@@ -38,23 +38,23 @@ export async function fetchBusinessDetails(sbi, crn) {
   let response
   const now = new Date().toISOString()
   const query = `
-    query Business {
-      business(sbi: "${sbi}") {
-        sbi
-        organisationId
-        land {
-          parcels(date: "${now}") {
-            parcelId
-            sheetId
+      query Business {
+        business(sbi: "${sbi}") {
+          sbi
+          organisationId
+          land {
+            parcels(date: "${now}") {
+              parcelId
+              sheetId
+            }
+          }
+          customer(crn: "${crn}") {
+              firstName
+              lastName
+              role
           }
         }
-        customer(crn: "${crn}") {
-            firstName
-            lastName
-            role
-        }
-      }
-    }`
+      }`
 
   const token = await getValidToken()
 
