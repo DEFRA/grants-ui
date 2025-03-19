@@ -40,7 +40,7 @@ export const config = convict({
   serviceName: {
     doc: 'Applications Service Name',
     format: String,
-    default: 'cdp-node-frontend-template'
+    default: 'grants-ui'
   },
   root: {
     doc: 'Project root',
@@ -180,7 +180,7 @@ export const config = convict({
     keyPrefix: {
       doc: 'Redis cache key prefix name used to isolate the cached results across multiple clients',
       format: String,
-      default: 'cdp-node-frontend-template:',
+      default: 'grants-ui:',
       env: 'REDIS_KEY_PREFIX'
     },
     useSingleInstanceCache: {

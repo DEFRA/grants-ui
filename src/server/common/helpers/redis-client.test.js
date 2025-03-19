@@ -19,7 +19,7 @@ describe('#buildRedisClient', () => {
       expect(Redis).toHaveBeenCalledWith({
         db: 0,
         host: '127.0.0.1',
-        keyPrefix: 'cdp-node-frontend-template:',
+        keyPrefix: 'grants-ui:',
         port: 6379
       })
     })
@@ -41,7 +41,7 @@ describe('#buildRedisClient', () => {
         [{ host: '127.0.0.1', port: 6379 }],
         {
           dnsLookup: expect.any(Function),
-          keyPrefix: 'cdp-node-frontend-template:',
+          keyPrefix: 'grants-ui:',
           redisOptions: { db: 0, password: 'pass', tls: {}, username: 'user' },
           slotsRefreshTimeout: 10000
         }
