@@ -9,4 +9,5 @@ npm-debug.log
 coverage
 .cache
 .envrc
+.env
 tsconfig.tsbuildinfo
