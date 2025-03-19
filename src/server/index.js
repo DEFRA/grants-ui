@@ -1,4 +1,4 @@
-import defraForms from '@defra/forms-engine-plugin'
+import plugin from '@defra/forms-engine-plugin'
 import crumb from '@hapi/crumb'
 import hapi from '@hapi/hapi'
 import inert from '@hapi/inert'
@@ -107,11 +107,12 @@ export async function createServer() {
   })
 
   await server.register({
-    plugin: defraForms,
+    plugin,
     options: {
       services: {
         formsService
       },
+      viewPaths: [path.resolve(config.get('root'), 'src/server/views')],
       controllers: {
         LandParcelController
       }
