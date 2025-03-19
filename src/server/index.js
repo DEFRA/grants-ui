@@ -49,7 +49,6 @@ const landGrantsMetadata = {
 
 const formsService = {
   getFormMetadata: function (slug) {
-    console.log('alo??', { slug })
     switch (slug) {
       case landGrantsMetadata.slug:
         return Promise.resolve(landGrantsMetadata)

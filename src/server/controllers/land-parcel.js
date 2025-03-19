@@ -1,4 +1,4 @@
-import { QuestionPageController } from '@defra/forms-engine-plugin'
+import { QuestionPageController } from '@defra/forms-engine-plugin/.server/server/plugins/engine/pageControllers/QuestionPageController.js'
 
 export default class LandParcelController extends QuestionPageController {
   viewName = 'grants/select-land-parcel'
