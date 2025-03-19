@@ -1,0 +1,7 @@
+@use "variables/colours" as *;
+
+// Example namespaced custom element style CSS classes
+
+.app-header {
+  border-bottom-color: $app-light-grey;
+}

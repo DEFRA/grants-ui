@@ -1,0 +1,24 @@
+name: Validate Template
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - edited
+      - reopened
+      - synchronize
+      - ready_for_review
+
+jobs:
+  pr-validator:
+    name: Run Pull Request Template Checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Apply template
+        run: .github/template/apply.sh DEFRA/template-frontend
+      - name: Check container starts in production-like mode
+        run: .github/template/validate.sh

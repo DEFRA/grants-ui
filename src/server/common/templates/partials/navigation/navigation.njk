@@ -1,0 +1,14 @@
+<nav class="app-navigation" role="navigation">
+  <div class="govuk-width-container">
+    <ul class="app-navigation__list">
+      {% for item in navigation %}
+        <li class="app-navigation__list-item">
+          <a class="app-navigation__link{% if item.isActive %} app-navigation__link--active{% endif %}"
+             href="{{ item.url }}">
+            {{ item.text }}
+          </a>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+</nav>

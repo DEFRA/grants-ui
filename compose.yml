@@ -1,0 +1,98 @@
+version: '3.4'
+services:
+
+  localstack:
+    image: localstack/localstack:3.0.2
+    ports:
+      - '4566:4566' # LocalStack Gateway
+      - '4510-4559:4510-4559' # external services port range
+    env_file:
+      - 'compose/aws.env'
+    environment:
+      DEBUG: ${DEBUG:-1}
+      LS_LOG: WARN # Localstack DEBUG Level
+      SERVICES: s3,sqs,sns,firehose
+      LOCALSTACK_HOST: 127.0.0.1
+    volumes:
+      - '${TMPDIR:-/tmp}/localstack:/var/lib/localstack'
+      - ./compose/start-localstack.sh:/etc/localstack/init/ready.d/start-localstack.sh
+    healthcheck:
+      test: ['CMD', 'curl', 'localhost:4566']
+      interval: 5s
+      start_period: 5s
+      retries: 3
+    networks:
+      - cdp-tenant
+
+  redis:
+    image: redis:7.2.3-alpine3.18
+    ports:
+      - '6379:6379'
+    restart: always
+    networks:
+      - cdp-tenant
+
+  mongodb:
+    image: mongo:6.0.13
+    networks:
+      - cdp-tenant
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongodb-data:/data
+    restart: always
+
+################################################################################
+
+  your-frontend:
+    build: ./
+    ports:
+      - '3000:3000'
+    links:
+      - 'localstack:localstack'
+      - 'redis:redis'
+    depends_on:
+      localstack:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    env_file:
+      - 'compose/aws.env'
+    environment:
+      PORT: 3000
+      NODE_ENV: development
+      REDIS_HOST: redis
+      LOCALSTACK_ENDPOINT: http://localstack:4566
+      USE_SINGLE_INSTANCE_CACHE: true
+    networks:
+      - cdp-tenant
+
+  # your-backend:
+  #   image: defradigital/your-backend:${YOUR_BACKEND_VERSION:-latest}
+  #   ports:
+  #     - '3555:3555'
+  #   links:
+  #     - 'localstack:localstack'
+  #     - 'mongodb:mongodb'
+  #   depends_on:
+  #     localstack:
+  #       condition: service_healthy
+  #     mongodb:
+  #       condition: service_started
+  #   env_file:
+  #     - 'compose/aws.env'
+  #   environment:
+  #     PORT: 3555
+  #     NODE_ENV: development
+  #     LOCALSTACK_ENDPOINT: http://localstack:4566
+  #   networks:
+  #     - cdp-tenant
+
+################################################################################
+
+volumes:
+  mongodb-data:
+
+networks:
+  cdp-tenant:
+    driver: bridge

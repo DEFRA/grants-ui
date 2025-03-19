@@ -1,0 +1,13 @@
+// Example SASS helpers
+
+@mixin app-link-style {
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  &:focus {
+    text-decoration: none;
+  }
+}

@@ -1,0 +1,80 @@
+version: 2
+
+updates:
+  # Update npm packages
+  - package-ecosystem: npm
+    directory: /
+    open-pull-requests-limit: 10
+
+    # Group packages into shared PR
+    groups:
+      build:
+        patterns:
+          - '@babel/*'
+          - 'autoprefixer'
+          - 'babel-plugin-module-resolver'
+          - 'babel-loader'
+          - 'babel-plugin-transform-import-meta'
+          - 'tsx'
+          - 'webpack'
+          - 'webpack-*'
+          - 'terser-webpack-plugin'
+
+      lint:
+        patterns:
+          - '@typescript-eslint/*'
+          - 'prettier'
+          - 'stylelint'
+          - 'stylelint-*'
+          - 'typescript'
+
+      logging:
+        patterns:
+          - '*-pino'
+          - '*-pino-format'
+          - 'pino'
+          - 'pino-*'
+
+      tools:
+        patterns:
+          - 'babel-jest'
+          - 'husky'
+          - 'jest'
+          - 'jest-*'
+          - 'nodemon'
+          - 'npm-run-all'
+          - 'lodash'
+          - 'source-map-loader'
+          - 'sass-*'
+          - 'postcss-*'
+
+      types:
+        patterns:
+          - '@types/*'
+
+    ignore:
+      - dependency-name: 'eslint-*'
+      - dependency-name: 'eslint'
+      - dependency-name: '@typescript-eslint/*'
+
+    # Schedule run every Monday, local time
+    schedule:
+      interval: weekly
+      time: '10:30'
+      timezone: 'Europe/London'
+
+    versioning-strategy: increase
+
+    allow:
+      # Include direct package.json updates
+      - dependency-type: direct
+
+  # Update GitHub Actions
+  - package-ecosystem: github-actions
+    directory: /
+
+    # Schedule run every Monday, local time
+    schedule:
+      interval: weekly
+      time: '10:30'
+      timezone: 'Europe/London'

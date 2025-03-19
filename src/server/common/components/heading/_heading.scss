@@ -1,0 +1,18 @@
+@use "govuk-frontend" as *;
+
+.app-heading {
+  display: flex;
+  margin-bottom: govuk-spacing(4);
+}
+
+.app-heading-secondary-info {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+}
+
+.app-heading-entities {
+  display: flex;
+  margin-top: govuk-spacing(2);
+  margin-bottom: govuk-spacing(4);
+}
