@@ -16,20 +16,6 @@ export const home = {
           method: 'GET',
           path: '/',
           ...homeController
-        },
-        {
-          method: 'GET',
-          path: '/stylesheets/application.min.css',
-          handler: {
-            file: './stylesheets/application.min.css'
-          }
-        },
-        {
-          method: 'GET',
-          path: '/javascripts/application.min.js',
-          handler: {
-            file: './javascripts/application.min.js'
-          }
         }
       ])
     }
