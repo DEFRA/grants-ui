@@ -11,3 +11,6 @@ coverage
 .env
 .envrc
 tsconfig.tsbuildinfo
+
+# Snyk config files
+.snyk
