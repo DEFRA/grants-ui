@@ -1,0 +1,96 @@
+{% extends "layout.html" %}
+
+{% from "govuk/components/radios/macro.njk" import govukRadios %}
+{% from "govuk/components/inset-text/macro.njk" import govukInsetText %}
+{% from "govuk/components/warning-text/macro.njk" import govukWarningText %}
+{% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/input/macro.njk" import govukInput %}
+
+{% block content %}
+<div class="govuk-body">
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      <h1 class="govuk-heading-l">Please select your land parcel</h1>
+      
+      {# {% if business and business.customer %}
+      <p>
+        Welcome back, {{ business.customer.firstName }} {{business.customer.lastName}}.
+        <br/>
+        SBI: {{ business.sbi }}
+        <br/>
+        Org ID: {{ business.organisationId }}
+      </p>
+      {% endif %} #}
+      {% if business and business.land and business.land.parcels %}
+
+        <form method="post" {%- if proxyUrl and not context.isForceAccess %} data-proxy-url="{{ proxyUrl }}" {%- endif %} data-actions="{{ actions }}" novalidate>
+          {% set radioItems = [] %}
+          {% set parcelId = landParcelId or business.land.parcels[0].parcelId %}
+          {% set sheetId = landParcelId or business.land.parcels[0].sheetId %}
+
+          {% for parcel in business.land.parcels.slice(0,3) %}
+            {% set radioItems = radioItems.concat([{
+              value: parcel.parcelId + "-" + parcel.sheetId,
+              text: "Parcel ID: " + parcel.parcelId + " - " + parcel.sheetId
+            }]) %}
+          {% endfor %}
+          
+          {% if radioItems.length > 0 %}
+            {{ govukRadios({
+                name: "landParcelId",
+                fieldset: {
+                  legend: {
+                    text: "Parcel ID - Sheet ID",
+                    classes: "govuk-fieldset__legend--s"
+                  }
+                },
+                items: radioItems,
+                value: parcelId
+              }) 
+            }}
+            
+
+            {# {{ govukInput({
+                label: {
+                  text: "Land cover, in hectars",
+                  classes: "govuk-fieldset__legend--s"
+                },
+                classes: "govuk-input--width-5",
+                hint: {
+                  text: "Maximum area available: " + maxArea.value + " " + maxArea.unit + "."
+                },
+                id: "area",
+                name: "area",
+                suffix: {
+                  text: maxArea.unit
+                },
+                spellcheck: false
+              }) 
+            }} #}
+
+            <div class="govuk-button-group">
+              <input type="hidden" name="crumb" value="{{ crumb }}">
+              {% block form %}
+                  {{ govukButton({
+                    text: "Continue",
+                    preventDoubleClick: true
+                  }) }}
+              {% endblock %}
+            </div>
+          {% else %}
+            {{ govukWarningText({
+              text: "No land parcels available to select.",
+              iconFallbackText: "Warning"
+            }) }}
+          {% endif %}
+        </form>
+      {% else %}
+        {{ govukWarningText({
+          text: "No land data available.",
+          iconFallbackText: "Warning"
+        }) }}
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

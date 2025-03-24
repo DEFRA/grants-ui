@@ -1,17 +1,21 @@
-import path from 'path'
+import plugin from '@defra/forms-engine-plugin'
+import crumb from '@hapi/crumb'
 import hapi from '@hapi/hapi'
-
+import inert from '@hapi/inert'
+import path from 'path'
 import { config } from '~/src/config/config.js'
 import { nunjucksConfig } from '~/src/config/nunjucks/nunjucks.js'
-import { router } from './router.js'
-import { requestLogger } from '~/src/server/common/helpers/logging/request-logger.js'
 import { catchAll } from '~/src/server/common/helpers/errors.js'
-import { secureContext } from '~/src/server/common/helpers/secure-context/index.js'
-import { sessionCache } from '~/src/server/common/helpers/session-cache/session-cache.js'
-import { getCacheEngine } from '~/src/server/common/helpers/session-cache/cache-engine.js'
+import { requestLogger } from '~/src/server/common/helpers/logging/request-logger.js'
+import { setupProxy } from '~/src/server/common/helpers/proxy/setup-proxy.js'
 import { pulse } from '~/src/server/common/helpers/pulse.js'
 import { requestTracing } from '~/src/server/common/helpers/request-tracing.js'
-import { setupProxy } from '~/src/server/common/helpers/proxy/setup-proxy.js'
+import { secureContext } from '~/src/server/common/helpers/secure-context/index.js'
+import { getCacheEngine } from '~/src/server/common/helpers/session-cache/cache-engine.js'
+import { sessionCache } from '~/src/server/common/helpers/session-cache/session-cache.js'
+import { formsService } from '~/src/server/forms/config.js'
+import LandParcelController from '~/src/server/land-parcel/controller.js'
+import { router } from './router.js'
 
 export async function createServer() {
   setupProxy()
@@ -52,6 +56,24 @@ export async function createServer() {
       strictHeader: false
     }
   })
+
+  await server.register({
+    plugin,
+    options: {
+      services: {
+        formsService
+      },
+      viewPaths: [path.resolve(config.get('root'), 'src/server/land-parcel')],
+      controllers: {
+        LandParcelController
+      }
+    }
+  })
+
+  // Defra Forms & dependencies
+  await server.register(inert)
+  await server.register(crumb)
+
   await server.register([
     requestLogger,
     requestTracing,
@@ -59,7 +81,7 @@ export async function createServer() {
     pulse,
     sessionCache,
     nunjucksConfig,
-    router // Register all the controllers/routes defined in src/server/router.js
+    router // Register all the controllers/routes defined in src/server/router.js,
   ])
 
   server.ext('onPreResponse', catchAll)

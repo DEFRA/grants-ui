@@ -1,8 +1,8 @@
+import { CleanWebpackPlugin } from 'clean-webpack-plugin'
+import CopyPlugin from 'copy-webpack-plugin'
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import path from 'path'
-import CopyPlugin from 'copy-webpack-plugin'
-import { CleanWebpackPlugin } from 'clean-webpack-plugin'
 import TerserPlugin from 'terser-webpack-plugin'
 import WebpackAssetsManifest from 'webpack-assets-manifest'
 
@@ -13,6 +13,10 @@ const dirname = path.dirname(fileURLToPath(import.meta.url))
 
 const govukFrontendPath = path.dirname(
   require.resolve('govuk-frontend/package.json')
+)
+
+const defraFormsPath = path.dirname(
+  require.resolve('@defra/forms-engine-plugin/package.json')
 )
 
 const ruleTypeAssetResource = 'asset/resource'
@@ -181,6 +185,22 @@ export default {
         {
           from: path.join(govukFrontendPath, 'dist/govuk/assets'),
           to: 'assets'
+        },
+        {
+          from: require.resolve(
+            '@defra/forms-engine-plugin/application.min.css'
+          ),
+          to: 'stylesheets/dxt-application.min.css'
+        },
+        {
+          from: require.resolve(
+            '@defra/forms-engine-plugin/application.min.js'
+          ),
+          to: 'javascripts/dxt-application.min.js'
+        },
+        {
+          from: path.join(defraFormsPath, '.public/assets'),
+          to: 'dxt-assets'
         }
       ]
     })
