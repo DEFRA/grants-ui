@@ -1,7 +1,7 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 
 export default class LandParcelController extends QuestionPageController {
-  viewName = 'grants/select-land-parcel'
+  viewName = 'select-land-parcel'
 
   /**
    * This method is called when there is a GET request to the select land parcel page.

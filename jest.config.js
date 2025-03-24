@@ -25,10 +25,16 @@ export default {
   transform: {
     '^.+\\.js$': 'babel-jest'
   },
+  // Create module name mapper for your mocks
+  moduleNameMapper: {
+    '^@defra/forms-engine-plugin$':
+      '<rootDir>/src/__mocks__/@defra/forms-engine-plugin.cjs'
+  },
   transformIgnorePatterns: [
     `node_modules/(?!${[
       '@defra/hapi-tracing', // Supports ESM only
-      'node-fetch' // Supports ESM only
+      'node-fetch', // Supports ESM only
+      '@defra/forms-engine-plugin'
     ].join('|')}/)`
   ]
 }

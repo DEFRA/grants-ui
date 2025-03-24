@@ -20,6 +20,8 @@ describe('#buildRedisClient', () => {
         db: 0,
         host: '127.0.0.1',
         keyPrefix: 'grants-ui:',
+        password: 'my-password',
+        username: 'default',
         port: 6379
       })
     })

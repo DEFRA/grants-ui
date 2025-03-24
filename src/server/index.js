@@ -1,8 +1,8 @@
 import plugin from '@defra/forms-engine-plugin'
+import Boom from '@hapi/boom'
 import crumb from '@hapi/crumb'
 import hapi from '@hapi/hapi'
 import inert from '@hapi/inert'
-import Boom from '@hapi/boom'
 import path from 'path'
 import { config } from '~/src/config/config.js'
 import { nunjucksConfig } from '~/src/config/nunjucks/nunjucks.js'
@@ -14,8 +14,8 @@ import { requestTracing } from '~/src/server/common/helpers/request-tracing.js'
 import { secureContext } from '~/src/server/common/helpers/secure-context/index.js'
 import { getCacheEngine } from '~/src/server/common/helpers/session-cache/cache-engine.js'
 import { sessionCache } from '~/src/server/common/helpers/session-cache/session-cache.js'
-import LandParcelController from '~/src/server/controllers/land-parcel.js'
 import landGrantsDefinition from '~/src/server/forms/find-funding-for-land-or-farms.json'
+import LandParcelController from '~/src/server/land-parcel/controller.js'
 import { router } from './router.js'
 
 // Form metadata
@@ -113,7 +113,7 @@ export async function createServer() {
       services: {
         formsService
       },
-      viewPaths: [path.resolve(config.get('root'), 'src/server/views')],
+      viewPaths: [path.resolve(config.get('root'), 'src/server/land-parcel')],
       controllers: {
         LandParcelController
       }

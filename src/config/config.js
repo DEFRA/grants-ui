@@ -1,4 +1,5 @@
 import convict from 'convict'
+import 'dotenv/config'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -67,6 +68,46 @@ export const config = convict({
     doc: 'If this application running in the test environment',
     format: Boolean,
     default: isTest
+  },
+  entra: {
+    tokenEndpoint: {
+      doc: 'Microsoft entra token endpoint',
+      format: String,
+      default: '',
+      env: 'ENTRA_INTERNAL_TOKEN_URL'
+    },
+    tenantId: {
+      doc: 'Microsoft tenant ID',
+      format: String,
+      default: '',
+      env: 'ENTRA_INTERNAL_TENANT_ID'
+    },
+    clientId: {
+      doc: 'Microsoft client ID',
+      format: String,
+      default: '',
+      env: 'ENTRA_INTERNAL_CLIENT_ID'
+    },
+    clientSecret: {
+      doc: 'Microsoft client secret',
+      format: String,
+      default: '',
+      env: 'ENTRA_INTERNAL_CLIENT_SECRET'
+    }
+  },
+  consolidatedView: {
+    apiEndpoint: {
+      doc: 'Consolidated View API endpoint',
+      format: String,
+      default: '',
+      env: 'CV_API_ENDPOINT'
+    },
+    authEmail: {
+      doc: 'Consolidated View AuthEmail',
+      format: String,
+      default: '',
+      env: 'CV_API_AUTH_EMAIL'
+    }
   },
   log: {
     enabled: {
