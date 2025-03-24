@@ -1,4 +1,6 @@
 import Boom from '@hapi/boom'
+import addingValueDefinition from '~/src/server/forms/adding-value.json'
+import exampleGrantDefinition from '~/src/server/forms/example-grant.json'
 import landGrantsDefinition from '~/src/server/forms/find-funding-for-land-or-farms.json'
 
 const now = new Date()
@@ -23,6 +25,20 @@ const metadata = {
   live: author
 }
 
+const exampleGrantMetadata = {
+  id: '5eeb9f71-44f8-46ed-9412-3d5e2c5ab2bc',
+  slug: 'example-grant',
+  title: 'Example grant',
+  ...metadata
+}
+
+const addingValueMetadata = {
+  id: '95e92559-968d-44ae-8666-2b1ad3dffd31',
+  slug: 'adding-value',
+  title: 'Adding value',
+  ...metadata
+}
+
 const landGrantsMetadata = {
   id: '5c67688f-3c61-4839-a6e1-d48b598257f1',
   slug: 'find-funding-for-land-or-farms',
@@ -33,6 +49,10 @@ const landGrantsMetadata = {
 export const formsService = {
   getFormMetadata: function (slug) {
     switch (slug) {
+      case exampleGrantMetadata.slug:
+        return Promise.resolve(exampleGrantMetadata)
+      case addingValueMetadata.slug:
+        return Promise.resolve(addingValueMetadata)
       case landGrantsMetadata.slug:
         return Promise.resolve(landGrantsMetadata)
       default:
@@ -41,6 +61,10 @@ export const formsService = {
   },
   getFormDefinition: function (id) {
     switch (id) {
+      case exampleGrantMetadata.id:
+        return Promise.resolve(exampleGrantDefinition)
+      case addingValueMetadata.id:
+        return Promise.resolve(addingValueDefinition)
       case landGrantsMetadata.id:
         return Promise.resolve(landGrantsDefinition)
       default:

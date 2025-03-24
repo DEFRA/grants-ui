@@ -14,8 +14,10 @@ import { secureContext } from '~/src/server/common/helpers/secure-context/index.
 import { getCacheEngine } from '~/src/server/common/helpers/session-cache/cache-engine.js'
 import { sessionCache } from '~/src/server/common/helpers/session-cache/session-cache.js'
 import { formsService } from '~/src/server/forms/config.js'
-import LandActionsController from '~/src/server/land-grants/actions/controller.js'
+import ConfirmationPageController from '~/src/server/controllers/confirmation/controller.js'
+import DeclarationPageController from '~/src/server/controllers/declaration/controller.js'
 import LandParcelController from '~/src/server/land-grants/parcels/controller.js'
+import LandActionsController from '~/src/server/land-grants/actions/controller.js'
 import { router } from './router.js'
 
 export async function createServer() {
@@ -69,6 +71,8 @@ export async function createServer() {
         path.resolve(config.get('root'), 'src/server/land-grants/parcels')
       ],
       controllers: {
+        ConfirmationPageController,
+        DeclarationPageController,
         LandParcelController,
         LandActionsController
       }
