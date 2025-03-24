@@ -29,6 +29,8 @@
     "test:watch": "jest --watch",
     "server:watch": "nodemon --exec tsx --enable-source-maps ./src",
     "server:debug": "nodemon --exec tsx --enable-source-maps --inspect ./src",
+    "snyk-test": "snyk test",
+    "snyk-monitor": "snyk monitor",
     "prestart": "npm run build",
     "start": "NODE_ENV=production node --use-strict .",
     "setup:husky": "node -e \"try { (await import('husky')).default() } catch (e) { if (e.code !== 'ERR_MODULE_NOT_FOUND') throw e }\" --input-type module"
@@ -108,6 +110,7 @@
     "prettier": "^3.3.3",
     "sass-embedded": "^1.80.6",
     "sass-loader": "^16.0.3",
+    "snyk": "^1.1296.0",
     "source-map-loader": "^5.0.0",
     "stylelint": "^16.10.0",
     "stylelint-config-gds": "^2.0.0",
