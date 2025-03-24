@@ -1,5 +1,4 @@
 import plugin from '@defra/forms-engine-plugin'
-import Boom from '@hapi/boom'
 import crumb from '@hapi/crumb'
 import hapi from '@hapi/hapi'
 import inert from '@hapi/inert'
@@ -14,58 +13,9 @@ import { requestTracing } from '~/src/server/common/helpers/request-tracing.js'
 import { secureContext } from '~/src/server/common/helpers/secure-context/index.js'
 import { getCacheEngine } from '~/src/server/common/helpers/session-cache/cache-engine.js'
 import { sessionCache } from '~/src/server/common/helpers/session-cache/session-cache.js'
-import landGrantsDefinition from '~/src/server/forms/find-funding-for-land-or-farms.json'
+import { formsService } from '~/src/server/forms/config.js'
 import LandParcelController from '~/src/server/land-parcel/controller.js'
 import { router } from './router.js'
-
-// Form metadata
-const now = new Date()
-const user = {
-  id: 'grants-user',
-  displayName: 'Grants dev'
-}
-const author = {
-  createdAt: now,
-  createdBy: user,
-  updatedAt: now,
-  updatedBy: user
-}
-
-const metadata = {
-  organisation: 'Defra',
-  teamName: 'Grants',
-  teamEmail: 'grants@defra.gov.uk',
-  submissionGuidance: "Thanks for your submission, we'll be in touch",
-  notificationEmail: 'cl-defra-tactical-grants-test-rpa-email@equalexperts.com',
-  ...author,
-  live: author
-}
-
-const landGrantsMetadata = {
-  id: '5c67688f-3c61-4839-a6e1-d48b598257f1',
-  slug: 'find-funding-for-land-or-farms',
-  title: 'Find Funding for Land or Farms',
-  ...metadata
-}
-
-const formsService = {
-  getFormMetadata: function (slug) {
-    switch (slug) {
-      case landGrantsMetadata.slug:
-        return Promise.resolve(landGrantsMetadata)
-      default:
-        throw Boom.notFound(`Form '${slug}' not found`)
-    }
-  },
-  getFormDefinition: function (id) {
-    switch (id) {
-      case landGrantsMetadata.id:
-        return Promise.resolve(landGrantsDefinition)
-      default:
-        throw Boom.notFound(`Form '${id}' not found`)
-    }
-  }
-}
 
 export async function createServer() {
   setupProxy()
@@ -121,17 +71,8 @@ export async function createServer() {
   })
 
   // Defra Forms & dependencies
-  // await server.register(pino)
   await server.register(inert)
   await server.register(crumb)
-  // await server.register({
-  //   plugin: yar,
-  //   options: {
-  //     cookieOptions: {
-  //       password: config.get('session.cookie.password')
-  //     }
-  //   }
-  // })
 
   await server.register([
     requestLogger,
