@@ -102,9 +102,10 @@ describe('LandActionsController', () => {
       const handler = controller.makeGetRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
-      expect(mockRequest.logger.error).toHaveBeenCalledWith(
-        'No actions found for parcel sheet1-parcel1'
-      )
+      expect(mockRequest.logger.error).toHaveBeenCalledWith({
+        landParcel: 'sheet1-parcel1',
+        message: 'No actions found for parcel sheet1-parcel1'
+      })
     })
   })
 
