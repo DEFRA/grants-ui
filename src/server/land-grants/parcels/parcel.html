@@ -30,17 +30,17 @@
 
           {% for parcel in business.land.parcels.slice(0,3) %}
             {% set radioItems = radioItems.concat([{
-              value: parcel.parcelId + "-" + parcel.sheetId,
-              text: "Parcel ID: " + parcel.parcelId + " - " + parcel.sheetId
+              value: parcel.sheetId + "-" + parcel.parcelId,
+              text: parcel.sheetId + "-" + parcel.parcelId
             }]) %}
           {% endfor %}
           
           {% if radioItems.length > 0 %}
             {{ govukRadios({
-                name: "landParcelId",
+                name: "landParcel",
                 fieldset: {
                   legend: {
-                    text: "Parcel ID - Sheet ID",
+                    text: "Sheet and Parcel ID",
                     classes: "govuk-fieldset__legend--s"
                   }
                 },
