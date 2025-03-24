@@ -67,6 +67,7 @@ export default class LandActionsController extends QuestionPageController {
         ...super.getViewModel(request, context),
         errors: collection.getErrors(collection.getErrors()),
         landParcel: state.landParcel,
+        area: state.area,
         availableActions: actions,
         selectedActions: state.actions
       }

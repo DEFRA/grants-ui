@@ -25,8 +25,7 @@
 
         <form method="post" {%- if proxyUrl and not context.isForceAccess %} data-proxy-url="{{ proxyUrl }}" {%- endif %} data-actions="{{ actions }}" novalidate>
           {% set radioItems = [] %}
-          {% set parcelId = landParcelId or business.land.parcels[0].parcelId %}
-          {% set sheetId = landParcelId or business.land.parcels[0].sheetId %}
+          {% set parcelId = landParcel or business.land.parcels[0].parcelId %}
 
           {% for parcel in business.land.parcels.slice(0,1) %}
             {% set radioItems = radioItems.concat([{
@@ -49,25 +48,6 @@
               }) 
             }}
             
-
-            {# {{ govukInput({
-                label: {
-                  text: "Land cover, in hectars",
-                  classes: "govuk-fieldset__legend--s"
-                },
-                classes: "govuk-input--width-5",
-                hint: {
-                  text: "Maximum area available: " + maxArea.value + " " + maxArea.unit + "."
-                },
-                id: "area",
-                name: "area",
-                suffix: {
-                  text: maxArea.unit
-                },
-                spellcheck: false
-              }) 
-            }} #}
-
             <div class="govuk-button-group">
               <input type="hidden" name="crumb" value="{{ crumb }}">
               {% block form %}
