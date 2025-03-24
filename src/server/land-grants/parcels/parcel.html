@@ -28,7 +28,7 @@
           {% set parcelId = landParcelId or business.land.parcels[0].parcelId %}
           {% set sheetId = landParcelId or business.land.parcels[0].sheetId %}
 
-          {% for parcel in business.land.parcels.slice(0,3) %}
+          {% for parcel in business.land.parcels.slice(0,1) %}
             {% set radioItems = radioItems.concat([{
               value: parcel.sheetId + "-" + parcel.parcelId,
               text: parcel.sheetId + "-" + parcel.parcelId
