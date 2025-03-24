@@ -15,9 +15,8 @@ const govukFrontendPath = path.dirname(
   require.resolve('govuk-frontend/package.json')
 )
 
-const defraFormsPath = path.resolve(
-  dirname,
-  'node_modules/@defra/forms-engine-plugin'
+const defraFormsPath = path.dirname(
+  require.resolve('@defra/forms-engine-plugin/package.json')
 )
 
 const ruleTypeAssetResource = 'asset/resource'
@@ -188,18 +187,20 @@ export default {
           to: 'assets'
         },
         {
-          from: path.join(
-            defraFormsPath,
-            '.public/stylesheets/application.min.css'
+          from: require.resolve(
+            '@defra/forms-engine-plugin/application.min.css'
           ),
-          to: 'stylesheets'
+          to: 'stylesheets/dxt-application.min.css'
         },
         {
-          from: path.join(
-            defraFormsPath,
-            '.public/javascripts/application.min.js'
+          from: require.resolve(
+            '@defra/forms-engine-plugin/application.min.js'
           ),
-          to: 'javascripts'
+          to: 'javascripts/dxt-application.min.js'
+        },
+        {
+          from: path.join(defraFormsPath, '.public/assets'),
+          to: 'dxt-assets'
         }
       ]
     })

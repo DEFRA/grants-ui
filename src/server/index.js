@@ -2,6 +2,7 @@ import plugin from '@defra/forms-engine-plugin'
 import crumb from '@hapi/crumb'
 import hapi from '@hapi/hapi'
 import inert from '@hapi/inert'
+import Boom from '@hapi/boom'
 import path from 'path'
 import { config } from '~/src/config/config.js'
 import { nunjucksConfig } from '~/src/config/nunjucks/nunjucks.js'
@@ -56,7 +57,7 @@ const formsService = {
         throw Boom.notFound(`Form '${slug}' not found`)
     }
   },
-  getFormDefinition: function (id, _state) {
+  getFormDefinition: function (id) {
     switch (id) {
       case landGrantsMetadata.id:
         return Promise.resolve(landGrantsDefinition)
