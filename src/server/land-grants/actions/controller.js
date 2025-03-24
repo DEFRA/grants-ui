@@ -34,7 +34,7 @@ export default class LandActionsController extends QuestionPageController {
   }
 
   /**
-   * This method is called when there is a GET request to the land grants home page.
+   * This method is called when there is a GET request to the land grants actions page.
    * It gets the view model for the page using the `getViewModel` method,
    * and then adds business details to the view model
    */
@@ -69,7 +69,6 @@ export default class LandActionsController extends QuestionPageController {
         landParcel: state.landParcel,
         availableActions: actions,
         selectedActions: state.actions
-        // title: page?.title
       }
 
       return h.view(viewName, viewModel)
