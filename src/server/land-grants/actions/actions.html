@@ -15,11 +15,11 @@
       </div>
       {% if availableActions %}
         <form method="post" novalidate>
-          {% set listItems = [] %}
+          {% set actionList = [] %}
           {% set action = actionId or actions[0].id %}
 
           {% for action in availableActions %}
-            {% set listItems = listItems.concat([{
+            {% set actionList = actionList.concat([{
               value: action.code,
               text: action.description,
               availableArea: action.availableArea.value,
@@ -28,7 +28,7 @@
             }]) %}
           {% endfor %}
           
-          {% if listItems.length > 0 %}
+          {% if actionList.length > 0 %}
           <div class="govuk-form-group">
             <fieldset class="govuk-fieldset" aria-describedby="action-hint">
               <legend class="govuk-fieldset__legend govuk-fieldset__legend--l">
@@ -41,15 +41,15 @@
               </div>
               
               <div class="govuk-checkboxes" data-module="govuk-checkboxes">
-                {% for item in listItems %}
+                {% for action in actionList %}
                     <div class="govuk-checkboxes__item">
-                      <input class="govuk-checkboxes__input" id="{{item.value}}" name="actions" type="checkbox" value="{{item.value}}" {% if item.checked %}checked{% endif %}>
-                      <label class="govuk-label govuk-checkboxes__label" for="{{item.value}}">
-                        {{ item.text }}
+                      <input class="govuk-checkboxes__input" id="{{action.value}}" name="actions" type="checkbox" value="{{action.value}}" {% if action.checked %}checked{% endif %}>
+                      <label class="govuk-label govuk-checkboxes__label" for="{{action.value}}">
+                        {{ action.text }}
                       </label>
                       <div class="govuk-form-group">
                         <div class="govuk-input__wrapper">
-                          <input class="govuk-input govuk-input--width-5" id="area" name="area" value="{{area}}" type="text" spellcheck="false" placeholder="Max. {{item.availableArea}}">
+                          <input class="govuk-input govuk-input--width-5" id="area" name="area" value="{{area}}" type="text" spellcheck="false" placeholder="Max. {{action.availableArea}}">
                           <div class="govuk-input__suffix" aria-hidden="true">ha.</div>
                         </div>
                       </div>
