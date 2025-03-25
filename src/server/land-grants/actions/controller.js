@@ -24,7 +24,7 @@ export default class LandActionsController extends QuestionPageController {
 
       await this.setState(request, {
         ...state,
-        actions: actions.toString(),
+        actions,
         area
       })
       return this.proceed(request, h, this.getNextPath(context))
