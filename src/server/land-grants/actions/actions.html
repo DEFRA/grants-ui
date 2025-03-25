@@ -1,0 +1,82 @@
+{% extends "layout.html" %}
+
+{% from "govuk/components/checkboxes/macro.njk" import govukCheckboxes %}
+{% from "govuk/components/inset-text/macro.njk" import govukInsetText %}
+{% from "govuk/components/warning-text/macro.njk" import govukWarningText %}
+{% from "govuk/components/button/macro.njk" import govukButton %}
+
+{% block content %}
+<div class="govuk-body">
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      <h1 class="govuk-heading-l">Choosing an action</h1>
+      <div class="govuk-hint">
+        Land parcel: {{landParcel}}
+      </div>
+      {% if availableActions %}
+        <form method="post" novalidate>
+          {% set actionList = [] %}
+          {% set action = actionId or actions[0].id %}
+
+          {% for action in availableActions %}
+            {% set actionList = actionList.concat([{
+              value: action.code,
+              text: action.description,
+              availableArea: action.availableArea.value,
+              availableAreaUnit: action.availableArea.unit,
+              checked: selectedActions and selectedActions.includes(action.code)
+            }]) %}
+          {% endfor %}
+          
+          {% if actionList.length > 0 %}
+          <div class="govuk-form-group">
+            <fieldset class="govuk-fieldset" aria-describedby="action-hint">
+              <legend class="govuk-fieldset__legend govuk-fieldset__legend--l">
+                <h1 class="govuk-fieldset__heading">
+                  Which actions do you want to apply for?
+                </h1>
+              </legend>
+              <div id="action-hint" class="govuk-hint">
+                Select all that apply
+              </div>
+              
+              <div class="govuk-checkboxes" data-module="govuk-checkboxes">
+                {% for action in actionList %}
+                    <div class="govuk-checkboxes__item">
+                      <input class="govuk-checkboxes__input" id="{{action.value}}" name="actions" type="checkbox" value="{{action.value}}" {% if action.checked %}checked{% endif %}>
+                      <label class="govuk-label govuk-checkboxes__label" for="{{action.value}}">
+                        {{ action.text }}
+                      </label>
+                      <div class="govuk-form-group">
+                        <div class="govuk-input__wrapper">
+                          <input class="govuk-input govuk-input--width-5" id="area" name="area" value="{{area}}" type="text" spellcheck="false" placeholder="Max. {{action.availableArea}}">
+                          <div class="govuk-input__suffix" aria-hidden="true">ha.</div>
+                        </div>
+                      </div>
+                    </div>
+                {% endfor %}
+              </div>
+            </fieldset>
+          </div>
+            
+            <div class="govuk-button-group">
+              <input type="hidden" name="crumb" value="{{ crumb }}">
+              {% block form %}
+                  {{ govukButton({
+                    text: "Continue",
+                    preventDoubleClick: true
+                  }) }}
+              {% endblock %}
+            </div>
+          {% else %}
+            {{ govukWarningText({
+              text: "No actions available to select.",
+              iconFallbackText: "Warning"
+            }) }}
+          {% endif %}
+        </form>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

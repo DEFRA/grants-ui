@@ -26,8 +26,8 @@
       "components": [
         {
           "type": "TextField",
-          "name": "landParcelId",
-          "title": "Parcel ID",
+          "name": "landParcel",
+          "title": "Parcel",
           "options": {
             "required": true
           },
@@ -35,6 +35,33 @@
         }
       ]
     },
+    {
+      "title": "Select Land Actions",
+      "controller": "LandActionsController",
+      "path": "/select-land-actions",
+      "next": [{ "path": "/select-land-parcel" }],
+      "components": [
+        {
+          "type": "TextField",
+          "name": "actions",
+          "title": "Actions",
+          "options": {
+            "required": true
+          },
+          "schema": {}
+        },
+        {
+          "type": "TextField",
+          "name": "area",
+          "title": "Parcel cover (ha.)",
+          "options": {
+            "required": true
+          },
+          "schema": {}
+        }
+      ]
+    },
+
     {
       "path": "/summary",
       "controller": "SummaryPageController",

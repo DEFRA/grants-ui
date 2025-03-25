@@ -69,6 +69,13 @@ export const config = convict({
     format: Boolean,
     default: isTest
   },
+  landGrants: {
+    apiEndpoint: {
+      format: String,
+      default: '',
+      env: 'LAND_GRANTS_API_URL'
+    }
+  },
   entra: {
     tokenEndpoint: {
       doc: 'Microsoft entra token endpoint',
