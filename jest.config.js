@@ -28,13 +28,16 @@ export default {
   // Create module name mapper for your mocks
   moduleNameMapper: {
     '^@defra/forms-engine-plugin$':
-      '<rootDir>/src/__mocks__/@defra/forms-engine-plugin.cjs'
+      '<rootDir>/src/__mocks__/@defra/forms-engine-plugin.cjs',
+    '^@defra/forms-model$': '<rootDir>/src/__mocks__/@defra/forms-model.cjs',
+    '^~/src/server/index.js$': '<rootDir>/src/__mocks__/server-index.js'
   },
   transformIgnorePatterns: [
     `node_modules/(?!${[
       '@defra/hapi-tracing', // Supports ESM only
       'node-fetch', // Supports ESM only
-      '@defra/forms-engine-plugin'
+      '@defra/forms-engine-plugin',
+      '@defra/forms-model'
     ].join('|')}/)`
   ]
 }
