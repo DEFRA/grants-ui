@@ -1,0 +1,207 @@
+{
+  "name": "Grants",
+  "pages": [
+    {
+      "title": "Start page",
+      "path": "/start",
+      "controller": "StartPageController",
+      "components": [
+        {
+          "name": "Jhimsh",
+          "title": "Html",
+          "type": "Html",
+          "content": "<p class=\"govuk-body\">Welcome to Grants.</p>\n",
+          "options": {},
+          "schema": {}
+        }
+      ],
+      "next": [
+        {
+          "path": "/are-you-in-england"
+        }
+      ]
+    },
+    {
+      "title": "Are you in England?",
+      "path": "/are-you-in-england",
+      "next": [
+        {
+          "path": "/you-must-be-in-england",
+          "condition": "uFOrmA"
+        },
+        {
+          "path": "/what-is-your-business"
+        }
+      ],
+      "components": [
+        {
+          "name": "TKsWbP",
+          "title": "Are you in England?",
+          "type": "YesNoField",
+          "hint": "",
+          "options": {},
+          "schema": {}
+        }
+      ]
+    },
+    {
+      "title": "You must be in England",
+      "path": "/you-must-be-in-england",
+      "next": [],
+      "components": [
+        {
+          "name": "FGyiLS",
+          "title": "You must be in England",
+          "type": "Html",
+          "hint": "",
+          "content": "<p class=\"govuk-body\">You must be in England.</p>\n",
+          "options": {},
+          "schema": {}
+        }
+      ]
+    },
+    {
+      "title": "What is your business?",
+      "path": "/what-is-your-business",
+      "next": [
+        {
+          "path": "/summary"
+        }
+      ],
+      "components": [
+        {
+          "name": "sdFYHf",
+          "title": "What is your business?",
+          "type": "RadiosField",
+          "list": "dfdGFY",
+          "hint": "",
+          "options": {},
+          "schema": {}
+        }
+      ]
+    },
+    {
+      "path": "/summary",
+      "controller": "SummaryPageController",
+      "title": "Check your answers before submitting your form"
+    }
+  ],
+  "lists": [
+    {
+      "title": "What is the nature of your business?",
+      "name": "dfdGFY",
+      "type": "string",
+      "items": [
+        {
+          "text": "A grower or producer of agricultural or horticultural produce",
+          "description": "For example, arable or livestock farmer",
+          "value": "grower"
+        },
+        {
+          "text": "A business processing agricultural or horticultural products",
+          "description": "For example a cheese processing business owner by farmer",
+          "value": "business"
+        },
+        {
+          "text": "None of the above",
+          "value": "none"
+        }
+      ]
+    },
+    {
+      "title": "What is the legal status of your business?",
+      "name": "ihwVmQ",
+      "type": "string",
+      "items": [
+        {
+          "text": "Sole trader",
+          "value": "Sole trader"
+        },
+        {
+          "text": "Private limited company (Ltd)",
+          "value": "Private limited company (Ltd)"
+        },
+        {
+          "text": "Partnership",
+          "value": "Partnership"
+        },
+        {
+          "text": "Limited partnership (LP)",
+          "value": "Limited partnership (LP)"
+        },
+        {
+          "text": "Charitable trust",
+          "value": "Charitable trust"
+        },
+        {
+          "text": "Limited liability partnership (LLP)",
+          "value": "Limited liability partnership (LLP)"
+        },
+        {
+          "text": "Charitable incorporated organisation (CIO)",
+          "value": "Charitable incorporated organisation (CIO)"
+        },
+        {
+          "text": "Government (local)",
+          "value": "Government (local)"
+        },
+        {
+          "text": "Public limited company (PLC)",
+          "value": "Public limited company (PLC)"
+        },
+        {
+          "text": "Community interest company (CIC)",
+          "value": "Community interest company (CIC)"
+        },
+        {
+          "text": "Non-UK company",
+          "value": "Non-UK company"
+        },
+        {
+          "text": "The Crown",
+          "value": "The Crown"
+        },
+        {
+          "text": "Unlimited company (Ultd)",
+          "value": "Unlimited company (Ultd)"
+        },
+        {
+          "text": "Government (central)",
+          "value": "Government (central)"
+        }
+      ]
+    }
+  ],
+  "sections": [
+    {
+      "title": "Contact details",
+      "name": "dhpiZu",
+      "hideTitle": false
+    }
+  ],
+  "conditions": [
+    {
+      "name": "uFOrmA",
+      "displayName": "notEngland",
+      "value": {
+        "name": "notEngland",
+        "conditions": [
+          {
+            "field": {
+              "name": "TKsWbP",
+              "type": "YesNoField",
+              "display": "Are you in England?"
+            },
+            "operator": "is",
+            "value": {
+              "type": "Value",
+              "value": "false",
+              "display": "No"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "startPage": "/start"
+}
