@@ -18,6 +18,8 @@ import { getCacheEngine } from '~/src/server/common/helpers/session-cache/cache-
 import { sessionCache } from '~/src/server/common/helpers/session-cache/session-cache.js'
 import LandActionsController from '~/src/server/land-grants/actions/actions.controller.js'
 import LandParcelController from '~/src/server/land-grants/parcels/parcel.controller.js'
+import ConfirmationPageController from '~/src/server/controllers/confirmation/controller.js'
+import DeclarationPageController from '~/src/server/controllers/declaration/controller.js'
 import { router } from './router.js'
 
 export async function createServer() {
@@ -73,6 +75,8 @@ export async function createServer() {
         path.resolve(config.get('root'), 'src/server/land-grants/parcels')
       ],
       controllers: {
+        ConfirmationPageController,
+        DeclarationPageController,
         LandParcelController,
         LandActionsController
       }
