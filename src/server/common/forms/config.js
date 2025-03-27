@@ -20,6 +20,13 @@ const metadata = {
   live: author
 }
 
+export const exampleGrantMetadata = {
+  id: '5eeb9f71-44f8-46ed-9412-3d5e2c5ab2bc',
+  slug: 'example-grant',
+  title: 'Example grant',
+  ...metadata
+}
+
 export const landGrantsMetadata = {
   id: '5c67688f-3c61-4839-a6e1-d48b598257f1',
   slug: 'find-funding-for-land-or-farms',
