@@ -1,6 +1,6 @@
 import Boom from '@hapi/boom'
-import exampleGrantDefinition from '~/src/server/common/forms/data/example-grant.json'
-import landGrantsDefinition from '~/src/server/common/forms/data/find-funding-for-land-or-farms.json'
+import exampleGrantDefinition from '~/src/server/common/forms/definitions/example-grant.json'
+import landGrantsDefinition from '~/src/server/common/forms/definitions/find-funding-for-land-or-farms.json'
 import { exampleGrantMetadata, landGrantsMetadata } from '../config.js'
 
 export const formsService = {
