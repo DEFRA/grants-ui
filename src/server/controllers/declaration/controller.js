@@ -7,7 +7,7 @@ export default class DeclarationPageController extends SummaryPageController {
    */
   constructor(model, pageDef) {
     super(model, pageDef)
-    this.viewName = 'grants/declaration'
+    this.viewName = 'declaration'
   }
 
   /**
