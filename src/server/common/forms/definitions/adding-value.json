@@ -291,7 +291,7 @@
     {
       "title": "Score results",
       "path": "/score-results",
-      "view": "grants/score-results.html",
+      "view": "score-results.html",
       "next": [],
       "components": [],
       "events": {

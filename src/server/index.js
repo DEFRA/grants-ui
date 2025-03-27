@@ -72,7 +72,8 @@ export async function createServer() {
       },
       viewPaths: [
         path.resolve(config.get('root'), 'src/server/land-grants/actions'),
-        path.resolve(config.get('root'), 'src/server/land-grants/parcels')
+        path.resolve(config.get('root'), 'src/server/land-grants/parcels'),
+        path.resolve(config.get('root'), 'src/server/views')
       ],
       controllers: {
         ConfirmationPageController,
