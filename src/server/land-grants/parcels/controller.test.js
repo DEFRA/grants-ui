@@ -1,11 +1,11 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
-import { fetchBusinessDetails } from '~/src/server/common/helpers/consolidated-view/consolidated-view.js'
+import { fetchBusinessDetails } from '~/src/server/consolidated-view/services/consolidated-view.js'
 import LandParcelController from './controller.js'
 
 jest.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js')
 
 jest.mock(
-  '~/src/server/common/helpers/consolidated-view/consolidated-view.js',
+  '~/src/server/consolidated-view/services/consolidated-view.js',
   () => ({
     fetchBusinessDetails: jest.fn()
   })

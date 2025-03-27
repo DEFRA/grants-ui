@@ -1,10 +1,10 @@
-import { fetchBusinessDetails } from '~/src/server/common/helpers/consolidated-view/consolidated-view.js'
 import { getValidToken } from '~/src/server/common/helpers/token-manager.js'
+import { fetchBusinessDetails } from '~/src/server/consolidated-view/services/consolidated-view.js'
 
 /**
  * @type {object}
  */
-jest.mock('../token-manager.js', () => ({
+jest.mock('~/src/server/common/helpers/token-manager.js', () => ({
   /**
    * @type {jest.Mock<Promise<string>>}
    */

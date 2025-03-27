@@ -1,5 +1,5 @@
 import { config } from '~/src/config/config.js'
-import { fetchLandSheetDetails } from '~/src/server/common/helpers/land-grants/land-grants.js'
+import { fetchLandSheetDetails } from '~/src/server/land-grants/services/land-grants.js'
 
 const landGrantsApi = config.get('landGrants.apiEndpoint')
 
