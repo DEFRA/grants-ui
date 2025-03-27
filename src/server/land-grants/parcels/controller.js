@@ -2,8 +2,8 @@ import Boom from '@hapi/boom'
 import { config } from '~/src/config/config.js'
 
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
-import { fetchBusinessDetails } from '../../common/helpers/consolidated-view/consolidated-view.js'
-import { createLogger } from '../../common/helpers/logging/logger.js'
+import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
+import { fetchBusinessDetails } from '~/src/server/land-grants/services/data-access-layer.js'
 
 const logger = createLogger()
 

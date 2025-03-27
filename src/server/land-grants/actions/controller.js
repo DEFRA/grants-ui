@@ -1,5 +1,5 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
-import { fetchLandSheetDetails } from '../../common/helpers/land-grants/land-grants.js'
+import { fetchLandSheetDetails } from '~/src/server/land-grants/services/land-grants.js'
 
 export default class LandActionsController extends QuestionPageController {
   viewName = 'actions'
