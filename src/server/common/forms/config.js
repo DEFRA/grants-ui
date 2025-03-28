@@ -20,6 +20,13 @@ const metadata = {
   live: author
 }
 
+export const addingValueMetadata = {
+  id: '95e92559-968d-44ae-8666-2b1ad3dffd31',
+  slug: 'adding-value',
+  title: 'Adding value',
+  ...metadata
+}
+
 export const exampleGrantMetadata = {
   id: '5eeb9f71-44f8-46ed-9412-3d5e2c5ab2bc',
   slug: 'example-grant',
