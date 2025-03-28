@@ -4,7 +4,7 @@ import { fetchBusinessDetails } from '~/src/server/common/services/consolidated-
 /**
  * @type {object}
  */
-jest.mock('~/src/server/common/helpers/token-manager.js', () => ({
+jest.mock('~/src/server/common/helpers/entra/token-manager.js', () => ({
   /**
    * @type {jest.Mock<Promise<string>>}
    */
