@@ -1,5 +1,5 @@
-import { getValidToken } from '~/src/server/common/helpers/token-manager.js'
-import { fetchBusinessDetails } from '~/src/server/common/services/consolidated-view.dal.js'
+import { getValidToken } from '~/src/server/common/helpers/entra/token-manager.js'
+import { fetchBusinessDetails } from '~/src/server/common/services/consolidated-view.service.js'
 
 /**
  * @type {object}

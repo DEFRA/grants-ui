@@ -3,7 +3,7 @@ import { config } from '~/src/config/config.js'
 
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
-import { fetchBusinessDetails } from '~/src/server/common/services/consolidated-view.dal.js'
+import { fetchBusinessDetails } from '~/src/server/common/services/consolidated-view.service.js'
 
 const logger = createLogger()
 
