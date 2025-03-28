@@ -1,17 +1,18 @@
+import Boom from '@hapi/boom'
+import { config } from '~/src/config/config.js'
+
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
-import { fetchLandSheetDetails } from '~/src/server/land-grants/services/land-grants.js'
+import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
+import { fetchBusinessDetails } from '~/src/server/common/services/consolidated-view.dal.js'
 
-export default class LandActionsController extends QuestionPageController {
-  viewName = 'actions'
+const logger = createLogger()
 
-  /**
-   * This method is called when there is a POST request to the select land actions page.
-   * It gets the land parcel id and redirects to the next step in the journey.,
-   */
+export default class LandParcelController extends QuestionPageController {
+  viewName = 'parcel'
 
   makePostRouteHandler() {
     /**
-     * Handle GET requests to the score page.
+     * Handle POST requests to the land parcel page.
      * @param {FormRequest} request
      * @param {FormContext} context
      * @param {Pick<ResponseToolkit, 'redirect' | 'view'>} h
@@ -20,12 +21,11 @@ export default class LandActionsController extends QuestionPageController {
     const fn = async (request, context, h) => {
       const { state } = context
       const payload = request.payload ?? {}
-      const { area, actions = '' } = payload
+      const { landParcel } = payload
 
       await this.setState(request, {
         ...state,
-        actions,
-        area
+        landParcel
       })
       return this.proceed(request, h, this.getNextPath(context))
     }
@@ -34,42 +34,38 @@ export default class LandActionsController extends QuestionPageController {
   }
 
   /**
-   * This method is called when there is a GET request to the land grants actions page.
+   * This method is called when there is a GET request to the select land parcel page.
    * It gets the view model for the page using the `getViewModel` method,
    * and then adds business details to the view model
    */
   makeGetRouteHandler() {
     /**
-     * Handle GET requests to the score page.
+     * Handle GET requests to the land parcel page.
      * @param {FormRequest} request
      * @param {FormContext} context
      * @param {Pick<ResponseToolkit, 'redirect' | 'view'>} h
      */
     const fn = async (request, context, h) => {
+      const { landParcel = '', actions = [] } = context.state || {}
+
+      // TODO: This is a hardcoded value for testing purposes, should come from Defra ID (CRN included in the JWT returned from Defra ID in the contactId property)
+      const sbi = 117235001
+      const crn = 1100598138
       const { collection, viewName } = this
-      const { state } = context
 
-      const [sheetId, parcelId] = state.landParcel?.split('-') || []
-      let actions = []
+      const { data } = await fetchBusinessDetails(sbi, crn).catch((error) => {
+        logger.error(error, `Failed to fetch business details ${sbi}`)
+        throw Boom.notFound(`No business information found for sbi ${sbi}`)
+      })
 
-      try {
-        const data = await fetchLandSheetDetails(parcelId, sheetId)
-        actions = data.parcel.actions || []
-        if (!actions.length) {
-          request.logger.error({
-            message: `No actions found for parcel ${sheetId}-${parcelId}`,
-            landParcel: state.landParcel
-          })
-        }
-      } catch (error) {}
-
+      const business = data?.business
       const viewModel = {
         ...super.getViewModel(request, context),
         errors: collection.getErrors(collection.getErrors()),
-        landParcel: state.landParcel,
-        area: state.area,
-        availableActions: actions,
-        selectedActions: state.actions
+        business,
+        actions: actions?.toString(),
+        landParcel,
+        proxyUrl: config.get('landGrants.apiEndpoint')
       }
 
       return h.view(viewName, viewModel)

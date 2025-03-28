@@ -16,8 +16,8 @@ import { requestTracing } from '~/src/server/common/helpers/request-tracing.js'
 import { secureContext } from '~/src/server/common/helpers/secure-context/index.js'
 import { getCacheEngine } from '~/src/server/common/helpers/session-cache/cache-engine.js'
 import { sessionCache } from '~/src/server/common/helpers/session-cache/session-cache.js'
-import LandActionsController from '~/src/server/land-grants/actions/controller.js'
-import LandParcelController from '~/src/server/land-grants/parcels/controller.js'
+import LandActionsController from '~/src/server/land-grants/actions/actions.controller.js'
+import LandParcelController from '~/src/server/land-grants/parcels/parcel.controller.js'
 import { router } from './router.js'
 
 export async function createServer() {

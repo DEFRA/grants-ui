@@ -1,6 +1,6 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
-import { fetchLandSheetDetails } from '~/src/server/land-grants/services/land-grants.js'
-import LandActionsController from './controller.js'
+import { fetchLandSheetDetails } from '~/src/server/land-grants/services/land-grants.service.js'
+import LandActionsController from './actions.controller.js'
 
 jest.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js')
 jest.mock('~/src/server/land-grants/services/land-grants.js')

@@ -1,5 +1,5 @@
 import { getValidToken } from '~/src/server/common/helpers/token-manager.js'
-import { fetchBusinessDetails } from '~/src/server/land-grants/services/data-access-layer.js'
+import { fetchBusinessDetails } from '~/src/server/common/services/consolidated-view.dal.js'
 
 /**
  * @type {object}
