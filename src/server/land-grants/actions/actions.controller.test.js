@@ -3,7 +3,7 @@ import { fetchLandSheetDetails } from '~/src/server/land-grants/services/land-gr
 import LandActionsController from './actions.controller.js'
 
 jest.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js')
-jest.mock('~/src/server/land-grants/services/land-grants.js')
+jest.mock('~/src/server/land-grants/services/land-grants.service.js')
 
 describe('LandActionsController', () => {
   let controller

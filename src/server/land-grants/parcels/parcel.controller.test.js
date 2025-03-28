@@ -4,7 +4,7 @@ import LandParcelController from './parcel.controller.js'
 
 jest.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js')
 
-jest.mock('~/src/server/land-grants/services/data-access-layer.js', () => ({
+jest.mock('~/src/server/common/services/consolidated-view.service.js', () => ({
   fetchBusinessDetails: jest.fn()
 }))
 
