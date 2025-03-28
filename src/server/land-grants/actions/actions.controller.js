@@ -1,5 +1,5 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
-import { fetchLandSheetDetails } from '../../common/helpers/land-grants/land-grants.js'
+import { fetchLandSheetDetails } from '~/src/server/land-grants/services/land-grants.service.js'
 
 export default class LandActionsController extends QuestionPageController {
   viewName = 'actions'
@@ -24,7 +24,7 @@ export default class LandActionsController extends QuestionPageController {
 
       await this.setState(request, {
         ...state,
-        actions: actions.toString(),
+        actions,
         area
       })
       return this.proceed(request, h, this.getNextPath(context))
@@ -49,7 +49,7 @@ export default class LandActionsController extends QuestionPageController {
       const { collection, viewName } = this
       const { state } = context
 
-      const [sheetId, parcelId] = state.landParcel?.split('-')
+      const [sheetId, parcelId] = state.landParcel?.split('-') || []
       let actions = []
 
       try {

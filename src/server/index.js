@@ -5,6 +5,9 @@ import inert from '@hapi/inert'
 import path from 'path'
 import { config } from '~/src/config/config.js'
 import { nunjucksConfig } from '~/src/config/nunjucks/nunjucks.js'
+import { formsService } from '~/src/server/common/forms/services/form.js'
+import { outputService } from '~/src/server/common/forms/services/output.js'
+import { formSubmissionService } from '~/src/server/common/forms/services/submission.js'
 import { catchAll } from '~/src/server/common/helpers/errors.js'
 import { requestLogger } from '~/src/server/common/helpers/logging/request-logger.js'
 import { setupProxy } from '~/src/server/common/helpers/proxy/setup-proxy.js'
@@ -13,9 +16,8 @@ import { requestTracing } from '~/src/server/common/helpers/request-tracing.js'
 import { secureContext } from '~/src/server/common/helpers/secure-context/index.js'
 import { getCacheEngine } from '~/src/server/common/helpers/session-cache/cache-engine.js'
 import { sessionCache } from '~/src/server/common/helpers/session-cache/session-cache.js'
-import { formsService } from '~/src/server/forms/config.js'
-import LandActionsController from '~/src/server/land-grants/actions/controller.js'
-import LandParcelController from '~/src/server/land-grants/parcels/controller.js'
+import LandActionsController from '~/src/server/land-grants/actions/actions.controller.js'
+import LandParcelController from '~/src/server/land-grants/parcels/parcel.controller.js'
 import { router } from './router.js'
 
 export async function createServer() {
@@ -62,7 +64,9 @@ export async function createServer() {
     plugin,
     options: {
       services: {
-        formsService
+        formsService,
+        outputService,
+        formSubmissionService
       },
       viewPaths: [
         path.resolve(config.get('root'), 'src/server/land-grants/actions'),
