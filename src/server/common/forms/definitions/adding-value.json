@@ -299,7 +299,7 @@
           "type": "http",
           "options": {
             "method": "POST",
-            "url": "https://fg-gas-backend.cdpEnvironment.cdp-int.defra.cloud/grants/adding-value/endpoints/calculate-score/invoke"
+            "url": "https://ffc-grants-scoring.cdpEnvironment.cdp-int.defra.cloud/scoring/api/v1/adding-value/score?allowPartialScoring=true"
           }
         }
       }
