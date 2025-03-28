@@ -1,9 +1,9 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
-import { fetchLandSheetDetails } from '../../common/helpers/land-grants/land-grants.js'
-import LandActionsController from './controller.js'
+import { fetchLandSheetDetails } from '~/src/server/land-grants/services/land-grants.service.js'
+import LandActionsController from './actions.controller.js'
 
 jest.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js')
-jest.mock('../../common/helpers/land-grants/land-grants.js')
+jest.mock('~/src/server/land-grants/services/land-grants.service.js')
 
 describe('LandActionsController', () => {
   let controller
@@ -61,7 +61,7 @@ describe('LandActionsController', () => {
         }
       })
 
-      mockContext.state.actions = 'action1,action2'
+      mockContext.state.actions = ['action1', 'action2']
 
       const handler = controller.makeGetRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
@@ -72,7 +72,7 @@ describe('LandActionsController', () => {
         expect.objectContaining({
           landParcel: 'sheet1-parcel1',
           availableActions: ['action1', 'action2', 'action3'],
-          selectedActions: 'action1,action2'
+          selectedActions: ['action1', 'action2']
         })
       )
       expect(result).toBe('rendered view')
@@ -116,7 +116,7 @@ describe('LandActionsController', () => {
 
       expect(controller.setState).toHaveBeenCalledWith(mockRequest, {
         landParcel: 'sheet1-parcel1',
-        actions: 'action1,action2',
+        actions: ['action1', 'action2'],
         area: '10'
       })
 

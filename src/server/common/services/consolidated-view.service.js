@@ -1,6 +1,6 @@
 import { config } from '~/src/config/config.js'
-import { createLogger } from '../logging/logger.js'
-import { getValidToken } from '../token-manager.js'
+import { getValidToken } from '~/src/server/common/helpers/entra/token-manager.js'
+import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
 
 const CV_API_ENDPOINT = config.get('consolidatedView.apiEndpoint')
 const CV_API_AUTH_EMAIL = config.get('consolidatedView.authEmail')

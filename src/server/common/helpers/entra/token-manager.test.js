@@ -5,7 +5,7 @@ import {
   getValidToken,
   isTokenExpired,
   refreshToken
-} from '~/src/server/common/helpers/token-manager.js'
+} from '~/src/server/common/helpers/entra/token-manager.js'
 
 const mockFetch = jest.fn()
 global.fetch = mockFetch
