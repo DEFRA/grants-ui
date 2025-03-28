@@ -25,8 +25,8 @@ function statusCodeMessage(statusCode) {
 export function catchAll(request, h) {
   const { response } = request
 
-  if (!('isBoom' in response)) {
-    return h.continue
+  if (!response?.isBoom) {
+    return h.response(response).code(response?.statusCode ?? 200)
   }
 
   const statusCode = response.output.statusCode

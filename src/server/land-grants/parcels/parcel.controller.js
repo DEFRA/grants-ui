@@ -48,7 +48,6 @@ export default class LandParcelController extends QuestionPageController {
     const fn = async (request, context, h) => {
       const { landParcel = '', actions = [] } = context.state || {}
 
-      // TODO: This is a hardcoded value for testing purposes, should come from Defra ID (CRN included in the JWT returned from Defra ID in the contactId property)
       const sbi = 117235001
       const crn = 1100598138
       const { collection, viewName } = this

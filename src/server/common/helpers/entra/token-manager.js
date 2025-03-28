@@ -4,7 +4,10 @@ import { config } from '~/src/config/config.js'
 import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
 
 const logger = createLogger()
-const EXPIRATION_BUFFER = 5 * 60 * 1000 // refresh tokens 5 minutes before actual expiry
+const msInSec = 1000
+const secsInMins = 60
+const numMins = 5
+const expirationBuffer = numMins * secsInMins * msInSec // refresh tokens 5 minutes before actual expiry
 
 /**
  * @typedef {object} TokenState - The state of the OAuth2 token
@@ -31,8 +34,10 @@ export function clearTokenState() {
  * @returns {boolean} - Boolean indicating if the token has expired
  */
 export function isTokenExpired(expiryTime) {
-  if (!expiryTime) return true
-  return Date.now() >= expiryTime - EXPIRATION_BUFFER
+  if (!expiryTime) {
+    return true
+  }
+  return Date.now() >= expiryTime - expirationBuffer
 }
 
 /**
