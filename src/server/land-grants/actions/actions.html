@@ -9,7 +9,6 @@
 <div class="govuk-body">
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
-      <h1 class="govuk-heading-l">Choosing an action</h1>
       <div class="govuk-hint">
         Land parcel: {{landParcel}}
       </div>
@@ -31,31 +30,43 @@
           {% if actionList.length > 0 %}
           <div class="govuk-form-group">
             <fieldset class="govuk-fieldset" aria-describedby="action-hint">
-              <legend class="govuk-fieldset__legend govuk-fieldset__legend--l">
-                <h1 class="govuk-fieldset__heading">
-                  Which actions do you want to apply for?
-                </h1>
-              </legend>
-              <div id="action-hint" class="govuk-hint">
-                Select all that apply
-              </div>
               
-              <div class="govuk-checkboxes" data-module="govuk-checkboxes">
-                {% for action in actionList %}
-                    <div class="govuk-checkboxes__item">
-                      <input class="govuk-checkboxes__input" id="{{action.value}}" name="actions" type="checkbox" value="{{action.value}}" {% if action.checked %}checked{% endif %}>
-                      <label class="govuk-label govuk-checkboxes__label" for="{{action.value}}">
-                        {{ action.text }}
-                      </label>
-                      <div class="govuk-form-group">
-                        <div class="govuk-input__wrapper">
-                          <input class="govuk-input govuk-input--width-5" id="area" name="area" value="{{area}}" type="text" spellcheck="false" placeholder="Max. {{action.availableArea}}">
-                          <div class="govuk-input__suffix" aria-hidden="true">ha.</div>
-                        </div>
-                      </div>
-                    </div>
-                {% endfor %}
+              <table class="govuk-table">
+  <caption class="govuk-table__caption govuk-table__caption--l">Available actions for selected parcel</caption>
+  <tbody class="govuk-table__body">
+    <tr class="govuk-table__row">
+      <td class="govuk-table__cell">Select</td>
+      <td class="govuk-table__cell">Action</td>
+      <td class="govuk-table__cell">Available</td>
+      <td class="govuk-table__cell">Quantity</td>
+      <td class="govuk-table__cell">Unit</td>
+    </tr>
+    <tr class="govuk-table__row">
+        {% for action in actionList %}
+          <td class="govuk-table__cell">
+            <div class="govuk-checkboxes__item series-selector-items">
+              <input class="govuk-checkboxes__input" id="{{action.value}}" name="actions" type="checkbox" value="{{action.value}}" {% if action.checked %}checked{% endif %}>
+              <label class="govuk-label govuk-checkboxes__label" for="actions"></label>
+            </div>
+          </td>
+          <td class="govuk-table__cell">{{action.text}}</td>
+          <td class="govuk-table__cell">{{action.availableArea}}</td>
+          <td class="govuk-table__cell">
+            <div class="govuk-date-input__item">
+              <div class="govuk-form-group">
+                <label class="govuk-label govuk-date-input__label" for="area"></label>
+                <input class="govuk-input govuk-date-input__input govuk-input--width-4" id="area" name="area" value="{{area}}" type="text" inputmode="numeric">
               </div>
+            </div>
+          </td>
+          <td class="govuk-table__cell">ha.</td>
+      {% endfor %}
+
+    </tr>
+  </tbody>
+</table>
+
+
             </fieldset>
           </div>
             
