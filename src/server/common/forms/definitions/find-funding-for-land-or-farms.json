@@ -1,18 +1,51 @@
 {
-  "engine": "V2",
   "name": "Find Funding for Land or Farms",
   "pages": [
     {
-      "title": "Check if you can apply for Funding for Land or Farms",
+      "title": "Start page",
       "path": "/start",
       "controller": "StartPageController",
+      "next": [
+        {
+          "path": "/land-details"
+        }
+      ],
+      "components": []
+    },
+    {
+      "title": "Do your digital maps show the correct land details?",
+      "path": "/land-details",
+      "next": [
+        {
+          "path": "/you-must-correct-your-details",
+          "condition": "uFOrmA"
+        },
+        {
+          "path": "/select-land-parcel"
+        }
+      ],
+      "components": [
+        {
+          "name": "TKsWbP",
+          "title": "Do your digital maps show the correct land details?",
+          "type": "YesNoField",
+          "hint": "",
+          "options": {},
+          "schema": {}
+        }
+      ]
+    },
+    {
+      "title": "You must correct your land details",
+      "path": "/you-must-correct-your-details",
       "next": [],
       "components": [
         {
-          "name": "Jhimsh",
-          "title": "Html",
+          "name": "FGyiLS",
+          "title": "You must correct your land details",
           "type": "Html",
-          "content": "<p class=\"govuk-body\">Find out about grants and funding for farmers and land managers in England. We will add more grants and funding as we develop this tool.</p><p class=\"govuk-body\">You can search for actions you can get paid for as part of the Sustainable Farming Incentive (SFI). The tool does not confirm your eligibility. <a href=\"https://www.gov.uk/government/collections/sustainable-farming-incentive-guidance\">Read the SFI guidance to check if you're eligible and how you can apply</a>.</p><p class=\"govuk-body\">Search by keyword, action name or code if you know it. Use the filters to search by land types or areas of interest.</p>",
+          "hint": "",
+          "content": "<p class=\"govuk-body\">You must correct your land details.</p>\n",
           "options": {},
           "schema": {}
         }
@@ -22,7 +55,7 @@
       "title": "Select Land Parcel",
       "controller": "LandParcelController",
       "path": "/select-land-parcel",
-      "next": [],
+      "next": [{ "path": "/select-land-actions" }],
       "components": [
         {
           "type": "TextField",
@@ -39,7 +72,7 @@
       "title": "Select Land Actions",
       "controller": "LandActionsController",
       "path": "/select-land-actions",
-      "next": [{ "path": "/select-land-parcel" }],
+      "next": [{ "path": "/summary" }],
       "components": [
         {
           "type": "TextField",
@@ -58,6 +91,13 @@
             "required": true
           },
           "schema": {}
+        },
+        {
+          "type": "TextField",
+          "name": "applicationValue",
+          "title": "Total Application Value",
+          "options": {},
+          "schema": {}
         }
       ]
     },
@@ -65,13 +105,34 @@
     {
       "path": "/summary",
       "controller": "SummaryPageController",
-      "title": "Check your answers before submitting your form"
+      "title": "Funding details",
+      "components": []
     }
   ],
   "lists": [],
   "sections": [],
-  "conditions": [],
-  "feedback": {
-    "emailAddress": "defraforms@defra.gov.uk"
-  }
+  "conditions": [
+    {
+      "name": "uFOrmA",
+      "displayName": "notCorrect",
+      "value": {
+        "name": "notCorrect",
+        "conditions": [
+          {
+            "field": {
+              "name": "TKsWbP",
+              "type": "YesNoField",
+              "display": "Do your digital maps show the correct land details?"
+            },
+            "operator": "is",
+            "value": {
+              "type": "Value",
+              "value": "false",
+              "display": "No"
+            }
+          }
+        ]
+      }
+    }
+  ]
 }
