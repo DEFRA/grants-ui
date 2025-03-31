@@ -1,6 +1,5 @@
 import { Cluster, Redis } from 'ioredis'
 
-import { config } from '~/src/config/config.js'
 import { buildRedisClient } from '~/src/server/common/helpers/redis-client.js'
 
 jest.mock('ioredis', () => ({
@@ -12,7 +11,14 @@ jest.mock('ioredis', () => ({
 describe('#buildRedisClient', () => {
   describe('When Redis Single InstanceCache is requested', () => {
     beforeEach(() => {
-      buildRedisClient(config.get('redis'))
+      buildRedisClient({
+        host: '127.0.0.1',
+        keyPrefix: 'grants-ui:',
+        useSingleInstanceCache: true,
+        useTLS: false,
+        username: '',
+        password: ''
+      })
     })
 
     test('Should instantiate a single Redis client', () => {
@@ -65,7 +71,8 @@ describe('#buildRedisClient', () => {
   describe('When a Redis Cluster is requested', () => {
     beforeEach(() => {
       buildRedisClient({
-        ...config.get('redis'),
+        host: '127.0.0.1',
+        keyPrefix: 'grants-ui:',
         useSingleInstanceCache: false,
         useTLS: true,
         username: 'user',
