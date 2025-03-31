@@ -1,6 +1,5 @@
 import Boom from '@hapi/boom'
-import exampleGrantDefinition from '~/src/server/common/forms/definitions/example-grant.json'
-import landGrantsDefinition from '~/src/server/common/forms/definitions/find-funding-for-land-or-farms.json'
+import fs from 'fs/promises'
 import { exampleGrantMetadata, landGrantsMetadata } from '../config.js'
 
 export const formsService = {
@@ -14,7 +13,24 @@ export const formsService = {
         throw Boom.notFound(`Form '${slug}' not found`)
     }
   },
-  getFormDefinition: function (id) {
+  getFormDefinition: async function (id) {
+    const exampleGrantPath = new URL(
+      '../definitions/example-grant.json',
+      import.meta.url
+    ).pathname
+    const landGrantsPath = new URL(
+      '../definitions/find-funding-for-land-or-farms.json',
+      import.meta.url
+    ).pathname
+
+    const exampleGrantDefinition = JSON.parse(
+      await fs.readFile(exampleGrantPath, 'utf8')
+    )
+
+    const landGrantsDefinition = JSON.parse(
+      await fs.readFile(landGrantsPath, 'utf8')
+    )
+
     switch (id) {
       case exampleGrantMetadata.id:
         return Promise.resolve(exampleGrantDefinition)
