@@ -398,60 +398,12 @@
           "schema": {}
         },
         {
-          "type": "Html",
+          "type": "UkAddressField",
+          "title": "Business address",
           "name": "agentBusinessAddress",
-          "title": "Html",
-          "content": "<h1 class=\"govuk-heading-m\">Business address</h1>",
+          "hint": "",
           "options": {},
           "schema": {}
-        },
-        {
-          "type": "TextField",
-          "name": "agentAddressLineOne",
-          "title": "Address line 1",
-          "options": {
-            "required": true
-          },
-          "schema": {}
-        },
-        {
-          "type": "TextField",
-          "name": "agentAddressLineTwo",
-          "title": "Address line 2",
-          "options": {
-            "required": false
-          },
-          "schema": {}
-        },
-        {
-          "type": "TextField",
-          "name": "agentTown",
-          "title": "Town",
-          "options": {
-            "required": true
-          },
-          "schema": {}
-        },
-        {
-          "type": "SelectField",
-          "name": "agentCounty",
-          "title": "County",
-          "list": "counties-list",
-          "options": {
-            "required": false
-          },
-          "schema": {}
-        },
-        {
-          "type": "TextField",
-          "name": "agentPostcode",
-          "title": "Postcode",
-          "options": {
-            "required": true
-          },
-          "schema": {
-            "regex": "^[a-zA-Z]{1,2}\\d[a-zA-Z\\d]?\\s?\\d[a-zA-Z]{2}$"
-          }
         }
       ],
       "condition": "agentDetailsSelected"
@@ -519,60 +471,12 @@
           "schema": {}
         },
         {
-          "type": "Html",
-          "name": "applicantBusinessAddress",
-          "title": "Html",
-          "content": "<h1 class=\"govuk-heading-m\">Business address</h1>",
+          "type": "UkAddressField",
+          "title": "Business address",
+          "name": "agentBusinessAddress",
+          "hint": "",
           "options": {},
           "schema": {}
-        },
-        {
-          "type": "TextField",
-          "name": "applicantAddressLineOne",
-          "title": "Address line 1",
-          "options": {
-            "required": true
-          },
-          "schema": {}
-        },
-        {
-          "type": "TextField",
-          "name": "applicantAddressLineTwo",
-          "title": "Address line 2",
-          "options": {
-            "required": false
-          },
-          "schema": {}
-        },
-        {
-          "type": "TextField",
-          "name": "applicantTown",
-          "title": "Town",
-          "options": {
-            "required": true
-          },
-          "schema": {}
-        },
-        {
-          "type": "SelectField",
-          "name": "applicantCounty",
-          "title": "County",
-          "list": "counties-list",
-          "options": {
-            "required": false
-          },
-          "schema": {}
-        },
-        {
-          "type": "TextField",
-          "name": "applicantBusinessPostcode",
-          "title": "Business postcode",
-          "options": {
-            "required": true
-          },
-          "schema": {
-            "regex": "^[a-zA-Z]{1,2}\\d[a-zA-Z\\d]?\\s?\\d[a-zA-Z]{2}$"
-          }
         },
         {
           "type": "TextField",
@@ -580,7 +484,8 @@
           "title": "Project postcode",
           "hint": "The site postcode where the work will happen",
           "options": {
-            "required": true
+            "required": true,
+            "classes": "govuk-input--width-10"
           },
           "schema": {
             "regex": "^[a-zA-Z]{1,2}\\d[a-zA-Z\\d]?\\s?\\d[a-zA-Z]{2}$"
