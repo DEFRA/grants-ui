@@ -27,7 +27,14 @@ const getViewPaths = () => {
   const currentFilePath = fileURLToPath(import.meta.url)
   const isRunningBuiltCode = currentFilePath.includes('.server')
   const basePath = isRunningBuiltCode ? '.server/server' : 'src/server'
-  return [`${basePath}/land-grants/actions`, `${basePath}/land-grants/parcels`]
+  return [
+    `${basePath}/land-grants/actions`, 
+    `${basePath}/land-grants/parcels`,
+    `${basePath}/views`,
+    `${basePath}/common/templates`,
+    `${basePath}/common/components`
+  ],
+
 }
 
 export async function createServer() {

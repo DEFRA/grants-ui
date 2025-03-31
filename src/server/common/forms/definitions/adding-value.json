@@ -503,7 +503,7 @@
       "title": "Confirm and send",
       "path": "/declaration",
       "controller": "DeclarationPageController",
-      "view": "grants/declaration.html",
+      "view": "declaration.html",
       "next": [],
       "components": []
     },
