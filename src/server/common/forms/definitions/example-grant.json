@@ -203,5 +203,8 @@
       }
     }
   ],
-  "startPage": "/start"
+  "startPage": "/start",
+  "feedback": {
+    "emailAddress": "defraforms@defra.gov.uk"
+  }
 }

@@ -70,5 +70,8 @@
   ],
   "lists": [],
   "sections": [],
-  "conditions": []
+  "conditions": [],
+  "feedback": {
+    "emailAddress": "defraforms@defra.gov.uk"
+  }
 }
