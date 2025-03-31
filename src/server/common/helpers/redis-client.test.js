@@ -23,6 +23,43 @@ describe('#buildRedisClient', () => {
         port: 6379
       })
     })
+
+    test('Should log Redis connect and error events', () => {
+      const mockOn = jest.fn((event, cb) => {
+        if (event === 'connect') cb()
+        if (event === 'error') cb(new Error('fail'))
+      })
+
+      Redis.mockReturnValue({ on: mockOn })
+
+      buildRedisClient({
+        ...config.get('redis'),
+        useSingleInstanceCache: true
+      })
+
+      expect(mockOn).toHaveBeenCalledWith('connect', expect.any(Function))
+      expect(mockOn).toHaveBeenCalledWith('error', expect.any(Function))
+    })
+
+    test('Should resolve DNS lookup in cluster mode', () => {
+      const mockOn = jest.fn()
+      let dnsCallback
+
+      Cluster.mockImplementation((nodes, options) => {
+        dnsCallback = options.dnsLookup
+        return { on: mockOn }
+      })
+
+      buildRedisClient({
+        ...config.get('redis'),
+        useSingleInstanceCache: false
+      })
+
+      const mockCb = jest.fn()
+      dnsCallback('localhost', mockCb)
+
+      expect(mockCb).toHaveBeenCalledWith(null, 'localhost')
+    })
   })
 
   describe('When a Redis Cluster is requested', () => {
