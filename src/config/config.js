@@ -20,12 +20,6 @@ export const config = convict({
     default: null,
     env: 'SERVICE_VERSION'
   },
-  feedbackLink: {
-    doc: 'Used in your phase banner. Can be a URL or more commonly mailto mailto:feedback@department.gov.uk',
-    format: String,
-    default: null,
-    env: 'FEEDBACK_LINK'
-  },
   env: {
     doc: 'The application environment.',
     format: ['production', 'development', 'test'],
@@ -81,6 +75,12 @@ export const config = convict({
       default: '',
       env: 'LAND_GRANTS_API_URL'
     }
+  },
+  feedbackLink: {
+    doc: 'Used in your phase banner. Can be a URL or more commonly mailto mailto:feedback@department.gov.uk',
+    format: String,
+    default: '',
+    env: 'FEEDBACK_LINK'
   },
   entra: {
     tokenEndpoint: {
