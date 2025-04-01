@@ -1,6 +1,7 @@
 import { config } from '~/src/config/config.js'
 import { getValidToken } from '~/src/server/common/helpers/entra/token-manager.js'
 import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
+import { proxyFetch } from '../helpers/proxy/proxy.js'
 
 const CV_API_ENDPOINT = config.get('consolidatedView.apiEndpoint')
 const CV_API_AUTH_EMAIL = config.get('consolidatedView.authEmail')
@@ -60,7 +61,7 @@ export async function fetchParcelDataForBusiness(sbi, crn) {
   const token = await getValidToken()
 
   try {
-    response = await fetch(CV_API_ENDPOINT, {
+    response = await proxyFetch(CV_API_ENDPOINT, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
