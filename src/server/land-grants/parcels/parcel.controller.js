@@ -3,7 +3,7 @@ import { config } from '~/src/config/config.js'
 
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
-import { fetchBusinessDetails } from '~/src/server/common/services/consolidated-view.service.js'
+import { fetchParcelDataForBusiness } from '~/src/server/common/services/consolidated-view.service.js'
 
 const logger = createLogger()
 
@@ -53,10 +53,12 @@ export default class LandParcelController extends QuestionPageController {
       const crn = 1100598138
       const { collection, viewName } = this
 
-      const { data } = await fetchBusinessDetails(sbi, crn).catch((error) => {
-        logger.error(error, `Failed to fetch business details ${sbi}`)
-        throw Boom.notFound(`No business information found for sbi ${sbi}`)
-      })
+      const { data } = await fetchParcelDataForBusiness(sbi, crn).catch(
+        (error) => {
+          logger.error(error, `Failed to fetch business details ${sbi}`)
+          throw Boom.notFound(`No business information found for sbi ${sbi}`)
+        }
+      )
 
       const business = data?.business
       const viewModel = {

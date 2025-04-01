@@ -1,5 +1,5 @@
 import { getValidToken } from '~/src/server/common/helpers/entra/token-manager.js'
-import { fetchBusinessDetails } from '~/src/server/common/services/consolidated-view.service.js'
+import { fetchParcelDataForBusiness } from '~/src/server/common/services/consolidated-view.service.js'
 
 /**
  * @type {object}
@@ -17,7 +17,7 @@ jest.mock('~/src/server/common/helpers/entra/token-manager.js', () => ({
 const mockFetch = jest.fn()
 global.fetch = mockFetch
 
-describe('fetchBusinessDetails', () => {
+describe('fetchParcelDataForBusiness', () => {
   const mockSbi = 123456789
   const mockCrn = 987654321
   const mockToken = 'mock-jwt-token'
@@ -56,7 +56,7 @@ describe('fetchBusinessDetails', () => {
       json: () => Promise.resolve(mockSuccessResponse)
     })
 
-    const result = await fetchBusinessDetails(mockSbi, mockCrn)
+    const result = await fetchParcelDataForBusiness(mockSbi, mockCrn)
 
     expect(getValidToken).toHaveBeenCalledTimes(1)
     expect(mockFetch).toHaveBeenCalledTimes(1)
@@ -71,7 +71,7 @@ describe('fetchBusinessDetails', () => {
       statusText: 'Not Found'
     })
 
-    await expect(fetchBusinessDetails(mockSbi, mockCrn)).rejects.toThrow()
+    await expect(fetchParcelDataForBusiness(mockSbi, mockCrn)).rejects.toThrow()
 
     expect(getValidToken).toHaveBeenCalledTimes(1)
     expect(mockFetch).toHaveBeenCalledTimes(1)
@@ -81,7 +81,7 @@ describe('fetchBusinessDetails', () => {
     const networkError = new Error('Network error')
     mockFetch.mockRejectedValueOnce(networkError)
 
-    await expect(fetchBusinessDetails(mockSbi, mockCrn)).rejects.toThrow(
+    await expect(fetchParcelDataForBusiness(mockSbi, mockCrn)).rejects.toThrow(
       'Network error'
     )
 
@@ -97,7 +97,7 @@ describe('fetchBusinessDetails', () => {
     const typedMock = /** @type {jest.Mock} */ (getValidToken)
     typedMock.mockRejectedValueOnce(tokenError)
 
-    await expect(fetchBusinessDetails(mockSbi, mockCrn)).rejects.toThrow(
+    await expect(fetchParcelDataForBusiness(mockSbi, mockCrn)).rejects.toThrow(
       'Token error'
     )
 
@@ -111,7 +111,7 @@ describe('fetchBusinessDetails', () => {
       json: () => Promise.resolve(mockSuccessResponse)
     })
 
-    await fetchBusinessDetails(mockSbi, mockCrn)
+    await fetchParcelDataForBusiness(mockSbi, mockCrn)
 
     const [[, calledOptions]] = mockFetch.mock.calls
     const body = JSON.parse(calledOptions.body)
