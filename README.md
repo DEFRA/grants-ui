@@ -180,6 +180,10 @@ A local environment with:
 docker compose up --build -d
 ```
 
+**Authorise Snyk**
+
+Run `snyk auth` to authenticate your local machine with Snyk.
+
 ### Dependabot
 
 We have added an example dependabot configuration file to the repository. You can enable it by renaming
