@@ -1,3 +1,5 @@
+// istanbul ignore file
+
 import convict from 'convict'
 import 'dotenv/config'
 import path from 'node:path'

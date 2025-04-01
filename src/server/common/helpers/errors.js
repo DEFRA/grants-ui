@@ -23,10 +23,11 @@ function statusCodeMessage(statusCode) {
  * @param { ResponseToolkit } h
  */
 export function catchAll(request, h) {
+  const successCode = 200
   const { response } = request
 
-  if (!('isBoom' in response)) {
-    return h.continue
+  if (!response?.isBoom) {
+    return h.response(response).code(response?.statusCode ?? successCode)
   }
 
   const statusCode = response.output.statusCode
