@@ -2,6 +2,7 @@ import { URLSearchParams } from 'url'
 
 import { config } from '~/src/config/config.js'
 import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
+import { proxyFetch } from '../proxy/proxy.js'
 
 const logger = createLogger()
 const EXPIRATION_BUFFER = 5 * 60 * 1000 // refresh tokens 5 minutes before actual expiry
@@ -74,7 +75,7 @@ export async function refreshToken() {
   try {
     const params = createTokenRequestParams(clientId, scope, clientSecret)
 
-    const response = await fetch(
+    const response = await proxyFetch(
       `${tokenEndpoint}/${tenantId}/oauth2/v2.0/token`,
       {
         method: 'POST',
