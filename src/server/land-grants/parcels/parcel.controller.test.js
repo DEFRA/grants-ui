@@ -14,6 +14,24 @@ describe('LandParcelController', () => {
   let mockContext
   let mockH
 
+  const fetchParcelDataForBusinessMock = {
+    data: { business: { name: 'Mock Farm' } }
+  }
+  const renderedViewMock = 'mock-rendered-view'
+  const landParcel = { landParcel: 'sheet123' }
+
+  const setupRequest = () => ({
+    query: {},
+    logger: { error: jest.fn() }
+  })
+
+  const setupContext = (state = {}) => ({ state })
+
+  const setupH = () => ({
+    view: jest.fn().mockReturnValue(renderedViewMock),
+    redirect: jest.fn().mockReturnValue('redirected')
+  })
+
   beforeEach(() => {
     QuestionPageController.prototype.getViewModel = jest.fn().mockReturnValue({
       pageTitle: 'Select Land Parcel'
@@ -23,6 +41,9 @@ describe('LandParcelController', () => {
     controller.collection = {
       getErrors: jest.fn().mockReturnValue([])
     }
+    controller.proceed = jest.fn().mockResolvedValue('next')
+    controller.getNextPath = jest.fn().mockReturnValue('/next-page')
+    controller.setState = jest.fn()
 
     fetchParcelDataForBusiness.mockResolvedValue({
       data: {
@@ -35,82 +56,157 @@ describe('LandParcelController', () => {
       }
     })
 
-    mockRequest = {
-      query: {},
-      logger: {
-        error: jest.fn()
-      }
-    }
-
-    mockContext = {
-      state: {
-        sbi: 117235001,
-        customerReference: 1100598138
-      }
-    }
-
-    mockH = {
-      view: jest.fn().mockReturnValue('rendered view'),
-      redirect: jest.fn().mockReturnValue('redirected')
-    }
+    mockRequest = setupRequest()
+    mockContext = setupContext({
+      sbi: 117235001,
+      customerReference: 1100598138
+    })
+    mockH = setupH()
   })
 
-  afterEach(() => {
-    jest.clearAllMocks()
-  })
+  afterEach(jest.clearAllMocks)
 
   it('should have the correct viewName', () => {
     expect(controller.viewName).toBe('parcel')
   })
 
   describe('GET route handler', () => {
-    it('should fetch business info and render view with correct data', async () => {
-      const handler = controller.makeGetRouteHandler()
-      const result = await handler(mockRequest, mockContext, mockH)
+    it('fetches business info and renders view', async () => {
+      const result = await controller.makeGetRouteHandler()(
+        mockRequest,
+        mockContext,
+        mockH
+      )
 
       expect(fetchParcelDataForBusiness).toHaveBeenCalledWith(
         117235001,
         1100598138
+      )
+      expect(mockH.view).toHaveBeenCalledWith(
+        'parcel',
+        expect.objectContaining({ pageTitle: 'Select Land Parcel' })
+      )
+      expect(result).toBe(renderedViewMock)
+    })
+
+    it('handles missing business info', async () => {
+      fetchParcelDataForBusiness.mockRejectedValue(new Error('not found'))
+
+      const handler = controller.makeGetRouteHandler()
+      await expect(
+        handler(mockRequest, mockContext, mockH)
+      ).rejects.toMatchObject({
+        isBoom: true,
+        output: { statusCode: 404 }
+      })
+    })
+
+    it('defaults state fields when context.state is undefined', async () => {
+      mockContext.state = undefined
+
+      fetchParcelDataForBusiness.mockResolvedValue(
+        fetchParcelDataForBusinessMock
+      )
+
+      const result = await controller.makeGetRouteHandler()(
+        mockRequest,
+        mockContext,
+        mockH
       )
 
       expect(mockH.view).toHaveBeenCalledWith(
         'parcel',
         expect.objectContaining({
-          pageTitle: 'Select Land Parcel'
+          landParcel: '',
+          actions: '',
+          business: { name: 'Mock Farm' }
         })
       )
-
-      expect(result).toBe('rendered view')
+      expect(result).toBe(renderedViewMock)
     })
 
-    it('should handle missing business info gracefully', async () => {
-      fetchParcelDataForBusiness.mockRejectedValue(new Error('not found'))
+    it('populates full viewModel correctly', async () => {
+      mockContext.state.landParcel = landParcel.landParcel
+      mockContext.state.actions = ['a1', 'a2']
+      controller.collection.getErrors.mockReturnValue(['mock error'])
 
-      const handler = controller.makeGetRouteHandler()
-
-      await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow(
-        'No business information found for sbi 117235001'
+      fetchParcelDataForBusiness.mockResolvedValue(
+        fetchParcelDataForBusinessMock
       )
 
-      await expect(
-        handler(mockRequest, mockContext, mockH)
-      ).rejects.toMatchObject({
-        isBoom: true,
-        output: {
-          statusCode: 404
-        }
+      const result = await controller.makeGetRouteHandler()(
+        mockRequest,
+        mockContext,
+        mockH
+      )
+
+      expect(controller.collection.getErrors).toHaveBeenCalledTimes(2)
+      expect(mockH.view).toHaveBeenCalledWith('parcel', {
+        ...landParcel,
+        actions: 'a1,a2',
+        business: { name: 'Mock Farm' },
+        errors: ['mock error'],
+        proxyUrl: '',
+        pageTitle: 'Select Land Parcel'
       })
+      expect(result).toBe(renderedViewMock)
+    })
+  })
 
-      expect(fetchParcelDataForBusiness).toHaveBeenCalledWith(
-        117235001,
-        1100598138
+  describe('POST route handler', () => {
+    it('saves landParcel and proceeds', async () => {
+      mockRequest.payload = landParcel
+      mockContext = setupContext({ existing: 'value' })
+
+      const result = await controller.makePostRouteHandler()(
+        mockRequest,
+        mockContext,
+        mockH
       )
+
+      expect(controller.setState).toHaveBeenCalledWith(mockRequest, {
+        existing: 'value',
+        landParcel: landParcel.landParcel
+      })
+      expect(controller.proceed).toHaveBeenCalledWith(
+        mockRequest,
+        mockH,
+        '/next-page'
+      )
+      expect(result).toBe('next')
+    })
+
+    it('handles missing landParcel in payload', async () => {
+      mockRequest.payload = {}
+      mockContext = setupContext({ foo: 'bar' })
+
+      const result = await controller.makePostRouteHandler()(
+        mockRequest,
+        mockContext,
+        mockH
+      )
+
+      expect(controller.setState).toHaveBeenCalledWith(mockRequest, {
+        foo: 'bar',
+        landParcel: undefined
+      })
+      expect(result).toBe('next')
+    })
+
+    it('handles null payload', async () => {
+      mockRequest.payload = null
+      mockContext = setupContext({})
+
+      const result = await controller.makePostRouteHandler()(
+        mockRequest,
+        mockContext,
+        mockH
+      )
+
+      expect(controller.setState).toHaveBeenCalledWith(mockRequest, {
+        landParcel: undefined
+      })
+      expect(result).toBe('next')
     })
   })
 })
-
-/**
- * @import { type FormRequest } from '~/src/server/routes/types.js'
- * @import { type FormContext } from '~/src/server/plugins/engine/types.js'
- * @import { type ResponseToolkit } from '@hapi/hapi'
- */

@@ -32,53 +32,51 @@
             <fieldset class="govuk-fieldset" aria-describedby="action-hint">
               
               <table class="govuk-table">
-  <caption class="govuk-table__caption govuk-table__caption--l">Available actions for selected parcel</caption>
-  <tbody class="govuk-table__body">
-    <tr class="govuk-table__row">
-      <td class="govuk-table__cell">Select</td>
-      <td class="govuk-table__cell">Action</td>
-      <td class="govuk-table__cell">Available</td>
-      <td class="govuk-table__cell">Quantity</td>
-      <td class="govuk-table__cell">Unit</td>
-    </tr>
-    <tr class="govuk-table__row">
-        {% for action in actionList %}
-          <td class="govuk-table__cell">
-            <div class="govuk-checkboxes__item series-selector-items">
-              <input class="govuk-checkboxes__input" id="{{action.value}}" name="actions" type="checkbox" value="{{action.value}}" {% if action.checked %}checked{% endif %}>
-              <label class="govuk-label govuk-checkboxes__label" for="actions"></label>
-            </div>
-          </td>
-          <td class="govuk-table__cell">{{action.text}}</td>
-          <td class="govuk-table__cell">{{action.availableArea}}</td>
-          <td class="govuk-table__cell">
-            <div class="govuk-date-input__item">
-              <div class="govuk-form-group">
-                <label class="govuk-label govuk-date-input__label" for="area"></label>
-                <input class="govuk-input govuk-date-input__input govuk-input--width-4" id="area" name="area" value="{{area}}" type="text" inputmode="numeric">
-              </div>
-            </div>
-          </td>
-          <td class="govuk-table__cell">ha.</td>
-      {% endfor %}
-
-    </tr>
-  </tbody>
-</table>
-
+                <caption class="govuk-table__caption govuk-table__caption--l">Available actions for selected parcel</caption>
+                <thead class="govuk-table__head">
+                  <tr class="govuk-table__row">
+                    <th class="govuk-table__header">Select</th>
+                    <th class="govuk-table__header">Action</th>
+                    <th class="govuk-table__header">Available</th>
+                    <th class="govuk-table__header">Quantity</th>
+                    <th class="govuk-table__header">Unit</th>
+                  </tr>
+                </thead>
+                <tbody class="govuk-table__body">
+                  {% for action in actionList %}
+                  <tr class="govuk-table__row">
+                    <td class="govuk-table__cell">
+                      <div class="govuk-checkboxes__item series-selector-items">
+                        <input class="govuk-checkboxes__input" id="{{ action.value }}" name="actions" type="checkbox" value="{{ action.value }}" {% if action.checked %}checked{% endif %}>
+                        <label class="govuk-label govuk-checkboxes__label" for="{{ action.value }}">{{ action.text }}</label>
+                      </div>
+                    </td>
+                    <td class="govuk-table__cell">{{ action.text }}</td>
+                    <td class="govuk-table__cell">{{ action.availableArea }}</td>
+                    <td class="govuk-table__cell">
+                      <div class="govuk-form-group">
+                        <label class="govuk-label" for="area-{{ loop.index }}">Area</label>
+                        <input class="govuk-input govuk-input--width-4" id="area-{{ loop.index }}" name="area-{{ action.value }}" value="{{ area }}" type="text" inputmode="numeric">
+                      </div>
+                    </td>
+                    <td class="govuk-table__cell">{{ action.availableAreaUnit }}</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
 
             </fieldset>
           </div>
             
-            <div class="govuk-button-group">
-              <input type="hidden" name="crumb" value="{{ crumb }}">
-              {% block form %}
-                  {{ govukButton({
-                    text: "Continue",
-                    preventDoubleClick: true
-                  }) }}
-              {% endblock %}
-            </div>
+          <div class="govuk-button-group">
+            <input type="hidden" name="crumb" value="{{ crumb }}">
+            {% block form %}
+              {{ govukButton({
+                text: "Continue",
+                preventDoubleClick: true
+              }) }}
+            {% endblock %}
+          </div>
           {% else %}
             {{ govukWarningText({
               text: "No actions available to select.",

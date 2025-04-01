@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 import { ecsFormat } from '@elastic/ecs-pino-format'
 import { config } from '~/src/config/config.js'
 import { getTraceId } from '@defra/hapi-tracing'
