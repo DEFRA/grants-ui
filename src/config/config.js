@@ -76,6 +76,12 @@ export const config = convict({
       env: 'LAND_GRANTS_API_URL'
     }
   },
+  feedbackLink: {
+    doc: 'Used in your phase banner. Can be a URL or more commonly mailto mailto:feedback@department.gov.uk',
+    format: String,
+    default: '',
+    env: 'FEEDBACK_LINK'
+  },
   entra: {
     tokenEndpoint: {
       doc: 'Microsoft entra token endpoint',
