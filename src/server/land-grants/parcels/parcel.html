@@ -9,28 +9,16 @@
 {% block content %}
 <div class="govuk-body">
   <div class="govuk-grid-row">
-    <div class="govuk-grid-column-two-thirds">
-      <h1 class="govuk-heading-l">Please select your land parcel</h1>
-      
-      {# {% if business and business.customer %}
-      <p>
-        Welcome back, {{ business.customer.firstName }} {{business.customer.lastName}}.
-        <br/>
-        SBI: {{ business.sbi }}
-        <br/>
-        Org ID: {{ business.organisationId }}
-      </p>
-      {% endif %} #}
+    <div class="govuk-grid-column-two-thirds">      
       {% if business and business.land and business.land.parcels %}
-
-        <form method="post" {%- if proxyUrl and not context.isForceAccess %} data-proxy-url="{{ proxyUrl }}" {%- endif %} data-actions="{{ actions }}" novalidate>
+        <form method="post" data-actions="{{ actions }}" >
           {% set radioItems = [] %}
           {% set parcelId = landParcel or business.land.parcels[0].parcelId %}
 
           {% for parcel in business.land.parcels.slice(0,1) %}
             {% set radioItems = radioItems.concat([{
               value: parcel.sheetId + "-" + parcel.parcelId,
-              text: parcel.sheetId + "-" + parcel.parcelId
+              text: parcel.sheetId + "-" + parcel.parcelId + " (Total size: " + parcel.area + " ha.)"
             }]) %}
           {% endfor %}
           
@@ -39,8 +27,9 @@
                 name: "landParcel",
                 fieldset: {
                   legend: {
-                    text: "Sheet and Parcel ID",
-                    classes: "govuk-fieldset__legend--s"
+                    text: "Select land for your actions",
+                    isPageHeading: true,
+                    classes: "govuk-fieldset__legend--l"
                   }
                 },
                 items: radioItems,

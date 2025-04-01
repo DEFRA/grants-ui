@@ -25,6 +25,7 @@ export default class LandActionsController extends QuestionPageController {
       await this.setState(request, {
         ...state,
         actions,
+        applicationValue: '£16,467.49', // TODO: This calculation will come from Land Grants API
         area
       })
       return this.proceed(request, h, this.getNextPath(context))

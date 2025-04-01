@@ -34,7 +34,7 @@ const logger = createLogger()
  * @returns {Promise<BusinessResponse>} - Promise that resolves to the business details
  * @throws {Error} - If the request fails
  */
-export async function fetchBusinessDetails(sbi, crn) {
+export async function fetchParcelDataForBusiness(sbi, crn) {
   let response
   const now = new Date().toISOString()
   const query = `
@@ -46,6 +46,7 @@ export async function fetchBusinessDetails(sbi, crn) {
           parcels(date: "${now}") {
             parcelId
             sheetId
+            area
           }
         }
         customer(crn: "${crn}") {

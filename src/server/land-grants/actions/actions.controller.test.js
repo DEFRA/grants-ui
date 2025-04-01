@@ -27,6 +27,7 @@ describe('LandActionsController', () => {
     mockRequest = {
       payload: {
         area: '10',
+        applicationValue: '£16,467.49',
         actions: ['action1', 'action2']
       },
       logger: {
@@ -117,7 +118,8 @@ describe('LandActionsController', () => {
       expect(controller.setState).toHaveBeenCalledWith(mockRequest, {
         landParcel: 'sheet1-parcel1',
         actions: ['action1', 'action2'],
-        area: '10'
+        area: '10',
+        applicationValue: '£16,467.49'
       })
 
       expect(controller.proceed).toHaveBeenCalledWith(
@@ -138,7 +140,8 @@ describe('LandActionsController', () => {
       expect(controller.setState).toHaveBeenCalledWith(mockRequest, {
         landParcel: 'sheet1-parcel1',
         actions: '',
-        area: undefined
+        area: undefined,
+        applicationValue: '£16,467.49'
       })
     })
   })

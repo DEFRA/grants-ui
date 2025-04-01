@@ -1,11 +1,11 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
-import { fetchBusinessDetails } from '~/src/server/common/services/consolidated-view.service.js'
+import { fetchParcelDataForBusiness } from '~/src/server/common/services/consolidated-view.service.js'
 import LandParcelController from './parcel.controller.js'
 
 jest.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js')
 
 jest.mock('~/src/server/common/services/consolidated-view.service.js', () => ({
-  fetchBusinessDetails: jest.fn()
+  fetchParcelDataForBusiness: jest.fn()
 }))
 
 describe('LandParcelController', () => {
@@ -24,7 +24,7 @@ describe('LandParcelController', () => {
       getErrors: jest.fn().mockReturnValue([])
     }
 
-    fetchBusinessDetails.mockResolvedValue({
+    fetchParcelDataForBusiness.mockResolvedValue({
       data: {
         name: 'Test Farm',
         address: '123 Farm Road',
@@ -68,7 +68,10 @@ describe('LandParcelController', () => {
       const handler = controller.makeGetRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
 
-      expect(fetchBusinessDetails).toHaveBeenCalledWith(117235001, 1100598138)
+      expect(fetchParcelDataForBusiness).toHaveBeenCalledWith(
+        117235001,
+        1100598138
+      )
 
       expect(mockH.view).toHaveBeenCalledWith(
         'parcel',
@@ -81,7 +84,7 @@ describe('LandParcelController', () => {
     })
 
     it('should handle missing business info gracefully', async () => {
-      fetchBusinessDetails.mockRejectedValue(new Error('not found'))
+      fetchParcelDataForBusiness.mockRejectedValue(new Error('not found'))
 
       const handler = controller.makeGetRouteHandler()
 
@@ -98,7 +101,10 @@ describe('LandParcelController', () => {
         }
       })
 
-      expect(fetchBusinessDetails).toHaveBeenCalledWith(117235001, 1100598138)
+      expect(fetchParcelDataForBusiness).toHaveBeenCalledWith(
+        117235001,
+        1100598138
+      )
     })
   })
 })
