@@ -1,0 +1,11 @@
+# Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities
+version: v1.25.0
+ignore:
+  "SNYK-JS-USERAGENT-174737":
+    - "*":
+        reason: "No fix available, indirect dependency"
+        expires: "2025-12-31"
+  "SNYK-JS-USERAGENT-8309369":
+    - "*":
+        reason: "No fix available, indirect dependency"
+        expires: "2025-12-31"
