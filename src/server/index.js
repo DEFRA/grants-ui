@@ -3,6 +3,7 @@ import crumb from '@hapi/crumb'
 import hapi from '@hapi/hapi'
 import inert from '@hapi/inert'
 import path from 'path'
+import { fileURLToPath } from 'url'
 import { config } from '~/src/config/config.js'
 import { nunjucksConfig } from '~/src/config/nunjucks/nunjucks.js'
 import { formsService } from '~/src/server/common/forms/services/form.js'
@@ -19,6 +20,13 @@ import { sessionCache } from '~/src/server/common/helpers/session-cache/session-
 import LandActionsController from '~/src/server/land-grants/actions/actions.controller.js'
 import LandParcelController from '~/src/server/land-grants/parcels/parcel.controller.js'
 import { router } from './router.js'
+
+const getViewPaths = () => {
+  const currentFilePath = fileURLToPath(import.meta.url)
+  const isRunningBuiltCode = currentFilePath.includes('.server')
+  const basePath = isRunningBuiltCode ? '.server/server' : 'src/server'
+  return [`${basePath}/land-grants/actions`, `${basePath}/land-grants/parcels`]
+}
 
 export async function createServer() {
   setupProxy()
@@ -68,10 +76,7 @@ export async function createServer() {
         outputService,
         formSubmissionService
       },
-      viewPaths: [
-        path.resolve(config.get('root'), 'src/server/land-grants/actions'),
-        path.resolve(config.get('root'), 'src/server/land-grants/parcels')
-      ],
+      viewPaths: getViewPaths(),
       controllers: {
         LandParcelController,
         LandActionsController
