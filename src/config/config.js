@@ -84,6 +84,32 @@ export const config = convict({
     default: '',
     env: 'FEEDBACK_LINK'
   },
+  entra: {
+    tokenEndpoint: {
+      doc: 'Microsoft entra token endpoint',
+      format: String,
+      default: '',
+      env: 'ENTRA_INTERNAL_TOKEN_URL'
+    },
+    tenantId: {
+      doc: 'Microsoft tenant ID',
+      format: String,
+      default: '',
+      env: 'ENTRA_INTERNAL_TENANT_ID'
+    },
+    clientId: {
+      doc: 'Microsoft client ID',
+      format: String,
+      default: '',
+      env: 'ENTRA_INTERNAL_CLIENT_ID'
+    },
+    clientSecret: {
+      doc: 'Microsoft client secret',
+      format: String,
+      default: '',
+      env: 'ENTRA_INTERNAL_CLIENT_SECRET'
+    }
+  },
   consolidatedView: {
     apiEndpoint: {
       doc: 'Consolidated View API endpoint',
