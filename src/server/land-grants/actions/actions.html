@@ -47,16 +47,17 @@
                   <tr class="govuk-table__row">
                     <td class="govuk-table__cell">
                       <div class="govuk-checkboxes__item series-selector-items">
-                        <input class="govuk-checkboxes__input" id="{{ action.value }}" name="actions" type="checkbox" value="{{ action.value }}" {% if action.checked %}checked{% endif %}>
-                        <label class="govuk-label govuk-checkboxes__label" for="{{ action.value }}">{{ action.text }}</label>
+                        <input class="govuk-checkboxes__input" id="{{action.value}}" name="actions" type="checkbox" value="{{action.value}}" {% if action.checked %}checked{% endif %}>
+                        <label class="govuk-label govuk-checkboxes__label" for="actions">
+                        <span class="govuk-visually-hidden">{{action.value}}</span></label>
                       </div>
                     </td>
                     <td class="govuk-table__cell">{{ action.text }}</td>
                     <td class="govuk-table__cell">{{ action.availableArea }}</td>
                     <td class="govuk-table__cell">
                       <div class="govuk-form-group">
-                        <label class="govuk-label" for="area-{{ loop.index }}">Area</label>
-                        <input class="govuk-input govuk-input--width-4" id="area-{{ loop.index }}" name="area-{{ action.value }}" value="{{ area }}" type="text" inputmode="numeric">
+                        <label class="govuk-label govuk-date-input__label govuk-visually-hidden" for="area">Area</label>
+                        <input class="govuk-input govuk-input--width-4" id="area-{{ loop.index }}" name="area" value="{{ area }}" type="text" inputmode="numeric">
                       </div>
                     </td>
                     <td class="govuk-table__cell">{{ action.availableAreaUnit }}</td>
