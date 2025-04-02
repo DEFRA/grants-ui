@@ -55,10 +55,13 @@ export async function fetchParcelDataForBusiness(sbi, crn) {
       }
     }`
 
+  // const token = await getValidToken()
+
   const response = await fetch(CV_API_ENDPOINT, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      // Authorization: `Bearer ${token}`,
       email: CV_API_AUTH_EMAIL
     },
     body: JSON.stringify({
