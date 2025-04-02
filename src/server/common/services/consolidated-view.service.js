@@ -71,13 +71,24 @@ export async function fetchParcelDataForBusiness(sbi, crn) {
   })
 
   if (!response.ok) {
-    /**
-     * @type {Error & {code?: number}}
-     */
-    const error = new Error(response.statusText)
+    const errorText = await response.text()
+    const error = new Error(
+      `Failed to fetch business data: ${response.status} ${response.statusText}`
+    )
     error.code = response.status
-    const text = await response.text()
-    logger.error(error, `DAL error: ${text}`)
+    error.responseBody = errorText
+
+    logger.error(
+      {
+        err: error,
+        statusCode: response.status,
+        responseText: errorText,
+        sbi,
+        crn
+      },
+      'Failed to fetch business data from Consolidated View API'
+    )
+
     throw error
   }
 
