@@ -50,19 +50,28 @@ export const formsService = {
     }
   },
   getFormDefinition: async function (id) {
-    const addingValue = getJsonFromFile('adding-value.json')
-    const exampleGrant = getJsonFromFile('example-grant.json')
-    const landGrants = getJsonFromFile('find-funding-for-land-or-farms.json')
+    try {
+      const [addingValue, exampleGrant, landGrants] = await Promise.all([
+        getJsonFromFile('adding-value.json'),
+        getJsonFromFile('example-grant.json'),
+        getJsonFromFile('find-funding-for-land-or-farms.json')
+      ])
 
-    switch (id) {
-      case addingValueMetadata.id:
-        return Promise.resolve(configureFormDefinition(addingValue))
-      case exampleGrantMetadata.id:
-        return Promise.resolve(configureFormDefinition(exampleGrant))
-      case landGrantsMetadata.id:
-        return Promise.resolve(configureFormDefinition(landGrants))
-      default:
-        throw Boom.notFound(`Form '${id}' not found`)
+      switch (id) {
+        case addingValueMetadata.id:
+          return configureFormDefinition(await addingValue)
+        case exampleGrantMetadata.id:
+          return configureFormDefinition(await exampleGrant)
+        case landGrantsMetadata.id:
+          return configureFormDefinition(await landGrants)
+        default:
+          throw Boom.notFound(`Form '${id}' not found`)
+      }
+    } catch (error) {
+      if (error instanceof SyntaxError) {
+        throw new Error('Invalid JSON in form definition file')
+      }
+      throw error
     }
   }
 }
