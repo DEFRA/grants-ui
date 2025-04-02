@@ -18,7 +18,7 @@
       "next": [
         {
           "path": "/you-must-correct-your-details",
-          "condition": "uFOrmA"
+          "condition": "uFOrmB"
         },
         {
           "path": "/select-land-parcel"
@@ -26,7 +26,7 @@
       ],
       "components": [
         {
-          "name": "TKsWbP",
+          "name": "TKsWbB",
           "title": "Do your digital maps show the correct land details?",
           "type": "YesNoField",
           "hint": "",
@@ -113,14 +113,14 @@
   "sections": [],
   "conditions": [
     {
-      "name": "uFOrmA",
+      "name": "uFOrmB",
       "displayName": "notCorrect",
       "value": {
         "name": "notCorrect",
         "conditions": [
           {
             "field": {
-              "name": "TKsWbP",
+              "name": "TKsWbB",
               "type": "YesNoField",
               "display": "Do your digital maps show the correct land details?"
             },
