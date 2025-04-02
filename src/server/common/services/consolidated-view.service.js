@@ -62,7 +62,7 @@ export async function fetchParcelDataForBusiness(sbi, crn) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
+      Authorization: `a ${token}`,
       email: CV_API_AUTH_EMAIL
     },
     body: JSON.stringify({
@@ -77,7 +77,7 @@ export async function fetchParcelDataForBusiness(sbi, crn) {
     const error = new Error(response.statusText)
     error.code = response.status
     const text = await response.text()
-    logger.error(`DAL error: ${text}`)
+    logger.error(error, `DAL error: ${text}`)
     throw error
   }
 
