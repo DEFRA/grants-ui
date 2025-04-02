@@ -75,6 +75,30 @@ describe('DeclarationPageController', () => {
       expect(mockH.redirect).toHaveBeenCalledWith('/adding-value/confirmation')
     })
 
+    test('should log submission details when available', async () => {
+      const submissionDetails = {
+        fieldsSubmitted: ['field1', 'field2'],
+        timestamp: '2024-03-20T10:00:00Z'
+      }
+      formSubmissionService.submit.mockResolvedValue({
+        result: {
+          referenceNumber: 'REF123',
+          submissionDetails
+        }
+      })
+
+      mockRequest.logger.info = jest.fn()
+      const handler = controller.makePostRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(mockRequest.logger.info).toHaveBeenCalledWith({
+        message: 'Form submission completed',
+        referenceNumber: 'REF123',
+        fieldsSubmitted: submissionDetails.fieldsSubmitted,
+        timestamp: submissionDetails.timestamp
+      })
+    })
+
     test('should handle submission errors', async () => {
       const error = new Error('Submission failed')
       formSubmissionService.submit.mockRejectedValue(error)
