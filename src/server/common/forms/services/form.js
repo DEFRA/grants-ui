@@ -13,10 +13,9 @@ const getJsonFromFile = async function (path) {
   return JSON.parse(await fs.readFile(url, 'utf8'))
 }
 
-const environment = config.get('cdpEnvironment')
-
 function configureFormDefinition(definition) {
   const logger = createLogger()
+  const environment = config.get('cdpEnvironment')
 
   if (definition.pages) {
     definition.pages.forEach((page) => {

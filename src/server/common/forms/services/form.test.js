@@ -1,6 +1,7 @@
 import { formsService } from './form.js'
 import { readFile } from 'fs/promises'
 import { exampleGrantMetadata, landGrantsMetadata } from '../config.js'
+import { config } from '~/src/config/config.js'
 
 // Mock URL and import.meta.url
 const mockUrl = { pathname: '/mock/path' }
@@ -8,27 +9,21 @@ global.URL = jest.fn(() => mockUrl)
 global.import = { meta: { url: 'file:///mock/path' } }
 
 // Mock config
+const defaultConfigMock = {
+  cdpEnvironment: 'local',
+  log: {
+    enabled: true,
+    level: 'info',
+    format: 'pino-pretty',
+    redact: []
+  },
+  serviceName: 'test-service',
+  serviceVersion: '1.0.0'
+}
+
 jest.mock('~/src/config/config.js', () => ({
   config: {
-    get: jest.fn((key) => {
-      switch (key) {
-        case 'cdpEnvironment':
-          return 'local'
-        case 'log':
-          return {
-            enabled: true,
-            level: 'info',
-            format: 'pino-pretty',
-            redact: []
-          }
-        case 'serviceName':
-          return 'test-service'
-        case 'serviceVersion':
-          return '1.0.0'
-        default:
-          return undefined
-      }
-    })
+    get: jest.fn((key) => defaultConfigMock[key])
   }
 }))
 
@@ -66,6 +61,8 @@ describe('formsService', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     readFile.mockReset()
+    // Reset config mock to default values
+    config.get.mockImplementation((key) => defaultConfigMock[key])
   })
 
   describe('getFormDefinition', () => {
@@ -191,6 +188,128 @@ describe('formsService', () => {
         name: 'no-onload',
         pages: [{ events: { otherEvent: {} } }]
       })
+    })
+
+    test('configures URLs correctly for local environment', async () => {
+      const mockData = JSON.stringify({
+        name: 'test-form',
+        pages: [
+          {
+            events: {
+              onLoad: {
+                options: {
+                  url: 'http://cdpEnvironment.example.com'
+                }
+              }
+            }
+          }
+        ]
+      })
+      readFile.mockResolvedValue(mockData)
+
+      const result = await formsService.getFormDefinition(
+        exampleGrantMetadata.id
+      )
+      expect(result.pages[0].events.onLoad.options.url).toBe(
+        'http://localhost:3001/scoring/api/v1/adding-value/score?allowPartialScoring=true'
+      )
+    })
+
+    test('configures URLs correctly for non-local environment', async () => {
+      // Override the config mock for this test only
+      config.get.mockImplementation((key) =>
+        key === 'cdpEnvironment' ? 'dev' : defaultConfigMock[key]
+      )
+
+      const mockData = JSON.stringify({
+        name: 'test-form',
+        pages: [
+          {
+            events: {
+              onLoad: {
+                options: {
+                  url: 'http://cdpEnvironment.example.com'
+                }
+              }
+            }
+          }
+        ]
+      })
+      readFile.mockResolvedValue(mockData)
+
+      const result = await formsService.getFormDefinition(
+        exampleGrantMetadata.id
+      )
+      expect(result.pages[0].events.onLoad.options.url).toBe(
+        'http://dev.example.com'
+      )
+    })
+
+    test('handles form definition with multiple pages and events', async () => {
+      const mockData = JSON.stringify({
+        name: 'multi-page-form',
+        pages: [
+          {
+            events: {
+              onLoad: {
+                options: {
+                  url: 'http://cdpEnvironment.example.com'
+                }
+              }
+            }
+          },
+          {
+            events: {
+              onLoad: {
+                options: {
+                  url: 'http://cdpEnvironment.example.com'
+                }
+              }
+            }
+          }
+        ]
+      })
+      readFile.mockResolvedValue(mockData)
+
+      const result = await formsService.getFormDefinition(
+        exampleGrantMetadata.id
+      )
+      expect(result.pages).toHaveLength(2)
+      result.pages.forEach((page) => {
+        expect(page.events.onLoad.options.url).toBe(
+          'http://localhost:3001/scoring/api/v1/adding-value/score?allowPartialScoring=true'
+        )
+      })
+    })
+
+    test('handles form definition with undefined events', async () => {
+      const mockData = JSON.stringify({
+        name: 'test-form',
+        pages: [
+          {
+            events: undefined
+          }
+        ]
+      })
+      readFile.mockResolvedValue(mockData)
+
+      const result = await formsService.getFormDefinition(
+        exampleGrantMetadata.id
+      )
+      expect(result.pages[0].events).toBeUndefined()
+    })
+
+    test('handles form definition with undefined pages', async () => {
+      const mockData = JSON.stringify({
+        name: 'test-form',
+        pages: undefined
+      })
+      readFile.mockResolvedValue(mockData)
+
+      const result = await formsService.getFormDefinition(
+        exampleGrantMetadata.id
+      )
+      expect(result.pages).toBeUndefined()
     })
   })
 
