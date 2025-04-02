@@ -180,7 +180,7 @@
           "name": "plOIUS",
           "title": "Html",
           "type": "Html",
-          "content": "<p class=\"govuk-body\">The minimum grant you can apply for is £25,000 (40% of £62,500).</p>\n\n<p class='govuk-body'><a href='https://www.gov.uk/guidance/funding-for-farmers' class='govuk-link govuk-link--no-visited-state'>See other grants you may be eligible for</a></p>\n",
+          "content": "<p class=\"govuk-body\">The minimum grant you can apply for is £25,000 (40% of £62,500).</p>\n\n<p='govuk-body'><a href='https://www.gov.uk/guidance/funding-for-farmers' class='govuk-link govuk-link--no-visited-state'>See other grants you may be eligible for</a></p>\n",
           "options": {},
           "schema": {}
         }
@@ -503,7 +503,7 @@
       "title": "Confirm and send",
       "path": "/declaration",
       "controller": "DeclarationPageController",
-      "view": "declaration.html",
+      "view": "declaration-page.html",
       "next": [],
       "components": []
     },

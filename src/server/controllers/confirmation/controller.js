@@ -1,7 +1,7 @@
 import { StatusPageController } from '@defra/forms-engine-plugin/controllers/StatusPageController.js'
 
 export default class ConfirmationPageController extends StatusPageController {
-  viewName = 'confirmation'
+  viewName = 'confirmation-page'
 
   /**
    * This method is called when there is a GET request to the confirmation page.

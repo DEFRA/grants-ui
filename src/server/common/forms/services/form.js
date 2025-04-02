@@ -1,6 +1,10 @@
 import Boom from '@hapi/boom'
 import fs from 'fs/promises'
-import { addingValueMetadata, exampleGrantMetadata, landGrantsMetadata } from '../config.js'
+import {
+  addingValueMetadata,
+  exampleGrantMetadata,
+  landGrantsMetadata
+} from '../config.js'
 import { config } from '~/src/config/config.js'
 
 const getJsonFromFile = async function (path) {
