@@ -50,7 +50,8 @@ export default class LandActionsController extends QuestionPageController {
       const { collection, viewName } = this
       const { state } = context
 
-      const [sheetId, parcelId] = state.landParcel?.split('-') || []
+      const [sheetId, parcelId] = (state.landParcel || '').split('-')
+
       let actions = []
 
       try {

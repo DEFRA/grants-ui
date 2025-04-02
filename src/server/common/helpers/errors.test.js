@@ -122,6 +122,20 @@ describe('#catchAll', () => {
       statusCodes.internalServerError
     )
   })
+
+  test('Should default to 200 if no statusCode on non-Boom response', () => {
+    const responseObj = { payload: 'OK' }
+    const mockResponse = jest.fn().mockReturnThis()
+    const mockCode = jest.fn().mockReturnThis()
+
+    catchAll(
+      { response: responseObj },
+      { response: mockResponse, code: mockCode }
+    )
+
+    expect(mockResponse).toHaveBeenCalledWith(responseObj)
+    expect(mockCode).toHaveBeenCalledWith(200)
+  })
 })
 
 /**

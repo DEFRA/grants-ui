@@ -108,6 +108,47 @@ describe('LandActionsController', () => {
         message: 'No actions found for parcel sheet1-parcel1'
       })
     })
+
+    test('should default sheetId and parcelId when landParcel is missing', async () => {
+      mockContext.state = {}
+      controller.collection.getErrors.mockReturnValue([])
+
+      fetchLandSheetDetails.mockResolvedValue({ parcel: { actions: [] } })
+
+      const handler = controller.makeGetRouteHandler()
+      const result = await handler(mockRequest, mockContext, mockH)
+
+      expect(fetchLandSheetDetails).toHaveBeenCalledWith(undefined, '')
+      expect(mockH.view).toHaveBeenCalledWith(
+        'actions',
+        expect.objectContaining({
+          availableActions: [],
+          landParcel: undefined,
+          selectedActions: undefined
+        })
+      )
+      expect(result).toBe('rendered view')
+    })
+
+    test('should default to empty actions when parcel.actions is undefined', async () => {
+      fetchLandSheetDetails.mockResolvedValue({
+        parcel: {}
+      })
+
+      controller.collection.getErrors.mockReturnValue([])
+
+      const handler = controller.makeGetRouteHandler()
+      const result = await handler(mockRequest, mockContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'actions',
+        expect.objectContaining({
+          availableActions: [],
+          landParcel: 'sheet1-parcel1'
+        })
+      )
+      expect(result).toBe('rendered view')
+    })
   })
 
   describe('POST route handler', () => {
