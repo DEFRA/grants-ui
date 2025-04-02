@@ -29,6 +29,16 @@ export default class DeclarationPageController extends SummaryPageController {
 
         context.referenceNumber = result.referenceNumber
 
+        // Log submission details if available
+        if (result.submissionDetails) {
+          request.logger.info({
+            message: 'Form submission completed',
+            referenceNumber: result.referenceNumber,
+            fieldsSubmitted: result.submissionDetails.fieldsSubmitted,
+            timestamp: result.submissionDetails.timestamp
+          })
+        }
+
         return h.redirect(this.getStatusPath())
       } catch (error) {
         request.logger.error(error, 'Failed to submit form')

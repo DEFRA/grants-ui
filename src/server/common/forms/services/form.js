@@ -6,6 +6,7 @@ import {
   landGrantsMetadata
 } from '../config.js'
 import { config } from '~/src/config/config.js'
+import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
 
 const getJsonFromFile = async function (path) {
   const url = new URL(`../definitions/${path}`, import.meta.url).pathname
@@ -15,6 +16,8 @@ const getJsonFromFile = async function (path) {
 const environment = config.get('cdpEnvironment')
 
 function configureFormDefinition(definition) {
+  const logger = createLogger()
+
   if (definition.pages) {
     definition.pages.forEach((page) => {
       const events = page.events
@@ -29,6 +32,10 @@ function configureFormDefinition(definition) {
         } else if (events.onLoad?.options.url && environment === 'local') {
           events.onLoad.options.url =
             'http://localhost:3001/scoring/api/v1/adding-value/score?allowPartialScoring=true'
+        } else {
+          // If we have a URL but environment is neither 'local' nor a non-local environment,
+          // we should log this unexpected case but not modify the URL
+          logger.warn(`Unexpected environment value: ${environment}`)
         }
       }
     })

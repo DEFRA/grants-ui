@@ -10,7 +10,25 @@ global.import = { meta: { url: 'file:///mock/path' } }
 // Mock config
 jest.mock('~/src/config/config.js', () => ({
   config: {
-    get: jest.fn((key) => (key === 'cdpEnvironment' ? 'local' : undefined))
+    get: jest.fn((key) => {
+      switch (key) {
+        case 'cdpEnvironment':
+          return 'local'
+        case 'log':
+          return {
+            enabled: true,
+            level: 'info',
+            format: 'pino-pretty',
+            redact: []
+          }
+        case 'serviceName':
+          return 'test-service'
+        case 'serviceVersion':
+          return '1.0.0'
+        default:
+          return undefined
+      }
+    })
   }
 }))
 
