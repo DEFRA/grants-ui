@@ -10,6 +10,7 @@ describe('LandActionsController', () => {
   let mockRequest
   let mockContext
   let mockH
+  const areaObj = { action1: 10 }
 
   beforeEach(() => {
     QuestionPageController.prototype.getViewModel = jest.fn().mockReturnValue({
@@ -26,7 +27,7 @@ describe('LandActionsController', () => {
 
     mockRequest = {
       payload: {
-        area: '10',
+        'area-action1': 10,
         applicationValue: '£16,467.49',
         actions: ['action1', 'action2']
       },
@@ -122,8 +123,7 @@ describe('LandActionsController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'actions',
         expect.objectContaining({
-          availableActions: [],
-          landParcel: undefined
+          availableActions: []
         })
       )
       expect(result).toBe('rendered view')
@@ -158,8 +158,8 @@ describe('LandActionsController', () => {
       expect(controller.setState).toHaveBeenCalledWith(mockRequest, {
         landParcel: 'sheet1-parcel1',
         actions: ['action1', 'action2'],
-        area: JSON.stringify({}),
-        areaObj: {},
+        area: JSON.stringify(areaObj),
+        areaObj,
         applicationValue: '£16,467.49'
       })
 
