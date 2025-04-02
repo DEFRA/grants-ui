@@ -73,7 +73,7 @@ describe('LandActionsController', () => {
         expect.objectContaining({
           landParcel: 'sheet1-parcel1',
           availableActions: ['action1', 'action2', 'action3'],
-          selectedActions: ['action1', 'action2']
+          actions: ['action1', 'action2']
         })
       )
       expect(result).toBe('rendered view')
@@ -123,8 +123,7 @@ describe('LandActionsController', () => {
         'actions',
         expect.objectContaining({
           availableActions: [],
-          landParcel: undefined,
-          selectedActions: undefined
+          landParcel: undefined
         })
       )
       expect(result).toBe('rendered view')
@@ -159,7 +158,8 @@ describe('LandActionsController', () => {
       expect(controller.setState).toHaveBeenCalledWith(mockRequest, {
         landParcel: 'sheet1-parcel1',
         actions: ['action1', 'action2'],
-        area: '10',
+        area: JSON.stringify({}),
+        areaObj: {},
         applicationValue: '£16,467.49'
       })
 
@@ -181,7 +181,8 @@ describe('LandActionsController', () => {
       expect(controller.setState).toHaveBeenCalledWith(mockRequest, {
         landParcel: 'sheet1-parcel1',
         actions: '',
-        area: undefined,
+        area: JSON.stringify({}),
+        areaObj: {},
         applicationValue: '£16,467.49'
       })
     })
