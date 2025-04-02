@@ -35,7 +35,6 @@ const logger = createLogger()
  * @throws {Error} - If the request fails
  */
 export async function fetchParcelDataForBusiness(sbi, crn) {
-  let response
   const now = new Date().toISOString()
   const query = `
     query Business {
@@ -59,29 +58,26 @@ export async function fetchParcelDataForBusiness(sbi, crn) {
 
   const token = await getValidToken()
 
-  try {
-    response = await fetch(CV_API_ENDPOINT, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-        email: CV_API_AUTH_EMAIL
-      },
-      body: JSON.stringify({
-        query
-      })
+  const response = await fetch(CV_API_ENDPOINT, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+      email: CV_API_AUTH_EMAIL
+    },
+    body: JSON.stringify({
+      query
     })
+  })
 
-    if (!response.ok) {
-      /**
-       * @type {Error & {code?: number}}
-       */
-      const error = new Error(response.statusText)
-      error.code = response.status
-      throw error
-    }
-  } catch (error) {
-    logger.error(error, `Failed to fetch business details for sbi ${sbi}`)
+  if (!response.ok) {
+    /**
+     * @type {Error & {code?: number}}
+     */
+    const error = new Error(response.statusText)
+    error.code = response.status
+    const text = await response.text()
+    logger.error(JSON.parse(text), 'DAL error')
     throw error
   }
 
