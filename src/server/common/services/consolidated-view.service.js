@@ -62,7 +62,7 @@ export async function fetchParcelDataForBusiness(sbi, crn) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `a ${token}`,
+      Authorization: `Bearer ${token}`,
       email: CV_API_AUTH_EMAIL
     },
     body: JSON.stringify({
