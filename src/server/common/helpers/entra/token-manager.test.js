@@ -114,7 +114,7 @@ describe('Token Manager', () => {
         ok: true,
         json: () =>
           Promise.resolve({
-            malformed_response: null
+            access_token: null
           })
       })
 

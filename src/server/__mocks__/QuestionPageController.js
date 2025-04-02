@@ -7,7 +7,7 @@ export class QuestionPageController {
    * @type {object}
    * @readonly
    */
-  static get COMPONENTS() {
+  static get components() {
     return {
       RADIOS: 'radios',
       CHECKBOXES: 'checkboxes',

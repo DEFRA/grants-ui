@@ -77,7 +77,7 @@ export async function fetchParcelDataForBusiness(sbi, crn) {
     const error = new Error(response.statusText)
     error.code = response.status
     const text = await response.text()
-    logger.error('DAL error: ' + text)
+    logger.error(`DAL error: ${text}`)
     throw error
   }
 
