@@ -1,9 +1,6 @@
 import { config } from '~/src/config/config.js'
-import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
 
 const LAND_GRANTS_API_URL = config.get('landGrants.apiEndpoint')
-
-const logger = createLogger()
 
 /**
  * @typedef {object} LandParcel
