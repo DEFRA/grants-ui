@@ -62,7 +62,6 @@ export function transformStateObjectToGasApplication(stateObj) {
         actionApplication.parcelId = parcelId
       }
 
-      // Process the applied for data
       if (actionData && typeof actionData === 'object') {
         const appliedFor = {}
 
