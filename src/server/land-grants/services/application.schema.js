@@ -4,28 +4,19 @@ import Joi from 'joi'
  * Joi schema definitions for GAS application payload validation
  */
 
-/**
- * Schema for ActionArea properties
- */
-export const actionAreaSchema = Joi.object({
+const actionAreaSchema = Joi.object({
   unit: Joi.string(),
   quantity: Joi.number()
 })
 
-/**
- * Schema for ActionApplication properties
- */
-export const actionApplicationSchema = Joi.object({
+const actionApplicationSchema = Joi.object({
   parcelId: Joi.string(),
   sheetId: Joi.string(),
   code: Joi.string(),
   appliedFor: actionAreaSchema
 })
 
-/**
- * Schema for GASPayload
- */
-export const gasPayloadSchema = Joi.object({
+const gasPayloadSchema = Joi.object({
   sbi: Joi.string(),
   frn: Joi.string(),
   crn: Joi.string(),
@@ -36,10 +27,7 @@ export const gasPayloadSchema = Joi.object({
   actionApplications: Joi.array().items(actionApplicationSchema)
 })
 
-/**
- * Only validate structure without requiring fields for the UI application
- */
-export const defaultValidationOptions = {
+const defaultValidationOptions = {
   allowUnknown: true,
   presence: 'optional'
 }
