@@ -77,7 +77,12 @@ export default class LandActionsController extends QuestionPageController {
             landParcel: state.landParcel
           })
         }
-      } catch (error) {}
+      } catch (error) {
+        request.logger.error(
+          error,
+          `Failed to fetch land parcel data for id ${sheetId}-${parcelId}`
+        )
+      }
 
       const viewModel = {
         ...super.getViewModel(request, context),

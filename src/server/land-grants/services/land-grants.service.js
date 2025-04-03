@@ -19,29 +19,19 @@ const logger = createLogger()
  * @throws {Error} - If the request fails
  */
 export async function fetchLandSheetDetails(parcelId, sheetId) {
-  let response
-
-  try {
-    response = await fetch(
-      `${LAND_GRANTS_API_URL}/parcel/${sheetId}-${parcelId}`,
-      {
-        method: 'GET'
-      }
-    )
-
-    if (!response.ok) {
-      /**
-       * @type {Error & {code?: number}}
-       */
-      const error = new Error(response.statusText)
-      error.code = response.status
-      throw error
+  const response = await fetch(
+    `${LAND_GRANTS_API_URL}/parcel/${sheetId}-${parcelId}`,
+    {
+      method: 'GET'
     }
-  } catch (error) {
-    logger.error(
-      error,
-      `Failed to fetch land parcel data for id ${sheetId}-${parcelId}`
-    )
+  )
+
+  if (!response.ok) {
+    /**
+     * @type {Error & {code?: number}}
+     */
+    const error = new Error(response.statusText)
+    error.code = response.status
     throw error
   }
 
