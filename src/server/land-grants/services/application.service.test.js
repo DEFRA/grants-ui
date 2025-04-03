@@ -3,7 +3,6 @@ import { transformStateObjectToGasApplication } from './application.service.js'
 describe('transformStateObjectToGasApplication', () => {
   it('should transform a complete object correctly', () => {
     const input = {
-      $$__referenceNumber: 'CBC-882-F65',
       sbi: 'sbi-1234',
       frn: 'frn-1234',
       crn: 'crn-1234',
