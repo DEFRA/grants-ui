@@ -11,3 +11,25 @@ jest.mock(
     }
   }
 )
+
+jest.mock(
+  '@defra/forms-engine-plugin/controllers/StatusPageController.js',
+  () => {
+    return {
+      StatusPageController:
+        require('../src/server/__mocks__/StatusPageController.js')
+          .StatusPageController
+    }
+  }
+)
+
+jest.mock(
+  '@defra/forms-engine-plugin/controllers/SummaryPageController.js',
+  () => {
+    return {
+      SummaryPageController:
+        require('../src/server/__mocks__/SummaryPageController.js')
+          .SummaryPageController
+    }
+  }
+)

@@ -41,20 +41,38 @@ describe('fetchParcelDataForBusiness', () => {
     const result = await fetchParcelDataForBusiness(mockSbi, mockCrn)
 
     expect(mockFetch).toHaveBeenCalledTimes(1)
-
     expect(result).toEqual(mockSuccessResponse)
   })
 
   it('should throw an error when fetch response is not ok', async () => {
+    const errorText = 'Error response from API'
     mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 404,
-      statusText: 'Not Found'
+      statusText: 'Not Found',
+      text: () => Promise.resolve(errorText)
     })
 
-    await expect(fetchParcelDataForBusiness(mockSbi, mockCrn)).rejects.toThrow()
-
+    await expect(fetchParcelDataForBusiness(mockSbi, mockCrn)).rejects.toThrow(
+      'Failed to fetch business data: 404 Not Found'
+    )
     expect(mockFetch).toHaveBeenCalledTimes(1)
+  })
+
+  it('should include error details in thrown error', async () => {
+    const errorText = 'Error response from API'
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      statusText: 'Internal Server Error',
+      text: () => Promise.resolve(errorText)
+    })
+
+    const error = await fetchParcelDataForBusiness(mockSbi, mockCrn).catch(
+      (e) => e
+    )
+    expect(error.code).toBe(500)
+    expect(error.responseBody).toBe(errorText)
   })
 
   it('should handle network errors during fetch', async () => {
@@ -64,7 +82,6 @@ describe('fetchParcelDataForBusiness', () => {
     await expect(fetchParcelDataForBusiness(mockSbi, mockCrn)).rejects.toThrow(
       'Network error'
     )
-
     expect(mockFetch).toHaveBeenCalledTimes(1)
   })
 
@@ -81,7 +98,6 @@ describe('fetchParcelDataForBusiness', () => {
 
     expect(calledOptions.method).toBe('POST')
     expect(calledOptions.headers['Content-Type']).toBe('application/json')
-
     expect(body.query).toContain(`business(sbi: "${mockSbi}")`)
     expect(body.query).toContain(`customer(crn: "${mockCrn}")`)
   })
