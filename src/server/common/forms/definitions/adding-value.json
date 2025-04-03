@@ -1,0 +1,1140 @@
+{
+  "engine": "V2",
+  "name": "Adding value",
+  "metadata": {
+    "referenceNumberPrefix": "AV"
+  },
+  "pages": [
+    {
+      "title": "Check if you can apply for a Farming Transformation Fund Adding Value Grant",
+      "path": "/start",
+      "controller": "StartPageController",
+      "next": [],
+      "components": [
+        {
+          "name": "Jhimsh",
+          "title": "Html",
+          "type": "Html",
+          "content": "<p class=\"govuk-body\">Use this service to:</p>\n\n<ul class=\"govuk-list govuk-list--bullet\">\n  <li>check if you can apply for a grant for your project (takes about 5 minutes)</li>\n  <li>check how well your project fits the funding priorities (takes about 15 minutes if you have all the project details)</li>\n</ul>\n\n<p class=\"govuk-body\">You can apply if you:</p>\n\n<ul class=\"govuk-list govuk-list--bullet\">\n<li>﻿﻿are a grower or producer of agricultural or horticultural produce</li>\n<li>are a business processing agricultural or horticultural products that is at least 50% owned by agricultural or horticultural producers</li>\n<li>﻿﻿will do the grant-funded work in England</li>\n<li>﻿﻿estimate the project costs are over £62,500</li>\n</ul>",
+          "options": {},
+          "schema": {}
+        },
+        {
+          "name": "JrDsEw",
+          "title": "Inset text",
+          "type": "InsetText",
+          "content": "If your project is eligible, you can submit your answers to the Rural Payments Agency (RPA) to request the full application form.",
+          "options": {},
+          "schema": {}
+        },
+        {
+          "name": "znVaPb",
+          "title": "Html",
+          "type": "Html",
+          "content": "<p class=\"govuk-body govuk-!-font-weight-bold\">Before you start</p>\n<p class=\"govuk-body\">To use the checker, you need:</p>\n<ul class=\"govuk-list govuk-list--bullet\">\n  <li>information about your business (for example, number of employees, turnover)</li>\n  <li>information about the project (for example, the types of products being processed and how you will add value, the impact the project will have)</li>\n  <li>a list of the items you'd like to buy for the project</li>\n  <li>an estimate of the total cost of the items</li>\n</ul>\n<p class=\"govuk-body\">If you do not enter any information for more than 20 minutes, your application will time out and you will have to start again.</p>\n\n<p class=\"govuk-body govuk-!-font-weight-bold\">Problems using the online service</p>\n<p class=\"govuk-body\">If you have any problems using the online service, contact the RPA.</p>\n\n<p class=\"govuk-body govuk-!-font-weight-bold\">Telephone</p>\n<p class=\"govuk-body\">Telephone: 03000 200 301</p>\n<p class=\"govuk-body\">Telephone: 03000 200 301</p>\n\n<p class=\"govuk-body\">Monday to Friday, 9am to 5pm (except public holidays)</p>\n\n\n\n",
+          "options": {},
+          "schema": {}
+        }
+      ]
+    },
+    {
+      "title": "What is your business?",
+      "path": "/what-is-your-business",
+      "next": [],
+      "components": [
+        {
+          "name": "sdFYHf",
+          "title": "What is your business?",
+          "type": "RadiosField",
+          "list": "what-is-your-business-list",
+          "hint": "Select one option",
+          "options": {},
+          "schema": {}
+        }
+      ]
+    },
+    {
+      "title": "You cannot apply for a grant from this scheme",
+      "path": "/you-cannot-apply-for-a-grant-from-this-scheme-business-type",
+      "controller": "TerminalPageController",
+      "next": [],
+      "components": [
+        {
+          "name": "zHznCQ",
+          "title": "Html",
+          "type": "Html",
+          "content": "<p class=\"govuk-body\">This grant is for businesses who:</p>\n\n<ul class=\"govuk-list govuk-list--bullet\">\n  <li>are agricultural or horticultural growers or producers</li>\n  <li>are a business processing agricultural or horticultural products that is at least 50% owned by agricultural or horticultural producers</li>\n</ul>\n\n<p class=\"govuk-body\">See other grants you may be eligible for.</p>\n",
+          "options": {},
+          "schema": {}
+        }
+      ],
+      "condition": "businessTypeIsNoneCondition"
+    },
+    {
+      "title": "What is the legal status of the business?",
+      "path": "/what-is-the-legal-status-of-the-business",
+      "next": [],
+      "components": [
+        {
+          "name": "vPivcN",
+          "title": "What is the legal status of the business?",
+          "type": "RadiosField",
+          "hint": "",
+          "list": "DFtbgm",
+          "options": {},
+          "schema": {}
+        }
+      ]
+    },
+    {
+      "title": "You cannot apply for a grant from this scheme",
+      "path": "/you-cannot-apply-for-a-grant-from-this-scheme-legal-status",
+      "controller": "TerminalPageController",
+      "next": [],
+      "components": [
+        {
+          "name": "dgTBVj",
+          "title": "Html",
+          "type": "Html",
+          "content": "<p class=\"govuk-body\">Your business does not have an eligible legal status.</p>\n",
+          "options": {},
+          "schema": {}
+        }
+      ],
+      "condition": "legalStatusIsNoneCondition"
+    },
+    {
+      "title": "Is the planned project in England?",
+      "path": "/is-the-planned-project-in-england",
+      "next": [],
+      "components": [
+        {
+          "name": "dfRSaq",
+          "title": "Is the planned project in England?",
+          "hint": "The site where the work will happen",
+          "type": "YesNoField",
+          "options": {},
+          "schema": {}
+        }
+      ]
+    },
+    {
+      "title": "You cannot apply for a grant from this scheme",
+      "path": "/you-cannot-apply-for-a-grant-from-this-scheme-project-in-england",
+      "controller": "TerminalPageController",
+      "next": [],
+      "components": [
+        {
+          "name": "ddbgTE",
+          "title": "Html",
+          "type": "Html",
+          "content": "<p class=\"govuk-body\">This grant is only for projects in England.</p>\n",
+          "options": {},
+          "schema": {}
+        }
+      ],
+      "condition": "plannedProjectNotInEnglandCondition"
+    },
+    {
+      "title": "What is the estimated cost of the items?",
+      "path": "/what-is-the-estimated-cost-of-the-items",
+      "next": [],
+      "components": [
+        {
+          "type": "Html",
+          "name": "PkklMN",
+          "title": "Html",
+          "content": "<p class=\"govuk-hint\">Do not include VAT<br><br>Enter cost of items, for example 695000</p>",
+          "options": {},
+          "schema": {}
+        },
+        {
+          "type": "NumberField",
+          "name": "PkdRee",
+          "title": "Enter amount",
+          "options": {
+            "prefix": "£",
+            "required": true,
+            "classes": "govuk-!-width-one-third",
+            "customValidationMessages": {
+              "any.required": "Enter the estimated cost of the items",
+              "number.max": "Enter a whole number with a maximum of 7 digits",
+              "number.min": "Enter a whole number with a maximum of 7 digits"
+            }
+          },
+          "schema": {
+            "min": 1,
+            "max": 9999999,
+            "precision": 0
+          }
+        }
+      ]
+    },
+    {
+      "title": "You cannot apply for a grant from this scheme",
+      "path": "/you-cannot-apply-for-a-grant-from-this-scheme-estimated-items-cost",
+      "controller": "TerminalPageController",
+      "next": [],
+      "components": [
+        {
+          "name": "plOIUS",
+          "title": "Html",
+          "type": "Html",
+          "content": "<p class=\"govuk-body\">The minimum grant you can apply for is £25,000 (40% of £62,500).</p>\n\n<p='govuk-body'><a href='https://www.gov.uk/guidance/funding-for-farmers' class='govuk-link govuk-link--no-visited-state'>See other grants you may be eligible for</a></p>\n",
+          "options": {},
+          "schema": {}
+        }
+      ],
+      "condition": "estimatedCostThresholdNotReachedCondition"
+    },
+    {
+      "title": "{%- assign estimatedCost = 'PkdRee' | answer -%} {%- assign applicantPayMultiplier = 0.6 -%} {%- assign applicantPayAmount = estimatedCost | times: applicantPayMultiplier -%} Can you pay the remaining costs of {{ applicantPayAmount | money }}?",
+      "path": "/can-you-pay-the-remaining-costs",
+      "next": [],
+      "components": [
+        {
+          "type": "YesNoField",
+          "name": "mncHGD",
+          "title": " ",
+          "options": {
+            "customValidationMessages": {
+              "any.required": "Select yes if you can pay the remaining costs"
+            }
+          },
+          "schema": {}
+        }
+      ]
+    },
+    {
+      "title": "You cannot apply for a grant from this scheme",
+      "path": "/you-cannot-apply-for-a-grant-from-this-scheme-remaining-costs",
+      "controller": "TerminalPageController",
+      "next": [],
+      "components": [
+        {
+          "name": "VVCFre",
+          "title": "Html",
+          "type": "Html",
+          "content": "<p class=\"govuk-body\">You cannot use public money (for example, grant funding from government or local authorities) towards the project costs.</br></br>You also cannot use money from a producer organisation under the Fresh Fruit and Vegetable Aid Scheme.</br></br>For example, you can use:</p>\n\n<ul class=\"govuk-list govuk-list--bullet\">\n  <li>loans</li>\n<li>overdrafts</li>\n<li>delinked payments</li></ul>\n\n<p class='govuk-body'><a href='https://www.gov.uk/guidance/funding-for-farmers' class='govuk-link govuk-link--no-visited-state'>See other grants you may be eligible for</a></p>\n",
+          "options": {},
+          "schema": {}
+        }
+      ],
+      "condition": "canYouPayTheRemainingCostsCondition"
+    },
+    {
+      "title": "What type of produce is being processed?",
+      "path": "/products-processed",
+      "next": [],
+      "components": [
+        {
+          "name": "productsProcessed",
+          "title": "What type of produce is being processed?",
+          "type": "RadiosField",
+          "list": "adding-value-produce-list",
+          "hint": "Select one option",
+          "options": {},
+          "schema": {}
+        }
+      ]
+    },
+    {
+      "title": "How will your project add value to the produce?",
+      "path": "/adding-value",
+      "next": [],
+      "components": [
+        {
+          "name": "addingValue",
+          "title": "How will your project add value to the produce?",
+          "type": "RadiosField",
+          "list": "how-will-you-add-value-list",
+          "hint": "Select the main option that applies",
+          "options": {},
+          "schema": {}
+        }
+      ]
+    },
+    {
+      "title": "What impact will this project have?",
+      "path": "/project-impact",
+      "next": [],
+      "components": [
+        {
+          "name": "projectImpact",
+          "title": "What impact will the project have?",
+          "type": "CheckboxesField",
+          "list": "project-impact-list",
+          "hint": "Select all that apply",
+          "options": {},
+          "schema": {}
+        }
+      ]
+    },
+    {
+      "title": "Who will your new customers be after the project?",
+      "path": "/future-customers",
+      "next": [],
+      "components": []
+    },
+    {
+      "title": "Will you work in partnership or collaborate with other farmers or producers?",
+      "path": "/collaboration",
+      "next": [],
+      "components": []
+    },
+    {
+      "title": "How will the project improve the environment?",
+      "path": "/environmental-impact",
+      "next": [],
+      "components": []
+    },
+    {
+      "title": "Score results",
+      "path": "/score-results",
+      "view": "score-results.html",
+      "next": [],
+      "components": [],
+      "events": {
+        "onLoad": {
+          "type": "http",
+          "options": {
+            "method": "POST",
+            "url": "https://ffc-grants-scoring.cdpEnvironment.cdp-int.defra.cloud/scoring/api/v1/adding-value/score?allowPartialScoring=true"
+          }
+        }
+      }
+    },
+    {
+      "title": "Business Details",
+      "path": "/business-details",
+      "next": [],
+      "components": []
+    },
+    {
+      "title": "Who is applying for this grant?",
+      "path": "/who-is-applying-for-this-grant",
+      "next": [],
+      "components": [
+        {
+          "name": "whoIsApplyingForThisGrantComponent",
+          "title": "Who is applying for this grant?",
+          "type": "RadiosField",
+          "list": "who-is-applying-for-this-grant-list",
+          "hint": "",
+          "options": {},
+          "schema": {}
+        }
+      ]
+    },
+    {
+      "title": "Agent's details",
+      "path": "/agent-details",
+      "next": [],
+      "components": [
+        {
+          "type": "TextField",
+          "name": "agentFirstName",
+          "title": "First name",
+          "options": {
+            "required": true
+          },
+          "schema": {}
+        },
+        {
+          "type": "TextField",
+          "name": "agentLastName",
+          "title": "Last name",
+          "options": {
+            "required": true
+          },
+          "schema": {}
+        },
+        {
+          "type": "TextField",
+          "name": "agentBusinessName",
+          "title": "Business name",
+          "options": {
+            "required": true
+          },
+          "schema": {}
+        },
+        {
+          "type": "TextField",
+          "name": "agentEmailAddress",
+          "title": "Email address",
+          "hint": "We will only use this to send you a confirmation",
+          "options": {
+            "required": true
+          },
+          "schema": {}
+        },
+        {
+          "type": "TextField",
+          "name": "agentConfirmEmailAddress",
+          "title": "Confirm email address",
+          "options": {
+            "required": true
+          },
+          "schema": {}
+        },
+        {
+          "type": "TextField",
+          "name": "agentMobileNumber",
+          "title": "Mobile number",
+          "hint": "We will only use this to contact you about your application",
+          "options": {
+            "required": true
+          },
+          "schema": {}
+        },
+        {
+          "type": "TextField",
+          "name": "agentLandlineNumber",
+          "title": "Landline number",
+          "hint": "We will only use this to contact you about your application",
+          "options": {
+            "required": true
+          },
+          "schema": {}
+        },
+        {
+          "type": "UkAddressField",
+          "title": "Business address",
+          "name": "agentBusinessAddress",
+          "hint": "",
+          "options": {},
+          "schema": {}
+        }
+      ],
+      "condition": "agentDetailsSelected"
+    },
+    {
+      "title": "Applicant's details",
+      "path": "/applicant-details",
+      "next": [],
+      "components": [
+        {
+          "type": "TextField",
+          "name": "applicantFirstName",
+          "title": "First name",
+          "options": {
+            "required": true
+          },
+          "schema": {}
+        },
+        {
+          "type": "TextField",
+          "name": "applicantLastName",
+          "title": "Last name",
+          "options": {
+            "required": true
+          },
+          "schema": {}
+        },
+        {
+          "type": "TextField",
+          "name": "applicantEmailAddress",
+          "title": "Email address",
+          "hint": "We will only use this to send you a confirmation",
+          "options": {
+            "required": true
+          },
+          "schema": {}
+        },
+        {
+          "type": "TextField",
+          "name": "applicantConfirmEmailAddress",
+          "title": "Confirm email address",
+          "options": {
+            "required": true
+          },
+          "schema": {}
+        },
+        {
+          "type": "TextField",
+          "name": "applicantMobileNumber",
+          "title": "Mobile number",
+          "hint": "We will only use this to contact you about your application",
+          "options": {
+            "required": true
+          },
+          "schema": {}
+        },
+        {
+          "type": "TextField",
+          "name": "applicantLandlineNumber",
+          "title": "Landline number",
+          "hint": "We will only use this to contact you about your application",
+          "options": {
+            "required": true
+          },
+          "schema": {}
+        },
+        {
+          "type": "UkAddressField",
+          "title": "Business address",
+          "name": "agentBusinessAddress",
+          "hint": "",
+          "options": {},
+          "schema": {}
+        },
+        {
+          "type": "TextField",
+          "name": "applicantProjectPostcode",
+          "title": "Project postcode",
+          "hint": "The site postcode where the work will happen",
+          "options": {
+            "required": true,
+            "classes": "govuk-input--width-10"
+          },
+          "schema": {
+            "regex": "^[a-zA-Z]{1,2}\\d[a-zA-Z\\d]?\\s?\\d[a-zA-Z]{2}$"
+          }
+        }
+      ]
+    },
+    {
+      "title": "Check your details",
+      "path": "/check-your-details",
+      "next": [],
+      "components": []
+    },
+    {
+      "title": "Confirm and send",
+      "path": "/declaration",
+      "controller": "DeclarationPageController",
+      "view": "declaration-page.html",
+      "next": [],
+      "components": []
+    },
+    {
+      "title": "Confirmation",
+      "path": "/confirmation",
+      "controller": "ConfirmationPageController",
+      "next": [],
+      "components": []
+    }
+  ],
+  "lists": [
+    {
+      "title": "What is your business?",
+      "name": "what-is-your-business-list",
+      "type": "string",
+      "items": [
+        {
+          "text": "A grower or producer of agricultural or horticultural produce",
+          "description": "For example, arable or livestock farmer, fruit producer, salad grower",
+          "value": "sdRGhn"
+        },
+        {
+          "text": "A business processing agricultural or horticultural products that is at least 50% owned by agricultural or horticultural producers",
+          "description": "For example, a cheese production business owned by a group of farmers",
+          "value": "DSgfyh"
+        },
+        {
+          "text": "A woodland manager processing wild venison products",
+          "value": "FThjoP"
+        },
+        {
+          "text": "None of the above",
+          "value": "noEDag"
+        }
+      ]
+    },
+    {
+      "title": "Who is applying for this grant?",
+      "name": "who-is-applying-for-this-grant-list",
+      "type": "string",
+      "items": [
+        {
+          "text": "Applicant",
+          "value": "applying-A1"
+        },
+        {
+          "text": "Agent",
+          "value": "applying-A2"
+        }
+      ]
+    },
+    {
+      "title": "What type of produce is being processed?",
+      "name": "adding-value-produce-list",
+      "type": "string",
+      "items": [
+        {
+          "text": "Arable produce",
+          "description": "For example, crushing of oilseeds, rolling or flaking of grains as food ingredients",
+          "value": "products-processed-A1"
+        },
+        {
+          "text": "Wild venison meat produce",
+          "description": "For example, processing and packing wild venison meat",
+          "value": "products-processed-A2"
+        },
+        {
+          "text": "Dairy or meat produce",
+          "description": "For example, processing and bottling milk or slaughtering, cutting, processing and packing meat",
+          "value": "products-processed-A3"
+        },
+        {
+          "text": "Fibre produce",
+          "description": "For example, processing animal hides and leather, processing fibres such as wool, flax and hemp",
+          "value": "products-processed-A4"
+        },
+        {
+          "text": "Fodder produce",
+          "description": "For example, processing and repacking hay and straw for specialist markets or retail sale",
+          "value": "products-processed-A5"
+        },
+        {
+          "text": "Horticultural produce",
+          "description": "For example, grading and packing of soft fruit, washing and packing vegetables, packing salad crops",
+          "value": "products-processed-A6"
+        },
+        {
+          "text": "Non-edible produce",
+          "description": "For example, processing and packing ornamental flowers and bulbs after harvesting",
+          "value": "products-processed-A7"
+        }
+      ]
+    },
+    {
+      "title": "How will this project add value to the produce?",
+      "name": "how-will-you-add-value-list",
+      "type": "string",
+      "items": [
+        {
+          "text": "Introducing a new product to your farm",
+          "description": "For example, processing meat to burgers, milk to cheese, cereals to beer or spirits.",
+          "value": "adding-value-A1"
+        },
+        {
+          "text": "Grading or sorting produce",
+          "description": "For example, washing and grading vegetables, egg grading, optical grading of top fruit.",
+          "value": "adding-value-A2"
+        },
+        {
+          "text": "Packing produce",
+          "description": "For example, packing top fruit, bagging vegetables, bottling wine.",
+          "value": "adding-value-A3"
+        },
+        {
+          "text": "A new retail facility to sell direct to consumers",
+          "description": "",
+          "value": "adding-value-A4"
+        }
+      ]
+    },
+    {
+      "title": "What impact will this project have?",
+      "name": "project-impact-list",
+      "type": "string",
+      "items": [
+        {
+          "text": "Increasing range of added-value products",
+          "description": "",
+          "value": "project-impact-A1"
+        },
+        {
+          "text": "Increasing volume of added-value products",
+          "description": "",
+          "value": "project-impact-A2"
+        },
+        {
+          "text": "Allow selling direct to consumers",
+          "description": "For example, retail and internet sales.",
+          "value": "project-impact-A3"
+        },
+        {
+          "text": "Starting to make added-value products for the first time",
+          "description": "This only applies if you do not already make added-value products.",
+          "value": "project-impact-A4"
+        }
+      ]
+    },
+    {
+      "title": "What is the legal status of your business?",
+      "name": "DFtbgm",
+      "type": "string",
+      "items": [
+        {
+          "text": "Sole trader",
+          "value": "dfHYIn"
+        },
+        {
+          "text": "Partnership",
+          "value": "Partnership"
+        },
+        {
+          "text": "Limited company",
+          "value": "FGynjx"
+        },
+        {
+          "text": "Charity",
+          "value": "cdGHiu"
+        },
+        {
+          "text": "Trust",
+          "value": "xzfRTn"
+        },
+        {
+          "text": "Limited liability partnership",
+          "value": "fgTYui"
+        },
+        {
+          "text": "Community interest company",
+          "value": "asdfTH"
+        },
+        {
+          "text": "Limited partnership",
+          "value": "dgUMfd"
+        },
+        {
+          "text": "Industrial and provident society",
+          "value": "DSweJK"
+        },
+        {
+          "text": "Co-operative society (Co-Op)",
+          "value": "DFHVcx"
+        },
+        {
+          "text": "Community benefit society (BenCom)",
+          "value": "sdfERx"
+        },
+        {
+          "text": "None of the above",
+          "value": "mkSEvg"
+        }
+      ]
+    },
+    {
+      "title": "Consent optional",
+      "name": "consent-optional-list",
+      "type": "string",
+      "items": [
+        {
+          "text": "(Optional) I consent to being contacted by Defra or a third party about service improvements",
+          "value": "consent-optional-list-A1"
+        }
+      ]
+    },
+    {
+      "title": "Counties",
+      "name": "counties-list",
+      "type": "string",
+      "items": [
+        {
+          "text": "Bath and North East Somerset",
+          "description": "",
+          "value": "counties-list-A1"
+        },
+        {
+          "text": "Bedfordshire",
+          "description": "",
+          "value": "counties-list-A2"
+        },
+        {
+          "text": "Berkshire",
+          "description": "",
+          "value": "counties-list-A3"
+        },
+        {
+          "text": "Bristol",
+          "description": "",
+          "value": "counties-list-A4"
+        },
+        {
+          "text": "Buckinghamshire",
+          "description": "",
+          "value": "counties-list-A5"
+        },
+        {
+          "text": "Cheshire",
+          "description": "",
+          "value": "counties-list-A6"
+        },
+        {
+          "text": "Cleveland",
+          "description": "",
+          "value": "counties-list-A7"
+        },
+        {
+          "text": "Cornwall",
+          "description": "",
+          "value": "counties-list-A8"
+        },
+        {
+          "text": "County Durham",
+          "description": "",
+          "value": "counties-list-A9"
+        },
+        {
+          "text": "Cumbria",
+          "description": "",
+          "value": "counties-list-A10"
+        },
+        {
+          "text": "Derbyshire",
+          "description": "",
+          "value": "counties-list-A11"
+        },
+        {
+          "text": "Devon",
+          "description": "",
+          "value": "counties-list-A12"
+        },
+        {
+          "text": "Dorset",
+          "description": "",
+          "value": "counties-list-A13"
+        },
+        {
+          "text": "East Sussex",
+          "description": "",
+          "value": "counties-list-A14"
+        },
+        {
+          "text": "East Yorkshire",
+          "description": "",
+          "value": "counties-list-A15"
+        },
+        {
+          "text": "Essex",
+          "description": "",
+          "value": "counties-list-A16"
+        },
+        {
+          "text": "Gloucestershire",
+          "description": "",
+          "value": "counties-list-A17"
+        },
+        {
+          "text": "Greater London",
+          "description": "",
+          "value": "counties-list-A18"
+        },
+        {
+          "text": "Greater Manchester",
+          "description": "",
+          "value": "counties-list-A19"
+        },
+        {
+          "text": "Hampshire",
+          "description": "",
+          "value": "counties-list-A20"
+        },
+        {
+          "text": "Herefordshire",
+          "description": "",
+          "value": "counties-list-A21"
+        },
+        {
+          "text": "Hertfordshire",
+          "description": "",
+          "value": "counties-list-A22"
+        },
+        {
+          "text": "Isle of Wight",
+          "description": "",
+          "value": "counties-list-A23"
+        },
+        {
+          "text": "Isles of Scilly",
+          "description": "",
+          "value": "counties-list-A24"
+        },
+        {
+          "text": "Kent",
+          "description": "",
+          "value": "counties-list-A25"
+        },
+        {
+          "text": "Lancashire",
+          "description": "",
+          "value": "counties-list-A26"
+        },
+        {
+          "text": "Leicestershire",
+          "description": "",
+          "value": "counties-list-A27"
+        },
+        {
+          "text": "Lincolnshire",
+          "description": "",
+          "value": "counties-list-A28"
+        },
+        {
+          "text": "Merseyside",
+          "description": "",
+          "value": "counties-list-A29"
+        },
+        {
+          "text": "Norfolk",
+          "description": "",
+          "value": "counties-list-A30"
+        },
+        {
+          "text": "North East Lincolnshire",
+          "description": "",
+          "value": "counties-list-A31"
+        },
+        {
+          "text": "North Lincolnshire",
+          "description": "",
+          "value": "counties-list-A32"
+        },
+        {
+          "text": "North Somerset",
+          "description": "",
+          "value": "counties-list-A33"
+        },
+        {
+          "text": "North Yorkshire",
+          "description": "",
+          "value": "counties-list-A34"
+        },
+        {
+          "text": "Northamptonshire",
+          "description": "",
+          "value": "counties-list-A35"
+        },
+        {
+          "text": "Northumberland",
+          "description": "",
+          "value": "counties-list-A36"
+        },
+        {
+          "text": "Nottinghamshire",
+          "description": "",
+          "value": "counties-list-A37"
+        },
+        {
+          "text": "Oxfordshire",
+          "description": "",
+          "value": "counties-list-A38"
+        },
+        {
+          "text": "Rutland",
+          "description": "",
+          "value": "counties-list-A39"
+        },
+        {
+          "text": "Shropshire",
+          "description": "",
+          "value": "counties-list-A40"
+        },
+        {
+          "text": "Somerset",
+          "description": "",
+          "value": "counties-list-A41"
+        },
+        {
+          "text": "South Gloucestershire",
+          "description": "",
+          "value": "counties-list-A42"
+        },
+        {
+          "text": "South Yorkshire",
+          "description": "",
+          "value": "counties-list-A43"
+        },
+        {
+          "text": "Staffordshire",
+          "description": "",
+          "value": "counties-list-A44"
+        },
+        {
+          "text": "Suffolk",
+          "description": "",
+          "value": "counties-list-A45"
+        },
+        {
+          "text": "Surrey",
+          "description": "",
+          "value": "counties-list-A46"
+        },
+        {
+          "text": "Tyne and Wear",
+          "description": "",
+          "value": "counties-list-A47"
+        },
+        {
+          "text": "Warwickshire",
+          "description": "",
+          "value": "counties-list-A48"
+        },
+        {
+          "text": "West Midlands",
+          "description": "",
+          "value": "counties-list-A49"
+        },
+        {
+          "text": "West Sussex",
+          "description": "",
+          "value": "counties-list-A50"
+        },
+        {
+          "text": "West Yorkshire",
+          "description": "",
+          "value": "counties-list-A51"
+        },
+        {
+          "text": "Wiltshire",
+          "description": "",
+          "value": "counties-list-A52"
+        },
+        {
+          "text": "Worcestershire",
+          "description": "",
+          "value": "counties-list-A53"
+        },
+        {
+          "text": "Other",
+          "description": "",
+          "value": "counties-list-A54"
+        }
+      ]
+    }
+  ],
+  "sections": [
+    {
+      "title": "Eligibility",
+      "name": "dhpiZu",
+      "hideTitle": false
+    }
+  ],
+  "conditions": [
+    {
+      "name": "businessTypeIsNoneCondition",
+      "displayName": "businessTypeIsNone",
+      "value": {
+        "name": "businessTypeIsNone",
+        "conditions": [
+          {
+            "field": {
+              "name": "sdFYHf",
+              "type": "RadiosField",
+              "display": "What is your business?"
+            },
+            "operator": "is",
+            "value": {
+              "type": "Value",
+              "value": "noEDag",
+              "display": "None of the above"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "legalStatusIsNoneCondition",
+      "displayName": "legalStatusIsNone",
+      "value": {
+        "name": "legalStatusIsNone",
+        "conditions": [
+          {
+            "field": {
+              "name": "vPivcN",
+              "type": "RadiosField",
+              "display": "What is the legal status of the business?"
+            },
+            "operator": "is",
+            "value": {
+              "type": "Value",
+              "value": "mkSEvg",
+              "display": "None of the above"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "plannedProjectNotInEnglandCondition",
+      "displayName": "plannedProjectNotInEngland",
+      "value": {
+        "name": "plannedProjectNotInEngland",
+        "conditions": [
+          {
+            "field": {
+              "name": "dfRSaq",
+              "type": "YesNoField",
+              "display": "Is the planned project in England?"
+            },
+            "operator": "is",
+            "value": {
+              "type": "Value",
+              "value": "false",
+              "display": "No"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "estimatedCostThresholdNotReachedCondition",
+      "displayName": "estimatedCostThresholdNotReached",
+      "value": {
+        "name": "estimatedCostThresholdNotReached",
+        "conditions": [
+          {
+            "field": {
+              "name": "PkdRee",
+              "type": "NumberField",
+              "display": "What is the estimated cost of the items?"
+            },
+            "operator": "is less than",
+            "value": {
+              "type": "Value",
+              "value": "62500",
+              "display": "Enter amount"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "canYouPayTheRemainingCostsCondition",
+      "displayName": "canYouPayTheRemainingCosts",
+      "value": {
+        "name": "canYouPayTheRemainingCosts",
+        "conditions": [
+          {
+            "field": {
+              "name": "mncHGD",
+              "type": "YesNoField",
+              "display": "Can you pay the remaining costs of £x?"
+            },
+            "operator": "is",
+            "value": {
+              "type": "Value",
+              "value": "false",
+              "display": "No"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "agentDetailsSelected",
+      "displayName": "agentDetailsSelected",
+      "value": {
+        "name": "agentDetailsSelected",
+        "conditions": [
+          {
+            "field": {
+              "name": "whoIsApplyingForThisGrantComponent",
+              "type": "RadiosField",
+              "display": "Who is applying for this grant?"
+            },
+            "operator": "is",
+            "value": {
+              "type": "Value",
+              "value": "applying-A2",
+              "display": "Agent"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,125 @@
+{% extends "layout.html" %}
+
+{% from "govuk/components/inset-text/macro.njk" import govukInsetText %}
+{% from "govuk/components/warning-text/macro.njk" import govukWarningText %}
+{% from "govuk/components/button/macro.njk" import govukButton %}
+
+{% block content %}
+  {% set scoreChanceSection %}
+    <p class="govuk-body govuk-!-font-weight-bold">{{ context.data.scoreBand }}</p>
+    {% if context.data.scoreBand == 'Strong' %}
+      <span>This means your project seems likely to be successful.</span>
+    {% elif context.data.scoreBand == 'Average' %}
+      <span>This means your project might be successful.</span>
+    {% else %}
+      <span>This means your project seems unlikely to be successful.</span>
+    {% endif %}
+  {% endset %}
+
+<div class="govuk-body">
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      <h1 class="govuk-heading-l">Score results</h1>
+      <p class="govuk-body">Based on your answers, your project's score is:</p>
+      {{ govukInsetText({
+        html: scoreChanceSection
+      }) }}
+      <div class="scoring-block">
+        <dl class="govuk-body govuk-!-margin-bottom-0">
+          <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">
+              Strong
+            </dt>
+            <dd class="govuk-summary-list__value">
+              Based on your answers, a grant application is likely to be successful.
+            </dd>
+          </div>
+          <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">
+              Average
+            </dt>
+            <dd class="govuk-summary-list__value">
+              Based on your answers, a grant application might be successful.
+            </dd>
+          </div>
+          <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">
+              Weak
+            </dt>
+            <dd class="govuk-summary-list__value">
+              Based on your answers, a grant application is unlikely to be successful.
+            </dd>
+          </div>
+        </dl>
+      </div>
+      <br/>
+      {{ govukWarningText({
+        text: "The likelihood of a full application being successful will also depend on the number and value of applications we receive.",
+        iconFallbackText: "Warning"
+      }) }}
+      <p class="govuk-body">Value for money will be assessed alongside the funding priorities at full application stage
+        and this may impact your overall project score.</p>
+    </div>
+  </div>
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      <hr class="govuk-!-margin-bottom-5"/>
+      <h2 class="govuk-heading-m">Your answers</h2>
+      <p class="govuk-body">You can go back to change scoring questions as many times as you like, but you can only
+        submit your details once.</p>
+      <table class="govuk-table govuk-body">
+        <thead class="govuk-table__head">
+        <tr class="govuk-table__row">
+          <th scope="col" class="govuk-table__header">Topic</th>
+          <th scope="col" class="govuk-table__header">Your answer</th>
+          <th scope="col" class="govuk-table__header govuk-!-width-one-third">Your score</th>
+          <th scope="col" class="govuk-table__header">Change</th>
+        </tr>
+        </thead>
+        <tbody class="govuk-table__body">
+        {% for answer in context.data.answers %}
+          <tr class="govuk-table__row">
+            <td class="govuk-table__cell">
+              <strong class="govuk-!-padding-top-2">{{ answer.category }}</strong>
+            </td>
+            <td class="govuk-table__cell scoring-answer app-prose-scope">
+              {{ answer.questionId | answer | safe }}
+            </td>
+            <td class="govuk-table__cell">
+              <strong class="govuk-tag govuk-!-padding-0">{{ answer.score.band }}</strong>
+              <ul class="govuk-list govuk-!-padding-top-2">
+                {% for fundingPriority in answer.fundingPriorities %}
+                  <li class="govuk-!-margin-bottom-3">{{ fundingPriority }}</li>
+                {% endfor %}
+              </ul>
+            </td>
+            <td class="govuk-table__cell ">
+              <a class="govuk-link" href="{{ answer.questionId }}">
+                Change <span class="govuk-visually-hidden">{{ answer.questionId }}</span>
+              </a>
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      <div class="govuk-grid-row">
+        <h2 class="govuk-heading-m">Next steps</h2>
+        <p class="govuk-body">Next, add your business and contact details and submit them to the RPA (you should only do
+          this once).</p>
+        <p>You’ll get an email with your score and answers, and a reference number.</p>
+        <br/><br/>
+        {% block form %}
+          <form method="post" novalidate>
+            <input type="hidden" name="crumb" value="{{ crumb }}">
+            {{ govukButton({
+              text: "Continue",
+              preventDoubleClick: true
+            }) }}
+          </form>
+        {% endblock %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
