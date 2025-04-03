@@ -7,7 +7,6 @@ import { fileURLToPath } from 'url'
 import { config } from '~/src/config/config.js'
 import { nunjucksConfig } from '~/src/config/nunjucks/nunjucks.js'
 import { formsService } from '~/src/server/common/forms/services/form.js'
-import { outputService } from '~/src/server/common/forms/services/output.js'
 import { formSubmissionService } from '~/src/server/common/forms/services/submission.js'
 import { catchAll } from '~/src/server/common/helpers/errors.js'
 import { requestLogger } from '~/src/server/common/helpers/logging/request-logger.js'
@@ -19,13 +18,21 @@ import { getCacheEngine } from '~/src/server/common/helpers/session-cache/cache-
 import { sessionCache } from '~/src/server/common/helpers/session-cache/session-cache.js'
 import LandActionsController from '~/src/server/land-grants/actions/actions.controller.js'
 import LandParcelController from '~/src/server/land-grants/parcels/parcel.controller.js'
+import ConfirmationPageController from '~/src/server/controllers/confirmation/controller.js'
+import DeclarationPageController from '~/src/server/controllers/declaration/controller.js'
 import { router } from './router.js'
 
 const getViewPaths = () => {
   const currentFilePath = fileURLToPath(import.meta.url)
   const isRunningBuiltCode = currentFilePath.includes('.server')
   const basePath = isRunningBuiltCode ? '.server/server' : 'src/server'
-  return [`${basePath}/land-grants/actions`, `${basePath}/land-grants/parcels`]
+  return [
+    `${basePath}/land-grants/actions`,
+    `${basePath}/land-grants/parcels`,
+    `${basePath}/views`,
+    `${basePath}/common/templates`,
+    `${basePath}/common/components`
+  ]
 }
 
 export async function createServer() {
@@ -73,18 +80,18 @@ export async function createServer() {
     options: {
       services: {
         formsService,
-        outputService,
         formSubmissionService
       },
       viewPaths: getViewPaths(),
       controllers: {
+        ConfirmationPageController,
+        DeclarationPageController,
         LandParcelController,
         LandActionsController
       }
     }
   })
 
-  // Defra Forms & dependencies
   await server.register(inert)
   await server.register(crumb)
 
@@ -95,14 +102,10 @@ export async function createServer() {
     pulse,
     sessionCache,
     nunjucksConfig,
-    router // Register all the controllers/routes defined in src/server/router.js,
+    router
   ])
 
   server.ext('onPreResponse', catchAll)
 
   return server
 }
-
-/**
- * @import {Engine} from '~/src/server/common/helpers/session-cache/cache-engine.js'
- */

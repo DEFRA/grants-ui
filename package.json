@@ -11,7 +11,7 @@
   "scripts": {
     "build": "run-s build:frontend build:server",
     "build:frontend": "NODE_ENV=production webpack",
-    "build:server": "NODE_ENV=production babel --delete-dir-on-start --ignore \"**/*.test.js\" --ignore \"**/test-helpers\" --copy-files --no-copy-ignored --out-dir ./.server ./src",
+    "build:server": "NODE_ENV=production babel --delete-dir-on-start --ignore \"**/*.test.js\" --ignore \"**/test-helpers\" --ignore \"**/__mocks__\" --copy-files --no-copy-ignored --out-dir ./.server ./src",
     "dev": "run-p frontend:watch server:watch",
     "dev:debug": "run-p frontend:watch server:debug",
     "format": "prettier --write \"src/**/*.js\" \"**/*.{js,cjs,md,json,config.js,test.js}\"",
@@ -39,7 +39,7 @@
   "license": "OGL-UK-3.0",
   "dependencies": {
     "@babel/runtime": "^7.26.0",
-    "@defra/forms-engine-plugin": "^0.1.6",
+    "@defra/forms-engine-plugin": "^0.1.8",
     "@defra/hapi-tracing": "^1.0.0",
     "@elastic/ecs-pino-format": "^1.5.0",
     "@hapi/catbox-memory": "^6.0.2",
