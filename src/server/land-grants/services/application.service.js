@@ -47,8 +47,8 @@ export function transformStateObjectToGasApplication(stateObj) {
   })
 
   if (stateObj.landParcel && stateObj.actionsObj) {
+    const [sheetId, parcelId] = stateObj?.landParcel?.split('-') ?? []
     result.actionApplications = []
-    const [sheetId, parcelId] = stateObj ? stateObj.landParcel?.split('-') : []
 
     Object.entries(stateObj.actionsObj).forEach(([actionCode, actionData]) => {
       const actionApplication = {
