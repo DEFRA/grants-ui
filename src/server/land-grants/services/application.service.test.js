@@ -537,8 +537,8 @@ describe('transformStateObjectToGasApplication', () => {
 })
 
 describe('schema validation', () => {
-  test('output always conforms to GASPayload schema structure', () => {
-    const testCases = [
+  it('output always conforms to GASPayload schema structure', () => {
+    const stateObjectTestCases = [
       // Complete object being set
       {
         sbi: 'sbi-1234',
@@ -590,7 +590,7 @@ describe('schema validation', () => {
       {}
     ]
 
-    testCases.forEach((testCase) => {
+    stateObjectTestCases.forEach((testCase) => {
       const result = transformStateObjectToGasApplication(testCase)
       const { error } = validateGasPayload(result)
 
