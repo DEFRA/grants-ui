@@ -28,7 +28,6 @@ const gasPayloadSchema = Joi.object({
 })
 
 const defaultValidationOptions = {
-  allowUnknown: true,
   presence: 'optional'
 }
 
