@@ -78,6 +78,7 @@ export async function createServer() {
   await server.register({
     plugin,
     options: {
+      cacheName: config.get('session.cache.name'),
       services: {
         formsService,
         formSubmissionService

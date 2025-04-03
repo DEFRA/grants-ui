@@ -1,9 +1,6 @@
 import { config } from '~/src/config/config.js'
-import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
 
 const LAND_GRANTS_API_URL = config.get('landGrants.apiEndpoint')
-
-const logger = createLogger()
 
 /**
  * @typedef {object} LandParcel
@@ -19,29 +16,19 @@ const logger = createLogger()
  * @throws {Error} - If the request fails
  */
 export async function fetchLandSheetDetails(parcelId, sheetId) {
-  let response
-
-  try {
-    response = await fetch(
-      `${LAND_GRANTS_API_URL}/parcel/${sheetId}-${parcelId}`,
-      {
-        method: 'GET'
-      }
-    )
-
-    if (!response.ok) {
-      /**
-       * @type {Error & {code?: number}}
-       */
-      const error = new Error(response.statusText)
-      error.code = response.status
-      throw error
+  const response = await fetch(
+    `${LAND_GRANTS_API_URL}/parcel/${sheetId}-${parcelId}`,
+    {
+      method: 'GET'
     }
-  } catch (error) {
-    logger.error(
-      error,
-      `Failed to fetch land parcel data for id ${sheetId}-${parcelId}`
-    )
+  )
+
+  if (!response.ok) {
+    /**
+     * @type {Error & {code?: number}}
+     */
+    const error = new Error(response.statusText)
+    error.code = response.status
     throw error
   }
 

@@ -3,6 +3,18 @@ import { fetchLandSheetDetails } from '~/src/server/land-grants/services/land-gr
 
 export default class LandActionsController extends QuestionPageController {
   viewName = 'actions'
+  areaPrefix = 'area-'
+
+  extractAreasForActions(payload) {
+    const areas = {}
+    for (const key in payload) {
+      if (key.startsWith(this.areaPrefix)) {
+        const [, code] = key.split('-')
+        areas[code] = payload[key]
+      }
+    }
+    return areas
+  }
 
   /**
    * This method is called when there is a POST request to the select land actions page.
@@ -20,13 +32,15 @@ export default class LandActionsController extends QuestionPageController {
     const fn = async (request, context, h) => {
       const { state } = context
       const payload = request.payload ?? {}
-      const { area, actions = '' } = payload
+      const { actions = '' } = payload
 
+      const areaObj = this.extractAreasForActions(payload)
       await this.setState(request, {
         ...state,
         actions,
-        applicationValue: '£16,467.49', // TODO: This calculation will come from Land Grants API
-        area
+        area: JSON.stringify(areaObj),
+        areaObj,
+        applicationValue: '£16,467.49' // TODO: This calculation will come from Land Grants API
       })
       return this.proceed(request, h, this.getNextPath(context))
     }
@@ -63,15 +77,19 @@ export default class LandActionsController extends QuestionPageController {
             landParcel: state.landParcel
           })
         }
-      } catch (error) {}
+      } catch (error) {
+        request.logger.error(
+          error,
+          `Failed to fetch land parcel data for id ${sheetId}-${parcelId}`
+        )
+      }
 
       const viewModel = {
         ...super.getViewModel(request, context),
+        ...state,
         errors: collection.getErrors(collection.getErrors()),
-        landParcel: state.landParcel,
-        area: state.area,
-        availableActions: actions,
-        selectedActions: state.actions
+        areaPrefix: this.areaPrefix,
+        availableActions: actions
       }
 
       return h.view(viewName, viewModel)
