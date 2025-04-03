@@ -61,6 +61,7 @@
     "hapi-pino": "^12.1.0",
     "hapi-pulse": "^3.0.1",
     "ioredis": "^5.4.1",
+    "joi": "^17.13.3",
     "lodash": "^4.17.21",
     "node-fetch": "^3.3.2",
     "nunjucks": "^3.2.4",

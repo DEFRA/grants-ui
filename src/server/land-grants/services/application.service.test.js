@@ -1,3 +1,4 @@
+import { validateGasPayload } from './application.schema.js'
 import { transformStateObjectToGasApplication } from './application.service.js'
 
 describe('transformStateObjectToGasApplication', () => {
@@ -532,5 +533,69 @@ describe('transformStateObjectToGasApplication', () => {
     }
 
     expect(transformStateObjectToGasApplication(input)).toEqual(expected)
+  })
+})
+
+describe('schema validation', () => {
+  test('output always conforms to GASPayload schema structure', () => {
+    const testCases = [
+      // Complete object being set
+      {
+        sbi: 'sbi-1234',
+        frn: 'frn-1234',
+        crn: 'crn-1234',
+        defraId: 'defra-id-1234',
+        scheme: 'SFI',
+        year: 2025,
+        hasCheckedLandIsUpToDate: true,
+        landParcel: 'SX0679-9238',
+        actionsObj: {
+          CSAM1: {
+            value: '44',
+            unit: 'ha'
+          }
+        }
+      },
+      // Minimal object with actions
+      {
+        landParcel: 'SX0679-9238',
+        actionsObj: {
+          CSAM1: {
+            value: '44',
+            unit: 'ha'
+          }
+        }
+      },
+      // Multiple actions with different formats
+      {
+        landParcel: 'SX0679-9238',
+        actionsObj: {
+          CSAM1: {
+            value: '44',
+            unit: 'ha'
+          },
+          CSAM2: {
+            value: 'not-a-number',
+            unit: 'm2'
+          },
+          CSAM3: {}
+        }
+      },
+      // Only basic props
+      {
+        sbi: 'sbi-1234',
+        frn: 'frn-1234'
+      },
+      // Empty object
+      {}
+    ]
+
+    testCases.forEach((testCase) => {
+      const result = transformStateObjectToGasApplication(testCase)
+      const { error } = validateGasPayload(result)
+
+      // We check here that the output always adheres to GasPayload expectations in terms of format
+      expect(error).toBeUndefined()
+    })
   })
 })
