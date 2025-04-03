@@ -48,15 +48,19 @@ export function transformStateObjectToGasApplication(stateObj) {
 
   if (stateObj.landParcel && stateObj.actionsObj) {
     result.actionApplications = []
-    const [sheetId, parcelId] = stateObj.landParcel?.split('-')
+    const [sheetId, parcelId] = stateObj ? stateObj.landParcel?.split('-') : []
 
     Object.entries(stateObj.actionsObj).forEach(([actionCode, actionData]) => {
       const actionApplication = {
         code: actionCode
       }
 
-      if (sheetId) actionApplication.sheetId = sheetId
-      if (parcelId) actionApplication.parcelId = parcelId
+      if (sheetId) {
+        actionApplication.sheetId = sheetId
+      }
+      if (parcelId) {
+        actionApplication.parcelId = parcelId
+      }
 
       // Process the applied for data
       if (actionData && typeof actionData === 'object') {
@@ -68,9 +72,7 @@ export function transformStateObjectToGasApplication(stateObj) {
 
         if (actionData.value !== undefined) {
           const quantity = parseFloat(actionData.value)
-          if (!isNaN(quantity)) {
-            appliedFor.quantity = quantity
-          }
+          appliedFor.quantity = !isNaN(quantity) ? quantity : undefined
         }
         if (Object.keys(appliedFor).length > 0) {
           actionApplication.appliedFor = appliedFor

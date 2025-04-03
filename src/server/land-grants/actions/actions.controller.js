@@ -48,9 +48,6 @@ export default class LandActionsController extends QuestionPageController {
         applicationValue: '£16,467.49' // TODO: This calculation will come from Land Grants API
       })
 
-      // const newState = await this.getState(request)
-      // transformStateObjectToGasApplication(newState)
-
       return this.proceed(request, h, this.getNextPath(context))
     }
 
