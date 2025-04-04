@@ -41,7 +41,7 @@ export function transformStateObjectToGasApplication(stateObj) {
     'hasCheckedLandIsUpToDate'
   ]
   basicProps.forEach((prop) => {
-    if (stateObj[prop] !== undefined) {
+    if (stateObj[prop] != null) {
       result[prop] = stateObj[prop]
     }
   })
@@ -60,11 +60,11 @@ export function transformStateObjectToGasApplication(stateObj) {
       if (actionData && typeof actionData === 'object') {
         const appliedFor = {}
 
-        if (actionData.unit !== undefined) {
+        if (actionData.unit != null) {
           appliedFor.unit = actionData.unit.trim()
         }
 
-        if (actionData.value !== undefined) {
+        if (actionData.value != null) {
           const quantity = parseFloat(actionData.value)
           appliedFor.quantity = !isNaN(quantity) ? quantity : undefined
         }
