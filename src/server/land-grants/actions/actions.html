@@ -23,7 +23,7 @@
               text: action.description,
               availableArea: action.availableArea.value,
               availableAreaUnit: action.availableArea.unit,
-              areaValue: areaObj[action.code] or '',
+              areaValue: actionsObj[action.code].value or '',
               checked: actions and actions.includes(action.code)
             }]) %}
           {% endfor %}

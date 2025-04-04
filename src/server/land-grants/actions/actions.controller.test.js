@@ -10,7 +10,18 @@ describe('LandActionsController', () => {
   let mockRequest
   let mockContext
   let mockH
-  const areaObj = { action1: 10 }
+
+  const availableActions = [
+    {
+      code: 'action1',
+      description: 'Action 1 description',
+      availableArea: {
+        unit: 'ha',
+        value: 200
+      }
+    }
+  ]
+  const actionsObj = { action1: { value: 10, unit: 'ha' } }
 
   beforeEach(() => {
     QuestionPageController.prototype.getViewModel = jest.fn().mockReturnValue({
@@ -18,6 +29,7 @@ describe('LandActionsController', () => {
     })
 
     controller = new LandActionsController()
+    controller.availableActions = availableActions
     controller.collection = {
       getErrors: jest.fn().mockReturnValue([])
     }
@@ -89,7 +101,7 @@ describe('LandActionsController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'actions',
         expect.objectContaining({
-          availableActions: []
+          availableActions
         })
       )
     })
@@ -158,8 +170,8 @@ describe('LandActionsController', () => {
       expect(controller.setState).toHaveBeenCalledWith(mockRequest, {
         landParcel: 'sheet1-parcel1',
         actions: ['action1', 'action2'],
-        area: JSON.stringify(areaObj),
-        areaObj,
+        area: JSON.stringify(actionsObj),
+        actionsObj,
         applicationValue: '£16,467.49'
       })
 
@@ -182,7 +194,7 @@ describe('LandActionsController', () => {
         landParcel: 'sheet1-parcel1',
         actions: '',
         area: JSON.stringify({}),
-        areaObj: {},
+        actionsObj: {},
         applicationValue: '£16,467.49'
       })
     })

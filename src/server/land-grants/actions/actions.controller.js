@@ -4,13 +4,18 @@ import { fetchLandSheetDetails } from '~/src/server/land-grants/services/land-gr
 export default class LandActionsController extends QuestionPageController {
   viewName = 'actions'
   areaPrefix = 'area-'
+  availableActions = []
 
-  extractAreasForActions(payload) {
+  extractActionsObjectFromPayload(payload) {
     const areas = {}
     for (const key in payload) {
       if (key.startsWith(this.areaPrefix)) {
         const [, code] = key.split('-')
-        areas[code] = payload[key]
+        const actionInfo = this.availableActions.find((a) => a.code === code)
+        areas[code] = {
+          value: payload[key],
+          unit: actionInfo ? actionInfo.availableArea?.unit : ''
+        }
       }
     }
     return areas
@@ -34,14 +39,15 @@ export default class LandActionsController extends QuestionPageController {
       const payload = request.payload ?? {}
       const { actions = '' } = payload
 
-      const areaObj = this.extractAreasForActions(payload)
+      const actionsObj = this.extractActionsObjectFromPayload(payload)
       await this.setState(request, {
         ...state,
         actions,
-        area: JSON.stringify(areaObj),
-        areaObj,
+        area: JSON.stringify(actionsObj),
+        actionsObj,
         applicationValue: '£16,467.49' // TODO: This calculation will come from Land Grants API
       })
+
       return this.proceed(request, h, this.getNextPath(context))
     }
 
@@ -66,12 +72,10 @@ export default class LandActionsController extends QuestionPageController {
 
       const [sheetId, parcelId] = (state.landParcel || '').split('-')
 
-      let actions = []
-
       try {
         const data = await fetchLandSheetDetails(parcelId, sheetId)
-        actions = data.parcel.actions || []
-        if (!actions.length) {
+        this.availableActions = data.parcel.actions || []
+        if (!this.availableActions.length) {
           request.logger.error({
             message: `No actions found for parcel ${sheetId}-${parcelId}`,
             landParcel: state.landParcel
@@ -89,7 +93,7 @@ export default class LandActionsController extends QuestionPageController {
         ...state,
         errors: collection.getErrors(collection.getErrors()),
         areaPrefix: this.areaPrefix,
-        availableActions: actions
+        availableActions: this.availableActions
       }
 
       return h.view(viewName, viewModel)
