@@ -1,5 +1,5 @@
-import { validateGasPayload } from './application.schema.js'
-import { transformStateObjectToGasApplication } from './application.service.js'
+import { validateGasPayload } from './gas-payload.schema.js'
+import { transformStateObjectToGasApplication } from './state-to-payload-mapper.js'
 
 describe('transformStateObjectToGasApplication', () => {
   it('should transform a complete object correctly', () => {

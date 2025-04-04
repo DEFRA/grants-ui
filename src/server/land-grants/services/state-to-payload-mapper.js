@@ -52,14 +52,9 @@ export function transformStateObjectToGasApplication(stateObj) {
 
     Object.entries(stateObj.actionsObj).forEach(([actionCode, actionData]) => {
       const actionApplication = {
-        code: actionCode
-      }
-
-      if (sheetId) {
-        actionApplication.sheetId = sheetId
-      }
-      if (parcelId) {
-        actionApplication.parcelId = parcelId
+        code: actionCode,
+        sheetId,
+        parcelId
       }
 
       if (actionData && typeof actionData === 'object') {
