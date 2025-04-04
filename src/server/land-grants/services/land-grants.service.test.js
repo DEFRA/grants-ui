@@ -9,7 +9,7 @@ const landGrantsApi = config.get('landGrants.apiEndpoint')
 const mockFetch = jest.fn()
 global.fetch = mockFetch
 
-describe('fetchBusinessDetails', () => {
+describe('fetchLandSheetDetails', () => {
   const parcelId = '9238'
   const sheetId = 'SX0679'
 
