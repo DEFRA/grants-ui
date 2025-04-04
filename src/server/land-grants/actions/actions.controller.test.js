@@ -40,7 +40,6 @@ describe('LandActionsController', () => {
     mockRequest = {
       payload: {
         'area-action1': 10,
-        applicationValue: '£16,467.49',
         actions: ['action1', 'action2']
       },
       logger: {
@@ -171,8 +170,7 @@ describe('LandActionsController', () => {
         landParcel: 'sheet1-parcel1',
         actions: ['action1', 'action2'],
         area: JSON.stringify(actionsObj),
-        actionsObj,
-        applicationValue: '£16,467.49'
+        actionsObj
       })
 
       expect(controller.proceed).toHaveBeenCalledWith(
@@ -194,8 +192,7 @@ describe('LandActionsController', () => {
         landParcel: 'sheet1-parcel1',
         actions: '',
         area: JSON.stringify({}),
-        actionsObj: {},
-        applicationValue: '£16,467.49'
+        actionsObj: {}
       })
     })
   })

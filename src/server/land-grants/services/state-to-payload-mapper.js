@@ -14,14 +14,14 @@
 
 /**
  * @typedef {object} GASPayload
- * @property {string} sbi - Standard Business Identifier
- * @property {string} frn - FRN
- * @property {string} crn - Customer Reference Number
- * @property {string} defraId - Defra ID
- * @property {string} scheme - Scheme
- * @property {number} year - Scheme year
- * @property {hasCheckedLandIsUpToDate} boolean - Land details are up to date
- * @property {ActionApplication[]} actionApplications - Action applications information
+ * @property {string} [sbi] - Standard Business Identifier
+ * @property {string} [frn] - FRN
+ * @property {string} [crn] - Customer Reference Number
+ * @property {string} [defraId] - Defra ID
+ * @property {string} [scheme] - Scheme
+ * @property {number} [year] - Scheme year
+ * @property {boolean} [hasCheckedLandIsUpToDate] - Land details are up to date
+ * @property {ActionApplication[]} [actionApplications] - Action applications information
  */
 
 /**
