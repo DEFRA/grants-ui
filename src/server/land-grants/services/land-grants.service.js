@@ -2,6 +2,12 @@ import { config } from '~/src/config/config.js'
 
 const LAND_GRANTS_API_URL = config.get('landGrants.apiEndpoint')
 
+const mapActionsObjectToPayload = (actionsObj) =>
+  Object.entries(actionsObj).map(([code, area]) => ({
+    actionId: code,
+    area: area.value
+  }))
+
 /**
  * @typedef {object} LandParcel
  * @property {object} [parcelId] - The parcel identifier
@@ -38,6 +44,42 @@ export async function fetchLandSheetDetails(parcelId, sheetId) {
 }
 
 /**
+ * Validates action information through Land Grants API
+ * @param {string} sheetId - Sheet Id
+ * @param {string} parcelId - Land Parcel Id
+ * @param {object} actionsObj - Actions object
+ * @returns {Promise<object>} - Promise that resolves to the validation result
+ * @throws {Error} - If the request fails
+ */
+export async function validateLandActions(sheetId, parcelId, actionsObj = {}) {
+  const response = await fetch(`${LAND_GRANTS_API_URL}/actions/validate`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      landActions: {
+        sheetId,
+        parcelId,
+        sbi: 117235001,
+        actions: mapActionsObjectToPayload(actionsObj)
+      }
+    })
+  })
+
+  if (!response.ok) {
+    /**
+     * @type {Error & {code?: number}}
+     */
+    const error = new Error(response.statusText)
+    error.code = response.status
+    throw error
+  }
+
+  return await response.json()
+}
+
+/**
  * Calculates application payment information through Land Grants API
  * @param {string} sheetId - Sheet Id
  * @param {string} parcelId - Land Parcel Id
@@ -68,10 +110,7 @@ export async function calculateApplicationPayment(
         sheetId,
         parcelId,
         sbi: 117235001,
-        actions: Object.entries(actionsObj).map(([code, area]) => ({
-          actionId: code,
-          area: area.value
-        }))
+        actions: mapActionsObjectToPayload(actionsObj)
       }
     })
   })
@@ -86,8 +125,13 @@ export async function calculateApplicationPayment(
   }
 
   const data = await response.json()
+  const paymentTotal = formatAmount(data.payment?.total)
   return {
     ...data,
-    paymentTotal: formatAmount(data.payment?.total)
+    errorMessage:
+      paymentTotal == null
+        ? 'Error calculating payment. Please try again later.'
+        : undefined,
+    paymentTotal
   }
 }

@@ -153,6 +153,7 @@ describe('calculateApplicationPayment', () => {
 
   it('should handle null payment amount correctly', async () => {
     const nullPaymentResponse = {
+      errorMessage: 'Error calculating payment. Please try again later.',
       payment: {
         total: null
       }

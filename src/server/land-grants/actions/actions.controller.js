@@ -1,7 +1,8 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import {
   calculateApplicationPayment,
-  fetchLandSheetDetails
+  fetchLandSheetDetails,
+  validateLandActions
 } from '~/src/server/land-grants/services/land-grants.service.js'
 
 export default class LandActionsController extends QuestionPageController {
@@ -9,6 +10,11 @@ export default class LandActionsController extends QuestionPageController {
   areaPrefix = 'area-'
   availableActions = []
 
+  /**
+   * Extract action details from the form payload
+   * @param {object} payload - The form payload
+   * @returns {object} - Extracted action data
+   */
   extractActionsObjectFromPayload(payload) {
     const areas = {}
     for (const key in payload) {
@@ -25,13 +31,21 @@ export default class LandActionsController extends QuestionPageController {
   }
 
   /**
-   * This method is called when there is a POST request to the select land actions page.
-   * It gets the land parcel id and redirects to the next step in the journey.,
+   * Parse land parcel identifier
+   * @param {string} landParcel - The land parcel identifier
+   * @returns {string[]} - Array containing [sheetId, parcelId]
    */
+  parseLandParcelId(landParcel) {
+    return (landParcel || '').split('-')
+  }
 
+  /**
+   * This method is called when there is a POST request to the select land actions page.
+   * It gets the land parcel id and redirects to the next step in the journey.
+   */
   makePostRouteHandler() {
     /**
-     * Handle GET requests to the score page.
+     * Handle POST requests to the page.
      * @param {FormRequest} request
      * @param {FormContext} context
      * @param {Pick<ResponseToolkit, 'redirect' | 'view'>} h
@@ -39,24 +53,50 @@ export default class LandActionsController extends QuestionPageController {
      */
     const fn = async (request, context, h) => {
       const { state } = context
+      const { viewName } = this
       const payload = request.payload ?? {}
       const { actions = '' } = payload
-      const [sheetId, parcelId] = (state.landParcel || '').split('-')
+      const [sheetId, parcelId] = this.parseLandParcelId(state.landParcel)
       const actionsObj = this.extractActionsObjectFromPayload(payload)
-      const applicationValue = await calculateApplicationPayment(
+
+      // Create updated state with the new action data
+      const newState = {
+        ...state,
+        actions,
+        area: JSON.stringify(actionsObj),
+        actionsObj
+      }
+
+      if (payload.action === 'validate') {
+        const validation = await validateLandActions(
+          sheetId,
+          parcelId,
+          actionsObj
+        )
+        if (validation?.errorMessage) {
+          await this.setState(request, newState)
+          return h.view(viewName, {
+            ...super.getViewModel(request, context),
+            ...newState,
+            errorMessage: validation.errorMessage,
+            areaPrefix: this.areaPrefix,
+            availableActions: this.availableActions
+          })
+        }
+      }
+
+      const applicationPayment = await calculateApplicationPayment(
         sheetId,
         parcelId,
         actionsObj
       )
+      const { paymentTotal, errorMessage } = applicationPayment || {}
 
       await this.setState(request, {
-        ...state,
-        actions,
-        area: JSON.stringify(actionsObj),
-        actionsObj,
-        applicationValue: applicationValue?.paymentTotal
+        ...newState,
+        errorMessage,
+        applicationValue: paymentTotal
       })
-
       return this.proceed(request, h, this.getNextPath(context))
     }
 
@@ -65,12 +105,11 @@ export default class LandActionsController extends QuestionPageController {
 
   /**
    * This method is called when there is a GET request to the land grants actions page.
-   * It gets the view model for the page using the `getViewModel` method,
-   * and then adds business details to the view model
+   * It gets the view model for the page and adds business details
    */
   makeGetRouteHandler() {
     /**
-     * Handle GET requests to the score page.
+     * Handle GET requests to the page.
      * @param {FormRequest} request
      * @param {FormContext} context
      * @param {Pick<ResponseToolkit, 'redirect' | 'view'>} h
@@ -79,8 +118,9 @@ export default class LandActionsController extends QuestionPageController {
       const { collection, viewName } = this
       const { state } = context
 
-      const [sheetId, parcelId] = (state.landParcel || '').split('-')
+      const [sheetId, parcelId] = this.parseLandParcelId(state.landParcel)
 
+      // Load available actions for the land parcel
       try {
         const data = await fetchLandSheetDetails(parcelId, sheetId)
         this.availableActions = data.parcel.actions || []
@@ -97,6 +137,7 @@ export default class LandActionsController extends QuestionPageController {
         )
       }
 
+      // Build the view model exactly as in the original code
       const viewModel = {
         ...super.getViewModel(request, context),
         ...state,
