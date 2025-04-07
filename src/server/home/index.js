@@ -14,6 +14,13 @@ export const home = {
       server.route([
         {
           method: 'GET',
+          path: '/home',
+          ...homeController
+        }
+      ])
+      server.route([
+        {
+          method: 'GET',
           path: '/',
           ...homeController
         }

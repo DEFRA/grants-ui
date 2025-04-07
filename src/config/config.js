@@ -4,6 +4,7 @@ import convict from 'convict'
 import 'dotenv/config'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import defraId from './defra-id.js'
 
 const dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -286,7 +287,8 @@ export const config = convict({
       default: 'x-cdp-request-id',
       env: 'TRACING_HEADER'
     }
-  }
+  },
+  defraId: defraId.getProperties()
 })
 
 config.validate({ allowed: 'strict' })

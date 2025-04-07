@@ -1,11 +1,17 @@
 import plugin from '@defra/forms-engine-plugin'
+import Bell from '@hapi/bell'
+import Cookie from '@hapi/cookie'
 import crumb from '@hapi/crumb'
 import hapi from '@hapi/hapi'
 import inert from '@hapi/inert'
+import Scooter from '@hapi/scooter'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { config } from '~/src/config/config.js'
 import { nunjucksConfig } from '~/src/config/nunjucks/nunjucks.js'
+import auth from '~/src/plugins/auth.js'
+import csp from '~/src/plugins/content-security-policy.js'
+import sso from '~/src/plugins/sso.js'
 import { formsService } from '~/src/server/common/forms/services/form.js'
 import { formSubmissionService } from '~/src/server/common/forms/services/submission.js'
 import { catchAll } from '~/src/server/common/helpers/errors.js'
@@ -16,10 +22,10 @@ import { requestTracing } from '~/src/server/common/helpers/request-tracing.js'
 import { secureContext } from '~/src/server/common/helpers/secure-context/index.js'
 import { getCacheEngine } from '~/src/server/common/helpers/session-cache/cache-engine.js'
 import { sessionCache } from '~/src/server/common/helpers/session-cache/session-cache.js'
-import LandActionsController from '~/src/server/land-grants/actions/actions.controller.js'
-import LandParcelController from '~/src/server/land-grants/parcels/parcel.controller.js'
 import ConfirmationPageController from '~/src/server/controllers/confirmation/controller.js'
 import DeclarationPageController from '~/src/server/controllers/declaration/controller.js'
+import LandActionsController from '~/src/server/land-grants/actions/actions.controller.js'
+import LandParcelController from '~/src/server/land-grants/parcels/parcel.controller.js'
 import { router } from './router.js'
 
 const getViewPaths = () => {
@@ -93,18 +99,29 @@ export async function createServer() {
     }
   })
 
-  await server.register(inert)
-  await server.register(crumb)
-
   await server.register([
+    inert,
+    crumb,
+    Bell,
+    Cookie,
+    Scooter,
+    csp,
+    auth,
     requestLogger,
     requestTracing,
     secureContext,
     pulse,
     sessionCache,
     nunjucksConfig,
-    router
+    router,
+    sso
   ])
+
+  server.app.cache = server.cache({
+    cache: config.get('session.cache.name'),
+    segment: 'test-segment', // config.get('session.cache.segment')
+    expiresIn: config.get('session.cache.ttl')
+  })
 
   server.ext('onPreResponse', catchAll)
 
