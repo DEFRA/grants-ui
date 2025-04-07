@@ -1,5 +1,8 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
-import { fetchLandSheetDetails } from '~/src/server/land-grants/services/land-grants.service.js'
+import {
+  calculateApplicationPayment,
+  fetchLandSheetDetails
+} from '~/src/server/land-grants/services/land-grants.service.js'
 
 export default class LandActionsController extends QuestionPageController {
   viewName = 'actions'
@@ -38,14 +41,20 @@ export default class LandActionsController extends QuestionPageController {
       const { state } = context
       const payload = request.payload ?? {}
       const { actions = '' } = payload
-
+      const [sheetId, parcelId] = (state.landParcel || '').split('-')
       const actionsObj = this.extractActionsObjectFromPayload(payload)
+      const applicationValue = await calculateApplicationPayment(
+        sheetId,
+        parcelId,
+        actionsObj
+      )
+
       await this.setState(request, {
         ...state,
         actions,
         area: JSON.stringify(actionsObj),
         actionsObj,
-        applicationValue: '£16,467.49' // TODO: This calculation will come from Land Grants API
+        applicationValue: applicationValue?.paymentTotal
       })
 
       return this.proceed(request, h, this.getNextPath(context))
