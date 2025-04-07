@@ -137,6 +137,12 @@ export async function createServer() {
     expiresIn: config.get('session.cache.ttl')
   })
 
+  server.app.cache = server.cache({
+    cache: config.get('session.cache.name'),
+    segment: 'test-segment', // config.get('session.cache.segment')
+    expiresIn: config.get('session.cache.ttl')
+  })
+
   server.ext('onPreResponse', catchAll)
 
   return server
