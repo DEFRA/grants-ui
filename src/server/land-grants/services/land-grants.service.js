@@ -76,7 +76,7 @@ export async function validateLandActions(sheetId, parcelId, actionsObj = {}) {
     throw error
   }
 
-  return await response.json()
+  return response.json()
 }
 
 /**
