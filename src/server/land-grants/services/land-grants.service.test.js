@@ -266,7 +266,7 @@ describe('validateLandActions', () => {
    */
   const mockSuccessResponse = {
     valid: true,
-    validationMessages: []
+    errorMessages: []
   }
 
   const expectedPayload = {
@@ -311,7 +311,7 @@ describe('validateLandActions', () => {
   it('should handle validation errors correctly', async () => {
     const validationErrorResponse = {
       valid: false,
-      validationMessages: [
+      errorMessages: [
         {
           actionId: 'BND1',
           message: 'Area exceeds available area for action'
@@ -357,7 +357,7 @@ describe('validateLandActions', () => {
   it('should use empty actions array when no actionsObj is provided', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: () => Promise.resolve({ valid: true, validationMessages: [] })
+      json: () => Promise.resolve({ valid: true, errorMessages: [] })
     })
 
     await validateLandActions(sheetId, parcelId)

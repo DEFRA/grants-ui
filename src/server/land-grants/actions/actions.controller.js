@@ -68,7 +68,7 @@ export default class LandActionsController extends QuestionPageController {
       }
 
       if (payload.action === 'validate') {
-        const { valid, validationMessages = [] } = await validateLandActions(
+        const { valid, errorMessages = [] } = await validateLandActions(
           sheetId,
           parcelId,
           actionsObj
@@ -79,7 +79,7 @@ export default class LandActionsController extends QuestionPageController {
           return h.view(viewName, {
             ...super.getViewModel(request, context),
             ...newState,
-            errors: validationMessages,
+            errors: errorMessages,
             areaPrefix: this.areaPrefix,
             availableActions: this.availableActions
           })

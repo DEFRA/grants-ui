@@ -71,7 +71,7 @@ describe('LandActionsController', () => {
 
     validateLandActions.mockResolvedValue({
       valid: true,
-      validationMessages: []
+      errorMessages: []
     })
     calculateApplicationPayment.mockResolvedValue({
       paymentTotal: '£1,250.75',
@@ -301,7 +301,7 @@ describe('LandActionsController', () => {
 
       validateLandActions.mockResolvedValue({
         valid: true,
-        validationMessages: []
+        errorMessages: []
       })
 
       const handler = controller.makePostRouteHandler()
@@ -322,13 +322,13 @@ describe('LandActionsController', () => {
         action: 'validate'
       }
 
-      const validationMessages = [
+      const errorMessages = [
         { actionId: 'action1', message: 'Area exceeds available area' }
       ]
 
       validateLandActions.mockResolvedValue({
         valid: false,
-        validationMessages
+        errorMessages
       })
 
       const handler = controller.makePostRouteHandler()
@@ -350,7 +350,7 @@ describe('LandActionsController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'actions',
         expect.objectContaining({
-          errors: validationMessages,
+          errors: errorMessages,
           availableActions: availableActions
         })
       )
