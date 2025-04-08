@@ -68,17 +68,18 @@ export default class LandActionsController extends QuestionPageController {
       }
 
       if (payload.action === 'validate') {
-        const validation = await validateLandActions(
+        const { valid, validationMessages = [] } = await validateLandActions(
           sheetId,
           parcelId,
           actionsObj
         )
-        if (validation?.errorMessage) {
+
+        if (valid === false) {
           await this.setState(request, newState)
           return h.view(viewName, {
             ...super.getViewModel(request, context),
             ...newState,
-            errorMessage: validation.errorMessage,
+            errors: validationMessages,
             areaPrefix: this.areaPrefix,
             availableActions: this.availableActions
           })
