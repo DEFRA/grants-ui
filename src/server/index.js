@@ -5,6 +5,8 @@ import crumb from '@hapi/crumb'
 import hapi from '@hapi/hapi'
 import inert from '@hapi/inert'
 import Scooter from '@hapi/scooter'
+import errors from '~/src/plugins/errors.js'
+
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { config } from '~/src/config/config.js'
@@ -114,6 +116,7 @@ export async function createServer() {
     sessionCache,
     nunjucksConfig,
     router,
+    errors,
     sso
   ])
 

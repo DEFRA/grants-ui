@@ -96,7 +96,7 @@ export const auth = {
         options: {
           auth: 'defra-id'
         },
-        handler: async function (request, h) {
+        handler: function (request, h) {
           // Should never be called as the user should no longer be authenticated with `defra-id` after initial sign in
           // The strategy should redirect the user to the sign in page and they will rejoin the service at the /auth/sign-in-oidc route
           // Adding as safeguard
@@ -110,3 +110,7 @@ export const auth = {
     }
   }
 }
+
+/**
+ * @import { ServerRegisterPluginObject } from '@hapi/hapi'
+ */

@@ -4,7 +4,7 @@ const { HTTP_STATUS_FORBIDDEN, HTTP_STATUS_NOT_FOUND } = constants
 export default {
   plugin: {
     name: 'errors',
-    register: (server, _options) => {
+    register: (server) => {
       server.ext('onPreResponse', (request, h) => {
         const response = request.response
 

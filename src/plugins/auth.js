@@ -36,7 +36,7 @@ function getBellOptions(oidcConfig) {
       auth: oidcConfig.authorization_endpoint,
       token: oidcConfig.token_endpoint,
       scope: ['openid', 'offline_access'],
-      profile: function (credentials, _params, _get) {
+      profile: function (credentials) {
         const payload = Jwt.token.decode(credentials.token).decoded.payload
 
         // Map all JWT properties to the credentials object so it can be stored in the session
