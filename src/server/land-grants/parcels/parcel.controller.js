@@ -1,6 +1,3 @@
-import Boom from '@hapi/boom'
-import { config } from '~/src/config/config.js'
-
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
 import { fetchParcelDataForBusiness } from '~/src/server/common/services/consolidated-view.service.js'
@@ -46,30 +43,33 @@ export default class LandParcelController extends QuestionPageController {
      * @param {Pick<ResponseToolkit, 'redirect' | 'view'>} h
      */
     const fn = async (request, context, h) => {
-      const { landParcel = '', actions = [] } = context.state || {}
-
+      const { landParcel = '' } = context.state || {}
       const sbi = 117235001
       const crn = 1100598138
-      const { collection, viewName } = this
+      const { viewName } = this
+      const errorMessages = []
 
-      const { data } = await fetchParcelDataForBusiness(sbi, crn).catch(
-        (error) => {
-          logger.error(error, `Failed to fetch business details ${sbi}`)
-          throw Boom.notFound(`No business information found for sbi ${sbi}`)
+      try {
+        const response = await fetchParcelDataForBusiness(sbi, crn)
+        const business = response.data?.business
+        const viewModel = {
+          ...super.getViewModel(request, context),
+          errors: errorMessages,
+          business,
+          landParcel
         }
-      )
 
-      const business = data?.business
-      const viewModel = {
-        ...super.getViewModel(request, context),
-        errors: collection.getErrors(collection.getErrors()),
-        business,
-        actions: actions?.toString(),
-        landParcel,
-        proxyUrl: config.get('landGrants.apiEndpoint')
+        return h.view(viewName, viewModel)
+      } catch (e) {
+        logger.error(e, `Failed to fetch business details ${sbi}`)
+        errorMessages.push(
+          'Unable to find parcel information, please try again later.'
+        )
+        return h.view(viewName, {
+          ...super.getViewModel(request, context),
+          errors: errorMessages
+        })
       }
-
-      return h.view(viewName, viewModel)
     }
 
     return fn

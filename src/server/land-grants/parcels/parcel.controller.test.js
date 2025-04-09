@@ -1,8 +1,14 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
+import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
 import { fetchParcelDataForBusiness } from '~/src/server/common/services/consolidated-view.service.js'
 import LandParcelController from './parcel.controller.js'
 
 jest.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js')
+jest.mock('~/src/server/common/helpers/logging/logger.js', () => ({
+  createLogger: jest.fn().mockReturnValue({
+    error: jest.fn()
+  })
+}))
 
 jest.mock('~/src/server/common/services/consolidated-view.service.js', () => ({
   fetchParcelDataForBusiness: jest.fn()
@@ -14,9 +20,6 @@ describe('LandParcelController', () => {
   let mockContext
   let mockH
 
-  const fetchParcelDataForBusinessMock = {
-    data: { business: { name: 'Mock Farm' } }
-  }
   const renderedViewMock = 'mock-rendered-view'
   const landParcel = { landParcel: 'sheet123' }
 
@@ -38,21 +41,20 @@ describe('LandParcelController', () => {
     })
 
     controller = new LandParcelController()
-    controller.collection = {
-      getErrors: jest.fn().mockReturnValue([])
-    }
     controller.proceed = jest.fn().mockResolvedValue('next')
     controller.getNextPath = jest.fn().mockReturnValue('/next-page')
     controller.setState = jest.fn()
 
     fetchParcelDataForBusiness.mockResolvedValue({
       data: {
-        name: 'Test Farm',
-        address: '123 Farm Road',
-        parcels: [
-          { id: 'parcel1', name: 'Field 1', area: 10 },
-          { id: 'parcel2', name: 'Field 2', area: 20 }
-        ]
+        business: {
+          name: 'Test Farm',
+          address: '123 Farm Road',
+          parcels: [
+            { id: 'parcel1', name: 'Field 1', area: 10 },
+            { id: 'parcel2', name: 'Field 2', area: 20 }
+          ]
+        }
       }
     })
 
@@ -84,7 +86,11 @@ describe('LandParcelController', () => {
       )
       expect(mockH.view).toHaveBeenCalledWith(
         'parcel',
-        expect.objectContaining({ pageTitle: 'Select Land Parcel' })
+        expect.objectContaining({
+          pageTitle: 'Select Land Parcel',
+          business: expect.anything(),
+          landParcel: ''
+        })
       )
       expect(result).toBe(renderedViewMock)
     })
@@ -92,21 +98,25 @@ describe('LandParcelController', () => {
     it('handles missing business info', async () => {
       fetchParcelDataForBusiness.mockRejectedValue(new Error('not found'))
 
-      const handler = controller.makeGetRouteHandler()
-      await expect(
-        handler(mockRequest, mockContext, mockH)
-      ).rejects.toMatchObject({
-        isBoom: true,
-        output: { statusCode: 404 }
-      })
+      const result = await controller.makeGetRouteHandler()(
+        mockRequest,
+        mockContext,
+        mockH
+      )
+
+      expect(createLogger().error).toHaveBeenCalled()
+      expect(mockH.view).toHaveBeenCalledWith(
+        'parcel',
+        expect.objectContaining({
+          pageTitle: 'Select Land Parcel',
+          errors: ['Unable to find parcel information, please try again later.']
+        })
+      )
+      expect(result).toBe(renderedViewMock)
     })
 
     it('defaults state fields when context.state is undefined', async () => {
       mockContext.state = undefined
-
-      fetchParcelDataForBusiness.mockResolvedValue(
-        fetchParcelDataForBusinessMock
-      )
 
       const result = await controller.makeGetRouteHandler()(
         mockRequest,
@@ -118,8 +128,7 @@ describe('LandParcelController', () => {
         'parcel',
         expect.objectContaining({
           landParcel: '',
-          actions: '',
-          business: { name: 'Mock Farm' }
+          business: expect.anything()
         })
       )
       expect(result).toBe(renderedViewMock)
@@ -127,12 +136,6 @@ describe('LandParcelController', () => {
 
     it('populates full viewModel correctly', async () => {
       mockContext.state.landParcel = landParcel.landParcel
-      mockContext.state.actions = ['a1', 'a2']
-      controller.collection.getErrors.mockReturnValue(['mock error'])
-
-      fetchParcelDataForBusiness.mockResolvedValue(
-        fetchParcelDataForBusinessMock
-      )
 
       const result = await controller.makeGetRouteHandler()(
         mockRequest,
@@ -140,15 +143,14 @@ describe('LandParcelController', () => {
         mockH
       )
 
-      expect(controller.collection.getErrors).toHaveBeenCalledTimes(2)
-      expect(mockH.view).toHaveBeenCalledWith('parcel', {
-        ...landParcel,
-        actions: 'a1,a2',
-        business: { name: 'Mock Farm' },
-        errors: ['mock error'],
-        proxyUrl: '',
-        pageTitle: 'Select Land Parcel'
-      })
+      expect(mockH.view).toHaveBeenCalledWith(
+        'parcel',
+        expect.objectContaining({
+          landParcel: 'sheet123',
+          business: expect.anything(),
+          pageTitle: 'Select Land Parcel'
+        })
+      )
       expect(result).toBe(renderedViewMock)
     })
   })
@@ -190,6 +192,7 @@ describe('LandParcelController', () => {
         foo: 'bar',
         landParcel: undefined
       })
+      expect(controller.proceed).toHaveBeenCalled()
       expect(result).toBe('next')
     })
 
@@ -206,6 +209,7 @@ describe('LandParcelController', () => {
       expect(controller.setState).toHaveBeenCalledWith(mockRequest, {
         landParcel: undefined
       })
+      expect(controller.proceed).toHaveBeenCalled()
       expect(result).toBe('next')
     })
   })

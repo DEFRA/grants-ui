@@ -5,11 +5,26 @@
 {% from "govuk/components/warning-text/macro.njk" import govukWarningText %}
 {% from "govuk/components/button/macro.njk" import govukButton %}
 {% from "govuk/components/input/macro.njk" import govukInput %}
+{% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
 
 {% block content %}
 <div class="govuk-body">
   <div class="govuk-grid-row">
-    <div class="govuk-grid-column-two-thirds">      
+    <div class="govuk-grid-column-two-thirds">
+      {% if errors.length > 0 %}
+        {% set errorList = [] %}
+        {% for error in errors %}
+            {% set errorList = errorList.concat([{
+              text: error,
+              href: ''
+            }]) %}
+        {% endfor %}
+        {{ govukErrorSummary({
+          titleText: "There is a problem",
+          errorList: errorList
+        }) }}
+      {% endif %}
+
       {% if business and business.land and business.land.parcels %}
         <form method="post" data-actions="{{ actions }}" >
           {% set radioItems = [] %}
@@ -53,11 +68,6 @@
             }) }}
           {% endif %}
         </form>
-      {% else %}
-        {{ govukWarningText({
-          text: "No land data available.",
-          iconFallbackText: "Warning"
-        }) }}
       {% endif %}
     </div>
   </div>
