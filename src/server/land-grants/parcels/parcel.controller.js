@@ -47,14 +47,12 @@ export default class LandParcelController extends QuestionPageController {
       const sbi = 117235001
       const crn = 1100598138
       const { viewName } = this
-      const errorMessages = []
 
       try {
         const response = await fetchParcelDataForBusiness(sbi, crn)
         const business = response.data?.business
         const viewModel = {
           ...super.getViewModel(request, context),
-          errors: errorMessages,
           business,
           landParcel
         }
@@ -62,12 +60,9 @@ export default class LandParcelController extends QuestionPageController {
         return h.view(viewName, viewModel)
       } catch (e) {
         logger.error(e, `Failed to fetch business details ${sbi}`)
-        errorMessages.push(
-          'Unable to find parcel information, please try again later.'
-        )
         return h.view(viewName, {
           ...super.getViewModel(request, context),
-          errors: errorMessages
+          errors: ['Unable to find parcel information, please try again later.']
         })
       }
     }
