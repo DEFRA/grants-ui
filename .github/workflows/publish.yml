@@ -12,7 +12,7 @@ permissions:
 
 env:
   AWS_REGION: eu-west-2
-  AWS_ACCOUNT_ID: "094954420758"
+  AWS_ACCOUNT_ID: '094954420758'
 
 jobs:
   build:
@@ -28,11 +28,11 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-#      - name: Create Test Coverage Reports
-#        run: |
-#          npm ci
-#          npm run build
-#          npm test
+      - name: Create Test Coverage Reports
+        run: |
+          npm ci
+          npm run build
+          npm test
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
