@@ -120,7 +120,6 @@ const registerPlugins = async (server) => {
     sessionCache,
     nunjucksConfig,
     router,
-    errors,
     sso
   ])
 }
