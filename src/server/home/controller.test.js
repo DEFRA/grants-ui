@@ -2,6 +2,7 @@ import * as Iron from '@hapi/iron'
 import { seal } from '@hapi/iron'
 import Jwt from '@hapi/jwt'
 import Wreck from '@hapi/wreck'
+import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { createServer } from '~/src/server/index.js'
 
 jest.mock('@hapi/wreck', () => ({
@@ -79,10 +80,8 @@ describe('#homeController', () => {
       }
     })
 
-    expect(result).toEqual(
-      expect.stringContaining('You are being redirected..')
-    )
-    expect(statusCode).toBe(302)
+    expect(result).toEqual(expect.stringContaining('Home |'))
+    expect(statusCode).toBe(statusCodes.ok)
   })
 })
 
