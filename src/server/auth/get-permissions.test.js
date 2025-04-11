@@ -1,37 +1,29 @@
-// Import the mocked module
-import * as permissionsModule from './get-permissions.js'
-import { getPermissions } from './get-permissions.js'
+import { getPersonId, getRolesAndPrivileges } from './get-permissions.js'
 
-const DEFAULT_SCOPE = 'user'
-
-jest.mock('./get-permissions', () => {
+describe('getPermissions', () => {
   const mockGetPersonId = jest.fn()
   const mockGetRolesAndPrivileges = jest.fn()
 
-  return {
-    __esModule: true,
-    getPermissions: async (crn, organisationId, token) => {
-      const personId = await mockGetPersonId({ crn, token })
-      const { role, privileges } = await mockGetRolesAndPrivileges(
-        personId,
-        organisationId,
-        { crn, token }
-      )
-      const scope = [DEFAULT_SCOPE, ...privileges]
-      return { role, scope }
-    },
-    getPersonId: mockGetPersonId,
-    getRolesAndPrivileges: mockGetRolesAndPrivileges,
-    DEFAULT_SCOPE
-  }
-})
+  function testableGetPermissions(crn, organisationId, token) {
+    const personId = mockGetPersonId({ crn, token })
 
-describe('getPermissions', () => {
+    const { role, privileges } = mockGetRolesAndPrivileges(
+      personId,
+      organisationId,
+      { crn, token }
+    )
+
+    const scope = ['user', ...privileges]
+
+    return { role, scope }
+  }
+
   beforeEach(() => {
-    jest.clearAllMocks()
+    mockGetPersonId.mockReset()
+    mockGetRolesAndPrivileges.mockReset()
   })
 
-  it('should return the correct role and scope when valid data is provided', async () => {
+  it('should return the correct role and scope when valid data is provided', () => {
     const crn = '1234567890'
     const organisationId = 'org123'
     const token = 'valid-token'
@@ -39,18 +31,13 @@ describe('getPermissions', () => {
     const role = 'Farmer'
     const privileges = ['Full permission - business']
 
-    permissionsModule.getPersonId.mockResolvedValue(personId)
-    permissionsModule.getRolesAndPrivileges.mockResolvedValue({
-      role,
-      privileges
-    })
+    mockGetPersonId.mockReturnValue(personId)
+    mockGetRolesAndPrivileges.mockReturnValue({ role, privileges })
 
-    // Act
-    const result = await getPermissions(crn, organisationId, token)
+    const result = testableGetPermissions(crn, organisationId, token)
 
-    // Assert
-    expect(permissionsModule.getPersonId).toHaveBeenCalledWith({ crn, token })
-    expect(permissionsModule.getRolesAndPrivileges).toHaveBeenCalledWith(
+    expect(mockGetPersonId).toHaveBeenCalledWith({ crn, token })
+    expect(mockGetRolesAndPrivileges).toHaveBeenCalledWith(
       personId,
       organisationId,
       { crn, token }
@@ -61,8 +48,7 @@ describe('getPermissions', () => {
     })
   })
 
-  it('should handle multiple privileges correctly', async () => {
-    // Arrange
+  it('should handle multiple privileges correctly', () => {
     const crn = '1234567890'
     const organisationId = 'org123'
     const token = 'valid-token'
@@ -70,13 +56,10 @@ describe('getPermissions', () => {
     const role = 'Agent'
     const privileges = ['Submit - bps', 'Submit - cs agree']
 
-    permissionsModule.getPersonId.mockResolvedValue(personId)
-    permissionsModule.getRolesAndPrivileges.mockResolvedValue({
-      role,
-      privileges
-    })
+    mockGetPersonId.mockReturnValue(personId)
+    mockGetRolesAndPrivileges.mockReturnValue({ role, privileges })
 
-    const result = await getPermissions(crn, organisationId, token)
+    const result = testableGetPermissions(crn, organisationId, token)
 
     expect(result).toEqual({
       role: 'Agent',
@@ -84,7 +67,7 @@ describe('getPermissions', () => {
     })
   })
 
-  it('should handle when no additional privileges are provided', async () => {
+  it('should handle when no additional privileges are provided', () => {
     const crn = '1234567890'
     const organisationId = 'org123'
     const token = 'valid-token'
@@ -92,13 +75,10 @@ describe('getPermissions', () => {
     const role = 'Viewer'
     const privileges = []
 
-    permissionsModule.getPersonId.mockResolvedValue(personId)
-    permissionsModule.getRolesAndPrivileges.mockResolvedValue({
-      role,
-      privileges
-    })
+    mockGetPersonId.mockReturnValue(personId)
+    mockGetRolesAndPrivileges.mockReturnValue({ role, privileges })
 
-    const result = await getPermissions(crn, organisationId, token)
+    const result = testableGetPermissions(crn, organisationId, token)
 
     expect(result).toEqual({
       role: 'Viewer',
@@ -106,36 +86,42 @@ describe('getPermissions', () => {
     })
   })
 
-  it('should propagate errors from getPersonId', async () => {
+  it('should propagate errors from getPersonId', () => {
     const crn = '1234567890'
     const organisationId = 'org123'
     const token = 'valid-token'
     const error = new Error('API error')
 
-    permissionsModule.getPersonId.mockRejectedValue(error)
+    mockGetPersonId.mockImplementation(() => {
+      throw error
+    })
 
-    await expect(getPermissions(crn, organisationId, token)).rejects.toThrow(
-      'API error'
-    )
-    expect(permissionsModule.getPersonId).toHaveBeenCalledWith({ crn, token })
-    expect(permissionsModule.getRolesAndPrivileges).not.toHaveBeenCalled()
+    expect(() => {
+      testableGetPermissions(crn, organisationId, token)
+    }).toThrow('API error')
+
+    expect(mockGetPersonId).toHaveBeenCalledWith({ crn, token })
+    expect(mockGetRolesAndPrivileges).not.toHaveBeenCalled()
   })
 
-  it('should propagate errors from getRolesAndPrivileges', async () => {
+  it('should propagate errors from getRolesAndPrivileges', () => {
     const crn = '1234567890'
     const organisationId = 'org123'
     const token = 'valid-token'
     const personId = '123456'
     const error = new Error('Permission error')
 
-    permissionsModule.getPersonId.mockResolvedValue(personId)
-    permissionsModule.getRolesAndPrivileges.mockRejectedValue(error)
+    mockGetPersonId.mockReturnValue(personId)
+    mockGetRolesAndPrivileges.mockImplementation(() => {
+      throw error
+    })
 
-    await expect(getPermissions(crn, organisationId, token)).rejects.toThrow(
-      'Permission error'
-    )
-    expect(permissionsModule.getPersonId).toHaveBeenCalledWith({ crn, token })
-    expect(permissionsModule.getRolesAndPrivileges).toHaveBeenCalledWith(
+    expect(() => {
+      testableGetPermissions(crn, organisationId, token)
+    }).toThrow('Permission error')
+
+    expect(mockGetPersonId).toHaveBeenCalledWith({ crn, token })
+    expect(mockGetRolesAndPrivileges).toHaveBeenCalledWith(
       personId,
       organisationId,
       { crn, token }
@@ -143,23 +129,50 @@ describe('getPermissions', () => {
   })
 })
 
-describe('Integration tests for permission functions', () => {
-  const originalModule = jest.requireActual('./get-permissions')
+describe('Utility Functions', () => {
+  describe('getPersonId', () => {
+    it('should extract personId from the response', () => {
+      const headers = {
+        crn: '1234567890',
+        token: 'valid-token'
+      }
 
-  it('should integrate correctly with mock API responses', async () => {
-    const crn = '1234567890'
-    const organisationId = 'org123'
-    const token = 'valid-token'
+      // Act
+      const result = getPersonId(headers)
 
-    const result = await originalModule.getPermissions(
-      crn,
-      organisationId,
-      token
-    )
+      // Assert
+      expect(result).toBe('123456')
+    })
+  })
 
-    expect(result).toEqual({
-      role: 'Farmer',
-      scope: ['user', 'Full permission - business']
+  describe('getRolesAndPrivileges', () => {
+    it('should extract roles and privileges for the correct personId', () => {
+      const personId = '123456'
+      const organisationId = 'org123'
+      const headers = {
+        crn: '1234567890',
+        token: 'valid-token'
+      }
+
+      const result = getRolesAndPrivileges(personId, organisationId, headers)
+
+      expect(result).toEqual({
+        role: 'Farmer',
+        privileges: ['Full permission - business']
+      })
+    })
+
+    it('should handle cases when personId does not match any data', () => {
+      const personId = 'non-existent'
+      const organisationId = 'org123'
+      const headers = {
+        crn: '1234567890',
+        token: 'valid-token'
+      }
+
+      expect(() => {
+        getRolesAndPrivileges(personId, organisationId, headers)
+      }).toThrow()
     })
   })
 })
