@@ -19,7 +19,8 @@ function getPermissions(crn, organisationId, token) {
   return { role, scope }
 }
 
-function getPersonId(headers) {
+// function getPersonId(headers) {
+function getPersonId() {
   // simulate call to RPS API
   // Only id is needed for mapping roles, but other fields shown for context for what else is available
   // PATH: /person/3337243/summary
@@ -57,7 +58,8 @@ function getPersonId(headers) {
   return mockResponse._data.id
 }
 
-function getRolesAndPrivileges(personId, organisationId, { crn, token }) {
+// function getRolesAndPrivileges(personId, organisationId, { crn, token }) {
+function getRolesAndPrivileges(personId) {
   // simulate call to Siti Agri API
   // returns all roles and privileges for so need to filter for logged in user
   // PATH: /SitiAgriApi/authorisation/organisation/<organisationId>/authorisation
