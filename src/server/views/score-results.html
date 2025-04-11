@@ -6,7 +6,7 @@
 
 {% block content %}
   {% set scoreChanceSection %}
-    <p class="govuk-body govuk-!-font-weight-bold">{{ context.data.scoreBand }}</p>
+  <h2 class="govuk-heading-m">{{ context.data.scoreBand }}</h2>
     {% if context.data.scoreBand == 'Strong' %}
       <span>This means your project seems likely to be successful.</span>
     {% elif context.data.scoreBand == 'Average' %}
