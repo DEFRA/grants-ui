@@ -33,11 +33,7 @@ describe('fetchLandSheetDetails', () => {
         actions: [
           {
             code: 'BND1',
-            description: 'BND1: Maintain dry stone walls',
-            availablequantity: {
-              unit: 'ha',
-              value: 907
-            }
+            description: 'BND1: Maintain dry stone walls'
           }
         ]
       }
