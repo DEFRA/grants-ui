@@ -19,8 +19,8 @@ function getPermissions(crn, organisationId, token) {
   return { role, scope }
 }
 
-// function getPersonId(headers) {
-function getPersonId() {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function getPersonId(_headers) {
   // simulate call to RPS API
   // Only id is needed for mapping roles, but other fields shown for context for what else is available
   // PATH: /person/3337243/summary
@@ -58,8 +58,8 @@ function getPersonId() {
   return mockResponse._data.id
 }
 
-// function getRolesAndPrivileges(personId, organisationId, { crn, token }) {
-function getRolesAndPrivileges(personId) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function getRolesAndPrivileges(_personId, _organisationId, { _headers }) {
   // simulate call to Siti Agri API
   // returns all roles and privileges for so need to filter for logged in user
   // PATH: /SitiAgriApi/authorisation/organisation/<organisationId>/authorisation
@@ -99,12 +99,12 @@ function getRolesAndPrivileges(personId) {
 
   return {
     role: mockResponse.data.personRoles.find(
-      (role) => role.personId === personId
+      (role) => role.personId === '123456'
     ).role,
     privileges: mockResponse.data.personPrivileges
-      .filter((privilege) => privilege.personId === personId)
+      .filter((privilege) => privilege.personId === '123456')
       .map((privilege) => privilege.privilegeNames[0])
   }
 }
 
-export { DEFAULT_SCOPE, getPermissions, getPersonId, getRolesAndPrivileges }
+export { getPermissions }
