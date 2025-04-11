@@ -2,6 +2,7 @@ import { getPermissions } from '~/src/server/auth/get-permissions.js'
 import { getSafeRedirect } from '~/src/server/auth/get-safe-redirect.js'
 import { validateState } from '~/src/server/auth/state.js'
 import { verifyToken } from '~/src/server/auth/verify-token.js'
+import { getSignOutUrl } from './get-sign-out-url.js'
 
 /**
  * @satisfies {ServerRegisterPluginObject<void>}
@@ -88,6 +89,23 @@ export const auth = {
             request.cookieAuth.clear()
           }
           return h.redirect('/')
+        }
+      })
+      server.route({
+        method: 'GET',
+        path: '/auth/sign-out',
+        options: {
+          auth: { mode: 'try' }
+        },
+        handler: async function (request, h) {
+          if (!request.auth.isAuthenticated) {
+            return h.redirect('/')
+          }
+          const signOutUrl = await getSignOutUrl(
+            request,
+            request.auth.credentials.token
+          )
+          return h.redirect(signOutUrl)
         }
       })
       server.route({
