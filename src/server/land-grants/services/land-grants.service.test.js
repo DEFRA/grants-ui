@@ -34,7 +34,7 @@ describe('fetchLandSheetDetails', () => {
           {
             code: 'BND1',
             description: 'BND1: Maintain dry stone walls',
-            availableArea: {
+            availablequantity: {
               unit: 'ha',
               value: 907
             }
@@ -107,15 +107,17 @@ describe('calculateApplicationPayment', () => {
   }
 
   const expectedPayload = {
-    landActions: {
-      sheetId,
-      parcelId,
-      sbi: 117235001,
-      actions: [
-        { actionId: 'BND1', area: 10 },
-        { actionId: 'UP2', area: 5 }
-      ]
-    }
+    landActions: [
+      {
+        sheetId,
+        parcelId,
+        sbi: 117235001,
+        actions: [
+          { code: 'BND1', quantity: 10 },
+          { code: 'UP2', quantity: 5 }
+        ]
+      }
+    ]
   }
 
   beforeEach(() => {
@@ -211,12 +213,14 @@ describe('calculateApplicationPayment', () => {
     await calculateApplicationPayment(sheetId, parcelId)
 
     const expectedEmptyPayload = {
-      landActions: {
-        sheetId,
-        parcelId,
-        sbi: 117235001,
-        actions: []
-      }
+      landActions: [
+        {
+          sheetId,
+          parcelId,
+          sbi: 117235001,
+          actions: []
+        }
+      ]
     }
 
     expect(mockFetch).toHaveBeenCalledWith(
@@ -270,15 +274,17 @@ describe('validateLandActions', () => {
   }
 
   const expectedPayload = {
-    landActions: {
-      sheetId,
-      parcelId,
-      sbi: 117235001,
-      actions: [
-        { actionId: 'BND1', area: 10 },
-        { actionId: 'UP2', area: 5 }
-      ]
-    }
+    landActions: [
+      {
+        sheetId,
+        parcelId,
+        sbi: 117235001,
+        actions: [
+          { code: 'BND1', quantity: 10 },
+          { code: 'UP2', quantity: 5 }
+        ]
+      }
+    ]
   }
 
   beforeEach(() => {
@@ -313,7 +319,7 @@ describe('validateLandActions', () => {
       valid: false,
       errorMessages: [
         {
-          actionId: 'BND1',
+          code: 'BND1',
           message: 'Area exceeds available area for action'
         }
       ]
@@ -363,12 +369,14 @@ describe('validateLandActions', () => {
     await validateLandActions(sheetId, parcelId)
 
     const expectedEmptyPayload = {
-      landActions: {
-        sheetId,
-        parcelId,
-        sbi: 117235001,
-        actions: []
-      }
+      landActions: [
+        {
+          sheetId,
+          parcelId,
+          sbi: 117235001,
+          actions: []
+        }
+      ]
     }
 
     expect(mockFetch).toHaveBeenCalledWith(

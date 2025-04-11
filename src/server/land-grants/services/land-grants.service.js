@@ -2,10 +2,21 @@ import { config } from '~/src/config/config.js'
 
 const LAND_GRANTS_API_URL = config.get('landGrants.apiEndpoint')
 
+const mapLandActionsToPayload = (sheetId, parcelId, actionsObj) => ({
+  landActions: [
+    {
+      sheetId,
+      parcelId,
+      sbi: 117235001,
+      actions: mapActionsObjectToPayload(actionsObj)
+    }
+  ]
+})
+
 const mapActionsObjectToPayload = (actionsObj) =>
   Object.entries(actionsObj).map(([code, area]) => ({
-    actionId: code,
-    area: area.value
+    code,
+    quantity: Number(area.value)
   }))
 
 /**
@@ -57,14 +68,7 @@ export async function validateLandActions(sheetId, parcelId, actionsObj = {}) {
     headers: {
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({
-      landActions: {
-        sheetId,
-        parcelId,
-        sbi: 117235001,
-        actions: mapActionsObjectToPayload(actionsObj)
-      }
-    })
+    body: JSON.stringify(mapLandActionsToPayload(sheetId, parcelId, actionsObj))
   })
 
   if (!response.ok) {
@@ -105,14 +109,7 @@ export async function calculateApplicationPayment(
     headers: {
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({
-      landActions: {
-        sheetId,
-        parcelId,
-        sbi: 117235001,
-        actions: mapActionsObjectToPayload(actionsObj)
-      }
-    })
+    body: JSON.stringify(mapLandActionsToPayload(sheetId, parcelId, actionsObj))
   })
 
   if (!response.ok) {
