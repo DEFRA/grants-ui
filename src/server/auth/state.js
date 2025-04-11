@@ -14,6 +14,10 @@ function createState(request) {
 
 function validateState(request, state) {
   const storedState = request.yar.get('state')
+
+  console.log(`Stored state: ${storedState}`)
+  console.log(`Stored state: ${state}`)
+
   request.yar.clear('state')
 
   // If state has been modified, it is likely a potential CSRF attack
