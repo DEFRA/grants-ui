@@ -1,6 +1,6 @@
 const DEFAULT_SCOPE = 'user'
 
-async function getPermissions(crn, organisationId, token) {
+function getPermissions(crn, organisationId, token) {
   // Cannot be retrieved in a single call so need to make multiple calls to different APIs
   // These calls are authenticated using the token returned from Defra Identity
   // All APIs are accessible via a series of RESTful endpoints hosted in Crown Hosting
