@@ -27,9 +27,15 @@ export async function context(request) {
     }
   }
 
-  const auth = request?.auth?.isAuthenticated
+  const session = request?.auth?.isAuthenticated
     ? await request.server.app.cache.get(request.auth.credentials.sessionId)
     : {}
+  const auth = {
+    isAuthenticated: request?.auth?.isAuthenticated ?? false,
+    name: session.name,
+    organisationId: session.organisationId,
+    role: session.role
+  }
 
   return {
     assetPath: `${assetPath}/assets`,

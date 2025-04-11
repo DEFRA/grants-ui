@@ -1,14 +1,17 @@
 const DEFAULT_SCOPE = 'user'
 
-async function getPermissions (crn, organisationId, token) {
+function getPermissions(crn, organisationId, token) {
   // Cannot be retrieved in a single call so need to make multiple calls to different APIs
   // These calls are authenticated using the token returned from Defra Identity
   // All APIs are accessible via a series of RESTful endpoints hosted in Crown Hosting
   // For the purposes of this example, we will simulate these calls using mock data
   // 1. Get personId from RPS API
-  const personId = await getPersonId({ crn, token })
+  const personId = getPersonId({ crn, token })
   // 2. Get roles and privileges from Siti Agri API
-  const { role, privileges } = await getRolesAndPrivileges(personId, organisationId, { crn, token })
+  const { role, privileges } = getRolesAndPrivileges(personId, organisationId, {
+    crn,
+    token
+  })
   // 3. Map roles and privileges to scope
   // An application specific permission is added to demonstrate how to add local, non-Siti Agri permissions
   const scope = [DEFAULT_SCOPE, ...privileges]
@@ -16,7 +19,8 @@ async function getPermissions (crn, organisationId, token) {
   return { role, scope }
 }
 
-async function getPersonId (headers) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function getPersonId(_headers) {
   // simulate call to RPS API
   // Only id is needed for mapping roles, but other fields shown for context for what else is available
   // PATH: /person/3337243/summary
@@ -54,7 +58,8 @@ async function getPersonId (headers) {
   return mockResponse._data.id
 }
 
-async function getRolesAndPrivileges (personId, organisationId, { headers }) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function getRolesAndPrivileges(_personId, _organisationId, { _headers }) {
   // simulate call to Siti Agri API
   // returns all roles and privileges for so need to filter for logged in user
   // PATH: /SitiAgriApi/authorisation/organisation/<organisationId>/authorisation
@@ -65,29 +70,40 @@ async function getRolesAndPrivileges (personId, organisationId, { headers }) {
 
   const mockResponse = {
     data: {
-      personRoles: [{
-        personId: '123456',
-        role: 'Farmer'
-      }, {
-        personId: '654321',
-        role: 'Agent'
-      }],
-      personPrivileges: [{
-        personId: '123456',
-        privilegeNames: ['Full permission - business']
-      }, {
-        personId: '654321',
-        privilegeNames: ['Submit - bps']
-      }, {
-        personId: '654321',
-        privilegeNames: ['Submit - cs agree']
-      }]
+      personRoles: [
+        {
+          personId: '123456',
+          role: 'Farmer'
+        },
+        {
+          personId: '654321',
+          role: 'Agent'
+        }
+      ],
+      personPrivileges: [
+        {
+          personId: '123456',
+          privilegeNames: ['Full permission - business']
+        },
+        {
+          personId: '654321',
+          privilegeNames: ['Submit - bps']
+        },
+        {
+          personId: '654321',
+          privilegeNames: ['Submit - cs agree']
+        }
+      ]
     }
   }
 
   return {
-    role: mockResponse.data.personRoles.find(role => role.personId === '123456').role,
-    privileges: mockResponse.data.personPrivileges.filter(privilege => privilege.personId === '123456').map(privilege => privilege.privilegeNames[0])
+    role: mockResponse.data.personRoles.find(
+      (role) => role.personId === '123456'
+    ).role,
+    privileges: mockResponse.data.personPrivileges
+      .filter((privilege) => privilege.personId === '123456')
+      .map((privilege) => privilege.privilegeNames[0])
   }
 }
 

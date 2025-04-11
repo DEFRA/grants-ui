@@ -5,7 +5,6 @@ import crumb from '@hapi/crumb'
 import hapi from '@hapi/hapi'
 import inert from '@hapi/inert'
 import Scooter from '@hapi/scooter'
-import errors from '~/src/plugins/errors.js'
 
 import path from 'path'
 import { fileURLToPath } from 'url'
@@ -30,6 +29,8 @@ import LandActionsController from '~/src/server/land-grants/actions/actions.cont
 import LandParcelController from '~/src/server/land-grants/parcels/parcel.controller.js'
 import { router } from './router.js'
 
+const SESSION_CACHE_NAME = 'session.cache.name'
+
 const getViewPaths = () => {
   const currentFilePath = fileURLToPath(import.meta.url)
   const isRunningBuiltCode = currentFilePath.includes('.server')
@@ -43,9 +44,8 @@ const getViewPaths = () => {
   ]
 }
 
-export async function createServer() {
-  setupProxy()
-  const server = hapi.server({
+const createHapiServer = () => {
+  return hapi.server({
     port: config.get('port'),
     routes: {
       validate: {
@@ -72,7 +72,7 @@ export async function createServer() {
     },
     cache: [
       {
-        name: config.get('session.cache.name'),
+        name: config.get(SESSION_CACHE_NAME),
         engine: getCacheEngine(
           /** @type {Engine} */ (config.get('session.cache.engine'))
         )
@@ -82,11 +82,13 @@ export async function createServer() {
       strictHeader: false
     }
   })
+}
 
+const registerFormsPlugin = async (server) => {
   await server.register({
     plugin,
     options: {
-      cacheName: config.get('session.cache.name'),
+      cacheName: config.get(SESSION_CACHE_NAME),
       services: {
         formsService,
         formSubmissionService
@@ -100,7 +102,9 @@ export async function createServer() {
       }
     }
   })
+}
 
+const registerPlugins = async (server) => {
   await server.register([
     inert,
     crumb,
@@ -116,12 +120,19 @@ export async function createServer() {
     sessionCache,
     nunjucksConfig,
     router,
-    errors,
     sso
   ])
+}
+
+export async function createServer() {
+  setupProxy()
+  const server = createHapiServer()
+
+  await registerFormsPlugin(server)
+  await registerPlugins(server)
 
   server.app.cache = server.cache({
-    cache: config.get('session.cache.name'),
+    cache: config.get(SESSION_CACHE_NAME),
     segment: 'test-segment', // config.get('session.cache.segment')
     expiresIn: config.get('session.cache.ttl')
   })

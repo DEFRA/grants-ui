@@ -1,4 +1,9 @@
 import hapi from '@hapi/hapi'
+import Wreck from '@hapi/wreck'
+
+jest.mock('@hapi/wreck', () => ({
+  get: jest.fn()
+}))
 
 const mockLoggerInfo = jest.fn()
 const mockLoggerError = jest.fn()
@@ -40,6 +45,13 @@ describe('#startServer', () => {
 
     createServerSpy = jest.spyOn(createServerImport, 'createServer')
     hapiServerSpy = jest.spyOn(hapi, 'server')
+    // Mock the well-known OIDC config before server starts
+    Wreck.get.mockResolvedValue({
+      payload: {
+        authorization_endpoint: 'https://mock-auth/authorize',
+        token_endpoint: 'https://mock-auth/token'
+      }
+    })
   })
 
   afterAll(() => {

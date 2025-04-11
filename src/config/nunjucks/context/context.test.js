@@ -20,14 +20,14 @@ describe('#context', () => {
       contextImport = await import('~/src/config/nunjucks/context/context.js')
     })
 
-    beforeEach(() => {
+    beforeEach(async () => {
       // Return JSON string
       mockReadFileSync.mockReturnValue(`{
         "application.js": "javascripts/application.js",
         "stylesheets/application.scss": "stylesheets/application.css"
       }`)
 
-      contextResult = contextImport.context(mockRequest)
+      contextResult = await contextImport.context(mockRequest)
     })
 
     test('Should provide expected context', () => {
@@ -48,7 +48,13 @@ describe('#context', () => {
           }
         ],
         serviceName: 'grants-ui',
-        serviceUrl: '/'
+        serviceUrl: '/',
+        auth: {
+          isAuthenticated: false,
+          name: undefined,
+          role: undefined,
+          organisationId: undefined
+        }
       })
     })
 
@@ -101,14 +107,14 @@ describe('#context cache', () => {
       contextImport = await import('~/src/config/nunjucks/context/context.js')
     })
 
-    beforeEach(() => {
+    beforeEach(async () => {
       // Return JSON string
       mockReadFileSync.mockReturnValue(`{
         "application.js": "javascripts/application.js",
         "stylesheets/application.scss": "stylesheets/application.css"
       }`)
 
-      contextResult = contextImport.context(mockRequest)
+      contextResult = await contextImport.context(mockRequest)
     })
 
     test('Should read file', () => {
@@ -137,7 +143,13 @@ describe('#context cache', () => {
           }
         ],
         serviceName: 'grants-ui',
-        serviceUrl: '/'
+        serviceUrl: '/',
+        auth: {
+          isAuthenticated: false,
+          name: undefined,
+          organisationId: undefined,
+          role: undefined
+        }
       })
     })
   })
