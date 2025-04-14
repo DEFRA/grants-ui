@@ -1,4 +1,9 @@
+import { getValidToken } from '~/src/server/common/helpers/entra/token-manager.js'
 import { fetchParcelDataForBusiness } from '~/src/server/common/services/consolidated-view.service.js'
+
+jest.mock('~/src/server/common/helpers/entra/token-manager.js', () => ({
+  getValidToken: jest.fn()
+}))
 
 /**
  * @type {jest.Mock}
@@ -9,6 +14,7 @@ global.fetch = mockFetch
 describe('fetchParcelDataForBusiness', () => {
   const mockSbi = 123456789
   const mockCrn = 987654321
+  const mockToken = 'mock-token-123'
 
   /**
    * @type {object}
@@ -30,6 +36,7 @@ describe('fetchParcelDataForBusiness', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     mockFetch.mockReset()
+    getValidToken.mockResolvedValue(mockToken)
   })
 
   it('should fetch business details successfully', async () => {
@@ -42,6 +49,9 @@ describe('fetchParcelDataForBusiness', () => {
 
     expect(mockFetch).toHaveBeenCalledTimes(1)
     expect(result).toEqual(mockSuccessResponse)
+
+    const [[, calledOptions]] = mockFetch.mock.calls
+    expect(calledOptions.headers.Authorization).toBe(`Bearer ${mockToken}`)
   })
 
   it('should throw an error when fetch response is not ok', async () => {
@@ -98,6 +108,7 @@ describe('fetchParcelDataForBusiness', () => {
 
     expect(calledOptions.method).toBe('POST')
     expect(calledOptions.headers['Content-Type']).toBe('application/json')
+    expect(calledOptions.headers.Authorization).toBe(`Bearer ${mockToken}`)
     expect(body.query).toContain(`business(sbi: "${mockSbi}")`)
     expect(body.query).toContain(`customer(crn: "${mockCrn}")`)
   })
