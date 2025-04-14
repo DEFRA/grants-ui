@@ -33,16 +33,7 @@ export const auth = {
         options: {
           auth: { mode: 'try' }
         },
-        handler: async function (request, h) {
-          if (!request.auth.isAuthenticated) {
-            return h.redirect('/')
-          }
-          const signOutUrl = await getSignOutUrl(
-            request,
-            request.auth.credentials.token
-          )
-          return h.redirect(signOutUrl)
-        }
+        handler: handleSignOut
       })
       server.route({
         method: 'GET',
@@ -106,6 +97,17 @@ async function handleOidcSignIn(request, h) {
   // Ensure redirect is a relative path to prevent redirect attacks
   const safeRedirect = getSafeRedirect(redirect)
   return h.redirect(safeRedirect)
+}
+
+async function handleSignOut(request, h) {
+  if (!request.auth.isAuthenticated) {
+    return h.redirect('/')
+  }
+  const signOutUrl = await getSignOutUrl(
+    request,
+    request.auth.credentials.token
+  )
+  return h.redirect(signOutUrl)
 }
 
 async function handleOidcSignOut(request, h) {
