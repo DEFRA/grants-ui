@@ -3,6 +3,7 @@ import { getPermissions } from './get-permissions.js'
 
 const DEFAULT_SCOPE = 'user'
 
+// TODO: This test currently mocks the actual `getPermissions` implementation.
 jest.mock('./get-permissions', () => {
   const mockGetPersonId = jest.fn()
   const mockGetRolesAndPrivileges = jest.fn()
