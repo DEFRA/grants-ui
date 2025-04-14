@@ -1,5 +1,6 @@
 import { config } from '~/src/config/config.js'
 import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
+import { getValidToken } from '../helpers/entra/token-manager.js'
 
 const CV_API_ENDPOINT = config.get('consolidatedView.apiEndpoint')
 const CV_API_AUTH_EMAIL = config.get('consolidatedView.authEmail')
@@ -55,13 +56,13 @@ export async function fetchParcelDataForBusiness(sbi, crn) {
       }
     }`
 
-  // const token = await getValidToken()
+  const token = await getValidToken()
 
   const response = await fetch(CV_API_ENDPOINT, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      // Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${token}`,
       email: CV_API_AUTH_EMAIL
     },
     body: JSON.stringify({
