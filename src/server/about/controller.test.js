@@ -81,6 +81,7 @@ describe('#aboutController', () => {
       }
     })
 
+    expect(result).toEqual(expect.stringContaining('About |'))
     expect(statusCode).toBe(statusCodes.ok)
   })
 })
