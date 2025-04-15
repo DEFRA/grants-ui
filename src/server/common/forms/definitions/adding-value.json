@@ -14,25 +14,19 @@
           "name": "startInfoOne",
           "title": "Html",
           "type": "Html",
-          "content": "<p class=\"govuk-body\">Use this service to:</p>\n\n<ul class=\"govuk-list govuk-list--bullet\">\n  <li>check if you can apply for a grant for your project (takes about 5 minutes)</li>\n  <li>check how well your project fits the funding priorities (takes about 15 minutes if you have all the project details)</li>\n</ul>\n\n<p class=\"govuk-body\">You can apply if you:</p>\n\n<ul class=\"govuk-list govuk-list--bullet\">\n<li>﻿﻿are a grower or producer of agricultural or horticultural produce</li>\n<li>are a business processing agricultural or horticultural products that is at least 50% owned by agricultural or horticultural producers</li>\n<li>﻿﻿will do the grant-funded work in England</li>\n<li>﻿﻿estimate the project costs are over £62,500</li>\n</ul>",
-          "options": {},
-          "schema": {}
+          "content": "<p class=\"govuk-body\">Use this service to:</p>\n\n<ul class=\"govuk-list govuk-list--bullet\">\n<li>check if you can apply for a grant for your project (takes about 5 minutes)</li>\n<li>check how well your project fits the funding priorities (takes about 15 minutes if you have all the project details)</li>\n</ul>\n\n<p class=\"govuk-body\">You can apply if you:</p>\n\n<ul class=\"govuk-list govuk-list--bullet\">\n<li>are a grower or producer of agricultural or horticultural produce</li>\n<li>are a business processing agricultural or horticultural products that is at least 50% owned by agricultural or horticultural producers</li>\n<li>will do the grant-funded work in England</li>\n<li>estimate the project costs are over £62,500</li>\n</ul>"
         },
         {
           "name": "startInsetText",
           "title": "Inset text",
           "type": "InsetText",
-          "content": "If your project is eligible, you can submit your answers to the Rural Payments Agency (RPA) to request the full application form.",
-          "options": {},
-          "schema": {}
+          "content": "If your project is eligible, you can submit your answers to the Rural Payments Agency (RPA) to request the full application form."
         },
         {
           "name": "startInfoTwo",
           "title": "Html",
           "type": "Html",
-          "content": "<h2 class=\"govuk-heading-s\">Before you start</h2>\n<p class=\"govuk-body\">To use the checker, you need:</p>\n<ul class=\"govuk-list govuk-list--bullet\">\n  <li>information about your business (for example, number of employees, turnover)</li>\n  <li>information about the project (for example, the types of products being processed and how you will add value, the impact the project will have)</li>\n  <li>a list of the items you'd like to buy for the project</li>\n  <li>an estimate of the total cost of the items</li>\n</ul>\n<p class=\"govuk-body\">If you do not enter any information for more than 20 minutes, your application will time out and you will have to start again.</p>\n\n<h2 class=\"govuk-heading-s\">Problems using the online service</h2>\n<p class=\"govuk-body\">If you have any problems using the online service, contact the RPA.</p>\n\n<h2 class=\"govuk-heading-s\">Telephone</h2>\n<p class=\"govuk-body\">Telephone: 03000 200 301</p>\n<p class=\"govuk-body\">Telephone: 03000 200 301</p>\n\n<p class=\"govuk-body\">Monday to Friday, 9am to 5pm (except public holidays)</p>\n\n\n\n",
-          "options": {},
-          "schema": {}
+          "content": "<h2 class=\"govuk-heading-s\">Before you start</h2>\n<p class=\"govuk-body\">To use the checker, you need:</p>\n<ul class=\"govuk-list govuk-list--bullet\">\n<li>information about your business (for example, number of employees, turnover)</li>\n<li>information about the project (for example, the types of products being processed and how you will add value, the impact the project will have)</li>\n<li>a list of the items you'd like to buy for the project</li>\n<li>an estimate of the total cost of the items</li>\n</ul>\n<p class=\"govuk-body\">If you do not enter any information for more than 20 minutes, your application will time out and you will have to start again.</p>\n\n<h2 class=\"govuk-heading-s\">Problems using the online service</h2>\n<p class=\"govuk-body\">If you have any problems using the online service, contact the RPA.</p>\n\n<h2 class=\"govuk-heading-s\">Telephone</h2>\n<p class=\"govuk-body\">Telephone: 03000 200 301</p>\n<p class=\"govuk-body\">Telephone: 03000 200 301</p>\n\n<p class=\"govuk-body\">Monday to Friday, 9am to 5pm (except public holidays)</p>\n\n\n\n"
         }
       ]
     },
@@ -50,8 +44,7 @@
             "customValidationMessages": {
               "any.required": "Select the option that applies to your business"
             }
-          },
-          "schema": {}
+          }
         }
       ]
     },
@@ -64,9 +57,7 @@
           "name": "natureOfBusinessCannotApply",
           "title": "Html",
           "type": "Html",
-          "content": "<p class=\"govuk-body\">This grant is for businesses who:</p>\n\n<ul class=\"govuk-list govuk-list--bullet\">\n  <li>are agricultural or horticultural growers or producers</li>\n  <li>are a business processing agricultural or horticultural products that is at least 50% owned by agricultural or horticultural producers</li>\n</ul>\n\n<p class=\"govuk-body\">See other grants you may be eligible for.</p>\n",
-          "options": {},
-          "schema": {}
+          "content": "<p class=\"govuk-body\">This grant is for businesses who:</p>\n\n<ul class=\"govuk-list govuk-list--bullet\">\n<li>are agricultural or horticultural growers or producers</li>\n<li>are a business processing agricultural or horticultural products that is at least 50% owned by agricultural or horticultural producers</li>\n</ul>\n\n<p class=\"govuk-body\">See other grants you may be eligible for.</p>\n"
         }
       ],
       "condition": "natureOfBusinessCondition"
@@ -79,14 +70,12 @@
           "name": "legalStatusRadiosField",
           "title": "What is the legal status of the business?",
           "type": "RadiosField",
-          "hint": "",
           "list": "legalStatusList",
           "options": {
             "customValidationMessages": {
               "any.required": "Select the legal status of the business"
             }
-          },
-          "schema": {}
+          }
         }
       ]
     },
@@ -99,17 +88,13 @@
           "name": "legalStatusCannotApplyInfo",
           "title": "Html",
           "type": "Html",
-          "content": "<p class=\"govuk-body\">Your business does not have an eligible legal status.</p>\n",
-          "options": {},
-          "schema": {}
+          "content": "<p class=\"govuk-body\">Your business does not have an eligible legal status.</p>\n"
         },
         {
           "type": "Html",
           "name": "legalStatusWarning",
           "title": "Html",
-          "content": "<div class=\"govuk-warning-text\"> <span class=\"govuk-warning-text__icon\" aria-hidden=\"true\">!</span> <strong class=\"govuk-warning-text__text\"> <span class=\"govuk-visually-hidden\">Warning</span>Other types of business may be supported in future schemes.</strong></div>",
-          "options": {},
-          "schema": {}
+          "content": "<div class=\"govuk-warning-text\"> <span class=\"govuk-warning-text__icon\" aria-hidden=\"true\">!</span> <strong class=\"govuk-warning-text__text\"> <span class=\"govuk-visually-hidden\">Warning</span>Other types of business may be supported in future schemes.</strong></div>"
         }
       ],
       "condition": "legalStatusCondition"
@@ -127,8 +112,7 @@
             "customValidationMessages": {
               "any.required": "Select yes if the project is in England"
             }
-          },
-          "schema": {}
+          }
         }
       ]
     },
@@ -141,9 +125,7 @@
           "name": "countryCannotApplyInfo",
           "title": "Html",
           "type": "Html",
-          "content": "<p class=\"govuk-body\">This grant is only for projects in England.</p>\n<div class=\"govuk-inset-text\">Scotland, Wales and Northern Ireland have other grants available.</div>",
-          "options": {},
-          "schema": {}
+          "content": "<p class=\"govuk-body\">This grant is only for projects in England.</p>\n<div class=\"govuk-inset-text\">Scotland, Wales and Northern Ireland have other grants available.</div>"
         }
       ],
       "condition": "countryCondition"
@@ -161,23 +143,25 @@
             "customValidationMessages": {
               "any.required": "Select when the project will have planning permission"
             }
-          },
-          "schema": {}
+          }
         }
       ]
     },
     {
       "title": "You may be able to apply for a grant from this scheme",
       "path": "/planning-permission-may-apply",
-      "controller": "TerminalPageController",
       "components": [
         {
           "name": "planningPermissionMayApplyInfo",
           "title": "Html",
           "type": "Html",
-          "content": "<p class=\"govuk-body\">You must have secured planning permission before you submit a full application. The application deadline is 31 May 2025</p>\n",
-          "options": {},
-          "schema": {}
+          "content": "<p class=\"govuk-body\">You must have secured planning permission before you submit a full application. The application deadline is 31 May 2025</p>\n"
+        },
+        {
+          "name": "planningPermissionMayApplyLink",
+          "title": "Html",
+          "type": "Html",
+          "content": "<p class='govuk-body'><a href='https://www.gov.uk/guidance/funding-for-farmers' class='govuk-link govuk-link--no-visited-state'>See other grants you may be eligible for</a></p>"
         }
       ],
       "condition": "planningPermissionShouldBeCondition"
@@ -191,7 +175,7 @@
           "name": "planningPermissionCannotApplyInfo",
           "type": "Html",
           "title": "Html",
-          "content": "<p class=\"govuk-body\">You must have secured planning permission before you submit a full application.</p>\n<p class=\"govuk-body\"><a href=\"#\">See other grants you may be eligible for.</a></p>"
+          "content": "<p class=\"govuk-body\">You must have secured planning permission before you submit a full application.</p>\n<p class='govuk-body'><a href='https://www.gov.uk/guidance/funding-for-farmers' class='govuk-link govuk-link--no-visited-state'>See other grants you may be eligible for</a></p>"
         }
       ],
       "condition": "planningPermissionWillNotCondition"
@@ -209,8 +193,7 @@
             "customValidationMessages": {
               "any.required": "Select the option that applies to your project"
             }
-          },
-          "schema": {}
+          }
         }
       ]
     },
@@ -240,8 +223,7 @@
             "customValidationMessages": {
               "any.required": "Select yes if the planned project is on land the business owns"
             }
-          },
-          "schema": {}
+          }
         }
       ]
     },
@@ -257,8 +239,7 @@
             "customValidationMessages": {
               "any.required": "Select yes if the land has a tenancy agreement in place for 5 years after the final grant payment."
             }
-          },
-          "schema": {}
+          }
         }
       ],
       "condition": "tenancyCondition"
@@ -266,7 +247,6 @@
     {
       "title": "You may be able to apply for a grant from this scheme",
       "path": "/may-apply-tenancy-length",
-      "controller": "TerminalPageController",
       "components": [
         {
           "name": "mayApplyTenancyLengthInfo",
@@ -278,20 +258,19 @@
       "condition": "tenancyLengthCondition"
     },
     {
-      "title": "Do you want to build a new smaller abottoir?",
+      "title": "Do you want to build a new smaller abattoir?",
       "path": "/smaller-abattoir",
       "components": [
         {
           "name": "smallerAbattoirYesNoField",
-          "title": "Do you want to build a new smaller abottoir?",
+          "title": "Do you want to build a new smaller abattoir?",
           "type": "YesNoField",
-          "hint": "A smaller abattoir is a red meat abattoir that processes up to 10,000 livestock units each year, or, a poultry abattoir that slaughters up to 500,000 birds each year.",
+          "hint": "A smaller abattoir is a red meat abattoir that processes up to 10,000 livestock units each year or a poultry abattoir that slaughters up to 500,000 birds each year.",
           "options": {
             "customValidationMessages": {
               "any.required": "Select yes if you want to build a new smaller abattoir"
             }
-          },
-          "schema": {}
+          }
         }
       ]
     },
@@ -308,8 +287,7 @@
             "customValidationMessages": {
               "any.required": "Select yes if this abattoir will provide services to other farmers"
             }
-          },
-          "schema": {}
+          }
         }
       ],
       "condition": "smallerAbattoirConditionYes"
@@ -341,8 +319,7 @@
             "customValidationMessages": {
               "any.required": "Select yes if you want to build new controlled atmosphere storage for top fruit"
             }
-          },
-          "schema": {}
+          }
         }
       ],
       "condition": "smallerAbattoirConditionNo"
@@ -354,15 +331,14 @@
         {
           "name": "projectItemsCheckboxesField",
           "title": "What eligible items does your project need?",
-          "hint": "Storage facilities will only be funded as part of a bigger project and cannot be more than 50% of the total grant funding. \n\n Select all the items your project needs",
+          "hint": "Storage facilities will only be funded as part of a bigger project and cannot be more than 50% of the total grant funding.\n\nSelect all the items your project needs",
           "type": "CheckboxesField",
           "list": "projectItemsList",
           "options": {
             "customValidationMessages": {
               "any.required": "Select all the items your project needs"
             }
-          },
-          "schema": {}
+          }
         }
       ],
       "condition": "otherFarmersYesOrFruitStorageCondition"
@@ -395,16 +371,13 @@
             "customValidationMessages": {
               "any.required": "Select yes if you will need storage facilities"
             }
-          },
-          "schema": {}
+          }
         },
         {
           "type": "Html",
           "name": "storageWarning",
           "title": "Html",
-          "content": "<div class=\"govuk-warning-text\"> <span class=\"govuk-warning-text__icon\" aria-hidden=\"true\">!</span> <strong class=\"govuk-warning-text__text\"> <span class=\"govuk-visually-hidden\">Warning</span>Storage facilities cannot be more than 50% of the total grant funding.</strong></div>",
-          "options": {},
-          "schema": {}
+          "content": "<div class=\"govuk-warning-text\"> <span class=\"govuk-warning-text__icon\" aria-hidden=\"true\">!</span> <strong class=\"govuk-warning-text__text\"> <span class=\"govuk-visually-hidden\">Warning</span>Storage facilities cannot be more than 50% of the total grant funding.</strong></div>"
         }
       ],
       "condition": "otherFarmersYesOrFruitStorageCondition"
@@ -417,9 +390,7 @@
           "name": "projectCostInfo",
           "type": "Html",
           "title": "Html",
-          "content": "<p class=\"govuk-hint\">Do not include VAT<br><br>Enter cost of items, for example 695000</p>",
-          "options": {},
-          "schema": {}
+          "content": "<p class=\"govuk-hint\">Do not include VAT<br><br>Enter cost of items, for example 695000</p>"
         },
         {
           "name": "projectCostNumberField",
@@ -452,9 +423,7 @@
           "name": "projectCostCannotApplyInfo",
           "title": "Html",
           "type": "Html",
-          "content": "<p class=\"govuk-body\">The minimum grant you can apply for is £25,000 (40% of £62,500).</p>\n\n<p class='govuk-body'><a href='https://www.gov.uk/guidance/funding-for-farmers' class='govuk-link govuk-link--no-visited-state'>See other grants you may be eligible for</a></p>\n",
-          "options": {},
-          "schema": {}
+          "content": "<p class=\"govuk-body\">The minimum grant you can apply for is £25,000 (40% of £62,500).</p>\n\n<p class='govuk-body'><a href='https://www.gov.uk/guidance/funding-for-farmers' class='govuk-link govuk-link--no-visited-state'>See other grants you may be eligible for</a></p>\n"
         }
       ],
       "condition": "projectCostCondition"
@@ -471,8 +440,7 @@
             "customValidationMessages": {
               "any.required": "Select yes if you can pay the remaining costs"
             }
-          },
-          "schema": {}
+          }
         }
       ]
     },
@@ -485,9 +453,7 @@
           "name": "cannotApplyRemainingCostsInfo",
           "title": "Html",
           "type": "Html",
-          "content": "<p class=\"govuk-body\">You cannot use public money (for example, grant funding from government or local authorities) towards the project costs.</br></br>You also cannot use money from a producer organisation under the Fresh Fruit and Vegetable Aid Scheme.</br></br>For example, you can use:</p>\n\n<ul class=\"govuk-list govuk-list--bullet\">\n  <li>loans</li>\n<li>overdrafts</li>\n<li>delinked payments</li></ul>\n\n<p class='govuk-body'><a href='https://www.gov.uk/guidance/funding-for-farmers' class='govuk-link govuk-link--no-visited-state'>See other grants you may be eligible for</a></p>\n",
-          "options": {},
-          "schema": {}
+          "content": "<p class=\"govuk-body\">You cannot use public money (for example, grant funding from government or local authorities) towards the project costs.</br></br>You also cannot use money from a producer organisation under the Fresh Fruit and Vegetable Aid Scheme.</br></br>For example, you can use:</p>\n\n<ul class=\"govuk-list govuk-list--bullet\">\n<li>loans</li>\n<li>overdrafts</li>\n<li>delinked payments</li></ul>\n\n<p class='govuk-body'><a href='https://www.gov.uk/guidance/funding-for-farmers' class='govuk-link govuk-link--no-visited-state'>See other grants you may be eligible for</a></p>\n"
         }
       ],
       "condition": "remainingCostsCondition"
@@ -506,8 +472,7 @@
             "customValidationMessages": {
               "any.required": "Select what type of produce is being processed"
             }
-          },
-          "schema": {}
+          }
         }
       ],
       "condition": "otherFarmersYesOrFruitStorageCondition"
@@ -526,8 +491,7 @@
             "customValidationMessages": {
               "any.required": "Select how this project will add value to the produce"
             }
-          },
-          "schema": {}
+          }
         }
       ],
       "condition": "otherFarmersYesOrFruitStorageCondition"
@@ -546,8 +510,7 @@
             "customValidationMessages": {
               "any.required": "Select what impact this project will have"
             }
-          },
-          "schema": {}
+          }
         }
       ],
       "condition": "otherFarmersYesOrFruitStorageCondition"
@@ -565,8 +528,7 @@
             "customValidationMessages": {
               "any.required": "Select yes if this project will use any mechanisation instead of manual labour"
             }
-          },
-          "schema": {}
+          }
         }
       ]
     },
@@ -579,38 +541,32 @@
           "title": "How much manual labour will the mechanisation be equal to?",
           "type": "RadiosField",
           "list": "manualLabourAmountList",
-          "hint": "based on your current staff numbers",
+          "hint": "Based on your current staff numbers",
           "options": {
             "customValidationMessages": {
               "any.required": "Select how much manual labour the mechanisation will be equal to"
             }
-          },
-          "schema": {}
+          }
         }
       ],
       "condition": "mechanisationCondition"
     },
     {
       "title": "Who will your new customers be after the project?",
-      "path": "/future-customers",
-      "components": []
+      "path": "/future-customers"
     },
     {
       "title": "Will you work in partnership or collaborate with other farmers or producers?",
-      "path": "/collaboration",
-      "components": []
+      "path": "/collaboration"
     },
     {
       "title": "How will this project improve the environment?",
-      "path": "/environmental-impact",
-      "components": []
+      "path": "/environmental-impact"
     },
     {
       "title": "Score results",
       "path": "/score-results",
       "view": "score-results.html",
-      "next": [],
-      "components": [],
       "events": {
         "onLoad": {
           "type": "http",
@@ -623,8 +579,7 @@
     },
     {
       "title": "Business Details",
-      "path": "/business-details",
-      "components": []
+      "path": "/business-details"
     },
     {
       "title": "Who is applying for this grant?",
@@ -635,13 +590,11 @@
           "title": "Who is applying for this grant?",
           "type": "RadiosField",
           "list": "applyingList",
-          "hint": "",
           "options": {
             "customValidationMessages": {
               "any.required": "Select who is applying for this grant"
             }
-          },
-          "schema": {}
+          }
         }
       ]
     },
@@ -765,17 +718,12 @@
           "type": "Html",
           "name": "agentBusinessAddressHeader",
           "title": "Html",
-          "content": "<h1 class=\"govuk-heading-m\">Business address</h1>",
-          "options": {},
-          "schema": {}
+          "content": "<h1 class=\"govuk-heading-m\">Business address</h1>"
         },
         {
           "type": "UkAddressField",
           "title": "Address",
-          "name": "agentBusinessAddress",
-          "hint": "",
-          "options": {},
-          "schema": {}
+          "name": "agentBusinessAddress"
         }
       ],
       "condition": "agentDetailsSelected"
@@ -888,17 +836,12 @@
           "type": "Html",
           "name": "applicantBusinessAddressHeader",
           "title": "Html",
-          "content": "<h1 class=\"govuk-heading-m\">Business address</h1>",
-          "options": {},
-          "schema": {}
+          "content": "<h1 class=\"govuk-heading-m\">Business address</h1>"
         },
         {
           "type": "UkAddressField",
           "title": "Address",
-          "name": "applicantBusinessAddress",
-          "hint": "",
-          "options": {},
-          "schema": {}
+          "name": "applicantBusinessAddress"
         },
         {
           "type": "TextField",
@@ -920,21 +863,18 @@
     },
     {
       "title": "Check your details",
-      "path": "/check-details",
-      "components": []
+      "path": "/check-details"
     },
     {
       "title": "Confirm and send",
       "path": "/declaration",
       "controller": "DeclarationPageController",
-      "view": "grants/declaration.html",
-      "components": []
+      "view": "grants/declaration.html"
     },
     {
       "title": "Confirmation",
       "path": "/confirmation",
-      "controller": "ConfirmationPageController",
-      "components": []
+      "controller": "ConfirmationPageController"
     }
   ],
   "lists": [
@@ -1365,9 +1305,9 @@
     },
     {
       "name": "projectStartCondition",
-      "displayName": "projectStartPreparatoryWork",
+      "displayName": "startProjectWork",
       "value": {
-        "name": "projectStartPreparatoryWork",
+        "name": "startProjectWork",
         "conditions": [
           {
             "field": {
@@ -1378,8 +1318,8 @@
             "operator": "is",
             "value": {
               "type": "Value",
-              "value": "projectStart-A1",
-              "display": "Yes, preparatory work"
+              "value": "projectStart-A2",
+              "display": "Yes, we have begun project work"
             }
           }
         ]
@@ -1439,7 +1379,7 @@
             "field": {
               "name": "smallerAbattoirYesNoField",
               "type": "YesNoField",
-              "display": "Do you want to build a new smaller abottoir?"
+              "display": "Do you want to build a new smaller abattoir?"
             },
             "operator": "is",
             "value": {
@@ -1461,7 +1401,7 @@
             "field": {
               "name": "smallerAbattoirYesNoField",
               "type": "YesNoField",
-              "display": "Do you want to build a new smaller abottoir?"
+              "display": "Do you want to build a new smaller abattoir?"
             },
             "operator": "is",
             "value": {
