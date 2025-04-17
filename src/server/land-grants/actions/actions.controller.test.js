@@ -182,7 +182,7 @@ describe('LandActionsController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'actions',
         expect.objectContaining({
-          availableActions: availableActions
+          availableActions
         })
       )
       expect(mockRequest.logger.error).toHaveBeenCalled()
@@ -351,7 +351,7 @@ describe('LandActionsController', () => {
         'actions',
         expect.objectContaining({
           errors: errorMessages,
-          availableActions: availableActions
+          availableActions
         })
       )
 

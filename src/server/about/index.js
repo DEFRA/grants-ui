@@ -13,6 +13,9 @@ export const about = {
         {
           method: 'GET',
           path: '/about',
+          options: {
+            auth: { mode: 'optional' }
+          },
           ...aboutController
         }
       ])
