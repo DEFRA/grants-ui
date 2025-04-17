@@ -18,9 +18,9 @@ export const home = {
         {
           method: 'GET',
           path: '/home',
-          options: {
-            auth: { mode: 'required' }
-          },
+          // options: {
+          //   auth: { mode: 'required' }
+          // },
           ...homeController
         }
       ])
@@ -28,9 +28,9 @@ export const home = {
         {
           method: 'GET',
           path: '/',
-          options: {
-            auth: { mode: 'optional' }
-          },
+          // options: {
+          //   auth: { mode: 'optional' }
+          // },
           ...indexController
         }
       ])
