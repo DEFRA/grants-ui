@@ -53,6 +53,10 @@ const createHapiServer = () => {
           abortEarly: false
         }
       },
+      auth: {
+        mode: 'try',
+        strategy: 'session'
+      },
       files: {
         relativeTo: path.resolve(config.get('root'), '.public')
       },
@@ -128,8 +132,8 @@ export async function createServer() {
   setupProxy()
   const server = createHapiServer()
 
-  await registerFormsPlugin(server)
   await registerPlugins(server)
+  await registerFormsPlugin(server)
 
   server.app.cache = server.cache({
     cache: config.get(SESSION_CACHE_NAME),
