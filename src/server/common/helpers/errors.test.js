@@ -1,12 +1,24 @@
 import { createServer } from '~/src/server/index.js'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { catchAll } from '~/src/server/common/helpers/errors.js'
+import Wreck from '@hapi/wreck'
+
+jest.mock('@hapi/wreck', () => ({
+  get: jest.fn()
+}))
 
 describe('#errors', () => {
   /** @type {Server} */
   let server
 
   beforeAll(async () => {
+    // Mock the well-known OIDC config before server starts
+    Wreck.get.mockResolvedValue({
+      payload: {
+        authorization_endpoint: 'https://mock-auth/authorize',
+        token_endpoint: 'https://mock-auth/token'
+      }
+    })
     server = await createServer()
     await server.initialize()
   })

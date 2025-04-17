@@ -1,0 +1,26 @@
+{% extends 'layouts/page.njk' %}
+{% from "govuk/components/button/macro.njk" import govukButton %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      <h1 class="govuk-heading-l">
+        <span class="govuk-caption-l">{{ auth.name }}</span>
+        You have signed in
+      </h1>
+
+      <span class="govuk-caption-m">{{ auth.organisationId }}</span>
+      <h2 class="govuk-heading-m">Your session details</h2>
+
+      <dl class="govuk-summary-list">
+        {% for key, value in auth %}
+          <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">{{ key }}</dt>
+            <dd class="govuk-summary-list__value">{{ value }}</dd>
+          </div>
+        {% endfor %}
+      </dl>
+
+    </div>
+  </div>
+{% endblock %}
