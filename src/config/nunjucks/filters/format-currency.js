@@ -3,11 +3,21 @@
  * @param {Intl.LocalesArgument} locale
  * @param {string} currency
  */
-export function formatCurrency(value, locale = 'en-GB', currency = 'GBP') {
-  const formatter = new Intl.NumberFormat(locale, {
-    style: 'currency',
-    currency
-  })
+export function formatCurrency(
+  value,
+  locale = 'en-GB',
+  currency = 'GBP',
+  maximumFractionDigits = 2,
+  style = 'currency'
+) {
+  const options = {
+    style,
+    maximumFractionDigits
+  }
 
-  return formatter.format(value)
+  if (style === 'currency') {
+    options.currency = currency
+  }
+
+  return new Intl.NumberFormat(locale, options).format(value)
 }
