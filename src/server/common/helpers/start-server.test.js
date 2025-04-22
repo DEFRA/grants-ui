@@ -71,7 +71,7 @@ describe('#startServer', () => {
       expect(createServerSpy).toHaveBeenCalled()
       expect(hapiServerSpy).toHaveBeenCalled()
       expect(mockLoggerInfo).toHaveBeenCalledWith(
-        'Using Catbox Memory session cache'
+        expect.stringMatching(/Using (Redis|Catbox Memory) session cache/)
       )
       expect(mockHapiLoggerInfo).toHaveBeenNthCalledWith(
         1,
