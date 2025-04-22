@@ -28,6 +28,7 @@ import DeclarationPageController from '~/src/server/controllers/declaration/cont
 import LandActionsController from '~/src/server/land-grants/actions/actions.controller.js'
 import LandParcelController from '~/src/server/land-grants/parcels/parcel.controller.js'
 import { router } from './router.js'
+import { formatCurrency } from '../config/nunjucks/filters/format-currency.js'
 
 const SESSION_CACHE_NAME = 'session.cache.name'
 
@@ -96,6 +97,9 @@ const registerFormsPlugin = async (server) => {
       services: {
         formsService,
         formSubmissionService
+      },
+      filters: {
+        formatCurrency
       },
       viewPaths: getViewPaths(),
       controllers: {
