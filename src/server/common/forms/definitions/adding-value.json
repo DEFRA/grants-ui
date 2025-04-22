@@ -390,7 +390,7 @@
           "name": "projectCostInfo",
           "type": "Html",
           "title": "Html",
-          "content": "<p class=\"govuk-hint\">Do not include VAT<br><br>Enter cost of items, for example 695000</p>"
+          "content": "<p class=\"govuk-hint\">Do not include VAT<br><br>Enter cost of items, for example {{ 695000 | formatCurrency: 'en-GB', 'GBP', 0, 'decimal' }}</p>"
         },
         {
           "name": "projectCostNumberField",
@@ -429,7 +429,29 @@
       "condition": "projectCostCondition"
     },
     {
-      "title": "{%- assign estimatedCost = 'projectCostNumberField' | answer -%} {%- assign applicantPayMultiplier = 0.6 -%} {%- assign applicantPayAmount = estimatedCost | times: applicantPayMultiplier -%} Can you pay the remaining costs of {{ applicantPayAmount | money }}?",
+      "title": "Potential grant funding",
+      "path": "/potential-funding",
+      "components": [
+        {
+          "name": "potentialFundingInfo",
+          "title": "Html",
+          "type": "Html",
+          "content": "<p class=\"govuk-body\"> {% assign estimatedCost = 'projectCostNumberField' | answer %} {% assign eligibilityMultiplier = 0.4 %} {% assign eligibilityAmount = estimatedCost | times: eligibilityMultiplier %} {% if eligibilityAmount <= 300000 and eligibilityAmount >= 25000 %} You may be able to apply for grant funding of up to {{ eligibilityAmount | formatCurrency: 'en-GB', 'GBP', 0 }} (40% of {{ estimatedCost | formatCurrency: 'en-GB', 'GBP', 0 }}).{% elsif eligibilityAmount > 300000 %} You may be able to apply for grant funding of up to £300,000, based on the estimated cost of {{ estimatedCost | formatCurrency: 'en-GB', 'GBP', 0 }}.\n\n\n<div class=\"govuk-inset-text\">The maximum grant you can apply for is £300,000</div> {% endif %}</p>\n",
+          "options": {},
+          "schema": {}
+        },
+        {
+          "type": "Html",
+          "name": "potentialFundingWarning",
+          "title": "Html",
+          "content": "<div class=\"govuk-warning-text\"> <span class=\"govuk-warning-text__icon\" aria-hidden=\"true\">!</span> <strong class=\"govuk-warning-text__text\"> <span class=\"govuk-visually-hidden\">Warning</span>There's no guarantee the project will receive a grant.</strong></div>",
+          "options": {},
+          "schema": {}
+        }
+      ]
+    },
+    {
+      "title": "{%- assign estimatedCost = 'projectCostNumberField' | answer -%} {%- assign applicantPayMultiplier = 0.6 -%} {%- assign applicantPayAmount = estimatedCost | times: applicantPayMultiplier -%} Can you pay the remaining costs of {{ applicantPayAmount | formatCurrency: 'en-GB', 'GBP', 0 }}?",
       "path": "/remaining-costs",
       "components": [
         {
