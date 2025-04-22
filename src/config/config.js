@@ -87,6 +87,14 @@ export const config = convict({
     format: Boolean,
     default: isTest
   },
+  gas: {
+    apiEndpoint: {
+      doc: 'GAS API endpoint',
+      format: String,
+      default: '',
+      env: 'GAS_API_URL'
+    }
+  },
   landGrants: {
     apiEndpoint: {
       format: String,
