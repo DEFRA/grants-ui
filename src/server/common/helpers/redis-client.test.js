@@ -3,12 +3,6 @@ import { config } from '~/src/config/config.js'
 
 import { buildRedisClient } from '~/src/server/common/helpers/redis-client.js'
 
-jest.mock('ioredis', () => ({
-  ...jest.requireActual('ioredis'),
-  Cluster: jest.fn().mockReturnValue({ on: () => ({}) }),
-  Redis: jest.fn().mockReturnValue({ on: () => ({}) })
-}))
-
 describe('#buildRedisClient', () => {
   describe('When Redis Single InstanceCache is requested', () => {
     beforeEach(() => {
