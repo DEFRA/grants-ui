@@ -45,7 +45,9 @@
   {% endif %}
 {% endblock %}
 
-{% block content %}{% endblock %}
+<main id="main-content" class="{{ mainClasses }}" role="main">
+  {% block content %}{% endblock %}
+</main>
 
 {% block footer %}
   {{ govukFooter({
