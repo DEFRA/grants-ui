@@ -70,7 +70,9 @@ describe('#startServer', () => {
 
       expect(createServerSpy).toHaveBeenCalled()
       expect(hapiServerSpy).toHaveBeenCalled()
-      expect(mockLoggerInfo).toHaveBeenCalledWith('Using Redis session cache')
+      expect(mockLoggerInfo).toHaveBeenCalledWith(
+        expect.stringMatching(/Using (Redis|Catbox Memory) session cache/)
+      )
       expect(mockHapiLoggerInfo).toHaveBeenNthCalledWith(
         1,
         'Custom secure context is disabled'
