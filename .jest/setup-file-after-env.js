@@ -1,5 +1,9 @@
 // Globally mock redis in tests
-jest.mock('ioredis')
+jest.mock('ioredis', () => ({
+  ...jest.requireActual('ioredis'),
+  Cluster: jest.fn().mockReturnValue({ on: () => ({}) }),
+  Redis: jest.fn().mockReturnValue({ on: () => ({}) })
+}))
 
 jest.mock(
   '@defra/forms-engine-plugin/controllers/QuestionPageController.js',
