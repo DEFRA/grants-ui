@@ -3,7 +3,7 @@ import { submitGrantApplication } from '~/src/server/common/services/grant-appli
 import { transformStateObjectToGasApplication } from '../../common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
 import { stateToLandGrantsGasAnswers } from '../services/state-to-gas-answers-mapper.js'
 
-export default class LandGrantsSummaryPageController extends SummaryPageController {
+export default class LandSummaryPageController extends SummaryPageController {
   /**
    * @param {FormModel} model
    * @param {PageSummary} pageDef
@@ -23,13 +23,14 @@ export default class LandGrantsSummaryPageController extends SummaryPageControll
   }
 
   async submitLandGrantApplication(context) {
+    const identifiers = {
+      sbi: 'sbi',
+      frn: 'frn',
+      crn: 'crn',
+      defraId: 'defraId'
+    }
     const applicationData = transformStateObjectToGasApplication(
-      {
-        sbi: 'sbi',
-        frn: 'frn',
-        crn: 'crn',
-        defraId: 'defraId'
-      },
+      identifiers,
       context.state,
       stateToLandGrantsGasAnswers
     )
