@@ -352,7 +352,7 @@
           "type": "Html",
           "name": "cannotApplyProjectItemsInfo",
           "title": "Html",
-          "content": "<p class=\"govuk-body\">This grant is for:</p>\n\n<ul class=\"govuk-list govuk-list--bullet\">\n<li>constructing or improving buildings for processing</li>\n<li>processing equipment or machinery</li>\n<li>retail facilities</li>\n</ul>"
+          "content": "<p class=\"govuk-body\">This grant is for:</p>\n\n<ul class=\"govuk-list govuk-list--bullet\">\n<li>constructing or improving buildings for processing</li>\n<li>processing equipment or machinery</li>\n<li>retail facilities</li>\n</ul>\n<p class=\"govuk-body\"><a href='https://www.gov.uk/guidance/funding-for-farmers' class='govuk-link govuk-link--no-visited-state'>See other grants you may be eligible for</a></p>"
         }
       ],
       "condition": "projectItemsCondition"
