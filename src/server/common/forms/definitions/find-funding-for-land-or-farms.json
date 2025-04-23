@@ -109,7 +109,7 @@
     {
       "title": "Confirmation",
       "path": "/confirmation",
-      "controller": "LandConfirmationPageController"
+      "controller": "ConfirmationPageController"
     }
   ],
   "lists": [],
