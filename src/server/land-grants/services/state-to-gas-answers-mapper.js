@@ -25,11 +25,11 @@
  * @param {object} state
  * @returns {GASAnswers}
  */
-export function transformStateObjectToLandGrantsGasAnswers(state) {
+export function stateToLandGrantsGasAnswers(state) {
   const result = {
     hasCheckedLandIsUpToDate: state.hasCheckedLandIsUpToDate,
-    scheme: state.scheme,
-    year: state.year
+    scheme: 'SFI',
+    year: 2025
   }
 
   if (state.landParcel && state.actionsObj) {

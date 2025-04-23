@@ -1,5 +1,5 @@
 import { formSubmissionService } from '~/src/server/common/forms/services/submission.js'
-import DeclarationPageController from './controller.js'
+import DeclarationPageController from './declaration.controller.js'
 
 jest.mock('@defra/forms-engine-plugin/controllers/SummaryPageController.js')
 jest.mock('~/src/server/common/forms/services/submission.js')

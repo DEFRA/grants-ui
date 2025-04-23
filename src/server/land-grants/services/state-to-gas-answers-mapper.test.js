@@ -1,7 +1,7 @@
-import { transformStateObjectToLandGrantsGasAnswers } from '~/src/server/land-grants/services/state-to-gas-answers-mapper.js'
+import { stateToLandGrantsGasAnswers } from '~/src/server/land-grants/services/state-to-gas-answers-mapper.js'
 import { validateGasAnswersForLandGrants } from '../schemas/gas-answers.schema.js'
 
-describe('transformStateObjectToLandGrantsGasAnswers', () => {
+describe('stateToLandGrantsGasAnswers', () => {
   it('should transform a complete object correctly', () => {
     const input = {
       hasCheckedLandIsUpToDate: true,
@@ -33,7 +33,7 @@ describe('transformStateObjectToLandGrantsGasAnswers', () => {
       ]
     }
 
-    expect(transformStateObjectToLandGrantsGasAnswers(input)).toEqual(expected)
+    expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
   })
 
   it('should handle multiple actions with different units', () => {
@@ -56,6 +56,8 @@ describe('transformStateObjectToLandGrantsGasAnswers', () => {
     }
 
     const expected = {
+      scheme: 'SFI',
+      year: 2025,
       actionApplications: [
         {
           parcelId: '9238',
@@ -87,7 +89,7 @@ describe('transformStateObjectToLandGrantsGasAnswers', () => {
       ]
     }
 
-    expect(transformStateObjectToLandGrantsGasAnswers(input)).toEqual(expected)
+    expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
   })
 
   it('should not include actionApplications when landParcel is missing', () => {
@@ -109,7 +111,7 @@ describe('transformStateObjectToLandGrantsGasAnswers', () => {
       year: 2025
     }
 
-    expect(transformStateObjectToLandGrantsGasAnswers(input)).toEqual(expected)
+    expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
   })
 
   it('should not include actionApplications when actionsObj is missing', () => {
@@ -126,7 +128,7 @@ describe('transformStateObjectToLandGrantsGasAnswers', () => {
       hasCheckedLandIsUpToDate: true
     }
 
-    expect(transformStateObjectToLandGrantsGasAnswers(input)).toEqual(expected)
+    expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
   })
 
   it('should handle decimal values correctly', () => {
@@ -141,6 +143,8 @@ describe('transformStateObjectToLandGrantsGasAnswers', () => {
     }
 
     const expected = {
+      scheme: 'SFI',
+      year: 2025,
       actionApplications: [
         {
           parcelId: '9238',
@@ -154,7 +158,7 @@ describe('transformStateObjectToLandGrantsGasAnswers', () => {
       ]
     }
 
-    expect(transformStateObjectToLandGrantsGasAnswers(input)).toEqual(expected)
+    expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
   })
 
   it('should omit unit in appliedFor when unit is missing', () => {
@@ -169,6 +173,8 @@ describe('transformStateObjectToLandGrantsGasAnswers', () => {
     }
 
     const expected = {
+      scheme: 'SFI',
+      year: 2025,
       actionApplications: [
         {
           parcelId: '9238',
@@ -181,7 +187,7 @@ describe('transformStateObjectToLandGrantsGasAnswers', () => {
       ]
     }
 
-    expect(transformStateObjectToLandGrantsGasAnswers(input)).toEqual(expected)
+    expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
   })
 
   it('should omit quantity in appliedFor when value is missing', () => {
@@ -196,6 +202,8 @@ describe('transformStateObjectToLandGrantsGasAnswers', () => {
     }
 
     const expected = {
+      scheme: 'SFI',
+      year: 2025,
       actionApplications: [
         {
           parcelId: '9238',
@@ -208,7 +216,7 @@ describe('transformStateObjectToLandGrantsGasAnswers', () => {
       ]
     }
 
-    expect(transformStateObjectToLandGrantsGasAnswers(input)).toEqual(expected)
+    expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
   })
 
   it('should omit quantity when value is not a valid number', () => {
@@ -223,6 +231,8 @@ describe('transformStateObjectToLandGrantsGasAnswers', () => {
     }
 
     const expected = {
+      scheme: 'SFI',
+      year: 2025,
       actionApplications: [
         {
           parcelId: '9238',
@@ -235,7 +245,7 @@ describe('transformStateObjectToLandGrantsGasAnswers', () => {
       ]
     }
 
-    expect(transformStateObjectToLandGrantsGasAnswers(input)).toEqual(expected)
+    expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
   })
 
   it('should omit appliedFor when action data is empty', () => {
@@ -247,6 +257,8 @@ describe('transformStateObjectToLandGrantsGasAnswers', () => {
     }
 
     const expected = {
+      scheme: 'SFI',
+      year: 2025,
       actionApplications: [
         {
           parcelId: '9238',
@@ -256,7 +268,7 @@ describe('transformStateObjectToLandGrantsGasAnswers', () => {
       ]
     }
 
-    expect(transformStateObjectToLandGrantsGasAnswers(input)).toEqual(expected)
+    expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
   })
 
   it('should omit appliedFor when action data is not an object', () => {
@@ -268,6 +280,8 @@ describe('transformStateObjectToLandGrantsGasAnswers', () => {
     }
 
     const expected = {
+      scheme: 'SFI',
+      year: 2025,
       actionApplications: [
         {
           parcelId: '9238',
@@ -277,7 +291,7 @@ describe('transformStateObjectToLandGrantsGasAnswers', () => {
       ]
     }
 
-    expect(transformStateObjectToLandGrantsGasAnswers(input)).toEqual(expected)
+    expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
   })
 
   it('should return only basic properties when no action data is provided', () => {
@@ -291,14 +305,17 @@ describe('transformStateObjectToLandGrantsGasAnswers', () => {
       year: 2025
     }
 
-    expect(transformStateObjectToLandGrantsGasAnswers(input)).toEqual(expected)
+    expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
   })
 
-  it('should return empty object when input is empty', () => {
+  it('should return minimal object when input is empty', () => {
     const input = {}
-    const expected = {}
+    const expected = {
+      scheme: 'SFI',
+      year: 2025
+    }
 
-    expect(transformStateObjectToLandGrantsGasAnswers(input)).toEqual(expected)
+    expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
   })
 
   it('should handle landParcel without dash', () => {
@@ -313,6 +330,8 @@ describe('transformStateObjectToLandGrantsGasAnswers', () => {
     }
 
     const expected = {
+      scheme: 'SFI',
+      year: 2025,
       actionApplications: [
         {
           sheetId: 'SX06799238', // The entire value becomes sheetId
@@ -325,7 +344,7 @@ describe('transformStateObjectToLandGrantsGasAnswers', () => {
       ]
     }
 
-    expect(transformStateObjectToLandGrantsGasAnswers(input)).toEqual(expected)
+    expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
   })
 
   it('should include zero as a valid quantity', () => {
@@ -340,6 +359,8 @@ describe('transformStateObjectToLandGrantsGasAnswers', () => {
     }
 
     const expected = {
+      scheme: 'SFI',
+      year: 2025,
       actionApplications: [
         {
           parcelId: '9238',
@@ -353,7 +374,7 @@ describe('transformStateObjectToLandGrantsGasAnswers', () => {
       ]
     }
 
-    expect(transformStateObjectToLandGrantsGasAnswers(input)).toEqual(expected)
+    expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
   })
 
   it('should handle landParcel with multiple dashes correctly', () => {
@@ -368,6 +389,8 @@ describe('transformStateObjectToLandGrantsGasAnswers', () => {
     }
 
     const expected = {
+      scheme: 'SFI',
+      year: 2025,
       actionApplications: [
         {
           sheetId: 'SX0679',
@@ -381,7 +404,7 @@ describe('transformStateObjectToLandGrantsGasAnswers', () => {
       ]
     }
 
-    expect(transformStateObjectToLandGrantsGasAnswers(input)).toEqual(expected)
+    expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
   })
 
   it('should handle null values in actionsObj', () => {
@@ -393,6 +416,8 @@ describe('transformStateObjectToLandGrantsGasAnswers', () => {
     }
 
     const expected = {
+      scheme: 'SFI',
+      year: 2025,
       actionApplications: [
         {
           parcelId: '9238',
@@ -402,7 +427,7 @@ describe('transformStateObjectToLandGrantsGasAnswers', () => {
       ]
     }
 
-    expect(transformStateObjectToLandGrantsGasAnswers(input)).toEqual(expected)
+    expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
   })
 
   it('should handle mixed action data types', () => {
@@ -420,6 +445,8 @@ describe('transformStateObjectToLandGrantsGasAnswers', () => {
     }
 
     const expected = {
+      scheme: 'SFI',
+      year: 2025,
       actionApplications: [
         {
           parcelId: '9238',
@@ -448,7 +475,7 @@ describe('transformStateObjectToLandGrantsGasAnswers', () => {
       ]
     }
 
-    expect(transformStateObjectToLandGrantsGasAnswers(input)).toEqual(expected)
+    expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
   })
 
   it('should handle string values with spaces', () => {
@@ -463,6 +490,8 @@ describe('transformStateObjectToLandGrantsGasAnswers', () => {
     }
 
     const expected = {
+      scheme: 'SFI',
+      year: 2025,
       actionApplications: [
         {
           parcelId: '9238',
@@ -476,7 +505,7 @@ describe('transformStateObjectToLandGrantsGasAnswers', () => {
       ]
     }
 
-    expect(transformStateObjectToLandGrantsGasAnswers(input)).toEqual(expected)
+    expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
   })
 
   it('should handle numeric strings with leading zeros', () => {
@@ -491,6 +520,8 @@ describe('transformStateObjectToLandGrantsGasAnswers', () => {
     }
 
     const expected = {
+      scheme: 'SFI',
+      year: 2025,
       actionApplications: [
         {
           parcelId: '9238',
@@ -504,7 +535,7 @@ describe('transformStateObjectToLandGrantsGasAnswers', () => {
       ]
     }
 
-    expect(transformStateObjectToLandGrantsGasAnswers(input)).toEqual(expected)
+    expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
   })
 
   it('should handle undefined values in actionsObj', () => {
@@ -516,6 +547,8 @@ describe('transformStateObjectToLandGrantsGasAnswers', () => {
     }
 
     const expected = {
+      scheme: 'SFI',
+      year: 2025,
       actionApplications: [
         {
           parcelId: '9238',
@@ -525,7 +558,7 @@ describe('transformStateObjectToLandGrantsGasAnswers', () => {
       ]
     }
 
-    expect(transformStateObjectToLandGrantsGasAnswers(input)).toEqual(expected)
+    expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
   })
 })
 
@@ -584,7 +617,7 @@ describe('schema validation', () => {
     ]
 
     stateObjectTestCases.forEach((testCase) => {
-      const result = transformStateObjectToLandGrantsGasAnswers(testCase)
+      const result = stateToLandGrantsGasAnswers(testCase)
       const { error } = validateGasAnswersForLandGrants(result)
 
       // We check here that the output always adheres to GasPayload expectations in terms of format

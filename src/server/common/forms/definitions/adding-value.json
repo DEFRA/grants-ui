@@ -891,7 +891,7 @@
       "title": "Confirm and send",
       "path": "/declaration",
       "controller": "DeclarationPageController",
-      "view": "grants/declaration.html"
+      "view": "declaration-page.html"
     },
     {
       "title": "Confirmation",

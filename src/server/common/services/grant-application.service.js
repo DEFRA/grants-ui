@@ -22,7 +22,9 @@ export async function submitGrantApplication(code, payload) {
     /**
      * @type {Error & {code?: number}}
      */
-    const error = new Error(response.statusText)
+
+    const data = await response.json()
+    const error = new Error(data.message)
     error.code = response.status
     throw error
   }

@@ -1,6 +1,8 @@
 import { transformStateObjectToGasApplication } from '~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
 import { validateGasPayload } from '~/src/server/common/schemas/gas-payload.schema.js'
 
+jest.mock('crypto', () => ({ randomUUID: () => 'CLIENT-REF-456' }))
+
 const mockDate = new Date('2025-04-22T12:00:00Z')
 const originalDate = global.Date
 
@@ -26,13 +28,14 @@ afterAll(() => {
 
 describe('transformStateObjectToGasApplication', () => {
   it('should transform a state object with basic properties', () => {
-    const mockState = {
+    const identifiers = {
       sbi: '12345678',
       frn: 'FRN123456',
       crn: 'CRN789012',
       defraId: 'DEFRA-ID-123',
       clientRef: 'CLIENT-REF-456'
     }
+    const state = {}
 
     const mockAnswersTransformer = jest.fn().mockReturnValue({
       scheme: 'Test Scheme',
@@ -40,7 +43,8 @@ describe('transformStateObjectToGasApplication', () => {
     })
 
     const result = transformStateObjectToGasApplication(
-      mockState,
+      identifiers,
+      state,
       mockAnswersTransformer
     )
 
@@ -59,21 +63,23 @@ describe('transformStateObjectToGasApplication', () => {
       }
     })
 
-    expect(mockAnswersTransformer).toHaveBeenCalledWith(mockState)
+    expect(mockAnswersTransformer).toHaveBeenCalledWith(state)
   })
 
   it('should handle missing optional properties', () => {
-    const mockState = {
-      sbi: '12345678',
-      clientRef: 'CLIENT-REF-456'
+    const identifiers = {
+      sbi: '12345678'
     }
+
+    const state = {}
 
     const mockAnswersTransformer = jest.fn().mockReturnValue({
       scheme: 'Test Scheme'
     })
 
     const result = transformStateObjectToGasApplication(
-      mockState,
+      identifiers,
+      state,
       mockAnswersTransformer
     )
 
@@ -93,12 +99,15 @@ describe('transformStateObjectToGasApplication', () => {
   })
 
   it('should transform a state with action applications', () => {
-    const mockState = {
+    const identifiers = {
       sbi: '12345678',
       frn: 'FRN123456',
       crn: 'CRN789012',
       defraId: 'DEFRA-ID-123',
-      clientRef: 'CLIENT-REF-456',
+      clientRef: 'CLIENT-REF-456'
+    }
+
+    const state = {
       actionApplications: [
         {
           parcelId: 'PARCEL-001',
@@ -129,7 +138,8 @@ describe('transformStateObjectToGasApplication', () => {
     }))
 
     const result = transformStateObjectToGasApplication(
-      mockState,
+      identifiers,
+      state,
       mockAnswersTransformer
     )
 
@@ -171,25 +181,40 @@ describe('transformStateObjectToGasApplication', () => {
   })
 
   it('should call the answers transformer with the state object', () => {
-    const mockState = { sbi: '12345678' }
+    const identifiers = {
+      sbi: '12345678',
+      frn: 'FRN123456',
+      crn: 'CRN789012',
+      defraId: 'DEFRA-ID-123',
+      clientRef: 'CLIENT-REF-456'
+    }
+
+    const state = { sbi: '12345678' }
     const mockAnswersTransformer = jest.fn().mockReturnValue({})
 
-    transformStateObjectToGasApplication(mockState, mockAnswersTransformer)
+    transformStateObjectToGasApplication(
+      identifiers,
+      state,
+      mockAnswersTransformer
+    )
 
     expect(mockAnswersTransformer).toHaveBeenCalledTimes(1)
-    expect(mockAnswersTransformer).toHaveBeenCalledWith(mockState)
+    expect(mockAnswersTransformer).toHaveBeenCalledWith(state)
   })
 })
 
 describe('schema validation', () => {
   it('output always conforms to GASPayload schema structure', () => {
+    const identifiers = {
+      sbi: '12345678',
+      frn: 'FRN123456',
+      crn: 'CRN789012',
+      defraId: 'DEFRA-ID-123',
+      clientRef: 'CLIENT-REF-456'
+    }
     const stateObjectTestCases = [
       // Complete object being set
       {
-        sbi: 'sbi-1234',
-        frn: 'frn-1234',
-        crn: 'crn-1234',
-        defraId: 'defra-id-1234',
         scheme: 'SFI',
         year: 2025,
         hasCheckedLandIsUpToDate: true,
@@ -236,7 +261,11 @@ describe('schema validation', () => {
     ]
 
     stateObjectTestCases.forEach((testCase) => {
-      const result = transformStateObjectToGasApplication(testCase, (a) => a)
+      const result = transformStateObjectToGasApplication(
+        identifiers,
+        testCase,
+        (a) => a
+      )
       const { error } = validateGasPayload(result)
 
       // We check here that the output always adheres to GasPayload expectations in terms of format

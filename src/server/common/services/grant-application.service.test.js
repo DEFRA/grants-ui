@@ -63,17 +63,15 @@ describe('submitGrantApplication', () => {
   })
 
   test('should throw an error when the request fails', async () => {
-    const mockStatus = 400
-    const mockStatusText = 'Bad Request'
+    const mockMessage = 'Bad Request'
 
     fetch.mockResolvedValue({
       ok: false,
-      status: mockStatus,
-      statusText: mockStatusText
+      json: jest.fn().mockResolvedValueOnce({ message: mockMessage })
     })
 
     await expect(submitGrantApplication(code, payload)).rejects.toThrow(
-      mockStatusText
+      mockMessage
     )
 
     expect(fetch).toHaveBeenCalledWith(
