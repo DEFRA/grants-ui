@@ -13,7 +13,6 @@ import { nunjucksConfig } from '~/src/config/nunjucks/nunjucks.js'
 // import auth from '~/src/plugins/auth.js'
 import csp from '~/src/plugins/content-security-policy.js'
 import sso from '~/src/plugins/sso.js'
-import ConfirmationPageController from '~/src/server/common/components/confirmation/confirmation.controller.js'
 import { formsService } from '~/src/server/common/forms/services/form.js'
 import { formSubmissionService } from '~/src/server/common/forms/services/submission.js'
 import { catchAll } from '~/src/server/common/helpers/errors.js'
@@ -24,10 +23,11 @@ import { requestTracing } from '~/src/server/common/helpers/request-tracing.js'
 import { secureContext } from '~/src/server/common/helpers/secure-context/index.js'
 import { getCacheEngine } from '~/src/server/common/helpers/session-cache/cache-engine.js'
 import { sessionCache } from '~/src/server/common/helpers/session-cache/session-cache.js'
-import LandActionsController from '~/src/server/land-grants/actions/actions.controller.js'
-import LandParcelController from '~/src/server/land-grants/parcels/parcel.controller.js'
-import LandSummaryPageController from '~/src/server/land-grants/summary/land-summary.controller.js'
-import DeclarationPageController from '~/src/server/scoring/declaration/declaration.controller.js'
+import LandActionsController from '~/src/server/land-grants/controllers/actions.controller.js'
+import LandSummaryPageController from '~/src/server/land-grants/controllers/land-summary.controller.js'
+import LandParcelController from '~/src/server/land-grants/controllers/parcel.controller.js'
+import ConfirmationPageController from '~/src/server/scoring/controllers/confirmation.controller.js'
+import DeclarationPageController from '~/src/server/scoring/controllers/declaration.controller.js'
 import { formatCurrency } from '../config/nunjucks/filters/format-currency.js'
 import { router } from './router.js'
 
@@ -38,13 +38,9 @@ const getViewPaths = () => {
   const isRunningBuiltCode = currentFilePath.includes('.server')
   const basePath = isRunningBuiltCode ? '.server/server' : 'src/server'
   return [
-    `${basePath}/land-grants/actions`,
-    `${basePath}/land-grants/parcels`,
-    `${basePath}/land-grants/summary`,
-    `${basePath}/scoring`,
-    `${basePath}/scoring/declaration`,
-    `${basePath}/common/templates`,
-    `${basePath}/common/components/confirmation`
+    `${basePath}/land-grants/views`,
+    `${basePath}/scoring/views`,
+    `${basePath}/common/templates`
   ]
 }
 
