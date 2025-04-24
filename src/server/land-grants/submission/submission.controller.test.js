@@ -8,7 +8,7 @@ jest.mock('~/src/server/common/services/grant-application.service.js')
 jest.mock(
   '../../common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
 )
-jest.mock('../services/state-to-gas-answers-mapper.js')
+jest.mock('./state-to-gas-answers-mapper.js')
 
 jest.mock(
   '@defra/forms-engine-plugin/controllers/SummaryPageController.js',
@@ -36,8 +36,8 @@ describe('SubmissionPageController', () => {
   })
 
   describe('constructor', () => {
-    it('should set viewName to "land-summary"', () => {
-      expect(controller.viewName).toBe('land-summary')
+    it('should set viewName to "submission"', () => {
+      expect(controller.viewName).toBe('submission')
     })
 
     it('should set grantCode to "frps-private-beta"', () => {
