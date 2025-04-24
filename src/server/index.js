@@ -23,11 +23,11 @@ import { requestTracing } from '~/src/server/common/helpers/request-tracing.js'
 import { secureContext } from '~/src/server/common/helpers/secure-context/index.js'
 import { getCacheEngine } from '~/src/server/common/helpers/session-cache/cache-engine.js'
 import { sessionCache } from '~/src/server/common/helpers/session-cache/session-cache.js'
-import LandActionsController from '~/src/server/land-grants/controllers/actions.controller.js'
-import LandSummaryPageController from '~/src/server/land-grants/controllers/land-summary.controller.js'
-import LandParcelController from '~/src/server/land-grants/controllers/parcel.controller.js'
-import ConfirmationPageController from '~/src/server/scoring/controllers/confirmation.controller.js'
-import DeclarationPageController from '~/src/server/scoring/controllers/declaration.controller.js'
+import LandActionsController from '~/src/server/land-grants/actions/actions.controller.js'
+import LandParcelController from '~/src/server/land-grants/parcel/parcel.controller.js'
+import SubmissionPageController from '~/src/server/land-grants/submission/submission.controller.js'
+import ConfirmationPageController from '~/src/server/scoring/confirmation/confirmation.controller.js'
+import DeclarationPageController from '~/src/server/scoring/declaration/declaration.controller.js'
 import { formatCurrency } from '../config/nunjucks/filters/format-currency.js'
 import { router } from './router.js'
 
@@ -38,8 +38,12 @@ const getViewPaths = () => {
   const isRunningBuiltCode = currentFilePath.includes('.server')
   const basePath = isRunningBuiltCode ? '.server/server' : 'src/server'
   return [
-    `${basePath}/land-grants/views`,
+    `${basePath}/land-grants/actions`,
+    `${basePath}/land-grants/parcel`,
+    `${basePath}/land-grants/submission`,
     `${basePath}/scoring/views`,
+    `${basePath}/scoring/declaration`,
+    `${basePath}/scoring/confirmation`,
     `${basePath}/common/templates`
   ]
 }
@@ -104,7 +108,7 @@ const registerFormsPlugin = async (server) => {
       controllers: {
         ConfirmationPageController,
         DeclarationPageController,
-        LandSummaryPageController,
+        SubmissionPageController,
         LandParcelController,
         LandActionsController
       }

@@ -104,7 +104,7 @@
     {
       "title": "Funding Details",
       "path": "/summary",
-      "controller": "LandSummaryPageController"
+      "controller": "SubmissionPageController"
     },
     {
       "title": "Confirmation",

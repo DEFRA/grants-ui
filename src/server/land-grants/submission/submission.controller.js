@@ -1,16 +1,16 @@
 import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
 import { submitGrantApplication } from '~/src/server/common/services/grant-application.service.js'
 import { transformStateObjectToGasApplication } from '../../common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
-import { stateToLandGrantsGasAnswers } from '../services/state-to-gas-answers-mapper.js'
+import { stateToLandGrantsGasAnswers } from './state-to-gas-answers-mapper.js'
 
-export default class LandSummaryPageController extends SummaryPageController {
+export default class SubmissionPageController extends SummaryPageController {
   /**
    * @param {FormModel} model
    * @param {PageSummary} pageDef
    */
   constructor(model, pageDef) {
     super(model, pageDef)
-    this.viewName = 'land-summary'
+    this.viewName = 'submission'
     this.grantCode = 'frps-private-beta'
   }
 

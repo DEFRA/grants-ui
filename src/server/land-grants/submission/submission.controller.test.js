@@ -1,8 +1,8 @@
 import { jest } from '@jest/globals'
 import { submitGrantApplication } from '~/src/server/common/services/grant-application.service.js'
 import { transformStateObjectToGasApplication } from '../../common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
-import { stateToLandGrantsGasAnswers } from '../services/state-to-gas-answers-mapper.js'
-import LandSummaryPageController from './land-summary.controller.js'
+import { stateToLandGrantsGasAnswers } from './state-to-gas-answers-mapper.js'
+import SubmissionPageController from './submission.controller.js'
 
 jest.mock('~/src/server/common/services/grant-application.service.js')
 jest.mock(
@@ -21,7 +21,7 @@ jest.mock(
   }
 )
 
-describe('LandSummaryPageController', () => {
+describe('SubmissionPageController', () => {
   let controller
   let mockModel
   let mockPageDef
@@ -32,7 +32,7 @@ describe('LandSummaryPageController', () => {
     mockModel = {}
     mockPageDef = {}
 
-    controller = new LandSummaryPageController(mockModel, mockPageDef)
+    controller = new SubmissionPageController(mockModel, mockPageDef)
   })
 
   describe('constructor', () => {

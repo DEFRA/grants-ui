@@ -1,5 +1,5 @@
-import { stateToLandGrantsGasAnswers } from '~/src/server/land-grants/services/state-to-gas-answers-mapper.js'
-import { validateGasAnswersForLandGrants } from '../schemas/gas-answers.schema.js'
+import { stateToLandGrantsGasAnswers } from '~/src/server/land-grants/submission/state-to-gas-answers-mapper.js'
+import { validateGasAnswersForLandGrants } from './gas-answers.schema.js'
 
 describe('stateToLandGrantsGasAnswers', () => {
   it('should transform a complete object correctly', () => {
