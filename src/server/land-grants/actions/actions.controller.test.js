@@ -260,7 +260,7 @@ describe('LandActionsController', () => {
         expect.objectContaining({
           landParcel: 'sheet1-parcel1',
           actions: ['action1', 'action2'],
-          area: JSON.stringify(actionsObj),
+          area: 'action1: 10 ha.',
           actionsObj,
           applicationValue: '£1,250.75'
         })
@@ -286,7 +286,7 @@ describe('LandActionsController', () => {
         expect.objectContaining({
           landParcel: 'sheet1-parcel1',
           actions: '',
-          area: JSON.stringify({}),
+          area: '',
           actionsObj: {}
         })
       )

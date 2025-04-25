@@ -58,12 +58,17 @@ export default class LandActionsController extends QuestionPageController {
       const { actions = '' } = payload
       const [sheetId, parcelId] = this.parseLandParcelId(state.landParcel)
       const actionsObj = this.extractActionsObjectFromPayload(payload)
+      const area = []
+
+      Object.entries(actionsObj).forEach(([key, value]) => {
+        area.push(`${key}: ${value.value} ${value.unit}.`)
+      })
 
       // Create updated state with the new action data
       const newState = {
         ...state,
         actions,
-        area: JSON.stringify(actionsObj),
+        area: area.join(', '),
         actionsObj
       }
 

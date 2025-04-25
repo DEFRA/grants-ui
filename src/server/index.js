@@ -14,6 +14,7 @@ import { nunjucksConfig } from '~/src/config/nunjucks/nunjucks.js'
 import csp from '~/src/plugins/content-security-policy.js'
 import sso from '~/src/plugins/sso.js'
 import { formsService } from '~/src/server/common/forms/services/form.js'
+import { outputService } from '~/src/server/common/forms/services/output.js'
 import { formSubmissionService } from '~/src/server/common/forms/services/submission.js'
 import { catchAll } from '~/src/server/common/helpers/errors.js'
 import { requestLogger } from '~/src/server/common/helpers/logging/request-logger.js'
@@ -99,7 +100,8 @@ const registerFormsPlugin = async (server) => {
       cacheName: config.get(SESSION_CACHE_NAME),
       services: {
         formsService,
-        formSubmissionService
+        formSubmissionService,
+        outputService
       },
       filters: {
         formatCurrency
