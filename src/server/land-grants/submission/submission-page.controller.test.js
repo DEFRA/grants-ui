@@ -2,7 +2,7 @@ import { jest } from '@jest/globals'
 import { submitGrantApplication } from '~/src/server/common/services/grant-application.service.js'
 import { transformStateObjectToGasApplication } from '../../common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
 import { stateToLandGrantsGasAnswers } from './state-to-gas-answers-mapper.js'
-import SubmissionPageController from './submission.controller.js'
+import SubmissionPageController from './submission-page.controller.js'
 
 jest.mock('~/src/server/common/services/grant-application.service.js')
 jest.mock(

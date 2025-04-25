@@ -1,7 +1,7 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
 import { fetchParcelDataForBusiness } from '~/src/server/common/services/consolidated-view.service.js'
-import LandParcelController from './parcel.controller.js'
+import LandParcelPageController from './land-parcel-page.controller.js'
 
 jest.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js')
 jest.mock('~/src/server/common/helpers/logging/logger.js', () => ({
@@ -14,7 +14,7 @@ jest.mock('~/src/server/common/services/consolidated-view.service.js', () => ({
   fetchParcelDataForBusiness: jest.fn()
 }))
 
-describe('LandParcelController', () => {
+describe('LandParcelPageController', () => {
   let controller
   let mockRequest
   let mockContext
@@ -40,7 +40,7 @@ describe('LandParcelController', () => {
       pageTitle: 'Select Land Parcel'
     })
 
-    controller = new LandParcelController()
+    controller = new LandParcelPageController()
     controller.proceed = jest.fn().mockResolvedValue('next')
     controller.getNextPath = jest.fn().mockReturnValue('/next-page')
     controller.setState = jest.fn()
@@ -69,7 +69,7 @@ describe('LandParcelController', () => {
   afterEach(jest.clearAllMocks)
 
   it('should have the correct viewName', () => {
-    expect(controller.viewName).toBe('parcel')
+    expect(controller.viewName).toBe('land-parcel')
   })
 
   describe('GET route handler', () => {
@@ -85,7 +85,7 @@ describe('LandParcelController', () => {
         1100598138
       )
       expect(mockH.view).toHaveBeenCalledWith(
-        'parcel',
+        'land-parcel',
         expect.objectContaining({
           pageTitle: 'Select Land Parcel',
           business: expect.anything(),
@@ -106,7 +106,7 @@ describe('LandParcelController', () => {
 
       expect(createLogger().error).toHaveBeenCalled()
       expect(mockH.view).toHaveBeenCalledWith(
-        'parcel',
+        'land-parcel',
         expect.objectContaining({
           pageTitle: 'Select Land Parcel',
           errors: ['Unable to find parcel information, please try again later.']
@@ -125,7 +125,7 @@ describe('LandParcelController', () => {
       )
 
       expect(mockH.view).toHaveBeenCalledWith(
-        'parcel',
+        'land-parcel',
         expect.objectContaining({
           landParcel: '',
           business: expect.anything()
@@ -144,7 +144,7 @@ describe('LandParcelController', () => {
       )
 
       expect(mockH.view).toHaveBeenCalledWith(
-        'parcel',
+        'land-parcel',
         expect.objectContaining({
           landParcel: 'sheet123',
           business: expect.anything(),

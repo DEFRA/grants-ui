@@ -4,8 +4,8 @@ import { fetchParcelDataForBusiness } from '~/src/server/common/services/consoli
 
 const logger = createLogger()
 
-export default class LandParcelController extends QuestionPageController {
-  viewName = 'parcel'
+export default class LandParcelPageController extends QuestionPageController {
+  viewName = 'land-parcel'
 
   makePostRouteHandler() {
     /**

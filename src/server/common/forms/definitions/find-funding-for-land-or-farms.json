@@ -53,7 +53,7 @@
     },
     {
       "title": "Select Land Parcel",
-      "controller": "LandParcelController",
+      "controller": "LandParcelPageController",
       "path": "/select-land-parcel",
       "next": [{ "path": "/select-land-actions" }],
       "components": [
@@ -70,7 +70,7 @@
     },
     {
       "title": "Select Land Actions",
-      "controller": "LandActionsController",
+      "controller": "LandActionsPageController",
       "path": "/select-land-actions",
       "next": [{ "path": "/summary" }],
       "components": [

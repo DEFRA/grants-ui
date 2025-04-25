@@ -24,9 +24,9 @@ import { requestTracing } from '~/src/server/common/helpers/request-tracing.js'
 import { secureContext } from '~/src/server/common/helpers/secure-context/index.js'
 import { getCacheEngine } from '~/src/server/common/helpers/session-cache/cache-engine.js'
 import { sessionCache } from '~/src/server/common/helpers/session-cache/session-cache.js'
-import LandActionsController from '~/src/server/land-grants/actions/actions.controller.js'
-import LandParcelController from '~/src/server/land-grants/parcel/parcel.controller.js'
-import SubmissionPageController from '~/src/server/land-grants/submission/submission.controller.js'
+import LandActionsPageController from '~/src/server/land-grants/actions/land-actions.controller.js'
+import LandParcelPageController from '~/src/server/land-grants/parcel/land-parcel-page.controller.js'
+import SubmissionPageController from '~/src/server/land-grants/submission/submission-page.controller.js'
 import ConfirmationPageController from '~/src/server/scoring/confirmation/confirmation.controller.js'
 import DeclarationPageController from '~/src/server/scoring/declaration/declaration.controller.js'
 import { formatCurrency } from '../config/nunjucks/filters/format-currency.js'
@@ -111,8 +111,8 @@ const registerFormsPlugin = async (server) => {
         ConfirmationPageController,
         DeclarationPageController,
         SubmissionPageController,
-        LandParcelController,
-        LandActionsController
+        LandParcelPageController,
+        LandActionsPageController
       }
     }
   })

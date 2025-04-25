@@ -3,10 +3,10 @@ import {
   calculateApplicationPayment,
   fetchLandSheetDetails,
   validateLandActions
-} from '~/src/server/land-grants/actions/actions.service.js'
+} from '~/src/server/land-grants/actions/land-actions.service.js'
 
 export default class LandActionsController extends QuestionPageController {
-  viewName = 'actions'
+  viewName = 'land-actions'
   areaPrefix = 'area-'
   availableActions = []
 
