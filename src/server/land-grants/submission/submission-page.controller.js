@@ -34,7 +34,7 @@ export default class SubmissionPageController extends SummaryPageController {
       context.state,
       stateToLandGrantsGasAnswers
     )
-    return await submitGrantApplication(this.grantCode, applicationData)
+    return submitGrantApplication(this.grantCode, applicationData)
   }
 
   makePostRouteHandler() {
