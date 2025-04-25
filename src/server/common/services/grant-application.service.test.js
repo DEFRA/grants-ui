@@ -2,9 +2,9 @@ import { config } from '~/src/config/config.js'
 import { submitGrantApplication } from '~/src/server/common/services/grant-application.service.js'
 
 const gasApi = config.get('gas.apiEndpoint')
+const code = config.get('gas.frpsGrantCode')
 
 describe('submitGrantApplication', () => {
-  const code = 'frps-private-beta'
   const payload = {
     metadata: {
       clientRef: 'abc123',

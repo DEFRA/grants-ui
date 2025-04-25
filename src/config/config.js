@@ -93,6 +93,12 @@ export const config = convict({
       format: String,
       default: '',
       env: 'GAS_API_URL'
+    },
+    frpsGrantCode: {
+      doc: 'GAS Future RPS grant code',
+      format: String,
+      default: '',
+      env: 'GAS_FRPS_GRANT_CODE'
     }
   },
   landGrants: {

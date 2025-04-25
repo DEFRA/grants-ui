@@ -1,4 +1,5 @@
 import { jest } from '@jest/globals'
+import { config } from '~/src/config/config.js'
 import { submitGrantApplication } from '~/src/server/common/services/grant-application.service.js'
 import { transformStateObjectToGasApplication } from '../../common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
 import { stateToLandGrantsGasAnswers } from './state-to-gas-answers-mapper.js'
@@ -21,6 +22,8 @@ jest.mock(
   }
 )
 
+const code = config.get('gas.frpsGrantCode')
+
 describe('SubmissionPageController', () => {
   let controller
   let mockModel
@@ -40,8 +43,8 @@ describe('SubmissionPageController', () => {
       expect(controller.viewName).toBe('submission')
     })
 
-    it('should set grantCode to "frps-private-beta"', () => {
-      expect(controller.grantCode).toBe('frps-private-beta')
+    it('should set grantCode', () => {
+      expect(controller.grantCode).toBe(code)
     })
   })
 
@@ -77,7 +80,7 @@ describe('SubmissionPageController', () => {
         stateToLandGrantsGasAnswers
       )
       expect(submitGrantApplication).toHaveBeenCalledWith(
-        'frps-private-beta',
+        code,
         mockApplicationData
       )
       expect(result).toEqual(mockResult)
