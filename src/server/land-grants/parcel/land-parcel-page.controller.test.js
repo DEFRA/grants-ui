@@ -1,5 +1,4 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
-import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
 import { fetchParcelDataForBusiness } from '~/src/server/common/services/consolidated-view.service.js'
 import LandParcelPageController from './land-parcel-page.controller.js'
 
@@ -104,7 +103,6 @@ describe('LandParcelPageController', () => {
         mockH
       )
 
-      expect(createLogger().error).toHaveBeenCalled()
       expect(mockH.view).toHaveBeenCalledWith(
         'land-parcel',
         expect.objectContaining({

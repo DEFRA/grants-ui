@@ -59,7 +59,6 @@ export default class LandParcelPageController extends QuestionPageController {
 
         return h.view(viewName, viewModel)
       } catch (e) {
-        logger.error(e, `Failed to fetch business details ${sbi}`)
         return h.view(viewName, {
           ...super.getViewModel(request, context),
           errors: ['Unable to find parcel information, please try again later.']

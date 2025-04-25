@@ -142,10 +142,6 @@ describe('SubmissionPageController', () => {
       await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow(
         mockError
       )
-      expect(mockRequest.logger.error).toHaveBeenCalledWith(
-        mockError,
-        'Failed to submit form to GAS: Submission failed'
-      )
       expect(mockH.redirect).not.toHaveBeenCalled()
     })
   })

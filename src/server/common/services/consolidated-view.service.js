@@ -35,8 +35,9 @@ const logger = createLogger()
  * @throws {Error} - If the request fails
  */
 export async function fetchParcelDataForBusiness(sbi, crn) {
-  const now = new Date().toISOString()
-  const query = `
+  try {
+    const now = new Date().toISOString()
+    const query = `
     query Business {
       business(sbi: "${sbi}") {
         sbi
@@ -56,43 +57,50 @@ export async function fetchParcelDataForBusiness(sbi, crn) {
       }
     }`
 
-  const token = await getValidToken()
+    const token = await getValidToken()
 
-  const response = await fetch(CV_API_ENDPOINT, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-      email: CV_API_AUTH_EMAIL
-    },
-    body: JSON.stringify({
-      query
-    })
-  })
-
-  if (!response.ok) {
-    const errorText = await response.text()
-    const error = new Error(
-      `Failed to fetch business data: ${response.status} ${response.statusText}`
-    )
-    error.code = response.status
-    error.responseBody = errorText
-
-    logger.error(
-      {
-        err: error,
-        statusCode: response.status,
-        responseText: errorText,
-        sbi,
-        crn
+    const response = await fetch(CV_API_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+        email: CV_API_AUTH_EMAIL
       },
-      'Failed to fetch business data from Consolidated View API'
-    )
+      body: JSON.stringify({
+        query
+      })
+    })
 
+    if (!response.ok) {
+      const errorText = await response.text()
+      const error = new Error(
+        `Failed to fetch business data: ${response.status} ${response.statusText}`
+      )
+      error.code = response.status
+      error.responseBody = errorText
+
+      logger.error(
+        {
+          err: error,
+          statusCode: response.status,
+          responseText: errorText,
+          sbi,
+          crn
+        },
+        'Failed to fetch business data from Consolidated View API'
+      )
+
+      throw error
+    }
+
+    const data = /** @type {Promise<BusinessResponse>} */ (response.json())
+
+    return data
+  } catch (error) {
+    logger.error(
+      error,
+      `Failed to fetch parcel data for sbi ${sbi} and crn ${crn}`
+    )
     throw error
   }
-
-  const data = /** @type {Promise<BusinessResponse>} */ (response.json())
-
-  return data
 }

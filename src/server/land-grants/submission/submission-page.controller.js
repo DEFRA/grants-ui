@@ -40,18 +40,10 @@ export default class SubmissionPageController extends SummaryPageController {
 
   makePostRouteHandler() {
     const fn = async (request, context, h) => {
-      try {
-        const result = await this.submitLandGrantApplication(context)
-        request.logger.info('Form submission completed', result)
+      const result = await this.submitLandGrantApplication(context)
+      request.logger.info('Form submission completed', result)
 
-        return h.redirect(this.getStatusPath())
-      } catch (error) {
-        request.logger.error(
-          error,
-          'Failed to submit form to GAS: ' + error.message
-        )
-        throw error
-      }
+      return h.redirect(this.getStatusPath())
     }
 
     return fn

@@ -1,6 +1,8 @@
 import { config } from '~/src/config/config.js'
+import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
 
 const GAS_API_URL = config.get('gas.apiEndpoint')
+const logger = createLogger()
 
 /**
  * Submits a grant application to Grants Application service
@@ -10,24 +12,29 @@ const GAS_API_URL = config.get('gas.apiEndpoint')
  * @throws {Error} - If the request fails
  */
 export async function submitGrantApplication(code, payload) {
-  const response = await fetch(`${GAS_API_URL}/grants/${code}/applications`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(payload)
-  })
+  try {
+    const response = await fetch(`${GAS_API_URL}/grants/${code}/applications`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    })
 
-  if (!response.ok) {
-    /**
-     * @type {Error & {code?: number}}
-     */
+    if (!response.ok) {
+      /**
+       * @type {Error & {code?: number}}
+       */
 
-    const data = await response.json()
-    const error = new Error(data.message)
-    error.code = response.status
+      const data = await response.json()
+      const error = new Error(data.message)
+      error.code = response.status
+      throw error
+    }
+
+    return response.json()
+  } catch (error) {
+    logger.error(error, `Failed to submit grant application for code ${code}`)
     throw error
   }
-
-  return response.json()
 }
