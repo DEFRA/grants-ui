@@ -24,11 +24,11 @@ import { requestTracing } from '~/src/server/common/helpers/request-tracing.js'
 import { secureContext } from '~/src/server/common/helpers/secure-context/index.js'
 import { getCacheEngine } from '~/src/server/common/helpers/session-cache/cache-engine.js'
 import { sessionCache } from '~/src/server/common/helpers/session-cache/session-cache.js'
+import ConfirmationPageController from '~/src/server/controllers/confirmation/controller.js'
+import DeclarationPageController from '~/src/server/controllers/declaration/controller.js'
 import LandActionsPageController from '~/src/server/land-grants/actions/land-actions.controller.js'
 import LandParcelPageController from '~/src/server/land-grants/parcel/land-parcel-page.controller.js'
 import SubmissionPageController from '~/src/server/land-grants/submission/submission-page.controller.js'
-import ConfirmationPageController from '~/src/server/scoring/confirmation/confirmation.controller.js'
-import DeclarationPageController from '~/src/server/scoring/declaration/declaration.controller.js'
 import { formatCurrency } from '../config/nunjucks/filters/format-currency.js'
 import { router } from './router.js'
 
@@ -42,9 +42,7 @@ const getViewPaths = () => {
     `${basePath}/land-grants/actions`,
     `${basePath}/land-grants/parcel`,
     `${basePath}/land-grants/submission`,
-    `${basePath}/scoring/views`,
-    `${basePath}/scoring/declaration`,
-    `${basePath}/scoring/confirmation`,
+    `${basePath}/views`,
     `${basePath}/common/templates`
   ]
 }
