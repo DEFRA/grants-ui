@@ -31,7 +31,7 @@ class ConsolidatedViewApiError extends Error {
   constructor(message, statusCode, responseBody, sbi, crn) {
     super(message)
     this.name = 'ConsolidatedViewApiError'
-    this.code = statusCode
+    this.status = statusCode
     this.responseBody = responseBody
     this.sbi = sbi
     this.crn = crn
@@ -95,20 +95,6 @@ export async function fetchParcelDataForBusiness(sbi, crn) {
 
     return response.json()
   } catch (error) {
-    if (error instanceof ConsolidatedViewApiError) {
-      logger.error(
-        {
-          err: error,
-          statusCode: error.code,
-          responseBody: error.responseBody,
-          sbi,
-          crn
-        },
-        `Failed to fetch business data from Consolidated View API`
-      )
-      throw error
-    }
-
     logger.error(
       { err: error },
       `Unexpected error fetching business data from Consolidated View API`

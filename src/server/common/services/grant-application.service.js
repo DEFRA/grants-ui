@@ -8,7 +8,7 @@ class GrantApplicationServiceApiError extends Error {
   constructor(message, statusCode, responseBody, code) {
     super(message)
     this.name = 'GrantApplicationServiceApiError'
-    this.code = statusCode
+    this.status = statusCode
     this.responseBody = responseBody
     this.grantCode = code
   }
@@ -37,7 +37,7 @@ export async function submitGrantApplication(code, payload) {
     if (!response.ok) {
       const errorText = await response.text()
       throw new GrantApplicationServiceApiError(
-        `Failed to submit grant application: ${response.status} ${response.statusText}`,
+        `${response.status} ${response.statusText}`,
         response.status,
         errorText,
         code
@@ -46,19 +46,6 @@ export async function submitGrantApplication(code, payload) {
 
     return response.json()
   } catch (error) {
-    if (error instanceof GrantApplicationServiceApiError) {
-      logger.error(
-        {
-          err: error,
-          statusCode: error.code,
-          responseBody: error.responseBody,
-          code
-        },
-        `Failed to submit grant application`
-      )
-      throw error
-    }
-
     logger.error(
       { err: error },
       `Unexpected error submitting grant application: ${error.message}`
