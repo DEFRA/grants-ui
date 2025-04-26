@@ -67,6 +67,8 @@ describe('submitGrantApplication', () => {
 
     fetch.mockResolvedValue({
       ok: false,
+      status: 400,
+      statusText: 'Bad Request',
       json: jest.fn().mockResolvedValueOnce({ message: mockMessage })
     })
 
