@@ -47,8 +47,9 @@ class ConsolidatedViewApiError extends Error {
  * @throws {Error} - For other unexpected errors
  */
 export async function fetchParcelDataForBusiness(sbi, crn) {
-  const now = new Date().toISOString()
-  const query = `
+  try {
+    const now = new Date().toISOString()
+    const query = `
   query Business {
     business(sbi: "${sbi}") {
       sbi
@@ -66,58 +67,58 @@ export async function fetchParcelDataForBusiness(sbi, crn) {
           role
       }
     }
-  }`
+    }`
 
-  let token
-  try {
-    token = await getValidToken()
-  } catch (error) {
-    logger.error(
-      { err: error },
-      `Failed to obtain authentication token for consolidated view API`
-    )
-    throw new ConsolidatedViewApiError(
-      'Authentication failure when accessing business data',
-      null,
-      null,
-      sbi,
-      crn
-    )
-  }
-
-  const response = await fetch(CV_API_ENDPOINT, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-      email: CV_API_AUTH_EMAIL
-    },
-    body: JSON.stringify({
-      query
+    const token = await getValidToken()
+    const response = await fetch(CV_API_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+        email: CV_API_AUTH_EMAIL
+      },
+      body: JSON.stringify({
+        query
+      })
     })
-  })
 
-  if (!response.ok) {
-    const errorText = await response.text()
-
-    logger.error(
-      {
-        statusCode: response.status,
-        responseText: errorText,
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new ConsolidatedViewApiError(
+        `Failed to fetch business data: ${response.status} ${response.statusText}`,
+        response.status,
+        errorText,
         sbi,
         crn
-      },
-      'Failed to fetch business data from Consolidated View API'
-    )
+      )
+    }
 
+    return response.json()
+  } catch (error) {
+    if (error instanceof ConsolidatedViewApiError) {
+      logger.error(
+        {
+          err: error,
+          statusCode: error.code,
+          responseBody: error.responseBody,
+          sbi,
+          crn
+        },
+        `Failed to fetch business data from Consolidated View API`
+      )
+      throw error
+    }
+
+    logger.error(
+      { err: error },
+      `Unexpected error fetching business data from Consolidated View API`
+    )
     throw new ConsolidatedViewApiError(
-      `Failed to fetch business data: ${response.status} ${response.statusText}`,
-      response.status,
-      errorText,
+      'Failed to fetch business data: ' + error.message,
+      error.status,
+      error.message,
       sbi,
       crn
     )
   }
-
-  return response.json()
 }
