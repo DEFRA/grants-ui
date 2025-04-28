@@ -26,8 +26,9 @@ import { getCacheEngine } from '~/src/server/common/helpers/session-cache/cache-
 import { sessionCache } from '~/src/server/common/helpers/session-cache/session-cache.js'
 import ConfirmationPageController from '~/src/server/controllers/confirmation/controller.js'
 import DeclarationPageController from '~/src/server/controllers/declaration/controller.js'
-import LandActionsController from '~/src/server/land-grants/actions/actions.controller.js'
-import LandParcelController from '~/src/server/land-grants/parcels/parcel.controller.js'
+import LandActionsPageController from '~/src/server/land-grants/actions/land-actions.controller.js'
+import LandParcelPageController from '~/src/server/land-grants/parcel/land-parcel-page.controller.js'
+import SubmissionPageController from '~/src/server/land-grants/submission/submission-page.controller.js'
 import { formatCurrency } from '../config/nunjucks/filters/format-currency.js'
 import { router } from './router.js'
 
@@ -39,10 +40,10 @@ const getViewPaths = () => {
   const basePath = isRunningBuiltCode ? '.server/server' : 'src/server'
   return [
     `${basePath}/land-grants/actions`,
-    `${basePath}/land-grants/parcels`,
+    `${basePath}/land-grants/parcel`,
+    `${basePath}/land-grants/submission`,
     `${basePath}/views`,
-    `${basePath}/common/templates`,
-    `${basePath}/common/components`
+    `${basePath}/common/templates`
   ]
 }
 
@@ -107,8 +108,9 @@ const registerFormsPlugin = async (server) => {
       controllers: {
         ConfirmationPageController,
         DeclarationPageController,
-        LandParcelController,
-        LandActionsController
+        SubmissionPageController,
+        LandParcelPageController,
+        LandActionsPageController
       }
     }
   })

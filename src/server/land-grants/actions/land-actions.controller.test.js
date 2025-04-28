@@ -3,11 +3,11 @@ import {
   calculateApplicationPayment,
   fetchLandSheetDetails,
   validateLandActions
-} from '~/src/server/land-grants/services/land-grants.service.js'
-import LandActionsController from './actions.controller.js'
+} from '~/src/server/land-grants/actions/land-actions.service.js'
+import LandActionsController from './land-actions.controller.js'
 
 jest.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js')
-jest.mock('~/src/server/land-grants/services/land-grants.service.js')
+jest.mock('~/src/server/land-grants/actions/land-actions.service.js')
 
 describe('LandActionsController', () => {
   let controller
@@ -84,7 +84,7 @@ describe('LandActionsController', () => {
   })
 
   test('should have the correct viewName', () => {
-    expect(controller.viewName).toBe('actions')
+    expect(controller.viewName).toBe('land-actions')
   })
 
   describe('extractActionsObjectFromPayload', () => {
@@ -163,7 +163,7 @@ describe('LandActionsController', () => {
 
       expect(fetchLandSheetDetails).toHaveBeenCalledWith('parcel1', 'sheet1')
       expect(mockH.view).toHaveBeenCalledWith(
-        'actions',
+        'land-actions',
         expect.objectContaining({
           landParcel: 'sheet1-parcel1',
           availableActions: ['action1', 'action2', 'action3'],
@@ -180,7 +180,7 @@ describe('LandActionsController', () => {
       await handler(mockRequest, mockContext, mockH)
 
       expect(mockH.view).toHaveBeenCalledWith(
-        'actions',
+        'land-actions',
         expect.objectContaining({
           availableActions
         })
@@ -215,7 +215,7 @@ describe('LandActionsController', () => {
 
       expect(fetchLandSheetDetails).toHaveBeenCalledWith(undefined, '')
       expect(mockH.view).toHaveBeenCalledWith(
-        'actions',
+        'land-actions',
         expect.objectContaining({
           availableActions: []
         })
@@ -234,7 +234,7 @@ describe('LandActionsController', () => {
       const result = await handler(mockRequest, mockContext, mockH)
 
       expect(mockH.view).toHaveBeenCalledWith(
-        'actions',
+        'land-actions',
         expect.objectContaining({
           availableActions: [],
           landParcel: 'sheet1-parcel1'
@@ -348,7 +348,7 @@ describe('LandActionsController', () => {
       )
 
       expect(mockH.view).toHaveBeenCalledWith(
-        'actions',
+        'land-actions',
         expect.objectContaining({
           errors: errorMessages,
           availableActions

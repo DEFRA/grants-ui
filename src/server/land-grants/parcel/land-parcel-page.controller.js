@@ -4,16 +4,16 @@ import { fetchParcelDataForBusiness } from '~/src/server/common/services/consoli
 
 const logger = createLogger()
 
-export default class LandParcelController extends QuestionPageController {
-  viewName = 'parcel'
+export default class LandParcelPageController extends QuestionPageController {
+  viewName = 'land-parcel'
 
   makePostRouteHandler() {
     /**
      * Handle POST requests to the land parcel page.
      * @param {FormRequest} request
      * @param {FormContext} context
-     * @param {Pick<ResponseToolkit, 'redirect' | 'view'>} h
-     * @returns {Promise<import('@hapi/boom').Boom<any> | import('@hapi/hapi').ResponseObject>}
+     * @param {Pick} h
+     * @returns {Promise | import('@hapi/hapi').ResponseObject>}
      */
     const fn = async (request, context, h) => {
       const { state } = context
@@ -40,29 +40,54 @@ export default class LandParcelController extends QuestionPageController {
      * Handle GET requests to the land parcel page.
      * @param {FormRequest} request
      * @param {FormContext} context
-     * @param {Pick<ResponseToolkit, 'redirect' | 'view'>} h
+     * @param {Pick} h
      */
     const fn = async (request, context, h) => {
       const { landParcel = '' } = context.state || {}
       const sbi = 117235001
       const crn = 1100598138
       const { viewName } = this
+      const baseViewModel = super.getViewModel(request, context)
 
       try {
         const response = await fetchParcelDataForBusiness(sbi, crn)
         const business = response.data?.business
         const viewModel = {
-          ...super.getViewModel(request, context),
+          ...baseViewModel,
           business,
           landParcel
         }
 
         return h.view(viewName, viewModel)
-      } catch (e) {
-        logger.error(e, `Failed to fetch business details ${sbi}`)
+      } catch (error) {
+        // Log specific error details based on error type
+        if (error.name === 'ConsolidatedViewApiError') {
+          logger.error(
+            {
+              err: error,
+              statusCode: error.statusCode,
+              sbi,
+              crn
+            },
+            'Consolidated View API error when fetching parcel data'
+          )
+        } else {
+          logger.error(
+            {
+              err: error,
+              sbi,
+              crn
+            },
+            'Unexpected error when fetching parcel data'
+          )
+        }
+
+        const errorMessage =
+          'Unable to find parcel information, please try again later.'
+
         return h.view(viewName, {
-          ...super.getViewModel(request, context),
-          errors: ['Unable to find parcel information, please try again later.']
+          ...baseViewModel,
+          errors: [errorMessage]
         })
       }
     }
