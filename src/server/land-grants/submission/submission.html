@@ -1,0 +1,50 @@
+{% extends "layout.html" %}
+
+{% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
+{% from "govuk/components/summary-list/macro.njk" import govukSummaryList %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      {% if previewMode %}
+        {% include "partials/preview-banner.html" %}
+      {% endif %}
+
+      {% if hasMissingNotificationEmail %}
+        {% include "partials/warn-missing-notification-email.html" %}
+      {% endif %}
+
+      <h1 class="govuk-heading-l">
+        {{ pageTitle }}
+      </h1>
+
+      {% for section in checkAnswers %}
+        {% if section.title.text %}
+          <h2 class="govuk-heading-m">
+            {{ section.title.text }}
+          </h2>
+        {% endif %}
+
+        {{ govukSummaryList(section.summaryList) }}
+      {% endfor %}
+
+      <form method="post" novalidate>
+        <input type="hidden" name="crumb" value="{{ crumb }}">
+        <input type="hidden" name="action" value="send">
+
+        {% if declaration %}
+          <h2 class="govuk-heading-m" id="declaration">Declaration</h2>
+          {{ declaration | safe }}
+        {% endif %}
+
+        <button data-prevent-double-click="true" class="govuk-button" data-module="govuk-button">
+          {{ "Accept and send" if declaration else "Send" }}
+        </button>
+      </form>
+    </div>
+  </div>
+
+  {% if config.cdpEnvironment == 'local' and context | length and not context.isForceAccess %}
+    {% include "partials/debug.html" %}
+  {% endif %}
+{% endblock %}

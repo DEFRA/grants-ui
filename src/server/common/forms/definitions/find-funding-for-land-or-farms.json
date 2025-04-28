@@ -53,7 +53,7 @@
     },
     {
       "title": "Select Land Parcel",
-      "controller": "LandParcelController",
+      "controller": "LandParcelPageController",
       "path": "/select-land-parcel",
       "next": [{ "path": "/select-land-actions" }],
       "components": [
@@ -70,7 +70,7 @@
     },
     {
       "title": "Select Land Actions",
-      "controller": "LandActionsController",
+      "controller": "LandActionsPageController",
       "path": "/select-land-actions",
       "next": [{ "path": "/summary" }],
       "components": [
@@ -101,12 +101,15 @@
         }
       ]
     },
-
     {
+      "title": "Funding Details",
       "path": "/summary",
-      "controller": "SummaryPageController",
-      "title": "Funding details",
-      "components": []
+      "controller": "SubmissionPageController"
+    },
+    {
+      "title": "Confirmation",
+      "path": "/confirmation",
+      "controller": "ConfirmationPageController"
     }
   ],
   "lists": [],

@@ -87,6 +87,20 @@ export const config = convict({
     format: Boolean,
     default: isTest
   },
+  gas: {
+    apiEndpoint: {
+      doc: 'GAS API endpoint',
+      format: String,
+      default: '',
+      env: 'GAS_API_URL'
+    },
+    frpsGrantCode: {
+      doc: 'GAS Future RPS grant code',
+      format: String,
+      default: '',
+      env: 'GAS_FRPS_GRANT_CODE'
+    }
+  },
   landGrants: {
     apiEndpoint: {
       format: String,

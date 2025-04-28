@@ -1,7 +1,7 @@
 import Joi from 'joi'
 
 /**
- * Joi schema definitions for GAS application payload validation
+ * Joi schema definitions for GAS application land grant answers validation
  */
 
 const actionAreaSchema = Joi.object({
@@ -16,11 +16,7 @@ const actionApplicationSchema = Joi.object({
   appliedFor: actionAreaSchema
 })
 
-const gasPayloadSchema = Joi.object({
-  sbi: Joi.string(),
-  frn: Joi.string(),
-  crn: Joi.string(),
-  defraId: Joi.string(),
+const gasAnswersSchema = Joi.object({
   scheme: Joi.string(),
   year: Joi.number().integer(),
   hasCheckedLandIsUpToDate: Joi.boolean(),
@@ -32,15 +28,15 @@ const defaultValidationOptions = {
 }
 
 /**
- * Validates an object against the GASPayload schema structure
+ * Validates an object against the gasAnswersSchema structure
  * Only validates types of properties that are present, doesn't require any fields
  * @param {object} payload - The object to validate
  * @param {object} options - Joi validation options (optional)
  * @returns {object} - Joi validation result
  */
-export function validateGasPayload(
+export function validateGasAnswersForLandGrants(
   payload,
   options = defaultValidationOptions
 ) {
-  return gasPayloadSchema.validate(payload, options)
+  return gasAnswersSchema.validate(payload, options)
 }
