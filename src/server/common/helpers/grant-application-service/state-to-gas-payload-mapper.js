@@ -16,6 +16,12 @@
 
 /**
  * Transforms FormContext object into a GAS Application payload for Land Grants.
+ * @param {object} identifiers - identifiers object containing id details
+ * @param {string} identifiers.sbi - Single Business Identifier
+ * @param {string} identifiers.crn - Customer Reference Number
+ * @param {string} identifiers.frn - Firm Reference Number
+ * @param {string} identifiers.defraId - Defra ID
+ * @param {string} identifiers.clientRef - Client reference to be sent to GAS to track applications
  * @param {object} state - the DXT state object containing application details
  * @param {Function} transformAnswers - a function to transform the state object into the desired answers format
  * @returns {GASPayload}
