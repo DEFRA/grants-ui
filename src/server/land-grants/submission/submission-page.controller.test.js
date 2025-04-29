@@ -76,7 +76,7 @@ describe('SubmissionPageController', () => {
           frn: 'frn',
           crn: 'crn',
           defraId: 'defraId',
-          clientRef: expect.any(String)
+          clientRef: '123456'
         },
         mockContext.state,
         stateToLandGrantsGasAnswers

@@ -23,10 +23,6 @@ export default class SubmissionPageController extends SummaryPageController {
     return '/find-funding-for-land-or-farms/confirmation'
   }
 
-  getClientRef(context) {
-    return `${context.referenceNumber?.toLowerCase()}-${Date.now()}`
-  }
-
   async submitLandGrantApplication(context) {
     const {
       sbi = 'sbi',
@@ -39,7 +35,7 @@ export default class SubmissionPageController extends SummaryPageController {
       frn,
       crn,
       defraId,
-      clientRef: this.getClientRef(context)
+      clientRef: context.referenceNumber?.toLowerCase()
     }
     const applicationData = transformStateObjectToGasApplication(
       identifiers,
