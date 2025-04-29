@@ -24,11 +24,18 @@ export default class SubmissionPageController extends SummaryPageController {
   }
 
   async submitLandGrantApplication(context) {
+    const {
+      sbi = 'sbi',
+      crn = 'crn',
+      defraId = 'defraId',
+      frn = 'frn'
+    } = context.state
     const identifiers = {
-      sbi: 'sbi',
-      frn: 'frn',
-      crn: 'crn',
-      defraId: 'defraId'
+      sbi,
+      frn,
+      crn,
+      defraId,
+      clientRef: context.referenceNumber?.toLowerCase()
     }
     const applicationData = transformStateObjectToGasApplication(
       identifiers,

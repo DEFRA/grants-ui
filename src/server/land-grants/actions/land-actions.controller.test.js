@@ -90,6 +90,7 @@ describe('LandActionsController', () => {
   describe('extractActionsObjectFromPayload', () => {
     test('should extract action data correctly from payload', () => {
       const payload = {
+        actions: ['action1', 'action2'],
         'area-action1': 10,
         'area-action2': 5,
         'other-field': 'value'
@@ -103,16 +104,15 @@ describe('LandActionsController', () => {
       })
     })
 
-    test('should handle action codes not in availableActions', () => {
+    test('should ignore action codes not present in availableActions', () => {
       const payload = {
+        actions: ['unknownAction'],
         'area-unknownAction': 15
       }
 
       const result = controller.extractActionsObjectFromPayload(payload)
 
-      expect(result).toEqual({
-        unknownAction: { value: 15, unit: '' }
-      })
+      expect(result).toEqual({})
     })
 
     test('should handle empty payload', () => {
@@ -259,7 +259,7 @@ describe('LandActionsController', () => {
         mockRequest,
         expect.objectContaining({
           landParcel: 'sheet1-parcel1',
-          actions: ['action1', 'action2'],
+          actions: 'action1, action2',
           area: 'action1: 10 ha.',
           actionsObj,
           applicationValue: '£1,250.75'
@@ -342,7 +342,7 @@ describe('LandActionsController', () => {
         mockRequest,
         expect.objectContaining({
           landParcel: 'sheet1-parcel1',
-          actions: ['action1'],
+          actions: 'action1',
           actionsObj: { action1: { value: 10, unit: 'ha' } }
         })
       )

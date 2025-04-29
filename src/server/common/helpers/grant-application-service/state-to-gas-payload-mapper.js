@@ -1,5 +1,3 @@
-import crypto from 'crypto'
-
 /**
  * @typedef {object} GASMetadata
  * @property {string} [sbi] - Standard Business Identifier
@@ -18,12 +16,18 @@ import crypto from 'crypto'
 
 /**
  * Transforms FormContext object into a GAS Application payload for Land Grants.
+ * @param {object} identifiers - identifiers object containing id details
+ * @param {string} identifiers.sbi - Single Business Identifier
+ * @param {string} identifiers.crn - Customer Reference Number
+ * @param {string} identifiers.frn - Firm Reference Number
+ * @param {string} identifiers.defraId - Defra ID
+ * @param {string} identifiers.clientRef - Client reference to be sent to GAS to track applications
  * @param {object} state - the DXT state object containing application details
  * @param {Function} transformAnswers - a function to transform the state object into the desired answers format
  * @returns {GASPayload}
  */
 export const transformStateObjectToGasApplication = (
-  { sbi, frn, crn, defraId },
+  { sbi, frn, crn, defraId, clientRef },
   state,
   transformAnswers
 ) => ({
@@ -32,7 +36,7 @@ export const transformStateObjectToGasApplication = (
     frn,
     crn,
     defraId,
-    clientRef: crypto.randomUUID(),
+    clientRef,
     submittedAt: new Date().toISOString()
   },
   answers: transformAnswers(state)

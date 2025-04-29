@@ -13,7 +13,7 @@ export default class LandParcelPageController extends QuestionPageController {
      * @param {FormRequest} request
      * @param {FormContext} context
      * @param {Pick} h
-     * @returns {Promise | import('@hapi/hapi').ResponseObject>}
+     * @returns {Promise<void>}
      */
     const fn = async (request, context, h) => {
       const { state } = context
