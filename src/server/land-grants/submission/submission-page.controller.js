@@ -23,10 +23,6 @@ export default class SubmissionPageController extends SummaryPageController {
     return '/find-funding-for-land-or-farms/confirmation'
   }
 
-  getRandomCharacters() {
-    return (Math.random() + 1).toString(36).substring(7)
-  }
-
   async submitLandGrantApplication(context) {
     const {
       sbi = 'sbi',
@@ -39,9 +35,7 @@ export default class SubmissionPageController extends SummaryPageController {
       frn,
       crn,
       defraId,
-      clientRef:
-        context.referenceNumber?.toLowerCase() ||
-        `${sbi}-${crn}-${this.getRandomCharacters()}`
+      clientRef: context.referenceNumber?.toLowerCase()
     }
     const applicationData = transformStateObjectToGasApplication(
       identifiers,
