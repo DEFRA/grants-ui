@@ -359,6 +359,32 @@ describe('LandActionsPageController', () => {
       expect(result).toBe('rendered view')
     })
 
+    test('should render view with errors when no action is selected', async () => {
+      mockRequest.payload = {
+        action: 'validate'
+      }
+
+      validateLandActions.mockResolvedValue({
+        valid: true,
+        errorMessages: []
+      })
+
+      const handler = controller.makePostRouteHandler()
+      const result = await handler(mockRequest, mockContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'land-actions',
+        expect.objectContaining({
+          errors: ['Please select at least one action and quantity'],
+          availableActions
+        })
+      )
+
+      expect(calculateApplicationPayment).not.toHaveBeenCalled()
+      expect(controller.proceed).not.toHaveBeenCalled()
+      expect(result).toBe('rendered view')
+    })
+
     test('should handle payment calculation with error message', async () => {
       calculateApplicationPayment.mockResolvedValue({
         paymentTotal: null,
