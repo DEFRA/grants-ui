@@ -5,7 +5,7 @@ import {
   validateLandActions
 } from '~/src/server/land-grants/actions/land-actions.service.js'
 
-export default class LandActionsController extends QuestionPageController {
+export default class LandActionsPageController extends QuestionPageController {
   viewName = 'land-actions'
   areaPrefix = 'area-'
   availableActions = []
