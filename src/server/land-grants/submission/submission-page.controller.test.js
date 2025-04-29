@@ -59,10 +59,11 @@ describe('SubmissionPageController', () => {
   describe('submitLandGrantApplication', () => {
     it('should transform state and submit grant application', async () => {
       const mockContext = {
+        referenceNumber: '123456',
         state: { key: 'value' }
       }
       const mockApplicationData = { transformed: 'data' }
-      const mockResult = { success: true }
+      const mockResult = { success: true, clientRef: '123456' }
 
       transformStateObjectToGasApplication.mockReturnValue(mockApplicationData)
       submitGrantApplication.mockResolvedValue(mockResult)
@@ -74,7 +75,8 @@ describe('SubmissionPageController', () => {
           sbi: 'sbi',
           frn: 'frn',
           crn: 'crn',
-          defraId: 'defraId'
+          defraId: 'defraId',
+          clientRef: '123456'
         },
         mockContext.state,
         stateToLandGrantsGasAnswers

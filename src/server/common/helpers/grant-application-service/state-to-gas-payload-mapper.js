@@ -1,5 +1,3 @@
-import crypto from 'crypto'
-
 /**
  * @typedef {object} GASMetadata
  * @property {string} [sbi] - Standard Business Identifier
@@ -23,7 +21,7 @@ import crypto from 'crypto'
  * @returns {GASPayload}
  */
 export const transformStateObjectToGasApplication = (
-  { sbi, frn, crn, defraId },
+  { sbi, frn, crn, defraId, clientRef },
   state,
   transformAnswers
 ) => ({
@@ -32,7 +30,7 @@ export const transformStateObjectToGasApplication = (
     frn,
     crn,
     defraId,
-    clientRef: crypto.randomUUID(),
+    clientRef,
     submittedAt: new Date().toISOString()
   },
   answers: transformAnswers(state)

@@ -1,8 +1,6 @@
 import { transformStateObjectToGasApplication } from '~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
 import { validateGasPayload } from '~/src/server/common/schemas/gas-payload.schema.js'
 
-jest.mock('crypto', () => ({ randomUUID: () => 'CLIENT-REF-456' }))
-
 const mockDate = new Date('2025-04-22T12:00:00Z')
 const originalDate = global.Date
 
@@ -86,10 +84,6 @@ describe('transformStateObjectToGasApplication', () => {
     expect(result).toEqual({
       metadata: {
         sbi: '12345678',
-        frn: undefined,
-        crn: undefined,
-        defraId: undefined,
-        clientRef: 'CLIENT-REF-456',
         submittedAt: mockDate.toISOString()
       },
       answers: {
