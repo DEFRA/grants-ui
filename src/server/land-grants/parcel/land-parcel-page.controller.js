@@ -26,7 +26,7 @@ export default class LandParcelPageController extends QuestionPageController {
           ...super.getViewModel(request, context),
           ...state,
           business: this.business,
-          showLandParcelError: true
+          selectParcelError: true
         })
       }
 
