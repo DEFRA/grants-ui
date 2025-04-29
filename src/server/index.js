@@ -26,7 +26,7 @@ import { getCacheEngine } from '~/src/server/common/helpers/session-cache/cache-
 import { sessionCache } from '~/src/server/common/helpers/session-cache/session-cache.js'
 import ConfirmationPageController from '~/src/server/controllers/confirmation/controller.js'
 import DeclarationPageController from '~/src/server/controllers/declaration/controller.js'
-import LandActionsPageController from '~/src/server/land-grants/actions/land-actions.controller.js'
+import LandActionsPageController from '~/src/server/land-grants/actions/land-actions-page.controller.js'
 import LandParcelPageController from '~/src/server/land-grants/parcel/land-parcel-page.controller.js'
 import SubmissionPageController from '~/src/server/land-grants/submission/submission-page.controller.js'
 import { formatCurrency } from '../config/nunjucks/filters/format-currency.js'

@@ -60,7 +60,7 @@ export default class LandActionsController extends QuestionPageController {
       const { state } = context
       const { viewName } = this
       const payload = request.payload ?? {}
-      const { actions = [] } = payload
+      const { actions } = payload
       const [sheetId, parcelId] = this.parseLandParcelId(state.landParcel)
       const actionsObj = this.extractActionsObjectFromPayload(payload)
       const area = []
@@ -78,18 +78,17 @@ export default class LandActionsController extends QuestionPageController {
       }
 
       if (payload.action === 'validate') {
-        const { valid, errorMessages = [] } = await validateLandActions(
-          sheetId,
-          parcelId,
-          actionsObj
-        )
+        const { valid: rulesAreValid, errorMessages = [] } =
+          await validateLandActions(sheetId, parcelId, actionsObj)
 
-        if (valid === false) {
+        if (!rulesAreValid || !actions) {
           await this.setState(request, newState)
           return h.view(viewName, {
             ...super.getViewModel(request, context),
             ...newState,
-            errors: errorMessages,
+            errors: !actions
+              ? ['Please select at least one action and quantity']
+              : errorMessages,
             areaPrefix: this.areaPrefix,
             availableActions: this.availableActions
           })
