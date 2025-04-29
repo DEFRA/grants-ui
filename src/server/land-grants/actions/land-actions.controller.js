@@ -22,11 +22,8 @@ export default class LandActionsController extends QuestionPageController {
     for (const key in payload) {
       if (key.startsWith(this.areaPrefix)) {
         const [, code] = key.split('-')
-        if (!actions.includes(code)) {
-          continue
-        }
         const actionInfo = this.availableActions.find((a) => a.code === code)
-        if (!payload[key] || !actionInfo) {
+        if (!actions.includes(code) || !payload[key] || !actionInfo) {
           continue
         }
         areas[code] = {
