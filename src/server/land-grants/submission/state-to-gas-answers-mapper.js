@@ -13,11 +13,7 @@
  */
 
 /**
- * @typedef {object} GASPayload
- * @property {string} [sbi] - Standard Business Identifier
- * @property {string} [frn] - FRN
- * @property {string} [crn] - Customer Reference Number
- * @property {string} [defraId] - Defra ID
+ * @typedef {object} GASAnswers
  * @property {string} [scheme] - Scheme
  * @property {number} [year] - Scheme year
  * @property {boolean} [hasCheckedLandIsUpToDate] - Land details are up to date
@@ -25,32 +21,22 @@
  */
 
 /**
- * Transforms FormContext object into a GAS Application payload for Land Grants.
- * @param {object} stateObj
- * @returns {GASPayload}
+ * Transforms FormContext object into a GAS Application answers object for Land Grants.
+ * @param {object} state
+ * @returns {GASAnswers}
  */
-export function transformStateObjectToGasApplication(stateObj) {
-  const result = {}
-  const basicProps = [
-    'sbi',
-    'frn',
-    'crn',
-    'defraId',
-    'scheme',
-    'year',
-    'hasCheckedLandIsUpToDate'
-  ]
-  basicProps.forEach((prop) => {
-    if (stateObj[prop] != null) {
-      result[prop] = stateObj[prop]
-    }
-  })
+export function stateToLandGrantsGasAnswers(state) {
+  const result = {
+    hasCheckedLandIsUpToDate: state.hasCheckedLandIsUpToDate,
+    scheme: 'SFI',
+    year: 2025
+  }
 
-  if (stateObj.landParcel && stateObj.actionsObj) {
-    const [sheetId, parcelId] = stateObj?.landParcel?.split('-') ?? []
+  if (state.landParcel && state.actionsObj) {
+    const [sheetId, parcelId] = state?.landParcel?.split('-') ?? []
     result.actionApplications = []
 
-    Object.entries(stateObj.actionsObj).forEach(([actionCode, actionData]) => {
+    Object.entries(state.actionsObj).forEach(([actionCode, actionData]) => {
       const actionApplication = {
         code: actionCode,
         sheetId,

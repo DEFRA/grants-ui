@@ -352,7 +352,7 @@
           "type": "Html",
           "name": "cannotApplyProjectItemsInfo",
           "title": "Html",
-          "content": "<p class=\"govuk-body\">This grant is for:</p>\n\n<ul class=\"govuk-list govuk-list--bullet\">\n<li>constructing or improving buildings for processing</li>\n<li>processing equipment or machinery</li>\n<li>retail facilities</li>\n</ul>"
+          "content": "<p class=\"govuk-body\">This grant is for:</p>\n\n<ul class=\"govuk-list govuk-list--bullet\">\n<li>constructing or improving buildings for processing</li>\n<li>processing equipment or machinery</li>\n<li>retail facilities</li>\n</ul>\n<p class=\"govuk-body\"><a href='https://www.gov.uk/guidance/funding-for-farmers' class='govuk-link govuk-link--no-visited-state'>See other grants you may be eligible for</a></p>"
         }
       ],
       "condition": "projectItemsCondition"
@@ -436,7 +436,7 @@
           "name": "potentialFundingInfo",
           "title": "Html",
           "type": "Html",
-          "content": "<p class=\"govuk-body\"> {% assign estimatedCost = 'projectCostNumberField' | answer %} {% assign eligibilityMultiplier = 0.4 %} {% assign eligibilityAmount = estimatedCost | times: eligibilityMultiplier %} {% if eligibilityAmount <= 300000 and eligibilityAmount >= 25000 %} You may be able to apply for grant funding of up to {{ eligibilityAmount | formatCurrency: 'en-GB', 'GBP', 0 }} (40% of {{ estimatedCost | formatCurrency: 'en-GB', 'GBP', 0 }}).{% elsif eligibilityAmount > 300000 %} You may be able to apply for grant funding of up to £300,000, based on the estimated cost of {{ estimatedCost | formatCurrency: 'en-GB', 'GBP', 0 }}.\n\n\n<div class=\"govuk-inset-text\">The maximum grant you can apply for is £300,000</div> {% endif %}</p>\n",
+          "content": "<p class=\"govuk-body\"> {% assign estimatedCost = 'projectCostNumberField' | answer %} {% assign eligibilityMultiplier = 0.4 %} {% assign eligibilityAmount = estimatedCost | times: eligibilityMultiplier %} {% if eligibilityAmount <= 300000 and eligibilityAmount >= 25000 %} You may be able to apply for grant funding of up to {{ eligibilityAmount | formatCurrency: 'en-GB', 'GBP', 0 }} (40% of {{ estimatedCost | formatCurrency: 'en-GB', 'GBP', 0 }}).{% elsif eligibilityAmount > 300000 %} You may be able to apply for grant funding of up to £300,000, based on the estimated cost of {{ estimatedCost | formatCurrency: 'en-GB', 'GBP', 0 }}.\n\n\n<div class=\"govuk-inset-text\">The maximum grant you can apply for is £300,000.</div> {% endif %}</p>\n",
           "options": {},
           "schema": {}
         },
@@ -451,7 +451,7 @@
       ]
     },
     {
-      "title": "{%- assign estimatedCost = 'projectCostNumberField' | answer -%} {%- assign applicantPayMultiplier = 0.6 -%} {%- assign applicantPayAmount = estimatedCost | times: applicantPayMultiplier -%} Can you pay the remaining costs of {{ applicantPayAmount | formatCurrency: 'en-GB', 'GBP', 0 }}?",
+      "title": "{% assign estimatedCost = 'projectCostNumberField' | answer %} {% assign applicantPayMultiplier = 0.6 %} {% assign applicantPayAmount = estimatedCost | times: applicantPayMultiplier %} {% assign grantPayAmount = estimatedCost | minus: applicantPayAmount %} {% if grantPayAmount >= 300000 %} {% assign applicantPayAmount = estimatedCost | minus: 300000 %} {% endif %} Can you pay the remaining costs of {{ applicantPayAmount | formatCurrency: 'en-GB', 'GBP', 0 }}?",
       "path": "/remaining-costs",
       "components": [
         {

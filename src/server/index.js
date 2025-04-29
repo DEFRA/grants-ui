@@ -14,6 +14,7 @@ import { nunjucksConfig } from '~/src/config/nunjucks/nunjucks.js'
 import csp from '~/src/plugins/content-security-policy.js'
 import sso from '~/src/plugins/sso.js'
 import { formsService } from '~/src/server/common/forms/services/form.js'
+import { outputService } from '~/src/server/common/forms/services/output.js'
 import { formSubmissionService } from '~/src/server/common/forms/services/submission.js'
 import { catchAll } from '~/src/server/common/helpers/errors.js'
 import { requestLogger } from '~/src/server/common/helpers/logging/request-logger.js'
@@ -25,10 +26,11 @@ import { getCacheEngine } from '~/src/server/common/helpers/session-cache/cache-
 import { sessionCache } from '~/src/server/common/helpers/session-cache/session-cache.js'
 import ConfirmationPageController from '~/src/server/controllers/confirmation/controller.js'
 import DeclarationPageController from '~/src/server/controllers/declaration/controller.js'
-import LandActionsController from '~/src/server/land-grants/actions/actions.controller.js'
-import LandParcelController from '~/src/server/land-grants/parcels/parcel.controller.js'
-import { router } from './router.js'
+import LandActionsPageController from '~/src/server/land-grants/actions/land-actions.controller.js'
+import LandParcelPageController from '~/src/server/land-grants/parcel/land-parcel-page.controller.js'
+import SubmissionPageController from '~/src/server/land-grants/submission/submission-page.controller.js'
 import { formatCurrency } from '../config/nunjucks/filters/format-currency.js'
+import { router } from './router.js'
 
 const SESSION_CACHE_NAME = 'session.cache.name'
 
@@ -38,10 +40,10 @@ const getViewPaths = () => {
   const basePath = isRunningBuiltCode ? '.server/server' : 'src/server'
   return [
     `${basePath}/land-grants/actions`,
-    `${basePath}/land-grants/parcels`,
+    `${basePath}/land-grants/parcel`,
+    `${basePath}/land-grants/submission`,
     `${basePath}/views`,
-    `${basePath}/common/templates`,
-    `${basePath}/common/components`
+    `${basePath}/common/templates`
   ]
 }
 
@@ -96,7 +98,8 @@ const registerFormsPlugin = async (server) => {
       cacheName: config.get(SESSION_CACHE_NAME),
       services: {
         formsService,
-        formSubmissionService
+        formSubmissionService,
+        outputService
       },
       filters: {
         formatCurrency
@@ -105,8 +108,9 @@ const registerFormsPlugin = async (server) => {
       controllers: {
         ConfirmationPageController,
         DeclarationPageController,
-        LandParcelController,
-        LandActionsController
+        SubmissionPageController,
+        LandParcelPageController,
+        LandActionsPageController
       }
     }
   })

@@ -3,11 +3,11 @@ import {
   calculateApplicationPayment,
   fetchLandSheetDetails,
   validateLandActions
-} from '~/src/server/land-grants/services/land-grants.service.js'
-import LandActionsController from './actions.controller.js'
+} from '~/src/server/land-grants/actions/land-actions.service.js'
+import LandActionsController from './land-actions.controller.js'
 
 jest.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js')
-jest.mock('~/src/server/land-grants/services/land-grants.service.js')
+jest.mock('~/src/server/land-grants/actions/land-actions.service.js')
 
 describe('LandActionsController', () => {
   let controller
@@ -84,12 +84,13 @@ describe('LandActionsController', () => {
   })
 
   test('should have the correct viewName', () => {
-    expect(controller.viewName).toBe('actions')
+    expect(controller.viewName).toBe('land-actions')
   })
 
   describe('extractActionsObjectFromPayload', () => {
     test('should extract action data correctly from payload', () => {
       const payload = {
+        actions: ['action1', 'action2'],
         'area-action1': 10,
         'area-action2': 5,
         'other-field': 'value'
@@ -103,16 +104,15 @@ describe('LandActionsController', () => {
       })
     })
 
-    test('should handle action codes not in availableActions', () => {
+    test('should ignore action codes not present in availableActions', () => {
       const payload = {
+        actions: ['unknownAction'],
         'area-unknownAction': 15
       }
 
       const result = controller.extractActionsObjectFromPayload(payload)
 
-      expect(result).toEqual({
-        unknownAction: { value: 15, unit: '' }
-      })
+      expect(result).toEqual({})
     })
 
     test('should handle empty payload', () => {
@@ -163,7 +163,7 @@ describe('LandActionsController', () => {
 
       expect(fetchLandSheetDetails).toHaveBeenCalledWith('parcel1', 'sheet1')
       expect(mockH.view).toHaveBeenCalledWith(
-        'actions',
+        'land-actions',
         expect.objectContaining({
           landParcel: 'sheet1-parcel1',
           availableActions: ['action1', 'action2', 'action3'],
@@ -180,7 +180,7 @@ describe('LandActionsController', () => {
       await handler(mockRequest, mockContext, mockH)
 
       expect(mockH.view).toHaveBeenCalledWith(
-        'actions',
+        'land-actions',
         expect.objectContaining({
           availableActions
         })
@@ -215,7 +215,7 @@ describe('LandActionsController', () => {
 
       expect(fetchLandSheetDetails).toHaveBeenCalledWith(undefined, '')
       expect(mockH.view).toHaveBeenCalledWith(
-        'actions',
+        'land-actions',
         expect.objectContaining({
           availableActions: []
         })
@@ -234,7 +234,7 @@ describe('LandActionsController', () => {
       const result = await handler(mockRequest, mockContext, mockH)
 
       expect(mockH.view).toHaveBeenCalledWith(
-        'actions',
+        'land-actions',
         expect.objectContaining({
           availableActions: [],
           landParcel: 'sheet1-parcel1'
@@ -259,8 +259,8 @@ describe('LandActionsController', () => {
         mockRequest,
         expect.objectContaining({
           landParcel: 'sheet1-parcel1',
-          actions: ['action1', 'action2'],
-          area: JSON.stringify(actionsObj),
+          actions: 'action1, action2',
+          area: 'action1: 10 ha.',
           actionsObj,
           applicationValue: '£1,250.75'
         })
@@ -286,7 +286,7 @@ describe('LandActionsController', () => {
         expect.objectContaining({
           landParcel: 'sheet1-parcel1',
           actions: '',
-          area: JSON.stringify({}),
+          area: '',
           actionsObj: {}
         })
       )
@@ -342,13 +342,13 @@ describe('LandActionsController', () => {
         mockRequest,
         expect.objectContaining({
           landParcel: 'sheet1-parcel1',
-          actions: ['action1'],
+          actions: 'action1',
           actionsObj: { action1: { value: 10, unit: 'ha' } }
         })
       )
 
       expect(mockH.view).toHaveBeenCalledWith(
-        'actions',
+        'land-actions',
         expect.objectContaining({
           errors: errorMessages,
           availableActions

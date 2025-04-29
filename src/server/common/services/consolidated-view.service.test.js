@@ -74,15 +74,17 @@ describe('fetchParcelDataForBusiness', () => {
     mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 500,
-      statusText: 'Internal Server Error',
+      statusText: errorText,
       text: () => Promise.resolve(errorText)
     })
 
     const error = await fetchParcelDataForBusiness(mockSbi, mockCrn).catch(
       (e) => e
     )
-    expect(error.code).toBe(500)
-    expect(error.responseBody).toBe(errorText)
+    expect(error.status).toBe(500)
+    expect(error.responseBody).toBe(
+      `Failed to fetch business data: 500 ${errorText}`
+    )
   })
 
   it('should handle network errors during fetch', async () => {
