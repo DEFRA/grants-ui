@@ -17,10 +17,15 @@ export default class LandActionsController extends QuestionPageController {
    */
   extractActionsObjectFromPayload(payload) {
     const areas = {}
+    const { actions = [] } = payload
+
     for (const key in payload) {
       if (key.startsWith(this.areaPrefix)) {
         const [, code] = key.split('-')
         const actionInfo = this.availableActions.find((a) => a.code === code)
+        if (!actions.includes(code) || !payload[key] || !actionInfo) {
+          continue
+        }
         areas[code] = {
           value: payload[key],
           unit: actionInfo ? actionInfo.availableArea?.unit : ''
@@ -55,7 +60,7 @@ export default class LandActionsController extends QuestionPageController {
       const { state } = context
       const { viewName } = this
       const payload = request.payload ?? {}
-      const { actions = '' } = payload
+      const { actions = [] } = payload
       const [sheetId, parcelId] = this.parseLandParcelId(state.landParcel)
       const actionsObj = this.extractActionsObjectFromPayload(payload)
       const area = []
@@ -67,8 +72,8 @@ export default class LandActionsController extends QuestionPageController {
       // Create updated state with the new action data
       const newState = {
         ...state,
-        actions,
-        area: area.join(', '),
+        actions: Array.isArray(actions) ? actions?.join(', ') : actions,
+        area: area.join('<br/>'),
         actionsObj
       }
 
