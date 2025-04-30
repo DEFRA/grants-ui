@@ -41,7 +41,7 @@ describe('SubmissionPageController', () => {
     it('should return the correct status path', () => {
       const result = controller.getStatusPath()
 
-      expect(result).toBe('/confirmation')
+      expect(result).toBe('/find-funding-for-land-or-farms/confirmation')
     })
   })
 
