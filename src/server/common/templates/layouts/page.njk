@@ -2,6 +2,7 @@
 
 {# Import GOVUK components globally #}
 {% from "govuk/components/breadcrumbs/macro.njk" import govukBreadcrumbs %}
+{% from "govuk/components/service-navigation/macro.njk" import govukServiceNavigation %}
 
 {# Import custom components globally #}
 {% from "heading/macro.njk" import appHeading %}
@@ -16,20 +17,18 @@
 {% block header %}
   {{ govukHeader({
     homepageUrl: "https://www.gov.uk/",
-    classes: "app-header",
+    classes: "govuk-header--full-width-border",
     containerClasses: "govuk-width-container",
-    serviceName: serviceName,
-    serviceUrl: serviceUrl,
     useTudorCrown: true
   }) }}
+
+  {{ govukServiceNavigation({ serviceName: serviceName, serviceUrl: serviceUrl }) }}
 
   {{ defraAccountBar({
     businessName: "Agile Farms Ltd",
     sbi: "1234567890",
     userName: "Alfred Waldron"
   }) }}
-
-  {% include "partials/navigation/navigation.njk" %}
 {% endblock %}
 
 {% block pageTitle %}
