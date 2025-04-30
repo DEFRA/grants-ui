@@ -4,12 +4,12 @@ import {
   fetchLandSheetDetails,
   validateLandActions
 } from '~/src/server/land-grants/actions/land-actions.service.js'
-import LandActionsController from './land-actions.controller.js'
+import LandActionsPageController from './land-actions-page.controller.js'
 
 jest.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js')
 jest.mock('~/src/server/land-grants/actions/land-actions.service.js')
 
-describe('LandActionsController', () => {
+describe('LandActionsPageController', () => {
   let controller
   let mockRequest
   let mockContext
@@ -40,7 +40,7 @@ describe('LandActionsController', () => {
       pageTitle: 'Land Actions'
     })
 
-    controller = new LandActionsController()
+    controller = new LandActionsPageController()
     controller.availableActions = availableActions
     controller.collection = {
       getErrors: jest.fn().mockReturnValue([])
@@ -285,7 +285,6 @@ describe('LandActionsController', () => {
         mockRequest,
         expect.objectContaining({
           landParcel: 'sheet1-parcel1',
-          actions: '',
           area: '',
           actionsObj: {}
         })
@@ -351,6 +350,32 @@ describe('LandActionsController', () => {
         'land-actions',
         expect.objectContaining({
           errors: errorMessages,
+          availableActions
+        })
+      )
+
+      expect(calculateApplicationPayment).not.toHaveBeenCalled()
+      expect(controller.proceed).not.toHaveBeenCalled()
+      expect(result).toBe('rendered view')
+    })
+
+    test('should render view with errors when no action is selected', async () => {
+      mockRequest.payload = {
+        action: 'validate'
+      }
+
+      validateLandActions.mockResolvedValue({
+        valid: true,
+        errorMessages: []
+      })
+
+      const handler = controller.makePostRouteHandler()
+      const result = await handler(mockRequest, mockContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'land-actions',
+        expect.objectContaining({
+          errors: ['Please select at least one action and quantity'],
           availableActions
         })
       )

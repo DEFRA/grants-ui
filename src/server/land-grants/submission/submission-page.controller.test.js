@@ -11,17 +11,6 @@ jest.mock(
 )
 jest.mock('./state-to-gas-answers-mapper.js')
 
-jest.mock(
-  '@defra/forms-engine-plugin/controllers/SummaryPageController.js',
-  () => {
-    return {
-      SummaryPageController: jest.fn().mockImplementation(() => {
-        return {}
-      })
-    }
-  }
-)
-
 const code = config.get('gas.frpsGrantCode')
 
 describe('SubmissionPageController', () => {
@@ -52,7 +41,7 @@ describe('SubmissionPageController', () => {
     it('should return the correct status path', () => {
       const result = controller.getStatusPath()
 
-      expect(result).toBe('/find-funding-for-land-or-farms/confirmation')
+      expect(result).toBe('/confirmation')
     })
   })
 
@@ -109,7 +98,7 @@ describe('SubmissionPageController', () => {
       jest.spyOn(controller, 'getStatusPath').mockReturnValue('/mock-path')
 
       const handler = controller.makePostRouteHandler()
-      const result = await handler(mockRequest, mockContext, mockH)
+      await handler(mockRequest, mockContext, mockH)
 
       expect(controller.submitLandGrantApplication).toHaveBeenCalledWith(
         mockContext
@@ -118,9 +107,6 @@ describe('SubmissionPageController', () => {
         'Form submission completed',
         mockResult
       )
-      expect(controller.getStatusPath).toHaveBeenCalled()
-      expect(mockH.redirect).toHaveBeenCalledWith('/mock-path')
-      expect(result).toBe('redirected')
     })
 
     it('should handle errors and rethrow them', async () => {

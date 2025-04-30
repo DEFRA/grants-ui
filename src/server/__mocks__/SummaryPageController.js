@@ -20,6 +20,12 @@ export class SummaryPageController {
     return null
   }
 
+  makePostRouteHandler() {
+    return () => {
+      // Empty function implementation
+    }
+  }
+
   /**
    * Post request handler
    * @returns {Promise<void>}
