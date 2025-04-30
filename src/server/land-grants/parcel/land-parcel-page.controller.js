@@ -6,6 +6,7 @@ const logger = createLogger()
 
 export default class LandParcelPageController extends QuestionPageController {
   viewName = 'land-parcel'
+  business = null
 
   makePostRouteHandler() {
     /**
@@ -18,7 +19,16 @@ export default class LandParcelPageController extends QuestionPageController {
     const fn = async (request, context, h) => {
       const { state } = context
       const payload = request.payload ?? {}
-      const { landParcel } = payload
+      const { landParcel, action } = payload
+
+      if (action === 'validate' && !landParcel) {
+        return h.view(this.viewName, {
+          ...super.getViewModel(request, context),
+          ...state,
+          business: this.business,
+          landParcelError: 'Please select a land parcel from the list'
+        })
+      }
 
       await this.setState(request, {
         ...state,
@@ -51,10 +61,10 @@ export default class LandParcelPageController extends QuestionPageController {
 
       try {
         const response = await fetchParcelDataForBusiness(sbi, crn)
-        const business = response.data?.business
+        this.business = response.data?.business
         const viewModel = {
           ...baseViewModel,
-          business,
+          business: this.business,
           landParcel
         }
 

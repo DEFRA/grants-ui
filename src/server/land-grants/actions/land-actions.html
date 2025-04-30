@@ -15,8 +15,7 @@
         {% set errorList = [] %}
         {% for error in errors %}
             {% set errorList = errorList.concat([{
-              text: error,
-              href: '#'
+              text: error
             }]) %}
         {% endfor %}
         {{ govukErrorSummary({

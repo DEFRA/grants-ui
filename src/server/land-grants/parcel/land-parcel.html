@@ -11,17 +11,12 @@
 <div class="govuk-body">
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
-      {% if errors.length > 0 %}
-        {% set errorList = [] %}
-        {% for error in errors %}
-            {% set errorList = errorList.concat([{
-              text: error,
-              href: ''
-            }]) %}
-        {% endfor %}
+      {% if landParcelError %}
         {{ govukErrorSummary({
           titleText: "There is a problem",
-          errorList: errorList
+          errorList: [{
+            text: landParcelError
+          }]
         }) }}
       {% endif %}
 

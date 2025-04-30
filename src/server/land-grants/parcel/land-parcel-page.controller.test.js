@@ -176,6 +176,28 @@ describe('LandParcelPageController', () => {
       expect(result).toBe('next')
     })
 
+    it('sets an error if landParcel is not defined', async () => {
+      mockRequest.payload = { action: 'validate' }
+      mockContext = setupContext({ existing: 'value' })
+
+      const result = await controller.makePostRouteHandler()(
+        mockRequest,
+        mockContext,
+        mockH
+      )
+
+      expect(controller.setState).not.toHaveBeenCalled()
+      expect(controller.proceed).not.toHaveBeenCalled()
+      expect(mockH.view).toHaveBeenCalledWith(
+        'land-parcel',
+        expect.objectContaining({
+          pageTitle: 'Select Land Parcel',
+          landParcelError: 'Please select a land parcel from the list'
+        })
+      )
+      expect(result).toBe('mock-rendered-view')
+    })
+
     it('handles missing landParcel in payload', async () => {
       mockRequest.payload = {}
       mockContext = setupContext({ foo: 'bar' })
