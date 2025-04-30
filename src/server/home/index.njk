@@ -3,27 +3,23 @@
 {% from "govuk/components/button/macro.njk" import govukButton %}
 
 {% block content %}
-  <div class="govuk-width-container">
-    <main class="govuk-main-wrapper">
-      <div class="govuk-grid-row">
-        <div class="govuk-grid-column-two-thirds">
-          <h1 class="govuk-heading-l">Sign into your Defra account</h1>
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      <h1 class="govuk-heading-l">Sign into your Defra account</h1>
 
-          <p class="govuk-body">Use this service to sign in with your Defra account.</p>
-          <p class="govuk-body">If you have multiple businesses that are registered to your rural payments account, you'll be asked which one you're applying for.</p>
-          <p class="govuk-body">Signing in takes around 5 minutes.</p>
+      <p class="govuk-body">Use this service to sign in with your Defra account.</p>
+      <p class="govuk-body">If you have multiple businesses that are registered to your rural payments account, you'll be asked which one you're applying for.</p>
+      <p class="govuk-body">Signing in takes around 5 minutes.</p>
 
-          {{ govukButton({
-            classes: "govuk-!-margin-top-2 govuk-!-margin-bottom-8",
-            href: "/auth/sign-in",
-            isStartButton: true,
-            text: "Sign in"
-          }) }}
+      {{ govukButton({
+        classes: "govuk-!-margin-top-2 govuk-!-margin-bottom-8",
+        href: "/auth/sign-in",
+        isStartButton: true,
+        text: "Sign in"
+      }) }}
 
-          <h2 class="govuk-heading-m">Before you start</h2>
-          <p class="govuk-body">You’ll need your Rural Payments service customer reference number (CRN) and password to sign in.</p>
-        </div>
-      </div>
-    </main>
+      <h2 class="govuk-heading-m">Before you start</h2>
+      <p class="govuk-body">You’ll need your Rural Payments service customer reference number (CRN) and password to sign in.</p>
+    </div>
   </div>
 {% endblock %}
