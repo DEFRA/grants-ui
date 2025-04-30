@@ -49,7 +49,7 @@ const example = (v) =>
         events: {
           onLoad: {
             options: {
-              url: 'http://service.cdpEnvironment.example.com'
+              url: 'http://cdpEnvironment.example.com'
             }
           }
         }
@@ -80,7 +80,7 @@ describe('formsService', () => {
             events: {
               onLoad: {
                 options: {
-                  url: 'http://service.cdpEnvironment.example.com'
+                  url: 'http://localhost:3001/scoring/api/v1/adding-value/score?allowPartialScoring=true'
                 }
               }
             }
@@ -101,7 +101,7 @@ describe('formsService', () => {
             events: {
               onLoad: {
                 options: {
-                  url: 'http://service.cdpEnvironment.example.com'
+                  url: 'http://localhost:3001/scoring/api/v1/adding-value/score?allowPartialScoring=true'
                 }
               }
             }
@@ -124,7 +124,7 @@ describe('formsService', () => {
             events: {
               onLoad: {
                 options: {
-                  url: 'http://service.cdpEnvironment.example.com'
+                  url: 'http://localhost:3001/scoring/api/v1/adding-value/score?allowPartialScoring=true'
                 }
               }
             }
@@ -198,7 +198,7 @@ describe('formsService', () => {
             events: {
               onLoad: {
                 options: {
-                  url: 'http://service.cdpEnvironment.cdp-int.defra.cloud'
+                  url: 'http://cdpEnvironment.example.com'
                 }
               }
             }
@@ -210,7 +210,9 @@ describe('formsService', () => {
       const result = await formsService.getFormDefinition(
         exampleGrantMetadata.id
       )
-      expect(result.pages[0].events.onLoad.options.url).toBe('http://service')
+      expect(result.pages[0].events.onLoad.options.url).toBe(
+        'http://localhost:3001/scoring/api/v1/adding-value/score?allowPartialScoring=true'
+      )
     })
 
     test('configures URLs correctly for non-local environment', async () => {
@@ -251,7 +253,7 @@ describe('formsService', () => {
             events: {
               onLoad: {
                 options: {
-                  url: 'http://service.cdpEnvironment.example.com'
+                  url: 'http://cdpEnvironment.example.com'
                 }
               }
             }
@@ -260,7 +262,7 @@ describe('formsService', () => {
             events: {
               onLoad: {
                 options: {
-                  url: 'http://service.cdpEnvironment.example.com'
+                  url: 'http://cdpEnvironment.example.com'
                 }
               }
             }
@@ -275,7 +277,7 @@ describe('formsService', () => {
       expect(result.pages).toHaveLength(2)
       result.pages.forEach((page) => {
         expect(page.events.onLoad.options.url).toBe(
-          'http://service.cdpEnvironment.example.com'
+          'http://localhost:3001/scoring/api/v1/adding-value/score?allowPartialScoring=true'
         )
       })
     })
