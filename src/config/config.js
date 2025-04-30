@@ -59,7 +59,7 @@ export const config = convict({
   serviceName: {
     doc: 'Applications Service Name',
     format: String,
-    default: 'grants-ui'
+    default: 'Manage land-based actions'
   },
   root: {
     doc: 'Project root',
