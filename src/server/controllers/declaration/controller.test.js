@@ -1,7 +1,8 @@
 import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
-import { formSubmissionService } from '~/src/server/common/forms/services/submission.js'
 import DeclarationPageController from './controller.js'
 import * as formSlugHelper from '~/src/server/common/helpers/form-slug-helper.js'
+import { submitGrantApplication } from '~/src/server/common/services/grant-application.service.js'
+import { transformStateObjectToGasApplication } from '../../common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
 
 const mockCacheService = {
   getConfirmationState: jest.fn().mockResolvedValue({ confirmed: true }),
@@ -15,6 +16,10 @@ jest.mock('~/src/server/common/helpers/form-slug-helper.js')
 jest.mock('~/src/server/common/helpers/forms-cache/forms-cache.js', () => ({
   getFormsCacheService: () => mockCacheService
 }))
+jest.mock('~/src/server/common/services/grant-application.service.js')
+jest.mock(
+  '../../common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
+)
 
 describe('DeclarationPageController', () => {
   let controller
@@ -26,7 +31,15 @@ describe('DeclarationPageController', () => {
   let parentGetHandler
 
   beforeEach(() => {
-    mockModel = {}
+    mockModel = {
+      def: {
+        metadata: {
+          gas: {
+            grantCode: 'adding-value'
+          }
+        }
+      }
+    }
     mockPageDef = {}
 
     // Mock the parent's GET handler
@@ -57,7 +70,7 @@ describe('DeclarationPageController', () => {
 
     mockContext = {
       state: {
-        formData: {}
+        referenceNumber: 'REF123'
       }
     }
 
@@ -66,9 +79,14 @@ describe('DeclarationPageController', () => {
       view: jest.fn().mockReturnValue('rendered view')
     }
 
-    formSubmissionService.submit.mockResolvedValue({
+    transformStateObjectToGasApplication.mockReturnValue({ transformed: true })
+
+    submitGrantApplication.mockResolvedValue({
       result: {
-        referenceNumber: 'REF123'
+        submissionDetails: {
+          fieldsSubmitted: ['field1', 'field2'],
+          timestamp: '2024-03-20T10:00:00Z'
+        }
       }
     })
 
@@ -196,11 +214,20 @@ describe('DeclarationPageController', () => {
         mockContext,
         'DeclarationController'
       )
-      expect(formSubmissionService.submit).toHaveBeenCalledWith(
-        mockRequest.payload,
-        mockContext.state
+      expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
+        {
+          sbi: 'sbi',
+          frn: 'frn',
+          crn: 'crn',
+          defraId: 'defraId'
+        },
+        mockContext.state,
+        expect.any(Function)
       )
-      expect(mockContext.referenceNumber).toBe('REF123')
+
+      expect(submitGrantApplication).toHaveBeenCalledWith('adding-value', {
+        transformed: true
+      })
       expect(mockCacheService.setConfirmationState).toHaveBeenCalledWith(
         mockRequest,
         { confirmed: true }
@@ -233,36 +260,27 @@ describe('DeclarationPageController', () => {
     })
 
     test('should log submission details when available', async () => {
-      const submissionDetails = {
-        fieldsSubmitted: ['field1', 'field2'],
-        timestamp: '2024-03-20T10:00:00Z'
-      }
-      formSubmissionService.submit.mockResolvedValue({
-        result: {
-          referenceNumber: 'REF123',
-          submissionDetails
-        }
-      })
-
       const handler = controller.makePostRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
       expect(mockRequest.logger.info).toHaveBeenCalledWith({
         message: 'Form submission completed',
         referenceNumber: 'REF123',
-        fieldsSubmitted: submissionDetails.fieldsSubmitted,
-        timestamp: submissionDetails.timestamp
+        numberOfSubmittedFields: Object.keys(mockContext.state).length,
+        timestamp: expect.any(String)
       })
     })
 
     test('should handle submission errors', async () => {
       const error = new Error('Submission failed')
-      formSubmissionService.submit.mockRejectedValue(error)
+      submitGrantApplication.mockRejectedValue(error)
 
       const handler = controller.makePostRouteHandler()
+
       await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow(
         error
       )
+
       expect(mockRequest.logger.error).toHaveBeenCalledWith(
         error,
         'Failed to submit form'

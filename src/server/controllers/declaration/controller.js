@@ -1,10 +1,11 @@
 import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
-import { formSubmissionService } from '~/src/server/common/forms/services/submission.js'
 import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/forms-cache.js'
 import {
   storeSlugInContext,
   getConfirmationPath
 } from '~/src/server/common/helpers/form-slug-helper.js'
+import { submitGrantApplication } from '~/src/server/common/services/grant-application.service.js'
+import { transformStateObjectToGasApplication } from '../../common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
 
 export default class DeclarationPageController extends SummaryPageController {
   /**
@@ -14,6 +15,7 @@ export default class DeclarationPageController extends SummaryPageController {
   constructor(model, pageDef) {
     super(model, pageDef)
     this.viewName = 'declaration-page'
+    this.grantCode = model.def.metadata.gas.grantCode
   }
 
   /**
@@ -61,24 +63,30 @@ export default class DeclarationPageController extends SummaryPageController {
           request.path
         )
 
-        const { result } = await formSubmissionService.submit(
-          request.payload,
-          context.state
+        const identifiers = {
+          sbi: 'sbi',
+          frn: 'frn',
+          crn: 'crn',
+          defraId: 'defraId'
+        }
+        const applicationData = transformStateObjectToGasApplication(
+          identifiers,
+          context.state,
+          (state) => state
         )
 
-        context.referenceNumber = result.referenceNumber
-        request.logger.debug(
-          'DeclarationController: Got reference number:',
-          context.referenceNumber
+        const { result } = await submitGrantApplication(
+          this.grantCode,
+          applicationData
         )
 
         // Log submission details if available - this is not needed for the submission but it's useful for debugging
         if (result.submissionDetails) {
           request.logger.info({
             message: 'Form submission completed',
-            referenceNumber: result.referenceNumber,
-            fieldsSubmitted: result.submissionDetails.fieldsSubmitted,
-            timestamp: result.submissionDetails.timestamp
+            referenceNumber: context.state.referenceNumber,
+            numberOfSubmittedFields: Object.keys(context.state).length,
+            timestamp: new Date().toISOString()
           })
         }
 

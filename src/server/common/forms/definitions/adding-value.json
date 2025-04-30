@@ -2,7 +2,152 @@
   "engine": "V2",
   "name": "Adding value",
   "metadata": {
-    "referenceNumberPrefix": "AV"
+    "referenceNumberPrefix": "AV",
+    "gas": {
+      "grantCode": "adding-value",
+      "submissionSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "$$__referenceNumber",
+          "natureOfBusinessRadiosField",
+          "legalStatusRadiosField",
+          "countryYesNoField",
+          "planningPermissionRadiosField",
+          "projectStartRadiosField",
+          "tenancyYesNoField",
+          "smallerAbattoirYesNoField",
+          "otherFarmersYesNoField",
+          "projectItemsCheckboxesField",
+          "storageRadiosField",
+          "projectCostNumberField",
+          "remainingCostsYesNoField",
+          "produceProcessedRadiosField",
+          "howAddingValueRadiosField",
+          "projectImpactCheckboxesField",
+          "mechanisationYesNoField",
+          "manualLabourAmountRadiosField",
+          "applyingRadiosField",
+          "applicantFirstName",
+          "applicantLastName",
+          "applicantEmailAddress",
+          "applicantConfirmEmailAddress",
+          "applicantMobileNumber",
+          "applicantLandlineNumber",
+          "applicantBusinessAddress__addressLine1",
+          "applicantBusinessAddress__town",
+          "applicantBusinessAddress__postcode",
+          "applicantProjectPostcode"
+        ],
+        "properties": {
+          "$$__referenceNumber": {
+            "type": "string",
+            "title": "Reference Number"
+          },
+          "natureOfBusinessRadiosField": {
+            "type": "string"
+          },
+          "legalStatusRadiosField": {
+            "type": "string"
+          },
+          "countryYesNoField": {
+            "type": "boolean"
+          },
+          "planningPermissionRadiosField": {
+            "type": "string"
+          },
+          "projectStartRadiosField": {
+            "type": "string"
+          },
+          "tenancyYesNoField": {
+            "type": "boolean"
+          },
+          "smallerAbattoirYesNoField": {
+            "type": "boolean"
+          },
+          "otherFarmersYesNoField": {
+            "type": "boolean"
+          },
+          "projectItemsCheckboxesField": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1
+          },
+          "storageRadiosField": {
+            "type": "string"
+          },
+          "projectCostNumberField": {
+            "type": "number"
+          },
+          "remainingCostsYesNoField": {
+            "type": "boolean"
+          },
+          "produceProcessedRadiosField": {
+            "type": "string"
+          },
+          "howAddingValueRadiosField": {
+            "type": "string"
+          },
+          "projectImpactCheckboxesField": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1
+          },
+          "mechanisationYesNoField": {
+            "type": "boolean"
+          },
+          "manualLabourAmountRadiosField": {
+            "type": "string"
+          },
+          "applyingRadiosField": {
+            "type": "string"
+          },
+          "applicantFirstName": {
+            "type": "string"
+          },
+          "applicantLastName": {
+            "type": "string"
+          },
+          "applicantEmailAddress": {
+            "type": "string",
+            "format": "email"
+          },
+          "applicantConfirmEmailAddress": {
+            "type": "string",
+            "format": "email"
+          },
+          "applicantMobileNumber": {
+            "type": "string"
+          },
+          "applicantLandlineNumber": {
+            "type": "string"
+          },
+          "applicantBusinessAddress__addressLine1": {
+            "type": "string"
+          },
+          "applicantBusinessAddress__addressLine2": {
+            "type": ["string", "null"]
+          },
+          "applicantBusinessAddress__town": {
+            "type": "string"
+          },
+          "applicantBusinessAddress__county": {
+            "type": ["string", "null"]
+          },
+          "applicantBusinessAddress__postcode": {
+            "type": "string"
+          },
+          "applicantProjectPostcode": {
+            "type": "string"
+          }
+        }
+      }
+    }
   },
   "pages": [
     {
@@ -908,20 +1053,20 @@
         {
           "text": "A grower or producer of agricultural or horticultural produce",
           "description": "For example, arable or livestock farmer, fruit producer, salad grower",
-          "value": "natureOfBusiness-A1"
+          "value": "A grower or producer of agricultural or horticultural produce"
         },
         {
           "text": "A business processing agricultural or horticultural products that is at least 50% owned by agricultural or horticultural producers",
           "description": "For example, a cheese production business owned by a group of farmers",
-          "value": "natureOfBusiness-A2"
+          "value": "A business processing agricultural or horticultural products that is at least 50% owned by agricultural or horticultural producers"
         },
         {
           "text": "A woodland manager processing wild venison products",
-          "value": "natureOfBusiness-A3"
+          "value": "A woodland manager processing wild venison products"
         },
         {
           "text": "None of the above",
-          "value": "natureOfBusiness-A4"
+          "value": "None of the above"
         }
       ]
     },
@@ -932,11 +1077,11 @@
       "items": [
         {
           "text": "Applicant",
-          "value": "applying-A1"
+          "value": "Applicant"
         },
         {
           "text": "Agent",
-          "value": "applying-A2"
+          "value": "Agent"
         }
       ]
     },
@@ -948,37 +1093,37 @@
         {
           "text": "Arable produce",
           "description": "For example, crushing of oilseeds, rolling or flaking of grains as food ingredients",
-          "value": "produceProcessed-A1"
+          "value": "Arable produce"
         },
         {
           "text": "Wild venison meat produce",
           "description": "For example, processing and packing wild venison meat",
-          "value": "produceProcessed-A2"
+          "value": "Wild venison meat produce"
         },
         {
           "text": "Dairy or meat produce",
           "description": "For example, processing and bottling milk or slaughtering, cutting, processing and packing meat",
-          "value": "produceProcessed-A3"
+          "value": "Dairy or meat produce"
         },
         {
           "text": "Fibre produce",
           "description": "For example, processing animal hides and leather, processing fibres such as wool, flax and hemp",
-          "value": "produceProcessed-A4"
+          "value": "Fibre produce"
         },
         {
           "text": "Fodder produce",
           "description": "For example, processing and repacking hay and straw for specialist markets or retail sale",
-          "value": "produceProcessed-A5"
+          "value": "Fodder produce"
         },
         {
           "text": "Horticultural produce",
           "description": "For example, grading and packing of soft fruit, washing and packing vegetables, packing salad crops",
-          "value": "produceProcessed-A6"
+          "value": "Horticultural produce"
         },
         {
           "text": "Non-edible produce",
           "description": "For example, processing and packing ornamental flowers and bulbs after harvesting",
-          "value": "produceProcessed-A7"
+          "value": "Non-edible produce"
         }
       ]
     },
@@ -990,22 +1135,22 @@
         {
           "text": "Introducing a new product to your farm",
           "description": "For example, processing meat to burgers, milk to cheese, cereals to beer or spirits.",
-          "value": "howAddingValue-A1"
+          "value": "Introducing a new product to your farm"
         },
         {
           "text": "Grading or sorting produce",
           "description": "For example, washing and grading vegetables, egg grading, optical grading of top fruit.",
-          "value": "howAddingValue-A2"
+          "value": "Grading or sorting produce"
         },
         {
           "text": "Packing produce",
           "description": "For example, packing top fruit, bagging vegetables, bottling wine.",
-          "value": "howAddingValuee-A3"
+          "value": "Packing produce"
         },
         {
           "text": "A new retail facility to sell direct to consumers",
           "description": "",
-          "value": "howAddingValue-A4"
+          "value": "A new retail facility to sell direct to consumers"
         }
       ]
     },
@@ -1017,22 +1162,22 @@
         {
           "text": "Increasing range of added-value products",
           "description": "",
-          "value": "projectImpact-A1"
+          "value": "Increasing range of added-value products"
         },
         {
           "text": "Increasing volume of added-value products",
           "description": "",
-          "value": "projectImpact-A2"
+          "value": "Increasing volume of added-value products"
         },
         {
           "text": "Allow selling direct to consumers",
           "description": "For example, retail and internet sales.",
-          "value": "projectImpact-A3"
+          "value": "Allow selling direct to consumers"
         },
         {
           "text": "Starting to make added-value products for the first time",
           "description": "This only applies if you do not already make added-value products.",
-          "value": "projectImpact-A4"
+          "value": "Starting to make added-value products for the first time"
         }
       ]
     },
@@ -1043,51 +1188,51 @@
       "items": [
         {
           "text": "Sole trader",
-          "value": "legalStatus-A1"
+          "value": "Sole trader"
         },
         {
           "text": "Partnership",
-          "value": "legalStatus-A2"
+          "value": "Partnership"
         },
         {
           "text": "Limited company",
-          "value": "legalStatus-A3"
+          "value": "Limited company"
         },
         {
           "text": "Charity",
-          "value": "legalStatus-A4"
+          "value": "Charity"
         },
         {
           "text": "Trust",
-          "value": "legalStatus-A5"
+          "value": "Trust"
         },
         {
           "text": "Limited liability partnership",
-          "value": "legalStatus-A6"
+          "value": "Limited liability partnership"
         },
         {
           "text": "Community interest company",
-          "value": "legalStatus-A7"
+          "value": "Community interest company"
         },
         {
           "text": "Limited partnership",
-          "value": "legalStatus-A8"
+          "value": "Limited partnership"
         },
         {
           "text": "Industrial and provident society",
-          "value": "legalStatus-A9"
+          "value": "Industrial and provident society"
         },
         {
           "text": "Co-operative society (Co-Op)",
-          "value": "legalStatus-A10"
+          "value": "Co-operative society (Co-Op)"
         },
         {
           "text": "Community benefit society (BenCom)",
-          "value": "legalStatus-A11"
+          "value": "Community benefit society (BenCom)"
         },
         {
           "text": "None of the above",
-          "value": "legalStatus-A12"
+          "value": "None of the above"
         }
       ]
     },
@@ -1098,19 +1243,19 @@
       "items": [
         {
           "text": "Not needed",
-          "value": "planningPermission-A1"
+          "value": "Not needed"
         },
         {
           "text": "Secured",
-          "value": "planningPermission-A2"
+          "value": "Secured"
         },
         {
           "text": "Should be in place by the time I make my full application",
-          "value": "planningPermission-A3"
+          "value": "Should be in place by the time I make my full application"
         },
         {
           "text": "Will not be in place by the time I make my full application",
-          "value": "planningPermission-A4"
+          "value": "Will not be in place by the time I make my full application"
         }
       ]
     },
@@ -1122,16 +1267,16 @@
         {
           "text": "Yes, preparatory work",
           "description": "For example, quotes from suppliers, applying for planning permission",
-          "value": "projectStart-A1"
+          "value": "Yes, preparatory work"
         },
         {
           "text": "Yes, we have begun project work",
           "description": "For example, started construction work, signing contracts, placing orders",
-          "value": "projectStart-A2"
+          "value": "Yes, we have begun project work"
         },
         {
           "text": "No, we have not done any work on this project yet",
-          "value": "projectStart-A3"
+          "value": "No, we have not done any work on this project yet"
         }
       ]
     },
@@ -1143,21 +1288,21 @@
         {
           "text": "Constructing or improving buildings for processing",
           "description": "For example, a new building for cheese making, extending an existing building to install a new meat-cutting and packing line",
-          "value": "projectItems-A1"
+          "value": "Constructing or improving buildings for processing"
         },
         {
           "text": "Processing equipment or machinery",
           "description": "For example, equipment and machinery for pasteurising and bottling milk, a meat cutting and packing line or vegetable washing and packing",
-          "value": "projectItems-A2"
+          "value": "Processing equipment or machinery"
         },
         {
           "text": "Retail facilities",
           "description": "For example, shops or display cabinets",
-          "value": "projectItems-A3"
+          "value": "Retail facilities"
         },
         {
           "text": "None of the above",
-          "value": "projectItems-A4"
+          "value": "None of the above"
         }
       ]
     },
@@ -1168,11 +1313,11 @@
       "items": [
         {
           "text": "Yes, we will need storage facilities",
-          "value": "storageRadios-A1"
+          "value": "Yes, we will need storage facilities"
         },
         {
           "text": "No, we do not need storage facilities",
-          "value": "storageRadios-A2"
+          "value": "No, we do not need storage facilities"
         }
       ]
     },
@@ -1183,15 +1328,15 @@
       "items": [
         {
           "text": "Up to 5% of workforce",
-          "value": "manualLabourAmount-A1"
+          "value": "Up to 5% of workforce"
         },
         {
           "text": "Between 5% and 10%",
-          "value": "manualLabourAmount-A2"
+          "value": "Between 5% and 10%"
         },
         {
           "text": "More than 10%",
-          "value": "manualLabourAmount-A3"
+          "value": "More than 10%"
         }
       ]
     },
@@ -1202,7 +1347,7 @@
       "items": [
         {
           "text": "(Optional) I consent to being contacted by Defra or a third party about service improvements",
-          "value": "consentOptional-A1"
+          "value": "(Optional) I consent to being contacted by Defra or a third party about service improvements"
         }
       ]
     }
