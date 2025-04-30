@@ -20,7 +20,7 @@ export default class SubmissionPageController extends SummaryPageController {
    * @returns {string} path to the status page
    */
   getStatusPath() {
-    return '/confirmation'
+    return '/find-funding-for-land-or-farms/confirmation'
   }
 
   async submitLandGrantApplication(context) {
@@ -50,8 +50,7 @@ export default class SubmissionPageController extends SummaryPageController {
       const result = await this.submitLandGrantApplication(context)
       request.logger.info('Form submission completed', result)
 
-      // make sure cache is cleared & other tasks complete
-      return super.makePostRouteHandler()(request, context, h)
+      return h.redirect(this.getStatusPath())
     }
 
     return fn

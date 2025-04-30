@@ -1,4 +1,5 @@
 import { StatusPageController } from '@defra/forms-engine-plugin/controllers/StatusPageController.js'
+import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/forms-cache.js'
 
 export default class ConfirmationPageController extends StatusPageController {
   viewName = 'confirmation-page'
@@ -18,6 +19,10 @@ export default class ConfirmationPageController extends StatusPageController {
     // eslint-disable-next-line @typescript-eslint/require-await
     const fn = async (request, context, h) => {
       const { collection, viewName } = this
+
+      // Clear the state from the cache
+      const cacheService = getFormsCacheService(request.server)
+      cacheService?.clearState(request)
 
       const viewModel = {
         ...super.getViewModel(request, context),
