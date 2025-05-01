@@ -51,8 +51,8 @@ export default class SubmissionPageController extends SummaryPageController {
       const result = await this.submitLandGrantApplication(context)
       request.logger.info('Form submission completed', result)
       const cacheService = getFormsCacheService(request.server)
-
       await cacheService.setConfirmationState(request, { confirmed: true })
+
       return h.redirect(this.getStatusPath())
     }
 

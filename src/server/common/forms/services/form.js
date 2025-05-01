@@ -27,15 +27,10 @@ function configureFormDefinition(definition) {
             'cdpEnvironment',
             environment
           )
-
           // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
         } else if (events.onLoad?.options.url && environment === 'local') {
           events.onLoad.options.url =
-            process.env.SCORING_SERVICE_URL ??
-            events.onLoad.options.url.replace(
-              '.cdpEnvironment.cdp-int.defra.cloud',
-              ''
-            )
+            'http://localhost:3001/scoring/api/v1/adding-value/score?allowPartialScoring=true'
         } else {
           // If we have a URL but environment is neither 'local' nor a non-local environment,
           // we should log this unexpected case but not modify the URL
