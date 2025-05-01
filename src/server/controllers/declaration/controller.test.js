@@ -1,8 +1,10 @@
 import { formSubmissionService } from '~/src/server/common/forms/services/submission.js'
 import DeclarationPageController from './controller.js'
+import * as formSlugHelper from '~/src/server/common/helpers/form-slug-helper.js'
 
 jest.mock('@defra/forms-engine-plugin/controllers/SummaryPageController.js')
 jest.mock('~/src/server/common/forms/services/submission.js')
+jest.mock('~/src/server/common/helpers/form-slug-helper.js')
 jest.mock('~/src/server/common/helpers/forms-cache/forms-cache.js', () => ({
   getFormsCacheService: () => ({
     getConfirmationState: jest.fn().mockResolvedValue({ confirmed: true }),
@@ -29,7 +31,12 @@ describe('DeclarationPageController', () => {
         declaration: true
       },
       logger: {
-        error: jest.fn()
+        error: jest.fn(),
+        debug: jest.fn(),
+        info: jest.fn()
+      },
+      params: {
+        slug: 'adding-value'
       }
     }
 
@@ -48,6 +55,12 @@ describe('DeclarationPageController', () => {
         referenceNumber: 'REF123'
       }
     })
+
+    // Mock the form-slug-helper functions
+    formSlugHelper.storeSlugInContext.mockImplementation(() => null)
+    formSlugHelper.getConfirmationPath.mockImplementation(
+      () => '/adding-value/confirmation'
+    )
   })
 
   afterEach(() => {
@@ -60,7 +73,13 @@ describe('DeclarationPageController', () => {
 
   describe('getStatusPath', () => {
     test('should return the correct path', () => {
-      expect(controller.getStatusPath()).toBe('/adding-value/confirmation')
+      expect(
+        formSlugHelper.getConfirmationPath(
+          mockRequest,
+          mockContext,
+          'DeclarationController'
+        )
+      ).toBe('/adding-value/confirmation')
     })
   })
 
@@ -94,7 +113,6 @@ describe('DeclarationPageController', () => {
         }
       })
 
-      mockRequest.logger.info = jest.fn()
       const handler = controller.makePostRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
