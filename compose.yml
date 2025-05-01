@@ -1,5 +1,4 @@
----
-
+version: '3.4'
 services:
 
   localstack:
@@ -33,18 +32,29 @@ services:
     networks:
       - cdp-tenant
 
+  mongodb:
+    image: mongo:6.0.13
+    networks:
+      - cdp-tenant
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongodb-data:/data
+    restart: always
+
 ################################################################################
 
-  grants-ui:
+  your-frontend:
     build: ./
     ports:
-      - "0.0.0.0:3000:3000"
+      - '3000:3000'
+    links:
+      - 'localstack:localstack'
+      - 'redis:redis'
     depends_on:
       localstack:
         condition: service_healthy
       redis:
-        condition: service_started
-      scoring-service:
         condition: service_started
     env_file:
       - 'compose/aws.env'
@@ -52,22 +62,36 @@ services:
       PORT: 3000
       NODE_ENV: development
       REDIS_HOST: redis
+      LOCALSTACK_ENDPOINT: http://localstack:4566
       USE_SINGLE_INSTANCE_CACHE: true
     networks:
       - cdp-tenant
 
-  ffc-grants-scoring:
-    build:
-      context: https://github.com/DEFRA/ffc-grants-scoring.git#0.41.0
-    ports:
-      - "3001:3001"
-    networks:
-      - cdp-tenant
-    environment:
-      NODE_ENV: development
-      PORT: 3001
+  # your-backend:
+  #   image: defradigital/your-backend:${YOUR_BACKEND_VERSION:-latest}
+  #   ports:
+  #     - '3555:3555'
+  #   links:
+  #     - 'localstack:localstack'
+  #     - 'mongodb:mongodb'
+  #   depends_on:
+  #     localstack:
+  #       condition: service_healthy
+  #     mongodb:
+  #       condition: service_started
+  #   env_file:
+  #     - 'compose/aws.env'
+  #   environment:
+  #     PORT: 3555
+  #     NODE_ENV: development
+  #     LOCALSTACK_ENDPOINT: http://localstack:4566
+  #   networks:
+  #     - cdp-tenant
 
 ################################################################################
+
+volumes:
+  mongodb-data:
 
 networks:
   cdp-tenant:
