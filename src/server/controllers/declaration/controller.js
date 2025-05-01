@@ -1,6 +1,10 @@
 import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
 import { formSubmissionService } from '~/src/server/common/forms/services/submission.js'
-import { getFormsCacheService } from '../../common/helpers/forms-cache/forms-cache.js'
+import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/forms-cache.js'
+import {
+  storeSlugInContext,
+  getConfirmationPath
+} from '~/src/server/common/helpers/form-slug-helper.js'
 
 export default class DeclarationPageController extends SummaryPageController {
   /**
@@ -19,24 +23,7 @@ export default class DeclarationPageController extends SummaryPageController {
    * @returns {string} path to the status page
    */
   getStatusPath(request, context) {
-    // First try to get slug from request params (available during initial page render)
-    let slug = request?.params?.slug
-
-    // Next try to get it from context state (available during form submission)
-    if (!slug && context?.state?.formSlug) {
-      slug = context.state.formSlug
-      request?.logger?.debug('Using slug from context.state.formSlug:', slug)
-    }
-
-    if (slug) {
-      request?.logger?.debug('DeclarationController: Using slug:', slug)
-      return `/${slug}/confirmation`
-    }
-
-    request?.logger?.debug(
-      'DeclarationController: No slug found, using default path'
-    )
-    return '/confirmation'
+    return getConfirmationPath(request, context, 'DeclarationController')
   }
 
   /**
@@ -49,13 +36,7 @@ export default class DeclarationPageController extends SummaryPageController {
     // Return a wrapped version that stores the slug
     return async (request, context, h) => {
       // Store the slug in context if it's available in request.params
-      if (request?.params?.slug && !context.state.formSlug) {
-        context.state.formSlug = request.params.slug
-        request.logger.debug(
-          'DeclarationController: Storing slug in context (GET):',
-          request.params.slug
-        )
-      }
+      storeSlugInContext(request, context, 'DeclarationController')
 
       // Call the parent handler with await since it returns a promise
       return await parentHandler(request, context, h)
@@ -66,23 +47,32 @@ export default class DeclarationPageController extends SummaryPageController {
     const fn = async (request, context, h) => {
       try {
         // Store the slug in context for later use
-        if (request?.params?.slug && !context.state.formSlug) {
-          context.state.formSlug = request.params.slug
-          request.logger.debug(
-            'DeclarationController: Storing slug in context (POST):',
-            request.params.slug
-          )
-        }
+        storeSlugInContext(request, context, 'DeclarationController')
 
+        // Get cache service for later use
         const cacheService = getFormsCacheService(request.server)
+
+        // Log current state for debugging
+        request.logger.debug(
+          'DeclarationController: Processing form submission'
+        )
+        request.logger.debug(
+          'DeclarationController: Current URL:',
+          request.path
+        )
+
         const { result } = await formSubmissionService.submit(
           request.payload,
           context.state
         )
 
         context.referenceNumber = result.referenceNumber
+        request.logger.debug(
+          'DeclarationController: Got reference number:',
+          context.referenceNumber
+        )
 
-        // Log submission details if available
+        // Log submission details if available - this is not needed for the submission but it's useful for debugging
         if (result.submissionDetails) {
           request.logger.info({
             message: 'Form submission completed',
@@ -92,8 +82,20 @@ export default class DeclarationPageController extends SummaryPageController {
           })
         }
 
+        // Set confirmation state so the confirmation page knows a submission happened
         await cacheService.setConfirmationState(request, { confirmed: true })
-        return h.redirect(this.getStatusPath(request, context))
+        request.logger.debug(
+          'DeclarationController: Set confirmation state to true'
+        )
+
+        // Get the redirect path
+        const redirectPath = this.getStatusPath(request, context)
+        request.logger.debug(
+          'DeclarationController: Redirecting to:',
+          redirectPath
+        )
+
+        return h.redirect(redirectPath)
       } catch (error) {
         request.logger.error(error, 'Failed to submit form')
         throw error
