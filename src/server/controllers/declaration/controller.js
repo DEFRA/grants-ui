@@ -14,10 +14,20 @@ export default class DeclarationPageController extends SummaryPageController {
 
   /**
    * Gets the path to the status page (in this case /confirmation page) for the POST handler.
+   * @param {object} request - The request object containing the URL info
    * @returns {string} path to the status page
    */
-  getStatusPath() {
-    return '/adding-value/confirmation'
+  getStatusPath(request) {
+    // Get the slug directly from request params
+    const slug = request?.params?.slug
+    
+    if (slug) {
+      console.log('DeclarationController: Using slug from request.params.slug:', slug)
+      return `/${slug}/confirmation`
+    }
+    
+    console.log('DeclarationController: No slug found, using default path')
+    return '/confirmation'
   }
 
   makePostRouteHandler() {
@@ -42,7 +52,7 @@ export default class DeclarationPageController extends SummaryPageController {
         }
 
         await cacheService.setConfirmationState(request, { confirmed: true })
-        return h.redirect(this.getStatusPath())
+        return h.redirect(this.getStatusPath(request))
       } catch (error) {
         request.logger.error(error, 'Failed to submit form')
         throw error

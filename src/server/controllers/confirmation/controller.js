@@ -43,9 +43,19 @@ export default class ConfirmationPageController extends StatusPageController {
 
   /**
    * Gets the path to the status page (in this case /confirmation page) for the GET handler.
+   * @param {object} request - The request object containing the URL info
    * @returns {string} path to the status page
    */
-  getStatusPath() {
+  getStatusPath(request) {
+    // Get the slug directly from request params
+    const slug = request?.params?.slug
+    
+    if (slug) {
+      console.log('ConfirmationController: Using slug from request.params.slug:', slug)
+      return `/${slug}/confirmation`
+    }
+    
+    console.log('ConfirmationController: No slug found, using default path')
     return '/confirmation'
   }
 }
