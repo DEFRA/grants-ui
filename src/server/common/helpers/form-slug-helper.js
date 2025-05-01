@@ -10,6 +10,11 @@
  * @returns {string|null} - The slug that was stored or null if none
  */
 export function storeSlugInContext(request, context, controllerName) {
+  // Ensure context state exists
+  if (!context?.state) {
+    return null
+  }
+
   if (request?.params?.slug && !context.state.formSlug) {
     context.state.formSlug = request.params.slug
     request.logger.debug(
