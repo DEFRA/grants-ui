@@ -1,0 +1,17 @@
+@use "govuk-frontend" as *;
+
+.defra-account-bar {
+  border-bottom: 1px solid $govuk-border-colour;
+}
+
+.defra-account-bar__headings {
+  @extend %govuk-heading-s;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.defra-account-bar__headings--right-aligned {
+  @include govuk-media-query($from: desktop) {
+    text-align: right;
+  }
+}

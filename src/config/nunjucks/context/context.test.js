@@ -47,7 +47,7 @@ describe('#context', () => {
             url: '/about'
           }
         ],
-        serviceName: 'grants-ui',
+        serviceName: 'Manage land-based actions',
         serviceUrl: '/',
         auth: {
           isAuthenticated: false,
@@ -142,7 +142,7 @@ describe('#context cache', () => {
             url: '/about'
           }
         ],
-        serviceName: 'grants-ui',
+        serviceName: 'Manage land-based actions',
         serviceUrl: '/',
         auth: {
           isAuthenticated: false,
