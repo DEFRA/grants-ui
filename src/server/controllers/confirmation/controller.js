@@ -30,10 +30,6 @@ export default class ConfirmationPageController extends StatusPageController {
         cacheService.clearState(request)
       }
 
-      // Clear the state from the cache
-      const cacheService = getFormsCacheService(request.server)
-      cacheService?.clearState(request)
-
       const viewModel = {
         ...super.getViewModel(request, context),
         errors: collection.getErrors(collection.getErrors()),
