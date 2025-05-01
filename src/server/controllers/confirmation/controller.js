@@ -22,7 +22,7 @@ export default class ConfirmationPageController extends StatusPageController {
       const cacheService = getFormsCacheService(request.server)
       const confirmationState = await cacheService.getConfirmationState(request)
 
-      // In a similar way top the parent controller, we check confirmation state to redirect to start path
+      // In a similar way to the parent controller, we check confirmation state to redirect to start path
       if (!confirmationState.confirmed) {
         return this.proceed(request, h, this.getStartPath())
       } else {
