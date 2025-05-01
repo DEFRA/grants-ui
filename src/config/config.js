@@ -56,10 +56,15 @@ export const config = convict({
     default: oneWeekMs,
     env: 'STATIC_CACHE_TIMEOUT'
   },
+  gitRepositoryName: {
+    doc: 'The name of the git repository which is used for logging events',
+    format: String,
+    default: 'grants-ui'
+  },
   serviceName: {
     doc: 'Applications Service Name',
     format: String,
-    default: 'grants-ui'
+    default: 'Manage land-based actions'
   },
   root: {
     doc: 'Project root',

@@ -4,7 +4,7 @@ import { config } from '~/src/config/config.js'
 import { getTraceId } from '@defra/hapi-tracing'
 
 const logConfig = config.get('log')
-const serviceName = config.get('serviceName')
+const serviceName = config.get('gitRepositoryName')
 const serviceVersion = config.get('serviceVersion')
 
 /**

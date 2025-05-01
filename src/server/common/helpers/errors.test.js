@@ -34,7 +34,7 @@ describe('#errors', () => {
     })
 
     expect(result).toEqual(
-      expect.stringContaining('Page not found | grants-ui')
+      expect.stringContaining('Page not found | Manage land-based actions')
     )
     expect(statusCode).toBe(statusCodes.notFound)
   })
