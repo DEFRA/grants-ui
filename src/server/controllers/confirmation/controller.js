@@ -19,10 +19,16 @@ export default class ConfirmationPageController extends StatusPageController {
     // eslint-disable-next-line @typescript-eslint/require-await
     const fn = async (request, context, h) => {
       const { collection, viewName } = this
-
-      // Clear the state from the cache
       const cacheService = getFormsCacheService(request.server)
-      cacheService?.clearState(request)
+      const confirmationState = await cacheService.getConfirmationState(request)
+
+      // As we're using our custom controller but we want to be as close as DXT implementation as possible, we check confirmation state to redirect to start path
+      if (!confirmationState.confirmed) {
+        return this.proceed(request, h, this.getStartPath())
+      } else {
+        cacheService.setConfirmationState(request, { confirmed: false })
+        cacheService.clearState(request)
+      }
 
       const viewModel = {
         ...super.getViewModel(request, context),
