@@ -1,13 +1,15 @@
 import { StatusPageController } from '@defra/forms-engine-plugin/controllers/StatusPageController.js'
 import ConfirmationPageController from './controller.js'
 
+const mockFormsCacheService = {
+  getConfirmationState: jest.fn(),
+  setConfirmationState: jest.fn(),
+  clearState: jest.fn()
+}
+
 jest.mock('@defra/forms-engine-plugin/controllers/StatusPageController.js')
 jest.mock('~/src/server/common/helpers/forms-cache/forms-cache.js', () => ({
-  getFormsCacheService: () => ({
-    getConfirmationState: jest.fn().mockResolvedValue({ confirmed: true }),
-    setConfirmationState: jest.fn(),
-    clearState: jest.fn()
-  })
+  getFormsCacheService: () => mockFormsCacheService
 }))
 
 describe('ConfirmationPageController', () => {
@@ -25,12 +27,18 @@ describe('ConfirmationPageController', () => {
     controller.collection = {
       getErrors: jest.fn().mockReturnValue([])
     }
+    controller.proceed = jest.fn().mockReturnValue('redirected')
+    controller.getStartPath = jest.fn().mockReturnValue('/start')
 
     mockRequest = {
       logger: {
         error: jest.fn()
       }
     }
+
+    mockFormsCacheService.getConfirmationState.mockResolvedValue({
+      confirmed: true
+    })
 
     mockContext = {
       referenceNumber: 'REF123'
@@ -64,6 +72,20 @@ describe('ConfirmationPageController', () => {
         errors: [],
         referenceNumber: 'REF123'
       })
+    })
+
+    test('should redirect to start page if confirmation state is not confirmed', async () => {
+      mockFormsCacheService.getConfirmationState.mockResolvedValueOnce({
+        confirmed: false
+      })
+      const handler = controller.makeGetRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(controller.proceed).toHaveBeenCalledWith(
+        expect.any(Object),
+        expect.any(Object),
+        '/start'
+      )
     })
 
     test('should handle errors from collection', async () => {
