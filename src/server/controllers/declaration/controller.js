@@ -15,24 +15,65 @@ export default class DeclarationPageController extends SummaryPageController {
   /**
    * Gets the path to the status page (in this case /confirmation page) for the POST handler.
    * @param {object} request - The request object containing the URL info
+   * @param {object} [context] - The context object which may contain form state
    * @returns {string} path to the status page
    */
-  getStatusPath(request) {
-    // Get the slug directly from request params
-    const slug = request?.params?.slug
-    
+  getStatusPath(request, context) {
+    // First try to get slug from request params (available during initial page render)
+    let slug = request?.params?.slug
+
+    // Next try to get it from context state (available during form submission)
+    if (!slug && context?.state?.formSlug) {
+      slug = context.state.formSlug
+      request?.logger?.debug('Using slug from context.state.formSlug:', slug)
+    }
+
     if (slug) {
-      console.log('DeclarationController: Using slug from request.params.slug:', slug)
+      request?.logger?.debug('DeclarationController: Using slug:', slug)
       return `/${slug}/confirmation`
     }
-    
-    console.log('DeclarationController: No slug found, using default path')
+
+    request?.logger?.debug(
+      'DeclarationController: No slug found, using default path'
+    )
     return '/confirmation'
+  }
+
+  /**
+   * Override the GET handler to store the slug in context
+   */
+  makeGetRouteHandler() {
+    // Get the parent's implementation
+    const parentHandler = super.makeGetRouteHandler()
+
+    // Return a wrapped version that stores the slug
+    return async (request, context, h) => {
+      // Store the slug in context if it's available in request.params
+      if (request?.params?.slug && !context.state.formSlug) {
+        context.state.formSlug = request.params.slug
+        request.logger.debug(
+          'DeclarationController: Storing slug in context (GET):',
+          request.params.slug
+        )
+      }
+
+      // Call the parent handler with await since it returns a promise
+      return await parentHandler(request, context, h)
+    }
   }
 
   makePostRouteHandler() {
     const fn = async (request, context, h) => {
       try {
+        // Store the slug in context for later use
+        if (request?.params?.slug && !context.state.formSlug) {
+          context.state.formSlug = request.params.slug
+          request.logger.debug(
+            'DeclarationController: Storing slug in context (POST):',
+            request.params.slug
+          )
+        }
+
         const cacheService = getFormsCacheService(request.server)
         const { result } = await formSubmissionService.submit(
           request.payload,
@@ -52,7 +93,7 @@ export default class DeclarationPageController extends SummaryPageController {
         }
 
         await cacheService.setConfirmationState(request, { confirmed: true })
-        return h.redirect(this.getStatusPath(request))
+        return h.redirect(this.getStatusPath(request, context))
       } catch (error) {
         request.logger.error(error, 'Failed to submit form')
         throw error
