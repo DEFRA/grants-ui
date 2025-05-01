@@ -1,7 +1,8 @@
 import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
 import { config } from '~/src/config/config.js'
+import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/forms-cache.js'
+import { transformStateObjectToGasApplication } from '~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
 import { submitGrantApplication } from '~/src/server/common/services/grant-application.service.js'
-import { transformStateObjectToGasApplication } from '../../common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
 import { stateToLandGrantsGasAnswers } from './state-to-gas-answers-mapper.js'
 
 export default class SubmissionPageController extends SummaryPageController {
@@ -42,6 +43,7 @@ export default class SubmissionPageController extends SummaryPageController {
       context.state,
       stateToLandGrantsGasAnswers
     )
+    console.log('applicationData', applicationData)
     return submitGrantApplication(this.grantCode, applicationData)
   }
 
@@ -49,7 +51,9 @@ export default class SubmissionPageController extends SummaryPageController {
     const fn = async (request, context, h) => {
       const result = await this.submitLandGrantApplication(context)
       request.logger.info('Form submission completed', result)
+      const cacheService = getFormsCacheService(request.server)
 
+      await cacheService.setConfirmationState(request, { confirmed: true })
       return h.redirect(this.getStatusPath())
     }
 

@@ -2,7 +2,13 @@ import { StatusPageController } from '@defra/forms-engine-plugin/controllers/Sta
 import ConfirmationPageController from './controller.js'
 
 jest.mock('@defra/forms-engine-plugin/controllers/StatusPageController.js')
-jest.mock('~/src/server/common/helpers/forms-cache/forms-cache.js')
+jest.mock('~/src/server/common/helpers/forms-cache/forms-cache.js', () => ({
+  getFormsCacheService: () => ({
+    getConfirmationState: jest.fn().mockResolvedValue({ confirmed: true }),
+    setConfirmationState: jest.fn(),
+    clearState: jest.fn()
+  })
+}))
 
 describe('ConfirmationPageController', () => {
   let controller

@@ -10,6 +10,13 @@ jest.mock(
   '../../common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
 )
 jest.mock('./state-to-gas-answers-mapper.js')
+jest.mock('~/src/server/common/helpers/forms-cache/forms-cache.js', () => ({
+  getFormsCacheService: () => ({
+    getConfirmationState: jest.fn().mockResolvedValue({ confirmed: true }),
+    setConfirmationState: jest.fn(),
+    clearState: jest.fn()
+  })
+}))
 
 const code = config.get('gas.frpsGrantCode')
 

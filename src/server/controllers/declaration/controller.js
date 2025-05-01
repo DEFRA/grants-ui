@@ -1,5 +1,6 @@
 import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
 import { formSubmissionService } from '~/src/server/common/forms/services/submission.js'
+import { getFormsCacheService } from '../../common/helpers/forms-cache/forms-cache.js'
 
 export default class DeclarationPageController extends SummaryPageController {
   /**
@@ -22,6 +23,7 @@ export default class DeclarationPageController extends SummaryPageController {
   makePostRouteHandler() {
     const fn = async (request, context, h) => {
       try {
+        const cacheService = getFormsCacheService(request.server)
         const { result } = await formSubmissionService.submit(
           request.payload,
           context.state
@@ -39,6 +41,7 @@ export default class DeclarationPageController extends SummaryPageController {
           })
         }
 
+        await cacheService.setConfirmationState(request, { confirmed: true })
         return h.redirect(this.getStatusPath())
       } catch (error) {
         request.logger.error(error, 'Failed to submit form')
