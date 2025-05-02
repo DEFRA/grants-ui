@@ -9,7 +9,11 @@ import Scooter from '@hapi/scooter'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { config } from '~/src/config/config.js'
-import { nunjucksConfig } from '~/src/config/nunjucks/nunjucks.js'
+import {
+  nunjucksConfig,
+  grantsUiPaths
+} from '~/src/config/nunjucks/nunjucks.js'
+import { context } from '~/src/config/nunjucks/context/context.js'
 // import auth from '~/src/plugins/auth.js'
 import csp from '~/src/plugins/content-security-policy.js'
 import sso from '~/src/plugins/sso.js'
@@ -104,6 +108,11 @@ const registerFormsPlugin = async (server) => {
       filters: {
         formatCurrency
       },
+      nunjucks: {
+        baseLayoutPath: 'layouts/form.njk',
+        paths: grantsUiPaths
+      },
+      viewContext: context,
       viewPaths: getViewPaths(),
       controllers: {
         ConfirmationPageController,
