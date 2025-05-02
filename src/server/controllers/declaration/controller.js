@@ -6,6 +6,7 @@ import {
 } from '~/src/server/common/helpers/form-slug-helper.js'
 import { submitGrantApplication } from '~/src/server/common/services/grant-application.service.js'
 import { transformStateObjectToGasApplication } from '../../common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
+import { transformAnswerKeysToText } from './state-to-gas-answers-mapper.js'
 
 export default class DeclarationPageController extends SummaryPageController {
   /**
@@ -64,27 +65,35 @@ export default class DeclarationPageController extends SummaryPageController {
         )
 
         const identifiers = {
+          clientRef: context.referenceNumber?.toLowerCase(),
           sbi: 'sbi',
           frn: 'frn',
           crn: 'crn',
           defraId: 'defraId'
         }
+
+        const stateWithTextAnswers = transformAnswerKeysToText(
+          context.state,
+          this.model.componentDefMap,
+          this.model.listDefMap
+        )
+
         const applicationData = transformStateObjectToGasApplication(
           identifiers,
-          context.state,
+          stateWithTextAnswers,
           (state) => state
         )
 
-        const { result } = await submitGrantApplication(
+        const result = await submitGrantApplication(
           this.grantCode,
           applicationData
         )
 
-        // Log submission details if available - this is not needed for the submission but it's useful for debugging
-        if (result.submissionDetails) {
+        // Log submission details if available
+        if (result.clientRef) {
           request.logger.info({
             message: 'Form submission completed',
-            referenceNumber: context.state.referenceNumber,
+            referenceNumber: result.clientRef,
             numberOfSubmittedFields: Object.keys(context.state).length,
             timestamp: new Date().toISOString()
           })

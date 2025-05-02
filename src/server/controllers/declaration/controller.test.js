@@ -3,6 +3,7 @@ import DeclarationPageController from './controller.js'
 import * as formSlugHelper from '~/src/server/common/helpers/form-slug-helper.js'
 import { submitGrantApplication } from '~/src/server/common/services/grant-application.service.js'
 import { transformStateObjectToGasApplication } from '../../common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
+import { transformAnswerKeysToText } from './state-to-gas-answers-mapper.js'
 
 const mockCacheService = {
   getConfirmationState: jest.fn().mockResolvedValue({ confirmed: true }),
@@ -10,16 +11,29 @@ const mockCacheService = {
   clearState: jest.fn()
 }
 
-jest.mock('@defra/forms-engine-plugin/controllers/SummaryPageController.js')
 jest.mock('~/src/server/common/forms/services/submission.js')
 jest.mock('~/src/server/common/helpers/form-slug-helper.js')
 jest.mock('~/src/server/common/helpers/forms-cache/forms-cache.js', () => ({
   getFormsCacheService: () => mockCacheService
 }))
+jest.mock(
+  '@defra/forms-engine-plugin/controllers/SummaryPageController.js',
+  () => {
+    return {
+      SummaryPageController: class {
+        constructor(model, pageDef) {
+          this.model = model
+          this.pageDef = pageDef
+        }
+      }
+    }
+  }
+)
 jest.mock('~/src/server/common/services/grant-application.service.js')
 jest.mock(
   '../../common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
 )
+jest.mock('./state-to-gas-answers-mapper.js')
 
 describe('DeclarationPageController', () => {
   let controller
@@ -38,7 +52,9 @@ describe('DeclarationPageController', () => {
             grantCode: 'adding-value'
           }
         }
-      }
+      },
+      componentDefMap: {},
+      listDefMap: {}
     }
     mockPageDef = {}
 
@@ -70,8 +86,10 @@ describe('DeclarationPageController', () => {
 
     mockContext = {
       state: {
-        referenceNumber: 'REF123'
-      }
+        referenceNumber: 'REF123',
+        field1: 'value1'
+      },
+      referenceNumber: 'REF123'
     }
 
     mockH = {
@@ -79,15 +97,12 @@ describe('DeclarationPageController', () => {
       view: jest.fn().mockReturnValue('rendered view')
     }
 
-    transformStateObjectToGasApplication.mockReturnValue({ transformed: true })
-
+    transformAnswerKeysToText.mockReturnValue({ transformedState: true })
+    transformStateObjectToGasApplication.mockReturnValue({
+      transformedApp: true
+    })
     submitGrantApplication.mockResolvedValue({
-      result: {
-        submissionDetails: {
-          fieldsSubmitted: ['field1', 'field2'],
-          timestamp: '2024-03-20T10:00:00Z'
-        }
-      }
+      clientRef: 'ref123'
     })
 
     // Mock the form-slug-helper functions
@@ -214,19 +229,26 @@ describe('DeclarationPageController', () => {
         mockContext,
         'DeclarationController'
       )
+      expect(transformAnswerKeysToText).toHaveBeenCalledWith(
+        mockContext.state,
+        mockModel.componentDefMap,
+        mockModel.listDefMap
+      )
+
       expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
         {
+          clientRef: 'ref123', // <- note: in controller, it’s `context.referenceNumber?.toLowerCase()`
           sbi: 'sbi',
           frn: 'frn',
           crn: 'crn',
           defraId: 'defraId'
         },
-        mockContext.state,
+        { transformedState: true },
         expect.any(Function)
       )
 
       expect(submitGrantApplication).toHaveBeenCalledWith('adding-value', {
-        transformed: true
+        transformedApp: true
       })
       expect(mockCacheService.setConfirmationState).toHaveBeenCalledWith(
         mockRequest,
@@ -265,7 +287,7 @@ describe('DeclarationPageController', () => {
 
       expect(mockRequest.logger.info).toHaveBeenCalledWith({
         message: 'Form submission completed',
-        referenceNumber: 'REF123',
+        referenceNumber: 'ref123',
         numberOfSubmittedFields: Object.keys(mockContext.state).length,
         timestamp: expect.any(String)
       })
