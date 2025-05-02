@@ -1615,7 +1615,7 @@
         "conditions": [
           {
             "field": {
-              "name": "whoIsApplyingForThisGrantComponent",
+              "name": "applyingRadiosField",
               "type": "RadiosField",
               "display": "Who is applying for this grant?"
             },
