@@ -89,12 +89,19 @@ export default class DeclarationPageController extends SummaryPageController {
           applicationData
         )
 
+        request.logger.debug(
+          'DeclarationController: Got reference number:',
+          result.clientRef
+        )
+
         // Log submission details if available
         if (result.clientRef) {
           request.logger.info({
             message: 'Form submission completed',
             referenceNumber: result.clientRef,
-            numberOfSubmittedFields: Object.keys(context.state).length,
+            numberOfSubmittedFields: context.state
+              ? Object.keys(context.state).length
+              : 0,
             timestamp: new Date().toISOString()
           })
         }

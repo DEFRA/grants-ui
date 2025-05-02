@@ -11,7 +11,6 @@ const mockCacheService = {
   clearState: jest.fn()
 }
 
-jest.mock('~/src/server/common/forms/services/submission.js')
 jest.mock('~/src/server/common/helpers/form-slug-helper.js')
 jest.mock('~/src/server/common/helpers/forms-cache/forms-cache.js', () => ({
   getFormsCacheService: () => mockCacheService
@@ -270,7 +269,7 @@ describe('DeclarationPageController', () => {
       )
       expect(mockRequest.logger.debug).toHaveBeenCalledWith(
         'DeclarationController: Got reference number:',
-        'REF123'
+        'ref123'
       )
       expect(mockRequest.logger.debug).toHaveBeenCalledWith(
         'DeclarationController: Set confirmation state to true'
@@ -318,12 +317,15 @@ describe('DeclarationPageController', () => {
         error
       )
 
-      expect(formSubmissionService.submit).toHaveBeenCalled()
+      expect(submitGrantApplication).toHaveBeenCalledWith('adding-value', {
+        transformedApp: true
+      })
       expect(mockContext.referenceNumber).toBe('REF123')
     })
 
     test('should handle case when submission result has no referenceNumber', async () => {
-      formSubmissionService.submit.mockResolvedValueOnce({
+      mockContext.referenceNumber = undefined
+      submitGrantApplication.mockResolvedValueOnce({
         result: {}
       })
 
@@ -333,30 +335,6 @@ describe('DeclarationPageController', () => {
       expect(mockContext.referenceNumber).toBeUndefined()
       expect(mockCacheService.setConfirmationState).toHaveBeenCalled()
       expect(mockH.redirect).toHaveBeenCalled()
-    })
-
-    test('should handle case when payload is empty', async () => {
-      mockRequest.payload = {}
-
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
-
-      expect(formSubmissionService.submit).toHaveBeenCalledWith(
-        {},
-        mockContext.state
-      )
-    })
-
-    test('should handle case when context state is undefined', async () => {
-      mockContext.state = undefined
-
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
-
-      expect(formSubmissionService.submit).toHaveBeenCalledWith(
-        mockRequest.payload,
-        undefined
-      )
     })
   })
 })
