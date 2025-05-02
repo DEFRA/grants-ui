@@ -9,14 +9,6 @@ const valueTextPair = Joi.object({
   text: Joi.string()
 })
 
-const addressSchema = Joi.object({
-  addressLine1: Joi.string(),
-  addressLine2: Joi.string().allow(null),
-  town: Joi.string(),
-  county: Joi.string().allow(null),
-  postcode: Joi.string()
-})
-
 const applicationAnswersSchema = Joi.object({
   $$__referenceNumber: Joi.string(),
 
