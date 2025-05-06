@@ -1,0 +1,1248 @@
+engine: V2
+name: Adding value
+metadata:
+  referenceNumberPrefix: AV
+pages:
+  - title: Check if you can apply for a Farming Transformation Fund Adding Value Grant
+    path: /start
+    controller: StartPageController
+    components:
+      - name: startInfoOne
+        title: Html
+        type: Html
+        content: >-
+          <p class="govuk-body">Use this service to:</p>
+
+
+          <ul class="govuk-list govuk-list--bullet">
+
+          <li>check if you can apply for a grant for your project (takes about 5
+          minutes)</li>
+
+          <li>check how well your project fits the funding priorities (takes
+          about 15 minutes if you have all the project details)</li>
+
+          </ul>
+
+
+          <p class="govuk-body">You can apply if you:</p>
+
+
+          <ul class="govuk-list govuk-list--bullet">
+
+          <li>are a grower or producer of agricultural or horticultural
+          produce</li>
+
+          <li>are a business processing agricultural or horticultural products
+          that is at least 50% owned by agricultural or horticultural
+          producers</li>
+
+          <li>will do the grant-funded work in England</li>
+
+          <li>estimate the project costs are over £62,500</li>
+
+          </ul>
+      - name: startInsetText
+        title: Inset text
+        type: InsetText
+        content: If your project is eligible, you can submit your answers to the Rural
+          Payments Agency (RPA) to request the full application form.
+      - name: startInfoTwo
+        title: Html
+        type: Html
+        content: >+
+          <h2 class="govuk-heading-s">Before you start</h2>
+
+          <p class="govuk-body">To use the checker, you need:</p>
+
+          <ul class="govuk-list govuk-list--bullet">
+
+          <li>information about your business (for example, number of employees,
+          turnover)</li>
+
+          <li>information about the project (for example, the types of products
+          being processed and how you will add value, the impact the project
+          will have)</li>
+
+          <li>a list of the items you'd like to buy for the project</li>
+
+          <li>an estimate of the total cost of the items</li>
+
+          </ul>
+
+          <p class="govuk-body">If you do not enter any information for more
+          than 20 minutes, your application will time out and you will have to
+          start again.</p>
+
+
+          <h2 class="govuk-heading-s">Problems using the online service</h2>
+
+          <p class="govuk-body">If you have any problems using the online
+          service, contact the RPA.</p>
+
+
+          <h2 class="govuk-heading-s">Telephone</h2>
+
+          <p class="govuk-body">Telephone: 03000 200 301</p>
+
+          <p class="govuk-body">Telephone: 03000 200 301</p>
+
+
+          <p class="govuk-body">Monday to Friday, 9am to 5pm (except public
+          holidays)</p>
+
+
+
+  - title: What is your business?
+    path: /nature-of-business
+    components:
+      - name: natureOfBusinessRadiosField
+        title: What is your business?
+        type: RadiosField
+        list: natureOfBusinessList
+        hint: Select one option
+        options:
+          customValidationMessages:
+            any.required: Select the option that applies to your business
+  - title: You cannot apply for a grant from this scheme
+    path: /cannot-apply-nature-of-business
+    controller: TerminalPageController
+    components:
+      - name: natureOfBusinessCannotApply
+        title: Html
+        type: Html
+        content: >
+          <p class="govuk-body">This grant is for businesses who:</p>
+
+
+          <ul class="govuk-list govuk-list--bullet">
+
+          <li>are agricultural or horticultural growers or producers</li>
+
+          <li>are a business processing agricultural or horticultural products
+          that is at least 50% owned by agricultural or horticultural
+          producers</li>
+
+          </ul>
+
+
+          <p class="govuk-body">See other grants you may be eligible for.</p>
+    condition: natureOfBusinessCondition
+  - title: What is the legal status of the business?
+    path: /legal-status
+    components:
+      - name: legalStatusRadiosField
+        title: What is the legal status of the business?
+        type: RadiosField
+        list: legalStatusList
+        options:
+          customValidationMessages:
+            any.required: Select the legal status of the business
+  - title: You cannot apply for a grant from this scheme
+    path: /legal-status-cannot-apply
+    controller: TerminalPageController
+    components:
+      - name: legalStatusCannotApplyInfo
+        title: Html
+        type: Html
+        content: >
+          <p class="govuk-body">Your business does not have an eligible legal
+          status.</p>
+      - type: Html
+        name: legalStatusWarning
+        title: Html
+        content: <div class="govuk-warning-text"> <span class="govuk-warning-text__icon"
+          aria-hidden="true">!</span> <strong class="govuk-warning-text__text">
+          <span class="govuk-visually-hidden">Warning</span>Other types of
+          business may be supported in future schemes.</strong></div>
+    condition: legalStatusCondition
+  - title: Is the planned project in England?
+    path: /country
+    components:
+      - name: countryYesNoField
+        title: Is the planned project in England?
+        hint: The site where the work will happen
+        type: YesNoField
+        options:
+          customValidationMessages:
+            any.required: Select yes if the project is in England
+  - title: You cannot apply for a grant from this scheme
+    path: /cannot-apply-country
+    controller: TerminalPageController
+    components:
+      - name: countryCannotApplyInfo
+        title: Html
+        type: Html
+        content: >-
+          <p class="govuk-body">This grant is only for projects in England.</p>
+
+          <div class="govuk-inset-text">Scotland, Wales and Northern Ireland
+          have other grants available.</div>
+    condition: countryCondition
+  - title: Does the project have planning permission?
+    path: /planning-permission
+    components:
+      - name: planningPermissionRadiosField
+        title: Does the project have planning permission?
+        type: RadiosField
+        list: planningPermissionList
+        options:
+          customValidationMessages:
+            any.required: Select when the project will have planning permission
+  - title: You may be able to apply for a grant from this scheme
+    path: /planning-permission-may-apply
+    components:
+      - name: planningPermissionMayApplyInfo
+        title: Html
+        type: Html
+        content: >
+          <p class="govuk-body">You must have secured planning permission before
+          you submit a full application. The application deadline is 31 May
+          2025</p>
+      - name: planningPermissionMayApplyLink
+        title: Html
+        type: Html
+        content: <p class='govuk-body'><a
+          href='https://www.gov.uk/guidance/funding-for-farmers'
+          class='govuk-link govuk-link--no-visited-state'>See other grants you
+          may be eligible for</a></p>
+    condition: planningPermissionShouldBeCondition
+  - title: You cannot apply for a grant from this scheme
+    path: /planning-permission-cannot-apply
+    controller: TerminalPageController
+    components:
+      - name: planningPermissionCannotApplyInfo
+        type: Html
+        title: Html
+        content: >-
+          <p class="govuk-body">You must have secured planning permission before
+          you submit a full application.</p>
+
+          <p class='govuk-body'><a
+          href='https://www.gov.uk/guidance/funding-for-farmers'
+          class='govuk-link govuk-link--no-visited-state'>See other grants you
+          may be eligible for</a></p>
+    condition: planningPermissionWillNotCondition
+  - title: Have you already started work on the project?
+    path: /project-start
+    components:
+      - name: projectStartRadiosField
+        title: Have you already started work on the project?
+        type: RadiosField
+        list: projectStartList
+        options:
+          customValidationMessages:
+            any.required: Select the option that applies to your project
+  - title: You cannot apply for a grant from this scheme
+    path: /cannot-apply-project-start
+    controller: TerminalPageController
+    components:
+      - name: cannotApplyProjectStartInfo
+        type: Html
+        title: Html
+        content: >-
+          <p class="govuk-body">You cannot apply for a grant if you have already
+          started work on the project.</p>
+
+          <div class="govuk-inset-text">Starting the project or committing to
+          any costs (such as placing orders) before you receive a funding
+          agreement invalidates your application.</div><p class='govuk-body'><a
+          href='https://www.gov.uk/guidance/funding-for-farmers'
+          class='govuk-link govuk-link--no-visited-state'>See other grants you
+          may be eligible for</a></p>
+    condition: projectStartCondition
+  - title: Is the planned project on land the business owns?
+    path: /tenancy
+    components:
+      - name: tenancyYesNoField
+        title: Is the planned project on land the business owns?
+        type: YesNoField
+        options:
+          customValidationMessages:
+            any.required: Select yes if the planned project is on land the business owns
+  - title: Do you have a tenancy agreement for 5 years after the final grant payment?
+    path: /tenancy-length
+    components:
+      - name: tenancyLengthYesNoField
+        title: Do you have a tenancy agreement for 5 years after the final grant
+          payment?
+        type: YesNoField
+        options:
+          customValidationMessages:
+            any.required: Select yes if the land has a tenancy agreement in place for 5
+              years after the final grant payment.
+    condition: tenancyCondition
+  - title: You may be able to apply for a grant from this scheme
+    path: /may-apply-tenancy-length
+    components:
+      - name: mayApplyTenancyLengthInfo
+        type: Html
+        title: Html
+        content: <p class="govuk-body">You will need to extend your tenancy agreement
+          for 5 years after the final grant payment.</p>
+    condition: tenancyLengthCondition
+  - title: Do you want to build a new smaller abattoir?
+    path: /smaller-abattoir
+    components:
+      - name: smallerAbattoirYesNoField
+        title: Do you want to build a new smaller abattoir?
+        type: YesNoField
+        hint: A smaller abattoir is a red meat abattoir that processes up to 10,000
+          livestock units each year or a poultry abattoir that slaughters up to
+          500,000 birds each year.
+        options:
+          customValidationMessages:
+            any.required: Select yes if you want to build a new smaller abattoir
+  - title: Will this abattoir provide services to other farmers?
+    path: /other-farmers
+    components:
+      - name: otherFarmersYesNoField
+        title: Will this abattoir provide services to other farmers?
+        hint: For example, farmers pay you to slaughter their livestock.
+        type: YesNoField
+        options:
+          customValidationMessages:
+            any.required: Select yes if this abattoir will provide services to other farmers
+    condition: smallerAbattoirConditionYes
+  - title: You cannot apply for a grant from this scheme
+    path: /cannot-apply-other-farmers
+    controller: TerminalPageController
+    components:
+      - type: Html
+        name: cannotApplyOtherFarmersInfo
+        title: Html
+        content: >-
+          <p class="govuk-body">You must provide some abattoir services to other
+          farmers if you are building a new smaller abattoir with this
+          grant.</p>
+
+          <p class="govuk-body"><a
+          href='https://www.gov.uk/guidance/funding-for-farmers'
+          class='govuk-link govuk-link--no-visited-state'>See other grants you
+          may be eligible for</a></p>
+    condition: otherFarmersConditionNo
+  - title: Do you want to build new controlled atmosphere storage for top fruit?
+    path: /fruit-storage
+    components:
+      - name: fruitStorageYesNoField
+        title: Do you want to build new controlled atmosphere storage for top fruit?
+        hint: Fruit that grows on trees, for example apples, pears, quinces, medlars,
+          plums, peaches, apricots and cherries
+        type: YesNoField
+        options:
+          customValidationMessages:
+            any.required: Select yes if you want to build new controlled atmosphere storage
+              for top fruit
+    condition: smallerAbattoirConditionNo
+  - title: What eligible items does your project need?
+    path: /project-items
+    components:
+      - name: projectItemsCheckboxesField
+        title: What eligible items does your project need?
+        hint: >-
+          Storage facilities will only be funded as part of a bigger project and
+          cannot be more than 50% of the total grant funding.
+
+
+          Select all the items your project needs
+        type: CheckboxesField
+        list: projectItemsList
+        options:
+          customValidationMessages:
+            any.required: Select all the items your project needs
+    condition: otherFarmersYesOrFruitStorageCondition
+  - title: You cannot apply for a grant from this scheme
+    path: /cannot-apply-project-items
+    controller: TerminalPageController
+    components:
+      - type: Html
+        name: cannotApplyProjectItemsInfo
+        title: Html
+        content: >-
+          <p class="govuk-body">This grant is for:</p>
+
+
+          <ul class="govuk-list govuk-list--bullet">
+
+          <li>constructing or improving buildings for processing</li>
+
+          <li>processing equipment or machinery</li>
+
+          <li>retail facilities</li>
+
+          </ul>
+
+          <p class="govuk-body"><a
+          href='https://www.gov.uk/guidance/funding-for-farmers'
+          class='govuk-link govuk-link--no-visited-state'>See other grants you
+          may be eligible for</a></p>
+    condition: projectItemsCondition
+  - title: Does your project also need storage facilities?
+    path: /storage
+    components:
+      - name: storageRadiosField
+        title: Does your project also need storage facilities?
+        hint: For example, cold stores or controlled atmosphere storage
+        type: RadiosField
+        list: storageRadiosList
+        options:
+          customValidationMessages:
+            any.required: Select yes if you will need storage facilities
+      - type: Html
+        name: storageWarning
+        title: Html
+        content: <div class="govuk-warning-text"> <span class="govuk-warning-text__icon"
+          aria-hidden="true">!</span> <strong class="govuk-warning-text__text">
+          <span class="govuk-visually-hidden">Warning</span>Storage facilities
+          cannot be more than 50% of the total grant funding.</strong></div>
+    condition: otherFarmersYesOrFruitStorageCondition
+  - title: What is the estimated cost of the items?
+    path: /project-cost
+    components:
+      - name: projectCostInfo
+        type: Html
+        title: Html
+        content: "<p class=\"govuk-hint\">Do not include VAT<br><br>Enter cost of items,
+          for example {{ 695000 | formatCurrency: 'en-GB', 'GBP', 0, 'decimal'
+          }}</p>"
+      - name: projectCostNumberField
+        type: NumberField
+        title: Enter amount
+        options:
+          prefix: £
+          required: true
+          classes: govuk-!-width-one-third
+          customValidationMessages:
+            any.required: Enter the estimated cost of the items
+            number.max: Enter a whole number with a maximum of 7 digits
+            number.min: Enter a whole number with a maximum of 7 digits
+        schema:
+          min: 1
+          max: 9999999
+          precision: 0
+  - title: You cannot apply for a grant from this scheme
+    path: /project-cost-cannot-apply
+    controller: TerminalPageController
+    components:
+      - name: projectCostCannotApplyInfo
+        title: Html
+        type: Html
+        content: >
+          <p class="govuk-body">The minimum grant you can apply for is £25,000
+          (40% of £62,500).</p>
+
+
+          <p class='govuk-body'><a
+          href='https://www.gov.uk/guidance/funding-for-farmers'
+          class='govuk-link govuk-link--no-visited-state'>See other grants you
+          may be eligible for</a></p>
+    condition: projectCostCondition
+  - title: Potential grant funding
+    path: /potential-funding
+    components:
+      - name: potentialFundingInfo
+        title: Html
+        type: Html
+        content: >
+          <p class="govuk-body"> {% assign estimatedCost =
+          'projectCostNumberField' | answer %} {% assign eligibilityMultiplier =
+          0.4 %} {% assign eligibilityAmount = estimatedCost | times:
+          eligibilityMultiplier %} {% if eligibilityAmount <= 300000 and
+          eligibilityAmount >= 25000 %} You may be able to apply for grant
+          funding of up to {{ eligibilityAmount | formatCurrency: 'en-GB',
+          'GBP', 0 }} (40% of {{ estimatedCost | formatCurrency: 'en-GB', 'GBP',
+          0 }}).{% elsif eligibilityAmount > 300000 %} You may be able to apply
+          for grant funding of up to £300,000, based on the estimated cost of {{
+          estimatedCost | formatCurrency: 'en-GB', 'GBP', 0 }}.
+
+
+
+          <div class="govuk-inset-text">The maximum grant you can apply for is
+          £300,000.</div> {% endif %}</p>
+        options: {}
+        schema: {}
+      - type: Html
+        name: potentialFundingWarning
+        title: Html
+        content: <div class="govuk-warning-text"> <span class="govuk-warning-text__icon"
+          aria-hidden="true">!</span> <strong class="govuk-warning-text__text">
+          <span class="govuk-visually-hidden">Warning</span>There's no guarantee
+          the project will receive a grant.</strong></div>
+        options: {}
+        schema: {}
+  - title: "{% assign estimatedCost = 'projectCostNumberField' | answer %} {% assign
+      applicantPayMultiplier = 0.6 %} {% assign applicantPayAmount =
+      estimatedCost | times: applicantPayMultiplier %} {% assign grantPayAmount
+      = estimatedCost | minus: applicantPayAmount %} {% if grantPayAmount >=
+      300000 %} {% assign applicantPayAmount = estimatedCost | minus: 300000 %}
+      {% endif %} Can you pay the remaining costs of {{ applicantPayAmount |
+      formatCurrency: 'en-GB', 'GBP', 0 }}?"
+    path: /remaining-costs
+    components:
+      - type: YesNoField
+        name: remainingCostsYesNoField
+        title: Can you pay the remaining costs?
+        options:
+          customValidationMessages:
+            any.required: Select yes if you can pay the remaining costs
+  - title: You cannot apply for a grant from this scheme
+    path: /cannot-apply-remaining-costs
+    controller: TerminalPageController
+    components:
+      - name: cannotApplyRemainingCostsInfo
+        title: Html
+        type: Html
+        content: >
+          <p class="govuk-body">You cannot use public money (for example, grant
+          funding from government or local authorities) towards the project
+          costs.</br></br>You also cannot use money from a producer organisation
+          under the Fresh Fruit and Vegetable Aid Scheme.</br></br>For example,
+          you can use:</p>
+
+
+          <ul class="govuk-list govuk-list--bullet">
+
+          <li>loans</li>
+
+          <li>overdrafts</li>
+
+          <li>delinked payments</li></ul>
+
+
+          <p class='govuk-body'><a
+          href='https://www.gov.uk/guidance/funding-for-farmers'
+          class='govuk-link govuk-link--no-visited-state'>See other grants you
+          may be eligible for</a></p>
+    condition: remainingCostsCondition
+  - title: What type of produce is being processed?
+    path: /produce-processed
+    components:
+      - name: produceProcessedRadiosField
+        title: What type of produce is being processed?
+        type: RadiosField
+        list: produceProcessedList
+        hint: Select one option
+        options:
+          customValidationMessages:
+            any.required: Select what type of produce is being processed
+    condition: otherFarmersYesOrFruitStorageCondition
+  - title: How will this project add value to the produce?
+    path: /how-adding-value
+    components:
+      - name: howAddingValueRadiosField
+        title: How will this project add value to the produce?
+        type: RadiosField
+        list: howAddingValueList
+        hint: Select the main option that applies
+        options:
+          customValidationMessages:
+            any.required: Select how this project will add value to the produce
+    condition: otherFarmersYesOrFruitStorageCondition
+  - title: What impact will this project have?
+    path: /project-impact
+    components:
+      - name: projectImpactCheckboxesField
+        title: What impact will the project have?
+        type: CheckboxesField
+        list: projectImpactList
+        hint: Select all that apply
+        options:
+          customValidationMessages:
+            any.required: Select what impact this project will have
+    condition: otherFarmersYesOrFruitStorageCondition
+  - title: Will this project use any mechanisation instead of manual labour?
+    path: /mechanisation
+    components:
+      - name: mechanisationYesNoField
+        title: Will this project use any mechanisation instead of manual labour?
+        hint: For example, a fruit grading and sorting machine that does the work of 2
+          farm labourers
+        type: YesNoField
+        options:
+          customValidationMessages:
+            any.required: Select yes if this project will use any mechanisation instead of
+              manual labour
+  - title: How much manual labour will the mechanisation be equal to?
+    path: /manual-labour-amount
+    components:
+      - name: manualLabourAmountRadiosField
+        title: How much manual labour will the mechanisation be equal to?
+        type: RadiosField
+        list: manualLabourAmountList
+        hint: Based on your current staff numbers
+        options:
+          customValidationMessages:
+            any.required: Select how much manual labour the mechanisation will be equal to
+    condition: mechanisationCondition
+  - title: Who will your new customers be after the project?
+    path: /future-customers
+  - title: Will you work in partnership or collaborate with other farmers or
+      producers?
+    path: /collaboration
+  - title: How will this project improve the environment?
+    path: /environmental-impact
+  - title: Score results
+    path: /score-results
+    view: score-results.html
+    events:
+      onLoad:
+        type: http
+        options:
+          method: POST
+          url: https://ffc-grants-scoring.cdpEnvironment.cdp-int.defra.cloud/scoring/api/v1/adding-value/score?allowPartialScoring=true
+  - title: Business Details
+    path: /business-details
+  - title: Who is applying for this grant?
+    path: /applying
+    components:
+      - name: applyingRadiosField
+        title: Who is applying for this grant?
+        type: RadiosField
+        list: applyingList
+        options:
+          customValidationMessages:
+            any.required: Select who is applying for this grant
+  - title: Agent's details
+    path: /agent-details
+    components:
+      - type: TextField
+        name: agentFirstName
+        title: First name
+        options:
+          required: true
+          customValidationMessages:
+            string.empty: Enter your first name
+            string.max: First name must be 30 characters or fewer
+            string.pattern.base: First name must only include letters, hyphens and apostrophes
+        schema:
+          regex: ^[a-zA-Z' -]*$
+          max: 30
+      - type: TextField
+        name: agentLastName
+        title: Last name
+        options:
+          required: true
+          customValidationMessages:
+            string.empty: Enter your last name
+            string.max: Last name must be 30 characters or fewer
+            string.pattern.base: Last name must only include letters, hyphens and apostrophes
+        schema:
+          regex: ^[a-zA-Z' -]*$
+          max: 30
+      - type: TextField
+        name: agentBusinessName
+        title: Business name
+        options:
+          required: true
+          customValidationMessages:
+            string.empty: Enter your business name
+            string.max: Business name must be 30 characters or fewer
+        schema:
+          max: 30
+      - type: EmailAddressField
+        name: agentEmailAddress
+        title: Email address
+        hint: We will only use this to send you a confirmation
+        options:
+          required: true
+          customValidationMessages:
+            string.empty: Enter your email address
+            string.email: Enter an email address in the correct format, like name@example.com
+        schema:
+          regex: ^\w+([.-]\w+)*@[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*(\.[a-zA-Z]{2,})+$
+      - type: EmailAddressField
+        name: agentConfirmEmailAddress
+        title: Confirm email address
+        options:
+          required: true
+          customValidationMessages:
+            string.empty: Confirm your email address
+            string.email: Enter an email address that matches
+        schema:
+          regex: ^\w+([.-]\w+)*@[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*(\.[a-zA-Z]{2,})+$
+      - type: TelephoneNumberField
+        name: agentMobileNumber
+        title: Mobile number
+        hint: We will only use this to contact you about your application
+        options:
+          required: true
+          customValidationMessages:
+            string.empty: Enter a mobile number
+            string.pattern.base: Enter a telephone number, like 01632 960 001, 07700 900 982
+              or +44 0808 157 0192
+        schema:
+          regex: ^\+?[0-9\s()-]{10,}$
+      - type: TelephoneNumberField
+        name: agentLandlineNumber
+        title: Landline number
+        hint: We will only use this to contact you about your application
+        options:
+          required: true
+          customValidationMessages:
+            string.empty: Enter a landline number
+            string.pattern.base: Enter a telephone number, like 01632 960 001, 07700 900 982
+              or +44 0808 157 0192
+        schema:
+          regex: ^\+?[0-9\s()-]{10,}$
+      - type: Html
+        name: agentBusinessAddressHeader
+        title: Html
+        content: <h1 class="govuk-heading-m">Business address</h1>
+      - type: UkAddressField
+        title: Address
+        name: agentBusinessAddress
+    condition: agentDetailsSelected
+  - title: Applicant's details
+    path: /applicant-details
+    components:
+      - type: TextField
+        name: applicantFirstName
+        title: First name
+        options:
+          required: true
+          customValidationMessages:
+            string.empty: Enter your first name
+            string.max: First name must be 30 characters or fewer
+            string.pattern.base: First name must only include letters, hyphens and apostrophes
+        schema:
+          regex: ^[a-zA-Z' -]*$
+          max: 30
+      - type: TextField
+        name: applicantLastName
+        title: Last name
+        options:
+          required: true
+          customValidationMessages:
+            string.empty: Enter your last name
+            string.max: Last name must be 30 characters or fewer
+            string.pattern.base: Last name must only include letters, hyphens and apostrophes
+        schema:
+          regex: ^[a-zA-Z' -]*$
+          max: 30
+      - type: EmailAddressField
+        name: applicantEmailAddress
+        title: Email address
+        hint: We will only use this to send you a confirmation
+        options:
+          required: true
+          customValidationMessages:
+            string.empty: Enter your email address
+            string.email: Enter an email address in the correct format, like name@example.com
+        schema:
+          regex: ^\w+([.-]\w+)*@[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*(\.[a-zA-Z]{2,})+$
+      - type: EmailAddressField
+        name: applicantConfirmEmailAddress
+        title: Confirm email address
+        options:
+          required: true
+          customValidationMessages:
+            string.empty: Confirm your email address
+            string.email: Enter an email address that matches
+        schema:
+          regex: ^\w+([.-]\w+)*@[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*(\.[a-zA-Z]{2,})+$
+      - type: TelephoneNumberField
+        name: applicantMobileNumber
+        title: Mobile number
+        hint: We will only use this to contact you about your application
+        options:
+          required: true
+          customValidationMessages:
+            string.empty: Enter a mobile number
+            string.pattern.base: Enter a telephone number, like 01632 960 001, 07700 900 982
+              or +44 0808 157 0192
+          autocomplete: tel
+        schema:
+          regex: ^\+?[0-9\s()-]{10,}$
+      - type: TelephoneNumberField
+        name: applicantLandlineNumber
+        title: Landline number
+        hint: We will only use this to contact you about your application
+        options:
+          required: true
+          customValidationMessages:
+            string.empty: Enter a landline number
+            string.min: Your landline number must have at least 10 characters
+            string.pattern.base: Enter a telephone number, like 01632 960 001, 07700 900 982
+              or +44 0808 157 0192
+          autocomplete: tel
+        schema:
+          regex: ^\+?[0-9\s()-]{10,}$
+      - type: Html
+        name: applicantBusinessAddressHeader
+        title: Html
+        content: <h1 class="govuk-heading-m">Business address</h1>
+      - type: UkAddressField
+        title: Address
+        name: applicantBusinessAddress
+      - type: TextField
+        name: applicantProjectPostcode
+        title: Project postcode
+        hint: The site postcode where the work will happen
+        options:
+          required: true
+          customValidationMessages:
+            string.empty: Enter postcode
+            string.pattern.base: Enter a valid postcode
+        schema:
+          regex: ^[a-zA-Z]{1,2}\d[a-zA-Z\d]?\s?\d[a-zA-Z]{2}$
+  - title: Check your details
+    path: /check-details
+  - title: Confirm and send
+    path: /declaration
+    controller: DeclarationPageController
+    view: grants/declaration.html
+  - title: Confirmation
+    path: /confirmation
+    controller: ConfirmationPageController
+lists:
+  - title: What is your business?
+    name: natureOfBusinessList
+    type: string
+    items:
+      - text: A grower or producer of agricultural or horticultural produce
+        description: For example, arable or livestock farmer, fruit producer, salad grower
+        value: natureOfBusiness-A1
+      - text: A business processing agricultural or horticultural products that is at
+          least 50% owned by agricultural or horticultural producers
+        description: For example, a cheese production business owned by a group of farmers
+        value: natureOfBusiness-A2
+      - text: A woodland manager processing wild venison products
+        value: natureOfBusiness-A3
+      - text: None of the above
+        value: natureOfBusiness-A4
+  - title: Who is applying for this grant?
+    name: applyingList
+    type: string
+    items:
+      - text: Applicant
+        value: applying-A1
+      - text: Agent
+        value: applying-A2
+  - title: What type of produce is being processed?
+    name: produceProcessedList
+    type: string
+    items:
+      - text: Arable produce
+        description: For example, crushing of oilseeds, rolling or flaking of grains as
+          food ingredients
+        value: produceProcessed-A1
+      - text: Wild venison meat produce
+        description: For example, processing and packing wild venison meat
+        value: produceProcessed-A2
+      - text: Dairy or meat produce
+        description: For example, processing and bottling milk or slaughtering, cutting,
+          processing and packing meat
+        value: produceProcessed-A3
+      - text: Fibre produce
+        description: For example, processing animal hides and leather, processing fibres
+          such as wool, flax and hemp
+        value: produceProcessed-A4
+      - text: Fodder produce
+        description: For example, processing and repacking hay and straw for specialist
+          markets or retail sale
+        value: produceProcessed-A5
+      - text: Horticultural produce
+        description: For example, grading and packing of soft fruit, washing and packing
+          vegetables, packing salad crops
+        value: produceProcessed-A6
+      - text: Non-edible produce
+        description: For example, processing and packing ornamental flowers and bulbs
+          after harvesting
+        value: produceProcessed-A7
+  - title: How will this project add value to the produce?
+    name: howAddingValueList
+    type: string
+    items:
+      - text: Introducing a new product to your farm
+        description: For example, processing meat to burgers, milk to cheese, cereals to
+          beer or spirits.
+        value: howAddingValue-A1
+      - text: Grading or sorting produce
+        description: For example, washing and grading vegetables, egg grading, optical
+          grading of top fruit.
+        value: howAddingValue-A2
+      - text: Packing produce
+        description: For example, packing top fruit, bagging vegetables, bottling wine.
+        value: howAddingValuee-A3
+      - text: A new retail facility to sell direct to consumers
+        description: ""
+        value: howAddingValue-A4
+  - title: What impact will this project have?
+    name: projectImpactList
+    type: string
+    items:
+      - text: Increasing range of added-value products
+        description: ""
+        value: projectImpact-A1
+      - text: Increasing volume of added-value products
+        description: ""
+        value: projectImpact-A2
+      - text: Allow selling direct to consumers
+        description: For example, retail and internet sales.
+        value: projectImpact-A3
+      - text: Starting to make added-value products for the first time
+        description: This only applies if you do not already make added-value products.
+        value: projectImpact-A4
+  - title: What is the legal status of your business?
+    name: legalStatusList
+    type: string
+    items:
+      - text: Sole trader
+        value: legalStatus-A1
+      - text: Partnership
+        value: legalStatus-A2
+      - text: Limited company
+        value: legalStatus-A3
+      - text: Charity
+        value: legalStatus-A4
+      - text: Trust
+        value: legalStatus-A5
+      - text: Limited liability partnership
+        value: legalStatus-A6
+      - text: Community interest company
+        value: legalStatus-A7
+      - text: Limited partnership
+        value: legalStatus-A8
+      - text: Industrial and provident society
+        value: legalStatus-A9
+      - text: Co-operative society (Co-Op)
+        value: legalStatus-A10
+      - text: Community benefit society (BenCom)
+        value: legalStatus-A11
+      - text: None of the above
+        value: legalStatus-A12
+  - title: Does the project have planning permission?
+    name: planningPermissionList
+    type: string
+    items:
+      - text: Not needed
+        value: planningPermission-A1
+      - text: Secured
+        value: planningPermission-A2
+      - text: Should be in place by the time I make my full application
+        value: planningPermission-A3
+      - text: Will not be in place by the time I make my full application
+        value: planningPermission-A4
+  - title: Have you already started work on the project?
+    name: projectStartList
+    type: string
+    items:
+      - text: Yes, preparatory work
+        description: For example, quotes from suppliers, applying for planning permission
+        value: projectStart-A1
+      - text: Yes, we have begun project work
+        description: For example, started construction work, signing contracts, placing
+          orders
+        value: projectStart-A2
+      - text: No, we have not done any work on this project yet
+        value: projectStart-A3
+  - title: What eligible items does your project need?
+    name: projectItemsList
+    type: string
+    items:
+      - text: Constructing or improving buildings for processing
+        description: For example, a new building for cheese making, extending an
+          existing building to install a new meat-cutting and packing line
+        value: projectItems-A1
+      - text: Processing equipment or machinery
+        description: For example, equipment and machinery for pasteurising and bottling
+          milk, a meat cutting and packing line or vegetable washing and packing
+        value: projectItems-A2
+      - text: Retail facilities
+        description: For example, shops or display cabinets
+        value: projectItems-A3
+      - text: None of the above
+        value: projectItems-A4
+  - title: Does your project also need storage facilities?
+    name: storageRadiosList
+    type: string
+    items:
+      - text: Yes, we will need storage facilities
+        value: storageRadios-A1
+      - text: No, we do not need storage facilities
+        value: storageRadios-A2
+  - title: How much manual labour will the mechanisation be equal to?
+    name: manualLabourAmountList
+    type: string
+    items:
+      - text: Up to 5% of workforce
+        value: manualLabourAmount-A1
+      - text: Between 5% and 10%
+        value: manualLabourAmount-A2
+      - text: More than 10%
+        value: manualLabourAmount-A3
+  - title: Consent optional
+    name: consent-optional-list
+    type: string
+    items:
+      - text: (Optional) I consent to being contacted by Defra or a third party about
+          service improvements
+        value: consentOptional-A1
+sections:
+  - title: Eligibility
+    name: EligibilitySection
+    hideTitle: false
+conditions:
+  - name: natureOfBusinessCondition
+    displayName: natureOfBusinessNone
+    value:
+      name: natureOfBusinessNone
+      conditions:
+        - field:
+            name: natureOfBusinessRadiosField
+            type: RadiosField
+            display: What is your business?
+          operator: is
+          value:
+            type: Value
+            value: natureOfBusiness-A4
+            display: None of the above
+  - name: legalStatusCondition
+    displayName: legalStatusNone
+    value:
+      name: legalStatusNone
+      conditions:
+        - field:
+            name: legalStatusRadiosField
+            type: RadiosField
+            display: What is the legal status of the business?
+          operator: is
+          value:
+            type: Value
+            value: legalStatus-A12
+            display: None of the above
+  - name: countryCondition
+    displayName: plannedProjectNo
+    value:
+      name: plannedProjectNo
+      conditions:
+        - field:
+            name: countryYesNoField
+            type: YesNoField
+            display: Is the planned project in England?
+          operator: is
+          value:
+            type: Value
+            value: "false"
+            display: No
+  - name: planningPermissionShouldBeCondition
+    displayName: planningPermissionShouldBe
+    value:
+      name: planningPermissionShouldBe
+      conditions:
+        - field:
+            name: planningPermissionRadiosField
+            type: RadiosField
+            display: Does the project have planning permission?
+          operator: is
+          value:
+            type: Value
+            value: planningPermission-A3
+            display: Should be in place by the time I make my full application
+  - name: planningPermissionWillNotCondition
+    displayName: planningPermissionWillNot
+    value:
+      name: planningPermissionWillNot
+      conditions:
+        - field:
+            name: planningPermissionRadiosField
+            type: RadiosField
+            display: Does the project have planning permission?
+          operator: is
+          value:
+            type: Value
+            value: planningPermission-A4
+            display: Will not be in place by the time I make my full application
+  - name: projectStartCondition
+    displayName: startProjectWork
+    value:
+      name: startProjectWork
+      conditions:
+        - field:
+            name: projectStartRadiosField
+            type: RadiosField
+            display: Have you already started work on the project?
+          operator: is
+          value:
+            type: Value
+            value: projectStart-A2
+            display: Yes, we have begun project work
+  - name: tenancyCondition
+    displayName: tenancyConditionNo
+    value:
+      name: tenancyConditionNo
+      conditions:
+        - field:
+            name: tenancyYesNoField
+            type: YesNoField
+            display: Is the planned project on land the business owns?
+          operator: is
+          value:
+            type: Value
+            value: "false"
+            display: No
+  - name: tenancyLengthCondition
+    displayName: tenancyLengthConditionNo
+    value:
+      name: tenancyLengthConditionNo
+      conditions:
+        - field:
+            name: tenancyLengthYesNoField
+            type: YesNoField
+            display: Do you have a tenancy agreement for 5 years after the final grant
+              payment?
+          operator: is
+          value:
+            type: Value
+            value: "false"
+            display: No
+  - name: smallerAbattoirConditionYes
+    displayName: smallerAbattoirConditionYes
+    value:
+      name: smallerAbattoirConditionYes
+      conditions:
+        - field:
+            name: smallerAbattoirYesNoField
+            type: YesNoField
+            display: Do you want to build a new smaller abattoir?
+          operator: is
+          value:
+            type: Value
+            value: "true"
+            display: Yes
+  - name: smallerAbattoirConditionNo
+    displayName: smallerAbattoirConditionNo
+    value:
+      name: smallerAbattoirConditionNo
+      conditions:
+        - field:
+            name: smallerAbattoirYesNoField
+            type: YesNoField
+            display: Do you want to build a new smaller abattoir?
+          operator: is
+          value:
+            type: Value
+            value: "false"
+            display: No
+  - name: otherFarmersConditionNo
+    displayName: otherFarmersConditionNo
+    value:
+      name: otherFarmersConditionNo
+      conditions:
+        - field:
+            name: otherFarmersYesNoField
+            type: YesNoField
+            display: Will this abattoir provide services to other farmers?
+          operator: is
+          value:
+            type: Value
+            value: "false"
+            display: No
+  - name: otherFarmersConditionYes
+    displayName: otherFarmersConditionYes
+    value:
+      name: otherFarmersConditionYes
+      conditions:
+        - field:
+            name: otherFarmersYesNoField
+            type: YesNoField
+            display: Will this abattoir provide services to other farmers?
+          operator: is
+          value:
+            type: Value
+            value: "true"
+            display: Yes
+  - name: fruitStorageCondition
+    displayName: fruitStorageConditionNo
+    value:
+      name: fruitStorageConditionNo
+      conditions:
+        - field:
+            name: fruitStorageYesNoField
+            type: YesNoField
+            display: Do you want to build new controlled atmosphere storage for top fruit?
+          operator: is
+          value:
+            type: Value
+            value: "false"
+            display: No
+  - name: otherFarmersYesOrFruitStorageCondition
+    displayName: otherFarmersYesOrFruitStorage
+    value:
+      name: otherFarmersYesOrFruitStorage
+      conditions:
+        - conditionName: otherFarmersConditionYes
+          conditionDisplayName: Yes
+        - coordinator: or
+          conditionName: fruitStorageCondition
+          conditionDisplayName: No
+  - name: projectItemsCondition
+    displayName: projectItemsConditionNone
+    value:
+      name: projectItemsConditionNone
+      conditions:
+        - field:
+            name: projectItemsCheckboxesField
+            type: CheckboxesField
+            display: What eligible items does your project need?
+          operator: contains
+          value:
+            type: Value
+            value: projectItems-A4
+            display: None of the above
+  - name: projectCostCondition
+    displayName: projectCostConditionNotReached
+    value:
+      name: projectCostConditionNotReached
+      conditions:
+        - field:
+            name: projectCostNumberField
+            type: NumberField
+            display: What is the estimated cost of the items?
+          operator: is less than
+          value:
+            type: Value
+            value: "62500"
+            display: Enter amount
+  - name: remainingCostsCondition
+    displayName: canYouPayTheRemainingCosts
+    value:
+      name: canYouPayTheRemainingCosts
+      conditions:
+        - field:
+            name: remainingCostsYesNoField
+            type: YesNoField
+            display: Can you pay the remaining costs of £x?
+          operator: is
+          value:
+            type: Value
+            value: "false"
+            display: No
+  - name: mechanisationCondition
+    displayName: mechanisationYes
+    value:
+      name: mechanisationYes
+      conditions:
+        - field:
+            name: mechanisationYesNoField
+            type: YesNoField
+            display: Will this project use any mechanisation instead of manual labour?
+          operator: is
+          value:
+            type: Value
+            value: "true"
+            display: Yes
+  - name: agentDetailsSelected
+    displayName: agentDetailsSelected
+    value:
+      name: agentDetailsSelected
+      conditions:
+        - field:
+            name: applyingRadiosField
+            type: RadiosField
+            display: Who is applying for this grant?
+          operator: is
+          value:
+            type: Value
+            value: applying-A2
+            display: Agent
