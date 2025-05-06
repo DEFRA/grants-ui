@@ -21,7 +21,7 @@
           "condition": "uFOrmB"
         },
         {
-          "path": "/select-land-parcel"
+          "path": "/agreement-name"
         }
       ],
       "components": [
@@ -48,6 +48,30 @@
           "content": "<p class=\"govuk-body\">You must correct your land details.</p>\n",
           "options": {},
           "schema": {}
+        }
+      ]
+    },
+    {
+      "title": "Enter your agreement name",
+      "path": "/agreement-name",
+      "next": [
+        {
+          "path": "/select-land-parcel"
+        }
+      ],
+      "components": [
+        {
+          "type": "TextField",
+          "name": "agreementName",
+          "title": "Agreement name",
+          "hint": "This will appear on your agreement documents, it is for your own use. For example 'Joe's Farm Funding 2025'.",
+          "options": {
+            "required": true,
+            "classes": "govuk-input--width-30",
+            "customValidationMessages": {
+              "string.empty": "Enter your agreement name"
+            }
+          }
         }
       ]
     },
