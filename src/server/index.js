@@ -101,7 +101,7 @@ const registerFormsPlugin = async (server) => {
     options: {
       cacheName: config.get(SESSION_CACHE_NAME),
       services: {
-        formsService,
+        formsService: await formsService(),
         formSubmissionService,
         outputService
       },
