@@ -18,6 +18,7 @@ const actionApplicationSchema = Joi.object({
 
 const gasAnswersSchema = Joi.object({
   scheme: Joi.string(),
+  agreementName: Joi.string(),
   year: Joi.number().integer(),
   hasCheckedLandIsUpToDate: Joi.boolean(),
   actionApplications: Joi.array().items(actionApplicationSchema)
