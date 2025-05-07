@@ -109,7 +109,7 @@ const registerFormsPlugin = async (server) => {
         formatCurrency
       },
       nunjucks: {
-        baseLayoutPath: 'layouts/form.njk',
+        baseLayoutPath: 'layouts/dxt-form.njk',
         paths: grantsUiPaths
       },
       viewContext: context,
