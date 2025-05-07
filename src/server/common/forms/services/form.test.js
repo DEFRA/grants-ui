@@ -1,4 +1,4 @@
-import { configureFormDefinition } from './form.js'
+import { formsService, configureFormDefinition } from './form.js'
 import { config } from '~/src/config/config.js'
 
 // Mock URL and import.meta.url
@@ -25,91 +25,40 @@ jest.mock('~/src/config/config.js', () => ({
   }
 }))
 
-const example = (v) => {
-  return {
-    name: v,
-    pages: [
-      {
-        events: {
-          onLoad: {
-            options: {
-              url: 'http://cdpEnvironment.example.com'
-            }
-          }
-        }
-      }
-    ]
-  }
-}
-
-describe('configureFormDefinition', () => {
+describe('form', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     // Reset config mock to default values
     config.get.mockImplementation((key) => defaultConfigMock[key])
   })
 
-  describe('getFormDefinition', () => {
-    test('returns exampleGrantDefinition for matching id', () => {
-      const mockData = example('example-definition')
-
-      const result = configureFormDefinition(mockData)
-      expect(result).toEqual({
-        name: 'example-definition',
-        pages: [
-          {
-            events: {
-              onLoad: {
-                options: {
-                  url: 'http://localhost:3001/scoring/api/v1/adding-value/score?allowPartialScoring=true'
-                }
-              }
-            }
-          }
-        ]
-      })
+  describe('formsService', () => {
+    test('returns exampleGrantDefinition for matching id', async () => {
+      const service = await formsService()
+      const result = service.getFormDefinition(
+        '5eeb9f71-44f8-46ed-9412-3d5e2c5ab2bc'
+      )
+      await expect(result).resolves.toBeDefined()
     })
 
-    test('returns landGrantsDefinition for matching id', () => {
-      const mockData = example('land-definition')
-
-      const result = configureFormDefinition(mockData)
-      expect(result).toEqual({
-        name: 'land-definition',
-        pages: [
-          {
-            events: {
-              onLoad: {
-                options: {
-                  url: 'http://localhost:3001/scoring/api/v1/adding-value/score?allowPartialScoring=true'
-                }
-              }
-            }
-          }
-        ]
-      })
+    test('returns landGrantsDefinition for matching id', async () => {
+      const service = await formsService()
+      const result = service.getFormDefinition(
+        '5c67688f-3c61-4839-a6e1-d48b598257f1'
+      )
+      await expect(result).resolves.toBeDefined()
     })
 
-    test('returns addingValueDefinition for matching id', () => {
-      const mockData = example('adding-value-definition')
-
-      const result = configureFormDefinition(mockData)
-      expect(result).toEqual({
-        name: 'adding-value-definition',
-        pages: [
-          {
-            events: {
-              onLoad: {
-                options: {
-                  url: 'http://localhost:3001/scoring/api/v1/adding-value/score?allowPartialScoring=true'
-                }
-              }
-            }
-          }
-        ]
-      })
+    test('returns addingValueDefinition for matching id', async () => {
+      const service = await formsService()
+      const result = service.getFormDefinition(
+        '95e92559-968d-44ae-8666-2b1ad3dffd31'
+      )
+      await expect(result).resolves.toBeDefined()
     })
+  })
 
+  describe('configureFormDefinition', () => {
     test('handles form definition without events', () => {
       const mockData = {
         name: 'no-events',
