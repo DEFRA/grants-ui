@@ -4,33 +4,28 @@ import Joi from 'joi'
  * Joi schema definitions for application answers validation
  */
 
-const valueTextPair = Joi.object({
-  value: Joi.string(),
-  text: Joi.string()
-})
-
 const applicationAnswersSchema = Joi.object({
   $$__referenceNumber: Joi.string(),
 
-  natureOfBusinessRadiosField: valueTextPair,
-  legalStatusRadiosField: valueTextPair,
+  natureOfBusinessRadiosField: Joi.string(),
+  legalStatusRadiosField: Joi.string(),
   countryYesNoField: Joi.boolean(),
-  planningPermissionRadiosField: valueTextPair,
-  projectStartRadiosField: valueTextPair,
+  planningPermissionRadiosField: Joi.string(),
+  projectStartRadiosField: Joi.string(),
   tenancyYesNoField: Joi.boolean(),
   smallerAbattoirYesNoField: Joi.boolean(),
   otherFarmersYesNoField: Joi.boolean(),
 
-  projectItemsCheckboxesField: Joi.array().items(valueTextPair),
-  storageRadiosField: valueTextPair,
+  projectItemsCheckboxesField: Joi.array().items(Joi.string()),
+  storageRadiosField: Joi.string(),
   projectCostNumberField: Joi.number(),
   remainingCostsYesNoField: Joi.boolean(),
-  produceProcessedRadiosField: valueTextPair,
-  howAddingValueRadiosField: valueTextPair,
-  projectImpactCheckboxesField: Joi.array().items(valueTextPair),
+  produceProcessedRadiosField: Joi.string(),
+  howAddingValueRadiosField: Joi.string(),
+  projectImpactCheckboxesField: Joi.array().items(Joi.string()),
   mechanisationYesNoField: Joi.boolean(),
-  manualLabourAmountRadiosField: valueTextPair,
-  applyingRadiosField: valueTextPair,
+  manualLabourAmountRadiosField: Joi.string(),
+  applyingRadiosField: Joi.string(),
 
   applicantFirstName: Joi.string(),
   applicantLastName: Joi.string(),
