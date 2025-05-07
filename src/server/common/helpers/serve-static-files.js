@@ -19,14 +19,6 @@ export const serveStaticFiles = {
       server.route([
         {
           method: 'GET',
-          path: '/stylesheets/application.min.css',
-          handler: {
-            file: './stylesheets/dxt-application.min.css'
-          },
-          options
-        },
-        {
-          method: 'GET',
           path: '/javascripts/application.min.js',
           handler: {
             file: './javascripts/dxt-application.min.js'
