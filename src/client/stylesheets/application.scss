@@ -1,4 +1,5 @@
-@use 'govuk-frontend';
+@use 'pkg:@defra/forms-engine-plugin';
+@use 'pkg:govuk-frontend';
 
 @use 'variables';
 @use 'helpers';
