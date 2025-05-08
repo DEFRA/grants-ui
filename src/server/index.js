@@ -9,7 +9,11 @@ import Scooter from '@hapi/scooter'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { config } from '~/src/config/config.js'
-import { nunjucksConfig } from '~/src/config/nunjucks/nunjucks.js'
+import {
+  nunjucksConfig,
+  grantsUiPaths
+} from '~/src/config/nunjucks/nunjucks.js'
+import { context } from '~/src/config/nunjucks/context/context.js'
 // import auth from '~/src/plugins/auth.js'
 import csp from '~/src/plugins/content-security-policy.js'
 import sso from '~/src/plugins/sso.js'
@@ -43,7 +47,7 @@ const getViewPaths = () => {
     `${basePath}/land-grants/parcel`,
     `${basePath}/land-grants/submission`,
     `${basePath}/views`,
-    `${basePath}/common/templates`
+    ...grantsUiPaths
   ]
 }
 
@@ -104,7 +108,11 @@ const registerFormsPlugin = async (server) => {
       filters: {
         formatCurrency
       },
-      viewPaths: getViewPaths(),
+      nunjucks: {
+        baseLayoutPath: 'layouts/dxt-form.njk',
+        paths: getViewPaths()
+      },
+      viewContext: context,
       controllers: {
         ConfirmationPageController,
         DeclarationPageController,

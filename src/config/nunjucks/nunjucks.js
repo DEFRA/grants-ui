@@ -9,12 +9,12 @@ import * as filters from './filters/filters.js'
 import * as globals from './globals.js'
 
 const dirname = path.dirname(fileURLToPath(import.meta.url))
+export const grantsUiPaths = [
+  path.resolve(dirname, '../../server/common/templates'),
+  path.resolve(dirname, '../../server/common/components')
+]
 const nunjucksEnvironment = nunjucks.configure(
-  [
-    'node_modules/govuk-frontend/dist/',
-    path.resolve(dirname, '../../server/common/templates'),
-    path.resolve(dirname, '../../server/common/components')
-  ],
+  ['node_modules/govuk-frontend/dist/', ...grantsUiPaths],
   {
     autoescape: true,
     throwOnUndefined: false,

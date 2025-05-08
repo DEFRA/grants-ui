@@ -457,7 +457,7 @@
         {
           "type": "YesNoField",
           "name": "remainingCostsYesNoField",
-          "title": " ",
+          "title": "Can you pay the remaining costs?",
           "options": {
             "customValidationMessages": {
               "any.required": "Select yes if you can pay the remaining costs"
