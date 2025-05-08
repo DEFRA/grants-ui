@@ -2,6 +2,7 @@ import Boom from '@hapi/boom'
 import fs from 'fs/promises'
 import {
   addingValueMetadata,
+  addingValueWithTasklistMetadata,
   exampleGrantMetadata,
   landGrantsMetadata
 } from '../config.js'
@@ -47,6 +48,8 @@ export const formsService = {
     switch (slug) {
       case addingValueMetadata.slug:
         return Promise.resolve(addingValueMetadata)
+      case addingValueWithTasklistMetadata.slug:
+        return Promise.resolve(addingValueWithTasklistMetadata)
       case exampleGrantMetadata.slug:
         return Promise.resolve(exampleGrantMetadata)
       case landGrantsMetadata.slug:
@@ -57,15 +60,19 @@ export const formsService = {
   },
   getFormDefinition: async function (id) {
     try {
-      const [addingValue, exampleGrant, landGrants] = await Promise.all([
-        getJsonFromFile('adding-value.json'),
-        getJsonFromFile('example-grant.json'),
-        getJsonFromFile('find-funding-for-land-or-farms.json')
-      ])
+      const [addingValue, addingValueWithTasklist, exampleGrant, landGrants] =
+        await Promise.all([
+          getJsonFromFile('adding-value.json'),
+          getJsonFromFile('adding-value-with-tasklist.json'),
+          getJsonFromFile('example-grant.json'),
+          getJsonFromFile('find-funding-for-land-or-farms.json')
+        ])
 
       switch (id) {
         case addingValueMetadata.id:
           return configureFormDefinition(await addingValue)
+        case addingValueWithTasklistMetadata.id:
+          return configureFormDefinition(await addingValueWithTasklist)
         case exampleGrantMetadata.id:
           return configureFormDefinition(await exampleGrant)
         case landGrantsMetadata.id:

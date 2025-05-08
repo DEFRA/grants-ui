@@ -5,6 +5,7 @@ import { auth } from '~/src/server/auth/index.js'
 import { serveStaticFiles } from '~/src/server/common/helpers/serve-static-files.js'
 import { health } from '~/src/server/health/index.js'
 import { home } from '~/src/server/home/index.js'
+import { tasklist } from './controllers/tasklist/controller.js'
 
 /**
  * @satisfies {ServerRegisterPluginObject<void>}
@@ -26,6 +27,9 @@ export const router = {
 
       // Static assets
       await server.register([serveStaticFiles])
+
+      // Tasklist routes
+      await server.register([tasklist])
     }
   }
 }

@@ -32,13 +32,18 @@ jest.mock('fs/promises', () => ({
 }))
 
 const addingValueMetadataMock = { id: 'example-id', slug: 'example-slug' }
+const addingValueWithTasklistMetadataMock = {
+  id: 'adding-value-with-metadata-id',
+  slug: 'adding-value-with-metadata-slug'
+}
 const exampleGrantMetadataMock = { id: 'example-id', slug: 'example-slug' }
 const landGrantsMetadataMock = { id: 'land-id', slug: 'land-slug' }
 
 jest.mock('../config.js', () => ({
   exampleGrantMetadata: exampleGrantMetadataMock,
   landGrantsMetadata: landGrantsMetadataMock,
-  addingValueMetadata: addingValueMetadataMock
+  addingValueMetadata: addingValueMetadataMock,
+  addingValueWithTasklistMetadata: addingValueWithTasklistMetadataMock
 }))
 
 const example = (v) =>

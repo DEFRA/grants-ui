@@ -27,6 +27,13 @@ export const addingValueMetadata = {
   ...metadata
 }
 
+export const addingValueWithTasklistMetadata = {
+  id: '95e92559-968d-44ae-8666-2b1ad3dffd32',
+  slug: 'adding-value-with-tasklist',
+  title: 'Adding value with tasklist',
+  ...metadata
+}
+
 export const exampleGrantMetadata = {
   id: '5eeb9f71-44f8-46ed-9412-3d5e2c5ab2bc',
   slug: 'example-grant',
