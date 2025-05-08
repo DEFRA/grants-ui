@@ -47,7 +47,7 @@ const getViewPaths = () => {
     `${basePath}/land-grants/parcel`,
     `${basePath}/land-grants/submission`,
     `${basePath}/views`,
-    `${basePath}/common/templates`
+    ...grantsUiPaths
   ]
 }
 
@@ -110,10 +110,9 @@ const registerFormsPlugin = async (server) => {
       },
       nunjucks: {
         baseLayoutPath: 'layouts/dxt-form.njk',
-        paths: grantsUiPaths
+        paths: getViewPaths()
       },
       viewContext: context,
-      viewPaths: getViewPaths(),
       controllers: {
         ConfirmationPageController,
         DeclarationPageController,

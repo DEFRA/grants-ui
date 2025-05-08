@@ -1,4 +1,4 @@
-{% extends "layout.html" %}
+{% extends baseLayoutPath %}
 
 {% from "govuk/components/radios/macro.njk" import govukRadios %}
 {% from "govuk/components/inset-text/macro.njk" import govukInsetText %}
@@ -31,7 +31,7 @@
               text: parcel.sheetId + "-" + parcel.parcelId + " (Total size: " + parcel.area + " ha.)"
             }]) %}
           {% endfor %}
-          
+
           {% if radioItems.length > 0 %}
             {{ govukRadios({
                 name: "landParcel",
@@ -44,9 +44,9 @@
                 },
                 items: radioItems,
                 value: parcelId
-              }) 
+              })
             }}
-            
+
             <div class="govuk-button-group">
               <input type="hidden" name="crumb" value="{{ crumb }}">
               {% block form %}
