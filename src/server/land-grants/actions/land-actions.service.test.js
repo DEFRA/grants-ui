@@ -54,7 +54,7 @@ describe('fetchLandSheetDetails', () => {
     const result = await fetchLandSheetDetails(parcelId, sheetId)
 
     expect(mockFetch).toHaveBeenCalledWith(
-      `${landGrantsApi}/parcel/SX0679-9238`,
+      `${landGrantsApi}/parcels/SX0679-9238`,
       { method: 'GET' }
     )
 
@@ -134,7 +134,7 @@ describe('calculateApplicationPayment', () => {
     )
 
     expect(mockFetch).toHaveBeenCalledWith(
-      `${landGrantsApi}/calculate/payment`,
+      `${landGrantsApi}/payments/calculate`,
       {
         method: 'POST',
         headers: {
@@ -220,7 +220,7 @@ describe('calculateApplicationPayment', () => {
     }
 
     expect(mockFetch).toHaveBeenCalledWith(
-      `${landGrantsApi}/calculate/payment`,
+      `${landGrantsApi}/payments/calculate`,
       {
         method: 'POST',
         headers: {

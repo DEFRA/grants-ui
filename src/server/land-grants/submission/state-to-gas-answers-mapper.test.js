@@ -7,6 +7,7 @@ describe('stateToLandGrantsGasAnswers', () => {
       hasCheckedLandIsUpToDate: true,
       landParcel: 'SX0679-9238',
       scheme: 'SFI',
+      agreementName: "Joe's farm funding 2025",
       year: 2025,
       actionsObj: {
         CSAM1: {
@@ -20,6 +21,7 @@ describe('stateToLandGrantsGasAnswers', () => {
       scheme: 'SFI',
       year: 2025,
       hasCheckedLandIsUpToDate: true,
+      agreementName: "Joe's farm funding 2025",
       actionApplications: [
         {
           parcelId: '9238',

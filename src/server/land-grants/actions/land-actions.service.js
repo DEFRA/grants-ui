@@ -34,7 +34,7 @@ const mapActionsObjectToPayload = (actionsObj) =>
  */
 export async function fetchLandSheetDetails(parcelId, sheetId) {
   const response = await fetch(
-    `${LAND_GRANTS_API_URL}/parcel/${sheetId}-${parcelId}`,
+    `${LAND_GRANTS_API_URL}/parcels/${sheetId}-${parcelId}`,
     {
       method: 'GET'
     }
@@ -104,7 +104,7 @@ export async function calculateApplicationPayment(
         }).format(amount)
       : null
 
-  const response = await fetch(`${LAND_GRANTS_API_URL}/calculate/payment`, {
+  const response = await fetch(`${LAND_GRANTS_API_URL}/payments/calculate`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'

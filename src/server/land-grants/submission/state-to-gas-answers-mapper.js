@@ -28,6 +28,7 @@
 export function stateToLandGrantsGasAnswers(state) {
   const result = {
     hasCheckedLandIsUpToDate: state.hasCheckedLandIsUpToDate,
+    agreementName: state.agreementName,
     scheme: 'SFI',
     year: 2025
   }
