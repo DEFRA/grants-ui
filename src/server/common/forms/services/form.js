@@ -1,6 +1,6 @@
-import { metadata } from '../config.js'
 import { config } from '~/src/config/config.js'
 import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
+import { metadata } from '../config.js'
 
 import { FileFormService } from '@defra/forms-engine-plugin/file-form-service.js'
 

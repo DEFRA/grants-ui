@@ -1,4 +1,4 @@
-{% extends "layout.html" %}
+{% extends baseLayoutPath %}
 
 {% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
 {% from "govuk/components/checkboxes/macro.njk" import govukCheckboxes %}
@@ -42,11 +42,11 @@
               checked: actions and actions.includes(action.code)
             }]) %}
           {% endfor %}
-          
+
           {% if actionList.length > 0 %}
           <div class="govuk-form-group">
             <fieldset class="govuk-fieldset" aria-describedby="action-hint">
-              
+
               <table class="govuk-table">
                 <caption class="govuk-table__caption govuk-table__caption--l">Available actions for selected parcel</caption>
                 <thead class="govuk-table__head">
@@ -84,7 +84,7 @@
 
             </fieldset>
           </div>
-            
+
           <div class="govuk-button-group">
             <input type="hidden" name="crumb" value="{{ crumb }}">
             {% block form %}
