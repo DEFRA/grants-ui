@@ -126,7 +126,7 @@
       ]
     },
     {
-      "title": "Funding Details",
+      "title": "Funding details",
       "path": "/summary",
       "controller": "SubmissionPageController"
     },
