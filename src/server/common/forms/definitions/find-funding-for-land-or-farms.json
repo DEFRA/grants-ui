@@ -119,7 +119,7 @@
         {
           "type": "TextField",
           "name": "applicationValue",
-          "title": "Total Application Value",
+          "title": "Total application value",
           "options": {},
           "schema": {}
         }
