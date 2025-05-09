@@ -66,7 +66,7 @@ export const formsService = async () => {
   )
 
   await loader.addForm(
-    'src/server/common/forms/definitions/find-funding-for-land-or-farms.json',
+    'src/server/common/forms/definitions/find-funding-for-land-or-farms.yaml',
     {
       ...metadata,
       id: '5c67688f-3c61-4839-a6e1-d48b598257f1',
