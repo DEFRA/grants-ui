@@ -1,0 +1,55 @@
+{
+  "info": {
+    "_postman_id": "7ce0746b-327f-497d-91bf-8da941a66b81",
+    "name": "gas",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Submit adding-value data",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"metadata\": {\n    \"sbi\": \"sbi\",\n    \"frn\": \"frn\",\n    \"crn\": \"crn\",\n    \"defraId\": \"defraId\",\n    \"clientRef\": \"408273ba-3f19-4868-a646-2861df0b742d\",\n    \"submittedAt\": \"2025-04-29T17:12:55.408Z\"\n  },\n  \"answers\": {\n    \"$$__referenceNumber\": \"AV-0A2-B08\",\n    \"natureOfBusinessRadiosField\": \"A grower or producer of agricultural or horticultural produce\",\n    \"legalStatusRadiosField\": \"Sole trader\",\n    \"countryYesNoField\": true,\n    \"planningPermissionRadiosField\": \"Not needed\",\n    \"projectStartRadiosField\": \"Yes, preparatory work\",\n    \"tenancyYesNoField\": true,\n    \"smallerAbattoirYesNoField\": true,\n    \"otherFarmersYesNoField\": true,\n    \"projectItemsCheckboxesField\": [\n      \"Constructing or improving buildings for processing\"\n    ],\n    \"storageRadiosField\": \"Yes, we will need storage facilities\",\n    \"projectCostNumberField\": 123456,\n    \"remainingCostsYesNoField\": true,\n    \"produceProcessedRadiosField\": \"Arable produce\",\n    \"howAddingValueRadiosField\": \"Introducing a new product to your farm\",\n    \"projectImpactCheckboxesField\": [\n      \"Increasing range of added-value products\"\n    ],\n    \"mechanisationYesNoField\": true,\n    \"manualLabourAmountRadiosField\": \"Up to 5% of workforce\",\n    \"applyingRadiosField\": \"Agent\",\n    \"applicantFirstName\": \"fdasfdsa\",\n    \"applicantLastName\": \"hgfhgfhgf\",\n    \"applicantEmailAddress\": \"andrew.folga@equalexperts.com\",\n    \"applicantConfirmEmailAddress\": \"andrew.folga@equalexperts.com\",\n    \"applicantMobileNumber\": \"43432423\",\n    \"applicantLandlineNumber\": \"4354654654\",\n    \"applicantBusinessAddress__addressLine1\": \"Address Line One\",\n    \"applicantBusinessAddress__addressLine2\": null,\n    \"applicantBusinessAddress__town\": \"Town Or City\",\n    \"applicantBusinessAddress__county\": null,\n    \"applicantBusinessAddress__postcode\": \"CR3 5NF\",\n    \"applicantProjectPostcode\": \"CR41NJ\"\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://fg-gas-backend.dev.cdp-int.defra.cloud/grants/adding-value/applications",
+          "protocol": "https",
+          "host": ["fg-gas-backend", "dev", "cdp-int", "defra", "cloud"],
+          "path": ["grants", "adding-value", "applications"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Create new grant definition",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"code\": \"adding-value-v3\",\n  \"questions\": {\n    \"$schema\": \"https://json-schema.org/draft/2020-12/schema\",\n    \"title\": \"GrantApplicationPayload\",\n    \"type\": \"object\",\n    \"properties\": {\n        \"$$__referenceNumber\": { \"type\": \"string\" },\n        \"businessNature\": { \"type\": \"string\" },\n        \"businessLegalStatus\": { \"type\": \"string\" },\n        \"isInEngland\": { \"type\": \"boolean\" },\n        \"planningPermissionStatus\": { \"type\": \"string\" },\n        \"projectStartStatus\": { \"type\": \"string\" },\n        \"isLandBusinessOwned\": { \"type\": \"boolean\" },\n        \"hasFiveYearTenancyAgreement\": { \"type\": \"boolean\" },\n        \"isBuildingSmallerAbattoir\": { \"type\": \"boolean\" },\n        \"isBuildingFruitStorage\": { \"type\": \"boolean\" },\n        \"isProvidingServicesToOtherFarmers\": { \"type\": \"boolean\" },\n        \"eligibleItemsNeeded\": {\n        \"type\": \"array\",\n        \"items\": { \"type\": \"string\" }\n        },\n        \"needsStorageFacilities\": { \"type\": \"string\" },\n        \"estimatedCost\": { \"type\": \"number\" },\n        \"canPayRemainingCosts\": { \"type\": \"boolean\" },\n        \"processedProduceType\": { \"type\": \"string\" },\n        \"valueAdditionMethod\": { \"type\": \"string\" },\n        \"impactType\": {\n        \"type\": \"array\",\n        \"items\": { \"type\": \"string\" }\n        },\n        \"hasMechanisationUsage\": { \"type\": \"boolean\" },\n        \"manualLabourEquivalence\": { \"type\": \"string\" },\n        \"grantApplicantType\": { \"type\": \"string\" },\n        \"agentFirstName\": { \"type\": \"string\" },\n        \"agentLastName\": { \"type\": \"string\" },\n        \"agentBusinessName\": { \"type\": \"string\" },\n        \"agentEmail\": { \"type\": \"string\", \"format\": \"email\" },\n        \"agentEmailConfirmation\": { \"type\": \"string\", \"format\": \"email\" },\n        \"agentMobile\": { \"type\": \"string\" },\n        \"agentLandline\": { \"type\": \"string\" },\n        \"agentBusinessAddress__addressLine1\": { \"type\": \"string\" },\n        \"agentBusinessAddress__addressLine2\": {\n        \"type\": [\"string\", \"null\"]\n        },\n        \"agentBusinessAddress__town\": { \"type\": \"string\" },\n        \"agentBusinessAddress__county\": { \"type\": [\"string\", \"null\"] },\n        \"agentBusinessAddress__postcode\": { \"type\": \"string\" },\n        \"applicantFirstName\": { \"type\": \"string\" },\n        \"applicantLastName\": { \"type\": \"string\" },\n        \"applicantEmail\": { \"type\": \"string\", \"format\": \"email\" },\n        \"applicantEmailConfirmation\": {\n        \"type\": \"string\",\n        \"format\": \"email\"\n        },\n        \"applicantMobile\": { \"type\": \"string\" },\n        \"applicantLandline\": { \"type\": \"string\" },\n        \"applicantBusinessAddress__addressLine1\": { \"type\": \"string\" },\n        \"applicantBusinessAddress__addressLine2\": {\n        \"type\": [\"string\", \"null\"]\n        },\n        \"applicantBusinessAddress__town\": { \"type\": \"string\" },\n        \"applicantBusinessAddress__county\": { \"type\": [\"string\", \"null\"] },\n        \"applicantBusinessAddress__postcode\": { \"type\": \"string\" },\n        \"applicantProjectPostcode\": { \"type\": \"string\" }\n    },\n    \"required\": [\n        \"$$__referenceNumber\",\n        \"businessNature\",\n        \"businessLegalStatus\",\n        \"isInEngland\",\n        \"planningPermissionStatus\",\n        \"projectStartStatus\",\n        \"isLandBusinessOwned\",\n        \"isBuildingSmallerAbattoir\",\n        \"estimatedCost\",\n        \"canPayRemainingCosts\",\n        \"hasMechanisationUsage\",\n        \"grantApplicantType\",\n        \"applicantFirstName\",\n        \"applicantLastName\",\n        \"applicantEmail\",\n        \"applicantEmailConfirmation\",\n        \"applicantMobile\",\n        \"applicantLandline\",\n        \"applicantBusinessAddress__addressLine1\",\n        \"applicantBusinessAddress__town\",\n        \"applicantBusinessAddress__postcode\",\n        \"applicantProjectPostcode\"\n    ]\n  },\n  \"metadata\": {\n    \"description\": \"Adding Value\",\n    \"startDate\": \"2025-05-09T13:08:27.125Z\"\n  },\n  \"actions\": [\n      {\n        \"name\": \"calculate-score\",\n        \"method\": \"POST\",\n        \"url\": \"https://ffc-grants-scoring.dev.cdp-int.defra.cloud/scoring/api/v1/adding-value/score?allowPartialScoring=true\"\n      }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://fg-gas-backend.dev.cdp-int.defra.cloud/grants",
+          "protocol": "https",
+          "host": ["fg-gas-backend", "dev", "cdp-int", "defra", "cloud"],
+          "path": ["grants"]
+        }
+      },
+      "response": []
+    }
+  ]
+}
