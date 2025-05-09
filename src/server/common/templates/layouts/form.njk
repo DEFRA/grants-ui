@@ -1,0 +1,14 @@
+{% extends "layouts/page.njk" %}
+
+{% from "govuk/components/back-link/macro.njk" import govukBackLink %}
+
+{% block pageTitle %}
+  {{ "Error: " if errors | length }}{{ pageTitle | evaluate }} {{ serviceName }}
+{% endblock %}
+
+{% block beforeContent %}
+  {{ super() }}
+  {% if backLink %}
+    {{ govukBackLink(backLink) }}
+  {% endif %}
+{% endblock %}
