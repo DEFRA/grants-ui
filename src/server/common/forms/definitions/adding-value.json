@@ -4,64 +4,62 @@
   "metadata": {
     "referenceNumberPrefix": "AV",
     "gas": {
-      "grantCode": "adding-value-v1",
+      "grantCode": "adding-value-v3",
       "submissionSchema": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "title": "GrantApplicationPayload",
         "type": "object",
         "properties": {
           "$$__referenceNumber": { "type": "string" },
-          "natureOfBusinessRadiosField": {
-            "$ref": "#/definitions/valueTextPair"
-          },
-          "legalStatusRadiosField": {
-            "$ref": "#/definitions/valueTextPair"
-          },
-          "countryYesNoField": { "type": "boolean" },
-          "planningPermissionRadiosField": {
-            "$ref": "#/definitions/valueTextPair"
-          },
-          "projectStartRadiosField": {
-            "$ref": "#/definitions/valueTextPair"
-          },
-          "tenancyYesNoField": { "type": "boolean" },
-          "smallerAbattoirYesNoField": { "type": "boolean" },
-          "otherFarmersYesNoField": { "type": "boolean" },
-          "projectItemsCheckboxesField": {
+          "businessNature": { "type": "string" },
+          "businessLegalStatus": { "type": "string" },
+          "isInEngland": { "type": "boolean" },
+          "planningPermissionStatus": { "type": "string" },
+          "projectStartStatus": { "type": "string" },
+          "isLandBusinessOwned": { "type": "boolean" },
+          "hasFiveYearTenancyAgreement": { "type": "boolean" },
+          "isBuildingSmallerAbattoir": { "type": "boolean" },
+          "isBuildingFruitStorage": { "type": "boolean" },
+          "isProvidingServicesToOtherFarmers": { "type": "boolean" },
+          "eligibleItemsNeeded": {
             "type": "array",
-            "items": { "$ref": "#/definitions/valueTextPair" }
+            "items": { "type": "string" }
           },
-          "storageRadiosField": {
-            "$ref": "#/definitions/valueTextPair"
-          },
-          "projectCostNumberField": { "type": "number" },
-          "remainingCostsYesNoField": { "type": "boolean" },
-          "produceProcessedRadiosField": {
-            "$ref": "#/definitions/valueTextPair"
-          },
-          "howAddingValueRadiosField": {
-            "$ref": "#/definitions/valueTextPair"
-          },
-          "projectImpactCheckboxesField": {
+          "needsStorageFacilities": { "type": "string" },
+          "estimatedCost": { "type": "number" },
+          "canPayRemainingCosts": { "type": "boolean" },
+          "processedProduceType": { "type": "string" },
+          "valueAdditionMethod": { "type": "string" },
+          "impactType": {
             "type": "array",
-            "items": { "$ref": "#/definitions/valueTextPair" }
+            "items": { "type": "string" }
           },
-          "mechanisationYesNoField": { "type": "boolean" },
-          "manualLabourAmountRadiosField": {
-            "$ref": "#/definitions/valueTextPair"
+          "hasMechanisationUsage": { "type": "boolean" },
+          "manualLabourEquivalence": { "type": "string" },
+          "grantApplicantType": { "type": "string" },
+          "agentFirstName": { "type": "string" },
+          "agentLastName": { "type": "string" },
+          "agentBusinessName": { "type": "string" },
+          "agentEmail": { "type": "string", "format": "email" },
+          "agentEmailConfirmation": { "type": "string", "format": "email" },
+          "agentMobile": { "type": "string" },
+          "agentLandline": { "type": "string" },
+          "agentBusinessAddress__addressLine1": { "type": "string" },
+          "agentBusinessAddress__addressLine2": {
+            "type": ["string", "null"]
           },
-          "applyingRadiosField": {
-            "$ref": "#/definitions/valueTextPair"
-          },
+          "agentBusinessAddress__town": { "type": "string" },
+          "agentBusinessAddress__county": { "type": ["string", "null"] },
+          "agentBusinessAddress__postcode": { "type": "string" },
           "applicantFirstName": { "type": "string" },
           "applicantLastName": { "type": "string" },
-          "applicantEmailAddress": { "type": "string", "format": "email" },
-          "applicantConfirmEmailAddress": {
+          "applicantEmail": { "type": "string", "format": "email" },
+          "applicantEmailConfirmation": {
             "type": "string",
             "format": "email"
           },
-          "applicantMobileNumber": { "type": "string" },
-          "applicantLandlineNumber": { "type": "string" },
+          "applicantMobile": { "type": "string" },
+          "applicantLandline": { "type": "string" },
           "applicantBusinessAddress__addressLine1": { "type": "string" },
           "applicantBusinessAddress__addressLine2": {
             "type": ["string", "null"]
@@ -73,45 +71,28 @@
         },
         "required": [
           "$$__referenceNumber",
-          "natureOfBusinessRadiosField",
-          "legalStatusRadiosField",
-          "countryYesNoField",
-          "planningPermissionRadiosField",
-          "projectStartRadiosField",
-          "tenancyYesNoField",
-          "smallerAbattoirYesNoField",
-          "otherFarmersYesNoField",
-          "projectItemsCheckboxesField",
-          "storageRadiosField",
-          "projectCostNumberField",
-          "remainingCostsYesNoField",
-          "produceProcessedRadiosField",
-          "howAddingValueRadiosField",
-          "projectImpactCheckboxesField",
-          "mechanisationYesNoField",
-          "manualLabourAmountRadiosField",
-          "applyingRadiosField",
+          "businessNature",
+          "businessLegalStatus",
+          "isInEngland",
+          "planningPermissionStatus",
+          "projectStartStatus",
+          "isLandBusinessOwned",
+          "isBuildingSmallerAbattoir",
+          "estimatedCost",
+          "canPayRemainingCosts",
+          "hasMechanisationUsage",
+          "grantApplicantType",
           "applicantFirstName",
           "applicantLastName",
-          "applicantEmailAddress",
-          "applicantConfirmEmailAddress",
-          "applicantMobileNumber",
-          "applicantLandlineNumber",
+          "applicantEmail",
+          "applicantEmailConfirmation",
+          "applicantMobile",
+          "applicantLandline",
           "applicantBusinessAddress__addressLine1",
           "applicantBusinessAddress__town",
           "applicantBusinessAddress__postcode",
           "applicantProjectPostcode"
-        ],
-        "definitions": {
-          "valueTextPair": {
-            "type": "object",
-            "properties": {
-              "value": { "type": "string" },
-              "text": { "type": "string" }
-            },
-            "required": ["value", "text"]
-          }
-        }
+        ]
       }
     }
   },
@@ -146,7 +127,7 @@
       "path": "/nature-of-business",
       "components": [
         {
-          "name": "natureOfBusinessRadiosField",
+          "name": "businessNature",
           "title": "What is your business?",
           "type": "RadiosField",
           "list": "natureOfBusinessList",
@@ -178,7 +159,7 @@
       "path": "/legal-status",
       "components": [
         {
-          "name": "legalStatusRadiosField",
+          "name": "businessLegalStatus",
           "title": "What is the legal status of the business?",
           "type": "RadiosField",
           "list": "legalStatusList",
@@ -215,7 +196,7 @@
       "path": "/country",
       "components": [
         {
-          "name": "countryYesNoField",
+          "name": "isInEngland",
           "title": "Is the planned project in England?",
           "hint": "The site where the work will happen",
           "type": "YesNoField",
@@ -246,7 +227,7 @@
       "path": "/planning-permission",
       "components": [
         {
-          "name": "planningPermissionRadiosField",
+          "name": "planningPermissionStatus",
           "title": "Does the project have planning permission?",
           "type": "RadiosField",
           "list": "planningPermissionList",
@@ -296,7 +277,7 @@
       "path": "/project-start",
       "components": [
         {
-          "name": "projectStartRadiosField",
+          "name": "projectStartStatus",
           "title": "Have you already started work on the project?",
           "type": "RadiosField",
           "list": "projectStartList",
@@ -327,7 +308,7 @@
       "path": "/tenancy",
       "components": [
         {
-          "name": "tenancyYesNoField",
+          "name": "isLandBusinessOwned",
           "title": "Is the planned project on land the business owns?",
           "type": "YesNoField",
           "options": {
@@ -343,7 +324,7 @@
       "path": "/tenancy-length",
       "components": [
         {
-          "name": "tenancyLengthYesNoField",
+          "name": "hasFiveYearTenancyAgreement",
           "title": "Do you have a tenancy agreement for 5 years after the final grant payment?",
           "type": "YesNoField",
           "options": {
@@ -373,7 +354,7 @@
       "path": "/smaller-abattoir",
       "components": [
         {
-          "name": "smallerAbattoirYesNoField",
+          "name": "isBuildingSmallerAbattoir",
           "title": "Do you want to build a new smaller abattoir?",
           "type": "YesNoField",
           "hint": "A smaller abattoir is a red meat abattoir that processes up to 10,000 livestock units each year or a poultry abattoir that slaughters up to 500,000 birds each year.",
@@ -390,7 +371,7 @@
       "path": "/other-farmers",
       "components": [
         {
-          "name": "otherFarmersYesNoField",
+          "name": "isProvidingServicesToOtherFarmers",
           "title": "Will this abattoir provide services to other farmers?",
           "hint": "For example, farmers pay you to slaughter their livestock.",
           "type": "YesNoField",
@@ -422,7 +403,7 @@
       "path": "/fruit-storage",
       "components": [
         {
-          "name": "fruitStorageYesNoField",
+          "name": "isBuildingFruitStorage",
           "title": "Do you want to build new controlled atmosphere storage for top fruit?",
           "hint": "Fruit that grows on trees, for example apples, pears, quinces, medlars, plums, peaches, apricots and cherries",
           "type": "YesNoField",
@@ -440,7 +421,7 @@
       "path": "/project-items",
       "components": [
         {
-          "name": "projectItemsCheckboxesField",
+          "name": "eligibleItemsNeeded",
           "title": "What eligible items does your project need?",
           "hint": "Storage facilities will only be funded as part of a bigger project and cannot be more than 50% of the total grant funding.\n\nSelect all the items your project needs",
           "type": "CheckboxesField",
@@ -473,7 +454,7 @@
       "path": "/storage",
       "components": [
         {
-          "name": "storageRadiosField",
+          "name": "needsStorageFacilities",
           "title": "Does your project also need storage facilities?",
           "hint": "For example, cold stores or controlled atmosphere storage",
           "type": "RadiosField",
@@ -504,7 +485,7 @@
           "content": "<p class=\"govuk-hint\">Do not include VAT<br><br>Enter cost of items, for example {{ 695000 | formatCurrency: 'en-GB', 'GBP', 0, 'decimal' }}</p>"
         },
         {
-          "name": "projectCostNumberField",
+          "name": "estimatedCost",
           "type": "NumberField",
           "title": "Enter amount",
           "options": {
@@ -547,7 +528,7 @@
           "name": "potentialFundingInfo",
           "title": "Html",
           "type": "Html",
-          "content": "<p class=\"govuk-body\"> {% assign estimatedCost = 'projectCostNumberField' | answer %} {% assign eligibilityMultiplier = 0.4 %} {% assign eligibilityAmount = estimatedCost | times: eligibilityMultiplier %} {% if eligibilityAmount <= 300000 and eligibilityAmount >= 25000 %} You may be able to apply for grant funding of up to {{ eligibilityAmount | formatCurrency: 'en-GB', 'GBP', 0 }} (40% of {{ estimatedCost | formatCurrency: 'en-GB', 'GBP', 0 }}).{% elsif eligibilityAmount > 300000 %} You may be able to apply for grant funding of up to £300,000, based on the estimated cost of {{ estimatedCost | formatCurrency: 'en-GB', 'GBP', 0 }}.\n\n\n<div class=\"govuk-inset-text\">The maximum grant you can apply for is £300,000.</div> {% endif %}</p>\n",
+          "content": "<p class=\"govuk-body\"> {% assign estimatedCost = 'estimatedCost' | answer %} {% assign eligibilityMultiplier = 0.4 %} {% assign eligibilityAmount = estimatedCost | times: eligibilityMultiplier %} {% if eligibilityAmount <= 300000 and eligibilityAmount >= 25000 %} You may be able to apply for grant funding of up to {{ eligibilityAmount | formatCurrency: 'en-GB', 'GBP', 0 }} (40% of {{ estimatedCost | formatCurrency: 'en-GB', 'GBP', 0 }}).{% elsif eligibilityAmount > 300000 %} You may be able to apply for grant funding of up to £300,000, based on the estimated cost of {{ estimatedCost | formatCurrency: 'en-GB', 'GBP', 0 }}.\n\n\n<div class=\"govuk-inset-text\">The maximum grant you can apply for is £300,000.</div> {% endif %}</p>\n",
           "options": {},
           "schema": {}
         },
@@ -562,12 +543,12 @@
       ]
     },
     {
-      "title": "{% assign estimatedCost = 'projectCostNumberField' | answer %} {% assign applicantPayMultiplier = 0.6 %} {% assign applicantPayAmount = estimatedCost | times: applicantPayMultiplier %} {% assign grantPayAmount = estimatedCost | minus: applicantPayAmount %} {% if grantPayAmount >= 300000 %} {% assign applicantPayAmount = estimatedCost | minus: 300000 %} {% endif %} Can you pay the remaining costs of {{ applicantPayAmount | formatCurrency: 'en-GB', 'GBP', 0 }}?",
+      "title": "{% assign estimatedCost = 'estimatedCost' | answer %} {% assign applicantPayMultiplier = 0.6 %} {% assign applicantPayAmount = estimatedCost | times: applicantPayMultiplier %} {% assign grantPayAmount = estimatedCost | minus: applicantPayAmount %} {% if grantPayAmount >= 300000 %} {% assign applicantPayAmount = estimatedCost | minus: 300000 %} {% endif %} Can you pay the remaining costs of {{ applicantPayAmount | formatCurrency: 'en-GB', 'GBP', 0 }}?",
       "path": "/remaining-costs",
       "components": [
         {
           "type": "YesNoField",
-          "name": "remainingCostsYesNoField",
+          "name": "canPayRemainingCosts",
           "title": "Can you pay the remaining costs?",
           "options": {
             "customValidationMessages": {
@@ -596,7 +577,7 @@
       "path": "/produce-processed",
       "components": [
         {
-          "name": "produceProcessedRadiosField",
+          "name": "processedProduceType",
           "title": "What type of produce is being processed?",
           "type": "RadiosField",
           "list": "produceProcessedList",
@@ -615,7 +596,7 @@
       "path": "/how-adding-value",
       "components": [
         {
-          "name": "howAddingValueRadiosField",
+          "name": "valueAdditionMethod",
           "title": "How will this project add value to the produce?",
           "type": "RadiosField",
           "list": "howAddingValueList",
@@ -634,7 +615,7 @@
       "path": "/project-impact",
       "components": [
         {
-          "name": "projectImpactCheckboxesField",
+          "name": "impactType",
           "title": "What impact will the project have?",
           "type": "CheckboxesField",
           "list": "projectImpactList",
@@ -653,7 +634,7 @@
       "path": "/mechanisation",
       "components": [
         {
-          "name": "mechanisationYesNoField",
+          "name": "hasMechanisationUsage",
           "title": "Will this project use any mechanisation instead of manual labour?",
           "hint": "For example, a fruit grading and sorting machine that does the work of 2 farm labourers",
           "type": "YesNoField",
@@ -670,7 +651,7 @@
       "path": "/manual-labour-amount",
       "components": [
         {
-          "name": "manualLabourAmountRadiosField",
+          "name": "manualLabourEquivalence",
           "title": "How much manual labour will the mechanisation be equal to?",
           "type": "RadiosField",
           "list": "manualLabourAmountList",
@@ -719,7 +700,7 @@
       "path": "/applying",
       "components": [
         {
-          "name": "applyingRadiosField",
+          "name": "grantApplicantType",
           "title": "Who is applying for this grant?",
           "type": "RadiosField",
           "list": "applyingList",
@@ -786,7 +767,7 @@
         },
         {
           "type": "EmailAddressField",
-          "name": "agentEmailAddress",
+          "name": "agentEmail",
           "title": "Email address",
           "hint": "We will only use this to send you a confirmation",
           "options": {
@@ -802,7 +783,7 @@
         },
         {
           "type": "EmailAddressField",
-          "name": "agentConfirmEmailAddress",
+          "name": "agentEmailConfirmation",
           "title": "Confirm email address",
           "options": {
             "required": true,
@@ -817,7 +798,7 @@
         },
         {
           "type": "TelephoneNumberField",
-          "name": "agentMobileNumber",
+          "name": "agentMobile",
           "title": "Mobile number",
           "hint": "We will only use this to contact you about your application",
           "options": {
@@ -833,7 +814,7 @@
         },
         {
           "type": "TelephoneNumberField",
-          "name": "agentLandlineNumber",
+          "name": "agentLandline",
           "title": "Landline number",
           "hint": "We will only use this to contact you about your application",
           "options": {
@@ -901,7 +882,7 @@
         },
         {
           "type": "EmailAddressField",
-          "name": "applicantEmailAddress",
+          "name": "applicantEmail",
           "title": "Email address",
           "hint": "We will only use this to send you a confirmation",
           "options": {
@@ -917,7 +898,7 @@
         },
         {
           "type": "EmailAddressField",
-          "name": "applicantConfirmEmailAddress",
+          "name": "applicantEmailConfirmation",
           "title": "Confirm email address",
           "options": {
             "required": true,
@@ -932,7 +913,7 @@
         },
         {
           "type": "TelephoneNumberField",
-          "name": "applicantMobileNumber",
+          "name": "applicantMobile",
           "title": "Mobile number",
           "hint": "We will only use this to contact you about your application",
           "options": {
@@ -949,7 +930,7 @@
         },
         {
           "type": "TelephoneNumberField",
-          "name": "applicantLandlineNumber",
+          "name": "applicantLandline",
           "title": "Landline number",
           "hint": "We will only use this to contact you about your application",
           "options": {
@@ -1400,7 +1381,7 @@
         "conditions": [
           {
             "field": {
-              "name": "planningPermissionRadiosField",
+              "name": "planningPermissionStatus",
               "type": "RadiosField",
               "display": "Does the project have planning permission?"
             },
@@ -1422,7 +1403,7 @@
         "conditions": [
           {
             "field": {
-              "name": "planningPermissionRadiosField",
+              "name": "planningPermissionStatus",
               "type": "RadiosField",
               "display": "Does the project have planning permission?"
             },
@@ -1444,7 +1425,7 @@
         "conditions": [
           {
             "field": {
-              "name": "projectStartRadiosField",
+              "name": "projectStartStatus",
               "type": "RadiosField",
               "display": "Have you already started work on the project?"
             },
@@ -1466,7 +1447,7 @@
         "conditions": [
           {
             "field": {
-              "name": "tenancyYesNoField",
+              "name": "isLandBusinessOwned",
               "type": "YesNoField",
               "display": "Is the planned project on land the business owns?"
             },
@@ -1488,7 +1469,7 @@
         "conditions": [
           {
             "field": {
-              "name": "tenancyLengthYesNoField",
+              "name": "hasFiveYearTenancyAgreement",
               "type": "YesNoField",
               "display": "Do you have a tenancy agreement for 5 years after the final grant payment?"
             },
@@ -1510,7 +1491,7 @@
         "conditions": [
           {
             "field": {
-              "name": "smallerAbattoirYesNoField",
+              "name": "isBuildingSmallerAbattoir",
               "type": "YesNoField",
               "display": "Do you want to build a new smaller abattoir?"
             },
@@ -1532,7 +1513,7 @@
         "conditions": [
           {
             "field": {
-              "name": "smallerAbattoirYesNoField",
+              "name": "isBuildingSmallerAbattoir",
               "type": "YesNoField",
               "display": "Do you want to build a new smaller abattoir?"
             },
@@ -1554,7 +1535,7 @@
         "conditions": [
           {
             "field": {
-              "name": "otherFarmersYesNoField",
+              "name": "isProvidingServicesToOtherFarmers",
               "type": "YesNoField",
               "display": "Will this abattoir provide services to other farmers?"
             },
@@ -1576,7 +1557,7 @@
         "conditions": [
           {
             "field": {
-              "name": "otherFarmersYesNoField",
+              "name": "isProvidingServicesToOtherFarmers",
               "type": "YesNoField",
               "display": "Will this abattoir provide services to other farmers?"
             },
@@ -1598,7 +1579,7 @@
         "conditions": [
           {
             "field": {
-              "name": "fruitStorageYesNoField",
+              "name": "isBuildingFruitStorage",
               "type": "YesNoField",
               "display": "Do you want to build new controlled atmosphere storage for top fruit?"
             },
@@ -1638,7 +1619,7 @@
         "conditions": [
           {
             "field": {
-              "name": "projectItemsCheckboxesField",
+              "name": "eligibleItemsNeeded",
               "type": "CheckboxesField",
               "display": "What eligible items does your project need?"
             },
@@ -1660,7 +1641,7 @@
         "conditions": [
           {
             "field": {
-              "name": "projectCostNumberField",
+              "name": "estimatedCost",
               "type": "NumberField",
               "display": "What is the estimated cost of the items?"
             },
@@ -1682,7 +1663,7 @@
         "conditions": [
           {
             "field": {
-              "name": "remainingCostsYesNoField",
+              "name": "canPayRemainingCosts",
               "type": "YesNoField",
               "display": "Can you pay the remaining costs of £x?"
             },
@@ -1704,7 +1685,7 @@
         "conditions": [
           {
             "field": {
-              "name": "mechanisationYesNoField",
+              "name": "hasMechanisationUsage",
               "type": "YesNoField",
               "display": "Will this project use any mechanisation instead of manual labour?"
             },
@@ -1726,7 +1707,7 @@
         "conditions": [
           {
             "field": {
-              "name": "applyingRadiosField",
+              "name": "grantApplicantType",
               "type": "RadiosField",
               "display": "Who is applying for this grant?"
             },
