@@ -1315,7 +1315,7 @@
         "conditions": [
           {
             "field": {
-              "name": "natureOfBusinessRadiosField",
+              "name": "businessNature",
               "type": "RadiosField",
               "display": "What is your business?"
             },
@@ -1337,7 +1337,7 @@
         "conditions": [
           {
             "field": {
-              "name": "legalStatusRadiosField",
+              "name": "businessLegalStatus",
               "type": "RadiosField",
               "display": "What is the legal status of the business?"
             },
@@ -1359,7 +1359,7 @@
         "conditions": [
           {
             "field": {
-              "name": "countryYesNoField",
+              "name": "isInEngland",
               "type": "YesNoField",
               "display": "Is the planned project in England?"
             },
