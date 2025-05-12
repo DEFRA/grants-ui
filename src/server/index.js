@@ -9,11 +9,11 @@ import Scooter from '@hapi/scooter'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { config } from '~/src/config/config.js'
-import {
-  nunjucksConfig,
-  grantsUiPaths
-} from '~/src/config/nunjucks/nunjucks.js'
 import { context } from '~/src/config/nunjucks/context/context.js'
+import {
+  grantsUiPaths,
+  nunjucksConfig
+} from '~/src/config/nunjucks/nunjucks.js'
 // import auth from '~/src/plugins/auth.js'
 import csp from '~/src/plugins/content-security-policy.js'
 import sso from '~/src/plugins/sso.js'
@@ -34,6 +34,7 @@ import LandParcelPageController from '~/src/server/land-grants/parcel/land-parce
 import SubmissionPageController from '~/src/server/land-grants/submission/submission-page.controller.js'
 import { formatCurrency } from '../config/nunjucks/filters/format-currency.js'
 import { router } from './router.js'
+import { formSubmissionService } from './common/forms/services/submission.js'
 
 const SESSION_CACHE_NAME = 'session.cache.name'
 
@@ -100,7 +101,8 @@ const registerFormsPlugin = async (server) => {
     options: {
       cacheName: config.get(SESSION_CACHE_NAME),
       services: {
-        formsService,
+        formsService: await formsService(),
+        formSubmissionService,
         outputService
       },
       filters: {
