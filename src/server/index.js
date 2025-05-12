@@ -9,11 +9,11 @@ import Scooter from '@hapi/scooter'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { config } from '~/src/config/config.js'
-import {
-  nunjucksConfig,
-  grantsUiPaths
-} from '~/src/config/nunjucks/nunjucks.js'
 import { context } from '~/src/config/nunjucks/context/context.js'
+import {
+  grantsUiPaths,
+  nunjucksConfig
+} from '~/src/config/nunjucks/nunjucks.js'
 // import auth from '~/src/plugins/auth.js'
 import csp from '~/src/plugins/content-security-policy.js'
 import sso from '~/src/plugins/sso.js'
@@ -101,7 +101,7 @@ const registerFormsPlugin = async (server) => {
     options: {
       cacheName: config.get(SESSION_CACHE_NAME),
       services: {
-        formsService,
+        formsService: await formsService(),
         formSubmissionService,
         outputService
       },
