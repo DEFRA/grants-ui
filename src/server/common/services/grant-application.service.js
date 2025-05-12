@@ -15,6 +15,49 @@ class GrantApplicationServiceApiError extends Error {
 }
 
 /**
+ * Makes a request to the Grant Application Service (GAS) API
+ * @param {string} url - API endpoint URL
+ * @param {string} grantCode - Grant code for error context
+ * @param {object} payload - Request payload
+ * @returns {Promise} - Promise that resolves to the response
+ * @throws {GrantApplicationServiceApiError} - If the API request fails
+ */
+async function makeGasApiRequest(url, grantCode, payload) {
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new GrantApplicationServiceApiError(
+        `${response.status} ${response.statusText}`,
+        response.status,
+        errorText,
+        grantCode
+      )
+    }
+
+    return response.json()
+  } catch (error) {
+    logger.error(
+      { err: error },
+      `Unexpected error in GAS API request: ${error.message}`
+    )
+    throw new GrantApplicationServiceApiError(
+      'Failed to process GAS API request: ' + error.message,
+      error.status,
+      error.message,
+      grantCode
+    )
+  }
+}
+
+/**
  * Invokes a POST action on the Grant Application Service (GAS)
  * @param {string} code - Grant code
  * @param {string} name - Action name
@@ -23,41 +66,8 @@ class GrantApplicationServiceApiError extends Error {
  * @throws {GrantApplicationServiceApiError} - If the API request fails
  */
 export async function invokeGasPostAction(code, name, payload) {
-  try {
-    const response = await fetch(
-      `${GAS_API_ENDPOINT}/grants/${code}/actions/${name}/invoke`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      }
-    )
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      throw new GrantApplicationServiceApiError(
-        `${response.status} ${response.statusText}`,
-        response.status,
-        errorText,
-        code
-      )
-    }
-
-    return response.json()
-  } catch (error) {
-    logger.error(
-      { err: error },
-      `Unexpected error submitting grant application: ${error.message}`
-    )
-    throw new GrantApplicationServiceApiError(
-      'Failed to submit grant application: ' + error.message,
-      error.status,
-      error.message,
-      code
-    )
-  }
+  const url = `${GAS_API_ENDPOINT}/grants/${code}/actions/${name}/invoke`
+  return makeGasApiRequest(url, code, payload)
 }
 
 /**
@@ -68,39 +78,6 @@ export async function invokeGasPostAction(code, name, payload) {
  * @throws {GrantApplicationServiceApiError} - If the API request fails
  */
 export async function submitGrantApplication(code, payload) {
-  try {
-    const response = await fetch(
-      `${GAS_API_ENDPOINT}/grants/${code}/applications`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      }
-    )
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      throw new GrantApplicationServiceApiError(
-        `${response.status} ${response.statusText}`,
-        response.status,
-        errorText,
-        code
-      )
-    }
-
-    return response.json()
-  } catch (error) {
-    logger.error(
-      { err: error },
-      `Unexpected error submitting grant application: ${error.message}`
-    )
-    throw new GrantApplicationServiceApiError(
-      'Failed to submit grant application: ' + error.message,
-      error.status,
-      error.message,
-      code
-    )
-  }
+  const url = `${GAS_API_ENDPOINT}/grants/${code}/applications`
+  return makeGasApiRequest(url, code, payload)
 }
