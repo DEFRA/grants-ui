@@ -5,6 +5,7 @@ import 'dotenv/config'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import defraId from './defra-id.js'
+import landGrants from './land-grants.js'
 
 const dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -98,19 +99,20 @@ export const config = convict({
       format: String,
       default: '',
       env: 'GAS_API_URL'
-    },
-    frpsGrantCode: {
-      doc: 'GAS Future RPS grant code',
-      format: String,
-      default: '',
-      env: 'GAS_FRPS_GRANT_CODE'
     }
   },
-  landGrants: {
+  consolidatedView: {
     apiEndpoint: {
+      doc: 'Consolidated View API endpoint',
       format: String,
       default: '',
-      env: 'LAND_GRANTS_API_URL'
+      env: 'CV_API_ENDPOINT'
+    },
+    authEmail: {
+      doc: 'Consolidated View AuthEmail',
+      format: String,
+      default: '',
+      env: 'CV_API_AUTH_EMAIL'
     }
   },
   feedbackLink: {
@@ -307,7 +309,8 @@ export const config = convict({
       env: 'TRACING_HEADER'
     }
   },
-  defraId: defraId.getProperties()
+  defraId: defraId.getProperties(),
+  landGrants: landGrants.getProperties()
 })
 
 config.validate({ allowed: 'strict' })

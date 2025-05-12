@@ -1,8 +1,11 @@
 import { config } from '~/src/config/config.js'
-import { submitGrantApplication } from '~/src/server/common/services/grant-application.service.js'
+import {
+  invokeGasPostAction,
+  submitGrantApplication
+} from '~/src/server/common/services/grant-application.service.js'
 
 const gasApi = config.get('gas.apiEndpoint')
-const code = config.get('gas.frpsGrantCode')
+const code = config.get('landGrants.grantCode')
 
 describe('submitGrantApplication', () => {
   const payload = {
@@ -99,6 +102,133 @@ describe('submitGrantApplication', () => {
 
     expect(fetch).toHaveBeenCalledWith(
       `${gasApi}/grants/${code}/applications`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      }
+    )
+  })
+})
+
+describe('invokeGasPostAction', () => {
+  const actionName = 'submit'
+  const payload = {
+    applicationId: '12345',
+    metadata: {
+      clientRef: 'abc123',
+      submittedAt: '2025-04-22T12:00:00Z'
+    },
+    data: {
+      status: 'complete'
+    }
+  }
+  const mockResponse = {
+    success: true,
+    actionId: 'action-123',
+    timestamp: '2025-04-22T12:05:00Z'
+  }
+
+  beforeEach(() => {
+    jest.resetAllMocks()
+  })
+
+  test('should successfully invoke a POST action', async () => {
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      json: jest.fn().mockResolvedValueOnce(mockResponse)
+    })
+
+    const result = await invokeGasPostAction(code, actionName, payload)
+
+    expect(fetch).toHaveBeenCalledWith(
+      `${gasApi}/grants/${code}/actions/${actionName}/invoke`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      }
+    )
+    expect(result).toEqual(mockResponse)
+  })
+
+  test('should throw an error when the request fails', async () => {
+    const mockMessage = 'Bad Request'
+
+    fetch.mockResolvedValue({
+      ok: false,
+      status: 400,
+      text: jest.fn().mockResolvedValueOnce(mockMessage),
+      statusText: 'Bad Request',
+      json: jest.fn().mockResolvedValueOnce({ message: mockMessage })
+    })
+
+    await expect(
+      invokeGasPostAction(code, actionName, payload)
+    ).rejects.toThrow(mockMessage)
+
+    expect(fetch).toHaveBeenCalledWith(
+      `${gasApi}/grants/${code}/actions/${actionName}/invoke`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      }
+    )
+  })
+
+  test('should handle network errors', async () => {
+    const networkError = new Error('Network error')
+    fetch.mockRejectedValueOnce(networkError)
+
+    await expect(
+      invokeGasPostAction(code, actionName, payload)
+    ).rejects.toThrow('Network error')
+
+    expect(fetch).toHaveBeenCalledWith(
+      `${gasApi}/grants/${code}/actions/${actionName}/invoke`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      }
+    )
+  })
+
+  test('should throw a GrantApplicationServiceApiError with correct properties', async () => {
+    const errorStatus = 422
+    const errorText = JSON.stringify({ message: 'API error' })
+
+    fetch.mockResolvedValue({
+      ok: false,
+      status: errorStatus,
+      text: jest.fn().mockResolvedValueOnce(errorText),
+      statusText: 'API error'
+    })
+
+    let thrownError
+    try {
+      await invokeGasPostAction(code, actionName, payload)
+    } catch (error) {
+      thrownError = error
+    }
+
+    expect(thrownError).toBeDefined()
+    expect(thrownError.name).toBe('GrantApplicationServiceApiError')
+    expect(thrownError.status).toBe(errorStatus)
+    expect(thrownError.responseBody).toBe('422 API error')
+    expect(thrownError.grantCode).toBe(code)
+
+    expect(fetch).toHaveBeenCalledWith(
+      `${gasApi}/grants/${code}/actions/${actionName}/invoke`,
       {
         method: 'POST',
         headers: {

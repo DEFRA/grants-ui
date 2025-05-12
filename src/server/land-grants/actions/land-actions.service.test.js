@@ -5,7 +5,9 @@ import {
   validateLandActions
 } from '~/src/server/land-grants/actions/land-actions.service.js'
 
-const landGrantsApi = config.get('landGrants.apiEndpoint')
+const landGrantsApi = config.get('landGrants.grantsServiceApiEndpoint')
+const gasApi = config.get('gas.apiEndpoint')
+const frpsGrantCode = config.get('landGrants.grantCode')
 
 /**
  * @type {jest.Mock}
@@ -297,7 +299,7 @@ describe('validateLandActions', () => {
     const result = await validateLandActions(sheetId, parcelId, actionsObj)
 
     expect(mockFetch).toHaveBeenCalledWith(
-      `${landGrantsApi}/actions/validate`,
+      `${gasApi}/grants/${frpsGrantCode}/actions/validate-land-parcel-actions/invoke`,
       {
         method: 'POST',
         headers: {
@@ -332,9 +334,12 @@ describe('validateLandActions', () => {
   })
 
   it('should throw an error when fetch response is not ok', async () => {
+    const errorText = JSON.stringify({ message: 'Bad Request' })
+
     mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 400,
+      text: jest.fn().mockResolvedValueOnce(errorText),
       statusText: 'Bad Request'
     })
 
@@ -376,7 +381,7 @@ describe('validateLandActions', () => {
     }
 
     expect(mockFetch).toHaveBeenCalledWith(
-      `${landGrantsApi}/actions/validate`,
+      `${gasApi}/grants/${frpsGrantCode}/actions/validate-land-parcel-actions/invoke`,
       {
         method: 'POST',
         headers: {
