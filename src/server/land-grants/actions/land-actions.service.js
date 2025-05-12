@@ -65,7 +65,7 @@ export async function fetchLandSheetDetails(parcelId, sheetId) {
  * @throws {Error} - If the request fails
  */
 export async function validateLandActions(sheetId, parcelId, actionsObj = {}) {
-  return await invokeGasPostAction(
+  return invokeGasPostAction(
     GAS_FRPS_GRANT_CODE,
     'validate-land-parcel-actions',
     mapLandActionsToPayload(sheetId, parcelId, actionsObj)

@@ -9,7 +9,7 @@ import 'dotenv/config'
  * @property {string} grantsServiceApiEndpoint
  */
 
-const config = convict({
+const landGrants = convict({
   grantCode: {
     doc: 'GAS Future RPS grant code',
     format: String,
@@ -23,11 +23,6 @@ const config = convict({
   }
 })
 
-config.validate({ allowed: 'strict' })
+landGrants.validate({ allowed: 'strict' })
 
-export default config
-
-/**
- * @import { Schema, SchemaObj } from 'convict'
- * @import { RedisConfig } from '~/src/server/common/helpers/redis-client.js'
- */
+export default landGrants
