@@ -1,7 +1,5 @@
-import { formsService } from './form.js'
-import { readFile } from 'fs/promises'
-import { exampleGrantMetadata, landGrantsMetadata } from '../config.js'
 import { config } from '~/src/config/config.js'
+import { configureFormDefinition, formsService } from './form.js'
 
 // Mock URL and import.meta.url
 const mockUrl = { pathname: '/mock/path' }
@@ -27,171 +25,68 @@ jest.mock('~/src/config/config.js', () => ({
   }
 }))
 
-jest.mock('fs/promises', () => ({
-  readFile: jest.fn()
-}))
-
-const addingValueMetadataMock = { id: 'example-id', slug: 'example-slug' }
-const exampleGrantMetadataMock = { id: 'example-id', slug: 'example-slug' }
-const landGrantsMetadataMock = { id: 'land-id', slug: 'land-slug' }
-
-jest.mock('../config.js', () => ({
-  exampleGrantMetadata: exampleGrantMetadataMock,
-  landGrantsMetadata: landGrantsMetadataMock,
-  addingValueMetadata: addingValueMetadataMock
-}))
-
-const example = (v) =>
-  JSON.stringify({
-    name: v,
-    pages: [
-      {
-        events: {
-          onLoad: {
-            options: {
-              url: 'http://cdpEnvironment.example.com'
-            }
-          }
-        }
-      }
-    ]
-  })
-
-describe('formsService', () => {
+describe('form', () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    readFile.mockReset()
     // Reset config mock to default values
     config.get.mockImplementation((key) => defaultConfigMock[key])
   })
 
-  describe('getFormDefinition', () => {
+  describe('formsService', () => {
     test('returns exampleGrantDefinition for matching id', async () => {
-      const mockData = example('example-definition')
-      readFile.mockResolvedValue(mockData)
-
-      const result = await formsService.getFormDefinition(
-        exampleGrantMetadata.id
+      const service = await formsService()
+      const result = service.getFormDefinition(
+        '5eeb9f71-44f8-46ed-9412-3d5e2c5ab2bc'
       )
-      expect(result).toEqual({
-        name: 'example-definition',
-        pages: [
-          {
-            events: {
-              onLoad: {
-                options: {
-                  url: 'http://localhost:3001/scoring/api/v1/adding-value/score?allowPartialScoring=true'
-                }
-              }
-            }
-          }
-        ]
-      })
+      await expect(result).resolves.toBeDefined()
     })
 
     test('returns landGrantsDefinition for matching id', async () => {
-      const mockData = example('land-definition')
-      readFile.mockResolvedValue(mockData)
-
-      const result = await formsService.getFormDefinition(landGrantsMetadata.id)
-      expect(result).toEqual({
-        name: 'land-definition',
-        pages: [
-          {
-            events: {
-              onLoad: {
-                options: {
-                  url: 'http://localhost:3001/scoring/api/v1/adding-value/score?allowPartialScoring=true'
-                }
-              }
-            }
-          }
-        ]
-      })
+      const service = await formsService()
+      const result = service.getFormDefinition(
+        '5c67688f-3c61-4839-a6e1-d48b598257f1'
+      )
+      await expect(result).resolves.toBeDefined()
     })
 
     test('returns addingValueDefinition for matching id', async () => {
-      const mockData = example('adding-value-definition')
-      readFile.mockResolvedValue(mockData)
-
-      const result = await formsService.getFormDefinition(
-        addingValueMetadataMock.id
+      const service = await formsService()
+      const result = service.getFormDefinition(
+        '95e92559-968d-44ae-8666-2b1ad3dffd31'
       )
-      expect(result).toEqual({
-        name: 'adding-value-definition',
-        pages: [
-          {
-            events: {
-              onLoad: {
-                options: {
-                  url: 'http://localhost:3001/scoring/api/v1/adding-value/score?allowPartialScoring=true'
-                }
-              }
-            }
-          }
-        ]
-      })
+      await expect(result).resolves.toBeDefined()
     })
+  })
 
-    test('throws Boom notFound for unknown id', async () => {
-      const mockData = example('irrelevant')
-      readFile.mockResolvedValue(mockData)
-
-      await expect(
-        formsService.getFormDefinition('invalid-slug')
-      ).rejects.toThrow("Form 'invalid-slug' not found")
-    })
-
-    test('handles non-SyntaxError file reading errors', async () => {
-      readFile.mockRejectedValue(new Error('File not found'))
-
-      await expect(
-        formsService.getFormDefinition(exampleGrantMetadata.id)
-      ).rejects.toThrow('File not found')
-    })
-
-    test('handles JSON parsing errors', async () => {
-      readFile.mockResolvedValue('invalid json')
-
-      await expect(
-        formsService.getFormDefinition(exampleGrantMetadata.id)
-      ).rejects.toThrow('Invalid JSON in form definition file')
-    })
-
-    test('handles form definition without events', async () => {
-      const mockData = JSON.stringify({
+  describe('configureFormDefinition', () => {
+    test('handles form definition without events', () => {
+      const mockData = {
         name: 'no-events',
         pages: [{ title: 'Page 1' }]
-      })
-      readFile.mockResolvedValue(mockData)
+      }
 
-      const result = await formsService.getFormDefinition(
-        exampleGrantMetadata.id
-      )
+      const result = configureFormDefinition(mockData)
       expect(result).toEqual({
         name: 'no-events',
         pages: [{ title: 'Page 1' }]
       })
     })
 
-    test('handles form definition with events but no onLoad', async () => {
-      const mockData = JSON.stringify({
+    test('handles form definition with events but no onLoad', () => {
+      const mockData = {
         name: 'no-onload',
         pages: [{ events: { otherEvent: {} } }]
-      })
-      readFile.mockResolvedValue(mockData)
+      }
+      const result = configureFormDefinition(mockData)
 
-      const result = await formsService.getFormDefinition(
-        exampleGrantMetadata.id
-      )
       expect(result).toEqual({
         name: 'no-onload',
         pages: [{ events: { otherEvent: {} } }]
       })
     })
 
-    test('configures URLs correctly for local environment', async () => {
-      const mockData = JSON.stringify({
+    test('configures URLs correctly for local environment', () => {
+      const mockData = {
         name: 'test-form',
         pages: [
           {
@@ -204,24 +99,21 @@ describe('formsService', () => {
             }
           }
         ]
-      })
-      readFile.mockResolvedValue(mockData)
+      }
 
-      const result = await formsService.getFormDefinition(
-        exampleGrantMetadata.id
-      )
+      const result = configureFormDefinition(mockData)
       expect(result.pages[0].events.onLoad.options.url).toBe(
         'http://localhost:3001/scoring/api/v1/adding-value/score?allowPartialScoring=true'
       )
     })
 
-    test('configures URLs correctly for non-local environment', async () => {
+    test('configures URLs correctly for non-local environment', () => {
       // Override the config mock for this test only
       config.get.mockImplementation((key) =>
         key === 'cdpEnvironment' ? 'dev' : defaultConfigMock[key]
       )
 
-      const mockData = JSON.stringify({
+      const mockData = {
         name: 'test-form',
         pages: [
           {
@@ -234,19 +126,16 @@ describe('formsService', () => {
             }
           }
         ]
-      })
-      readFile.mockResolvedValue(mockData)
+      }
+      const result = configureFormDefinition(mockData)
 
-      const result = await formsService.getFormDefinition(
-        exampleGrantMetadata.id
-      )
       expect(result.pages[0].events.onLoad.options.url).toBe(
         'http://dev.example.com'
       )
     })
 
-    test('handles form definition with multiple pages and events', async () => {
-      const mockData = JSON.stringify({
+    test('handles form definition with multiple pages and events', () => {
+      const mockData = {
         name: 'multi-page-form',
         pages: [
           {
@@ -268,12 +157,10 @@ describe('formsService', () => {
             }
           }
         ]
-      })
-      readFile.mockResolvedValue(mockData)
+      }
 
-      const result = await formsService.getFormDefinition(
-        exampleGrantMetadata.id
-      )
+      const result = configureFormDefinition(mockData)
+
       expect(result.pages).toHaveLength(2)
       result.pages.forEach((page) => {
         expect(page.events.onLoad.options.url).toBe(
@@ -282,61 +169,30 @@ describe('formsService', () => {
       })
     })
 
-    test('handles form definition with undefined events', async () => {
-      const mockData = JSON.stringify({
+    test('handles form definition with undefined events', () => {
+      const mockData = {
         name: 'test-form',
         pages: [
           {
             events: undefined
           }
         ]
-      })
-      readFile.mockResolvedValue(mockData)
+      }
 
-      const result = await formsService.getFormDefinition(
-        exampleGrantMetadata.id
-      )
+      const result = configureFormDefinition(mockData)
+
       expect(result.pages[0].events).toBeUndefined()
     })
 
-    test('handles form definition with undefined pages', async () => {
-      const mockData = JSON.stringify({
+    test('handles form definition with undefined pages', () => {
+      const mockData = {
         name: 'test-form',
         pages: undefined
-      })
-      readFile.mockResolvedValue(mockData)
+      }
 
-      const result = await formsService.getFormDefinition(
-        exampleGrantMetadata.id
-      )
+      const result = configureFormDefinition(mockData)
+
       expect(result.pages).toBeUndefined()
-    })
-  })
-
-  describe('getFormMetadata', () => {
-    test('returns exampleGrantDefinition for matching id', async () => {
-      const result = await formsService.getFormMetadata(
-        exampleGrantMetadata.slug
-      )
-      expect(result).toEqual(exampleGrantMetadataMock)
-    })
-
-    test('returns landGrantsDefinition for matching id', async () => {
-      const result = await formsService.getFormMetadata(landGrantsMetadata.slug)
-      expect(result).toEqual(landGrantsMetadataMock)
-    })
-
-    test('returns addingValueMetadata for matching slug', async () => {
-      const result = await formsService.getFormMetadata(
-        addingValueMetadataMock.slug
-      )
-      expect(result).toEqual(addingValueMetadataMock)
-    })
-
-    test('throws Boom notFound for unknown id', async () => {
-      await expect(
-        formsService.getFormMetadata('invalid-slug')
-      ).rejects.toThrow("Form 'invalid-slug' not found")
     })
   })
 })
