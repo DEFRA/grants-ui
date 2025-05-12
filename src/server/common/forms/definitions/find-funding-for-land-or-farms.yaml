@@ -29,7 +29,10 @@ pages:
         title: You must correct your land details
         type: Html
         hint: ''
-        content: "<p class=\"govuk-body\">You must correct your land details.</p>\n"
+        content: |+
+          <p class="govuk-body">
+            You must correct your land details.
+          </p>
         options: {}
         schema: {}
 
@@ -41,7 +44,7 @@ pages:
       - type: TextField
         name: agreementName
         title: Agreement name
-        hint: "This will appear on your agreement documents, it is for your own use. For example 'Joe's Farm Funding 2025'."
+        hint: This will appear on your agreement documents, it is for your own use. For example 'Joe's Farm Funding 2025'.
         options:
           required: true
           classes: govuk-input--width-30
@@ -70,12 +73,6 @@ pages:
       - type: TextField
         name: actions
         title: Actions
-        options:
-          required: true
-        schema: {}
-      - type: TextField
-        name: area
-        title: Parcel cover (ha.)
         options:
           required: true
         schema: {}

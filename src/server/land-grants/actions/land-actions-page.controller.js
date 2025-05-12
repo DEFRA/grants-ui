@@ -7,7 +7,7 @@ import {
 
 export default class LandActionsPageController extends QuestionPageController {
   viewName = 'land-actions'
-  areaPrefix = 'area-'
+  quantityPrefix = 'qty-'
   availableActions = []
 
   /**
@@ -20,7 +20,7 @@ export default class LandActionsPageController extends QuestionPageController {
     const { actions = [] } = payload
 
     for (const key in payload) {
-      if (key.startsWith(this.areaPrefix)) {
+      if (key.startsWith(this.quantityPrefix)) {
         const [, code] = key.split('-')
         const actionInfo = this.availableActions.find((a) => a.code === code)
         if (!actions.includes(code) || !payload[key] || !actionInfo) {
@@ -45,6 +45,36 @@ export default class LandActionsPageController extends QuestionPageController {
   }
 
   /**
+   * Transform actions object for view
+   * @param {object} actionsObj - The actions object
+   * @param {object} actionsObj.value - The action value
+   * @param {string} actionsObj.unit - The action unit
+   * @returns {string} - Formatted string for view
+   */
+  transformActionsForView(actionsObj) {
+    const actions = []
+    Object.entries(actionsObj).forEach(([key, value]) => {
+      actions.push(`${key}: ${value.value} ${value.unit}.`)
+    })
+    return actions.join(' - ')
+  }
+
+  /**
+   * This method is called to get the view model for the page.
+   * It adds the area prefix and available actions to the view model.
+   * @param {FormRequest} request - The request object
+   * @param {FormContext} context - The form context
+   * @returns {object} - The view model for the page
+   */
+  getViewModel(request, context) {
+    return {
+      ...super.getViewModel(request, context),
+      quantityPrefix: this.quantityPrefix,
+      availableActions: this.availableActions
+    }
+  }
+
+  /**
    * This method is called when there is a POST request to the select land actions page.
    * It gets the land parcel id and redirects to the next step in the journey.
    */
@@ -60,37 +90,38 @@ export default class LandActionsPageController extends QuestionPageController {
       const { state } = context
       const { viewName } = this
       const payload = request.payload ?? {}
-      const { actions } = payload
       const [sheetId, parcelId] = this.parseLandParcelId(state.landParcel)
       const actionsObj = this.extractActionsObjectFromPayload(payload)
-      const area = []
-
-      Object.entries(actionsObj).forEach(([key, value]) => {
-        area.push(`${key}: ${value.value} ${value.unit}.`)
-      })
 
       // Create updated state with the new action data
       const newState = {
         ...state,
-        actions: Array.isArray(actions) ? actions?.join(', ') : actions,
-        area: area.join('<br/>'),
+        actions: this.transformActionsForView(actionsObj),
         actionsObj
       }
 
       if (payload.action === 'validate') {
-        const { valid: rulesAreValid, errorMessages = [] } =
-          await validateLandActions(sheetId, parcelId, actionsObj)
+        let errors = []
+        if (Object.keys(actionsObj).length === 0) {
+          errors.push('Please select at least one action and quantity')
+        } else {
+          const { valid, errorMessages = [] } = await validateLandActions(
+            sheetId,
+            parcelId,
+            actionsObj
+          )
 
-        if (!rulesAreValid || !actions) {
+          if (!valid) {
+            errors = errorMessages.map((m) => m.description)
+          }
+        }
+
+        if (errors.length > 0) {
           await this.setState(request, newState)
           return h.view(viewName, {
-            ...super.getViewModel(request, context),
+            ...this.getViewModel(request, context),
             ...newState,
-            errors: !actions
-              ? ['Please select at least one action and quantity']
-              : errorMessages.map((m) => m.description),
-            areaPrefix: this.areaPrefix,
-            availableActions: this.availableActions
+            errors
           })
         }
       }
@@ -149,11 +180,9 @@ export default class LandActionsPageController extends QuestionPageController {
 
       // Build the view model exactly as in the original code
       const viewModel = {
-        ...super.getViewModel(request, context),
+        ...this.getViewModel(request, context),
         ...state,
-        errors: collection.getErrors(collection.getErrors()),
-        areaPrefix: this.areaPrefix,
-        availableActions: this.availableActions
+        errors: collection.getErrors(collection.getErrors())
       }
 
       return h.view(viewName, viewModel)
