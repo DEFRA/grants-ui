@@ -1,0 +1,109 @@
+name: Find Funding for Land or Farms
+pages:
+  - title: Start page
+    path: /start
+    controller: StartPageController
+    next:
+      - path: /land-details
+    components: []
+
+  - title: Do your digital maps show the correct land details?
+    path: /land-details
+    next:
+      - path: /you-must-correct-your-details
+        condition: uFOrmB
+      - path: /agreement-name
+    components:
+      - name: hasCheckedLandIsUpToDate
+        title: Do your digital maps show the correct land details?
+        type: YesNoField
+        hint: ''
+        options: {}
+        schema: {}
+
+  - title: You must correct your land details
+    path: /you-must-correct-your-details
+    next: []
+    components:
+      - name: FGyiLS
+        title: You must correct your land details
+        type: Html
+        hint: ''
+        content: |+
+          <p class="govuk-body">
+            You must correct your land details.
+          </p>
+        options: {}
+        schema: {}
+
+  - title: Enter your agreement name
+    path: /agreement-name
+    next:
+      - path: /select-land-parcel
+    components:
+      - type: TextField
+        name: agreementName
+        title: Agreement name
+        hint: This will appear on your agreement documents, it is for your own use. For example 'Joe's Farm Funding 2025'.
+        options:
+          required: true
+          classes: govuk-input--width-30
+          customValidationMessages:
+            string.empty: Enter your agreement name
+
+  - title: Select Land Parcel
+    controller: LandParcelPageController
+    path: /select-land-parcel
+    next:
+      - path: /select-land-actions
+    components:
+      - type: TextField
+        name: landParcel
+        title: Parcel
+        options:
+          required: true
+        schema: {}
+
+  - title: Select Land Actions
+    controller: LandActionsPageController
+    path: /select-land-actions
+    next:
+      - path: /summary
+    components:
+      - type: TextField
+        name: actions
+        title: Actions
+        options:
+          required: true
+        schema: {}
+      - type: TextField
+        name: applicationValue
+        title: Total application value
+        options: {}
+        schema: {}
+
+  - title: Funding details
+    path: /summary
+    controller: SubmissionPageController
+
+  - title: Confirmation
+    path: /confirmation
+    controller: ConfirmationPageController
+
+lists: []
+sections: []
+conditions:
+  - name: uFOrmB
+    displayName: notCorrect
+    value:
+      name: notCorrect
+      conditions:
+        - field:
+            name: hasCheckedLandIsUpToDate
+            type: YesNoField
+            display: Do your digital maps show the correct land details?
+          operator: is
+          value:
+            type: Value
+            value: 'false'
+            display: 'No'
