@@ -322,7 +322,7 @@ describe('LandActionsPageController', () => {
       }
 
       const errorMessages = [
-        { actionId: 'action1', message: 'Area exceeds available area' }
+        { code: 'action1', description: 'Area exceeds available area' }
       ]
 
       validateLandActions.mockResolvedValue({
@@ -349,7 +349,7 @@ describe('LandActionsPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'land-actions',
         expect.objectContaining({
-          errors: errorMessages,
+          errors: errorMessages.map((m) => m.description),
           availableActions
         })
       )
