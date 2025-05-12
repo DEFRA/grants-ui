@@ -51,7 +51,7 @@ describe('LandActionsPageController', () => {
 
     mockRequest = {
       payload: {
-        'area-action1': 10,
+        'qty-action1': 10,
         actions: ['action1', 'action2']
       },
       logger: {
@@ -91,8 +91,8 @@ describe('LandActionsPageController', () => {
     test('should extract action data correctly from payload', () => {
       const payload = {
         actions: ['action1', 'action2'],
-        'area-action1': 10,
-        'area-action2': 5,
+        'qty-action1': 10,
+        'qty-action2': 5,
         'other-field': 'value'
       }
 
@@ -107,7 +107,7 @@ describe('LandActionsPageController', () => {
     test('should ignore action codes not present in availableActions', () => {
       const payload = {
         actions: ['unknownAction'],
-        'area-unknownAction': 15
+        'qty-unknownAction': 15
       }
 
       const result = controller.extractActionsObjectFromPayload(payload)
@@ -259,8 +259,7 @@ describe('LandActionsPageController', () => {
         mockRequest,
         expect.objectContaining({
           landParcel: 'sheet1-parcel1',
-          actions: 'action1, action2',
-          area: 'action1: 10 ha.',
+          actions: 'action1: 10 ha.',
           actionsObj,
           applicationValue: '£1,250.75'
         })
@@ -285,15 +284,34 @@ describe('LandActionsPageController', () => {
         mockRequest,
         expect.objectContaining({
           landParcel: 'sheet1-parcel1',
-          area: '',
+          actions: '',
           actionsObj: {}
+        })
+      )
+    })
+
+    test('should handle missing actions gracefully', async () => {
+      mockRequest.payload = {
+        actions: [],
+        action: 'validate'
+      }
+
+      const handler = controller.makePostRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(validateLandActions).not.toHaveBeenCalled()
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'land-actions',
+        expect.objectContaining({
+          errors: ['Please select at least one action and quantity']
         })
       )
     })
 
     test('should validate actions when validate action is requested', async () => {
       mockRequest.payload = {
-        'area-action1': 10,
+        'qty-action1': 10,
         actions: ['action1'],
         action: 'validate'
       }
@@ -316,7 +334,7 @@ describe('LandActionsPageController', () => {
 
     test('should render view with validation errors when validation fails', async () => {
       mockRequest.payload = {
-        'area-action1': 10,
+        'qty-action1': 10,
         actions: ['action1'],
         action: 'validate'
       }
@@ -341,7 +359,7 @@ describe('LandActionsPageController', () => {
         mockRequest,
         expect.objectContaining({
           landParcel: 'sheet1-parcel1',
-          actions: 'action1',
+          actions: 'action1: 10 ha.',
           actionsObj: { action1: { value: 10, unit: 'ha' } }
         })
       )

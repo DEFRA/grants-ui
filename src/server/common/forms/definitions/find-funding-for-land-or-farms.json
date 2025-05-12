@@ -109,15 +109,6 @@
         },
         {
           "type": "TextField",
-          "name": "area",
-          "title": "Parcel cover (ha.)",
-          "options": {
-            "required": true
-          },
-          "schema": {}
-        },
-        {
-          "type": "TextField",
           "name": "applicationValue",
           "title": "Total application value",
           "options": {},
