@@ -1,19 +1,10 @@
-import Boom from '@hapi/boom'
-import fs from 'fs/promises'
-import {
-  addingValueMetadata,
-  exampleGrantMetadata,
-  landGrantsMetadata
-} from '../config.js'
 import { config } from '~/src/config/config.js'
 import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
+import { metadata } from '../config.js'
 
-const getJsonFromFile = async function (path) {
-  const url = new URL(`../definitions/${path}`, import.meta.url).pathname
-  return JSON.parse(await fs.readFile(url, 'utf8'))
-}
+import { FileFormService } from '@defra/forms-engine-plugin/file-form-service.js'
 
-function configureFormDefinition(definition) {
+export function configureFormDefinition(definition) {
   const logger = createLogger()
   const environment = config.get('cdpEnvironment')
 
@@ -42,42 +33,47 @@ function configureFormDefinition(definition) {
   return definition
 }
 
-export const formsService = {
-  getFormMetadata: async function (slug) {
-    switch (slug) {
-      case addingValueMetadata.slug:
-        return Promise.resolve(addingValueMetadata)
-      case exampleGrantMetadata.slug:
-        return Promise.resolve(exampleGrantMetadata)
-      case landGrantsMetadata.slug:
-        return Promise.resolve(landGrantsMetadata)
-      default:
-        throw Boom.notFound(`Form '${slug}' not found`)
-    }
-  },
-  getFormDefinition: async function (id) {
-    try {
-      const [addingValue, exampleGrant, landGrants] = await Promise.all([
-        getJsonFromFile('adding-value.json'),
-        getJsonFromFile('example-grant.json'),
-        getJsonFromFile('find-funding-for-land-or-farms.json')
-      ])
+class GrantsFormLoader extends FileFormService {
+  getFormDefinition(id) {
+    const definition = super.getFormDefinition(id)
 
-      switch (id) {
-        case addingValueMetadata.id:
-          return configureFormDefinition(await addingValue)
-        case exampleGrantMetadata.id:
-          return configureFormDefinition(await exampleGrant)
-        case landGrantsMetadata.id:
-          return configureFormDefinition(await landGrants)
-        default:
-          throw Boom.notFound(`Form '${id}' not found`)
-      }
-    } catch (error) {
-      if (error instanceof SyntaxError) {
-        throw new Error('Invalid JSON in form definition file')
-      }
-      throw error
-    }
+    return configureFormDefinition(definition)
   }
+}
+
+export const formsService = async () => {
+  const loader = new GrantsFormLoader()
+
+  // Add a Json form
+  await loader.addForm(
+    'src/server/common/forms/definitions/adding-value.yaml',
+    {
+      ...metadata,
+      id: '95e92559-968d-44ae-8666-2b1ad3dffd31',
+      slug: 'adding-value',
+      title: 'Adding value'
+    }
+  )
+
+  await loader.addForm(
+    'src/server/common/forms/definitions/example-grant.json',
+    {
+      ...metadata,
+      id: '5eeb9f71-44f8-46ed-9412-3d5e2c5ab2bc',
+      slug: 'example-grant',
+      title: 'Example grant'
+    }
+  )
+
+  await loader.addForm(
+    'src/server/common/forms/definitions/find-funding-for-land-or-farms.yaml',
+    {
+      ...metadata,
+      id: '5c67688f-3c61-4839-a6e1-d48b598257f1',
+      slug: 'find-funding-for-land-or-farms',
+      title: 'Find Funding for Land or Farms'
+    }
+  )
+
+  return loader.toFormsService()
 }
