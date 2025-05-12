@@ -3,7 +3,7 @@
 {% from "govuk/components/back-link/macro.njk" import govukBackLink %}
 
 {% block pageTitle %}
-  {{ "Error: " if errors | length }}{{ pageTitle | evaluate }} | {{ serviceName }}
+  {{ "Error: " if errors | length }}{{ pageTitle | evaluate }} {{ serviceName }}
 {% endblock %}
 
 {% block beforeContent %}
