@@ -88,7 +88,7 @@ export default class LandActionsPageController extends QuestionPageController {
             ...newState,
             errors: !actions
               ? ['Please select at least one action and quantity']
-              : errorMessages,
+              : errorMessages.map((m) => m.description),
             areaPrefix: this.areaPrefix,
             availableActions: this.availableActions
           })
