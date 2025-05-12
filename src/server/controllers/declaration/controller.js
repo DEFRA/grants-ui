@@ -1,10 +1,12 @@
 import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
-import { formSubmissionService } from '~/src/server/common/forms/services/submission.js'
 import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/forms-cache.js'
 import {
   storeSlugInContext,
   getConfirmationPath
 } from '~/src/server/common/helpers/form-slug-helper.js'
+import { submitGrantApplication } from '~/src/server/common/services/grant-application.service.js'
+import { transformStateObjectToGasApplication } from '../../common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
+import { transformAnswerKeysToText } from './state-to-gas-answers-mapper.js'
 
 export default class DeclarationPageController extends SummaryPageController {
   /**
@@ -14,6 +16,7 @@ export default class DeclarationPageController extends SummaryPageController {
   constructor(model, pageDef) {
     super(model, pageDef)
     this.viewName = 'declaration-page'
+    this.grantCode = model.def.metadata.gas.grantCode
   }
 
   /**
@@ -61,24 +64,45 @@ export default class DeclarationPageController extends SummaryPageController {
           request.path
         )
 
-        const { result } = await formSubmissionService.submit(
-          request.payload,
-          context.state
+        const identifiers = {
+          clientRef: context.referenceNumber?.toLowerCase(),
+          sbi: 'sbi',
+          frn: 'frn',
+          crn: 'crn',
+          defraId: 'defraId'
+        }
+
+        const stateWithTextAnswers = transformAnswerKeysToText(
+          context.state,
+          this.model.componentDefMap,
+          this.model.listDefMap
         )
 
-        context.referenceNumber = result.referenceNumber
+        const applicationData = transformStateObjectToGasApplication(
+          identifiers,
+          stateWithTextAnswers,
+          (state) => state
+        )
+
+        const result = await submitGrantApplication(
+          this.grantCode,
+          applicationData
+        )
+
         request.logger.debug(
           'DeclarationController: Got reference number:',
-          context.referenceNumber
+          result.clientRef
         )
 
-        // Log submission details if available - this is not needed for the submission but it's useful for debugging
-        if (result.submissionDetails) {
+        // Log submission details if available
+        if (result.clientRef) {
           request.logger.info({
             message: 'Form submission completed',
-            referenceNumber: result.referenceNumber,
-            fieldsSubmitted: result.submissionDetails.fieldsSubmitted,
-            timestamp: result.submissionDetails.timestamp
+            referenceNumber: result.clientRef,
+            numberOfSubmittedFields: context.state
+              ? Object.keys(context.state).length
+              : 0,
+            timestamp: new Date().toISOString()
           })
         }
 

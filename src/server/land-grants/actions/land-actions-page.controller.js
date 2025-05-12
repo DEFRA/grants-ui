@@ -101,7 +101,7 @@ export default class LandActionsPageController extends QuestionPageController {
       }
 
       if (payload.action === 'validate') {
-        const errors = []
+        let errors = []
         if (Object.keys(actionsObj).length === 0) {
           errors.push('Please select at least one action and quantity')
         } else {
@@ -112,7 +112,7 @@ export default class LandActionsPageController extends QuestionPageController {
           )
 
           if (!valid) {
-            errors.push(...errorMessages)
+            errors = errorMessages.map((m) => m.description)
           }
         }
 
