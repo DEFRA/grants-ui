@@ -147,20 +147,6 @@ export const config = convict({
       env: 'ENTRA_INTERNAL_CLIENT_SECRET'
     }
   },
-  consolidatedView: {
-    apiEndpoint: {
-      doc: 'Consolidated View API endpoint',
-      format: String,
-      default: '',
-      env: 'CV_API_ENDPOINT'
-    },
-    authEmail: {
-      doc: 'Consolidated View AuthEmail',
-      format: String,
-      default: '',
-      env: 'CV_API_AUTH_EMAIL'
-    }
-  },
   log: {
     enabled: {
       doc: 'Is logging enabled',
@@ -310,7 +296,9 @@ export const config = convict({
     }
   },
   defraId: defraId.getProperties(),
-  landGrants: landGrants.getProperties()
+  landGrants: /** @type {Schema<LandGrantsConfig>} */ (
+    landGrants.getProperties()
+  )
 })
 
 config.validate({ allowed: 'strict' })
@@ -318,4 +306,5 @@ config.validate({ allowed: 'strict' })
 /**
  * @import { Schema, SchemaObj } from 'convict'
  * @import { RedisConfig } from '~/src/server/common/helpers/redis-client.js'
+ * @import { LandGrantsConfig } from '~/src/config/land-grants.js'
  */

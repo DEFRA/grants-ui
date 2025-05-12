@@ -3,6 +3,12 @@
 import convict from 'convict'
 import 'dotenv/config'
 
+/**
+ * @typedef {object} LandGrantsConfig
+ * @property {string} grantCode
+ * @property {string} grantsServiceApiEndpoint
+ */
+
 const config = convict({
   grantCode: {
     doc: 'GAS Future RPS grant code',
