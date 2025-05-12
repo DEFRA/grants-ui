@@ -13,6 +13,7 @@ Core delivery platform Node.js Frontend Template.
 - [Local Development](#local-development)
   - [Setup](#setup)
   - [Development](#development)
+  - [GAS Integration](#gas-integration)
   - [Production](#production)
   - [Npm scripts](#npm-scripts)
   - [Update dependencies](#update-dependencies)
@@ -97,6 +98,111 @@ To run the application in `development` mode run:
 ```bash
 npm run dev
 ```
+
+### GAS Integration
+
+The Grants Application Service (GAS) is used to store grant definitions that the app submits data against.
+
+Creating a Grant Definition
+A grant definition is created via the GAS backend by making a POST request to the /grants endpoint (see postman folder in the root of the project). This defines the structure and schema of the grant application payload, which the app will later submit.
+
+Example request:
+
+```
+curl --location --request POST 'https://fg-gas-backend.dev.cdp-int.defra.cloud/grants' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+  "code": "adding-value-v4",
+  "questions": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "GrantApplicationPayload",
+    "type": "object",
+    "properties": {
+      "$$__referenceNumber": { "type": "string" },
+      "businessNature": { "type": "string" },
+      "businessLegalStatus": { "type": "string" },
+      "isInEngland": { "type": "boolean" },
+      "planningPermissionStatus": { "type": "string" },
+      "projectStartStatus": { "type": "string" },
+      "isLandBusinessOwned": { "type": "boolean" },
+      "hasFiveYearTenancyAgreement": { "type": "boolean" },
+      "isBuildingSmallerAbattoir": { "type": "boolean" },
+      "isBuildingFruitStorage": { "type": "boolean" },
+      "isProvidingServicesToOtherFarmers": { "type": "boolean" },
+      "eligibleItemsNeeded": {
+        "type": "array",
+        "items": { "type": "string" }
+      },
+      "needsStorageFacilities": { "type": "string" },
+      "estimatedCost": { "type": "number" },
+      "canPayRemainingCosts": { "type": "boolean" },
+      "processedProduceType": { "type": "string" },
+      "valueAdditionMethod": { "type": "string" },
+      "impactType": {
+        "type": "array",
+        "items": { "type": "string" }
+      },
+      "hasMechanisationUsage": { "type": "boolean" },
+      "manualLabourEquivalence": { "type": "string" },
+      "grantApplicantType": { "type": "string" },
+      "agentFirstName": { "type": "string" },
+      "agentLastName": { "type": "string" },
+      "agentBusinessName": { "type": "string" },
+      "agentEmail": { "type": "string", "format": "email" },
+      "agentEmailConfirmation": { "type": "string", "format": "email" },
+      "agentMobile": { "type": "string" },
+      "agentLandline": { "type": "string" },
+      "agentBusinessAddress__addressLine1": { "type": "string" },
+      "agentBusinessAddress__addressLine2": { "type": ["string", "null"] },
+      "agentBusinessAddress__town": { "type": "string" },
+      "agentBusinessAddress__county": { "type": ["string", "null"] },
+      "agentBusinessAddress__postcode": { "type": "string" },
+      "applicantFirstName": { "type": "string" },
+      "applicantLastName": { "type": "string" },
+      "applicantEmail": { "type": "string", "format": "email" },
+      "applicantEmailConfirmation": { "type": "string", "format": "email" },
+      "applicantMobile": { "type": "string" },
+      "applicantLandline": { "type": "string" },
+      "applicantBusinessAddress__addressLine1": { "type": "string" },
+      "applicantBusinessAddress__addressLine2": { "type": ["string", "null"] },
+      "applicantBusinessAddress__town": { "type": "string" }
+      // ... more fields if needed
+    }
+  }
+}'
+```
+
+Example response:
+
+```
+{
+    "code": "adding-value-v4"
+}
+```
+
+#### Using the Grant Definition
+
+Once the grant is created, its code (for example, adding-value-v4) must be added to the relevant configuration file to link it with the frontend flow.
+
+The grant code should be added to:
+
+```
+src/server/common/forms/definitions/adding-value.json
+```
+
+under the following section:
+
+```
+{
+  "metadata": {
+    "gas": {
+      "grantCode": "adding-value-v4"
+    }
+  }
+}
+```
+
+This ensures that when the app submits application data, it targets the correct grant definition in GAS.
 
 ### Production
 
