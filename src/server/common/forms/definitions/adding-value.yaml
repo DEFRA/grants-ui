@@ -1053,7 +1053,7 @@ conditions:
       name: natureOfBusinessNone
       conditions:
         - field:
-            name: natureOfBusinessRadiosField
+            name: businessNature
             type: RadiosField
             display: What is your business?
           operator: is
@@ -1067,7 +1067,7 @@ conditions:
       name: legalStatusNone
       conditions:
         - field:
-            name: legalStatusRadiosField
+            name: businessLegalStatus
             type: RadiosField
             display: What is the legal status of the business?
           operator: is
@@ -1081,7 +1081,7 @@ conditions:
       name: plannedProjectNo
       conditions:
         - field:
-            name: countryYesNoField
+            name: isInEngland
             type: YesNoField
             display: Is the planned project in England?
           operator: is
