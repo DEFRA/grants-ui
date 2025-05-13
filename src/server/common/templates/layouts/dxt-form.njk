@@ -3,7 +3,33 @@
 {% from "govuk/components/back-link/macro.njk" import govukBackLink %}
 
 {% block pageTitle %}
-  {{ "Error: " if errors | length }}{{ pageTitle | evaluate }} {{ serviceName }}
+  {{ "Error: " if errors | length }}{{ pageTitle | evaluate }} | {{ name | default(serviceName) }}
+{% endblock %}
+
+{% block header %}
+  {{ govukHeader({
+    homepageUrl: "https://www.gov.uk/",
+    classes: "govuk-header--full-width-border",
+    containerClasses: "govuk-width-container",
+    useTudorCrown: true
+  }) }}
+
+  {{ govukServiceNavigation({ serviceName: name | default(serviceName) , serviceUrl: serviceUrl }) }}
+
+  {{ defraAccountBar({
+    businessName: "",
+    sbi: "1234567890",
+    userName: ""
+  }) }}
+
+  <div class="govuk-width-container">
+    {{ govukPhaseBanner({
+      tag: {
+        text: "Beta"
+      },
+      text: 'This is a new service - your feedback will help us to improve it.'
+    }) }}
+  </div>
 {% endblock %}
 
 {% block beforeContent %}
