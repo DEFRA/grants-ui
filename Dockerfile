@@ -46,6 +46,7 @@ LABEL uk.gov.defra.ffc.parent-image=defradigital/node:${PARENT_VERSION}
 COPY --from=production_build /home/node/package*.json ./
 COPY --from=production_build /home/node/.server ./.server/
 COPY --from=production_build /home/node/.public/ ./.public/
+COPY --from=production_build /home/node/src/server/common/forms ./src/server/common/forms
 
 RUN npm ci --omit=dev  --ignore-scripts
 
