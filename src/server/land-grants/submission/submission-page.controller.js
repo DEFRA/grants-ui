@@ -13,7 +13,7 @@ export default class SubmissionPageController extends SummaryPageController {
   constructor(model, pageDef) {
     super(model, pageDef)
     this.viewName = 'submission'
-    this.grantCode = config.get('gas.frpsGrantCode')
+    this.grantCode = config.get('landGrants.grantCode')
   }
 
   /**

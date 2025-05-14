@@ -18,7 +18,7 @@ jest.mock('~/src/server/common/helpers/forms-cache/forms-cache.js', () => ({
   })
 }))
 
-const code = config.get('gas.frpsGrantCode')
+const code = config.get('landGrants.grantCode')
 
 describe('SubmissionPageController', () => {
   let controller
