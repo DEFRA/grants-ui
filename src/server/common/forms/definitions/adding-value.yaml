@@ -3,7 +3,7 @@ name: Adding value
 metadata:
   referenceNumberPrefix: AV
   gas:
-    grantCode: adding-value-v3
+    grantCode: adding-value
     submissionSchema:
       '$schema': https://json-schema.org/draft/2020-12/schema
       title: GrantApplicationPayload
