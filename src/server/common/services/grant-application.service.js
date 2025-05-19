@@ -1,6 +1,7 @@
 import { config } from '~/src/config/config.js'
 import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
 
+const DEFAULT_STATUS_CODE = 500
 const GAS_API_ENDPOINT = config.get('gas.apiEndpoint')
 const logger = createLogger()
 
@@ -75,7 +76,7 @@ async function makeGasApiRequest({
 
     throw new GrantApplicationServiceApiError(
       'Failed to process GAS API request: ' + error.message,
-      error.status || 500,
+      error.status || DEFAULT_STATUS_CODE,
       error.responseBody || error.message,
       grantCode
     )
