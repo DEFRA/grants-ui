@@ -56,7 +56,7 @@ export const formsService = async () => {
   )
 
   await loader.addForm(
-    'src/server/common/forms/definitions/example-grant.json',
+    'src/server/common/forms/definitions/example-grant.yaml',
     {
       ...metadata,
       id: '5eeb9f71-44f8-46ed-9412-3d5e2c5ab2bc',
