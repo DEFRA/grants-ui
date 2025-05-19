@@ -66,7 +66,7 @@ function getBellOptions(oidcConfig) {
     providerParams: function (request) {
       const params = {
         serviceId: config.get('defraId.serviceId')
-        // p: config.get('defraId.policy'), // TODO - This doesn't work with cdp stub, we need to figure out if we can use it on a real environment
+        // p: config.get('defraId.policy') // TODO - This doesn't work with cdp stub, we need to figure out if we can use it on a real environment
         // response_mode: 'query'
       }
 

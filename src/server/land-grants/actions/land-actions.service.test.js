@@ -5,7 +5,6 @@ import {
   validateLandActions
 } from '~/src/server/land-grants/actions/land-actions.service.js'
 
-const landGrantsApi = config.get('landGrants.grantsServiceApiEndpoint')
 const gasApi = config.get('gas.apiEndpoint')
 const frpsGrantCode = config.get('landGrants.grantCode')
 
@@ -56,8 +55,10 @@ describe('fetchLandSheetDetails', () => {
     const result = await fetchLandSheetDetails(parcelId, sheetId)
 
     expect(mockFetch).toHaveBeenCalledWith(
-      `${landGrantsApi}/parcels/SX0679-9238`,
-      { method: 'GET' }
+      `${gasApi}/grants/${frpsGrantCode}/actions/get-land-parcel-data/invoke?parcelId=${sheetId}-${parcelId}`,
+      expect.objectContaining({
+        method: 'GET'
+      })
     )
 
     expect(result).toEqual(mockSuccessResponse)
@@ -136,14 +137,11 @@ describe('calculateApplicationPayment', () => {
     )
 
     expect(mockFetch).toHaveBeenCalledWith(
-      `${landGrantsApi}/payments/calculate`,
-      {
+      `${gasApi}/grants/${frpsGrantCode}/actions/calculate-payment/invoke`,
+      expect.objectContaining({
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
         body: JSON.stringify(expectedPayload)
-      }
+      })
     )
 
     expect(result).toEqual({
@@ -181,12 +179,13 @@ describe('calculateApplicationPayment', () => {
     mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 400,
-      statusText: 'Bad Request'
+      statusText: 'Bad Request',
+      text: () => Promise.resolve('Bad Request')
     })
 
     await expect(
       calculateApplicationPayment(sheetId, parcelId, actionsObj)
-    ).rejects.toThrow('Bad Request')
+    ).rejects.toThrow('400 Bad Request')
 
     expect(mockFetch).toHaveBeenCalledTimes(1)
   })
@@ -222,14 +221,14 @@ describe('calculateApplicationPayment', () => {
     }
 
     expect(mockFetch).toHaveBeenCalledWith(
-      `${landGrantsApi}/payments/calculate`,
-      {
+      `${gasApi}/grants/${frpsGrantCode}/actions/calculate-payment/invoke`,
+      expect.objectContaining({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(expectedEmptyPayload)
-      }
+      })
     )
   })
 
