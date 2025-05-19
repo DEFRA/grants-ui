@@ -25,7 +25,9 @@ export function loadSubmissionSchemaValidators() {
     const grantCode = metadata?.metadata?.gas?.grantCode
     const schemaPath = metadata?.metadata?.gas?.submissionSchemaPath
 
-    if (!grantCode || !schemaPath) continue
+    if (!grantCode || !schemaPath) {
+      continue
+    }
 
     const fullSchemaPath = path.resolve(
       SCHEMAS_BASE_PATH,
@@ -47,8 +49,9 @@ export function loadSubmissionSchemaValidators() {
  */
 export function validateApplicationAnswers(payload, grantCode) {
   const validate = validators.get(grantCode)
-  if (!validate)
+  if (!validate) {
     throw new Error(`No validator found for grantCode: ${grantCode}`)
+  }
   const valid = validate(payload)
   if (!valid) {
     return { valid: false, errors: validate.errors }
