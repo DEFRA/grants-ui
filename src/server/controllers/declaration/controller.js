@@ -73,10 +73,11 @@ export default class DeclarationPageController extends SummaryPageController {
         }
 
         const stateWithTextAnswers = transformAnswerKeysToText(
-          context.state,
+          context.relevantState,
           this.model.componentDefMap,
           this.model.listDefMap
         )
+        stateWithTextAnswers.referenceNumber = context.referenceNumber
 
         const applicationData = transformStateObjectToGasApplication(
           identifiers,
@@ -99,8 +100,8 @@ export default class DeclarationPageController extends SummaryPageController {
           request.logger.info({
             message: 'Form submission completed',
             referenceNumber: result.clientRef,
-            numberOfSubmittedFields: context.state
-              ? Object.keys(context.state).length
+            numberOfSubmittedFields: context.relevantState
+              ? Object.keys(context.relevantState).length
               : 0,
             timestamp: new Date().toISOString()
           })

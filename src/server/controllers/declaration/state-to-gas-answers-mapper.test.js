@@ -72,7 +72,7 @@ describe('transformAnswerKeysToText', () => {
 describe('schema validation', () => {
   describe('output always conforms to GASPayload schema structure', () => {
     const validPayload = {
-      $$__referenceNumber: 'AV-108-333',
+      referenceNumber: 'AV-108-333',
       natureOfBusinessRadiosField:
         'A grower or producer of agricultural or horticultural produce',
       legalStatusRadiosField: 'Sole trader',

@@ -9,7 +9,7 @@ metadata:
       title: GrantApplicationPayload
       type: object
       properties:
-        '$$__referenceNumber':
+        'referenceNumber':
           type: string
         businessNature:
           type: string
@@ -116,7 +116,7 @@ metadata:
         applicantProjectPostcode:
           type: string
       required:
-        - '$$__referenceNumber'
+        - 'referenceNumber'
         - businessNature
         - businessLegalStatus
         - isInEngland
