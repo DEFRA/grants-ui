@@ -60,10 +60,10 @@ const createHapiServer = () => {
           abortEarly: false
         }
       },
-      auth: {
-        mode: 'try',
-        strategy: 'session'
-      },
+      // auth: {
+      //   mode: 'try',
+      //   strategy: 'session'
+      // },
       files: {
         relativeTo: path.resolve(config.get('root'), '.public')
       },
