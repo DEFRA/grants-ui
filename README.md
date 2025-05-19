@@ -118,7 +118,7 @@ curl --location --request POST 'https://fg-gas-backend.dev.cdp-int.defra.cloud/g
     "title": "GrantApplicationPayload",
     "type": "object",
     "properties": {
-      "$$__referenceNumber": { "type": "string" },
+      "referenceNumber": { "type": "string" },
       "businessNature": { "type": "string" },
       "businessLegalStatus": { "type": "string" },
       "isInEngland": { "type": "boolean" },

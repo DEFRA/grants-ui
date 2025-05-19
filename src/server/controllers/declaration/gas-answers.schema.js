@@ -5,7 +5,7 @@ import Joi from 'joi'
  */
 
 const applicationAnswersSchema = Joi.object({
-  $$__referenceNumber: Joi.string(),
+  referenceNumber: Joi.string(),
 
   natureOfBusinessRadiosField: Joi.string(),
   legalStatusRadiosField: Joi.string(),

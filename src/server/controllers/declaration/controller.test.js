@@ -84,7 +84,7 @@ describe('DeclarationPageController', () => {
     }
 
     mockContext = {
-      state: {
+      relevantState: {
         referenceNumber: 'REF123',
         field1: 'value1'
       },
@@ -229,7 +229,7 @@ describe('DeclarationPageController', () => {
         'DeclarationController'
       )
       expect(transformAnswerKeysToText).toHaveBeenCalledWith(
-        mockContext.state,
+        mockContext.relevantState,
         mockModel.componentDefMap,
         mockModel.listDefMap
       )
@@ -242,7 +242,7 @@ describe('DeclarationPageController', () => {
           crn: 'crn',
           defraId: 'defraId'
         },
-        { transformedState: true },
+        { transformedState: true, referenceNumber: 'REF123' },
         expect.any(Function)
       )
 
@@ -287,7 +287,7 @@ describe('DeclarationPageController', () => {
       expect(mockRequest.logger.info).toHaveBeenCalledWith({
         message: 'Form submission completed',
         referenceNumber: 'ref123',
-        numberOfSubmittedFields: Object.keys(mockContext.state).length,
+        numberOfSubmittedFields: Object.keys(mockContext.relevantState).length,
         timestamp: expect.any(String)
       })
     })
