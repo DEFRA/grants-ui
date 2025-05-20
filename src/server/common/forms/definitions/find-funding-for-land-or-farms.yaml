@@ -1,4 +1,8 @@
 name: Find Funding for Land or Farms
+metadata:
+  submission:
+    grantCode: frps-private-beta
+    submissionSchemaPath: ./schemas/find-funding-for-land-or-farms.schema.json
 pages:
   - title: Start page
     path: /start

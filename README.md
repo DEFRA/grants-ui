@@ -218,7 +218,7 @@ At application startup, the app scans the schemas directory and compiles each sc
 
 This map is used at runtime to validate payloads prior to submission using:
 
-`validateApplicationAnswers(payload, grantCode)`
+`validateSubmissionAnswers(payload, grantCode)`
 
 This ensures each grant submission matches the expected schema defined in GAS and prevents invalid data from being submitted.
 
