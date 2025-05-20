@@ -35,6 +35,7 @@ import SubmissionPageController from '~/src/server/land-grants/submission/submis
 import { formatCurrency } from '../config/nunjucks/filters/format-currency.js'
 import { router } from './router.js'
 import { formSubmissionService } from './common/forms/services/submission.js'
+import { loadSubmissionSchemaValidators } from './common/forms/gas/gas-answers.schema.js'
 
 const SESSION_CACHE_NAME = 'session.cache.name'
 
@@ -150,6 +151,7 @@ export async function createServer() {
 
   await registerPlugins(server)
   await registerFormsPlugin(server)
+  loadSubmissionSchemaValidators()
 
   server.app.cache = server.cache({
     cache: config.get(SESSION_CACHE_NAME),

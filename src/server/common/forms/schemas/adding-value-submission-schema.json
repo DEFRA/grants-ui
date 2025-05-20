@@ -1,0 +1,89 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "GrantApplicationPayload",
+  "type": "object",
+  "properties": {
+    "referenceNumber": { "type": "string" },
+    "businessNature": { "type": "string" },
+    "businessLegalStatus": { "type": "string" },
+    "isInEngland": { "type": "boolean" },
+    "planningPermissionStatus": { "type": "string" },
+    "projectStartStatus": { "type": "string" },
+    "isLandBusinessOwned": { "type": "boolean" },
+    "hasFiveYearTenancyAgreement": { "type": "boolean" },
+    "isBuildingSmallerAbattoir": { "type": "boolean" },
+    "isBuildingFruitStorage": { "type": "boolean" },
+    "isProvidingServicesToOtherFarmers": { "type": "boolean" },
+    "eligibleItemsNeeded": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "needsStorageFacilities": { "type": "string" },
+    "estimatedCost": { "type": "number" },
+    "canPayRemainingCosts": { "type": "boolean" },
+    "processedProduceType": { "type": "string" },
+    "valueAdditionMethod": { "type": "string" },
+    "impactType": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "hasMechanisationUsage": { "type": "boolean" },
+    "manualLabourEquivalence": { "type": "string" },
+    "grantApplicantType": { "type": "string" },
+    "agentFirstName": { "type": "string" },
+    "agentLastName": { "type": "string" },
+    "agentBusinessName": { "type": "string" },
+    "agentEmail": { "type": "string", "format": "email" },
+    "agentEmailConfirmation": { "type": "string", "format": "email" },
+    "agentMobile": { "type": "string" },
+    "agentLandline": { "type": "string" },
+    "agentBusinessAddress__addressLine1": { "type": "string" },
+    "agentBusinessAddress__addressLine2": {
+      "type": ["string", "null"]
+    },
+    "agentBusinessAddress__town": { "type": "string" },
+    "agentBusinessAddress__county": { "type": ["string", "null"] },
+    "agentBusinessAddress__postcode": { "type": "string" },
+    "applicantFirstName": { "type": "string" },
+    "applicantLastName": { "type": "string" },
+    "applicantEmail": { "type": "string", "format": "email" },
+    "applicantEmailConfirmation": {
+      "type": "string",
+      "format": "email"
+    },
+    "applicantMobile": { "type": "string" },
+    "applicantLandline": { "type": "string" },
+    "applicantBusinessAddress__addressLine1": { "type": "string" },
+    "applicantBusinessAddress__addressLine2": {
+      "type": ["string", "null"]
+    },
+    "applicantBusinessAddress__town": { "type": "string" },
+    "applicantBusinessAddress__county": { "type": ["string", "null"] },
+    "applicantBusinessAddress__postcode": { "type": "string" },
+    "applicantProjectPostcode": { "type": "string" }
+  },
+  "required": [
+    "referenceNumber",
+    "businessNature",
+    "businessLegalStatus",
+    "isInEngland",
+    "planningPermissionStatus",
+    "projectStartStatus",
+    "isLandBusinessOwned",
+    "isBuildingSmallerAbattoir",
+    "estimatedCost",
+    "canPayRemainingCosts",
+    "hasMechanisationUsage",
+    "grantApplicantType",
+    "applicantFirstName",
+    "applicantLastName",
+    "applicantEmail",
+    "applicantEmailConfirmation",
+    "applicantMobile",
+    "applicantLandline",
+    "applicantBusinessAddress__addressLine1",
+    "applicantBusinessAddress__town",
+    "applicantBusinessAddress__postcode",
+    "applicantProjectPostcode"
+  ]
+}
