@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "FRPS Land Grants Schema",
+  "type": "object",
+  "properties": {
+    "scheme": {
+      "type": "string",
+      "description": "The funding scheme identifier"
+    },
+    "year": {
+      "type": "integer",
+      "description": "The year of the grant period"
+    },
+    "agreementName": {
+      "type": "string",
+      "description": "The name of the agreement"
+    },
+    "hasCheckedLandIsUpToDate": {
+      "type": "boolean",
+      "description": "Indicates whether the land information has been verified as up to date"
+    },
+    "actionApplications": {
+      "type": "array",
+      "description": "List of actions applied for under this submission",
+      "items": {
+        "type": "object",
+        "properties": {
+          "parcelId": {
+            "type": "string",
+            "description": "The identifier for the land parcel"
+          },
+          "sheetId": {
+            "type": "string",
+            "description": "The sheet identifier for the land parcel"
+          },
+          "code": {
+            "type": "string",
+            "description": "The code identifying the type of action"
+          },
+          "appliedFor": {
+            "type": "object",
+            "description": "Details of the application quantity",
+            "properties": {
+              "unit": {
+                "type": "string",
+                "description": "The unit of measurement (e.g., hectares, sqm)"
+              },
+              "quantity": {
+                "type": "number",
+                "description": "The quantity applied for in the specified unit"
+              }
+            },
+            "required": ["unit", "quantity"]
+          }
+        },
+        "required": ["parcelId", "sheetId", "code", "appliedFor"]
+      }
+    }
+  },
+  "required": [
+    "scheme",
+    "year",
+    "agreementName",
+    "hasCheckedLandIsUpToDate",
+    "actionApplications"
+  ]
+}

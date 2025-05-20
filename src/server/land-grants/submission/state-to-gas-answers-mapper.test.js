@@ -1,5 +1,11 @@
+import { config } from '~/src/config/config.js'
 import { stateToLandGrantsGasAnswers } from '~/src/server/land-grants/submission/state-to-gas-answers-mapper.js'
-import { validateGasAnswersForLandGrants } from './gas-answers.schema.js'
+import {
+  loadSubmissionSchemaValidators,
+  validateSubmissionAnswers
+} from '../../common/forms/services/submission.js'
+
+const frpsGrantCode = config.get('landGrants.grantCode')
 
 describe('stateToLandGrantsGasAnswers', () => {
   it('should transform a complete object correctly', () => {
@@ -565,6 +571,10 @@ describe('stateToLandGrantsGasAnswers', () => {
 })
 
 describe('schema validation', () => {
+  beforeAll(() => {
+    loadSubmissionSchemaValidators()
+  })
+
   it('output always conforms to GASPayload schema structure', () => {
     const stateObjectTestCases = [
       // Complete object being set
@@ -573,6 +583,7 @@ describe('schema validation', () => {
         frn: 'frn-1234',
         crn: 'crn-1234',
         defraId: 'defra-id-1234',
+        agreementName: "Joe's farm funding 2025",
         scheme: 'SFI',
         year: 2025,
         hasCheckedLandIsUpToDate: true,
@@ -586,6 +597,8 @@ describe('schema validation', () => {
       },
       // Minimal object with actions
       {
+        agreementName: "Joe's farm funding 2025",
+        hasCheckedLandIsUpToDate: true,
         landParcel: 'SX0679-9238',
         actionsObj: {
           CSAM1: {
@@ -593,37 +606,15 @@ describe('schema validation', () => {
             unit: 'ha'
           }
         }
-      },
-      // Multiple actions with different formats
-      {
-        landParcel: 'SX0679-9238',
-        actionsObj: {
-          CSAM1: {
-            value: '44',
-            unit: 'ha'
-          },
-          CSAM2: {
-            value: 'not-a-number',
-            unit: 'm2'
-          },
-          CSAM3: {}
-        }
-      },
-      // Only basic props
-      {
-        sbi: 'sbi-1234',
-        frn: 'frn-1234'
-      },
-      // Empty object
-      {}
+      }
     ]
 
     stateObjectTestCases.forEach((testCase) => {
       const result = stateToLandGrantsGasAnswers(testCase)
-      const { error } = validateGasAnswersForLandGrants(result)
+      const { valid } = validateSubmissionAnswers(result, frpsGrantCode)
 
       // We check here that the output always adheres to GasPayload expectations in terms of format
-      expect(error).toBeUndefined()
+      expect(valid).toBe(true)
     })
   })
 })
