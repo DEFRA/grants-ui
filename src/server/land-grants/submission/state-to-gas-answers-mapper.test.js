@@ -1,9 +1,9 @@
 import { config } from '~/src/config/config.js'
-import { stateToLandGrantsGasAnswers } from '~/src/server/land-grants/submission/state-to-gas-answers-mapper.js'
 import {
   loadSubmissionSchemaValidators,
   validateSubmissionAnswers
-} from '../../common/forms/services/submission.js'
+} from '~/src/server/common/forms/services/submission.js'
+import { stateToLandGrantsGasAnswers } from '~/src/server/land-grants/submission/state-to-gas-answers-mapper.js'
 
 const frpsGrantCode = config.get('landGrants.grantCode')
 
