@@ -1,14 +1,19 @@
 import fs from 'fs'
 import path from 'path'
-import Ajv from 'ajv'
+import Ajv2020 from 'ajv/dist/2020.js'
 import addFormats from 'ajv-formats'
 import YAML from 'yaml'
 
 const SCHEMAS_BASE_PATH = './src/server/common/forms/schemas'
 const DEFINITIONS_BASE_PATH = './src/server/common/forms/definitions'
 
-const ajv = new Ajv({ strict: false, allErrors: true })
-addFormats(ajv) // adds 'email', 'uri', 'date', etc.
+const ajv = new Ajv2020({
+  strict: true,
+  allErrors: true,
+  removeAdditional: 'all',
+  useDefaults: true
+})
+addFormats(ajv, ['date-time', 'date', 'time', 'duration', 'email', 'uri'])
 
 const validators = new Map()
 
