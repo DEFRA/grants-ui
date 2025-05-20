@@ -118,7 +118,7 @@ curl --location --request POST 'https://fg-gas-backend.dev.cdp-int.defra.cloud/g
     "title": "GrantApplicationPayload",
     "type": "object",
     "properties": {
-      "$$__referenceNumber": { "type": "string" },
+      "referenceNumber": { "type": "string" },
       "businessNature": { "type": "string" },
       "businessLegalStatus": { "type": "string" },
       "isInEngland": { "type": "boolean" },
@@ -203,6 +203,24 @@ under the following section:
 ```
 
 This ensures that when the app submits application data, it targets the correct grant definition in GAS.
+
+#### Submission Schema Validators
+
+Each GAS grant also has an associated schema stored locally in:
+
+`src/server/common/forms/schemas/`
+
+Each file should be named with the grant code (e.g., adding-value-v4.json) and contain the JSON Schema that validates the application payload for that grant.
+
+At application startup, the app scans the schemas directory and compiles each schema into a JSON Schema validator using Ajv. These validators are cached in memory in a map of the form:
+
+`Map<string, ValidateFunction>`
+
+This map is used at runtime to validate payloads prior to submission using:
+
+`validateApplicationAnswers(payload, grantCode)`
+
+This ensures each grant submission matches the expected schema defined in GAS and prevents invalid data from being submitted.
 
 ### Production
 
