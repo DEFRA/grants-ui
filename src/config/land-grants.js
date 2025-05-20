@@ -13,7 +13,7 @@ const landGrants = convict({
   grantCode: {
     doc: 'GAS Future RPS grant code',
     format: String,
-    default: '',
+    default: 'frps-private-beta',
     env: 'GAS_FRPS_GRANT_CODE'
   },
   grantsServiceApiEndpoint: {

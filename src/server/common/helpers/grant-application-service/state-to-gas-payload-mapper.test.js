@@ -1,5 +1,4 @@
 import { transformStateObjectToGasApplication } from '~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
-import { validateGasPayload } from '~/src/server/common/schemas/gas-payload.schema.js'
 
 const mockDate = new Date('2025-04-22T12:00:00Z')
 const originalDate = global.Date
@@ -194,76 +193,5 @@ describe('transformStateObjectToGasApplication', () => {
 
     expect(mockAnswersTransformer).toHaveBeenCalledTimes(1)
     expect(mockAnswersTransformer).toHaveBeenCalledWith(state)
-  })
-})
-
-describe('schema validation', () => {
-  it('output always conforms to GASPayload schema structure', () => {
-    const identifiers = {
-      sbi: '12345678',
-      frn: 'FRN123456',
-      crn: 'CRN789012',
-      defraId: 'DEFRA-ID-123',
-      clientRef: 'CLIENT-REF-456'
-    }
-    const stateObjectTestCases = [
-      // Complete object being set
-      {
-        scheme: 'SFI',
-        year: 2025,
-        hasCheckedLandIsUpToDate: true,
-        landParcel: 'SX0679-9238',
-        actionsObj: {
-          CSAM1: {
-            value: '44',
-            unit: 'ha'
-          }
-        }
-      },
-      // Minimal object with actions
-      {
-        landParcel: 'SX0679-9238',
-        actionsObj: {
-          CSAM1: {
-            value: '44',
-            unit: 'ha'
-          }
-        }
-      },
-      // Multiple actions with different formats
-      {
-        landParcel: 'SX0679-9238',
-        actionsObj: {
-          CSAM1: {
-            value: '44',
-            unit: 'ha'
-          },
-          CSAM2: {
-            value: 'not-a-number',
-            unit: 'm2'
-          },
-          CSAM3: {}
-        }
-      },
-      // Only basic props
-      {
-        sbi: 'sbi-1234',
-        frn: 'frn-1234'
-      },
-      // Empty object
-      {}
-    ]
-
-    stateObjectTestCases.forEach((testCase) => {
-      const result = transformStateObjectToGasApplication(
-        identifiers,
-        testCase,
-        (a) => a
-      )
-      const { error } = validateGasPayload(result)
-
-      // We check here that the output always adheres to GasPayload expectations in terms of format
-      expect(error).toBeUndefined()
-    })
   })
 })

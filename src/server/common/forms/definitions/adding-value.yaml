@@ -2,9 +2,9 @@ engine: V2
 name: Adding value
 metadata:
   referenceNumberPrefix: AV
-  gas:
+  submission:
     grantCode: adding-value
-    submissionSchemaPath: ./schemas/adding-value-submission-schema.json
+    submissionSchemaPath: ./schemas/adding-value-submission.schema.json
 pages:
   - title: Check if you can apply for a Farming Transformation Fund Adding Value Grant
     path: '/start'
