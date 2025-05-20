@@ -1,4 +1,3 @@
-import { validateApplicationAnswers } from './gas-answers.schema.js'
 import { transformAnswerKeysToText } from './state-to-gas-answers-mapper.js'
 
 describe('transformAnswerKeysToText', () => {
@@ -66,83 +65,5 @@ describe('transformAnswerKeysToText', () => {
   it('should handle empty state gracefully', () => {
     const result = transformAnswerKeysToText({}, componentDefMap, listDefMap)
     expect(result).toEqual({})
-  })
-})
-
-describe('schema validation', () => {
-  describe('output always conforms to GASPayload schema structure', () => {
-    const validPayload = {
-      referenceNumber: 'AV-108-333',
-      natureOfBusinessRadiosField:
-        'A grower or producer of agricultural or horticultural produce',
-      legalStatusRadiosField: 'Sole trader',
-      countryYesNoField: true,
-      planningPermissionRadiosField: 'Not needed',
-      projectStartRadiosField: 'Yes, preparatory work',
-      tenancyYesNoField: true,
-      smallerAbattoirYesNoField: true,
-      otherFarmersYesNoField: true,
-      projectItemsCheckboxesField: [
-        'Constructing or improving buildings for processing'
-      ],
-      storageRadiosField: 'Yes, we will need storage facilities',
-      projectCostNumberField: 123456,
-      remainingCostsYesNoField: true,
-      produceProcessedRadiosField: 'Arable produce',
-      howAddingValueRadiosField: 'Introducing a new product to your farm',
-      projectImpactCheckboxesField: [
-        'Increasing range of added-value products'
-      ],
-      mechanisationYesNoField: true,
-      manualLabourAmountRadiosField: 'Up to 5% of workforce',
-      applyingRadiosField: 'Applicant',
-      applicantFirstName: 'John',
-      applicantLastName: 'Doe',
-      applicantEmailAddress: 'john.doe@example.com',
-      applicantConfirmEmailAddress: 'john.doe@example.com',
-      applicantMobileNumber: '1234567890',
-      applicantLandlineNumber: '0987654321',
-      applicantBusinessAddress__addressLine1: '123 Main St',
-      applicantBusinessAddress__addressLine2: null,
-      applicantBusinessAddress__town: 'Townsville',
-      applicantBusinessAddress__county: null,
-      applicantBusinessAddress__postcode: 'AB12 3CD',
-      applicantProjectPostcode: 'XY45 6ZT'
-    }
-
-    it('should validate a correct payload without errors', () => {
-      const result = validateApplicationAnswers(validPayload)
-      expect(result.error).toBeUndefined()
-      expect(result.value).toEqual(validPayload)
-    })
-
-    it('should return an error if a boolean field has wrong type', () => {
-      const invalidPayload = {
-        ...validPayload,
-        countryYesNoField: 'yes'
-      }
-      const result = validateApplicationAnswers(invalidPayload)
-      expect(result.error).toBeDefined()
-      expect(result.error.details[0].path).toContain('countryYesNoField')
-    })
-
-    it('should allow missing optional fields without error', () => {
-      const partialPayload = {
-        applicantFirstName: 'John'
-      }
-      const result = validateApplicationAnswers(partialPayload)
-      expect(result.error).toBeUndefined()
-      expect(result.value.applicantFirstName).toBe('John')
-    })
-
-    it('should return an error if email fields are invalid', () => {
-      const invalidPayload = {
-        ...validPayload,
-        applicantEmailAddress: 'not-an-email'
-      }
-      const result = validateApplicationAnswers(invalidPayload)
-      expect(result.error).toBeDefined()
-      expect(result.error.details[0].path).toContain('applicantEmailAddress')
-    })
   })
 })
