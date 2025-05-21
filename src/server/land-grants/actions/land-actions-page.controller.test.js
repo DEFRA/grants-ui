@@ -182,7 +182,7 @@ describe('LandActionsPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'land-actions',
         expect.objectContaining({
-          availableActions
+          availableActions: []
         })
       )
       expect(mockRequest.logger.error).toHaveBeenCalled()
