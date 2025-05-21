@@ -54,13 +54,12 @@ export default class LandParcelPageController extends QuestionPageController {
      */
     const fn = async (request, context, h) => {
       const { landParcel = '' } = context.state || {}
-      const sbi = 117235001
-      const crn = 1100598138
+      const sbi = 106284736
       const { viewName } = this
       const baseViewModel = super.getViewModel(request, context)
 
       try {
-        const response = await fetchParcelDataForBusiness(sbi, crn)
+        const response = await fetchParcelDataForBusiness(sbi)
         this.business = response.data?.business
         const viewModel = {
           ...baseViewModel,
@@ -76,8 +75,7 @@ export default class LandParcelPageController extends QuestionPageController {
             {
               err: error,
               statusCode: error.statusCode,
-              sbi,
-              crn
+              sbi
             },
             'Consolidated View API error when fetching parcel data'
           )
@@ -85,8 +83,7 @@ export default class LandParcelPageController extends QuestionPageController {
           logger.error(
             {
               err: error,
-              sbi,
-              crn
+              sbi
             },
             'Unexpected error when fetching parcel data'
           )
