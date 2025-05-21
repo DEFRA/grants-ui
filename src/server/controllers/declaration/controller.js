@@ -16,7 +16,7 @@ export default class DeclarationPageController extends SummaryPageController {
   constructor(model, pageDef) {
     super(model, pageDef)
     this.viewName = 'declaration-page'
-    this.grantCode = model.def.metadata.gas.grantCode
+    this.grantCode = model.def.metadata.submission.grantCode
   }
 
   /**
