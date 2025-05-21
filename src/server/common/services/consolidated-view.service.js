@@ -28,25 +28,23 @@ const logger = createLogger()
  */
 
 class ConsolidatedViewApiError extends Error {
-  constructor(message, statusCode, responseBody, sbi, crn) {
+  constructor(message, statusCode, responseBody, sbi) {
     super(message)
     this.name = 'ConsolidatedViewApiError'
     this.status = statusCode
     this.responseBody = responseBody
     this.sbi = sbi
-    this.crn = crn
   }
 }
 
 /**
  * Fetches business details from Consolidated View
  * @param {number} sbi - Standard Business Identifier
- * @param {number} crn - Customer Reference Number
  * @returns {Promise} - Promise that resolves to the business details
  * @throws {ConsolidatedViewApiError} - If the API request fails
  * @throws {Error} - For other unexpected errors
  */
-export async function fetchParcelDataForBusiness(sbi, crn) {
+export async function fetchParcelDataForBusiness(sbi) {
   try {
     const now = new Date().toISOString()
     const query = `
@@ -60,11 +58,6 @@ export async function fetchParcelDataForBusiness(sbi, crn) {
           sheetId
           area
         }
-      }
-      customer(crn: "${crn}") {
-          firstName
-          lastName
-          role
       }
     }
     }`
@@ -88,8 +81,7 @@ export async function fetchParcelDataForBusiness(sbi, crn) {
         `Failed to fetch business data: ${response.status} ${response.statusText}`,
         response.status,
         errorText,
-        sbi,
-        crn
+        sbi
       )
     }
 
@@ -103,8 +95,7 @@ export async function fetchParcelDataForBusiness(sbi, crn) {
       'Failed to fetch business data: ' + error.message,
       error.status,
       error.message,
-      sbi,
-      crn
+      sbi
     )
   }
 }
