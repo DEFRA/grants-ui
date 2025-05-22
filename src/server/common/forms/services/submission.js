@@ -50,7 +50,7 @@ export function loadSubmissionSchemaValidators() {
  * Only validates types of properties that are present, doesn't require any fields
  * @param {object} payload - The object to validate
  * @param {string} grantCode - The object to validate
- * @returns {object} - Joi validation result
+ * @returns {object} - Validation result
  */
 export function validateSubmissionAnswers(payload, grantCode) {
   const validate = validators.get(grantCode)
