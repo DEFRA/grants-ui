@@ -47,7 +47,7 @@ describe('DeclarationPageController', () => {
     mockModel = {
       def: {
         metadata: {
-          gas: {
+          submission: {
             grantCode: 'adding-value'
           }
         }
