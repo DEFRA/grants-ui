@@ -172,6 +172,7 @@ export default class LandActionsPageController extends QuestionPageController {
           })
         }
       } catch (error) {
+        this.availableActions = []
         request.logger.error(
           error,
           `Failed to fetch land parcel data for id ${sheetId}-${parcelId}`

@@ -13,7 +13,6 @@ global.fetch = mockFetch
 
 describe('fetchParcelDataForBusiness', () => {
   const mockSbi = 123456789
-  const mockCrn = 987654321
   const mockToken = 'mock-token-123'
 
   /**
@@ -45,7 +44,7 @@ describe('fetchParcelDataForBusiness', () => {
       json: () => Promise.resolve(mockSuccessResponse)
     })
 
-    const result = await fetchParcelDataForBusiness(mockSbi, mockCrn)
+    const result = await fetchParcelDataForBusiness(mockSbi)
 
     expect(mockFetch).toHaveBeenCalledTimes(1)
     expect(result).toEqual(mockSuccessResponse)
@@ -63,7 +62,7 @@ describe('fetchParcelDataForBusiness', () => {
       text: () => Promise.resolve(errorText)
     })
 
-    await expect(fetchParcelDataForBusiness(mockSbi, mockCrn)).rejects.toThrow(
+    await expect(fetchParcelDataForBusiness(mockSbi)).rejects.toThrow(
       'Failed to fetch business data: 404 Not Found'
     )
     expect(mockFetch).toHaveBeenCalledTimes(1)
@@ -78,9 +77,7 @@ describe('fetchParcelDataForBusiness', () => {
       text: () => Promise.resolve(errorText)
     })
 
-    const error = await fetchParcelDataForBusiness(mockSbi, mockCrn).catch(
-      (e) => e
-    )
+    const error = await fetchParcelDataForBusiness(mockSbi).catch((e) => e)
     expect(error.status).toBe(500)
     expect(error.responseBody).toBe(
       `Failed to fetch business data: 500 ${errorText}`
@@ -91,19 +88,19 @@ describe('fetchParcelDataForBusiness', () => {
     const networkError = new Error('Network error')
     mockFetch.mockRejectedValueOnce(networkError)
 
-    await expect(fetchParcelDataForBusiness(mockSbi, mockCrn)).rejects.toThrow(
+    await expect(fetchParcelDataForBusiness(mockSbi)).rejects.toThrow(
       'Network error'
     )
     expect(mockFetch).toHaveBeenCalledTimes(1)
   })
 
-  it('should include correct GraphQL query with SBI and CRN', async () => {
+  it('should include correct GraphQL query with SBI', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve(mockSuccessResponse)
     })
 
-    await fetchParcelDataForBusiness(mockSbi, mockCrn)
+    await fetchParcelDataForBusiness(mockSbi)
 
     const [[, calledOptions]] = mockFetch.mock.calls
     const body = JSON.parse(calledOptions.body)
@@ -112,6 +109,5 @@ describe('fetchParcelDataForBusiness', () => {
     expect(calledOptions.headers['Content-Type']).toBe('application/json')
     expect(calledOptions.headers.Authorization).toBe(`Bearer ${mockToken}`)
     expect(body.query).toContain(`business(sbi: "${mockSbi}")`)
-    expect(body.query).toContain(`customer(crn: "${mockCrn}")`)
   })
 })
