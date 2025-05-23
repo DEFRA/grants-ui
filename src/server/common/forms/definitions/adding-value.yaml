@@ -282,10 +282,21 @@ pages:
               Select yes if you want to build new controlled atmosphere storage
               for top fruit
     condition: smallerAbattoirConditionNo
+  - title: Does your project need eligible items?
+    path: '/project-items-needed'
+    components:
+      - name: projectItemsNeeded
+        title: Does your project need eligible items?
+        hint: For example, shops or display cabinets
+        type: YesNoField
+        options:
+          customValidationMessages:
+            any.required: Select yes if you will need eligible items
+    condition: otherFarmersYesOrFruitStorageCondition
   - title: What eligible items does your project need?
     path: '/project-items'
     components:
-      - name: eligibleItemsNeeded
+      - name: eligibleItems
         title: What eligible items does your project need?
         hint: |-
           Storage facilities will only be funded as part of a bigger project and cannot be more than 50% of the total grant funding.
@@ -296,7 +307,7 @@ pages:
         options:
           customValidationMessages:
             any.required: Select all the items your project needs
-    condition: otherFarmersYesOrFruitStorageCondition
+    condition: eligibleItemsNeededCondition
   - title: You cannot apply for a grant from this scheme
     path: '/cannot-apply-project-items'
     controller: TerminalPageController
@@ -313,7 +324,7 @@ pages:
           <li>retail facilities</li>
           </ul>
           <p class="govuk-body"><a href='https://www.gov.uk/guidance/funding-for-farmers' class='govuk-link govuk-link--no-visited-state'>See other grants you may be eligible for</a></p>
-    condition: projectItemsCondition
+    condition: eligibleItemsNotNeededCondition
   - title: Does your project also need storage facilities?
     path: '/storage'
     components:
@@ -489,12 +500,63 @@ pages:
               Select how much manual labour the mechanisation will be equal
               to
     condition: mechanisationCondition
-  - title: Who will your new customers be after the project?
+  - title: Will you have new customers after this project?
+    path: '/future-customers-exist'
+    components:
+      - name: hasFutureCustomers
+        title: Will you have new customers after this project?
+        hint: For example, a customer that will buy directly from you.
+        type: YesNoField
+        options:
+          customValidationMessages:
+            any.required: Select yes if you will have new customers after this project
+  - title: Who will your new customers be after this project?
     path: '/future-customers'
+    components:
+      - name: futureCustomerTypes
+        title: Who will your new customers be after this project?
+        type: CheckboxesField
+        list: futureCustomerTypesList
+        hint: |
+          For example, you will now sell directly to retailers
+
+          Select all that apply
+        options:
+          customValidationMessages:
+            any.required: Select who will your new customers be after the project
+    condition: futureCustomersExistCondition
   - title: Will you work in partnership or collaborate with other farmers or producers?
     path: '/collaboration'
+    components:
+      - name: collaboration
+        title: Will you work in partnership or collaborate with other farmers or producers?
+        hint: For example, in a formal partnership or contract supply arrangement for raw materials
+        type: YesNoField
+        options:
+          customValidationMessages:
+            any.required: Select yes if you will work in partnership or collaborate with other farmers or producers
+  - title: Will this project improve the environment?
+    path: '/environment-impact-exist'
+    components:
+      - name: hasEnvironmentImpact
+        title: Will this project improve the environment?
+        hint: For example, majority of energy for the project is generated on site
+        type: YesNoField
+        options:
+          customValidationMessages:
+            any.required: Select yes if this project will improve the environment
   - title: How will this project improve the environment?
     path: '/environmental-impact'
+    components:
+      - name: environmentalImpactTypes
+        title: How will this project improve the environment?
+        type: CheckboxesField
+        list: environmentalImpactTypesList
+        hint: Select all that apply
+        options:
+          customValidationMessages:
+            any.required: Select how this project will improve the environment
+    condition: environmentalImpactExistCondition
   - title: Score results
     path: '/score-results'
     view: score-results.html
@@ -881,8 +943,6 @@ lists:
       - text: Retail facilities
         description: For example, shops or display cabinets
         value: projectItems-A3
-      - text: None of the above
-        value: projectItems-A4
   - title: Does your project also need storage facilities?
     name: storageRadiosList
     type: string
@@ -901,6 +961,40 @@ lists:
         value: manualLabourAmount-A2
       - text: More than 10%
         value: manualLabourAmount-A3
+  - title: Who will your new customers be after the project?
+    name: futureCustomerTypesList
+    type: string
+    items:
+      - text: Processors
+        value: futureCustomers-A1
+      - text: Wholesalers
+        value: futureCustomers-A2
+      - text: Retailers
+        value: futureCustomers-A3
+      - text: Selling direct to consumers
+        value: futureCustomers-A4
+  - title: How will this project improve the environment?
+    name: environmentalImpactTypesList
+    type: string
+    items:
+      - text: Renewable energy
+        value: environmentalImpact-A1
+        description: For example, majority of energy for the project is generated on site
+      - text: Energy efficiency
+        value: environmentalImpact-A2
+        description: For example, using variable speed motors or heat exchangers
+      - text: Water efficiency
+        value: environmentalImpact-A3
+        description: For example, majority of water for the project is harvested or recycled on site
+      - text: Waste efficiency
+        value: environmentalImpact-A4
+        description: For example, majority of the project waste is recycled or reused instead of going to landfill
+      - text: Sustainable packaging measures
+        value: environmentalImpact-A5
+        description: For example, removing unnecessary packaging, replacing plastic packaging
+      - text: Reduce harmful emissions or pollutants
+        value: environmentalImpact-A6
+        description: For example, reducing pollutants in waste water
   - title: Consent optional
     name: consent-optional-list
     type: string
@@ -1108,20 +1202,34 @@ conditions:
         - coordinator: or
           conditionName: fruitStorageCondition
           conditionDisplayName: 'No'
-  - name: projectItemsCondition
-    displayName: projectItemsConditionNone
+  - name: eligibleItemsNeededCondition
+    displayName: eligibleItemsNeededYes
     value:
-      name: projectItemsConditionNone
+      name: eligibleItemsNeededYes
       conditions:
         - field:
-            name: eligibleItemsNeeded
-            type: CheckboxesField
-            display: What eligible items does your project need?
-          operator: contains
+            name: projectItemsNeeded
+            type: YesNoField
+            display: Does your project need eligible items?
+          operator: is
           value:
             type: Value
-            value: projectItems-A4
-            display: None of the above
+            value: 'true'
+            display: 'Yes'
+  - name: eligibleItemsNotNeededCondition
+    displayName: eligibleItemsNeededNo
+    value:
+      name: eligibleItemsNeededNo
+      conditions:
+        - field:
+            name: projectItemsNeeded
+            type: YesNoField
+            display: Does your project need eligible items?
+          operator: is
+          value:
+            type: Value
+            value: 'false'
+            display: 'No'
   - name: projectCostCondition
     displayName: projectCostConditionNotReached
     value:
@@ -1159,6 +1267,34 @@ conditions:
             name: hasMechanisationUsage
             type: YesNoField
             display: Will this project use any mechanisation instead of manual labour?
+          operator: is
+          value:
+            type: Value
+            value: 'true'
+            display: 'Yes'
+  - name: futureCustomersExistCondition
+    displayName: futureCustomerExistYes
+    value:
+      name: futureCustomerExistYes
+      conditions:
+        - field:
+            name: hasFutureCustomers
+            type: YesNoField
+            display: Will you have new customers after this project?
+          operator: is
+          value:
+            type: Value
+            value: 'true'
+            display: 'Yes'
+  - name: environmentalImpactExistCondition
+    displayName: environmentalImpactExistYes
+    value:
+      name: environmentalImpactExistYes
+      conditions:
+        - field:
+            name: hasEnvironmentImpact
+            type: YesNoField
+            display: Will this project improve the environment?
           operator: is
           value:
             type: Value
