@@ -1,0 +1,346 @@
+{
+  "engine": "V2",
+  "name": "Facilities",
+  "pages": [
+    {
+      "title": "Do you want to build a new smaller abattoir?",
+      "path": "/smaller-abattoir",
+      "section": "facilitiesSection",
+      "components": [
+        {
+          "name": "isBuildingSmallerAbattoir",
+          "title": "Do you want to build a new smaller abattoir?",
+          "type": "YesNoField",
+          "hint": "A smaller abattoir is a red meat abattoir that processes up to 10,000 livestock units each year or a poultry abattoir that slaughters up to 500,000 birds each year.",
+          "options": {
+            "customValidationMessages": {
+              "any.required": "Select yes if you want to build a new smaller abattoir"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "title": "Will this abattoir provide services to other farmers?",
+      "path": "/other-farmers",
+      "section": "facilitiesSection",
+      "components": [
+        {
+          "name": "isProvidingServicesToOtherFarmers",
+          "title": "Will this abattoir provide services to other farmers?",
+          "hint": "For example, farmers pay you to slaughter their livestock.",
+          "type": "YesNoField",
+          "options": {
+            "customValidationMessages": {
+              "any.required": "Select yes if this abattoir will provide services to other farmers"
+            }
+          }
+        }
+      ],
+      "condition": "smallerAbattoirConditionYes"
+    },
+    {
+      "title": "You cannot apply for a grant from this scheme",
+      "path": "/cannot-apply-other-farmers",
+      "section": "facilitiesSection",
+      "controller": "TerminalPageController",
+      "components": [
+        {
+          "type": "Html",
+          "name": "cannotApplyOtherFarmersInfo",
+          "title": "Html",
+          "content": "<p class=\"govuk-body\">You must provide some abattoir services to other farmers if you are building a new smaller abattoir with this grant.</p>\n<p class=\"govuk-body\"><a href='https://www.gov.uk/guidance/funding-for-farmers' class='govuk-link govuk-link--no-visited-state'>See other grants you may be eligible for</a></p>"
+        }
+      ],
+      "condition": "otherFarmersConditionNo"
+    },
+    {
+      "title": "Do you want to build new controlled atmosphere storage for top fruit?",
+      "path": "/fruit-storage",
+      "section": "facilitiesSection",
+      "components": [
+        {
+          "name": "isBuildingFruitStorage",
+          "title": "Do you want to build new controlled atmosphere storage for top fruit?",
+          "hint": "Fruit that grows on trees, for example apples, pears, quinces, medlars, plums, peaches, apricots and cherries",
+          "type": "YesNoField",
+          "options": {
+            "customValidationMessages": {
+              "any.required": "Select yes if you want to build new controlled atmosphere storage for top fruit"
+            }
+          }
+        }
+      ],
+      "condition": "smallerAbattoirConditionNo"
+    },
+    {
+      "title": "What eligible items does your project need?",
+      "path": "/project-items",
+      "section": "facilitiesSection",
+      "components": [
+        {
+          "name": "eligibleItemsNeeded",
+          "title": "What eligible items does your project need?",
+          "hint": "Storage facilities will only be funded as part of a bigger project and cannot be more than 50% of the total grant funding.\n\nSelect all the items your project needs",
+          "type": "CheckboxesField",
+          "list": "projectItemsList",
+          "options": {
+            "customValidationMessages": {
+              "any.required": "Select all the items your project needs"
+            }
+          }
+        }
+      ],
+      "condition": "otherFarmersYesOrFruitStorageCondition"
+    },
+    {
+      "title": "You cannot apply for a grant from this scheme",
+      "path": "/cannot-apply-project-items",
+      "section": "facilitiesSection",
+      "controller": "TerminalPageController",
+      "components": [
+        {
+          "type": "Html",
+          "name": "cannotApplyProjectItemsInfo",
+          "title": "Html",
+          "content": "<p class=\"govuk-body\">This grant is for:</p>\n\n<ul class=\"govuk-list govuk-list--bullet\">\n<li>constructing or improving buildings for processing</li>\n<li>processing equipment or machinery</li>\n<li>retail facilities</li>\n</ul>\n<p class=\"govuk-body\"><a href='https://www.gov.uk/guidance/funding-for-farmers' class='govuk-link govuk-link--no-visited-state'>See other grants you may be eligible for</a></p>"
+        }
+      ],
+      "condition": "projectItemsCondition"
+    },
+    {
+      "title": "Does your project also need storage facilities?",
+      "path": "/storage",
+      "section": "facilitiesSection",
+      "components": [
+        {
+          "name": "needsStorageFacilities",
+          "title": "Does your project also need storage facilities?",
+          "hint": "For example, cold stores or controlled atmosphere storage",
+          "type": "RadiosField",
+          "list": "storageRadiosList",
+          "options": {
+            "customValidationMessages": {
+              "any.required": "Select yes if you will need storage facilities"
+            }
+          }
+        },
+        {
+          "type": "Html",
+          "name": "storageWarning",
+          "title": "Html",
+          "content": "<div class=\"govuk-warning-text\"> <span class=\"govuk-warning-text__icon\" aria-hidden=\"true\">!</span> <strong class=\"govuk-warning-text__text\"> <span class=\"govuk-visually-hidden\">Warning</span>Storage facilities cannot be more than 50% of the total grant funding.</strong></div>"
+        }
+      ],
+      "condition": "otherFarmersYesOrFruitStorageCondition"
+    },
+    {
+      "title": "Summary",
+      "path": "/summary",
+      "controller": "SectionEndController"
+    }
+  ],
+  "lists": [
+    {
+      "title": "What eligible items does your project need?",
+      "name": "projectItemsList",
+      "type": "string",
+      "items": [
+        {
+          "text": "Constructing or improving buildings for processing",
+          "description": "For example, a new building for cheese making, extending an existing building to install a new meat-cutting and packing line",
+          "value": "projectItems-A1"
+        },
+        {
+          "text": "Processing equipment or machinery",
+          "description": "For example, equipment and machinery for pasteurising and bottling milk, a meat cutting and packing line or vegetable washing and packing",
+          "value": "projectItems-A2"
+        },
+        {
+          "text": "Retail facilities",
+          "description": "For example, shops or display cabinets",
+          "value": "projectItems-A3"
+        },
+        {
+          "text": "None of the above",
+          "value": "projectItems-A4"
+        }
+      ]
+    },
+    {
+      "title": "Does your project also need storage facilities?",
+      "name": "storageRadiosList",
+      "type": "string",
+      "items": [
+        {
+          "text": "Yes, we will need storage facilities",
+          "value": "storageRadios-A1"
+        },
+        {
+          "text": "No, we do not need storage facilities",
+          "value": "storageRadios-A2"
+        }
+      ]
+    }
+  ],
+  "conditions": [
+    {
+      "name": "smallerAbattoirConditionYes",
+      "displayName": "smallerAbattoirConditionYes",
+      "value": {
+        "name": "smallerAbattoirConditionYes",
+        "conditions": [
+          {
+            "field": {
+              "name": "isBuildingSmallerAbattoir",
+              "type": "YesNoField",
+              "display": "Do you want to build a new smaller abattoir?"
+            },
+            "operator": "is",
+            "value": {
+              "type": "Value",
+              "value": "true",
+              "display": "Yes"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "otherFarmersConditionNo",
+      "displayName": "otherFarmersConditionNo",
+      "value": {
+        "name": "otherFarmersConditionNo",
+        "conditions": [
+          {
+            "field": {
+              "name": "isProvidingServicesToOtherFarmers",
+              "type": "YesNoField",
+              "display": "Will this abattoir provide services to other farmers?"
+            },
+            "operator": "is",
+            "value": {
+              "type": "Value",
+              "value": "false",
+              "display": "No"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "smallerAbattoirConditionNo",
+      "displayName": "smallerAbattoirConditionNo",
+      "value": {
+        "name": "smallerAbattoirConditionNo",
+        "conditions": [
+          {
+            "field": {
+              "name": "isBuildingSmallerAbattoir",
+              "type": "YesNoField",
+              "display": "Do you want to build a new smaller abattoir?"
+            },
+            "operator": "is",
+            "value": {
+              "type": "Value",
+              "value": "false",
+              "display": "No"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "otherFarmersConditionYes",
+      "displayName": "otherFarmersConditionYes",
+      "value": {
+        "name": "otherFarmersConditionYes",
+        "conditions": [
+          {
+            "field": {
+              "name": "isProvidingServicesToOtherFarmers",
+              "type": "YesNoField",
+              "display": "Will this abattoir provide services to other farmers?"
+            },
+            "operator": "is",
+            "value": {
+              "type": "Value",
+              "value": "true",
+              "display": "Yes"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "fruitStorageCondition",
+      "displayName": "fruitStorageConditionNo",
+      "value": {
+        "name": "fruitStorageConditionNo",
+        "conditions": [
+          {
+            "field": {
+              "name": "isBuildingFruitStorage",
+              "type": "YesNoField",
+              "display": "Do you want to build new controlled atmosphere storage for top fruit?"
+            },
+            "operator": "is",
+            "value": {
+              "type": "Value",
+              "value": "false",
+              "display": "No"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "otherFarmersYesOrFruitStorageCondition",
+      "displayName": "otherFarmersYesOrFruitStorage",
+      "value": {
+        "name": "otherFarmersYesOrFruitStorage",
+        "conditions": [
+          {
+            "conditionName": "otherFarmersConditionYes",
+            "conditionDisplayName": "Yes"
+          },
+          {
+            "coordinator": "or",
+            "conditionName": "fruitStorageCondition",
+            "conditionDisplayName": "No"
+          }
+        ]
+      }
+    },
+    {
+      "name": "projectItemsCondition",
+      "displayName": "projectItemsConditionNone",
+      "value": {
+        "name": "projectItemsConditionNone",
+        "conditions": [
+          {
+            "field": {
+              "name": "eligibleItemsNeeded",
+              "type": "CheckboxesField",
+              "display": "What eligible items does your project need?"
+            },
+            "operator": "contains",
+            "value": {
+              "type": "Value",
+              "value": "projectItems-A4",
+              "display": "None of the above"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "sections": [
+    {
+      "title": "Facilities",
+      "name": "facilitiesSection",
+      "hideTitle": false
+    }
+  ],
+  "startPage": "/smaller-abattoir"
+}

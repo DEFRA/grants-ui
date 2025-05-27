@@ -1,10 +1,10 @@
 import inert from '@hapi/inert'
-
 import { about } from '~/src/server/about/index.js'
 import { auth } from '~/src/server/auth/index.js'
 import { serveStaticFiles } from '~/src/server/common/helpers/serve-static-files.js'
 import { health } from '~/src/server/health/index.js'
 import { home } from '~/src/server/home/index.js'
+import { addingValueTasklist } from '~/src/server/controllers/adding-value-tasklist/adding-value-tasklist-controller.js'
 
 /**
  * @satisfies {ServerRegisterPluginObject<void>}
@@ -26,6 +26,9 @@ export const router = {
 
       // Static assets
       await server.register([serveStaticFiles])
+
+      // Adding Value Tasklist
+      await server.register([addingValueTasklist])
     }
   }
 }

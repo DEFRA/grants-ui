@@ -1,0 +1,169 @@
+{
+  "engine": "V2",
+  "name": "Costs",
+  "pages": [
+    {
+      "title": "What is the estimated cost of the items?",
+      "path": "/project-cost",
+      "section": "costsSection",
+      "components": [
+        {
+          "name": "projectCostInfo",
+          "type": "Html",
+          "title": "Html",
+          "content": "<p class=\"govuk-hint\">Do not include VAT<br><br>Enter cost of items, for example {{ 695000 | formatCurrency: 'en-GB', 'GBP', 0, 'decimal' }}</p>"
+        },
+        {
+          "name": "estimatedCost",
+          "type": "NumberField",
+          "title": "Enter amount",
+          "options": {
+            "prefix": "£",
+            "required": true,
+            "classes": "govuk-!-width-one-third",
+            "customValidationMessages": {
+              "any.required": "Enter the estimated cost of the items",
+              "number.max": "Enter a whole number with a maximum of 7 digits",
+              "number.min": "Enter a whole number with a maximum of 7 digits"
+            }
+          },
+          "schema": {
+            "min": 1,
+            "max": 9999999,
+            "precision": 0
+          }
+        }
+      ]
+    },
+    {
+      "title": "You cannot apply for a grant from this scheme",
+      "path": "/project-cost-cannot-apply",
+      "controller": "TerminalPageController",
+      "section": "costsSection",
+      "components": [
+        {
+          "name": "projectCostCannotApplyInfo",
+          "title": "Html",
+          "type": "Html",
+          "content": "<p class=\"govuk-body\">The minimum grant you can apply for is £25,000 (40% of £62,500).</p>\n\n<p class='govuk-body'><a href='https://www.gov.uk/guidance/funding-for-farmers' class='govuk-link govuk-link--no-visited-state'>See other grants you may be eligible for</a></p>\n"
+        }
+      ],
+      "condition": "projectCostCondition"
+    },
+    {
+      "title": "Potential grant funding",
+      "path": "/potential-funding",
+      "section": "costsSection",
+      "components": [
+        {
+          "name": "potentialFundingInfo",
+          "title": "Html",
+          "type": "Html",
+          "content": "<p class=\"govuk-body\"> {% assign estimatedCost = 'estimatedCost' | answer %} {% assign eligibilityMultiplier = 0.4 %} {% assign eligibilityAmount = estimatedCost | times: eligibilityMultiplier %} {% if eligibilityAmount <= 300000 and eligibilityAmount >= 25000 %} You may be able to apply for grant funding of up to {{ eligibilityAmount | formatCurrency: 'en-GB', 'GBP', 0 }} (40% of {{ estimatedCost | formatCurrency: 'en-GB', 'GBP', 0 }}).{% elsif eligibilityAmount > 300000 %} You may be able to apply for grant funding of up to £300,000, based on the estimated cost of {{ estimatedCost | formatCurrency: 'en-GB', 'GBP', 0 }}.\n\n\n<div class=\"govuk-inset-text\">The maximum grant you can apply for is £300,000.</div> {% endif %}</p>\n",
+          "options": {},
+          "schema": {}
+        },
+        {
+          "type": "Html",
+          "name": "potentialFundingWarning",
+          "title": "Html",
+          "content": "<div class=\"govuk-warning-text\"> <span class=\"govuk-warning-text__icon\" aria-hidden=\"true\">!</span> <strong class=\"govuk-warning-text__text\"> <span class=\"govuk-visually-hidden\">Warning</span>There's no guarantee the project will receive a grant.</strong></div>",
+          "options": {},
+          "schema": {}
+        }
+      ]
+    },
+    {
+      "title": "{% assign estimatedCost = 'estimatedCost' | answer %} {% assign applicantPayMultiplier = 0.6 %} {% assign applicantPayAmount = estimatedCost | times: applicantPayMultiplier %} {% assign grantPayAmount = estimatedCost | minus: applicantPayAmount %} {% if grantPayAmount >= 300000 %} {% assign applicantPayAmount = estimatedCost | minus: 300000 %} {% endif %} Can you pay the remaining costs of {{ applicantPayAmount | formatCurrency: 'en-GB', 'GBP', 0 }}?",
+      "path": "/remaining-costs",
+      "section": "costsSection",
+      "components": [
+        {
+          "type": "YesNoField",
+          "name": "canPayRemainingCosts",
+          "title": "Can you pay the remaining costs?",
+          "options": {
+            "customValidationMessages": {
+              "any.required": "Select yes if you can pay the remaining costs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "title": "You cannot apply for a grant from this scheme",
+      "path": "/cannot-apply-remaining-costs",
+      "controller": "TerminalPageController",
+      "section": "costsSection",
+      "components": [
+        {
+          "name": "cannotApplyRemainingCostsInfo",
+          "title": "Html",
+          "type": "Html",
+          "content": "<p class=\"govuk-body\">You cannot use public money (for example, grant funding from government or local authorities) towards the project costs.</br></br>You also cannot use money from a producer organisation under the Fresh Fruit and Vegetable Aid Scheme.</br></br>For example, you can use:</p>\n\n<ul class=\"govuk-t govuk-list--bullet\">\n<li>loans</li>\n<li>overdrafts</li>\n<li>delinked payments</li></ul>\n\n<p class='govuk-body'><a href='https://www.gov.uk/guidance/funding-for-farmers' class='govuk-link govuk-link--no-visited-state'>See other grants you may be eligible for</a></p>\n"
+        }
+      ],
+      "condition": "remainingCostsCondition"
+    },
+    {
+      "title": "Summary",
+      "path": "/summary",
+      "controller": "SectionEndController"
+    }
+  ],
+  "lists": [],
+  "conditions": [
+    {
+      "name": "projectCostCondition",
+      "displayName": "projectCostConditionNotReached",
+      "value": {
+        "name": "projectCostConditionNotReached",
+        "conditions": [
+          {
+            "field": {
+              "name": "estimatedCost",
+              "type": "NumberField",
+              "display": "What is the estimated cost of the items?"
+            },
+            "operator": "is less than",
+            "value": {
+              "type": "Value",
+              "value": "62500",
+              "display": "Enter amount"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "remainingCostsCondition",
+      "displayName": "canYouPayTheRemainingCosts",
+      "value": {
+        "name": "canYouPayTheRemainingCosts",
+        "conditions": [
+          {
+            "field": {
+              "name": "canPayRemainingCosts",
+              "type": "YesNoField",
+              "display": "Can you pay the remaining costs of £x?"
+            },
+            "operator": "is",
+            "value": {
+              "type": "Value",
+              "value": "false",
+              "display": "No"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "sections": [
+    {
+      "title": "Costs",
+      "name": "costsSection",
+      "hideTitle": false
+    }
+  ],
+  "startPage": "/project-cost"
+}

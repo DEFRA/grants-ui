@@ -1,0 +1,26 @@
+{
+  "engine": "V2",
+  "name": "Collaboration",
+  "pages": [
+    {
+      "title": "Will you work in partnership or collaborate with other farmers or producers?",
+      "path": "/collaboration",
+      "section": "collaborationSection"
+    },
+    {
+      "title": "Summary",
+      "path": "/summary",
+      "controller": "SectionEndController"
+    }
+  ],
+  "sections": [
+    {
+      "title": "Collaboration",
+      "name": "collaborationSection",
+      "hideTitle": false
+    }
+  ],
+  "lists": [],
+  "conditions": [],
+  "startPage": "/collaboration"
+}

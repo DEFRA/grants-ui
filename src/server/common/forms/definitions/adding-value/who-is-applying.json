@@ -1,0 +1,55 @@
+{
+  "engine": "V2",
+  "name": "Who is applying",
+  "pages": [
+    {
+      "title": "Who is applying for this grant?",
+      "path": "/applying",
+      "section": "whoIsApplyingSection",
+      "components": [
+        {
+          "name": "grantApplicantType",
+          "title": "Who is applying for this grant?",
+          "type": "RadiosField",
+          "list": "applyingList",
+          "options": {
+            "customValidationMessages": {
+              "any.required": "Select who is applying for this grant"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "title": "Summary",
+      "path": "/summary",
+      "controller": "SectionEndController"
+    }
+  ],
+  "lists": [
+    {
+      "title": "Who is applying for this grant?",
+      "name": "applyingList",
+      "type": "string",
+      "items": [
+        {
+          "text": "Applicant",
+          "value": "applying-A1"
+        },
+        {
+          "text": "Agent",
+          "value": "applying-A2"
+        }
+      ]
+    }
+  ],
+  "conditions": [],
+  "sections": [
+    {
+      "title": "Who is applying",
+      "name": "whoIsApplyingSection",
+      "hideTitle": false
+    }
+  ],
+  "startPage": "/applying"
+}
