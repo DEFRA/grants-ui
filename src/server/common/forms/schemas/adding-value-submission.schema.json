@@ -14,7 +14,8 @@
     "isBuildingSmallerAbattoir": { "type": "boolean" },
     "isBuildingFruitStorage": { "type": "boolean" },
     "isProvidingServicesToOtherFarmers": { "type": "boolean" },
-    "eligibleItemsNeeded": {
+    "projectItemsNeeded": { "type": "boolean" },
+    "eligibleItems": {
       "type": "array",
       "items": { "type": "string" }
     },
@@ -29,6 +30,17 @@
     },
     "hasMechanisationUsage": { "type": "boolean" },
     "manualLabourEquivalence": { "type": "string" },
+    "hasFutureCustomers": { "type": "boolean" },
+    "futureCustomerTypes": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "collaboration": { "type": "boolean" },
+    "hasEnvironmentImpact": { "type": "boolean" },
+    "environmentalImpactTypes": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
     "grantApplicantType": { "type": "string" },
     "agentFirstName": { "type": "string" },
     "agentLastName": { "type": "string" },
