@@ -1,8 +1,8 @@
 import { config } from '~/src/config/config.js'
 import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
 import { metadata } from '../config.js'
-
 import { FileFormService } from '@defra/forms-engine-plugin/file-form-service.js'
+import { allForms } from './forms-config.js'
 
 export function configureFormDefinition(definition) {
   const logger = createLogger()
@@ -41,39 +41,38 @@ class GrantsFormLoader extends FileFormService {
   }
 }
 
+export async function addAllForms(loader, forms) {
+  const addedForms = new Set()
+  const logger = createLogger()
+
+  const uniqueForms = forms.filter((form) => {
+    const key = `${form.id}-${form.slug}`
+    if (addedForms.has(key)) {
+      logger.warn(`Skipping duplicate form: ${form.slug} with id ${form.id}`)
+      return false
+    }
+    addedForms.add(key)
+    return true
+  })
+
+  await Promise.all(
+    uniqueForms.map((form) =>
+      loader.addForm(form.path, {
+        ...metadata,
+        id: form.id,
+        slug: form.slug,
+        title: form.title
+      })
+    )
+  )
+
+  return addedForms.size
+}
+
 export const formsService = async () => {
   const loader = new GrantsFormLoader()
 
-  // Add a Json form
-  await loader.addForm(
-    'src/server/common/forms/definitions/adding-value.yaml',
-    {
-      ...metadata,
-      id: '95e92559-968d-44ae-8666-2b1ad3dffd31',
-      slug: 'adding-value',
-      title: 'Adding value'
-    }
-  )
-
-  await loader.addForm(
-    'src/server/common/forms/definitions/example-grant.yaml',
-    {
-      ...metadata,
-      id: '5eeb9f71-44f8-46ed-9412-3d5e2c5ab2bc',
-      slug: 'example-grant',
-      title: 'Example grant'
-    }
-  )
-
-  await loader.addForm(
-    'src/server/common/forms/definitions/find-funding-for-land-or-farms.yaml',
-    {
-      ...metadata,
-      id: '5c67688f-3c61-4839-a6e1-d48b598257f1',
-      slug: 'find-funding-for-land-or-farms',
-      title: 'Find Funding for Land or Farms'
-    }
-  )
+  await addAllForms(loader, allForms)
 
   return loader.toFormsService()
 }

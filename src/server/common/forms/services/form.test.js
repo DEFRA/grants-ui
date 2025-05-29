@@ -1,12 +1,10 @@
 import { config } from '~/src/config/config.js'
-import { configureFormDefinition, formsService } from './form.js'
+import { configureFormDefinition, formsService, addAllForms } from './form.js'
 
-// Mock URL and import.meta.url
 const mockUrl = { pathname: '/mock/path' }
 global.URL = jest.fn(() => mockUrl)
 global.import = { meta: { url: 'file:///mock/path' } }
 
-// Mock config
 const defaultConfigMock = {
   cdpEnvironment: 'local',
   log: {
@@ -25,10 +23,27 @@ jest.mock('~/src/config/config.js', () => ({
   }
 }))
 
+const mockWarn = jest.fn()
+jest.mock('~/src/server/common/helpers/logging/logger.js', () => ({
+  createLogger: jest.fn(() => ({
+    warn: mockWarn,
+    info: jest.fn(),
+    error: jest.fn(),
+    debug: jest.fn()
+  }))
+}))
+
+jest.mock('../config.js', () => ({
+  metadata: {
+    organisation: 'Test Org',
+    teamName: 'Test Team',
+    teamEmail: 'test@example.com'
+  }
+}))
+
 describe('form', () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    // Reset config mock to default values
     config.get.mockImplementation((key) => defaultConfigMock[key])
   })
 
@@ -56,38 +71,16 @@ describe('form', () => {
       )
       await expect(result).resolves.toBeDefined()
     })
+
+    test('throws error for unknown id', async () => {
+      const service = await formsService()
+      expect(() => service.getFormDefinition('unknown-id')).toThrow()
+    })
   })
 
   describe('configureFormDefinition', () => {
-    test('handles form definition without events', () => {
-      const mockData = {
-        name: 'no-events',
-        pages: [{ title: 'Page 1' }]
-      }
-
-      const result = configureFormDefinition(mockData)
-      expect(result).toEqual({
-        name: 'no-events',
-        pages: [{ title: 'Page 1' }]
-      })
-    })
-
-    test('handles form definition with events but no onLoad', () => {
-      const mockData = {
-        name: 'no-onload',
-        pages: [{ events: { otherEvent: {} } }]
-      }
-      const result = configureFormDefinition(mockData)
-
-      expect(result).toEqual({
-        name: 'no-onload',
-        pages: [{ events: { otherEvent: {} } }]
-      })
-    })
-
     test('configures URLs correctly for local environment', () => {
-      const mockData = {
-        name: 'test-form',
+      const definition = {
         pages: [
           {
             events: {
@@ -101,7 +94,7 @@ describe('form', () => {
         ]
       }
 
-      const result = configureFormDefinition(mockData)
+      const result = configureFormDefinition(definition)
       expect(result.pages[0].events.onLoad.options.url).toBe(
         'http://localhost:3001/scoring/api/v1/adding-value/score?allowPartialScoring=true'
       )
@@ -113,8 +106,7 @@ describe('form', () => {
         key === 'cdpEnvironment' ? 'dev' : defaultConfigMock[key]
       )
 
-      const mockData = {
-        name: 'test-form',
+      const definition = {
         pages: [
           {
             events: {
@@ -127,16 +119,33 @@ describe('form', () => {
           }
         ]
       }
-      const result = configureFormDefinition(mockData)
 
+      const result = configureFormDefinition(definition)
       expect(result.pages[0].events.onLoad.options.url).toBe(
         'http://dev.example.com'
       )
     })
 
-    test('handles form definition with multiple pages and events', () => {
-      const mockData = {
-        name: 'multi-page-form',
+    test('handles form definition without events', () => {
+      const definition = {
+        pages: [{ title: 'Page 1' }]
+      }
+
+      const result = configureFormDefinition(definition)
+      expect(result).toEqual(definition)
+    })
+
+    test('handles form definition without pages', () => {
+      const definition = {
+        name: 'test-form'
+      }
+
+      const result = configureFormDefinition(definition)
+      expect(result).toEqual(definition)
+    })
+
+    test('handles form definition with multiple pages', () => {
+      const definition = {
         pages: [
           {
             events: {
@@ -159,8 +168,7 @@ describe('form', () => {
         ]
       }
 
-      const result = configureFormDefinition(mockData)
-
+      const result = configureFormDefinition(definition)
       expect(result.pages).toHaveLength(2)
       result.pages.forEach((page) => {
         expect(page.events.onLoad.options.url).toBe(
@@ -169,30 +177,141 @@ describe('form', () => {
       })
     })
 
-    test('handles form definition with undefined events', () => {
-      const mockData = {
-        name: 'test-form',
+    test('logs warning when events exist but no onLoad URL is present', () => {
+      const definition = {
         pages: [
           {
-            events: undefined
+            events: {
+              onSubmit: {
+                options: {
+                  action: 'submit'
+                }
+              }
+            }
           }
         ]
       }
 
-      const result = configureFormDefinition(mockData)
+      const result = configureFormDefinition(definition)
 
-      expect(result.pages[0].events).toBeUndefined()
+      expect(mockWarn).toHaveBeenCalledWith(
+        `Unexpected environment value: ${defaultConfigMock.cdpEnvironment}`
+      )
+
+      expect(result).toEqual(definition)
     })
+  })
 
-    test('handles form definition with undefined pages', () => {
-      const mockData = {
-        name: 'test-form',
-        pages: undefined
+  describe('addAllForms', () => {
+    test('handles duplicate forms and logs warning', async () => {
+      const mockLoader = {
+        addForm: jest.fn().mockResolvedValue(undefined)
       }
 
-      const result = configureFormDefinition(mockData)
+      const testForms = [
+        {
+          path: 'path/to/form1.yaml',
+          id: 'form-id-1',
+          slug: 'form-slug-1',
+          title: 'Form 1'
+        },
+        {
+          path: 'path/to/form2.yaml',
+          id: 'form-id-2',
+          slug: 'form-slug-2',
+          title: 'Form 2'
+        },
+        {
+          path: 'path/to/form1-duplicate.yaml',
+          id: 'form-id-1',
+          slug: 'form-slug-1',
+          title: 'Form 1 Duplicate'
+        },
+        {
+          path: 'path/to/form3.yaml',
+          id: 'form-id-3',
+          slug: 'form-slug-3',
+          title: 'Form 3'
+        }
+      ]
 
-      expect(result.pages).toBeUndefined()
+      const result = await addAllForms(mockLoader, testForms)
+
+      expect(mockWarn).toHaveBeenCalledWith(
+        'Skipping duplicate form: form-slug-1 with id form-id-1'
+      )
+
+      expect(result).toBe(3)
+      expect(mockLoader.addForm).toHaveBeenCalledTimes(3)
+
+      expect(mockLoader.addForm).not.toHaveBeenCalledWith(
+        'path/to/form1-duplicate.yaml',
+        expect.any(Object)
+      )
+
+      expect(mockLoader.addForm).toHaveBeenCalledWith(
+        'path/to/form1.yaml',
+        expect.objectContaining({
+          id: 'form-id-1',
+          slug: 'form-slug-1',
+          title: 'Form 1'
+        })
+      )
+      expect(mockLoader.addForm).toHaveBeenCalledWith(
+        'path/to/form2.yaml',
+        expect.objectContaining({
+          id: 'form-id-2',
+          slug: 'form-slug-2',
+          title: 'Form 2'
+        })
+      )
+      expect(mockLoader.addForm).toHaveBeenCalledWith(
+        'path/to/form3.yaml',
+        expect.objectContaining({
+          id: 'form-id-3',
+          slug: 'form-slug-3',
+          title: 'Form 3'
+        })
+      )
+    })
+
+    test('handles empty forms array', async () => {
+      const mockLoader = {
+        addForm: jest.fn()
+      }
+
+      const result = await addAllForms(mockLoader, [])
+
+      expect(result).toBe(0)
+      expect(mockLoader.addForm).not.toHaveBeenCalled()
+      expect(mockWarn).not.toHaveBeenCalled()
+    })
+
+    test('handles all unique forms', async () => {
+      const mockLoader = {
+        addForm: jest.fn().mockResolvedValue(undefined)
+      }
+
+      const testForms = [
+        {
+          path: 'path/to/form1.yaml',
+          id: 'form-id-1',
+          slug: 'form-slug-1',
+          title: 'Form 1'
+        },
+        {
+          path: 'path/to/form2.yaml',
+          id: 'form-id-2',
+          slug: 'form-slug-2',
+          title: 'Form 2'
+        }
+      ]
+
+      const result = await addAllForms(mockLoader, testForms)
+
+      expect(result).toBe(2)
+      expect(mockLoader.addForm).toHaveBeenCalledTimes(2)
+      expect(mockWarn).not.toHaveBeenCalled()
     })
   })
 })
