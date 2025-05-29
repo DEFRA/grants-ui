@@ -1,0 +1,314 @@
+{
+  "engine": "V2",
+  "name": "Project preparation",
+  "pages": [
+    {
+      "title": "Does the project have planning permission?",
+      "path": "/planning-permission",
+      "section": "projectPreparationSection",
+      "components": [
+        {
+          "name": "planningPermissionRadiosField",
+          "title": "Does the project have planning permission?",
+          "type": "RadiosField",
+          "list": "planningPermissionList",
+          "options": {
+            "customValidationMessages": {
+              "any.required": "Select when the project will have planning permission"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "title": "You may be able to apply for a grant from this scheme",
+      "path": "/planning-permission-may-apply",
+      "section": "projectPreparationSection",
+      "components": [
+        {
+          "name": "planningPermissionMayApplyInfo",
+          "title": "Html",
+          "type": "Html",
+          "content": "<p class=\"govuk-body\">You must have secured planning permission before you submit a full application. The application deadline is 31 May 2025</p>\n"
+        },
+        {
+          "name": "planningPermissionMayApplyLink",
+          "title": "Html",
+          "type": "Html",
+          "content": "<p class='govuk-body'><a href='https://www.gov.uk/guidance/funding-for-farmers' class='govuk-link govuk-link--no-visited-state'>See other grants you may be eligible for</a></p>"
+        }
+      ],
+      "condition": "planningPermissionShouldBeCondition"
+    },
+    {
+      "title": "You cannot apply for a grant from this scheme",
+      "path": "/planning-permission-cannot-apply",
+      "section": "projectPreparationSection",
+      "controller": "TerminalPageController",
+      "components": [
+        {
+          "name": "planningPermissionCannotApplyInfo",
+          "type": "Html",
+          "title": "Html",
+          "content": "<p class=\"govuk-body\">You must have secured planning permission before you submit a full application.</p>\n<p class='govuk-body'><a href='https://www.gov.uk/guidance/funding-for-farmers' class='govuk-link govuk-link--no-visited-state'>See other grants you may be eligible for</a></p>"
+        }
+      ],
+      "condition": "planningPermissionWillNotCondition"
+    },
+    {
+      "title": "Have you already started work on the project?",
+      "path": "/project-start",
+      "section": "projectPreparationSection",
+      "components": [
+        {
+          "name": "projectStartRadiosField",
+          "title": "Have you already started work on the project?",
+          "type": "RadiosField",
+          "list": "projectStartList",
+          "options": {
+            "customValidationMessages": {
+              "any.required": "Select the option that applies to your project"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "title": "You cannot apply for a grant from this scheme",
+      "path": "/cannot-apply-project-start",
+      "section": "projectPreparationSection",
+      "controller": "TerminalPageController",
+      "components": [
+        {
+          "name": "cannotApplyProjectStartInfo",
+          "type": "Html",
+          "title": "Html",
+          "content": "<p class=\"govuk-body\">You cannot apply for a grant if you have already started work on the project.</p>\n<div class=\"govuk-inset-text\">Starting the project or committing to any costs (such as placing orders) before you receive a funding agreement invalidates your application.</div><p class='govuk-body'><a href='https://www.gov.uk/guidance/funding-for-farmers' class='govuk-link govuk-link--no-visited-state'>See other grants you may be eligible for</a></p>"
+        }
+      ],
+      "condition": "projectStartCondition"
+    },
+    {
+      "title": "Is the planned project on land the business owns?",
+      "path": "/tenancy",
+      "section": "projectPreparationSection",
+      "components": [
+        {
+          "name": "tenancyYesNoField",
+          "title": "Is the planned project on land the business owns?",
+          "type": "YesNoField",
+          "options": {
+            "customValidationMessages": {
+              "any.required": "Select yes if the planned project is on land the business owns"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "title": "Do you have a tenancy agreement for 5 years after the final grant payment?",
+      "path": "/tenancy-length",
+      "section": "projectPreparationSection",
+
+      "components": [
+        {
+          "name": "tenancyLengthYesNoField",
+          "title": "Do you have a tenancy agreement for 5 years after the final grant payment?",
+          "type": "YesNoField",
+          "options": {
+            "customValidationMessages": {
+              "any.required": "Select yes if the land has a tenancy agreement in place for 5 years after the final grant payment."
+            }
+          }
+        }
+      ],
+      "condition": "tenancyCondition"
+    },
+    {
+      "title": "You may be able to apply for a grant from this scheme",
+      "path": "/may-apply-tenancy-length",
+      "section": "projectPreparationSection",
+
+      "components": [
+        {
+          "name": "mayApplyTenancyLengthInfo",
+          "type": "Html",
+          "title": "Html",
+          "content": "<p class=\"govuk-body\">You will need to extend your tenancy agreement for 5 years after the final grant payment.</p>"
+        }
+      ],
+      "condition": "tenancyLengthCondition"
+    },
+    {
+      "title": "Summary",
+      "path": "/summary",
+      "controller": "SectionEndController"
+    }
+  ],
+  "lists": [
+    {
+      "title": "Does the project have planning permission?",
+      "name": "planningPermissionList",
+      "type": "string",
+      "items": [
+        {
+          "text": "Not needed",
+          "value": "planningPermission-A1"
+        },
+        {
+          "text": "Secured",
+          "value": "planningPermission-A2"
+        },
+        {
+          "text": "Should be in place by the time I make my full application",
+          "value": "planningPermission-A3"
+        },
+        {
+          "text": "Will not be in place by the time I make my full application",
+          "value": "planningPermission-A4"
+        }
+      ]
+    },
+    {
+      "title": "Have you already started work on the project?",
+      "name": "projectStartList",
+      "type": "string",
+      "items": [
+        {
+          "text": "Yes, preparatory work",
+          "description": "For example, quotes from suppliers, applying for planning permission",
+          "value": "projectStart-A1"
+        },
+        {
+          "text": "Yes, we have begun project work",
+          "description": "For example, started construction work, signing contracts, placing orders",
+          "value": "projectStart-A2"
+        },
+        {
+          "text": "No, we have not done any work on this project yet",
+          "value": "projectStart-A3"
+        }
+      ]
+    }
+  ],
+  "conditions": [
+    {
+      "name": "planningPermissionShouldBeCondition",
+      "displayName": "planningPermissionShouldBe",
+      "value": {
+        "name": "planningPermissionShouldBe",
+        "conditions": [
+          {
+            "field": {
+              "name": "planningPermissionRadiosField",
+              "type": "RadiosField",
+              "display": "Does the project have planning permission?"
+            },
+            "operator": "is",
+            "value": {
+              "type": "Value",
+              "value": "planningPermission-A3",
+              "display": "Should be in place by the time I make my full application"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "planningPermissionWillNotCondition",
+      "displayName": "planningPermissionWillNot",
+      "value": {
+        "name": "planningPermissionWillNot",
+        "conditions": [
+          {
+            "field": {
+              "name": "planningPermissionRadiosField",
+              "type": "RadiosField",
+              "display": "Does the project have planning permission?"
+            },
+            "operator": "is",
+            "value": {
+              "type": "Value",
+              "value": "planningPermission-A4",
+              "display": "Will not be in place by the time I make my full application"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "projectStartCondition",
+      "displayName": "startProjectWork",
+      "value": {
+        "name": "startProjectWork",
+        "conditions": [
+          {
+            "field": {
+              "name": "projectStartRadiosField",
+              "type": "RadiosField",
+              "display": "Have you already started work on the project?"
+            },
+            "operator": "is",
+            "value": {
+              "type": "Value",
+              "value": "projectStart-A2",
+              "display": "Yes, we have begun project work"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "tenancyCondition",
+      "displayName": "tenancyConditionNo",
+      "value": {
+        "name": "tenancyConditionNo",
+        "conditions": [
+          {
+            "field": {
+              "name": "tenancyYesNoField",
+              "type": "YesNoField",
+              "display": "Is the planned project on land the business owns?"
+            },
+            "operator": "is",
+            "value": {
+              "type": "Value",
+              "value": "false",
+              "display": "No"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "tenancyLengthCondition",
+      "displayName": "tenancyLengthConditionNo",
+      "value": {
+        "name": "tenancyLengthConditionNo",
+        "conditions": [
+          {
+            "field": {
+              "name": "tenancyLengthYesNoField",
+              "type": "YesNoField",
+              "display": "Do you have a tenancy agreement for 5 years after the final grant payment?"
+            },
+            "operator": "is",
+            "value": {
+              "type": "Value",
+              "value": "false",
+              "display": "No"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "sections": [
+    {
+      "title": "Project preparation",
+      "name": "projectPreparationSection",
+      "hideTitle": false
+    }
+  ],
+  "startPage": "/planning-permission"
+}

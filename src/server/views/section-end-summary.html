@@ -1,0 +1,39 @@
+{% extends baseLayoutPath %}
+
+{% from "govuk/components/summary-list/macro.njk" import govukSummaryList %}
+{% from "govuk/components/button/macro.njk" import govukButton %}
+
+{% block pageTitle %}
+  {{ pageTitle | evaluate }} | {{ serviceName }}
+{% endblock %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      {% if pageHeading %}
+        <h1 class="govuk-heading-l">{{ pageHeading | evaluate }}</h1>
+      {% endif %}
+
+      {% if checkAnswers %}
+        {% for section in checkAnswers %}
+          {% if section.title and section.title.text %}
+            <h2 class="govuk-heading-m">{{ section.title.text }}</h2>
+          {% endif %}
+          {% if section.summaryList %}
+            {{ govukSummaryList(section.summaryList) }}
+          {% endif %}
+        {% endfor %}
+      {% endif %}
+
+      {% block form %}
+        <form method="post" novalidate>
+          <input type="hidden" name="crumb" value="{{ crumb }}">
+          {{ govukButton({
+            text: "Confirm and Continue",
+            preventDoubleClick: true
+          }) }}
+        </form>
+      {% endblock %}
+    </div>
+  </div>
+{% endblock %}
