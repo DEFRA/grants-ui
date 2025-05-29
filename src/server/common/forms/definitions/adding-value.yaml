@@ -517,8 +517,8 @@ pages:
         title: Who will your new customers be after this project?
         type: CheckboxesField
         list: futureCustomerTypesList
-        hint: |
-          For example, you will now sell directly to retailers
+        hint: |-
+          For example, you will now sell directly to retailers.
 
           Select all that apply
         options:
@@ -866,7 +866,7 @@ lists:
       - text: Increasing volume of added-value products
         description: ''
         value: projectImpact-A2
-      - text: Allow selling direct to consumers
+      - text: Allow selling direct to consumer
         description: For example, retail and internet sales.
         value: projectImpact-A3
       - text: Starting to make added-value products for the first time
