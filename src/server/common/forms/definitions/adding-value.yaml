@@ -287,7 +287,6 @@ pages:
     components:
       - name: projectItemsNeeded
         title: Does your project need eligible items?
-        hint: For example, shops or display cabinets
         type: YesNoField
         options:
           customValidationMessages:
@@ -505,7 +504,6 @@ pages:
     components:
       - name: hasFutureCustomers
         title: Will you have new customers after this project?
-        hint: For example, a customer that will buy directly from you.
         type: YesNoField
         options:
           customValidationMessages:
@@ -536,11 +534,10 @@ pages:
           customValidationMessages:
             any.required: Select yes if you will work in partnership or collaborate with other farmers or producers
   - title: Will this project improve the environment?
-    path: '/environment-impact-exist'
+    path: '/environmental-impact-exist'
     components:
       - name: hasEnvironmentImpact
         title: Will this project improve the environment?
-        hint: For example, majority of energy for the project is generated on site
         type: YesNoField
         options:
           customValidationMessages:
