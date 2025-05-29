@@ -79,10 +79,7 @@ describe('LandParcelPageController', () => {
         mockH
       )
 
-      expect(fetchParcelDataForBusiness).toHaveBeenCalledWith(
-        117235001,
-        1100598138
-      )
+      expect(fetchParcelDataForBusiness).toHaveBeenCalledWith(106284736)
       expect(mockH.view).toHaveBeenCalledWith(
         'land-parcel',
         expect.objectContaining({

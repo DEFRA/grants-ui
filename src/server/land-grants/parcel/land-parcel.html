@@ -25,7 +25,7 @@
           {% set radioItems = [] %}
           {% set parcelId = landParcel or business.land.parcels[0].parcelId %}
 
-          {% for parcel in business.land.parcels.slice(0,1) %}
+          {% for parcel in business.land.parcels %}
             {% set radioItems = radioItems.concat([{
               value: parcel.sheetId + "-" + parcel.parcelId,
               text: parcel.sheetId + "-" + parcel.parcelId + " (Total size: " + parcel.area + " ha.)"

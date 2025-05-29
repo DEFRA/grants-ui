@@ -1,8 +1,6 @@
 import { config } from '~/src/config/config.js'
-import { invokeGasPostAction } from '../../common/services/grant-application.service.js'
 
 const LAND_GRANTS_API_URL = config.get('landGrants.grantsServiceApiEndpoint')
-const GAS_FRPS_GRANT_CODE = config.get('landGrants.grantCode')
 
 const mapLandActionsToPayload = (sheetId, parcelId, actionsObj) => ({
   landActions: [
@@ -65,11 +63,24 @@ export async function fetchLandSheetDetails(parcelId, sheetId) {
  * @throws {Error} - If the request fails
  */
 export async function validateLandActions(sheetId, parcelId, actionsObj = {}) {
-  return invokeGasPostAction(
-    GAS_FRPS_GRANT_CODE,
-    'validate-land-parcel-actions',
-    mapLandActionsToPayload(sheetId, parcelId, actionsObj)
-  )
+  const response = await fetch(`${LAND_GRANTS_API_URL}/actions/validate`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(mapLandActionsToPayload(sheetId, parcelId, actionsObj))
+  })
+
+  if (!response.ok) {
+    /**
+     * @type {Error & {code?: number}}
+     */
+    const error = new Error(response.statusText)
+    error.code = response.status
+    throw error
+  }
+
+  return response.json()
 }
 
 /**
