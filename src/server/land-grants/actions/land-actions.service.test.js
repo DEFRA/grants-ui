@@ -6,8 +6,6 @@ import {
 } from '~/src/server/land-grants/actions/land-actions.service.js'
 
 const landGrantsApi = config.get('landGrants.grantsServiceApiEndpoint')
-const gasApi = config.get('gas.apiEndpoint')
-const frpsGrantCode = config.get('landGrants.grantCode')
 
 /**
  * @type {jest.Mock}
@@ -299,7 +297,7 @@ describe('validateLandActions', () => {
     const result = await validateLandActions(sheetId, parcelId, actionsObj)
 
     expect(mockFetch).toHaveBeenCalledWith(
-      `${gasApi}/grants/${frpsGrantCode}/actions/validate-land-parcel-actions/invoke`,
+      `${landGrantsApi}/actions/validate`,
       {
         method: 'POST',
         headers: {
@@ -381,7 +379,7 @@ describe('validateLandActions', () => {
     }
 
     expect(mockFetch).toHaveBeenCalledWith(
-      `${gasApi}/grants/${frpsGrantCode}/actions/validate-land-parcel-actions/invoke`,
+      `${landGrantsApi}/actions/validate`,
       {
         method: 'POST',
         headers: {
