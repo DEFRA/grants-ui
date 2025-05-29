@@ -1,5 +1,8 @@
 import { addingValueModel } from '../../common/forms/model-definitions/adding-value/adding-value.js'
-import { statusComponents } from '../../common/constants/status-components.js'
+import {
+  taskListStatusComponents,
+  TaskListStatus
+} from '../../common/constants/tasklist-status-components.js'
 
 const scorePages = [
   'business-status',
@@ -23,9 +26,15 @@ const checkPages = [
   'applicant-details'
 ]
 
-const declarationPages = [...checkPages, 'check-details']
+const CHECK_DETAILS = 'check-details'
 
-const falsyStatuses = ['notYetStarted', 'cannotStartYet', 'inProgress']
+const declarationPages = [...checkPages, CHECK_DETAILS]
+
+const falsyStatuses = [
+  TaskListStatus.NOT_YET_STARTED,
+  TaskListStatus.CANNOT_START_YET,
+  TaskListStatus.IN_PROGRESS
+]
 
 export const addingValueTasklist = {
   plugin: {
@@ -50,39 +59,39 @@ export const addingValueTasklist = {
 
 const determineStatuses = (request, data) => {
   const baseStatuses = {
-    'business-status': 'notYetStarted',
-    'project-preparation': 'notYetStarted',
-    facilities: 'notYetStarted',
-    costs: 'notYetStarted',
+    'business-status': TaskListStatus.NOT_YET_STARTED,
+    'project-preparation': TaskListStatus.NOT_YET_STARTED,
+    facilities: TaskListStatus.NOT_YET_STARTED,
+    costs: TaskListStatus.NOT_YET_STARTED,
     'produce-processed': otherFarmersYesOrFruitStorageCondition(data),
     'project-impact': otherFarmersYesOrFruitStorageCondition(data),
-    'manual-labour-amount': 'notYetStarted',
-    'future-customers': 'notYetStarted',
-    collaboration: 'notYetStarted',
-    'environmental-impact': 'notYetStarted',
-    'score-results': 'cannotStartYet',
-    'business-details': 'notYetStarted',
-    'who-is-applying': 'notYetStarted',
+    'manual-labour-amount': TaskListStatus.NOT_YET_STARTED,
+    'future-customers': TaskListStatus.NOT_YET_STARTED,
+    collaboration: TaskListStatus.NOT_YET_STARTED,
+    'environmental-impact': TaskListStatus.NOT_YET_STARTED,
+    'score-results': TaskListStatus.CANNOT_START_YET,
+    'business-details': TaskListStatus.NOT_YET_STARTED,
+    'who-is-applying': TaskListStatus.NOT_YET_STARTED,
     'agent-details': agentOrApplicantCondition(data, 'agent'),
     'applicant-details': agentOrApplicantCondition(data, 'applicant'),
-    'check-details': 'cannotStartYet',
-    declaration: 'cannotStartYet'
+    'check-details': TaskListStatus.CANNOT_START_YET,
+    declaration: TaskListStatus.CANNOT_START_YET
   }
 
   const pageStatuses = { ...baseStatuses }
 
   for (const [key] of Object.entries(pageStatuses)) {
-    if (baseStatuses[key] === 'notRequired') {
+    if (baseStatuses[key] === TaskListStatus.NOT_REQUIRED) {
       continue
     }
 
     if (key in data) {
-      pageStatuses[key] = 'completed'
+      pageStatuses[key] = TaskListStatus.COMPLETED
     } else {
       const visitedSubSections = request.yar.get('visitedSubSections')
 
       if (visitedSubSections.includes(key)) {
-        pageStatuses[key] = 'inProgress'
+        pageStatuses[key] = TaskListStatus.IN_PROGRESS
       }
     }
   }
@@ -94,8 +103,8 @@ const determineStatuses = (request, data) => {
     scorePages
   )
 
-  pageStatuses['check-details'] = basedOnCompletion(
-    'check-details',
+  pageStatuses[CHECK_DETAILS] = basedOnCompletion(
+    CHECK_DETAILS,
     data,
     pageStatuses,
     checkPages
@@ -112,8 +121,12 @@ const determineStatuses = (request, data) => {
 }
 
 const getCondition = (
-  data,
-  { check, whenTrue = 'notYetStarted', whenFalse = 'cannotStartYet' }
+  _data,
+  {
+    check,
+    whenTrue = TaskListStatus.NOT_YET_STARTED,
+    whenFalse = TaskListStatus.CANNOT_START_YET
+  }
 ) => (check ? whenTrue : whenFalse)
 
 export const otherFarmersYesOrFruitStorageCondition = (data) => {
@@ -124,7 +137,9 @@ export const otherFarmersYesOrFruitStorageCondition = (data) => {
     isBuildingFruitStorage: d
   } = data?.facilities ?? {}
 
-  if (c === false && d === false) return 'notRequired'
+  if (c === false && d === false) {
+    return TaskListStatus.NOT_REQUIRED
+  }
 
   return getCondition(data, {
     check: a || b
@@ -133,21 +148,27 @@ export const otherFarmersYesOrFruitStorageCondition = (data) => {
 
 export const agentOrApplicantCondition = (data, role) => {
   const grantType = data?.['who-is-applying']?.grantApplicantType ?? null
-  if (!grantType) return 'cannotStartYet'
+  if (!grantType) {
+    return TaskListStatus.CANNOT_START_YET
+  }
   const isValid =
     (role === 'applicant' && grantType === 'applying-A1') ||
     (role === 'agent' && grantType === 'applying-A2')
-  return isValid ? 'notYetStarted' : 'notRequired'
+  return isValid ? TaskListStatus.NOT_YET_STARTED : TaskListStatus.NOT_REQUIRED
 }
 
 export const basedOnCompletion = (pageSlug, data, pageStatuses, pageList) => {
   // CHANGE WHEN SCORING & CHECK PAGES WORK
-  if (pageSlug in data) return 'completed'
+  if (pageSlug in data) {
+    return TaskListStatus.COMPLETED
+  }
 
   const values = pageList.map((key) => pageStatuses[key])
 
-  if (falsyStatuses.some((iv) => values.includes(iv))) return 'cannotStartYet'
-  return 'notYetStarted'
+  if (falsyStatuses.some((iv) => values.includes(iv))) {
+    return TaskListStatus.CANNOT_START_YET
+  }
+  return TaskListStatus.NOT_YET_STARTED
 }
 
 const applyStatuses = (sections, statuses) => {
@@ -155,10 +176,10 @@ const applyStatuses = (sections, statuses) => {
     title: section.title,
     subsections: section.subsections.map((sub) => ({
       ...sub,
-      status: statusComponents[statuses[sub.href]],
+      status: taskListStatusComponents[statuses[sub.href]],
       href:
-        statuses[sub.href] === 'cannotStartYet' ||
-        statuses[sub.href] === 'notRequired'
+        statuses[sub.href] === TaskListStatus.CANNOT_START_YET ||
+        statuses[sub.href] === TaskListStatus.NOT_REQUIRED
           ? null
           : `${sub.href}?source=adding-value-tasklist`
     }))

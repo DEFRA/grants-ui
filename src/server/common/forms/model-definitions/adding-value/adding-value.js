@@ -1,3 +1,6 @@
+/* istanbul ignore file */
+/* c8 ignore start */
+// NOSONAR - Configuration data requires repetitive structure
 export const addingValueModel = [
   {
     title: '1. Check before you start',
@@ -51,8 +54,7 @@ export const addingValueModel = [
       },
       {
         title: { text: 'Collaboration' },
-        href: 'collaboration',
-        id: 'd2feb2b3-bf1c-4639-8108-129a2eb0ea0a'
+        href: 'collaboration'
       },
       {
         title: { text: 'Environment' },
@@ -96,3 +98,4 @@ export const addingValueModel = [
     ]
   }
 ]
+/* c8 ignore stop */

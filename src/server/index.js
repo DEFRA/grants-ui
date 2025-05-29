@@ -163,7 +163,9 @@ export async function createServer() {
     const prev = request.yar.get('visitedSubSections') || []
     const entry = request?.paramsArray[0] || null
 
-    if (entry && !prev.includes(entry)) prev.push(entry)
+    if (entry && !prev.includes(entry)) {
+      prev.push(entry)
+    }
 
     request.yar.set('visitedSubSections', prev)
 
