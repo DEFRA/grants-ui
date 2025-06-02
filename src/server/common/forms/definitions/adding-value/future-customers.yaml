@@ -1,26 +1,16 @@
-{
-  "engine": "V2",
-  "name": "Future customers",
-  "pages": [
-    {
-      "title": "Who will your new customers be after the project?",
-      "path": "/future-customers",
-      "section": "futureCustomersSection"
-    },
-    {
-      "title": "Summary",
-      "path": "/summary",
-      "controller": "SectionEndController"
-    }
-  ],
-  "lists": [],
-  "conditions": [],
-  "sections": [
-    {
-      "title": "Future customers",
-      "name": "futureCustomersSection",
-      "hideTitle": false
-    }
-  ],
-  "startPage": "/future-customers"
-}
+engine: V2
+name: Future customers
+pages:
+  - title: Who will your new customers be after the project?
+    path: /future-customers
+    section: futureCustomersSection
+  - title: Summary
+    path: /summary
+    controller: SectionEndController
+lists: []
+conditions: []
+sections:
+  - title: Future customers
+    name: futureCustomersSection
+    hideTitle: false
+startPage: /future-customers

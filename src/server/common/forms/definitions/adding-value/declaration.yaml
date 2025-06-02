@@ -1,29 +1,19 @@
-{
-  "engine": "V2",
-  "name": "Confirm and send",
-  "pages": [
-    {
-      "title": "Confirm and send",
-      "path": "/declaration",
-      "section": "confirmAndSendSection",
-      "controller": "DeclarationPageController",
-      "view": "grants/declaration.html"
-    },
-    {
-      "title": "Confirmation",
-      "path": "/confirmation",
-      "section": "confirmAndSendSection",
-      "controller": "ConfirmationPageController"
-    }
-  ],
-  "lists": [],
-  "conditions": [],
-  "sections": [
-    {
-      "title": "Confirm and send",
-      "name": "confirmAndSendSection",
-      "hideTitle": false
-    }
-  ],
-  "startPage": "/declaration"
-}
+engine: V2
+name: Confirm and send
+pages:
+  - title: Confirm and send
+    path: /declaration
+    section: confirmAndSendSection
+    controller: DeclarationPageController
+    view: grants/declaration.html
+  - title: Confirmation
+    path: /confirmation
+    section: confirmAndSendSection
+    controller: ConfirmationPageController
+lists: []
+conditions: []
+sections:
+  - title: Confirm and send
+    name: confirmAndSendSection
+    hideTitle: false
+startPage: /declaration

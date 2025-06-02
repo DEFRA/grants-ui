@@ -1,26 +1,16 @@
-{
-  "engine": "V2",
-  "name": "Environment",
-  "pages": [
-    {
-      "title": "How will this project improve the environment?",
-      "path": "/environmental-impact",
-      "section": "environmentSection"
-    },
-    {
-      "title": "Summary",
-      "path": "/summary",
-      "controller": "SectionEndController"
-    }
-  ],
-  "lists": [],
-  "conditions": [],
-  "sections": [
-    {
-      "title": "Environment",
-      "name": "environmentSection",
-      "hideTitle": false
-    }
-  ],
-  "startPage": "/environmental-impact"
-}
+engine: V2
+name: Environment
+pages:
+  - title: How will this project improve the environment?
+    path: /environmental-impact
+    section: environmentSection
+  - title: Summary
+    path: /summary
+    controller: SectionEndController
+lists: []
+conditions: []
+sections:
+  - title: Environment
+    name: environmentSection
+    hideTitle: false
+startPage: /environmental-impact
