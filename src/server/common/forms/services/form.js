@@ -8,6 +8,8 @@ export function configureFormDefinition(definition) {
   const logger = createLogger()
   const environment = config.get('cdpEnvironment')
 
+  definition.engine = 'V2'
+
   if (definition.pages) {
     definition.pages.forEach((page) => {
       const events = page.events
