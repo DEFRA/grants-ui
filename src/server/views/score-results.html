@@ -6,10 +6,10 @@
 
 {% block content %}
   {% set scoreChanceSection %}
-  <h2 class="govuk-heading-m">{{ context.data.scoreBand }}</h2>
-    {% if context.data.scoreBand == 'Strong' %}
+  <h2 class="govuk-heading-m">{{ context.data.score.band }}</h2>
+    {% if context.data.score.band == 'Strong' %}
       <span>This means your project seems likely to be successful.</span>
-    {% elif context.data.scoreBand == 'Average' %}
+    {% elif context.data.score.band == 'Average' %}
       <span>This means your project might be successful.</span>
     {% else %}
       <span>This means your project seems unlikely to be successful.</span>
