@@ -1,15 +1,6 @@
 .app-contact-panel {
   background-color: govuk-colour("light-grey");
-  border-left: 4px solid govuk-colour("blue");
+  border-left: govuk-spacing(1) solid govuk-colour("blue");
   padding: govuk-spacing(4);
-  margin-top: govuk-spacing(6);
-  margin-bottom: govuk-spacing(6);
-
-  &__body {
-    margin-bottom: 0;
-  }
-
-  .govuk-heading-s {
-    margin-top: 0;
-  }
+  margin-block: govuk-spacing(6);
 }
