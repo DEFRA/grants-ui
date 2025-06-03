@@ -1,6 +1,10 @@
 import { config } from '~/src/config/config.js'
+import {
+  invokeGasGetAction,
+  invokeGasPostAction
+} from '~/src/server/common/services/grant-application.service.js'
 
-const LAND_GRANTS_API_URL = config.get('landGrants.grantsServiceApiEndpoint')
+const GRANT_CODE = config.get('landGrants.grantCode')
 
 const mapLandActionsToPayload = (sheetId, parcelId, actionsObj) => ({
   landActions: [
@@ -26,36 +30,20 @@ const mapActionsObjectToPayload = (actionsObj) =>
  */
 
 /**
- * Fetches land grant information from Land Grants API
+ * Fetches land grant information
  * @param {string} parcelId - Land Parcel Id
  * @param {string} sheetId - Sheet Id
  * @returns {Promise<object>} - Promise that resolves to the business details
  * @throws {Error} - If the request fails
  */
 export async function fetchLandSheetDetails(parcelId, sheetId) {
-  const response = await fetch(
-    `${LAND_GRANTS_API_URL}/parcels/${sheetId}-${parcelId}`,
-    {
-      method: 'GET'
-    }
-  )
-
-  if (!response.ok) {
-    /**
-     * @type {Error & {code?: number}}
-     */
-    const error = new Error(response.statusText)
-    error.code = response.status
-    throw error
-  }
-
-  const data = /** @type {Promise<object>} */ (response.json())
-
-  return data
+  return invokeGasGetAction(GRANT_CODE, 'get-parcel-details', {
+    parcelId: `${sheetId}-${parcelId}`
+  })
 }
 
 /**
- * Validates action information through Land Grants API
+ * Validates action information
  * @param {string} sheetId - Sheet Id
  * @param {string} parcelId - Land Parcel Id
  * @param {object} actionsObj - Actions object
@@ -63,28 +51,12 @@ export async function fetchLandSheetDetails(parcelId, sheetId) {
  * @throws {Error} - If the request fails
  */
 export async function validateLandActions(sheetId, parcelId, actionsObj = {}) {
-  const response = await fetch(`${LAND_GRANTS_API_URL}/actions/validate`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(mapLandActionsToPayload(sheetId, parcelId, actionsObj))
-  })
-
-  if (!response.ok) {
-    /**
-     * @type {Error & {code?: number}}
-     */
-    const error = new Error(response.statusText)
-    error.code = response.status
-    throw error
-  }
-
-  return response.json()
+  const payload = mapLandActionsToPayload(sheetId, parcelId, actionsObj)
+  return invokeGasPostAction(GRANT_CODE, 'validate-actions', payload)
 }
 
 /**
- * Calculates application payment information through Land Grants API
+ * Calculates application payment information
  * @param {string} sheetId - Sheet Id
  * @param {string} parcelId - Land Parcel Id
  * @param {object} actionsObj - Actions object
@@ -104,24 +76,13 @@ export async function calculateApplicationPayment(
         }).format(amount)
       : null
 
-  const response = await fetch(`${LAND_GRANTS_API_URL}/payments/calculate`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(mapLandActionsToPayload(sheetId, parcelId, actionsObj))
-  })
+  const payload = mapLandActionsToPayload(sheetId, parcelId, actionsObj)
+  const data = await invokeGasPostAction(
+    GRANT_CODE,
+    'calculate-payment',
+    payload
+  )
 
-  if (!response.ok) {
-    /**
-     * @type {Error & {code?: number}}
-     */
-    const error = new Error(response.statusText)
-    error.code = response.status
-    throw error
-  }
-
-  const data = await response.json()
   const paymentTotal = formatAmount(data.payment?.total)
   return {
     ...data,
