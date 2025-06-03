@@ -25,7 +25,7 @@ class GrantApplicationServiceApiError extends Error {
  * @returns {Promise} - Promise that resolves to the response
  * @throws {GrantApplicationServiceApiError} - If the API request fails
  */
-async function makeGasApiRequest(url, grantCode, options = {}) {
+export async function makeGasApiRequest(url, grantCode, options = {}) {
   const { method = 'POST', payload, queryParams } = options
 
   try {

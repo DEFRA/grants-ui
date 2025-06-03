@@ -2,6 +2,7 @@ import { config } from '~/src/config/config.js'
 import {
   invokeGasGetAction,
   invokeGasPostAction,
+  makeGasApiRequest,
   submitGrantApplication
 } from '~/src/server/common/services/grant-application.service.js'
 
@@ -364,6 +365,204 @@ describe('invokeGasGetAction', () => {
     expect(thrownError.message).toBe(
       'Failed to process GAS API request: 422 API error'
     )
+  })
+})
+
+describe('makeGasApiRequest', () => {
+  const testUrl = `${gasApi}/test/endpoint`
+  const testGrantCode = 'TEST_GRANT'
+
+  beforeEach(() => {
+    jest.resetAllMocks()
+  })
+
+  test('should use default options when none provided', async () => {
+    const mockResponse = { success: true }
+
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      json: jest.fn().mockResolvedValueOnce(mockResponse)
+    })
+
+    const result = await makeGasApiRequest(testUrl, testGrantCode)
+
+    expect(fetch).toHaveBeenCalledWith(testUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(undefined)
+    })
+    expect(result).toEqual(mockResponse)
+  })
+
+  test('should use default method when only payload provided', async () => {
+    const mockResponse = { success: true }
+    const payload = { test: 'data' }
+
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      json: jest.fn().mockResolvedValueOnce(mockResponse)
+    })
+
+    const result = await makeGasApiRequest(testUrl, testGrantCode, { payload })
+
+    expect(fetch).toHaveBeenCalledWith(testUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    })
+    expect(result).toEqual(mockResponse)
+  })
+
+  test('should handle GET request with query params', async () => {
+    const mockResponse = { success: true }
+    const queryParams = { param1: 'value1', param2: 'value2' }
+
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      json: jest.fn().mockResolvedValueOnce(mockResponse)
+    })
+
+    const result = await makeGasApiRequest(testUrl, testGrantCode, {
+      method: 'GET',
+      queryParams
+    })
+
+    expect(fetch).toHaveBeenCalledWith(
+      `${testUrl}?param1=value1&param2=value2`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
+    )
+    expect(result).toEqual(mockResponse)
+  })
+
+  test('should handle GET request without query params', async () => {
+    const mockResponse = { success: true }
+
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      json: jest.fn().mockResolvedValueOnce(mockResponse)
+    })
+
+    const result = await makeGasApiRequest(testUrl, testGrantCode, {
+      method: 'GET'
+    })
+
+    expect(fetch).toHaveBeenCalledWith(testUrl, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+    expect(result).toEqual(mockResponse)
+  })
+
+  test('should filter out null and undefined query params', async () => {
+    const mockResponse = { success: true }
+    const queryParams = {
+      valid: 'value',
+      nullValue: null,
+      undefinedValue: undefined,
+      emptyString: '',
+      zero: 0
+    }
+
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      json: jest.fn().mockResolvedValueOnce(mockResponse)
+    })
+
+    await makeGasApiRequest(testUrl, testGrantCode, {
+      method: 'GET',
+      queryParams
+    })
+
+    expect(fetch).toHaveBeenCalledWith(
+      `${testUrl}?valid=value&emptyString=&zero=0`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
+    )
+  })
+
+  test('should throw GrantApplicationServiceApiError on API error', async () => {
+    const errorStatus = 400
+    const errorText = '400 Bad Request'
+    const statusText = 'Bad Request'
+
+    fetch.mockResolvedValueOnce({
+      ok: false,
+      status: errorStatus,
+      statusText,
+      text: jest.fn().mockResolvedValueOnce(errorText)
+    })
+
+    let thrownError
+    try {
+      await makeGasApiRequest(testUrl, testGrantCode)
+    } catch (error) {
+      thrownError = error
+    }
+
+    expect(thrownError).toBeDefined()
+    expect(thrownError.name).toBe('GrantApplicationServiceApiError')
+    expect(thrownError.message).toBe(
+      `Failed to process GAS API request: ${errorStatus} ${statusText}`
+    )
+    expect(thrownError.status).toBe(errorStatus)
+    expect(thrownError.responseBody).toBe(errorText)
+    expect(thrownError.grantCode).toBe(testGrantCode)
+  })
+
+  test('should re-throw GrantApplicationServiceApiError without wrapping', async () => {
+    const errorStatus = 500
+    const errorText = '500 Internal Server Error'
+    const statusText = 'Internal Server Error'
+
+    fetch.mockResolvedValueOnce({
+      ok: false,
+      status: errorStatus,
+      statusText,
+      text: jest.fn().mockResolvedValueOnce(errorText)
+    })
+
+    await expect(
+      makeGasApiRequest(testUrl, testGrantCode)
+    ).rejects.toMatchObject({
+      name: 'GrantApplicationServiceApiError',
+      status: errorStatus,
+      responseBody: errorText,
+      grantCode: testGrantCode
+    })
+  })
+
+  test('should wrap network errors in GrantApplicationServiceApiError', async () => {
+    const networkError = new Error('Network connection failed')
+    fetch.mockRejectedValueOnce(networkError)
+
+    let thrownError
+    try {
+      await makeGasApiRequest(testUrl, testGrantCode)
+    } catch (error) {
+      thrownError = error
+    }
+
+    expect(thrownError).toBeDefined()
+    expect(thrownError.name).toBe('GrantApplicationServiceApiError')
+    expect(thrownError.message).toBe(
+      'Failed to process GAS API request: Network connection failed'
+    )
+    expect(thrownError.grantCode).toBe(testGrantCode)
   })
 })
 
