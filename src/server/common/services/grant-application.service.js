@@ -18,19 +18,43 @@ class GrantApplicationServiceApiError extends Error {
  * Makes a request to the Grant Application Service (GAS) API
  * @param {string} url - API endpoint URL
  * @param {string} grantCode - Grant code for error context
- * @param {object} payload - Request payload
+ * @param {object} options - Request options
+ * @param {string} options.method - HTTP method (GET, POST, etc.)
+ * @param {object} [options.payload] - Request payload for POST requests
+ * @param {object} [options.queryParams] - Query parameters for GET requests
  * @returns {Promise} - Promise that resolves to the response
  * @throws {GrantApplicationServiceApiError} - If the API request fails
  */
-async function makeGasApiRequest(url, grantCode, payload) {
+export async function makeGasApiRequest(url, grantCode, options = {}) {
+  const { method = 'POST', payload, queryParams } = options
+
   try {
-    const response = await fetch(url, {
-      method: 'POST',
+    // Add query parameters for GET requests
+    let requestUrl = url
+    if (method === 'GET' && queryParams) {
+      const searchParams = new URLSearchParams()
+      Object.entries(queryParams).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          searchParams.append(key, value.toString())
+        }
+      })
+      if (searchParams.toString()) {
+        requestUrl += `?${searchParams.toString()}`
+      }
+    }
+
+    const requestOptions = {
+      method,
       headers: {
         'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(payload)
-    })
+      }
+    }
+
+    if (method !== 'GET' && payload) {
+      requestOptions.body = JSON.stringify(payload)
+    }
+
+    const response = await fetch(requestUrl, requestOptions)
 
     if (!response.ok) {
       const errorText = await response.text()
@@ -67,7 +91,20 @@ async function makeGasApiRequest(url, grantCode, payload) {
  */
 export async function invokeGasPostAction(code, name, payload) {
   const url = `${GAS_API_ENDPOINT}/grants/${code}/actions/${name}/invoke`
-  return makeGasApiRequest(url, code, payload)
+  return makeGasApiRequest(url, code, { method: 'POST', payload })
+}
+
+/**
+ * Invokes a GET action on the Grant Application Service (GAS)
+ * @param {string} code - Grant code
+ * @param {string} name - Action name
+ * @param {object} [queryParams] - Optional query parameters
+ * @returns {Promise} - Promise that resolves to the response
+ * @throws {GrantApplicationServiceApiError} - If the API request fails
+ */
+export async function invokeGasGetAction(code, name, queryParams = {}) {
+  const url = `${GAS_API_ENDPOINT}/grants/${code}/actions/${name}/invoke`
+  return makeGasApiRequest(url, code, { method: 'GET', queryParams })
 }
 
 /**
@@ -79,5 +116,5 @@ export async function invokeGasPostAction(code, name, payload) {
  */
 export async function submitGrantApplication(code, payload) {
   const url = `${GAS_API_ENDPOINT}/grants/${code}/applications`
-  return makeGasApiRequest(url, code, payload)
+  return makeGasApiRequest(url, code, { method: 'POST', payload })
 }
