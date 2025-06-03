@@ -117,7 +117,7 @@ server.route({
 
       if (!response.ok) {
         const errorText = await response.text()
-        server.log(['error', 'mock-gas'], `❌ ${response.status} ${errorText}`)
+        server.log(['error', 'mock-gas'], `${response.status} ${errorText}`)
         return h
           .response({
             error: response.statusText,
@@ -127,10 +127,10 @@ server.route({
       }
 
       const data = await response.json()
-      server.log(['debug', 'mock-gas'], `✅ Success`)
+      server.log(['debug', 'mock-gas'], `Success`)
       return data
     } catch (error) {
-      server.log(['error', 'mock-gas'], `❌ Error: ${error.message}`)
+      server.log(['error', 'mock-gas'], `Error: ${error.message}`)
       return h.response({ error: error.message }).code(500)
     }
   }
@@ -181,7 +181,7 @@ server.route({
 
       if (!response.ok) {
         const errorText = await response.text()
-        server.log(['error', 'mock-gas'], `❌ ${response.status} ${errorText}`)
+        server.log(['error', 'mock-gas'], `${response.status} ${errorText}`)
         return h
           .response({
             error: response.statusText,
@@ -191,10 +191,10 @@ server.route({
       }
 
       const data = await response.json()
-      server.log(['debug', 'mock-gas'], `✅ Success`)
+      server.log(['debug', 'mock-gas'], `Success`)
       return data
     } catch (error) {
-      server.log(['error', 'mock-gas'], `❌ Error: ${error.message}`)
+      server.log(['error', 'mock-gas'], `Error: ${error.message}`)
       return h.response({ error: error.message }).code(500)
     }
   }
