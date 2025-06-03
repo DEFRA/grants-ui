@@ -1,102 +1,60 @@
-{
-  "engine": "V2",
-  "name": "Manual Labour Amount",
-  "pages": [
-    {
-      "title": "Will this project use any mechanisation instead of manual labour?",
-      "path": "/mechanisation",
-      "section": "manualLabourAmountSection",
-      "components": [
-        {
-          "name": "hasMechanisationUsage",
-          "title": "Will this project use any mechanisation instead of manual labour?",
-          "hint": "For example, a fruit grading and sorting machine that does the work of 2 farm labourers",
-          "type": "YesNoField",
-          "options": {
-            "customValidationMessages": {
-              "any.required": "Select yes if this project will use any mechanisation instead of manual labour"
-            }
-          }
-        }
-      ]
-    },
-    {
-      "title": "How much manual labour will the mechanisation be equal to?",
-      "path": "/manual-labour-amount",
-      "section": "manualLabourAmountSection",
-      "components": [
-        {
-          "name": "manualLabourEquivalence",
-          "title": "How much manual labour will the mechanisation be equal to?",
-          "type": "RadiosField",
-          "list": "manualLabourAmountList",
-          "hint": "Based on your current staff numbers",
-          "options": {
-            "customValidationMessages": {
-              "any.required": "Select how much manual labour the mechanisation will be equal to"
-            }
-          }
-        }
-      ],
-      "condition": "mechanisationCondition"
-    },
-    {
-      "title": "Summary",
-      "path": "/summary",
-      "controller": "SectionEndController"
-    }
-  ],
-  "lists": [
-    {
-      "title": "How much manual labour will the mechanisation be equal to?",
-      "name": "manualLabourAmountList",
-      "type": "string",
-      "items": [
-        {
-          "text": "Up to 5% of workforce",
-          "value": "manualLabourAmount-A1"
-        },
-        {
-          "text": "Between 5% and 10%",
-          "value": "manualLabourAmount-A2"
-        },
-        {
-          "text": "More than 10%",
-          "value": "manualLabourAmount-A3"
-        }
-      ]
-    }
-  ],
-  "conditions": [
-    {
-      "name": "mechanisationCondition",
-      "displayName": "mechanisationYes",
-      "value": {
-        "name": "mechanisationYes",
-        "conditions": [
-          {
-            "field": {
-              "name": "hasMechanisationUsage",
-              "type": "YesNoField",
-              "display": "Will this project use any mechanisation instead of manual labour?"
-            },
-            "operator": "is",
-            "value": {
-              "type": "Value",
-              "value": "true",
-              "display": "Yes"
-            }
-          }
-        ]
-      }
-    }
-  ],
-  "sections": [
-    {
-      "title": "Manual Labour Amount",
-      "name": "manualLabourAmountSection",
-      "hideTitle": false
-    }
-  ],
-  "startPage": "/mechanisation"
-}
+name: Manual Labour Amount
+pages:
+  - title: Will this project use any mechanisation instead of manual labour?
+    path: /mechanisation
+    section: manualLabourAmountSection
+    components:
+      - name: hasMechanisationUsage
+        title: Will this project use any mechanisation instead of manual labour?
+        hint: For example, a fruit grading and sorting machine that does the work of 2 farm labourers
+        type: YesNoField
+        options:
+          customValidationMessages:
+            any.required: Select yes if this project will use any mechanisation instead of manual labour
+  - title: How much manual labour will the mechanisation be equal to?
+    path: /manual-labour-amount
+    section: manualLabourAmountSection
+    components:
+      - name: manualLabourEquivalence
+        title: How much manual labour will the mechanisation be equal to?
+        type: RadiosField
+        list: manualLabourAmountList
+        hint: Based on your current staff numbers
+        options:
+          customValidationMessages:
+            any.required: Select how much manual labour the mechanisation will be equal to
+    condition: mechanisationCondition
+  - title: Summary
+    path: /summary
+    controller: SectionEndController
+lists:
+  - title: How much manual labour will the mechanisation be equal to?
+    name: manualLabourAmountList
+    type: string
+    items:
+      - text: Up to 5% of workforce
+        value: manualLabourAmount-A1
+      - text: Between 5% and 10%
+        value: manualLabourAmount-A2
+      - text: More than 10%
+        value: manualLabourAmount-A3
+conditions:
+  - name: mechanisationCondition
+    displayName: mechanisationYes
+    value:
+      name: mechanisationYes
+      conditions:
+        - field:
+            name: hasMechanisationUsage
+            type: YesNoField
+            display: Will this project use any mechanisation instead of manual labour?
+          operator: is
+          value:
+            type: Value
+            value: "true"
+            display: "Yes"
+sections:
+  - title: Manual Labour Amount
+    name: manualLabourAmountSection
+    hideTitle: false
+startPage: /mechanisation

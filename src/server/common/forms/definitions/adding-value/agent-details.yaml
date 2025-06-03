@@ -1,175 +1,115 @@
-{
-  "engine": "V2",
-  "name": "Agent",
-  "pages": [
-    {
-      "title": "Agent's details",
-      "path": "/agent-details",
-      "section": "agentSection",
-      "components": [
-        {
-          "type": "TextField",
-          "name": "agentFirstName",
-          "title": "First name",
-          "options": {
-            "required": true,
-            "customValidationMessages": {
-              "string.empty": "Enter your first name",
-              "string.max": "First name must be 30 characters or fewer",
-              "string.pattern.base": "First name must only include letters, hyphens and apostrophes"
-            }
-          },
-          "schema": {
-            "regex": "^[a-zA-Z' -]*$",
-            "max": 30
-          }
-        },
-        {
-          "type": "TextField",
-          "name": "agentLastName",
-          "title": "Last name",
-          "options": {
-            "required": true,
-            "customValidationMessages": {
-              "string.empty": "Enter your last name",
-              "string.max": "Last name must be 30 characters or fewer",
-              "string.pattern.base": "Last name must only include letters, hyphens and apostrophes"
-            }
-          },
-          "schema": {
-            "regex": "^[a-zA-Z' -]*$",
-            "max": 30
-          }
-        },
-        {
-          "type": "TextField",
-          "name": "agentBusinessName",
-          "title": "Business name",
-          "options": {
-            "required": true,
-            "customValidationMessages": {
-              "string.empty": "Enter your business name",
-              "string.max": "Business name must be 30 characters or fewer"
-            }
-          },
-          "schema": {
-            "max": 30
-          }
-        },
-        {
-          "type": "EmailAddressField",
-          "name": "agentEmail",
-          "title": "Email address",
-          "hint": "We will only use this to send you a confirmation",
-          "options": {
-            "required": true,
-            "customValidationMessages": {
-              "string.empty": "Enter your email address",
-              "string.email": "Enter an email address in the correct format, like name@example.com"
-            }
-          },
-          "schema": {
-            "regex": "^\\w+([.-]\\w+)*@[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*(\\.[a-zA-Z]{2,})+$"
-          }
-        },
-        {
-          "type": "EmailAddressField",
-          "name": "agentEmailConfirmation",
-          "title": "Confirm email address",
-          "options": {
-            "required": true,
-            "customValidationMessages": {
-              "string.empty": "Confirm your email address",
-              "string.email": "Enter an email address that matches"
-            }
-          },
-          "schema": {
-            "regex": "^\\w+([.-]\\w+)*@[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*(\\.[a-zA-Z]{2,})+$"
-          }
-        },
-        {
-          "type": "TelephoneNumberField",
-          "name": "agentMobile",
-          "title": "Mobile number",
-          "hint": "We will only use this to contact you about your application",
-          "options": {
-            "required": true,
-            "customValidationMessages": {
-              "string.empty": "Enter a mobile number",
-              "string.pattern.base": "Enter a telephone number, like 01632 960 001, 07700 900 982 or +44 0808 157 0192"
-            }
-          },
-          "schema": {
-            "regex": "^\\+?[0-9\\s()-]{10,}$"
-          }
-        },
-        {
-          "type": "TelephoneNumberField",
-          "name": "agentLandline",
-          "title": "Landline number",
-          "hint": "We will only use this to contact you about your application",
-          "options": {
-            "required": true,
-            "customValidationMessages": {
-              "string.empty": "Enter a landline number",
-              "string.pattern.base": "Enter a telephone number, like 01632 960 001, 07700 900 982 or +44 0808 157 0192"
-            }
-          },
-          "schema": {
-            "regex": "^\\+?[0-9\\s()-]{10,}$"
-          }
-        },
-        {
-          "type": "Html",
-          "name": "agentBusinessAddressHeader",
-          "title": "Html",
-          "content": "<h1 class=\"govuk-heading-m\">Business address</h1>"
-        },
-        {
-          "type": "UkAddressField",
-          "title": "Address",
-          "name": "agentBusinessAddress"
-        }
-      ],
-      "condition": "agentDetailsSelected"
-    },
-    {
-      "title": "Summary",
-      "path": "/summary",
-      "controller": "SectionEndController"
-    }
-  ],
-  "lists": [],
-  "conditions": [
-    {
-      "name": "agentDetailsSelected",
-      "displayName": "agentDetailsSelected",
-      "value": {
-        "name": "agentDetailsSelected",
-        "conditions": [
-          {
-            "field": {
-              "name": "grantApplicantType",
-              "type": "RadiosField",
-              "display": "Who is applying for this grant?"
-            },
-            "operator": "is",
-            "value": {
-              "type": "Value",
-              "value": "applying-A2",
-              "display": "Agent"
-            }
-          }
-        ]
-      }
-    }
-  ],
-  "sections": [
-    {
-      "title": "Agent",
-      "name": "agentSection",
-      "hideTitle": false
-    }
-  ],
-  "startPage": "/agent-details"
-}
+name: Agent
+pages:
+  - title: Agent's details
+    path: /agent-details
+    section: agentSection
+    components:
+      - type: TextField
+        name: agentFirstName
+        title: First name
+        options:
+          required: true
+          customValidationMessages:
+            string.empty: Enter your first name
+            string.max: First name must be 30 characters or fewer
+            string.pattern.base: First name must only include letters, hyphens and apostrophes
+        schema:
+          regex: ^[a-zA-Z' -]*$
+          max: 30
+      - type: TextField
+        name: agentLastName
+        title: Last name
+        options:
+          required: true
+          customValidationMessages:
+            string.empty: Enter your last name
+            string.max: Last name must be 30 characters or fewer
+            string.pattern.base: Last name must only include letters, hyphens and apostrophes
+        schema:
+          regex: ^[a-zA-Z' -]*$
+          max: 30
+      - type: TextField
+        name: agentBusinessName
+        title: Business name
+        options:
+          required: true
+          customValidationMessages:
+            string.empty: Enter your business name
+            string.max: Business name must be 30 characters or fewer
+        schema:
+          max: 30
+      - type: EmailAddressField
+        name: agentEmail
+        title: Email address
+        hint: We will only use this to send you a confirmation
+        options:
+          required: true
+          customValidationMessages:
+            string.empty: Enter your email address
+            string.email: Enter an email address in the correct format, like name@example.com
+        schema:
+          regex: ^\w+([-.]?\w+)*@[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*(\.[a-zA-Z]{2,})+$
+      - type: EmailAddressField
+        name: agentEmailConfirmation
+        title: Confirm email address
+        options:
+          required: true
+          customValidationMessages:
+            string.empty: Confirm your email address
+            string.email: Enter an email address that matches
+        schema:
+          regex: ^\w+([-.]?\w+)*@[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*(\.[a-zA-Z]{2,})+$
+      - type: TelephoneNumberField
+        name: agentMobile
+        title: Mobile number
+        hint: We will only use this to contact you about your application
+        options:
+          required: true
+          customValidationMessages:
+            string.empty: Enter a mobile number
+            string.pattern.base: Enter a telephone number, like 01632 960 001, 07700 900 982 or +44 0808 157 0192
+        schema:
+          regex: ^\+?[0-9\s()-]{10,}$
+      - type: TelephoneNumberField
+        name: agentLandline
+        title: Landline number
+        hint: We will only use this to contact you about your application
+        options:
+          required: true
+          customValidationMessages:
+            string.empty: Enter a landline number
+            string.pattern.base: Enter a telephone number, like 01632 960 001, 07700 900 982 or +44 0808 157 0192
+        schema:
+          regex: ^\+?[0-9\s()-]{10,}$
+      - type: Html
+        name: agentBusinessAddressHeader
+        title: Html
+        content: '<h1 class="govuk-heading-m">Business address</h1>'
+      - type: UkAddressField
+        title: Address
+        name: agentBusinessAddress
+    condition: agentDetailsSelected
+  - title: Summary
+    path: /summary
+    controller: SectionEndController
+lists: []
+conditions:
+  - name: agentDetailsSelected
+    displayName: agentDetailsSelected
+    value:
+      name: agentDetailsSelected
+      conditions:
+        - field:
+            name: grantApplicantType
+            type: RadiosField
+            display: Who is applying for this grant?
+          operator: is
+          value:
+            type: Value
+            value: applying-A2
+            display: Agent
+sections:
+  - title: Agent
+    name: agentSection
+    hideTitle: false
+startPage: /agent-details

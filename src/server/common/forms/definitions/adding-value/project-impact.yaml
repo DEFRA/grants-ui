@@ -1,115 +1,69 @@
-{
-  "engine": "V2",
-  "name": "Project Impact",
-  "pages": [
-    {
-      "title": "How will this project add value to the produce?",
-      "path": "/how-adding-value",
-      "section": "projectImpactSection",
-      "components": [
-        {
-          "name": "valueAdditionMethod",
-          "title": "How will this project add value to the produce?",
-          "type": "RadiosField",
-          "list": "howAddingValueList",
-          "hint": "Select the main option that applies",
-          "options": {
-            "customValidationMessages": {
-              "any.required": "Select how this project will add value to the produce"
-            }
-          }
-        }
-      ],
-      "condition": "otherFarmersYesOrFruitStorageCondition"
-    },
-    {
-      "title": "What impact will this project have?",
-      "path": "/project-impact",
-      "components": [
-        {
-          "name": "impactType",
-          "title": "What impact will the project have?",
-          "type": "CheckboxesField",
-          "list": "projectImpactList",
-          "hint": "Select all that apply",
-          "options": {
-            "customValidationMessages": {
-              "any.required": "Select what impact this project will have"
-            }
-          }
-        }
-      ],
-      "condition": "otherFarmersYesOrFruitStorageCondition"
-    },
-    {
-      "title": "Summary",
-      "path": "/summary",
-      "controller": "SectionEndController"
-    }
-  ],
-  "lists": [
-    {
-      "title": "How will this project add value to the produce?",
-      "name": "howAddingValueList",
-      "type": "string",
-      "items": [
-        {
-          "text": "Introducing a new product to your farm",
-          "description": "For example, processing meat to burgers, milk to cheese, cereals to beer or spirits.",
-          "value": "howAddingValue-A1"
-        },
-        {
-          "text": "Grading or sorting produce",
-          "description": "For example, washing and grading vegetables, egg grading, optical grading of top fruit.",
-          "value": "howAddingValue-A2"
-        },
-        {
-          "text": "Packing produce",
-          "description": "For example, packing top fruit, bagging vegetables, bottling wine.",
-          "value": "howAddingValue-A3"
-        },
-        {
-          "text": "A new retail facility to sell direct to consumers",
-          "description": "",
-          "value": "howAddingValue-A4"
-        }
-      ]
-    },
-    {
-      "title": "What impact will this project have?",
-      "name": "projectImpactList",
-      "type": "string",
-      "items": [
-        {
-          "text": "Increasing range of added-value products",
-          "description": "",
-          "value": "projectImpact-A1"
-        },
-        {
-          "text": "Increasing volume of added-value products",
-          "description": "",
-          "value": "projectImpact-A2"
-        },
-        {
-          "text": "Allow selling direct to consumers",
-          "description": "For example, retail and internet sales.",
-          "value": "projectImpact-A3"
-        },
-        {
-          "text": "Starting to make added-value products for the first time",
-          "description": "This only applies if you do not already make added-value products.",
-          "value": "projectImpact-A4"
-        }
-      ]
-    }
-  ],
-  "conditions": [],
-  "sections": [
-    {
-      "title": "Project Impact",
-      "name": "projectImpactSection",
-      "hideTitle": false
-    }
-  ],
-  "startPage": "/how-adding-value"
-}
+name: Project Impact
+pages:
+  - title: How will this project add value to the produce?
+    path: /how-adding-value
+    section: projectImpactSection
+    components:
+      - name: valueAdditionMethod
+        title: How will this project add value to the produce?
+        type: RadiosField
+        list: howAddingValueList
+        hint: Select the main option that applies
+        options:
+          customValidationMessages:
+            any.required: Select how this project will add value to the produce
+    condition: otherFarmersYesOrFruitStorageCondition
+  - title: What impact will this project have?
+    path: /project-impact
+    components:
+      - name: impactType
+        title: What impact will the project have?
+        type: CheckboxesField
+        list: projectImpactList
+        hint: Select all that apply
+        options:
+          customValidationMessages:
+            any.required: Select what impact this project will have
+    condition: otherFarmersYesOrFruitStorageCondition
+  - title: Summary
+    path: /summary
+    controller: SectionEndController
+lists:
+  - title: How will this project add value to the produce?
+    name: howAddingValueList
+    type: string
+    items:
+      - text: Introducing a new product to your farm
+        description: For example, processing meat to burgers, milk to cheese, cereals to beer or spirits.
+        value: howAddingValue-A1
+      - text: Grading or sorting produce
+        description: For example, washing and grading vegetables, egg grading, optical grading of top fruit.
+        value: howAddingValue-A2
+      - text: Packing produce
+        description: For example, packing top fruit, bagging vegetables, bottling wine.
+        value: howAddingValue-A3
+      - text: A new retail facility to sell direct to consumers
+        description: ""
+        value: howAddingValue-A4
+  - title: What impact will this project have?
+    name: projectImpactList
+    type: string
+    items:
+      - text: Increasing range of added-value products
+        description: ""
+        value: projectImpact-A1
+      - text: Increasing volume of added-value products
+        description: ""
+        value: projectImpact-A2
+      - text: Allow selling direct to consumers
+        description: For example, retail and internet sales.
+        value: projectImpact-A3
+      - text: Starting to make added-value products for the first time
+        description: This only applies if you do not already make added-value products.
+        value: projectImpact-A4
+conditions: []
+sections:
+  - title: Project Impact
+    name: projectImpactSection
+    hideTitle: false
+startPage: /how-adding-value

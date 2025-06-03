@@ -1,26 +1,15 @@
-{
-  "engine": "V2",
-  "name": "Business Details",
-  "pages": [
-    {
-      "title": "Business Details",
-      "path": "/business-details",
-      "section": "businessDetailsSection"
-    },
-    {
-      "title": "Summary",
-      "path": "/summary",
-      "controller": "SectionEndController"
-    }
-  ],
-  "lists": [],
-  "conditions": [],
-  "sections": [
-    {
-      "title": "Business Details",
-      "name": "businessDetailsSection",
-      "hideTitle": false
-    }
-  ],
-  "startPage": "/business-details"
-}
+name: Business Details
+pages:
+  - title: Business Details
+    path: /business-details
+    section: businessDetailsSection
+  - title: Summary
+    path: /summary
+    controller: SectionEndController
+lists: []
+conditions: []
+sections:
+  - title: Business Details
+    name: businessDetailsSection
+    hideTitle: false
+startPage: /business-details
