@@ -338,4 +338,95 @@ describe('invokeGasGetAction', () => {
       'Network error'
     )
   })
+
+  test('should throw a GrantApplicationServiceApiError with correct properties', async () => {
+    const errorStatus = 422
+    const errorText = JSON.stringify({ message: 'API error' })
+
+    fetch.mockResolvedValue({
+      ok: false,
+      status: errorStatus,
+      text: jest.fn().mockResolvedValueOnce(errorText),
+      statusText: 'API error'
+    })
+
+    let thrownError
+    try {
+      await invokeGasGetAction(code, actionName)
+    } catch (error) {
+      thrownError = error
+    }
+
+    expect(thrownError).toBeDefined()
+    expect(thrownError.name).toBe('GrantApplicationServiceApiError')
+    expect(thrownError.status).toBe(errorStatus)
+    expect(thrownError.grantCode).toBe(code)
+    expect(thrownError.message).toBe(
+      'Failed to process GAS API request: 422 API error'
+    )
+  })
+})
+
+describe('makeGasApiRequest edge cases', () => {
+  beforeEach(() => {
+    jest.resetAllMocks()
+  })
+
+  test('should handle GrantApplicationServiceApiError being re-thrown', async () => {
+    const mockMessage = 'Server Error'
+
+    fetch.mockResolvedValue({
+      ok: false,
+      status: 500,
+      text: jest.fn().mockResolvedValueOnce(mockMessage),
+      statusText: 'Internal Server Error'
+    })
+
+    await expect(submitGrantApplication(code, {})).rejects.toThrow(mockMessage)
+  })
+
+  test('should handle empty query params object for GET requests', async () => {
+    const mockResponse = { success: true }
+
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      json: jest.fn().mockResolvedValueOnce(mockResponse)
+    })
+
+    const result = await invokeGasGetAction(code, 'test', {})
+
+    expect(fetch).toHaveBeenCalledWith(
+      `${gasApi}/grants/${code}/actions/test/invoke`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
+    )
+    expect(result).toEqual(mockResponse)
+  })
+
+  test('should handle query params with falsy but valid values', async () => {
+    const mockResponse = { success: true }
+
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      json: jest.fn().mockResolvedValueOnce(mockResponse)
+    })
+
+    const queryParams = { page: 0, search: '', active: 'false' }
+    const result = await invokeGasGetAction(code, 'test', queryParams)
+
+    expect(fetch).toHaveBeenCalledWith(
+      `${gasApi}/grants/${code}/actions/test/invoke?page=0&search=&active=false`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
+    )
+    expect(result).toEqual(mockResponse)
+  })
 })
