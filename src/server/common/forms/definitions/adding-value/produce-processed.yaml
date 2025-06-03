@@ -1,83 +1,49 @@
-{
-  "engine": "V2",
-  "name": "Produce processed",
-  "pages": [
-    {
-      "title": "What type of produce is being processed?",
-      "path": "/produce-processed",
-      "section": "produceProcessedSection",
-      "components": [
-        {
-          "name": "produceProcessedType",
-          "title": "What type of produce is being processed?",
-          "type": "RadiosField",
-          "list": "produceProcessedList",
-          "hint": "Select one option",
-          "options": {
-            "customValidationMessages": {
-              "any.required": "Select what type of produce is being processed"
-            }
-          }
-        }
-      ]
-    },
-    {
-      "title": "Summary",
-      "path": "/summary",
-      "controller": "SectionEndController"
-    }
-  ],
-  "lists": [
-    {
-      "title": "What type of produce is being processed?",
-      "name": "produceProcessedList",
-      "type": "string",
-      "items": [
-        {
-          "text": "Arable produce",
-          "description": "For example, crushing of oilseeds, rolling or flaking of grains as food ingredients",
-          "value": "produceProcessed-A1"
-        },
-        {
-          "text": "Wild venison meat produce",
-          "description": "For example, processing and packing wild venison meat",
-          "value": "produceProcessed-A2"
-        },
-        {
-          "text": "Dairy or meat produce",
-          "description": "For example, processing and bottling milk or slaughtering, cutting, processing and packing meat",
-          "value": "produceProcessed-A3"
-        },
-        {
-          "text": "Fibre produce",
-          "description": "For example, processing animal hides and leather, processing fibres such as wool, flax and hemp",
-          "value": "produceProcessed-A4"
-        },
-        {
-          "text": "Fodder produce",
-          "description": "For example, processing and repacking hay and straw for specialist markets or retail sale",
-          "value": "produceProcessed-A5"
-        },
-        {
-          "text": "Horticultural produce",
-          "description": "For example, grading and packing of soft fruit, washing and packing vegetables, packing salad crops",
-          "value": "produceProcessed-A6"
-        },
-        {
-          "text": "Non-edible produce",
-          "description": "For example, processing and packing ornamental flowers and bulbs after harvesting",
-          "value": "produceProcessed-A7"
-        }
-      ]
-    }
-  ],
-  "conditions": [],
-  "sections": [
-    {
-      "title": "Produce processed",
-      "name": "produceProcessedSection",
-      "hideTitle": false
-    }
-  ],
-  "startPage": "/produce-processed"
-}
+name: Produce processed
+pages:
+  - title: What type of produce is being processed?
+    path: /produce-processed
+    section: produceProcessedSection
+    components:
+      - name: produceProcessedType
+        title: What type of produce is being processed?
+        type: RadiosField
+        list: produceProcessedList
+        hint: Select one option
+        options:
+          customValidationMessages:
+            any.required: Select what type of produce is being processed
+  - title: Summary
+    path: /summary
+    controller: SectionEndController
+lists:
+  - title: What type of produce is being processed?
+    name: produceProcessedList
+    type: string
+    items:
+      - text: Arable produce
+        description: For example, crushing of oilseeds, rolling or flaking of grains as food ingredients
+        value: produceProcessed-A1
+      - text: Wild venison meat produce
+        description: For example, processing and packing wild venison meat
+        value: produceProcessed-A2
+      - text: Dairy or meat produce
+        description: For example, processing and bottling milk or slaughtering, cutting, processing and packing meat
+        value: produceProcessed-A3
+      - text: Fibre produce
+        description: For example, processing animal hides and leather, processing fibres such as wool, flax and hemp
+        value: produceProcessed-A4
+      - text: Fodder produce
+        description: For example, processing and repacking hay and straw for specialist markets or retail sale
+        value: produceProcessed-A5
+      - text: Horticultural produce
+        description: For example, grading and packing of soft fruit, washing and packing vegetables, packing salad crops
+        value: produceProcessed-A6
+      - text: Non-edible produce
+        description: For example, processing and packing ornamental flowers and bulbs after harvesting
+        value: produceProcessed-A7
+conditions: []
+sections:
+  - title: Produce processed
+    name: produceProcessedSection
+    hideTitle: false
+startPage: /produce-processed

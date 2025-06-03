@@ -1,26 +1,15 @@
-{
-  "engine": "V2",
-  "name": "Check your details",
-  "pages": [
-    {
-      "title": "Check your details",
-      "path": "/check-details",
-      "section": "checkDetailsSection"
-    },
-    {
-      "title": "Summary",
-      "path": "/summary",
-      "controller": "SectionEndController"
-    }
-  ],
-  "lists": [],
-  "conditions": [],
-  "sections": [
-    {
-      "title": "Check your details",
-      "name": "checkDetailsSection",
-      "hideTitle": false
-    }
-  ],
-  "startPage": "/check-details"
-}
+name: Check your details
+pages:
+  - title: Check your details
+    path: /check-details
+    section: checkDetailsSection
+  - title: Summary
+    path: /summary
+    controller: SectionEndController
+lists: []
+conditions: []
+sections:
+  - title: Check your details
+    name: checkDetailsSection
+    hideTitle: false
+startPage: /check-details

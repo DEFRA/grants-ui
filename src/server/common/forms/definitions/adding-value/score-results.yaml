@@ -1,22 +1,13 @@
-{
-  "engine": "V2",
-  "name": "Score results",
-  "pages": [
-    {
-      "title": "Score results",
-      "path": "/score-results",
-      "section": "scoreResultsSection",
-      "view": "score-results-tasklist.html"
-    }
-  ],
-  "lists": [],
-  "conditions": [],
-  "sections": [
-    {
-      "title": "Score results",
-      "name": "scoreResultsSection",
-      "hideTitle": false
-    }
-  ],
-  "startPage": "/score-results"
-}
+name: Score results
+pages:
+  - title: Score results
+    path: /score-results
+    section: scoreResultsSection
+    view: score-results-tasklist.html
+lists: []
+conditions: []
+sections:
+  - title: Score results
+    name: scoreResultsSection
+    hideTitle: false
+startPage: /score-results
