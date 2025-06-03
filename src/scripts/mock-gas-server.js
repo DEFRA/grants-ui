@@ -69,6 +69,18 @@ const createMockGasServer = () => {
 
 const server = createMockGasServer()
 
+// Handle application submission: /grants/{grantCode}/applications
+server.route({
+  method: 'POST',
+  path: '/grants/{grantCode}/applications',
+  handler: (request, h) => {
+    const { grantCode } = request.params
+    // const payload = request.payload
+    server.log(['info', 'mock-gas'], `POST /grants/${grantCode}/applications`)
+    return h.response({}).code(201)
+  }
+})
+
 // Handle POST actions: /grants/{grantCode}/actions/{actionName}/invoke
 server.route({
   method: 'POST',
