@@ -1,5 +1,6 @@
 import { config } from '~/src/config/config.js'
 import {
+  invokeGasGetAction,
   invokeGasPostAction,
   submitGrantApplication
 } from '~/src/server/common/services/grant-application.service.js'
@@ -236,6 +237,105 @@ describe('invokeGasPostAction', () => {
         },
         body: JSON.stringify(payload)
       }
+    )
+  })
+})
+
+describe('invokeGasGetAction', () => {
+  const actionName = 'status'
+  const mockResponse = {
+    success: true,
+    actionId: 'action-123',
+    status: 'active',
+    timestamp: '2025-04-22T12:05:00Z'
+  }
+
+  beforeEach(() => {
+    jest.resetAllMocks()
+  })
+
+  test('should successfully invoke a GET action without query params', async () => {
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      json: jest.fn().mockResolvedValueOnce(mockResponse)
+    })
+
+    const result = await invokeGasGetAction(code, actionName)
+
+    expect(fetch).toHaveBeenCalledWith(
+      `${gasApi}/grants/${code}/actions/${actionName}/invoke`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
+    )
+    expect(result).toEqual(mockResponse)
+  })
+
+  test('should successfully invoke a GET action with query params', async () => {
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      json: jest.fn().mockResolvedValueOnce(mockResponse)
+    })
+
+    const queryParams = { parcelId: '9238', includeHistory: 'true' }
+    const result = await invokeGasGetAction(code, actionName, queryParams)
+
+    expect(fetch).toHaveBeenCalledWith(
+      `${gasApi}/grants/${code}/actions/${actionName}/invoke?parcelId=9238&includeHistory=true`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
+    )
+    expect(result).toEqual(mockResponse)
+  })
+
+  test('should handle empty query params object', async () => {
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      json: jest.fn().mockResolvedValueOnce(mockResponse)
+    })
+
+    const result = await invokeGasGetAction(code, actionName, {})
+
+    expect(fetch).toHaveBeenCalledWith(
+      `${gasApi}/grants/${code}/actions/${actionName}/invoke`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
+    )
+    expect(result).toEqual(mockResponse)
+  })
+
+  test('should throw an error when the request fails', async () => {
+    const mockMessage = 'Forbidden'
+
+    fetch.mockResolvedValue({
+      ok: false,
+      status: 403,
+      text: jest.fn().mockResolvedValueOnce(mockMessage),
+      statusText: 'Forbidden'
+    })
+
+    await expect(invokeGasGetAction(code, actionName)).rejects.toThrow(
+      mockMessage
+    )
+  })
+
+  test('should handle network errors', async () => {
+    const networkError = new Error('Network error')
+    fetch.mockRejectedValueOnce(networkError)
+
+    await expect(invokeGasGetAction(code, actionName)).rejects.toThrow(
+      'Network error'
     )
   })
 })
