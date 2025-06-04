@@ -28,6 +28,14 @@ function getSessionId(request) {
   return request.yar?.id
 }
 
+function isFromTasklist(request) {
+  try {
+    return request.yar?.get('fromTasklist') === true
+  } catch {
+    return false
+  }
+}
+
 function isRedirectResponse(response) {
   return (
     response?.isBoom === false &&
@@ -73,6 +81,7 @@ function createOnPreResponseHandler(tasklistSessions) {
     const sessionId = getSessionId(request)
 
     if (isSourceTasklist(request) && sessionId) {
+      request.yar.set('fromTasklist', true)
       tasklistSessions.add(sessionId)
 
       if (isRedirectResponse(request.response)) {
@@ -82,7 +91,12 @@ function createOnPreResponseHandler(tasklistSessions) {
       return h.continue
     }
 
-    if (!sessionId || !tasklistSessions.has(sessionId)) {
+    const fromTasklistSession = isFromTasklist(request)
+
+    if (
+      !sessionId ||
+      !(tasklistSessions.has(sessionId) || fromTasklistSession)
+    ) {
       return h.continue
     }
 
@@ -92,6 +106,8 @@ function createOnPreResponseHandler(tasklistSessions) {
 
     if (isFirstPage(request.path) && hasViewContext(request.response)) {
       addBackLinkToContext(request.response)
+    } else if (!isFirstPage(request.path) && fromTasklistSession) {
+      request.yar.set('fromTasklist', false)
       tasklistSessions.delete(sessionId)
     }
 
