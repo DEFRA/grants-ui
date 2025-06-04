@@ -1,0 +1,13 @@
+version: '3.4'
+services:
+  your-frontend:
+    build:
+      context: ./
+      dockerfile: Dockerfile.dev
+    environment:
+      CHOKIDAR_USEPOLLING: true
+      CHOKIDAR_INTERVAL: 1000
+    volumes:
+      - ./src:/home/node/src
+      - ./.browserslistrc:/home/node/.browserslistrc
+      - /home/node/node_modules
