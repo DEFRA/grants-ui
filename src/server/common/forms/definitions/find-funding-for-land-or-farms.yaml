@@ -13,10 +13,6 @@ pages:
 
   - title: Do your digital maps show the correct land details?
     path: /land-details
-    next:
-      - path: /you-must-correct-your-details
-        condition: uFOrmB
-      - path: /agreement-name
     components:
       - name: hasCheckedLandIsUpToDate
         title: Do your digital maps show the correct land details?
@@ -27,7 +23,8 @@ pages:
 
   - title: You must correct your land details
     path: /you-must-correct-your-details
-    next: []
+    controller: TerminalPageController
+    condition: landIsUpToDateCondition
     components:
       - name: FGyiLS
         title: You must correct your land details
@@ -97,7 +94,7 @@ pages:
 lists: []
 sections: []
 conditions:
-  - name: uFOrmB
+  - name: landIsUpToDateCondition
     displayName: notCorrect
     value:
       name: notCorrect
