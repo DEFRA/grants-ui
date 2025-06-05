@@ -3,7 +3,7 @@ import {
   loadSubmissionSchemaValidators,
   validateSubmissionAnswers
 } from '~/src/server/common/forms/services/submission.js'
-import { stateToLandGrantsGasAnswers } from '~/src/server/land-grants/submission/state-to-gas-answers-mapper.js'
+import { stateToLandGrantsGasAnswers } from '~/src/server/land-grants/mappers/state-to-gas-answers-mapper.js'
 
 const frpsGrantCode = config.get('landGrants.grantCode')
 
