@@ -69,7 +69,7 @@ pages:
     controller: LandActionsPageController
     path: /select-land-actions
     next:
-      - path: /summary
+      - path: /check-selected-land-actions
     components:
       - type: TextField
         name: actions
@@ -82,6 +82,10 @@ pages:
         title: Total application value
         options: {}
         schema: {}
+
+  - title: Check selected land actions
+    path: /check-selected-land-actions
+    controller: LandActionsCheckPageController
 
   - title: Funding details
     path: /summary
