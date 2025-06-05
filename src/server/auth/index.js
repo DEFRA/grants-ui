@@ -14,41 +14,35 @@ export const auth = {
       server.route({
         method: 'GET',
         path: '/auth/sign-in',
-        // options: {
-        //   auth: 'defra-id'
-        // },
+        options: {
+          auth: { strategy: 'defra-id', mode: 'try' }
+        },
         handler: (_request, h) => h.redirect('/home')
       })
       server.route({
         method: 'GET',
         path: '/auth/sign-in-oidc',
-        // options: {
-        //   auth: { strategy: 'defra-id', mode: 'try' }
-        // },
+        options: {
+          auth: { strategy: 'defra-id', mode: 'try' }
+        },
         handler: handleOidcSignIn
       })
       server.route({
         method: 'GET',
         path: '/auth/sign-out',
-        // options: {
-        //   auth: { mode: 'try' }
-        // },
         handler: handleSignOut
       })
       server.route({
         method: 'GET',
         path: '/auth/sign-out-oidc',
-        // options: {
-        //   auth: { mode: 'try' }
-        // },
         handler: handleOidcSignOut
       })
       server.route({
         method: 'GET',
         path: '/auth/organisation',
-        // options: {
-        //   auth: 'defra-id'
-        // },
+        options: {
+          auth: 'defra-id'
+        },
         handler: handleOrganisationRedirect
       })
     }
