@@ -75,10 +75,10 @@ const createHapiServer = () => {
           abortEarly: false
         }
       },
-      // auth: {
-      //   mode: 'try',
-      //   strategy: 'session'
-      // },
+      auth: {
+        mode: 'try',
+        strategy: 'session'
+      },
       files: {
         relativeTo: path.resolve(config.get('root'), '.public')
       },
@@ -295,7 +295,7 @@ const registerPlugins = async (server) => {
     Scooter,
     csp,
     h2o2,
-    // auth,
+    auth,
     requestLogger,
     requestTracing,
     secureContext,
