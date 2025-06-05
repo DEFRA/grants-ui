@@ -3,7 +3,7 @@ import {
   calculateApplicationPayment,
   fetchLandSheetDetails,
   validateLandActions
-} from '~/src/server/land-grants/actions/land-actions.service.js'
+} from '~/src/server/land-grants/services/land-actions.service.js'
 
 export default class LandActionsPageController extends QuestionPageController {
   viewName = 'land-actions'

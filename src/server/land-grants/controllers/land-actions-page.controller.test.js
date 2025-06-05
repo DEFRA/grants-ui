@@ -3,11 +3,11 @@ import {
   calculateApplicationPayment,
   fetchLandSheetDetails,
   validateLandActions
-} from '~/src/server/land-grants/actions/land-actions.service.js'
+} from '~/src/server/land-grants/services/land-actions.service.js'
 import LandActionsPageController from './land-actions-page.controller.js'
 
 jest.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js')
-jest.mock('~/src/server/land-grants/actions/land-actions.service.js')
+jest.mock('~/src/server/land-grants/services/land-actions.service.js')
 
 describe('LandActionsPageController', () => {
   let controller
