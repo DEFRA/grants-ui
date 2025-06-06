@@ -28,6 +28,14 @@ function getSessionId(request) {
   return request.yar?.id
 }
 
+function isFromTasklist(request) {
+  try {
+    return request.yar?.get('fromTasklist') === true
+  } catch {
+    return false
+  }
+}
+
 function isRedirectResponse(response) {
   return (
     response?.isBoom === false &&
@@ -68,34 +76,96 @@ function createSessionCleanupInterval(tasklistSessions) {
   }, CLEANUP_INTERVAL_MS)
 }
 
+function handleTasklistSourceRequest(request, tasklistSessions, sessionId) {
+  request.yar.set('fromTasklist', true)
+  tasklistSessions.add(sessionId)
+
+  if (isRedirectResponse(request.response)) {
+    preserveSourceParameterInRedirect(request.response)
+  }
+}
+
+function shouldProcessTasklistRequest(
+  sessionId,
+  tasklistSessions,
+  fromTasklistSession
+) {
+  return sessionId && (tasklistSessions.has(sessionId) || fromTasklistSession)
+}
+
+function handleFirstPageRequest(
+  request,
+  fromTasklistSession,
+  tasklistSessions,
+  sessionId
+) {
+  if (isFirstPage(request.path) && hasViewContext(request.response)) {
+    addBackLinkToContext(request.response)
+  } else if (!isFirstPage(request.path) && fromTasklistSession) {
+    request.yar.set('fromTasklist', false)
+    tasklistSessions.delete(sessionId)
+  } else {
+    // No action needed - either first page without context or non-first page without session
+  }
+}
+
+function processTasklistSourceRequest(request, tasklistSessions, sessionId, h) {
+  handleTasklistSourceRequest(request, tasklistSessions, sessionId)
+  return h.continue
+}
+
+function processExistingTasklistSession(
+  request,
+  fromTasklistSession,
+  tasklistSessions,
+  sessionId,
+  h
+) {
+  if (!isViewResponse(request.response)) {
+    return h.continue
+  }
+
+  handleFirstPageRequest(
+    request,
+    fromTasklistSession,
+    tasklistSessions,
+    sessionId
+  )
+  return h.continue
+}
+
 function createOnPreResponseHandler(tasklistSessions) {
   return (request, h) => {
     const sessionId = getSessionId(request)
 
     if (isSourceTasklist(request) && sessionId) {
-      tasklistSessions.add(sessionId)
+      return processTasklistSourceRequest(
+        request,
+        tasklistSessions,
+        sessionId,
+        h
+      )
+    }
 
-      if (isRedirectResponse(request.response)) {
-        preserveSourceParameterInRedirect(request.response)
-      }
+    const fromTasklistSession = isFromTasklist(request)
 
+    if (
+      !shouldProcessTasklistRequest(
+        sessionId,
+        tasklistSessions,
+        fromTasklistSession
+      )
+    ) {
       return h.continue
     }
 
-    if (!sessionId || !tasklistSessions.has(sessionId)) {
-      return h.continue
-    }
-
-    if (!isViewResponse(request.response)) {
-      return h.continue
-    }
-
-    if (isFirstPage(request.path) && hasViewContext(request.response)) {
-      addBackLinkToContext(request.response)
-      tasklistSessions.delete(sessionId)
-    }
-
-    return h.continue
+    return processExistingTasklistSession(
+      request,
+      fromTasklistSession,
+      tasklistSessions,
+      sessionId,
+      h
+    )
   }
 }
 
