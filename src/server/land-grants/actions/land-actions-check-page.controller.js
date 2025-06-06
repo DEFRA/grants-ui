@@ -37,10 +37,14 @@ export default class LandActionsCheckPageController extends QuestionPageControll
       const { collection, viewName } = this
       const { state } = context
 
+      // Build the selected action rows from the collection
+      const selectedActionRows = this.getSelectedActionRows(state, context)
+
       // Build the view model exactly as in the original code
       const viewModel = {
         ...this.getViewModel(request, context),
         ...state,
+        selectedActionRows,
         errors: collection.getErrors(collection.getErrors())
       }
 
@@ -48,6 +52,20 @@ export default class LandActionsCheckPageController extends QuestionPageControll
     }
 
     return fn
+  }
+
+  getSelectedActionRows = (state) => {
+    return Object.entries(state.actionsObj).map(([, actionData]) => [
+      {
+        text: state.landParcel
+      },
+      {
+        text: actionData.description
+      },
+      {
+        text: `${actionData.value} ${actionData.unit}`
+      }
+    ])
   }
 }
 

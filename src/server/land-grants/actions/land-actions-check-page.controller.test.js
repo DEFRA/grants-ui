@@ -36,7 +36,14 @@ describe('LandActionsCheckPageController', () => {
 
     mockContext = {
       state: {
-        landParcel: 'sheet1-parcel1'
+        landParcel: 'sheet1-parcel1',
+        actionsObj: {
+          CMOR1: {
+            description: 'Crop Management',
+            value: 10,
+            unit: 'm'
+          }
+        }
       }
     }
 
@@ -59,6 +66,32 @@ describe('LandActionsCheckPageController', () => {
       const result = await handler(mockRequest, mockContext, mockH)
 
       expect(result).toBe('rendered view')
+    })
+
+    describe('selectedActionRows', () => {
+      test('should build selected action rows correctly', async () => {
+        const handler = controller.makeGetRouteHandler()
+        await handler(mockRequest, mockContext, mockH)
+
+        expect(mockH.view).toHaveBeenCalledWith(
+          'land-actions-check',
+          expect.objectContaining({
+            actionsObj: {
+              CMOR1: { description: 'Crop Management', unit: 'm', value: 10 }
+            },
+            errors: [],
+            landParcel: 'sheet1-parcel1',
+            pageTitle: 'Check selected land actions',
+            selectedActionRows: [
+              [
+                { text: 'sheet1-parcel1' },
+                { text: 'Crop Management' },
+                { text: '10 m' }
+              ]
+            ]
+          })
+        )
+      })
     })
   })
 
