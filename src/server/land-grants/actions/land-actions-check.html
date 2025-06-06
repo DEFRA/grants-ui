@@ -1,15 +1,15 @@
 {% extends baseLayoutPath %}
 
 {% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
-{% from "govuk/components/checkboxes/macro.njk" import govukCheckboxes %}
 {% from "govuk/components/inset-text/macro.njk" import govukInsetText %}
 {% from "govuk/components/warning-text/macro.njk" import govukWarningText %}
 {% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/table/macro.njk" import govukTable %}
 
 {% block content %}
 <div class="govuk-body">
   <div class="govuk-grid-row">
-    <div class="govuk-grid-column-two-thirds-from-desktop">
+    <div class="govuk-grid-column-full">
       {% if warning %}
         {{ govukWarningText({
           text: warning
@@ -35,7 +35,27 @@
       {% endif %}
 
       <form method="post" novalidate>
-        <h1 class="govuk-heading-l">Check selected land actions for your farm</h1>
+        <h1 class="govuk-heading-l">You have added 1 action to 1 parcel</h1>
+
+        {{ govukTable({
+            caption: "List of parcel actions selected for this application",
+            captionClasses: "govuk-visually-hidden",
+            head: [
+              {
+                classes: "govuk-visually-hidden",
+                text: "Parcel"
+              },
+              {
+                classes: "govuk-visually-hidden",
+                text: "Action"
+              },
+              {
+                classes: "govuk-visually-hidden",
+                text: "Quantity"
+              }
+            ],
+            rows: selectedActionRows
+        }) }}
 
 
         <div class="govuk-button-group">
@@ -51,4 +71,7 @@
     </div>
   </div>
 </div>
+{% if config.cdpEnvironment == 'local' and context | length and not context.isForceAccess %}
+{% include "partials/debug.html" %}
+{% endif %}
 {% endblock %}

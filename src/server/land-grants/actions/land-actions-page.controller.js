@@ -26,7 +26,9 @@ export default class LandActionsPageController extends QuestionPageController {
         if (!actions.includes(code) || !payload[key] || !actionInfo) {
           continue
         }
+
         areas[code] = {
+          description: actionInfo.description,
           value: payload[key],
           unit: actionInfo ? actionInfo.availableArea?.unit : ''
         }
