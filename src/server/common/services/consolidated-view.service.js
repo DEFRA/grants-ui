@@ -1,3 +1,5 @@
+import fs from 'fs/promises'
+import path from 'path'
 import { config } from '~/src/config/config.js'
 import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
 import { getValidToken } from '../helpers/entra/token-manager.js'
@@ -38,6 +40,25 @@ class ConsolidatedViewApiError extends Error {
 }
 
 /**
+ * Fetches business details from self hosted mock data
+ * @param {number} sbi - Standard Business Identifier
+ * @returns {Promise} - Promise that resolves to the business details
+ * @throws {Error} - For unexpected errors
+ */
+async function fetchMockParcelDataForBusiness(sbi) {
+  const mockFile = path.join(
+    process.cwd(),
+    'src',
+    'server',
+    '__mocks__',
+    'consolidated-view',
+    `${sbi}.json`
+  )
+  const data = await fs.readFile(mockFile)
+  return JSON.parse(data)
+}
+
+/**
  * Fetches business details from Consolidated View
  * @param {number} sbi - Standard Business Identifier
  * @returns {Promise} - Promise that resolves to the business details
@@ -45,7 +66,12 @@ class ConsolidatedViewApiError extends Error {
  * @throws {Error} - For other unexpected errors
  */
 export async function fetchParcelDataForBusiness(sbi) {
+  const mockEnabled = config.get('consolidatedView.mockEnabled')
   try {
+    if (mockEnabled) {
+      return await fetchMockParcelDataForBusiness(sbi)
+    }
+
     const now = new Date().toISOString()
     const query = `
   query Business {

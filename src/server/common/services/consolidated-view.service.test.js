@@ -1,3 +1,6 @@
+import fs from 'fs/promises'
+import path from 'path'
+import { config } from '~/src/config/config.js'
 import { getValidToken } from '~/src/server/common/helpers/entra/token-manager.js'
 import { fetchParcelDataForBusiness } from '~/src/server/common/services/consolidated-view.service.js'
 
@@ -5,6 +8,18 @@ jest.mock('~/src/server/common/helpers/entra/token-manager.js', () => ({
   getValidToken: jest.fn()
 }))
 
+jest.mock('fs/promises')
+
+const getMockFilePath = (sbi) => {
+  return path.join(
+    process.cwd(),
+    'src',
+    'server',
+    '__mocks__',
+    'consolidated-view',
+    `${sbi}.json`
+  )
+}
 /**
  * @type {jest.Mock}
  */
@@ -36,6 +51,12 @@ describe('fetchParcelDataForBusiness', () => {
     jest.clearAllMocks()
     mockFetch.mockReset()
     getValidToken.mockResolvedValue(mockToken)
+
+    config.set('consolidatedView', {
+      apiEndpoint: 'https://api.example.com/graphql',
+      authEmail: 'test@example.com',
+      mockEnabled: false
+    })
   })
 
   it('should fetch business details successfully', async () => {
@@ -89,7 +110,7 @@ describe('fetchParcelDataForBusiness', () => {
     mockFetch.mockRejectedValueOnce(networkError)
 
     await expect(fetchParcelDataForBusiness(mockSbi)).rejects.toThrow(
-      'Network error'
+      'Failed to fetch business data: Network error'
     )
     expect(mockFetch).toHaveBeenCalledTimes(1)
   })
@@ -109,5 +130,73 @@ describe('fetchParcelDataForBusiness', () => {
     expect(calledOptions.headers['Content-Type']).toBe('application/json')
     expect(calledOptions.headers.Authorization).toBe(`Bearer ${mockToken}`)
     expect(body.query).toContain(`business(sbi: "${mockSbi}")`)
+  })
+
+  describe('when mock is enabled', () => {
+    const mockFileData = {
+      data: {
+        business: {
+          sbi: mockSbi,
+          organisationId: 'MOCK-ORG123',
+          land: {
+            parcels: [
+              {
+                parcelId: 'MOCK-P001',
+                sheetId: 'MOCK-S001',
+                area: 150.5
+              }
+            ]
+          }
+        }
+      }
+    }
+
+    beforeEach(() => {
+      // Enable mock mode
+      config.set('consolidatedView', {
+        apiEndpoint: 'https://api.example.com/graphql',
+        authEmail: 'test@example.com',
+        mockEnabled: true
+      })
+    })
+
+    it('should read mock data from file instead of calling API', async () => {
+      fs.readFile.mockResolvedValueOnce(JSON.stringify(mockFileData))
+
+      const result = await fetchParcelDataForBusiness(mockSbi)
+
+      expect(result).toEqual(mockFileData)
+      expect(fs.readFile).toHaveBeenCalledTimes(1)
+      expect(fs.readFile).toHaveBeenCalledWith(getMockFilePath(mockSbi))
+      expect(mockFetch).not.toHaveBeenCalled()
+      expect(getValidToken).not.toHaveBeenCalled()
+    })
+
+    it('should handle file not found error', async () => {
+      const fileError = new Error('ENOENT: no such file or directory')
+      fileError.code = 'ENOENT'
+      fs.readFile.mockRejectedValueOnce(fileError)
+
+      await expect(fetchParcelDataForBusiness(mockSbi)).rejects.toThrow(
+        'Failed to fetch business data: ENOENT: no such file or directory'
+      )
+    })
+
+    it('should handle invalid JSON in mock file', async () => {
+      fs.readFile.mockResolvedValueOnce('invalid json content')
+
+      await expect(fetchParcelDataForBusiness(mockSbi)).rejects.toThrow(
+        'Failed to fetch business data:'
+      )
+    })
+
+    it('should use correct file path for different SBI', async () => {
+      const differentSbi = 987654321
+      fs.readFile.mockResolvedValueOnce(JSON.stringify(mockFileData))
+
+      await fetchParcelDataForBusiness(differentSbi)
+
+      expect(fs.readFile).toHaveBeenCalledWith(getMockFilePath(differentSbi))
+    })
   })
 })
