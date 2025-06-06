@@ -102,7 +102,7 @@ export const config = convict({
     }
   },
   consolidatedView: {
-    mockEnabled: {
+    mockDALEnabled: {
       doc: 'Consolidated View API mock enabled',
       format: Boolean,
       default: false,

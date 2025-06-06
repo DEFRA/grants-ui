@@ -66,9 +66,9 @@ async function fetchMockParcelDataForBusiness(sbi) {
  * @throws {Error} - For other unexpected errors
  */
 export async function fetchParcelDataForBusiness(sbi) {
-  const mockEnabled = config.get('consolidatedView.mockEnabled')
+  const mockDALEnabled = config.get('consolidatedView.mockDALEnabled')
   try {
-    if (mockEnabled) {
+    if (mockDALEnabled) {
       return await fetchMockParcelDataForBusiness(sbi)
     }
 

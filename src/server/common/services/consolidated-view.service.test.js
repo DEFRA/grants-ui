@@ -55,7 +55,7 @@ describe('fetchParcelDataForBusiness', () => {
     config.set('consolidatedView', {
       apiEndpoint: 'https://api.example.com/graphql',
       authEmail: 'test@example.com',
-      mockEnabled: false
+      mockDALEnabled: false
     })
   })
 
@@ -156,7 +156,7 @@ describe('fetchParcelDataForBusiness', () => {
       config.set('consolidatedView', {
         apiEndpoint: 'https://api.example.com/graphql',
         authEmail: 'test@example.com',
-        mockEnabled: true
+        mockDALEnabled: true
       })
     })
 
