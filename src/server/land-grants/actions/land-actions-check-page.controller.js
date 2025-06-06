@@ -16,7 +16,23 @@ export default class LandActionsCheckPageController extends QuestionPageControll
      * @returns {Promise<import('@hapi/boom').Boom<any> | import('@hapi/hapi').ResponseObject>}
      */
     const fn = (request, context, h) => {
-      return this.proceed(request, h, this.getNextPath(context))
+      const { state } = context
+      const payload = request.payload ?? {}
+      const { addMoreActions } = payload
+
+      if (!addMoreActions) {
+        return h.view(this.viewName, {
+          ...this.getViewModel(request, context),
+          ...state,
+          errors: ['Please select an option']
+        })
+      }
+
+      const nextPath =
+        addMoreActions === 'true'
+          ? '/select-land-parcel'
+          : this.getNextPath(context)
+      return this.proceed(request, h, nextPath)
     }
 
     return fn

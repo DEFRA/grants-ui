@@ -5,6 +5,7 @@
 {% from "govuk/components/inset-text/macro.njk" import govukInsetText %}
 {% from "govuk/components/warning-text/macro.njk" import govukWarningText %}
 {% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/radios/macro.njk" import govukRadios %}
 
 {% block content %}
 <div class="govuk-body">
@@ -37,6 +38,25 @@
       <form method="post" novalidate>
         <h1 class="govuk-heading-l">Check selected land actions for your farm</h1>
 
+        {{ govukRadios({
+          name: "addMoreActions",
+          fieldset: {
+            legend: {
+              text: "Do you want to add more actions to your land?",
+              classes: "govuk-fieldset__legend--l"
+            }
+          },
+          items: [
+            {
+              value: "true",
+              text: "Yes"
+            },
+            {
+              value: "false",
+              text: "No"
+            }
+          ]
+        }) }}
 
         <div class="govuk-button-group">
           <input type="hidden" name="crumb" value="{{ crumb }}">
