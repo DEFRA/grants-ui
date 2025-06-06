@@ -102,6 +102,12 @@ export const config = convict({
     }
   },
   consolidatedView: {
+    mockDALEnabled: {
+      doc: 'Consolidated View API mock enabled',
+      format: Boolean,
+      default: false,
+      env: 'CV_API_MOCK_ENABLED'
+    },
     apiEndpoint: {
       doc: 'Consolidated View API endpoint',
       format: String,
