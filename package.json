@@ -34,6 +34,7 @@
     "snyk-monitor": "snyk monitor",
     "prestart": "npm run build",
     "start": "NODE_ENV=production node --use-strict .",
+    "mock-gas-server": "nodemon ./src/scripts/mock-gas-server.js",
     "setup:husky": "node -e \"try { (await import('husky')).default() } catch (e) { if (e.code !== 'ERR_MODULE_NOT_FOUND') throw e }\" --input-type module"
   },
   "author": "Defra DDTS",
