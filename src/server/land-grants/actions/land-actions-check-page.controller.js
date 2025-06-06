@@ -2,6 +2,7 @@ import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/Q
 
 export default class LandActionsCheckPageController extends QuestionPageController {
   viewName = 'land-actions-check'
+  selectedActionRows = []
 
   /**
    * This method is called when there is a POST request on the check selected land actions page.
@@ -18,12 +19,13 @@ export default class LandActionsCheckPageController extends QuestionPageControll
     const fn = (request, context, h) => {
       const { state } = context
       const payload = request.payload ?? {}
-      const { addMoreActions } = payload
+      const { addMoreActions, action } = payload
 
-      if (!addMoreActions) {
+      if (action === 'validate' && !addMoreActions) {
         return h.view(this.viewName, {
           ...this.getViewModel(request, context),
           ...state,
+          selectedActionRows: this.selectedActionRows,
           errors: ['Please select an option']
         })
       }
@@ -53,10 +55,14 @@ export default class LandActionsCheckPageController extends QuestionPageControll
       const { collection, viewName } = this
       const { state } = context
 
+      // Build the selected action rows from the collection
+      this.selectedActionRows = this.getSelectedActionRows(state, context)
+
       // Build the view model exactly as in the original code
       const viewModel = {
         ...this.getViewModel(request, context),
         ...state,
+        selectedActionRows: this.selectedActionRows,
         errors: collection.getErrors(collection.getErrors())
       }
 
@@ -64,6 +70,20 @@ export default class LandActionsCheckPageController extends QuestionPageControll
     }
 
     return fn
+  }
+
+  getSelectedActionRows = (state) => {
+    return Object.entries(state.actionsObj).map(([, actionData]) => [
+      {
+        text: state.landParcel
+      },
+      {
+        text: actionData.description
+      },
+      {
+        text: `${actionData.value} ${actionData.unit}`
+      }
+    ])
   }
 }
 

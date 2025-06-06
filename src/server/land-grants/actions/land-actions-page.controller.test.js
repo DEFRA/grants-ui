@@ -33,7 +33,9 @@ describe('LandActionsPageController', () => {
       }
     }
   ]
-  const actionsObj = { action1: { value: 10, unit: 'ha' } }
+  const actionsObj = {
+    action1: { description: 'Action 1 description', value: 10, unit: 'ha' }
+  }
 
   beforeEach(() => {
     QuestionPageController.prototype.getViewModel = jest.fn().mockReturnValue({
@@ -99,8 +101,8 @@ describe('LandActionsPageController', () => {
       const result = controller.extractActionsObjectFromPayload(payload)
 
       expect(result).toEqual({
-        action1: { value: 10, unit: 'ha' },
-        action2: { value: 5, unit: 'ha' }
+        action1: { description: 'Action 1 description', value: 10, unit: 'ha' },
+        action2: { description: 'Action 2 description', value: 5, unit: 'ha' }
       })
     })
 
@@ -325,7 +327,7 @@ describe('LandActionsPageController', () => {
       await handler(mockRequest, mockContext, mockH)
 
       expect(validateLandActions).toHaveBeenCalledWith('sheet1', 'parcel1', {
-        action1: { value: 10, unit: 'ha' }
+        action1: { description: 'Action 1 description', value: 10, unit: 'ha' }
       })
 
       expect(calculateApplicationPayment).toHaveBeenCalled()
@@ -352,7 +354,7 @@ describe('LandActionsPageController', () => {
       const result = await handler(mockRequest, mockContext, mockH)
 
       expect(validateLandActions).toHaveBeenCalledWith('sheet1', 'parcel1', {
-        action1: { value: 10, unit: 'ha' }
+        action1: { description: 'Action 1 description', value: 10, unit: 'ha' }
       })
 
       expect(controller.setState).toHaveBeenCalledWith(
@@ -360,7 +362,13 @@ describe('LandActionsPageController', () => {
         expect.objectContaining({
           landParcel: 'sheet1-parcel1',
           actions: 'action1: 10 ha.',
-          actionsObj: { action1: { value: 10, unit: 'ha' } }
+          actionsObj: {
+            action1: {
+              description: 'Action 1 description',
+              value: 10,
+              unit: 'ha'
+            }
+          }
         })
       )
 

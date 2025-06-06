@@ -23,6 +23,15 @@ describe('LandActionsCheckPageController', () => {
     controller.setState = jest.fn().mockResolvedValue(true)
     controller.proceed = jest.fn().mockReturnValue('redirected')
     controller.getNextPath = jest.fn().mockReturnValue('/next-path')
+    controller.getSelectedActionRows = jest
+      .fn()
+      .mockReturnValue([
+        [
+          { text: 'sheet1-parcel1' },
+          { text: 'Test Action' },
+          { text: '10 hectares' }
+        ]
+      ])
 
     mockRequest = {
       payload: {
@@ -36,7 +45,14 @@ describe('LandActionsCheckPageController', () => {
 
     mockContext = {
       state: {
-        landParcel: 'sheet1-parcel1'
+        landParcel: 'sheet1-parcel1',
+        actionsObj: {
+          action1: {
+            description: 'Test Action',
+            value: 10,
+            unit: 'hectares'
+          }
+        }
       }
     }
 
@@ -61,11 +77,25 @@ describe('LandActionsCheckPageController', () => {
 
       expect(result).toBe('rendered view')
     })
+
+    describe('selectedActionRows', () => {
+      test('should build selected action rows correctly', () => {
+        const result = controller.getSelectedActionRows(mockContext.state)
+
+        expect(result).toEqual([
+          [
+            { text: 'sheet1-parcel1' },
+            { text: 'Test Action' },
+            { text: '10 hectares' }
+          ]
+        ])
+      })
+    })
   })
 
   describe('POST route handler', () => {
-    test('should show error when addMoreActions is not provided', async () => {
-      mockRequest.payload = {}
+    test('should show error when addMoreActions is not provided and action is validate', async () => {
+      mockRequest.payload = { action: 'validate' }
 
       const handler = controller.makePostRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
@@ -73,13 +103,21 @@ describe('LandActionsCheckPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith('land-actions-check', {
         pageTitle: 'Check selected land actions',
         landParcel: 'sheet1-parcel1',
+        actionsObj: {
+          action1: {
+            description: 'Test Action',
+            value: 10,
+            unit: 'hectares'
+          }
+        },
+        selectedActionRows: [],
         errors: ['Please select an option']
       })
       expect(result).toBe('rendered view')
     })
 
-    test('should show error when addMoreActions is null', async () => {
-      mockRequest.payload = { addMoreActions: null }
+    test('should show error when addMoreActions is null and action is validate', async () => {
+      mockRequest.payload = { addMoreActions: null, action: 'validate' }
 
       const handler = controller.makePostRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
@@ -87,13 +125,21 @@ describe('LandActionsCheckPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith('land-actions-check', {
         pageTitle: 'Check selected land actions',
         landParcel: 'sheet1-parcel1',
+        actionsObj: {
+          action1: {
+            description: 'Test Action',
+            value: 10,
+            unit: 'hectares'
+          }
+        },
+        selectedActionRows: [],
         errors: ['Please select an option']
       })
       expect(result).toBe('rendered view')
     })
 
-    test('should show error when addMoreActions is undefined', async () => {
-      mockRequest.payload = { addMoreActions: undefined }
+    test('should show error when addMoreActions is undefined and action is validate', async () => {
+      mockRequest.payload = { addMoreActions: undefined, action: 'validate' }
 
       const handler = controller.makePostRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
@@ -101,6 +147,14 @@ describe('LandActionsCheckPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith('land-actions-check', {
         pageTitle: 'Check selected land actions',
         landParcel: 'sheet1-parcel1',
+        actionsObj: {
+          action1: {
+            description: 'Test Action',
+            value: 10,
+            unit: 'hectares'
+          }
+        },
+        selectedActionRows: [],
         errors: ['Please select an option']
       })
       expect(result).toBe('rendered view')
@@ -148,8 +202,8 @@ describe('LandActionsCheckPageController', () => {
       expect(result).toBe('redirected')
     })
 
-    test('should handle empty payload gracefully', async () => {
-      mockRequest.payload = null
+    test('should handle empty payload gracefully when action is validate', async () => {
+      mockRequest.payload = { action: 'validate' }
 
       const handler = controller.makePostRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
@@ -157,9 +211,31 @@ describe('LandActionsCheckPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith('land-actions-check', {
         pageTitle: 'Check selected land actions',
         landParcel: 'sheet1-parcel1',
+        actionsObj: {
+          action1: {
+            description: 'Test Action',
+            value: 10,
+            unit: 'hectares'
+          }
+        },
+        selectedActionRows: [],
         errors: ['Please select an option']
       })
       expect(result).toBe('rendered view')
+    })
+
+    test('should proceed to next path without validation when action is not validate', async () => {
+      mockRequest.payload = {}
+
+      const handler = controller.makePostRouteHandler()
+      const result = await handler(mockRequest, mockContext, mockH)
+
+      expect(controller.proceed).toHaveBeenCalledWith(
+        mockRequest,
+        mockH,
+        '/next-path'
+      )
+      expect(result).toBe('redirected')
     })
   })
 })
