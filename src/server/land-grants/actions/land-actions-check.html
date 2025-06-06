@@ -1,0 +1,54 @@
+{% extends baseLayoutPath %}
+
+{% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
+{% from "govuk/components/checkboxes/macro.njk" import govukCheckboxes %}
+{% from "govuk/components/inset-text/macro.njk" import govukInsetText %}
+{% from "govuk/components/warning-text/macro.njk" import govukWarningText %}
+{% from "govuk/components/button/macro.njk" import govukButton %}
+
+{% block content %}
+<div class="govuk-body">
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds-from-desktop">
+      {% if warning %}
+        {{ govukWarningText({
+          text: warning
+        }) }}
+      {% endif %}
+
+      {% if info %}
+        {{ govukInsetText({
+          text: info
+        }) }}
+      {% endif %}
+      {% if errors.length > 0 %}
+        {% set errorList = [] %}
+        {% for error in errors %}
+            {% set errorList = errorList.concat([{
+              text: error
+            }]) %}
+        {% endfor %}
+        {{ govukErrorSummary({
+          titleText: "There is a problem",
+          errorList: errorList
+        }) }}
+      {% endif %}
+
+      <form method="post" novalidate>
+        <h1 class="govuk-heading-l">Check selected land actions for your farm</h1>
+
+
+        <div class="govuk-button-group">
+          <input type="hidden" name="crumb" value="{{ crumb }}">
+          {% block form %}
+            {{ govukButton({
+              text: "Continue",
+              preventDoubleClick: true
+            }) }}
+          {% endblock %}
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
