@@ -26,11 +26,9 @@
         const newSbiValue = e.target.value;
         clearTimeout(debounceTimer);
         
-        // Show updating status
         sbiStatus.textContent = 'Updating...';
         sbiStatus.style.color = '#666';
         
-        // Debounce the update (wait 500ms after user stops typing)
         debounceTimer = setTimeout(function() {
           updateSbi(newSbiValue);
         }, 1000);
@@ -44,7 +42,6 @@
           return;
         }
 
-        // Update server context
         fetch('/api/update-sbi', {
           method: 'POST',
           headers: {
@@ -53,7 +50,7 @@
           },
           body: JSON.stringify({ 
             sbi: sbiValue,
-            crumb: csrfToken  // Include crumb in the JSON payload
+            crumb: csrfToken
           })
         })
         .then(response => {
@@ -66,8 +63,8 @@
           sbiStatus.textContent = 'Saved';
           sbiStatus.style.color = '#00703c';
           
-          // Clear status after 2 seconds
           setTimeout(() => {
+            // redirect to start page
             window.location.replace('/find-funding-for-land-or-farms/start'); 
           }, 1000);
 
