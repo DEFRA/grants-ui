@@ -66,7 +66,7 @@ export async function makeGasApiRequest(url, grantCode, options = {}) {
       )
     }
 
-    return response.json()
+    return response
   } catch (error) {
     logger.error(
       { err: error },
@@ -91,7 +91,11 @@ export async function makeGasApiRequest(url, grantCode, options = {}) {
  */
 export async function invokeGasPostAction(code, name, payload) {
   const url = `${GAS_API_ENDPOINT}/grants/${code}/actions/${name}/invoke`
-  return makeGasApiRequest(url, code, { method: 'POST', payload })
+  const response = await makeGasApiRequest(url, code, {
+    method: 'POST',
+    payload
+  })
+  return response.json()
 }
 
 /**
@@ -104,7 +108,11 @@ export async function invokeGasPostAction(code, name, payload) {
  */
 export async function invokeGasGetAction(code, name, queryParams = {}) {
   const url = `${GAS_API_ENDPOINT}/grants/${code}/actions/${name}/invoke`
-  return makeGasApiRequest(url, code, { method: 'GET', queryParams })
+  const response = await makeGasApiRequest(url, code, {
+    method: 'GET',
+    queryParams
+  })
+  return response.json()
 }
 
 /**
