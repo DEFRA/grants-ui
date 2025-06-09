@@ -111,7 +111,7 @@ describe('LandActionsCheckPageController', () => {
           }
         },
         selectedActionRows: [],
-        errors: ['Please select an option']
+        errorMessage: 'Please select if you want to add more actions'
       })
       expect(result).toBe('rendered view')
     })
@@ -133,7 +133,7 @@ describe('LandActionsCheckPageController', () => {
           }
         },
         selectedActionRows: [],
-        errors: ['Please select an option']
+        errorMessage: 'Please select if you want to add more actions'
       })
       expect(result).toBe('rendered view')
     })
@@ -155,7 +155,7 @@ describe('LandActionsCheckPageController', () => {
           }
         },
         selectedActionRows: [],
-        errors: ['Please select an option']
+        errorMessage: 'Please select if you want to add more actions'
       })
       expect(result).toBe('rendered view')
     })
@@ -219,7 +219,7 @@ describe('LandActionsCheckPageController', () => {
           }
         },
         selectedActionRows: [],
-        errors: ['Please select an option']
+        errorMessage: 'Please select if you want to add more actions'
       })
       expect(result).toBe('rendered view')
     })
