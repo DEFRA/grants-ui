@@ -20,7 +20,7 @@ let webpackManifest
  * @param {Request | null} request
  */
 export async function context(request) {
-  const tempSbi = sbiStore?.get('sbi') || null
+  const tempSbi = sbiStore.get('sbi')
 
   if (!webpackManifest) {
     try {

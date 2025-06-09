@@ -55,7 +55,7 @@ export default class LandParcelPageController extends QuestionPageController {
      */
     const fn = async (request, context, h) => {
       const { landParcel = '' } = context.state || {}
-      const sbi = sbiStore?.get('sbi') || null
+      const sbi = sbiStore.get('sbi')
 
       const { viewName } = this
       const baseViewModel = super.getViewModel(request, context)
