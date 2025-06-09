@@ -4,6 +4,7 @@
 {% from "govuk/components/inset-text/macro.njk" import govukInsetText %}
 {% from "govuk/components/warning-text/macro.njk" import govukWarningText %}
 {% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/radios/macro.njk" import govukRadios %}
 {% from "govuk/components/table/macro.njk" import govukTable %}
 
 {% block content %}
@@ -34,30 +35,50 @@
         }) }}
       {% endif %}
 
+      <h1 class="govuk-heading-l">You have added 1 action to 1 parcel</h1>
+
+      {{ govukTable({
+          caption: "List of parcel actions selected for this application",
+          captionClasses: "govuk-visually-hidden",
+          head: [
+            {
+              classes: "govuk-visually-hidden",
+              text: "Parcel"
+            },
+            {
+              classes: "govuk-visually-hidden",
+              text: "Action"
+            },
+            {
+              classes: "govuk-visually-hidden",
+              text: "Quantity"
+            }
+          ],
+          rows: selectedActionRows
+      }) }}
+    </div>
+    <div class="govuk-grid-column-two-thirds">
       <form method="post" novalidate>
-        <h1 class="govuk-heading-l">You have added 1 action to 1 parcel</h1>
-
-        {{ govukTable({
-            caption: "List of parcel actions selected for this application",
-            captionClasses: "govuk-visually-hidden",
-            head: [
-              {
-                classes: "govuk-visually-hidden",
-                text: "Parcel"
-              },
-              {
-                classes: "govuk-visually-hidden",
-                text: "Action"
-              },
-              {
-                classes: "govuk-visually-hidden",
-                text: "Quantity"
-              }
-            ],
-            rows: selectedActionRows
+        {{ govukRadios({
+					classes: "govuk-radios--inline",
+          name: "addMoreActions",
+          fieldset: {
+            legend: {
+              text: "Do you want to add more actions to your land?",
+              classes: "govuk-fieldset__legend--m"
+            }
+          },
+          items: [
+            {
+              value: "true",
+              text: "Yes"
+            },
+            {
+              value: "false",
+              text: "No"
+            }
+          ]
         }) }}
-
-
         <div class="govuk-button-group">
           <input type="hidden" name="crumb" value="{{ crumb }}">
           {% block form %}
