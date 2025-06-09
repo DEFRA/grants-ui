@@ -71,26 +71,10 @@ export default class LandParcelPageController extends QuestionPageController {
 
         return h.view(viewName, viewModel)
       } catch (error) {
-        // Log specific error details based on error type
-        if (error.name === 'ConsolidatedViewApiError') {
-          logger.error(
-            {
-              err: error,
-              statusCode: error.statusCode,
-              sbi
-            },
-            'Consolidated View API error when fetching parcel data'
-          )
-        } else {
-          logger.error(
-            {
-              err: error,
-              sbi
-            },
-            'Unexpected error when fetching parcel data'
-          )
-        }
-
+        logger.error(
+          { err: error, sbi },
+          'Unexpected error when fetching parcel data'
+        )
         const errorMessage =
           'Unable to find parcel information, please try again later.'
 
