@@ -47,10 +47,12 @@ describe('submitGrantApplication', () => {
   })
 
   test('should successfully submit a grant application', async () => {
-    fetch.mockResolvedValueOnce({
+    const mockRawResponse = {
       ok: true,
       json: jest.fn().mockResolvedValueOnce(mockResponse)
-    })
+    }
+
+    fetch.mockResolvedValueOnce(mockRawResponse)
 
     const result = await submitGrantApplication(code, payload)
 
@@ -64,7 +66,7 @@ describe('submitGrantApplication', () => {
         body: JSON.stringify(payload)
       }
     )
-    expect(result).toEqual(mockResponse)
+    expect(result).toEqual(mockRawResponse)
   })
 
   test('should throw an error when the request fails', async () => {
@@ -138,10 +140,12 @@ describe('invokeGasPostAction', () => {
   })
 
   test('should successfully invoke a POST action', async () => {
-    fetch.mockResolvedValueOnce({
+    const mockRawResponse = {
       ok: true,
       json: jest.fn().mockResolvedValueOnce(mockResponse)
-    })
+    }
+
+    fetch.mockResolvedValueOnce(mockRawResponse)
 
     const result = await invokeGasPostAction(code, actionName, payload)
 
@@ -156,6 +160,7 @@ describe('invokeGasPostAction', () => {
       }
     )
     expect(result).toEqual(mockResponse)
+    expect(mockRawResponse.json).toHaveBeenCalled()
   })
 
   test('should throw an error when the request fails', async () => {
@@ -256,10 +261,12 @@ describe('invokeGasGetAction', () => {
   })
 
   test('should successfully invoke a GET action without query params', async () => {
-    fetch.mockResolvedValueOnce({
+    const mockRawResponse = {
       ok: true,
       json: jest.fn().mockResolvedValueOnce(mockResponse)
-    })
+    }
+
+    fetch.mockResolvedValueOnce(mockRawResponse)
 
     const result = await invokeGasGetAction(code, actionName)
 
@@ -273,13 +280,16 @@ describe('invokeGasGetAction', () => {
       }
     )
     expect(result).toEqual(mockResponse)
+    expect(mockRawResponse.json).toHaveBeenCalled()
   })
 
   test('should successfully invoke a GET action with query params', async () => {
-    fetch.mockResolvedValueOnce({
+    const mockRawResponse = {
       ok: true,
       json: jest.fn().mockResolvedValueOnce(mockResponse)
-    })
+    }
+
+    fetch.mockResolvedValueOnce(mockRawResponse)
 
     const queryParams = { parcelId: '9238', includeHistory: 'true' }
     const result = await invokeGasGetAction(code, actionName, queryParams)
@@ -294,13 +304,16 @@ describe('invokeGasGetAction', () => {
       }
     )
     expect(result).toEqual(mockResponse)
+    expect(mockRawResponse.json).toHaveBeenCalled()
   })
 
   test('should handle empty query params object', async () => {
-    fetch.mockResolvedValueOnce({
+    const mockRawResponse = {
       ok: true,
       json: jest.fn().mockResolvedValueOnce(mockResponse)
-    })
+    }
+
+    fetch.mockResolvedValueOnce(mockRawResponse)
 
     const result = await invokeGasGetAction(code, actionName, {})
 
@@ -314,6 +327,7 @@ describe('invokeGasGetAction', () => {
       }
     )
     expect(result).toEqual(mockResponse)
+    expect(mockRawResponse.json).toHaveBeenCalled()
   })
 
   test('should throw an error when the request fails', async () => {
@@ -377,12 +391,12 @@ describe('makeGasApiRequest', () => {
   })
 
   test('should use default options when none provided', async () => {
-    const mockResponse = { success: true }
-
-    fetch.mockResolvedValueOnce({
+    const mockRawResponse = {
       ok: true,
-      json: jest.fn().mockResolvedValueOnce(mockResponse)
-    })
+      json: jest.fn().mockResolvedValueOnce({ success: true })
+    }
+
+    fetch.mockResolvedValueOnce(mockRawResponse)
 
     const result = await makeGasApiRequest(testUrl, testGrantCode)
 
@@ -393,17 +407,17 @@ describe('makeGasApiRequest', () => {
       },
       body: JSON.stringify(undefined)
     })
-    expect(result).toEqual(mockResponse)
+    expect(result).toEqual(mockRawResponse)
   })
 
   test('should use default method when only payload provided', async () => {
-    const mockResponse = { success: true }
+    const mockRawResponse = {
+      ok: true,
+      json: jest.fn().mockResolvedValueOnce({ success: true })
+    }
     const payload = { test: 'data' }
 
-    fetch.mockResolvedValueOnce({
-      ok: true,
-      json: jest.fn().mockResolvedValueOnce(mockResponse)
-    })
+    fetch.mockResolvedValueOnce(mockRawResponse)
 
     const result = await makeGasApiRequest(testUrl, testGrantCode, { payload })
 
@@ -414,17 +428,17 @@ describe('makeGasApiRequest', () => {
       },
       body: JSON.stringify(payload)
     })
-    expect(result).toEqual(mockResponse)
+    expect(result).toEqual(mockRawResponse)
   })
 
   test('should handle GET request with query params', async () => {
-    const mockResponse = { success: true }
+    const mockRawResponse = {
+      ok: true,
+      json: jest.fn().mockResolvedValueOnce({ success: true })
+    }
     const queryParams = { param1: 'value1', param2: 'value2' }
 
-    fetch.mockResolvedValueOnce({
-      ok: true,
-      json: jest.fn().mockResolvedValueOnce(mockResponse)
-    })
+    fetch.mockResolvedValueOnce(mockRawResponse)
 
     const result = await makeGasApiRequest(testUrl, testGrantCode, {
       method: 'GET',
@@ -440,16 +454,16 @@ describe('makeGasApiRequest', () => {
         }
       }
     )
-    expect(result).toEqual(mockResponse)
+    expect(result).toEqual(mockRawResponse)
   })
 
   test('should handle GET request without query params', async () => {
-    const mockResponse = { success: true }
-
-    fetch.mockResolvedValueOnce({
+    const mockRawResponse = {
       ok: true,
-      json: jest.fn().mockResolvedValueOnce(mockResponse)
-    })
+      json: jest.fn().mockResolvedValueOnce({ success: true })
+    }
+
+    fetch.mockResolvedValueOnce(mockRawResponse)
 
     const result = await makeGasApiRequest(testUrl, testGrantCode, {
       method: 'GET'
@@ -461,11 +475,14 @@ describe('makeGasApiRequest', () => {
         'Content-Type': 'application/json'
       }
     })
-    expect(result).toEqual(mockResponse)
+    expect(result).toEqual(mockRawResponse)
   })
 
   test('should filter out null and undefined query params', async () => {
-    const mockResponse = { success: true }
+    const mockRawResponse = {
+      ok: true,
+      json: jest.fn().mockResolvedValueOnce({ success: true })
+    }
     const queryParams = {
       valid: 'value',
       nullValue: null,
@@ -474,10 +491,7 @@ describe('makeGasApiRequest', () => {
       zero: 0
     }
 
-    fetch.mockResolvedValueOnce({
-      ok: true,
-      json: jest.fn().mockResolvedValueOnce(mockResponse)
-    })
+    fetch.mockResolvedValueOnce(mockRawResponse)
 
     await makeGasApiRequest(testUrl, testGrantCode, {
       method: 'GET',
@@ -585,12 +599,12 @@ describe('makeGasApiRequest edge cases', () => {
   })
 
   test('should handle empty query params object for GET requests', async () => {
-    const mockResponse = { success: true }
-
-    fetch.mockResolvedValueOnce({
+    const mockRawResponse = {
       ok: true,
-      json: jest.fn().mockResolvedValueOnce(mockResponse)
-    })
+      json: jest.fn().mockResolvedValueOnce({ success: true })
+    }
+
+    fetch.mockResolvedValueOnce(mockRawResponse)
 
     const result = await invokeGasGetAction(code, 'test', {})
 
@@ -603,16 +617,17 @@ describe('makeGasApiRequest edge cases', () => {
         }
       }
     )
-    expect(result).toEqual(mockResponse)
+    expect(result).toEqual({ success: true })
+    expect(mockRawResponse.json).toHaveBeenCalled()
   })
 
   test('should handle query params with falsy but valid values', async () => {
-    const mockResponse = { success: true }
-
-    fetch.mockResolvedValueOnce({
+    const mockRawResponse = {
       ok: true,
-      json: jest.fn().mockResolvedValueOnce(mockResponse)
-    })
+      json: jest.fn().mockResolvedValueOnce({ success: true })
+    }
+
+    fetch.mockResolvedValueOnce(mockRawResponse)
 
     const queryParams = { page: 0, search: '', active: 'false' }
     const result = await invokeGasGetAction(code, 'test', queryParams)
@@ -626,6 +641,7 @@ describe('makeGasApiRequest edge cases', () => {
         }
       }
     )
-    expect(result).toEqual(mockResponse)
+    expect(result).toEqual({ success: true })
+    expect(mockRawResponse.json).toHaveBeenCalled()
   })
 })
