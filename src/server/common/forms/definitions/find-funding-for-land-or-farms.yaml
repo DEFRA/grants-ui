@@ -13,6 +13,8 @@ pages:
 
   - title: Do your digital maps show the correct land details?
     path: /land-details
+    next:
+      - path: /agreement-name
     components:
       - name: hasCheckedLandIsUpToDate
         title: Do your digital maps show the correct land details?
@@ -86,7 +88,8 @@ pages:
   - title: Check selected land actions
     path: /check-selected-land-actions
     controller: LandActionsCheckPageController
-
+    next:
+      - path: /summary
   - title: Funding details
     path: /summary
     controller: SubmissionPageController
