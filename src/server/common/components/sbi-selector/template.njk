@@ -37,6 +37,12 @@
       function updateSbi(sbiValue) {     
         const csrfToken = document.querySelector('#csrf-token')?.value;
   
+        if (!sbiValue || sbiValue.trim() === '') {
+          console.error('SBI value is empty');
+          sbiStatus.textContent = 'Please enter a valid SBI';
+          sbiStatus.style.color = '#d4351c';
+          return;
+        }
         if (!csrfToken) {
           console.error('CSRF token not found');
           return;
