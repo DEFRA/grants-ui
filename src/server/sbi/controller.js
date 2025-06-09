@@ -1,3 +1,4 @@
+import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { sbiStore } from './state.js'
 
 /**
@@ -14,9 +15,13 @@ export const sbiController = {
 
     if (method === 'post') {
       sbiStore.set('sbi', sbi)
-      return h.response({ message: 'SBI updated successfully' }).code(200)
+      return h
+        .response({ message: 'SBI updated successfully' })
+        .code(statusCodes.ok)
     }
-    return h.response({ error: 'Method not allowed' }).code(405)
+    return h
+      .response({ error: 'Method not allowed' })
+      .code(statusCodes.methodNotAllowed)
   }
 }
 
