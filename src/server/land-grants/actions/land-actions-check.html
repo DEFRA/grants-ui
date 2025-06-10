@@ -59,26 +59,27 @@
     <div class="govuk-grid-column-two-thirds">
       <form method="post" novalidate>
          {{ govukRadios({
-  classes: "govuk-radios--inline",
-  name: "addMoreActions",
-  fieldset: {
-    legend: {
-      text: "Do you want to add more actions to your land?",
-      classes: "govuk-fieldset__legend--m"
-    }
-  },
-  items: [
-    {
-      value: "true",
-      text: "Yes"
-    },
-    {
-      value: "false",
-      text: "No"
-    }
-  ],
-  errorMessage: errorMessage and { text: errorMessage }
-}) }}
+              classes: "govuk-radios--inline",
+              name: "addMoreActions",
+              fieldset: {
+                legend: {
+                  text: "Do you want to add more actions to your land?",
+                  classes: "govuk-fieldset__legend--m"
+                }
+              },
+              items: [
+                {
+                  value: "true",
+                  text: "Yes"
+                },
+                {
+                  value: "false",
+                  text: "No"
+                }
+              ],
+              errorMessage: errorMessage and { text: errorMessage }
+            }) 
+          }}
         <div class="govuk-button-group">
           <input type="hidden" name="crumb" value="{{ crumb }}">
           {% block form %}
