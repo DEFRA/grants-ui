@@ -7,14 +7,14 @@ import {
 
 describe('adding-value-tasklist-controller', () => {
   describe('otherFarmersYesOrFruitStorageCondition', () => {
-    it('should return "notRequired" when both smaller abattoir and fruit storage are false', () => {
+    it('should return "hidden" when both smaller abattoir and fruit storage are false', () => {
       const data = {
         facilities: {
           isBuildingSmallerAbattoir: false,
           isBuildingFruitStorage: false
         }
       }
-      expect(otherFarmersYesOrFruitStorageCondition(data)).toBe('notRequired')
+      expect(otherFarmersYesOrFruitStorageCondition(data)).toBe('hidden')
     })
 
     it('should return "notYetStarted" when providing services to other farmers', () => {
@@ -53,11 +53,9 @@ describe('adding-value-tasklist-controller', () => {
       )
     })
 
-    it('should return "cannotStartYet" when facilities data is missing', () => {
+    it('should return "hidden" when facilities data is missing', () => {
       const data = {}
-      expect(otherFarmersYesOrFruitStorageCondition(data)).toBe(
-        'cannotStartYet'
-      )
+      expect(otherFarmersYesOrFruitStorageCondition(data)).toBe('hidden')
     })
   })
 
@@ -80,39 +78,35 @@ describe('adding-value-tasklist-controller', () => {
       expect(agentOrApplicantCondition(data, 'agent')).toBe('notYetStarted')
     })
 
-    it('should return "notRequired" for agent when applying-A1', () => {
+    it('should return "hidden" for agent when applying-A1', () => {
       const data = {
         'who-is-applying': {
           grantApplicantType: 'applying-A1'
         }
       }
-      expect(agentOrApplicantCondition(data, 'agent')).toBe('notRequired')
+      expect(agentOrApplicantCondition(data, 'agent')).toBe('hidden')
     })
 
-    it('should return "notRequired" for applicant when applying-A2', () => {
+    it('should return "hidden" for applicant when applying-A2', () => {
       const data = {
         'who-is-applying': {
           grantApplicantType: 'applying-A2'
         }
       }
-      expect(agentOrApplicantCondition(data, 'applicant')).toBe('notRequired')
+      expect(agentOrApplicantCondition(data, 'applicant')).toBe('hidden')
     })
 
-    it('should return "cannotStartYet" when who-is-applying data is missing', () => {
+    it('should return "hidden" when who-is-applying data is missing', () => {
       const data = {}
-      expect(agentOrApplicantCondition(data, 'applicant')).toBe(
-        'cannotStartYet'
-      )
-      expect(agentOrApplicantCondition(data, 'agent')).toBe('cannotStartYet')
+      expect(agentOrApplicantCondition(data, 'applicant')).toBe('hidden')
+      expect(agentOrApplicantCondition(data, 'agent')).toBe('hidden')
     })
 
-    it('should return "cannotStartYet" when grantApplicantType is null', () => {
+    it('should return "hidden" when grantApplicantType is null', () => {
       const data = {
         'who-is-applying': {}
       }
-      expect(agentOrApplicantCondition(data, 'applicant')).toBe(
-        'cannotStartYet'
-      )
+      expect(agentOrApplicantCondition(data, 'applicant')).toBe('hidden')
     })
   })
 
@@ -269,7 +263,7 @@ describe('adding-value-tasklist-controller', () => {
       )
     })
 
-    it('should preserve notRequired status for completed sections', async () => {
+    it('should filter out hidden sections', async () => {
       const mockData = {
         facilities: {
           isBuildingSmallerAbattoir: false,
@@ -287,15 +281,16 @@ describe('adding-value-tasklist-controller', () => {
       await handler(mockRequest, mockH)
 
       const viewData = mockH.view.mock.calls[0][1]
-      const produceSection = viewData.sections
-        .flatMap((s) => s.subsections)
-        .find((sub) => sub.title?.text === 'Produce')
-      const projectImpactSection = viewData.sections
-        .flatMap((s) => s.subsections)
-        .find((sub) => sub.title?.text === 'Project')
+      const allSubsections = viewData.sections.flatMap((s) => s.subsections)
+      const produceSection = allSubsections.find(
+        (sub) => sub.title?.text === 'Produce'
+      )
+      const projectImpactSection = allSubsections.find(
+        (sub) => sub.title?.text === 'Project'
+      )
 
-      expect(produceSection?.href).toBeNull()
-      expect(projectImpactSection?.href).toBeNull()
+      expect(produceSection).toBeUndefined()
+      expect(projectImpactSection).toBeUndefined()
     })
 
     it('should handle agent/applicant conditional sections', async () => {
@@ -322,7 +317,7 @@ describe('adding-value-tasklist-controller', () => {
         .find((sub) => sub.title?.text === 'Agent')
 
       expect(applicantSection?.href).toContain('applicant-details')
-      expect(agentSection?.href).toBeNull()
+      expect(agentSection).toBeUndefined()
     })
   })
 })
