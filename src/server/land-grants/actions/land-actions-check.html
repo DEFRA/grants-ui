@@ -22,20 +22,19 @@
           text: info
         }) }}
       {% endif %}
-      {% if errors.length > 0 %}
-        {% set errorList = [] %}
-        {% for error in errors %}
-            {% set errorList = errorList.concat([{
-              text: error
-            }]) %}
-        {% endfor %}
+      {% if errorMessage %}
         {{ govukErrorSummary({
           titleText: "There is a problem",
-          errorList: errorList
+          errorList: [
+            {
+              text: errorMessage,
+              href: '#addMoreActions'
+            } 
+          ] 
         }) }}
       {% endif %}
 
-      <h1 class="govuk-heading-l">You have added 1 action to 1 parcel</h1>
+      <h1 class="govuk-heading-l">You have added {{selectedActionRows.length}} action{% if selectedActionRows.length > 1 %}s{% endif %} to 1 parcel</h1>
 
       {{ govukTable({
           caption: "List of parcel actions selected for this application",
@@ -59,26 +58,28 @@
     </div>
     <div class="govuk-grid-column-two-thirds">
       <form method="post" novalidate>
-        {{ govukRadios({
-					classes: "govuk-radios--inline",
-          name: "addMoreActions",
-          fieldset: {
-            legend: {
-              text: "Do you want to add more actions to your land?",
-              classes: "govuk-fieldset__legend--m"
-            }
-          },
-          items: [
-            {
-              value: "true",
-              text: "Yes"
-            },
-            {
-              value: "false",
-              text: "No"
-            }
-          ]
-        }) }}
+         {{ govukRadios({
+              classes: "govuk-radios--inline",
+              name: "addMoreActions",
+              fieldset: {
+                legend: {
+                  text: "Do you want to add more actions to your land?",
+                  classes: "govuk-fieldset__legend--m"
+                }
+              },
+              items: [
+                {
+                  value: "true",
+                  text: "Yes"
+                },
+                {
+                  value: "false",
+                  text: "No"
+                }
+              ],
+              errorMessage: errorMessage and { text: errorMessage }
+            }) 
+          }}
         <div class="govuk-button-group">
           <input type="hidden" name="crumb" value="{{ crumb }}">
           {% block form %}
