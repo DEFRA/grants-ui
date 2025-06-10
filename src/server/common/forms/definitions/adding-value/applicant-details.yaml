@@ -1,3 +1,4 @@
+engine: V2
 name: Applicant
 pages:
   - title: Applicant's details
