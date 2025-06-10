@@ -5,5 +5,8 @@
   },
   "ignore": ["**/*.test.*", "./src/server/common/test-helpers", "./src/client"],
   "ext": "cjs,js,json",
-  "signal": "SIGINT"
+  "signal": "SIGINT",
+  "legacyWatch": true,
+  "polling": true,
+  "pollInterval": 1000
 }

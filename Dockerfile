@@ -6,7 +6,7 @@ FROM defradigital/node-development:${PARENT_VERSION} AS development
 
 ENV TZ="Europe/London"
 
-ARG PARENT_VERSION
+ARG PARENT_VERSION=latest-22
 LABEL uk.gov.defra.ffc.parent-image=defradigital/node-development:${PARENT_VERSION}
 
 ARG PORT
@@ -14,10 +14,13 @@ ARG PORT_DEBUG
 ENV PORT=${PORT}
 EXPOSE ${PORT} ${PORT_DEBUG}
 
+WORKDIR /home/node
+
 COPY --chown=node:node --chmod=755 package*.json ./
+COPY --chown=node:node --chmod=755 .browserslistrc ./
+COPY --chown=node:node --chmod=755 webpack.config.js ./
+COPY --chown=node:node --chmod=755 babel.config.cjs ./
 RUN npm install --ignore-scripts
-COPY --chown=node:node --chmod=755 . .
-RUN npm run build
 
 CMD [ "npm", "run", "dev" ]
 
@@ -25,6 +28,7 @@ FROM development AS production_build
 
 ENV NODE_ENV=production
 
+COPY --chown=node:node --chmod=755 . .
 RUN npm run build
 
 FROM defradigital/node:${PARENT_VERSION} AS production
