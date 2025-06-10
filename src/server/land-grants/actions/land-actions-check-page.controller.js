@@ -26,7 +26,7 @@ export default class LandActionsCheckPageController extends QuestionPageControll
           ...this.getViewModel(request, context),
           ...state,
           selectedActionRows: this.selectedActionRows,
-          errors: ['Please select an option']
+          errorMessage: 'Please select if you want to add more actions'
         })
       }
 
