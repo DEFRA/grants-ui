@@ -81,7 +81,7 @@ const determineStatuses = (request, data) => {
   const pageStatuses = { ...baseStatuses }
 
   for (const [key] of Object.entries(pageStatuses)) {
-    if (baseStatuses[key] === TaskListStatus.NOT_REQUIRED) {
+    if (baseStatuses[key] === TaskListStatus.HIDDEN) {
       continue
     }
 
@@ -137,8 +137,8 @@ export const otherFarmersYesOrFruitStorageCondition = (data) => {
     isBuildingFruitStorage: d
   } = data?.facilities ?? {}
 
-  if (c === false && d === false) {
-    return TaskListStatus.NOT_REQUIRED
+  if (c !== true && d !== true) {
+    return TaskListStatus.HIDDEN
   }
 
   return getCondition(data, {
@@ -149,12 +149,12 @@ export const otherFarmersYesOrFruitStorageCondition = (data) => {
 export const agentOrApplicantCondition = (data, role) => {
   const grantType = data?.['who-is-applying']?.grantApplicantType ?? null
   if (!grantType) {
-    return TaskListStatus.CANNOT_START_YET
+    return TaskListStatus.HIDDEN
   }
   const isValid =
     (role === 'applicant' && grantType === 'applying-A1') ||
     (role === 'agent' && grantType === 'applying-A2')
-  return isValid ? TaskListStatus.NOT_YET_STARTED : TaskListStatus.NOT_REQUIRED
+  return isValid ? TaskListStatus.NOT_YET_STARTED : TaskListStatus.HIDDEN
 }
 
 export const basedOnCompletion = (pageSlug, data, pageStatuses, pageList) => {
@@ -174,14 +174,15 @@ export const basedOnCompletion = (pageSlug, data, pageStatuses, pageList) => {
 const applyStatuses = (sections, statuses) => {
   return sections.map((section) => ({
     title: section.title,
-    subsections: section.subsections.map((sub) => ({
-      ...sub,
-      status: taskListStatusComponents[statuses[sub.href]],
-      href:
-        statuses[sub.href] === TaskListStatus.CANNOT_START_YET ||
-        statuses[sub.href] === TaskListStatus.NOT_REQUIRED
-          ? null
-          : `${sub.href}?source=adding-value-tasklist`
-    }))
+    subsections: section.subsections
+      .filter((sub) => statuses[sub.href] !== TaskListStatus.HIDDEN)
+      .map((sub) => ({
+        ...sub,
+        status: taskListStatusComponents[statuses[sub.href]],
+        href:
+          statuses[sub.href] === TaskListStatus.CANNOT_START_YET
+            ? null
+            : `${sub.href}?source=adding-value-tasklist`
+      }))
   }))
 }
