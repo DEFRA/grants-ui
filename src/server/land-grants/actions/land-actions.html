@@ -24,8 +24,12 @@
         }) }}
       {% endif %}
 
+      <h1 class="govuk-heading-l">
+        <span class="govuk-caption-l">Land parcel: {{landParcel}}</span>
+        Choose which actions to do
+      </h1>
       <div class="govuk-hint">
-        Land parcel: {{landParcel}}
+
       </div>
       {% if availableActions %}
         <form method="post" novalidate>
@@ -48,7 +52,6 @@
             <fieldset class="govuk-fieldset" aria-describedby="action-hint">
 
               <table class="govuk-table">
-                <caption class="govuk-table__caption govuk-table__caption--l">Available actions for selected parcel</caption>
                 <thead class="govuk-table__head">
                   <tr class="govuk-table__row">
                     <th class="govuk-table__header">Select</th>
