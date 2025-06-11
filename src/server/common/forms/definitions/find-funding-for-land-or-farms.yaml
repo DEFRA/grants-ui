@@ -57,7 +57,7 @@ pages:
     controller: LandParcelPageController
     path: /select-land-parcel
     next:
-      - path: /select-land-actions
+      - path: /choose-which-actions-to-do
     components:
       - type: TextField
         name: landParcel
@@ -68,7 +68,7 @@ pages:
 
   - title: Choose which actions to do
     controller: LandActionsPageController
-    path: /select-land-actions
+    path: /choose-which-actions-to-do
     next:
       - path: /check-selected-land-actions
     components:
