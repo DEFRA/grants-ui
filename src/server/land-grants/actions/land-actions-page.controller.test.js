@@ -375,7 +375,7 @@ describe('LandActionsPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'land-actions',
         expect.objectContaining({
-          errors: errorMessages.map((m) => m.description),
+          errors: errorMessages.map((m) => `${m.code}: ${m.description}`),
           availableActions
         })
       )
