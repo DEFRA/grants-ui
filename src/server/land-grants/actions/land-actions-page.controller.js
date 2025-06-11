@@ -114,7 +114,7 @@ export default class LandActionsPageController extends QuestionPageController {
           )
 
           if (!valid) {
-            errors = errorMessages.map((m) => m.description)
+            errors = errorMessages.map((m) => `${m.code}: ${m.description}`)
           }
         }
 
