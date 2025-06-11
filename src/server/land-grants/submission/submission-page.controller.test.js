@@ -1,13 +1,15 @@
 import { jest } from '@jest/globals'
 import { config } from '~/src/config/config.js'
+import { transformStateObjectToGasApplication } from '~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
 import { submitGrantApplication } from '~/src/server/common/services/grant-application/grant-application.service.js'
-import { transformStateObjectToGasApplication } from '../../common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
 import { stateToLandGrantsGasAnswers } from './state-to-gas-answers-mapper.js'
 import SubmissionPageController from './submission-page.controller.js'
 
-jest.mock('~/src/server/common/services/grant-application.service.js')
 jest.mock(
-  '../../common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
+  '~/src/server/common/services/grant-application/grant-application.service.js'
+)
+jest.mock(
+  '~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
 )
 jest.mock('./state-to-gas-answers-mapper.js')
 jest.mock('~/src/server/common/helpers/forms-cache/forms-cache.js', () => ({

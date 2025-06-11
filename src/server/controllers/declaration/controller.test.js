@@ -28,7 +28,9 @@ jest.mock(
     }
   }
 )
-jest.mock('~/src/server/common/services/grant-application.service.js')
+jest.mock(
+  '~/src/server/common/services/grant-application/grant-application.service.js'
+)
 jest.mock(
   '../../common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
 )

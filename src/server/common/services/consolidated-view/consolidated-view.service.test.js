@@ -15,8 +15,10 @@ const getMockFilePath = (sbi) => {
     process.cwd(),
     'src',
     'server',
-    '__mocks__',
+    'common',
+    'services',
     'consolidated-view',
+    'mock-data',
     `${sbi}.json`
   )
 }

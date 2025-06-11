@@ -9,9 +9,12 @@ jest.mock('~/src/server/common/helpers/logging/logger.js', () => ({
   })
 }))
 
-jest.mock('~/src/server/common/services/consolidated-view.service.js', () => ({
-  fetchParcelDataForBusiness: jest.fn()
-}))
+jest.mock(
+  '~/src/server/common/services/consolidated-view/consolidated-view.service.js',
+  () => ({
+    fetchParcelDataForBusiness: jest.fn()
+  })
+)
 
 describe('LandParcelPageController', () => {
   let controller
