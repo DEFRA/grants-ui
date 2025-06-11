@@ -20,6 +20,7 @@ COPY --chown=node:node --chmod=755 package*.json ./
 COPY --chown=node:node --chmod=755 .browserslistrc ./
 COPY --chown=node:node --chmod=755 webpack.config.js ./
 COPY --chown=node:node --chmod=755 babel.config.cjs ./
+COPY --chown=node:node --chmod=755 tsconfig.json ./
 RUN npm install --ignore-scripts
 
 CMD [ "npm", "run", "dev" ]
