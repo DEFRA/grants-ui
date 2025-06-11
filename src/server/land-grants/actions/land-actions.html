@@ -2,9 +2,11 @@
 
 {% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
 {% from "govuk/components/checkboxes/macro.njk" import govukCheckboxes %}
+{% from "govuk/components/input/macro.njk" import govukInput %}
 {% from "govuk/components/inset-text/macro.njk" import govukInsetText %}
 {% from "govuk/components/warning-text/macro.njk" import govukWarningText %}
 {% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/input/macro.njk" import govukInput %}
 
 {% block content %}
 <div class="govuk-body">
@@ -55,7 +57,6 @@
                     <th class="govuk-table__header">Action</th>
                     <th class="govuk-table__header">Available</th>
                     <th class="govuk-table__header">Quantity</th>
-                    <th class="govuk-table__header">Unit</th>
                   </tr>
                 </thead>
                 <tbody class="govuk-table__body">
@@ -71,12 +72,21 @@
                     <td class="govuk-table__cell">{{ action.text }}</td>
                     <td class="govuk-table__cell">{{ action.availableArea }}</td>
                     <td class="govuk-table__cell">
-                      <div class="govuk-form-group">
-                        <label class="govuk-label govuk-date-input__label govuk-visually-hidden" for="area">Area</label>
-                        <input class="govuk-input govuk-input--width-4" id="{{quantityPrefix}}{{ loop.index }}" name="{{quantityPrefix}}{{action.value}}" value="{{action.areaValue}}" type="text" inputmode="numeric">
-                      </div>
+
+                      {{ govukInput({
+                        label: {
+                          classes: "govuk-visually-hidden",
+                          text: "Quantity"
+                        },
+                        classes: "govuk-input--width-10",
+                        value: action.areaValue,
+                        name: quantityPrefix + action.value,
+                        suffix: {
+                          text: action.availableAreaUnit
+                        },
+                        spellcheck: false
+                      }) }}
                     </td>
-                    <td class="govuk-table__cell">{{ action.availableAreaUnit }}</td>
                   </tr>
                   {% endfor %}
                 </tbody>
