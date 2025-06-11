@@ -66,7 +66,7 @@ pages:
           required: true
         schema: {}
 
-  - title: Select Land Actions
+  - title: Choose which actions to do
     controller: LandActionsPageController
     path: /select-land-actions
     next:
