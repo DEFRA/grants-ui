@@ -1,8 +1,8 @@
 import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
-import DeclarationPageController from './controller.js'
 import * as formSlugHelper from '~/src/server/common/helpers/form-slug-helper.js'
-import { submitGrantApplication } from '~/src/server/common/services/grant-application.service.js'
+import { submitGrantApplication } from '~/src/server/common/services/grant-application/grant-application.service.js'
 import { transformStateObjectToGasApplication } from '../../common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
+import DeclarationPageController from './controller.js'
 import { transformAnswerKeysToText } from './state-to-gas-answers-mapper.js'
 
 const mockCacheService = {

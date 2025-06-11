@@ -2,7 +2,7 @@ import fs from 'fs/promises'
 import path from 'path'
 import { config } from '~/src/config/config.js'
 import { getValidToken } from '~/src/server/common/helpers/entra/token-manager.js'
-import { fetchParcelDataForBusiness } from '~/src/server/common/services/consolidated-view.service.js'
+import { fetchParcelDataForBusiness } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
 
 jest.mock('~/src/server/common/helpers/entra/token-manager.js', () => ({
   getValidToken: jest.fn()

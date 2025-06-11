@@ -1,8 +1,8 @@
 import fs from 'fs/promises'
 import path from 'path'
 import { config } from '~/src/config/config.js'
+import { getValidToken } from '~/src/server/common/helpers/entra/token-manager.js'
 import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
-import { getValidToken } from '../helpers/entra/token-manager.js'
 
 const CV_API_ENDPOINT = config.get('consolidatedView.apiEndpoint')
 const CV_API_AUTH_EMAIL = config.get('consolidatedView.authEmail')
@@ -50,8 +50,10 @@ async function fetchMockParcelDataForBusiness(sbi) {
     process.cwd(),
     'src',
     'server',
-    '__mocks__',
+    'common',
+    'services',
     'consolidated-view',
+    'mock-data',
     `${sbi}.json`
   )
   const data = await fs.readFile(mockFile)
