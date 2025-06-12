@@ -18,7 +18,7 @@ const getMockFilePath = (sbi) => {
     'common',
     'services',
     'consolidated-view',
-    'mock-data',
+    'land-data',
     `${sbi}.json`
   )
 }
@@ -169,7 +169,7 @@ describe('fetchParcelDataForBusiness', () => {
 
       expect(result).toEqual(mockFileData)
       expect(fs.readFile).toHaveBeenCalledTimes(1)
-      expect(fs.readFile).toHaveBeenCalledWith(getMockFilePath(mockSbi))
+      expect(fs.readFile).toHaveBeenCalledWith(getMockFilePath(mockSbi), 'utf8')
       expect(mockFetch).not.toHaveBeenCalled()
       expect(getValidToken).not.toHaveBeenCalled()
     })
@@ -198,7 +198,10 @@ describe('fetchParcelDataForBusiness', () => {
 
       await fetchParcelDataForBusiness(differentSbi)
 
-      expect(fs.readFile).toHaveBeenCalledWith(getMockFilePath(differentSbi))
+      expect(fs.readFile).toHaveBeenCalledWith(
+        getMockFilePath(differentSbi),
+        'utf8'
+      )
     })
   })
 })
