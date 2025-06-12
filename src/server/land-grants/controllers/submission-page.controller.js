@@ -3,7 +3,7 @@ import { config } from '~/src/config/config.js'
 import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/forms-cache.js'
 import { transformStateObjectToGasApplication } from '~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
 import { submitGrantApplication } from '~/src/server/common/services/grant-application.service.js'
-import { stateToLandGrantsGasAnswers } from './state-to-gas-answers-mapper.js'
+import { stateToLandGrantsGasAnswers } from '../mappers/state-to-gas-answers-mapper.js'
 
 export default class SubmissionPageController extends SummaryPageController {
   /**
