@@ -55,7 +55,6 @@ export async function addAllForms(loader, forms) {
     uniqueForms.map((form) =>
       loader.addForm(form.path, {
         ...metadata,
-        authRequired: ['adding-value', 'land-grants'].includes(form.slug),
         id: form.id,
         slug: form.slug,
         title: form.title
