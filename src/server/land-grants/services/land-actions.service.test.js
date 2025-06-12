@@ -1,7 +1,7 @@
 import { config } from '~/src/config/config.js'
 import {
   calculateApplicationPayment,
-  fetchLandSheetDetails,
+  fetchAvailableActionsForParcel,
   validateLandActions
 } from '~/src/server/land-grants/services/land-actions.service.js'
 
@@ -13,7 +13,7 @@ const landGrantsApi = config.get('landGrants.grantsServiceApiEndpoint')
 const mockFetch = jest.fn()
 global.fetch = mockFetch
 
-describe('fetchLandSheetDetails', () => {
+describe('fetchAvailableActionsForParcel', () => {
   const parcelId = '9238'
   const sheetId = 'SX0679'
 
@@ -21,10 +21,10 @@ describe('fetchLandSheetDetails', () => {
    * @type {object}
    */
   const mockSuccessResponse = {
-    data: {
-      message: 'success',
-      parcel: {
-        parcelId: 9238,
+    message: 'success',
+    parcels: [
+      {
+        parcelId: '9238',
         sheetId: 'SX0679',
         size: {
           unit: 'ha',
@@ -37,7 +37,7 @@ describe('fetchLandSheetDetails', () => {
           }
         ]
       }
-    }
+    ]
   }
 
   beforeEach(() => {
@@ -51,14 +51,19 @@ describe('fetchLandSheetDetails', () => {
       json: () => Promise.resolve(mockSuccessResponse)
     })
 
-    const result = await fetchLandSheetDetails(parcelId, sheetId)
-
+    const result = await fetchAvailableActionsForParcel(parcelId, sheetId)
     expect(mockFetch).toHaveBeenCalledWith(
-      `${landGrantsApi}/parcels/SX0679-9238`,
-      { method: 'GET' }
+      `${landGrantsApi}/parcels`,
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({
+          parcelIds: ['SX0679-9238'],
+          fields: ['actions', 'actions.availableArea']
+        })
+      })
     )
 
-    expect(result).toEqual(mockSuccessResponse)
+    expect(result).toEqual(mockSuccessResponse.parcels[0])
   })
 
   it('should throw an error when fetch response is not ok', async () => {
@@ -68,7 +73,9 @@ describe('fetchLandSheetDetails', () => {
       statusText: 'Not Found'
     })
 
-    await expect(fetchLandSheetDetails(parcelId, sheetId)).rejects.toThrow()
+    await expect(
+      fetchAvailableActionsForParcel(parcelId, sheetId)
+    ).rejects.toThrow()
 
     expect(mockFetch).toHaveBeenCalledTimes(1)
   })
@@ -77,9 +84,9 @@ describe('fetchLandSheetDetails', () => {
     const networkError = new Error('Network error')
     mockFetch.mockRejectedValueOnce(networkError)
 
-    await expect(fetchLandSheetDetails(parcelId, sheetId)).rejects.toThrow(
-      'Network error'
-    )
+    await expect(
+      fetchAvailableActionsForParcel(parcelId, sheetId)
+    ).rejects.toThrow('Network error')
 
     expect(mockFetch).toHaveBeenCalledTimes(1)
   })
