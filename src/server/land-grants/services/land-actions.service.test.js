@@ -3,7 +3,7 @@ import {
   calculateApplicationPayment,
   fetchLandSheetDetails,
   validateLandActions
-} from '~/src/server/land-grants/actions/land-actions.service.js'
+} from '~/src/server/land-grants/services/land-actions.service.js'
 
 const landGrantsApi = config.get('landGrants.grantsServiceApiEndpoint')
 

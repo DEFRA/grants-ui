@@ -34,10 +34,10 @@ import { getCacheEngine } from '~/src/server/common/helpers/session-cache/cache-
 import { sessionCache } from '~/src/server/common/helpers/session-cache/session-cache.js'
 import ConfirmationPageController from '~/src/server/controllers/confirmation/controller.js'
 import DeclarationPageController from '~/src/server/controllers/declaration/controller.js'
-import LandActionsPageController from '~/src/server/land-grants/actions/land-actions-page.controller.js'
-import LandActionsCheckPageController from '~/src/server/land-grants/actions/land-actions-check-page.controller.js'
-import LandParcelPageController from '~/src/server/land-grants/parcel/land-parcel-page.controller.js'
-import SubmissionPageController from '~/src/server/land-grants/submission/submission-page.controller.js'
+import LandActionsPageController from '~/src/server/land-grants/controllers/land-actions-page.controller.js'
+import LandActionsCheckPageController from '~/src/server/land-grants/controllers/land-actions-check-page.controller.js'
+import LandParcelPageController from '~/src/server/land-grants/controllers/land-parcel-page.controller.js'
+import SubmissionPageController from '~/src/server/land-grants/controllers/submission-page.controller.js'
 import SectionEndController from './controllers/section-end/section-end-controller.js'
 import { formatCurrency } from '../config/nunjucks/filters/format-currency.js'
 import { router } from './router.js'
@@ -49,9 +49,7 @@ const getViewPaths = () => {
   const isRunningBuiltCode = currentFilePath.includes('.server')
   const basePath = isRunningBuiltCode ? '.server/server' : 'src/server'
   return [
-    `${basePath}/land-grants/actions`,
-    `${basePath}/land-grants/parcel`,
-    `${basePath}/land-grants/submission`,
+    `${basePath}/land-grants/views`,
     `${basePath}/views`,
     ...grantsUiPaths
   ]
