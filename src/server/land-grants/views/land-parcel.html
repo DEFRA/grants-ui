@@ -20,12 +20,12 @@
         }) }}
       {% endif %}
 
-      {% if business and business.land and business.land.parcels %}
+      {% if parcels %}
         <form method="post" data-actions="{{ actions }}" >
           {% set radioItems = [] %}
-          {% set parcelId = landParcel or business.land.parcels[0].parcelId %}
+          {% set parcelId = landParcel or parcels[0].parcelId %}
 
-          {% for parcel in business.land.parcels %}
+          {% for parcel in parcels %}
             {% set radioItems = radioItems.concat([{
               value: parcel.sheetId + "-" + parcel.parcelId,
               text: parcel.sheetId + "-" + parcel.parcelId + " (Total size: " + parcel.area + " ha.)"

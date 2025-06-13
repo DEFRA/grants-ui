@@ -1,7 +1,7 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import {
   calculateApplicationPayment,
-  fetchLandSheetDetails,
+  fetchAvailableActionsForParcel,
   validateLandActions
 } from '~/src/server/land-grants/services/land-actions.service.js'
 
@@ -165,8 +165,8 @@ export default class LandActionsPageController extends QuestionPageController {
 
       // Load available actions for the land parcel
       try {
-        const data = await fetchLandSheetDetails(parcelId, sheetId)
-        this.availableActions = data.parcel.actions || []
+        const data = await fetchAvailableActionsForParcel(parcelId, sheetId)
+        this.availableActions = data.actions || []
         if (!this.availableActions.length) {
           request.logger.error({
             message: `No actions found for parcel ${sheetId}-${parcelId}`,

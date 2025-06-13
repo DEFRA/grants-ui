@@ -26,19 +26,23 @@ const mapActionsObjectToPayload = (actionsObj) =>
  */
 
 /**
- * Fetches land grant information from Land Grants API
+ * Fetches actions information from Land Grants API
  * @param {string} parcelId - Land Parcel Id
  * @param {string} sheetId - Sheet Id
  * @returns {Promise<object>} - Promise that resolves to the business details
  * @throws {Error} - If the request fails
  */
-export async function fetchLandSheetDetails(parcelId, sheetId) {
-  const response = await fetch(
-    `${LAND_GRANTS_API_URL}/parcels/${sheetId}-${parcelId}`,
-    {
-      method: 'GET'
-    }
-  )
+export async function fetchAvailableActionsForParcel(parcelId, sheetId) {
+  const response = await fetch(`${LAND_GRANTS_API_URL}/parcels`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      parcelIds: [`${sheetId}-${parcelId}`],
+      fields: ['actions', 'actions.availableArea']
+    })
+  })
 
   if (!response.ok) {
     /**
@@ -49,9 +53,10 @@ export async function fetchLandSheetDetails(parcelId, sheetId) {
     throw error
   }
 
-  const data = /** @type {Promise<object>} */ (response.json())
-
-  return data
+  const data = /** @type {Promise<object>} */ await response.json()
+  return data.parcels?.find(
+    (p) => p.parcelId === parcelId && p.sheetId === sheetId
+  )
 }
 
 /**

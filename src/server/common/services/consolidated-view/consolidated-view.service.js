@@ -69,7 +69,7 @@ async function fetchMockParcelDataForBusiness(sbi) {
  * @throws {ConsolidatedViewApiError} - If the API request fails
  * @throws {Error} - For other unexpected errors
  */
-export async function fetchParcelDataForBusiness(sbi) {
+export async function fetchParcelsForSbi(sbi) {
   const mockDALEnabled = config.get('consolidatedView.mockDALEnabled')
   try {
     if (mockDALEnabled) {
@@ -115,7 +115,8 @@ export async function fetchParcelDataForBusiness(sbi) {
       )
     }
 
-    return response.json()
+    const responseJson = await response.json()
+    return responseJson.data?.business?.land?.parcels || []
   } catch (error) {
     logger.error(
       { err: error },

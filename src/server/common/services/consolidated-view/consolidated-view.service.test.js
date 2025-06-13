@@ -2,7 +2,7 @@ import fs from 'fs/promises'
 import path from 'path'
 import { config } from '~/src/config/config.js'
 import { getValidToken } from '~/src/server/common/helpers/entra/token-manager.js'
-import { fetchParcelDataForBusiness } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
+import { fetchParcelsForSbi } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
 
 jest.mock('~/src/server/common/helpers/entra/token-manager.js', () => ({
   getValidToken: jest.fn()
@@ -28,7 +28,7 @@ const getMockFilePath = (sbi) => {
 const mockFetch = jest.fn()
 global.fetch = mockFetch
 
-describe('fetchParcelDataForBusiness', () => {
+describe('fetchParcelsForSbi', () => {
   const mockSbi = 123456789
   const mockToken = 'mock-token-123'
 
@@ -38,12 +38,19 @@ describe('fetchParcelDataForBusiness', () => {
   const mockSuccessResponse = {
     data: {
       business: {
-        sbi: mockSbi,
-        organisationId: 'ORG123',
-        customer: {
-          firstName: 'John',
-          lastName: 'Doe',
-          role: 'Owner'
+        land: {
+          parcels: [
+            {
+              parcelId: '0155',
+              sheetId: 'SD7946',
+              area: 4.0383
+            },
+            {
+              parcelId: '4509',
+              sheetId: 'SD7846',
+              area: 0.0633
+            }
+          ]
         }
       }
     }
@@ -61,16 +68,16 @@ describe('fetchParcelDataForBusiness', () => {
     })
   })
 
-  it('should fetch business details successfully', async () => {
+  it('should fetch land parcels successfully', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve(mockSuccessResponse)
     })
 
-    const result = await fetchParcelDataForBusiness(mockSbi)
+    const result = await fetchParcelsForSbi(mockSbi)
 
     expect(mockFetch).toHaveBeenCalledTimes(1)
-    expect(result).toEqual(mockSuccessResponse)
+    expect(result).toEqual(mockSuccessResponse.data.business.land.parcels)
 
     const [[, calledOptions]] = mockFetch.mock.calls
     expect(calledOptions.headers.Authorization).toBe(`Bearer ${mockToken}`)
@@ -85,7 +92,7 @@ describe('fetchParcelDataForBusiness', () => {
       text: () => Promise.resolve(errorText)
     })
 
-    await expect(fetchParcelDataForBusiness(mockSbi)).rejects.toThrow(
+    await expect(fetchParcelsForSbi(mockSbi)).rejects.toThrow(
       'Failed to fetch business data: 404 Not Found'
     )
     expect(mockFetch).toHaveBeenCalledTimes(1)
@@ -100,7 +107,7 @@ describe('fetchParcelDataForBusiness', () => {
       text: () => Promise.resolve(errorText)
     })
 
-    const error = await fetchParcelDataForBusiness(mockSbi).catch((e) => e)
+    const error = await fetchParcelsForSbi(mockSbi).catch((e) => e)
     expect(error.status).toBe(500)
     expect(error.responseBody).toBe(
       `Failed to fetch business data: 500 ${errorText}`
@@ -111,7 +118,7 @@ describe('fetchParcelDataForBusiness', () => {
     const networkError = new Error('Network error')
     mockFetch.mockRejectedValueOnce(networkError)
 
-    await expect(fetchParcelDataForBusiness(mockSbi)).rejects.toThrow(
+    await expect(fetchParcelsForSbi(mockSbi)).rejects.toThrow(
       'Failed to fetch business data: Network error'
     )
     expect(mockFetch).toHaveBeenCalledTimes(1)
@@ -123,7 +130,7 @@ describe('fetchParcelDataForBusiness', () => {
       json: () => Promise.resolve(mockSuccessResponse)
     })
 
-    await fetchParcelDataForBusiness(mockSbi)
+    await fetchParcelsForSbi(mockSbi)
 
     const [[, calledOptions]] = mockFetch.mock.calls
     const body = JSON.parse(calledOptions.body)
@@ -165,7 +172,7 @@ describe('fetchParcelDataForBusiness', () => {
     it('should read mock data from file instead of calling API', async () => {
       fs.readFile.mockResolvedValueOnce(JSON.stringify(mockFileData))
 
-      const result = await fetchParcelDataForBusiness(mockSbi)
+      const result = await fetchParcelsForSbi(mockSbi)
 
       expect(result).toEqual(mockFileData)
       expect(fs.readFile).toHaveBeenCalledTimes(1)
@@ -179,7 +186,7 @@ describe('fetchParcelDataForBusiness', () => {
       fileError.code = 'ENOENT'
       fs.readFile.mockRejectedValueOnce(fileError)
 
-      await expect(fetchParcelDataForBusiness(mockSbi)).rejects.toThrow(
+      await expect(fetchParcelsForSbi(mockSbi)).rejects.toThrow(
         'Failed to fetch business data: ENOENT: no such file or directory'
       )
     })
@@ -187,7 +194,7 @@ describe('fetchParcelDataForBusiness', () => {
     it('should handle invalid JSON in mock file', async () => {
       fs.readFile.mockResolvedValueOnce('invalid json content')
 
-      await expect(fetchParcelDataForBusiness(mockSbi)).rejects.toThrow(
+      await expect(fetchParcelsForSbi(mockSbi)).rejects.toThrow(
         'Failed to fetch business data:'
       )
     })
@@ -196,7 +203,7 @@ describe('fetchParcelDataForBusiness', () => {
       const differentSbi = 987654321
       fs.readFile.mockResolvedValueOnce(JSON.stringify(mockFileData))
 
-      await fetchParcelDataForBusiness(differentSbi)
+      await fetchParcelsForSbi(differentSbi)
 
       expect(fs.readFile).toHaveBeenCalledWith(
         getMockFilePath(differentSbi),

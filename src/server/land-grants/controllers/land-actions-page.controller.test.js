@@ -1,7 +1,7 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import {
   calculateApplicationPayment,
-  fetchLandSheetDetails,
+  fetchAvailableActionsForParcel,
   validateLandActions
 } from '~/src/server/land-grants/services/land-actions.service.js'
 import LandActionsPageController from './land-actions-page.controller.js'
@@ -152,10 +152,8 @@ describe('LandActionsPageController', () => {
 
   describe('GET route handler', () => {
     test('should fetch land details and render view with correct data', async () => {
-      fetchLandSheetDetails.mockResolvedValue({
-        parcel: {
-          actions: ['action1', 'action2', 'action3']
-        }
+      fetchAvailableActionsForParcel.mockResolvedValue({
+        actions: ['action1', 'action2', 'action3']
       })
 
       mockContext.state.actions = ['action1', 'action2']
@@ -163,7 +161,10 @@ describe('LandActionsPageController', () => {
       const handler = controller.makeGetRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
 
-      expect(fetchLandSheetDetails).toHaveBeenCalledWith('parcel1', 'sheet1')
+      expect(fetchAvailableActionsForParcel).toHaveBeenCalledWith(
+        'parcel1',
+        'sheet1'
+      )
       expect(mockH.view).toHaveBeenCalledWith(
         'land-actions',
         expect.objectContaining({
@@ -176,7 +177,7 @@ describe('LandActionsPageController', () => {
     })
 
     test('should handle fetch errors gracefully', async () => {
-      fetchLandSheetDetails.mockRejectedValue(new Error('API error'))
+      fetchAvailableActionsForParcel.mockRejectedValue(new Error('API error'))
 
       const handler = controller.makeGetRouteHandler()
       await handler(mockRequest, mockContext, mockH)
@@ -191,10 +192,8 @@ describe('LandActionsPageController', () => {
     })
 
     test('should log error when no actions found', async () => {
-      fetchLandSheetDetails.mockResolvedValue({
-        parcel: {
-          actions: []
-        }
+      fetchAvailableActionsForParcel.mockResolvedValue({
+        actions: []
       })
 
       const handler = controller.makeGetRouteHandler()
@@ -210,12 +209,12 @@ describe('LandActionsPageController', () => {
       mockContext.state = {}
       controller.collection.getErrors.mockReturnValue([])
 
-      fetchLandSheetDetails.mockResolvedValue({ parcel: { actions: [] } })
+      fetchAvailableActionsForParcel.mockResolvedValue({ actions: [] })
 
       const handler = controller.makeGetRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
 
-      expect(fetchLandSheetDetails).toHaveBeenCalledWith(undefined, '')
+      expect(fetchAvailableActionsForParcel).toHaveBeenCalledWith(undefined, '')
       expect(mockH.view).toHaveBeenCalledWith(
         'land-actions',
         expect.objectContaining({
@@ -226,9 +225,7 @@ describe('LandActionsPageController', () => {
     })
 
     test('should default to empty actions when parcel.actions is undefined', async () => {
-      fetchLandSheetDetails.mockResolvedValue({
-        parcel: {}
-      })
+      fetchAvailableActionsForParcel.mockResolvedValue({})
 
       controller.collection.getErrors.mockReturnValue([])
 
