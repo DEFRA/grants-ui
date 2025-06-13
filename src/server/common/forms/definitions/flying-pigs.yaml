@@ -1,0 +1,427 @@
+engine: V2
+name: Pigs Might Fly
+metadata:
+  referenceNumberPrefix: PMF
+  submission:
+    grantCode: pigs-might-fly-v1
+    submissionSchemaPath: ./schemas/pigs-might-fly-submission.schema.json
+pages:
+  - title: Check if you can apply for a Pigs Might Fly Grant
+    path: '/start'
+    controller: StartPageController
+    components:
+      - name: startInfoOne
+        title: Html
+        type: Html
+        content: |-
+          <p class="govuk-body">Use this service to:</p>
+
+          <ul class="govuk-list govuk-list--bullet">
+          <li>check if you can apply for wings for your pigs (takes about 3 minutes)</li>
+          <li>get an estimate of your grant funding (takes about 5 minutes if you have all the pig details)</li>
+          </ul>
+
+          <p class="govuk-body">You can apply if you:</p>
+
+          <ul class="govuk-list govuk-list--bullet">
+          <li>are a pig farmer</li>
+          <li>have between 1 and 1,000 pigs</li>
+          <li>will use the wings in England</li>
+          <li>want to super-power your pigs</li>
+          </ul>
+      - name: startInsetText
+        title: Inset text
+        type: InsetText
+        content:
+          If your project is eligible, you can submit your answers to the Rural
+          Payments Agency (RPA) to request the full application form.
+      - name: startInfoTwo
+        title: Html
+        type: Html
+        content: |+
+          <h2 class="govuk-heading-s">Grant funding rates</h2>
+          <p class="govuk-body">You can get funding for:</p>
+          <ul class="govuk-list govuk-list--bullet">
+          <li>£10 per pig for Large White breeds</li>
+          <li>£15 per pig for British Landrace breeds</li>
+          <li>£18 per pig for Berkshire breeds</li>
+          <li>£10 per pig for other breeds</li>
+          </ul>
+
+          <h2 class="govuk-heading-s">Before you start</h2>
+          <p class="govuk-body">To use the checker, you need:</p>
+          <ul class="govuk-list govuk-list--bullet">
+          <li>information about your farming business</li>
+          <li>the number and breeds of pigs you have</li>
+          <li>your contact details and business address</li>
+          </ul>
+          <p class="govuk-body">If you do not enter any information for more than 20 minutes, your application will time out and you will have to start again.</p>
+
+          <h2 class="govuk-heading-s">Problems using the online service</h2>
+          <p class="govuk-body">If you have any problems using the online service, contact the RPA.</p>
+
+          <h2 class="govuk-heading-s">Telephone</h2>
+          <p class="govuk-body">Telephone: 03000 200 301</p>
+          <p class="govuk-body">Monday to Friday, 9am to 5pm (except public holidays)</p>
+
+  - title: Are you a pig farmer?
+    path: '/pig-farmer'
+    components:
+      - name: isPigFarmer
+        title: Are you a pig farmer?
+        type: YesNoField
+        hint: You must be a pig farmer to apply for this grant
+        options:
+          customValidationMessages:
+            any.required: Select yes if you are a pig farmer
+
+  - title: You cannot apply for a grant from this scheme
+    path: '/cannot-apply-not-pig-farmer'
+    controller: TerminalPageController
+    components:
+      - name: notPigFarmerCannotApply
+        title: Html
+        type: Html
+        content: |
+          <p class="govuk-body">This grant is only available for pig farmers.</p>
+
+          <p class="govuk-body">See other grants you may be eligible for.</p>
+    condition: notPigFarmerCondition
+
+  - title: How many pigs do you have?
+    path: '/pig-count'
+    components:
+      - name: pigCountInfo
+        type: Html
+        title: Html
+        content:
+          '<p class="govuk-hint">Enter the total number of pigs you have<br><br>You can apply for wings for up to 1,000 pigs</p>'
+      - name: totalPigs
+        type: NumberField
+        title: Enter number of pigs
+        options:
+          required: true
+          classes: govuk-!-width-one-third
+          customValidationMessages:
+            any.required: Enter the number of pigs you have
+            number.max: You can apply for wings for up to 1,000 pigs
+            number.min: You must have at least 1 pig
+        schema:
+          min: 1
+          max: 1000
+          precision: 0
+
+  - title: You cannot apply for a grant from this scheme
+    path: '/pig-count-cannot-apply'
+    controller: TerminalPageController
+    components:
+      - name: pigCountCannotApplyInfo
+        title: Html
+        type: Html
+        content: |
+          <p class="govuk-body">This grant is only available for pig farmers with up to 1,000 pigs.</p>
+
+          <p class="govuk-body">See other grants you may be eligible for.</p>
+    condition: tooManyPigsCondition
+
+  - title: What pig breeds do you have?
+    path: '/pig-breeds'
+    next:
+      - path: '/large-white'
+        condition: hasLargeWhiteCondition
+    components:
+      - name: pigBreeds
+        title: What pig breeds do you have?
+        type: CheckboxesField
+        list: pigBreedsList
+        hint: Select all that apply
+        options:
+          customValidationMessages:
+            any.required: Select at least one pig breed
+
+  - title: How many Large White pigs do you have?
+    path: '/large-white'
+    components:
+      - name: largeWhiteCount
+        title: How many large white pigs do you have?
+        type: NumberField
+        options:
+          classes: govuk-!-width-one-third
+          customValidationMessages:
+            number.min: Number cannot be less than 0
+        schema:
+          min: 0
+          precision: 0
+        condition: hasLargeWhiteCondition
+
+  - title: How many pigs of each breed do you have?
+    path: '/breed-counts'
+    components:
+      - name: britishLandraceCount
+        title: How many British Landrace pigs do you have?
+        type: NumberField
+        options:
+          classes: govuk-!-width-one-third
+          customValidationMessages:
+            number.min: Number cannot be less than 0
+        schema:
+          min: 0
+          precision: 0
+        condition: hasBritishLandraceCondition
+      - name: berkshireCount
+        title: How many Berkshire pigs do you have?
+        type: NumberField
+        options:
+          classes: govuk-!-width-one-third
+          customValidationMessages:
+            number.min: Number cannot be less than 0
+        schema:
+          min: 0
+          precision: 0
+        condition: hasBerkshireCondition
+      - name: otherCount
+        title: How many other breed pigs do you have?
+        type: NumberField
+        options:
+          classes: govuk-!-width-one-third
+          customValidationMessages:
+            number.min: Number cannot be less than 0
+        schema:
+          min: 0
+          precision: 0
+        condition: hasOtherCondition
+
+  - title: Potential grant funding
+    path: '/potential-funding'
+    components:
+      - name: potentialFundingInfo
+        title: Html
+        type: Html
+        content: |
+          <p class="govuk-body">
+          {% assign largeWhiteCount = 'largeWhiteCount' | answer | default: 0 %}
+          {% assign britishLandraceCount = 'britishLandraceCount' | answer | default: 0 %}
+          {% assign berkshireCount = 'berkshireCount' | answer | default: 0 %}
+          {% assign otherCount = 'otherCount' | answer | default: 0 %}
+          {% assign largeWhiteFunding = largeWhiteCount | times: 10 %}
+          {% assign britishLandraceFunding = britishLandraceCount | times: 15 %}
+          {% assign berkshireFunding = berkshireCount | times: 18 %}
+          {% assign otherFunding = otherCount | times: 10 %}
+          {% assign totalFunding = largeWhiteFunding | plus: britishLandraceFunding | plus: berkshireFunding | plus: otherFunding %}
+
+          Based on your pig breeds and numbers, you may be able to apply for grant funding of up to {{ totalFunding | formatCurrency: 'en-GB', 'GBP', 0 }}.
+
+          {% if largeWhiteCount > 0 %}
+          <br>Large White: {{ largeWhiteCount }} pigs × £10 = {{ largeWhiteFunding | formatCurrency: 'en-GB', 'GBP', 0 }}
+          {% endif %}
+          {% if britishLandraceCount > 0 %}
+          <br>British Landrace: {{ britishLandraceCount }} pigs × £15 = {{ britishLandraceFunding | formatCurrency: 'en-GB', 'GBP', 0 }}
+          {% endif %}
+          {% if berkshireCount > 0 %}
+          <br>Berkshire: {{ berkshireCount }} pigs × £18 = {{ berkshireFunding | formatCurrency: 'en-GB', 'GBP', 0 }}
+          {% endif %}
+          {% if otherCount > 0 %}
+          <br>Other breeds: {{ otherCount }} pigs × £10 = {{ otherFunding | formatCurrency: 'en-GB', 'GBP', 0 }}
+          {% endif %}
+          </p>
+      - type: Html
+        name: potentialFundingWarning
+        title: Html
+        content:
+          <div class="govuk-warning-text"> <span class="govuk-warning-text__icon"
+          aria-hidden="true">!</span> <strong class="govuk-warning-text__text"> <span
+          class="govuk-visually-hidden">Warning</span>There's no guarantee the project
+          will receive a grant.</strong></div>
+
+  - title: Where will the pigs use their wings?
+    path: '/project-location'
+    components:
+      - name: projectLocation
+        title: Where will the pigs use their wings?
+        type: RadiosField
+        list: projectLocationList
+        options:
+          customValidationMessages:
+            any.required: Select where the pigs will use their wings
+
+  - title: You cannot apply for a grant from this scheme
+    path: '/cannot-apply-location'
+    controller: TerminalPageController
+    components:
+      - name: locationCannotApplyInfo
+        title: Html
+        type: Html
+        content: |-
+          <p class="govuk-body">This grant is only for projects in England.</p>
+          <div class="govuk-inset-text">Scotland, Wales and Northern Ireland have other grants available.</div>
+    condition: locationCondition
+
+  - path: /summary
+    controller: SummaryPageController
+    title: Check your answers before submitting your form
+
+lists:
+  - title: What pig breeds do you have?
+    name: pigBreedsList
+    type: string
+    items:
+      - text: Large White
+        description: £10 per pig funding rate
+        value: Large White
+      - text: British Landrace
+        description: £15 per pig funding rate
+        value: pigBreeds-A2
+      - text: Berkshire
+        description: £18 per pig funding rate
+        value: pigBreeds-A3
+      - text: Other
+        description: £10 per pig funding rate
+        value: pigBreeds-A4
+
+  - title: Who is applying for this grant?
+    name: applyingList
+    type: string
+    items:
+      - text: Applicant
+        value: applying-A1
+      - text: Agent
+        value: applying-A2
+
+  - title: Where will the pigs use their wings?
+    name: projectLocationList
+    type: string
+    items:
+      - text: England
+        value: projectLocation-A1
+      - text: Scotland
+        value: projectLocation-A2
+      - text: Wales
+        value: projectLocation-A3
+      - text: Northern Ireland
+        value: projectLocation-A4
+
+sections:
+  - title: Eligibility
+    name: EligibilitySection
+    hideTitle: false
+
+conditions:
+  - name: notPigFarmerCondition
+    displayName: notPigFarmer
+    value:
+      name: notPigFarmer
+      conditions:
+        - field:
+            name: isPigFarmer
+            type: YesNoField
+            display: Are you a pig farmer?
+          operator: is
+          value:
+            type: Value
+            value: 'false'
+            display: 'No'
+
+  - name: tooManyPigsCondition
+    displayName: tooManyPigs
+    value:
+      name: tooManyPigs
+      conditions:
+        - field:
+            name: totalPigs
+            type: NumberField
+            display: How many pigs do you have?
+          operator: is greater than
+          value:
+            type: Value
+            value: '1000'
+            display: '1000'
+
+  - name: hasLargeWhiteCondition
+    displayName: hasLargeWhite
+    value:
+      name: hasLargeWhite
+      conditions:
+        - field:
+            name: pigBreeds
+            type: CheckboxesField
+            display: What pig breeds do you have?
+          operator: contains
+          value:
+            type: Value
+            value: Large White
+            display: Large White
+
+  - name: hasBritishLandraceCondition
+    displayName: hasBritishLandrace
+    value:
+      name: hasBritishLandrace
+      conditions:
+        - field:
+            name: pigBreeds
+            type: CheckboxesField
+            display: What pig breeds do you have?
+          operator: contains
+          value:
+            type: Value
+            value: pigBreeds-A2
+            display: British Landrace
+
+  - name: hasBerkshireCondition
+    displayName: hasBerkshire
+    value:
+      name: hasBerkshire
+      conditions:
+        - field:
+            name: pigBreeds
+            type: CheckboxesField
+            display: What pig breeds do you have?
+          operator: contains
+          value:
+            type: Value
+            value: pigBreeds-A3
+            display: Berkshire
+
+  - name: hasOtherCondition
+    displayName: hasOther
+    value:
+      name: hasOther
+      conditions:
+        - field:
+            name: pigBreeds
+            type: CheckboxesField
+            display: What pig breeds do you have?
+          operator: contains
+          value:
+            type: Value
+            value: pigBreeds-A4
+            display: Other
+
+  - name: locationCondition
+    displayName: locationNotEngland
+    value:
+      name: locationNotEngland
+      conditions:
+        - field:
+            name: projectLocation
+            type: RadiosField
+            display: Where will the pigs use their wings?
+          operator: is not
+          value:
+            type: Value
+            value: projectLocation-A1
+            display: England
+
+  - name: agentDetailsSelected
+    displayName: agentDetailsSelected
+    value:
+      name: agentDetailsSelected
+      conditions:
+        - field:
+            name: grantApplicantType
+            type: RadiosField
+            display: Who is applying for this grant?
+          operator: is
+          value:
+            type: Value
+            value: applying-A2
+            display: Agent
