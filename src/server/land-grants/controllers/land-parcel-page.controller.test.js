@@ -120,7 +120,7 @@ describe('LandParcelPageController', () => {
         'select-land-parcel',
         expect.objectContaining({
           landParcel: '',
-          parcels: expect.anything()
+          parcels: mockParcelsResponse
         })
       )
       expect(result).toBe(renderedViewMock)
@@ -139,7 +139,7 @@ describe('LandParcelPageController', () => {
         'select-land-parcel',
         expect.objectContaining({
           landParcel: 'sheet123',
-          parcels: expect.anything(),
+          parcels: mockParcelsResponse,
           pageTitle: 'Select Land Parcel'
         })
       )
