@@ -1,10 +1,14 @@
 import inert from '@hapi/inert'
+import { config } from '~/src/config/config.js'
 import { about } from '~/src/server/about/index.js'
 import { auth } from '~/src/server/auth/index.js'
 import { serveStaticFiles } from '~/src/server/common/helpers/serve-static-files.js'
+import { addingValueTasklist } from '~/src/server/controllers/adding-value-tasklist/adding-value-tasklist-controller.js'
 import { health } from '~/src/server/health/index.js'
 import { home } from '~/src/server/home/index.js'
-import { addingValueTasklist } from '~/src/server/controllers/adding-value-tasklist/adding-value-tasklist-controller.js'
+import { sbi } from '~/src/server/sbi/index.js'
+
+const enableSbiSelector = config.get('landGrants.enableSbiSelector')
 
 /**
  * @satisfies {ServerRegisterPluginObject<void>}
@@ -17,6 +21,11 @@ export const router = {
 
       // Health-check route. Used by platform to check if service is running, do not remove!
       await server.register([health])
+
+      // Dev specific routes
+      if (enableSbiSelector) {
+        await server.register([sbi])
+      }
 
       // Auth routes
       await server.register([auth])
