@@ -138,6 +138,181 @@ describe('LandActionsPageController', () => {
 
       expect(result).toEqual({})
     })
+
+    test('should skip actions not included in actions array', () => {
+      const payload = {
+        actions: ['CMOR1'],
+        'qty-CMOR1': 10,
+        'qty-UPL1': 5
+      }
+
+      const result = controller.extractActionsObjectFromPayload(payload)
+
+      expect(result).toEqual({
+        CMOR1: {
+          description: 'CMOR1: Assess moorland and produce a written record',
+          value: 10,
+          unit: 'ha'
+        }
+      })
+    })
+
+    test('should skip actions with empty quantity values', () => {
+      const payload = {
+        actions: ['CMOR1', 'UPL1'],
+        'qty-CMOR1': 10,
+        'qty-UPL1': ''
+      }
+
+      const result = controller.extractActionsObjectFromPayload(payload)
+
+      expect(result).toEqual({
+        CMOR1: {
+          description: 'CMOR1: Assess moorland and produce a written record',
+          value: 10,
+          unit: 'ha'
+        }
+      })
+    })
+
+    test('should handle missing availableArea unit gracefully', () => {
+      controller.availableActions = [
+        {
+          code: 'CMOR1',
+          description: 'CMOR1: Assess moorland and produce a written record',
+          availableArea: null
+        }
+      ]
+
+      const payload = {
+        actions: ['CMOR1'],
+        'qty-CMOR1': 10
+      }
+
+      const result = controller.extractActionsObjectFromPayload(payload)
+
+      expect(result).toEqual({
+        CMOR1: {
+          description: 'CMOR1: Assess moorland and produce a written record',
+          value: 10,
+          unit: undefined
+        }
+      })
+    })
+  })
+
+  describe('transformActionsForView', () => {
+    test('should transform single action object to formatted string', () => {
+      const actionsObj = {
+        CMOR1: {
+          description: 'CMOR1: Assess moorland and produce a written record',
+          value: 10,
+          unit: 'ha'
+        }
+      }
+
+      const result = controller.transformActionsForView(actionsObj)
+
+      expect(result).toBe('CMOR1: 10 ha.')
+    })
+
+    test('should transform multiple actions to formatted string', () => {
+      const actionsObj = {
+        CMOR1: {
+          description: 'CMOR1: Assess moorland and produce a written record',
+          value: 10,
+          unit: 'ha'
+        },
+        UPL1: {
+          description: 'UPL1: Moderate livestock grazing on moorland',
+          value: 5,
+          unit: 'ha'
+        }
+      }
+
+      const result = controller.transformActionsForView(actionsObj)
+
+      expect(result).toBe('CMOR1: 10 ha. - UPL1: 5 ha.')
+    })
+
+    test('should handle empty actions object', () => {
+      const result = controller.transformActionsForView({})
+
+      expect(result).toBe('')
+    })
+
+    test('should handle actions with different units', () => {
+      const actionsObj = {
+        CMOR1: {
+          description: 'CMOR1: Assess moorland and produce a written record',
+          value: 10,
+          unit: 'ha'
+        },
+        UPL1: {
+          description: 'UPL1: Moderate livestock grazing on moorland',
+          value: 3,
+          unit: 'km'
+        }
+      }
+
+      const result = controller.transformActionsForView(actionsObj)
+
+      expect(result).toBe('CMOR1: 10 ha. - UPL1: 3 km.')
+    })
+
+    test('should handle actions with zero values', () => {
+      const actionsObj = {
+        CMOR1: {
+          description: 'CMOR1: Assess moorland and produce a written record',
+          value: 0,
+          unit: 'ha'
+        }
+      }
+
+      const result = controller.transformActionsForView(actionsObj)
+
+      expect(result).toBe('CMOR1: 0 ha.')
+    })
+  })
+
+  describe('getViewModel', () => {
+    test('should extend parent view model with quantity prefix and available actions', () => {
+      const mockParentViewModel = {
+        pageTitle: 'Land Actions',
+        formModel: {},
+        errors: []
+      }
+      QuestionPageController.prototype.getViewModel.mockReturnValue(
+        mockParentViewModel
+      )
+
+      const result = controller.getViewModel(mockRequest, mockContext)
+
+      expect(
+        QuestionPageController.prototype.getViewModel
+      ).toHaveBeenCalledWith(mockRequest, mockContext)
+      expect(result).toEqual({
+        ...mockParentViewModel,
+        quantityPrefix: 'qty-',
+        availableActions
+      })
+    })
+
+    test('should handle empty available actions', () => {
+      controller.availableActions = []
+      const mockParentViewModel = { pageTitle: 'Land Actions' }
+      QuestionPageController.prototype.getViewModel.mockReturnValue(
+        mockParentViewModel
+      )
+
+      const result = controller.getViewModel(mockRequest, mockContext)
+
+      expect(result).toEqual({
+        ...mockParentViewModel,
+        quantityPrefix: 'qty-',
+        availableActions: []
+      })
+    })
   })
 
   describe('GET route handler', () => {
@@ -239,6 +414,32 @@ describe('LandActionsPageController', () => {
         })
       )
       expect(result).toBe('rendered view')
+    })
+
+    test('should handle undefined data response from fetchAvailableActionsForParcel', async () => {
+      fetchAvailableActionsForParcel.mockResolvedValue(undefined)
+
+      const handler = controller.makeGetRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(controller.availableActions).toEqual([])
+      expect(mockRequest.logger.error).toHaveBeenCalledWith(
+        expect.any(TypeError),
+        'Failed to fetch land parcel data for id sheet1-parcel1'
+      )
+    })
+
+    test('should handle null data response from fetchAvailableActionsForParcel', async () => {
+      fetchAvailableActionsForParcel.mockResolvedValue(null)
+
+      const handler = controller.makeGetRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(controller.availableActions).toEqual([])
+      expect(mockRequest.logger.error).toHaveBeenCalledWith(
+        expect.any(TypeError),
+        'Failed to fetch land parcel data for id sheet1-parcel1'
+      )
     })
   })
 
@@ -441,6 +642,23 @@ describe('LandActionsPageController', () => {
         expect.objectContaining({
           errorMessage: 'Error calculating payment. Please try again later.',
           applicationValue: null
+        })
+      )
+
+      expect(controller.proceed).toHaveBeenCalled()
+    })
+
+    test('should handle null or undefined payment calculation response', async () => {
+      calculateGrantPayment.mockResolvedValue(null)
+
+      const handler = controller.makePostRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(controller.setState).toHaveBeenCalledWith(
+        mockRequest,
+        expect.objectContaining({
+          errorMessage: undefined,
+          applicationValue: undefined
         })
       )
 

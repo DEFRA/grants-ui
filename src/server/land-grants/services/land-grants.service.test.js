@@ -1,11 +1,15 @@
 import { jest } from '@jest/globals'
 import { formatCurrency } from '~/src/config/nunjucks/filters/format-currency.js'
+import { fetchParcelsForSbi } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
 import {
   calculateGrantPayment,
+  fetchAvailableActionsForParcel,
+  fetchParcels,
   landActionsToApiPayload,
   parseLandParcel,
   postToLandGrantsApi,
-  stringifyParcel
+  stringifyParcel,
+  validateLandActions
 } from './land-grants.service.js'
 
 const mockApiEndpoint = 'https://land-grants-api'
@@ -26,6 +30,12 @@ jest.mock('~/src/server/common/helpers/logging/logger.js', () => ({
     error: jest.fn()
   })
 }))
+jest.mock(
+  '~/src/server/common/services/consolidated-view/consolidated-view.service.js',
+  () => ({
+    fetchParcelsForSbi: jest.fn()
+  })
+)
 
 global.fetch = jest.fn()
 
@@ -340,6 +350,333 @@ describe('land-grants service', () => {
           parcelId: 'PARCEL456'
         })
       ).rejects.toThrow('API error')
+    })
+  })
+
+  describe('fetchAvailableActionsForParcel', () => {
+    it('should fetch available actions for a parcel successfully', async () => {
+      const mockApiResponse = {
+        parcels: [
+          {
+            parcelId: 'PARCEL456',
+            sheetId: 'SHEET123',
+            actions: [
+              { code: 'CMOR1', availableArea: 10.5 },
+              { code: 'UPL1', availableArea: 20.75 }
+            ]
+          }
+        ]
+      }
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => mockApiResponse
+      })
+
+      const result = await fetchAvailableActionsForParcel({
+        parcelId: 'PARCEL456',
+        sheetId: 'SHEET123'
+      })
+
+      expect(fetch).toHaveBeenCalledWith(
+        `${mockApiEndpoint}/parcels`,
+        expect.objectContaining({
+          body: JSON.stringify({
+            parcelIds: ['SHEET123-PARCEL456'],
+            fields: ['actions', 'actions.availableArea']
+          })
+        })
+      )
+      expect(result).toEqual({
+        parcelId: 'PARCEL456',
+        sheetId: 'SHEET123',
+        actions: [
+          { code: 'CMOR1', availableArea: 10.5 },
+          { code: 'UPL1', availableArea: 20.75 }
+        ]
+      })
+    })
+
+    it('should handle empty parcel parameters', async () => {
+      const mockApiResponse = { parcels: [] }
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => mockApiResponse
+      })
+
+      const result = await fetchAvailableActionsForParcel({})
+
+      expect(fetch).toHaveBeenCalledWith(
+        `${mockApiEndpoint}/parcels`,
+        expect.objectContaining({
+          body: JSON.stringify({
+            parcelIds: ['-'],
+            fields: ['actions', 'actions.availableArea']
+          })
+        })
+      )
+      expect(result).toBeUndefined()
+    })
+
+    it('should return undefined when parcel not found', async () => {
+      const mockApiResponse = {
+        parcels: [
+          {
+            parcelId: 'OTHER_PARCEL',
+            sheetId: 'OTHER_SHEET',
+            actions: []
+          }
+        ]
+      }
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => mockApiResponse
+      })
+
+      const result = await fetchAvailableActionsForParcel({
+        parcelId: 'PARCEL456',
+        sheetId: 'SHEET123'
+      })
+
+      expect(result).toBeUndefined()
+    })
+
+    it('should handle API errors', async () => {
+      fetch.mockRejectedValueOnce(new Error('API error'))
+
+      await expect(
+        fetchAvailableActionsForParcel({
+          parcelId: 'PARCEL456',
+          sheetId: 'SHEET123'
+        })
+      ).rejects.toThrow('API error')
+    })
+  })
+
+  describe('validateLandActions', () => {
+    it('should validate land actions successfully', async () => {
+      const mockApiResponse = {
+        valid: true,
+        errors: [],
+        warnings: []
+      }
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => mockApiResponse
+      })
+
+      const result = await validateLandActions({
+        sheetId: 'SHEET123',
+        parcelId: 'PARCEL456',
+        actionsObj: {
+          CMOR1: { value: 10.5 },
+          UPL1: { value: 20.75 }
+        }
+      })
+
+      expect(fetch).toHaveBeenCalledWith(
+        `${mockApiEndpoint}/actions/validate`,
+        expect.objectContaining({
+          body: JSON.stringify({
+            landActions: [
+              {
+                sheetId: 'SHEET123',
+                parcelId: 'PARCEL456',
+                sbi: 117235001,
+                actions: [
+                  { code: 'CMOR1', quantity: 10.5 },
+                  { code: 'UPL1', quantity: 20.75 }
+                ]
+              }
+            ]
+          })
+        })
+      )
+      expect(result).toEqual(mockApiResponse)
+    })
+
+    it('should handle validation with errors', async () => {
+      const mockApiResponse = {
+        valid: false,
+        errors: ['Area exceeds maximum allowed'],
+        warnings: ['Consider alternative action']
+      }
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => mockApiResponse
+      })
+
+      const result = await validateLandActions({
+        sheetId: 'SHEET123',
+        parcelId: 'PARCEL456',
+        actionsObj: { CMOR1: { value: 100 } }
+      })
+
+      expect(result).toEqual(mockApiResponse)
+    })
+
+    it('should handle empty actions object', async () => {
+      const mockApiResponse = { valid: true, errors: [], warnings: [] }
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => mockApiResponse
+      })
+
+      const result = await validateLandActions({
+        sheetId: 'SHEET123',
+        parcelId: 'PARCEL456'
+      })
+
+      expect(fetch).toHaveBeenCalledWith(
+        `${mockApiEndpoint}/actions/validate`,
+        expect.objectContaining({
+          body: JSON.stringify({
+            landActions: [
+              {
+                sheetId: 'SHEET123',
+                parcelId: 'PARCEL456',
+                sbi: 117235001,
+                actions: []
+              }
+            ]
+          })
+        })
+      )
+      expect(result).toEqual(mockApiResponse)
+    })
+
+    it('should handle API errors', async () => {
+      fetch.mockRejectedValueOnce(new Error('Validation API error'))
+
+      await expect(
+        validateLandActions({
+          sheetId: 'SHEET123',
+          parcelId: 'PARCEL456',
+          actionsObj: { CMOR1: { value: 10 } }
+        })
+      ).rejects.toThrow('Validation API error')
+    })
+  })
+
+  describe('fetchParcels', () => {
+    it('should fetch parcels with size data successfully', async () => {
+      const mockParcels = [
+        { parcelId: 'PARCEL1', sheetId: 'SHEET1' },
+        { parcelId: 'PARCEL2', sheetId: 'SHEET2' }
+      ]
+      const mockSizeResponse = {
+        parcels: [
+          {
+            parcelId: 'PARCEL1',
+            sheetId: 'SHEET1',
+            size: { total: 15.5, unit: 'ha' }
+          },
+          {
+            parcelId: 'PARCEL2',
+            sheetId: 'SHEET2',
+            size: { total: 22.3, unit: 'ha' }
+          }
+        ]
+      }
+
+      fetchParcelsForSbi.mockResolvedValueOnce(mockParcels)
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => mockSizeResponse
+      })
+
+      const result = await fetchParcels('117235001')
+
+      expect(fetchParcelsForSbi).toHaveBeenCalledWith('117235001')
+      expect(fetch).toHaveBeenCalledWith(
+        `${mockApiEndpoint}/parcels`,
+        expect.objectContaining({
+          body: JSON.stringify({
+            parcelIds: ['SHEET1-PARCEL1', 'SHEET2-PARCEL2'],
+            fields: ['size']
+          })
+        })
+      )
+      expect(result).toEqual([
+        {
+          parcelId: 'PARCEL1',
+          sheetId: 'SHEET1',
+          area: { total: 15.5, unit: 'ha' }
+        },
+        {
+          parcelId: 'PARCEL2',
+          sheetId: 'SHEET2',
+          area: { total: 22.3, unit: 'ha' }
+        }
+      ])
+    })
+
+    it('should handle parcels with missing size data', async () => {
+      const mockParcels = [
+        { parcelId: 'PARCEL1', sheetId: 'SHEET1' },
+        { parcelId: 'PARCEL2', sheetId: 'SHEET2' }
+      ]
+      const mockSizeResponse = {
+        parcels: [
+          {
+            parcelId: 'PARCEL1',
+            sheetId: 'SHEET1',
+            size: { total: 15.5, unit: 'ha' }
+          }
+          // PARCEL2 size data missing
+        ]
+      }
+
+      fetchParcelsForSbi.mockResolvedValueOnce(mockParcels)
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => mockSizeResponse
+      })
+
+      const result = await fetchParcels('117235001')
+
+      expect(result).toEqual([
+        {
+          parcelId: 'PARCEL1',
+          sheetId: 'SHEET1',
+          area: { total: 15.5, unit: 'ha' }
+        },
+        {
+          parcelId: 'PARCEL2',
+          sheetId: 'SHEET2',
+          area: {}
+        }
+      ])
+    })
+
+    it('should handle empty parcels list', async () => {
+      const mockParcels = []
+      const mockSizeResponse = { parcels: [] }
+
+      fetchParcelsForSbi.mockResolvedValueOnce(mockParcels)
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => mockSizeResponse
+      })
+
+      const result = await fetchParcels('117235001')
+
+      expect(result).toEqual([])
+    })
+
+    it('should handle fetchParcelsForSbi error', async () => {
+      fetchParcelsForSbi.mockRejectedValueOnce(new Error('SBI service error'))
+
+      await expect(fetchParcels('117235001')).rejects.toThrow(
+        'SBI service error'
+      )
+    })
+
+    it('should handle size API error', async () => {
+      const mockParcels = [{ parcelId: 'PARCEL1', sheetId: 'SHEET1' }]
+      fetchParcelsForSbi.mockResolvedValueOnce(mockParcels)
+      fetch.mockRejectedValueOnce(new Error('Size API error'))
+
+      await expect(fetchParcels('117235001')).rejects.toThrow('Size API error')
     })
   })
 })
