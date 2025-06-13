@@ -71,13 +71,12 @@ async function fetchMockParcelDataForBusiness(sbi) {
  */
 export async function fetchParcelsForSbi(sbi) {
   const mockDALEnabled = config.get('consolidatedView.mockDALEnabled')
-  const formatResponse = (response) =>
-    response.data?.business?.land?.parcels || []
+  const formatResponse = (r) => r.data?.business?.land?.parcels || []
 
   try {
     if (mockDALEnabled) {
-      const response = await fetchMockParcelDataForBusiness(sbi)
-      return formatResponse(response)
+      const mockResponse = await fetchMockParcelDataForBusiness(sbi)
+      return formatResponse(mockResponse)
     }
 
     const now = new Date().toISOString()
