@@ -2,7 +2,7 @@ import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/Q
 import LandActionsCheckPageController from './land-actions-check-page.controller.js'
 
 jest.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js')
-jest.mock('~/src/server/land-grants/services/land-actions.service.js')
+jest.mock('~/src/server/land-grants/services/land-grants.service.js')
 
 describe('LandActionsCheckPageController', () => {
   let controller
