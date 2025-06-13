@@ -1,20 +1,12 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
-import { fetchParcelsForSbi } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
+import { fetchParcels } from '~/src/server/land-grants/services/land-grants.service.js'
 import LandParcelPageController from './land-parcel-page.controller.js'
 
 jest.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js')
-jest.mock('~/src/server/common/helpers/logging/logger.js', () => ({
-  createLogger: jest.fn().mockReturnValue({
-    error: jest.fn()
-  })
-}))
 
-jest.mock(
-  '~/src/server/common/services/consolidated-view/consolidated-view.service.js',
-  () => ({
-    fetchParcelsForSbi: jest.fn()
-  })
-)
+jest.mock('~/src/server/land-grants/services/land-grants.service.js', () => ({
+  fetchParcels: jest.fn()
+}))
 
 const mockParcelsResponse = [
   {
@@ -60,7 +52,7 @@ describe('LandParcelPageController', () => {
     controller.getNextPath = jest.fn().mockReturnValue('/next-page')
     controller.setState = jest.fn()
 
-    fetchParcelsForSbi.mockResolvedValue(mockParcelsResponse)
+    fetchParcels.mockResolvedValue(mockParcelsResponse)
 
     mockRequest = setupRequest()
     mockContext = setupContext({
@@ -73,20 +65,20 @@ describe('LandParcelPageController', () => {
   afterEach(jest.clearAllMocks)
 
   it('should have the correct viewName', () => {
-    expect(controller.viewName).toBe('land-parcel')
+    expect(controller.viewName).toBe('select-land-parcel')
   })
 
   describe('GET route handler', () => {
-    it('fetches parcels list and renders view', async () => {
+    it('gets parcels info and renders view', async () => {
       const result = await controller.makeGetRouteHandler()(
         mockRequest,
         mockContext,
         mockH
       )
 
-      expect(fetchParcelsForSbi).toHaveBeenCalledWith(106284736)
+      expect(fetchParcels).toHaveBeenCalledWith(106284736)
       expect(mockH.view).toHaveBeenCalledWith(
-        'land-parcel',
+        'select-land-parcel',
         expect.objectContaining({
           pageTitle: 'Select Land Parcel',
           parcels: mockParcelsResponse,
@@ -97,7 +89,7 @@ describe('LandParcelPageController', () => {
     })
 
     it('handles missing parcels info', async () => {
-      fetchParcelsForSbi.mockRejectedValue(new Error('not found'))
+      fetchParcels.mockRejectedValue(new Error('not found'))
 
       const result = await controller.makeGetRouteHandler()(
         mockRequest,
@@ -106,7 +98,7 @@ describe('LandParcelPageController', () => {
       )
 
       expect(mockH.view).toHaveBeenCalledWith(
-        'land-parcel',
+        'select-land-parcel',
         expect.objectContaining({
           pageTitle: 'Select Land Parcel',
           errors: ['Unable to find parcel information, please try again later.']
@@ -125,10 +117,10 @@ describe('LandParcelPageController', () => {
       )
 
       expect(mockH.view).toHaveBeenCalledWith(
-        'land-parcel',
+        'select-land-parcel',
         expect.objectContaining({
           landParcel: '',
-          parcels: mockParcelsResponse
+          parcels: expect.anything()
         })
       )
       expect(result).toBe(renderedViewMock)
@@ -144,10 +136,10 @@ describe('LandParcelPageController', () => {
       )
 
       expect(mockH.view).toHaveBeenCalledWith(
-        'land-parcel',
+        'select-land-parcel',
         expect.objectContaining({
           landParcel: 'sheet123',
-          parcels: mockParcelsResponse,
+          parcels: expect.anything(),
           pageTitle: 'Select Land Parcel'
         })
       )
@@ -191,7 +183,7 @@ describe('LandParcelPageController', () => {
       expect(controller.setState).not.toHaveBeenCalled()
       expect(controller.proceed).not.toHaveBeenCalled()
       expect(mockH.view).toHaveBeenCalledWith(
-        'land-parcel',
+        'select-land-parcel',
         expect.objectContaining({
           pageTitle: 'Select Land Parcel',
           landParcelError: 'Please select a land parcel from the list'

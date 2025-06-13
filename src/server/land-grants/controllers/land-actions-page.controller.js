@@ -1,12 +1,13 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import {
-  calculateApplicationPayment,
+  calculateGrantPayment,
   fetchAvailableActionsForParcel,
+  parseLandParcel,
   validateLandActions
-} from '~/src/server/land-grants/services/land-actions.service.js'
+} from '~/src/server/land-grants/services/land-grants.service.js'
 
 export default class LandActionsPageController extends QuestionPageController {
-  viewName = 'land-actions'
+  viewName = 'choose-which-actions-to-do'
   quantityPrefix = 'qty-'
   availableActions = []
 
@@ -35,15 +36,6 @@ export default class LandActionsPageController extends QuestionPageController {
       }
     }
     return areas
-  }
-
-  /**
-   * Parse land parcel identifier
-   * @param {string} landParcel - The land parcel identifier
-   * @returns {string[]} - Array containing [sheetId, parcelId]
-   */
-  parseLandParcelId(landParcel) {
-    return (landParcel || '').split('-')
   }
 
   /**
@@ -92,7 +84,7 @@ export default class LandActionsPageController extends QuestionPageController {
       const { state } = context
       const { viewName } = this
       const payload = request.payload ?? {}
-      const [sheetId, parcelId] = this.parseLandParcelId(state.landParcel)
+      const [sheetId, parcelId] = parseLandParcel(state.landParcel)
       const actionsObj = this.extractActionsObjectFromPayload(payload)
 
       // Create updated state with the new action data
@@ -107,11 +99,11 @@ export default class LandActionsPageController extends QuestionPageController {
         if (Object.keys(actionsObj).length === 0) {
           errors.push('Please select at least one action and quantity')
         } else {
-          const { valid, errorMessages = [] } = await validateLandActions(
+          const { valid, errorMessages = [] } = await validateLandActions({
             sheetId,
             parcelId,
             actionsObj
-          )
+          })
 
           if (!valid) {
             errors = errorMessages.map((m) => `${m.code}: ${m.description}`)
@@ -128,11 +120,11 @@ export default class LandActionsPageController extends QuestionPageController {
         }
       }
 
-      const applicationPayment = await calculateApplicationPayment(
+      const applicationPayment = await calculateGrantPayment({
         sheetId,
         parcelId,
         actionsObj
-      )
+      })
       const { paymentTotal, errorMessage } = applicationPayment || {}
 
       await this.setState(request, {
@@ -161,11 +153,11 @@ export default class LandActionsPageController extends QuestionPageController {
       const { collection, viewName } = this
       const { state } = context
 
-      const [sheetId, parcelId] = this.parseLandParcelId(state.landParcel)
+      const [sheetId = '', parcelId = ''] = parseLandParcel(state.landParcel)
 
       // Load available actions for the land parcel
       try {
-        const data = await fetchAvailableActionsForParcel(parcelId, sheetId)
+        const data = await fetchAvailableActionsForParcel({ parcelId, sheetId })
         this.availableActions = data.actions || []
         if (!this.availableActions.length) {
           request.logger.error({

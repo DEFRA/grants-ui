@@ -1,13 +1,14 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import {
-  calculateApplicationPayment,
+  calculateGrantPayment,
   fetchAvailableActionsForParcel,
+  parseLandParcel,
   validateLandActions
-} from '~/src/server/land-grants/services/land-actions.service.js'
+} from '~/src/server/land-grants/services/land-grants.service.js'
 import LandActionsPageController from './land-actions-page.controller.js'
 
 jest.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js')
-jest.mock('~/src/server/land-grants/services/land-actions.service.js')
+jest.mock('~/src/server/land-grants/services/land-grants.service.js')
 
 describe('LandActionsPageController', () => {
   let controller
@@ -17,24 +18,29 @@ describe('LandActionsPageController', () => {
 
   const availableActions = [
     {
-      code: 'action1',
-      description: 'Action 1 description',
+      code: 'CMOR1',
+      description: 'CMOR1: Assess moorland and produce a written record',
       availableArea: {
         unit: 'ha',
-        value: 200
+        value: 792.43
       }
     },
     {
-      code: 'action2',
-      description: 'Action 2 description',
+      code: 'UPL1',
+      description: 'UPL1: Moderate livestock grazing on moorland',
       availableArea: {
         unit: 'ha',
-        value: 150
+        value: 792.43
       }
     }
   ]
+
   const actionsObj = {
-    action1: { description: 'Action 1 description', value: 10, unit: 'ha' }
+    CMOR1: {
+      description: 'CMOR1: Assess moorland and produce a written record',
+      value: 10,
+      unit: 'ha'
+    }
   }
 
   beforeEach(() => {
@@ -53,8 +59,8 @@ describe('LandActionsPageController', () => {
 
     mockRequest = {
       payload: {
-        'qty-action1': 10,
-        actions: ['action1', 'action2']
+        'qty-CMOR1': 10,
+        actions: ['CMOR1', 'UPL1']
       },
       logger: {
         error: jest.fn()
@@ -71,11 +77,13 @@ describe('LandActionsPageController', () => {
       view: jest.fn().mockReturnValue('rendered view')
     }
 
+    parseLandParcel.mockReturnValue(['sheet1', 'parcel1'])
+
     validateLandActions.mockResolvedValue({
       valid: true,
       errorMessages: []
     })
-    calculateApplicationPayment.mockResolvedValue({
+    calculateGrantPayment.mockResolvedValue({
       paymentTotal: '£1,250.75',
       errorMessage: undefined
     })
@@ -86,23 +94,31 @@ describe('LandActionsPageController', () => {
   })
 
   test('should have the correct viewName', () => {
-    expect(controller.viewName).toBe('land-actions')
+    expect(controller.viewName).toBe('choose-which-actions-to-do')
   })
 
   describe('extractActionsObjectFromPayload', () => {
     test('should extract action data correctly from payload', () => {
       const payload = {
-        actions: ['action1', 'action2'],
-        'qty-action1': 10,
-        'qty-action2': 5,
+        actions: ['CMOR1', 'UPL1'],
+        'qty-CMOR1': 10,
+        'qty-UPL1': 5,
         'other-field': 'value'
       }
 
       const result = controller.extractActionsObjectFromPayload(payload)
 
       expect(result).toEqual({
-        action1: { description: 'Action 1 description', value: 10, unit: 'ha' },
-        action2: { description: 'Action 2 description', value: 5, unit: 'ha' }
+        CMOR1: {
+          description: 'CMOR1: Assess moorland and produce a written record',
+          value: 10,
+          unit: 'ha'
+        },
+        UPL1: {
+          description: 'UPL1: Moderate livestock grazing on moorland',
+          value: 5,
+          unit: 'ha'
+        }
       })
     })
 
@@ -124,53 +140,27 @@ describe('LandActionsPageController', () => {
     })
   })
 
-  describe('parseLandParcelId', () => {
-    test('should correctly parse landParcel with sheet and parcel', () => {
-      const result = controller.parseLandParcelId('sheet1-parcel1')
-
-      expect(result).toEqual(['sheet1', 'parcel1'])
-    })
-
-    test('should handle undefined landParcel', () => {
-      const result = controller.parseLandParcelId(undefined)
-
-      expect(result).toEqual([''])
-    })
-
-    test('should handle empty landParcel', () => {
-      const result = controller.parseLandParcelId('')
-
-      expect(result).toEqual([''])
-    })
-
-    test('should handle landParcel without separator', () => {
-      const result = controller.parseLandParcelId('noSeparator')
-
-      expect(result).toEqual(['noSeparator'])
-    })
-  })
-
   describe('GET route handler', () => {
-    test('should fetch land details and render view with correct data', async () => {
+    test('should get available actions and render view with correct data', async () => {
       fetchAvailableActionsForParcel.mockResolvedValue({
-        actions: ['action1', 'action2', 'action3']
+        actions: availableActions
       })
 
-      mockContext.state.actions = ['action1', 'action2']
+      mockContext.state.actions = ['CMOR1', 'UPL1']
 
       const handler = controller.makeGetRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
 
-      expect(fetchAvailableActionsForParcel).toHaveBeenCalledWith(
-        'parcel1',
-        'sheet1'
-      )
+      expect(fetchAvailableActionsForParcel).toHaveBeenCalledWith({
+        parcelId: 'parcel1',
+        sheetId: 'sheet1'
+      })
       expect(mockH.view).toHaveBeenCalledWith(
-        'land-actions',
+        'choose-which-actions-to-do',
         expect.objectContaining({
           landParcel: 'sheet1-parcel1',
-          availableActions: ['action1', 'action2', 'action3'],
-          actions: ['action1', 'action2']
+          availableActions,
+          actions: ['CMOR1', 'UPL1']
         })
       )
       expect(result).toBe('rendered view')
@@ -183,7 +173,7 @@ describe('LandActionsPageController', () => {
       await handler(mockRequest, mockContext, mockH)
 
       expect(mockH.view).toHaveBeenCalledWith(
-        'land-actions',
+        'choose-which-actions-to-do',
         expect.objectContaining({
           availableActions: []
         })
@@ -193,7 +183,9 @@ describe('LandActionsPageController', () => {
 
     test('should log error when no actions found', async () => {
       fetchAvailableActionsForParcel.mockResolvedValue({
-        actions: []
+        parcel: {
+          actions: []
+        }
       })
 
       const handler = controller.makeGetRouteHandler()
@@ -207,16 +199,21 @@ describe('LandActionsPageController', () => {
 
     test('should default sheetId and parcelId when landParcel is missing', async () => {
       mockContext.state = {}
-      controller.collection.getErrors.mockReturnValue([])
+      parseLandParcel.mockReturnValue(['', ''])
 
-      fetchAvailableActionsForParcel.mockResolvedValue({ actions: [] })
+      fetchAvailableActionsForParcel.mockResolvedValue({
+        parcel: { actions: [] }
+      })
 
       const handler = controller.makeGetRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
 
-      expect(fetchAvailableActionsForParcel).toHaveBeenCalledWith(undefined, '')
+      expect(fetchAvailableActionsForParcel).toHaveBeenCalledWith({
+        parcelId: '',
+        sheetId: ''
+      })
       expect(mockH.view).toHaveBeenCalledWith(
-        'land-actions',
+        'choose-which-actions-to-do',
         expect.objectContaining({
           availableActions: []
         })
@@ -225,7 +222,9 @@ describe('LandActionsPageController', () => {
     })
 
     test('should default to empty actions when parcel.actions is undefined', async () => {
-      fetchAvailableActionsForParcel.mockResolvedValue({})
+      fetchAvailableActionsForParcel.mockResolvedValue({
+        parcel: {}
+      })
 
       controller.collection.getErrors.mockReturnValue([])
 
@@ -233,7 +232,7 @@ describe('LandActionsPageController', () => {
       const result = await handler(mockRequest, mockContext, mockH)
 
       expect(mockH.view).toHaveBeenCalledWith(
-        'land-actions',
+        'choose-which-actions-to-do',
         expect.objectContaining({
           availableActions: [],
           landParcel: 'sheet1-parcel1'
@@ -248,17 +247,17 @@ describe('LandActionsPageController', () => {
       const handler = controller.makePostRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
 
-      expect(calculateApplicationPayment).toHaveBeenCalledWith(
-        'sheet1',
-        'parcel1',
+      expect(calculateGrantPayment).toHaveBeenCalledWith({
+        sheetId: 'sheet1',
+        parcelId: 'parcel1',
         actionsObj
-      )
+      })
 
       expect(controller.setState).toHaveBeenCalledWith(
         mockRequest,
         expect.objectContaining({
           landParcel: 'sheet1-parcel1',
-          actions: 'action1: 10 ha.',
+          actions: 'CMOR1: 10 ha.',
           actionsObj,
           applicationValue: '£1,250.75'
         })
@@ -301,7 +300,7 @@ describe('LandActionsPageController', () => {
       expect(validateLandActions).not.toHaveBeenCalled()
 
       expect(mockH.view).toHaveBeenCalledWith(
-        'land-actions',
+        'choose-which-actions-to-do',
         expect.objectContaining({
           errors: ['Please select at least one action and quantity']
         })
@@ -310,8 +309,8 @@ describe('LandActionsPageController', () => {
 
     test('should validate actions when validate action is requested', async () => {
       mockRequest.payload = {
-        'qty-action1': 10,
-        actions: ['action1'],
+        'qty-CMOR1': 10,
+        actions: ['CMOR1'],
         action: 'validate'
       }
 
@@ -323,23 +322,34 @@ describe('LandActionsPageController', () => {
       const handler = controller.makePostRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
-      expect(validateLandActions).toHaveBeenCalledWith('sheet1', 'parcel1', {
-        action1: { description: 'Action 1 description', value: 10, unit: 'ha' }
+      expect(validateLandActions).toHaveBeenCalledWith({
+        sheetId: 'sheet1',
+        parcelId: 'parcel1',
+        actionsObj: {
+          CMOR1: {
+            description: 'CMOR1: Assess moorland and produce a written record',
+            value: 10,
+            unit: 'ha'
+          }
+        }
       })
 
-      expect(calculateApplicationPayment).toHaveBeenCalled()
+      expect(calculateGrantPayment).toHaveBeenCalled()
       expect(controller.proceed).toHaveBeenCalled()
     })
 
     test('should render view with validation errors when validation fails', async () => {
       mockRequest.payload = {
-        'qty-action1': 10,
-        actions: ['action1'],
+        'qty-CMOR1': 10,
+        actions: ['CMOR1'],
         action: 'validate'
       }
 
       const errorMessages = [
-        { code: 'action1', description: 'Area exceeds available area' }
+        {
+          code: 'CMOR1',
+          description: 'CMOR1: Assess moorland and produce a written record'
+        }
       ]
 
       validateLandActions.mockResolvedValue({
@@ -350,18 +360,27 @@ describe('LandActionsPageController', () => {
       const handler = controller.makePostRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
 
-      expect(validateLandActions).toHaveBeenCalledWith('sheet1', 'parcel1', {
-        action1: { description: 'Action 1 description', value: 10, unit: 'ha' }
+      expect(validateLandActions).toHaveBeenCalledWith({
+        sheetId: 'sheet1',
+        parcelId: 'parcel1',
+        actionsObj: {
+          CMOR1: {
+            description: 'CMOR1: Assess moorland and produce a written record',
+            value: 10,
+            unit: 'ha'
+          }
+        }
       })
 
       expect(controller.setState).toHaveBeenCalledWith(
         mockRequest,
         expect.objectContaining({
           landParcel: 'sheet1-parcel1',
-          actions: 'action1: 10 ha.',
+          actions: 'CMOR1: 10 ha.',
           actionsObj: {
-            action1: {
-              description: 'Action 1 description',
+            CMOR1: {
+              description:
+                'CMOR1: Assess moorland and produce a written record',
               value: 10,
               unit: 'ha'
             }
@@ -370,14 +389,14 @@ describe('LandActionsPageController', () => {
       )
 
       expect(mockH.view).toHaveBeenCalledWith(
-        'land-actions',
+        'choose-which-actions-to-do',
         expect.objectContaining({
           errors: errorMessages.map((m) => `${m.code}: ${m.description}`),
           availableActions
         })
       )
 
-      expect(calculateApplicationPayment).not.toHaveBeenCalled()
+      expect(calculateGrantPayment).not.toHaveBeenCalled()
       expect(controller.proceed).not.toHaveBeenCalled()
       expect(result).toBe('rendered view')
     })
@@ -396,20 +415,20 @@ describe('LandActionsPageController', () => {
       const result = await handler(mockRequest, mockContext, mockH)
 
       expect(mockH.view).toHaveBeenCalledWith(
-        'land-actions',
+        'choose-which-actions-to-do',
         expect.objectContaining({
           errors: ['Please select at least one action and quantity'],
           availableActions
         })
       )
 
-      expect(calculateApplicationPayment).not.toHaveBeenCalled()
+      expect(calculateGrantPayment).not.toHaveBeenCalled()
       expect(controller.proceed).not.toHaveBeenCalled()
       expect(result).toBe('rendered view')
     })
 
     test('should handle payment calculation with error message', async () => {
-      calculateApplicationPayment.mockResolvedValue({
+      calculateGrantPayment.mockResolvedValue({
         paymentTotal: null,
         errorMessage: 'Error calculating payment. Please try again later.'
       })

@@ -1,12 +1,12 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
-import { fetchParcelsForSbi } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
+import { fetchParcels } from '../services/land-grants.service.js'
 
 const logger = createLogger()
 
 export default class LandParcelPageController extends QuestionPageController {
-  viewName = 'land-parcel'
-  parcels = null
+  viewName = 'select-land-parcel'
+  parcels = []
 
   makePostRouteHandler() {
     /**
@@ -59,7 +59,7 @@ export default class LandParcelPageController extends QuestionPageController {
       const baseViewModel = super.getViewModel(request, context)
 
       try {
-        this.parcels = await fetchParcelsForSbi(sbi)
+        this.parcels = await fetchParcels(sbi)
         const viewModel = {
           ...baseViewModel,
           parcels: this.parcels,

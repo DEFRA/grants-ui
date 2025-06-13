@@ -78,18 +78,15 @@ export async function fetchParcelsForSbi(sbi) {
 
     const now = new Date().toISOString()
     const query = `
-  query Business {
-    business(sbi: "${sbi}") {
-      sbi
-      organisationId
-      land {
-        parcels(date: "${now}") {
-          parcelId
-          sheetId
-          area
+      query Business {
+        business(sbi: "${sbi}") {
+          land {
+            parcels(date: "${now}") {
+              parcelId
+              sheetId
+            }
+          }
         }
-      }
-    }
     }`
 
     const token = await getValidToken()

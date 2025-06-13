@@ -28,7 +28,7 @@
           {% for parcel in parcels %}
             {% set radioItems = radioItems.concat([{
               value: parcel.sheetId + "-" + parcel.parcelId,
-              text: parcel.sheetId + "-" + parcel.parcelId + " (Total size: " + parcel.area + " ha.)"
+              text: parcel.sheetId + "-" + parcel.parcelId + " (Total size: " + parcel.area.value  + " " + parcel.area.unit + ")"
             }]) %}
           {% endfor %}
 
