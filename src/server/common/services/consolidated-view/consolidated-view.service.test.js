@@ -174,7 +174,7 @@ describe('fetchParcelsForSbi', () => {
 
       const result = await fetchParcelsForSbi(mockSbi)
 
-      expect(result).toEqual(mockFileData)
+      expect(result).toEqual(mockFileData.data.business.land.parcels)
       expect(fs.readFile).toHaveBeenCalledTimes(1)
       expect(fs.readFile).toHaveBeenCalledWith(getMockFilePath(mockSbi), 'utf8')
       expect(mockFetch).not.toHaveBeenCalled()
