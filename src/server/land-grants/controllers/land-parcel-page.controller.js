@@ -1,6 +1,7 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
 import { fetchParcelsForSbi } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
+import { sbiStore } from '~/src/server/sbi/state.js'
 
 const logger = createLogger()
 
@@ -54,7 +55,8 @@ export default class LandParcelPageController extends QuestionPageController {
      */
     const fn = async (request, context, h) => {
       const { landParcel = '' } = context.state || {}
-      const sbi = 106284736
+      const sbi = sbiStore.get('sbi')
+
       const { viewName } = this
       const baseViewModel = super.getViewModel(request, context)
 
@@ -68,26 +70,10 @@ export default class LandParcelPageController extends QuestionPageController {
 
         return h.view(viewName, viewModel)
       } catch (error) {
-        // Log specific error details based on error type
-        if (error.name === 'ConsolidatedViewApiError') {
-          logger.error(
-            {
-              err: error,
-              statusCode: error.statusCode,
-              sbi
-            },
-            'Consolidated View API error when fetching parcel data'
-          )
-        } else {
-          logger.error(
-            {
-              err: error,
-              sbi
-            },
-            'Unexpected error when fetching parcel data'
-          )
-        }
-
+        logger.error(
+          { err: error, sbi },
+          'Unexpected error when fetching parcel data'
+        )
         const errorMessage =
           'Unable to find parcel information, please try again later.'
 
