@@ -41,7 +41,7 @@ export async function postToLandGrantsApi(endpoint, body) {
     throw error
   }
 
-  return await response.json()
+  return response.json()
 }
 
 /**
