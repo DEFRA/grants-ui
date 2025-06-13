@@ -2,7 +2,7 @@ import fs from 'fs/promises'
 import path from 'path'
 import { config } from '~/src/config/config.js'
 import { getValidToken } from '~/src/server/common/helpers/entra/token-manager.js'
-import { fetchParcelDataForBusiness } from '~/src/server/common/services/consolidated-view.service.js'
+import { fetchParcelDataForBusiness } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
 
 jest.mock('~/src/server/common/helpers/entra/token-manager.js', () => ({
   getValidToken: jest.fn()
@@ -15,8 +15,10 @@ const getMockFilePath = (sbi) => {
     process.cwd(),
     'src',
     'server',
-    '__mocks__',
+    'common',
+    'services',
     'consolidated-view',
+    'land-data',
     `${sbi}.json`
   )
 }
@@ -167,7 +169,7 @@ describe('fetchParcelDataForBusiness', () => {
 
       expect(result).toEqual(mockFileData)
       expect(fs.readFile).toHaveBeenCalledTimes(1)
-      expect(fs.readFile).toHaveBeenCalledWith(getMockFilePath(mockSbi))
+      expect(fs.readFile).toHaveBeenCalledWith(getMockFilePath(mockSbi), 'utf8')
       expect(mockFetch).not.toHaveBeenCalled()
       expect(getValidToken).not.toHaveBeenCalled()
     })
@@ -196,7 +198,10 @@ describe('fetchParcelDataForBusiness', () => {
 
       await fetchParcelDataForBusiness(differentSbi)
 
-      expect(fs.readFile).toHaveBeenCalledWith(getMockFilePath(differentSbi))
+      expect(fs.readFile).toHaveBeenCalledWith(
+        getMockFilePath(differentSbi),
+        'utf8'
+      )
     })
   })
 })
