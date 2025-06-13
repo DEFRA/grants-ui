@@ -1,5 +1,5 @@
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
-import { sbiController } from './controller.js'
+import { sbiSelectorController } from './sbi-selector.controller.js'
 import { sbiStore } from './state.js'
 
 jest.mock('~/src/server/common/constants/status-codes.js', () => ({
@@ -15,7 +15,7 @@ jest.mock('./state.js', () => ({
   }
 }))
 
-describe('sbiController', () => {
+describe('sbiSelectorController', () => {
   let mockRequest
   let mockH
 
@@ -39,7 +39,7 @@ describe('sbiController', () => {
     })
 
     it('should successfully update SBI and return success message', () => {
-      sbiController.handler(mockRequest, mockH)
+      sbiSelectorController.handler(mockRequest, mockH)
 
       expect(sbiStore.set).toHaveBeenCalledWith('sbi', 'test-sbi-value')
       expect(mockH.response).toHaveBeenCalledWith({
@@ -51,7 +51,7 @@ describe('sbiController', () => {
     it('should handle empty SBI value', () => {
       mockRequest.payload.sbi = ''
 
-      sbiController.handler(mockRequest, mockH)
+      sbiSelectorController.handler(mockRequest, mockH)
 
       expect(sbiStore.set).toHaveBeenCalledWith('sbi', '')
       expect(mockH.response).toHaveBeenCalledWith({
@@ -63,7 +63,7 @@ describe('sbiController', () => {
     it('should handle null SBI value', () => {
       mockRequest.payload.sbi = null
 
-      sbiController.handler(mockRequest, mockH)
+      sbiSelectorController.handler(mockRequest, mockH)
 
       expect(sbiStore.set).toHaveBeenCalledWith('sbi', null)
       expect(mockH.response).toHaveBeenCalledWith({
@@ -80,7 +80,7 @@ describe('sbiController', () => {
       }
       mockRequest.payload.sbi = complexSbi
 
-      sbiController.handler(mockRequest, mockH)
+      sbiSelectorController.handler(mockRequest, mockH)
 
       expect(sbiStore.set).toHaveBeenCalledWith('sbi', complexSbi)
       expect(mockH.response).toHaveBeenCalledWith({
@@ -97,7 +97,7 @@ describe('sbiController', () => {
         payload: {}
       }
 
-      sbiController.handler(mockRequest, mockH)
+      sbiSelectorController.handler(mockRequest, mockH)
 
       expect(sbiStore.set).not.toHaveBeenCalled()
       expect(mockH.response).toHaveBeenCalledWith({
@@ -112,7 +112,7 @@ describe('sbiController', () => {
         payload: { sbi: 'test-value' }
       }
 
-      sbiController.handler(mockRequest, mockH)
+      sbiSelectorController.handler(mockRequest, mockH)
 
       expect(sbiStore.set).not.toHaveBeenCalled()
       expect(mockH.response).toHaveBeenCalledWith({
@@ -127,7 +127,7 @@ describe('sbiController', () => {
         payload: {}
       }
 
-      sbiController.handler(mockRequest, mockH)
+      sbiSelectorController.handler(mockRequest, mockH)
 
       expect(sbiStore.set).not.toHaveBeenCalled()
       expect(mockH.response).toHaveBeenCalledWith({
@@ -142,7 +142,7 @@ describe('sbiController', () => {
         payload: { sbi: 'test-value' }
       }
 
-      sbiController.handler(mockRequest, mockH)
+      sbiSelectorController.handler(mockRequest, mockH)
 
       expect(sbiStore.set).not.toHaveBeenCalled()
       expect(mockH.response).toHaveBeenCalledWith({
@@ -159,7 +159,7 @@ describe('sbiController', () => {
       }
 
       expect(() => {
-        sbiController.handler(mockRequest, mockH)
+        sbiSelectorController.handler(mockRequest, mockH)
       }).toThrow()
     })
 
@@ -169,7 +169,7 @@ describe('sbiController', () => {
         payload: {}
       }
 
-      sbiController.handler(mockRequest, mockH)
+      sbiSelectorController.handler(mockRequest, mockH)
 
       expect(sbiStore.set).toHaveBeenCalledWith('sbi', undefined)
       expect(mockH.response).toHaveBeenCalledWith({
@@ -186,7 +186,7 @@ describe('sbiController', () => {
         payload: { sbi: 'test-value' }
       }
 
-      const result = sbiController.handler(mockRequest, mockH)
+      const result = sbiSelectorController.handler(mockRequest, mockH)
 
       expect(result).toBe(mockH)
     })
@@ -197,7 +197,7 @@ describe('sbiController', () => {
         payload: {}
       }
 
-      const result = sbiController.handler(mockRequest, mockH)
+      const result = sbiSelectorController.handler(mockRequest, mockH)
 
       expect(result).toBe(mockH)
     })
@@ -210,7 +210,7 @@ describe('sbiController', () => {
         payload: { sbi: 'unique-sbi-value' }
       }
 
-      sbiController.handler(mockRequest, mockH)
+      sbiSelectorController.handler(mockRequest, mockH)
 
       expect(sbiStore.set).toHaveBeenCalledTimes(1)
       expect(sbiStore.set).toHaveBeenCalledWith('sbi', 'unique-sbi-value')
@@ -222,7 +222,7 @@ describe('sbiController', () => {
         payload: { sbi: 'should-not-be-stored' }
       }
 
-      sbiController.handler(mockRequest, mockH)
+      sbiSelectorController.handler(mockRequest, mockH)
 
       expect(sbiStore.set).not.toHaveBeenCalled()
     })
