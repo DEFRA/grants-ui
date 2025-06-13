@@ -80,7 +80,7 @@ pages:
           <p class="govuk-body">This grant is only for projects in England.</p>
           <div class="govuk-inset-text">Scotland, Wales and Northern Ireland have other grants available.</div>
     condition: countryCondition
-  - title: Summary
+  - title: "Check your answers: Business status"
     path: /summary
     controller: SectionEndController
 lists:

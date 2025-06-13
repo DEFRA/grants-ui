@@ -13,7 +13,7 @@ pages:
         options:
           customValidationMessages:
             any.required: Select what type of produce is being processed
-  - title: Summary
+  - title: "Check your answers: Produce processed"
     path: /summary
     controller: SectionEndController
 lists:

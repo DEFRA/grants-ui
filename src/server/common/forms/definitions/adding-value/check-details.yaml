@@ -4,7 +4,7 @@ pages:
   - title: Check your details
     path: /check-details
     section: checkDetailsSection
-  - title: Summary
+  - title: "Check your answers: Check your details"
     path: /summary
     controller: SectionEndController
 lists: []
