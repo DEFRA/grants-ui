@@ -121,7 +121,7 @@ export async function validateLandActions({
   parcelId,
   actionsObj = {}
 }) {
-  return await postToLandGrantsApi(
+  return postToLandGrantsApi(
     '/actions/validate',
     landActionsToApiPayload({ sheetId, parcelId, actionsObj })
   )
