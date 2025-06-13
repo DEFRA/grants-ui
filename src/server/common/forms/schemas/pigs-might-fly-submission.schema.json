@@ -1,0 +1,124 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PigsMightFlyGrantApplicationPayload",
+  "type": "object",
+  "properties": {
+    "referenceNumber": { "type": "string" },
+    "isPigFarmer": { "type": "boolean" },
+    "totalPigs": {
+      "type": "number",
+      "minimum": 1,
+      "maximum": 1000
+    },
+    "pigBreeds": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "largeWhiteCount": {
+      "type": ["number", "null"],
+      "minimum": 0
+    },
+    "britishLandraceCount": {
+      "type": ["number", "null"],
+      "minimum": 0
+    },
+    "berkshireCount": {
+      "type": ["number", "null"],
+      "minimum": 0
+    },
+    "otherCount": {
+      "type": ["number", "null"],
+      "minimum": 0
+    },
+    "projectLocation": { "type": "string" },
+    "isInEngland": { "type": "boolean" },
+    "wingType": { "type": "string" },
+    "estimatedCost": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 18000
+    },
+    "canPayRemainingCosts": { "type": "boolean" },
+    "fundingBreakdown": {
+      "type": "object",
+      "properties": {
+        "largeWhiteFunding": {
+          "type": "number",
+          "minimum": 0
+        },
+        "britishLandraceFunding": {
+          "type": "number",
+          "minimum": 0
+        },
+        "berkshireFunding": {
+          "type": "number",
+          "minimum": 0
+        },
+        "otherFunding": {
+          "type": "number",
+          "minimum": 0
+        },
+        "totalFunding": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 18000
+        }
+      }
+    },
+    "grantApplicantType": { "type": "string" },
+    "agentFirstName": { "type": "string" },
+    "agentLastName": { "type": "string" },
+    "agentBusinessName": { "type": "string" },
+    "agentEmail": { "type": "string", "format": "email" },
+    "agentEmailConfirmation": { "type": "string", "format": "email" },
+    "agentMobile": { "type": "string" },
+    "agentLandline": { "type": "string" },
+    "agentBusinessAddress__addressLine1": { "type": "string" },
+    "agentBusinessAddress__addressLine2": {
+      "type": ["string", "null"]
+    },
+    "agentBusinessAddress__town": { "type": "string" },
+    "agentBusinessAddress__county": { "type": ["string", "null"] },
+    "agentBusinessAddress__postcode": { "type": "string" },
+    "applicantFirstName": { "type": "string" },
+    "applicantLastName": { "type": "string" },
+    "applicantEmail": { "type": "string", "format": "email" },
+    "applicantEmailConfirmation": {
+      "type": "string",
+      "format": "email"
+    },
+    "applicantMobile": { "type": "string" },
+    "applicantLandline": { "type": "string" },
+    "applicantBusinessAddress__addressLine1": { "type": "string" },
+    "applicantBusinessAddress__addressLine2": {
+      "type": ["string", "null"]
+    },
+    "applicantBusinessAddress__town": { "type": "string" },
+    "applicantBusinessAddress__county": { "type": ["string", "null"] },
+    "applicantBusinessAddress__postcode": { "type": "string" },
+    "applicantProjectPostcode": { "type": "string" }
+  },
+  "required": [
+    "referenceNumber",
+    "isPigFarmer",
+    "totalPigs",
+    "pigBreeds",
+    "projectLocation",
+    "isInEngland",
+    "wingType",
+    "estimatedCost",
+    "canPayRemainingCosts",
+    "grantApplicantType",
+    "applicantFirstName",
+    "applicantLastName",
+    "applicantEmail",
+    "applicantEmailConfirmation",
+    "applicantMobile",
+    "applicantLandline",
+    "applicantBusinessAddress__addressLine1",
+    "applicantBusinessAddress__town",
+    "applicantBusinessAddress__postcode",
+    "applicantProjectPostcode"
+  ]
+}
