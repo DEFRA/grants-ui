@@ -1,5 +1,5 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
-import { fetchParcelDataForBusiness } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
+import { fetchParcelsForSbi } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
 import LandParcelPageController from './land-parcel-page.controller.js'
 
 jest.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js')
@@ -12,9 +12,22 @@ jest.mock('~/src/server/common/helpers/logging/logger.js', () => ({
 jest.mock(
   '~/src/server/common/services/consolidated-view/consolidated-view.service.js',
   () => ({
-    fetchParcelDataForBusiness: jest.fn()
+    fetchParcelsForSbi: jest.fn()
   })
 )
+
+const mockParcelsResponse = [
+  {
+    parcelId: '0155',
+    sheetId: 'SD7946',
+    area: 4.0383
+  },
+  {
+    parcelId: '4509',
+    sheetId: 'SD7846',
+    area: 0.0633
+  }
+]
 
 describe('LandParcelPageController', () => {
   let controller
@@ -47,18 +60,7 @@ describe('LandParcelPageController', () => {
     controller.getNextPath = jest.fn().mockReturnValue('/next-page')
     controller.setState = jest.fn()
 
-    fetchParcelDataForBusiness.mockResolvedValue({
-      data: {
-        business: {
-          name: 'Test Farm',
-          address: '123 Farm Road',
-          parcels: [
-            { id: 'parcel1', name: 'Field 1', area: 10 },
-            { id: 'parcel2', name: 'Field 2', area: 20 }
-          ]
-        }
-      }
-    })
+    fetchParcelsForSbi.mockResolvedValue(mockParcelsResponse)
 
     mockRequest = setupRequest()
     mockContext = setupContext({
@@ -75,27 +77,27 @@ describe('LandParcelPageController', () => {
   })
 
   describe('GET route handler', () => {
-    it('fetches business info and renders view', async () => {
+    it('fetches parcels list and renders view', async () => {
       const result = await controller.makeGetRouteHandler()(
         mockRequest,
         mockContext,
         mockH
       )
 
-      expect(fetchParcelDataForBusiness).toHaveBeenCalledWith(106284736)
+      expect(fetchParcelsForSbi).toHaveBeenCalledWith(106284736)
       expect(mockH.view).toHaveBeenCalledWith(
         'land-parcel',
         expect.objectContaining({
           pageTitle: 'Select Land Parcel',
-          business: expect.anything(),
+          parcels: mockParcelsResponse,
           landParcel: ''
         })
       )
       expect(result).toBe(renderedViewMock)
     })
 
-    it('handles missing business info', async () => {
-      fetchParcelDataForBusiness.mockRejectedValue(new Error('not found'))
+    it('handles missing parcels info', async () => {
+      fetchParcelsForSbi.mockRejectedValue(new Error('not found'))
 
       const result = await controller.makeGetRouteHandler()(
         mockRequest,
@@ -126,7 +128,7 @@ describe('LandParcelPageController', () => {
         'land-parcel',
         expect.objectContaining({
           landParcel: '',
-          business: expect.anything()
+          parcels: mockParcelsResponse
         })
       )
       expect(result).toBe(renderedViewMock)
@@ -145,7 +147,7 @@ describe('LandParcelPageController', () => {
         'land-parcel',
         expect.objectContaining({
           landParcel: 'sheet123',
-          business: expect.anything(),
+          parcels: mockParcelsResponse,
           pageTitle: 'Select Land Parcel'
         })
       )

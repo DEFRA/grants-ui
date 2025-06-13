@@ -1,13 +1,13 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
-import { fetchParcelDataForBusiness } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
+import { fetchParcelsForSbi } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
 import { sbiStore } from '~/src/server/sbi/state.js'
 
 const logger = createLogger()
 
 export default class LandParcelPageController extends QuestionPageController {
   viewName = 'land-parcel'
-  business = null
+  parcels = null
 
   makePostRouteHandler() {
     /**
@@ -26,7 +26,7 @@ export default class LandParcelPageController extends QuestionPageController {
         return h.view(this.viewName, {
           ...super.getViewModel(request, context),
           ...state,
-          business: this.business,
+          parcels: this.parcels,
           landParcelError: 'Please select a land parcel from the list'
         })
       }
@@ -61,11 +61,10 @@ export default class LandParcelPageController extends QuestionPageController {
       const baseViewModel = super.getViewModel(request, context)
 
       try {
-        const response = await fetchParcelDataForBusiness(sbi)
-        this.business = response.data?.business
+        this.parcels = await fetchParcelsForSbi(sbi)
         const viewModel = {
           ...baseViewModel,
-          business: this.business,
+          parcels: this.parcels,
           landParcel
         }
 
