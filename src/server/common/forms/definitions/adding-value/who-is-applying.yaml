@@ -12,7 +12,7 @@ pages:
         options:
           customValidationMessages:
             any.required: Select who is applying for this grant
-  - title: Summary
+  - title: "Check your answers: Who is applying"
     path: /summary
     controller: SectionEndController
 lists:

@@ -144,7 +144,7 @@ describe('tasklistBackButton plugin', () => {
 
         expect(request2.response.source.context.backLink).toEqual({
           text: 'Back to task list',
-          href: '/adding-value-tasklist'
+          href: '/adding-value-tasklist/tasklist'
         })
       })
 
@@ -170,7 +170,7 @@ describe('tasklistBackButton plugin', () => {
         expect(request.yar.get).toHaveBeenCalledWith('fromTasklist')
         expect(request.response.source.context.backLink).toEqual({
           text: 'Back to task list',
-          href: '/adding-value-tasklist'
+          href: '/adding-value-tasklist/tasklist'
         })
       })
 
