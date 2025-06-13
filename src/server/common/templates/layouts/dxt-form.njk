@@ -18,7 +18,7 @@
 
   {{ defraAccountBar({
     businessName: "",
-    sbi: "1234567890",
+    sbi: auth.sbi | default(""),
     userName: ""
   }) }}
 
@@ -29,7 +29,17 @@
       },
       text: 'This is a new service - your feedback will help us to improve it.'
     }) }}
+  
+    {% if enableSbiSelector and serviceUrl == '/find-funding-for-land-or-farms' %}
+
+      {{ sbiSelector({
+        sbi: auth.sbi | default("")
+      }) }}
+
+    {% endif %}
   </div>
+
+  <input type="hidden" id="csrf-token" value="{{ crumb }}">
 {% endblock %}
 
 {% block beforeContent %}
