@@ -4,7 +4,7 @@ pages:
   - title: Business Details
     path: /business-details
     section: businessDetailsSection
-  - title: Summary
+  - title: "Check your answers: Business details"
     path: /summary
     controller: SectionEndController
 lists: []

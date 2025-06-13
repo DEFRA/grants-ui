@@ -90,7 +90,7 @@ pages:
         title: Address
         name: agentBusinessAddress
     condition: agentDetailsSelected
-  - title: Summary
+  - title: "Check your answers: Agent"
     path: /summary
     controller: SectionEndController
 lists: []

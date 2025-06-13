@@ -25,7 +25,7 @@ pages:
           customValidationMessages:
             any.required: Select how much manual labour the mechanisation will be equal to
     condition: mechanisationCondition
-  - title: Summary
+  - title: "Check your answers: Manual Labour Amount"
     path: /summary
     controller: SectionEndController
 lists:

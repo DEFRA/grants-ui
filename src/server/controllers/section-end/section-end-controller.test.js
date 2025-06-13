@@ -135,12 +135,14 @@ describe('SectionEndController', () => {
       )
     })
 
-    it('should redirect to /adding-value-tasklist', async () => {
+    it('should redirect to /adding-value-tasklist/tasklist', async () => {
       mockRequest.server.app.cacheTemp.get.mockResolvedValue({})
 
       await handler(mockRequest, mockContext, mockH)
 
-      expect(mockH.redirect).toHaveBeenCalledWith('/adding-value-tasklist')
+      expect(mockH.redirect).toHaveBeenCalledWith(
+        '/adding-value-tasklist/tasklist'
+      )
     })
 
     it('should handle async operations correctly', async () => {
