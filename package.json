@@ -73,7 +73,7 @@
     "node-fetch": "^3.3.2",
     "node-jose": "^2.2.0",
     "nunjucks": "^3.2.4",
-    "pino": "^9.5.0",
+    "pino": "^9.7.0",
     "pino-pretty": "^13.0.0",
     "semver": "^7.7.1",
     "undici": "^6.21.1"
