@@ -76,7 +76,7 @@
     "pino": "^9.5.0",
     "pino-pretty": "^13.0.0",
     "semver": "^7.7.1",
-    "undici": "^6.21.1"
+    "undici": "^6.21.3"
   },
   "devDependencies": {
     "@babel/cli": "^7.25.9",
