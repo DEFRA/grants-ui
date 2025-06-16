@@ -470,8 +470,7 @@ describe('LandActionsPageController', () => {
                   unit: 'ha',
                   value: 10
                 }
-              },
-              id: 'sheet1-parcel1'
+              }
             }
           }
         })
@@ -500,8 +499,7 @@ describe('LandActionsPageController', () => {
           landParcels: {
             'sheet1-parcel1': {
               actions: '',
-              actionsObj: {},
-              id: 'sheet1-parcel1'
+              actionsObj: {}
             }
           }
         })
@@ -607,8 +605,7 @@ describe('LandActionsPageController', () => {
                   unit: 'ha',
                   value: 10
                 }
-              },
-              id: 'sheet1-parcel1'
+              }
             }
           }
         })
