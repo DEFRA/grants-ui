@@ -36,7 +36,7 @@ export default class LandParcelPageController extends QuestionPageController {
           ...super.getViewModel(request, context),
           ...state,
           parcels: this.parcels,
-          landParcelError: 'Please select a land parcel from the list'
+          errorMessage: 'Please select a land parcel from the list'
         })
       }
 

@@ -199,7 +199,7 @@ describe('LandParcelPageController', () => {
         'select-land-parcel',
         expect.objectContaining({
           pageTitle: 'Select Land Parcel',
-          landParcelError: 'Please select a land parcel from the list'
+          errorMessage: 'Please select a land parcel from the list'
         })
       )
       expect(result).toBe('mock-rendered-view')

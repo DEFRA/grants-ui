@@ -11,11 +11,11 @@
 <div class="govuk-body">
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
-      {% if landParcelError %}
+      {% if errorMessage %}
         {{ govukErrorSummary({
           titleText: "There is a problem",
           errorList: [{
-            text: landParcelError,
+            text: errorMessage,
             href: '#landParcel'
           }]
         }) }}
@@ -45,7 +45,8 @@
                   }
                 },
                 items: radioItems,
-                value: parcelId
+                value: parcelId,
+                errorMessage: errorMessage and { text: errorMessage }
               })
             }}
 
