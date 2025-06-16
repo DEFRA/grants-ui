@@ -1,13 +1,22 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
-import { fetchParcelsForSbi } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
 import { sbiStore } from '~/src/server/sbi/state.js'
+import { fetchParcels } from '../services/land-grants.service.js'
 
 const logger = createLogger()
 
 export default class LandParcelPageController extends QuestionPageController {
-  viewName = 'land-parcel'
-  parcels = null
+  viewName = 'select-land-parcel'
+  parcels = []
+
+  formatParcelForView = (parcel) => ({
+    text: `${parcel.sheetId} ${parcel.parcelId}`,
+    value: `${parcel.sheetId}-${parcel.parcelId}`,
+    hint:
+      parcel.area.value && parcel.area.unit
+        ? `Total size: ${parcel.area.value} ${parcel.area.unit}`
+        : undefined
+  })
 
   makePostRouteHandler() {
     /**
@@ -27,7 +36,7 @@ export default class LandParcelPageController extends QuestionPageController {
           ...super.getViewModel(request, context),
           ...state,
           parcels: this.parcels,
-          landParcelError: 'Please select a land parcel from the list'
+          errorMessage: 'Please select a land parcel from the list'
         })
       }
 
@@ -61,7 +70,9 @@ export default class LandParcelPageController extends QuestionPageController {
       const baseViewModel = super.getViewModel(request, context)
 
       try {
-        this.parcels = await fetchParcelsForSbi(sbi)
+        const parcels = await fetchParcels(sbi)
+        this.parcels = parcels.map(this.formatParcelForView)
+
         const viewModel = {
           ...baseViewModel,
           parcels: this.parcels,

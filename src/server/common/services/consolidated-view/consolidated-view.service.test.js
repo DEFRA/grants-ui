@@ -2,7 +2,7 @@ import fs from 'fs/promises'
 import path from 'path'
 import { config } from '~/src/config/config.js'
 import { getValidToken } from '~/src/server/common/helpers/entra/token-manager.js'
-import { fetchParcelsForSbi } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
+import { fetchParcelsFromDal } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
 
 jest.mock('~/src/server/common/helpers/entra/token-manager.js', () => ({
   getValidToken: jest.fn()
@@ -28,7 +28,7 @@ const getMockFilePath = (sbi) => {
 const mockFetch = jest.fn()
 global.fetch = mockFetch
 
-describe('fetchParcelsForSbi', () => {
+describe('fetchParcelsFromDal', () => {
   const mockSbi = 123456789
   const mockToken = 'mock-token-123'
 
@@ -74,7 +74,7 @@ describe('fetchParcelsForSbi', () => {
       json: () => Promise.resolve(mockSuccessResponse)
     })
 
-    const result = await fetchParcelsForSbi(mockSbi)
+    const result = await fetchParcelsFromDal(mockSbi)
 
     expect(mockFetch).toHaveBeenCalledTimes(1)
     expect(result).toEqual(mockSuccessResponse.data.business.land.parcels)
@@ -92,7 +92,7 @@ describe('fetchParcelsForSbi', () => {
       text: () => Promise.resolve(errorText)
     })
 
-    await expect(fetchParcelsForSbi(mockSbi)).rejects.toThrow(
+    await expect(fetchParcelsFromDal(mockSbi)).rejects.toThrow(
       'Failed to fetch business data: 404 Not Found'
     )
     expect(mockFetch).toHaveBeenCalledTimes(1)
@@ -107,7 +107,7 @@ describe('fetchParcelsForSbi', () => {
       text: () => Promise.resolve(errorText)
     })
 
-    const error = await fetchParcelsForSbi(mockSbi).catch((e) => e)
+    const error = await fetchParcelsFromDal(mockSbi).catch((e) => e)
     expect(error.status).toBe(500)
     expect(error.responseBody).toBe(
       `Failed to fetch business data: 500 ${errorText}`
@@ -118,7 +118,7 @@ describe('fetchParcelsForSbi', () => {
     const networkError = new Error('Network error')
     mockFetch.mockRejectedValueOnce(networkError)
 
-    await expect(fetchParcelsForSbi(mockSbi)).rejects.toThrow(
+    await expect(fetchParcelsFromDal(mockSbi)).rejects.toThrow(
       'Failed to fetch business data: Network error'
     )
     expect(mockFetch).toHaveBeenCalledTimes(1)
@@ -130,7 +130,7 @@ describe('fetchParcelsForSbi', () => {
       json: () => Promise.resolve(mockSuccessResponse)
     })
 
-    await fetchParcelsForSbi(mockSbi)
+    await fetchParcelsFromDal(mockSbi)
 
     const [[, calledOptions]] = mockFetch.mock.calls
     const body = JSON.parse(calledOptions.body)
@@ -172,7 +172,7 @@ describe('fetchParcelsForSbi', () => {
     it('should read mock data from file instead of calling API', async () => {
       fs.readFile.mockResolvedValueOnce(JSON.stringify(mockFileData))
 
-      const result = await fetchParcelsForSbi(mockSbi)
+      const result = await fetchParcelsFromDal(mockSbi)
 
       expect(result).toEqual(mockFileData.data.business.land.parcels)
       expect(fs.readFile).toHaveBeenCalledTimes(1)
@@ -186,7 +186,7 @@ describe('fetchParcelsForSbi', () => {
       fileError.code = 'ENOENT'
       fs.readFile.mockRejectedValueOnce(fileError)
 
-      await expect(fetchParcelsForSbi(mockSbi)).rejects.toThrow(
+      await expect(fetchParcelsFromDal(mockSbi)).rejects.toThrow(
         'Failed to fetch business data: ENOENT: no such file or directory'
       )
     })
@@ -194,7 +194,7 @@ describe('fetchParcelsForSbi', () => {
     it('should handle invalid JSON in mock file', async () => {
       fs.readFile.mockResolvedValueOnce('invalid json content')
 
-      await expect(fetchParcelsForSbi(mockSbi)).rejects.toThrow(
+      await expect(fetchParcelsFromDal(mockSbi)).rejects.toThrow(
         'Failed to fetch business data:'
       )
     })
@@ -203,7 +203,7 @@ describe('fetchParcelsForSbi', () => {
       const differentSbi = 987654321
       fs.readFile.mockResolvedValueOnce(JSON.stringify(mockFileData))
 
-      await fetchParcelsForSbi(differentSbi)
+      await fetchParcelsFromDal(differentSbi)
 
       expect(fs.readFile).toHaveBeenCalledWith(
         getMockFilePath(differentSbi),
