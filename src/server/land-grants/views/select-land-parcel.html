@@ -11,11 +11,12 @@
 <div class="govuk-body">
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
-      {% if landParcelError %}
+      {% if errorMessage %}
         {{ govukErrorSummary({
           titleText: "There is a problem",
           errorList: [{
-            text: landParcelError
+            text: errorMessage,
+            href: '#landParcel'
           }]
         }) }}
       {% endif %}
@@ -23,12 +24,13 @@
       {% if parcels %}
         <form method="post" data-actions="{{ actions }}" >
           {% set radioItems = [] %}
-          {% set parcelId = landParcel or parcels[0].parcelId %}
-
           {% for parcel in parcels %}
             {% set radioItems = radioItems.concat([{
-              value: parcel.sheetId + "-" + parcel.parcelId,
-              text: parcel.sheetId + "-" + parcel.parcelId + " (Total size: " + parcel.area + " ha.)"
+              value: parcel.value,
+              text: parcel.text,
+              hint: {
+                text: parcel.hint
+              }
             }]) %}
           {% endfor %}
 
@@ -37,17 +39,18 @@
                 name: "landParcel",
                 fieldset: {
                   legend: {
-                    text: "Select land for your actions",
+                    text: "Select land parcel for actions",
                     isPageHeading: true,
                     classes: "govuk-fieldset__legend--l"
                   }
                 },
                 items: radioItems,
-                value: parcelId
+                value: parcelId,
+                errorMessage: errorMessage and { text: errorMessage }
               })
             }}
 
-            <div class="govuk-button-group">
+            <div id="landParcels" class="govuk-button-group">
               <input type="hidden" name="crumb" value="{{ crumb }}">
               {% block form %}
                   {{ govukButton({
