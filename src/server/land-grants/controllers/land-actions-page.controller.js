@@ -68,6 +68,40 @@ export default class LandActionsPageController extends QuestionPageController {
     }
   }
 
+  getSelectedLandParcelData(context) {
+    const { state } = context
+
+    return {
+      name: state.landParcel,
+      rows: [
+        {
+          key: {
+            text: 'Total size'
+          },
+          value: {
+            text: 'Not available'
+          }
+        },
+        {
+          key: {
+            text: 'Land Cover'
+          },
+          value: {
+            text: 'Not available'
+          }
+        },
+        {
+          key: {
+            text: 'Intersections'
+          },
+          value: {
+            text: 'Not available'
+          }
+        }
+      ]
+    }
+  }
+
   /**
    * This method is called when there is a POST request to the select land actions page.
    * It gets the land parcel id and redirects to the next step in the journey.
@@ -91,6 +125,7 @@ export default class LandActionsPageController extends QuestionPageController {
       const newState = {
         ...state,
         actions: this.transformActionsForView(actionsObj),
+        selectedLandParcel: this.getSelectedLandParcelData(context),
         actionsObj
       }
 
@@ -177,6 +212,7 @@ export default class LandActionsPageController extends QuestionPageController {
       const viewModel = {
         ...this.getViewModel(request, context),
         ...state,
+        selectedLandParcel: this.getSelectedLandParcelData(context),
         errors: collection.getErrors(collection.getErrors())
       }
 
