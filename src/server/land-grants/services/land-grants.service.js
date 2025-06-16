@@ -154,9 +154,9 @@ export async function fetchParcels(sbi) {
   const parcels = await fetchParcelsFromDal(sbi)
   const parcelKeys = parcels.map(stringifyParcel)
   const sizes = await fetchParcelsSize(parcelKeys)
-
-  return parcels.map((p) => ({
+  const hydratedParcels = parcels.map((p) => ({
     ...p,
     area: sizes[stringifyParcel(p)] || {}
   }))
+  return hydratedParcels
 }

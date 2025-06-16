@@ -26,9 +26,17 @@
           {% set parcelId = landParcel or parcels[0].parcelId %}
 
           {% for parcel in parcels %}
+            {% if parcel.area.value and parcel.area.unit %}
+              {% set hintText = "Total size: " + parcel.area.value + " " + parcel.area.unit %}
+            {% else %}
+              {% set hintText = "" %}
+            {% endif %}
             {% set radioItems = radioItems.concat([{
               value: parcel.sheetId + "-" + parcel.parcelId,
-              text: parcel.sheetId + "-" + parcel.parcelId + " (Total size: " + parcel.area.value  + " " + parcel.area.unit + ")"
+              text: parcel.sheetId + " " + parcel.parcelId,
+              hint: {
+                text: hintText
+              }
             }]) %}
           {% endfor %}
 
@@ -37,7 +45,7 @@
                 name: "landParcel",
                 fieldset: {
                   legend: {
-                    text: "Select land for your actions",
+                    text: "Select land parcel for actions",
                     isPageHeading: true,
                     classes: "govuk-fieldset__legend--l"
                   }
