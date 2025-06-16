@@ -16,6 +16,36 @@ describe('LandActionsPageController', () => {
   let mockContext
   let mockH
 
+  const selectedLandParcel = {
+    name: 'sheet1-parcel1',
+    rows: [
+      {
+        key: {
+          text: 'Total size'
+        },
+        value: {
+          text: 'Not available'
+        }
+      },
+      {
+        key: {
+          text: 'Land Cover'
+        },
+        value: {
+          text: 'Not available'
+        }
+      },
+      {
+        key: {
+          text: 'Intersections'
+        },
+        value: {
+          text: 'Not available'
+        }
+      }
+    ]
+  }
+
   const availableActions = [
     {
       code: 'CMOR1',
@@ -335,6 +365,7 @@ describe('LandActionsPageController', () => {
         expect.objectContaining({
           landParcel: 'sheet1-parcel1',
           availableActions,
+          selectedLandParcel,
           actions: ['CMOR1', 'UPL1']
         })
       )
@@ -460,6 +491,7 @@ describe('LandActionsPageController', () => {
           landParcel: 'sheet1-parcel1',
           actions: 'CMOR1: 10 ha',
           applicationValue: '£1,250.75',
+          selectedLandParcel,
           landParcels: {
             'sheet1-parcel1': {
               actions: 'CMOR1: 10 ha',
