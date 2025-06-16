@@ -4,29 +4,59 @@ import {
   TaskListStatus
 } from '../../common/constants/tasklist-status-components.js'
 
+export const SECTIONS = {
+  BUSINESS_STATUS: 'business-status',
+  PROJECT_PREPARATION: 'project-preparation',
+  FACILITIES: 'facilities',
+  COSTS: 'costs',
+  PRODUCE_PROCESSED: 'produce-processed',
+  PROJECT_IMPACT: 'project-impact',
+  MANUAL_LABOUR_AMOUNT: 'manual-labour-amount',
+  FUTURE_CUSTOMERS: 'future-customers',
+  COLLABORATION: 'collaboration',
+  ENVIRONMENTAL_IMPACT: 'environmental-impact',
+  BUSINESS_DETAILS: 'business-details',
+  WHO_IS_APPLYING: 'who-is-applying',
+  AGENT_DETAILS: 'agent-details',
+  APPLICANT_DETAILS: 'applicant-details',
+  CHECK_DETAILS: 'check-details',
+  SCORE_RESULTS: 'score-results',
+  DECLARATION: 'declaration'
+}
+
+export const GRANT_APPLICANT_TYPES = {
+  APPLYING_A1: 'applying-A1',
+  APPLYING_A2: 'applying-A2'
+}
+
+export const ROLES = {
+  APPLICANT: 'applicant',
+  AGENT: 'agent'
+}
+
 const scorePages = [
-  'business-status',
-  'project-preparation',
-  'facilities',
-  'costs',
-  'produce-processed',
-  'project-impact',
-  'manual-labour-amount',
-  'future-customers',
-  'collaboration',
-  'environmental-impact'
+  SECTIONS.BUSINESS_STATUS,
+  SECTIONS.PROJECT_PREPARATION,
+  SECTIONS.FACILITIES,
+  SECTIONS.COSTS,
+  SECTIONS.PRODUCE_PROCESSED,
+  SECTIONS.PROJECT_IMPACT,
+  SECTIONS.MANUAL_LABOUR_AMOUNT,
+  SECTIONS.FUTURE_CUSTOMERS,
+  SECTIONS.COLLABORATION,
+  SECTIONS.ENVIRONMENTAL_IMPACT
 ]
 
 const checkPages = [
   ...scorePages,
-  // 'score-results', // ADD THIS BACK IN WHEN SCORING PAGE WORKS
-  'business-details',
-  'who-is-applying',
-  'agent-details',
-  'applicant-details'
+  // SECTIONS.SCORE_RESULTS, // ADD THIS BACK IN WHEN SCORING PAGE WORKS
+  SECTIONS.BUSINESS_DETAILS,
+  SECTIONS.WHO_IS_APPLYING,
+  SECTIONS.AGENT_DETAILS,
+  SECTIONS.APPLICANT_DETAILS
 ]
 
-const CHECK_DETAILS = 'check-details'
+const CHECK_DETAILS = SECTIONS.CHECK_DETAILS
 
 const declarationPages = [...checkPages, CHECK_DETAILS]
 
@@ -42,16 +72,56 @@ export const addingValueTasklist = {
     register(server) {
       server.route({
         method: 'GET',
-        path: '/adding-value-tasklist',
+        path: '/adding-value-tasklist/tasklist',
         handler: async (request, h) => {
           const data = (await server.app.cacheTemp.get(request.yar.id)) || {}
           const pageStatuses = determineStatuses(request, data)
           const modelWithStatuses = {
             pageHeading: 'Apply for adding value grant',
-            sections: applyStatuses(addingValueModel, pageStatuses)
+            sections: applyStatuses(addingValueModel, pageStatuses),
+            serviceName: 'Adding Value Tasklist grant'
           }
           return h.view('views/adding-value-tasklist-page', modelWithStatuses)
         }
+      })
+
+      const sections = [
+        SECTIONS.BUSINESS_STATUS,
+        SECTIONS.PROJECT_PREPARATION,
+        SECTIONS.FACILITIES,
+        SECTIONS.COSTS,
+        SECTIONS.PRODUCE_PROCESSED,
+        SECTIONS.PROJECT_IMPACT,
+        SECTIONS.MANUAL_LABOUR_AMOUNT,
+        SECTIONS.FUTURE_CUSTOMERS,
+        SECTIONS.COLLABORATION,
+        SECTIONS.ENVIRONMENTAL_IMPACT,
+        SECTIONS.BUSINESS_DETAILS,
+        SECTIONS.WHO_IS_APPLYING,
+        SECTIONS.AGENT_DETAILS,
+        SECTIONS.APPLICANT_DETAILS,
+        SECTIONS.CHECK_DETAILS
+      ]
+
+      sections.forEach((section) => {
+        server.route({
+          method: 'GET',
+          path: `/adding-value-tasklist/${section}`,
+          handler: (request, h) => {
+            const queryString = request.url.search || ''
+            return h.redirect(`/${section}${queryString}`)
+          }
+        })
+
+        server.route({
+          method: 'GET',
+          path: `/adding-value-tasklist/${section}/{path*}`,
+          handler: (request, h) => {
+            const path = request.params.path || ''
+            const queryString = request.url.search || ''
+            return h.redirect(`/${section}/${path}${queryString}`)
+          }
+        })
       })
     }
   }
@@ -59,23 +129,26 @@ export const addingValueTasklist = {
 
 const determineStatuses = (request, data) => {
   const baseStatuses = {
-    'business-status': TaskListStatus.NOT_YET_STARTED,
-    'project-preparation': TaskListStatus.NOT_YET_STARTED,
-    facilities: TaskListStatus.NOT_YET_STARTED,
-    costs: TaskListStatus.NOT_YET_STARTED,
-    'produce-processed': otherFarmersYesOrFruitStorageCondition(data),
-    'project-impact': otherFarmersYesOrFruitStorageCondition(data),
-    'manual-labour-amount': TaskListStatus.NOT_YET_STARTED,
-    'future-customers': TaskListStatus.NOT_YET_STARTED,
-    collaboration: TaskListStatus.NOT_YET_STARTED,
-    'environmental-impact': TaskListStatus.NOT_YET_STARTED,
-    'score-results': TaskListStatus.CANNOT_START_YET,
-    'business-details': TaskListStatus.NOT_YET_STARTED,
-    'who-is-applying': TaskListStatus.NOT_YET_STARTED,
-    'agent-details': agentOrApplicantCondition(data, 'agent'),
-    'applicant-details': agentOrApplicantCondition(data, 'applicant'),
-    'check-details': TaskListStatus.CANNOT_START_YET,
-    declaration: TaskListStatus.CANNOT_START_YET
+    [SECTIONS.BUSINESS_STATUS]: TaskListStatus.NOT_YET_STARTED,
+    [SECTIONS.PROJECT_PREPARATION]: TaskListStatus.NOT_YET_STARTED,
+    [SECTIONS.FACILITIES]: TaskListStatus.NOT_YET_STARTED,
+    [SECTIONS.COSTS]: TaskListStatus.NOT_YET_STARTED,
+    [SECTIONS.PRODUCE_PROCESSED]: otherFarmersYesOrFruitStorageCondition(data),
+    [SECTIONS.PROJECT_IMPACT]: otherFarmersYesOrFruitStorageCondition(data),
+    [SECTIONS.MANUAL_LABOUR_AMOUNT]: TaskListStatus.NOT_YET_STARTED,
+    [SECTIONS.FUTURE_CUSTOMERS]: TaskListStatus.NOT_YET_STARTED,
+    [SECTIONS.COLLABORATION]: TaskListStatus.NOT_YET_STARTED,
+    [SECTIONS.ENVIRONMENTAL_IMPACT]: TaskListStatus.NOT_YET_STARTED,
+    [SECTIONS.SCORE_RESULTS]: TaskListStatus.CANNOT_START_YET,
+    [SECTIONS.BUSINESS_DETAILS]: TaskListStatus.NOT_YET_STARTED,
+    [SECTIONS.WHO_IS_APPLYING]: TaskListStatus.NOT_YET_STARTED,
+    [SECTIONS.AGENT_DETAILS]: agentOrApplicantCondition(data, ROLES.AGENT),
+    [SECTIONS.APPLICANT_DETAILS]: agentOrApplicantCondition(
+      data,
+      ROLES.APPLICANT
+    ),
+    [SECTIONS.CHECK_DETAILS]: TaskListStatus.CANNOT_START_YET,
+    [SECTIONS.DECLARATION]: TaskListStatus.CANNOT_START_YET
   }
 
   const pageStatuses = { ...baseStatuses }
@@ -96,8 +169,8 @@ const determineStatuses = (request, data) => {
     }
   }
 
-  pageStatuses['score-results'] = basedOnCompletion(
-    'score-results',
+  pageStatuses[SECTIONS.SCORE_RESULTS] = basedOnCompletion(
+    SECTIONS.SCORE_RESULTS,
     data,
     pageStatuses,
     scorePages
@@ -110,8 +183,8 @@ const determineStatuses = (request, data) => {
     checkPages
   )
 
-  pageStatuses.declaration = basedOnCompletion(
-    'declaration',
+  pageStatuses[SECTIONS.DECLARATION] = basedOnCompletion(
+    SECTIONS.DECLARATION,
     data,
     pageStatuses,
     declarationPages
@@ -147,13 +220,14 @@ export const otherFarmersYesOrFruitStorageCondition = (data) => {
 }
 
 export const agentOrApplicantCondition = (data, role) => {
-  const grantType = data?.['who-is-applying']?.grantApplicantType ?? null
+  const grantType = data?.[SECTIONS.WHO_IS_APPLYING]?.grantApplicantType ?? null
   if (!grantType) {
     return TaskListStatus.HIDDEN
   }
   const isValid =
-    (role === 'applicant' && grantType === 'applying-A1') ||
-    (role === 'agent' && grantType === 'applying-A2')
+    (role === ROLES.APPLICANT &&
+      grantType === GRANT_APPLICANT_TYPES.APPLYING_A1) ||
+    (role === ROLES.AGENT && grantType === GRANT_APPLICANT_TYPES.APPLYING_A2)
   return isValid ? TaskListStatus.NOT_YET_STARTED : TaskListStatus.HIDDEN
 }
 
@@ -182,7 +256,7 @@ const applyStatuses = (sections, statuses) => {
         href:
           statuses[sub.href] === TaskListStatus.CANNOT_START_YET
             ? null
-            : `${sub.href}?source=adding-value-tasklist`
+            : `/adding-value-tasklist/${sub.href}?source=adding-value-tasklist`
       }))
   }))
 }

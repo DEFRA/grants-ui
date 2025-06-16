@@ -3,6 +3,16 @@ import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/Su
 export default class SectionEndController extends SummaryPageController {
   viewName = 'section-end-summary'
 
+  getSummaryViewModel(request, context) {
+    const viewModel = super.getSummaryViewModel(request, context)
+
+    if (viewModel.checkAnswers && viewModel.checkAnswers.length > 0) {
+      viewModel.checkAnswers = viewModel.checkAnswers[0]
+    }
+
+    return viewModel
+  }
+
   makePostRouteHandler() {
     return async (request, context, h) => {
       const data =
@@ -14,7 +24,7 @@ export default class SectionEndController extends SummaryPageController {
 
       await request.server.app.cacheTemp.set(request.yar.id, newData)
 
-      return h.redirect('/adding-value-tasklist')
+      return h.redirect('/adding-value-tasklist/tasklist')
     }
   }
 }
