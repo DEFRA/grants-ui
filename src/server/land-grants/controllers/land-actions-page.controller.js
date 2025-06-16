@@ -6,6 +6,8 @@ import {
   validateLandActions
 } from '~/src/server/land-grants/services/land-grants.service.js'
 
+const NOT_AVAILABLE = 'Not available'
+
 export default class LandActionsPageController extends QuestionPageController {
   viewName = 'choose-which-actions-to-do'
   quantityPrefix = 'qty-'
@@ -79,7 +81,7 @@ export default class LandActionsPageController extends QuestionPageController {
             text: 'Total size'
           },
           value: {
-            text: 'Not available'
+            text: NOT_AVAILABLE
           }
         },
         {
@@ -87,7 +89,7 @@ export default class LandActionsPageController extends QuestionPageController {
             text: 'Land Cover'
           },
           value: {
-            text: 'Not available'
+            text: NOT_AVAILABLE
           }
         },
         {
@@ -95,7 +97,7 @@ export default class LandActionsPageController extends QuestionPageController {
             text: 'Intersections'
           },
           value: {
-            text: 'Not available'
+            text: NOT_AVAILABLE
           }
         }
       ]
