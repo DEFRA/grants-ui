@@ -490,9 +490,21 @@ describe('LandActionsPageController', () => {
         expect.objectContaining({
           landParcel: 'sheet1-parcel1',
           actions: 'CMOR1: 10 ha.',
-          actionsObj,
+          applicationValue: '£1,250.75',
           selectedLandParcel,
-          applicationValue: '£1,250.75'
+          landParcels: {
+            'sheet1-parcel1': {
+              actions: 'CMOR1: 10 ha.',
+              actionsObj: {
+                CMOR1: {
+                  description:
+                    'CMOR1: Assess moorland and produce a written record',
+                  unit: 'ha',
+                  value: 10
+                }
+              }
+            }
+          }
         })
       )
 
@@ -516,7 +528,12 @@ describe('LandActionsPageController', () => {
         expect.objectContaining({
           landParcel: 'sheet1-parcel1',
           actions: '',
-          actionsObj: {}
+          landParcels: {
+            'sheet1-parcel1': {
+              actions: '',
+              actionsObj: {}
+            }
+          }
         })
       )
     })
@@ -610,12 +627,17 @@ describe('LandActionsPageController', () => {
         expect.objectContaining({
           landParcel: 'sheet1-parcel1',
           actions: 'CMOR1: 10 ha.',
-          actionsObj: {
-            CMOR1: {
-              description:
-                'CMOR1: Assess moorland and produce a written record',
-              value: 10,
-              unit: 'ha'
+          landParcels: {
+            'sheet1-parcel1': {
+              actions: 'CMOR1: 10 ha.',
+              actionsObj: {
+                CMOR1: {
+                  description:
+                    'CMOR1: Assess moorland and produce a written record',
+                  unit: 'ha',
+                  value: 10
+                }
+              }
             }
           }
         })

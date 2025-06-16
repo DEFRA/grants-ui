@@ -122,11 +122,18 @@ export default class LandActionsPageController extends QuestionPageController {
       const actionsObj = this.extractActionsObjectFromPayload(payload)
 
       // Create updated state with the new action data
+      const landParcelID = `${sheetId}-${parcelId}`
       const newState = {
         ...state,
         actions: this.transformActionsForView(actionsObj),
         selectedLandParcel: this.getSelectedLandParcelData(context),
-        actionsObj
+        landParcels: {
+          ...state.landParcels, // Spread existing land parcels
+          [landParcelID]: {
+            actionsObj,
+            actions: this.transformActionsForView(actionsObj)
+          }
+        }
       }
 
       if (payload.action === 'validate') {
