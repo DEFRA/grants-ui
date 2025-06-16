@@ -12,12 +12,25 @@ const mockParcelsResponse = [
   {
     parcelId: '0155',
     sheetId: 'SD7946',
-    area: 4.0383
+    area: { unit: 'ha', value: 4.0383 }
   },
   {
     parcelId: '4509',
     sheetId: 'SD7846',
-    area: 0.0633
+    area: { unit: 'sqm', value: 0.0633 }
+  }
+]
+
+const controllerParcelsResponse = [
+  {
+    value: 'SD7946-0155',
+    text: 'SD7946 0155',
+    hint: 'Total size: 4.0383 ha'
+  },
+  {
+    value: 'SD7846-4509',
+    text: 'SD7846 4509',
+    hint: 'Total size: 0.0633 sqm'
   }
 ]
 
@@ -81,7 +94,7 @@ describe('LandParcelPageController', () => {
         'select-land-parcel',
         expect.objectContaining({
           pageTitle: 'Select Land Parcel',
-          parcels: mockParcelsResponse,
+          parcels: controllerParcelsResponse,
           landParcel: ''
         })
       )
@@ -120,7 +133,7 @@ describe('LandParcelPageController', () => {
         'select-land-parcel',
         expect.objectContaining({
           landParcel: '',
-          parcels: mockParcelsResponse
+          parcels: controllerParcelsResponse
         })
       )
       expect(result).toBe(renderedViewMock)
@@ -139,7 +152,7 @@ describe('LandParcelPageController', () => {
         'select-land-parcel',
         expect.objectContaining({
           landParcel: 'sheet123',
-          parcels: mockParcelsResponse,
+          parcels: controllerParcelsResponse,
           pageTitle: 'Select Land Parcel'
         })
       )

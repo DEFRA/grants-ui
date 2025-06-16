@@ -23,19 +23,12 @@
       {% if parcels %}
         <form method="post" data-actions="{{ actions }}" >
           {% set radioItems = [] %}
-          {% set parcelId = landParcel or parcels[0].parcelId %}
-
           {% for parcel in parcels %}
-            {% if parcel.area.value and parcel.area.unit %}
-              {% set hintText = "Total size: " + parcel.area.value + " " + parcel.area.unit %}
-            {% else %}
-              {% set hintText = "" %}
-            {% endif %}
             {% set radioItems = radioItems.concat([{
-              value: parcel.sheetId + "-" + parcel.parcelId,
-              text: parcel.sheetId + " " + parcel.parcelId,
+              value: parcel.value,
+              text: parcel.text,
               hint: {
-                text: hintText
+                text: parcel.hint
               }
             }]) %}
           {% endfor %}

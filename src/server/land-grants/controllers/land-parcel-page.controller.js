@@ -61,7 +61,16 @@ export default class LandParcelPageController extends QuestionPageController {
       const baseViewModel = super.getViewModel(request, context)
 
       try {
-        this.parcels = await fetchParcels(sbi)
+        const parcels = await fetchParcels(sbi)
+        this.parcels = parcels.map((parcel) => ({
+          text: parcel.sheetId + ' ' + parcel.parcelId,
+          value: parcel.sheetId + '-' + parcel.parcelId,
+          hint:
+            parcel.area.value && parcel.area.unit
+              ? 'Total size: ' + parcel.area.value + ' ' + parcel.area.unit
+              : undefined
+        }))
+
         const viewModel = {
           ...baseViewModel,
           parcels: this.parcels,
