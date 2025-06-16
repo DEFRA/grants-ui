@@ -93,7 +93,7 @@ pages:
             string.pattern.base: Enter a valid postcode
         schema:
           regex: ^[a-zA-Z]{1,2}\d[a-zA-Z\d]?\s?\d[a-zA-Z]{2}$
-  - title: Summary
+  - title: "Check your answers: Applicant"
     path: /summary
     controller: SectionEndController
 lists: []
