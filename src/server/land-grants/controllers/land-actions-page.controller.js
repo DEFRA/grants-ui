@@ -95,7 +95,6 @@ export default class LandActionsPageController extends QuestionPageController {
         landParcels: {
           ...state.landParcels, // Spread existing land parcels
           [landParcelID]: {
-            id: landParcelID,
             actionsObj,
             actions: this.transformActionsForView(actionsObj)
           }
