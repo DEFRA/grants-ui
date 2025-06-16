@@ -10,11 +10,11 @@ export default class LandParcelPageController extends QuestionPageController {
   parcels = []
 
   formatParcelForView = (parcel) => ({
-    text: parcel.sheetId + ' ' + parcel.parcelId,
-    value: parcel.sheetId + '-' + parcel.parcelId,
+    text: `${parcel.sheetId} ${parcel.parcelId}`,
+    value: `${parcel.sheetId}-${parcel.parcelId}`,
     hint:
       parcel.area.value && parcel.area.unit
-        ? 'Total size: ' + parcel.area.value + ' ' + parcel.area.unit
+        ? `Total size: ${parcel.area.value} ${parcel.area.unit}`
         : undefined
   })
 
