@@ -4,7 +4,7 @@ pages:
   - title: How will this project improve the environment?
     path: /environmental-impact
     section: environmentSection
-  - title: Summary
+  - title: "Check your answers: Environment"
     path: /summary
     controller: SectionEndController
 lists: []

@@ -2,7 +2,10 @@ import {
   addingValueTasklist,
   otherFarmersYesOrFruitStorageCondition,
   agentOrApplicantCondition,
-  basedOnCompletion
+  basedOnCompletion,
+  SECTIONS,
+  GRANT_APPLICANT_TYPES,
+  ROLES
 } from './adding-value-tasklist-controller.js'
 
 describe('adding-value-tasklist-controller', () => {
@@ -62,51 +65,53 @@ describe('adding-value-tasklist-controller', () => {
   describe('agentOrApplicantCondition', () => {
     it('should return "notYetStarted" for applicant when applying-A1', () => {
       const data = {
-        'who-is-applying': {
-          grantApplicantType: 'applying-A1'
+        [SECTIONS.WHO_IS_APPLYING]: {
+          grantApplicantType: GRANT_APPLICANT_TYPES.APPLYING_A1
         }
       }
-      expect(agentOrApplicantCondition(data, 'applicant')).toBe('notYetStarted')
+      expect(agentOrApplicantCondition(data, ROLES.APPLICANT)).toBe(
+        'notYetStarted'
+      )
     })
 
     it('should return "notYetStarted" for agent when applying-A2', () => {
       const data = {
-        'who-is-applying': {
-          grantApplicantType: 'applying-A2'
+        [SECTIONS.WHO_IS_APPLYING]: {
+          grantApplicantType: GRANT_APPLICANT_TYPES.APPLYING_A2
         }
       }
-      expect(agentOrApplicantCondition(data, 'agent')).toBe('notYetStarted')
+      expect(agentOrApplicantCondition(data, ROLES.AGENT)).toBe('notYetStarted')
     })
 
     it('should return "hidden" for agent when applying-A1', () => {
       const data = {
-        'who-is-applying': {
-          grantApplicantType: 'applying-A1'
+        [SECTIONS.WHO_IS_APPLYING]: {
+          grantApplicantType: GRANT_APPLICANT_TYPES.APPLYING_A1
         }
       }
-      expect(agentOrApplicantCondition(data, 'agent')).toBe('hidden')
+      expect(agentOrApplicantCondition(data, ROLES.AGENT)).toBe('hidden')
     })
 
     it('should return "hidden" for applicant when applying-A2', () => {
       const data = {
-        'who-is-applying': {
-          grantApplicantType: 'applying-A2'
+        [SECTIONS.WHO_IS_APPLYING]: {
+          grantApplicantType: GRANT_APPLICANT_TYPES.APPLYING_A2
         }
       }
-      expect(agentOrApplicantCondition(data, 'applicant')).toBe('hidden')
+      expect(agentOrApplicantCondition(data, ROLES.APPLICANT)).toBe('hidden')
     })
 
     it('should return "hidden" when who-is-applying data is missing', () => {
       const data = {}
-      expect(agentOrApplicantCondition(data, 'applicant')).toBe('hidden')
-      expect(agentOrApplicantCondition(data, 'agent')).toBe('hidden')
+      expect(agentOrApplicantCondition(data, ROLES.APPLICANT)).toBe('hidden')
+      expect(agentOrApplicantCondition(data, ROLES.AGENT)).toBe('hidden')
     })
 
     it('should return "hidden" when grantApplicantType is null', () => {
       const data = {
         'who-is-applying': {}
       }
-      expect(agentOrApplicantCondition(data, 'applicant')).toBe('hidden')
+      expect(agentOrApplicantCondition(data, ROLES.APPLICANT)).toBe('hidden')
     })
   })
 
@@ -197,7 +202,7 @@ describe('adding-value-tasklist-controller', () => {
       addingValueTasklist.plugin.register(server)
       expect(server.route).toHaveBeenCalledWith({
         method: 'GET',
-        path: '/adding-value-tasklist',
+        path: '/adding-value-tasklist/tasklist',
         handler: expect.any(Function)
       })
     })
@@ -215,14 +220,15 @@ describe('adding-value-tasklist-controller', () => {
         'views/adding-value-tasklist-page',
         expect.objectContaining({
           pageHeading: 'Apply for adding value grant',
-          sections: expect.any(Array)
+          sections: expect.any(Array),
+          serviceName: 'Adding Value Tasklist grant'
         })
       )
     })
 
     it('should handle request with completed sections', async () => {
       const mockData = {
-        'business-status': { completed: true },
+        [SECTIONS.BUSINESS_STATUS]: { completed: true },
         facilities: {
           isBuildingSmallerAbattoir: true,
           isProvidingServicesToOtherFarmers: true
@@ -295,10 +301,10 @@ describe('adding-value-tasklist-controller', () => {
 
     it('should handle agent/applicant conditional sections', async () => {
       const mockData = {
-        'who-is-applying': {
-          grantApplicantType: 'applying-A1'
+        [SECTIONS.WHO_IS_APPLYING]: {
+          grantApplicantType: GRANT_APPLICANT_TYPES.APPLYING_A1
         },
-        'applicant-details': { name: 'Test Applicant' }
+        [SECTIONS.APPLICANT_DETAILS]: { name: 'Test Applicant' }
       }
       server.app.cacheTemp.get.mockResolvedValue(mockData)
       mockRequest.yar.get.mockReturnValue([])
@@ -318,6 +324,102 @@ describe('adding-value-tasklist-controller', () => {
 
       expect(applicantSection?.href).toContain('applicant-details')
       expect(agentSection).toBeUndefined()
+    })
+
+    it('should register redirect routes for each section', () => {
+      addingValueTasklist.plugin.register(server)
+
+      expect(server.route).toHaveBeenCalledWith({
+        method: 'GET',
+        path: `/adding-value-tasklist/${SECTIONS.BUSINESS_STATUS}`,
+        handler: expect.any(Function)
+      })
+
+      expect(server.route).toHaveBeenCalledWith({
+        method: 'GET',
+        path: '/adding-value-tasklist/business-status/{path*}',
+        handler: expect.any(Function)
+      })
+    })
+
+    it('should redirect base section routes correctly', () => {
+      addingValueTasklist.plugin.register(server)
+
+      const baseRedirectCall = server.route.mock.calls.find(
+        (call) =>
+          call[0].path === `/adding-value-tasklist/${SECTIONS.BUSINESS_STATUS}`
+      )
+      const handler = baseRedirectCall[0].handler
+
+      const mockRequest = {
+        url: { search: '?test=value' }
+      }
+      const mockH = { redirect: jest.fn() }
+
+      handler(mockRequest, mockH)
+
+      expect(mockH.redirect).toHaveBeenCalledWith('/business-status?test=value')
+    })
+
+    it('should redirect nested section routes correctly', () => {
+      addingValueTasklist.plugin.register(server)
+
+      const nestedRedirectCall = server.route.mock.calls.find(
+        (call) =>
+          call[0].path === '/adding-value-tasklist/business-status/{path*}'
+      )
+      const handler = nestedRedirectCall[0].handler
+
+      const mockRequest = {
+        params: { path: 'nature-of-business' },
+        url: { search: '?source=adding-value-tasklist' }
+      }
+      const mockH = { redirect: jest.fn() }
+
+      handler(mockRequest, mockH)
+
+      expect(mockH.redirect).toHaveBeenCalledWith(
+        '/business-status/nature-of-business?source=adding-value-tasklist'
+      )
+    })
+
+    it('should handle empty query string in redirects', () => {
+      addingValueTasklist.plugin.register(server)
+
+      const baseRedirectCall = server.route.mock.calls.find(
+        (call) =>
+          call[0].path === `/adding-value-tasklist/${SECTIONS.BUSINESS_STATUS}`
+      )
+      const handler = baseRedirectCall[0].handler
+
+      const mockRequest = { url: { search: '' } }
+      const mockH = { redirect: jest.fn() }
+
+      handler(mockRequest, mockH)
+
+      expect(mockH.redirect).toHaveBeenCalledWith(
+        `/${SECTIONS.BUSINESS_STATUS}`
+      )
+    })
+
+    it('should handle empty path in nested redirects', () => {
+      addingValueTasklist.plugin.register(server)
+
+      const nestedRedirectCall = server.route.mock.calls.find(
+        (call) =>
+          call[0].path === '/adding-value-tasklist/business-status/{path*}'
+      )
+      const handler = nestedRedirectCall[0].handler
+
+      const mockRequest = {
+        params: { path: '' },
+        url: { search: '' }
+      }
+      const mockH = { redirect: jest.fn() }
+
+      handler(mockRequest, mockH)
+
+      expect(mockH.redirect).toHaveBeenCalledWith('/business-status/')
     })
   })
 })
