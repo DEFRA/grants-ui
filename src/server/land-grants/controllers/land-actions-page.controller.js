@@ -48,7 +48,7 @@ export default class LandActionsPageController extends QuestionPageController {
   transformActionsForView(actionsObj) {
     const actions = []
     Object.entries(actionsObj).forEach(([key, value]) => {
-      actions.push(`${key}: ${value.value} ${value.unit}.`)
+      actions.push(`${key}: ${value.value} ${value.unit}`)
     })
     return actions.join(' - ')
   }

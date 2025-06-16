@@ -213,7 +213,7 @@ describe('LandActionsPageController', () => {
 
       const result = controller.transformActionsForView(actionsObj)
 
-      expect(result).toBe('CMOR1: 10 ha.')
+      expect(result).toBe('CMOR1: 10 ha')
     })
 
     test('should transform multiple actions to formatted string', () => {
@@ -232,7 +232,7 @@ describe('LandActionsPageController', () => {
 
       const result = controller.transformActionsForView(actionsObj)
 
-      expect(result).toBe('CMOR1: 10 ha. - UPL1: 5 ha.')
+      expect(result).toBe('CMOR1: 10 ha - UPL1: 5 ha')
     })
 
     test('should handle empty actions object', () => {
@@ -257,7 +257,7 @@ describe('LandActionsPageController', () => {
 
       const result = controller.transformActionsForView(actionsObj)
 
-      expect(result).toBe('CMOR1: 10 ha. - UPL1: 3 km.')
+      expect(result).toBe('CMOR1: 10 ha - UPL1: 3 km')
     })
 
     test('should handle actions with zero values', () => {
@@ -271,7 +271,7 @@ describe('LandActionsPageController', () => {
 
       const result = controller.transformActionsForView(actionsObj)
 
-      expect(result).toBe('CMOR1: 0 ha.')
+      expect(result).toBe('CMOR1: 0 ha')
     })
   })
 
@@ -458,11 +458,11 @@ describe('LandActionsPageController', () => {
         mockRequest,
         expect.objectContaining({
           landParcel: 'sheet1-parcel1',
-          actions: 'CMOR1: 10 ha.',
+          actions: 'CMOR1: 10 ha',
           applicationValue: '£1,250.75',
           landParcels: {
             'sheet1-parcel1': {
-              actions: 'CMOR1: 10 ha.',
+              actions: 'CMOR1: 10 ha',
               actionsObj: {
                 CMOR1: {
                   description:
@@ -594,10 +594,10 @@ describe('LandActionsPageController', () => {
         mockRequest,
         expect.objectContaining({
           landParcel: 'sheet1-parcel1',
-          actions: 'CMOR1: 10 ha.',
+          actions: 'CMOR1: 10 ha',
           landParcels: {
             'sheet1-parcel1': {
-              actions: 'CMOR1: 10 ha.',
+              actions: 'CMOR1: 10 ha',
               actionsObj: {
                 CMOR1: {
                   description:
