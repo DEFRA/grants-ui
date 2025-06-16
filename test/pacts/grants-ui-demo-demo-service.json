@@ -1,0 +1,40 @@
+{
+  "consumer": {
+    "name": "grants-ui-demo"
+  },
+  "interactions": [
+    {
+      "description": "a demo request",
+      "providerState": "demo service is available",
+      "request": {
+        "method": "GET",
+        "path": "/demo"
+      },
+      "response": {
+        "body": {
+          "message": "success",
+          "service": "demo"
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "status": 200
+      }
+    }
+  ],
+  "metadata": {
+    "pact-js": {
+      "version": "13.2.0"
+    },
+    "pactRust": {
+      "ffi": "0.4.22",
+      "models": "1.2.3"
+    },
+    "pactSpecification": {
+      "version": "2.0.0"
+    }
+  },
+  "provider": {
+    "name": "demo-service"
+  }
+}

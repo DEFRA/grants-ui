@@ -1,0 +1,267 @@
+{
+  "consumer": {
+    "name": "grants-ui"
+  },
+  "interactions": [
+    {
+      "description": "a request to calculate score for average project",
+      "providerState": "scoring system is available for adding value grants",
+      "request": {
+        "body": {
+          "data": {
+            "main": {
+              "/adding-value": "adding-value-B2",
+              "/collaboration": "collaboration-B1",
+              "/environmental-impact": [
+                "environmental-impact-B1"
+              ],
+              "/future-customers": "future-customers-B1",
+              "/products-processed": "products-processed-B1",
+              "/project-impact": [
+                "project-impact-B1"
+              ]
+            }
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "method": "POST",
+        "path": "/scoring/api/v1/adding-value/score"
+      },
+      "response": {
+        "body": {
+          "answers": [
+            {
+              "category": "Collaboration",
+              "fundingPriorities": [
+                "Improve processing and supply chains"
+              ],
+              "questionId": "/collaboration",
+              "score": {
+                "band": "Weak",
+                "value": 3
+              }
+            },
+            {
+              "category": "Environmental impact",
+              "fundingPriorities": [
+                "Improve the environment"
+              ],
+              "questionId": "/environmental-impact",
+              "score": {
+                "band": "Weak",
+                "value": 2
+              }
+            },
+            {
+              "category": "Adding value",
+              "fundingPriorities": [
+                "Grow your business"
+              ],
+              "questionId": "/adding-value",
+              "score": {
+                "band": "Medium",
+                "value": 5
+              }
+            },
+            {
+              "category": "Project impact",
+              "fundingPriorities": [
+                "Grow your business"
+              ],
+              "questionId": "/project-impact",
+              "score": {
+                "band": "Weak",
+                "value": 4
+              }
+            },
+            {
+              "category": "Future customers",
+              "fundingPriorities": [
+                "Grow your business"
+              ],
+              "questionId": "/future-customers",
+              "score": {
+                "band": "Weak",
+                "value": 3
+              }
+            },
+            {
+              "category": "Products processed",
+              "fundingPriorities": [
+                "Create and expand processing capacity"
+              ],
+              "questionId": "/products-processed",
+              "score": {
+                "band": "Weak",
+                "value": 3
+              }
+            }
+          ],
+          "score": 20,
+          "scoreBand": "Medium",
+          "status": "Ineligible"
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a request to calculate score for strong project",
+      "providerState": "scoring system is available for adding value grants",
+      "request": {
+        "body": {
+          "data": {
+            "main": {
+              "/adding-value": "adding-value-A1",
+              "/collaboration": "collaboration-A1",
+              "/environmental-impact": [
+                "environmental-impact-A1",
+                "environmental-impact-A2"
+              ],
+              "/future-customers": "future-customers-A1",
+              "/products-processed": "products-processed-A1",
+              "/project-impact": [
+                "project-impact-A1"
+              ]
+            }
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "method": "POST",
+        "path": "/scoring/api/v1/adding-value/score"
+      },
+      "response": {
+        "body": {
+          "answers": [
+            {
+              "category": "Collaboration",
+              "fundingPriorities": [
+                "Improve processing and supply chains"
+              ],
+              "questionId": "/collaboration",
+              "score": {
+                "band": "Strong",
+                "value": 7
+              }
+            },
+            {
+              "category": "Environmental impact",
+              "fundingPriorities": [
+                "Improve the environment"
+              ],
+              "questionId": "/environmental-impact",
+              "score": {
+                "band": "Strong",
+                "value": 9
+              }
+            },
+            {
+              "category": "Adding value",
+              "fundingPriorities": [
+                "Grow your business"
+              ],
+              "questionId": "/adding-value",
+              "score": {
+                "band": "Strong",
+                "value": 8
+              }
+            },
+            {
+              "category": "Project impact",
+              "fundingPriorities": [
+                "Grow your business"
+              ],
+              "questionId": "/project-impact",
+              "score": {
+                "band": "Strong",
+                "value": 12
+              }
+            },
+            {
+              "category": "Future customers",
+              "fundingPriorities": [
+                "Grow your business"
+              ],
+              "questionId": "/future-customers",
+              "score": {
+                "band": "Strong",
+                "value": 7
+              }
+            },
+            {
+              "category": "Products processed",
+              "fundingPriorities": [
+                "Create and expand processing capacity"
+              ],
+              "questionId": "/products-processed",
+              "score": {
+                "band": "Strong",
+                "value": 7
+              }
+            }
+          ],
+          "score": 37,
+          "scoreBand": "Strong",
+          "status": "Eligible"
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a request with invalid grant type",
+      "providerState": "scoring system validates grant types",
+      "request": {
+        "body": {
+          "data": {
+            "main": {
+              "/collaboration": "collaboration-A1",
+              "/environmental-impact": [
+                "environmental-impact-A1"
+              ]
+            }
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "method": "POST",
+        "path": "/scoring/api/v1/invalid-grant/score"
+      },
+      "response": {
+        "body": {
+          "error": "Bad Request",
+          "message": "Invalid grant type",
+          "statusCode": 400
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "status": 400
+      }
+    }
+  ],
+  "metadata": {
+    "pact-js": {
+      "version": "13.2.0"
+    },
+    "pactRust": {
+      "ffi": "0.4.22",
+      "models": "1.2.3"
+    },
+    "pactSpecification": {
+      "version": "2.0.0"
+    }
+  },
+  "provider": {
+    "name": "ffc-grants-scoring"
+  }
+}

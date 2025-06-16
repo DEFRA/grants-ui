@@ -1,0 +1,65 @@
+{
+  "consumer": {
+    "name": "working-consumer"
+  },
+  "interactions": [
+    {
+      "description": "a POST request with JSON data",
+      "providerState": "service accepts data",
+      "request": {
+        "body": {
+          "name": "test",
+          "value": 123
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "method": "POST",
+        "path": "/data"
+      },
+      "response": {
+        "body": {
+          "id": "test-123",
+          "status": "created"
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "status": 201
+      }
+    },
+    {
+      "description": "a simple health check request",
+      "providerState": "service is available",
+      "request": {
+        "method": "GET",
+        "path": "/health"
+      },
+      "response": {
+        "body": {
+          "message": "success",
+          "timestamp": "2024-01-01T00:00:00Z"
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "status": 200
+      }
+    }
+  ],
+  "metadata": {
+    "pact-js": {
+      "version": "13.2.0"
+    },
+    "pactRust": {
+      "ffi": "0.4.22",
+      "models": "1.2.3"
+    },
+    "pactSpecification": {
+      "version": "2.0.0"
+    }
+  },
+  "provider": {
+    "name": "working-provider"
+  }
+}

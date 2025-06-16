@@ -30,6 +30,10 @@
     "postversion": "git add package.json package-lock.json && git commit -m $npm_package_version",
     "test": "jest --coverage --verbose",
     "test:watch": "jest --watch",
+    "test:contracts": "vitest --config test/contracts/vitest.config.js --dir test/contracts",
+    "test:contracts:consumer": "vitest --config test/contracts/vitest.config.js --dir test/contracts",
+    "contracts:upload": "SERVICE_NAME=grants-ui node ../../scripts/pact-artifact-manager.js upload",
+    "contracts:download": "SERVICE_NAME=grants-ui node ../../scripts/pact-artifact-manager.js download",
     "server:watch": "nodemon --exec tsx --enable-source-maps ./src",
     "server:debug": "nodemon --exec tsx --enable-source-maps --inspect ./src",
     "snyk-test": "snyk test",
@@ -76,12 +80,14 @@
     "pino": "^9.7.0",
     "pino-pretty": "^13.0.0",
     "semver": "^7.7.2",
-    "undici": "^6.21.1"
+    "undici": "^6.21.1",
+    "vitest": "^3.1.4"
   },
   "devDependencies": {
     "@babel/cli": "^7.25.9",
     "@babel/core": "^7.26.0",
     "@babel/preset-env": "^7.26.0",
+    "@pact-foundation/pact": "^13.2.0",
     "@types/convict": "^6.1.6",
     "@types/hapi__catbox-memory": "^4.1.8",
     "@types/jest": "^29.5.14",

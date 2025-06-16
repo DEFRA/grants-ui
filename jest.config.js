@@ -7,7 +7,7 @@ export default {
   resetModules: true,
   clearMocks: true,
   silent: false,
-  testMatch: ['**/src/**/*.test.js'],
+  testMatch: ['**/src/**/*.test.js', '**/test/**/*.test.js'],
   reporters: ['default', ['github-actions', { silent: false }], 'summary'],
   setupFiles: ['<rootDir>/.jest/setup-file.js'],
   setupFilesAfterEnv: ['<rootDir>/.jest/setup-file-after-env.js'],
@@ -37,7 +37,9 @@ export default {
       '@defra/hapi-tracing', // Supports ESM only
       'node-fetch', // Supports ESM only
       '@defra/forms-engine-plugin',
-      '@defra/forms-model'
+      '@defra/forms-model',
+      '@pact-foundation/pact', // Contract testing
+      'data-uri-to-buffer' // node-fetch dependency
     ].join('|')}/)`
   ]
 }
