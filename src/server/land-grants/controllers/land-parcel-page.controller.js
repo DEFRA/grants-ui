@@ -5,6 +5,15 @@ import { fetchParcels } from '../services/land-grants.service.js'
 
 const logger = createLogger()
 
+const formatParcelForView = (parcel) => ({
+  text: parcel.sheetId + ' ' + parcel.parcelId,
+  value: parcel.sheetId + '-' + parcel.parcelId,
+  hint:
+    parcel.area.value && parcel.area.unit
+      ? 'Total size: ' + parcel.area.value + ' ' + parcel.area.unit
+      : undefined
+})
+
 export default class LandParcelPageController extends QuestionPageController {
   viewName = 'select-land-parcel'
   parcels = []
@@ -62,14 +71,7 @@ export default class LandParcelPageController extends QuestionPageController {
 
       try {
         const parcels = await fetchParcels(sbi)
-        this.parcels = parcels.map((parcel) => ({
-          text: parcel.sheetId + ' ' + parcel.parcelId,
-          value: parcel.sheetId + '-' + parcel.parcelId,
-          hint:
-            parcel.area.value && parcel.area.unit
-              ? 'Total size: ' + parcel.area.value + ' ' + parcel.area.unit
-              : undefined
-        }))
+        this.parcels = parcels.map(formatParcelForView)
 
         const viewModel = {
           ...baseViewModel,
