@@ -42,7 +42,7 @@
   "license": "OGL-UK-3.0",
   "dependencies": {
     "@babel/runtime": "^7.27.1",
-    "@defra/forms-engine-plugin": "^0.1.18",
+    "@defra/forms-engine-plugin": "^0.1.21",
     "@defra/hapi-tracing": "^1.0.0",
     "@elastic/ecs-pino-format": "^1.5.0",
     "@hapi/bell": "^13.1.0",
@@ -64,7 +64,7 @@
     "date-fns": "^4.1.0",
     "dotenv": "^16.5.0",
     "global-agent": "^3.0.0",
-    "govuk-frontend": "^5.10.0",
+    "govuk-frontend": "^5.10.1",
     "hapi-pino": "^12.1.0",
     "hapi-pulse": "^3.0.1",
     "ioredis": "^5.6.1",
@@ -73,9 +73,9 @@
     "node-fetch": "^3.3.2",
     "node-jose": "^2.2.0",
     "nunjucks": "^3.2.4",
-    "pino": "^9.5.0",
+    "pino": "^9.7.0",
     "pino-pretty": "^13.0.0",
-    "semver": "^7.7.1",
+    "semver": "^7.7.2",
     "undici": "^6.21.1"
   },
   "devDependencies": {
