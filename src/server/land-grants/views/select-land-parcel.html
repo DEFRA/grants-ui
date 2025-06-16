@@ -15,7 +15,8 @@
         {{ govukErrorSummary({
           titleText: "There is a problem",
           errorList: [{
-            text: landParcelError
+            text: landParcelError,
+            href: '#landParcel'
           }]
         }) }}
       {% endif %}
@@ -48,7 +49,7 @@
               })
             }}
 
-            <div class="govuk-button-group">
+            <div id="landParcels" class="govuk-button-group">
               <input type="hidden" name="crumb" value="{{ crumb }}">
               {% block form %}
                   {{ govukButton({
