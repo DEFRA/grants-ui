@@ -29,12 +29,12 @@
             {
               text: errorMessage,
               href: '#addMoreActions'
-            } 
-          ] 
+            }
+          ]
         }) }}
       {% endif %}
 
-      <h1 class="govuk-heading-l">You have added {{selectedActionRows.length}} action{% if selectedActionRows.length > 1 %}s{% endif %} to 1 parcel</h1>
+      <h1 class="govuk-heading-l">{{ pageTitle }}</h1>
 
       {{ govukTable({
           caption: "List of parcel actions selected for this application",
@@ -78,7 +78,7 @@
                 }
               ],
               errorMessage: errorMessage and { text: errorMessage }
-            }) 
+            })
           }}
         <div class="govuk-button-group">
           <input type="hidden" name="crumb" value="{{ crumb }}">

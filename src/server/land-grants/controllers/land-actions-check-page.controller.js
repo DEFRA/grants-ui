@@ -57,12 +57,24 @@ export default class LandActionsCheckPageController extends QuestionPageControll
 
       // Build the selected action rows from the collection
       this.selectedActionRows = this.getSelectedActionRows(state, context)
+      const pluralize = (count, singular, plural) =>
+        count === 1 ? singular : plural || `${singular}s`
+
+      const getPageTitle = (parcelsCount, actionsCount) => {
+        const parcelsText = pluralize(parcelsCount, 'parcel')
+        const actionsText = pluralize(actionsCount, 'action')
+        return `You have selected ${actionsCount} ${actionsText} to ${parcelsCount} ${parcelsText}`
+      }
 
       // Build the view model exactly as in the original code
       const viewModel = {
         ...this.getViewModel(request, context),
         ...state,
         selectedActionRows: this.selectedActionRows,
+        pageTitle: getPageTitle(
+          Object.keys(state.landParcels).length,
+          this.selectedActionRows.length
+        ),
         errors: collection.getErrors(collection.getErrors())
       }
 
@@ -73,17 +85,21 @@ export default class LandActionsCheckPageController extends QuestionPageControll
   }
 
   getSelectedActionRows = (state) => {
-    return Object.entries(state.actionsObj).map(([, actionData]) => [
-      {
-        text: state.landParcel
-      },
-      {
-        text: actionData.description
-      },
-      {
-        text: `${actionData.value} ${actionData.unit}`
+    return Object.entries(state.landParcels).flatMap(
+      ([sheetParcelId, parcelData]) => {
+        return Object.entries(parcelData.actionsObj).map(([, actionData]) => [
+          {
+            text: sheetParcelId
+          },
+          {
+            text: actionData.description
+          },
+          {
+            text: `${actionData.value} ${actionData.unit}`
+          }
+        ])
       }
-    ])
+    )
   }
 }
 
