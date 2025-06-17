@@ -11,14 +11,17 @@ describe('stateToLandGrantsGasAnswers', () => {
   it('should transform a complete object correctly', () => {
     const input = {
       hasCheckedLandIsUpToDate: true,
-      landParcel: 'SX0679-9238',
       scheme: 'SFI',
       agreementName: "Joe's farm funding 2025",
       year: 2025,
-      actionsObj: {
-        CSAM1: {
-          value: '44',
-          unit: 'ha'
+      landParcels: {
+        'SX0679-9238': {
+          actionsObj: {
+            CSAM1: {
+              value: '44',
+              unit: 'ha'
+            }
+          }
         }
       }
     }
@@ -46,19 +49,22 @@ describe('stateToLandGrantsGasAnswers', () => {
 
   it('should handle multiple actions with different units', () => {
     const input = {
-      landParcel: 'SX0679-9238',
-      actionsObj: {
-        CSAM1: {
-          value: '44',
-          unit: 'ha'
-        },
-        CSAM2: {
-          value: '100',
-          unit: 'm2'
-        },
-        CSAM3: {
-          value: '5',
-          unit: 'count'
+      landParcels: {
+        'SX0679-9238': {
+          actionsObj: {
+            CSAM1: {
+              value: '44',
+              unit: 'ha'
+            },
+            CSAM2: {
+              value: '100',
+              unit: 'm2'
+            },
+            CSAM3: {
+              value: '5',
+              unit: 'count'
+            }
+          }
         }
       }
     }
@@ -100,23 +106,19 @@ describe('stateToLandGrantsGasAnswers', () => {
     expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
   })
 
-  it('should not include actionApplications when landParcel is missing', () => {
+  it('should include actionApplications when landParcels object is missing', () => {
     const input = {
       hasCheckedLandIsUpToDate: true,
       scheme: 'SFI',
       year: 2025,
-      actionsObj: {
-        CSAM1: {
-          value: '44',
-          unit: 'ha'
-        }
-      }
+      landParcels: {}
     }
 
     const expected = {
       hasCheckedLandIsUpToDate: true,
       scheme: 'SFI',
-      year: 2025
+      year: 2025,
+      actionApplications: []
     }
 
     expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
@@ -127,13 +129,16 @@ describe('stateToLandGrantsGasAnswers', () => {
       scheme: 'SFI',
       year: 2025,
       hasCheckedLandIsUpToDate: true,
-      landParcel: 'SX0679-9238'
+      landParcels: {
+        'SX0679-9238': {}
+      }
     }
 
     const expected = {
       scheme: 'SFI',
       year: 2025,
-      hasCheckedLandIsUpToDate: true
+      hasCheckedLandIsUpToDate: true,
+      actionApplications: []
     }
 
     expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
@@ -141,11 +146,14 @@ describe('stateToLandGrantsGasAnswers', () => {
 
   it('should handle decimal values correctly', () => {
     const input = {
-      landParcel: 'SX0679-9238',
-      actionsObj: {
-        CSAM1: {
-          value: '44.75',
-          unit: 'ha'
+      landParcels: {
+        'SX0679-9238': {
+          actionsObj: {
+            CSAM1: {
+              value: '44.75',
+              unit: 'ha'
+            }
+          }
         }
       }
     }
@@ -171,11 +179,14 @@ describe('stateToLandGrantsGasAnswers', () => {
 
   it('should omit unit in appliedFor when unit is missing', () => {
     const input = {
-      landParcel: 'SX0679-9238',
-      actionsObj: {
-        CSAM1: {
-          value: '44'
-          // unit is missing
+      landParcels: {
+        'SX0679-9238': {
+          actionsObj: {
+            CSAM1: {
+              value: '44'
+              // unit is missing
+            }
+          }
         }
       }
     }
@@ -200,11 +211,14 @@ describe('stateToLandGrantsGasAnswers', () => {
 
   it('should omit quantity in appliedFor when value is missing', () => {
     const input = {
-      landParcel: 'SX0679-9238',
-      actionsObj: {
-        CSAM1: {
-          unit: 'ha'
-          // value is missing
+      landParcels: {
+        'SX0679-9238': {
+          actionsObj: {
+            CSAM1: {
+              unit: 'ha'
+              // value is missing
+            }
+          }
         }
       }
     }
@@ -229,11 +243,14 @@ describe('stateToLandGrantsGasAnswers', () => {
 
   it('should omit quantity when value is not a valid number', () => {
     const input = {
-      landParcel: 'SX0679-9238',
-      actionsObj: {
-        CSAM1: {
-          value: 'not-a-number',
-          unit: 'ha'
+      landParcels: {
+        'SX0679-9238': {
+          actionsObj: {
+            CSAM1: {
+              value: 'not-a-number',
+              unit: 'ha'
+            }
+          }
         }
       }
     }
@@ -258,9 +275,12 @@ describe('stateToLandGrantsGasAnswers', () => {
 
   it('should omit appliedFor when action data is empty', () => {
     const input = {
-      landParcel: 'SX0679-9238',
-      actionsObj: {
-        CSAM1: {} // Empty object
+      landParcels: {
+        'SX0679-9238': {
+          actionsObj: {
+            CSAM1: {}
+          }
+        }
       }
     }
 
@@ -281,9 +301,12 @@ describe('stateToLandGrantsGasAnswers', () => {
 
   it('should omit appliedFor when action data is not an object', () => {
     const input = {
-      landParcel: 'SX0679-9238',
-      actionsObj: {
-        CSAM1: 'string-value' // Not an object
+      landParcels: {
+        'SX0679-9238': {
+          actionsObj: {
+            CSAM1: 'string-value' // Not an object
+          }
+        }
       }
     }
 
@@ -310,7 +333,8 @@ describe('stateToLandGrantsGasAnswers', () => {
 
     const expected = {
       scheme: 'SFI',
-      year: 2025
+      year: 2025,
+      actionApplications: []
     }
 
     expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
@@ -320,19 +344,23 @@ describe('stateToLandGrantsGasAnswers', () => {
     const input = {}
     const expected = {
       scheme: 'SFI',
-      year: 2025
+      year: 2025,
+      actionApplications: []
     }
 
     expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
   })
 
-  it('should handle landParcel without dash', () => {
+  it('should handle land parcels without dash', () => {
     const input = {
-      landParcel: 'SX06799238', // No dash
-      actionsObj: {
-        CSAM1: {
-          value: '44',
-          unit: 'ha'
+      landParcels: {
+        SX06799238: {
+          actionsObj: {
+            CSAM1: {
+              value: '44',
+              unit: 'ha'
+            }
+          }
         }
       }
     }
@@ -357,11 +385,14 @@ describe('stateToLandGrantsGasAnswers', () => {
 
   it('should include zero as a valid quantity', () => {
     const input = {
-      landParcel: 'SX0679-9238',
-      actionsObj: {
-        CSAM1: {
-          value: '0',
-          unit: 'ha'
+      landParcels: {
+        'SX0679-9238': {
+          actionsObj: {
+            CSAM1: {
+              value: '0',
+              unit: 'ha'
+            }
+          }
         }
       }
     }
@@ -385,13 +416,16 @@ describe('stateToLandGrantsGasAnswers', () => {
     expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
   })
 
-  it('should handle landParcel with multiple dashes correctly', () => {
+  it('should handle landParcels with multiple dashes correctly', () => {
     const input = {
-      landParcel: 'SX0679-9238-EXTRA',
-      actionsObj: {
-        CSAM1: {
-          value: '44',
-          unit: 'ha'
+      landParcels: {
+        'SX0679-9238-EXTRA': {
+          actionsObj: {
+            CSAM1: {
+              value: '44',
+              unit: 'ha'
+            }
+          }
         }
       }
     }
@@ -417,9 +451,12 @@ describe('stateToLandGrantsGasAnswers', () => {
 
   it('should handle null values in actionsObj', () => {
     const input = {
-      landParcel: 'SX0679-9238',
-      actionsObj: {
-        CSAM1: null
+      landParcels: {
+        'SX0679-9238': {
+          actionsObj: {
+            CSAM1: null // Null value for action
+          }
+        }
       }
     }
 
@@ -440,15 +477,18 @@ describe('stateToLandGrantsGasAnswers', () => {
 
   it('should handle mixed action data types', () => {
     const input = {
-      landParcel: 'SX0679-9238',
-      actionsObj: {
-        CSAM1: {
-          value: '44',
-          unit: 'ha'
-        },
-        CSAM2: null,
-        CSAM3: 'string-value',
-        CSAM4: {}
+      landParcels: {
+        'SX0679-9238': {
+          actionsObj: {
+            CSAM1: {
+              value: '44',
+              unit: 'ha'
+            },
+            CSAM2: null, // Null action
+            CSAM3: 'string-value', // String action
+            CSAM4: {} // Empty object action
+          }
+        }
       }
     }
 
@@ -488,11 +528,14 @@ describe('stateToLandGrantsGasAnswers', () => {
 
   it('should handle string values with spaces', () => {
     const input = {
-      landParcel: 'SX0679-9238',
-      actionsObj: {
-        CSAM1: {
-          value: '  44  ',
-          unit: '  ha  '
+      landParcels: {
+        'SX0679-9238': {
+          actionsObj: {
+            CSAM1: {
+              value: '  44  ', // String with leading and trailing spaces
+              unit: '  ha  ' // Unit with spaces
+            }
+          }
         }
       }
     }
@@ -518,11 +561,14 @@ describe('stateToLandGrantsGasAnswers', () => {
 
   it('should handle numeric strings with leading zeros', () => {
     const input = {
-      landParcel: 'SX0679-9238',
-      actionsObj: {
-        CSAM1: {
-          value: '0044.50',
-          unit: 'ha'
+      landParcels: {
+        'SX0679-9238': {
+          actionsObj: {
+            CSAM1: {
+              value: '0044.50', // Numeric string with leading zeros
+              unit: 'ha'
+            }
+          }
         }
       }
     }
@@ -548,9 +594,12 @@ describe('stateToLandGrantsGasAnswers', () => {
 
   it('should handle undefined values in actionsObj', () => {
     const input = {
-      landParcel: 'SX0679-9238',
-      actionsObj: {
-        CSAM1: undefined
+      landParcels: {
+        'SX0679-9238': {
+          actionsObj: {
+            CSAM1: undefined // Undefined action
+          }
+        }
       }
     }
 
@@ -587,11 +636,14 @@ describe('schema validation', () => {
         scheme: 'SFI',
         year: 2025,
         hasCheckedLandIsUpToDate: true,
-        landParcel: 'SX0679-9238',
-        actionsObj: {
-          CSAM1: {
-            value: '44',
-            unit: 'ha'
+        landParcels: {
+          'SX0679-9238': {
+            actionsObj: {
+              CSAM1: {
+                value: '44',
+                unit: 'ha'
+              }
+            }
           }
         }
       },
@@ -599,11 +651,14 @@ describe('schema validation', () => {
       {
         agreementName: "Joe's farm funding 2025",
         hasCheckedLandIsUpToDate: true,
-        landParcel: 'SX0679-9238',
-        actionsObj: {
-          CSAM1: {
-            value: '44',
-            unit: 'ha'
+        landParcels: {
+          'SX0679-9238': {
+            actionsObj: {
+              CSAM1: {
+                value: '44',
+                unit: 'ha'
+              }
+            }
           }
         }
       }

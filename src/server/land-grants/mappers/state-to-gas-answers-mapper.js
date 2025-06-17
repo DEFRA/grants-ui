@@ -26,42 +26,48 @@
  * @returns {GASAnswers}
  */
 export function stateToLandGrantsGasAnswers(state) {
+  const { landParcels } = state
   const result = {
     hasCheckedLandIsUpToDate: state.hasCheckedLandIsUpToDate,
     agreementName: state.agreementName,
     scheme: 'SFI',
-    year: 2025
+    year: 2025,
+    actionApplications: []
   }
 
-  if (state.landParcel && state.actionsObj) {
-    const [sheetId, parcelId] = state?.landParcel?.split('-') ?? []
-    result.actionApplications = []
+  if (landParcels && Object.keys(landParcels).length > 0) {
+    for (const [parcelKey, data] of Object.entries(landParcels)) {
+      const { actionsObj } = data
+      const [sheetId, parcelId] = parcelKey.split('-') ?? []
 
-    Object.entries(state.actionsObj).forEach(([actionCode, actionData]) => {
-      const actionApplication = {
-        code: actionCode,
-        sheetId,
-        parcelId
+      if (actionsObj && Object.keys(actionsObj).length > 0) {
+        Object.entries(actionsObj).forEach(([actionCode, actionData]) => {
+          const actionApplication = {
+            code: actionCode,
+            sheetId,
+            parcelId
+          }
+
+          if (actionData && typeof actionData === 'object') {
+            const appliedFor = {}
+
+            if (actionData.unit != null) {
+              appliedFor.unit = actionData.unit.trim()
+            }
+
+            if (actionData.value != null) {
+              const quantity = parseFloat(actionData.value)
+              appliedFor.quantity = !isNaN(quantity) ? quantity : undefined
+            }
+            if (Object.keys(appliedFor).length > 0) {
+              actionApplication.appliedFor = appliedFor
+            }
+          }
+
+          result.actionApplications.push(actionApplication)
+        })
       }
-
-      if (actionData && typeof actionData === 'object') {
-        const appliedFor = {}
-
-        if (actionData.unit != null) {
-          appliedFor.unit = actionData.unit.trim()
-        }
-
-        if (actionData.value != null) {
-          const quantity = parseFloat(actionData.value)
-          appliedFor.quantity = !isNaN(quantity) ? quantity : undefined
-        }
-        if (Object.keys(appliedFor).length > 0) {
-          actionApplication.appliedFor = appliedFor
-        }
-      }
-
-      result.actionApplications.push(actionApplication)
-    })
+    }
   }
   return result
 }
