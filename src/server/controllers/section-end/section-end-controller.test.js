@@ -27,6 +27,69 @@ describe('SectionEndController', () => {
     })
   })
 
+  describe('getSummaryViewModel', () => {
+    let mockRequest
+    let mockContext
+    let originalParentMethod
+    let parentGetSummaryViewModel
+
+    beforeEach(() => {
+      mockRequest = {}
+      mockContext = {}
+
+      originalParentMethod = Object.getPrototypeOf(
+        Object.getPrototypeOf(controller)
+      ).getSummaryViewModel
+
+      parentGetSummaryViewModel = jest.fn()
+      Object.getPrototypeOf(
+        Object.getPrototypeOf(controller)
+      ).getSummaryViewModel = parentGetSummaryViewModel
+    })
+
+    afterEach(() => {
+      if (originalParentMethod) {
+        Object.getPrototypeOf(
+          Object.getPrototypeOf(controller)
+        ).getSummaryViewModel = originalParentMethod
+      }
+    })
+
+    it('should call parent method and transform checkAnswers array to first element', () => {
+      const mockViewModel = {
+        checkAnswers: [
+          { title: 'Section 1', questions: [] },
+          { title: 'Section 2', questions: [] }
+        ],
+        otherProperty: 'value'
+      }
+      parentGetSummaryViewModel.mockReturnValue(mockViewModel)
+
+      const result = controller.getSummaryViewModel(mockRequest, mockContext)
+
+      expect(parentGetSummaryViewModel).toHaveBeenCalledWith(
+        mockRequest,
+        mockContext
+      )
+      expect(result.checkAnswers).toEqual({ title: 'Section 1', questions: [] })
+      expect(result.otherProperty).toBe('value')
+    })
+
+    it('should handle empty array and non-array values', () => {
+      const emptyArrayViewModel = { checkAnswers: [] }
+      parentGetSummaryViewModel.mockReturnValue(emptyArrayViewModel)
+
+      let result = controller.getSummaryViewModel(mockRequest, mockContext)
+      expect(result.checkAnswers).toEqual([])
+
+      const undefinedViewModel = { checkAnswers: undefined }
+      parentGetSummaryViewModel.mockReturnValue(undefinedViewModel)
+
+      result = controller.getSummaryViewModel(mockRequest, mockContext)
+      expect(result.checkAnswers).toBeUndefined()
+    })
+  })
+
   describe('makePostRouteHandler', () => {
     let handler
     let mockRequest
@@ -135,12 +198,14 @@ describe('SectionEndController', () => {
       )
     })
 
-    it('should redirect to /adding-value-tasklist', async () => {
+    it('should redirect to /adding-value-tasklist/tasklist', async () => {
       mockRequest.server.app.cacheTemp.get.mockResolvedValue({})
 
       await handler(mockRequest, mockContext, mockH)
 
-      expect(mockH.redirect).toHaveBeenCalledWith('/adding-value-tasklist')
+      expect(mockH.redirect).toHaveBeenCalledWith(
+        '/adding-value-tasklist/tasklist'
+      )
     })
 
     it('should handle async operations correctly', async () => {

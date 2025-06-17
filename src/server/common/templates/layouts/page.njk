@@ -8,6 +8,7 @@
 {# Import custom components globally #}
 {% from "heading/macro.njk" import appHeading %}
 {% from "account-bar/macro.njk" import defraAccountBar %}
+{% from "sbi-selector/macro.njk" import sbiSelector %}
 
 {% set mainClasses = "" %}
 
@@ -27,7 +28,7 @@
 
   {{ defraAccountBar({
     businessName: "",
-    sbi: "1234567890",
+    sbi: auth.sbi | default(""),
     userName: ""
   }) }}
 

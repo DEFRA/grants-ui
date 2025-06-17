@@ -4,6 +4,7 @@ import path from 'node:path'
 import { config } from '~/src/config/config.js'
 import { buildNavigation } from '~/src/config/nunjucks/context/build-navigation.js'
 import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
+import { sbiStore } from '~/src/server/sbi/state.js'
 
 const logger = createLogger()
 const assetPath = config.get('assetPath')
@@ -19,6 +20,8 @@ let webpackManifest
  * @param {Request | null} request
  */
 export async function context(request) {
+  const tempSbi = sbiStore.get('sbi')
+
   if (!webpackManifest) {
     try {
       webpackManifest = JSON.parse(readFileSync(manifestPath, 'utf-8'))
@@ -32,6 +35,7 @@ export async function context(request) {
     : {}
   const auth = {
     isAuthenticated: request?.auth?.isAuthenticated ?? false,
+    sbi: session.sbi || tempSbi, // Use temp SBI if no session SBI
     name: session.name,
     organisationId: session.organisationId,
     role: session.role
@@ -41,6 +45,7 @@ export async function context(request) {
     assetPath: `${assetPath}/assets`,
     serviceName: config.get('serviceName'),
     serviceUrl: '/',
+    enableSbiSelector: config.get('landGrants.enableSbiSelector'),
     auth,
     breadcrumbs: [],
     navigation: buildNavigation(request),

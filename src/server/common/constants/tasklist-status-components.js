@@ -2,8 +2,8 @@ export const TaskListStatus = {
   COMPLETED: 'completed',
   IN_PROGRESS: 'inProgress',
   NOT_YET_STARTED: 'notYetStarted',
-  NOT_REQUIRED: 'notRequired',
-  CANNOT_START_YET: 'cannotStartYet'
+  CANNOT_START_YET: 'cannotStartYet',
+  HIDDEN: 'hidden'
 }
 
 export const taskListStatusComponents = {
@@ -15,9 +15,6 @@ export const taskListStatusComponents = {
   },
   [TaskListStatus.NOT_YET_STARTED]: {
     tag: { text: 'Not yet started', classes: 'govuk-tag--blue' }
-  },
-  [TaskListStatus.NOT_REQUIRED]: {
-    tag: { text: 'Not required', classes: 'govuk-tag--yellow' }
   },
   [TaskListStatus.CANNOT_START_YET]: {
     tag: {

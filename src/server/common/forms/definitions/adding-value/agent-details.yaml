@@ -1,3 +1,4 @@
+engine: V2
 name: Agent
 pages:
   - title: Agent's details
@@ -89,7 +90,7 @@ pages:
         title: Address
         name: agentBusinessAddress
     condition: agentDetailsSelected
-  - title: Summary
+  - title: "Check your answers: Agent"
     path: /summary
     controller: SectionEndController
 lists: []

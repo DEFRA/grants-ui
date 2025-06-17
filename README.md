@@ -239,6 +239,25 @@ To view them in your command line run:
 npm run
 ```
 
+#### Available Scripts
+
+- **`build`** - Build both frontend and server for production
+- **`build:frontend`** - Build frontend assets with webpack for production
+- **`build:server`** - Transpile server code with Babel for production
+- **`dev`** - Start development environment with frontend and server watch mode
+- **`dev:debug`** - Start development environment with debug mode enabled
+- **`docker:dev`** - Start development environment using Docker Compose
+- **`docker:dev:rebuild`** - Rebuild and restart Docker development environment
+- **`format`** - Format code using Prettier
+- **`format:check`** - Check code formatting without making changes
+- **`lint`** - Run all linting checks (JavaScript, SCSS, TypeScript)
+- **`lint:fix`** - Automatically fix linting issues where possible
+- **`test`** - Run test suite with coverage
+- **`test:watch`** - Run tests in watch mode
+- **`start`** - Start production server (requires build first)
+- **`snyk-test`** - Run Snyk security vulnerability tests
+- **`snyk-monitor`** - Monitor project with Snyk
+
 ### Update dependencies
 
 To update dependencies use [npm-check-updates](https://github.com/raineorshine/npm-check-updates):

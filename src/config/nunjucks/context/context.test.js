@@ -49,11 +49,13 @@ describe('#context', () => {
         ],
         serviceName: 'Manage land-based actions',
         serviceUrl: '/',
+        enableSbiSelector: expect.any(Boolean),
         auth: {
           isAuthenticated: false,
           name: undefined,
           role: undefined,
-          organisationId: undefined
+          organisationId: undefined,
+          sbi: 106284736
         }
       })
     })
@@ -144,11 +146,13 @@ describe('#context cache', () => {
         ],
         serviceName: 'Manage land-based actions',
         serviceUrl: '/',
+        enableSbiSelector: expect.any(Boolean),
         auth: {
           isAuthenticated: false,
           name: undefined,
           organisationId: undefined,
-          role: undefined
+          role: undefined,
+          sbi: 106284736
         }
       })
     })

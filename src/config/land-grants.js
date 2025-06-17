@@ -16,6 +16,12 @@ const landGrants = convict({
     default: 'frps-private-beta',
     env: 'GAS_FRPS_GRANT_CODE'
   },
+  enableSbiSelector: {
+    doc: 'Enable SBI selector for the Future RPS grants service, test only',
+    format: Boolean,
+    default: false,
+    env: 'SBI_SELECTOR_ENABLED'
+  },
   grantsServiceApiEndpoint: {
     format: String,
     default: '',
