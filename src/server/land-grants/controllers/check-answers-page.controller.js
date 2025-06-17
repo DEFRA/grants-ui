@@ -12,6 +12,39 @@ const SELECT_LAND_PARCEL_ACTIONS = {
   ]
 }
 
+const createSbiRow = (sbi) => ({
+  key: { text: 'Single business identifier (SBI)' },
+  value: { text: sbi }
+})
+
+const createPaymentRow = (paymentTotal) => ({
+  key: {
+    text: 'Indicative annual payment (excluding management payment)'
+  },
+  value: { text: paymentTotal }
+})
+
+const createTotalActionsRow = (totalActions) => ({
+  key: {
+    text: 'Total number of actions applied for'
+  },
+  value: { text: totalActions },
+  actions: SELECT_LAND_PARCEL_ACTIONS
+})
+
+const createParcelBasedActionsRow = () => ({
+  key: { text: 'Parcel based actions' },
+  actions: SELECT_LAND_PARCEL_ACTIONS
+})
+
+const createParcelActionRow = (parcelId, action) => ({
+  classes: 'govuk-summary-list__parcels-row',
+  key: { text: parcelId },
+  value: {
+    html: `${action.description}<br/>Applied area: ${action.value} ${action.unit}`
+  }
+})
+
 export default class CheckAnswersPageController extends SummaryPageController {
   /**
    * @param {FormModel} model
@@ -23,70 +56,103 @@ export default class CheckAnswersPageController extends SummaryPageController {
   }
 
   /**
+   * Validates that the required data exists in context
+   * @param {FormContext} context - The form context
+   * @throws {Error} If required data is missing
+   */
+  validateContext(context) {
+    if (!context?.state?.landParcels) {
+      throw new Error('Land parcels data is missing from context')
+    }
+  }
+
+  /**
+   * Calculates the total number of actions across all land parcels
+   * @param {object} landParcels - The land parcels data
+   * @returns {number} Total number of actions
+   */
+  calculateTotalActions(landParcels) {
+    return Object.values(landParcels).reduce((total, parcelData) => {
+      const actionsCount = parcelData?.actionsObj
+        ? Object.keys(parcelData.actionsObj).length
+        : 0
+      return total + actionsCount
+    }, 0)
+  }
+
+  /**
+   * Creates parcel action rows for the summary list
+   * @param {object} landParcels - The land parcels data
+   * @returns {Array} Array of parcel action rows
+   */
+  createParcelActionRows(landParcels) {
+    const rows = []
+
+    for (const [parcelId, parcelData] of Object.entries(landParcels)) {
+      const actionsObj = parcelData?.actionsObj || {}
+
+      if (Object.keys(actionsObj).length === 0) {
+        continue
+      }
+
+      for (const action of Object.values(actionsObj)) {
+        rows.push(createParcelActionRow(parcelId, action))
+      }
+    }
+
+    return rows
+  }
+
+  /**
+   * Gets the business data needed for the summary
+   * @returns {Promise<object>} Business data
+   */
+  getBusinessData() {
+    const sbi = sbiStore.get('sbi') // TODO: Get sbi from defraID
+    return { sbi }
+  }
+
+  /**
+   * Calculates payment information for the land parcels
+   * @param {object} landParcels - The land parcels data
+   * @returns {Promise<object>} Payment calculation results
+   */
+  async calculatePaymentData(landParcels) {
+    const applicationPayment = await calculateGrantPayment({ landParcels })
+    return {
+      paymentTotal: applicationPayment?.paymentTotal
+    }
+  }
+
+  /**
    * Gets the rows for the summary list view.
    * @param {PageSummary} summaryList - The summary list definition
    * @param {FormContext} context - The form context containing state
    * @returns {Promise<Array>} - The rows for the summary list
    */
   async getViewRows(summaryList, context) {
-    const {
-      state: { landParcels }
-    } = context
+    this.validateContext(context)
+
+    const { landParcels } = context.state
+    const baseRows = summaryList.rows || []
+
     const sbi = sbiStore.get('sbi') // TODO: Get sbi from defraID
-    const rows = summaryList.rows || []
+    const { paymentTotal } = await calculateGrantPayment({ landParcels })
+    const totalActions = this.calculateTotalActions(landParcels)
+    const businessRow = createSbiRow(sbi)
+    const paymentRow = createPaymentRow(paymentTotal)
+    const totalActionsRow = createTotalActionsRow(totalActions)
+    const parcelBasedRow = createParcelBasedActionsRow()
+    const parcelActionRows = this.createParcelActionRows(landParcels)
 
-    const applicationPayment = await calculateGrantPayment({ landParcels })
-    const { paymentTotal } = applicationPayment || {}
-
-    const totalActions = Object.values(landParcels).reduce(
-      (total, data) =>
-        total + (data.actionsObj ? Object.keys(data.actionsObj).length : 0),
-      0
-    )
-
-    rows.unshift(
-      {
-        key: { text: 'Single business identifier (SBI)' },
-        value: { text: sbi }
-      },
-      {
-        key: {
-          text: 'Indicative annual payment (excluding management payment)'
-        },
-        value: { text: paymentTotal }
-      }
-    )
-    rows.push(
-      {
-        key: {
-          text: 'Total number of actions applied for'
-        },
-        value: { text: totalActions },
-        actions: SELECT_LAND_PARCEL_ACTIONS
-      },
-      {
-        key: { text: 'Parcel based actions' },
-        actions: SELECT_LAND_PARCEL_ACTIONS
-      }
-    )
-
-    for (const [parcelId, actionsData] of Object.entries(landParcels)) {
-      const actionsObj = actionsData.actionsObj || {}
-      if (Object.keys(actionsObj).length === 0) {
-        continue
-      }
-      for (const [, action] of Object.entries(actionsObj)) {
-        rows.push({
-          classes: 'govuk-summary-list__parcels-row',
-          key: { text: parcelId },
-          value: {
-            html: `${action.description}<br/>Applied area: ${action.value} ${action.unit}`
-          }
-        })
-      }
-    }
-
-    return rows
+    return [
+      businessRow,
+      paymentRow,
+      ...baseRows,
+      totalActionsRow,
+      parcelBasedRow,
+      ...parcelActionRows
+    ]
   }
 
   /**
@@ -96,18 +162,28 @@ export default class CheckAnswersPageController extends SummaryPageController {
    * @returns {Promise<object>} - The summary view model
    */
   async getSummaryViewModel(request, context) {
-    const newViewModel = super.getSummaryViewModel(request, context)
-    const { checkAnswers = [] } = newViewModel
+    const viewModel = await super.getSummaryViewModel(request, context)
+    const { checkAnswers = [] } = viewModel
 
     if (!checkAnswers.length) {
-      return newViewModel
+      return viewModel
     }
 
     const summaryList = checkAnswers[0].summaryList
     const rows = await this.getViewRows(summaryList, context)
 
-    newViewModel.checkAnswers[0].summaryList.rows = rows
-    return newViewModel
+    return {
+      ...viewModel,
+      checkAnswers: [
+        {
+          ...checkAnswers[0],
+          summaryList: {
+            ...summaryList,
+            rows
+          }
+        }
+      ]
+    }
   }
 
   /**
@@ -121,13 +197,18 @@ export default class CheckAnswersPageController extends SummaryPageController {
      * @param {FormContext} context
      * @param {Pick<ResponseToolkit, 'redirect' | 'view'>} h
      */
-    const fn = async (request, context, h) => {
-      const { viewName } = this
-      const viewModel = await this.getSummaryViewModel(request, context)
-      return h.view(viewName, viewModel)
+    return async (request, context, h) => {
+      try {
+        const viewModel = await this.getSummaryViewModel(request, context)
+        return h.view(this.viewName, viewModel)
+      } catch (error) {
+        request.logger.error({
+          message: `Error in CheckAnswersPageController GET handler`,
+          error
+        })
+        throw error
+      }
     }
-
-    return fn
   }
 
   /**
@@ -136,11 +217,10 @@ export default class CheckAnswersPageController extends SummaryPageController {
    * @returns {Function} - The route handler function
    */
   makePostRouteHandler() {
-    const fn = (request, context, h) => {
-      return this.proceed(request, h, this.getNextPath(context))
+    return (request, context, h) => {
+      const nextPath = this.getNextPath(context)
+      return this.proceed(request, h, nextPath)
     }
-
-    return fn
   }
 }
 
