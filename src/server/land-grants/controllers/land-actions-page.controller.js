@@ -1,6 +1,5 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import {
-  calculateGrantPayment,
   fetchAvailableActionsForParcel,
   parseLandParcel,
   validateLandActions
@@ -109,13 +108,12 @@ export default class LandActionsPageController extends QuestionPageController {
       const actionsObj = this.extractActionsObjectFromPayload(payload)
 
       // Create updated state with the new action data
-      const landParcelID = `${sheetId}-${parcelId}`
       const newState = {
         ...state,
-        selectedLandParcelObj: this.getSelectedLandParcelData(context),
+        selectedLandParcelSummary: this.getSelectedLandParcelData(context),
         landParcels: {
           ...state.landParcels, // Spread existing land parcels
-          [landParcelID]: {
+          [state.selectedLandParcel]: {
             actionsObj
           }
         }
@@ -138,7 +136,6 @@ export default class LandActionsPageController extends QuestionPageController {
         }
 
         if (errors.length > 0) {
-          await this.setState(request, newState)
           return h.view(viewName, {
             ...this.getViewModel(request, context),
             ...newState,
@@ -147,18 +144,7 @@ export default class LandActionsPageController extends QuestionPageController {
         }
       }
 
-      const applicationPayment = await calculateGrantPayment({
-        sheetId,
-        parcelId,
-        actionsObj
-      })
-      const { paymentTotal, errorMessage } = applicationPayment || {}
-
-      await this.setState(request, {
-        ...newState,
-        errorMessage,
-        applicationValue: paymentTotal
-      })
+      await this.setState(request, newState)
       return this.proceed(request, h, this.getNextPath(context))
     }
 
@@ -191,7 +177,7 @@ export default class LandActionsPageController extends QuestionPageController {
         if (!this.availableActions.length) {
           request.logger.error({
             message: `No actions found for parcel ${sheetId}-${parcelId}`,
-            landParcel: state.selectedLandParcel
+            selectedLandParcel: state.selectedLandParcel
           })
         }
       } catch (error) {
@@ -206,7 +192,7 @@ export default class LandActionsPageController extends QuestionPageController {
       const viewModel = {
         ...this.getViewModel(request, context),
         ...state,
-        selectedLandParcelObj: this.getSelectedLandParcelData(context),
+        selectedLandParcelSummary: this.getSelectedLandParcelData(context),
         errors: collection.getErrors(collection.getErrors())
       }
 

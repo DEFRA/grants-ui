@@ -12,7 +12,7 @@ export default class SubmissionPageController extends SummaryPageController {
    */
   constructor(model, pageDef) {
     super(model, pageDef)
-    this.viewName = 'submission'
+    this.viewName = 'submit-your-application'
     this.grantCode = config.get('landGrants.grantCode')
   }
 

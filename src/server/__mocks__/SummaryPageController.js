@@ -13,6 +13,30 @@ export class SummaryPageController {
   }
 
   /**
+   * Get the path for the summary page
+   * @returns {string} The path to the summary page
+   */
+  getSummaryPath() {
+    return '/summary'
+  }
+
+  /**
+   * Get the view model for the summary page
+   * @returns {object} The view model for the summary page
+   */
+  getSummaryViewModel() {
+    return {
+      checkAnswers: [
+        {
+          summaryList: {
+            rows: []
+          }
+        }
+      ]
+    }
+  }
+
+  /**
    * Get request handler
    * @returns {Promise<void>}
    */
