@@ -7,6 +7,16 @@ import { sbiStore } from '../../sbi/state.js'
 import { stateToLandGrantsGasAnswers } from '../mappers/state-to-gas-answers-mapper.js'
 import { calculateGrantPayment } from '../services/land-grants.service.js'
 
+const SELECT_LAND_PARCEL_ACTIONS = {
+  items: [
+    {
+      href: '/find-funding-for-land-or-farms/select-land-parcel',
+      text: 'Change',
+      visuallyHiddenText: 'Actions'
+    }
+  ]
+}
+
 export default class CheckAnswersPageController extends SummaryPageController {
   /**
    * @param {FormModel} model
@@ -26,86 +36,79 @@ export default class CheckAnswersPageController extends SummaryPageController {
     return '/find-funding-for-land-or-farms/confirmation'
   }
 
-  async getSummaryViewModel(request, context) {
-    const sbi = sbiStore.get('sbi') // TODO: Get sbi from defraID
+  async getViewRows(summaryList, context) {
     const {
       state: { landParcels }
     } = context
+    const sbi = sbiStore.get('sbi') // TODO: Get sbi from defraID
+    const rows = summaryList.rows || []
+
+    const applicationPayment = await calculateGrantPayment({ landParcels })
+    const { paymentTotal } = applicationPayment || {}
+
+    const totalActions = Object.values(landParcels).reduce(
+      (total, data) =>
+        total + (data.actionsObj ? Object.keys(data.actionsObj).length : 0),
+      0
+    )
+
+    rows.unshift(
+      {
+        key: { text: 'Single business identifier (SBI)' },
+        value: { text: sbi }
+      },
+      {
+        key: {
+          text: 'Indicative annual payment (excluding management payment)'
+        },
+        value: { text: paymentTotal }
+      }
+    )
+    rows.push(
+      {
+        key: {
+          text: 'Total number of actions applied for'
+        },
+        value: { text: totalActions },
+        actions: SELECT_LAND_PARCEL_ACTIONS
+      },
+      {
+        key: { text: 'Parcel based actions' },
+        actions: SELECT_LAND_PARCEL_ACTIONS
+      }
+    )
+
+    for (const [parcelId, actionsData] of Object.entries(landParcels)) {
+      const actionsObj = actionsData.actionsObj || {}
+      if (Object.keys(actionsObj).length === 0) {
+        continue
+      }
+      for (const [, action] of Object.entries(actionsObj)) {
+        rows.push({
+          classes: 'govuk-summary-list__parcels-row',
+          key: { text: parcelId },
+          value: {
+            html: `${action.description}<br/>Applied area: ${action.value} ${action.unit}`
+          }
+        })
+      }
+    }
+
+    return rows
+  }
+
+  async getSummaryViewModel(request, context) {
     const newViewModel = super.getSummaryViewModel(request, context)
     const { checkAnswers = [] } = newViewModel
 
-    if (checkAnswers.length > 0) {
-      const applicationPayment = await calculateGrantPayment({ landParcels })
-      const { paymentTotal } = applicationPayment || {}
-
-      const summaryList = checkAnswers[0].summaryList
-      const rows = summaryList.rows || []
-      const totalActions = Object.values(landParcels).reduce(
-        (total, data) =>
-          total + (data.actionsObj ? Object.keys(data.actionsObj).length : 0),
-        0
-      )
-
-      rows.unshift(
-        {
-          key: { text: 'Single business identifier (SBI)' },
-          value: { text: sbi }
-        },
-        {
-          key: {
-            text: 'Indicative annual payment (excluding management payment)'
-          },
-          value: { text: paymentTotal }
-        }
-      )
-      rows.push(
-        {
-          key: {
-            text: 'Total number of actions applied for'
-          },
-          value: { text: totalActions },
-          actions: {
-            items: [
-              {
-                href: '/find-funding-for-land-or-farms/select-land-parcel',
-                text: 'Change',
-                visuallyHiddenText: 'Actions'
-              }
-            ]
-          }
-        },
-        {
-          key: { text: 'Parcel based actions' },
-          actions: {
-            items: [
-              {
-                href: '/find-funding-for-land-or-farms/select-land-parcel',
-                text: 'Change',
-                visuallyHiddenText: 'Actions'
-              }
-            ]
-          }
-        }
-      )
-
-      for (const [parcelId, actionsData] of Object.entries(landParcels)) {
-        const actionsObj = actionsData.actionsObj || {}
-        if (Object.keys(actionsObj).length === 0) {
-          continue
-        }
-        for (const [, action] of Object.entries(actionsObj)) {
-          rows.push({
-            classes: 'govuk-summary-list__parcels-row',
-            key: { text: parcelId },
-            value: {
-              html: `${action.description}<br/>Applied area: ${action.value} ${action.unit}`
-            }
-          })
-        }
-      }
-      newViewModel.checkAnswers[0].summaryList.rows = rows
+    if (!checkAnswers.length) {
+      return newViewModel
     }
 
+    const summaryList = checkAnswers[0].summaryList
+    const rows = await this.getViewRows(summaryList, context)
+
+    newViewModel.checkAnswers[0].summaryList.rows = rows
     return newViewModel
   }
 

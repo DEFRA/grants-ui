@@ -69,10 +69,6 @@ pages:
     path: /summary
     controller: CheckAnswersPageController
 
-  - title: Submit your application
-    path: /submit-your-application
-    controller: SubmissionPageController
-
   - title: Confirmation
     path: /confirmation
     controller: ConfirmationPageController

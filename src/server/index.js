@@ -37,7 +37,6 @@ import CheckAnswersPageController from '~/src/server/land-grants/controllers/che
 import LandActionsCheckPageController from '~/src/server/land-grants/controllers/land-actions-check-page.controller.js'
 import LandActionsPageController from '~/src/server/land-grants/controllers/land-actions-page.controller.js'
 import LandParcelPageController from '~/src/server/land-grants/controllers/land-parcel-page.controller.js'
-import SubmissionPageController from '~/src/server/land-grants/controllers/submission-page.controller.js'
 import { tasklistBackButton } from '~/src/server/plugins/tasklist-back-button.js'
 import { formatCurrency } from '../config/nunjucks/filters/format-currency.js'
 import SectionEndController from './controllers/section-end/section-end-controller.js'
@@ -122,7 +121,6 @@ const registerFormsPlugin = async (server) => {
         ConfirmationPageController,
         DeclarationPageController,
         CheckAnswersPageController,
-        SubmissionPageController,
         LandParcelPageController,
         LandActionsPageController,
         LandActionsCheckPageController,
