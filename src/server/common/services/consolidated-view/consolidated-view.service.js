@@ -1,8 +1,9 @@
 import fs from 'fs/promises'
 import path from 'path'
+import { fileURLToPath } from 'url'
 import { config } from '~/src/config/config.js'
+import { getValidToken } from '~/src/server/common/helpers/entra/token-manager.js'
 import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
-import { getValidToken } from '../helpers/entra/token-manager.js'
 
 const CV_API_ENDPOINT = config.get('consolidatedView.apiEndpoint')
 const CV_API_AUTH_EMAIL = config.get('consolidatedView.authEmail')
@@ -40,21 +41,24 @@ class ConsolidatedViewApiError extends Error {
 }
 
 /**
- * Fetches business details from self hosted mock data
+ * Get the directory name for the current module
+ * @returns {string} Directory path
+ */
+function getCurrentDirectory() {
+  const currentFilePath = fileURLToPath(import.meta.url)
+  return path.dirname(currentFilePath)
+}
+
+/**
+ * Fetches business details from self hosted static land data
  * @param {number} sbi - Standard Business Identifier
  * @returns {Promise} - Promise that resolves to the business details
  * @throws {Error} - For unexpected errors
  */
 async function fetchMockParcelDataForBusiness(sbi) {
-  const mockFile = path.join(
-    process.cwd(),
-    'src',
-    'server',
-    '__mocks__',
-    'consolidated-view',
-    `${sbi}.json`
-  )
-  const data = await fs.readFile(mockFile)
+  const currentDir = getCurrentDirectory()
+  const mockFile = path.join(currentDir, 'land-data', `${sbi}.json`)
+  const data = await fs.readFile(mockFile, 'utf8')
   return JSON.parse(data)
 }
 
@@ -65,27 +69,27 @@ async function fetchMockParcelDataForBusiness(sbi) {
  * @throws {ConsolidatedViewApiError} - If the API request fails
  * @throws {Error} - For other unexpected errors
  */
-export async function fetchParcelDataForBusiness(sbi) {
+export async function fetchParcelsFromDal(sbi) {
   const mockDALEnabled = config.get('consolidatedView.mockDALEnabled')
+  const formatResponse = (r) => r.data?.business?.land?.parcels || []
+
   try {
     if (mockDALEnabled) {
-      return await fetchMockParcelDataForBusiness(sbi)
+      const mockResponse = await fetchMockParcelDataForBusiness(sbi)
+      return formatResponse(mockResponse)
     }
 
     const now = new Date().toISOString()
     const query = `
-  query Business {
-    business(sbi: "${sbi}") {
-      sbi
-      organisationId
-      land {
-        parcels(date: "${now}") {
-          parcelId
-          sheetId
-          area
+      query Business {
+        business(sbi: "${sbi}") {
+          land {
+            parcels(date: "${now}") {
+              parcelId
+              sheetId
+            }
+          }
         }
-      }
-    }
     }`
 
     const token = await getValidToken()
@@ -111,7 +115,8 @@ export async function fetchParcelDataForBusiness(sbi) {
       )
     }
 
-    return response.json()
+    const responseJson = await response.json()
+    return formatResponse(responseJson)
   } catch (error) {
     logger.error(
       { err: error },

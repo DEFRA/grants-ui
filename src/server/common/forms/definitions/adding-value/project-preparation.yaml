@@ -1,3 +1,4 @@
+engine: V2
 name: Project preparation
 pages:
   - title: Does the project have planning permission?
@@ -90,7 +91,7 @@ pages:
         title: Html
         content: '<p class="govuk-body">You will need to extend your tenancy agreement for 5 years after the final grant payment.</p>'
     condition: tenancyLengthCondition
-  - title: Summary
+  - title: "Check your answers: Project preparation"
     path: /summary
     controller: SectionEndController
 lists:

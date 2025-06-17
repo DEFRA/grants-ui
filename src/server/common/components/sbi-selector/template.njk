@@ -1,0 +1,94 @@
+{% from "govuk/components/phase-banner/macro.njk" import govukPhaseBanner %}
+
+{{ govukPhaseBanner({
+  tag: {
+    text: "Development",
+    classes: "govuk-tag--red"
+  },
+  html: 'Single business identifier (SBI): ' + 
+        '<select 
+            id="sbi-select"
+            name="sbi"
+            style="margin-left: 5px; font-size: 16px;"
+          >
+            <option value="121428499"' + (params.sbi == "121428499" and " selected" or "") + '>121428499 - SE & HB Robinson</option>
+            <option value="106284736"' + (params.sbi == "106284736" and " selected" or "") + '>106284736 - J&S Hartley</option>
+            <option value="106238988"' + (params.sbi == "106238988" and " selected" or "") + '>106238988 - JT & E Thornber</option>
+          </select>
+          <span id="sbi-status" class="sbi-status" style="margin-left: 10px; font-size: 14px;"></span>'
+}) }}
+
+<script>
+  (function() {
+    const sbiSelect = document.getElementById('sbi-select');
+    const sbiStatus = document.getElementById('sbi-status');
+
+    if (sbiSelect) {
+      sbiSelect.addEventListener('change', function(e) {
+        const newSbiValue = e.target.value;
+        
+        if (newSbiValue && newSbiValue.trim() !== '') {
+          sbiStatus.textContent = 'Updating...';
+          sbiStatus.style.color = '#666';
+          updateSbi(newSbiValue);
+        } else {
+          sbiStatus.textContent = '';
+        }
+      });
+
+      function updateSbi(sbiValue) {     
+        const csrfToken = document.querySelector('#csrf-token')?.value;
+  
+        if (!sbiValue || sbiValue.trim() === '') {
+          console.error('SBI value is empty');
+          sbiStatus.textContent = 'Please select a valid SBI';
+          sbiStatus.style.color = '#d4351c';
+          return;
+        }
+        if (!csrfToken) {
+          console.error('CSRF token not found');
+          return;
+        }
+
+        fetch('/api/update-sbi', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          body: JSON.stringify({ 
+            sbi: sbiValue,
+            crumb: csrfToken
+          })
+        })
+        .then(response => {
+          if (response.ok) {
+            return response.json();
+          }
+          throw new Error('Network response was not ok');
+        })
+        .then(data => {
+          sbiStatus.textContent = 'Saved';
+          sbiStatus.style.color = '#00703c';
+          
+          setTimeout(() => {
+            window.location.replace('/find-funding-for-land-or-farms/start'); 
+          }, 1000);
+
+          setTimeout(() => {
+            sbiStatus.textContent = '';
+          }, 2000);
+        })
+        .catch(error => {
+          console.error('Error updating SBI:', error);
+          sbiStatus.textContent = 'Error saving';
+          sbiStatus.style.color = '#d4351c';
+          
+          setTimeout(() => {
+            sbiStatus.textContent = '';
+          }, 3000);
+        });
+      }
+    }
+  })();
+</script>

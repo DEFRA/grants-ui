@@ -1,3 +1,4 @@
+engine: V2
 name: Facilities
 pages:
   - title: Do you want to build a new smaller abattoir?
@@ -98,7 +99,7 @@ pages:
         title: Html
         content: '<div class="govuk-warning-text"> <span class="govuk-warning-text__icon" aria-hidden="true">!</span> <strong class="govuk-warning-text__text"> <span class="govuk-visually-hidden">Warning</span>Storage facilities cannot be more than 50% of the total grant funding.</strong></div>'
     condition: otherFarmersYesOrFruitStorageCondition
-  - title: Summary
+  - title: "Check your answers: Facilities"
     path: /summary
     controller: SectionEndController
 lists:

@@ -4,7 +4,7 @@ import {
   invokeGasPostAction,
   makeGasApiRequest,
   submitGrantApplication
-} from '~/src/server/common/services/grant-application.service.js'
+} from '~/src/server/common/services/grant-application/grant-application.service.js'
 
 const gasApi = config.get('gas.apiEndpoint')
 const code = config.get('landGrants.grantCode')

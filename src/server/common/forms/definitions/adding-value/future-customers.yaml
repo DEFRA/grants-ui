@@ -1,9 +1,10 @@
+engine: V2
 name: Future customers
 pages:
   - title: Who will your new customers be after the project?
     path: /future-customers
     section: futureCustomersSection
-  - title: Summary
+  - title: "Check your answers: Future customers"
     path: /summary
     controller: SectionEndController
 lists: []

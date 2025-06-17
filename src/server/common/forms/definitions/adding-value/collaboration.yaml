@@ -1,9 +1,10 @@
+engine: V2
 name: Collaboration
 pages:
   - title: Will you work in partnership or collaborate with other farmers or producers?
     path: /collaboration
     section: collaborationSection
-  - title: Summary
+  - title: "Check your answers: Collaboration"
     path: /summary
     controller: SectionEndController
 sections:

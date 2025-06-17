@@ -1,12 +1,22 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
-import { fetchParcelDataForBusiness } from '~/src/server/common/services/consolidated-view.service.js'
+import { sbiStore } from '~/src/server/sbi/state.js'
+import { fetchParcels } from '../services/land-grants.service.js'
 
 const logger = createLogger()
 
 export default class LandParcelPageController extends QuestionPageController {
-  viewName = 'land-parcel'
-  business = null
+  viewName = 'select-land-parcel'
+  parcels = []
+
+  formatParcelForView = (parcel) => ({
+    text: `${parcel.sheetId} ${parcel.parcelId}`,
+    value: `${parcel.sheetId}-${parcel.parcelId}`,
+    hint:
+      parcel.area.value && parcel.area.unit
+        ? `Total size: ${parcel.area.value} ${parcel.area.unit}`
+        : undefined
+  })
 
   makePostRouteHandler() {
     /**
@@ -25,8 +35,8 @@ export default class LandParcelPageController extends QuestionPageController {
         return h.view(this.viewName, {
           ...super.getViewModel(request, context),
           ...state,
-          business: this.business,
-          landParcelError: 'Please select a land parcel from the list'
+          parcels: this.parcels,
+          errorMessage: 'Please select a land parcel from the list'
         })
       }
 
@@ -54,41 +64,27 @@ export default class LandParcelPageController extends QuestionPageController {
      */
     const fn = async (request, context, h) => {
       const { landParcel = '' } = context.state || {}
-      const sbi = 106284736
+      const sbi = sbiStore.get('sbi')
+
       const { viewName } = this
       const baseViewModel = super.getViewModel(request, context)
 
       try {
-        const response = await fetchParcelDataForBusiness(sbi)
-        this.business = response.data?.business
+        const parcels = await fetchParcels(sbi)
+        this.parcels = parcels.map(this.formatParcelForView)
+
         const viewModel = {
           ...baseViewModel,
-          business: this.business,
+          parcels: this.parcels,
           landParcel
         }
 
         return h.view(viewName, viewModel)
       } catch (error) {
-        // Log specific error details based on error type
-        if (error.name === 'ConsolidatedViewApiError') {
-          logger.error(
-            {
-              err: error,
-              statusCode: error.statusCode,
-              sbi
-            },
-            'Consolidated View API error when fetching parcel data'
-          )
-        } else {
-          logger.error(
-            {
-              err: error,
-              sbi
-            },
-            'Unexpected error when fetching parcel data'
-          )
-        }
-
+        logger.error(
+          { err: error, sbi },
+          'Unexpected error when fetching parcel data'
+        )
         const errorMessage =
           'Unable to find parcel information, please try again later.'
 

@@ -1,3 +1,4 @@
+engine: V2
 name: Costs
 pages:
   - title: What is the estimated cost of the items?
@@ -104,7 +105,7 @@ pages:
 
           <p class='govuk-body'><a href='https://www.gov.uk/guidance/funding-for-farmers' class='govuk-link govuk-link--no-visited-state'>See other grants you may be eligible for</a></p>
     condition: remainingCostsCondition
-  - title: Summary
+  - title: "Check your answers: Costs"
     path: /summary
     controller: SectionEndController
 lists: []
