@@ -40,33 +40,35 @@ export function stateToLandGrantsGasAnswers(state) {
       const { actionsObj } = data
       const [sheetId, parcelId] = parcelKey.split('-') ?? []
 
-      if (actionsObj && Object.keys(actionsObj).length > 0) {
-        Object.entries(actionsObj).forEach(([actionCode, actionData]) => {
-          const actionApplication = {
-            code: actionCode,
-            sheetId,
-            parcelId
-          }
-
-          if (actionData && typeof actionData === 'object') {
-            const appliedFor = {}
-
-            if (actionData.unit != null) {
-              appliedFor.unit = actionData.unit.trim()
-            }
-
-            if (actionData.value != null) {
-              const quantity = parseFloat(actionData.value)
-              appliedFor.quantity = !isNaN(quantity) ? quantity : undefined
-            }
-            if (Object.keys(appliedFor).length > 0) {
-              actionApplication.appliedFor = appliedFor
-            }
-          }
-
-          result.actionApplications.push(actionApplication)
-        })
+      if (!actionsObj || Object.keys(actionsObj).length === 0) {
+        continue
       }
+
+      Object.entries(actionsObj).forEach(([actionCode, actionData]) => {
+        const actionApplication = {
+          code: actionCode,
+          sheetId,
+          parcelId
+        }
+
+        if (actionData && typeof actionData === 'object') {
+          const appliedFor = {}
+
+          if (actionData.unit != null) {
+            appliedFor.unit = actionData.unit.trim()
+          }
+
+          if (actionData.value != null) {
+            const quantity = parseFloat(actionData.value)
+            appliedFor.quantity = !isNaN(quantity) ? quantity : undefined
+          }
+          if (Object.keys(appliedFor).length > 0) {
+            actionApplication.appliedFor = appliedFor
+          }
+        }
+
+        result.actionApplications.push(actionApplication)
+      })
     }
   }
   return result
