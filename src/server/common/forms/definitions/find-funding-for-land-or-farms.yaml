@@ -56,33 +56,10 @@ pages:
   - title: Select Land Parcel
     controller: LandParcelPageController
     path: /select-land-parcel
-    next:
-      - path: /choose-which-actions-to-do
-    components:
-      - type: TextField
-        name: landParcel
-        title: Parcel
-        options:
-          required: true
-        schema: {}
 
   - title: Choose which actions to do
     controller: LandActionsPageController
     path: /choose-which-actions-to-do
-    next:
-      - path: /check-selected-land-actions
-    components:
-      - type: TextField
-        name: actions
-        title: Actions
-        options:
-          required: true
-        schema: {}
-      - type: TextField
-        name: applicationValue
-        title: Total application value
-        options: {}
-        schema: {}
 
   - title: Check selected land actions
     path: /check-selected-land-actions

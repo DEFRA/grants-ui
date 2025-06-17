@@ -32,7 +32,7 @@
       {{ govukSummaryList({
           card: {
             title: {
-              text: "Chosen parcel: " + selectedLandParcel.name
+              text: "Chosen parcel: " + selectedLandParcelObj.name
             },
             actions: {
               items: [
@@ -44,7 +44,7 @@
               ]
             }
           },
-          rows: selectedLandParcel.rows
+          rows: selectedLandParcelObj.rows
         }) 
       }}
       <div class="govuk-hint">
@@ -84,8 +84,8 @@
                   <tr class="govuk-table__row">
                     <td class="govuk-table__cell">
                       <div class="govuk-checkboxes__item series-selector-items">
-                        <input class="govuk-checkboxes__input" id="{{action.value}}" name="actions" type="checkbox" value="{{action.value}}" {% if action.checked %}checked{% endif %}>
-                        <label class="govuk-label govuk-checkboxes__label" for="actions">
+                        <input class="govuk-checkboxes__input" id="{{action.value}}" name="selectedActions" type="checkbox" value="{{action.value}}" {% if action.checked %}checked{% endif %}>
+                        <label class="govuk-label govuk-checkboxes__label" for="selectedActions">
                         <span class="govuk-visually-hidden">{{action.value}}</span></label>
                       </div>
                     </td>
