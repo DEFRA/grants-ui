@@ -65,8 +65,9 @@ describe('CheckAnswersPageController', () => {
       view: jest.fn().mockReturnValue('mocked-view-response')
     }
 
-    // Create controller instance
     controller = new CheckAnswersPageController(mockModel, mockPageDef)
+    controller.getNextPath = jest.fn().mockReturnValue('/next-path')
+    controller.proceed = jest.fn().mockReturnValue('redirected')
   })
 
   describe('constructor', () => {
@@ -285,6 +286,21 @@ describe('CheckAnswersPageController', () => {
       await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow(
         'Test error'
       )
+    })
+  })
+
+  describe('makePostRouteHandler', () => {
+    test('should just proceed', async () => {
+      const handler = controller.makePostRouteHandler()
+      const result = await handler(mockRequest, mockContext, mockH)
+
+      expect(controller.proceed).toHaveBeenCalledWith(
+        mockRequest,
+        mockH,
+        '/next-path'
+      )
+
+      expect(result).toBe('redirected')
     })
   })
 
