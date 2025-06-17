@@ -10,10 +10,6 @@
         {% include "partials/preview-banner.html" %}
       {% endif %}
 
-      {% if hasMissingNotificationEmail %}
-        {% include "partials/warn-missing-notification-email.html" %}
-      {% endif %}
-
       <h1 class="govuk-heading-l">
         {{ pageTitle }}
       </h1>
@@ -30,15 +26,8 @@
 
       <form method="post" novalidate>
         <input type="hidden" name="crumb" value="{{ crumb }}">
-        <input type="hidden" name="action" value="send">
-
-        {% if declaration %}
-          <h2 class="govuk-heading-m" id="declaration">Declaration</h2>
-          {{ declaration | safe }}
-        {% endif %}
-
         <button data-prevent-double-click="true" class="govuk-button" data-module="govuk-button">
-          {{ "Accept and send" if declaration else "Send" }}
+          Continue
         </button>
       </form>
     </div>

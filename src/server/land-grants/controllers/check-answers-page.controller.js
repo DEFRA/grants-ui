@@ -1,10 +1,5 @@
 import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
-import { config } from '~/src/config/config.js'
-import { getFormsCacheService } from '../../common/helpers/forms-cache/forms-cache.js'
-import { transformStateObjectToGasApplication } from '../../common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
-import { submitGrantApplication } from '../../common/services/grant-application/grant-application.service.js'
 import { sbiStore } from '../../sbi/state.js'
-import { stateToLandGrantsGasAnswers } from '../mappers/state-to-gas-answers-mapper.js'
 import { calculateGrantPayment } from '../services/land-grants.service.js'
 
 const SELECT_LAND_PARCEL_ACTIONS = {
@@ -25,17 +20,14 @@ export default class CheckAnswersPageController extends SummaryPageController {
   constructor(model, pageDef) {
     super(model, pageDef)
     this.viewName = 'check-your-answers'
-    this.grantCode = config.get('landGrants.grantCode')
   }
 
   /**
-   * Gets the path to the status page (in this case /confirmation page) for the POST handler.
-   * @returns {string} path to the status page
+   * Gets the rows for the summary list view.
+   * @param {PageSummary} summaryList - The summary list definition
+   * @param {FormContext} context - The form context containing state
+   * @returns {Promise<Array>} - The rows for the summary list
    */
-  getStatusPath() {
-    return '/find-funding-for-land-or-farms/confirmation'
-  }
-
   async getViewRows(summaryList, context) {
     const {
       state: { landParcels }
@@ -97,6 +89,12 @@ export default class CheckAnswersPageController extends SummaryPageController {
     return rows
   }
 
+  /**
+   * Gets the summary view model for the check answers page.
+   * @param {FormRequest} request - The form request object
+   * @param {FormContext} context - The form context
+   * @returns {Promise<object>} - The summary view model
+   */
   async getSummaryViewModel(request, context) {
     const newViewModel = super.getSummaryViewModel(request, context)
     const { checkAnswers = [] } = newViewModel
@@ -110,28 +108,6 @@ export default class CheckAnswersPageController extends SummaryPageController {
 
     newViewModel.checkAnswers[0].summaryList.rows = rows
     return newViewModel
-  }
-
-  async submitLandGrantApplication(context) {
-    const {
-      sbi = 'sbi',
-      crn = 'crn',
-      defraId = 'defraId',
-      frn = 'frn'
-    } = context.state
-    const identifiers = {
-      sbi,
-      frn,
-      crn,
-      defraId,
-      clientRef: context.referenceNumber?.toLowerCase()
-    }
-    const applicationData = transformStateObjectToGasApplication(
-      identifiers,
-      context.state,
-      stateToLandGrantsGasAnswers
-    )
-    return submitGrantApplication(this.grantCode, applicationData)
   }
 
   /**
@@ -154,14 +130,14 @@ export default class CheckAnswersPageController extends SummaryPageController {
     return fn
   }
 
+  /**
+   * This method is called when there is a POST request to the check answers page.
+   * It processes the request and redirects to the next path.
+   * @returns {Function} - The route handler function
+   */
   makePostRouteHandler() {
-    const fn = async (request, context, h) => {
-      const result = await this.submitLandGrantApplication(context)
-      request.logger.info('Form submission completed', result)
-      const cacheService = getFormsCacheService(request.server)
-      await cacheService.setConfirmationState(request, { confirmed: true })
-
-      return h.redirect(this.getStatusPath())
+    const fn = (request, context, h) => {
+      return this.proceed(request, h, this.getNextPath(context))
     }
 
     return fn
