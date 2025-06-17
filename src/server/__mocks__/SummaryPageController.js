@@ -44,6 +44,10 @@ export class SummaryPageController {
     return null
   }
 
+  /**
+   * Create a route handler for POST requests
+   * @returns {Function} The route handler function
+   */
   makePostRouteHandler() {
     return () => {
       // Empty function implementation
