@@ -20,13 +20,13 @@ export default class LandActionsPageController extends QuestionPageController {
    */
   extractActionsObjectFromPayload(payload) {
     const areas = {}
-    const { actions = [] } = payload
+    const { selectedActions = [] } = payload
 
     for (const key in payload) {
       if (key.startsWith(this.quantityPrefix)) {
         const [, code] = key.split('-')
         const actionInfo = this.availableActions.find((a) => a.code === code)
-        if (!actions.includes(code) || !payload[key] || !actionInfo) {
+        if (!selectedActions.includes(code) || !payload[key] || !actionInfo) {
           continue
         }
 
@@ -38,21 +38,6 @@ export default class LandActionsPageController extends QuestionPageController {
       }
     }
     return areas
-  }
-
-  /**
-   * Transform actions object for view
-   * @param {object} actionsObj - The actions object
-   * @param {object} actionsObj.value - The action value
-   * @param {string} actionsObj.unit - The action unit
-   * @returns {string} - Formatted string for view
-   */
-  transformActionsForView(actionsObj) {
-    const actions = []
-    Object.entries(actionsObj).forEach(([key, value]) => {
-      actions.push(`${key}: ${value.value} ${value.unit}`)
-    })
-    return actions.join(' - ')
   }
 
   /**
@@ -74,7 +59,7 @@ export default class LandActionsPageController extends QuestionPageController {
     const { state } = context
 
     return {
-      name: state.landParcel,
+      name: state.selectedLandParcel,
       rows: [
         {
           key: {
@@ -120,20 +105,18 @@ export default class LandActionsPageController extends QuestionPageController {
       const { state } = context
       const { viewName } = this
       const payload = request.payload ?? {}
-      const [sheetId, parcelId] = parseLandParcel(state.landParcel)
+      const [sheetId, parcelId] = parseLandParcel(state.selectedLandParcel)
       const actionsObj = this.extractActionsObjectFromPayload(payload)
 
       // Create updated state with the new action data
       const landParcelID = `${sheetId}-${parcelId}`
       const newState = {
         ...state,
-        actions: this.transformActionsForView(actionsObj),
-        selectedLandParcel: this.getSelectedLandParcelData(context),
+        selectedLandParcelObj: this.getSelectedLandParcelData(context),
         landParcels: {
           ...state.landParcels, // Spread existing land parcels
           [landParcelID]: {
-            actionsObj,
-            actions: this.transformActionsForView(actionsObj)
+            actionsObj
           }
         }
       }
@@ -197,7 +180,9 @@ export default class LandActionsPageController extends QuestionPageController {
       const { collection, viewName } = this
       const { state } = context
 
-      const [sheetId = '', parcelId = ''] = parseLandParcel(state.landParcel)
+      const [sheetId = '', parcelId = ''] = parseLandParcel(
+        state.selectedLandParcel
+      )
 
       // Load available actions for the land parcel
       try {
@@ -206,7 +191,7 @@ export default class LandActionsPageController extends QuestionPageController {
         if (!this.availableActions.length) {
           request.logger.error({
             message: `No actions found for parcel ${sheetId}-${parcelId}`,
-            landParcel: state.landParcel
+            landParcel: state.selectedLandParcel
           })
         }
       } catch (error) {
@@ -221,7 +206,7 @@ export default class LandActionsPageController extends QuestionPageController {
       const viewModel = {
         ...this.getViewModel(request, context),
         ...state,
-        selectedLandParcel: this.getSelectedLandParcelData(context),
+        selectedLandParcelObj: this.getSelectedLandParcelData(context),
         errors: collection.getErrors(collection.getErrors())
       }
 

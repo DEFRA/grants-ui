@@ -16,7 +16,7 @@ describe('LandActionsPageController', () => {
   let mockContext
   let mockH
 
-  const selectedLandParcel = {
+  const selectedLandParcelObj = {
     name: 'sheet1-parcel1',
     rows: [
       {
@@ -90,7 +90,7 @@ describe('LandActionsPageController', () => {
     mockRequest = {
       payload: {
         'qty-CMOR1': 10,
-        actions: ['CMOR1', 'UPL1']
+        selectedActions: ['CMOR1', 'UPL1']
       },
       logger: {
         error: jest.fn()
@@ -99,7 +99,7 @@ describe('LandActionsPageController', () => {
 
     mockContext = {
       state: {
-        landParcel: 'sheet1-parcel1'
+        selectedLandParcel: 'sheet1-parcel1'
       }
     }
 
@@ -130,7 +130,7 @@ describe('LandActionsPageController', () => {
   describe('extractActionsObjectFromPayload', () => {
     test('should extract action data correctly from payload', () => {
       const payload = {
-        actions: ['CMOR1', 'UPL1'],
+        selectedActions: ['CMOR1', 'UPL1'],
         'qty-CMOR1': 10,
         'qty-UPL1': 5,
         'other-field': 'value'
@@ -154,7 +154,7 @@ describe('LandActionsPageController', () => {
 
     test('should ignore action codes not present in availableActions', () => {
       const payload = {
-        actions: ['unknownAction'],
+        selectedActions: ['unknownAction'],
         'qty-unknownAction': 15
       }
 
@@ -171,7 +171,7 @@ describe('LandActionsPageController', () => {
 
     test('should skip actions not included in actions array', () => {
       const payload = {
-        actions: ['CMOR1'],
+        selectedActions: ['CMOR1'],
         'qty-CMOR1': 10,
         'qty-UPL1': 5
       }
@@ -189,7 +189,7 @@ describe('LandActionsPageController', () => {
 
     test('should skip actions with empty quantity values', () => {
       const payload = {
-        actions: ['CMOR1', 'UPL1'],
+        selectedActions: ['CMOR1', 'UPL1'],
         'qty-CMOR1': 10,
         'qty-UPL1': ''
       }
@@ -215,7 +215,7 @@ describe('LandActionsPageController', () => {
       ]
 
       const payload = {
-        actions: ['CMOR1'],
+        selectedActions: ['CMOR1'],
         'qty-CMOR1': 10
       }
 
@@ -228,80 +228,6 @@ describe('LandActionsPageController', () => {
           unit: undefined
         }
       })
-    })
-  })
-
-  describe('transformActionsForView', () => {
-    test('should transform single action object to formatted string', () => {
-      const actionsObj = {
-        CMOR1: {
-          description: 'CMOR1: Assess moorland and produce a written record',
-          value: 10,
-          unit: 'ha'
-        }
-      }
-
-      const result = controller.transformActionsForView(actionsObj)
-
-      expect(result).toBe('CMOR1: 10 ha')
-    })
-
-    test('should transform multiple actions to formatted string', () => {
-      const actionsObj = {
-        CMOR1: {
-          description: 'CMOR1: Assess moorland and produce a written record',
-          value: 10,
-          unit: 'ha'
-        },
-        UPL1: {
-          description: 'UPL1: Moderate livestock grazing on moorland',
-          value: 5,
-          unit: 'ha'
-        }
-      }
-
-      const result = controller.transformActionsForView(actionsObj)
-
-      expect(result).toBe('CMOR1: 10 ha - UPL1: 5 ha')
-    })
-
-    test('should handle empty actions object', () => {
-      const result = controller.transformActionsForView({})
-
-      expect(result).toBe('')
-    })
-
-    test('should handle actions with different units', () => {
-      const actionsObj = {
-        CMOR1: {
-          description: 'CMOR1: Assess moorland and produce a written record',
-          value: 10,
-          unit: 'ha'
-        },
-        UPL1: {
-          description: 'UPL1: Moderate livestock grazing on moorland',
-          value: 3,
-          unit: 'km'
-        }
-      }
-
-      const result = controller.transformActionsForView(actionsObj)
-
-      expect(result).toBe('CMOR1: 10 ha - UPL1: 3 km')
-    })
-
-    test('should handle actions with zero values', () => {
-      const actionsObj = {
-        CMOR1: {
-          description: 'CMOR1: Assess moorland and produce a written record',
-          value: 0,
-          unit: 'ha'
-        }
-      }
-
-      const result = controller.transformActionsForView(actionsObj)
-
-      expect(result).toBe('CMOR1: 0 ha')
     })
   })
 
@@ -351,7 +277,7 @@ describe('LandActionsPageController', () => {
         actions: availableActions
       })
 
-      mockContext.state.actions = ['CMOR1', 'UPL1']
+      mockContext.state.selectedActions = ['CMOR1', 'UPL1']
 
       const handler = controller.makeGetRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
@@ -363,10 +289,9 @@ describe('LandActionsPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'choose-which-actions-to-do',
         expect.objectContaining({
-          landParcel: 'sheet1-parcel1',
+          selectedLandParcel: 'sheet1-parcel1',
           availableActions,
-          selectedLandParcel,
-          actions: ['CMOR1', 'UPL1']
+          selectedLandParcelObj
         })
       )
       expect(result).toBe('rendered view')
@@ -441,7 +366,7 @@ describe('LandActionsPageController', () => {
         'choose-which-actions-to-do',
         expect.objectContaining({
           availableActions: [],
-          landParcel: 'sheet1-parcel1'
+          selectedLandParcel: 'sheet1-parcel1'
         })
       )
       expect(result).toBe('rendered view')
@@ -488,13 +413,11 @@ describe('LandActionsPageController', () => {
       expect(controller.setState).toHaveBeenCalledWith(
         mockRequest,
         expect.objectContaining({
-          landParcel: 'sheet1-parcel1',
-          actions: 'CMOR1: 10 ha',
+          selectedLandParcel: 'sheet1-parcel1',
           applicationValue: '£1,250.75',
-          selectedLandParcel,
+          selectedLandParcelObj,
           landParcels: {
             'sheet1-parcel1': {
-              actions: 'CMOR1: 10 ha',
               actionsObj: {
                 CMOR1: {
                   description:
@@ -526,11 +449,9 @@ describe('LandActionsPageController', () => {
       expect(controller.setState).toHaveBeenCalledWith(
         mockRequest,
         expect.objectContaining({
-          landParcel: 'sheet1-parcel1',
-          actions: '',
+          selectedLandParcel: 'sheet1-parcel1',
           landParcels: {
             'sheet1-parcel1': {
-              actions: '',
               actionsObj: {}
             }
           }
@@ -540,7 +461,7 @@ describe('LandActionsPageController', () => {
 
     test('should handle missing actions gracefully', async () => {
       mockRequest.payload = {
-        actions: [],
+        selectedActions: [],
         action: 'validate'
       }
 
@@ -560,7 +481,7 @@ describe('LandActionsPageController', () => {
     test('should validate actions when validate action is requested', async () => {
       mockRequest.payload = {
         'qty-CMOR1': 10,
-        actions: ['CMOR1'],
+        selectedActions: ['CMOR1'],
         action: 'validate'
       }
 
@@ -591,7 +512,7 @@ describe('LandActionsPageController', () => {
     test('should render view with validation errors when validation fails', async () => {
       mockRequest.payload = {
         'qty-CMOR1': 10,
-        actions: ['CMOR1'],
+        selectedActions: ['CMOR1'],
         action: 'validate'
       }
 
@@ -625,11 +546,9 @@ describe('LandActionsPageController', () => {
       expect(controller.setState).toHaveBeenCalledWith(
         mockRequest,
         expect.objectContaining({
-          landParcel: 'sheet1-parcel1',
-          actions: 'CMOR1: 10 ha',
+          selectedLandParcel: 'sheet1-parcel1',
           landParcels: {
             'sheet1-parcel1': {
-              actions: 'CMOR1: 10 ha',
               actionsObj: {
                 CMOR1: {
                   description:
