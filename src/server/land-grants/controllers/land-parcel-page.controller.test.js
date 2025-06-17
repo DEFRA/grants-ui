@@ -140,7 +140,7 @@ describe('LandParcelPageController', () => {
     })
 
     it('populates full viewModel correctly', async () => {
-      mockContext.state.landParcel = state.selectedLandParcel
+      mockContext.state = state
 
       const result = await controller.makeGetRouteHandler()(
         mockRequest,
@@ -162,7 +162,7 @@ describe('LandParcelPageController', () => {
 
   describe('POST route handler', () => {
     it('saves landParcel and proceeds', async () => {
-      mockRequest.payload = state.selectedLandParcel
+      mockRequest.payload = { selectedLandParcel: state.selectedLandParcel }
       mockContext = setupContext({ existing: 'value' })
 
       const result = await controller.makePostRouteHandler()(
