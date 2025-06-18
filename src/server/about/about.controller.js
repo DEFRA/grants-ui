@@ -5,7 +5,7 @@
  */
 export const aboutController = {
   handler(_request, h) {
-    return h.view('about/index', {
+    return h.view('about/views/index', {
       pageTitle: 'About',
       heading: 'About',
       breadcrumbs: [

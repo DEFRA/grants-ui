@@ -1,4 +1,4 @@
-import { sbiSelectorController } from '~/src/server/sbi/sbi-selector.controller.js'
+import { sbiController } from '~/src/server/sbi/sbi.controller.js'
 /**
  * Helper API to update sbi (for dev purposes).
  * These routes are registered in src/server/router.js.
@@ -15,7 +15,7 @@ export const sbi = {
         {
           method: 'POST',
           path: '/api/update-sbi',
-          ...sbiSelectorController
+          ...sbiController
         }
       ])
     }
