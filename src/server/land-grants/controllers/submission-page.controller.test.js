@@ -37,8 +37,8 @@ describe('SubmissionPageController', () => {
   })
 
   describe('constructor', () => {
-    it('should set viewName to "submission"', () => {
-      expect(controller.viewName).toBe('submission')
+    it('should set viewName to "submit-your-application"', () => {
+      expect(controller.viewName).toBe('submit-your-application')
     })
 
     it('should set grantCode', () => {

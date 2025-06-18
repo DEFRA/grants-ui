@@ -32,19 +32,19 @@
       {{ govukSummaryList({
           card: {
             title: {
-              text: "Chosen parcel: " + selectedLandParcelObj.name
+              text: "Chosen parcel: " + selectedLandParcelSummary.name
             },
             actions: {
               items: [
                 {
-                  href: "/find-funding-for-land-or-farms/select-land-parcel",
+                  href: backLink.href,
                   text: "Change",
                   visuallyHiddenText: "land parcel to do actions on"
                 }
               ]
             }
           },
-          rows: selectedLandParcelObj.rows
+          rows: selectedLandParcelSummary.rows
         }) 
       }}
       <div class="govuk-hint">

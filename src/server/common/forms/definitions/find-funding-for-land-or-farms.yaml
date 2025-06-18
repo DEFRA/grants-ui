@@ -65,8 +65,12 @@ pages:
     path: /check-selected-land-actions
     controller: LandActionsCheckPageController
 
-  - title: Funding details
+  - title: Check your answers before sending your application
     path: /summary
+    controller: CheckAnswersPageController
+
+  - title: Submit your application
+    path: /submit-your-application
     controller: SubmissionPageController
 
   - title: Confirmation
