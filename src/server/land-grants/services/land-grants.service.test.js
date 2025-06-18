@@ -382,7 +382,7 @@ describe('land-grants service', () => {
         expect.objectContaining({
           body: JSON.stringify({
             parcelIds: ['SHEET123-PARCEL456'],
-            fields: ['actions', 'actions.availableArea']
+            fields: ['actions', 'actions.availableArea', 'size']
           })
         })
       )
@@ -410,7 +410,7 @@ describe('land-grants service', () => {
         expect.objectContaining({
           body: JSON.stringify({
             parcelIds: ['-'],
-            fields: ['actions', 'actions.availableArea']
+            fields: ['actions', 'actions.availableArea', 'size']
           })
         })
       )

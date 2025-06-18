@@ -111,7 +111,7 @@ export async function fetchAvailableActionsForParcel({
   sheetId = ''
 }) {
   const parcelIds = [stringifyParcel({ sheetId, parcelId })]
-  const fields = ['actions', 'actions.availableArea']
+  const fields = ['actions', 'actions.availableArea', 'size']
   const data = await postToLandGrantsApi('/parcels', { parcelIds, fields })
 
   return data.parcels?.find(

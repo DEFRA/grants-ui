@@ -25,22 +25,6 @@ describe('LandActionsPageController', () => {
         value: {
           text: 'Not available'
         }
-      },
-      {
-        key: {
-          text: 'Land Cover'
-        },
-        value: {
-          text: 'Not available'
-        }
-      },
-      {
-        key: {
-          text: 'Intersections'
-        },
-        value: {
-          text: 'Not available'
-        }
       }
     ]
   }
