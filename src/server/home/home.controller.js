@@ -5,7 +5,7 @@
  */
 export const homeController = {
   handler(_request, h) {
-    return h.view('home/home', {
+    return h.view('home/views/home', {
       pageTitle: 'Home',
       heading: 'Home'
     })
@@ -14,7 +14,7 @@ export const homeController = {
 
 export const indexController = {
   handler(_request, h) {
-    return h.view('home/index', {
+    return h.view('home/views/index', {
       pageTitle: 'Index',
       heading: 'Index'
     })

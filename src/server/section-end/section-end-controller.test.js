@@ -23,7 +23,7 @@ describe('SectionEndController', () => {
     })
 
     it('should set viewName to section-end-summary', () => {
-      expect(controller.viewName).toBe('section-end-summary')
+      expect(controller.viewName).toBe('section-end/views/section-end-summary')
     })
   })
 
@@ -256,7 +256,7 @@ describe('SectionEndController', () => {
   describe('integration with SummaryPageController', () => {
     it('should properly set up the controller instance', () => {
       expect(controller).toBeDefined()
-      expect(controller.viewName).toBe('section-end-summary')
+      expect(controller.viewName).toBe('section-end/views/section-end-summary')
       expect(controller).toHaveProperty('makePostRouteHandler')
     })
 

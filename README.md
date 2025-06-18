@@ -27,6 +27,7 @@ Core delivery platform Node.js Frontend Template.
   - [SonarCloud](#sonarcloud)
 - [Licence](#licence)
   - [About the licence](#about-the-licence)
+- [Project Structure](#project-structure)
 
 ## Requirements
 
@@ -41,6 +42,22 @@ To use the correct version of Node.js for this application, via nvm:
 cd grants-ui
 nvm use
 ```
+
+## Project Structure
+
+This project follows a feature-based structure to promote modularity and maintainability. Each feature should be organized into its own directory within `src/server`, containing all the necessary files for that feature to function independently.
+
+A feature directory, for example `src/server/my-feature`, can be composed of several parts. While smaller features might have a single controller and a view, more complex features like `src/server/land-grants` are organized into subdirectories.
+
+A typical feature can have the following structure:
+
+- **`index.js`**: (Optional) Defines the routes for the feature and maps them to the controller methods. For some features, routes may be defined in a central router.
+- **`controllers/`**: A directory for controllers that handle requests and responses. A feature may have one or more controllers.
+- **`views/`**: A subdirectory for Nunjucks templates specific to this feature.
+- **`mappers/`**: (Optional) A subdirectory for data transformation logic.
+- **`services/`**: (Optional) A subdirectory for business logic that is independent of the web layer.
+
+By organizing the codebase this way, we aim to make it easier to locate and modify feature-specific code, reducing the risk of unintended side effects and improving overall development efficiency.
 
 ## Server-side Caching
 
