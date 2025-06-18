@@ -12,6 +12,7 @@ export default class LandActionsPageController extends QuestionPageController {
   viewName = 'choose-which-actions-to-do'
   quantityPrefix = 'qty-'
   availableActions = []
+  currentParcelSize = NOT_AVAILABLE
 
   /**
    * Extract action details from the form payload
@@ -66,23 +67,7 @@ export default class LandActionsPageController extends QuestionPageController {
             text: 'Total size'
           },
           value: {
-            text: NOT_AVAILABLE
-          }
-        },
-        {
-          key: {
-            text: 'Land Cover'
-          },
-          value: {
-            text: NOT_AVAILABLE
-          }
-        },
-        {
-          key: {
-            text: 'Intersections'
-          },
-          value: {
-            text: NOT_AVAILABLE
+            text: this.currentParcelSize
           }
         }
       ]
@@ -187,6 +172,9 @@ export default class LandActionsPageController extends QuestionPageController {
       // Load available actions for the land parcel
       try {
         const data = await fetchAvailableActionsForParcel({ parcelId, sheetId })
+        this.currentParcelSize = data.size
+          ? `${data.size.value} ${data.size.unit}`
+          : NOT_AVAILABLE
         this.availableActions = data.actions || []
         if (!this.availableActions.length) {
           request.logger.error({
