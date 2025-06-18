@@ -217,7 +217,7 @@ describe('adding-value-tasklist-controller', () => {
       await handler(mockRequest, mockH)
 
       expect(mockH.view).toHaveBeenCalledWith(
-        'views/adding-value-tasklist-page',
+        'adding-value-tasklist/views/adding-value-tasklist-page',
         expect.objectContaining({
           pageHeading: 'Apply for adding value grant',
           sections: expect.any(Array),
@@ -243,7 +243,7 @@ describe('adding-value-tasklist-controller', () => {
       await handler(mockRequest, mockH)
 
       expect(mockH.view).toHaveBeenCalledWith(
-        'views/adding-value-tasklist-page',
+        'adding-value-tasklist/views/adding-value-tasklist-page',
         expect.objectContaining({
           pageHeading: 'Apply for adding value grant',
           sections: expect.any(Array)
@@ -261,7 +261,7 @@ describe('adding-value-tasklist-controller', () => {
       await handler(mockRequest, mockH)
 
       expect(mockH.view).toHaveBeenCalledWith(
-        'views/adding-value-tasklist-page',
+        'adding-value-tasklist/views/adding-value-tasklist-page',
         expect.objectContaining({
           pageHeading: 'Apply for adding value grant',
           sections: expect.any(Array)
