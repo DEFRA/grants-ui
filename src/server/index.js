@@ -17,7 +17,6 @@ import {
 // import auth from '~/src/plugins/auth.js'
 import csp from '~/src/plugins/content-security-policy.js'
 import sso from '~/src/plugins/sso.js'
-import { tasklistBackButton } from '~/src/server/plugins/tasklist-back-button.js'
 import { formsService } from '~/src/server/common/forms/services/form.js'
 import { outputService } from '~/src/server/common/forms/services/output.js'
 import {
@@ -34,12 +33,14 @@ import { getCacheEngine } from '~/src/server/common/helpers/session-cache/cache-
 import { sessionCache } from '~/src/server/common/helpers/session-cache/session-cache.js'
 import ConfirmationPageController from '~/src/server/controllers/confirmation/controller.js'
 import DeclarationPageController from '~/src/server/controllers/declaration/controller.js'
-import LandActionsPageController from '~/src/server/land-grants/controllers/land-actions-page.controller.js'
+import CheckAnswersPageController from '~/src/server/land-grants/controllers/check-answers-page.controller.js'
 import LandActionsCheckPageController from '~/src/server/land-grants/controllers/land-actions-check-page.controller.js'
+import LandActionsPageController from '~/src/server/land-grants/controllers/land-actions-page.controller.js'
 import LandParcelPageController from '~/src/server/land-grants/controllers/land-parcel-page.controller.js'
 import SubmissionPageController from '~/src/server/land-grants/controllers/submission-page.controller.js'
-import SectionEndController from './controllers/section-end/section-end-controller.js'
+import { tasklistBackButton } from '~/src/server/plugins/tasklist-back-button.js'
 import { formatCurrency } from '../config/nunjucks/filters/format-currency.js'
+import SectionEndController from './controllers/section-end/section-end-controller.js'
 import { router } from './router.js'
 
 const SESSION_CACHE_NAME = 'session.cache.name'
@@ -120,6 +121,7 @@ const registerFormsPlugin = async (server) => {
       controllers: {
         ConfirmationPageController,
         DeclarationPageController,
+        CheckAnswersPageController,
         SubmissionPageController,
         LandParcelPageController,
         LandActionsPageController,

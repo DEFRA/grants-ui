@@ -140,7 +140,7 @@ describe('LandParcelPageController', () => {
     })
 
     it('populates full viewModel correctly', async () => {
-      mockContext.state = state
+      mockContext.state.selectedLandParcel = state.selectedLandParcel
 
       const result = await controller.makeGetRouteHandler()(
         mockRequest,
@@ -161,8 +161,8 @@ describe('LandParcelPageController', () => {
   })
 
   describe('POST route handler', () => {
-    it('saves landParcel and proceeds', async () => {
-      mockRequest.payload = { selectedLandParcel: state.selectedLandParcel }
+    it('saves selectedLandParcel and proceeds', async () => {
+      mockRequest.payload = state
       mockContext = setupContext({ existing: 'value' })
 
       const result = await controller.makePostRouteHandler()(
@@ -183,7 +183,7 @@ describe('LandParcelPageController', () => {
       expect(result).toBe('next')
     })
 
-    it('sets an error if landParcel is not defined', async () => {
+    it('sets an error if selectedLandParcel is not defined', async () => {
       mockRequest.payload = { action: 'validate' }
       mockContext = setupContext({ existing: 'value' })
 
@@ -205,9 +205,9 @@ describe('LandParcelPageController', () => {
       expect(result).toBe('mock-rendered-view')
     })
 
-    it('handles missing landParcel in payload', async () => {
+    it('handles missing selectedLandParcel in payload', async () => {
       mockRequest.payload = {}
-      mockContext = setupContext({ foo: 'bar' })
+      mockContext = setupContext({})
 
       const result = await controller.makePostRouteHandler()(
         mockRequest,
@@ -216,7 +216,6 @@ describe('LandParcelPageController', () => {
       )
 
       expect(controller.setState).toHaveBeenCalledWith(mockRequest, {
-        foo: 'bar',
         selectedLandParcel: undefined
       })
       expect(controller.proceed).toHaveBeenCalled()

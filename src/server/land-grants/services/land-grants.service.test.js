@@ -206,16 +206,12 @@ describe('land-grants service', () => {
       const result = landActionsToApiPayload(input)
 
       expect(result).toEqual({
-        landActions: [
-          {
-            sheetId: 'sheetId',
-            parcelId: 'parcelId',
-            sbi: 117235001,
-            actions: [
-              { code: 'CMOR1', quantity: 10.5 },
-              { code: 'UPL1', quantity: 20.75 }
-            ]
-          }
+        sheetId: 'sheetId',
+        parcelId: 'parcelId',
+        sbi: 106284736,
+        actions: [
+          { code: 'CMOR1', quantity: 10.5 },
+          { code: 'UPL1', quantity: 20.75 }
         ]
       })
     })
@@ -230,14 +226,10 @@ describe('land-grants service', () => {
       const result = landActionsToApiPayload(input)
 
       expect(result).toEqual({
-        landActions: [
-          {
-            sheetId: 'sheetId',
-            parcelId: 'parcelId',
-            sbi: 117235001,
-            actions: []
-          }
-        ]
+        sheetId: 'sheetId',
+        parcelId: 'parcelId',
+        sbi: 106284736,
+        actions: []
       })
     })
   })
@@ -255,9 +247,11 @@ describe('land-grants service', () => {
       formatCurrency.mockReturnValue('£1,234.56')
 
       const result = await calculateGrantPayment({
-        sheetId: 'SHEET123',
-        parcelId: 'PARCEL456',
-        actionsObj: { CMOR1: { value: 10 } }
+        landParcels: {
+          'SHEET123-PARCEL456': {
+            actionsObj: { CMOR1: { value: 10 } }
+          }
+        }
       })
 
       expect(fetch).toHaveBeenCalledWith(
@@ -268,7 +262,7 @@ describe('land-grants service', () => {
               {
                 sheetId: 'SHEET123',
                 parcelId: 'PARCEL456',
-                sbi: 117235001,
+                sbi: 106284736,
                 actions: [{ code: 'CMOR1', quantity: 10 }]
               }
             ]
@@ -293,8 +287,11 @@ describe('land-grants service', () => {
       formatCurrency.mockReturnValue('£0.00')
 
       const result = await calculateGrantPayment({
-        sheetId: 'SHEET123',
-        parcelId: 'PARCEL456'
+        landParcels: {
+          'SHEET123-PARCEL456': {
+            actionsObj: { CMOR1: { value: 0 } }
+          }
+        }
       })
 
       expect(result.paymentTotal).toBe('£0.00')
@@ -312,8 +309,9 @@ describe('land-grants service', () => {
       formatCurrency.mockReturnValue(null)
 
       const result = await calculateGrantPayment({
-        sheetId: 'SHEET123',
-        parcelId: 'PARCEL456'
+        landParcels: {
+          'SHEET123-PARCEL456': {}
+        }
       })
 
       expect(result.paymentTotal).toBeNull()
@@ -331,8 +329,9 @@ describe('land-grants service', () => {
       formatCurrency.mockReturnValue(null)
 
       const result = await calculateGrantPayment({
-        sheetId: 'SHEET123',
-        parcelId: 'PARCEL456'
+        landParcels: {
+          'SHEET123-PARCEL456': {}
+        }
       })
 
       expect(result.paymentTotal).toBeNull()
@@ -346,8 +345,9 @@ describe('land-grants service', () => {
 
       await expect(
         calculateGrantPayment({
-          sheetId: 'SHEET123',
-          parcelId: 'PARCEL456'
+          landParcels: {
+            'SHEET123-PARCEL456': {}
+          }
         })
       ).rejects.toThrow('API error')
     })
@@ -481,7 +481,7 @@ describe('land-grants service', () => {
               {
                 sheetId: 'SHEET123',
                 parcelId: 'PARCEL456',
-                sbi: 117235001,
+                sbi: 106284736,
                 actions: [
                   { code: 'CMOR1', quantity: 10.5 },
                   { code: 'UPL1', quantity: 20.75 }
@@ -534,7 +534,7 @@ describe('land-grants service', () => {
               {
                 sheetId: 'SHEET123',
                 parcelId: 'PARCEL456',
-                sbi: 117235001,
+                sbi: 106284736,
                 actions: []
               }
             ]
@@ -584,9 +584,9 @@ describe('land-grants service', () => {
         json: () => mockSizeResponse
       })
 
-      const result = await fetchParcels('117235001')
+      const result = await fetchParcels('106284736')
 
-      expect(fetchParcelsFromDal).toHaveBeenCalledWith('117235001')
+      expect(fetchParcelsFromDal).toHaveBeenCalledWith('106284736')
       expect(fetch).toHaveBeenCalledWith(
         `${mockApiEndpoint}/parcels`,
         expect.objectContaining({
@@ -632,7 +632,7 @@ describe('land-grants service', () => {
         json: () => mockSizeResponse
       })
 
-      const result = await fetchParcels('117235001')
+      const result = await fetchParcels('106284736')
 
       expect(result).toEqual([
         {
@@ -658,7 +658,7 @@ describe('land-grants service', () => {
         json: () => mockSizeResponse
       })
 
-      const result = await fetchParcels('117235001')
+      const result = await fetchParcels('106284736')
 
       expect(result).toEqual([])
     })
@@ -666,7 +666,7 @@ describe('land-grants service', () => {
     it('should handle fetchParcelsFromDal error', async () => {
       fetchParcelsFromDal.mockRejectedValueOnce(new Error('SBI service error'))
 
-      await expect(fetchParcels('117235001')).rejects.toThrow(
+      await expect(fetchParcels('106284736')).rejects.toThrow(
         'SBI service error'
       )
     })
@@ -676,7 +676,7 @@ describe('land-grants service', () => {
       fetchParcelsFromDal.mockResolvedValueOnce(mockParcels)
       fetch.mockRejectedValueOnce(new Error('Size API error'))
 
-      await expect(fetchParcels('117235001')).rejects.toThrow('Size API error')
+      await expect(fetchParcels('106284736')).rejects.toThrow('Size API error')
     })
   })
 })
