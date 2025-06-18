@@ -38,8 +38,7 @@ const createParcelBasedActionsRow = () => ({
 })
 
 const createParcelActionRow = (parcelId, action) => ({
-  classes: 'govuk-summary-list__parcels-row',
-  key: { text: parcelId },
+  key: { classes: 'govuk-!-font-weight-regular', text: parcelId },
   value: {
     html: `${action.description}<br/>Applied area: ${action.value} ${action.unit}`
   }

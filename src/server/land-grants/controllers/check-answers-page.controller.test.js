@@ -173,7 +173,7 @@ describe('CheckAnswersPageController', () => {
 
       expect(rows[0]).toEqual(
         expect.objectContaining({
-          key: { text: 'parcel-1' },
+          key: expect.objectContaining({ text: 'parcel-1' }),
           value: {
             html: 'Test Action 1<br/>Applied area: 10 hectares'
           }
@@ -182,7 +182,7 @@ describe('CheckAnswersPageController', () => {
 
       expect(rows[1]).toEqual(
         expect.objectContaining({
-          key: { text: 'parcel-1' },
+          key: expect.objectContaining({ text: 'parcel-1' }),
           value: {
             html: 'Test Action 2<br/>Applied area: 5 hectares'
           }
@@ -191,7 +191,7 @@ describe('CheckAnswersPageController', () => {
 
       expect(rows[2]).toEqual(
         expect.objectContaining({
-          key: { text: 'parcel-2' },
+          key: expect.objectContaining({ text: 'parcel-2' }),
           value: {
             html: 'Test Action 3<br/>Applied area: 15 hectares'
           }
@@ -368,7 +368,7 @@ describe('CheckAnswersPageController', () => {
 
       expect(rows[5]).toEqual(
         expect.objectContaining({
-          key: { text: 'parcel-1' },
+          key: expect.objectContaining({ text: 'parcel-1' }),
           value: {
             html: 'Test Action 1<br/>Applied area: 10 hectares'
           }
@@ -377,7 +377,7 @@ describe('CheckAnswersPageController', () => {
 
       expect(rows[6]).toEqual(
         expect.objectContaining({
-          key: { text: 'parcel-1' },
+          key: expect.objectContaining({ text: 'parcel-1' }),
           value: {
             html: 'Test Action 2<br/>Applied area: 5 hectares'
           }
@@ -386,7 +386,7 @@ describe('CheckAnswersPageController', () => {
 
       expect(rows[7]).toEqual(
         expect.objectContaining({
-          key: { text: 'parcel-2' },
+          key: expect.objectContaining({ text: 'parcel-2' }),
           value: {
             html: 'Test Action 3<br/>Applied area: 15 hectares'
           }
