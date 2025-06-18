@@ -26,7 +26,6 @@ jobs:
           cache: npm
       - run: |
           npm ci
-          npm run build
           npm run format:check
           npm run lint
           npm test
