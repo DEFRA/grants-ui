@@ -3,7 +3,6 @@
 {% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
 {% from "govuk/components/checkboxes/macro.njk" import govukCheckboxes %}
 {% from "govuk/components/input/macro.njk" import govukInput %}
-{% from "govuk/components/inset-text/macro.njk" import govukInsetText %}
 {% from "govuk/components/warning-text/macro.njk" import govukWarningText %}
 {% from "govuk/components/button/macro.njk" import govukButton %}
 {% from "govuk/components/input/macro.njk" import govukInput %}
@@ -45,75 +44,60 @@
             }
           },
           rows: selectedLandParcelSummary.rows
-        }) 
+        })
       }}
-      <div class="govuk-hint">
 
-      </div>
       {% if availableActions %}
         <form method="post" novalidate>
-          {% set actionList = [] %}
+          {% set actionsCheckboxes = [] %}
           {% set action = actionId or actions[0].id %}
 
           {% for action in availableActions %}
-            {% set actionList = actionList.concat([{
+            {% set actionsCheckboxes = actionsCheckboxes.concat([{
               value: action.code,
               text: action.description,
-              availableArea: action.availableArea.value,
-              availableAreaUnit: action.availableArea.unit,
-              areaValue: actionsObj[action.code].value or '',
-              checked: actions and actions.includes(action.code)
+              checked: actions and actions.includes(action.code),
+              conditional: {
+                html: govukInput({
+                  name: quantityPrefix + action.code,
+                  spellcheck: false,
+                  classes: "govuk-input--width-5",
+                  label: {
+                    text: "Quantity"
+                  },
+                  hint: {
+                    text: action.availableArea.value + " " + action.availableArea.unit + " available"
+                  },
+                  value: selectedActionsQuantities[ "qty-" + action.code ] or "",
+                  suffix: {
+                    text: action.availableArea.unit
+                  }
+                })
+              }
             }]) %}
           {% endfor %}
 
-          {% if actionList.length > 0 %}
-          <div class="govuk-form-group">
-            <fieldset class="govuk-fieldset" aria-describedby="action-hint">
+          {% if actionsCheckboxes.length > 0 %}
 
-              <table class="govuk-table">
-                <thead class="govuk-table__head">
-                  <tr class="govuk-table__row">
-                    <th class="govuk-table__header">Select</th>
-                    <th class="govuk-table__header">Action</th>
-                    <th class="govuk-table__header">Available</th>
-                    <th class="govuk-table__header">Quantity</th>
-                  </tr>
-                </thead>
-                <tbody class="govuk-table__body">
-                  {% for action in actionList %}
-                  <tr class="govuk-table__row">
-                    <td class="govuk-table__cell">
-                      <div class="govuk-checkboxes__item series-selector-items">
-                        <input class="govuk-checkboxes__input" id="{{action.value}}" name="selectedActions" type="checkbox" value="{{action.value}}" {% if action.checked %}checked{% endif %}>
-                        <label class="govuk-label govuk-checkboxes__label" for="selectedActions">
-                        <span class="govuk-visually-hidden">{{action.value}}</span></label>
-                      </div>
-                    </td>
-                    <td class="govuk-table__cell">{{ action.text }}</td>
-                    <td class="govuk-table__cell">{{ action.availableArea }}</td>
-                    <td class="govuk-table__cell">
+          {% set quantityPrefix = "quantity-" %}
+          {% if actionsObj is defined and actionsObj[action] is defined %}
+            {% set quantityPrefix = actionsObj[action].quantityPrefix or quantityPrefix %}
+          {% endif %}
 
-                      {{ govukInput({
-                        label: {
-                          classes: "govuk-visually-hidden",
-                          text: "Quantity"
-                        },
-                        classes: "govuk-input--width-10",
-                        value: action.areaValue,
-                        name: quantityPrefix + action.value,
-                        suffix: {
-                          text: action.availableAreaUnit
-                        },
-                        spellcheck: false
-                      }) }}
-                    </td>
-                  </tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-
-            </fieldset>
-          </div>
+          {{ govukCheckboxes({
+            name: "selectedActions",
+            fieldset: {
+              legend: {
+                text: "Available actions",
+                classes: "govuk-fieldset__legend--m"
+              }
+            },
+            hint: {
+              text: "Select all the actions you want to do for this land parcel"
+            },
+            items: actionsCheckboxes,
+            values: selectedActions or []
+          }) }}
 
           <div class="govuk-button-group">
             <input type="hidden" name="crumb" value="{{ crumb }}">
