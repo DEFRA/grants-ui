@@ -46,7 +46,7 @@ describe('TasklistGenerator', () => {
       const result = generator.generateTasklist(mockData, visitedSubSections)
 
       expect(result).toEqual({
-        pageHeading: 'Adding Value Tasklist',
+        pageHeading: 'Example Tasklist',
         closingDate: '2024-12-31',
         helpText: 'Complete all sections to submit your application',
         sections: expect.any(Array)
@@ -61,7 +61,7 @@ describe('TasklistGenerator', () => {
       const result = generator.generateTasklist()
 
       expect(result).toEqual({
-        pageHeading: 'Adding Value Tasklist',
+        pageHeading: 'Example Tasklist',
         closingDate: '2024-12-31',
         helpText: 'Complete all sections to submit your application',
         sections: expect.any(Array)
@@ -72,7 +72,7 @@ describe('TasklistGenerator', () => {
       const result = generator.generateTasklist(undefined, ['visited1'])
 
       expect(result).toEqual({
-        pageHeading: 'Adding Value Tasklist',
+        pageHeading: 'Example Tasklist',
         closingDate: '2024-12-31',
         helpText: 'Complete all sections to submit your application',
         sections: expect.any(Array)
@@ -478,12 +478,12 @@ describe('TasklistGenerator', () => {
       expect(result[0].subsections).toHaveLength(2)
       expect(result[0].subsections[0]).toEqual({
         title: { text: 'Subsection 1' },
-        href: '/sub1?source=adding-value-tasklist',
+        href: '/sub1?source=example-tasklist',
         status: taskListStatusComponents[TaskListStatus.COMPLETED]
       })
       expect(result[0].subsections[1]).toEqual({
         title: { text: 'Subsection 2' },
-        href: '/sub2?source=adding-value-tasklist',
+        href: '/sub2?source=example-tasklist',
         status: taskListStatusComponents[TaskListStatus.NOT_YET_STARTED]
       })
     })
@@ -525,7 +525,7 @@ describe('TasklistGenerator', () => {
       const statuses = { test: TaskListStatus.COMPLETED }
 
       const result = generator.buildHref(subsection, statuses)
-      expect(result).toBe('/test?source=adding-value-tasklist')
+      expect(result).toBe('/test?source=example-tasklist')
     })
 
     it('should use subsection id as href when href not specified', () => {
@@ -533,7 +533,7 @@ describe('TasklistGenerator', () => {
       const statuses = { test: TaskListStatus.NOT_YET_STARTED }
 
       const result = generator.buildHref(subsection, statuses)
-      expect(result).toBe('/test?source=adding-value-tasklist')
+      expect(result).toBe('/test?source=example-tasklist')
     })
 
     it('should return null for CANNOT_START_YET status', () => {

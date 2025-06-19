@@ -44,11 +44,11 @@ describe('generic-tasklist-controller', () => {
 
   describe('createTasklistRoute', () => {
     it('should create a route plugin with correct name', () => {
-      const result = createTasklistRoute('adding-value')
+      const result = createTasklistRoute('example')
 
       expect(result).toEqual({
         plugin: {
-          name: 'adding-valueTasklist',
+          name: 'exampleTasklist',
           register: expect.any(Function)
         }
       })
@@ -235,8 +235,8 @@ describe('generic-tasklist-controller', () => {
       it('should handle complete workflow with real-like data', async () => {
         const complexConfig = {
           tasklist: {
-            id: 'adding-value',
-            title: 'Adding Value Grant',
+            id: 'example',
+            title: 'Example Grant',
             sections: [
               {
                 id: 'section1',
@@ -253,7 +253,7 @@ describe('generic-tasklist-controller', () => {
         }
 
         const complexTasklistModel = {
-          pageHeading: 'Adding Value Grant',
+          pageHeading: 'Example Grant',
           sections: [
             {
               title: 'Section 1',
@@ -280,7 +280,7 @@ describe('generic-tasklist-controller', () => {
         })
         TasklistGenerator.mockImplementationOnce(createComplexTasklistGenerator)
 
-        const routePlugin = createTasklistRoute('adding-value')
+        const routePlugin = createTasklistRoute('example')
         routePlugin.plugin.register(mockServer)
 
         const routeCall = mockServer.route.mock.calls[1][0]
@@ -288,7 +288,7 @@ describe('generic-tasklist-controller', () => {
 
         const result = await handler(mockRequest, mockH)
 
-        expect(loadTasklistConfig).toHaveBeenCalledWith('adding-value')
+        expect(loadTasklistConfig).toHaveBeenCalledWith('example')
         expect(validateTasklistConfig).toHaveBeenCalledWith(complexConfig)
         expect(mockServer.app.cacheTemp.get).toHaveBeenCalledWith(
           'test-session-id'
@@ -301,7 +301,7 @@ describe('generic-tasklist-controller', () => {
 
         expect(mockH.view).toHaveBeenCalledWith('views/generic-tasklist-page', {
           ...complexTasklistModel,
-          tasklistId: 'adding-value'
+          tasklistId: 'example'
         })
         expect(result).toBe('rendered-view')
       })
