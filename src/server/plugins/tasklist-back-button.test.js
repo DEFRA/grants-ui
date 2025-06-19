@@ -29,7 +29,7 @@ const createMockResponse = (type, overrides = {}) => {
   return { ...baseResponses[type], ...overrides }
 }
 
-const createTasklistContext = (tasklistId = 'adding-value-tasklist') => ({
+const createTasklistContext = (tasklistId = 'example-tasklist') => ({
   fromTasklist: true,
   tasklistId
 })
@@ -52,8 +52,8 @@ const mockThrowingFileRead = () => {
 
 const createTasklistYaml = (href = 'nonexistent-form') => `
 tasklist:
-  id: adding-value
-  title: Adding Value
+  id: example
+  title: Example
   sections:
     - id: section1
       title: Section 1
@@ -77,13 +77,13 @@ const redirectTestCases = [
   {
     description: 'preserve source parameter on redirect',
     location: '/business-status/nature-of-business',
-    expected: '/business-status/nature-of-business?source=adding-value-tasklist'
+    expected: '/business-status/nature-of-business?source=example-tasklist'
   },
   {
     description: 'handle redirects with existing query parameters',
     location: '/business-status/nature-of-business?mock=query',
     expected:
-      '/business-status/nature-of-business?mock=query&source=adding-value-tasklist'
+      '/business-status/nature-of-business?mock=query&source=example-tasklist'
   }
 ]
 
@@ -158,7 +158,7 @@ describe('tasklistBackButton plugin', () => {
       jest.doMock('fs', () =>
         mockFsModule({
           existsSync: true,
-          files: ['adding-value-tasklist.yaml'],
+          files: ['example-tasklist.yaml'],
           readFileSync: jest.fn().mockReturnValueOnce(createTasklistYaml())
         })
       )
@@ -186,7 +186,7 @@ describe('tasklistBackButton plugin', () => {
       jest.doMock('fs', () =>
         mockFsModule({
           existsSync: true,
-          files: ['adding-value-tasklist.yaml'],
+          files: ['example-tasklist.yaml'],
           readFileSync: readFileImpl
         })
       )
@@ -247,7 +247,7 @@ describe('tasklistBackButton plugin', () => {
 
     it('should set session context when source parameter is present', () => {
       const request = createMockRequest({
-        query: { source: 'adding-value-tasklist' },
+        query: { source: 'example-tasklist' },
         path: '/business-status'
       })
 
@@ -255,14 +255,14 @@ describe('tasklistBackButton plugin', () => {
 
       expect(request.yar.set).toHaveBeenCalledWith(
         'tasklistContext',
-        createTasklistContext('adding-value-tasklist')
+        createTasklistContext('example-tasklist')
       )
       expect(result).toBe(h.continue)
     })
 
     it('should continue without setting context when missing yar', () => {
       const request = {
-        query: { source: 'adding-value-tasklist' },
+        query: { source: 'example-tasklist' },
         path: '/business-status'
       }
 
@@ -280,7 +280,7 @@ describe('tasklistBackButton plugin', () => {
 
     it('should handle Yar set errors gracefully', () => {
       const request = createMockRequest({
-        query: { source: 'adding-value-tasklist' },
+        query: { source: 'example-tasklist' },
         path: '/business-status',
         yar: {
           set: jest.fn().mockImplementation(mockThrowingYarSet)
@@ -300,7 +300,7 @@ describe('tasklistBackButton plugin', () => {
       responseHandler = getResponseHandler(server)
     })
 
-    const sourceQuery = { source: 'adding-value-tasklist' }
+    const sourceQuery = { source: 'example-tasklist' }
 
     const testRedirectCase = (location, expected) => {
       const request = createMockRequest({
@@ -317,11 +317,11 @@ describe('tasklistBackButton plugin', () => {
 
     // eslint-disable-next-line jest/expect-expect
     it.each(redirectTestCases)(
-      'when source=adding-value-tasklist should $description',
+      'when source=example-tasklist should $description',
       ({ location, expected }) => testRedirectCase(location, expected)
     )
 
-    it('when source=adding-value-tasklist should continue without modification for non-redirect responses', () => {
+    it('when source=example-tasklist should continue without modification for non-redirect responses', () => {
       const request = createMockRequest({
         query: sourceQuery,
         path: '/business-status',
@@ -351,7 +351,7 @@ describe('tasklistBackButton plugin', () => {
       expect(request.yar.get).toHaveBeenCalledWith('tasklistContext')
       expect(request.response.source.context.backLink).toEqual({
         text: 'Back to tasklist',
-        href: '/adding-value-tasklist/tasklist'
+        href: '/example-tasklist/tasklist'
       })
     })
 
@@ -469,7 +469,7 @@ describe('tasklistBackButton plugin', () => {
       {
         description: 'boom response with source',
         request: createMockRequest({
-          query: { source: 'adding-value-tasklist' },
+          query: { source: 'example-tasklist' },
           path: '/business-status',
           response: createMockResponse('boom')
         }),

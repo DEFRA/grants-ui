@@ -55,8 +55,8 @@ export const createMockHapiResponseToolkit = () => ({
 
 export const createComplexTasklistConfig = () => ({
   tasklist: {
-    id: 'adding-value',
-    title: 'Adding Value Tasklist',
+    id: 'example',
+    title: 'Example Tasklist',
     closingDate: '2024-12-31',
     helpText: 'Complete all sections to submit your application',
     sections: [

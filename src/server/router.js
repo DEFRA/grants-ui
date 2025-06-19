@@ -34,7 +34,7 @@ export const router = {
       await server.register([home, about])
 
       // Generic tasklist routes
-      await server.register([createTasklistRoute('adding-value')])
+      await server.register([createTasklistRoute('example')])
 
       // Static assets
       await server.register([serveStaticFiles])

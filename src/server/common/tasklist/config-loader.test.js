@@ -48,10 +48,10 @@ tasklist:
       readFile.mockResolvedValue('content')
       parse.mockReturnValue(mockConfig)
 
-      await loadTasklistConfig('adding-value')
+      await loadTasklistConfig('example')
 
       expect(readFile).toHaveBeenCalledWith(
-        expect.stringContaining('adding-value-tasklist.yaml'),
+        expect.stringContaining('example-tasklist.yaml'),
         'utf8'
       )
     })
@@ -317,8 +317,8 @@ tasklist:
     it('should load and validate a complete config successfully', async () => {
       const completeYamlContent = `
 tasklist:
-  id: adding-value
-  title: Adding Value Grant Application
+  id: example
+  title: Example Grant Application
   closingDate: "31 December 2024"
   helpText: "Complete all sections to submit your application"
   sections:
@@ -339,8 +339,8 @@ tasklist:
 `
 
       const expectedConfig = createValidTasklistConfig({
-        id: 'adding-value',
-        title: 'Adding Value Grant Application',
+        id: 'example',
+        title: 'Example Grant Application',
         closingDate: '31 December 2024',
         helpText: 'Complete all sections to submit your application',
         sections: [
@@ -378,7 +378,7 @@ tasklist:
       readFile.mockResolvedValue(completeYamlContent)
       parse.mockReturnValue(expectedConfig)
 
-      const loadedConfig = await loadTasklistConfig('adding-value')
+      const loadedConfig = await loadTasklistConfig('example')
       const isValid = validateTasklistConfig(loadedConfig)
 
       expect(loadedConfig).toEqual(expectedConfig)
