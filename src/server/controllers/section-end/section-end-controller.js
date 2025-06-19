@@ -24,7 +24,9 @@ export default class SectionEndController extends SummaryPageController {
 
       await request.server.app.cacheTemp.set(request.yar.id, newData)
 
-      return h.redirect('/adding-value-tasklist/tasklist')
+      const source = request.query.source
+
+      return h.redirect(`/${source}/tasklist`)
     }
   }
 }

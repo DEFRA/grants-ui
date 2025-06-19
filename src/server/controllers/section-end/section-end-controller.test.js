@@ -113,7 +113,8 @@ describe('SectionEndController', () => {
         },
         yar: {
           id: 'session-123'
-        }
+        },
+        query: {}
       }
 
       mockContext = {
@@ -198,14 +199,13 @@ describe('SectionEndController', () => {
       )
     })
 
-    it('should redirect to /adding-value-tasklist/tasklist', async () => {
+    it('should redirect based on source query parameter', async () => {
       mockRequest.server.app.cacheTemp.get.mockResolvedValue({})
+      mockRequest.query = { source: 'custom-tasklist' }
 
       await handler(mockRequest, mockContext, mockH)
 
-      expect(mockH.redirect).toHaveBeenCalledWith(
-        '/adding-value-tasklist/tasklist'
-      )
+      expect(mockH.redirect).toHaveBeenCalledWith('/custom-tasklist/tasklist')
     })
 
     it('should handle async operations correctly', async () => {
