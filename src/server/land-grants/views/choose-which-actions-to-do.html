@@ -61,14 +61,14 @@
                 html: govukInput({
                   name: quantityPrefix + action.code,
                   spellcheck: false,
-                  classes: "govuk-input--width-5",
+                  classes: "govuk-input--width-10",
                   label: {
                     text: "Quantity"
                   },
                   hint: {
                     text: action.availableArea.value + " " + action.availableArea.unit + " available"
                   },
-                  value: selectedActionsQuantities[ "qty-" + action.code ] or "",
+                  value: selectedActionsQuantities[ quantityPrefix + action.code ] or "",
                   suffix: {
                     text: action.availableArea.unit
                   }
@@ -79,35 +79,30 @@
 
           {% if actionsCheckboxes.length > 0 %}
 
-          {% set quantityPrefix = "quantity-" %}
-          {% if actionsObj is defined and actionsObj[action] is defined %}
-            {% set quantityPrefix = actionsObj[action].quantityPrefix or quantityPrefix %}
-          {% endif %}
+            {{ govukCheckboxes({
+              name: "selectedActions",
+              fieldset: {
+                legend: {
+                  text: "Available actions",
+                  classes: "govuk-fieldset__legend--m"
+                }
+              },
+              hint: {
+                text: "Select all the actions you want to do for this land parcel"
+              },
+              items: actionsCheckboxes,
+              values: selectedActions or []
+            }) }}
 
-          {{ govukCheckboxes({
-            name: "selectedActions",
-            fieldset: {
-              legend: {
-                text: "Available actions",
-                classes: "govuk-fieldset__legend--m"
-              }
-            },
-            hint: {
-              text: "Select all the actions you want to do for this land parcel"
-            },
-            items: actionsCheckboxes,
-            values: selectedActions or []
-          }) }}
-
-          <div class="govuk-button-group">
-            <input type="hidden" name="crumb" value="{{ crumb }}">
-            {% block form %}
-              {{ govukButton({
-                text: "Continue",
-                preventDoubleClick: true
-              }) }}
-            {% endblock %}
-          </div>
+            <div class="govuk-button-group">
+              <input type="hidden" name="crumb" value="{{ crumb }}">
+              {% block form %}
+                {{ govukButton({
+                  text: "Continue",
+                  preventDoubleClick: true
+                }) }}
+              {% endblock %}
+            </div>
           {% else %}
             {{ govukWarningText({
               text: "No actions available to select.",
