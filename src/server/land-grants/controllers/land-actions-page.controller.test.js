@@ -249,6 +249,23 @@ describe('LandActionsPageController', () => {
       })
 
       mockContext.state.selectedActions = ['CMOR1', 'UPL1']
+      if (!mockContext.state.landParcels) {
+        mockContext.state.landParcels = {}
+      }
+      mockContext.state.landParcels['sheet1-parcel1'] = {
+        actionsObj: {
+          CMOR1: {
+            description: 'CMOR1: Assess moorland and produce a written record',
+            value: 10,
+            unit: 'ha'
+          },
+          UPL1: {
+            description: 'UPL1: Moderate livestock grazing on moorland',
+            value: 5,
+            unit: 'ha'
+          }
+        }
+      }
 
       const handler = controller.makeGetRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
@@ -263,7 +280,8 @@ describe('LandActionsPageController', () => {
           selectedLandParcel: 'sheet1-parcel1',
           availableActions,
           selectedLandParcelSummary,
-          selectedActions: ['CMOR1', 'UPL1']
+          selectedActions: ['CMOR1', 'UPL1'],
+          selectedActionsQuantities: { 'qty-CMOR1': 10, 'qty-UPL1': 5 }
         })
       )
       expect(result).toBe('rendered view')
@@ -339,7 +357,9 @@ describe('LandActionsPageController', () => {
         expect.objectContaining({
           availableActions: [],
           selectedLandParcelSummary,
-          selectedLandParcel: 'sheet1-parcel1'
+          selectedLandParcel: 'sheet1-parcel1',
+          selectedActions: [],
+          selectedActionsQuantities: {}
         })
       )
       expect(result).toBe('rendered view')
