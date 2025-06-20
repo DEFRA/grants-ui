@@ -44,7 +44,7 @@ pages:
   - title: What is your business?
     path: /what-is-your-business
     next:
-      - path: /summary
+      - path: /what-type-of-pigs
     components:
       - name: sdFYHf
         title: What is your business?
@@ -53,6 +53,87 @@ pages:
         hint: ''
         options: {}
         schema: {}
+
+  - title: What type of pigs?
+    path: /what-type-of-pigs
+    components:
+      - name: pigTypes
+        title: What type of pigs?
+        type: CheckboxesField
+        list: pigTypesList
+        hint: Select all that apply.
+        options: {}
+        schema: {}
+    next:
+      - path: /how-many-white-pigs
+        condition: selectedWhitePig
+      - path: /how-many-black-pigs
+        condition: selectedBlackPig
+      - path: /how-many-grey-pigs
+        condition: selectedGreyPig
+      - path: /how-many-other-pigs
+        condition: selectedOtherPig
+      - path: /summary
+
+  - title: How many White pigs do you have?
+    path: /how-many-white-pigs
+    components:
+      - name: whitePigsCount
+        title: How many White pigs do you have?
+        type: NumberField
+        hint: ''
+        options: {}
+        schema: {}
+    next:
+      - path: /how-many-black-pigs
+        condition: selectedBlackPig
+      - path: /how-many-grey-pigs
+        condition: selectedGreyPig
+      - path: /how-many-other-pigs
+        condition: selectedOtherPig
+      - path: /summary
+
+  - title: How many Black pigs do you have?
+    path: /how-many-black-pigs
+    components:
+      - name: blackPigsCount
+        title: How many Black pigs do you have?
+        type: NumberField
+        hint: ''
+        options: {}
+        schema: {}
+    next:
+      - path: /how-many-grey-pigs
+        condition: selectedGreyPig
+      - path: /how-many-other-pigs
+        condition: selectedOtherPig
+      - path: /summary
+
+  - title: How many Grey pigs do you have?
+    path: /how-many-grey-pigs
+    components:
+      - name: greyPigsCount
+        title: How many Grey pigs do you have?
+        type: NumberField
+        hint: ''
+        options: {}
+        schema: {}
+    next:
+      - path: /how-many-other-pigs
+        condition: selectedOtherPig
+      - path: /summary
+
+  - title: How many Other pigs do you have?
+    path: /how-many-other-pigs
+    components:
+      - name: otherPigsCount
+        title: How many Other pigs do you have?
+        type: NumberField
+        hint: ''
+        options: {}
+        schema: {}
+    next:
+      - path: /summary
 
   - path: /summary
     controller: SummaryPageController
@@ -71,6 +152,19 @@ lists:
         value: business
       - text: None of the above
         value: none
+
+  - title: What type of pigs do you have?
+    name: pigTypesList
+    type: string
+    items:
+      - text: White
+        value: white
+      - text: Black
+        value: black
+      - text: Grey
+        value: grey
+      - text: Other
+        value: other
 
   - title: What is the legal status of your business?
     name: ihwVmQ
@@ -125,5 +219,65 @@ conditions:
             type: Value
             value: 'false'
             display: No
+
+  - name: selectedWhitePig
+    displayName: User selected white pig
+    value:
+      name: selectedWhitePig
+      conditions:
+        - field:
+            name: pigTypes
+            type: CheckboxesField
+            display: What type of pigs?
+          operator: contains
+          value:
+            type: Value
+            value: 'white'
+            display: 'white'
+
+  - name: selectedBlackPig
+    displayName: User selected black pig
+    value:
+      name: selectedBlackPig
+      conditions:
+        - field:
+            name: pigTypes
+            type: CheckboxesField
+            display: What type of pigs?
+          operator: contains
+          value:
+            type: Value
+            value: 'black'
+            display: 'black'
+
+  - name: selectedGreyPig
+    displayName: User selected grey pig
+    value:
+      name: selectedGreyPig
+      conditions:
+        - field:
+            name: pigTypes
+            type: CheckboxesField
+            display: What type of pigs?
+          operator: contains
+          value:
+            type: Value
+            value: 'grey'
+            display: 'grey'
+
+  - name: selectedOtherPig
+    displayName: User selected other pig
+    value:
+      name: selectedOtherPig
+      conditions:
+        - field:
+            name: pigTypes
+            type: CheckboxesField
+            display: What type of pigs?
+          operator: contains
+          value:
+            type: Value
+            value: 'other'
+            display: 'other'
 
 startPage: /start
