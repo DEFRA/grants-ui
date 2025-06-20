@@ -100,10 +100,11 @@ const createHapiServer = () => {
   })
 }
 
-const registerFormsPlugin = async (server) => {
+const registerFormsPlugin = async (server, prefix = '') => {
   await server.register({
     plugin,
     options: {
+      ...(prefix && { routes: { prefix } }),
       cacheName: config.get(SESSION_CACHE_NAME),
       services: {
         formsService: await formsService(),
@@ -133,6 +134,8 @@ const registerFormsPlugin = async (server) => {
 }
 
 const registerPlugins = async (server) => {
+  await server.register([router])
+
   await server.register([
     inert,
     crumb,
@@ -148,7 +151,6 @@ const registerPlugins = async (server) => {
     sessionCache,
     nunjucksConfig,
     tasklistBackButton,
-    router,
     sso
   ])
 }
