@@ -91,11 +91,15 @@ export default class LandActionsPageController extends QuestionPageController {
       const payload = request.payload ?? {}
       const [sheetId, parcelId] = parseLandParcel(state.selectedLandParcel)
       const actionsObj = this.extractActionsObjectFromPayload(payload)
+      const selectedActionsQuantities = Object.fromEntries(
+        Object.entries(payload).filter(([key]) => key.startsWith('qty-'))
+      )
 
       // Create updated state with the new action data
       const newState = {
         ...state,
         selectedLandParcelSummary: this.getSelectedLandParcelData(context),
+        selectedActionsQuantities,
         landParcels: {
           ...state.landParcels, // Spread existing land parcels
           [state.selectedLandParcel]: {
@@ -134,6 +138,7 @@ export default class LandActionsPageController extends QuestionPageController {
             ...this.getViewModel(request, context),
             ...newState,
             selectedActions: payload.selectedActions,
+            selectedActionsQuantities,
             errors
           })
         }

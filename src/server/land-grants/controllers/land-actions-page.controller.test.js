@@ -616,6 +616,7 @@ describe('LandActionsPageController', () => {
           errors: errorMessages.map((m) => m.description),
           availableActions,
           selectedActions: ['CMOR1', 'UPL1'],
+          selectedActionsQuantities: { 'qty-CMOR1': 10, 'qty-UPL1': 5 },
           // The state should include the user's submitted actionsObj
           landParcels: expect.objectContaining({
             'sheet1-parcel1': {
