@@ -14,7 +14,7 @@ import {
   grantsUiPaths,
   nunjucksConfig
 } from '~/src/config/nunjucks/nunjucks.js'
-// import auth from '~/src/plugins/auth.js'
+import auth from '~/src/plugins/auth.js'
 import csp from '~/src/plugins/content-security-policy.js'
 import sso from '~/src/plugins/sso.js'
 import { formsService } from '~/src/server/common/forms/services/form.js'
@@ -65,10 +65,10 @@ const createHapiServer = () => {
           abortEarly: false
         }
       },
-      // auth: {
-      //   mode: 'try',
-      //   strategy: 'session'
-      // },
+      auth: {
+        mode: 'try',
+        strategy: 'session'
+      },
       files: {
         relativeTo: path.resolve(config.get('root'), '.public')
       },
@@ -140,7 +140,7 @@ const registerPlugins = async (server) => {
     Cookie,
     Scooter,
     csp,
-    // auth,
+    auth,
     requestLogger,
     requestTracing,
     secureContext,
