@@ -426,42 +426,64 @@ describe('LandActionsPageController', () => {
       expect(result).toBe('redirected')
     })
 
-    test('should handle empty payload gracefully', async () => {
-      mockRequest.payload = null
+    describe('validations', () => {
+      test('should handle empty payload gracefully', async () => {
+        mockRequest.payload = null
 
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+        const handler = controller.makePostRouteHandler()
+        await handler(mockRequest, mockContext, mockH)
 
-      expect(controller.setState).toHaveBeenCalledWith(
-        mockRequest,
-        expect.objectContaining({
-          selectedLandParcel: 'sheet1-parcel1',
-          landParcels: {
-            'sheet1-parcel1': {
-              actionsObj: {}
+        expect(controller.setState).toHaveBeenCalledWith(
+          mockRequest,
+          expect.objectContaining({
+            selectedLandParcel: 'sheet1-parcel1',
+            landParcels: {
+              'sheet1-parcel1': {
+                actionsObj: {}
+              }
             }
-          }
-        })
-      )
-    })
+          })
+        )
+      })
 
-    test('should handle missing actions gracefully', async () => {
-      mockRequest.payload = {
-        selectedActions: [],
-        action: 'validate'
-      }
+      test('should handle no actions selected', async () => {
+        mockRequest.payload = {
+          selectedActions: [],
+          action: 'validate'
+        }
 
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+        const handler = controller.makePostRouteHandler()
+        await handler(mockRequest, mockContext, mockH)
 
-      expect(validateLandActions).not.toHaveBeenCalled()
+        expect(validateLandActions).not.toHaveBeenCalled()
 
-      expect(mockH.view).toHaveBeenCalledWith(
-        'choose-which-actions-to-do',
-        expect.objectContaining({
-          errors: ['Please select at least one action and quantity']
-        })
-      )
+        expect(mockH.view).toHaveBeenCalledWith(
+          'choose-which-actions-to-do',
+          expect.objectContaining({
+            errors: ['Please select at least one action']
+          })
+        )
+      })
+
+      test('should handle no quantity provided for selected action', async () => {
+        mockRequest.payload = {
+          selectedActions: ['CMOR1'],
+          'qty-CMOR1': '',
+          action: 'validate'
+        }
+
+        const handler = controller.makePostRouteHandler()
+        await handler(mockRequest, mockContext, mockH)
+
+        expect(validateLandActions).not.toHaveBeenCalled()
+
+        expect(mockH.view).toHaveBeenCalledWith(
+          'choose-which-actions-to-do',
+          expect.objectContaining({
+            errors: ['Please provide a quantity for CMOR1']
+          })
+        )
+      })
     })
 
     test('should validate actions when validate action is requested', async () => {
@@ -531,7 +553,7 @@ describe('LandActionsPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'choose-which-actions-to-do',
         expect.objectContaining({
-          errors: errorMessages.map((m) => `${m.code}: ${m.description}`),
+          errors: errorMessages.map((m) => `${m.description}`),
           availableActions
         })
       )
@@ -556,12 +578,64 @@ describe('LandActionsPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'choose-which-actions-to-do',
         expect.objectContaining({
-          errors: ['Please select at least one action and quantity'],
+          errors: ['Please select at least one action'],
           availableActions
         })
       )
 
       expect(controller.proceed).not.toHaveBeenCalled()
+      expect(result).toBe('rendered view')
+    })
+
+    test('should replay user input values if validation fails', async () => {
+      // Simulate user input
+      mockRequest.payload = {
+        'qty-CMOR1': 10,
+        'qty-UPL1': 5,
+        selectedActions: ['CMOR1', 'UPL1'],
+        action: 'validate'
+      }
+
+      // Simulate validation failure
+      const errorMessages = [
+        { code: 'CMOR1', description: 'Please provide a quantity for CMOR1' },
+        { code: 'UPL1', description: 'Please provide a quantity for UPL1' }
+      ]
+      validateLandActions.mockResolvedValue({
+        valid: false,
+        errorMessages
+      })
+
+      const handler = controller.makePostRouteHandler()
+      const result = await handler(mockRequest, mockContext, mockH)
+
+      // The view should be rendered with the user's submitted values
+      expect(mockH.view).toHaveBeenCalledWith(
+        'choose-which-actions-to-do',
+        expect.objectContaining({
+          errors: errorMessages.map((m) => m.description),
+          availableActions,
+          selectedActions: ['CMOR1', 'UPL1'],
+          // The state should include the user's submitted actionsObj
+          landParcels: expect.objectContaining({
+            'sheet1-parcel1': {
+              actionsObj: {
+                CMOR1: {
+                  description:
+                    'CMOR1: Assess moorland and produce a written record',
+                  value: 10,
+                  unit: 'ha'
+                },
+                UPL1: {
+                  description: 'UPL1: Moderate livestock grazing on moorland',
+                  value: 5,
+                  unit: 'ha'
+                }
+              }
+            }
+          })
+        })
+      )
       expect(result).toBe('rendered view')
     })
   })
