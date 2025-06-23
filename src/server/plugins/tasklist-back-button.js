@@ -148,6 +148,12 @@ function addBackLinkToContext(response, tasklistId) {
   }
 }
 
+function addTasklistIdToContext(response, tasklistId) {
+  if (hasViewContext(response)) {
+    response.source.context.tasklistId = tasklistId
+  }
+}
+
 function shouldProcessTasklistRequest(fromTasklistSession) {
   return fromTasklistSession
 }
@@ -174,6 +180,11 @@ function processExistingTasklistSession(request, fromTasklistSession, h) {
     return h.continue
   }
 
+  const tasklistId = getTasklistIdFromSession(request)
+  if (tasklistId) {
+    addTasklistIdToContext(request.response, tasklistId)
+  }
+
   handleFirstPageRequest(request, fromTasklistSession)
   return h.continue
 }
@@ -194,16 +205,33 @@ function createOnPreHandlerHook() {
 
 function createOnPreResponseHandler() {
   return (request, h) => {
-    if (isSourceTasklist(request) && isRedirectResponse(request.response)) {
+    if (isSourceTasklist(request)) {
       const tasklistId = getTasklistIdFromSource(request)
-      preserveSourceParameterInRedirect(request.response, tasklistId)
-      return h.continue
+
+      if (isRedirectResponse(request.response)) {
+        preserveSourceParameterInRedirect(request.response, tasklistId)
+        return h.continue
+      }
+
+      if (
+        isViewResponse(request.response) &&
+        hasViewContext(request.response)
+      ) {
+        addTasklistIdToContext(request.response, tasklistId)
+      }
     }
 
     const fromTasklistSession = isFromTasklist(request)
 
     if (!shouldProcessTasklistRequest(fromTasklistSession)) {
       return h.continue
+    }
+
+    if (fromTasklistSession && isRedirectResponse(request.response)) {
+      const tasklistId = getTasklistIdFromSession(request)
+      if (tasklistId) {
+        preserveSourceParameterInRedirect(request.response, tasklistId)
+      }
     }
 
     return processExistingTasklistSession(request, fromTasklistSession, h)

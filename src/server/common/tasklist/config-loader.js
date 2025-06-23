@@ -1,8 +1,29 @@
 import { readFile } from 'fs/promises'
 import { parse } from 'yaml'
 import { join } from 'path'
+import { statusCodes } from '../constants/status-codes.js'
 
 const CONFIGS_PATH = join(process.cwd(), 'src/server/common/tasklist/configs')
+
+class TasklistNotFoundError extends Error {
+  constructor(message, statusCode, responseBody, tasklistId) {
+    super(message)
+    this.name = 'TasklistNotFoundError'
+    this.status = statusCode
+    this.responseBody = responseBody
+    this.tasklistId = tasklistId
+  }
+}
+
+class TasklistValidationError extends Error {
+  constructor(message, statusCode, responseBody, tasklistId) {
+    super(message)
+    this.name = 'TasklistValidationError'
+    this.status = statusCode
+    this.responseBody = responseBody
+    this.tasklistId = tasklistId
+  }
+}
 
 export async function loadTasklistConfig(tasklistId) {
   try {
@@ -10,54 +31,120 @@ export async function loadTasklistConfig(tasklistId) {
     const fileContent = await readFile(configPath, 'utf8')
     return parse(fileContent)
   } catch (error) {
-    throw new Error(
-      `Failed to load tasklist config for '${tasklistId}': ${error.message}`
+    throw new TasklistNotFoundError(
+      `Failed to load tasklist config for '${tasklistId}': ${error.message}`,
+      statusCodes.notFound,
+      error.message,
+      tasklistId
     )
   }
 }
 
-export function validateTasklistConfig(config) {
+function validateTasklistRoot(config, tasklistId) {
   if (!config.tasklist) {
-    throw new Error('Missing tasklist root element in config')
+    throw new TasklistValidationError(
+      'Missing tasklist root element in config',
+      statusCodes.badRequest,
+      'Invalid configuration structure',
+      tasklistId
+    )
   }
+}
 
-  const { tasklist } = config
-
+function validateTasklistProperties(tasklist, tasklistId) {
   if (!tasklist.id) {
-    throw new Error('Tasklist config must have an id')
+    throw new TasklistValidationError(
+      'Tasklist config must have an id',
+      statusCodes.badRequest,
+      'Missing required id field',
+      tasklistId
+    )
   }
 
   if (!tasklist.title) {
-    throw new Error('Tasklist config must have a title')
+    throw new TasklistValidationError(
+      'Tasklist config must have a title',
+      statusCodes.badRequest,
+      'Missing required title field',
+      tasklistId
+    )
   }
 
   if (!tasklist.sections || !Array.isArray(tasklist.sections)) {
-    throw new Error('Tasklist config must have sections array')
+    throw new TasklistValidationError(
+      'Tasklist config must have sections array',
+      statusCodes.badRequest,
+      'Invalid sections structure',
+      tasklistId
+    )
+  }
+}
+
+function validateSection(section, sectionIndex, tasklistId) {
+  if (!section.id) {
+    throw new TasklistValidationError(
+      `Section at index ${sectionIndex} must have an id`,
+      statusCodes.badRequest,
+      'Missing section id',
+      tasklistId
+    )
   }
 
+  if (!section.title) {
+    throw new TasklistValidationError(
+      `Section '${section.id}' must have a title`,
+      statusCodes.badRequest,
+      'Missing section title',
+      tasklistId
+    )
+  }
+
+  if (!section.subsections || !Array.isArray(section.subsections)) {
+    throw new TasklistValidationError(
+      `Section '${section.id}' must have subsections array`,
+      statusCodes.badRequest,
+      'Invalid subsections structure',
+      tasklistId
+    )
+  }
+}
+
+function validateSubsection(
+  subsection,
+  subsectionIndex,
+  sectionId,
+  tasklistId
+) {
+  if (!subsection.id) {
+    throw new TasklistValidationError(
+      `Subsection at index ${subsectionIndex} in section '${sectionId}' must have an id`,
+      statusCodes.badRequest,
+      'Missing subsection id',
+      tasklistId
+    )
+  }
+
+  if (!subsection.title) {
+    throw new TasklistValidationError(
+      `Subsection '${subsection.id}' must have a title`,
+      statusCodes.badRequest,
+      'Missing subsection title',
+      tasklistId
+    )
+  }
+}
+
+export function validateTasklistConfig(config, tasklistId = 'unknown') {
+  validateTasklistRoot(config, tasklistId)
+
+  const { tasklist } = config
+  validateTasklistProperties(tasklist, tasklistId)
+
   tasklist.sections.forEach((section, sectionIndex) => {
-    if (!section.id) {
-      throw new Error(`Section at index ${sectionIndex} must have an id`)
-    }
-
-    if (!section.title) {
-      throw new Error(`Section '${section.id}' must have a title`)
-    }
-
-    if (!section.subsections || !Array.isArray(section.subsections)) {
-      throw new Error(`Section '${section.id}' must have subsections array`)
-    }
+    validateSection(section, sectionIndex, tasklistId)
 
     section.subsections.forEach((subsection, subsectionIndex) => {
-      if (!subsection.id) {
-        throw new Error(
-          `Subsection at index ${subsectionIndex} in section '${section.id}' must have an id`
-        )
-      }
-
-      if (!subsection.title) {
-        throw new Error(`Subsection '${subsection.id}' must have a title`)
-      }
+      validateSubsection(subsection, subsectionIndex, section.id, tasklistId)
     })
   })
 

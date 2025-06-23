@@ -10,6 +10,8 @@ export default class SectionEndController extends SummaryPageController {
       viewModel.checkAnswers = viewModel.checkAnswers[0]
     }
 
+    viewModel.source = request?.query?.source
+
     return viewModel
   }
 
@@ -24,7 +26,12 @@ export default class SectionEndController extends SummaryPageController {
 
       await request.server.app.cacheTemp.set(request.yar.id, newData)
 
-      const source = request.query.source
+      let source = request.query.source
+
+      if (!source && request.yar) {
+        const tasklistContext = request.yar.get('tasklistContext')
+        source = tasklistContext?.tasklistId
+      }
 
       return h.redirect(`/${source}/tasklist`)
     }

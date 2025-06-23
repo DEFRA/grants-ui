@@ -72,6 +72,14 @@ export class TasklistGenerator {
     conditions,
     currentStatuses
   ) {
+    if (subsection.id in data) {
+      return TaskListStatus.COMPLETED
+    }
+
+    if (visitedSubSections.includes(subsection.id)) {
+      return TaskListStatus.IN_PROGRESS
+    }
+
     if (subsection.condition) {
       try {
         const conditionConfig =
@@ -104,14 +112,6 @@ export class TasklistGenerator {
       if (!canStart) {
         return TaskListStatus.CANNOT_START_YET
       }
-    }
-
-    if (subsection.id in data) {
-      return TaskListStatus.COMPLETED
-    }
-
-    if (visitedSubSections.includes(subsection.id)) {
-      return TaskListStatus.IN_PROGRESS
     }
 
     return subsection.required !== false

@@ -264,6 +264,47 @@ describe('TasklistGenerator', () => {
       expect(status).toBe(TaskListStatus.NOT_YET_STARTED)
     })
 
+    it.each([
+      {
+        description: 'completed status over condition evaluation',
+        subsectionId: 'completedSubsection',
+        data: { completedSubsection: { value: 'done' } },
+        visitedSubSections: [],
+        expectedStatus: TaskListStatus.COMPLETED
+      },
+      {
+        description: 'in-progress status over condition evaluation',
+        subsectionId: 'visitedSubsection',
+        data: {},
+        visitedSubSections: ['visitedSubsection'],
+        expectedStatus: TaskListStatus.IN_PROGRESS
+      }
+    ])(
+      'should prioritise $description',
+      ({ subsectionId, data, visitedSubSections, expectedStatus }) => {
+        const subsection = {
+          id: subsectionId,
+          title: 'Test',
+          condition: 'testCondition'
+        }
+
+        const mockConditions = {
+          evaluateCondition: jest.fn().mockReturnValue(TaskListStatus.HIDDEN)
+        }
+
+        const status = generator.getSubsectionStatus(
+          subsection,
+          data,
+          visitedSubSections,
+          mockConditions,
+          {}
+        )
+
+        expect(status).toBe(expectedStatus)
+        expect(mockConditions.evaluateCondition).not.toHaveBeenCalled()
+      }
+    )
+
     it('should handle condition evaluation errors gracefully', () => {
       const subsection = {
         id: 'newSubsection',

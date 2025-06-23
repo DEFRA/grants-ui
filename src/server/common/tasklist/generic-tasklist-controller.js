@@ -1,7 +1,18 @@
 import { TasklistGenerator } from './tasklist-generator.js'
 import { loadTasklistConfig, validateTasklistConfig } from './config-loader.js'
+import { statusCodes } from '../constants/status-codes.js'
 
 const HTTP_MOVED_PERMANENTLY = 301
+
+class TasklistGenerationError extends Error {
+  constructor(message, statusCode, responseBody, tasklistId) {
+    super(message)
+    this.name = 'TasklistGenerationError'
+    this.status = statusCode
+    this.responseBody = responseBody
+    this.tasklistId = tasklistId
+  }
+}
 
 export function createTasklistRoute(tasklistId) {
   return {
@@ -57,7 +68,12 @@ export function createTasklistRoute(tasklistId) {
                 'error',
                 `Failed to generate tasklist for ${tasklistId}: ${error.message}`
               )
-              throw error
+              throw new TasklistGenerationError(
+                `Failed to generate tasklist for ${tasklistId}: ${error.message}`,
+                statusCodes.internalServerError,
+                error.message,
+                tasklistId
+              )
             }
           }
         })

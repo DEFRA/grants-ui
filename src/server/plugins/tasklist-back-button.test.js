@@ -333,6 +333,32 @@ describe('tasklistBackButton plugin', () => {
       expect(result).toBe(h.continue)
     })
 
+    it('when source=example-tasklist should add tasklistId to view context', () => {
+      const request = createMockRequest({
+        query: sourceQuery,
+        path: '/business-status',
+        response: createMockResponse('view')
+      })
+
+      responseHandler(request, h)
+
+      expect(request.response.source.context.tasklistId).toBe(
+        'example-tasklist'
+      )
+    })
+
+    it('when source=example-tasklist should not add tasklistId to view without context', () => {
+      const request = createMockRequest({
+        query: sourceQuery,
+        path: '/business-status',
+        response: { variety: 'view', source: {} }
+      })
+
+      responseHandler(request, h)
+
+      expect(request.response.source.tasklistId).toBeUndefined()
+    })
+
     const tasklistContext = createTasklistContext()
     const firstPagePath = '/business-status/nature-of-business'
     const nonFirstPagePath = '/business-status/legal-status'
@@ -384,6 +410,44 @@ describe('tasklistBackButton plugin', () => {
       const request = createYarGetErrorRequest(firstPagePath)
       const result = responseHandler(request, h)
       expect(result).toBe(h.continue)
+    })
+
+    it('should preserve source parameter on redirect from session context', () => {
+      const request = createMockRequest({
+        path: '/business-status',
+        yar: {
+          get: jest.fn().mockReturnValue(tasklistContext)
+        },
+        response: createMockResponse('redirect', {
+          headers: { location: '/next-page' }
+        })
+      })
+
+      responseHandler(request, h)
+
+      expect(request.response.headers.location).toBe(
+        '/next-page?source=example-tasklist'
+      )
+    })
+
+    it('should add tasklistId to context from session when processing existing session', () => {
+      const request = createMockRequest({
+        path: firstPagePath,
+        yar: {
+          get: jest.fn().mockReturnValue(tasklistContext)
+        },
+        response: createMockResponse('view')
+      })
+
+      responseHandler(request, h)
+
+      expect(request.response.source.context.tasklistId).toBe(
+        'example-tasklist'
+      )
+      expect(request.response.source.context.backLink).toEqual({
+        text: 'Back to tasklist',
+        href: '/example-tasklist/tasklist'
+      })
     })
 
     const continueCases = [

@@ -2,6 +2,7 @@
 
 {% block pageTitle %}{{ pageHeading }}{% endblock %}
 {% from "govuk/components/task-list/macro.njk" import govukTaskList %}
+{% from "govuk/components/inset-text/macro.njk" import govukInsetText %}
 
 {% block content %}
   <div class="govuk-grid-row">
@@ -9,9 +10,9 @@
       <h1 class="govuk-heading-xl">{{ pageHeading }}</h1>
 
       {% if closingDate %}
-      <div class="govuk-inset-text">
-        Application closing date is <strong>{{ closingDate }}</strong>.
-      </div>
+      {{ govukInsetText({
+        html: "Application closing date is <strong>" + closingDate + "</strong>."
+      }) }}
       {% endif %}
 
       {% for section in sections %}
