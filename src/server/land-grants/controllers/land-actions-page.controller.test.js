@@ -460,7 +460,18 @@ describe('LandActionsPageController', () => {
         expect(mockH.view).toHaveBeenCalledWith(
           'choose-which-actions-to-do',
           expect.objectContaining({
-            errors: ['Please select at least one action']
+            errorSummary: [
+              {
+                text: 'Please select at least one action',
+                href: '#selectedActions'
+              }
+            ],
+            errors: {
+              selectedActions: {
+                text: 'Please select at least one action',
+                href: '#selectedActions'
+              }
+            }
           })
         )
       })
@@ -480,7 +491,49 @@ describe('LandActionsPageController', () => {
         expect(mockH.view).toHaveBeenCalledWith(
           'choose-which-actions-to-do',
           expect.objectContaining({
-            errors: ['Please provide a quantity for CMOR1']
+            errorSummary: [
+              {
+                text: 'Please provide a quantity for CMOR1',
+                href: '#qty-CMOR1'
+              }
+            ],
+            errors: {
+              CMOR1: {
+                text: 'Please provide a quantity for CMOR1',
+                href: '#qty-CMOR1'
+              }
+            }
+          })
+        )
+      })
+
+      test('should be able to display error message for qty if only one action is selected', async () => {
+        mockRequest.payload = {
+          selectedActions: 'CMOR1',
+          'qty-CMOR1': '',
+          action: 'validate'
+        }
+
+        const handler = controller.makePostRouteHandler()
+        await handler(mockRequest, mockContext, mockH)
+
+        expect(validateLandActions).not.toHaveBeenCalled()
+
+        expect(mockH.view).toHaveBeenCalledWith(
+          'choose-which-actions-to-do',
+          expect.objectContaining({
+            errorSummary: [
+              {
+                text: 'Please provide a quantity for CMOR1',
+                href: '#qty-CMOR1'
+              }
+            ],
+            errors: {
+              CMOR1: {
+                text: 'Please provide a quantity for CMOR1',
+                href: '#qty-CMOR1'
+              }
+            }
           })
         )
       })
@@ -578,7 +631,18 @@ describe('LandActionsPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'choose-which-actions-to-do',
         expect.objectContaining({
-          errors: ['Please select at least one action'],
+          errorSummary: [
+            {
+              text: 'Please select at least one action',
+              href: '#selectedActions'
+            }
+          ],
+          errors: {
+            selectedActions: {
+              text: 'Please select at least one action',
+              href: '#selectedActions'
+            }
+          },
           availableActions
         })
       )

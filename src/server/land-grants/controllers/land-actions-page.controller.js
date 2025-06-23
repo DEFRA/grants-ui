@@ -109,19 +109,28 @@ export default class LandActionsPageController extends QuestionPageController {
       }
 
       if (payload.action === 'validate') {
-        let errors = []
+        let errors = {}
+        const errorSummary = []
         if (!payload.selectedActions || payload.selectedActions.length === 0) {
-          errors.push('Please select at least one action')
+          errors.selectedActions = {
+            text: 'Please select at least one action',
+            href: '#selectedActions'
+          }
+          errorSummary.push(errors.selectedActions)
         } else if (payload.selectedActions.length > 0) {
           // for each selected action, check if a quantity is provided
-          for (const code of payload.selectedActions) {
+          for (const code of [payload.selectedActions].flat()) {
             if (!payload[`qty-${code}`]) {
-              errors.push(`Please provide a quantity for ${code}`)
+              errors[code] = {
+                text: `Please provide a quantity for ${code}`,
+                href: `#${this.quantityPrefix}${code}`
+              }
             }
+            errorSummary.push(errors[code])
           }
         }
 
-        if (errors.length === 0) {
+        if (Object.keys(errors).length === 0) {
           const { valid, errorMessages = [] } = await validateLandActions({
             sheetId,
             parcelId,
@@ -133,12 +142,13 @@ export default class LandActionsPageController extends QuestionPageController {
           }
         }
 
-        if (errors.length > 0) {
+        if (Object.keys(errors).length > 0) {
           return h.view(viewName, {
             ...this.getViewModel(request, context),
             ...newState,
             selectedActions: payload.selectedActions,
             selectedActionsQuantities,
+            errorSummary,
             errors
           })
         }
