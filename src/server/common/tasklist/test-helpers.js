@@ -2,10 +2,14 @@ import jest, { fn as jestMockFn } from 'jest-mock'
 
 const mockFn = typeof jest !== 'undefined' ? jest.fn : jestMockFn
 
+const TEST_TASKLIST_ID = 'test-tasklist'
+const TEST_TASKLIST_TITLE = 'Test Tasklist'
+const SUBSECTION_TITLE = 'Subsection 1'
+
 export const createMockTasklistConfig = (overrides = {}) => ({
   tasklist: {
-    id: 'test-tasklist',
-    title: 'Test Tasklist',
+    id: TEST_TASKLIST_ID,
+    title: TEST_TASKLIST_TITLE,
     sections: [],
     ...overrides
   }
@@ -66,7 +70,7 @@ export const createComplexTasklistConfig = () => ({
         subsections: [
           {
             id: 'subsection1',
-            title: 'Subsection 1',
+            title: SUBSECTION_TITLE,
             href: '/subsection1'
           },
           {
@@ -111,8 +115,8 @@ export const createComplexTasklistConfig = () => ({
 
 export const createValidTasklistConfig = (overrides = {}) => ({
   tasklist: {
-    id: 'test-tasklist',
-    title: 'Test Tasklist',
+    id: TEST_TASKLIST_ID,
+    title: TEST_TASKLIST_TITLE,
     sections: [
       {
         id: 'section1',
@@ -164,6 +168,6 @@ export const createSectionConfig = (overrides = {}) => ({
 
 export const createSubsectionConfig = (overrides = {}) => ({
   id: 'subsection1',
-  title: 'Subsection 1',
+  title: SUBSECTION_TITLE,
   ...overrides
 })

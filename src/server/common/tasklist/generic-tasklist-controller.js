@@ -1,6 +1,8 @@
 import { TasklistGenerator } from './tasklist-generator.js'
 import { loadTasklistConfig, validateTasklistConfig } from './config-loader.js'
 
+const HTTP_MOVED_PERMANENTLY = 301
+
 export function createTasklistRoute(tasklistId) {
   return {
     plugin: {
@@ -9,8 +11,10 @@ export function createTasklistRoute(tasklistId) {
         server.route({
           method: 'GET',
           path: `/${tasklistId}-tasklist`,
-          handler: (request, h) => {
-            return h.redirect(`/${tasklistId}-tasklist/tasklist`).code(301)
+          handler: (_request, h) => {
+            return h
+              .redirect(`/${tasklistId}-tasklist/tasklist`)
+              .code(HTTP_MOVED_PERMANENTLY)
           }
         })
 

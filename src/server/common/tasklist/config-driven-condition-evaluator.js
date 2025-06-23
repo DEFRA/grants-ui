@@ -52,7 +52,9 @@ export class ConfigDrivenConditionEvaluator {
   }
 
   evaluateRule(rule) {
-    if (!rule) return true
+    if (!rule) {
+      return true
+    }
 
     const ruleType = this.getRuleType(rule)
 
@@ -71,10 +73,18 @@ export class ConfigDrivenConditionEvaluator {
   }
 
   getRuleType(rule) {
-    if (rule.and) return 'and'
-    if (rule.or) return 'or'
-    if (rule.not) return 'not'
-    if (rule.field) return 'field'
+    if (rule.and) {
+      return 'and'
+    }
+    if (rule.or) {
+      return 'or'
+    }
+    if (rule.not) {
+      return 'not'
+    }
+    if (rule.field) {
+      return 'field'
+    }
     return 'unknown'
   }
 

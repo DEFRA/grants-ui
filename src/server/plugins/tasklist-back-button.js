@@ -163,6 +163,8 @@ function handleFirstPageRequest(request, fromTasklistSession) {
       addBackLinkToContext(request.response, tasklistId)
     } else if (!isFirst && fromTasklistSession) {
       safeYarClear(request, 'tasklistContext')
+    } else {
+      // No action needed for other cases
     }
   }
 }
