@@ -183,12 +183,14 @@ pages:
 
   - title: Potential grant funding
     path: '/potential-funding'
+    controller: PotentialFundingController
     components:
       - name: potentialFundingInfo
         title: Html
         type: Html
         content: |
           <p class="govuk-body">
+          This is my PIG DATA {{ context.pigData | dump }}
           {% assign whitePigsCount = 'whitePigsCount' | answer | default: 0 %}
           {% assign britishLandacePigsCount = 'britishLandacePigsCount' | answer | default: 0 %}
           {% assign berkshirePigsCount = 'berkshirePigsCount' | answer | default: 0 %}
