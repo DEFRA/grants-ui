@@ -18,14 +18,30 @@ export class PotentialFundingController extends QuestionPageController {
   }
 
   getViewModel(request, context) {
+    const payload = {
+      pigTypes: [
+        {
+          pigType: 'largeWhite',
+          quantity: context.state.whitePigsCount || 0
+        },
+        {
+          pigType: 'landace',
+          quantity: context.state.britishLandacePigsCount || 0
+        },
+        {
+          pigType: 'berkshire',
+          quantity: context.state.berkshirePigsCount || 0
+        },
+        { pigType: 'other', quantity: context.state.otherPigsCount || 0 }
+      ]
+    }
+
     const pigsDataPromise = new Promise((resolve, reject) => {
       try {
         const result = invokeGasPostAction(
           'pigs-might-fly',
           'calculate-pig-totals',
-          {
-            pigTypes: [{ pigType: 'largeWhite', quantity: 10 }]
-          }
+          payload
         )
         resolve(result)
       } catch (error) {
