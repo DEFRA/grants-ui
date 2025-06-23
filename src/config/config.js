@@ -97,7 +97,7 @@ export const config = convict({
     apiEndpoint: {
       doc: 'GAS API endpoint',
       format: String,
-      default: '',
+      default: 'http://localhost:3001',
       env: 'GAS_API_URL'
     }
   },
