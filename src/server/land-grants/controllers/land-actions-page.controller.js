@@ -40,6 +40,12 @@ export default class LandActionsPageController extends QuestionPageController {
     return areas
   }
 
+  extractActionsQuantitiesFromPayload(payload) {
+    return Object.fromEntries(
+      Object.entries(payload).filter(([key]) => key.startsWith('qty-'))
+    )
+  }
+
   /**
    * This method is called to get the view model for the page.
    * It adds the area prefix and available actions to the view model.
@@ -91,22 +97,16 @@ export default class LandActionsPageController extends QuestionPageController {
       const payload = request.payload ?? {}
       const [sheetId, parcelId] = parseLandParcel(state.selectedLandParcel)
       const actionsObj = this.extractActionsObjectFromPayload(payload)
-      const selectedActionsQuantities = Object.fromEntries(
-        Object.entries(payload).filter(([key]) => key.startsWith('qty-'))
-      )
+      const selectedActionsQuantities =
+        this.extractActionsQuantitiesFromPayload(payload)
 
-      // Create updated state with the new action data
-      const newState = {
-        ...state,
-        selectedLandParcelSummary: this.getSelectedLandParcelData(context),
+      // Create an updated state with the new action data
+      const newState = this.buildNewState(
+        state,
+        context,
         selectedActionsQuantities,
-        landParcels: {
-          ...state.landParcels, // Spread existing land parcels
-          [state.selectedLandParcel]: {
-            actionsObj
-          }
-        }
-      }
+        actionsObj
+      )
 
       if (payload.action === 'validate') {
         const errors = {}
@@ -130,14 +130,8 @@ export default class LandActionsPageController extends QuestionPageController {
           }
         }
         // Filter actionsObj to only include items with non-null values and ready to be validated by the api
-        const readyForValidationsActionsObj = Object.fromEntries(
-          Object.entries(actionsObj).filter(
-            ([, action]) =>
-              action.value !== null &&
-              action.value !== undefined &&
-              action.value !== ''
-          )
-        )
+        const readyForValidationsActionsObj =
+          this.getCompletedFormFieldsForApiValidation(actionsObj)
 
         if (Object.keys(readyForValidationsActionsObj).length > 0) {
           const { valid, errorMessages = [] } = await validateLandActions({
@@ -174,6 +168,31 @@ export default class LandActionsPageController extends QuestionPageController {
     }
 
     return fn
+  }
+
+  getCompletedFormFieldsForApiValidation = (actionsObj) => {
+    return Object.fromEntries(
+      Object.entries(actionsObj).filter(
+        ([, action]) =>
+          action.value !== null &&
+          action.value !== undefined &&
+          action.value !== ''
+      )
+    )
+  }
+
+  buildNewState = (state, context, selectedActionsQuantities, actionsObj) => {
+    return {
+      ...state,
+      selectedLandParcelSummary: this.getSelectedLandParcelData(context),
+      selectedActionsQuantities,
+      landParcels: {
+        ...state.landParcels, // Spread existing land parcels
+        [state.selectedLandParcel]: {
+          actionsObj
+        }
+      }
+    }
   }
 
   /**
