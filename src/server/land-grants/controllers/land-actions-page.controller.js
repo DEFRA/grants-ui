@@ -129,12 +129,21 @@ export default class LandActionsPageController extends QuestionPageController {
             }
           }
         }
+        // Filter actionsObj to only include items with non-null values and ready to be validated by the api
+        const readyForValidationsActionsObj = Object.fromEntries(
+          Object.entries(actionsObj).filter(
+            ([, action]) =>
+              action.value !== null &&
+              action.value !== undefined &&
+              action.value !== ''
+          )
+        )
 
-        if (Object.keys(errors).length === 0) {
+        if (Object.keys(readyForValidationsActionsObj).length > 0) {
           const { valid, errorMessages = [] } = await validateLandActions({
             sheetId,
             parcelId,
-            actionsObj
+            actionsObj: readyForValidationsActionsObj
           })
 
           if (!valid) {
