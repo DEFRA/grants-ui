@@ -58,47 +58,75 @@ pages:
           <p class="govuk-body">Telephone: 03000 200 301</p>
           <p class="govuk-body">Monday to Friday, 9am to 5pm (except public holidays)</p>
     next:
-      - path: /are-you-in-england
+      - path: /are-you-pig-farmer
 
-  - title: Are you in England?
-    path: /are-you-in-england
+  - title: Are you a pig farmer?
+    path: /are-you-pig-farmer
     next:
-      - path: /you-must-be-in-england
+      - path: /you-must-be-pig-farmer
         condition: uFOrmA
-      - path: /what-is-your-business
+      - path: /pig-count
     components:
       - name: TKsWbP
-        title: Are you in England?
+        title: Are you a pig farmer?
         type: YesNoField
         hint: ''
         options: {}
         schema: {}
 
-  - title: You must be in England
-    path: /you-must-be-in-england
+  - title: You are not eligible for this grant
+    path: /you-must-be-pig-farmer
     next: []
     components:
       - name: FGyiLS
-        title: You must be in England
+        title: You are not eligible for this grant
         type: Html
         hint: ''
         content: |
-          <p class="govuk-body">You must be in England.</p>
+          <p class="govuk-body">Sorry, this grant is only available for pig farmers.</p>
         options: {}
         schema: {}
 
-  - title: What is your business?
-    path: /what-is-your-business
+  - title: How many pigs do you have?
+    path: /pig-count
     next:
+      - path: /not-eligible
+        condition: tooManyPigsCondition
       - path: /what-type-of-pigs
     components:
-      - name: sdFYHf
-        title: What is your business?
-        type: RadiosField
-        list: dfdGFY
+      - name: pigCountInfo
+        type: Html
+        title: Html
+        content:
+          '<p class="govuk-hint">Enter the total number of pigs you have<br><br>You can apply for wings for up to 1,000 pigs</p>'
+      - name: totalPigs
+        type: NumberField
+        title: Enter number of pigs
+        options:
+          required: true
+          classes: govuk-!-width-one-third
+          customValidationMessages:
+            any.required: Enter the number of pigs you have
+            number.max: You can apply for wings for up to 1,000 pigs
+            number.min: You must have at least 1 pig
+        schema:
+          min: 1
+          precision: 0
+
+  - title: You are not eligible for this grant
+    path: /not-eligible
+    controller: TerminalPageController
+    next: [ ]
+    components:
+      - name: FGyiLA
+        title: You are not eligible for this grant
+        type: Html
         hint: ''
-        options: {}
-        schema: {}
+        content: |
+          <p class="govuk-body">Sorry, this grant is only available for pig farmers with up to 1,000 pigs</p>
+        options: { }
+        schema: { }
+    condition: tooManyPigsCondition
 
   - title: What type of pigs?
     path: /what-type-of-pigs
@@ -302,19 +330,49 @@ sections:
 
 conditions:
   - name: uFOrmA
-    displayName: notEngland
+    displayName: notPigFarmer
     value:
-      name: notEngland
+      name: notPigFarmer
       conditions:
         - field:
             name: TKsWbP
             type: YesNoField
-            display: Are you in England?
+            display: Are you a pig farmer?
           operator: is
           value:
             type: Value
             value: 'false'
             display: No
+
+  - name: uFOrmB
+    displayName: notEligible
+    value:
+      name: notEligible
+      conditions:
+        - field:
+            name: TKsWbP
+            type: YesNoField
+            display: Are you a pig farmer?
+          operator: is
+          value:
+            type: Value
+            value: 'false'
+            display: No
+
+  - name: tooManyPigsCondition
+    displayName: Too many pigs entered
+    value:
+      name: tooManyPigs
+      conditions:
+        - field:
+            name: totalPigs
+            type: NumberField
+            display: Enter number of pigs
+          operator: greaterThan
+          value:
+            type: Value
+            value: '1000'
+            display: Enter number of pigs
 
   - name: selectedWhitePig
     displayName: User selected white pig
