@@ -579,8 +579,19 @@ describe('LandActionsPageController', () => {
       const errorMessages = [
         {
           code: 'CMOR1',
-          description: 'CMOR1: Error in action validation'
+          description: 'Please provide a quantity for CMOR1'
         }
+      ]
+
+      const errors = {
+        CMOR1: {
+          text: 'Please provide a quantity for CMOR1',
+          href: '#qty-CMOR1'
+        }
+      }
+
+      const errorSummary = [
+        { text: 'Please provide a quantity for CMOR1', href: '#qty-CMOR1' }
       ]
 
       validateLandActions.mockResolvedValue({
@@ -606,7 +617,8 @@ describe('LandActionsPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'choose-which-actions-to-do',
         expect.objectContaining({
-          errors: errorMessages.map((m) => `${m.description}`),
+          errors,
+          errorSummary,
           availableActions
         })
       )
@@ -665,6 +677,20 @@ describe('LandActionsPageController', () => {
         { code: 'CMOR1', description: 'Please provide a quantity for CMOR1' },
         { code: 'UPL1', description: 'Please provide a quantity for UPL1' }
       ]
+
+      const errors = {
+        CMOR1: {
+          text: 'Please provide a quantity for CMOR1',
+          href: '#qty-CMOR1'
+        },
+        UPL1: { text: 'Please provide a quantity for UPL1', href: '#qty-UPL1' }
+      }
+
+      const errorSummary = [
+        { text: 'Please provide a quantity for CMOR1', href: '#qty-CMOR1' },
+        { text: 'Please provide a quantity for UPL1', href: '#qty-UPL1' }
+      ]
+
       validateLandActions.mockResolvedValue({
         valid: false,
         errorMessages
@@ -677,7 +703,8 @@ describe('LandActionsPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'choose-which-actions-to-do',
         expect.objectContaining({
-          errors: errorMessages.map((m) => m.description),
+          errors,
+          errorSummary,
           availableActions,
           selectedActions: ['CMOR1', 'UPL1'],
           selectedActionsQuantities: { 'qty-CMOR1': 10, 'qty-UPL1': 5 },

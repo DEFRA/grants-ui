@@ -109,7 +109,7 @@ export default class LandActionsPageController extends QuestionPageController {
       }
 
       if (payload.action === 'validate') {
-        let errors = {}
+        const errors = {}
         const errorSummary = []
         if (!payload.selectedActions || payload.selectedActions.length === 0) {
           errors.selectedActions = {
@@ -125,8 +125,8 @@ export default class LandActionsPageController extends QuestionPageController {
                 text: `Please provide a quantity for ${code}`,
                 href: `#${this.quantityPrefix}${code}`
               }
+              errorSummary.push(errors[code])
             }
-            errorSummary.push(errors[code])
           }
         }
 
@@ -138,7 +138,13 @@ export default class LandActionsPageController extends QuestionPageController {
           })
 
           if (!valid) {
-            errors = errorMessages.map((m) => `${m.description}`)
+            for (const apiError of errorMessages) {
+              errors[apiError.code] = {
+                text: apiError.description,
+                href: `#${this.quantityPrefix}${apiError.code}`
+              }
+              errorSummary.push(errors[apiError.code])
+            }
           }
         }
 
