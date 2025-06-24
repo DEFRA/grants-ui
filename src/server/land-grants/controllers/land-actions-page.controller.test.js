@@ -537,6 +537,64 @@ describe('LandActionsPageController', () => {
           })
         )
       })
+
+      test('should be able to display error messages from the UI and API at the same time', async () => {
+        mockRequest.payload = {
+          selectedActions: ['CMOR1', 'UPL1'],
+          'qty-CMOR1': '',
+          'qty-UPL1': 5,
+          action: 'validate'
+        }
+
+        const errorMessages = [
+          { code: 'UPL1', description: 'UPL1 is not available for this parcel' }
+        ]
+
+        const errors = {
+          CMOR1: {
+            text: 'Please provide a quantity for CMOR1',
+            href: '#qty-CMOR1'
+          },
+          UPL1: {
+            text: 'UPL1 is not available for this parcel',
+            href: '#qty-UPL1'
+          }
+        }
+
+        const errorSummary = [
+          { text: 'Please provide a quantity for CMOR1', href: '#qty-CMOR1' },
+          { text: 'UPL1 is not available for this parcel', href: '#qty-UPL1' }
+        ]
+
+        validateLandActions.mockResolvedValue({
+          valid: false,
+          errorMessages
+        })
+
+        const handler = controller.makePostRouteHandler()
+        await handler(mockRequest, mockContext, mockH)
+
+        expect(validateLandActions).toHaveBeenCalledWith({
+          sheetId: 'sheet1',
+          parcelId: 'parcel1',
+          actionsObj: {
+            UPL1: {
+              description: 'UPL1: Moderate livestock grazing on moorland',
+              value: 5,
+              unit: 'ha'
+            }
+          }
+        })
+
+        expect(mockH.view).toHaveBeenCalledWith(
+          'choose-which-actions-to-do',
+          expect.objectContaining({
+            errors,
+            errorSummary,
+            availableActions
+          })
+        )
+      })
     })
 
     test('should validate actions when validate action is requested', async () => {
