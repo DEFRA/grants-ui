@@ -1,6 +1,5 @@
 import inert from '@hapi/inert'
 import { config } from '~/src/config/config.js'
-import { about } from '~/src/server/about/index.js'
 import { auth } from '~/src/server/auth/index.js'
 import { serveStaticFiles } from '~/src/server/common/helpers/serve-static-files.js'
 import { addingValueTasklist } from '~/src/server/adding-value-tasklist/adding-value-tasklist-controller.js'
@@ -31,7 +30,7 @@ export const router = {
       await server.register([auth])
 
       // Application specific routes, add your own routes here
-      await server.register([home, about])
+      await server.register([home])
 
       // Static assets
       await server.register([serveStaticFiles])
