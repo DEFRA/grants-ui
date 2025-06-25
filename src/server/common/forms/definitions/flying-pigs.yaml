@@ -212,6 +212,8 @@ pages:
   - title: Potential grant funding
     path: '/potential-funding'
     controller: PotentialFundingController
+    next:
+      - path: /summary
     components:
       - name: potentialFundingInfo
         title: Html
@@ -220,7 +222,7 @@ pages:
           <p class="govuk-body">
           This is my PIG DATA {{ context.pigData | dump }}
           {% assign whitePigsCount = 'whitePigsCount' | answer | default: 0 %}
-          {% assign britishLandacePigsCount = 'britishLandacePigsCount' | answer | default: 0 %}
+          {% assign britishLandacePigsCount = 'briti  shLandacePigsCount' | answer | default: 0 %}
           {% assign berkshirePigsCount = 'berkshirePigsCount' | answer | default: 0 %}
           {% assign otherPigsCount = 'otherPigsCount' | answer | default: 0 %}
           {% assign largeWhiteFunding = whitePigsCount | times: 10 %}
@@ -252,27 +254,12 @@ pages:
           aria-hidden="true">!</span> <strong class="govuk-warning-text__text"> <span
           class="govuk-visually-hidden">Warning</span>There's no guarantee the project
           will receive a grant.</strong></div>
-#    next:
-#      -path: /summary
 
   - path: /summary
     controller: SummaryPageController
-    title: Check your answers before submitting your form
+    title: Check your answers
 
 lists:
-  - title: What is the nature of your business?
-    name: dfdGFY
-    type: string
-    items:
-      - text: A grower or producer of agricultural or horticultural produce
-        description: For example, arable or livestock farmer
-        value: grower
-      - text: A business processing agricultural or horticultural products
-        description: For example a cheese processing business owner by farmer
-        value: business
-      - text: None of the above
-        value: none
-
   - title: What type of pigs do you have?
     name: pigTypesList
     type: string
@@ -289,39 +276,6 @@ lists:
       - text: Other
         description: £10 per pig funding rate
         value: other
-
-  - title: What is the legal status of your business?
-    name: ihwVmQ
-    type: string
-    items:
-      - text: Sole trader
-        value: Sole trader
-      - text: Private limited company (Ltd)
-        value: Private limited company (Ltd)
-      - text: Partnership
-        value: Partnership
-      - text: Limited partnership (LP)
-        value: Limited partnership (LP)
-      - text: Charitable trust
-        value: Charitable trust
-      - text: Limited liability partnership (LLP)
-        value: Limited liability partnership (LLP)
-      - text: Charitable incorporated organisation (CIO)
-        value: Charitable incorporated organisation (CIO)
-      - text: Government (local)
-        value: Government (local)
-      - text: Public limited company (PLC)
-        value: Public limited company (PLC)
-      - text: Community interest company (CIC)
-        value: Community interest company (CIC)
-      - text: Non-UK company
-        value: Non-UK company
-      - text: The Crown
-        value: The Crown
-      - text: Unlimited company (Ultd)
-        value: Unlimited company (Ultd)
-      - text: Government (central)
-        value: Government (central)
 
 sections:
   - title: Contact details
@@ -368,7 +322,7 @@ conditions:
             name: totalPigs
             type: NumberField
             display: Enter number of pigs
-          operator: greaterThan
+          operator: is more than
           value:
             type: Value
             value: '1000'
