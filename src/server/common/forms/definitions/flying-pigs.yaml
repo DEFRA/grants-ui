@@ -131,10 +131,10 @@ pages:
   - title: What type of pigs?
     path: /what-type-of-pigs
     components:
-      - name: pigTypes
+      - name: pigBreeds
         title: What type of pigs?
         type: CheckboxesField
-        list: pigTypesList
+        list: pigBreedsList
         hint: Select all that apply.
         options: {}
         schema: {}
@@ -261,7 +261,7 @@ pages:
 
 lists:
   - title: What type of pigs do you have?
-    name: pigTypesList
+    name: pigBreedsList
     type: string
     items:
       - text: 'Large White'
@@ -334,7 +334,7 @@ conditions:
       name: selectedWhitePig
       conditions:
         - field:
-            name: pigTypes
+            name: pigBreeds
             type: CheckboxesField
             display: What type of pigs?
           operator: contains
@@ -349,7 +349,7 @@ conditions:
       name: selectedBritishLandace
       conditions:
         - field:
-            name: pigTypes
+            name: pigBreeds
             type: CheckboxesField
             display: What type of pigs?
           operator: contains
@@ -364,7 +364,7 @@ conditions:
       name: selectedBerkshirePig
       conditions:
         - field:
-            name: pigTypes
+            name: pigBreeds
             type: CheckboxesField
             display: What type of pigs?
           operator: contains
@@ -379,7 +379,7 @@ conditions:
       name: selectedOtherPig
       conditions:
         - field:
-            name: pigTypes
+            name: pigBreeds
             type: CheckboxesField
             display: What type of pigs?
           operator: contains
