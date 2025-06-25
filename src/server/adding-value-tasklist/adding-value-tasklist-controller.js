@@ -1,8 +1,8 @@
-import { addingValueModel } from '../../common/forms/model-definitions/adding-value/adding-value.js'
+import { addingValueModel } from '../common/forms/model-definitions/adding-value/adding-value.js'
 import {
   taskListStatusComponents,
   TaskListStatus
-} from '../../common/constants/tasklist-status-components.js'
+} from '../common/constants/tasklist-status-components.js'
 
 export const SECTIONS = {
   BUSINESS_STATUS: 'business-status',
@@ -81,7 +81,10 @@ export const addingValueTasklist = {
             sections: applyStatuses(addingValueModel, pageStatuses),
             serviceName: 'Adding Value Tasklist grant'
           }
-          return h.view('views/adding-value-tasklist-page', modelWithStatuses)
+          return h.view(
+            'adding-value-tasklist/views/adding-value-tasklist-page',
+            modelWithStatuses
+          )
         }
       })
 

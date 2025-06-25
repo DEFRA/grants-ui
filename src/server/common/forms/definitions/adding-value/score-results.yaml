@@ -4,7 +4,7 @@ pages:
   - title: Score results
     path: /score-results
     section: scoreResultsSection
-    view: score-results-tasklist.html
+    view: adding-value-tasklist/views/score-results-tasklist.html
 lists: []
 conditions: []
 sections:
