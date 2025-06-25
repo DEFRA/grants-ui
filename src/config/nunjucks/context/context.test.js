@@ -32,7 +32,7 @@ describe('#context', () => {
 
     test('Should provide expected context', () => {
       expect(contextResult).toEqual({
-        assetPath: '/public/assets',
+        assetPath: '/public/assets/rebrand',
         breadcrumbs: [],
         getAssetPath: expect.any(Function),
         navigation: [
@@ -124,7 +124,7 @@ describe('#context cache', () => {
 
     test('Should provide expected context', () => {
       expect(contextResult).toEqual({
-        assetPath: '/public/assets',
+        assetPath: '/public/assets/rebrand',
         breadcrumbs: [],
         getAssetPath: expect.any(Function),
         navigation: [
