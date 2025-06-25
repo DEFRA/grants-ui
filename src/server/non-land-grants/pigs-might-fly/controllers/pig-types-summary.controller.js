@@ -19,7 +19,7 @@ export class PotentialFundingController extends QuestionPageController {
 
   getViewModel(request, context) {
     const payload = {
-      pigTypes: [
+      pigBreeds: [
         {
           pigType: 'largeWhite',
           quantity: context.state.whitePigsCount || 0
