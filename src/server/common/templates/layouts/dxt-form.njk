@@ -11,7 +11,7 @@
     homepageUrl: "https://www.gov.uk/",
     classes: "govuk-header--full-width-border",
     containerClasses: "govuk-width-container",
-    useTudorCrown: true
+    rebrand: true
   }) }}
 
   {{ govukServiceNavigation({ serviceName: name | default(serviceName) , serviceUrl: serviceUrl }) }}
@@ -29,7 +29,7 @@
       },
       text: 'This is a new service - your feedback will help us to improve it.'
     }) }}
-  
+
     {% if enableSbiSelector and serviceUrl == '/find-funding-for-land-or-farms' %}
 
       {{ sbiSelector({
