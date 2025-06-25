@@ -109,47 +109,12 @@ export default class LandActionsPageController extends QuestionPageController {
       )
 
       if (payload.action === 'validate') {
-        const errors = {}
-        const errorSummary = []
-        if (!payload.selectedActions || payload.selectedActions.length === 0) {
-          errors.selectedActions = {
-            text: 'Please select at least one action',
-            href: '#selectedActions'
-          }
-          errorSummary.push(errors.selectedActions)
-        } else if (payload.selectedActions.length > 0) {
-          // for each selected action, check if a quantity is provided
-          for (const code of [payload.selectedActions].flat()) {
-            if (!payload[`qty-${code}`]) {
-              errors[code] = {
-                text: `Please provide a quantity for ${code}`,
-                href: `#${this.quantityPrefix}${code}`
-              }
-              errorSummary.push(errors[code])
-            }
-          }
-        }
-        // Filter actionsObj to only include items with non-null values and ready to be validated by the api
-        const readyForValidationsActionsObj =
-          this.getCompletedFormFieldsForApiValidation(actionsObj)
-
-        if (Object.keys(readyForValidationsActionsObj).length > 0) {
-          const { valid, errorMessages = [] } = await validateLandActions({
-            sheetId,
-            parcelId,
-            actionsObj: readyForValidationsActionsObj
-          })
-
-          if (!valid) {
-            for (const apiError of errorMessages) {
-              errors[apiError.code] = {
-                text: apiError.description,
-                href: `#${this.quantityPrefix}${apiError.code}`
-              }
-              errorSummary.push(errors[apiError.code])
-            }
-          }
-        }
+        const { errors, errorSummary } = await this.validatePayload(
+          payload,
+          actionsObj,
+          sheetId,
+          parcelId
+        )
 
         if (Object.keys(errors).length > 0) {
           return h.view(viewName, {
@@ -168,6 +133,53 @@ export default class LandActionsPageController extends QuestionPageController {
     }
 
     return fn
+  }
+
+  validatePayload = async (payload, actionsObj, sheetId, parcelId) => {
+    const errors = {}
+    const errorSummary = []
+    if (!payload.selectedActions || payload.selectedActions.length === 0) {
+      errors.selectedActions = {
+        text: 'Please select at least one action',
+        href: '#selectedActions'
+      }
+      errorSummary.push(errors.selectedActions)
+    }
+
+    if (payload?.selectedActions?.length > 0) {
+      // for each selected action, check if a quantity is provided
+      for (const code of [payload.selectedActions].flat()) {
+        if (!payload[`qty-${code}`]) {
+          errors[code] = {
+            text: `Please provide a quantity for ${code}`,
+            href: `#${this.quantityPrefix}${code}`
+          }
+          errorSummary.push(errors[code])
+        }
+      }
+    }
+    // Filter actionsObj to only include items with non-null values and ready to be validated by the api
+    const readyForValidationsActionsObj =
+      this.getCompletedFormFieldsForApiValidation(actionsObj)
+
+    if (Object.keys(readyForValidationsActionsObj).length > 0) {
+      const { valid, errorMessages = [] } = await validateLandActions({
+        sheetId,
+        parcelId,
+        actionsObj: readyForValidationsActionsObj
+      })
+
+      if (!valid) {
+        for (const apiError of errorMessages) {
+          errors[apiError.code] = {
+            text: apiError.description,
+            href: `#${this.quantityPrefix}${apiError.code}`
+          }
+          errorSummary.push(errors[apiError.code])
+        }
+      }
+    }
+    return { errors, errorSummary }
   }
 
   getCompletedFormFieldsForApiValidation = (actionsObj) => {
