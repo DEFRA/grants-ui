@@ -2,7 +2,7 @@ import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/Q
 import {
   fetchAvailableActionsForParcel,
   parseLandParcel,
-  validateLandActions
+  triggerApiActionsValidation
 } from '~/src/server/land-grants/services/land-grants.service.js'
 import LandActionsPageController from './land-actions-page.controller.js'
 
@@ -84,7 +84,7 @@ describe('LandActionsPageController', () => {
 
     parseLandParcel.mockReturnValue(['sheet1', 'parcel1'])
 
-    validateLandActions.mockResolvedValue({
+    triggerApiActionsValidation.mockResolvedValue({
       valid: true,
       errorMessages: []
     })
@@ -455,7 +455,7 @@ describe('LandActionsPageController', () => {
         const handler = controller.makePostRouteHandler()
         await handler(mockRequest, mockContext, mockH)
 
-        expect(validateLandActions).not.toHaveBeenCalled()
+        expect(triggerApiActionsValidation).not.toHaveBeenCalled()
 
         expect(mockH.view).toHaveBeenCalledWith(
           'choose-which-actions-to-do',
@@ -486,7 +486,7 @@ describe('LandActionsPageController', () => {
         const handler = controller.makePostRouteHandler()
         await handler(mockRequest, mockContext, mockH)
 
-        expect(validateLandActions).not.toHaveBeenCalled()
+        expect(triggerApiActionsValidation).not.toHaveBeenCalled()
 
         expect(mockH.view).toHaveBeenCalledWith(
           'choose-which-actions-to-do',
@@ -517,7 +517,7 @@ describe('LandActionsPageController', () => {
         const handler = controller.makePostRouteHandler()
         await handler(mockRequest, mockContext, mockH)
 
-        expect(validateLandActions).not.toHaveBeenCalled()
+        expect(triggerApiActionsValidation).not.toHaveBeenCalled()
 
         expect(mockH.view).toHaveBeenCalledWith(
           'choose-which-actions-to-do',
@@ -566,7 +566,7 @@ describe('LandActionsPageController', () => {
           { text: 'UPL1 is not available for this parcel', href: '#qty-UPL1' }
         ]
 
-        validateLandActions.mockResolvedValue({
+        triggerApiActionsValidation.mockResolvedValue({
           valid: false,
           errorMessages
         })
@@ -574,7 +574,7 @@ describe('LandActionsPageController', () => {
         const handler = controller.makePostRouteHandler()
         await handler(mockRequest, mockContext, mockH)
 
-        expect(validateLandActions).toHaveBeenCalledWith({
+        expect(triggerApiActionsValidation).toHaveBeenCalledWith({
           sheetId: 'sheet1',
           parcelId: 'parcel1',
           actionsObj: {
@@ -604,7 +604,7 @@ describe('LandActionsPageController', () => {
         action: 'validate'
       }
 
-      validateLandActions.mockResolvedValue({
+      triggerApiActionsValidation.mockResolvedValue({
         valid: true,
         errorMessages: []
       })
@@ -612,7 +612,7 @@ describe('LandActionsPageController', () => {
       const handler = controller.makePostRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
-      expect(validateLandActions).toHaveBeenCalledWith({
+      expect(triggerApiActionsValidation).toHaveBeenCalledWith({
         sheetId: 'sheet1',
         parcelId: 'parcel1',
         actionsObj: {
@@ -652,7 +652,7 @@ describe('LandActionsPageController', () => {
         { text: 'Please provide a quantity for CMOR1', href: '#qty-CMOR1' }
       ]
 
-      validateLandActions.mockResolvedValue({
+      triggerApiActionsValidation.mockResolvedValue({
         valid: false,
         errorMessages
       })
@@ -660,7 +660,7 @@ describe('LandActionsPageController', () => {
       const handler = controller.makePostRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
 
-      expect(validateLandActions).toHaveBeenCalledWith({
+      expect(triggerApiActionsValidation).toHaveBeenCalledWith({
         sheetId: 'sheet1',
         parcelId: 'parcel1',
         actionsObj: {
@@ -690,7 +690,7 @@ describe('LandActionsPageController', () => {
         action: 'validate'
       }
 
-      validateLandActions.mockResolvedValue({
+      triggerApiActionsValidation.mockResolvedValue({
         valid: true,
         errorMessages: []
       })
@@ -749,7 +749,7 @@ describe('LandActionsPageController', () => {
         { text: 'Please provide a quantity for UPL1', href: '#qty-UPL1' }
       ]
 
-      validateLandActions.mockResolvedValue({
+      triggerApiActionsValidation.mockResolvedValue({
         valid: false,
         errorMessages
       })

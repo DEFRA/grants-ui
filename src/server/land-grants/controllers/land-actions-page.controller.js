@@ -2,7 +2,7 @@ import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/Q
 import {
   fetchAvailableActionsForParcel,
   parseLandParcel,
-  validateLandActions
+  triggerApiActionsValidation
 } from '~/src/server/land-grants/services/land-grants.service.js'
 
 const NOT_AVAILABLE = 'Not available'
@@ -165,7 +165,7 @@ export default class LandActionsPageController extends QuestionPageController {
       this.getCompletedFormFieldsForApiValidation(actionsObj)
 
     if (Object.keys(readyForValidationsActionsObj).length > 0) {
-      const { valid, errorMessages = [] } = await validateLandActions({
+      const { valid, errorMessages = [] } = await triggerApiActionsValidation({
         sheetId,
         parcelId,
         actionsObj: readyForValidationsActionsObj
