@@ -42,7 +42,7 @@ export async function context(request) {
   }
 
   return {
-    assetPath: `${assetPath}/assets`,
+    assetPath: `${assetPath}/assets/rebrand`,
     serviceName: config.get('serviceName'),
     serviceUrl: '/',
     enableSbiSelector: config.get('landGrants.enableSbiSelector'),
