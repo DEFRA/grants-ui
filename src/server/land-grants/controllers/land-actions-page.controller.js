@@ -42,7 +42,9 @@ export default class LandActionsPageController extends QuestionPageController {
 
   extractActionsQuantitiesFromPayload(payload) {
     return Object.fromEntries(
-      Object.entries(payload).filter(([key]) => key.startsWith('qty-'))
+      Object.entries(payload).filter(([key]) =>
+        key.startsWith(this.quantityPrefix)
+      )
     )
   }
 
@@ -149,7 +151,7 @@ export default class LandActionsPageController extends QuestionPageController {
     if (payload?.selectedActions?.length > 0) {
       // for each selected action, check if a quantity is provided
       for (const code of [payload.selectedActions].flat()) {
-        if (!payload[`qty-${code}`]) {
+        if (!payload[`${this.quantityPrefix}${code}`]) {
           errors[code] = {
             text: `Please provide a quantity for ${code}`,
             href: `#${this.quantityPrefix}${code}`
@@ -262,7 +264,8 @@ export default class LandActionsPageController extends QuestionPageController {
           const actionData = actionsObj[action]
 
           if (actionData) {
-            selectedActionsQuantities[`qty-${action}`] = actionData.value
+            selectedActionsQuantities[`${this.quantityPrefix}${action}`] =
+              actionData.value
           }
         })
       }
