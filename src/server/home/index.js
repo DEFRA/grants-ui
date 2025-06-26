@@ -34,6 +34,21 @@ export const home = {
           ...indexController
         }
       ])
+      server.route([
+        {
+          method: 'GET',
+          path: '/auth-test',
+          options: {
+            auth: 'defra-id'
+          },
+          handler: (request, h) => {
+            return h.response({
+              message: 'Authentication successful',
+              user: request.auth.credentials
+            })
+          }
+        }
+      ])
     }
   }
 }

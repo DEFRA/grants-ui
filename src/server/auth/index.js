@@ -76,9 +76,9 @@ async function handleOidcSignIn(request, h) {
   await request.server.app.cache.set(profile.sessionId, {
     isAuthenticated: true,
     ...profile,
+    token,
     role,
     scope,
-    token,
     refreshToken
   })
 
