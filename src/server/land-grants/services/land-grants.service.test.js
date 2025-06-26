@@ -9,7 +9,7 @@ import {
   parseLandParcel,
   postToLandGrantsApi,
   stringifyParcel,
-  validateLandActions
+  triggerApiActionsValidation
 } from './land-grants.service.js'
 
 const mockApiEndpoint = 'https://land-grants-api'
@@ -464,7 +464,7 @@ describe('land-grants service', () => {
         json: () => mockApiResponse
       })
 
-      const result = await validateLandActions({
+      const result = await triggerApiActionsValidation({
         sheetId: 'SHEET123',
         parcelId: 'PARCEL456',
         actionsObj: {
@@ -505,7 +505,7 @@ describe('land-grants service', () => {
         json: () => mockApiResponse
       })
 
-      const result = await validateLandActions({
+      const result = await triggerApiActionsValidation({
         sheetId: 'SHEET123',
         parcelId: 'PARCEL456',
         actionsObj: { CMOR1: { value: 100 } }
@@ -521,7 +521,7 @@ describe('land-grants service', () => {
         json: () => mockApiResponse
       })
 
-      const result = await validateLandActions({
+      const result = await triggerApiActionsValidation({
         sheetId: 'SHEET123',
         parcelId: 'PARCEL456'
       })
@@ -548,7 +548,7 @@ describe('land-grants service', () => {
       fetch.mockRejectedValueOnce(new Error('Validation API error'))
 
       await expect(
-        validateLandActions({
+        triggerApiActionsValidation({
           sheetId: 'SHEET123',
           parcelId: 'PARCEL456',
           actionsObj: { CMOR1: { value: 10 } }

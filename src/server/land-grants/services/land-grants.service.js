@@ -125,7 +125,7 @@ export async function fetchAvailableActionsForParcel({
  * @returns {Promise<object>} - Validation result
  * @throws {Error}
  */
-export async function validateLandActions({
+export async function triggerApiActionsValidation({
   sheetId,
   parcelId,
   actionsObj = {}
