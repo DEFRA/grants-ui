@@ -1,12 +1,12 @@
 import { StatusPageController } from '@defra/forms-engine-plugin/controllers/StatusPageController.js'
-import { getFormsCacheService } from '../common/helpers/forms-cache/forms-cache.js'
+import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/forms-cache.js'
 import {
   storeSlugInContext,
   getConfirmationPath
-} from '../common/helpers/form-slug-helper.js'
+} from '~/src/server/common/helpers/form-slug-helper.js'
 
 export default class ConfirmationPageController extends StatusPageController {
-  viewName = 'confirmation/views/confirmation-page'
+  viewName = 'confirmation-page'
 
   /**
    * This method is called when there is a GET request to the confirmation page.

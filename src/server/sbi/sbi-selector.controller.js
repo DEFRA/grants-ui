@@ -6,7 +6,7 @@ import { sbiStore } from './state.js'
  * Provided as an example, remove or modify as required.
  * @satisfies {Partial<ServerRoute>}
  */
-export const sbiController = {
+export const sbiSelectorController = {
   handler(request, h) {
     const {
       method,
