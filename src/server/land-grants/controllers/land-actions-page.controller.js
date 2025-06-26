@@ -2,7 +2,7 @@ import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/Q
 import {
   fetchAvailableActionsForParcel,
   parseLandParcel,
-  validateLandActions
+  triggerApiActionsValidation
 } from '~/src/server/land-grants/services/land-grants.service.js'
 
 const NOT_AVAILABLE = 'Not available'
@@ -14,12 +14,12 @@ export default class LandActionsPageController extends QuestionPageController {
   currentParcelSize = NOT_AVAILABLE
 
   /**
-   * Extract action details from the form payload
+   * Extract action data from the form payload
    * @param {object} payload - The form payload
    * @returns {object} - Extracted action data
    */
-  extractActionsObjectFromPayload(payload) {
-    const areas = {}
+  extractActionsDataFromPayload(payload) {
+    const actionsObj = {}
     const { selectedActions = [] } = payload
 
     for (const key in payload) {
@@ -30,14 +30,26 @@ export default class LandActionsPageController extends QuestionPageController {
           continue
         }
 
-        areas[code] = {
+        actionsObj[code] = {
           description: actionInfo.description,
           value: payload[key],
           unit: actionInfo ? actionInfo.availableArea?.unit : ''
         }
       }
     }
-    return areas
+
+    const selectedActionsQuantities = Object.fromEntries(
+      Object.entries(payload).filter(([key, value]) => {
+        if (!key.startsWith(this.quantityPrefix)) {
+          return false
+        }
+        const code = key.split('-')[1]
+        const actionInfo = this.availableActions.find((a) => a.code === code)
+        return selectedActions.includes(code) && value && actionInfo
+      })
+    )
+
+    return { actionsObj, selectedActionsQuantities }
   }
 
   /**
@@ -90,40 +102,32 @@ export default class LandActionsPageController extends QuestionPageController {
       const { viewName } = this
       const payload = request.payload ?? {}
       const [sheetId, parcelId] = parseLandParcel(state.selectedLandParcel)
-      const actionsObj = this.extractActionsObjectFromPayload(payload)
+      const { actionsObj, selectedActionsQuantities } =
+        this.extractActionsDataFromPayload(payload)
 
-      // Create updated state with the new action data
-      const newState = {
-        ...state,
-        selectedLandParcelSummary: this.getSelectedLandParcelData(context),
-        landParcels: {
-          ...state.landParcels, // Spread existing land parcels
-          [state.selectedLandParcel]: {
-            actionsObj
-          }
-        }
-      }
+      // Create an updated state with the new action data
+      const newState = this.buildNewState(
+        state,
+        context,
+        selectedActionsQuantities,
+        actionsObj
+      )
 
       if (payload.action === 'validate') {
-        let errors = []
-        if (Object.keys(actionsObj).length === 0) {
-          errors.push('Please select at least one action and quantity')
-        } else {
-          const { valid, errorMessages = [] } = await validateLandActions({
-            sheetId,
-            parcelId,
-            actionsObj
-          })
+        const { errors, errorSummary } = await this.validatePayload(
+          payload,
+          actionsObj,
+          sheetId,
+          parcelId
+        )
 
-          if (!valid) {
-            errors = errorMessages.map((m) => `${m.code}: ${m.description}`)
-          }
-        }
-
-        if (errors.length > 0) {
+        if (Object.keys(errors).length > 0) {
           return h.view(viewName, {
             ...this.getViewModel(request, context),
             ...newState,
+            selectedActions: payload.selectedActions,
+            selectedActionsQuantities,
+            errorSummary,
             errors
           })
         }
@@ -134,6 +138,78 @@ export default class LandActionsPageController extends QuestionPageController {
     }
 
     return fn
+  }
+
+  validatePayload = async (payload, actionsObj, sheetId, parcelId) => {
+    const errors = {}
+
+    if (!payload.selectedActions || payload.selectedActions.length === 0) {
+      errors.selectedActions = {
+        text: 'Please select at least one action'
+      }
+    }
+
+    if (payload?.selectedActions?.length > 0) {
+      // for each selected action, check if a quantity is provided
+      for (const code of [payload.selectedActions].flat()) {
+        if (!payload[`${this.quantityPrefix}${code}`]) {
+          errors[code] = {
+            text: `Please provide a quantity for ${code}`
+          }
+        }
+      }
+    }
+    // Filter actionsObj to only include items with non-null values and ready to be validated by the api
+    const readyForValidationsActionsObj =
+      this.getCompletedFormFieldsForApiValidation(actionsObj)
+
+    if (Object.keys(readyForValidationsActionsObj).length > 0) {
+      const { valid, errorMessages = [] } = await triggerApiActionsValidation({
+        sheetId,
+        parcelId,
+        actionsObj: readyForValidationsActionsObj
+      })
+
+      if (!valid) {
+        for (const apiError of errorMessages) {
+          errors[apiError.code] = {
+            text: apiError.description
+          }
+        }
+      }
+    }
+
+    const errorSummary = Object.entries(errors).map(([key, { text }]) => ({
+      text,
+      href: key === 'selectedActions' ? '#selectedActions' : `#qty-${key}`
+    }))
+
+    return { errors, errorSummary }
+  }
+
+  getCompletedFormFieldsForApiValidation = (actionsObj) => {
+    return Object.fromEntries(
+      Object.entries(actionsObj).filter(
+        ([, action]) =>
+          action.value !== null &&
+          action.value !== undefined &&
+          action.value !== ''
+      )
+    )
+  }
+
+  buildNewState = (state, context, selectedActionsQuantities, actionsObj) => {
+    return {
+      ...state,
+      selectedLandParcelSummary: this.getSelectedLandParcelData(context),
+      selectedActionsQuantities,
+      landParcels: {
+        ...state.landParcels, // Spread existing land parcels
+        [state.selectedLandParcel]: {
+          actionsObj
+        }
+      }
+    }
   }
 
   /**
@@ -191,7 +267,8 @@ export default class LandActionsPageController extends QuestionPageController {
           const actionData = actionsObj[action]
 
           if (actionData) {
-            selectedActionsQuantities[`qty-${action}`] = actionData.value
+            selectedActionsQuantities[`${this.quantityPrefix}${action}`] =
+              actionData.value
           }
         })
       }
