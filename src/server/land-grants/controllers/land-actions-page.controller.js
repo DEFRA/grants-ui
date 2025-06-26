@@ -14,12 +14,12 @@ export default class LandActionsPageController extends QuestionPageController {
   currentParcelSize = NOT_AVAILABLE
 
   /**
-   * Extract action details from the form payload
+   * Extract action data from the form payload
    * @param {object} payload - The form payload
    * @returns {object} - Extracted action data
    */
-  extractActionsObjectFromPayload(payload) {
-    const areas = {}
+  extractActionsDataFromPayload(payload) {
+    const actionsObj = {}
     const { selectedActions = [] } = payload
 
     for (const key in payload) {
@@ -30,22 +30,26 @@ export default class LandActionsPageController extends QuestionPageController {
           continue
         }
 
-        areas[code] = {
+        actionsObj[code] = {
           description: actionInfo.description,
           value: payload[key],
           unit: actionInfo ? actionInfo.availableArea?.unit : ''
         }
       }
     }
-    return areas
-  }
 
-  extractActionsQuantitiesFromPayload(payload) {
-    return Object.fromEntries(
-      Object.entries(payload).filter(([key]) =>
-        key.startsWith(this.quantityPrefix)
-      )
+    const selectedActionsQuantities = Object.fromEntries(
+      Object.entries(payload).filter(([key, value]) => {
+        if (!key.startsWith(this.quantityPrefix)) {
+          return false
+        }
+        const code = key.split('-')[1]
+        const actionInfo = this.availableActions.find((a) => a.code === code)
+        return selectedActions.includes(code) && value && actionInfo
+      })
     )
+
+    return { actionsObj, selectedActionsQuantities }
   }
 
   /**
@@ -98,9 +102,8 @@ export default class LandActionsPageController extends QuestionPageController {
       const { viewName } = this
       const payload = request.payload ?? {}
       const [sheetId, parcelId] = parseLandParcel(state.selectedLandParcel)
-      const actionsObj = this.extractActionsObjectFromPayload(payload)
-      const selectedActionsQuantities =
-        this.extractActionsQuantitiesFromPayload(payload)
+      const { actionsObj, selectedActionsQuantities } =
+        this.extractActionsDataFromPayload(payload)
 
       // Create an updated state with the new action data
       const newState = this.buildNewState(

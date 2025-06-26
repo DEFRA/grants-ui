@@ -98,7 +98,7 @@ describe('LandActionsPageController', () => {
     expect(controller.viewName).toBe('choose-which-actions-to-do')
   })
 
-  describe('extractActionsObjectFromPayload', () => {
+  describe('extractActionsDataFromPayload', () => {
     test('should extract action data correctly from payload', () => {
       const payload = {
         selectedActions: ['CMOR1', 'UPL1'],
@@ -107,18 +107,24 @@ describe('LandActionsPageController', () => {
         'other-field': 'value'
       }
 
-      const result = controller.extractActionsObjectFromPayload(payload)
+      const result = controller.extractActionsDataFromPayload(payload)
 
       expect(result).toEqual({
-        CMOR1: {
-          description: 'CMOR1: Assess moorland and produce a written record',
-          value: 10,
-          unit: 'ha'
+        actionsObj: {
+          CMOR1: {
+            description: 'CMOR1: Assess moorland and produce a written record',
+            value: 10,
+            unit: 'ha'
+          },
+          UPL1: {
+            description: 'UPL1: Moderate livestock grazing on moorland',
+            value: 5,
+            unit: 'ha'
+          }
         },
-        UPL1: {
-          description: 'UPL1: Moderate livestock grazing on moorland',
-          value: 5,
-          unit: 'ha'
+        selectedActionsQuantities: {
+          'qty-CMOR1': 10,
+          'qty-UPL1': 5
         }
       })
     })
@@ -129,15 +135,18 @@ describe('LandActionsPageController', () => {
         'qty-unknownAction': 15
       }
 
-      const result = controller.extractActionsObjectFromPayload(payload)
+      const result = controller.extractActionsDataFromPayload(payload)
 
-      expect(result).toEqual({})
+      expect(result).toEqual({
+        actionsObj: {},
+        selectedActionsQuantities: {}
+      })
     })
 
     test('should handle empty payload', () => {
-      const result = controller.extractActionsObjectFromPayload({})
+      const result = controller.extractActionsDataFromPayload({})
 
-      expect(result).toEqual({})
+      expect(result).toEqual({ actionsObj: {}, selectedActionsQuantities: {} })
     })
 
     test('should skip actions not included in actions array', () => {
@@ -147,14 +156,17 @@ describe('LandActionsPageController', () => {
         'qty-UPL1': 5
       }
 
-      const result = controller.extractActionsObjectFromPayload(payload)
+      const result = controller.extractActionsDataFromPayload(payload)
 
       expect(result).toEqual({
-        CMOR1: {
-          description: 'CMOR1: Assess moorland and produce a written record',
-          value: 10,
-          unit: 'ha'
-        }
+        actionsObj: {
+          CMOR1: {
+            description: 'CMOR1: Assess moorland and produce a written record',
+            value: 10,
+            unit: 'ha'
+          }
+        },
+        selectedActionsQuantities: { 'qty-CMOR1': 10 }
       })
     })
 
@@ -165,14 +177,17 @@ describe('LandActionsPageController', () => {
         'qty-UPL1': ''
       }
 
-      const result = controller.extractActionsObjectFromPayload(payload)
+      const result = controller.extractActionsDataFromPayload(payload)
 
       expect(result).toEqual({
-        CMOR1: {
-          description: 'CMOR1: Assess moorland and produce a written record',
-          value: 10,
-          unit: 'ha'
-        }
+        actionsObj: {
+          CMOR1: {
+            description: 'CMOR1: Assess moorland and produce a written record',
+            value: 10,
+            unit: 'ha'
+          }
+        },
+        selectedActionsQuantities: { 'qty-CMOR1': 10 }
       })
     })
 
@@ -190,14 +205,17 @@ describe('LandActionsPageController', () => {
         'qty-CMOR1': 10
       }
 
-      const result = controller.extractActionsObjectFromPayload(payload)
+      const result = controller.extractActionsDataFromPayload(payload)
 
       expect(result).toEqual({
-        CMOR1: {
-          description: 'CMOR1: Assess moorland and produce a written record',
-          value: 10,
-          unit: undefined
-        }
+        actionsObj: {
+          CMOR1: {
+            description: 'CMOR1: Assess moorland and produce a written record',
+            value: 10,
+            unit: undefined
+          }
+        },
+        selectedActionsQuantities: { 'qty-CMOR1': 10 }
       })
     })
   })
