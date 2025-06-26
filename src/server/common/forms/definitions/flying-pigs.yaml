@@ -1,4 +1,7 @@
 name: Grants
+metadata:
+  submission:
+    grantCode: pigs-might-fly
 pages:
   - title: Check if you can apply for a Pigs Might Fly Grant
     path: '/start'
@@ -67,7 +70,7 @@ pages:
         condition: uFOrmA
       - path: /pig-count
     components:
-      - name: TKsWbP
+      - name: isPigFarmer
         title: Are you a pig farmer?
         type: YesNoField
         hint: ''
@@ -141,8 +144,8 @@ pages:
     next:
       - path: /how-many-white-pigs
         condition: selectedWhitePig
-      - path: /how-many-british-landace
-        condition: selectedBritishLandace
+      - path: /how-many-british-landrace
+        condition: selectedBritishLandrace
       - path: /how-many-berkshire-pigs
         condition: selectedBerkshirePig
       - path: /how-many-other-pigs
@@ -159,19 +162,19 @@ pages:
         options: {}
         schema: {}
     next:
-      - path: /how-many-british-landace
-        condition: selectedBritishLandace
+      - path: /how-many-british-landrace
+        condition: selectedBritishLandrace
       - path: /how-many-berkshire-pigs
         condition: selectedBerkshirePig
       - path: /how-many-other-pigs
         condition: selectedOtherPig
       - path: /potential-funding
 
-  - title: How many British Landace pigs do you have?
-    path: /how-many-british-landace
+  - title: How many British Landrace pigs do you have?
+    path: /how-many-british-landrace
     components:
-      - name: britishLandacePigsCount
-        title: How many British Landace pigs do you have?
+      - name: britishLandracePigsCount
+        title: How many British Landrace pigs do you have?
         type: NumberField
         hint: ''
         options: {}
@@ -222,11 +225,11 @@ pages:
           <p class="govuk-body">
           This is my PIG DATA {{ context.pigData | dump }}
           {% assign whitePigsCount = 'whitePigsCount' | answer | default: 0 %}
-          {% assign britishLandacePigsCount = 'briti  shLandacePigsCount' | answer | default: 0 %}
+          {% assign britishLandracePigsCount = 'briti  shLandracePigsCount' | answer | default: 0 %}
           {% assign berkshirePigsCount = 'berkshirePigsCount' | answer | default: 0 %}
           {% assign otherPigsCount = 'otherPigsCount' | answer | default: 0 %}
           {% assign largeWhiteFunding = whitePigsCount | times: 10 %}
-          {% assign britishLandraceFunding = britishLandacePigsCount | times: 15 %}
+          {% assign britishLandraceFunding = britishLandracePigsCount | times: 15 %}
           {% assign berkshireFunding = berkshirePigsCount | times: 18 %}
           {% assign otherFunding = otherPigsCount | times: 10 %}
           {% assign totalFunding = largeWhiteFunding | plus: britishLandraceFunding | plus: berkshireFunding | plus: otherFunding %}
@@ -236,8 +239,8 @@ pages:
           {% if whitePigsCount > 0 %}
           <br>Large White: {{ whitePigsCount }} pigs × £10 = {{ largeWhiteFunding | formatCurrency: 'en-GB', 'GBP', 0 }}
           {% endif %}
-          {% if britishLandacePigsCount > 0 %}
-          <br>British Landrace: {{ britishLandacePigsCount }} pigs × £15 = {{ britishLandraceFunding | formatCurrency: 'en-GB', 'GBP', 0 }}
+          {% if britishLandracePigsCount > 0 %}
+          <br>British Landrace: {{ britishLandracePigsCount }} pigs × £15 = {{ britishLandraceFunding | formatCurrency: 'en-GB', 'GBP', 0 }}
           {% endif %}
           {% if berkshirePigsCount > 0 %}
           <br>Berkshire: {{ berkshirePigsCount }} pigs × £18 = {{ berkshireFunding | formatCurrency: 'en-GB', 'GBP', 0 }}
@@ -256,7 +259,7 @@ pages:
           will receive a grant.</strong></div>
 
   - path: /summary
-    controller: SummaryPageController
+    controller: FlyingPigsSubmissionPageController
     title: Check your answers
 
 lists:
@@ -267,9 +270,9 @@ lists:
       - text: 'Large White'
         description: £10 per pig funding rate
         value: largeWhite
-      - text: 'British Landace'
+      - text: 'British Landrace'
         description: £15 per pig funding rate
-        value: britishLandace
+        value: britishLandrace
       - text: Berkshire
         description: £18 per pig funding rate
         value: berkshire
@@ -289,7 +292,7 @@ conditions:
       name: notPigFarmer
       conditions:
         - field:
-            name: TKsWbP
+            name: isPigFarmer
             type: YesNoField
             display: Are you a pig farmer?
           operator: is
@@ -304,7 +307,7 @@ conditions:
       name: notEligible
       conditions:
         - field:
-            name: TKsWbP
+            name: isPigFarmer
             type: YesNoField
             display: Are you a pig farmer?
           operator: is
@@ -343,10 +346,10 @@ conditions:
             value: 'largeWhite'
             display: 'Large White'
 
-  - name: selectedBritishLandace
-    displayName: User selected british landace
+  - name: selectedBritishLandrace
+    displayName: User selected british landrace
     value:
-      name: selectedBritishLandace
+      name: selectedBritishLandrace
       conditions:
         - field:
             name: pigBreeds
@@ -355,8 +358,8 @@ conditions:
           operator: contains
           value:
             type: Value
-            value: 'britishLandace'
-            display: 'British Landace'
+            value: 'britishLandrace'
+            display: 'British Landrace'
 
   - name: selectedBerkshirePig
     displayName: User selected berkshire
