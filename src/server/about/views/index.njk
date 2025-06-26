@@ -1,0 +1,21 @@
+{% extends 'layouts/page.njk' %}
+
+{% block content %}
+  {{ appHeading({
+    text: heading,
+    caption: "Core delivery platform Node.js Frontend Template."
+  }) }}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      <div class="govuk-body" data-testid="app-page-body">
+        <p>
+          Based on <a href="https://defra.github.io/software-development-standards">DEFRA</a> and <a
+            href="https://design-system.service.gov.uk/">GOV.UK</a> best practices this starter kit provides you with
+          a deployable, production ready template 🙌🏻 to start your new service with.
+        </p>
+      </div>
+    </div>
+  </div>
+
+{% endblock %}
