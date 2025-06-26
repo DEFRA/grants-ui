@@ -142,13 +142,11 @@ export default class LandActionsPageController extends QuestionPageController {
 
   validatePayload = async (payload, actionsObj, sheetId, parcelId) => {
     const errors = {}
-    const errorSummary = []
+
     if (!payload.selectedActions || payload.selectedActions.length === 0) {
       errors.selectedActions = {
-        text: 'Please select at least one action',
-        href: '#selectedActions'
+        text: 'Please select at least one action'
       }
-      errorSummary.push(errors.selectedActions)
     }
 
     if (payload?.selectedActions?.length > 0) {
@@ -156,10 +154,8 @@ export default class LandActionsPageController extends QuestionPageController {
       for (const code of [payload.selectedActions].flat()) {
         if (!payload[`${this.quantityPrefix}${code}`]) {
           errors[code] = {
-            text: `Please provide a quantity for ${code}`,
-            href: `#${this.quantityPrefix}${code}`
+            text: `Please provide a quantity for ${code}`
           }
-          errorSummary.push(errors[code])
         }
       }
     }
@@ -177,13 +173,17 @@ export default class LandActionsPageController extends QuestionPageController {
       if (!valid) {
         for (const apiError of errorMessages) {
           errors[apiError.code] = {
-            text: apiError.description,
-            href: `#${this.quantityPrefix}${apiError.code}`
+            text: apiError.description
           }
-          errorSummary.push(errors[apiError.code])
         }
       }
     }
+
+    const errorSummary = Object.entries(errors).map(([key, { text }]) => ({
+      text,
+      href: key === 'selectedActions' ? '#selectedActions' : `#qty-${key}`
+    }))
+
     return { errors, errorSummary }
   }
 

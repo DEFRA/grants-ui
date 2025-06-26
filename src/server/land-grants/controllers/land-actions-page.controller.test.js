@@ -486,8 +486,7 @@ describe('LandActionsPageController', () => {
             ],
             errors: {
               selectedActions: {
-                text: 'Please select at least one action',
-                href: '#selectedActions'
+                text: 'Please select at least one action'
               }
             }
           })
@@ -517,8 +516,7 @@ describe('LandActionsPageController', () => {
             ],
             errors: {
               CMOR1: {
-                text: 'Please provide a quantity for CMOR1',
-                href: '#qty-CMOR1'
+                text: 'Please provide a quantity for CMOR1'
               }
             }
           })
@@ -548,8 +546,7 @@ describe('LandActionsPageController', () => {
             ],
             errors: {
               CMOR1: {
-                text: 'Please provide a quantity for CMOR1',
-                href: '#qty-CMOR1'
+                text: 'Please provide a quantity for CMOR1'
               }
             }
           })
@@ -570,12 +567,10 @@ describe('LandActionsPageController', () => {
 
         const errors = {
           CMOR1: {
-            text: 'Please provide a quantity for CMOR1',
-            href: '#qty-CMOR1'
+            text: 'Please provide a quantity for CMOR1'
           },
           UPL1: {
-            text: 'UPL1 is not available for this parcel',
-            href: '#qty-UPL1'
+            text: 'UPL1 is not available for this parcel'
           }
         }
 
@@ -661,8 +656,7 @@ describe('LandActionsPageController', () => {
 
       const errors = {
         CMOR1: {
-          text: 'Please provide a quantity for CMOR1',
-          href: '#qty-CMOR1'
+          text: 'Please provide a quantity for CMOR1'
         }
       }
 
@@ -727,8 +721,7 @@ describe('LandActionsPageController', () => {
           ],
           errors: {
             selectedActions: {
-              text: 'Please select at least one action',
-              href: '#selectedActions'
+              text: 'Please select at least one action'
             }
           },
           availableActions
@@ -756,10 +749,9 @@ describe('LandActionsPageController', () => {
 
       const errors = {
         CMOR1: {
-          text: 'Please provide a quantity for CMOR1',
-          href: '#qty-CMOR1'
+          text: 'Please provide a quantity for CMOR1'
         },
-        UPL1: { text: 'Please provide a quantity for UPL1', href: '#qty-UPL1' }
+        UPL1: { text: 'Please provide a quantity for UPL1' }
       }
 
       const errorSummary = [
