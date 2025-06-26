@@ -1,9 +1,9 @@
 import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
-import * as formSlugHelper from '../common/helpers/form-slug-helper.js'
-import { submitGrantApplication } from '../common/services/grant-application/grant-application.service.js'
-import { transformStateObjectToGasApplication } from '../common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
-import DeclarationPageController from './declaration.controller.js'
-import { transformAnswerKeysToText } from '../adding-value-tasklist/mappers/state-to-gas-answers-mapper.js'
+import * as formSlugHelper from '~/src/server/common/helpers/form-slug-helper.js'
+import { submitGrantApplication } from '~/src/server/common/services/grant-application/grant-application.service.js'
+import { transformStateObjectToGasApplication } from '../../common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
+import DeclarationPageController from './controller.js'
+import { transformAnswerKeysToText } from './state-to-gas-answers-mapper.js'
 
 const mockCacheService = {
   getConfirmationState: jest.fn().mockResolvedValue({ confirmed: true }),
@@ -11,8 +11,8 @@ const mockCacheService = {
   clearState: jest.fn()
 }
 
-jest.mock('../common/helpers/form-slug-helper.js')
-jest.mock('../common/helpers/forms-cache/forms-cache.js', () => ({
+jest.mock('~/src/server/common/helpers/form-slug-helper.js')
+jest.mock('~/src/server/common/helpers/forms-cache/forms-cache.js', () => ({
   getFormsCacheService: () => mockCacheService
 }))
 jest.mock(
@@ -28,11 +28,13 @@ jest.mock(
     }
   }
 )
-jest.mock('../common/services/grant-application/grant-application.service.js')
 jest.mock(
-  '../common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
+  '~/src/server/common/services/grant-application/grant-application.service.js'
 )
-jest.mock('../adding-value-tasklist/mappers/state-to-gas-answers-mapper.js')
+jest.mock(
+  '../../common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
+)
+jest.mock('./state-to-gas-answers-mapper.js')
 
 describe('DeclarationPageController', () => {
   let controller
@@ -116,7 +118,7 @@ describe('DeclarationPageController', () => {
   })
 
   test('should have the correct viewName', () => {
-    expect(controller.viewName).toBe('declaration/views/declaration-page')
+    expect(controller.viewName).toBe('declaration-page')
   })
 
   describe('getStatusPath', () => {
@@ -236,7 +238,7 @@ describe('DeclarationPageController', () => {
 
       expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
         {
-          clientRef: 'ref123', // <- note: in controller, it's `context.referenceNumber?.toLowerCase()`
+          clientRef: 'ref123', // <- note: in controller, it’s `context.referenceNumber?.toLowerCase()`
           sbi: 'sbi',
           frn: 'frn',
           crn: 'crn',
