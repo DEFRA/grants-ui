@@ -112,7 +112,12 @@ describe('SectionEndController', () => {
           }
         },
         yar: {
-          id: 'session-123'
+          id: 'session-123',
+          get: jest.fn()
+        },
+        query: {},
+        url: {
+          href: 'http://test.com/test-form/summary'
         }
       }
 
@@ -198,14 +203,27 @@ describe('SectionEndController', () => {
       )
     })
 
-    it('should redirect to /adding-value-tasklist/tasklist', async () => {
+    it('should redirect based on source query parameter', async () => {
       mockRequest.server.app.cacheTemp.get.mockResolvedValue({})
+      mockRequest.query = { source: 'custom-tasklist' }
 
       await handler(mockRequest, mockContext, mockH)
 
-      expect(mockH.redirect).toHaveBeenCalledWith(
-        '/adding-value-tasklist/tasklist'
-      )
+      expect(mockH.redirect).toHaveBeenCalledWith('/custom-tasklist/tasklist')
+    })
+
+    it('should get source from session when not in query', async () => {
+      mockRequest.server.app.cacheTemp.get.mockResolvedValue({})
+      mockRequest.query = {}
+      mockRequest.yar.get.mockReturnValue({
+        fromTasklist: true,
+        tasklistId: 'session-tasklist'
+      })
+
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(mockRequest.yar.get).toHaveBeenCalledWith('tasklistContext')
+      expect(mockH.redirect).toHaveBeenCalledWith('/session-tasklist/tasklist')
     })
 
     it('should handle async operations correctly', async () => {

@@ -16,7 +16,7 @@
       {% endblock %}
 
       {% block form %}
-        <form method="post" novalidate>
+        <form method="post" {% if source %}action="?source={{ source }}"{% endif %} novalidate>
           <input type="hidden" name="crumb" value="{{ crumb }}">
           {{ govukButton({
             text: "Confirm and continue",
