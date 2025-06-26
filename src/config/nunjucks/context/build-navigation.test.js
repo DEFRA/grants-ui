@@ -16,6 +16,11 @@ describe('#buildNavigation', () => {
         isActive: false,
         text: 'Home',
         url: '/'
+      },
+      {
+        isActive: false,
+        text: 'About',
+        url: '/about'
       }
     ])
   })
@@ -26,6 +31,11 @@ describe('#buildNavigation', () => {
         isActive: true,
         text: 'Home',
         url: '/'
+      },
+      {
+        isActive: false,
+        text: 'About',
+        url: '/about'
       }
     ])
   })
