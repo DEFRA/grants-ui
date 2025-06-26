@@ -25,8 +25,8 @@ export class PotentialFundingController extends QuestionPageController {
           quantity: context.state.whitePigsCount || 0
         },
         {
-          pigType: 'landace',
-          quantity: context.state.britishLandacePigsCount || 0
+          pigType: 'landrace',
+          quantity: context.state.britishLandracePigsCount || 0
         },
         {
           pigType: 'berkshire',

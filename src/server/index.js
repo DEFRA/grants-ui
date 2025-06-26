@@ -39,6 +39,7 @@ import LandActionsCheckPageController from '~/src/server/land-grants/controllers
 import LandParcelPageController from '~/src/server/land-grants/controllers/land-parcel-page.controller.js'
 import SubmissionPageController from '~/src/server/land-grants/controllers/submission-page.controller.js'
 import SectionEndController from './controllers/section-end/section-end-controller.js'
+import FlyingPigsSubmissionPageController from './non-land-grants/pigs-might-fly/controllers/pig-types-submission.controller.js'
 import { formatCurrency } from '../config/nunjucks/filters/format-currency.js'
 import { router } from './router.js'
 import { PotentialFundingController } from '~/src/server/non-land-grants/pigs-might-fly/controllers/pig-types-summary.controller.js'
@@ -126,7 +127,8 @@ const registerFormsPlugin = async (server) => {
         LandActionsPageController,
         LandActionsCheckPageController,
         SectionEndController,
-        PotentialFundingController
+        PotentialFundingController,
+        FlyingPigsSubmissionPageController
       }
     }
   })
