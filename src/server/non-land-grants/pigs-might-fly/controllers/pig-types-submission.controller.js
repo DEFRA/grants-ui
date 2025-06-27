@@ -12,7 +12,7 @@ export default class FlyingPigsSubmissionPageController extends SummaryPageContr
    */
   constructor(model, pageDef) {
     super(model, pageDef)
-    this.grantCode = this.model.def.metadata.submission.grantCode
+    this.grantCode = model.def.metadata.submission.grantCode
     this.viewName = 'submission'
   }
 
