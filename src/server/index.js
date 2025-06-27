@@ -42,7 +42,7 @@ import SectionEndController from './controllers/section-end/section-end-controll
 import FlyingPigsSubmissionPageController from './non-land-grants/pigs-might-fly/controllers/pig-types-submission.controller.js'
 import { formatCurrency } from '../config/nunjucks/filters/format-currency.js'
 import { router } from './router.js'
-import { PotentialFundingController } from '~/src/server/non-land-grants/pigs-might-fly/controllers/pig-types-summary.controller.js'
+import { PotentialFundingController } from '~/src/server/non-land-grants/pigs-might-fly/controllers/potential-funding.controller.js'
 
 const SESSION_CACHE_NAME = 'session.cache.name'
 
