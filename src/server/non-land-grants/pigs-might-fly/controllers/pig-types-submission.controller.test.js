@@ -51,11 +51,6 @@ describe('FlyingPigsSubmissionPageController', () => {
     expect(controller.viewName).toBe('submission')
   })
 
-  // it('should return the correct status path', () => {
-  //   const statusPath = controller.getStatusPath()
-  //   expect(statusPath).toBe('/find-funding-for-land-or-farms/confirmation')
-  // })
-
   it('should transform state and submit the application', async () => {
     const mockApplicationData = { metadata: {}, answers: {} }
     stateToPigsMightFlyGasAnswers.mockReturnValue(mockContext.state)

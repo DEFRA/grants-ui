@@ -21,7 +21,6 @@ describe('PotentialFundingController', () => {
       pageTitle: 'Potential Funding'
     })
 
-    // Mock model
     mockModel = {
       def: {
         metadata: {
@@ -32,7 +31,6 @@ describe('PotentialFundingController', () => {
       }
     }
 
-    // Mock page definition
     mockPageDef = {
       title: 'Potential Funding',
       path: '/potential-funding',
@@ -98,7 +96,6 @@ describe('PotentialFundingController', () => {
       const contextWithPartialData = {
         state: {
           whitePigsCount: 15
-          // Other pig counts missing
         }
       }
 
@@ -185,7 +182,6 @@ describe('PotentialFundingController', () => {
 
       controller.getViewModel(mockRequest, mockContext)
 
-      // Wait for the promise to resolve
       await new Promise((resolve) => setTimeout(resolve, 0))
 
       expect(mockContext.pigData).toEqual(mockPigData)
@@ -195,15 +191,12 @@ describe('PotentialFundingController', () => {
       const mockError = new Error('GAS service unavailable')
       invokeGasPostAction.mockRejectedValue(mockError)
 
-      // Should not throw an error
       expect(() => {
         controller.getViewModel(mockRequest, mockContext)
       }).not.toThrow()
 
-      // Wait for the promise to be handled
       await new Promise((resolve) => setTimeout(resolve, 0))
 
-      // Context should not have pigData property set
       expect(mockContext.pigData).toBeUndefined()
     })
 
@@ -238,7 +231,6 @@ describe('PotentialFundingController', () => {
     })
 
     test('should create promise that handles both resolve and reject paths', async () => {
-      // Test resolve path
       const successData = { totalFunding: 300 }
       invokeGasPostAction.mockResolvedValueOnce(successData)
 
@@ -247,10 +239,8 @@ describe('PotentialFundingController', () => {
 
       expect(mockContext.pigData).toEqual(successData)
 
-      // Reset context for reject test
       delete mockContext.pigData
 
-      // Test reject path
       const errorMessage = 'Network error'
       invokeGasPostAction.mockRejectedValueOnce(new Error(errorMessage))
 
