@@ -3,6 +3,7 @@ import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/Su
 import { transformStateObjectToGasApplication } from '~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
 import { stateToPigsMightFlyGasAnswers } from '~/src/server/non-land-grants/pigs-might-fly/mappers/state-to-gas-pigs-mapper.js'
 import { submitGrantApplication } from '~/src/server/common/services/grant-application/grant-application.service.js'
+import { getConfirmationPath } from '~/src/server/common/helpers/form-slug-helper.js'
 import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/forms-cache.js'
 
 export default class FlyingPigsSubmissionPageController extends SummaryPageController {
@@ -16,12 +17,12 @@ export default class FlyingPigsSubmissionPageController extends SummaryPageContr
     this.viewName = 'submission'
   }
 
-  /**
-   * Gets the path to the status page (in this case /confirmation page) for the POST handler.
-   * @returns {string} path to the status page
-   */
-  getStatusPath() {
-    return '/find-funding-for-land-or-farms/confirmation'
+  getStatusPath(request, context) {
+    return getConfirmationPath(
+      request,
+      context,
+      'FlyingPigsSubmissionPageController'
+    )
   }
 
   async submitPigTypesApplication(context) {
@@ -54,7 +55,15 @@ export default class FlyingPigsSubmissionPageController extends SummaryPageContr
       request.logger.info('Form submission completed', result)
       const cacheService = getFormsCacheService(request.server)
       await cacheService.setConfirmationState(request, { confirmed: true })
-      return h.redirect('/state')
+      // return h.redirect('/confirmation')
+
+      const redirectPath = this.getStatusPath(request, context)
+      request.logger.debug(
+        'FlyingpigsController: Redirecting to:',
+        redirectPath
+      )
+
+      return h.redirect(redirectPath)
     }
 
     return fn

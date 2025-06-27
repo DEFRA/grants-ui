@@ -262,6 +262,10 @@ pages:
     controller: FlyingPigsSubmissionPageController
     title: Check your answers
 
+  - title: Confirmation
+    path: '/confirmation'
+    controller: ConfirmationPageController
+
 lists:
   - title: What type of pigs do you have?
     name: pigBreedsList
