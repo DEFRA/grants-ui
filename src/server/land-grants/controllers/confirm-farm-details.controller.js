@@ -8,8 +8,10 @@ const logger = createLogger()
 
 export default class ConfirmFarmDetailsController extends QuestionPageController {
   viewName = 'confirm-farm-details'
-  crn = 3646257965
-  farmInfoMissingErrorMessage =
+
+  // Constants
+  static CUSTOMER_ID = 3646257965
+  static ERROR_MESSAGE =
     'Unable to find farm information, please try again later.'
 
   /**
@@ -34,58 +36,71 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
    */
   async buildFarmDetails() {
     const sbi = sbiStore.get('sbi')
-    const data = await fetchBusinessAndCustomerInformation(sbi, this.crn)
-
-    const rows = []
-
-    this.addCustomerNameRow(rows, data.customer?.name)
-    this.addBusinessNameRow(rows, data.business?.name)
-    this.addAddressRow(rows, data.business?.address)
-    this.addSbiRow(rows, sbi)
-    this.addContactDetailsRow(
-      rows,
-      data.business?.phone?.mobile,
-      data.business?.email?.address
+    const data = await fetchBusinessAndCustomerInformation(
+      sbi,
+      ConfirmFarmDetailsController.CUSTOMER_ID
     )
+
+    const rows = [
+      this.createCustomerNameRow(data.customer?.name),
+      this.createBusinessNameRow(data.business?.name),
+      this.createAddressRow(data.business?.address),
+      this.createSbiRow(sbi),
+      this.createContactDetailsRow(
+        data.business?.phone?.mobile,
+        data.business?.email?.address
+      )
+    ].filter(Boolean)
 
     return { rows }
   }
 
   /**
-   * Add customer name row if available
+   * Create customer name row if available
+   * @returns {object|null} Row object or null if no valid name
    */
-  addCustomerNameRow(rows, name) {
-    if (!name) return
+  createCustomerNameRow(name) {
+    if (!name) {
+      return null
+    }
 
     const fullName = [name.first, name.middle, name.last]
       .filter(Boolean)
       .join(' ')
 
-    if (fullName) {
-      rows.push({
-        key: { text: 'Name' },
-        value: { text: fullName }
-      })
+    if (!fullName) {
+      return null
+    }
+
+    return {
+      key: { text: 'Name' },
+      value: { text: fullName }
     }
   }
 
   /**
-   * Add business name row if available
+   * Create business name row if available
+   * @returns {object|null} Row object or null if no business name
    */
-  addBusinessNameRow(rows, businessName) {
-    if (businessName) {
-      rows.push({
-        key: { text: 'Business name' },
-        value: { text: businessName }
-      })
+  createBusinessNameRow(businessName) {
+    if (!businessName) {
+      return null
+    }
+
+    return {
+      key: { text: 'Business name' },
+      value: { text: businessName }
     }
   }
 
   /**
-   * Add address row if available
+   * Create address row if available
+   * @returns {object|null} Row object or null if no valid address
    */
-  addAddressRow(rows, address) {
-    if (!address) return
+  createAddressRow(address) {
+    if (!address) {
+      return null
+    }
 
     const addressParts = [
       address.line1,
@@ -100,32 +115,36 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
         part
           .toString()
           .trim()
-          .replace(/^[,\s]+|[,\s]+$/g, '')
+          .replace(/^([,\s]+)|([,\s]+)$/g, '')
       )
       .filter((part) => part.length > 0)
 
-    if (addressParts.length > 0) {
-      rows.push({
-        key: { text: 'Address' },
-        value: { html: addressParts.join('<br/>') }
-      })
+    if (addressParts.length === 0) {
+      return null
+    }
+
+    return {
+      key: { text: 'Address' },
+      value: { html: addressParts.join('<br/>') }
     }
   }
 
   /**
-   * Add SBI number row
+   * Create SBI number row
+   * @returns {Object} Row object with SBI number
    */
-  addSbiRow(rows, sbi) {
-    rows.push({
+  createSbiRow(sbi) {
+    return {
       key: { text: 'SBI number' },
       value: { text: sbi }
-    })
+    }
   }
 
   /**
-   * Add contact details row if available
+   * Create contact details row if available
+   * @returns {object|null} Row object or null if no contact details
    */
-  addContactDetailsRow(rows, mobile, emailAddress) {
+  createContactDetailsRow(mobile, emailAddress) {
     const contactParts = []
 
     if (mobile) {
@@ -136,11 +155,13 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
       contactParts.push(emailAddress)
     }
 
-    if (contactParts.length > 0) {
-      rows.push({
-        key: { text: 'Contact details' },
-        value: { html: contactParts.join('<br/>') }
-      })
+    if (contactParts.length === 0) {
+      return null
+    }
+
+    return {
+      key: { text: 'Contact details' },
+      value: { html: contactParts.join('<br/>') }
     }
   }
 
@@ -157,7 +178,7 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
 
     return h.view(this.viewName, {
       ...baseViewModel,
-      errorMessage: this.farmInfoMissingErrorMessage
+      errorMessage: ConfirmFarmDetailsController.ERROR_MESSAGE
     })
   }
 }
