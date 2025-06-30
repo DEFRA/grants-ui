@@ -41,7 +41,7 @@
   "author": "Defra DDTS",
   "license": "OGL-UK-3.0",
   "dependencies": {
-    "@babel/runtime": "^7.27.4",
+    "@babel/runtime": "^7.27.6",
     "@defra/forms-engine-plugin": "^0.1.21",
     "@defra/hapi-tracing": "^1.0.0",
     "@elastic/ecs-pino-format": "^1.5.0",
