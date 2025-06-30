@@ -1,0 +1,46 @@
+{% extends baseLayoutPath %}
+
+{% from "govuk/components/warning-text/macro.njk" import govukWarningText %}
+{% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/checkboxes/macro.njk" import govukCheckboxes %}
+
+{% set checkboxConfirmOptional = {
+idPrefix: 'consentOptional',
+name: 'consentOptional',
+items: [{
+value: 'CONSENT_OPTIONAL',
+text: '(Optional) I consent to being contacted by Defra or a third party about service improvements',
+checked: false,
+selected: false
+}]
+}
+%}
+
+{% block content %}
+
+<p class="govuk-body">
+  This is my PIG DATA* {{ context.pigData | dump }}<br>
+
+  {% if context.pigData['largeWhite'].quantity > 0 %}
+  <br>Large White: {{ context.pigData['largeWhite'].quantity }} pigs × £10 = {{ context.pigData['largeWhite'].value | formatCurrency }}
+  {% endif %}
+
+  <ul class="govuk-body">
+  {% for pigType, pigData in context.pigData %}
+  <li><span class="govuk-!-font-weight-bold">{{ pigData.description }}:</span> {{ pigData.quantity }} pigs × {{ pigData.value | formatCurrency }} = {{ pigData.total | formatCurrency }}</li>
+  {% endfor %}
+  </ul>
+
+</p>
+
+{% block form %}
+<form method="post" novalidate>
+  <input type="hidden" name="crumb" value="{{ crumb }}">
+  {{ govukButton({
+  text: "Confirm and send",
+  preventDoubleClick: true
+  }) }}
+</form>
+{% endblock %}
+
+{% endblock %}

@@ -2,47 +2,63 @@ import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/Q
 import { invokeGasPostAction } from '~/src/server/common/services/grant-application/grant-application.service.js'
 
 export class PotentialFundingController extends QuestionPageController {
-  getViewModel(request, context) {
-    const payload = {
-      pigBreeds: [
-        {
-          pigType: 'largeWhite',
-          quantity: context.state.whitePigsCount || 0
-        },
-        {
-          pigType: 'landrace',
-          quantity: context.state.britishLandracePigsCount || 0
-        },
-        {
-          pigType: 'berkshire',
-          quantity: context.state.berkshirePigsCount || 0
-        },
-        { pigType: 'other', quantity: context.state.otherPigsCount || 0 }
-      ]
-    }
+  viewName = 'non-land-grants/flying-pigs/potential-funding'
 
-    const pigsDataPromise = new Promise((resolve, reject) => {
+  makeGetRouteHandler() {
+    const fn = async (request, context, h) => {
+      const payload = {
+        pigTypes: [
+          {
+            pigType: 'largeWhite',
+            quantity: context.state.whitePigsCount || 0
+          },
+          {
+            pigType: 'landrace',
+            quantity: context.state.britishLandracePigsCount || 0
+          },
+          {
+            pigType: 'berkshire',
+            quantity: context.state.berkshirePigsCount || 0
+          },
+          { pigType: 'other', quantity: context.state.otherPigsCount || 0 }
+        ]
+      }
+
       try {
-        const result = invokeGasPostAction(
+        const result = await invokeGasPostAction(
           'pigs-might-fly',
           'calculate-pig-totals',
           payload
         )
-        resolve(result)
+
+        // tranform result.items to an object keyed on type
+        context.pigData = result.items.reduce((acc, item) => {
+          acc[item.type] = item
+          return acc
+        }, {})
+
+        context.pigDataJson = JSON.stringify(result.pigsData)
+        const { viewName } = this
+        const baseViewModel = super.getViewModel(request, context)
+
+        const viewModel = {
+          ...baseViewModel
+        }
+
+        return h.view(viewName, viewModel)
       } catch (error) {
-        reject(error)
+        request.logger.error('Error invoking GAS action:', error)
+        throw error
       }
-    })
+    }
+    return fn
+  }
 
-    pigsDataPromise
-      // eslint-disable-next-line promise/always-return
-      .then((pigsData) => {
-        context.pigData = pigsData
-      })
-      .catch(() => {
-        // Handle any errors
-      })
+  makePostRouteHandler() {
+    const fn = (request, context, h) => {
+      return this.proceed(request, h, this.getNextPath(context))
+    }
 
-    return super.getViewModel(request, context)
+    return fn
   }
 }
