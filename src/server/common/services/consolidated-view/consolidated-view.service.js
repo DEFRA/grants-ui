@@ -183,7 +183,6 @@ export async function fetchBusinessAndCustomerInformation(sbi, crn) {
           name {
             title
             first
-            otherTitle
             middle
             last
           }
