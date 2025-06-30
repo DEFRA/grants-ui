@@ -246,6 +246,36 @@
             "area": 0.1447
           }
         ]
+      },
+      "info": {
+        "name": "J&S Hartley",
+        "email": {
+          "address": "cliffspencetasabbeyfarmf@mrafyebbasatecnepsffilcm.com.test"
+        },
+        "phone": {
+          "mobile": "01234031670"
+        },
+        "address": {
+          "line1": "Mason House Farm Clitheroe Rd",
+          "line2": ", Bashall Eaves",
+          "line3": null,
+          "line4": null,
+          "line5": null,
+          "street": "BARTINDALE ROAD",
+          "city": "Clitheroe",
+          "postalCode": "BB7 3DD"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Mr.",
+          "first": "David",
+          "otherTitle": null,
+          "middle": "Charles",
+          "last": "Kennewell"
+        }
       }
     }
   }
