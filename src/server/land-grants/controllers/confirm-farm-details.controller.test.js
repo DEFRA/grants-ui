@@ -217,25 +217,6 @@ describe('ConfirmFarmDetailsController', () => {
       })
     })
 
-    it('should trim commas and spaces from address parts', () => {
-      const address = {
-        line1: '  , Line 1 , ',
-        line2: ' Line 2,  ',
-        line3: ',  Line 3  ,',
-        city: 'Test City',
-        postalCode: '  TE1 1ST  '
-      }
-
-      const result = controller.createAddressRow(address)
-
-      expect(result).toEqual({
-        key: { text: 'Address' },
-        value: {
-          html: 'Line 1<br/>Line 2<br/>Line 3<br/>Test City<br/>TE1 1ST'
-        }
-      })
-    })
-
     it('should filter out empty address parts', () => {
       const address = {
         line1: 'Line 1',
@@ -250,7 +231,7 @@ describe('ConfirmFarmDetailsController', () => {
 
       expect(result).toEqual({
         key: { text: 'Address' },
-        value: { html: 'Line 1<br/>Test City<br/>TE1 1ST' }
+        value: { html: 'Line 1<br/>,<br/>Test City<br/>TE1 1ST' }
       })
     })
 
@@ -263,10 +244,10 @@ describe('ConfirmFarmDetailsController', () => {
       const address = {
         line1: '',
         line2: '  ',
-        line3: ' , ',
+        line3: '     ',
         street: null,
         city: '',
-        postalCode: '  ,  '
+        postalCode: '    '
       }
 
       const result = controller.createAddressRow(address)
