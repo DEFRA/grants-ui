@@ -1,4 +1,3 @@
-import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
 import { sbiStore } from '~/src/server/sbi/state.js'
 import { fetchBusinessAndCustomerInformation } from '../../common/services/consolidated-view/consolidated-view.service.js'
 import ConfirmFarmDetailsController from './confirm-farm-details.controller.js'
@@ -26,7 +25,6 @@ describe('ConfirmFarmDetailsController', () => {
   let mockRequest
   let mockContext
   let mockH
-  let mockLogger
 
   beforeEach(() => {
     controller = new ConfirmFarmDetailsController()
@@ -35,13 +33,7 @@ describe('ConfirmFarmDetailsController', () => {
     mockH = {
       view: jest.fn().mockReturnValue('mocked-view')
     }
-    mockLogger = {
-      error: jest.fn()
-    }
-
-    // Setup mocks
     sbiStore.get = jest.fn().mockReturnValue('SBI123456')
-    createLogger.mockReturnValue(mockLogger)
   })
 
   afterEach(() => {
@@ -49,7 +41,12 @@ describe('ConfirmFarmDetailsController', () => {
   })
 
   describe('makeGetRouteHandler', () => {
-    it('should handle successful data fetch from DAL and render view', async () => {
+    it('should return a function', () => {
+      const handler = controller.makeGetRouteHandler()
+      expect(typeof handler).toBe('function')
+    })
+
+    it('should handle successful data fetch and render view', async () => {
       const mockData = {
         business: {
           name: 'Test Farm Business',
@@ -148,72 +145,59 @@ describe('ConfirmFarmDetailsController', () => {
     })
   })
 
-  describe('addCustomerNameRow', () => {
-    it('should add name row when all name parts are present', () => {
-      const rows = []
+  describe('createCustomerNameRow', () => {
+    it('should create name row when all name parts are present', () => {
       const name = { first: 'Sarah', middle: 'A', last: 'Farmer' }
 
-      controller.addCustomerNameRow(rows, name)
+      const result = controller.createCustomerNameRow(name)
 
-      expect(rows).toEqual([
-        {
-          key: { text: 'Name' },
-          value: { text: 'Sarah A Farmer' }
-        }
-      ])
+      expect(result).toEqual({
+        key: { text: 'Name' },
+        value: { text: 'Sarah A Farmer' }
+      })
     })
 
-    it('should add name row when only first and last names are present', () => {
-      const rows = []
+    it('should create name row when only first and last names are present', () => {
       const name = { first: 'Jane', last: 'Smith' }
 
-      controller.addCustomerNameRow(rows, name)
+      const result = controller.createCustomerNameRow(name)
 
-      expect(rows).toEqual([
-        {
-          key: { text: 'Name' },
-          value: { text: 'Jane Smith' }
-        }
-      ])
+      expect(result).toEqual({
+        key: { text: 'Name' },
+        value: { text: 'Jane Smith' }
+      })
     })
 
-    it('should not add row when name is missing', () => {
-      const rows = []
-      controller.addCustomerNameRow(rows, null)
-      expect(rows).toEqual([])
+    it('should return null when name is missing', () => {
+      const result = controller.createCustomerNameRow(null)
+      expect(result).toBeNull()
     })
 
-    it('should not add row when name parts are empty', () => {
-      const rows = []
+    it('should return null when name parts are empty', () => {
       const name = { first: '', middle: '', last: '' }
-      controller.addCustomerNameRow(rows, name)
-      expect(rows).toEqual([])
+      const result = controller.createCustomerNameRow(name)
+      expect(result).toBeNull()
     })
   })
 
-  describe('addBusinessNameRow', () => {
-    it('should add business name row when name is present', () => {
-      const rows = []
-      controller.addBusinessNameRow(rows, 'Test Business Ltd')
+  describe('createBusinessNameRow', () => {
+    it('should create business name row when name is present', () => {
+      const result = controller.createBusinessNameRow('Test Business Ltd')
 
-      expect(rows).toEqual([
-        {
-          key: { text: 'Business name' },
-          value: { text: 'Test Business Ltd' }
-        }
-      ])
+      expect(result).toEqual({
+        key: { text: 'Business name' },
+        value: { text: 'Test Business Ltd' }
+      })
     })
 
-    it('should not add row when business name is missing', () => {
-      const rows = []
-      controller.addBusinessNameRow(rows, null)
-      expect(rows).toEqual([])
+    it('should return null when business name is missing', () => {
+      const result = controller.createBusinessNameRow(null)
+      expect(result).toBeNull()
     })
   })
 
-  describe('addAddressRow', () => {
-    it('should add address row with all fields', () => {
-      const rows = []
+  describe('createAddressRow', () => {
+    it('should create address row with all fields', () => {
       const address = {
         line1: 'Line 1',
         line2: 'Line 2',
@@ -223,20 +207,17 @@ describe('ConfirmFarmDetailsController', () => {
         postalCode: 'TE1 1ST'
       }
 
-      controller.addAddressRow(rows, address)
+      const result = controller.createAddressRow(address)
 
-      expect(rows).toEqual([
-        {
-          key: { text: 'Address' },
-          value: {
-            html: 'Line 1<br/>Line 2<br/>Line 3<br/>Main Street<br/>Test City<br/>TE1 1ST'
-          }
+      expect(result).toEqual({
+        key: { text: 'Address' },
+        value: {
+          html: 'Line 1<br/>Line 2<br/>Line 3<br/>Main Street<br/>Test City<br/>TE1 1ST'
         }
-      ])
+      })
     })
 
     it('should trim commas and spaces from address parts', () => {
-      const rows = []
       const address = {
         line1: '  , Line 1 , ',
         line2: ' Line 2,  ',
@@ -245,20 +226,17 @@ describe('ConfirmFarmDetailsController', () => {
         postalCode: '  TE1 1ST  '
       }
 
-      controller.addAddressRow(rows, address)
+      const result = controller.createAddressRow(address)
 
-      expect(rows).toEqual([
-        {
-          key: { text: 'Address' },
-          value: {
-            html: 'Line 1<br/>Line 2<br/>Line 3<br/>Test City<br/>TE1 1ST'
-          }
+      expect(result).toEqual({
+        key: { text: 'Address' },
+        value: {
+          html: 'Line 1<br/>Line 2<br/>Line 3<br/>Test City<br/>TE1 1ST'
         }
-      ])
+      })
     })
 
     it('should filter out empty address parts', () => {
-      const rows = []
       const address = {
         line1: 'Line 1',
         line2: '',
@@ -268,24 +246,20 @@ describe('ConfirmFarmDetailsController', () => {
         postalCode: 'TE1 1ST'
       }
 
-      controller.addAddressRow(rows, address)
+      const result = controller.createAddressRow(address)
 
-      expect(rows).toEqual([
-        {
-          key: { text: 'Address' },
-          value: { html: 'Line 1<br/>Test City<br/>TE1 1ST' }
-        }
-      ])
+      expect(result).toEqual({
+        key: { text: 'Address' },
+        value: { html: 'Line 1<br/>Test City<br/>TE1 1ST' }
+      })
     })
 
-    it('should not add row when address is missing', () => {
-      const rows = []
-      controller.addAddressRow(rows, null)
-      expect(rows).toEqual([])
+    it('should return null when address is missing', () => {
+      const result = controller.createAddressRow(null)
+      expect(result).toBeNull()
     })
 
-    it('should not add row when all address parts are empty', () => {
-      const rows = []
+    it('should return null when all address parts are empty', () => {
       const address = {
         line1: '',
         line2: '  ',
@@ -295,66 +269,59 @@ describe('ConfirmFarmDetailsController', () => {
         postalCode: '  ,  '
       }
 
-      controller.addAddressRow(rows, address)
-      expect(rows).toEqual([])
+      const result = controller.createAddressRow(address)
+      expect(result).toBeNull()
     })
   })
 
-  describe('addSbiRow', () => {
-    it('should always add SBI row', () => {
-      const rows = []
-      controller.addSbiRow(rows, 'SBI123456')
+  describe('createSbiRow', () => {
+    it('should always create SBI row', () => {
+      const result = controller.createSbiRow('SBI123456')
 
-      expect(rows).toEqual([
-        {
-          key: { text: 'SBI number' },
-          value: { text: 'SBI123456' }
-        }
-      ])
+      expect(result).toEqual({
+        key: { text: 'SBI number' },
+        value: { text: 'SBI123456' }
+      })
     })
   })
 
-  describe('addContactDetailsRow', () => {
-    it('should add contact details with both mobile and email', () => {
-      const rows = []
-      controller.addContactDetailsRow(rows, '07123456789', 'test@example.com')
+  describe('createContactDetailsRow', () => {
+    it('should create contact details with both mobile and email', () => {
+      const result = controller.createContactDetailsRow(
+        '07123456789',
+        'test@example.com'
+      )
 
-      expect(rows).toEqual([
-        {
-          key: { text: 'Contact details' },
-          value: { html: 'formatted-07123456789<br/>test@example.com' }
-        }
-      ])
+      expect(result).toEqual({
+        key: { text: 'Contact details' },
+        value: { html: 'formatted-07123456789<br/>test@example.com' }
+      })
     })
 
-    it('should add contact details with only mobile', () => {
-      const rows = []
-      controller.addContactDetailsRow(rows, '07123456789', null)
+    it('should create contact details with only mobile', () => {
+      const result = controller.createContactDetailsRow('07123456789', null)
 
-      expect(rows).toEqual([
-        {
-          key: { text: 'Contact details' },
-          value: { html: 'formatted-07123456789' }
-        }
-      ])
+      expect(result).toEqual({
+        key: { text: 'Contact details' },
+        value: { html: 'formatted-07123456789' }
+      })
     })
 
-    it('should add contact details with only email', () => {
-      const rows = []
-      controller.addContactDetailsRow(rows, null, 'test@example.com')
+    it('should create contact details with only email', () => {
+      const result = controller.createContactDetailsRow(
+        null,
+        'test@example.com'
+      )
 
-      expect(rows).toEqual([
-        {
-          key: { text: 'Contact details' },
-          value: { html: 'test@example.com' }
-        }
-      ])
+      expect(result).toEqual({
+        key: { text: 'Contact details' },
+        value: { html: 'test@example.com' }
+      })
     })
 
-    it('should not add row when both mobile and email are missing', () => {
-      const rows = []
-      controller.addContactDetailsRow(rows, null, null)
-      expect(rows).toEqual([])
+    it('should return null when both mobile and email are missing', () => {
+      const result = controller.createContactDetailsRow(null, null)
+      expect(result).toBeNull()
     })
   })
 
@@ -370,6 +337,15 @@ describe('ConfirmFarmDetailsController', () => {
         errorMessage: 'Unable to find farm information, please try again later.'
       })
       expect(result).toBe('mocked-view')
+    })
+  })
+
+  describe('constants', () => {
+    it('should have correct static constants', () => {
+      expect(ConfirmFarmDetailsController.CUSTOMER_ID).toBe(3646257965)
+      expect(ConfirmFarmDetailsController.ERROR_MESSAGE).toBe(
+        'Unable to find farm information, please try again later.'
+      )
     })
   })
 })
