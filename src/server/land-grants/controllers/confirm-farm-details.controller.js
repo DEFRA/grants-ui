@@ -111,13 +111,7 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
       address.postalCode
     ]
       .filter(Boolean)
-      .map((part) =>
-        part
-          .toString()
-          .trim()
-          .replace(/^([,\s]+)|([,\s]+)$/g, '')
-      )
-      .filter((part) => part.length > 0)
+      .map((part) => part.replace(/^[,\s]*/, '').replace(/[,\s]*$/, ''))
 
     if (addressParts.length === 0) {
       return null
