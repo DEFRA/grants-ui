@@ -113,7 +113,7 @@ describe('Consolidated View Service', () => {
 
       const [[, calledOptions]] = mockFetch.mock.calls
       expect(calledOptions.headers.Authorization).toBe(`Bearer ${mockToken}`)
-      expect(calledOptions.headers.email).toBe('Test.User01@defra.gov.uk')
+      expect(calledOptions.headers.email).toBe('test@example.com')
     })
 
     it('should return empty array when parcels data is missing', async () => {

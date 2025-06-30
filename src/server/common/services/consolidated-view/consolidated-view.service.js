@@ -5,9 +5,6 @@ import { config } from '~/src/config/config.js'
 import { getValidToken } from '~/src/server/common/helpers/entra/token-manager.js'
 import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
 
-const CV_API_ENDPOINT = config.get('consolidatedView.apiEndpoint')
-const CV_API_AUTH_EMAIL = config.get('consolidatedView.authEmail')
-
 const logger = createLogger()
 
 /**
@@ -48,6 +45,7 @@ class ConsolidatedViewApiError extends Error {
  * @returns {Promise<object>} Request options object
  */
 async function getConsolidatedViewRequestOptions({ method = 'POST', query }) {
+  const CV_API_AUTH_EMAIL = config.get('consolidatedView.authEmail')
   return {
     method,
     headers: {
@@ -91,6 +89,7 @@ async function fetchMockDataForBusiness(sbi) {
  * @throws {ConsolidatedViewApiError} - If the API request fails
  */
 async function makeConsolidatedViewRequest(query, sbi) {
+  const CV_API_ENDPOINT = config.get('consolidatedView.apiEndpoint')
   const response = await fetch(
     CV_API_ENDPOINT,
     await getConsolidatedViewRequestOptions({ query })
