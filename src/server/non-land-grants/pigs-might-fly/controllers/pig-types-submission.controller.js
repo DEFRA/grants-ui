@@ -55,7 +55,6 @@ export default class FlyingPigsSubmissionPageController extends SummaryPageContr
       request.logger.info('Form submission completed', result)
       const cacheService = getFormsCacheService(request.server)
       await cacheService.setConfirmationState(request, { confirmed: true })
-      // return h.redirect('/confirmation')
 
       const redirectPath = this.getStatusPath(request, context)
       request.logger.debug(

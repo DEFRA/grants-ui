@@ -1,47 +1,42 @@
-import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
-import { invokeGasPostAction } from '~/src/server/common/services/grant-application/grant-application.service.js'
 import { PotentialFundingController } from './potential-funding.controller.js'
+import { invokeGasPostAction } from '~/src/server/common/services/grant-application/grant-application.service.js'
+import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 
-jest.mock('@defra/forms-model')
-jest.mock('@defra/forms-engine-plugin/engine/components/ComponentCollection.js')
-jest.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js')
 jest.mock(
   '~/src/server/common/services/grant-application/grant-application.service.js'
 )
 
 describe('PotentialFundingController', () => {
   let controller
-  let mockModel
-  let mockPageDef
   let mockRequest
   let mockContext
+  let mockResponseToolkit
 
   beforeEach(() => {
     QuestionPageController.prototype.getViewModel = jest.fn().mockReturnValue({
       pageTitle: 'Potential Funding'
     })
 
-    mockModel = {
-      def: {
-        metadata: {
-          submission: {
-            grantCode: 'pigs-might-fly'
+    controller = new PotentialFundingController(
+      {
+        def: {
+          metadata: {
+            submission: {
+              grantCode: 'pigs-might-fly'
+            }
           }
         }
+      },
+      {
+        title: 'Test Page'
       }
-    }
-
-    mockPageDef = {
-      title: 'Potential Funding',
-      path: '/potential-funding',
-      components: [{ name: 'testComponent', type: 'TextField' }]
-    }
-
-    controller = new PotentialFundingController(mockModel, mockPageDef)
+    )
 
     mockRequest = {
       method: 'GET',
-      url: '/potential-funding'
+      logger: {
+        error: jest.fn()
+      }
     }
 
     mockContext = {
@@ -50,234 +45,102 @@ describe('PotentialFundingController', () => {
         britishLandracePigsCount: 5,
         berkshirePigsCount: 3,
         otherPigsCount: 2
-      }
+      },
+      pigData: null,
+      pigDataJson: null
     }
+
+    mockResponseToolkit = {
+      view: jest.fn(),
+      redirect: jest.fn()
+    }
+
+    invokeGasPostAction.mockReset()
   })
 
-  afterEach(() => {
-    jest.clearAllMocks()
-  })
+  describe('makeGetRouteHandler', () => {
+    it('should call invokeGasPostAction with correct payload and render the view', async () => {
+      const handler = controller.makeGetRouteHandler()
 
-  describe('getViewModel', () => {
-    test('should create correct payload with pig breeds from context state', () => {
-      const expectedPayload = {
-        pigBreeds: [
-          {
-            pigType: 'largeWhite',
-            quantity: 10
-          },
-          {
-            pigType: 'landrace',
-            quantity: 5
-          },
-          {
-            pigType: 'berkshire',
-            quantity: 3
-          },
-          {
-            pigType: 'other',
-            quantity: 2
-          }
-        ]
+      const mockResult = {
+        items: [
+          { type: 'largeWhite', value: 50 },
+          { type: 'landrace', value: 25 },
+          { type: 'berkshire', value: 15 },
+          { type: 'other', value: 10 }
+        ],
+        pigsData: { totalPigs: 100 }
       }
+      invokeGasPostAction.mockResolvedValue(mockResult)
 
-      invokeGasPostAction.mockResolvedValue({ totalFunding: 100 })
+      await handler(mockRequest, mockContext, mockResponseToolkit)
 
-      controller.getViewModel(mockRequest, mockContext)
-
+      expect(invokeGasPostAction).toHaveBeenCalledTimes(1)
       expect(invokeGasPostAction).toHaveBeenCalledWith(
         'pigs-might-fly',
         'calculate-pig-totals',
-        expectedPayload
-      )
-    })
-
-    test('should use default values of 0 when pig counts are missing from state', () => {
-      const contextWithPartialData = {
-        state: {
-          whitePigsCount: 15
+        {
+          pigTypes: [
+            { pigType: 'largeWhite', quantity: 10 },
+            { pigType: 'landrace', quantity: 5 },
+            { pigType: 'berkshire', quantity: 3 },
+            { pigType: 'other', quantity: 2 }
+          ]
         }
-      }
+      )
 
-      const expectedPayload = {
-        pigBreeds: [
-          {
-            pigType: 'largeWhite',
-            quantity: 15
-          },
-          {
-            pigType: 'landrace',
-            quantity: 0
-          },
-          {
-            pigType: 'berkshire',
-            quantity: 0
-          },
-          {
-            pigType: 'other',
-            quantity: 0
-          }
-        ]
-      }
-
-      invokeGasPostAction.mockResolvedValue({ totalFunding: 150 })
-
-      controller.getViewModel(mockRequest, contextWithPartialData)
-
-      expect(invokeGasPostAction).toHaveBeenCalledWith(
-        'pigs-might-fly',
-        'calculate-pig-totals',
-        expectedPayload
+      expect(mockContext.pigData).toEqual({
+        largeWhite: { type: 'largeWhite', value: 50 },
+        landrace: { type: 'landrace', value: 25 },
+        berkshire: { type: 'berkshire', value: 15 },
+        other: { type: 'other', value: 10 }
+      })
+      expect(mockContext.pigDataJson).toEqual(
+        JSON.stringify({ totalPigs: 100 })
+      )
+      expect(mockResponseToolkit.view).toHaveBeenCalledWith(
+        'non-land-grants/flying-pigs/potential-funding',
+        expect.any(Object)
       )
     })
 
-    test('should handle empty state object gracefully', () => {
-      const emptyStateContext = { state: {} }
+    it('should log and throw an error if invokeGasPostAction fails', async () => {
+      const handler = controller.makeGetRouteHandler()
 
-      const expectedPayload = {
-        pigBreeds: [
-          { pigType: 'largeWhite', quantity: 0 },
-          { pigType: 'landrace', quantity: 0 },
-          { pigType: 'berkshire', quantity: 0 },
-          { pigType: 'other', quantity: 0 }
-        ]
-      }
-
-      invokeGasPostAction.mockResolvedValue({ totalFunding: 0 })
-
-      controller.getViewModel(mockRequest, emptyStateContext)
-
-      expect(invokeGasPostAction).toHaveBeenCalledWith(
-        'pigs-might-fly',
-        'calculate-pig-totals',
-        expectedPayload
-      )
-    })
-
-    test('should call super.getViewModel and return its result', () => {
-      const mockSuperResult = { pageTitle: 'Potential Funding', formData: true }
-      QuestionPageController.prototype.getViewModel = jest
-        .fn()
-        .mockReturnValue(mockSuperResult)
-
-      const result = controller.getViewModel(mockRequest, mockContext)
-
-      expect(
-        QuestionPageController.prototype.getViewModel
-      ).toHaveBeenCalledWith(mockRequest, mockContext)
-      expect(result).toEqual(mockSuperResult)
-    })
-
-    test('should handle successful pig data response and set pigData on context', async () => {
-      const mockPigData = {
-        totalFunding: 420,
-        breakdown: [
-          { breed: 'largeWhite', count: 10, funding: 100 },
-          { breed: 'landrace', count: 5, funding: 75 },
-          { breed: 'berkshire', count: 3, funding: 54 },
-          { breed: 'other', count: 2, funding: 20 }
-        ]
-      }
-      invokeGasPostAction.mockResolvedValue(mockPigData)
-
-      controller.getViewModel(mockRequest, mockContext)
-
-      await new Promise((resolve) => setTimeout(resolve, 0))
-
-      expect(mockContext.pigData).toEqual(mockPigData)
-    })
-
-    test('should handle service errors gracefully without throwing', async () => {
-      const mockError = new Error('GAS service unavailable')
+      const mockError = new Error('Test Error')
       invokeGasPostAction.mockRejectedValue(mockError)
 
-      expect(() => {
-        controller.getViewModel(mockRequest, mockContext)
-      }).not.toThrow()
+      await expect(
+        handler(mockRequest, mockContext, mockResponseToolkit)
+      ).rejects.toThrow(mockError)
 
-      await new Promise((resolve) => setTimeout(resolve, 0))
-
-      expect(mockContext.pigData).toBeUndefined()
-    })
-
-    test('should handle all pig counts being zero', () => {
-      const zeroCountContext = {
-        state: {
-          whitePigsCount: 0,
-          britishLandracePigsCount: 0,
-          berkshirePigsCount: 0,
-          otherPigsCount: 0
-        }
-      }
-
-      const expectedPayload = {
-        pigBreeds: [
-          { pigType: 'largeWhite', quantity: 0 },
-          { pigType: 'landrace', quantity: 0 },
-          { pigType: 'berkshire', quantity: 0 },
-          { pigType: 'other', quantity: 0 }
-        ]
-      }
-
-      invokeGasPostAction.mockResolvedValue({ totalFunding: 0 })
-
-      controller.getViewModel(mockRequest, zeroCountContext)
-
-      expect(invokeGasPostAction).toHaveBeenCalledWith(
-        'pigs-might-fly',
-        'calculate-pig-totals',
-        expectedPayload
+      expect(mockRequest.logger.error).toHaveBeenCalledWith(
+        'Error invoking GAS action:',
+        mockError
       )
     })
+  })
 
-    test('should create promise that handles both resolve and reject paths', async () => {
-      const successData = { totalFunding: 300 }
-      invokeGasPostAction.mockResolvedValueOnce(successData)
-
-      controller.getViewModel(mockRequest, mockContext)
-      await new Promise(setImmediate)
-
-      expect(mockContext.pigData).toEqual(successData)
-
-      delete mockContext.pigData
-
-      const errorMessage = 'Network error'
-      invokeGasPostAction.mockRejectedValueOnce(new Error(errorMessage))
-
-      controller.getViewModel(mockRequest, mockContext)
-      await new Promise(setImmediate)
-
-      expect(mockContext.pigData).toBeUndefined()
+  describe('makePostRouteHandler', () => {
+    beforeEach(() => {
+      // Mock `proceed` and `getNextPath` in the controller
+      controller.proceed = jest.fn().mockReturnValue('redirectedPath')
+      controller.getNextPath = jest.fn().mockReturnValue('/next-path')
     })
 
-    test('should handle large pig counts correctly', () => {
-      const largeCountContext = {
-        state: {
-          whitePigsCount: 999,
-          britishLandracePigsCount: 500,
-          berkshirePigsCount: 300,
-          otherPigsCount: 100
-        }
-      }
+    it('should call proceed with the next path', () => {
+      const handler = controller.makePostRouteHandler()
 
-      const expectedPayload = {
-        pigBreeds: [
-          { pigType: 'largeWhite', quantity: 999 },
-          { pigType: 'landrace', quantity: 500 },
-          { pigType: 'berkshire', quantity: 300 },
-          { pigType: 'other', quantity: 100 }
-        ]
-      }
+      jest.spyOn(controller, 'proceed').mockReturnValue('nextPath')
 
-      invokeGasPostAction.mockResolvedValue({ totalFunding: 18990 })
+      const result = handler(mockRequest, mockContext, mockResponseToolkit)
 
-      controller.getViewModel(mockRequest, largeCountContext)
-
-      expect(invokeGasPostAction).toHaveBeenCalledWith(
-        'pigs-might-fly',
-        'calculate-pig-totals',
-        expectedPayload
+      expect(controller.proceed).toHaveBeenCalledWith(
+        mockRequest,
+        mockResponseToolkit,
+        controller.getNextPath(mockContext)
       )
+      expect(result).toBe('nextPath')
     })
   })
 })
