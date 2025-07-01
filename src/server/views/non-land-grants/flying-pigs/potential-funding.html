@@ -35,7 +35,7 @@ selected: false
     <br><span class="govuk-!-font-weight-bold">Berkshire:</span> {{ context.pigData['berkshire'].quantity }} pigs × {{ context.pigData['berkshire'].value | formatCurrency }} = {{ context.pigData['berkshire'].total | formatCurrency }}
   {% endif %}
 
-  {% if context.pigData['largeWhite'].quantity > 0 %}
+  {% if context.pigData['other'].quantity > 0 %}
   <br><span class="govuk-!-font-weight-bold">Other:</span> {{ context.pigData['other'].quantity }} pigs × {{ context.pigData['other'].value | formatCurrency }} = {{ context.pigData['other'].total | formatCurrency }}
   {% endif %}
 
