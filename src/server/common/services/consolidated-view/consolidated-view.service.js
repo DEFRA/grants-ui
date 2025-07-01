@@ -105,7 +105,7 @@ async function makeConsolidatedViewRequest(query, sbi) {
     )
   }
 
-  return await response.json()
+  return response.json()
 }
 
 /**
