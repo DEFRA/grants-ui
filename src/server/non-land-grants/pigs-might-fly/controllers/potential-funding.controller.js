@@ -13,7 +13,7 @@ export class PotentialFundingController extends QuestionPageController {
             quantity: context.state.whitePigsCount || 0
           },
           {
-            pigType: 'landrace',
+            pigType: 'britishLandrace',
             quantity: context.state.britishLandracePigsCount || 0
           },
           {
@@ -36,6 +36,10 @@ export class PotentialFundingController extends QuestionPageController {
           acc[item.type] = item
           return acc
         }, {})
+
+        context.grandTotal = result.items.reduce((total, item) => {
+          return total + (item.total || 0)
+        }, 0)
 
         context.pigDataJson = JSON.stringify(result.pigsData)
         const { viewName } = this

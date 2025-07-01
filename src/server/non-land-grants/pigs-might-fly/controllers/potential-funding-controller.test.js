@@ -65,7 +65,7 @@ describe('PotentialFundingController', () => {
       const mockResult = {
         items: [
           { type: 'largeWhite', value: 50 },
-          { type: 'landrace', value: 25 },
+          { type: 'britishLandrace', value: 25 },
           { type: 'berkshire', value: 15 },
           { type: 'other', value: 10 }
         ],
@@ -82,7 +82,7 @@ describe('PotentialFundingController', () => {
         {
           pigTypes: [
             { pigType: 'largeWhite', quantity: 10 },
-            { pigType: 'landrace', quantity: 5 },
+            { pigType: 'britishLandrace', quantity: 5 },
             { pigType: 'berkshire', quantity: 3 },
             { pigType: 'other', quantity: 2 }
           ]
@@ -91,7 +91,7 @@ describe('PotentialFundingController', () => {
 
       expect(mockContext.pigData).toEqual({
         largeWhite: { type: 'largeWhite', value: 50 },
-        landrace: { type: 'landrace', value: 25 },
+        britishLandrace: { type: 'britishLandrace', value: 25 },
         berkshire: { type: 'berkshire', value: 15 },
         other: { type: 'other', value: 10 }
       })

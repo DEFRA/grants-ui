@@ -18,26 +18,42 @@ selected: false
 
 {% block content %}
 
-<p class="govuk-body">
-  This is my PIG DATA* {{ context.pigData | dump }}<br>
+<div class="govuk-body">
+  <h1 class="govuk-heading-l">Potential funding</h1>
+
+  <p class="govuk-!-font-weight-bold">Based on your pig breeds and numbers, you may be able to apply for grant funding of up to {{ context.grandTotal | formatCurrency }}.</p>
 
   {% if context.pigData['largeWhite'].quantity > 0 %}
-  <br>Large White: {{ context.pigData['largeWhite'].quantity }} pigs × £10 = {{ context.pigData['largeWhite'].value | formatCurrency }}
+    <br><span class="govuk-!-font-weight-bold">Large White:</span> {{ context.pigData['largeWhite'].quantity }} pigs × {{ context.pigData['largeWhite'].value | formatCurrency }} = {{ context.pigData['largeWhite'].total | formatCurrency }}
   {% endif %}
 
-  <ul class="govuk-body">
-  {% for pigType, pigData in context.pigData %}
-  <li><span class="govuk-!-font-weight-bold">{{ pigData.description }}:</span> {{ pigData.quantity }} pigs × {{ pigData.value | formatCurrency }} = {{ pigData.total | formatCurrency }}</li>
-  {% endfor %}
-  </ul>
+  {% if context.pigData['britishLandrace'].quantity > 0 %}
+    <br><span class="govuk-!-font-weight-bold">British Landrace:</span> {{ context.pigData['britishLandrace'].quantity }} pigs × {{ context.pigData['britishLandrace'].value | formatCurrency }} = {{ context.pigData['britishLandrace'].total | formatCurrency }}
+  {% endif %}
 
-</p>
+  {% if context.pigData['berkshire'].quantity > 0 %}
+    <br><span class="govuk-!-font-weight-bold">Berkshire:</span> {{ context.pigData['berkshire'].quantity }} pigs × {{ context.pigData['berkshire'].value | formatCurrency }} = {{ context.pigData['berkshire'].total | formatCurrency }}
+  {% endif %}
+
+  {% if context.pigData['largeWhite'].quantity > 0 %}
+  <br><span class="govuk-!-font-weight-bold">Other:</span> {{ context.pigData['other'].quantity }} pigs × {{ context.pigData['other'].value | formatCurrency }} = {{ context.pigData['other'].total | formatCurrency }}
+  {% endif %}
+
+  <div class="padding-top: govuk-spacing(6)">
+    <br><span class="govuk-!-font-weight-bold">Grant total:</span> {{ context.grandTotal | formatCurrency }}
+  </div>
+
+  <div class="govuk-warning-text"> <span class="govuk-warning-text__icon"
+                                         aria-hidden="true">!</span> <strong class="govuk-warning-text__text"> <span
+    class="govuk-visually-hidden">Warning</span>There's no guarantee the project
+    will receive a grant.</strong></div>
+</div>
 
 {% block form %}
 <form method="post" novalidate>
   <input type="hidden" name="crumb" value="{{ crumb }}">
   {{ govukButton({
-  text: "Confirm and send",
+  text: "Continue",
   preventDoubleClick: true
   }) }}
 </form>
