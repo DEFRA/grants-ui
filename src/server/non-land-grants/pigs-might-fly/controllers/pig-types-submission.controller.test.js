@@ -75,9 +75,9 @@ describe('FlyingPigsSubmissionPageController', () => {
     )
   })
 
-  it('should handle POST route and redirect to /state', async () => {
+  it('should handle POST route and redirect to /confirmation', async () => {
     const mockRequest = {
-      logger: { info: jest.fn() },
+      logger: { info: jest.fn(), debug: jest.fn() },
       server: {}
     }
     const mockResponseToolkit = { redirect: jest.fn() }
@@ -88,14 +88,10 @@ describe('FlyingPigsSubmissionPageController', () => {
     const postHandler = controller.makePostRouteHandler()
     await postHandler(mockRequest, mockContext, mockResponseToolkit)
 
-    expect(mockRequest.logger.info).toHaveBeenCalledWith(
-      'Form submission completed',
-      undefined
-    )
     expect(mockCacheService.setConfirmationState).toHaveBeenCalledWith(
       mockRequest,
       { confirmed: true }
     )
-    expect(mockResponseToolkit.redirect).toHaveBeenCalledWith('/state')
+    expect(mockResponseToolkit.redirect).toHaveBeenCalledWith('/confirmation')
   })
 })
