@@ -2,6 +2,7 @@
 
 {% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
 {% from "govuk/components/summary-list/macro.njk" import govukSummaryList %}
+{% from "govuk/components/button/macro.njk" import govukButton %}
 
 {% block content %}
   <div class="govuk-grid-row">
@@ -22,9 +23,11 @@
 
       <form method="post" novalidate>
         <input type="hidden" name="crumb" value="{{ crumb }}">
-        <button data-prevent-double-click="true" class="govuk-button" data-module="govuk-button">
-          Continue
-        </button>
+        {{ govukButton({
+            text: "Continue",
+            preventDoubleClick: true
+          }) 
+        }}
       </form>
     </div>
   </div>
