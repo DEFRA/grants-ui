@@ -1,6 +1,6 @@
 import { config } from '~/src/config/config.js'
 import { formatCurrency } from '~/src/config/nunjucks/filters/format-currency.js'
-import { fetchParcelsFromDal } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
+import { fetchParcelsForSbi } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
 import { sbiStore } from '../../sbi/state.js'
 
 const LAND_GRANTS_API_URL = config.get('landGrants.grantsServiceApiEndpoint')
@@ -159,7 +159,7 @@ async function fetchParcelsSize(parcelIds) {
  * @throws {Error}
  */
 export async function fetchParcels(sbi) {
-  const parcels = await fetchParcelsFromDal(sbi)
+  const parcels = await fetchParcelsForSbi(sbi)
   const parcelKeys = parcels.map(stringifyParcel)
   const sizes = await fetchParcelsSize(parcelKeys)
   const hydratedParcels = parcels.map((p) => ({
