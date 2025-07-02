@@ -12,6 +12,10 @@ pages:
       - path: /land-details
     components: []
 
+  - title: Confirm your details
+    path: /confirm-farm-details
+    controller: ConfirmFarmDetailsController
+
   - title: Do your digital maps show the correct land details?
     path: /land-details
     components:
