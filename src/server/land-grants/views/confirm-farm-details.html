@@ -10,16 +10,8 @@
         {% include "partials/preview-banner.html" %}
       {% endif %}
 
-      {% if errorMessage %}
-        {{ govukErrorSummary({
-          titleText: "There is a problem",
-          errorList: [
-            {
-              text: errorMessage,
-              href: ''
-            }
-          ]
-        }) }}
+      {% if error %}
+        {{ govukErrorSummary(error) }}
       {% endif %}
 
       <h1 class="govuk-heading-l">

@@ -16,7 +16,7 @@ jest.mock('~/src/server/common/helpers/logging/logger.js', () => ({
     error: jest.fn()
   }))
 }))
-jest.mock('~/src/config/nunjucks/filters/format-phone.js', () => ({
+jest.mock('~/src/server/land-grants/utils/format-phone.js', () => ({
   formatPhone: jest.fn((phone) => (phone ? `formatted-${phone}` : ''))
 }))
 
@@ -89,7 +89,15 @@ describe('ConfirmFarmDetailsController', () => {
       const result = await handler(mockRequest, mockContext, mockH)
 
       expect(mockH.view).toHaveBeenCalledWith('confirm-farm-details', {
-        errorMessage: 'Unable to find farm information, please try again later.'
+        error: {
+          titleText: 'There is a problem',
+          errorList: [
+            {
+              text: ConfirmFarmDetailsController.ERROR_MESSAGE,
+              href: ''
+            }
+          ]
+        }
       })
       expect(result).toBe('mocked-view')
     })
@@ -315,7 +323,15 @@ describe('ConfirmFarmDetailsController', () => {
 
       expect(mockH.view).toHaveBeenCalledWith('confirm-farm-details', {
         baseProperty: 'value',
-        errorMessage: 'Unable to find farm information, please try again later.'
+        error: {
+          titleText: 'There is a problem',
+          errorList: [
+            {
+              text: ConfirmFarmDetailsController.ERROR_MESSAGE,
+              href: ''
+            }
+          ]
+        }
       })
       expect(result).toBe('mocked-view')
     })

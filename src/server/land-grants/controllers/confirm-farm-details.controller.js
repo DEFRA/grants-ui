@@ -1,6 +1,6 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
-import { formatPhone } from '~/src/config/nunjucks/filters/format-phone.js'
 import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
+import { formatPhone } from '~/src/server/land-grants/utils/format-phone.js'
 import { sbiStore } from '~/src/server/sbi/state.js'
 import { fetchBusinessAndCustomerInformation } from '../../common/services/consolidated-view/consolidated-view.service.js'
 
@@ -173,7 +173,15 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
 
     return h.view(this.viewName, {
       ...baseViewModel,
-      errorMessage: ConfirmFarmDetailsController.ERROR_MESSAGE
+      error: {
+        titleText: 'There is a problem',
+        errorList: [
+          {
+            text: ConfirmFarmDetailsController.ERROR_MESSAGE,
+            href: ''
+          }
+        ]
+      }
     })
   }
 }
