@@ -99,7 +99,7 @@ describe('PotentialFundingController', () => {
         JSON.stringify({ totalPigs: 100 })
       )
       expect(mockResponseToolkit.view).toHaveBeenCalledWith(
-        'non-land-grants/flying-pigs/potential-funding',
+        'potential-funding',
         expect.any(Object)
       )
     })

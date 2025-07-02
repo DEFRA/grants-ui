@@ -51,6 +51,7 @@ const getViewPaths = () => {
   const isRunningBuiltCode = currentFilePath.includes('.server')
   const basePath = isRunningBuiltCode ? '.server/server' : 'src/server'
   return [
+    `${basePath}/non-land-grants/pigs-might-fly/views`,
     `${basePath}/land-grants/views`,
     `${basePath}/views`,
     ...grantsUiPaths

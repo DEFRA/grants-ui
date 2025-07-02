@@ -2,7 +2,7 @@ import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/Q
 import { invokeGasPostAction } from '~/src/server/common/services/grant-application/grant-application.service.js'
 
 export class PotentialFundingController extends QuestionPageController {
-  viewName = 'non-land-grants/flying-pigs/potential-funding'
+  viewName = 'potential-funding'
 
   makeGetRouteHandler() {
     const fn = async (request, context, h) => {
