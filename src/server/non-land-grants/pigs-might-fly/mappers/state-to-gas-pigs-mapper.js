@@ -19,15 +19,13 @@ export function stateToPigsMightFlyGasAnswers(state = {}) {
   if (!state) {
     return {
       isPigFarmer: false,
-      totalPigs: 0,
-      pigBreeds: []
+      totalPigs: 0
     }
   }
 
   const result = {
     isPigFarmer: state.isPigFarmer || false,
-    totalPigs: state.totalPigs || 0,
-    pigBreeds: state.pigBreeds || []
+    totalPigs: state.totalPigs || 0
   }
 
   if (state.whitePigsCount !== undefined) {

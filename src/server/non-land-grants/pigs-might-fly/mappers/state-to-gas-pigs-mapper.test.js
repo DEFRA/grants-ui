@@ -8,8 +8,7 @@ describe('stateToPigsMightFlyGasAnswers', () => {
 
       expect(result).toEqual({
         isPigFarmer: false,
-        totalPigs: 0,
-        pigBreeds: []
+        totalPigs: 0
       })
     })
 
@@ -19,8 +18,7 @@ describe('stateToPigsMightFlyGasAnswers', () => {
 
       const expected = {
         isPigFarmer: false,
-        totalPigs: 0,
-        pigBreeds: []
+        totalPigs: 0
       }
 
       expect(resultNull).toEqual(expected)
@@ -48,14 +46,6 @@ describe('stateToPigsMightFlyGasAnswers', () => {
       const result = stateToPigsMightFlyGasAnswers(state)
 
       expect(result.totalPigs).toBe(100)
-    })
-
-    test('should correctly map pigBreeds array', () => {
-      const pigBreeds = ['Large White', 'British Landrace']
-      const state = { pigBreeds }
-      const result = stateToPigsMightFlyGasAnswers(state)
-
-      expect(result.pigBreeds).toEqual(pigBreeds)
     })
   })
 
@@ -162,7 +152,6 @@ describe('stateToPigsMightFlyGasAnswers', () => {
       expect(result).toEqual({
         isPigFarmer: true,
         totalPigs: 100,
-        pigBreeds: ['Large White', 'British Landrace', 'Berkshire'],
         whitePigsCount: 40,
         britishLandracePigsCount: 30,
         berkshirePigsCount: 20,
@@ -174,7 +163,6 @@ describe('stateToPigsMightFlyGasAnswers', () => {
       const state = {
         isPigFarmer: true,
         totalPigs: 50,
-        pigBreeds: ['Large White'],
         whitePigsCount: 30,
         berkshirePigsCount: 20
       }
@@ -184,7 +172,6 @@ describe('stateToPigsMightFlyGasAnswers', () => {
       expect(result).toEqual({
         isPigFarmer: true,
         totalPigs: 50,
-        pigBreeds: ['Large White'],
         whitePigsCount: 30,
         berkshirePigsCount: 20
       })
@@ -235,13 +222,11 @@ describe('stateToPigsMightFlyGasAnswers', () => {
 
     test('should handle empty arrays and objects', () => {
       const state = {
-        pigBreeds: [],
         totalPigs: 0
       }
 
       const result = stateToPigsMightFlyGasAnswers(state)
 
-      expect(result.pigBreeds).toEqual([])
       expect(result.totalPigs).toBe(0)
     })
   })
@@ -259,7 +244,6 @@ describe('stateToPigsMightFlyGasAnswers', () => {
 
       expect(result.isPigFarmer).toBe('yes')
       expect(result.totalPigs).toBe(100.5)
-      expect(result.pigBreeds).toBe('Large White')
       expect(result.whitePigsCount).toBe(25.7)
     })
   })
