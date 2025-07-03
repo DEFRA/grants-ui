@@ -41,7 +41,7 @@
   "author": "Defra DDTS",
   "license": "OGL-UK-3.0",
   "dependencies": {
-    "@babel/runtime": "^7.27.1",
+    "@babel/runtime": "^7.27.6",
     "@defra/forms-engine-plugin": "^0.1.21",
     "@defra/hapi-tracing": "^1.0.0",
     "@elastic/ecs-pino-format": "^1.5.0",
@@ -64,7 +64,7 @@
     "date-fns": "^4.1.0",
     "dotenv": "^16.5.0",
     "global-agent": "^3.0.0",
-    "govuk-frontend": "^5.10.1",
+    "govuk-frontend": "^5.10.2",
     "hapi-pino": "^12.1.0",
     "hapi-pulse": "^3.0.1",
     "ioredis": "^5.6.1",
@@ -75,8 +75,9 @@
     "nunjucks": "^3.2.4",
     "pino": "^9.7.0",
     "pino-pretty": "^13.0.0",
-    "semver": "^7.7.2",
-    "undici": "^6.21.1"
+    "semver": "^7.7.1",
+    "undici": "^6.21.1",
+    "yaml": "^2.8.0"
   },
   "devDependencies": {
     "@babel/cli": "^7.25.9",

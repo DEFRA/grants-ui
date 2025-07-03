@@ -41,7 +41,7 @@ describe('LandParcelPageController', () => {
   let mockH
 
   const renderedViewMock = 'mock-rendered-view'
-  const landParcel = { landParcel: 'sheet123' }
+  const state = { selectedLandParcel: 'sheet123' }
 
   const setupRequest = () => ({
     query: {},
@@ -95,7 +95,7 @@ describe('LandParcelPageController', () => {
         expect.objectContaining({
           pageTitle: 'Select Land Parcel',
           parcels: controllerParcelsResponse,
-          landParcel: ''
+          selectedLandParcel: ''
         })
       )
       expect(result).toBe(renderedViewMock)
@@ -132,7 +132,7 @@ describe('LandParcelPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'select-land-parcel',
         expect.objectContaining({
-          landParcel: '',
+          selectedLandParcel: '',
           parcels: controllerParcelsResponse
         })
       )
@@ -140,7 +140,7 @@ describe('LandParcelPageController', () => {
     })
 
     it('populates full viewModel correctly', async () => {
-      mockContext.state.landParcel = landParcel.landParcel
+      mockContext.state.selectedLandParcel = state.selectedLandParcel
 
       const result = await controller.makeGetRouteHandler()(
         mockRequest,
@@ -151,7 +151,7 @@ describe('LandParcelPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'select-land-parcel',
         expect.objectContaining({
-          landParcel: 'sheet123',
+          selectedLandParcel: 'sheet123',
           parcels: controllerParcelsResponse,
           pageTitle: 'Select Land Parcel'
         })
@@ -161,8 +161,8 @@ describe('LandParcelPageController', () => {
   })
 
   describe('POST route handler', () => {
-    it('saves landParcel and proceeds', async () => {
-      mockRequest.payload = landParcel
+    it('saves selectedLandParcel and proceeds', async () => {
+      mockRequest.payload = state
       mockContext = setupContext({ existing: 'value' })
 
       const result = await controller.makePostRouteHandler()(
@@ -173,7 +173,7 @@ describe('LandParcelPageController', () => {
 
       expect(controller.setState).toHaveBeenCalledWith(mockRequest, {
         existing: 'value',
-        landParcel: landParcel.landParcel
+        selectedLandParcel: state.selectedLandParcel
       })
       expect(controller.proceed).toHaveBeenCalledWith(
         mockRequest,
@@ -183,7 +183,7 @@ describe('LandParcelPageController', () => {
       expect(result).toBe('next')
     })
 
-    it('sets an error if landParcel is not defined', async () => {
+    it('sets an error if selectedLandParcel is not defined', async () => {
       mockRequest.payload = { action: 'validate' }
       mockContext = setupContext({ existing: 'value' })
 
@@ -205,9 +205,9 @@ describe('LandParcelPageController', () => {
       expect(result).toBe('mock-rendered-view')
     })
 
-    it('handles missing landParcel in payload', async () => {
+    it('handles missing selectedLandParcel in payload', async () => {
       mockRequest.payload = {}
-      mockContext = setupContext({ foo: 'bar' })
+      mockContext = setupContext({})
 
       const result = await controller.makePostRouteHandler()(
         mockRequest,
@@ -216,8 +216,7 @@ describe('LandParcelPageController', () => {
       )
 
       expect(controller.setState).toHaveBeenCalledWith(mockRequest, {
-        foo: 'bar',
-        landParcel: undefined
+        selectedLandParcel: undefined
       })
       expect(controller.proceed).toHaveBeenCalled()
       expect(result).toBe('next')
@@ -234,7 +233,7 @@ describe('LandParcelPageController', () => {
       )
 
       expect(controller.setState).toHaveBeenCalledWith(mockRequest, {
-        landParcel: undefined
+        selectedLandParcel: undefined
       })
       expect(controller.proceed).toHaveBeenCalled()
       expect(result).toBe('next')

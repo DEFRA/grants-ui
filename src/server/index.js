@@ -17,7 +17,6 @@ import {
 // import auth from '~/src/plugins/auth.js'
 import csp from '~/src/plugins/content-security-policy.js'
 import sso from '~/src/plugins/sso.js'
-import { tasklistBackButton } from '~/src/server/plugins/tasklist-back-button.js'
 import { formsService } from '~/src/server/common/forms/services/form.js'
 import { outputService } from '~/src/server/common/forms/services/output.js'
 import {
@@ -34,13 +33,16 @@ import { getCacheEngine } from '~/src/server/common/helpers/session-cache/cache-
 import { sessionCache } from '~/src/server/common/helpers/session-cache/session-cache.js'
 import ConfirmationPageController from '~/src/server/controllers/confirmation/controller.js'
 import DeclarationPageController from '~/src/server/controllers/declaration/controller.js'
-import LandActionsPageController from '~/src/server/land-grants/controllers/land-actions-page.controller.js'
+import CheckAnswersPageController from '~/src/server/land-grants/controllers/check-answers-page.controller.js'
+import ConfirmFarmDetailsController from '~/src/server/land-grants/controllers/confirm-farm-details.controller.js'
 import LandActionsCheckPageController from '~/src/server/land-grants/controllers/land-actions-check-page.controller.js'
+import LandActionsPageController from '~/src/server/land-grants/controllers/land-actions-page.controller.js'
 import LandParcelPageController from '~/src/server/land-grants/controllers/land-parcel-page.controller.js'
 import SubmissionPageController from '~/src/server/land-grants/controllers/submission-page.controller.js'
+import { tasklistBackButton } from '~/src/server/plugins/tasklist-back-button.js'
+import { formatCurrency } from '../config/nunjucks/filters/format-currency.js'
 import SectionEndController from './controllers/section-end/section-end-controller.js'
 import FlyingPigsSubmissionPageController from './non-land-grants/pigs-might-fly/controllers/pig-types-submission.controller.js'
-import { formatCurrency } from '../config/nunjucks/filters/format-currency.js'
 import { router } from './router.js'
 import { PotentialFundingController } from '~/src/server/non-land-grants/pigs-might-fly/controllers/potential-funding.controller.js'
 
@@ -102,10 +104,11 @@ const createHapiServer = () => {
   })
 }
 
-const registerFormsPlugin = async (server) => {
+const registerFormsPlugin = async (server, prefix = '') => {
   await server.register({
     plugin,
     options: {
+      ...(prefix && { routes: { prefix } }),
       cacheName: config.get(SESSION_CACHE_NAME),
       services: {
         formsService: await formsService(),
@@ -123,7 +126,9 @@ const registerFormsPlugin = async (server) => {
       controllers: {
         ConfirmationPageController,
         DeclarationPageController,
+        CheckAnswersPageController,
         SubmissionPageController,
+        ConfirmFarmDetailsController,
         LandParcelPageController,
         LandActionsPageController,
         LandActionsCheckPageController,
@@ -136,6 +141,8 @@ const registerFormsPlugin = async (server) => {
 }
 
 const registerPlugins = async (server) => {
+  await server.register([router])
+
   await server.register([
     inert,
     crumb,
@@ -151,7 +158,6 @@ const registerPlugins = async (server) => {
     sessionCache,
     nunjucksConfig,
     tasklistBackButton,
-    router,
     sso
   ])
 }

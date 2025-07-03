@@ -110,14 +110,11 @@
         <p>You’ll get an email with your score and answers, and a reference number.</p>
         <br/><br/>
         {% block form %}
-          <form method="post" novalidate>
-            <input type="hidden" name="crumb" value="{{ crumb }}">
-            {{ govukButton({
-              text: "Continue",
-              preventDoubleClick: true,
-              href: "/adding-value-tasklist"
-            }) }}
-          </form>
+          {{ govukButton({
+            text: "Continue",
+            preventDoubleClick: true,
+            href: "/" + tasklistId if tasklistId else "#"
+          }) }}
         {% endblock %}
       </div>
     </div>

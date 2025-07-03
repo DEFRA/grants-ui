@@ -37,6 +37,14 @@ export class QuestionPageController {
   }
 
   /**
+   * Get view model
+   * @returns {object}
+   */
+  getViewModel() {
+    return {}
+  }
+
+  /**
    * Post request handler
    * @returns {Promise<void>}
    */

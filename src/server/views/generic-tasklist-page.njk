@@ -2,15 +2,18 @@
 
 {% block pageTitle %}{{ pageHeading }}{% endblock %}
 {% from "govuk/components/task-list/macro.njk" import govukTaskList %}
+{% from "govuk/components/inset-text/macro.njk" import govukInsetText %}
 
 {% block content %}
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds govuk-!-margin-top-2">
-      <h1 class="govuk-heading-xl">Adding Value grant</h1>
+      <h1 class="govuk-heading-xl">{{ pageHeading }}</h1>
 
-      <div class="govuk-inset-text">
-        Application closing date is <strong>17 June 2025</strong>.
-      </div>
+      {% if closingDate %}
+      {{ govukInsetText({
+        html: "Application closing date is <strong>" + closingDate + "</strong>."
+      }) }}
+      {% endif %}
 
       {% for section in sections %}
         <h2 class="govuk-heading-m">{{ section.title }}</h2>
@@ -22,12 +25,14 @@
         }}
       {% endfor %}
 
+      {% if helpText %}
       <div class="app-contact-panel">
-        <h2 class="govuk-heading-s govuk-!-margin-top-0 govuk-!-margin-bottom-0">Need help?</h2>
+        <h2 class="govuk-heading-s">Need help?</h2>
         <p class="govuk-body app-contact-panel__body">
-          <a class="govuk-link" href="/fetf/change-request/help-triage">Contact the team</a> if you need help, want to report a problem or want to make a change to your Grant Funding Agreement.
+          <a class="govuk-link" href="/fetf/change-request/help-triage">{{ helpText }}</a>
         </p>
-      </div>  
+      </div>
+      {% endif %}  
     </div>  
   </div>  
 

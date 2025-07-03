@@ -1,3 +1,5 @@
+{% set govukRebrand = true %}
+
 {% extends "govuk/template.njk" %}
 
 {# Import GOVUK components globally #}
@@ -21,7 +23,7 @@
     homepageUrl: "https://www.gov.uk/",
     classes: "govuk-header--full-width-border",
     containerClasses: "govuk-width-container",
-    useTudorCrown: true
+    rebrand: true
   }) }}
 
   {{ govukServiceNavigation({ serviceName: serviceName, serviceUrl: serviceUrl }) }}
@@ -85,7 +87,8 @@
           text: "Accessibility statement"
         }
       ]
-    }
+    },
+    rebrand: true
   }) }}
 {% endblock %}
 

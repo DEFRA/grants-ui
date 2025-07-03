@@ -31,7 +31,6 @@ jobs:
       - name: Create Test Coverage Reports
         run: |
           npm ci
-          npm run build
           npm test
 
       - name: SonarCloud Scan
