@@ -1,0 +1,42 @@
+{% extends baseLayoutPath %}
+
+{% from "govuk/components/warning-text/macro.njk" import govukWarningText %}
+{% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/checkboxes/macro.njk" import govukCheckboxes %}
+{% from "govuk/components/warning-text/macro.njk" import govukWarningText %}
+
+{% block content %}
+<div class="govuk-body">
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+        <h1 class="govuk-heading-l">Potential funding</h1>
+        <p class="govuk-!-font-weight-bold">Based on your pig breeds and numbers, you may be able to apply for grant funding of up to {{ context.grandTotal | formatCurrency }}.</p>
+        {% for pigType, pigInfo in context.pigData %}
+          {% if pigInfo.quantity > 0 %}
+            <br><span class="govuk-!-font-weight-bold">{{ pigInfo.description }}:</span> {{ pigInfo.quantity }} pigs × {{ pigInfo.value | formatCurrency }} = {{ pigInfo.total | formatCurrency }}
+          {% endif %}
+        {% endfor %}
+
+        <div class="govuk-spacing(6)">
+          <br><span class="govuk-!-font-weight-bold">Grant total:</span> {{ context.grandTotal | formatCurrency }}
+        </div>
+
+        {{ govukWarningText({
+        text: "There is no guarantee the project will receive a grant.",
+        iconFallbackText: "Warning"
+        }) }}
+    </div>
+  </div>
+</div>
+
+{% block form %}
+<form method="post" novalidate>
+  <input type="hidden" name="crumb" value="{{ crumb }}">
+  {{ govukButton({
+  text: "Continue",
+  preventDoubleClick: true
+  }) }}
+</form>
+{% endblock %}
+
+{% endblock %}
