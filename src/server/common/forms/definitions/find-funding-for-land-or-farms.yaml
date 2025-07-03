@@ -12,6 +12,10 @@ pages:
       - path: /land-details
     components: []
 
+  - title: Confirm your details
+    path: /confirm-farm-details
+    controller: ConfirmFarmDetailsController
+
   - title: Do your digital maps show the correct land details?
     path: /land-details
     components:
@@ -56,40 +60,21 @@ pages:
   - title: Select Land Parcel
     controller: LandParcelPageController
     path: /select-land-parcel
-    next:
-      - path: /choose-which-actions-to-do
-    components:
-      - type: TextField
-        name: landParcel
-        title: Parcel
-        options:
-          required: true
-        schema: {}
 
   - title: Choose which actions to do
     controller: LandActionsPageController
     path: /choose-which-actions-to-do
-    next:
-      - path: /check-selected-land-actions
-    components:
-      - type: TextField
-        name: actions
-        title: Actions
-        options:
-          required: true
-        schema: {}
-      - type: TextField
-        name: applicationValue
-        title: Total application value
-        options: {}
-        schema: {}
 
   - title: Check selected land actions
     path: /check-selected-land-actions
     controller: LandActionsCheckPageController
 
-  - title: Funding details
+  - title: Check your answers before sending your application
     path: /summary
+    controller: CheckAnswersPageController
+
+  - title: Submit your application
+    path: /submit-your-application
     controller: SubmissionPageController
 
   - title: Confirmation

@@ -1,6 +1,7 @@
 import { config } from '~/src/config/config.js'
 import { formatCurrency } from '~/src/config/nunjucks/filters/format-currency.js'
-import { fetchParcelsFromDal } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
+import { fetchParcelsForSbi } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
+import { sbiStore } from '../../sbi/state.js'
 
 const LAND_GRANTS_API_URL = config.get('landGrants.grantsServiceApiEndpoint')
 
@@ -49,19 +50,20 @@ export async function postToLandGrantsApi(endpoint, body) {
  * @param {{ sheetId: string, parcelId: string, actionsObj: object }} param0
  * @returns {object}
  */
-export const landActionsToApiPayload = ({ sheetId, parcelId, actionsObj }) => ({
-  landActions: [
-    {
-      sheetId,
-      parcelId,
-      sbi: 117235001,
-      actions: Object.entries(actionsObj).map(([code, area]) => ({
-        code,
-        quantity: Number(area.value)
-      }))
-    }
-  ]
-})
+export const landActionsToApiPayload = ({ sheetId, parcelId, actionsObj }) => {
+  const sbi = sbiStore.get('sbi') // TODO: change this once DefraID is in place
+  return {
+    sheetId,
+    parcelId,
+    sbi,
+    actions: actionsObj
+      ? Object.entries(actionsObj).map(([code, area]) => ({
+          code,
+          quantity: Number(area.value)
+        }))
+      : []
+  }
+}
 
 /**
  * Calculates grant payment for land actions.
@@ -69,15 +71,22 @@ export const landActionsToApiPayload = ({ sheetId, parcelId, actionsObj }) => ({
  * @returns {Promise<object>} - Payment calculation result
  * @throws {Error}
  */
-export async function calculateGrantPayment({
-  sheetId,
-  parcelId,
-  actionsObj = {}
-}) {
-  const data = await postToLandGrantsApi(
-    '/payments/calculate',
-    landActionsToApiPayload({ sheetId, parcelId, actionsObj })
-  )
+export async function calculateGrantPayment({ landParcels }) {
+  const landActions = []
+  for (const [parcel, { actionsObj }] of Object.entries(landParcels)) {
+    const [sheetId, parcelId] = parseLandParcel(parcel)
+    landActions.push(
+      landActionsToApiPayload({
+        sheetId,
+        parcelId,
+        actionsObj
+      })
+    )
+  }
+
+  const data = await postToLandGrantsApi('/payments/calculate', {
+    landActions
+  })
 
   const paymentTotal = formatCurrency(data.payment?.total)
 
@@ -102,7 +111,7 @@ export async function fetchAvailableActionsForParcel({
   sheetId = ''
 }) {
   const parcelIds = [stringifyParcel({ sheetId, parcelId })]
-  const fields = ['actions', 'actions.availableArea']
+  const fields = ['actions', 'actions.availableArea', 'size']
   const data = await postToLandGrantsApi('/parcels', { parcelIds, fields })
 
   return data.parcels?.find(
@@ -116,15 +125,14 @@ export async function fetchAvailableActionsForParcel({
  * @returns {Promise<object>} - Validation result
  * @throws {Error}
  */
-export async function validateLandActions({
+export async function triggerApiActionsValidation({
   sheetId,
   parcelId,
   actionsObj = {}
 }) {
-  return postToLandGrantsApi(
-    '/actions/validate',
-    landActionsToApiPayload({ sheetId, parcelId, actionsObj })
-  )
+  return postToLandGrantsApi('/actions/validate', {
+    landActions: [landActionsToApiPayload({ sheetId, parcelId, actionsObj })]
+  })
 }
 
 /**
@@ -151,7 +159,7 @@ async function fetchParcelsSize(parcelIds) {
  * @throws {Error}
  */
 export async function fetchParcels(sbi) {
-  const parcels = await fetchParcelsFromDal(sbi)
+  const parcels = await fetchParcelsForSbi(sbi)
   const parcelKeys = parcels.map(stringifyParcel)
   const sizes = await fetchParcelsSize(parcelKeys)
   const hydratedParcels = parcels.map((p) => ({
