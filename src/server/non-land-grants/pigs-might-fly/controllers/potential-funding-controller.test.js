@@ -104,6 +104,44 @@ describe('PotentialFundingController', () => {
       )
     })
 
+    it('should handle undefined pig counts with fallback to 0', async () => {
+      const handler = controller.makeGetRouteHandler()
+
+      // Set up context with missing pig counts
+      mockContext.state = {
+        whitePigsCount: undefined,
+        britishLandracePigsCount: null,
+        berkshirePigsCount: 0,
+        otherPigsCount: 5
+      }
+
+      const mockResult = {
+        items: [
+          { type: 'largeWhite', value: 50 },
+          { type: 'britishLandrace', value: 25 },
+          { type: 'berkshire', value: 15 },
+          { type: 'other', value: 10 }
+        ],
+        pigsData: { totalPigs: 100 }
+      }
+      invokeGasPostAction.mockResolvedValue(mockResult)
+
+      await handler(mockRequest, mockContext, mockResponseToolkit)
+
+      expect(invokeGasPostAction).toHaveBeenCalledWith(
+        'pigs-might-fly',
+        'calculate-pig-totals',
+        {
+          pigTypes: [
+            { pigType: 'largeWhite', quantity: 0 }, // undefined || 0
+            { pigType: 'britishLandrace', quantity: 0 }, // null || 0
+            { pigType: 'berkshire', quantity: 0 }, // 0 || 0
+            { pigType: 'other', quantity: 5 } // 5 || 0
+          ]
+        }
+      )
+    })
+
     it('should log and throw an error if invokeGasPostAction fails', async () => {
       const handler = controller.makeGetRouteHandler()
 
