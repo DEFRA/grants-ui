@@ -1,16 +1,3 @@
-import {
-  createAll,
-  Button,
-  Checkboxes,
-  ErrorSummary,
-  Header,
-  Radios,
-  SkipLink
-} from 'govuk-frontend'
+import { initAll } from '@defra/forms-engine-plugin/shared.js'
 
-createAll(Button)
-createAll(Checkboxes)
-createAll(ErrorSummary)
-createAll(Header)
-createAll(Radios)
-createAll(SkipLink)
+initAll()
