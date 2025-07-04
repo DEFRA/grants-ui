@@ -126,7 +126,7 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
 
   /**
    * Create SBI number row
-   * @returns {Object} Row object with SBI number
+   * @returns {object} Row object with SBI number
    */
   createSbiRow(sbi) {
     return {
