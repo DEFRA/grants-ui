@@ -1,4 +1,4 @@
-import { sbiSelectorController } from '~/src/server/sbi/sbi-selector.controller.js'
+import { sbiSelectorController } from './sbi.controller.js'
 /**
  * Helper API to update sbi (for dev purposes).
  * These routes are registered in src/server/router.js.
