@@ -28,7 +28,7 @@ const config = convict({
   policy: {
     doc: 'The Defra Identity policy.',
     format: String,
-    default: 'default-policy',
+    default: 'signupsigninsfi',
     env: 'DEFRA_ID_POLICY'
   },
   redirectUrl: {

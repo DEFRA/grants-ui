@@ -15,6 +15,9 @@ export const sbi = {
         {
           method: 'POST',
           path: '/api/update-sbi',
+          options: {
+            auth: false
+          },
           ...sbiSelectorController
         }
       ])
