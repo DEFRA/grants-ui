@@ -33,7 +33,7 @@ import { secureContext } from '~/src/server/common/helpers/secure-context/index.
 import { getCacheEngine } from '~/src/server/common/helpers/session-cache/cache-engine.js'
 import { sessionCache } from '~/src/server/common/helpers/session-cache/session-cache.js'
 import ConfirmationPageController from '~/src/server/confirmation/confirmation.controller.js'
-import DeclarationPageController from '~/src/server/controllers/declaration/controller.js'
+import DeclarationPageController from '~/src/server/declaration/declaration.controller.js'
 import CheckAnswersPageController from '~/src/server/land-grants/controllers/check-answers-page.controller.js'
 import ConfirmFarmDetailsController from '~/src/server/land-grants/controllers/confirm-farm-details.controller.js'
 import LandActionsCheckPageController from '~/src/server/land-grants/controllers/land-actions-check-page.controller.js'

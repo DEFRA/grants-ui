@@ -1,8 +1,8 @@
 import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
 import * as formSlugHelper from '~/src/server/common/helpers/form-slug-helper.js'
 import { submitGrantApplication } from '~/src/server/common/services/grant-application/grant-application.service.js'
-import { transformStateObjectToGasApplication } from '../../common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
-import DeclarationPageController from './controller.js'
+import { transformStateObjectToGasApplication } from '~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
+import DeclarationPageController from './declaration.controller.js'
 import { transformAnswerKeysToText } from './state-to-gas-answers-mapper.js'
 
 const mockCacheService = {
@@ -32,7 +32,7 @@ jest.mock(
   '~/src/server/common/services/grant-application/grant-application.service.js'
 )
 jest.mock(
-  '../../common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
+  '~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
 )
 jest.mock('./state-to-gas-answers-mapper.js')
 
@@ -238,7 +238,7 @@ describe('DeclarationPageController', () => {
 
       expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
         {
-          clientRef: 'ref123', // <- note: in controller, it’s `context.referenceNumber?.toLowerCase()`
+          clientRef: 'ref123', // <- note: in controller, it's `context.referenceNumber?.toLowerCase()`
           sbi: 'sbi',
           frn: 'frn',
           crn: 'crn',
