@@ -42,7 +42,7 @@ import LandParcelPageController from '~/src/server/land-grants/controllers/land-
 import SubmissionPageController from '~/src/server/land-grants/controllers/submission-page.controller.js'
 import { tasklistBackButton } from '~/src/server/plugins/tasklist-back-button.js'
 import { formatCurrency } from '../config/nunjucks/filters/format-currency.js'
-import SectionEndController from './controllers/section-end/section-end-controller.js'
+import SectionEndController from './section-end/section-end.controller.js'
 import { router } from './router.js'
 import FlyingPigsSubmissionPageController from '~/src/server/non-land-grants/pigs-might-fly/controllers/pig-types-submission.controller.js'
 import { PotentialFundingController } from '~/.server/server/non-land-grants/pigs-might-fly/controllers/potential-funding.controller.js'

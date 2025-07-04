@@ -1,4 +1,4 @@
-import SectionEndController from './section-end-controller.js'
+import SectionEndController from './section-end.controller.js'
 import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
 
 describe('SectionEndController', () => {
