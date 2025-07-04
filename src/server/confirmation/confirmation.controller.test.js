@@ -1,5 +1,5 @@
 import { StatusPageController } from '@defra/forms-engine-plugin/controllers/StatusPageController.js'
-import ConfirmationPageController from './controller.js'
+import ConfirmationPageController from './confirmation.controller.js'
 import * as formSlugHelper from '~/src/server/common/helpers/form-slug-helper.js'
 
 const mockFormsCacheService = {
