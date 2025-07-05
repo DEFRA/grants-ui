@@ -81,6 +81,59 @@ return await fetch(url, {
 })
 ```
 
+## Feature Structure
+
+The repository has been structured to follow a feature-based structure, where each feature is organized into its own directory with all related components (controllers, views, tests, and utilities).
+
+### Feature Organization
+
+Each feature follows a consistent structure:
+
+```
+src/server/{feature-name}/
+├── {feature-name}.controller.js          # Main controller logic
+├── {feature-name}.controller.test.js     # Controller tests
+├── views/                                # Feature-specific views/templates
+│   └── {feature-page}.html/.njk
+├── index.js                              # Feature entry point (if needed)
+└── {additional-utilities}.js             # Feature-specific utilities
+```
+
+#### Optional Subfolder Organization
+
+For more complex features, additional subfolders can be used to further organize the code:
+
+```
+src/server/{feature-name}/
+├── controllers/                          # Multiple controllers for different pages
+│   ├── page1.controller.js
+│   ├── page1.controller.test.js
+│   ├── page2.controller.js
+│   └── page2.controller.test.js
+├── services/                             # Business logic and external service calls
+│   ├── {feature-name}.service.js
+│   └── {feature-name}.service.test.js
+├── mappers/                              # Data transformation utilities
+│   ├── state-to-gas-answers-mapper.js
+│   └── state-to-gas-answers-mapper.test.js
+├── utils/                                # Feature-specific utility functions
+│   ├── format-phone.js
+│   └── format-phone.test.js
+├── views/                                # Feature-specific views/templates
+│   └── {feature-page}.html/.njk
+└── index.js                              # Feature entry point
+```
+
+This subfolder approach is particularly useful for features with multiple pages, complex business logic, or extensive data transformation requirements.
+
+### Benefits of Feature-Based Structure
+
+- **Co-location**: Related files are grouped together, making it easier to find and modify feature-specific code
+- **Maintainability**: Clear separation of concerns with each feature self-contained
+- **Scalability**: New features can be added following the same pattern
+- **Testing**: Feature-specific tests are located alongside the code they test
+- **Navigation**: Developers can quickly understand the structure and locate relevant files
+
 ## Local Development
 
 ### Setup
