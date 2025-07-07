@@ -217,46 +217,6 @@ pages:
     controller: PotentialFundingController
     next:
       - path: /summary
-    components:
-      - name: potentialFundingInfo
-        title: Html
-        type: Html
-        content: |
-          <p class="govuk-body">
-          This is my PIG DATA {{ context.pigData | dump }}
-          {% assign whitePigsCount = 'whitePigsCount' | answer | default: 0 %}
-          {% assign britishLandracePigsCount = 'briti  shLandracePigsCount' | answer | default: 0 %}
-          {% assign berkshirePigsCount = 'berkshirePigsCount' | answer | default: 0 %}
-          {% assign otherPigsCount = 'otherPigsCount' | answer | default: 0 %}
-          {% assign largeWhiteFunding = whitePigsCount | times: 10 %}
-          {% assign britishLandraceFunding = britishLandracePigsCount | times: 15 %}
-          {% assign berkshireFunding = berkshirePigsCount | times: 18 %}
-          {% assign otherFunding = otherPigsCount | times: 10 %}
-          {% assign totalFunding = largeWhiteFunding | plus: britishLandraceFunding | plus: berkshireFunding | plus: otherFunding %}
-
-          Based on your pig breeds and numbers, you may be able to apply for grant funding of up to {{ totalFunding | formatCurrency: 'en-GB', 'GBP', 0 }}.
-
-          {% if whitePigsCount > 0 %}
-          <br>Large White: {{ whitePigsCount }} pigs × £10 = {{ largeWhiteFunding | formatCurrency: 'en-GB', 'GBP', 0 }}
-          {% endif %}
-          {% if britishLandracePigsCount > 0 %}
-          <br>British Landrace: {{ britishLandracePigsCount }} pigs × £15 = {{ britishLandraceFunding | formatCurrency: 'en-GB', 'GBP', 0 }}
-          {% endif %}
-          {% if berkshirePigsCount > 0 %}
-          <br>Berkshire: {{ berkshirePigsCount }} pigs × £18 = {{ berkshireFunding | formatCurrency: 'en-GB', 'GBP', 0 }}
-          {% endif %}
-          {% if otherPigsCount > 0 %}
-          <br>Other breeds: {{ otherPigsCount }} pigs × £10 = {{ otherFunding | formatCurrency: 'en-GB', 'GBP', 0 }}
-          {% endif %}
-          </p>
-      - type: Html
-        name: potentialFundingWarning
-        title: Html
-        content:
-          <div class="govuk-warning-text"> <span class="govuk-warning-text__icon"
-          aria-hidden="true">!</span> <strong class="govuk-warning-text__text"> <span
-          class="govuk-visually-hidden">Warning</span>There's no guarantee the project
-          will receive a grant.</strong></div>
 
   - path: /summary
     controller: FlyingPigsSubmissionPageController
