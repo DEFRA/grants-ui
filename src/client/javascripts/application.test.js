@@ -1,19 +1,12 @@
-jest.mock('govuk-frontend', () => ({
-  createAll: jest.fn(),
-  Button: {},
-  Checkboxes: {},
-  ErrorSummary: {},
-  Header: {},
-  Radios: {},
-  SkipLink: {}
+jest.mock('@defra/forms-engine-plugin/shared.js', () => ({
+  initAll: jest.fn()
 }))
 
 describe('#application', () => {
-  test('calls createAll on all components', async () => {
+  test('calls initAll on all components', async () => {
     await import('./application.js')
-    const { createAll } = await import('govuk-frontend')
+    const { initAll } = await import('@defra/forms-engine-plugin/shared.js')
 
-    expect(createAll).toHaveBeenCalledTimes(6)
-    expect(createAll).toHaveBeenCalledWith({})
+    expect(initAll).toHaveBeenCalledTimes(1)
   })
 })
