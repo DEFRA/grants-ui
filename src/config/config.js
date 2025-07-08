@@ -6,6 +6,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import defraId from './defra-id.js'
 import landGrants from './land-grants.js'
+import agreements from './agreements.js'
 
 const dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -304,6 +305,9 @@ export const config = convict({
   defraId: defraId.getProperties(),
   landGrants: /** @type {Schema<LandGrantsConfig>} */ (
     landGrants.getProperties()
+  ),
+  agreements: /** @type {Schema<AgreementsConfig>} */ (
+    agreements.getProperties()
   )
 })
 
