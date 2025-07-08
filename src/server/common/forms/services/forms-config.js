@@ -15,6 +15,12 @@ export const allForms = [
     title: 'Example grant'
   },
   {
+    path: 'src/server/common/forms/definitions/flying-pigs.yaml',
+    id: '95e92559-968d-44ae-8666-2b1ad3dffd33',
+    slug: 'flying-pigs',
+    title: 'Flying pigs'
+  },
+  {
     path: 'src/server/common/forms/definitions/find-funding-for-land-or-farms.yaml',
     id: '5c67688f-3c61-4839-a6e1-d48b598257f1',
     slug: 'find-funding-for-land-or-farms',

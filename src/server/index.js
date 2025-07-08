@@ -43,6 +43,8 @@ import { tasklistBackButton } from '~/src/server/plugins/tasklist-back-button.js
 import { formatCurrency } from '../config/nunjucks/filters/format-currency.js'
 import SectionEndController from './controllers/section-end/section-end-controller.js'
 import { router } from './router.js'
+import FlyingPigsSubmissionPageController from '~/src/server/non-land-grants/pigs-might-fly/controllers/pig-types-submission.controller.js'
+import { PotentialFundingController } from '~/.server/server/non-land-grants/pigs-might-fly/controllers/potential-funding.controller.js'
 
 const SESSION_CACHE_NAME = 'session.cache.name'
 
@@ -51,6 +53,7 @@ const getViewPaths = () => {
   const isRunningBuiltCode = currentFilePath.includes('.server')
   const basePath = isRunningBuiltCode ? '.server/server' : 'src/server'
   return [
+    `${basePath}/non-land-grants/pigs-might-fly/views`,
     `${basePath}/land-grants/views`,
     `${basePath}/views`,
     ...grantsUiPaths
@@ -129,7 +132,9 @@ const registerFormsPlugin = async (server, prefix = '') => {
         LandParcelPageController,
         LandActionsPageController,
         LandActionsCheckPageController,
-        SectionEndController
+        SectionEndController,
+        FlyingPigsSubmissionPageController,
+        PotentialFundingController
       }
     }
   })
