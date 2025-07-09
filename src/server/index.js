@@ -5,6 +5,7 @@ import crumb from '@hapi/crumb'
 import hapi from '@hapi/hapi'
 import inert from '@hapi/inert'
 import Scooter from '@hapi/scooter'
+import h2o2 from '@hapi/h2o2'
 
 import path from 'path'
 import { fileURLToPath } from 'url'
@@ -150,6 +151,7 @@ const registerPlugins = async (server) => {
     Cookie,
     Scooter,
     csp,
+    h2o2,
     // auth,
     requestLogger,
     requestTracing,

@@ -7,6 +7,7 @@ import { health } from '~/src/server/health/index.js'
 import { home } from '~/src/server/home/index.js'
 import { sbi } from '~/src/server/sbi/index.js'
 import { createTasklistRoute } from '~/src/server/common/tasklist/generic-tasklist-controller.js'
+import { agreements } from '~/src/server/agreements/index.js'
 
 const enableSbiSelector = config.get('landGrants.enableSbiSelector')
 
@@ -31,7 +32,7 @@ export const router = {
       await server.register([auth])
 
       // Application specific routes, add your own routes here
-      await server.register([home, about])
+      await server.register([home, about, agreements])
 
       // Generic tasklist routes
       await server.register([createTasklistRoute('example')])
