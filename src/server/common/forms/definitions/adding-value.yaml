@@ -556,7 +556,7 @@ pages:
     condition: environmentalImpactExistCondition
   - title: Score results
     path: '/score-results'
-    view: score-results.html
+    view: score-results/views/score-results.html
     events:
       onLoad:
         type: http
@@ -767,7 +767,7 @@ pages:
   - title: Confirm and send
     path: '/declaration'
     controller: DeclarationPageController
-    view: grants/declaration.html
+    view: declaration/views/declaration-page.html
   - title: Confirmation
     path: '/confirmation'
     controller: ConfirmationPageController

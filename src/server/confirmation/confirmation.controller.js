@@ -6,7 +6,7 @@ import {
 } from '~/src/server/common/helpers/form-slug-helper.js'
 
 export default class ConfirmationPageController extends StatusPageController {
-  viewName = 'confirmation-page'
+  viewName = 'confirmation/views/confirmation-page.html'
 
   /**
    * This method is called when there is a GET request to the confirmation page.

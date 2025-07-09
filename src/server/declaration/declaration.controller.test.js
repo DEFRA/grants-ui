@@ -118,7 +118,7 @@ describe('DeclarationPageController', () => {
   })
 
   test('should have the correct viewName', () => {
-    expect(controller.viewName).toBe('declaration-page')
+    expect(controller.viewName).toBe('declaration/views/declaration-page.html')
   })
 
   describe('getStatusPath', () => {
