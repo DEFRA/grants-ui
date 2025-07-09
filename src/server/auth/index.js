@@ -20,7 +20,7 @@ export const auth = {
         handler: (_request, h) => h.redirect('/home')
       })
       server.route({
-        method: 'GET',
+        method: ['GET', 'POST'],
         path: '/auth/sign-in-oidc',
         options: {
           auth: { strategy: 'defra-id', mode: 'try' }

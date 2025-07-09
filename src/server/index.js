@@ -141,8 +141,6 @@ const registerFormsPlugin = async (server, prefix = '') => {
 }
 
 const registerPlugins = async (server) => {
-  await server.register([router])
-
   await server.register([
     inert,
     crumb,
@@ -160,6 +158,8 @@ const registerPlugins = async (server) => {
     tasklistBackButton,
     sso
   ])
+
+  await server.register([router])
 }
 
 export async function createServer() {
