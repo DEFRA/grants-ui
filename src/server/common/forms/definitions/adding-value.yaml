@@ -351,8 +351,7 @@ pages:
         type: Html
         title: Html
         content:
-          '<p class="govuk-hint">Do not include VAT<br><br>Enter cost of items,
-          for example {{ 695000 | formatCurrency: ''en-GB'', ''GBP'', 0, ''decimal'' }}</p>'
+          '<p class="govuk-hint">Do not include VAT<br><br>Enter cost of items, for example 695000</p>'
       - name: estimatedCost
         type: NumberField
         title: Enter amount
