@@ -1,5 +1,5 @@
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
-import { sbiSelectorController } from './sbi-selector.controller.js'
+import { sbiSelectorController } from './sbi.controller.js'
 import { sbiStore } from './state.js'
 
 jest.mock('~/src/server/common/constants/status-codes.js', () => ({

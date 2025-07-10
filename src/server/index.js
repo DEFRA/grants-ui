@@ -32,8 +32,8 @@ import { requestTracing } from '~/src/server/common/helpers/request-tracing.js'
 import { secureContext } from '~/src/server/common/helpers/secure-context/index.js'
 import { getCacheEngine } from '~/src/server/common/helpers/session-cache/cache-engine.js'
 import { sessionCache } from '~/src/server/common/helpers/session-cache/session-cache.js'
-import ConfirmationPageController from '~/src/server/controllers/confirmation/controller.js'
-import DeclarationPageController from '~/src/server/controllers/declaration/controller.js'
+import ConfirmationPageController from '~/src/server/confirmation/confirmation.controller.js'
+import DeclarationPageController from '~/src/server/declaration/declaration.controller.js'
 import CheckAnswersPageController from '~/src/server/land-grants/controllers/check-answers-page.controller.js'
 import ConfirmFarmDetailsController from '~/src/server/land-grants/controllers/confirm-farm-details.controller.js'
 import LandActionsCheckPageController from '~/src/server/land-grants/controllers/land-actions-check-page.controller.js'
@@ -42,7 +42,7 @@ import LandParcelPageController from '~/src/server/land-grants/controllers/land-
 import SubmissionPageController from '~/src/server/land-grants/controllers/submission-page.controller.js'
 import { tasklistBackButton } from '~/src/server/plugins/tasklist-back-button.js'
 import { formatCurrency } from '../config/nunjucks/filters/format-currency.js'
-import SectionEndController from './controllers/section-end/section-end-controller.js'
+import SectionEndController from './section-end/section-end.controller.js'
 import { router } from './router.js'
 import FlyingPigsSubmissionPageController from '~/src/server/non-land-grants/pigs-might-fly/controllers/pig-types-submission.controller.js'
 import { PotentialFundingController } from '~/.server/server/non-land-grants/pigs-might-fly/controllers/potential-funding.controller.js'
@@ -57,6 +57,7 @@ const getViewPaths = () => {
     `${basePath}/non-land-grants/pigs-might-fly/views`,
     `${basePath}/land-grants/views`,
     `${basePath}/views`,
+    `${basePath}`,
     ...grantsUiPaths
   ]
 }

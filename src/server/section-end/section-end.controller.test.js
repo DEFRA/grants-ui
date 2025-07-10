@@ -1,4 +1,4 @@
-import SectionEndController from './section-end-controller.js'
+import SectionEndController from './section-end.controller.js'
 import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
 
 describe('SectionEndController', () => {
@@ -23,7 +23,7 @@ describe('SectionEndController', () => {
     })
 
     it('should set viewName to section-end-summary', () => {
-      expect(controller.viewName).toBe('section-end-summary')
+      expect(controller.viewName).toBe('views/section-end-summary.html')
     })
   })
 
@@ -256,7 +256,7 @@ describe('SectionEndController', () => {
   describe('integration with SummaryPageController', () => {
     it('should properly set up the controller instance', () => {
       expect(controller).toBeDefined()
-      expect(controller.viewName).toBe('section-end-summary')
+      expect(controller.viewName).toBe('views/section-end-summary.html')
       expect(controller).toHaveProperty('makePostRouteHandler')
     })
 

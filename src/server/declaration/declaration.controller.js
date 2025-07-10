@@ -5,7 +5,7 @@ import {
 } from '~/src/server/common/helpers/form-slug-helper.js'
 import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/forms-cache.js'
 import { submitGrantApplication } from '~/src/server/common/services/grant-application/grant-application.service.js'
-import { transformStateObjectToGasApplication } from '../../common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
+import { transformStateObjectToGasApplication } from '~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
 import { transformAnswerKeysToText } from './state-to-gas-answers-mapper.js'
 
 export default class DeclarationPageController extends SummaryPageController {
@@ -15,7 +15,7 @@ export default class DeclarationPageController extends SummaryPageController {
    */
   constructor(model, pageDef) {
     super(model, pageDef)
-    this.viewName = 'declaration-page'
+    this.viewName = 'declaration/views/declaration-page.html'
     this.grantCode = model.def.metadata.submission.grantCode
   }
 

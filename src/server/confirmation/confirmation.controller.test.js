@@ -1,5 +1,5 @@
 import { StatusPageController } from '@defra/forms-engine-plugin/controllers/StatusPageController.js'
-import ConfirmationPageController from './controller.js'
+import ConfirmationPageController from './confirmation.controller.js'
 import * as formSlugHelper from '~/src/server/common/helpers/form-slug-helper.js'
 
 const mockFormsCacheService = {
@@ -67,7 +67,9 @@ describe('ConfirmationPageController', () => {
   })
 
   test('should have the correct viewName', () => {
-    expect(controller.viewName).toBe('confirmation-page')
+    expect(controller.viewName).toBe(
+      'confirmation/views/confirmation-page.html'
+    )
   })
 
   describe('makeGetRouteHandler', () => {
@@ -80,11 +82,14 @@ describe('ConfirmationPageController', () => {
       const handler = controller.makeGetRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
-      expect(mockH.view).toHaveBeenCalledWith('confirmation-page', {
-        pageTitle: 'Confirmation',
-        errors: [],
-        referenceNumber: 'REF123'
-      })
+      expect(mockH.view).toHaveBeenCalledWith(
+        'confirmation/views/confirmation-page.html',
+        {
+          pageTitle: 'Confirmation',
+          errors: [],
+          referenceNumber: 'REF123'
+        }
+      )
     })
 
     test('should redirect to start page if confirmation state is not confirmed', async () => {
@@ -151,11 +156,14 @@ describe('ConfirmationPageController', () => {
       const handler = controller.makeGetRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
-      expect(mockH.view).toHaveBeenCalledWith('confirmation-page', {
-        pageTitle: 'Confirmation',
-        errors: mockErrors,
-        referenceNumber: 'REF123'
-      })
+      expect(mockH.view).toHaveBeenCalledWith(
+        'confirmation/views/confirmation-page.html',
+        {
+          pageTitle: 'Confirmation',
+          errors: mockErrors,
+          referenceNumber: 'REF123'
+        }
+      )
     })
 
     test('should handle error when getConfirmationState fails', async () => {
