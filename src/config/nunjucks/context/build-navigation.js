@@ -7,11 +7,6 @@ export function buildNavigation(request) {
       text: 'Home',
       url: '/',
       isActive: request?.path === '/'
-    },
-    {
-      text: 'About',
-      url: '/about',
-      isActive: request?.path === '/about'
     }
   ]
 }

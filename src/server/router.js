@@ -1,6 +1,5 @@
 import inert from '@hapi/inert'
 import { config } from '~/src/config/config.js'
-import { about } from '~/src/server/about/index.js'
 import { auth } from '~/src/server/auth/index.js'
 import { serveStaticFiles } from '~/src/server/common/helpers/serve-static-files.js'
 import { health } from '~/src/server/health/index.js'
@@ -32,7 +31,7 @@ export const router = {
       await server.register([auth])
 
       // Application specific routes, add your own routes here
-      await server.register([home, about, agreements])
+      await server.register([home, agreements])
 
       // Generic tasklist routes
       await server.register([createTasklistRoute('example')])
