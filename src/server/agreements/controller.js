@@ -88,7 +88,39 @@ export const getAgreementController = {
 
       const apiResponse = await h.proxy({
         mapUri: () => ({ uri: targetUri, headers: proxyHeaders }),
-        passThrough: true
+        passThrough: true,
+        onResponse: (err, res, request, h, settings) => {
+          /* eslint-disable-next-line no-console */
+          console.log('settings:', settings)
+          // If there was an error during proxy
+          if (err) {
+            /* eslint-disable-next-line no-console */
+            console.error('Proxy error:', err)
+            return h.response({ error: 'Proxy error' }).code(500)
+          }
+
+          // Access the response from the external service
+          const payload = res.rawPayload
+
+          // You can now process the payload
+          // For example, parse JSON if it is JSON
+          let jsonData
+          try {
+            jsonData = JSON.parse(payload.toString())
+            // Modify the data if needed
+            jsonData.additionalField = 'Added by proxy'
+
+            // Return the modified response
+            /* eslint-disable-next-line no-console */
+            console.log('Response from agreements API:', jsonData)
+            return h.response(jsonData).code(res.statusCode)
+          } catch (e) {
+            // If it's not JSON or another error occurs
+            /* eslint-disable-next-line no-console */
+            console.log('Error parsing response:', e)
+            return h.response(payload).code(res.statusCode).headers(res.headers)
+          }
+        }
       })
 
       /* eslint-disable-next-line no-console */
