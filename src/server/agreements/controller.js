@@ -12,6 +12,8 @@ function validateConfig() {
   if (!baseUrl || !token) {
     throw new Error('Missing required configuration: agreements API settings')
   }
+  /* eslint-disable-next-line no-console */
+  console.log('agreements API base URL:', String(baseUrl))
 
   return { baseUrl: String(baseUrl), token: String(token) }
 }
@@ -26,7 +28,8 @@ function buildTargetUri(baseUrl, path) {
   const cleanBaseUrl = baseUrl.replace(/\/$/, '')
   const cleanPath = path?.replace(/^\//, '') || ''
   const uri = cleanPath ? `${cleanBaseUrl}/${cleanPath}` : cleanBaseUrl
-
+  /* eslint-disable-next-line no-console */
+  console.log('Target URI:', uri)
   return uri
 }
 
