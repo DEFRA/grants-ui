@@ -50,25 +50,19 @@ describe('form', () => {
   describe('formsService', () => {
     test('returns exampleGrantDefinition for matching id', async () => {
       const service = await formsService()
-      const result = service.getFormDefinition(
-        '5eeb9f71-44f8-46ed-9412-3d5e2c5ab2bc'
-      )
+      const result = service.getFormDefinition('5eeb9f71-44f8-46ed-9412-3d5e2c5ab2bc')
       await expect(result).resolves.toBeDefined()
     })
 
     test('returns landGrantsDefinition for matching id', async () => {
       const service = await formsService()
-      const result = service.getFormDefinition(
-        '5c67688f-3c61-4839-a6e1-d48b598257f1'
-      )
+      const result = service.getFormDefinition('5c67688f-3c61-4839-a6e1-d48b598257f1')
       await expect(result).resolves.toBeDefined()
     })
 
     test('returns addingValueDefinition for matching id', async () => {
       const service = await formsService()
-      const result = service.getFormDefinition(
-        '95e92559-968d-44ae-8666-2b1ad3dffd31'
-      )
+      const result = service.getFormDefinition('95e92559-968d-44ae-8666-2b1ad3dffd31')
       await expect(result).resolves.toBeDefined()
     })
 
@@ -102,9 +96,7 @@ describe('form', () => {
 
     test('configures URLs correctly for non-local environment', () => {
       // Override the config mock for this test only
-      config.get.mockImplementation((key) =>
-        key === 'cdpEnvironment' ? 'dev' : defaultConfigMock[key]
-      )
+      config.get.mockImplementation((key) => (key === 'cdpEnvironment' ? 'dev' : defaultConfigMock[key]))
 
       const definition = {
         pages: [
@@ -121,9 +113,7 @@ describe('form', () => {
       }
 
       const result = configureFormDefinition(definition)
-      expect(result.pages[0].events.onLoad.options.url).toBe(
-        'http://dev.example.com'
-      )
+      expect(result.pages[0].events.onLoad.options.url).toBe('http://dev.example.com')
     })
 
     test('handles form definition without events', () => {
@@ -194,9 +184,7 @@ describe('form', () => {
 
       const result = configureFormDefinition(definition)
 
-      expect(mockWarn).toHaveBeenCalledWith(
-        `Unexpected environment value: ${defaultConfigMock.cdpEnvironment}`
-      )
+      expect(mockWarn).toHaveBeenCalledWith(`Unexpected environment value: ${defaultConfigMock.cdpEnvironment}`)
 
       expect(result).toEqual(definition)
     })
@@ -237,17 +225,12 @@ describe('form', () => {
 
       const result = await addAllForms(mockLoader, testForms)
 
-      expect(mockWarn).toHaveBeenCalledWith(
-        'Skipping duplicate form: form-slug-1 with id form-id-1'
-      )
+      expect(mockWarn).toHaveBeenCalledWith('Skipping duplicate form: form-slug-1 with id form-id-1')
 
       expect(result).toBe(3)
       expect(mockLoader.addForm).toHaveBeenCalledTimes(3)
 
-      expect(mockLoader.addForm).not.toHaveBeenCalledWith(
-        'path/to/form1-duplicate.yaml',
-        expect.any(Object)
-      )
+      expect(mockLoader.addForm).not.toHaveBeenCalledWith('path/to/form1-duplicate.yaml', expect.any(Object))
 
       expect(mockLoader.addForm).toHaveBeenCalledWith(
         'path/to/form1.yaml',

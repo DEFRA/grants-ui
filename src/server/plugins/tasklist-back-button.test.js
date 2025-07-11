@@ -82,8 +82,7 @@ const redirectTestCases = [
   {
     description: 'handle redirects with existing query parameters',
     location: '/business-status/nature-of-business?mock=query',
-    expected:
-      '/business-status/nature-of-business?mock=query&source=example-tasklist'
+    expected: '/business-status/nature-of-business?mock=query&source=example-tasklist'
   }
 ]
 
@@ -162,9 +161,7 @@ describe('tasklistBackButton plugin', () => {
           readFileSync: jest.fn().mockReturnValueOnce(createTasklistYaml())
         })
       )
-      jest.doMock('../common/forms/services/forms-config.js', () =>
-        mockFormsConfig([])
-      )
+      jest.doMock('../common/forms/services/forms-config.js', () => mockFormsConfig([]))
     }
 
     const testMissingFormConfig = async () => {
@@ -215,24 +212,15 @@ describe('tasklistBackButton plugin', () => {
   describe('plugin registration', () => {
     it('should have correct plugin structure', () => {
       expect(tasklistBackButton).toHaveProperty('plugin')
-      expect(tasklistBackButton.plugin).toHaveProperty(
-        'name',
-        'tasklist-back-button'
-      )
+      expect(tasklistBackButton.plugin).toHaveProperty('name', 'tasklist-back-button')
       expect(tasklistBackButton.plugin).toHaveProperty('register')
       expect(typeof tasklistBackButton.plugin.register).toBe('function')
     })
 
     it('should register onPreHandler and onPreResponse extensions', async () => {
       await tasklistBackButton.plugin.register(server)
-      expect(server.ext).toHaveBeenCalledWith(
-        'onPreHandler',
-        expect.any(Function)
-      )
-      expect(server.ext).toHaveBeenCalledWith(
-        'onPreResponse',
-        expect.any(Function)
-      )
+      expect(server.ext).toHaveBeenCalledWith('onPreHandler', expect.any(Function))
+      expect(server.ext).toHaveBeenCalledWith('onPreResponse', expect.any(Function))
       expect(server.ext).toHaveBeenCalledTimes(2)
     })
   })
@@ -253,10 +241,7 @@ describe('tasklistBackButton plugin', () => {
 
       const result = preHandler(request, h)
 
-      expect(request.yar.set).toHaveBeenCalledWith(
-        'tasklistContext',
-        createTasklistContext('example-tasklist')
-      )
+      expect(request.yar.set).toHaveBeenCalledWith('tasklistContext', createTasklistContext('example-tasklist'))
       expect(result).toBe(h.continue)
     })
 
@@ -316,9 +301,8 @@ describe('tasklistBackButton plugin', () => {
     }
 
     // eslint-disable-next-line jest/expect-expect
-    it.each(redirectTestCases)(
-      'when source=example-tasklist should $description',
-      ({ location, expected }) => testRedirectCase(location, expected)
+    it.each(redirectTestCases)('when source=example-tasklist should $description', ({ location, expected }) =>
+      testRedirectCase(location, expected)
     )
 
     it('when source=example-tasklist should continue without modification for non-redirect responses', () => {
@@ -342,9 +326,7 @@ describe('tasklistBackButton plugin', () => {
 
       responseHandler(request, h)
 
-      expect(request.response.source.context.tasklistId).toBe(
-        'example-tasklist'
-      )
+      expect(request.response.source.context.tasklistId).toBe('example-tasklist')
     })
 
     it('when source=example-tasklist should not add tasklistId to view without context', () => {
@@ -399,10 +381,7 @@ describe('tasklistBackButton plugin', () => {
 
     // eslint-disable-next-line jest/expect-expect
     it('when processing first pages should handle Yar clear errors gracefully', () => {
-      const request = createYarClearErrorRequest(
-        nonFirstPagePath,
-        tasklistContext
-      )
+      const request = createYarClearErrorRequest(nonFirstPagePath, tasklistContext)
       executeWithoutError(() => responseHandler(request, h))
     })
 
@@ -425,9 +404,7 @@ describe('tasklistBackButton plugin', () => {
 
       responseHandler(request, h)
 
-      expect(request.response.headers.location).toBe(
-        '/next-page?source=example-tasklist'
-      )
+      expect(request.response.headers.location).toBe('/next-page?source=example-tasklist')
     })
 
     it('should add tasklistId to context from session when processing existing session', () => {
@@ -441,9 +418,7 @@ describe('tasklistBackButton plugin', () => {
 
       responseHandler(request, h)
 
-      expect(request.response.source.context.tasklistId).toBe(
-        'example-tasklist'
-      )
+      expect(request.response.source.context.tasklistId).toBe('example-tasklist')
       expect(request.response.source.context.backLink).toEqual({
         text: 'Back to tasklist',
         href: '/example-tasklist/tasklist'
@@ -488,9 +463,8 @@ describe('tasklistBackButton plugin', () => {
     }
 
     // eslint-disable-next-line jest/expect-expect
-    it.each(continueCases)(
-      'when processing first pages should continue when $description',
-      ({ mockRequest }) => testContinueCase(mockRequest)
+    it.each(continueCases)('when processing first pages should continue when $description', ({ mockRequest }) =>
+      testContinueCase(mockRequest)
     )
 
     it.each([

@@ -56,16 +56,13 @@ describe('submitGrantApplication', () => {
 
     const result = await submitGrantApplication(code, payload)
 
-    expect(fetch).toHaveBeenCalledWith(
-      `${gasApi}/grants/${code}/applications`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      }
-    )
+    expect(fetch).toHaveBeenCalledWith(`${gasApi}/grants/${code}/applications`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    })
     expect(result).toEqual(mockRawResponse)
   })
 
@@ -80,40 +77,30 @@ describe('submitGrantApplication', () => {
       json: jest.fn().mockResolvedValueOnce({ message: mockMessage })
     })
 
-    await expect(submitGrantApplication(code, payload)).rejects.toThrow(
-      mockMessage
-    )
+    await expect(submitGrantApplication(code, payload)).rejects.toThrow(mockMessage)
 
-    expect(fetch).toHaveBeenCalledWith(
-      `${gasApi}/grants/${code}/applications`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      }
-    )
+    expect(fetch).toHaveBeenCalledWith(`${gasApi}/grants/${code}/applications`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    })
   })
 
   test('should handle network errors', async () => {
     const networkError = new Error('Network error')
     fetch.mockRejectedValueOnce(networkError)
 
-    await expect(submitGrantApplication(code, payload)).rejects.toThrow(
-      'Network error'
-    )
+    await expect(submitGrantApplication(code, payload)).rejects.toThrow('Network error')
 
-    expect(fetch).toHaveBeenCalledWith(
-      `${gasApi}/grants/${code}/applications`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      }
-    )
+    expect(fetch).toHaveBeenCalledWith(`${gasApi}/grants/${code}/applications`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    })
   })
 })
 
@@ -149,16 +136,13 @@ describe('invokeGasPostAction', () => {
 
     const result = await invokeGasPostAction(code, actionName, payload)
 
-    expect(fetch).toHaveBeenCalledWith(
-      `${gasApi}/grants/${code}/actions/${actionName}/invoke`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      }
-    )
+    expect(fetch).toHaveBeenCalledWith(`${gasApi}/grants/${code}/actions/${actionName}/invoke`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    })
     expect(result).toEqual(mockResponse)
     expect(mockRawResponse.json).toHaveBeenCalled()
   })
@@ -174,40 +158,30 @@ describe('invokeGasPostAction', () => {
       json: jest.fn().mockResolvedValueOnce({ message: mockMessage })
     })
 
-    await expect(
-      invokeGasPostAction(code, actionName, payload)
-    ).rejects.toThrow(mockMessage)
+    await expect(invokeGasPostAction(code, actionName, payload)).rejects.toThrow(mockMessage)
 
-    expect(fetch).toHaveBeenCalledWith(
-      `${gasApi}/grants/${code}/actions/${actionName}/invoke`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      }
-    )
+    expect(fetch).toHaveBeenCalledWith(`${gasApi}/grants/${code}/actions/${actionName}/invoke`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    })
   })
 
   test('should handle network errors', async () => {
     const networkError = new Error('Network error')
     fetch.mockRejectedValueOnce(networkError)
 
-    await expect(
-      invokeGasPostAction(code, actionName, payload)
-    ).rejects.toThrow('Network error')
+    await expect(invokeGasPostAction(code, actionName, payload)).rejects.toThrow('Network error')
 
-    expect(fetch).toHaveBeenCalledWith(
-      `${gasApi}/grants/${code}/actions/${actionName}/invoke`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      }
-    )
+    expect(fetch).toHaveBeenCalledWith(`${gasApi}/grants/${code}/actions/${actionName}/invoke`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    })
   })
 
   test('should throw a GrantApplicationServiceApiError with correct properties', async () => {
@@ -234,16 +208,13 @@ describe('invokeGasPostAction', () => {
     expect(thrownError.responseBody).toBe('422 API error')
     expect(thrownError.grantCode).toBe(code)
 
-    expect(fetch).toHaveBeenCalledWith(
-      `${gasApi}/grants/${code}/actions/${actionName}/invoke`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      }
-    )
+    expect(fetch).toHaveBeenCalledWith(`${gasApi}/grants/${code}/actions/${actionName}/invoke`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    })
   })
 })
 
@@ -270,15 +241,12 @@ describe('invokeGasGetAction', () => {
 
     const result = await invokeGasGetAction(code, actionName)
 
-    expect(fetch).toHaveBeenCalledWith(
-      `${gasApi}/grants/${code}/actions/${actionName}/invoke`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        }
+    expect(fetch).toHaveBeenCalledWith(`${gasApi}/grants/${code}/actions/${actionName}/invoke`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
       }
-    )
+    })
     expect(result).toEqual(mockResponse)
     expect(mockRawResponse.json).toHaveBeenCalled()
   })
@@ -317,15 +285,12 @@ describe('invokeGasGetAction', () => {
 
     const result = await invokeGasGetAction(code, actionName, {})
 
-    expect(fetch).toHaveBeenCalledWith(
-      `${gasApi}/grants/${code}/actions/${actionName}/invoke`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        }
+    expect(fetch).toHaveBeenCalledWith(`${gasApi}/grants/${code}/actions/${actionName}/invoke`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
       }
-    )
+    })
     expect(result).toEqual(mockResponse)
     expect(mockRawResponse.json).toHaveBeenCalled()
   })
@@ -340,18 +305,14 @@ describe('invokeGasGetAction', () => {
       statusText: 'Forbidden'
     })
 
-    await expect(invokeGasGetAction(code, actionName)).rejects.toThrow(
-      mockMessage
-    )
+    await expect(invokeGasGetAction(code, actionName)).rejects.toThrow(mockMessage)
   })
 
   test('should handle network errors', async () => {
     const networkError = new Error('Network error')
     fetch.mockRejectedValueOnce(networkError)
 
-    await expect(invokeGasGetAction(code, actionName)).rejects.toThrow(
-      'Network error'
-    )
+    await expect(invokeGasGetAction(code, actionName)).rejects.toThrow('Network error')
   })
 
   test('should throw a GrantApplicationServiceApiError with correct properties', async () => {
@@ -376,9 +337,7 @@ describe('invokeGasGetAction', () => {
     expect(thrownError.name).toBe('GrantApplicationServiceApiError')
     expect(thrownError.status).toBe(errorStatus)
     expect(thrownError.grantCode).toBe(code)
-    expect(thrownError.message).toBe(
-      'Failed to process GAS API request: 422 API error'
-    )
+    expect(thrownError.message).toBe('Failed to process GAS API request: 422 API error')
   })
 })
 
@@ -445,15 +404,12 @@ describe('makeGasApiRequest', () => {
       queryParams
     })
 
-    expect(fetch).toHaveBeenCalledWith(
-      `${testUrl}?param1=value1&param2=value2`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        }
+    expect(fetch).toHaveBeenCalledWith(`${testUrl}?param1=value1&param2=value2`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
       }
-    )
+    })
     expect(result).toEqual(mockRawResponse)
   })
 
@@ -498,15 +454,12 @@ describe('makeGasApiRequest', () => {
       queryParams
     })
 
-    expect(fetch).toHaveBeenCalledWith(
-      `${testUrl}?valid=value&emptyString=&zero=0`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        }
+    expect(fetch).toHaveBeenCalledWith(`${testUrl}?valid=value&emptyString=&zero=0`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
       }
-    )
+    })
   })
 
   test('should throw GrantApplicationServiceApiError on API error', async () => {
@@ -530,9 +483,7 @@ describe('makeGasApiRequest', () => {
 
     expect(thrownError).toBeDefined()
     expect(thrownError.name).toBe('GrantApplicationServiceApiError')
-    expect(thrownError.message).toBe(
-      `Failed to process GAS API request: ${errorStatus} ${statusText}`
-    )
+    expect(thrownError.message).toBe(`Failed to process GAS API request: ${errorStatus} ${statusText}`)
     expect(thrownError.status).toBe(errorStatus)
     expect(thrownError.responseBody).toBe(errorText)
     expect(thrownError.grantCode).toBe(testGrantCode)
@@ -550,9 +501,7 @@ describe('makeGasApiRequest', () => {
       text: jest.fn().mockResolvedValueOnce(errorText)
     })
 
-    await expect(
-      makeGasApiRequest(testUrl, testGrantCode)
-    ).rejects.toMatchObject({
+    await expect(makeGasApiRequest(testUrl, testGrantCode)).rejects.toMatchObject({
       name: 'GrantApplicationServiceApiError',
       status: errorStatus,
       responseBody: errorText,
@@ -573,9 +522,7 @@ describe('makeGasApiRequest', () => {
 
     expect(thrownError).toBeDefined()
     expect(thrownError.name).toBe('GrantApplicationServiceApiError')
-    expect(thrownError.message).toBe(
-      'Failed to process GAS API request: Network connection failed'
-    )
+    expect(thrownError.message).toBe('Failed to process GAS API request: Network connection failed')
     expect(thrownError.grantCode).toBe(testGrantCode)
   })
 })
@@ -608,15 +555,12 @@ describe('makeGasApiRequest edge cases', () => {
 
     const result = await invokeGasGetAction(code, 'test', {})
 
-    expect(fetch).toHaveBeenCalledWith(
-      `${gasApi}/grants/${code}/actions/test/invoke`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        }
+    expect(fetch).toHaveBeenCalledWith(`${gasApi}/grants/${code}/actions/test/invoke`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
       }
-    )
+    })
     expect(result).toEqual({ success: true })
     expect(mockRawResponse.json).toHaveBeenCalled()
   })
@@ -632,15 +576,12 @@ describe('makeGasApiRequest edge cases', () => {
     const queryParams = { page: 0, search: '', active: 'false' }
     const result = await invokeGasGetAction(code, 'test', queryParams)
 
-    expect(fetch).toHaveBeenCalledWith(
-      `${gasApi}/grants/${code}/actions/test/invoke?page=0&search=&active=false`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        }
+    expect(fetch).toHaveBeenCalledWith(`${gasApi}/grants/${code}/actions/test/invoke?page=0&search=&active=false`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
       }
-    )
+    })
     expect(result).toEqual({ success: true })
     expect(mockRawResponse.json).toHaveBeenCalled()
   })

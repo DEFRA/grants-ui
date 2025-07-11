@@ -14,8 +14,7 @@ export const parseLandParcel = (landParcel) => {
   return (landParcel || '').split('-')
 }
 
-export const stringifyParcel = ({ parcelId, sheetId }) =>
-  `${sheetId}-${parcelId}`
+export const stringifyParcel = ({ parcelId, sheetId }) => `${sheetId}-${parcelId}`
 
 /**
  * Performs a POST request to the Land Grants API.
@@ -92,10 +91,7 @@ export async function calculateGrantPayment({ landParcels }) {
 
   return {
     ...data,
-    errorMessage:
-      paymentTotal == null
-        ? 'Error calculating payment. Please try again later.'
-        : undefined,
+    errorMessage: paymentTotal == null ? 'Error calculating payment. Please try again later.' : undefined,
     paymentTotal
   }
 }
@@ -106,17 +102,12 @@ export async function calculateGrantPayment({ landParcels }) {
  * @returns {Promise<object>} - Parcel data with actions
  * @throws {Error}
  */
-export async function fetchAvailableActionsForParcel({
-  parcelId = '',
-  sheetId = ''
-}) {
+export async function fetchAvailableActionsForParcel({ parcelId = '', sheetId = '' }) {
   const parcelIds = [stringifyParcel({ sheetId, parcelId })]
   const fields = ['actions', 'actions.availableArea', 'size']
   const data = await postToLandGrantsApi('/parcels', { parcelIds, fields })
 
-  return data.parcels?.find(
-    (p) => p.parcelId === parcelId && p.sheetId === sheetId
-  )
+  return data.parcels?.find((p) => p.parcelId === parcelId && p.sheetId === sheetId)
 }
 
 /**
@@ -125,11 +116,7 @@ export async function fetchAvailableActionsForParcel({
  * @returns {Promise<object>} - Validation result
  * @throws {Error}
  */
-export async function triggerApiActionsValidation({
-  sheetId,
-  parcelId,
-  actionsObj = {}
-}) {
+export async function triggerApiActionsValidation({ sheetId, parcelId, actionsObj = {} }) {
   return postToLandGrantsApi('/actions/validate', {
     landActions: [landActionsToApiPayload({ sheetId, parcelId, actionsObj })]
   })

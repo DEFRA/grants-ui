@@ -15,13 +15,9 @@ export const sbiSelectorController = {
 
     if (method === 'post') {
       sbiStore.set('sbi', sbi)
-      return h
-        .response({ message: 'SBI updated successfully' })
-        .code(statusCodes.ok)
+      return h.response({ message: 'SBI updated successfully' }).code(statusCodes.ok)
     }
-    return h
-      .response({ error: 'Method not allowed' })
-      .code(statusCodes.methodNotAllowed)
+    return h.response({ error: 'Method not allowed' }).code(statusCodes.methodNotAllowed)
   }
 }
 

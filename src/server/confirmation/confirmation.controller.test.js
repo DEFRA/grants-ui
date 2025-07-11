@@ -24,9 +24,7 @@ describe('ConfirmationPageController', () => {
     StatusPageController.prototype.getViewModel = jest.fn().mockReturnValue({
       pageTitle: 'Confirmation'
     })
-    StatusPageController.prototype.getStartPath = jest
-      .fn()
-      .mockReturnValue('/default-start')
+    StatusPageController.prototype.getStartPath = jest.fn().mockReturnValue('/default-start')
 
     controller = new ConfirmationPageController()
     controller.collection = {
@@ -67,9 +65,7 @@ describe('ConfirmationPageController', () => {
   })
 
   test('should have the correct viewName', () => {
-    expect(controller.viewName).toBe(
-      'confirmation/views/confirmation-page.html'
-    )
+    expect(controller.viewName).toBe('confirmation/views/confirmation-page.html')
   })
 
   describe('makeGetRouteHandler', () => {
@@ -82,14 +78,11 @@ describe('ConfirmationPageController', () => {
       const handler = controller.makeGetRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
-      expect(mockH.view).toHaveBeenCalledWith(
-        'confirmation/views/confirmation-page.html',
-        {
-          pageTitle: 'Confirmation',
-          errors: [],
-          referenceNumber: 'REF123'
-        }
-      )
+      expect(mockH.view).toHaveBeenCalledWith('confirmation/views/confirmation-page.html', {
+        pageTitle: 'Confirmation',
+        errors: [],
+        referenceNumber: 'REF123'
+      })
     })
 
     test('should redirect to start page if confirmation state is not confirmed', async () => {
@@ -99,22 +92,14 @@ describe('ConfirmationPageController', () => {
       const handler = controller.makeGetRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
-      expect(controller.proceed).toHaveBeenCalledWith(
-        expect.any(Object),
-        expect.any(Object),
-        expect.any(String)
-      )
+      expect(controller.proceed).toHaveBeenCalledWith(expect.any(Object), expect.any(Object), expect.any(String))
     })
 
     test('should store slug in context', async () => {
       const handler = controller.makeGetRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
-      expect(formSlugHelper.storeSlugInContext).toHaveBeenCalledWith(
-        mockRequest,
-        mockContext,
-        'ConfirmationController'
-      )
+      expect(formSlugHelper.storeSlugInContext).toHaveBeenCalledWith(mockRequest, mockContext, 'ConfirmationController')
     })
 
     test('should clear state when confirmed', async () => {
@@ -124,10 +109,7 @@ describe('ConfirmationPageController', () => {
       const handler = controller.makeGetRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
-      expect(mockFormsCacheService.setConfirmationState).toHaveBeenCalledWith(
-        mockRequest,
-        { confirmed: false }
-      )
+      expect(mockFormsCacheService.setConfirmationState).toHaveBeenCalledWith(mockRequest, { confirmed: false })
       expect(mockFormsCacheService.clearState).toHaveBeenCalledWith(mockRequest)
     })
 
@@ -139,14 +121,8 @@ describe('ConfirmationPageController', () => {
         'ConfirmationController: Confirmation state:',
         expect.any(Object)
       )
-      expect(mockRequest.logger.debug).toHaveBeenCalledWith(
-        'ConfirmationController: Current path:',
-        mockRequest.path
-      )
-      expect(mockRequest.logger.debug).toHaveBeenCalledWith(
-        'ConfirmationController: Start path:',
-        expect.any(String)
-      )
+      expect(mockRequest.logger.debug).toHaveBeenCalledWith('ConfirmationController: Current path:', mockRequest.path)
+      expect(mockRequest.logger.debug).toHaveBeenCalledWith('ConfirmationController: Start path:', expect.any(String))
     })
 
     test('should handle errors from collection', async () => {
@@ -156,14 +132,11 @@ describe('ConfirmationPageController', () => {
       const handler = controller.makeGetRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
-      expect(mockH.view).toHaveBeenCalledWith(
-        'confirmation/views/confirmation-page.html',
-        {
-          pageTitle: 'Confirmation',
-          errors: mockErrors,
-          referenceNumber: 'REF123'
-        }
-      )
+      expect(mockH.view).toHaveBeenCalledWith('confirmation/views/confirmation-page.html', {
+        pageTitle: 'Confirmation',
+        errors: mockErrors,
+        referenceNumber: 'REF123'
+      })
     })
 
     test('should handle error when getConfirmationState fails', async () => {
@@ -171,22 +144,14 @@ describe('ConfirmationPageController', () => {
 
       // We need to implement the mock to call debug before throwing
       mockFormsCacheService.getConfirmationState.mockImplementationOnce(() => {
-        mockRequest.logger.debug(
-          'ConfirmationController: Current path:',
-          mockRequest.path
-        )
+        mockRequest.logger.debug('ConfirmationController: Current path:', mockRequest.path)
         return Promise.reject(error)
       })
 
       const handler = controller.makeGetRouteHandler()
-      await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow(
-        error
-      )
+      await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow(error)
 
-      expect(mockRequest.logger.debug).toHaveBeenCalledWith(
-        'ConfirmationController: Current path:',
-        mockRequest.path
-      )
+      expect(mockRequest.logger.debug).toHaveBeenCalledWith('ConfirmationController: Current path:', mockRequest.path)
     })
 
     test('should handle error when setConfirmationState fails', async () => {
@@ -194,9 +159,7 @@ describe('ConfirmationPageController', () => {
       mockFormsCacheService.setConfirmationState.mockRejectedValueOnce(error)
 
       const handler = controller.makeGetRouteHandler()
-      await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow(
-        error
-      )
+      await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow(error)
     })
 
     test('should handle error when clearState fails', async () => {
@@ -204,18 +167,13 @@ describe('ConfirmationPageController', () => {
       mockFormsCacheService.clearState.mockRejectedValueOnce(error)
 
       const handler = controller.makeGetRouteHandler()
-      await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow(
-        error
-      )
+      await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow(error)
     })
 
     test('should handle case when confirmationState is undefined', async () => {
       // Mock the controller's behavior to handle undefined confirmationState
-      const originalGetConfirmationState =
-        mockFormsCacheService.getConfirmationState
-      mockFormsCacheService.getConfirmationState = jest
-        .fn()
-        .mockResolvedValueOnce({ confirmed: false })
+      const originalGetConfirmationState = mockFormsCacheService.getConfirmationState
+      mockFormsCacheService.getConfirmationState = jest.fn().mockResolvedValueOnce({ confirmed: false })
 
       const handler = controller.makeGetRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
@@ -240,9 +198,7 @@ describe('ConfirmationPageController', () => {
     })
 
     test('should return the result from getConfirmationPath', () => {
-      formSlugHelper.getConfirmationPath.mockReturnValueOnce(
-        '/custom-confirmation'
-      )
+      formSlugHelper.getConfirmationPath.mockReturnValueOnce('/custom-confirmation')
 
       const result = controller.getStatusPath(mockRequest, mockContext)
 

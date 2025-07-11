@@ -17,9 +17,7 @@ describe('ConfigDrivenConditionEvaluator', () => {
       ['undefined', undefined]
     ])('should handle %s data parameter', (description, value) => {
       it(`sets data to empty object when ${description}`, () => {
-        const evaluator = new ConfigDrivenConditionEvaluator(value, [
-          'section1'
-        ])
+        const evaluator = new ConfigDrivenConditionEvaluator(value, ['section1'])
         expect(evaluator.data).toEqual({})
         expect(evaluator.visitedSubSections).toEqual(['section1'])
       })
@@ -266,11 +264,7 @@ describe('ConfigDrivenConditionEvaluator', () => {
     })
 
     describe.each([
-      [
-        'who-is-applying.grantApplicantType',
-        ['applying-A1', 'applying-A2'],
-        true
-      ],
+      ['who-is-applying.grantApplicantType', ['applying-A1', 'applying-A2'], true],
       ['who-is-applying.grantApplicantType', ['applying-A3'], false]
     ])('should handle in operator', (field, values, expected) => {
       it(`${field} in ${JSON.stringify(values)} should be ${expected}`, () => {
@@ -279,14 +273,15 @@ describe('ConfigDrivenConditionEvaluator', () => {
       })
     })
 
-    describe.each([
-      ['who-is-applying.grantApplicantType', ['applying-A3'], true]
-    ])('should handle notIn operator', (field, values, expected) => {
-      it(`${field} notIn ${JSON.stringify(values)} should be ${expected}`, () => {
-        const rule = { field, notIn: values }
-        expect(evaluator.evaluateFieldCondition(rule)).toBe(expected)
-      })
-    })
+    describe.each([['who-is-applying.grantApplicantType', ['applying-A3'], true]])(
+      'should handle notIn operator',
+      (field, values, expected) => {
+        it(`${field} notIn ${JSON.stringify(values)} should be ${expected}`, () => {
+          const rule = { field, notIn: values }
+          expect(evaluator.evaluateFieldCondition(rule)).toBe(expected)
+        })
+      }
+    )
 
     describe.each([
       ['gt', 40000, true],
@@ -305,25 +300,15 @@ describe('ConfigDrivenConditionEvaluator', () => {
     })
 
     describe.each([
-      [
-        'emptyField',
-        true,
-        true,
-        { emptyField: '', nullField: null, undefinedField: undefined }
-      ],
+      ['emptyField', true, true, { emptyField: '', nullField: null, undefinedField: undefined }],
       ['costs.totalCosts', false, true, null]
-    ])(
-      'should handle isEmpty operator',
-      (field, isEmptyValue, expected, customData) => {
-        it(`${field} isEmpty=${isEmptyValue} should be ${expected}`, () => {
-          const testEvaluator = customData
-            ? new ConfigDrivenConditionEvaluator(customData)
-            : evaluator
-          const rule = { field, isEmpty: isEmptyValue }
-          expect(testEvaluator.evaluateFieldCondition(rule)).toBe(expected)
-        })
-      }
-    )
+    ])('should handle isEmpty operator', (field, isEmptyValue, expected, customData) => {
+      it(`${field} isEmpty=${isEmptyValue} should be ${expected}`, () => {
+        const testEvaluator = customData ? new ConfigDrivenConditionEvaluator(customData) : evaluator
+        const rule = { field, isEmpty: isEmptyValue }
+        expect(testEvaluator.evaluateFieldCondition(rule)).toBe(expected)
+      })
+    })
 
     it('should return false for unknown operators', () => {
       const rule = {
@@ -336,9 +321,7 @@ describe('ConfigDrivenConditionEvaluator', () => {
 
   describe('getFieldValue', () => {
     it('should retrieve nested field values', () => {
-      const result = evaluator.getFieldValue(
-        'facilities.isBuildingSmallerAbattoir'
-      )
+      const result = evaluator.getFieldValue('facilities.isBuildingSmallerAbattoir')
       expect(result).toBe(true)
     })
 
@@ -368,10 +351,7 @@ describe('ConfigDrivenConditionEvaluator', () => {
       const result = evaluator.checkDependencies(['completed1', 'completed2'])
       expect(result).toBe(true)
 
-      const result2 = evaluator.checkDependencies([
-        'completed1',
-        'notCompleted'
-      ])
+      const result2 = evaluator.checkDependencies(['completed1', 'notCompleted'])
       expect(result2).toBe(false)
     })
 
@@ -443,24 +423,13 @@ describe('ConfigDrivenConditionEvaluator', () => {
 
     it('should get base status correctly', () => {
       const completedData = { testSection: { value: 'test' } }
-      const completedEvaluator = new ConfigDrivenConditionEvaluator(
-        completedData,
-        []
-      )
-      expect(completedEvaluator.getBaseStatus('testSection')).toBe(
-        TaskListStatus.COMPLETED
-      )
+      const completedEvaluator = new ConfigDrivenConditionEvaluator(completedData, [])
+      expect(completedEvaluator.getBaseStatus('testSection')).toBe(TaskListStatus.COMPLETED)
 
-      const visitedEvaluator = new ConfigDrivenConditionEvaluator({}, [
-        'testSection'
-      ])
-      expect(visitedEvaluator.getBaseStatus('testSection')).toBe(
-        TaskListStatus.IN_PROGRESS
-      )
+      const visitedEvaluator = new ConfigDrivenConditionEvaluator({}, ['testSection'])
+      expect(visitedEvaluator.getBaseStatus('testSection')).toBe(TaskListStatus.IN_PROGRESS)
 
-      expect(evaluator.getBaseStatus('newSection')).toBe(
-        TaskListStatus.NOT_YET_STARTED
-      )
+      expect(evaluator.getBaseStatus('newSection')).toBe(TaskListStatus.NOT_YET_STARTED)
     })
   })
 
@@ -474,19 +443,12 @@ describe('ConfigDrivenConditionEvaluator', () => {
       ['less than', 10, 5, (a, b) => a < b, false],
       ['less than or equal', 5, 5, (a, b) => a <= b, true],
       ['less than or equal', 3, 5, (a, b) => a <= b, true]
-    ])(
-      'should handle %s comparison',
-      (description, value1, value2, compareFn, expected) => {
-        it(`${value1} ${description} ${value2} should be ${expected}`, () => {
-          const result = evaluator.evaluateNumericComparison(
-            value1,
-            value2,
-            compareFn
-          )
-          expect(result).toBe(expected)
-        })
-      }
-    )
+    ])('should handle %s comparison', (description, value1, value2, compareFn, expected) => {
+      it(`${value1} ${description} ${value2} should be ${expected}`, () => {
+        const result = evaluator.evaluateNumericComparison(value1, value2, compareFn)
+        expect(result).toBe(expected)
+      })
+    })
 
     describe.each([
       ['string', 'string'],
@@ -494,11 +456,7 @@ describe('ConfigDrivenConditionEvaluator', () => {
       ['undefined', undefined]
     ])('should return false for non-numeric values', (description, value) => {
       it(`returns false when first value is ${description}`, () => {
-        const result = evaluator.evaluateNumericComparison(
-          value,
-          5,
-          (a, b) => a > b
-        )
+        const result = evaluator.evaluateNumericComparison(value, 5, (a, b) => a > b)
         expect(result).toBe(false)
       })
     })
@@ -516,15 +474,12 @@ describe('ConfigDrivenConditionEvaluator', () => {
       ['non-empty string', 'value', false, true],
       ['zero', 0, true, false],
       ['false boolean', false, true, false]
-    ])(
-      'should evaluate %s correctly',
-      (description, value, checkEmpty, expected) => {
-        it(`${description} with isEmpty=${checkEmpty} should return ${expected}`, () => {
-          const result = evaluator.evaluateEmptyCondition(value, checkEmpty)
-          expect(result).toBe(expected)
-        })
-      }
-    )
+    ])('should evaluate %s correctly', (description, value, checkEmpty, expected) => {
+      it(`${description} with isEmpty=${checkEmpty} should return ${expected}`, () => {
+        const result = evaluator.evaluateEmptyCondition(value, checkEmpty)
+        expect(result).toBe(expected)
+      })
+    })
   })
 
   describe('real-world condition examples', () => {
@@ -631,18 +586,12 @@ describe('ConfigDrivenConditionEvaluator', () => {
         { 'who-is-applying': { grantApplicantType: 'applying-A2' } },
         TaskListStatus.NOT_YET_STARTED
       ]
-    ])(
-      'should handle %s condition logic',
-      (description, conditionName, config, data, expected) => {
-        it(`evaluates ${description} correctly`, () => {
-          const testEvaluator = new ConfigDrivenConditionEvaluator(
-            data,
-            evaluator.visitedSubSections
-          )
-          const result = testEvaluator.evaluateCondition(conditionName, config)
-          expect(result).toBe(expected)
-        })
-      }
-    )
+    ])('should handle %s condition logic', (description, conditionName, config, data, expected) => {
+      it(`evaluates ${description} correctly`, () => {
+        const testEvaluator = new ConfigDrivenConditionEvaluator(data, evaluator.visitedSubSections)
+        const result = testEvaluator.evaluateCondition(conditionName, config)
+        expect(result).toBe(expected)
+      })
+    })
   })
 })

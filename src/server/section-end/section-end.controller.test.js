@@ -25,9 +25,7 @@ describe('SectionEndController', () => {
     })
 
     it('should set viewName to section-end-summary', () => {
-      expect(controller.viewName).toBe(
-        'section-end/views/section-end-summary.html'
-      )
+      expect(controller.viewName).toBe('section-end/views/section-end-summary.html')
     })
   })
 
@@ -41,21 +39,15 @@ describe('SectionEndController', () => {
       mockRequest = {}
       mockContext = {}
 
-      originalParentMethod = Object.getPrototypeOf(
-        Object.getPrototypeOf(controller)
-      ).getSummaryViewModel
+      originalParentMethod = Object.getPrototypeOf(Object.getPrototypeOf(controller)).getSummaryViewModel
 
       parentGetSummaryViewModel = jest.fn()
-      Object.getPrototypeOf(
-        Object.getPrototypeOf(controller)
-      ).getSummaryViewModel = parentGetSummaryViewModel
+      Object.getPrototypeOf(Object.getPrototypeOf(controller)).getSummaryViewModel = parentGetSummaryViewModel
     })
 
     afterEach(() => {
       if (originalParentMethod) {
-        Object.getPrototypeOf(
-          Object.getPrototypeOf(controller)
-        ).getSummaryViewModel = originalParentMethod
+        Object.getPrototypeOf(Object.getPrototypeOf(controller)).getSummaryViewModel = originalParentMethod
       }
     })
 
@@ -71,10 +63,7 @@ describe('SectionEndController', () => {
 
       const result = controller.getSummaryViewModel(mockRequest, mockContext)
 
-      expect(parentGetSummaryViewModel).toHaveBeenCalledWith(
-        mockRequest,
-        mockContext
-      )
+      expect(parentGetSummaryViewModel).toHaveBeenCalledWith(mockRequest, mockContext)
       expect(result.checkAnswers).toEqual({ title: 'Section 1', questions: [] })
       expect(result.otherProperty).toBe('value')
     })
@@ -149,9 +138,7 @@ describe('SectionEndController', () => {
 
       await handler(mockRequest, mockContext, mockH)
 
-      expect(mockRequest.server.app.cacheTemp.get).toHaveBeenCalledWith(
-        'session-123'
-      )
+      expect(mockRequest.server.app.cacheTemp.get).toHaveBeenCalledWith('session-123')
     })
 
     it('should handle null data from cache', async () => {
@@ -159,15 +146,12 @@ describe('SectionEndController', () => {
 
       await handler(mockRequest, mockContext, mockH)
 
-      expect(mockRequest.server.app.cacheTemp.set).toHaveBeenCalledWith(
-        'session-123',
-        {
-          '/test-form': {
-            field1: 'value1',
-            field2: 'value2'
-          }
+      expect(mockRequest.server.app.cacheTemp.set).toHaveBeenCalledWith('session-123', {
+        '/test-form': {
+          field1: 'value1',
+          field2: 'value2'
         }
-      )
+      })
     })
 
     it('should merge new data with existing data', async () => {
@@ -179,16 +163,13 @@ describe('SectionEndController', () => {
 
       await handler(mockRequest, mockContext, mockH)
 
-      expect(mockRequest.server.app.cacheTemp.set).toHaveBeenCalledWith(
-        'session-123',
-        {
-          'other-form': { existingField: 'existingValue' },
-          '/test-form': {
-            field1: 'value1',
-            field2: 'value2'
-          }
+      expect(mockRequest.server.app.cacheTemp.set).toHaveBeenCalledWith('session-123', {
+        'other-form': { existingField: 'existingValue' },
+        '/test-form': {
+          field1: 'value1',
+          field2: 'value2'
         }
-      )
+      })
     })
 
     it('should save merged data to cache', async () => {
@@ -196,15 +177,12 @@ describe('SectionEndController', () => {
 
       await handler(mockRequest, mockContext, mockH)
 
-      expect(mockRequest.server.app.cacheTemp.set).toHaveBeenCalledWith(
-        'session-123',
-        {
-          '/test-form': {
-            field1: 'value1',
-            field2: 'value2'
-          }
+      expect(mockRequest.server.app.cacheTemp.set).toHaveBeenCalledWith('session-123', {
+        '/test-form': {
+          field1: 'value1',
+          field2: 'value2'
         }
-      )
+      })
     })
 
     it('should redirect based on source query parameter', async () => {
@@ -260,9 +238,7 @@ describe('SectionEndController', () => {
   describe('integration with SummaryPageController', () => {
     it('should properly set up the controller instance', () => {
       expect(controller).toBeDefined()
-      expect(controller.viewName).toBe(
-        'section-end/views/section-end-summary.html'
-      )
+      expect(controller.viewName).toBe('section-end/views/section-end-summary.html')
       expect(controller).toHaveProperty('makePostRouteHandler')
     })
 
@@ -284,18 +260,12 @@ describe('SectionEndController', () => {
     })
 
     it('should not reference the old view location', () => {
-      const oldViewPath = join(
-        process.cwd(),
-        'src/server/views/section-end-summary.html'
-      )
+      const oldViewPath = join(process.cwd(), 'src/server/views/section-end-summary.html')
       expect(existsSync(oldViewPath)).toBe(false)
     })
 
     it('should have view file in the feature-based location', () => {
-      const featureViewPath = join(
-        process.cwd(),
-        'src/server/section-end/views/section-end-summary.html'
-      )
+      const featureViewPath = join(process.cwd(), 'src/server/section-end/views/section-end-summary.html')
       expect(existsSync(featureViewPath)).toBe(true)
     })
   })

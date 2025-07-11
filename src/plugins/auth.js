@@ -111,8 +111,7 @@ function getCookieOptions() {
         if (!config.get('defraId.refreshTokens')) {
           return { isValid: false }
         }
-        const { access_token: token, refresh_token: refreshToken } =
-          await refreshTokens(userSession.refreshToken)
+        const { access_token: token, refresh_token: refreshToken } = await refreshTokens(userSession.refreshToken)
         userSession.token = token
         userSession.refreshToken = refreshToken
         await request.server.app.cache.set(session.sessionId, userSession)

@@ -21,8 +21,7 @@ describe('#aboutController', () => {
   let server
 
   beforeAll(async () => {
-    process.env.SESSION_COOKIE_PASSWORD =
-      'the-password-must-be-at-least-32-characters-long'
+    process.env.SESSION_COOKIE_PASSWORD = 'the-password-must-be-at-least-32-characters-long'
 
     // Mock the well-known OIDC config before server starts
     Wreck.get.mockResolvedValue({
@@ -66,11 +65,7 @@ describe('#aboutController', () => {
     Jwt.token.verifyTime.mockImplementation(() => undefined)
 
     // Use password from environment variable for cookie sealing
-    const sealedCookie = await seal(
-      { sessionId },
-      process.env.SESSION_COOKIE_PASSWORD,
-      Iron.defaults
-    )
+    const sealedCookie = await seal({ sessionId }, process.env.SESSION_COOKIE_PASSWORD, Iron.defaults)
 
     // Make a request with the sealed cookie
     const { result, statusCode } = await server.inject({

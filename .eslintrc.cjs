@@ -26,14 +26,7 @@ module.exports = {
         project: ['./tsconfig.json'],
         tsconfigRootDir: __dirname
       },
-      plugins: [
-        '@typescript-eslint',
-        'import',
-        'jsdoc',
-        'n',
-        'promise',
-        'prettier'
-      ],
+      plugins: ['@typescript-eslint', 'import', 'jsdoc', 'n', 'promise', 'prettier'],
       rules: {
         'prettier/prettier': [
           'error',
@@ -125,11 +118,7 @@ module.exports = {
       env: {
         'jest/globals': true
       },
-      extends: [
-        'plugin:jest-formatting/recommended',
-        'plugin:jest/recommended',
-        'plugin:jest/style'
-      ],
+      extends: ['plugin:jest-formatting/recommended', 'plugin:jest/recommended', 'plugin:jest/style'],
       files: ['**/*.test.{cjs,js}', '**/__mocks__/**'],
       plugins: ['jest'],
       rules: {

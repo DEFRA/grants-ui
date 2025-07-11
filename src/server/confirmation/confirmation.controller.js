@@ -1,9 +1,6 @@
 import { StatusPageController } from '@defra/forms-engine-plugin/controllers/StatusPageController.js'
 import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/forms-cache.js'
-import {
-  storeSlugInContext,
-  getConfirmationPath
-} from '~/src/server/common/helpers/form-slug-helper.js'
+import { storeSlugInContext, getConfirmationPath } from '~/src/server/common/helpers/form-slug-helper.js'
 
 export default class ConfirmationPageController extends StatusPageController {
   viewName = 'confirmation/views/confirmation-page.html'
@@ -30,14 +27,8 @@ export default class ConfirmationPageController extends StatusPageController {
       const confirmationState = await cacheService.getConfirmationState(request)
 
       // Log the confirmation state for debugging
-      request.logger.debug(
-        'ConfirmationController: Confirmation state:',
-        confirmationState
-      )
-      request.logger.debug(
-        'ConfirmationController: Current path:',
-        request.path
-      )
+      request.logger.debug('ConfirmationController: Confirmation state:', confirmationState)
+      request.logger.debug('ConfirmationController: Current path:', request.path)
 
       // Get and log the start path - pass request to getStartPath for logging
       const startPath = this.getStartPath()
@@ -46,14 +37,10 @@ export default class ConfirmationPageController extends StatusPageController {
       // As we're using our custom controller but we want to be as close as DXT implementation as possible,
       // we check confirmation state to redirect to start path
       if (!confirmationState.confirmed) {
-        request.logger.info(
-          'ConfirmationController: Not confirmed, redirecting to start path'
-        )
+        request.logger.info('ConfirmationController: Not confirmed, redirecting to start path')
         return this.proceed(request, h, startPath)
       } else {
-        request.logger.info(
-          'ConfirmationController: Confirmed, showing confirmation page'
-        )
+        request.logger.info('ConfirmationController: Confirmed, showing confirmation page')
         await cacheService.setConfirmationState(request, { confirmed: false })
         await cacheService.clearState(request)
       }

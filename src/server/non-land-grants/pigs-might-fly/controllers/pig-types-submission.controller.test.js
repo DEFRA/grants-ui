@@ -5,15 +5,9 @@ import { transformStateObjectToGasApplication } from '~/src/server/common/helper
 import { submitGrantApplication } from '~/src/server/common/services/grant-application/grant-application.service.js'
 import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/forms-cache.js'
 
-jest.mock(
-  '~/src/server/non-land-grants/pigs-might-fly/mappers/state-to-gas-pigs-mapper.js'
-)
-jest.mock(
-  '~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
-)
-jest.mock(
-  '~/src/server/common/services/grant-application/grant-application.service.js'
-)
+jest.mock('~/src/server/non-land-grants/pigs-might-fly/mappers/state-to-gas-pigs-mapper.js')
+jest.mock('~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js')
+jest.mock('~/src/server/common/services/grant-application/grant-application.service.js')
 jest.mock('~/src/server/common/helpers/forms-cache/forms-cache.js')
 
 describe('FlyingPigsSubmissionPageController', () => {
@@ -69,10 +63,7 @@ describe('FlyingPigsSubmissionPageController', () => {
       mockContext.state,
       stateToPigsMightFlyGasAnswers
     )
-    expect(submitGrantApplication).toHaveBeenCalledWith(
-      'pigs-might-fly',
-      mockApplicationData
-    )
+    expect(submitGrantApplication).toHaveBeenCalledWith('pigs-might-fly', mockApplicationData)
   })
 
   it('should handle POST route and redirect to /confirmation', async () => {
@@ -88,10 +79,7 @@ describe('FlyingPigsSubmissionPageController', () => {
     const postHandler = controller.makePostRouteHandler()
     await postHandler(mockRequest, mockContext, mockResponseToolkit)
 
-    expect(mockCacheService.setConfirmationState).toHaveBeenCalledWith(
-      mockRequest,
-      { confirmed: true }
-    )
+    expect(mockCacheService.setConfirmationState).toHaveBeenCalledWith(mockRequest, { confirmed: true })
     expect(mockResponseToolkit.redirect).toHaveBeenCalledWith('/confirmation')
   })
 })

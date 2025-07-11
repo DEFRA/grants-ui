@@ -30,12 +30,7 @@ export default class SubmissionPageController extends SummaryPageController {
    * @returns {Promise<object>} - The result of the grant application submission
    */
   async submitLandGrantApplication(context) {
-    const {
-      sbi = 'sbi',
-      crn = 'crn',
-      defraId = 'defraId',
-      frn = 'frn'
-    } = context.state
+    const { sbi = 'sbi', crn = 'crn', defraId = 'defraId', frn = 'frn' } = context.state
     const identifiers = {
       sbi,
       frn,

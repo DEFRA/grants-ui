@@ -102,24 +102,13 @@ export default class LandActionsPageController extends QuestionPageController {
       const { viewName } = this
       const payload = request.payload ?? {}
       const [sheetId, parcelId] = parseLandParcel(state.selectedLandParcel)
-      const { actionsObj, selectedActionsQuantities } =
-        this.extractActionsDataFromPayload(payload)
+      const { actionsObj, selectedActionsQuantities } = this.extractActionsDataFromPayload(payload)
 
       // Create an updated state with the new action data
-      const newState = this.buildNewState(
-        state,
-        context,
-        selectedActionsQuantities,
-        actionsObj
-      )
+      const newState = this.buildNewState(state, context, selectedActionsQuantities, actionsObj)
 
       if (payload.action === 'validate') {
-        const { errors, errorSummary } = await this.validatePayload(
-          payload,
-          actionsObj,
-          sheetId,
-          parcelId
-        )
+        const { errors, errorSummary } = await this.validatePayload(payload, actionsObj, sheetId, parcelId)
 
         if (Object.keys(errors).length > 0) {
           return h.view(viewName, {
@@ -160,8 +149,7 @@ export default class LandActionsPageController extends QuestionPageController {
       }
     }
     // Filter actionsObj to only include items with non-null values and ready to be validated by the api
-    const readyForValidationsActionsObj =
-      this.getCompletedFormFieldsForApiValidation(actionsObj)
+    const readyForValidationsActionsObj = this.getCompletedFormFieldsForApiValidation(actionsObj)
 
     if (Object.keys(readyForValidationsActionsObj).length > 0) {
       const { valid, errorMessages = [] } = await triggerApiActionsValidation({
@@ -190,10 +178,7 @@ export default class LandActionsPageController extends QuestionPageController {
   getCompletedFormFieldsForApiValidation = (actionsObj) => {
     return Object.fromEntries(
       Object.entries(actionsObj).filter(
-        ([, action]) =>
-          action.value !== null &&
-          action.value !== undefined &&
-          action.value !== ''
+        ([, action]) => action.value !== null && action.value !== undefined && action.value !== ''
       )
     )
   }
@@ -227,16 +212,12 @@ export default class LandActionsPageController extends QuestionPageController {
       const { collection, viewName } = this
       const { state } = context
 
-      const [sheetId = '', parcelId = ''] = parseLandParcel(
-        state.selectedLandParcel
-      )
+      const [sheetId = '', parcelId = ''] = parseLandParcel(state.selectedLandParcel)
 
       // Load available actions for the land parcel
       try {
         const data = await fetchAvailableActionsForParcel({ parcelId, sheetId })
-        this.currentParcelSize = data.size
-          ? `${data.size.value} ${data.size.unit}`
-          : NOT_AVAILABLE
+        this.currentParcelSize = data.size ? `${data.size.value} ${data.size.unit}` : NOT_AVAILABLE
         this.availableActions = data.actions || []
         if (!this.availableActions.length) {
           request.logger.error({
@@ -246,29 +227,22 @@ export default class LandActionsPageController extends QuestionPageController {
         }
       } catch (error) {
         this.availableActions = []
-        request.logger.error(
-          error,
-          `Failed to fetch land parcel data for id ${sheetId}-${parcelId}`
-        )
+        request.logger.error(error, `Failed to fetch land parcel data for id ${sheetId}-${parcelId}`)
       }
 
-      const selectedActions = Object.keys(
-        state.landParcels?.[state.selectedLandParcel]?.actionsObj || {}
-      )
+      const selectedActions = Object.keys(state.landParcels?.[state.selectedLandParcel]?.actionsObj || {})
 
       const selectedActionsQuantities = {}
 
       if (state?.landParcels) {
         // Access actionsObj for the selected parcel
-        const actionsObj =
-          state.landParcels[state.selectedLandParcel]?.actionsObj
+        const actionsObj = state.landParcels[state.selectedLandParcel]?.actionsObj
 
         selectedActions.forEach((action) => {
           const actionData = actionsObj[action]
 
           if (actionData) {
-            selectedActionsQuantities[`${this.quantityPrefix}${action}`] =
-              actionData.value
+            selectedActionsQuantities[`${this.quantityPrefix}${action}`] = actionData.value
           }
         })
       }

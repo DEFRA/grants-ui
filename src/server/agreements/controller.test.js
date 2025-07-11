@@ -422,9 +422,7 @@ describe('Agreements Controller', () => {
       const proxyCall = mockH.proxy.mock.calls[0][0]
       const mapUriResult = proxyCall.mapUri()
 
-      expect(mapUriResult.uri).toBe(
-        'http://localhost:3003/api/v1/agreements?filter=active&sort=date'
-      )
+      expect(mapUriResult.uri).toBe('http://localhost:3003/api/v1/agreements?filter=active&sort=date')
     })
 
     test('should handle path with special characters', async () => {

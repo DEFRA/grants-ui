@@ -139,10 +139,7 @@ export const createValidTasklistConfig = (overrides = {}) => ({
 
 export const createTasklistConfigWithoutRoot = (content = {}) => content
 
-export const createTasklistConfigMissingField = (
-  missingField,
-  overrides = {}
-) => {
+export const createTasklistConfigMissingField = (missingField, overrides = {}) => {
   const baseConfig = {
     id: 'test-tasklist',
     title: 'Test Tasklist',

@@ -18,20 +18,11 @@ export default class FlyingPigsSubmissionPageController extends SummaryPageContr
   }
 
   getStatusPath(request, context) {
-    return getConfirmationPath(
-      request,
-      context,
-      'FlyingPigsSubmissionPageController'
-    )
+    return getConfirmationPath(request, context, 'FlyingPigsSubmissionPageController')
   }
 
   async submitPigTypesApplication(context) {
-    const {
-      sbi = 'sbi',
-      crn = 'crn',
-      defraId = 'defraId',
-      frn = 'frn'
-    } = context.state
+    const { sbi = 'sbi', crn = 'crn', defraId = 'defraId', frn = 'frn' } = context.state
     const identifiers = {
       sbi,
       frn,
@@ -57,10 +48,7 @@ export default class FlyingPigsSubmissionPageController extends SummaryPageContr
       await cacheService.setConfirmationState(request, { confirmed: true })
 
       const redirectPath = this.getStatusPath(request, context)
-      request.logger.debug(
-        'FlyingpigsController: Redirecting to:',
-        redirectPath
-      )
+      request.logger.debug('FlyingpigsController: Redirecting to:', redirectPath)
 
       return h.redirect(redirectPath)
     }

@@ -1,9 +1,6 @@
 import { TasklistGenerator } from './tasklist-generator.js'
 import { ConfigDrivenConditionEvaluator } from './config-driven-condition-evaluator.js'
-import {
-  TaskListStatus,
-  taskListStatusComponents
-} from '../../common/constants/tasklist-status-components.js'
+import { TaskListStatus, taskListStatusComponents } from '../../common/constants/tasklist-status-components.js'
 import { createComplexTasklistConfig } from '../helpers/test-helpers.js'
 
 jest.mock('./config-driven-condition-evaluator.js')
@@ -26,9 +23,7 @@ describe('TasklistGenerator', () => {
     visitedSubSections = ['subsection2']
 
     ConfigDrivenConditionEvaluator.mockImplementation(() => ({
-      evaluateCondition: jest
-        .fn()
-        .mockReturnValue(TaskListStatus.NOT_YET_STARTED),
+      evaluateCondition: jest.fn().mockReturnValue(TaskListStatus.NOT_YET_STARTED),
       checkDependencies: jest.fn().mockReturnValue(true)
     }))
 
@@ -117,23 +112,14 @@ describe('TasklistGenerator', () => {
 
       const result = gen.generateTasklist({}, [])
 
-      expect(result.sections[0].subsections[0].status).toEqual(
-        taskListStatusComponents[TaskListStatus.NOT_YET_STARTED]
-      )
+      expect(result.sections[0].subsections[0].status).toEqual(taskListStatusComponents[TaskListStatus.NOT_YET_STARTED])
     })
   })
 
   describe('determineStatuses', () => {
     it('should determine statuses for all subsections', () => {
-      const conditions = new ConfigDrivenConditionEvaluator(
-        mockData,
-        visitedSubSections
-      )
-      const statuses = generator.determineStatuses(
-        mockData,
-        visitedSubSections,
-        conditions
-      )
+      const conditions = new ConfigDrivenConditionEvaluator(mockData, visitedSubSections)
+      const statuses = generator.determineStatuses(mockData, visitedSubSections, conditions)
 
       expect(statuses).toHaveProperty('subsection1', TaskListStatus.COMPLETED)
       expect(statuses).toHaveProperty('subsection2', TaskListStatus.IN_PROGRESS)
@@ -141,15 +127,8 @@ describe('TasklistGenerator', () => {
     })
 
     it('should evaluate status rules when present', () => {
-      const conditions = new ConfigDrivenConditionEvaluator(
-        mockData,
-        visitedSubSections
-      )
-      const statuses = generator.determineStatuses(
-        mockData,
-        visitedSubSections,
-        conditions
-      )
+      const conditions = new ConfigDrivenConditionEvaluator(mockData, visitedSubSections)
+      const statuses = generator.determineStatuses(mockData, visitedSubSections, conditions)
 
       expect(statuses).toHaveProperty('computed1')
       expect(statuses.computed1).toBe(TaskListStatus.CANNOT_START_YET)
@@ -160,47 +139,26 @@ describe('TasklistGenerator', () => {
     let conditions
 
     beforeEach(() => {
-      conditions = new ConfigDrivenConditionEvaluator(
-        mockData,
-        visitedSubSections
-      )
+      conditions = new ConfigDrivenConditionEvaluator(mockData, visitedSubSections)
     })
 
     it('should return COMPLETED for completed subsections', () => {
       const subsection = { id: 'subsection1', title: 'Test' }
-      const status = generator.getSubsectionStatus(
-        subsection,
-        mockData,
-        visitedSubSections,
-        conditions,
-        {}
-      )
+      const status = generator.getSubsectionStatus(subsection, mockData, visitedSubSections, conditions, {})
 
       expect(status).toBe(TaskListStatus.COMPLETED)
     })
 
     it('should return IN_PROGRESS for visited but not completed subsections', () => {
       const subsection = { id: 'subsection2', title: 'Test' }
-      const status = generator.getSubsectionStatus(
-        subsection,
-        mockData,
-        visitedSubSections,
-        conditions,
-        {}
-      )
+      const status = generator.getSubsectionStatus(subsection, mockData, visitedSubSections, conditions, {})
 
       expect(status).toBe(TaskListStatus.IN_PROGRESS)
     })
 
     it('should return NOT_YET_STARTED for unvisited subsections', () => {
       const subsection = { id: 'newSubsection', title: 'Test' }
-      const status = generator.getSubsectionStatus(
-        subsection,
-        mockData,
-        [],
-        conditions,
-        {}
-      )
+      const status = generator.getSubsectionStatus(subsection, mockData, [], conditions, {})
 
       expect(status).toBe(TaskListStatus.NOT_YET_STARTED)
     })
@@ -211,13 +169,7 @@ describe('TasklistGenerator', () => {
         title: 'Test',
         required: false
       }
-      const status = generator.getSubsectionStatus(
-        subsection,
-        mockData,
-        [],
-        conditions,
-        {}
-      )
+      const status = generator.getSubsectionStatus(subsection, mockData, [], conditions, {})
 
       expect(status).toBe(TaskListStatus.HIDDEN)
     })
@@ -229,13 +181,7 @@ describe('TasklistGenerator', () => {
         dependsOn: ['notCompleted']
       }
       const currentStatuses = { notCompleted: TaskListStatus.NOT_YET_STARTED }
-      const status = generator.getSubsectionStatus(
-        subsection,
-        mockData,
-        [],
-        conditions,
-        currentStatuses
-      )
+      const status = generator.getSubsectionStatus(subsection, mockData, [], conditions, currentStatuses)
 
       expect(status).toBe(TaskListStatus.CANNOT_START_YET)
     })
@@ -248,18 +194,9 @@ describe('TasklistGenerator', () => {
       }
 
       const dataWithTestField = { test: { field: true } }
-      const conditionsWithTestField = new ConfigDrivenConditionEvaluator(
-        dataWithTestField,
-        []
-      )
+      const conditionsWithTestField = new ConfigDrivenConditionEvaluator(dataWithTestField, [])
 
-      const status = generator.getSubsectionStatus(
-        subsection,
-        dataWithTestField,
-        [],
-        conditionsWithTestField,
-        {}
-      )
+      const status = generator.getSubsectionStatus(subsection, dataWithTestField, [], conditionsWithTestField, {})
 
       expect(status).toBe(TaskListStatus.NOT_YET_STARTED)
     })
@@ -279,31 +216,22 @@ describe('TasklistGenerator', () => {
         visitedSubSections: ['visitedSubsection'],
         expectedStatus: TaskListStatus.IN_PROGRESS
       }
-    ])(
-      'should prioritise $description',
-      ({ subsectionId, data, visitedSubSections, expectedStatus }) => {
-        const subsection = {
-          id: subsectionId,
-          title: 'Test',
-          condition: 'testCondition'
-        }
-
-        const mockConditions = {
-          evaluateCondition: jest.fn().mockReturnValue(TaskListStatus.HIDDEN)
-        }
-
-        const status = generator.getSubsectionStatus(
-          subsection,
-          data,
-          visitedSubSections,
-          mockConditions,
-          {}
-        )
-
-        expect(status).toBe(expectedStatus)
-        expect(mockConditions.evaluateCondition).not.toHaveBeenCalled()
+    ])('should prioritise $description', ({ subsectionId, data, visitedSubSections, expectedStatus }) => {
+      const subsection = {
+        id: subsectionId,
+        title: 'Test',
+        condition: 'testCondition'
       }
-    )
+
+      const mockConditions = {
+        evaluateCondition: jest.fn().mockReturnValue(TaskListStatus.HIDDEN)
+      }
+
+      const status = generator.getSubsectionStatus(subsection, data, visitedSubSections, mockConditions, {})
+
+      expect(status).toBe(expectedStatus)
+      expect(mockConditions.evaluateCondition).not.toHaveBeenCalled()
+    })
 
     it('should handle condition evaluation errors gracefully', () => {
       const subsection = {
@@ -312,13 +240,7 @@ describe('TasklistGenerator', () => {
         condition: 'nonExistentCondition'
       }
 
-      const status = generator.getSubsectionStatus(
-        subsection,
-        mockData,
-        [],
-        conditions,
-        {}
-      )
+      const status = generator.getSubsectionStatus(subsection, mockData, [], conditions, {})
 
       expect(status).toBe(TaskListStatus.NOT_YET_STARTED)
     })
@@ -336,19 +258,10 @@ describe('TasklistGenerator', () => {
         })
       }
 
-      const status = generator.getSubsectionStatus(
-        subsection,
-        mockData,
-        [],
-        errorConditions,
-        {}
-      )
+      const status = generator.getSubsectionStatus(subsection, mockData, [], errorConditions, {})
 
       expect(status).toBe(TaskListStatus.NOT_YET_STARTED)
-      expect(errorConditions.evaluateCondition).toHaveBeenCalledWith(
-        'errorCondition',
-        undefined
-      )
+      expect(errorConditions.evaluateCondition).toHaveBeenCalledWith('errorCondition', undefined)
     })
   })
 
@@ -407,16 +320,10 @@ describe('TasklistGenerator', () => {
         dep3: TaskListStatus.HIDDEN
       }
 
-      const arrayResult = generator.checkDependencies(
-        ['dep1', 'dep2', 'dep3'],
-        statuses
-      )
+      const arrayResult = generator.checkDependencies(['dep1', 'dep2', 'dep3'], statuses)
       expect(arrayResult).toBe(true)
 
-      const allOfResult = generator.checkDependencies(
-        { allOf: ['dep1', 'dep2', 'dep3'] },
-        statuses
-      )
+      const allOfResult = generator.checkDependencies({ allOf: ['dep1', 'dep2', 'dep3'] }, statuses)
       expect(allOfResult).toBe(true)
     })
   })
@@ -429,9 +336,7 @@ describe('TasklistGenerator', () => {
     })
 
     it('should return IN_PROGRESS when rule ID is visited', () => {
-      const result = generator.evaluateStatusRule('ruleId', {}, {}, {}, [
-        'ruleId'
-      ])
+      const result = generator.evaluateStatusRule('ruleId', {}, {}, {}, ['ruleId'])
       expect(result).toBe(TaskListStatus.IN_PROGRESS)
     })
 
@@ -445,26 +350,14 @@ describe('TasklistGenerator', () => {
         dep2: TaskListStatus.COMPLETED
       }
 
-      const result = generator.evaluateStatusRule(
-        'ruleId',
-        rule,
-        statuses,
-        {},
-        []
-      )
+      const result = generator.evaluateStatusRule('ruleId', rule, statuses, {}, [])
       expect(result).toBe(TaskListStatus.NOT_YET_STARTED)
 
       const statusesIncomplete = {
         dep1: TaskListStatus.COMPLETED,
         dep2: TaskListStatus.NOT_YET_STARTED
       }
-      const result2 = generator.evaluateStatusRule(
-        'ruleId',
-        rule,
-        statusesIncomplete,
-        {},
-        []
-      )
+      const result2 = generator.evaluateStatusRule('ruleId', rule, statusesIncomplete, {}, [])
       expect(result2).toBe(TaskListStatus.CANNOT_START_YET)
     })
 
@@ -479,13 +372,7 @@ describe('TasklistGenerator', () => {
         dep3: TaskListStatus.HIDDEN
       }
 
-      const result = generator.evaluateStatusRule(
-        'ruleId',
-        rule,
-        statuses,
-        {},
-        []
-      )
+      const result = generator.evaluateStatusRule('ruleId', rule, statuses, {}, [])
       expect(result).toBe(TaskListStatus.NOT_YET_STARTED)
     })
 
@@ -554,9 +441,7 @@ describe('TasklistGenerator', () => {
       expect(result[0].subsections[0].title.text).toBe('Visible Subsection')
       expect(result[0].subsections[1].title.text).toBe('Another Visible')
 
-      expect(
-        result[0].subsections.find((s) => s.title.text === 'Hidden Subsection')
-      ).toBeUndefined()
+      expect(result[0].subsections.find((s) => s.title.text === 'Hidden Subsection')).toBeUndefined()
     })
   })
 
@@ -636,10 +521,7 @@ describe('TasklistGenerator', () => {
       const complexVisited = ['step2']
 
       const complexGenerator = new TasklistGenerator(complexConfig)
-      const result = complexGenerator.generateTasklist(
-        complexData,
-        complexVisited
-      )
+      const result = complexGenerator.generateTasklist(complexData, complexVisited)
 
       expect(result.sections).toHaveLength(2)
 
@@ -648,18 +530,10 @@ describe('TasklistGenerator', () => {
       const step3Status = result.sections[1].subsections[0].status
       const step4Status = result.sections[1].subsections[1].status
 
-      expect(step1Status).toEqual(
-        taskListStatusComponents[TaskListStatus.COMPLETED]
-      )
-      expect(step2Status).toEqual(
-        taskListStatusComponents[TaskListStatus.IN_PROGRESS]
-      )
-      expect(step3Status).toEqual(
-        taskListStatusComponents[TaskListStatus.CANNOT_START_YET]
-      )
-      expect(step4Status).toEqual(
-        taskListStatusComponents[TaskListStatus.CANNOT_START_YET]
-      )
+      expect(step1Status).toEqual(taskListStatusComponents[TaskListStatus.COMPLETED])
+      expect(step2Status).toEqual(taskListStatusComponents[TaskListStatus.IN_PROGRESS])
+      expect(step3Status).toEqual(taskListStatusComponents[TaskListStatus.CANNOT_START_YET])
+      expect(step4Status).toEqual(taskListStatusComponents[TaskListStatus.CANNOT_START_YET])
     })
   })
 })

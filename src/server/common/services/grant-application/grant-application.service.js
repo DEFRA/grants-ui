@@ -68,10 +68,7 @@ export async function makeGasApiRequest(url, grantCode, options = {}) {
 
     return response
   } catch (error) {
-    logger.error(
-      { err: error },
-      `Unexpected error in GAS API request: ${error.message}`
-    )
+    logger.error({ err: error }, `Unexpected error in GAS API request: ${error.message}`)
     throw new GrantApplicationServiceApiError(
       'Failed to process GAS API request: ' + error.message,
       error.status,

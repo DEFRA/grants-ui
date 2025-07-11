@@ -71,11 +71,7 @@ async function handleOidcSignIn(request, h) {
   // However, when signing in with RPA credentials, the roles only include the role name and not the permissions
   // Therefore, we need to make additional API calls to get the permissions from Siti Agri
   // These calls are authenticated using the token returned from Defra Identity
-  const { role, scope } = getPermissions(
-    profile.crn,
-    profile.organisationId,
-    token
-  )
+  const { role, scope } = getPermissions(profile.crn, profile.organisationId, token)
 
   // Store token and all useful data in the session cache
 
@@ -103,10 +99,7 @@ async function handleSignOut(request, h) {
   if (!request.auth.isAuthenticated) {
     return h.redirect('/')
   }
-  const signOutUrl = await getSignOutUrl(
-    request,
-    request.auth.credentials.token
-  )
+  const signOutUrl = await getSignOutUrl(request, request.auth.credentials.token)
   return h.redirect(signOutUrl)
 }
 
