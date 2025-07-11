@@ -30,9 +30,7 @@ export class ConfigDrivenConditionEvaluator {
       }
     }
 
-    return this.normaliseStatus(
-      defaultStatus || TaskListStatus.CANNOT_START_YET
-    )
+    return this.normaliseStatus(defaultStatus || TaskListStatus.CANNOT_START_YET)
   }
 
   evaluateDependencyRules(conditionConfig) {
@@ -41,14 +39,10 @@ export class ConfigDrivenConditionEvaluator {
     const dependencyStatus = this.checkDependencies(dependsOn)
 
     if (statusMap) {
-      return this.normaliseStatus(
-        statusMap[dependencyStatus] || statusMap.default
-      )
+      return this.normaliseStatus(statusMap[dependencyStatus] || statusMap.default)
     }
 
-    return dependencyStatus
-      ? TaskListStatus.NOT_YET_STARTED
-      : TaskListStatus.CANNOT_START_YET
+    return dependencyStatus ? TaskListStatus.NOT_YET_STARTED : TaskListStatus.CANNOT_START_YET
   }
 
   evaluateRule(rule) {
@@ -102,38 +96,31 @@ export class ConfigDrivenConditionEvaluator {
       },
       {
         key: 'exists',
-        handler: (val, ruleVal) =>
-          ruleVal ? val !== undefined : val === undefined
+        handler: (val, ruleVal) => (ruleVal ? val !== undefined : val === undefined)
       },
       {
         key: 'in',
-        handler: (val, ruleVal) =>
-          Array.isArray(ruleVal) && ruleVal.includes(val)
+        handler: (val, ruleVal) => Array.isArray(ruleVal) && ruleVal.includes(val)
       },
       {
         key: 'notIn',
-        handler: (val, ruleVal) =>
-          Array.isArray(ruleVal) && !ruleVal.includes(val)
+        handler: (val, ruleVal) => Array.isArray(ruleVal) && !ruleVal.includes(val)
       },
       {
         key: 'gt',
-        handler: (val, ruleVal) =>
-          this.evaluateNumericComparison(val, ruleVal, (a, b) => a > b)
+        handler: (val, ruleVal) => this.evaluateNumericComparison(val, ruleVal, (a, b) => a > b)
       },
       {
         key: 'gte',
-        handler: (val, ruleVal) =>
-          this.evaluateNumericComparison(val, ruleVal, (a, b) => a >= b)
+        handler: (val, ruleVal) => this.evaluateNumericComparison(val, ruleVal, (a, b) => a >= b)
       },
       {
         key: 'lt',
-        handler: (val, ruleVal) =>
-          this.evaluateNumericComparison(val, ruleVal, (a, b) => a < b)
+        handler: (val, ruleVal) => this.evaluateNumericComparison(val, ruleVal, (a, b) => a < b)
       },
       {
         key: 'lte',
-        handler: (val, ruleVal) =>
-          this.evaluateNumericComparison(val, ruleVal, (a, b) => a <= b)
+        handler: (val, ruleVal) => this.evaluateNumericComparison(val, ruleVal, (a, b) => a <= b)
       },
       {
         key: 'isEmpty',
@@ -155,8 +142,7 @@ export class ConfigDrivenConditionEvaluator {
   }
 
   evaluateEmptyCondition(fieldValue, shouldBeEmpty) {
-    const isEmpty =
-      fieldValue === null || fieldValue === undefined || fieldValue === ''
+    const isEmpty = fieldValue === null || fieldValue === undefined || fieldValue === ''
     return shouldBeEmpty ? isEmpty : !isEmpty
   }
 

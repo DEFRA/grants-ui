@@ -208,11 +208,7 @@ describe('stateToPigsMightFlyGasAnswers', () => {
     })
 
     test('should handle falsy values for isPigFarmer', () => {
-      const testCases = [
-        { isPigFarmer: '' },
-        { isPigFarmer: 0 },
-        { isPigFarmer: null }
-      ]
+      const testCases = [{ isPigFarmer: '' }, { isPigFarmer: 0 }, { isPigFarmer: null }]
 
       testCases.forEach((state) => {
         const result = stateToPigsMightFlyGasAnswers(state)

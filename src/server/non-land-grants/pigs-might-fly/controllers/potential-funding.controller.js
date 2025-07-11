@@ -25,11 +25,7 @@ export class PotentialFundingController extends QuestionPageController {
       }
 
       try {
-        const result = await invokeGasPostAction(
-          'pigs-might-fly',
-          'calculate-pig-totals',
-          payload
-        )
+        const result = await invokeGasPostAction('pigs-might-fly', 'calculate-pig-totals', payload)
 
         // tranform result.items to an object keyed on type
         context.pigData = result.items.reduce((acc, item) => {

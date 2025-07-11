@@ -227,15 +227,11 @@ describe('LandActionsPageController', () => {
         formModel: {},
         errors: []
       }
-      QuestionPageController.prototype.getViewModel.mockReturnValue(
-        mockParentViewModel
-      )
+      QuestionPageController.prototype.getViewModel.mockReturnValue(mockParentViewModel)
 
       const result = controller.getViewModel(mockRequest, mockContext)
 
-      expect(
-        QuestionPageController.prototype.getViewModel
-      ).toHaveBeenCalledWith(mockRequest, mockContext)
+      expect(QuestionPageController.prototype.getViewModel).toHaveBeenCalledWith(mockRequest, mockContext)
       expect(result).toEqual({
         ...mockParentViewModel,
         quantityPrefix: 'qty-',
@@ -246,9 +242,7 @@ describe('LandActionsPageController', () => {
     test('should handle empty available actions', () => {
       controller.availableActions = []
       const mockParentViewModel = { pageTitle: 'Land Actions' }
-      QuestionPageController.prototype.getViewModel.mockReturnValue(
-        mockParentViewModel
-      )
+      QuestionPageController.prototype.getViewModel.mockReturnValue(mockParentViewModel)
 
       const result = controller.getViewModel(mockRequest, mockContext)
 
@@ -424,8 +418,7 @@ describe('LandActionsPageController', () => {
             'sheet1-parcel1': {
               actionsObj: {
                 CMOR1: {
-                  description:
-                    'CMOR1: Assess moorland and produce a written record',
+                  description: 'CMOR1: Assess moorland and produce a written record',
                   unit: 'ha',
                   value: 10
                 }
@@ -435,11 +428,7 @@ describe('LandActionsPageController', () => {
         })
       )
 
-      expect(controller.proceed).toHaveBeenCalledWith(
-        mockRequest,
-        mockH,
-        '/next-path'
-      )
+      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-path')
 
       expect(result).toBe('redirected')
     })
@@ -561,9 +550,7 @@ describe('LandActionsPageController', () => {
           action: 'validate'
         }
 
-        const errorMessages = [
-          { code: 'UPL1', description: 'UPL1 is not available for this parcel' }
-        ]
+        const errorMessages = [{ code: 'UPL1', description: 'UPL1 is not available for this parcel' }]
 
         const errors = {
           CMOR1: {
@@ -660,9 +647,7 @@ describe('LandActionsPageController', () => {
         }
       }
 
-      const errorSummary = [
-        { text: 'Please provide a quantity for CMOR1', href: '#qty-CMOR1' }
-      ]
+      const errorSummary = [{ text: 'Please provide a quantity for CMOR1', href: '#qty-CMOR1' }]
 
       triggerApiActionsValidation.mockResolvedValue({
         valid: false,
@@ -781,8 +766,7 @@ describe('LandActionsPageController', () => {
             'sheet1-parcel1': {
               actionsObj: {
                 CMOR1: {
-                  description:
-                    'CMOR1: Assess moorland and produce a written record',
+                  description: 'CMOR1: Assess moorland and produce a written record',
                   value: 10,
                   unit: 'ha'
                 },

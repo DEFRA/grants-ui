@@ -178,9 +178,7 @@ describe('Consolidated View Service', () => {
         text: () => Promise.resolve('Server error')
       })
 
-      await expect(
-        fetchBusinessAndCustomerInformation(mockSbi, mockCrn)
-      ).rejects.toThrow(
+      await expect(fetchBusinessAndCustomerInformation(mockSbi, mockCrn)).rejects.toThrow(
         'Failed to fetch business data: 500 Internal Server Error'
       )
     })
@@ -265,9 +263,7 @@ describe('Consolidated View Service', () => {
     it('should handle invalid JSON in mock file', async () => {
       fs.readFile.mockResolvedValueOnce('invalid json content')
 
-      await expect(fetchParcelsForSbi(mockSbi)).rejects.toThrow(
-        'Failed to fetch business data:'
-      )
+      await expect(fetchParcelsForSbi(mockSbi)).rejects.toThrow('Failed to fetch business data:')
     })
 
     it('should use correct file path for different SBI', async () => {
@@ -276,10 +272,7 @@ describe('Consolidated View Service', () => {
 
       await fetchParcelsForSbi(differentSbi)
 
-      expect(fs.readFile).toHaveBeenCalledWith(
-        getMockFilePath(differentSbi),
-        'utf8'
-      )
+      expect(fs.readFile).toHaveBeenCalledWith(getMockFilePath(differentSbi), 'utf8')
     })
   })
 
@@ -292,9 +285,7 @@ describe('Consolidated View Service', () => {
         text: () => Promise.resolve('Access denied')
       })
 
-      await expect(fetchParcelsForSbi(mockSbi)).rejects.toThrow(
-        'Failed to fetch business data: 403 Forbidden'
-      )
+      await expect(fetchParcelsForSbi(mockSbi)).rejects.toThrow('Failed to fetch business data: 403 Forbidden')
     })
 
     it('should wrap non-API errors in ConsolidatedViewApiError', async () => {
@@ -302,9 +293,7 @@ describe('Consolidated View Service', () => {
         throw new Error('Cannot read property of undefined')
       })
 
-      await expect(fetchParcelsForSbi(mockSbi)).rejects.toThrow(
-        'Cannot read property of undefined'
-      )
+      await expect(fetchParcelsForSbi(mockSbi)).rejects.toThrow('Cannot read property of undefined')
     })
   })
 })

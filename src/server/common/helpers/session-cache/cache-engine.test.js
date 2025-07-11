@@ -46,9 +46,7 @@ describe('#getCacheEngine', () => {
     })
 
     test('Should log expected CatBox memory message', () => {
-      expect(mockLoggerInfo).toHaveBeenCalledWith(
-        'Using Catbox Memory session cache'
-      )
+      expect(mockLoggerInfo).toHaveBeenCalledWith('Using Catbox Memory session cache')
     })
   })
 
@@ -69,9 +67,7 @@ describe('#getCacheEngine', () => {
     })
 
     test('Should log expected message', () => {
-      expect(mockLoggerInfo).toHaveBeenCalledWith(
-        'Using Catbox Memory session cache'
-      )
+      expect(mockLoggerInfo).toHaveBeenCalledWith('Using Catbox Memory session cache')
     })
   })
 })

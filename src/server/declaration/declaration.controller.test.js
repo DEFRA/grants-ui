@@ -15,25 +15,18 @@ jest.mock('~/src/server/common/helpers/form-slug-helper.js')
 jest.mock('~/src/server/common/helpers/forms-cache/forms-cache.js', () => ({
   getFormsCacheService: () => mockCacheService
 }))
-jest.mock(
-  '@defra/forms-engine-plugin/controllers/SummaryPageController.js',
-  () => {
-    return {
-      SummaryPageController: class {
-        constructor(model, pageDef) {
-          this.model = model
-          this.pageDef = pageDef
-        }
+jest.mock('@defra/forms-engine-plugin/controllers/SummaryPageController.js', () => {
+  return {
+    SummaryPageController: class {
+      constructor(model, pageDef) {
+        this.model = model
+        this.pageDef = pageDef
       }
     }
   }
-)
-jest.mock(
-  '~/src/server/common/services/grant-application/grant-application.service.js'
-)
-jest.mock(
-  '~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
-)
+})
+jest.mock('~/src/server/common/services/grant-application/grant-application.service.js')
+jest.mock('~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js')
 jest.mock('./state-to-gas-answers-mapper.js')
 
 describe('DeclarationPageController', () => {
@@ -63,9 +56,7 @@ describe('DeclarationPageController', () => {
     parentGetHandler = jest.fn().mockImplementation(() => {
       return Promise.resolve('parent handler response')
     })
-    SummaryPageController.prototype.makeGetRouteHandler = jest
-      .fn()
-      .mockReturnValue(parentGetHandler)
+    SummaryPageController.prototype.makeGetRouteHandler = jest.fn().mockReturnValue(parentGetHandler)
 
     controller = new DeclarationPageController(mockModel, mockPageDef)
 
@@ -108,9 +99,7 @@ describe('DeclarationPageController', () => {
 
     // Mock the form-slug-helper functions
     formSlugHelper.storeSlugInContext.mockImplementation(() => null)
-    formSlugHelper.getConfirmationPath.mockImplementation(
-      () => '/adding-value/confirmation'
-    )
+    formSlugHelper.getConfirmationPath.mockImplementation(() => '/adding-value/confirmation')
   })
 
   afterEach(() => {
@@ -125,17 +114,11 @@ describe('DeclarationPageController', () => {
     test('should call getConfirmationPath with correct parameters', () => {
       controller.getStatusPath(mockRequest, mockContext)
 
-      expect(formSlugHelper.getConfirmationPath).toHaveBeenCalledWith(
-        mockRequest,
-        mockContext,
-        'DeclarationController'
-      )
+      expect(formSlugHelper.getConfirmationPath).toHaveBeenCalledWith(mockRequest, mockContext, 'DeclarationController')
     })
 
     test('should return the result from getConfirmationPath', () => {
-      formSlugHelper.getConfirmationPath.mockReturnValueOnce(
-        '/test-slug/confirmation'
-      )
+      formSlugHelper.getConfirmationPath.mockReturnValueOnce('/test-slug/confirmation')
 
       const result = controller.getStatusPath(mockRequest, mockContext)
 
@@ -145,19 +128,11 @@ describe('DeclarationPageController', () => {
     test('should handle missing request or context parameters', () => {
       // Test with undefined request
       controller.getStatusPath(undefined, mockContext)
-      expect(formSlugHelper.getConfirmationPath).toHaveBeenCalledWith(
-        undefined,
-        mockContext,
-        'DeclarationController'
-      )
+      expect(formSlugHelper.getConfirmationPath).toHaveBeenCalledWith(undefined, mockContext, 'DeclarationController')
 
       // Test with undefined context
       controller.getStatusPath(mockRequest, undefined)
-      expect(formSlugHelper.getConfirmationPath).toHaveBeenCalledWith(
-        mockRequest,
-        undefined,
-        'DeclarationController'
-      )
+      expect(formSlugHelper.getConfirmationPath).toHaveBeenCalledWith(mockRequest, undefined, 'DeclarationController')
     })
   })
 
@@ -165,25 +140,15 @@ describe('DeclarationPageController', () => {
     test('should return a function that wraps the parent handler', () => {
       const handler = controller.makeGetRouteHandler()
       expect(typeof handler).toBe('function')
-      expect(
-        SummaryPageController.prototype.makeGetRouteHandler
-      ).toHaveBeenCalled()
+      expect(SummaryPageController.prototype.makeGetRouteHandler).toHaveBeenCalled()
     })
 
     test('should store slug in context before calling parent handler', async () => {
       const handler = controller.makeGetRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
-      expect(formSlugHelper.storeSlugInContext).toHaveBeenCalledWith(
-        mockRequest,
-        mockContext,
-        'DeclarationController'
-      )
-      expect(parentGetHandler).toHaveBeenCalledWith(
-        mockRequest,
-        mockContext,
-        mockH
-      )
+      expect(formSlugHelper.storeSlugInContext).toHaveBeenCalledWith(mockRequest, mockContext, 'DeclarationController')
+      expect(parentGetHandler).toHaveBeenCalledWith(mockRequest, mockContext, mockH)
     })
 
     test('should return the result from the parent handler', async () => {
@@ -198,9 +163,7 @@ describe('DeclarationPageController', () => {
       parentGetHandler.mockRejectedValueOnce(error)
 
       const handler = controller.makeGetRouteHandler()
-      await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow(
-        error
-      )
+      await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow(error)
 
       expect(formSlugHelper.storeSlugInContext).toHaveBeenCalled()
     })
@@ -225,11 +188,7 @@ describe('DeclarationPageController', () => {
       const handler = controller.makePostRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
-      expect(formSlugHelper.storeSlugInContext).toHaveBeenCalledWith(
-        mockRequest,
-        mockContext,
-        'DeclarationController'
-      )
+      expect(formSlugHelper.storeSlugInContext).toHaveBeenCalledWith(mockRequest, mockContext, 'DeclarationController')
       expect(transformAnswerKeysToText).toHaveBeenCalledWith(
         mockContext.relevantState,
         mockModel.componentDefMap,
@@ -251,10 +210,7 @@ describe('DeclarationPageController', () => {
       expect(submitGrantApplication).toHaveBeenCalledWith('adding-value', {
         transformedApp: true
       })
-      expect(mockCacheService.setConfirmationState).toHaveBeenCalledWith(
-        mockRequest,
-        { confirmed: true }
-      )
+      expect(mockCacheService.setConfirmationState).toHaveBeenCalledWith(mockRequest, { confirmed: true })
       expect(mockH.redirect).toHaveBeenCalledWith('/adding-value/confirmation')
     })
 
@@ -262,20 +218,10 @@ describe('DeclarationPageController', () => {
       const handler = controller.makePostRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
-      expect(mockRequest.logger.debug).toHaveBeenCalledWith(
-        'DeclarationController: Processing form submission'
-      )
-      expect(mockRequest.logger.debug).toHaveBeenCalledWith(
-        'DeclarationController: Current URL:',
-        mockRequest.path
-      )
-      expect(mockRequest.logger.debug).toHaveBeenCalledWith(
-        'DeclarationController: Got reference number:',
-        'ref123'
-      )
-      expect(mockRequest.logger.debug).toHaveBeenCalledWith(
-        'DeclarationController: Set confirmation state to true'
-      )
+      expect(mockRequest.logger.debug).toHaveBeenCalledWith('DeclarationController: Processing form submission')
+      expect(mockRequest.logger.debug).toHaveBeenCalledWith('DeclarationController: Current URL:', mockRequest.path)
+      expect(mockRequest.logger.debug).toHaveBeenCalledWith('DeclarationController: Got reference number:', 'ref123')
+      expect(mockRequest.logger.debug).toHaveBeenCalledWith('DeclarationController: Set confirmation state to true')
       expect(mockRequest.logger.debug).toHaveBeenCalledWith(
         'DeclarationController: Redirecting to:',
         '/adding-value/confirmation'
@@ -300,14 +246,9 @@ describe('DeclarationPageController', () => {
 
       const handler = controller.makePostRouteHandler()
 
-      await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow(
-        error
-      )
+      await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow(error)
 
-      expect(mockRequest.logger.error).toHaveBeenCalledWith(
-        error,
-        'Failed to submit form'
-      )
+      expect(mockRequest.logger.error).toHaveBeenCalledWith(error, 'Failed to submit form')
     })
 
     test('should handle error when setConfirmationState fails', async () => {
@@ -315,9 +256,7 @@ describe('DeclarationPageController', () => {
       mockCacheService.setConfirmationState.mockRejectedValueOnce(error)
 
       const handler = controller.makePostRouteHandler()
-      await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow(
-        error
-      )
+      await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow(error)
 
       expect(submitGrantApplication).toHaveBeenCalledWith('adding-value', {
         transformedApp: true

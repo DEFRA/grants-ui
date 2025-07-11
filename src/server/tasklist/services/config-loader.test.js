@@ -35,10 +35,7 @@ tasklist:
 
       const result = await loadTasklistConfig(mockTasklistId)
 
-      expect(readFile).toHaveBeenCalledWith(
-        expect.stringContaining('test-tasklist-tasklist.yaml'),
-        'utf8'
-      )
+      expect(readFile).toHaveBeenCalledWith(expect.stringContaining('test-tasklist-tasklist.yaml'), 'utf8')
       expect(parse).toHaveBeenCalledWith(mockYamlContent)
       expect(result).toEqual(mockParsedConfig)
     })
@@ -50,10 +47,7 @@ tasklist:
 
       await loadTasklistConfig('example')
 
-      expect(readFile).toHaveBeenCalledWith(
-        expect.stringContaining('example-tasklist.yaml'),
-        'utf8'
-      )
+      expect(readFile).toHaveBeenCalledWith(expect.stringContaining('example-tasklist.yaml'), 'utf8')
     })
 
     it('should throw error when file cannot be read', async () => {
@@ -84,10 +78,7 @@ tasklist:
 
       await loadTasklistConfig('')
 
-      expect(readFile).toHaveBeenCalledWith(
-        expect.stringContaining('-tasklist.yaml'),
-        'utf8'
-      )
+      expect(readFile).toHaveBeenCalledWith(expect.stringContaining('-tasklist.yaml'), 'utf8')
     })
   })
 
@@ -106,25 +97,19 @@ tasklist:
     it('should throw error when tasklist root element is missing', () => {
       const invalidConfig = createTasklistConfigWithoutRoot()
 
-      expect(() => validateTasklistConfig(invalidConfig)).toThrow(
-        'Missing tasklist root element in config'
-      )
+      expect(() => validateTasklistConfig(invalidConfig)).toThrow('Missing tasklist root element in config')
     })
 
     it('should throw error when tasklist id is missing', () => {
       const invalidConfig = createTasklistConfigMissingField('id')
 
-      expect(() => validateTasklistConfig(invalidConfig)).toThrow(
-        'Tasklist config must have an id'
-      )
+      expect(() => validateTasklistConfig(invalidConfig)).toThrow('Tasklist config must have an id')
     })
 
     it('should throw error when tasklist title is missing', () => {
       const invalidConfig = createTasklistConfigMissingField('title')
 
-      expect(() => validateTasklistConfig(invalidConfig)).toThrow(
-        'Tasklist config must have a title'
-      )
+      expect(() => validateTasklistConfig(invalidConfig)).toThrow('Tasklist config must have a title')
     })
 
     it('should throw error when sections are missing', () => {
@@ -133,9 +118,7 @@ tasklist:
         title: 'Test Tasklist'
       })
 
-      expect(() => validateTasklistConfig(invalidConfig)).toThrow(
-        'Tasklist config must have sections array'
-      )
+      expect(() => validateTasklistConfig(invalidConfig)).toThrow('Tasklist config must have sections array')
     })
 
     it('should throw error when sections is not an array', () => {
@@ -147,9 +130,7 @@ tasklist:
         }
       }
 
-      expect(() => validateTasklistConfig(invalidConfig)).toThrow(
-        'Tasklist config must have sections array'
-      )
+      expect(() => validateTasklistConfig(invalidConfig)).toThrow('Tasklist config must have sections array')
     })
 
     it('should throw error when section id is missing', () => {
@@ -157,9 +138,7 @@ tasklist:
         sections: [createSectionConfig({ id: undefined })]
       })
 
-      expect(() => validateTasklistConfig(invalidConfig)).toThrow(
-        'Section at index 0 must have an id'
-      )
+      expect(() => validateTasklistConfig(invalidConfig)).toThrow('Section at index 0 must have an id')
     })
 
     it('should throw error when section title is missing', () => {
@@ -167,9 +146,7 @@ tasklist:
         sections: [createSectionConfig({ title: undefined })]
       })
 
-      expect(() => validateTasklistConfig(invalidConfig)).toThrow(
-        "Section 'section1' must have a title"
-      )
+      expect(() => validateTasklistConfig(invalidConfig)).toThrow("Section 'section1' must have a title")
     })
 
     it('should throw error when section subsections are missing', () => {
@@ -177,9 +154,7 @@ tasklist:
         sections: [createSectionConfig({ subsections: undefined })]
       })
 
-      expect(() => validateTasklistConfig(invalidConfig)).toThrow(
-        "Section 'section1' must have subsections array"
-      )
+      expect(() => validateTasklistConfig(invalidConfig)).toThrow("Section 'section1' must have subsections array")
     })
 
     it('should throw error when section subsections is not an array', () => {
@@ -187,9 +162,7 @@ tasklist:
         sections: [createSectionConfig({ subsections: 'not an array' })]
       })
 
-      expect(() => validateTasklistConfig(invalidConfig)).toThrow(
-        "Section 'section1' must have subsections array"
-      )
+      expect(() => validateTasklistConfig(invalidConfig)).toThrow("Section 'section1' must have subsections array")
     })
 
     it('should throw error when subsection id is missing', () => {
@@ -215,9 +188,7 @@ tasklist:
         ]
       })
 
-      expect(() => validateTasklistConfig(invalidConfig)).toThrow(
-        "Subsection 'subsection1' must have a title"
-      )
+      expect(() => validateTasklistConfig(invalidConfig)).toThrow("Subsection 'subsection1' must have a title")
     })
 
     it('should validate multiple sections and subsections', () => {
@@ -269,40 +240,27 @@ tasklist:
       const invalidConfig = createValidTasklistConfig({
         sections: [
           createSectionConfig({
-            subsections: [
-              createSubsectionConfig(),
-              createSubsectionConfig({ id: 'subsection2', title: undefined })
-            ]
+            subsections: [createSubsectionConfig(), createSubsectionConfig({ id: 'subsection2', title: undefined })]
           })
         ]
       })
 
-      expect(() => validateTasklistConfig(invalidConfig)).toThrow(
-        "Subsection 'subsection2' must have a title"
-      )
+      expect(() => validateTasklistConfig(invalidConfig)).toThrow("Subsection 'subsection2' must have a title")
     })
 
     it('should provide error message with section index when section id is missing', () => {
       const invalidConfig = createValidTasklistConfig({
-        sections: [
-          createSectionConfig(),
-          createSectionConfig({ id: undefined, title: 'Section 2' })
-        ]
+        sections: [createSectionConfig(), createSectionConfig({ id: undefined, title: 'Section 2' })]
       })
 
-      expect(() => validateTasklistConfig(invalidConfig)).toThrow(
-        'Section at index 1 must have an id'
-      )
+      expect(() => validateTasklistConfig(invalidConfig)).toThrow('Section at index 1 must have an id')
     })
 
     it('should provide error message with subsection index when subsection id is missing', () => {
       const invalidConfig = createValidTasklistConfig({
         sections: [
           createSectionConfig({
-            subsections: [
-              createSubsectionConfig(),
-              createSubsectionConfig({ id: undefined, title: 'Subsection 2' })
-            ]
+            subsections: [createSubsectionConfig(), createSubsectionConfig({ id: undefined, title: 'Subsection 2' })]
           })
         ]
       })
@@ -402,9 +360,7 @@ tasklist:
 
       const loadedInvalidConfig = await loadTasklistConfig('invalid')
 
-      expect(() => validateTasklistConfig(loadedInvalidConfig)).toThrow(
-        'Missing tasklist root element in config'
-      )
+      expect(() => validateTasklistConfig(loadedInvalidConfig)).toThrow('Missing tasklist root element in config')
     })
   })
 })

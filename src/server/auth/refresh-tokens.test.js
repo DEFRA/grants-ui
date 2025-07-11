@@ -56,9 +56,7 @@ describe('refreshTokens', () => {
     const mockError = new Error('Network error')
     Wreck.post.mockRejectedValue(mockError)
 
-    await expect(refreshTokens('old-refresh-token')).rejects.toThrow(
-      'Network error'
-    )
+    await expect(refreshTokens('old-refresh-token')).rejects.toThrow('Network error')
 
     expect(getOidcConfig).toHaveBeenCalledTimes(1)
 
@@ -69,9 +67,7 @@ describe('refreshTokens', () => {
     const mockError = new Error('Configuration error')
     getOidcConfig.mockRejectedValue(mockError)
 
-    await expect(refreshTokens('old-refresh-token')).rejects.toThrow(
-      'Configuration error'
-    )
+    await expect(refreshTokens('old-refresh-token')).rejects.toThrow('Configuration error')
 
     expect(Wreck.post).not.toHaveBeenCalled()
   })

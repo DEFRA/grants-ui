@@ -39,9 +39,7 @@ describe('#startServer', () => {
     process.env.PORT = '3097' // Set to obscure port to avoid conflicts
 
     createServerImport = await import('~/src/server/index.js')
-    startServerImport = await import(
-      '~/src/server/common/helpers/start-server.js'
-    )
+    startServerImport = await import('~/src/server/common/helpers/start-server.js')
 
     createServerSpy = jest.spyOn(createServerImport, 'createServer')
     hapiServerSpy = jest.spyOn(hapi, 'server')
@@ -70,21 +68,10 @@ describe('#startServer', () => {
 
       expect(createServerSpy).toHaveBeenCalled()
       expect(hapiServerSpy).toHaveBeenCalled()
-      expect(mockLoggerInfo).toHaveBeenCalledWith(
-        expect.stringMatching(/Using (Redis|Catbox Memory) session cache/)
-      )
-      expect(mockHapiLoggerInfo).toHaveBeenNthCalledWith(
-        1,
-        'Custom secure context is disabled'
-      )
-      expect(mockHapiLoggerInfo).toHaveBeenNthCalledWith(
-        2,
-        'Server started successfully'
-      )
-      expect(mockHapiLoggerInfo).toHaveBeenNthCalledWith(
-        3,
-        'Access your frontend on http://localhost:3097'
-      )
+      expect(mockLoggerInfo).toHaveBeenCalledWith(expect.stringMatching(/Using (Redis|Catbox Memory) session cache/))
+      expect(mockHapiLoggerInfo).toHaveBeenNthCalledWith(1, 'Custom secure context is disabled')
+      expect(mockHapiLoggerInfo).toHaveBeenNthCalledWith(2, 'Server started successfully')
+      expect(mockHapiLoggerInfo).toHaveBeenNthCalledWith(3, 'Access your frontend on http://localhost:3097')
     })
   })
 
@@ -97,9 +84,7 @@ describe('#startServer', () => {
       await startServerImport.startServer()
 
       expect(mockLoggerInfo).toHaveBeenCalledWith('Server failed to start :(')
-      expect(mockLoggerError).toHaveBeenCalledWith(
-        Error('Server failed to start')
-      )
+      expect(mockLoggerError).toHaveBeenCalledWith(Error('Server failed to start'))
     })
   })
 })
