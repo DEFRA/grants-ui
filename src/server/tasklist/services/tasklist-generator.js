@@ -1,7 +1,7 @@
 import {
   TaskListStatus,
   taskListStatusComponents
-} from '../constants/tasklist-status-components.js'
+} from '../../common/constants/tasklist-status-components.js'
 import { ConfigDrivenConditionEvaluator } from './config-driven-condition-evaluator.js'
 import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
 

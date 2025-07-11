@@ -3,8 +3,8 @@ import { ConfigDrivenConditionEvaluator } from './config-driven-condition-evalua
 import {
   TaskListStatus,
   taskListStatusComponents
-} from '../constants/tasklist-status-components.js'
-import { createComplexTasklistConfig } from './test-helpers.js'
+} from '../../common/constants/tasklist-status-components.js'
+import { createComplexTasklistConfig } from '../helpers/test-helpers.js'
 
 jest.mock('./config-driven-condition-evaluator.js')
 

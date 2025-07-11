@@ -1,4 +1,4 @@
-import { TaskListStatus } from '../constants/tasklist-status-components.js'
+import { TaskListStatus } from '../../common/constants/tasklist-status-components.js'
 
 export class ConfigDrivenConditionEvaluator {
   constructor(data, visitedSubSections = []) {

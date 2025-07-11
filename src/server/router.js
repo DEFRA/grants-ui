@@ -6,7 +6,7 @@ import { serveStaticFiles } from '~/src/server/common/helpers/serve-static-files
 import { health } from '~/src/server/health/index.js'
 import { home } from '~/src/server/home/index.js'
 import { sbi } from '~/src/server/sbi/index.js'
-import { createTasklistRoute } from '~/src/server/common/tasklist/generic-tasklist-controller.js'
+import { createTasklistRoute } from '~/src/server/tasklist/tasklist.controller.js'
 import { agreements } from '~/src/server/agreements/index.js'
 
 const enableSbiSelector = config.get('landGrants.enableSbiSelector')

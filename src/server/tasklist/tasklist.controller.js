@@ -1,6 +1,9 @@
-import { TasklistGenerator } from './tasklist-generator.js'
-import { loadTasklistConfig, validateTasklistConfig } from './config-loader.js'
-import { statusCodes } from '../constants/status-codes.js'
+import { TasklistGenerator } from './services/tasklist-generator.js'
+import {
+  loadTasklistConfig,
+  validateTasklistConfig
+} from './services/config-loader.js'
+import { statusCodes } from '../common/constants/status-codes.js'
 
 const HTTP_MOVED_PERMANENTLY = 301
 
@@ -59,7 +62,7 @@ export function createTasklistRoute(tasklistId) {
                 visitedSubSections
               )
 
-              return h.view('views/generic-tasklist-page', {
+              return h.view('tasklist/views/generic-tasklist-page', {
                 ...tasklistModel,
                 tasklistId
               })
