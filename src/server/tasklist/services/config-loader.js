@@ -1,9 +1,12 @@
 import { readFile } from 'fs/promises'
 import { parse } from 'yaml'
 import { join } from 'path'
-import { statusCodes } from '../constants/status-codes.js'
+import { statusCodes } from '../../common/constants/status-codes.js'
 
-const CONFIGS_PATH = join(process.cwd(), 'src/server/common/tasklist/configs')
+const CONFIGS_PATH = join(
+  process.cwd(),
+  'src/server/common/forms/definitions/tasklists'
+)
 
 class TasklistNotFoundError extends Error {
   constructor(message, statusCode, responseBody, tasklistId) {

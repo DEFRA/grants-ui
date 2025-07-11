@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync, existsSync } from 'fs'
 import { join } from 'path'
-import { loadTasklistConfig } from '../common/tasklist/config-loader.js'
+import { loadTasklistConfig } from '../tasklist/services/config-loader.js'
 import { allForms } from '../common/forms/services/forms-config.js'
 import { parse } from 'yaml'
 
@@ -43,7 +43,10 @@ function safeYarClear(request, key) {
 }
 
 async function loadAllTasklistConfigs() {
-  const configsPath = join(process.cwd(), 'src/server/common/tasklist/configs')
+  const configsPath = join(
+    process.cwd(),
+    'src/server/common/forms/definitions/tasklists'
+  )
 
   if (!existsSync(configsPath)) {
     return

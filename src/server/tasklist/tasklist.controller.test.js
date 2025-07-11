@@ -1,15 +1,20 @@
-import { createTasklistRoute } from './generic-tasklist-controller.js'
-import { TasklistGenerator } from './tasklist-generator.js'
-import { loadTasklistConfig, validateTasklistConfig } from './config-loader.js'
+import { createTasklistRoute } from './tasklist.controller.js'
+import { TasklistGenerator } from './services/tasklist-generator.js'
+import {
+  loadTasklistConfig,
+  validateTasklistConfig
+} from './services/config-loader.js'
 import {
   createMockTasklistConfig,
   createMockHapiServer,
   createMockHapiRequest,
   createMockHapiResponseToolkit
-} from './test-helpers.js'
+} from './helpers/test-helpers.js'
+import { existsSync } from 'fs'
+import { join } from 'path'
 
-jest.mock('./tasklist-generator.js')
-jest.mock('./config-loader.js')
+jest.mock('./services/tasklist-generator.js')
+jest.mock('./services/config-loader.js')
 
 describe('generic-tasklist-controller', () => {
   let mockServer
@@ -114,10 +119,13 @@ describe('generic-tasklist-controller', () => {
         )
         expect(mockRequest.yar.get).toHaveBeenCalledWith('visitedSubSections')
         expect(TasklistGenerator).toHaveBeenCalledWith(mockConfig)
-        expect(mockH.view).toHaveBeenCalledWith('views/generic-tasklist-page', {
-          ...mockTasklistModel,
-          tasklistId: 'test-tasklist'
-        })
+        expect(mockH.view).toHaveBeenCalledWith(
+          'tasklist/views/generic-tasklist-page',
+          {
+            ...mockTasklistModel,
+            tasklistId: 'test-tasklist'
+          }
+        )
         expect(result).toBe('rendered-view')
       })
 
@@ -299,12 +307,79 @@ describe('generic-tasklist-controller', () => {
           'sub1'
         ])
 
-        expect(mockH.view).toHaveBeenCalledWith('views/generic-tasklist-page', {
-          ...complexTasklistModel,
-          tasklistId: 'example'
-        })
+        expect(mockH.view).toHaveBeenCalledWith(
+          'tasklist/views/generic-tasklist-page',
+          {
+            ...complexTasklistModel,
+            tasklistId: 'example'
+          }
+        )
         expect(result).toBe('rendered-view')
       })
+    })
+  })
+
+  describe('view file existence', () => {
+    it('should reference view files that actually exist in the feature directory', () => {
+      // Check that the generic tasklist view exists at the expected location
+      const genericTasklistViewPath = join(
+        process.cwd(),
+        'src/server/tasklist/views/generic-tasklist-page.njk'
+      )
+      expect(existsSync(genericTasklistViewPath)).toBe(true)
+
+      // Check that the score results view exists at the expected location
+      const scoreResultsViewPath = join(
+        process.cwd(),
+        'src/server/tasklist/views/score-results-tasklist.html'
+      )
+      expect(existsSync(scoreResultsViewPath)).toBe(true)
+    })
+
+    it('should not reference the old view locations', () => {
+      const oldGenericTasklistPath = join(
+        process.cwd(),
+        'src/server/views/generic-tasklist-page.njk'
+      )
+      expect(existsSync(oldGenericTasklistPath)).toBe(false)
+
+      const oldScoreResultsPath = join(
+        process.cwd(),
+        'src/server/views/score-results-tasklist.html'
+      )
+      expect(existsSync(oldScoreResultsPath)).toBe(false)
+    })
+
+    it('should have tasklist config files in the centralized location', () => {
+      const exampleConfigPath = join(
+        process.cwd(),
+        'src/server/common/forms/definitions/tasklists/example-tasklist.yaml'
+      )
+      expect(existsSync(exampleConfigPath)).toBe(true)
+
+      const advancedConfigPath = join(
+        process.cwd(),
+        'src/server/common/forms/definitions/tasklists/advanced-tasklist-features.yaml'
+      )
+      expect(existsSync(advancedConfigPath)).toBe(true)
+    })
+
+    it('should not have config files in the old location', () => {
+      const oldConfigDirPath = join(
+        process.cwd(),
+        'src/server/common/tasklist/configs'
+      )
+      expect(existsSync(oldConfigDirPath)).toBe(false)
+    })
+  })
+
+  describe('controller functionality integration', () => {
+    it('should create a valid tasklist route plugin', () => {
+      const routePlugin = createTasklistRoute('test')
+      expect(routePlugin).toBeDefined()
+      expect(routePlugin.plugin).toBeDefined()
+      expect(routePlugin.plugin.name).toBe('testTasklist')
+      expect(typeof routePlugin.plugin.register).toBe('function')
     })
   })
 })
