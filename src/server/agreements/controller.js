@@ -83,11 +83,21 @@ export const getAgreementController = {
         request.method
       )
 
-      return await h.proxy({
+      /* eslint-disable-next-line no-console */
+      console.log('Proxying request to agreements API', token)
+
+      const apiResponse = await h.proxy({
         mapUri: () => ({ uri: targetUri, headers: proxyHeaders }),
         passThrough: true
       })
+
+      /* eslint-disable-next-line no-console */
+      console.log('Agreements Request completed', apiResponse)
+      return apiResponse
     } catch (error) {
+      /* eslint-disable-next-line no-console */
+      console.log('Request failed:', error)
+
       if (error.message.includes('Missing required configuration')) {
         return h
           .response({
