@@ -1,6 +1,7 @@
 {% extends "layouts/page.njk" %}
 
 {% from "govuk/components/back-link/macro.njk" import govukBackLink %}
+{% from "sbi-selector/macro.njk" import sbiSelector %}
 
 {% block pageTitle %}
   {{ "Error: " if errors | length }}{{ pageTitle | evaluate }} | {{ name | default(serviceName) }}
@@ -30,7 +31,9 @@
       text: 'This is a new service - your feedback will help us to improve it.'
     }) }}
 
-    {% if enableSbiSelector and serviceUrl == '/find-funding-for-land-or-farms' %}
+    {% set checkTitle = pageTitle | string | lower %}
+    {% set isStartPage = pageTitle and ('check if you can apply' in checkTitle or 'find funding' in checkTitle) %}
+    {% if enableSbiSelector and (serviceUrl == '/find-funding-for-land-or-farms' or serviceUrl == '/adding-value') and isStartPage %}
 
       {{ sbiSelector({
         sbi: auth.sbi | default("")
