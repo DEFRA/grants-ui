@@ -40,11 +40,6 @@ describe('#context', () => {
             isActive: true,
             text: 'Home',
             url: '/'
-          },
-          {
-            isActive: false,
-            text: 'About',
-            url: '/about'
           }
         ],
         serviceName: 'Manage land-based actions',
@@ -131,11 +126,6 @@ describe('#context cache', () => {
             isActive: true,
             text: 'Home',
             url: '/'
-          },
-          {
-            isActive: false,
-            text: 'About',
-            url: '/about'
           }
         ],
         serviceName: 'Manage land-based actions',
