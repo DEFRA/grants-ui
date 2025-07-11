@@ -441,7 +441,7 @@ describe('CheckAnswersPageController', () => {
           Object.getPrototypeOf(CheckAnswersPageController.prototype),
           'getSummaryViewModel'
         )
-        .mockResolvedValue({
+        .mockReturnValue({
           checkAnswers: [
             {
               summaryList: {
@@ -500,7 +500,7 @@ describe('CheckAnswersPageController', () => {
         otherProperty: 'original'
       }
 
-      superGetSummaryViewModelSpy.mockResolvedValue(originalViewModel)
+      superGetSummaryViewModelSpy.mockReturnValue(originalViewModel)
 
       const result = await controller.getSummaryViewModel(
         mockRequest,

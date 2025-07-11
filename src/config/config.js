@@ -218,6 +218,12 @@ export const config = convict({
         format: Number,
         default: fourHoursMs,
         env: 'SESSION_CACHE_TTL'
+      },
+      apiEndpoint: {
+        doc: 'Grants UI Backend API endpoint',
+        format: String,
+        default: '',
+        env: 'GRANTS_UI_BACKEND_URL'
       }
     },
     cookie: {
