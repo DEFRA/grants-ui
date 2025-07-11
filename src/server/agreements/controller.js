@@ -1,3 +1,4 @@
+import * as util from 'util'
 import { config } from '~/src/config/config.js'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 
@@ -97,7 +98,7 @@ export const getAgreementController = {
             return h.response({ error: 'Proxy error' }).code(500)
           }
 
-          request.logger.error(JSON.stringify(res, null, 2))
+          request.logger.error(util.inspect(res))
 
           // // Access the response from the external service
           // const payload = res.rawPayload
