@@ -8,7 +8,7 @@ import {
   createTasklistConfigMissingField,
   createSectionConfig,
   createSubsectionConfig
-} from './test-helpers.js'
+} from '../helpers/test-helpers.js'
 
 jest.mock('fs/promises')
 jest.mock('yaml')
