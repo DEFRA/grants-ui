@@ -1,6 +1,6 @@
 import { ConfigDrivenConditionEvaluator } from './config-driven-condition-evaluator.js'
-import { TaskListStatus } from '../constants/tasklist-status-components.js'
-import { createMockConditionEvaluatorData } from './test-helpers.js'
+import { TaskListStatus } from '../../common/constants/tasklist-status-components.js'
+import { createMockConditionEvaluatorData } from '../helpers/test-helpers.js'
 
 describe('ConfigDrivenConditionEvaluator', () => {
   let evaluator
