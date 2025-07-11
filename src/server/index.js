@@ -39,21 +39,25 @@ import { formatCurrency } from '../config/nunjucks/filters/format-currency.js'
 import SectionEndController from './section-end/section-end.controller.js'
 import { router } from './router.js'
 import FlyingPigsSubmissionPageController from '~/src/server/non-land-grants/pigs-might-fly/controllers/pig-types-submission.controller.js'
-import { PotentialFundingController } from '~/.server/server/non-land-grants/pigs-might-fly/controllers/potential-funding.controller.js'
+import { PotentialFundingController } from '~/src/server/non-land-grants/pigs-might-fly/controllers/potential-funding.controller.js'
+import { sbiStore } from './sbi/state.js'
+import { statusCodes } from './common/constants/status-codes.js'
 
 const SESSION_CACHE_NAME = 'session.cache.name'
+const GRANTS_UI_BACKEND_ENDPOINT = config.get('session.cache.apiEndpoint')
 
 const getViewPaths = () => {
   const currentFilePath = fileURLToPath(import.meta.url)
   const isRunningBuiltCode = currentFilePath.includes('.server')
   const basePath = isRunningBuiltCode ? '.server/server' : 'src/server'
-  return [
+  const paths = [
     `${basePath}/non-land-grants/pigs-might-fly/views`,
     `${basePath}/land-grants/views`,
     `${basePath}/views`,
-    `${basePath}`,
+    `${basePath}/common/components`,
     ...grantsUiPaths
   ]
+  return paths
 }
 
 const createHapiServer = () => {
@@ -98,12 +102,13 @@ const createHapiServer = () => {
   })
 }
 
-const registerFormsPlugin = async (server, prefix = '') => {
+export const registerFormsPlugin = async (server, prefix = '') => {
   await server.register({
     plugin,
     options: {
       ...(prefix && { routes: { prefix } }),
       cacheName: config.get(SESSION_CACHE_NAME),
+      keyGenerator: generateKey,
       services: {
         formsService: await formsService(),
         formSubmissionService,
@@ -131,6 +136,144 @@ const registerFormsPlugin = async (server, prefix = '') => {
         PotentialFundingController
       }
     }
+  })
+}
+
+let cachedKey = null
+let cachedSbi = null
+
+const createLogger = (serverLogger) => ({
+  info: serverLogger.info.bind(serverLogger),
+  error: serverLogger.error.bind(serverLogger),
+  warn: serverLogger.warn?.bind(serverLogger) || serverLogger.info.bind(serverLogger),
+  debug: serverLogger.debug?.bind(serverLogger) || serverLogger.info.bind(serverLogger)
+})
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const getIdentity = (_) => {
+  if (process.env.SBI_SELECTOR_ENABLED === 'true') {
+    const sbi = sbiStore.get('sbi')
+    return {
+      userId: `user_${sbi}`,
+      businessId: `business_${sbi}`,
+      grantId: `grant_${sbi}`
+    }
+  }
+
+  // If there are credentials from DEFRA ID, use those
+  // if (identity) {
+  //   return {
+  //     userId: identity.userId,
+  //     businessId: identity.businessId,
+  //     grantId: identity.grantId
+  //   }
+  // }
+
+  // Backup
+
+  return {
+    userId: 'placeholder-user-id',
+    businessId: 'placeholder-business-id',
+    grantId: 'placeholder-grant-id'
+  }
+}
+
+async function fetchSavedStateFromApi(request) {
+  if (!GRANTS_UI_BACKEND_ENDPOINT) {
+    request.logger.warn('Backend not configured - skipping API call')
+    return null
+  }
+
+  const { userId, businessId, grantId } = getIdentity(request)
+  const apiUrl = `${GRANTS_UI_BACKEND_ENDPOINT}/state/?userId=${userId}&businessId=${businessId}&grantId=${grantId}`
+
+  request.logger.info(`Fetching state from backend for identity: ${userId}:${businessId}:${grantId}`)
+
+  let json = {}
+  try {
+    const response = await fetch(apiUrl, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+
+    if (!response.ok) {
+      if (response.status === statusCodes.notFound) {
+        return null
+      }
+
+      throw new Error(`Failed to fetch saved state: ${response.status}`)
+    }
+
+    json = await response.json()
+  } catch (err) {
+    request.logger.error(['fetch-saved-state'], 'Failed to fetch saved state from API', err)
+    throw err
+  }
+
+  return json || null
+}
+
+const generateKey = (request) => {
+  const currentSbi = sbiStore.get('sbi')
+
+  if (cachedKey === null || cachedSbi !== currentSbi) {
+    const { userId, businessId, grantId } = getIdentity(request)
+    cachedKey = `${userId}:${businessId}:${grantId}`
+    cachedSbi = currentSbi
+  }
+
+  return cachedKey
+}
+
+export const clearCachedKey = () => {
+  cachedKey = null
+  cachedSbi = null
+}
+
+async function performSessionHydrationInternal(server, sbi, options = {}) {
+  const { pathname = '/server-startup', method = 'GET', logContext = 'session hydration' } = options
+
+  server.logger.info(`Starting ${logContext} for SBI:`, sbi)
+
+  try {
+    const request = {
+      auth: {
+        credentials: {
+          userId: `user_${sbi}`,
+          businessId: `business_${sbi}`,
+          grantId: `grant_${sbi}`
+        }
+      },
+      logger: createLogger(server.logger),
+      url: { pathname },
+      method
+    }
+
+    const result = await fetchSavedStateFromApi(request)
+    server.logger.info(`${logContext} completed for SBI:`, sbi)
+    return result
+  } catch (error) {
+    server.logger.error(`${logContext} failed for SBI:`, sbi, error.message)
+    throw error
+  }
+}
+
+async function performInitialSessionHydration(server) {
+  const defaultSbi = sbiStore.get('sbi')
+  return performSessionHydrationInternal(server, defaultSbi, {
+    pathname: '/server-startup',
+    method: 'GET',
+    logContext: 'initial session hydration'
+  })
+}
+
+export async function performSessionHydration(server, sbi) {
+  return performSessionHydrationInternal(server, sbi, {
+    pathname: '/sbi-change',
+    method: 'POST',
+    logContext: 'session hydration'
   })
 }
 
@@ -163,6 +306,11 @@ export async function createServer() {
 
   await registerPlugins(server)
   await registerFormsPlugin(server)
+
+  if (process.env.SBI_SELECTOR_ENABLED === 'true') {
+    await performInitialSessionHydration(server)
+  }
+
   loadSubmissionSchemaValidators()
 
   server.ext('onPreHandler', (request, h) => {
