@@ -33,16 +33,7 @@ export const config = convict({
   },
   cdpEnvironment: {
     doc: 'The CDP environment the app is currently in, with the addition of "local"',
-    format: [
-      'local',
-      'infra-dev',
-      'management',
-      'dev',
-      'test',
-      'perf-test',
-      'ext-test',
-      'prod'
-    ],
+    format: ['local', 'infra-dev', 'management', 'dev', 'test', 'perf-test', 'ext-test', 'prod'],
     default: 'local',
     env: 'ENVIRONMENT'
   },
@@ -176,9 +167,7 @@ export const config = convict({
     redact: {
       doc: 'Log paths to redact',
       format: Array,
-      default: isProduction
-        ? ['req.headers.authorization', 'req.headers.cookie', 'res.headers']
-        : []
+      default: isProduction ? ['req.headers.authorization', 'req.headers.cookie', 'res.headers'] : []
     }
   },
   httpProxy: /** @type {SchemaObj<string | null>} */ ({
@@ -303,12 +292,8 @@ export const config = convict({
     }
   },
   defraId: defraId.getProperties(),
-  landGrants: /** @type {Schema<LandGrantsConfig>} */ (
-    landGrants.getProperties()
-  ),
-  agreements: /** @type {Schema<AgreementsConfig>} */ (
-    agreements.getProperties()
-  )
+  landGrants: /** @type {Schema<LandGrantsConfig>} */ (landGrants.getProperties()),
+  agreements: /** @type {Schema<AgreementsConfig>} */ (agreements.getProperties())
 })
 
 config.validate({ allowed: 'strict' })

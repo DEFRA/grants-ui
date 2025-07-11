@@ -48,8 +48,7 @@ function buildProxyHeaders(token, requestHeaders, method) {
   }
 
   if (['POST', 'PUT', 'PATCH'].includes(method.toUpperCase())) {
-    headers['content-type'] =
-      requestHeaders['content-type'] || 'application/x-www-form-urlencoded'
+    headers['content-type'] = requestHeaders['content-type'] || 'application/x-www-form-urlencoded'
   }
 
   return headers
@@ -77,11 +76,7 @@ export const getAgreementController = {
       }
 
       const targetUri = buildTargetUri(baseUrl, path)
-      const proxyHeaders = buildProxyHeaders(
-        token,
-        request.headers,
-        request.method
-      )
+      const proxyHeaders = buildProxyHeaders(token, request.headers, request.method)
 
       /* eslint-disable-next-line no-console */
       console.log('Proxying request to agreements API', token)
@@ -107,10 +102,7 @@ export const getAgreementController = {
           .code(statusCodes.serviceUnavailable)
       }
 
-      const statusCode =
-        error.statusCode ||
-        error.output?.statusCode ||
-        statusCodes.serviceUnavailable
+      const statusCode = error.statusCode || error.output?.statusCode || statusCodes.serviceUnavailable
 
       return h
         .response({

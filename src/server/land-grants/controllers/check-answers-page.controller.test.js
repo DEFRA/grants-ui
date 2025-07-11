@@ -20,12 +20,7 @@ describe('CheckAnswersPageController', () => {
   let mockH
 
   // Test data factories
-  const createMockAction = (
-    id,
-    description = 'Test Action',
-    value = '10',
-    unit = 'hectares'
-  ) => ({
+  const createMockAction = (id, description = 'Test Action', value = '10', unit = 'hectares') => ({
     [id]: {
       description,
       value,
@@ -98,21 +93,15 @@ describe('CheckAnswersPageController', () => {
     })
 
     it('should throw when context is undefined', () => {
-      expect(() => controller.validateContext(undefined)).toThrow(
-        'Land parcels data is missing from context'
-      )
+      expect(() => controller.validateContext(undefined)).toThrow('Land parcels data is missing from context')
     })
 
     it('should throw when state is missing', () => {
-      expect(() => controller.validateContext({})).toThrow(
-        'Land parcels data is missing from context'
-      )
+      expect(() => controller.validateContext({})).toThrow('Land parcels data is missing from context')
     })
 
     it('should throw when landParcels is missing', () => {
-      expect(() => controller.validateContext({ state: {} })).toThrow(
-        'Land parcels data is missing from context'
-      )
+      expect(() => controller.validateContext({ state: {} })).toThrow('Land parcels data is missing from context')
     })
   })
 
@@ -304,9 +293,7 @@ describe('CheckAnswersPageController', () => {
 
       const landParcels = createMockLandParcels()
 
-      await expect(
-        controller.calculatePaymentData(landParcels)
-      ).rejects.toThrow('Payment calculation failed')
+      await expect(controller.calculatePaymentData(landParcels)).rejects.toThrow('Payment calculation failed')
     })
   })
 
@@ -414,9 +401,9 @@ describe('CheckAnswersPageController', () => {
       const invalidContext = { state: {} }
       const summaryList = { rows: [] }
 
-      await expect(
-        controller.getViewRows(summaryList, invalidContext)
-      ).rejects.toThrow('Land parcels data is missing from context')
+      await expect(controller.getViewRows(summaryList, invalidContext)).rejects.toThrow(
+        'Land parcels data is missing from context'
+      )
     })
 
     it('should handle calculateGrantPayment failure', async () => {
@@ -425,9 +412,7 @@ describe('CheckAnswersPageController', () => {
 
       const summaryList = { rows: [] }
 
-      await expect(
-        controller.getViewRows(summaryList, mockContext)
-      ).rejects.toThrow('Payment service unavailable')
+      await expect(controller.getViewRows(summaryList, mockContext)).rejects.toThrow('Payment service unavailable')
     })
   })
 
@@ -437,10 +422,7 @@ describe('CheckAnswersPageController', () => {
     beforeEach(() => {
       // Mock parent class method
       superGetSummaryViewModelSpy = jest
-        .spyOn(
-          Object.getPrototypeOf(CheckAnswersPageController.prototype),
-          'getSummaryViewModel'
-        )
+        .spyOn(Object.getPrototypeOf(CheckAnswersPageController.prototype), 'getSummaryViewModel')
         .mockResolvedValue({
           checkAnswers: [
             {
@@ -459,18 +441,13 @@ describe('CheckAnswersPageController', () => {
     })
 
     it('should return enhanced view model with all rows', async () => {
-      const result = await controller.getSummaryViewModel(
-        mockRequest,
-        mockContext
-      )
+      const result = await controller.getSummaryViewModel(mockRequest, mockContext)
 
       expect(result.checkAnswers).toHaveLength(1)
 
       const rows = result.checkAnswers[0].summaryList.rows
 
-      const sbiRow = rows.find(
-        (row) => row.key && row.key.text === 'Single business identifier (SBI)'
-      )
+      const sbiRow = rows.find((row) => row.key && row.key.text === 'Single business identifier (SBI)')
       expect(sbiRow).toBeDefined()
       expect(sbiRow.value.text).toBe('123456789')
     })
@@ -478,10 +455,7 @@ describe('CheckAnswersPageController', () => {
     it('should return original view model when no checkAnswers', async () => {
       superGetSummaryViewModelSpy.mockResolvedValue({ checkAnswers: [] })
 
-      const result = await controller.getSummaryViewModel(
-        mockRequest,
-        mockContext
-      )
+      const result = await controller.getSummaryViewModel(mockRequest, mockContext)
 
       expect(result).toEqual({ checkAnswers: [] })
     })
@@ -502,25 +476,14 @@ describe('CheckAnswersPageController', () => {
 
       superGetSummaryViewModelSpy.mockResolvedValue(originalViewModel)
 
-      const result = await controller.getSummaryViewModel(
-        mockRequest,
-        mockContext
-      )
+      const result = await controller.getSummaryViewModel(mockRequest, mockContext)
 
-      expect(originalViewModel.checkAnswers[0].summaryList.rows).toEqual([
-        'original-row'
-      ])
-      expect(originalViewModel.checkAnswers[0].summaryList.otherProperty).toBe(
-        'original-value'
-      )
+      expect(originalViewModel.checkAnswers[0].summaryList.rows).toEqual(['original-row'])
+      expect(originalViewModel.checkAnswers[0].summaryList.otherProperty).toBe('original-value')
       expect(originalViewModel.otherProperty).toBe('original')
 
-      expect(result.checkAnswers[0].summaryList.rows).not.toEqual([
-        'original-row'
-      ])
-      expect(result.checkAnswers[0].summaryList.otherProperty).toBe(
-        'original-value'
-      )
+      expect(result.checkAnswers[0].summaryList.rows).not.toEqual(['original-row'])
+      expect(result.checkAnswers[0].summaryList.otherProperty).toBe('original-value')
       expect(result.checkAnswers[0].otherCheckAnswerProperty).toBe('original')
       expect(result.otherProperty).toBe('original')
     })
@@ -528,9 +491,9 @@ describe('CheckAnswersPageController', () => {
     it('should handle getViewRows failure', async () => {
       mockContext.state = undefined
 
-      await expect(
-        controller.getSummaryViewModel(mockRequest, mockContext)
-      ).rejects.toThrow('Land parcels data is missing from context')
+      await expect(controller.getSummaryViewModel(mockRequest, mockContext)).rejects.toThrow(
+        'Land parcels data is missing from context'
+      )
     })
   })
 
@@ -542,21 +505,13 @@ describe('CheckAnswersPageController', () => {
 
     it('should call getSummaryViewModel and return view', async () => {
       const mockViewModel = { test: 'data' }
-      jest
-        .spyOn(controller, 'getSummaryViewModel')
-        .mockResolvedValue(mockViewModel)
+      jest.spyOn(controller, 'getSummaryViewModel').mockResolvedValue(mockViewModel)
 
       const handler = controller.makeGetRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
 
-      expect(controller.getSummaryViewModel).toHaveBeenCalledWith(
-        mockRequest,
-        mockContext
-      )
-      expect(mockH.view).toHaveBeenCalledWith(
-        'check-your-answers',
-        mockViewModel
-      )
+      expect(controller.getSummaryViewModel).toHaveBeenCalledWith(mockRequest, mockContext)
+      expect(mockH.view).toHaveBeenCalledWith('check-your-answers', mockViewModel)
       expect(result).toBe('mocked-view-response')
     })
 
@@ -566,9 +521,7 @@ describe('CheckAnswersPageController', () => {
 
       const handler = controller.makeGetRouteHandler()
 
-      await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow(
-        'Test error'
-      )
+      await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow('Test error')
       expect(mockRequest.logger.error).toHaveBeenCalledWith({
         message: 'Error in CheckAnswersPageController GET handler',
         error
@@ -582,11 +535,7 @@ describe('CheckAnswersPageController', () => {
       const result = handler(mockRequest, mockContext, mockH)
 
       expect(controller.getNextPath).toHaveBeenCalledWith(mockContext)
-      expect(controller.proceed).toHaveBeenCalledWith(
-        mockRequest,
-        mockH,
-        '/next-path'
-      )
+      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-path')
       expect(result).toBe('redirected')
     })
   })

@@ -90,10 +90,7 @@ async function fetchMockDataForBusiness(sbi) {
  */
 async function makeConsolidatedViewRequest(query, sbi) {
   const CV_API_ENDPOINT = config.get('consolidatedView.apiEndpoint')
-  const response = await fetch(
-    CV_API_ENDPOINT,
-    await getConsolidatedViewRequestOptions({ query })
-  )
+  const response = await fetch(CV_API_ENDPOINT, await getConsolidatedViewRequestOptions({ query }))
 
   if (!response.ok) {
     const errorText = await response.text()
@@ -129,10 +126,7 @@ async function fetchFromConsolidatedView({ sbi, query, formatResponse }) {
     const responseJson = await makeConsolidatedViewRequest(query, sbi)
     return formatResponse(responseJson)
   } catch (error) {
-    logger.error(
-      { err: error },
-      `Unexpected error fetching business data from Consolidated View API`
-    )
+    logger.error({ err: error }, `Unexpected error fetching business data from Consolidated View API`)
     throw new ConsolidatedViewApiError(
       'Failed to fetch business data: ' + error.message,
       error.status,

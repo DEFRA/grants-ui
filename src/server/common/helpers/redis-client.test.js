@@ -76,15 +76,12 @@ describe('#buildRedisClient', () => {
     })
 
     test('Should instantiate a Redis Cluster client', () => {
-      expect(Cluster).toHaveBeenCalledWith(
-        [{ host: '127.0.0.1', port: 6379 }],
-        {
-          dnsLookup: expect.any(Function),
-          keyPrefix: 'grants-ui:',
-          redisOptions: { db: 0, password: 'pass', tls: {}, username: 'user' },
-          slotsRefreshTimeout: 10000
-        }
-      )
+      expect(Cluster).toHaveBeenCalledWith([{ host: '127.0.0.1', port: 6379 }], {
+        dnsLookup: expect.any(Function),
+        keyPrefix: 'grants-ui:',
+        redisOptions: { db: 0, password: 'pass', tls: {}, username: 'user' },
+        slotsRefreshTimeout: 10000
+      })
     })
   })
 })

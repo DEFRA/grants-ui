@@ -15,9 +15,7 @@ describe('#formatCurrency', () => {
 
   describe('With no currency symbol', () => {
     test('Should format with commas but no currency sign', () => {
-      expect(formatCurrency('1234567', 'en-GB', 'GBP', 0, 'decimal')).toBe(
-        '1,234,567'
-      )
+      expect(formatCurrency('1234567', 'en-GB', 'GBP', 0, 'decimal')).toBe('1,234,567')
     })
   })
 

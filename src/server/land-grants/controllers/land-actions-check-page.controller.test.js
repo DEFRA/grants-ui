@@ -25,13 +25,7 @@ describe('LandActionsCheckPageController', () => {
     controller.getNextPath = jest.fn().mockReturnValue('/next-path')
     controller.getSelectedActionRows = jest
       .fn()
-      .mockReturnValue([
-        [
-          { text: 'sheet1-parcel1' },
-          { text: 'Test Action' },
-          { text: '10 hectares' }
-        ]
-      ])
+      .mockReturnValue([[{ text: 'sheet1-parcel1' }, { text: 'Test Action' }, { text: '10 hectares' }]])
 
     mockRequest = {
       payload: {
@@ -215,11 +209,7 @@ describe('LandActionsCheckPageController', () => {
       const handler = controller.makePostRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
 
-      expect(controller.proceed).toHaveBeenCalledWith(
-        mockRequest,
-        mockH,
-        '/select-land-parcel'
-      )
+      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/select-land-parcel')
       expect(result).toBe('redirected')
     })
 
@@ -229,11 +219,7 @@ describe('LandActionsCheckPageController', () => {
       const handler = controller.makePostRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
 
-      expect(controller.proceed).toHaveBeenCalledWith(
-        mockRequest,
-        mockH,
-        '/next-path'
-      )
+      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-path')
       expect(result).toBe('redirected')
     })
 
@@ -243,11 +229,7 @@ describe('LandActionsCheckPageController', () => {
       const handler = controller.makePostRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
 
-      expect(controller.proceed).toHaveBeenCalledWith(
-        mockRequest,
-        mockH,
-        '/next-path'
-      )
+      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-path')
       expect(result).toBe('redirected')
     })
 
@@ -297,11 +279,7 @@ describe('LandActionsCheckPageController', () => {
       const handler = controller.makePostRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
 
-      expect(controller.proceed).toHaveBeenCalledWith(
-        mockRequest,
-        mockH,
-        '/next-path'
-      )
+      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-path')
       expect(result).toBe('redirected')
     })
   })
@@ -311,21 +289,9 @@ describe('LandActionsCheckPageController', () => {
       // Arrange
       controller.getViewModel = jest.fn().mockReturnValue({ foo: 'bar' })
       controller.getSelectedActionRows = jest.fn().mockReturnValue([
-        [
-          { text: 'sheet1-parcel1' },
-          { text: 'Test Action' },
-          { text: '10 hectares' }
-        ],
-        [
-          { text: 'sheet2-parcel1' },
-          { text: 'Test Action 1' },
-          { text: '10 hectares' }
-        ],
-        [
-          { text: 'sheet2-parcel1' },
-          { text: 'Test Action 2' },
-          { text: '15 hectares' }
-        ]
+        [{ text: 'sheet1-parcel1' }, { text: 'Test Action' }, { text: '10 hectares' }],
+        [{ text: 'sheet2-parcel1' }, { text: 'Test Action 1' }, { text: '10 hectares' }],
+        [{ text: 'sheet2-parcel1' }, { text: 'Test Action 2' }, { text: '15 hectares' }]
       ])
       controller.collection = {
         getErrors: jest.fn().mockReturnValue([])
@@ -336,10 +302,7 @@ describe('LandActionsCheckPageController', () => {
       const result = handler(mockRequest, mockContext, mockH)
 
       // Assert
-      expect(controller.getSelectedActionRows).toHaveBeenCalledWith(
-        mockContext.state,
-        mockContext
-      )
+      expect(controller.getSelectedActionRows).toHaveBeenCalledWith(mockContext.state, mockContext)
 
       expect(mockH.view).toHaveBeenCalledWith(
         'land-actions-check',
@@ -359,13 +322,7 @@ describe('LandActionsCheckPageController', () => {
     test('should pluralize correctly for single parcel and action', () => {
       controller.getSelectedActionRows = jest
         .fn()
-        .mockReturnValue([
-          [
-            { text: 'sheet1-parcel1' },
-            { text: 'Test Action' },
-            { text: '10 hectares' }
-          ]
-        ])
+        .mockReturnValue([[{ text: 'sheet1-parcel1' }, { text: 'Test Action' }, { text: '10 hectares' }]])
       const singleParcelContext = {
         state: {
           landParcels: {
@@ -393,16 +350,8 @@ describe('LandActionsCheckPageController', () => {
 
     test('should pluralize correctly for multiple parcels and actions', () => {
       controller.getSelectedActionRows = jest.fn().mockReturnValue([
-        [
-          { text: 'sheet1-parcel1' },
-          { text: 'Test Action' },
-          { text: '10 hectares' }
-        ],
-        [
-          { text: 'sheet2-parcel1' },
-          { text: 'Test Action 1' },
-          { text: '10 hectares' }
-        ]
+        [{ text: 'sheet1-parcel1' }, { text: 'Test Action' }, { text: '10 hectares' }],
+        [{ text: 'sheet2-parcel1' }, { text: 'Test Action 1' }, { text: '10 hectares' }]
       ])
       const multiParcelContext = {
         state: {
@@ -483,21 +432,9 @@ describe('LandActionsCheckPageController', () => {
         const controller = new LandActionsCheckPageController()
         const rows = controller.getSelectedActionRows(state)
         expect(rows).toEqual([
-          [
-            { text: 'sheet1-parcel1' },
-            { text: 'Test Action' },
-            { text: '10 hectares' }
-          ],
-          [
-            { text: 'sheet2-parcel1' },
-            { text: 'Test Action 1' },
-            { text: '10 hectares' }
-          ],
-          [
-            { text: 'sheet2-parcel1' },
-            { text: 'Test Action 2' },
-            { text: '15 hectares' }
-          ]
+          [{ text: 'sheet1-parcel1' }, { text: 'Test Action' }, { text: '10 hectares' }],
+          [{ text: 'sheet2-parcel1' }, { text: 'Test Action 1' }, { text: '10 hectares' }],
+          [{ text: 'sheet2-parcel1' }, { text: 'Test Action 2' }, { text: '15 hectares' }]
         ])
       })
 

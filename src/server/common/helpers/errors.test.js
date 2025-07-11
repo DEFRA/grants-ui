@@ -33,9 +33,7 @@ describe('#errors', () => {
       url: '/non-existent-path'
     })
 
-    expect(result).toEqual(
-      expect.stringContaining('Page not found | Manage land-based actions')
-    )
+    expect(result).toEqual(expect.stringContaining('Page not found | Manage land-based actions'))
     expect(statusCode).toBe(statusCodes.notFound)
   })
 })
@@ -130,9 +128,7 @@ describe('#catchAll', () => {
       heading: statusCodes.internalServerError,
       message: 'Something went wrong'
     })
-    expect(mockToolkitCode).toHaveBeenCalledWith(
-      statusCodes.internalServerError
-    )
+    expect(mockToolkitCode).toHaveBeenCalledWith(statusCodes.internalServerError)
   })
 
   test('Should default to 200 if no statusCode on non-Boom response', () => {
@@ -140,10 +136,7 @@ describe('#catchAll', () => {
     const mockResponse = jest.fn().mockReturnThis()
     const mockCode = jest.fn().mockReturnThis()
 
-    catchAll(
-      { response: responseObj },
-      { response: mockResponse, code: mockCode }
-    )
+    catchAll({ response: responseObj }, { response: mockResponse, code: mockCode })
 
     expect(mockResponse).toHaveBeenCalledWith(responseObj)
     expect(mockCode).toHaveBeenCalledWith(200)

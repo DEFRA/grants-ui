@@ -3,10 +3,7 @@ import { parse } from 'yaml'
 import { join } from 'path'
 import { statusCodes } from '../../common/constants/status-codes.js'
 
-const CONFIGS_PATH = join(
-  process.cwd(),
-  'src/server/common/forms/definitions/tasklists'
-)
+const CONFIGS_PATH = join(process.cwd(), 'src/server/common/forms/definitions/tasklists')
 
 class TasklistNotFoundError extends Error {
   constructor(message, statusCode, responseBody, tasklistId) {
@@ -112,12 +109,7 @@ function validateSection(section, sectionIndex, tasklistId) {
   }
 }
 
-function validateSubsection(
-  subsection,
-  subsectionIndex,
-  sectionId,
-  tasklistId
-) {
+function validateSubsection(subsection, subsectionIndex, sectionId, tasklistId) {
   if (!subsection.id) {
     throw new TasklistValidationError(
       `Subsection at index ${subsectionIndex} in section '${sectionId}' must have an id`,

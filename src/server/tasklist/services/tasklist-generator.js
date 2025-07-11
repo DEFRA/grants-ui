@@ -1,7 +1,4 @@
-import {
-  TaskListStatus,
-  taskListStatusComponents
-} from '../../common/constants/tasklist-status-components.js'
+import { TaskListStatus, taskListStatusComponents } from '../../common/constants/tasklist-status-components.js'
 import { ConfigDrivenConditionEvaluator } from './config-driven-condition-evaluator.js'
 import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
 
@@ -13,25 +10,15 @@ export class TasklistGenerator {
   }
 
   generateTasklist(data = {}, visitedSubSections = []) {
-    const conditions = new ConfigDrivenConditionEvaluator(
-      data,
-      visitedSubSections
-    )
+    const conditions = new ConfigDrivenConditionEvaluator(data, visitedSubSections)
 
-    const statuses = this.determineStatuses(
-      data,
-      visitedSubSections,
-      conditions
-    )
+    const statuses = this.determineStatuses(data, visitedSubSections, conditions)
 
     return {
       pageHeading: this.config.tasklist.title,
       closingDate: this.config.tasklist.closingDate,
       helpText: this.config.tasklist.helpText,
-      sections: this.applySectionStatuses(
-        this.config.tasklist.sections,
-        statuses
-      )
+      sections: this.applySectionStatuses(this.config.tasklist.sections, statuses)
     }
   }
 
@@ -40,38 +27,20 @@ export class TasklistGenerator {
 
     this.config.tasklist.sections.forEach((section) => {
       section.subsections.forEach((subsection) => {
-        statuses[subsection.id] = this.getSubsectionStatus(
-          subsection,
-          data,
-          visitedSubSections,
-          conditions,
-          statuses
-        )
+        statuses[subsection.id] = this.getSubsectionStatus(subsection, data, visitedSubSections, conditions, statuses)
       })
     })
 
     if (this.config.tasklist.statusRules) {
       Object.entries(this.config.tasklist.statusRules).forEach(([id, rule]) => {
-        statuses[id] = this.evaluateStatusRule(
-          id,
-          rule,
-          statuses,
-          data,
-          visitedSubSections
-        )
+        statuses[id] = this.evaluateStatusRule(id, rule, statuses, data, visitedSubSections)
       })
     }
 
     return statuses
   }
 
-  getSubsectionStatus(
-    subsection,
-    data,
-    visitedSubSections,
-    conditions,
-    currentStatuses
-  ) {
+  getSubsectionStatus(subsection, data, visitedSubSections, conditions, currentStatuses) {
     if (subsection.id in data) {
       return TaskListStatus.COMPLETED
     }
@@ -82,12 +51,8 @@ export class TasklistGenerator {
 
     if (subsection.condition) {
       try {
-        const conditionConfig =
-          this.config.tasklist.conditions[subsection.condition]
-        const conditionResult = conditions.evaluateCondition(
-          subsection.condition,
-          conditionConfig
-        )
+        const conditionConfig = this.config.tasklist.conditions[subsection.condition]
+        const conditionResult = conditions.evaluateCondition(subsection.condition, conditionConfig)
 
         if (conditionResult !== null && conditionResult !== undefined) {
           return conditionResult
@@ -105,41 +70,30 @@ export class TasklistGenerator {
     }
 
     if (subsection.dependsOn) {
-      const canStart = this.checkDependencies(
-        subsection.dependsOn,
-        currentStatuses
-      )
+      const canStart = this.checkDependencies(subsection.dependsOn, currentStatuses)
       if (!canStart) {
         return TaskListStatus.CANNOT_START_YET
       }
     }
 
-    return subsection.required !== false
-      ? TaskListStatus.NOT_YET_STARTED
-      : TaskListStatus.HIDDEN
+    return subsection.required !== false ? TaskListStatus.NOT_YET_STARTED : TaskListStatus.HIDDEN
   }
 
   checkDependencies(dependencies, statuses) {
     if (Array.isArray(dependencies)) {
       return dependencies.every(
-        (dep) =>
-          statuses[dep] === TaskListStatus.COMPLETED ||
-          statuses[dep] === TaskListStatus.HIDDEN
+        (dep) => statuses[dep] === TaskListStatus.COMPLETED || statuses[dep] === TaskListStatus.HIDDEN
       )
     }
 
     if (dependencies.allOf) {
       return dependencies.allOf.every(
-        (dep) =>
-          statuses[dep] === TaskListStatus.COMPLETED ||
-          statuses[dep] === TaskListStatus.HIDDEN
+        (dep) => statuses[dep] === TaskListStatus.COMPLETED || statuses[dep] === TaskListStatus.HIDDEN
       )
     }
 
     if (dependencies.anyOf) {
-      return dependencies.anyOf.some(
-        (dep) => statuses[dep] === TaskListStatus.COMPLETED
-      )
+      return dependencies.anyOf.some((dep) => statuses[dep] === TaskListStatus.COMPLETED)
     }
 
     return true
@@ -156,13 +110,9 @@ export class TasklistGenerator {
 
     if (rule.type === 'allComplete') {
       const allComplete = rule.dependsOn.every(
-        (dep) =>
-          statuses[dep] === TaskListStatus.COMPLETED ||
-          statuses[dep] === TaskListStatus.HIDDEN
+        (dep) => statuses[dep] === TaskListStatus.COMPLETED || statuses[dep] === TaskListStatus.HIDDEN
       )
-      return allComplete
-        ? TaskListStatus.NOT_YET_STARTED
-        : TaskListStatus.CANNOT_START_YET
+      return allComplete ? TaskListStatus.NOT_YET_STARTED : TaskListStatus.CANNOT_START_YET
     }
 
     return TaskListStatus.CANNOT_START_YET
@@ -172,9 +122,7 @@ export class TasklistGenerator {
     return sections.map((section) => ({
       title: section.title,
       subsections: section.subsections
-        .filter(
-          (subsection) => statuses[subsection.id] !== TaskListStatus.HIDDEN
-        )
+        .filter((subsection) => statuses[subsection.id] !== TaskListStatus.HIDDEN)
         .map((subsection) => ({
           title: { text: subsection.title },
           href: this.buildHref(subsection, statuses),
@@ -186,10 +134,7 @@ export class TasklistGenerator {
   buildHref(subsection, statuses) {
     const status = statuses[subsection.id]
 
-    if (
-      status === TaskListStatus.CANNOT_START_YET ||
-      status === TaskListStatus.HIDDEN
-    ) {
+    if (status === TaskListStatus.CANNOT_START_YET || status === TaskListStatus.HIDDEN) {
       return null
     }
 

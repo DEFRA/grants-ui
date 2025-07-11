@@ -1,8 +1,5 @@
 import { TasklistGenerator } from './services/tasklist-generator.js'
-import {
-  loadTasklistConfig,
-  validateTasklistConfig
-} from './services/config-loader.js'
+import { loadTasklistConfig, validateTasklistConfig } from './services/config-loader.js'
 import { statusCodes } from '../common/constants/status-codes.js'
 
 const HTTP_MOVED_PERMANENTLY = 301
@@ -26,9 +23,7 @@ export function createTasklistRoute(tasklistId) {
           method: 'GET',
           path: `/${tasklistId}-tasklist`,
           handler: (_request, h) => {
-            return h
-              .redirect(`/${tasklistId}-tasklist/tasklist`)
-              .code(HTTP_MOVED_PERMANENTLY)
+            return h.redirect(`/${tasklistId}-tasklist/tasklist`).code(HTTP_MOVED_PERMANENTLY)
           }
         })
 
@@ -53,24 +48,17 @@ export function createTasklistRoute(tasklistId) {
                 )
                 data = {}
               }
-              const visitedSubSections =
-                request.yar.get('visitedSubSections') || []
+              const visitedSubSections = request.yar.get('visitedSubSections') || []
 
               const generator = new TasklistGenerator(config)
-              const tasklistModel = generator.generateTasklist(
-                data,
-                visitedSubSections
-              )
+              const tasklistModel = generator.generateTasklist(data, visitedSubSections)
 
               return h.view('tasklist/views/generic-tasklist-page', {
                 ...tasklistModel,
                 tasklistId
               })
             } catch (error) {
-              request.log(
-                'error',
-                `Failed to generate tasklist for ${tasklistId}: ${error.message}`
-              )
+              request.log('error', `Failed to generate tasklist for ${tasklistId}: ${error.message}`)
               throw new TasklistGenerationError(
                 `Failed to generate tasklist for ${tasklistId}: ${error.message}`,
                 statusCodes.internalServerError,

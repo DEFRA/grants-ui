@@ -44,11 +44,7 @@ describe('Token Manager', () => {
 
   describe('createTokenRequestParams', () => {
     test('creates correct URL search params', () => {
-      const params = createTokenRequestParams(
-        'client-id',
-        'test-scope',
-        'secret'
-      )
+      const params = createTokenRequestParams('client-id', 'test-scope', 'secret')
       const paramsObject = Object.fromEntries(params)
 
       expect(paramsObject).toEqual({
@@ -78,13 +74,9 @@ describe('Token Manager', () => {
 
       const [[calledUrl, calledOptions]] = mockFetch.mock.calls
 
-      expect(calledUrl).toBe(
-        'https://login.microsoftonline.com/mock-tenant-id/oauth2/v2.0/token'
-      )
+      expect(calledUrl).toBe('https://login.microsoftonline.com/mock-tenant-id/oauth2/v2.0/token')
       expect(calledOptions.method).toBe('POST')
-      expect(calledOptions.headers['Content-Type']).toBe(
-        'application/x-www-form-urlencoded'
-      )
+      expect(calledOptions.headers['Content-Type']).toBe('application/x-www-form-urlencoded')
 
       const bodyParams = new URLSearchParams(calledOptions.body)
       expect(Object.fromEntries(bodyParams)).toEqual({
@@ -118,9 +110,7 @@ describe('Token Manager', () => {
           })
       })
 
-      await expect(refreshToken()).rejects.toThrow(
-        'Invalid token response: missing or invalid access_token'
-      )
+      await expect(refreshToken()).rejects.toThrow('Invalid token response: missing or invalid access_token')
     })
 
     test('throws error on network failure', async () => {

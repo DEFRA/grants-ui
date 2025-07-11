@@ -1,8 +1,5 @@
 import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
-import {
-  getConfirmationPath,
-  storeSlugInContext
-} from '~/src/server/common/helpers/form-slug-helper.js'
+import { getConfirmationPath, storeSlugInContext } from '~/src/server/common/helpers/form-slug-helper.js'
 import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/forms-cache.js'
 import { submitGrantApplication } from '~/src/server/common/services/grant-application/grant-application.service.js'
 import { transformStateObjectToGasApplication } from '~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
@@ -56,13 +53,8 @@ export default class DeclarationPageController extends SummaryPageController {
         const cacheService = getFormsCacheService(request.server)
 
         // Log current state for debugging
-        request.logger.debug(
-          'DeclarationController: Processing form submission'
-        )
-        request.logger.debug(
-          'DeclarationController: Current URL:',
-          request.path
-        )
+        request.logger.debug('DeclarationController: Processing form submission')
+        request.logger.debug('DeclarationController: Current URL:', request.path)
 
         const identifiers = {
           clientRef: context.referenceNumber?.toLowerCase(),
@@ -85,40 +77,27 @@ export default class DeclarationPageController extends SummaryPageController {
           (state) => state
         )
 
-        const result = await submitGrantApplication(
-          this.grantCode,
-          applicationData
-        )
+        const result = await submitGrantApplication(this.grantCode, applicationData)
 
-        request.logger.debug(
-          'DeclarationController: Got reference number:',
-          result.clientRef
-        )
+        request.logger.debug('DeclarationController: Got reference number:', result.clientRef)
 
         // Log submission details if available
         if (result.clientRef) {
           request.logger.info({
             message: 'Form submission completed',
             referenceNumber: result.clientRef,
-            numberOfSubmittedFields: context.relevantState
-              ? Object.keys(context.relevantState).length
-              : 0,
+            numberOfSubmittedFields: context.relevantState ? Object.keys(context.relevantState).length : 0,
             timestamp: new Date().toISOString()
           })
         }
 
         // Set confirmation state so the confirmation page knows a submission happened
         await cacheService.setConfirmationState(request, { confirmed: true })
-        request.logger.debug(
-          'DeclarationController: Set confirmation state to true'
-        )
+        request.logger.debug('DeclarationController: Set confirmation state to true')
 
         // Get the redirect path
         const redirectPath = this.getStatusPath(request, context)
-        request.logger.debug(
-          'DeclarationController: Redirecting to:',
-          redirectPath
-        )
+        request.logger.debug('DeclarationController: Redirecting to:', redirectPath)
 
         return h.redirect(redirectPath)
       } catch (error) {

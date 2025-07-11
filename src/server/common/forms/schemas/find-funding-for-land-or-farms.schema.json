@@ -57,11 +57,5 @@
       }
     }
   },
-  "required": [
-    "scheme",
-    "year",
-    "agreementName",
-    "hasCheckedLandIsUpToDate",
-    "actionApplications"
-  ]
+  "required": ["scheme", "year", "agreementName", "hasCheckedLandIsUpToDate", "actionApplications"]
 }

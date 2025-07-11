@@ -17,8 +17,7 @@ export default class SectionEndController extends SummaryPageController {
 
   makePostRouteHandler() {
     return async (request, context, h) => {
-      const data =
-        (await request.server.app.cacheTemp.get(request.yar.id)) ?? {}
+      const data = (await request.server.app.cacheTemp.get(request.yar.id)) ?? {}
 
       const newData = Object.assign(data, {
         [request.app.model.basePath]: context.relevantState

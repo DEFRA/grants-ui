@@ -1,9 +1,6 @@
 import { createTasklistRoute } from './tasklist.controller.js'
 import { TasklistGenerator } from './services/tasklist-generator.js'
-import {
-  loadTasklistConfig,
-  validateTasklistConfig
-} from './services/config-loader.js'
+import { loadTasklistConfig, validateTasklistConfig } from './services/config-loader.js'
 import {
   createMockTasklistConfig,
   createMockHapiServer,
@@ -91,9 +88,7 @@ describe('generic-tasklist-controller', () => {
 
         redirectHandler(mockRequest, mockH)
 
-        expect(mockRedirect).toHaveBeenCalledWith(
-          '/test-tasklist-tasklist/tasklist'
-        )
+        expect(mockRedirect).toHaveBeenCalledWith('/test-tasklist-tasklist/tasklist')
         expect(mockRedirect().code).toHaveBeenCalledWith(301)
       })
     })
@@ -114,18 +109,13 @@ describe('generic-tasklist-controller', () => {
 
         expect(loadTasklistConfig).toHaveBeenCalledWith('test-tasklist')
         expect(validateTasklistConfig).toHaveBeenCalledWith(mockConfig)
-        expect(mockServer.app.cacheTemp.get).toHaveBeenCalledWith(
-          'test-session-id'
-        )
+        expect(mockServer.app.cacheTemp.get).toHaveBeenCalledWith('test-session-id')
         expect(mockRequest.yar.get).toHaveBeenCalledWith('visitedSubSections')
         expect(TasklistGenerator).toHaveBeenCalledWith(mockConfig)
-        expect(mockH.view).toHaveBeenCalledWith(
-          'tasklist/views/generic-tasklist-page',
-          {
-            ...mockTasklistModel,
-            tasklistId: 'test-tasklist'
-          }
-        )
+        expect(mockH.view).toHaveBeenCalledWith('tasklist/views/generic-tasklist-page', {
+          ...mockTasklistModel,
+          tasklistId: 'test-tasklist'
+        })
         expect(result).toBe('rendered-view')
       })
 
@@ -134,10 +124,7 @@ describe('generic-tasklist-controller', () => {
 
         const result = await routeHandler(mockRequest, mockH)
 
-        expect(mockGenerateTasklist).toHaveBeenCalledWith({}, [
-          'visited1',
-          'visited2'
-        ])
+        expect(mockGenerateTasklist).toHaveBeenCalledWith({}, ['visited1', 'visited2'])
         expect(result).toBe('rendered-view')
       })
 
@@ -146,10 +133,7 @@ describe('generic-tasklist-controller', () => {
 
         const result = await routeHandler(mockRequest, mockH)
 
-        expect(mockGenerateTasklist).toHaveBeenCalledWith(
-          { testData: 'value' },
-          []
-        )
+        expect(mockGenerateTasklist).toHaveBeenCalledWith({ testData: 'value' }, [])
         expect(result).toBe('rendered-view')
       })
 
@@ -157,9 +141,7 @@ describe('generic-tasklist-controller', () => {
         const configError = new Error('Config load failed')
         loadTasklistConfig.mockRejectedValue(configError)
 
-        await expect(routeHandler(mockRequest, mockH)).rejects.toThrow(
-          'Config load failed'
-        )
+        await expect(routeHandler(mockRequest, mockH)).rejects.toThrow('Config load failed')
 
         expect(mockRequest.log).toHaveBeenCalledWith(
           'error',
@@ -174,9 +156,7 @@ describe('generic-tasklist-controller', () => {
         }
         validateTasklistConfig.mockImplementation(throwValidationError)
 
-        await expect(routeHandler(mockRequest, mockH)).rejects.toThrow(
-          'Invalid config'
-        )
+        await expect(routeHandler(mockRequest, mockH)).rejects.toThrow('Invalid config')
 
         expect(mockRequest.log).toHaveBeenCalledWith(
           'error',
@@ -197,10 +177,7 @@ describe('generic-tasklist-controller', () => {
           },
           'Cache retrieval failed, using empty data'
         )
-        expect(mockGenerateTasklist).toHaveBeenCalledWith({}, [
-          'visited1',
-          'visited2'
-        ])
+        expect(mockGenerateTasklist).toHaveBeenCalledWith({}, ['visited1', 'visited2'])
         expect(result).toBe('rendered-view')
       })
 
@@ -211,9 +188,7 @@ describe('generic-tasklist-controller', () => {
         }
         mockGenerateTasklist.mockImplementation(throwGeneratorError)
 
-        await expect(routeHandler(mockRequest, mockH)).rejects.toThrow(
-          'Generator failed'
-        )
+        await expect(routeHandler(mockRequest, mockH)).rejects.toThrow('Generator failed')
 
         expect(mockRequest.log).toHaveBeenCalledWith(
           'error',
@@ -228,9 +203,7 @@ describe('generic-tasklist-controller', () => {
         }
         mockH.view.mockImplementation(throwViewError)
 
-        await expect(routeHandler(mockRequest, mockH)).rejects.toThrow(
-          'View error'
-        )
+        await expect(routeHandler(mockRequest, mockH)).rejects.toThrow('View error')
 
         expect(mockRequest.log).toHaveBeenCalledWith(
           'error',
@@ -280,9 +253,7 @@ describe('generic-tasklist-controller', () => {
         mockServer.app.cacheTemp.get.mockResolvedValueOnce(complexData)
         mockRequest.yar.get.mockReturnValueOnce(['sub1'])
 
-        const complexMockGenerateTasklist = jest
-          .fn()
-          .mockReturnValue(complexTasklistModel)
+        const complexMockGenerateTasklist = jest.fn().mockReturnValue(complexTasklistModel)
         const createComplexTasklistGenerator = () => ({
           generateTasklist: complexMockGenerateTasklist
         })
@@ -298,22 +269,15 @@ describe('generic-tasklist-controller', () => {
 
         expect(loadTasklistConfig).toHaveBeenCalledWith('example')
         expect(validateTasklistConfig).toHaveBeenCalledWith(complexConfig)
-        expect(mockServer.app.cacheTemp.get).toHaveBeenCalledWith(
-          'test-session-id'
-        )
+        expect(mockServer.app.cacheTemp.get).toHaveBeenCalledWith('test-session-id')
         expect(mockRequest.yar.get).toHaveBeenCalledWith('visitedSubSections')
 
-        expect(complexMockGenerateTasklist).toHaveBeenCalledWith(complexData, [
-          'sub1'
-        ])
+        expect(complexMockGenerateTasklist).toHaveBeenCalledWith(complexData, ['sub1'])
 
-        expect(mockH.view).toHaveBeenCalledWith(
-          'tasklist/views/generic-tasklist-page',
-          {
-            ...complexTasklistModel,
-            tasklistId: 'example'
-          }
-        )
+        expect(mockH.view).toHaveBeenCalledWith('tasklist/views/generic-tasklist-page', {
+          ...complexTasklistModel,
+          tasklistId: 'example'
+        })
         expect(result).toBe('rendered-view')
       })
     })
@@ -322,31 +286,19 @@ describe('generic-tasklist-controller', () => {
   describe('view file existence', () => {
     it('should reference view files that actually exist in the feature directory', () => {
       // Check that the generic tasklist view exists at the expected location
-      const genericTasklistViewPath = join(
-        process.cwd(),
-        'src/server/tasklist/views/generic-tasklist-page.njk'
-      )
+      const genericTasklistViewPath = join(process.cwd(), 'src/server/tasklist/views/generic-tasklist-page.njk')
       expect(existsSync(genericTasklistViewPath)).toBe(true)
 
       // Check that the score results view exists at the expected location
-      const scoreResultsViewPath = join(
-        process.cwd(),
-        'src/server/tasklist/views/score-results-tasklist.html'
-      )
+      const scoreResultsViewPath = join(process.cwd(), 'src/server/tasklist/views/score-results-tasklist.html')
       expect(existsSync(scoreResultsViewPath)).toBe(true)
     })
 
     it('should not reference the old view locations', () => {
-      const oldGenericTasklistPath = join(
-        process.cwd(),
-        'src/server/views/generic-tasklist-page.njk'
-      )
+      const oldGenericTasklistPath = join(process.cwd(), 'src/server/views/generic-tasklist-page.njk')
       expect(existsSync(oldGenericTasklistPath)).toBe(false)
 
-      const oldScoreResultsPath = join(
-        process.cwd(),
-        'src/server/views/score-results-tasklist.html'
-      )
+      const oldScoreResultsPath = join(process.cwd(), 'src/server/views/score-results-tasklist.html')
       expect(existsSync(oldScoreResultsPath)).toBe(false)
     })
 
@@ -365,10 +317,7 @@ describe('generic-tasklist-controller', () => {
     })
 
     it('should not have config files in the old location', () => {
-      const oldConfigDirPath = join(
-        process.cwd(),
-        'src/server/common/tasklist/configs'
-      )
+      const oldConfigDirPath = join(process.cwd(), 'src/server/common/tasklist/configs')
       expect(existsSync(oldConfigDirPath)).toBe(false)
     })
   })

@@ -47,11 +47,7 @@ describe('transformAnswerKeysToText', () => {
     extendedComponentDefMap.set('multiSelectField', { list: 'schemeList' })
 
     const state = { multiSelectField: ['scheme-1', 'scheme-2'] }
-    const result = transformAnswerKeysToText(
-      state,
-      extendedComponentDefMap,
-      listDefMap
-    )
+    const result = transformAnswerKeysToText(state, extendedComponentDefMap, listDefMap)
 
     expect(result.multiSelectField).toEqual(['Scheme One', 'Scheme Two'])
   })
