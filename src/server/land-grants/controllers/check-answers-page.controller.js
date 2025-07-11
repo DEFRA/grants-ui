@@ -161,7 +161,7 @@ export default class CheckAnswersPageController extends SummaryPageController {
    * @returns {Promise<object>} - The summary view model
    */
   async getSummaryViewModel(request, context) {
-    const viewModel = await super.getSummaryViewModel(request, context)
+    const viewModel = super.getSummaryViewModel(request, context)
     const { checkAnswers = [] } = viewModel
 
     if (!checkAnswers.length) {

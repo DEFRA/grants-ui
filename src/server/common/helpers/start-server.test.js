@@ -62,7 +62,9 @@ describe('#startServer', () => {
     let server
 
     afterAll(async () => {
-      await server.stop({ timeout: 0 })
+      if (server) {
+        await server.stop({ timeout: 0 })
+      }
     })
 
     test('Should start up server as expected', async () => {
@@ -77,12 +79,10 @@ describe('#startServer', () => {
         1,
         'Custom secure context is disabled'
       )
-      expect(mockHapiLoggerInfo).toHaveBeenNthCalledWith(
-        2,
+      expect(mockHapiLoggerInfo).toHaveBeenCalledWith(
         'Server started successfully'
       )
-      expect(mockHapiLoggerInfo).toHaveBeenNthCalledWith(
-        3,
+      expect(mockHapiLoggerInfo).toHaveBeenCalledWith(
         'Access your frontend on http://localhost:3097'
       )
     })
