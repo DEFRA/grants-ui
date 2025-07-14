@@ -52,9 +52,7 @@ function buildProxyHeaders(token, requestHeaders, method) {
 
 /**
  * Controller for the agreements API
- * @param {object} request - The incoming request
- * @param {object} h - The Hapi response toolkit
- * @returns {Promise<object>} The response from the proxy
+ * @satisfies {Partial<ServerRoute>}
  */
 export const getAgreementController = {
   async handler(request, h) {
@@ -76,10 +74,12 @@ export const getAgreementController = {
 
       request.logger.info('Proxying request to agreements API', token)
 
-      const apiResponse = await h.proxy({
-        mapUri: () => ({ uri: targetUri, headers: proxyHeaders }),
-        passThrough: true
-      })
+      const apiResponse = await Promise.resolve(
+        h.proxy({
+          mapUri: () => ({ uri: targetUri, headers: proxyHeaders }),
+          passThrough: true
+        })
+      )
 
       if (!apiResponse) {
         request.logger.error('Proxy response is undefined. Possible upstream error or misconfiguration.')
