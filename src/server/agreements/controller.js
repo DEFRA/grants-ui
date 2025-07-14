@@ -69,19 +69,28 @@ export const getAgreementController = {
           .code(statusCodes.badRequest)
       }
 
-      const targetUri = buildTargetUri(baseUrl, path)
-      const proxyHeaders = buildProxyHeaders(token, request.headers, request.method)
+      const uri = buildTargetUri(baseUrl, path)
+      const headers = buildProxyHeaders(token, request.headers, request.method)
 
-      request.logger.error('Proxying request to agreements API', {
-        token,
-        targetUri,
-        proxyHeaders
-      })
+      request.logger.error(`Proxying request to agreements API ${uri}`)
+      request.logger.info(`Request headers: ${JSON.stringify(headers)}`)
 
       const apiResponse = await Promise.resolve(
         h.proxy({
-          mapUri: () => ({ uri: targetUri, headers: proxyHeaders }),
-          passThrough: true
+          mapUri: () => ({ uri, headers }),
+          passThrough: true,
+          rejectUnauthorized: false,
+          onResponse: (err, res, req, h) => {
+            if (err) {
+              request.logger.error('Proxy error:', err)
+              return h.response('Proxy error').code(502)
+            }
+
+            request.logger.info(`Downstream status: ${res.statusCode}`)
+            request.logger.info(`Downstream content-type: ${res.headers['content-type']}`)
+
+            return h.response(res).code(res.statusCode)
+          }
         })
       )
 

@@ -11,16 +11,6 @@ export const agreements = {
       server.route([
         {
           method: 'GET',
-          path: '/proxy-test',
-          handler: (request, h) => {
-            return h.proxy({
-              uri: 'https://httpbin.org/get',
-              passThrough: true
-            })
-          }
-        },
-        {
-          method: 'GET',
           path: '/agreement/{path*}',
           options: {
             auth: false

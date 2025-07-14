@@ -61,7 +61,9 @@ describe('Agreements Controller', () => {
       expect(config.get).toHaveBeenCalledWith('agreements.agreementsApiToken')
       expect(mockH.proxy).toHaveBeenCalledWith({
         mapUri: expect.any(Function),
-        passThrough: true
+        passThrough: true,
+        onResponse: expect.any(Function),
+        rejectUnauthorized: false
       })
     })
 
@@ -123,7 +125,9 @@ describe('Agreements Controller', () => {
 
       expect(mockH.proxy).toHaveBeenCalledWith({
         mapUri: expect.any(Function),
-        passThrough: true
+        passThrough: true,
+        onResponse: expect.any(Function),
+        rejectUnauthorized: false
       })
     })
   })
@@ -318,7 +322,9 @@ describe('Agreements Controller', () => {
 
       expect(mockH.proxy).toHaveBeenCalledWith({
         mapUri: expect.any(Function),
-        passThrough: true
+        passThrough: true,
+        rejectUnauthorized: false,
+        onResponse: expect.any(Function)
       })
 
       const proxyCall = mockH.proxy.mock.calls[0][0]
