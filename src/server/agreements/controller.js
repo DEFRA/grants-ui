@@ -36,15 +36,11 @@ function buildTargetUri(baseUrl, path) {
  * @param {string} method - The HTTP method
  * @returns {object} The proxy headers object
  */
-function buildProxyHeaders(token, requestHeaders, method) {
+function buildProxyHeaders(token, requestHeaders) {
   const headers = {
     Authorization: `Bearer ${token}`,
     'defra-grants-proxy': 'true',
-    ...requestHeaders
-  }
-
-  if (['POST', 'PUT', 'PATCH'].includes(method.toUpperCase())) {
-    headers['content-type'] = requestHeaders['content-type'] || 'application/x-www-form-urlencoded'
+    'content-type': requestHeaders['content-type'] || 'application/x-www-form-urlencoded'
   }
 
   return headers
@@ -70,7 +66,7 @@ export const getAgreementController = {
       }
 
       const uri = buildTargetUri(baseUrl, path)
-      const headers = buildProxyHeaders(token, request.headers, request.method)
+      const headers = buildProxyHeaders(token, request.headers)
 
       request.logger.error(`Proxying request to agreements API ${uri}`)
       request.logger.info(`Request headers: ${JSON.stringify(headers)}`)
