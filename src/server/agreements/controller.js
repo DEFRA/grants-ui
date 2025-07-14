@@ -72,7 +72,7 @@ export const getAgreementController = {
       const targetUri = buildTargetUri(baseUrl, path)
       const proxyHeaders = buildProxyHeaders(token, request.headers, request.method)
 
-      request.logger.info('Proxying request to agreements API', {
+      request.logger.error('Proxying request to agreements API', {
         token,
         targetUri,
         proxyHeaders
