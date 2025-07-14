@@ -197,8 +197,8 @@ describe('Agreements Controller', () => {
 
       expect(mapUriResult.headers).toEqual({
         Authorization: 'Bearer test-token',
-        'defra-grants-proxy': 'true',
-        'x-request-id': 'test-request-id'
+        'content-type': 'application/x-www-form-urlencoded',
+        'defra-grants-proxy': 'true'
       })
     })
 
@@ -213,8 +213,7 @@ describe('Agreements Controller', () => {
       expect(mapUriResult.headers).toEqual({
         Authorization: 'Bearer test-token',
         'defra-grants-proxy': 'true',
-        'content-type': 'application/x-www-form-urlencoded',
-        'x-request-id': 'test-request-id'
+        'content-type': 'application/x-www-form-urlencoded'
       })
     })
 
@@ -233,8 +232,7 @@ describe('Agreements Controller', () => {
       expect(mapUriResult.headers).toEqual({
         Authorization: 'Bearer test-token',
         'defra-grants-proxy': 'true',
-        'content-type': 'application/json',
-        'x-request-id': 'test-request-id'
+        'content-type': 'application/json'
       })
     })
 
@@ -249,8 +247,7 @@ describe('Agreements Controller', () => {
       expect(mapUriResult.headers).toEqual({
         Authorization: 'Bearer test-token',
         'defra-grants-proxy': 'true',
-        'content-type': 'application/x-www-form-urlencoded',
-        'x-request-id': 'test-request-id'
+        'content-type': 'application/x-www-form-urlencoded'
       })
     })
 
@@ -265,8 +262,7 @@ describe('Agreements Controller', () => {
       expect(mapUriResult.headers).toEqual({
         Authorization: 'Bearer test-token',
         'defra-grants-proxy': 'true',
-        'content-type': 'application/x-www-form-urlencoded',
-        'x-request-id': 'test-request-id'
+        'content-type': 'application/x-www-form-urlencoded'
       })
     })
 
@@ -284,8 +280,7 @@ describe('Agreements Controller', () => {
       expect(mapUriResult.headers).toEqual({
         Authorization: 'Bearer test-token',
         'defra-grants-proxy': 'true',
-        'content-type': 'application/json',
-        'x-request-id': 'test-request-id'
+        'content-type': 'application/json'
       })
     })
   })
@@ -334,7 +329,7 @@ describe('Agreements Controller', () => {
       expect(mapUriResult.headers).toEqual({
         Authorization: 'Bearer test-token',
         'defra-grants-proxy': 'true',
-        'x-request-id': 'test-request-id'
+        'content-type': 'application/x-www-form-urlencoded'
       })
     })
 
