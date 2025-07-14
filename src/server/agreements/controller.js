@@ -12,8 +12,6 @@ function validateConfig() {
   if (!baseUrl || !token) {
     throw new Error('Missing required configuration: agreements API settings')
   }
-  /* eslint-disable-next-line no-console */
-  console.log('agreements API base URL:', String(baseUrl))
 
   return { baseUrl: String(baseUrl), token: String(token) }
 }
@@ -28,8 +26,6 @@ function buildTargetUri(baseUrl, path) {
   const cleanBaseUrl = baseUrl.replace(/\/$/, '')
   const cleanPath = path?.replace(/^\//, '') || ''
   const uri = cleanPath ? `${cleanBaseUrl}/${cleanPath}` : cleanBaseUrl
-  /* eslint-disable-next-line no-console */
-  console.log('Target URI:', uri)
   return uri
 }
 
@@ -78,20 +74,31 @@ export const getAgreementController = {
       const targetUri = buildTargetUri(baseUrl, path)
       const proxyHeaders = buildProxyHeaders(token, request.headers, request.method)
 
-      /* eslint-disable-next-line no-console */
-      console.log('Proxying request to agreements API', token)
+      request.logger.info('Proxying request to agreements API', token)
 
       const apiResponse = await h.proxy({
         mapUri: () => ({ uri: targetUri, headers: proxyHeaders }),
         passThrough: true
       })
 
-      /* eslint-disable-next-line no-console */
-      console.log('Agreements Request completed', apiResponse)
+      if (!apiResponse) {
+        request.logger.error('Proxy response is undefined. Possible upstream error or misconfiguration.')
+        return h
+          .response({
+            error: 'No response from upstream service',
+            message: 'The agreements API did not return any data'
+          })
+          .code(502)
+      }
+
+      request.logger.info({
+        message: 'Agreements API request successful',
+        method: request.method,
+        response: apiResponse
+      })
       return apiResponse
     } catch (error) {
-      /* eslint-disable-next-line no-console */
-      console.log('Request failed:', error)
+      request.logger.error('Request failed:', error)
 
       if (error.message.includes('Missing required configuration')) {
         return h

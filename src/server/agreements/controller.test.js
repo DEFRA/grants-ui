@@ -33,7 +33,11 @@ describe('Agreements Controller', () => {
     mockRequest = {
       headers: { 'x-request-id': 'test-request-id' },
       params: { path: 'test-path' },
-      method: 'GET'
+      method: 'GET',
+      logger: {
+        info: jest.fn(),
+        error: jest.fn()
+      }
     }
 
     // Default config setup
