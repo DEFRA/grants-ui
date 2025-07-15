@@ -54,7 +54,7 @@ async function handleOidcSignIn(request, h) {
   // This should only occur if the user tries to access the sign-in page directly and not part of the sign-in flow
   // eg if the user has bookmarked the Defra Identity sign-in page or they have signed out and tried to go back in the browser
   if (!request.auth.isAuthenticated) {
-    return h.view('unauthorised')
+    return h.view('auth/unauthorised')
   }
 
   const { profile, token, refreshToken } = request.auth.credentials
