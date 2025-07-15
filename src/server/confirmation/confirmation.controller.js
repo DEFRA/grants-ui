@@ -3,7 +3,7 @@ import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/fo
 import { storeSlugInContext, getConfirmationPath } from '~/src/server/common/helpers/form-slug-helper.js'
 
 export default class ConfirmationPageController extends StatusPageController {
-  viewName = 'confirmation/views/confirmation-page.html'
+  viewName = 'confirmation-page.html'
 
   /**
    * This method is called when there is a GET request to the confirmation page.

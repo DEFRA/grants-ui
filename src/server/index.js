@@ -54,6 +54,12 @@ const getViewPaths = () => {
     `${basePath}/non-land-grants/pigs-might-fly/views`,
     `${basePath}/land-grants/views`,
     `${basePath}/views`,
+    `${basePath}/home/views`,
+    `${basePath}/declaration/views`,
+    `${basePath}/confirmation/views`,
+    `${basePath}/score-results/views`,
+    `${basePath}/section-end/views`,
+    `${basePath}/tasklist/views`,
     `${basePath}/common/components`,
     ...grantsUiPaths
   ]

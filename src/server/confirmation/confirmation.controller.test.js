@@ -65,7 +65,7 @@ describe('ConfirmationPageController', () => {
   })
 
   test('should have the correct viewName', () => {
-    expect(controller.viewName).toBe('confirmation/views/confirmation-page.html')
+    expect(controller.viewName).toBe('confirmation-page.html')
   })
 
   describe('makeGetRouteHandler', () => {
@@ -78,7 +78,7 @@ describe('ConfirmationPageController', () => {
       const handler = controller.makeGetRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
-      expect(mockH.view).toHaveBeenCalledWith('confirmation/views/confirmation-page.html', {
+      expect(mockH.view).toHaveBeenCalledWith('confirmation-page.html', {
         pageTitle: 'Confirmation',
         errors: [],
         referenceNumber: 'REF123'
@@ -132,7 +132,7 @@ describe('ConfirmationPageController', () => {
       const handler = controller.makeGetRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
-      expect(mockH.view).toHaveBeenCalledWith('confirmation/views/confirmation-page.html', {
+      expect(mockH.view).toHaveBeenCalledWith('confirmation-page.html', {
         pageTitle: 'Confirmation',
         errors: mockErrors,
         referenceNumber: 'REF123'
