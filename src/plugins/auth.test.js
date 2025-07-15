@@ -96,6 +96,40 @@ describe('Auth Plugin', () => {
     expect(server.auth.default).toHaveBeenCalledWith('session')
   })
 
+  test('throws error when OIDC config fetch fails', async () => {
+    const errorMessage = 'Failed to fetch OIDC config'
+    getOidcConfig.mockRejectedValue(new Error(errorMessage))
+
+    server.log = jest.fn()
+
+    await expect(AuthPlugin.plugin.register(server)).rejects.toThrow(
+      errorMessage
+    )
+
+    expect(server.log).toHaveBeenCalledWith(
+      ['error', 'auth'],
+      `Failed to get OIDC config: ${errorMessage}`
+    )
+    expect(server.auth.strategy).not.toHaveBeenCalled()
+    expect(server.auth.default).not.toHaveBeenCalled()
+  })
+
+  test('logs error and throws when OIDC config is invalid', async () => {
+    const networkError = new Error('Network timeout')
+    getOidcConfig.mockRejectedValue(networkError)
+
+    server.log = jest.fn()
+
+    await expect(AuthPlugin.plugin.register(server)).rejects.toThrow(
+      'Network timeout'
+    )
+
+    expect(server.log).toHaveBeenCalledWith(
+      ['error', 'auth'],
+      'Failed to get OIDC config: Network timeout'
+    )
+  })
+
   describe('getBellOptions', () => {
     test('returns the correct bell options', () => {
       const options = getBellOptions(mockOidcConfig)

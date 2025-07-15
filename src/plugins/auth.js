@@ -8,7 +8,16 @@ export default {
   plugin: {
     name: 'auth',
     register: async (server) => {
-      const oidcConfig = await getOidcConfig()
+      let oidcConfig
+      try {
+        oidcConfig = await getOidcConfig()
+      } catch (error) {
+        server.log(
+          ['error', 'auth'],
+          `Failed to get OIDC config: ${error.message}`
+        )
+        throw error
+      }
 
       // Bell is a third-party plugin that provides a common interface for OAuth 2.0 authentication
       // Used to authenticate users with Defra Identity and a pre-requisite for the Cookie authentication strategy
