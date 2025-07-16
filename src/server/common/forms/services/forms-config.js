@@ -127,6 +127,12 @@ export const allForms = [
     id: '7ccfcdda-6e8f-4963-be8e-2b16f12d7ebf',
     slug: 'declaration',
     title: 'Confirm and send'
+  },
+  {
+    path: 'src/server/common/forms/definitions/example-grant-with-auth.yaml',
+    id: '9f9c5ec4-e237-4e6e-b67c-f232a6377d76',
+    slug: 'example-grant-with-auth',
+    title: 'Example grant with auth'
   }
 ]
 /* c8 ignore stop */

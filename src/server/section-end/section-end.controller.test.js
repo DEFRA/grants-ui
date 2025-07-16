@@ -25,7 +25,7 @@ describe('SectionEndController', () => {
     })
 
     it('should set viewName to section-end-summary', () => {
-      expect(controller.viewName).toBe('section-end/views/section-end-summary.html')
+      expect(controller.viewName).toBe('section-end-summary.html')
     })
   })
 
@@ -238,7 +238,7 @@ describe('SectionEndController', () => {
   describe('integration with SummaryPageController', () => {
     it('should properly set up the controller instance', () => {
       expect(controller).toBeDefined()
-      expect(controller.viewName).toBe('section-end/views/section-end-summary.html')
+      expect(controller.viewName).toBe('section-end-summary.html')
       expect(controller).toHaveProperty('makePostRouteHandler')
     })
 
@@ -252,10 +252,10 @@ describe('SectionEndController', () => {
   describe('view file existence', () => {
     it('should reference a view file that actually exists', () => {
       const viewPath = controller.viewName
-      expect(viewPath).toBe('section-end/views/section-end-summary.html')
+      expect(viewPath).toBe('section-end-summary.html')
 
       // Check that the view file exists at the expected location
-      const absoluteViewPath = join(process.cwd(), 'src/server', viewPath)
+      const absoluteViewPath = join(process.cwd(), 'src/server/section-end/views', viewPath)
       expect(existsSync(absoluteViewPath)).toBe(true)
     })
 

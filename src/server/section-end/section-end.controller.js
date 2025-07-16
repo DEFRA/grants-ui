@@ -1,7 +1,7 @@
 import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
 
 export default class SectionEndController extends SummaryPageController {
-  viewName = 'section-end/views/section-end-summary.html'
+  viewName = 'section-end-summary.html'
 
   getSummaryViewModel(request, context) {
     const viewModel = super.getSummaryViewModel(request, context)

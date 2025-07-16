@@ -12,7 +12,7 @@ export default class DeclarationPageController extends SummaryPageController {
    */
   constructor(model, pageDef) {
     super(model, pageDef)
-    this.viewName = 'declaration/views/declaration-page.html'
+    this.viewName = 'declaration-page.html'
     this.grantCode = model.def.metadata.submission.grantCode
   }
 

@@ -1,0 +1,490 @@
+engine: V2
+name: Example grant with auth
+metadata:
+  referenceNumberPrefix: EGWA
+  submission:
+    grantCode: example-grant-with-auth
+    submissionSchemaPath: ./schemas/example-grant-with-auth-submission.schema.json
+pages:
+  - title: Check if you can apply for an Example Grant
+    path: '/start'
+    controller: StartPageController
+    components:
+      - name: startInfoOne
+        title: Html
+        type: Html
+        content: |-
+          <p class="govuk-body">This service uses DefraID and demonstrates the use of the following components and page types:</p>
+
+      - name: startComponentsDetail
+        title: Components
+        type: Details
+        content: |+
+          <ul class="govuk-list govuk-list--bullet">
+            <li>AutocompleteField</li>
+            <li>CheckboxesField</li>
+            <li>DatePartsField</li>
+            <li>EmailAddressField</li>
+            <li>MonthYearField</li>
+            <li>MultilineTextField</li>
+            <li>NumberField</li>
+            <li>RadiosField</li>
+            <li>SelectField</li>
+            <li>TelephoneNumberField</li>
+            <li>TextField</li>
+            <li>UkAddressField</li>
+            <li>YesNoField</li>
+          </ul>
+
+      - name: startPagesDetails
+        title: Page types
+        type: Details
+        content: |+
+          <ul class="govuk-list govuk-list--bullet">
+            <li>Summary page</li>
+            <li>Declaration page</li>
+            <li>Confirmation page</li>
+            <li>Terminal page</li>
+          </ul>
+
+      - name: startInsetText
+        title: Inset text
+        type: InsetText
+        content: |
+          This page demonstrates the use of guidance components:
+          <br>
+          Details, InsetText, Html, Markdown and List.
+      - name: startMarkdown
+        title: Markdown
+        type: Markdown
+        content: |
+          Pages can use Markdown like headers and text formatting
+          e.g. *italic*, **bold** and ~~strikethrough~~
+
+  - title: Do you want to continue?
+    path: '/do-you-want-to-continue'
+    components:
+      - name: doYouWantToContinue
+        title: Do you want to continue
+        hint:
+          Selecting 'No' will demonstrate navigating to a Terminal page to end the application
+        type: YesNoField
+        options:
+          customValidationMessages:
+            any.required: Select 'Yes' to continue
+  - title: You cannot apply for a grant from this scheme
+    path: '/cannot-apply'
+    controller: TerminalPageController
+    components:
+      - name: cannotApplyInfo
+        title: Html
+        type: Html
+        content: |-
+          <p class="govuk-body">This is an example of a Terminal page to give details on what conditions have not been met to continue applying for the grant.</p>
+    condition: terminalCondition
+
+  - title: Which country is your business based in?
+    path: '/country'
+    components:
+      - name: supportedCountries
+        title: Supported Countries
+        type: List
+        list: countryList
+      - name: country
+        title: Business country
+        type: AutocompleteField
+        list: countryList
+        hint: Start typing to see a filtered list of countries to select from
+        options:
+          customValidationMessages:
+            any.required: Enter a country
+
+  - title: What is your business?
+    path: '/nature-of-business'
+    components:
+      - name: businessNature
+        title: What is your business?
+        type: RadiosField
+        list: natureOfBusinessList
+        hint: Selecting the first option demonstrates navigating to an optional page before continuing
+        options:
+          customValidationMessages:
+            any.required: Select the option that applies to your business
+
+  - title: You may be able to apply for a grant from this scheme
+    path: '/nature-of-business-may-apply'
+    components:
+      - name: natureOfBusinessMayApplyInfo
+        title: Html
+        type: Html
+        content:
+          '<p class="govuk-body">You must meet certain conditions before
+          you submit a full application. The application deadline is 31 May 2025</p>
+
+          '
+      - name: natureOfBusinessMayApplyLink
+        title: Html
+        type: Html
+        content:
+          "<p class='govuk-body'><a href='https://www.gov.uk/guidance/funding-for-farmers'
+          class='govuk-link govuk-link--no-visited-state'>See other grants you may be
+          eligible for</a></p>"
+    condition: choiceOneCondition
+
+  - title: What eligible items does your project need?
+    path: '/project-items'
+    components:
+      - name: eligibleItems
+        title: What eligible items does your project need?
+        hint: |
+          Use checkboxes to allow selection of one or more options.
+          This example requires at least one selection, but the component can be set to optional.
+        type: CheckboxesField
+        list: projectItemsList
+        options:
+          customValidationMessages:
+            any.required: Select all the items your project needs for now
+
+  - title: What is the estimated cost of the items?
+    path: '/project-cost'
+    components:
+      - name: projectCostInfo
+        type: Html
+        title: Html
+        content:
+          '<p class="govuk-hint">Do not include VAT<br><br>Enter cost of items,
+          for example 695000</p>'
+      - name: estimatedCost
+        type: NumberField
+        title: Enter amount
+        options:
+          prefix: '£'
+          required: true
+          autocomplete: off
+          classes: govuk-!-width-one-third
+          customValidationMessages:
+            any.required: Enter the estimated cost of the items
+            number.max: Enter a value less than £1 million
+            number.min: Enter a value of £10000 or more
+        schema:
+          min: 10000
+          max: 999999
+          precision: 0
+
+  - title: When do you need the grant?
+    path: '/grant-date'
+    components:
+      - name: grantDate
+        title: Grant date
+        hint: |
+          Cannot be in the past and must be within the next 90 days.
+        type: DatePartsField
+        options:
+          autocomplete: off
+          maxDaysInPast: 1
+          maxDaysInFuture: 90
+          customValidationMessages:
+            object.required: Select the date the grant is needed
+
+  - title: When does your project end?
+    path: '/project-end-month'
+    components:
+      - name: projectEndMonth
+        title: Project end
+        type: MonthYearField
+        options:
+          customValidationMessages:
+            any.required: Select the date the project ends
+
+  - title: What is the legal status of the business?
+    path: '/legal-status'
+    components:
+      - name: businessLegalStatus
+        title: What is the legal status of the business?
+        type: SelectField
+        list: legalStatusList
+        options:
+          customValidationMessages:
+            any.required: Select the legal status of the business
+
+  - title: Describe your project
+    path: '/project-description'
+    components:
+      - name: projectDescription
+        title: Project description
+        type: MultilineTextField
+        options:
+          required: true
+          rows: 10
+          maxWords: 400
+          customValidationMessages:
+            string.empty: Enter a description for your project
+
+  - title: Applicant's details
+    path: '/applicant-details'
+    components:
+      - type: TextField
+        name: applicantFirstName
+        title: First name
+        options:
+          required: true
+          customValidationMessages:
+            string.empty: Enter your first name
+            string.max: First name must be 30 characters or fewer
+            string.pattern.base: First name must only include letters, hyphens and apostrophes
+        schema:
+          regex: "^[a-zA-Z' -]*$"
+          max: 30
+      - type: TextField
+        name: applicantLastName
+        title: Last name
+        options:
+          required: true
+          customValidationMessages:
+            string.empty: Enter your last name
+            string.max: Last name must be 30 characters or fewer
+            string.pattern.base: Last name must only include letters, hyphens and apostrophes
+        schema:
+          regex: "^[a-zA-Z' -]*$"
+          max: 30
+      - type: EmailAddressField
+        name: applicantEmail
+        title: Email address
+        hint: We will only use this to send you a confirmation
+        options:
+          required: true
+          customValidationMessages:
+            string.empty: Enter your email address
+            string.email: Enter an email address in the correct format, like name@example.com
+        schema:
+          regex: "^\\w+([.-]\\w+)*@[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*(\\.[a-zA-Z]{2,})+$"
+      - type: EmailAddressField
+        name: applicantEmailConfirmation
+        title: Confirm email address
+        options:
+          required: true
+          customValidationMessages:
+            string.empty: Confirm your email address
+            string.email: Enter an email address that matches
+        schema:
+          regex: "^\\w+([.-]\\w+)*@[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*(\\.[a-zA-Z]{2,})+$"
+      - type: TelephoneNumberField
+        name: applicantMobile
+        title: Mobile number
+        hint: We will only use this to contact you about your application
+        options:
+          required: true
+          customValidationMessages:
+            string.empty: Enter a mobile number
+            string.pattern.base:
+              Enter a telephone number, like 01632 960 001, 07700 900
+              982 or +44 0808 157 0192
+          autocomplete: tel
+        schema:
+          regex: "^\\+?[0-9\\s()-]{10,}$"
+      - type: TelephoneNumberField
+        name: applicantLandline
+        title: Landline number
+        hint: We will only use this to contact you about your application
+        options:
+          required: true
+          customValidationMessages:
+            string.empty: Enter a landline number
+            string.min: Your landline number must have at least 10 characters
+            string.pattern.base:
+              Enter a telephone number, like 01632 960 001, 07700 900
+              982 or +44 0808 157 0192
+          autocomplete: tel
+        schema:
+          regex: "^\\+?[0-9\\s()-]{10,}$"
+      - type: Html
+        name: applicantBusinessAddressHeader
+        title: Html
+        content: <h1 class="govuk-heading-m">Business address</h1>
+      - type: UkAddressField
+        title: Address
+        name: applicantBusinessAddress
+      - type: TextField
+        name: applicantProjectPostcode
+        title: Project postcode
+        hint: The site postcode where the work will happen
+        options:
+          required: true
+          customValidationMessages:
+            string.empty: Enter postcode
+            string.pattern.base: Enter a valid postcode
+        schema:
+          regex: "^[a-zA-Z]{1,2}\\d[a-zA-Z\\d]?\\s?\\d[a-zA-Z]{2}$"
+
+  - title: Check your details
+    path: '/check-details'
+  - title: Confirm and send
+    path: '/declaration'
+    controller: DeclarationPageController
+    view: declaration-page.html
+  - title: Confirmation
+    path: '/confirmation'
+    controller: ConfirmationPageController
+lists:
+  - title: What is your business?
+    name: natureOfBusinessList
+    type: string
+    items:
+      - text: A grower or producer of agricultural or horticultural produce
+        description: For example, arable or livestock farmer, fruit producer, salad grower
+        value: natureOfBusiness-A1
+      - text:
+          A business processing agricultural or horticultural products that is at
+          least 50% owned by agricultural or horticultural producers
+        description: For example, a cheese production business owned by a group of farmers
+        value: natureOfBusiness-A2
+      - text: A woodland manager processing wild venison products
+        value: natureOfBusiness-A3
+      - text: None of the above
+        value: natureOfBusiness-A4
+  - title: What is the legal status of your business?
+    name: legalStatusList
+    type: string
+    items:
+      - text: Sole trader
+        value: legalStatus-A1
+      - text: Partnership
+        value: legalStatus-A2
+      - text: Limited company
+        value: legalStatus-A3
+      - text: Charity
+        value: legalStatus-A4
+      - text: Trust
+        value: legalStatus-A5
+      - text: Limited liability partnership
+        value: legalStatus-A6
+      - text: Community interest company
+        value: legalStatus-A7
+      - text: Limited partnership
+        value: legalStatus-A8
+      - text: Industrial and provident society
+        value: legalStatus-A9
+      - text: Co-operative society (Co-Op)
+        value: legalStatus-A10
+      - text: Community benefit society (BenCom)
+        value: legalStatus-A11
+      - text: None of the above
+        value: legalStatus-A12
+  - title: What eligible items does your project need?
+    name: projectItemsList
+    type: string
+    items:
+      - text: Constructing or improving buildings for processing
+        description:
+          For example, a new building for cheese making, extending an existing
+          building to install a new meat-cutting and packing line
+        value: projectItems-A1
+      - text: Processing equipment or machinery
+        description:
+          For example, equipment and machinery for pasteurising and bottling
+          milk, a meat cutting and packing line or vegetable washing and packing
+        value: projectItems-A2
+      - text: Retail facilities
+        description: For example, shops or display cabinets
+        value: projectItems-A3
+  - title: Country
+    name: countryList
+    type: string
+    items:
+      - text: Afghanistan
+        value: AFG
+      - text: Benin
+        value: BEN
+      - text: Cambodia
+        value: KHM
+      - text: Denmark
+        value: DNK
+      - text: England
+        value: ENG
+      - text: France
+        value: FRA
+      - text: Germany
+        value: DEU
+      - text: Hungary
+        value: HUN
+      - text: Ireland
+        value: IRL
+      - text: Jamaica
+        value: JAM
+      - text: Kenya
+        value: KEN
+      - text: Laos
+        value: LAO
+      - text: Mexico
+        value: MEX
+      - text: Netherlands
+        value: NLD
+      - text: Oman
+        value: OMN
+      - text: Pakistan
+        value: PAK
+      - text: Qatar
+        value: QAT
+      - text: Romania
+        value: ROU
+      - text: Spain
+        value: ESP
+      - text: Thailand
+        value: THA
+      - text: Uganda
+        value: UGA
+      - text: Vietnam
+        value: VNM
+      - text: Wales
+        value: WLS
+      - text: Yemen
+        value: YEM
+      - text: Zimbabwe
+        value: ZWE
+sections:
+  - title: Eligibility
+    name: EligibilitySection
+    hideTitle: false
+conditions:
+  - name: terminalCondition
+    displayName: continueNo
+    value:
+      name: continueNo
+      conditions:
+        - field:
+            name: doYouWantToContinue
+            type: YesNoField
+            display: Do you want to continue?
+          operator: is
+          value:
+            type: Value
+            value: 'false'
+            display: 'No'
+  - name: choiceOneCondition
+    displayName: choiceOne
+    value:
+      name: choiceOne
+      conditions:
+        - field:
+            name: businessNature
+            type: RadiosField
+            display: Does the project have planning permission?
+          operator: is
+          value:
+            type: Value
+            value: natureOfBusiness-A1
+            display: Should be in place by the time I make my full application
+  - name: remainingCostsCondition
+    displayName: canYouPayTheRemainingCosts
+    value:
+      name: canYouPayTheRemainingCosts
+      conditions:
+        - field:
+            name: canPayRemainingCosts
+            type: YesNoField
+            display: Can you pay the remaining costs of £x?
+          operator: is
+          value:
+            type: Value
+            value: 'false'
+            display: 'No'
