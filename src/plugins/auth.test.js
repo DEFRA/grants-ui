@@ -136,6 +136,11 @@ describe('Auth Plugin', () => {
 
       expect(options.provider.auth).toBe(mockOidcConfig.authorization_endpoint)
       expect(options.provider.token).toBe(mockOidcConfig.token_endpoint)
+      expect(options.provider.scope).toEqual([
+        'openid',
+        'offline_access',
+        'test-client-id'
+      ])
       expect(options.clientId).toBe('test-client-id')
       expect(options.clientSecret).toBe('test-client-secret')
       expect(options.isSecure).toBe(false)

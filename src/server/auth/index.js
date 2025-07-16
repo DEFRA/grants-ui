@@ -54,6 +54,21 @@ async function handleOidcSignIn(request, h) {
   // This should only occur if the user tries to access the sign-in page directly and not part of the sign-in flow
   // eg if the user has bookmarked the Defra Identity sign-in page or they have signed out and tried to go back in the browser
   if (!request.auth.isAuthenticated) {
+    // Log the authentication error for debugging
+    request.server.log(['error', 'auth'], {
+      message: 'OIDC authentication failed',
+      error: request.auth.error?.message || 'Unknown error',
+      errorDetails: request.auth.error,
+      strategy: request.auth.strategy,
+      mode: request.auth.mode
+    })
+
+    // Check if this is a user-initiated failure or a system issue
+    if (request.auth.error?.message?.includes('access_denied')) {
+      // User cancelled authentication - redirect to sign-in
+      return h.redirect('/auth/sign-in')
+    }
+
     return h.view('auth/unauthorised')
   }
 
