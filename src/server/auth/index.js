@@ -87,31 +87,58 @@ export const auth = {
 }
 
 async function handleOidcSignIn(request, h) {
+  // Log entry to this function for debugging
+  request.server.log(['info', 'auth'], `=== OIDC SIGN IN HANDLER CALLED ===`)
+  request.server.log(['info', 'auth'], `Request Path: ${request.path}`)
+  request.server.log(['info', 'auth'], `Request Method: ${request.method}`)
+  request.server.log(
+    ['info', 'auth'],
+    `Is Authenticated: ${request.auth.isAuthenticated}`
+  )
+  request.server.log(
+    ['info', 'auth'],
+    `Auth Strategy: ${request.auth.strategy || 'none'}`
+  )
+  request.server.log(
+    ['info', 'auth'],
+    `Auth Mode: ${request.auth.mode || 'none'}`
+  )
+
   // If the user is not authenticated, redirect to the home page
   // This should only occur if the user tries to access the sign-in page directly and not part of the sign-in flow
   // eg if the user has bookmarked the Defra Identity sign-in page or they have signed out and tried to go back in the browser
   if (!request.auth.isAuthenticated) {
     // Enhanced logging for debugging authentication failures
-    const authError = {
-      message: 'OIDC authentication failed',
-      errorMessage: request.auth.error?.message || 'Unknown error',
-      errorType: request.auth.error?.name || 'UnknownError',
-      errorDetails: request.auth.error,
-      strategy: request.auth.strategy,
-      mode: request.auth.mode,
-      requestPath: request.path,
-      requestMethod: request.method,
-      userAgent: request.headers['user-agent'],
-      timestamp: new Date().toISOString()
-    }
+    const errorMessage = request.auth.error?.message || 'Unknown error'
+    const errorType = request.auth.error?.name || 'UnknownError'
+    const strategy = request.auth.strategy || 'unknown'
+    const mode = request.auth.mode || 'unknown'
 
-    request.server.log(['error', 'auth'], authError)
-
-    // Log with enhanced visibility
+    // Multiple explicit log statements for better ECS visibility
+    request.server.log(['error', 'auth'], `=== AUTHENTICATION FAILURE ===`)
+    request.server.log(['error', 'auth'], `Error Message: ${errorMessage}`)
+    request.server.log(['error', 'auth'], `Error Type: ${errorType}`)
+    request.server.log(['error', 'auth'], `Strategy: ${strategy}`)
+    request.server.log(['error', 'auth'], `Mode: ${mode}`)
+    request.server.log(['error', 'auth'], `Request Path: ${request.path}`)
+    request.server.log(['error', 'auth'], `Request Method: ${request.method}`)
     request.server.log(
       ['error', 'auth'],
-      `AUTH FAILURE: ${JSON.stringify(authError, null, 2)}`
+      `User Agent: ${request.headers['user-agent']}`
     )
+    request.server.log(
+      ['error', 'auth'],
+      `Timestamp: ${new Date().toISOString()}`
+    )
+
+    if (request.auth.error) {
+      request.server.log(
+        ['error', 'auth'],
+        `Full Error Object: ${JSON.stringify(request.auth.error, null, 2)}`
+      )
+    }
+
+    request.server.log(['error', 'auth'], `=== END AUTHENTICATION FAILURE ===`)
 
     // Check if this is a user-initiated failure or a system issue
     if (request.auth.error?.message?.includes('access_denied')) {
@@ -123,11 +150,25 @@ async function handleOidcSignIn(request, h) {
   }
 
   // Log successful authentication start
-  request.server.log(['info', 'auth'], {
-    message: 'OIDC authentication successful, processing user',
-    requestPath: request.path,
-    timestamp: new Date().toISOString()
-  })
+  request.server.log(['info', 'auth'], `=== AUTHENTICATION SUCCESS ===`)
+  request.server.log(
+    ['info', 'auth'],
+    `OIDC authentication successful, processing user`
+  )
+  request.server.log(['info', 'auth'], `Request Path: ${request.path}`)
+  request.server.log(['info', 'auth'], `Timestamp: ${new Date().toISOString()}`)
+  request.server.log(
+    ['info', 'auth'],
+    `User: ${request.auth.credentials?.profile?.name || 'Unknown'}`
+  )
+  request.server.log(
+    ['info', 'auth'],
+    `CRN: ${request.auth.credentials?.profile?.crn || 'Unknown'}`
+  )
+  request.server.log(
+    ['info', 'auth'],
+    `Organisation: ${request.auth.credentials?.profile?.organisationId || 'Unknown'}`
+  )
 
   const { profile, token, refreshToken } = request.auth.credentials
   // verify token returned from Defra Identity against public key
