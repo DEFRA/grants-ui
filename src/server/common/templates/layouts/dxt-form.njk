@@ -32,7 +32,7 @@
     }) }}
 
     {% set checkTitle = pageTitle | string | lower %}
-    {% set isStartPage = pageTitle and ('check if you can apply' in checkTitle or 'find funding' in checkTitle) %}
+    {% set isStartPage = pageTitle and ('check if you can apply' in checkTitle or 'start page' in checkTitle) %}
     {% if enableSbiSelector and (serviceUrl == '/find-funding-for-land-or-farms' or serviceUrl == '/adding-value') and isStartPage %}
 
       {{ sbiSelector({
