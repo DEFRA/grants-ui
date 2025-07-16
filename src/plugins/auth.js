@@ -105,10 +105,32 @@ function getCookieOptions() {
       return `/auth/sign-in?redirect=${request.url.pathname}${request.url.search}`
     },
     validate: async function (request, session) {
-      const userSession = await request.server.app.cache.get(session.sessionId)
+      const sessionId = session.sessionId
+
+      // Enhanced logging for session validation debugging
+      request.server.log(['debug', 'auth'], {
+        message: 'Session validation started',
+        sessionId,
+        requestPath: request.path,
+        timestamp: new Date().toISOString()
+      })
+
+      const userSession = await request.server.app.cache.get(sessionId)
 
       // If session does not exist, return an invalid session
       if (!userSession) {
+        const sessionError = {
+          message: 'Session validation failed - session not found in cache',
+          sessionId,
+          requestPath: request.path,
+          timestamp: new Date().toISOString()
+        }
+
+        request.server.log(['error', 'auth'], sessionError)
+        request.server.log(
+          ['error', 'auth'],
+          `SESSION NOT FOUND: ${JSON.stringify(sessionError, null, 2)}`
+        )
         return { isValid: false }
       }
 
@@ -116,19 +138,80 @@ function getCookieOptions() {
       try {
         const decoded = Jwt.token.decode(userSession.token)
         Jwt.token.verifyTime(decoded)
+
+        request.server.log(['debug', 'auth'], {
+          message: 'Token verification successful during session validation',
+          sessionId,
+          crn: userSession.crn,
+          organisationId: userSession.organisationId
+        })
       } catch (error) {
+        request.server.log(['warn', 'auth'], {
+          message: 'Token expired during session validation',
+          sessionId,
+          crn: userSession.crn,
+          error: error.message,
+          refreshTokensEnabled: config.get('defraId.refreshTokens')
+        })
+
         if (!config.get('defraId.refreshTokens')) {
+          const tokenError = {
+            message: 'Token expired and refresh tokens disabled',
+            sessionId,
+            crn: userSession.crn,
+            error: error.message,
+            timestamp: new Date().toISOString()
+          }
+
+          request.server.log(['error', 'auth'], tokenError)
+          request.server.log(
+            ['error', 'auth'],
+            `TOKEN EXPIRED: ${JSON.stringify(tokenError, null, 2)}`
+          )
           return { isValid: false }
         }
-        const { access_token: token, refresh_token: refreshToken } =
-          await refreshTokens(userSession.refreshToken)
-        userSession.token = token
-        userSession.refreshToken = refreshToken
-        await request.server.app.cache.set(session.sessionId, userSession)
+
+        try {
+          const { access_token: token, refresh_token: refreshToken } =
+            await refreshTokens(userSession.refreshToken)
+          userSession.token = token
+          userSession.refreshToken = refreshToken
+          await request.server.app.cache.set(sessionId, userSession)
+
+          request.server.log(['info', 'auth'], {
+            message: 'Token refreshed successfully',
+            sessionId,
+            crn: userSession.crn,
+            organisationId: userSession.organisationId
+          })
+        } catch (refreshError) {
+          const refreshFailError = {
+            message: 'Token refresh failed',
+            sessionId,
+            crn: userSession.crn,
+            error: refreshError.message,
+            timestamp: new Date().toISOString()
+          }
+
+          request.server.log(['error', 'auth'], refreshFailError)
+          request.server.log(
+            ['error', 'auth'],
+            `TOKEN REFRESH FAILED: ${JSON.stringify(refreshFailError, null, 2)}`
+          )
+          return { isValid: false }
+        }
       }
 
       // Set the user's details on the request object and allow the request to continue
       // Depending on the service, additional checks can be performed here before returning `isValid: true`
+      request.server.log(['debug', 'auth'], {
+        message: 'Session validation successful',
+        sessionId,
+        crn: userSession.crn,
+        organisationId: userSession.organisationId,
+        role: userSession.role
+      })
+
       return { isValid: true, credentials: userSession }
     }
   }
