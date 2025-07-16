@@ -45,6 +45,43 @@ export const auth = {
         },
         handler: handleOrganisationRedirect
       })
+      // Temporary debug route for authentication troubleshooting
+      server.route({
+        method: 'GET',
+        path: '/auth/debug',
+        options: {
+          auth: { mode: 'try' }
+        },
+        handler: (request, h) => {
+          const debugInfo = {
+            timestamp: new Date().toISOString(),
+            requestPath: request.path,
+            authStrategy: request.auth.strategy,
+            authMode: request.auth.mode,
+            isAuthenticated: request.auth.isAuthenticated,
+            authError: request.auth.error,
+            sessionId: request.auth.credentials?.sessionId,
+            crn: request.auth.credentials?.crn,
+            organisationId: request.auth.credentials?.organisationId,
+            role: request.auth.credentials?.role,
+            scope: request.auth.credentials?.scope
+          }
+
+          // Log the debug info
+          request.server.log(['info', 'auth'], {
+            message: 'Authentication debug info requested',
+            debugInfo
+          })
+
+          // Log with enhanced visibility
+          request.server.log(
+            ['info', 'auth'],
+            `DEBUG INFO: ${JSON.stringify(debugInfo, null, 2)}`
+          )
+
+          return h.response(debugInfo).code(200)
+        }
+      })
     }
   }
 }
@@ -54,14 +91,27 @@ async function handleOidcSignIn(request, h) {
   // This should only occur if the user tries to access the sign-in page directly and not part of the sign-in flow
   // eg if the user has bookmarked the Defra Identity sign-in page or they have signed out and tried to go back in the browser
   if (!request.auth.isAuthenticated) {
-    // Log the authentication error for debugging
-    request.server.log(['error', 'auth'], {
+    // Enhanced logging for debugging authentication failures
+    const authError = {
       message: 'OIDC authentication failed',
-      error: request.auth.error?.message || 'Unknown error',
+      errorMessage: request.auth.error?.message || 'Unknown error',
+      errorType: request.auth.error?.name || 'UnknownError',
       errorDetails: request.auth.error,
       strategy: request.auth.strategy,
-      mode: request.auth.mode
-    })
+      mode: request.auth.mode,
+      requestPath: request.path,
+      requestMethod: request.method,
+      userAgent: request.headers['user-agent'],
+      timestamp: new Date().toISOString()
+    }
+
+    request.server.log(['error', 'auth'], authError)
+
+    // Log with enhanced visibility
+    request.server.log(
+      ['error', 'auth'],
+      `AUTH FAILURE: ${JSON.stringify(authError, null, 2)}`
+    )
 
     // Check if this is a user-initiated failure or a system issue
     if (request.auth.error?.message?.includes('access_denied')) {
@@ -72,40 +122,95 @@ async function handleOidcSignIn(request, h) {
     return h.view('auth/unauthorised')
   }
 
+  // Log successful authentication start
+  request.server.log(['info', 'auth'], {
+    message: 'OIDC authentication successful, processing user',
+    requestPath: request.path,
+    timestamp: new Date().toISOString()
+  })
+
   const { profile, token, refreshToken } = request.auth.credentials
   // verify token returned from Defra Identity against public key
-  await verifyToken(token)
+  try {
+    await verifyToken(token)
+    request.server.log(['info', 'auth'], {
+      message: 'Token verification successful',
+      crn: profile.crn,
+      organisationId: profile.organisationId
+    })
+  } catch (error) {
+    request.server.log(['error', 'auth'], {
+      message: 'Token verification failed',
+      error: error.message,
+      crn: profile.crn,
+      organisationId: profile.organisationId
+    })
+    request.server.log(
+      ['error', 'auth'],
+      `TOKEN VERIFICATION FAILURE: ${error.message}`
+    )
+    return h.view('auth/unauthorised')
+  }
 
   // Typically permissions for the selected organisation would be available in the `roles` property of the token
   // However, when signing in with RPA credentials, the roles only include the role name and not the permissions
   // Therefore, we need to make additional API calls to get the permissions from Siti Agri
   // These calls are authenticated using the token returned from Defra Identity
-  const { role, scope } = getPermissions(
-    profile.crn,
-    profile.organisationId,
-    token
-  )
+  try {
+    const { role, scope } = getPermissions(
+      profile.crn,
+      profile.organisationId,
+      token
+    )
 
-  // Store token and all useful data in the session cache
+    request.server.log(['info', 'auth'], {
+      message: 'Permissions retrieved successfully',
+      crn: profile.crn,
+      organisationId: profile.organisationId,
+      role,
+      scope
+    })
 
-  await request.server.app.cache.set(profile.sessionId, {
-    isAuthenticated: true,
-    ...profile,
-    role,
-    scope,
-    token,
-    refreshToken
-  })
+    // Store token and all useful data in the session cache
+    await request.server.app.cache.set(profile.sessionId, {
+      isAuthenticated: true,
+      ...profile,
+      role,
+      scope,
+      token,
+      refreshToken
+    })
 
-  // Create a new session using cookie authentication strategy which is used for all subsequent requests
-  request.cookieAuth.set({ sessionId: profile.sessionId })
+    // Create a new session using cookie authentication strategy which is used for all subsequent requests
+    request.cookieAuth.set({ sessionId: profile.sessionId })
 
-  // Redirect user to the page they were trying to access before signing in or to the home page if no redirect was set
-  const redirect = request.yar.get('redirect') ?? '/home'
-  request.yar.clear('redirect')
-  // Ensure redirect is a relative path to prevent redirect attacks
-  const safeRedirect = getSafeRedirect(redirect)
-  return h.redirect(safeRedirect)
+    // Redirect user to the page they were trying to access before signing in or to the home page if no redirect was set
+    const redirect = request.yar.get('redirect') ?? '/home'
+    request.yar.clear('redirect')
+    // Ensure redirect is a relative path to prevent redirect attacks
+    const safeRedirect = getSafeRedirect(redirect)
+
+    request.server.log(['info', 'auth'], {
+      message: 'Authentication completed successfully',
+      crn: profile.crn,
+      organisationId: profile.organisationId,
+      redirectTo: safeRedirect
+    })
+
+    return h.redirect(safeRedirect)
+  } catch (error) {
+    request.server.log(['error', 'auth'], {
+      message: 'Permission retrieval failed',
+      error: error.message,
+      crn: profile.crn,
+      organisationId: profile.organisationId
+    })
+    request.server.log(
+      ['error', 'auth'],
+      `PERMISSION RETRIEVAL FAILURE: ${error.message}`
+    )
+    return h.view('auth/unauthorised')
+  }
 }
 
 async function handleSignOut(request, h) {

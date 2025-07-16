@@ -5,12 +5,6 @@ metadata:
   submission:
     grantCode: adding-value
     submissionSchemaPath: ./schemas/adding-value-submission.schema.json
-  auth:
-    strategy: 'defra-id'
-    mode: 'required'
-    access:
-      scope:
-        - user
 pages:
   - title: Check if you can apply for a Farming Transformation Fund Adding Value Grant
     path: '/start'

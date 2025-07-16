@@ -1,11 +1,4 @@
 name: Grants
-metadata:
-  auth:
-    strategy: 'defra-id'
-    mode: 'none'
-    access:
-      scope:
-        - user
 pages:
   - title: Start page
     path: /start
