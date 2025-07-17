@@ -3,6 +3,7 @@ import { getSafeRedirect } from '~/src/server/auth/get-safe-redirect.js'
 import { validateState } from '~/src/server/auth/state.js'
 import { verifyToken } from '~/src/server/auth/verify-token.js'
 import { getSignOutUrl } from './get-sign-out-url.js'
+import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
 /**
  * @satisfies {ServerRegisterPluginObject<void>}
@@ -54,12 +55,34 @@ async function handleOidcSignIn(request, h) {
   // This should only occur if the user tries to access the sign-in page directly and not part of the sign-in flow
   // eg if the user has bookmarked the Defra Identity sign-in page or they have signed out and tried to go back in the browser
   if (!request.auth.isAuthenticated) {
+    log(LogCodes.AUTH.UNAUTHORIZED_ACCESS, {
+      path: request.path,
+      userId: 'unknown'
+    })
     return h.view('unauthorised')
   }
 
   const { profile, token, refreshToken } = request.auth.credentials
+
+  log(LogCodes.AUTH.SIGN_IN_ATTEMPT, {
+    userId: profile.contactId,
+    organisationId: profile.currentRelationshipId
+  })
+
   // verify token returned from Defra Identity against public key
-  await verifyToken(token)
+  try {
+    await verifyToken(token)
+    log(LogCodes.AUTH.TOKEN_VERIFICATION_SUCCESS, {
+      userId: profile.contactId,
+      organisationId: profile.currentRelationshipId
+    })
+  } catch (error) {
+    log(LogCodes.AUTH.TOKEN_VERIFICATION_FAILURE, {
+      userId: profile.contactId,
+      error: error.message
+    })
+    throw error
+  }
 
   // Typically permissions for the selected organisation would be available in the `roles` property of the token
   // However, when signing in with RPA credentials, the roles only include the role name and not the permissions
@@ -85,6 +108,11 @@ async function handleOidcSignIn(request, h) {
   // Create a new session using cookie authentication strategy which is used for all subsequent requests
   request.cookieAuth.set({ sessionId: profile.sessionId })
 
+  log(LogCodes.AUTH.SIGN_IN_SUCCESS, {
+    userId: profile.contactId,
+    organisationId: profile.currentRelationshipId
+  })
+
   // Redirect user to the page they were trying to access before signing in or to the home page if no redirect was set
   const redirect = request.yar.get('redirect') ?? '/home'
   request.yar.clear('redirect')
@@ -95,8 +123,18 @@ async function handleOidcSignIn(request, h) {
 
 async function handleSignOut(request, h) {
   if (!request.auth.isAuthenticated) {
+    log(LogCodes.AUTH.UNAUTHORIZED_ACCESS, {
+      path: request.path,
+      userId: 'unknown'
+    })
     return h.redirect('/')
   }
+
+  log(LogCodes.AUTH.SIGN_OUT, {
+    userId: request.auth.credentials.contactId,
+    sessionId: request.auth.credentials.sessionId
+  })
+
   const signOutUrl = await getSignOutUrl(
     request,
     request.auth.credentials.token
@@ -107,6 +145,12 @@ async function handleSignOut(request, h) {
 async function handleOidcSignOut(request, h) {
   if (request.auth.isAuthenticated) {
     validateState(request, request.query.state)
+
+    log(LogCodes.AUTH.SIGN_OUT, {
+      userId: request.auth.credentials.contactId,
+      sessionId: request.auth.credentials.sessionId
+    })
+
     if (request.auth.credentials?.sessionId) {
       // Clear the session cache
       await request.server.app.cache.drop(request.auth.credentials.sessionId)

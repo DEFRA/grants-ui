@@ -49,13 +49,16 @@ describe('Logger Functionality', () => {
   it('should call the logger with multiple interpolated values', () => {
     const complexLogCode = {
       level: 'info',
-      messageFunc: (options) => `Complex log ${options.value1} with ${options.value2} values`
+      messageFunc: (options) =>
+        `Complex log ${options.value1} with ${options.value2} values`
     }
     const complexOptions = { value1: 'first', value2: 'second' }
 
     log(complexLogCode, complexOptions)
 
-    expect(logger.info).toHaveBeenCalledWith('Complex log first with second values')
+    expect(logger.info).toHaveBeenCalledWith(
+      'Complex log first with second values'
+    )
   })
 
   it('should work with real LogCodes', () => {
@@ -66,7 +69,9 @@ describe('Logger Functionality', () => {
 
     log(LogCodes.AUTH.SIGN_IN_SUCCESS, testOptions)
 
-    expect(logger.info).toHaveBeenCalledWith('User sign-in successful for user=test-user, organisation=test-org')
+    expect(logger.info).toHaveBeenCalledWith(
+      'User sign-in successful for user=test-user, organisation=test-org'
+    )
   })
 
   it('should work with error log codes', () => {
@@ -76,7 +81,9 @@ describe('Logger Functionality', () => {
 
     log(LogCodes.SYSTEM.SERVER_ERROR, errorOptions)
 
-    expect(logger.error).toHaveBeenCalledWith('Server error occurred: Test error message')
+    expect(logger.error).toHaveBeenCalledWith(
+      'Server error occurred: Test error message'
+    )
   })
 
   it('should export the logger instance', () => {
@@ -101,7 +108,9 @@ describe('Logger Functionality', () => {
 
     log(LogCodes.FORMS.FORM_LOAD, formOptions)
 
-    expect(logger.info).toHaveBeenCalledWith('Form loaded: declaration for user=test-user')
+    expect(logger.info).toHaveBeenCalledWith(
+      'Form loaded: declaration for user=test-user'
+    )
   })
 
   it('should work with SUBMISSION log codes', () => {
@@ -112,6 +121,8 @@ describe('Logger Functionality', () => {
 
     log(LogCodes.SUBMISSION.SUBMISSION_STARTED, submissionOptions)
 
-    expect(logger.info).toHaveBeenCalledWith('Grant submission started for grantType=adding-value, user=test-user')
+    expect(logger.info).toHaveBeenCalledWith(
+      'Grant submission started for grantType=adding-value, user=test-user'
+    )
   })
 })

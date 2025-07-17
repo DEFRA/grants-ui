@@ -13,6 +13,16 @@ import { getSafeRedirect } from '~/src/server/auth/get-safe-redirect.js'
 import { refreshTokens } from '~/src/server/auth/refresh-tokens.js'
 
 jest.mock('@hapi/jwt')
+jest.mock('~/src/server/common/helpers/logging/log.js', () => ({
+  log: jest.fn(),
+  LogCodes: {
+    AUTH: {
+      SESSION_EXPIRED: { level: 'info', messageFunc: jest.fn() },
+      TOKEN_VERIFICATION_SUCCESS: { level: 'info', messageFunc: jest.fn() },
+      TOKEN_VERIFICATION_FAILURE: { level: 'error', messageFunc: jest.fn() }
+    }
+  }
+}))
 jest.mock('~/src/server/auth/get-oidc-config')
 jest.mock('~/src/server/auth/refresh-tokens')
 jest.mock('~/src/server/auth/get-safe-redirect')

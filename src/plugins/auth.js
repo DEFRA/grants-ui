@@ -3,6 +3,7 @@ import { config } from '~/src/config/config.js'
 import { getOidcConfig } from '~/src/server/auth/get-oidc-config.js'
 import { getSafeRedirect } from '~/src/server/auth/get-safe-redirect.js'
 import { refreshTokens } from '~/src/server/auth/refresh-tokens.js'
+import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
 export default {
   plugin: {
@@ -100,6 +101,10 @@ function getCookieOptions() {
 
       // If session does not exist, return an invalid session
       if (!userSession) {
+        log(LogCodes.AUTH.SESSION_EXPIRED, {
+          userId: 'unknown',
+          sessionId: session.sessionId
+        })
         return { isValid: false }
       }
 
@@ -109,13 +114,31 @@ function getCookieOptions() {
         Jwt.token.verifyTime(decoded)
       } catch (error) {
         if (!config.get('defraId.refreshTokens')) {
+          log(LogCodes.AUTH.SESSION_EXPIRED, {
+            userId: userSession.contactId,
+            sessionId: session.sessionId
+          })
           return { isValid: false }
         }
-        const { access_token: token, refresh_token: refreshToken } =
-          await refreshTokens(userSession.refreshToken)
-        userSession.token = token
-        userSession.refreshToken = refreshToken
-        await request.server.app.cache.set(session.sessionId, userSession)
+
+        try {
+          const { access_token: token, refresh_token: refreshToken } =
+            await refreshTokens(userSession.refreshToken)
+          userSession.token = token
+          userSession.refreshToken = refreshToken
+          await request.server.app.cache.set(session.sessionId, userSession)
+
+          log(LogCodes.AUTH.TOKEN_VERIFICATION_SUCCESS, {
+            userId: userSession.contactId,
+            organisationId: userSession.organisationId
+          })
+        } catch (refreshError) {
+          log(LogCodes.AUTH.TOKEN_VERIFICATION_FAILURE, {
+            userId: userSession.contactId,
+            error: refreshError.message
+          })
+          return { isValid: false }
+        }
       }
 
       // Set the user's details on the request object and allow the request to continue

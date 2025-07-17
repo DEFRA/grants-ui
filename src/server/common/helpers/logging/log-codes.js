@@ -4,7 +4,8 @@ export const LogCodes = {
   AUTH: {
     SIGN_IN_ATTEMPT: {
       level: 'info',
-      messageFunc: (messageOptions) => `User sign-in attempt for user=${messageOptions.userId || 'unknown'}`
+      messageFunc: (messageOptions) =>
+        `User sign-in attempt for user=${messageOptions.userId || 'unknown'}`
     },
     SIGN_IN_SUCCESS: {
       level: 'info',
@@ -55,15 +56,18 @@ export const LogCodes = {
     },
     FORM_VALIDATION_ERROR: {
       level: 'error',
-      messageFunc: (messageOptions) => `Form validation error in ${messageOptions.formName}: ${messageOptions.error}`
+      messageFunc: (messageOptions) =>
+        `Form validation error in ${messageOptions.formName}: ${messageOptions.error}`
     },
     FORM_VALIDATION_SUCCESS: {
       level: 'info',
-      messageFunc: (messageOptions) => `Form validation successful for ${messageOptions.formName}`
+      messageFunc: (messageOptions) =>
+        `Form validation successful for ${messageOptions.formName}`
     },
     FORM_PROCESSING_ERROR: {
       level: 'error',
-      messageFunc: (messageOptions) => `Form processing error for ${messageOptions.formName}: ${messageOptions.error}`
+      messageFunc: (messageOptions) =>
+        `Form processing error for ${messageOptions.formName}: ${messageOptions.error}`
     },
     FORM_SAVE: {
       level: 'info',
@@ -140,17 +144,20 @@ export const LogCodes = {
     },
     TASK_COMPLETED: {
       level: 'info',
-      messageFunc: (messageOptions) => `Task completed: ${messageOptions.taskName} for user=${messageOptions.userId}`
+      messageFunc: (messageOptions) =>
+        `Task completed: ${messageOptions.taskName} for user=${messageOptions.userId}`
     },
     TASK_ERROR: {
       level: 'error',
-      messageFunc: (messageOptions) => `Task processing error for ${messageOptions.taskName}: ${messageOptions.error}`
+      messageFunc: (messageOptions) =>
+        `Task processing error for ${messageOptions.taskName}: ${messageOptions.error}`
     }
   },
   LAND_GRANTS: {
     LAND_GRANT_APPLICATION_STARTED: {
       level: 'info',
-      messageFunc: (messageOptions) => `Land grant application started for user=${messageOptions.userId}`
+      messageFunc: (messageOptions) =>
+        `Land grant application started for user=${messageOptions.userId}`
     },
     LAND_GRANT_APPLICATION_SUBMITTED: {
       level: 'info',
@@ -184,11 +191,13 @@ export const LogCodes = {
   SYSTEM: {
     SERVER_ERROR: {
       level: 'error',
-      messageFunc: (messageOptions) => `Server error occurred: ${messageOptions.error}`
+      messageFunc: (messageOptions) =>
+        `Server error occurred: ${messageOptions.error}`
     },
     SYSTEM_STARTUP: {
       level: 'info',
-      messageFunc: (messageOptions) => `System startup completed on port=${messageOptions.port}`
+      messageFunc: (messageOptions) =>
+        `System startup completed on port=${messageOptions.port}`
     },
     SYSTEM_SHUTDOWN: {
       level: 'info',
@@ -201,7 +210,8 @@ export const LogCodes = {
     },
     EXTERNAL_API_ERROR: {
       level: 'error',
-      messageFunc: (messageOptions) => `External API error for ${messageOptions.endpoint}: ${messageOptions.error}`
+      messageFunc: (messageOptions) =>
+        `External API error for ${messageOptions.endpoint}: ${messageOptions.error}`
     }
   }
 }
@@ -219,20 +229,26 @@ export const validateLogCodes = (logCodes) => {
         if ('level' in value || 'messageFunc' in value) {
           // This is a leaf node, check that it has both required properties
           if (!('level' in value && 'messageFunc' in value)) {
-            throw new Error(`Invalid log code definition for "${key}": Missing "level" or "messageFunc"`)
+            throw new Error(
+              `Invalid log code definition for "${key}": Missing "level" or "messageFunc"`
+            )
           }
 
           try {
             validateLogCode(value)
           } catch (e) {
-            throw new Error(`Invalid log code definition for "${key}": ${e.message}`)
+            throw new Error(
+              `Invalid log code definition for "${key}": ${e.message}`
+            )
           }
         } else {
           // This is a nested node, recursively validate it
           validateLogCodes({ [key]: value })
         }
       } else {
-        throw new Error(`Invalid log code definition for "${key}": unexpected value type`)
+        throw new Error(
+          `Invalid log code definition for "${key}": unexpected value type`
+        )
       }
     })
   })

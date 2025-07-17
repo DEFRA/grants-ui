@@ -5,6 +5,15 @@ import { refreshTokens } from './refresh-tokens.js'
 
 jest.mock('@hapi/wreck')
 jest.mock('~/src/server/auth/get-oidc-config.js')
+jest.mock('~/src/server/common/helpers/logging/log.js', () => ({
+  log: jest.fn(),
+  LogCodes: {
+    AUTH: {
+      TOKEN_VERIFICATION_SUCCESS: { level: 'info', messageFunc: jest.fn() },
+      TOKEN_VERIFICATION_FAILURE: { level: 'error', messageFunc: jest.fn() }
+    }
+  }
+}))
 
 describe('refreshTokens', () => {
   beforeEach(() => {
