@@ -114,6 +114,7 @@ export const registerFormsPlugin = async (server, prefix = '') => {
     options: {
       ...(prefix && { routes: { prefix } }),
       cacheName: config.get(SESSION_CACHE_NAME),
+      baseUrl: config.get('baseUrl'),
       keyGenerator: generateKey,
       services: {
         formsService: await formsService(),

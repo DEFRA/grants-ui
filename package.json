@@ -42,7 +42,7 @@
   "license": "OGL-UK-3.0",
   "dependencies": {
     "@babel/runtime": "^7.27.6",
-    "@defra/forms-engine-plugin": "1.0.0",
+    "@defra/forms-engine-plugin": "1.4.0",
     "@defra/hapi-tracing": "^1.26.0",
     "@elastic/ecs-pino-format": "^1.5.0",
     "@hapi/bell": "^13.1.0",
