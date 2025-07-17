@@ -172,7 +172,7 @@ describe('Auth Plugin', () => {
       expect(options.cookie.password).toBe(
         'at-least-32-characters-long-for-security'
       )
-      expect(options.cookie.isSecure).toBe(false)
+      expect(options.cookie.isSecure).toBe(true)
       expect(options.cookie.isSameSite).toBe('Lax')
     })
 
