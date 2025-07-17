@@ -3,7 +3,7 @@ name: Example grant with auth
 metadata:
   referenceNumberPrefix: EGWA
   submission:
-    grantCode: example-grant-with-auth-v2
+    grantCode: example-grant-with-auth-v3
     submissionSchemaPath: ./schemas/example-grant-with-auth-submission.schema.json
 pages:
   - title: Example Grant
