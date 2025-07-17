@@ -89,7 +89,7 @@ function getCookieOptions() {
     cookie: {
       password: config.get('session.cookie.password'),
       path: '/',
-      isSecure: config.get('isProduction'),
+      isSecure: true,
       isSameSite: 'Lax'
     },
     redirectTo: function (request) {
