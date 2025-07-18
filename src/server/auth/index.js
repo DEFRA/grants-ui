@@ -70,19 +70,7 @@ async function handleOidcSignIn(request, h) {
   })
 
   // verify token returned from Defra Identity against public key
-  try {
-    await verifyToken(token)
-    log(LogCodes.AUTH.TOKEN_VERIFICATION_SUCCESS, {
-      userId: profile.contactId,
-      organisationId: profile.currentRelationshipId
-    })
-  } catch (error) {
-    log(LogCodes.AUTH.TOKEN_VERIFICATION_FAILURE, {
-      userId: profile.contactId,
-      error: error.message
-    })
-    throw error
-  }
+  await verifyToken(token)
 
   // Typically permissions for the selected organisation would be available in the `roles` property of the token
   // However, when signing in with RPA credentials, the roles only include the role name and not the permissions

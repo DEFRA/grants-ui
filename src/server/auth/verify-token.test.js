@@ -129,7 +129,7 @@ describe('verifyToken', () => {
     )
 
     await expect(verifyToken(mockToken)).rejects.toThrow(
-      'Cannot convert undefined JWK to key'
+      'No keys found in JWKS response'
     )
   })
 })

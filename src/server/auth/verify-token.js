@@ -13,6 +13,15 @@ async function verifyToken(token) {
     })
     const { keys } = payload
 
+    if (!keys || keys.length === 0) {
+      log(LogCodes.AUTH.TOKEN_VERIFICATION_FAILURE, {
+        userId: 'unknown',
+        error: 'No keys found in JWKS response',
+        step: 'jwks_fetch'
+      })
+      throw new Error('No keys found in JWKS response')
+    }
+
     // Convert the JWK to a PEM-encoded public key using node-jose
     const key = await jose.JWK.asKey(keys[0])
 
@@ -20,28 +29,48 @@ async function verifyToken(token) {
     const decoded = Jwt.token.decode(token)
     Jwt.token.verify(decoded, { key: key.toPEM(), algorithm: 'RS256' })
 
-    // Extract user info from token for logging
+    // Extract user info from token for detailed success logging
     const tokenPayload = decoded.decoded?.payload || decoded.payload || {}
     const userId = tokenPayload.contactId || 'unknown'
+
     log(LogCodes.AUTH.TOKEN_VERIFICATION_SUCCESS, {
       userId,
-      organisationId: tokenPayload.currentRelationshipId || 'unknown'
+      organisationId: tokenPayload.currentRelationshipId || 'unknown',
+      step: 'token_verification_complete'
     })
   } catch (error) {
-    // Try to extract user info from token for logging, fallback to unknown
+    // Try to extract user info from token for detailed error logging
     let userId = 'unknown'
+    let step = 'unknown'
+
     try {
       const decoded = Jwt.token.decode(token)
       const tokenPayload = decoded.decoded?.payload || decoded.payload || {}
       userId = tokenPayload.contactId || 'unknown'
     } catch {
-      // Token is malformed, keep userId as unknown
+      step = 'token_decode_failed'
+    }
+
+    // Determine the step where verification failed
+    if (error.message.includes('JWKS')) {
+      step = 'jwks_fetch'
+    } else if (error.message.includes('JWK')) {
+      step = 'jwk_conversion'
+    } else if (error.message.includes('decode')) {
+      step = 'token_decode'
+    } else if (error.message.includes('verify')) {
+      step = 'signature_verification'
     }
 
     log(LogCodes.AUTH.TOKEN_VERIFICATION_FAILURE, {
       userId,
-      error: error.message
+      error: error.message,
+      step,
+      tokenPresent: !!token
     })
+
+    // Mark error as already logged to prevent duplicate logging in global handler
+    error.alreadyLogged = true
     throw error
   }
 }

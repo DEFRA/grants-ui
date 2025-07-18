@@ -1,4 +1,5 @@
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
+import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
 /**
  * @param {number} statusCode
@@ -34,7 +35,36 @@ export function catchAll(request, h) {
   const errorMessage = statusCodeMessage(statusCode)
 
   if (statusCode >= statusCodes.internalServerError) {
-    request.logger.error(response?.stack)
+    // Use structured logging for server errors
+    const isAuthError = request.path?.startsWith('/auth')
+    const alreadyLogged = response?.alreadyLogged
+
+    if (isAuthError && !alreadyLogged) {
+      // Log authentication-related errors with specific log codes (only if not already logged)
+      log(LogCodes.AUTH.SIGN_IN_FAILURE, {
+        userId: request.auth?.credentials?.contactId || 'unknown',
+        error: response?.message || 'Authentication error',
+        step: 'auth_flow_error'
+      })
+    } else if (!isAuthError && !alreadyLogged) {
+      // Log system errors (only if not already logged)
+      log(LogCodes.SYSTEM.SERVER_ERROR, {
+        error: response?.message || 'Internal server error',
+        statusCode,
+        path: request.path,
+        method: request.method,
+        stack: response?.stack
+      })
+    }
+    // If already logged, skip logging to avoid duplicates
+  } else if (statusCode >= statusCodes.badRequest) {
+    // Log 4xx errors with structured logging for debugging
+    log(LogCodes.SYSTEM.SERVER_ERROR, {
+      error: response?.message || errorMessage,
+      statusCode,
+      path: request.path,
+      method: request.method
+    })
   }
 
   return h

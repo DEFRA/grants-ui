@@ -26,17 +26,51 @@ async function refreshTokens(refreshToken) {
     // Payload will include both a new access token and a new refresh token
     // Refresh tokens can only be used once, so the new refresh token should be stored in place of the old one
 
+    if (!payload.access_token) {
+      log(LogCodes.AUTH.TOKEN_VERIFICATION_FAILURE, {
+        userId: 'system',
+        error: 'No access token in refresh response',
+        step: 'token_refresh_response_validation'
+      })
+      throw new Error('No access token in refresh response')
+    }
+
     log(LogCodes.AUTH.TOKEN_VERIFICATION_SUCCESS, {
       userId: 'system',
-      organisationId: 'refresh'
+      organisationId: 'refresh_operation',
+      step: 'token_refresh_complete',
+      hasNewRefreshToken: !!payload.refresh_token
     })
 
     return payload
   } catch (error) {
+    // Determine the step where refresh failed
+    let step = 'unknown'
+    if (error.message.includes('OIDC')) {
+      step = 'oidc_config_fetch'
+    } else if (
+      error.message.includes('ENOTFOUND') ||
+      error.message.includes('ECONNREFUSED')
+    ) {
+      step = 'token_endpoint_connection'
+    } else if (error.message.includes('400') || error.message.includes('401')) {
+      step = 'token_endpoint_auth'
+    } else if (error.message.includes('access_token')) {
+      step = 'token_refresh_response_validation'
+    } else if (error.statusCode) {
+      step = 'token_endpoint_response'
+    }
+
     log(LogCodes.AUTH.TOKEN_VERIFICATION_FAILURE, {
       userId: 'system',
-      error: error.message
+      error: error.message,
+      step,
+      statusCode: error.statusCode,
+      hasRefreshToken: !!refreshToken
     })
+
+    // Mark error as already logged to prevent duplicate logging in global handler
+    error.alreadyLogged = true
     throw error
   }
 }
