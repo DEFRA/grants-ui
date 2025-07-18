@@ -1174,7 +1174,7 @@ conditions:
             type: Value
             value: 'true'
             display: 'Yes'
-  - name: fruitStorageCondition
+  - name: fruitStorageConditionNo
     displayName: fruitStorageConditionNo
     value:
       name: fruitStorageConditionNo
@@ -1193,10 +1193,10 @@ conditions:
     value:
       name: otherFarmersYesOrFruitStorage
       conditions:
-        - conditionName: otherFarmersConditionYes
+        - conditionName: cond_otherFarmersConditionYes
           conditionDisplayName: 'Yes'
         - coordinator: or
-          conditionName: fruitStorageCondition
+          conditionName: cond_fruitStorageConditionNo
           conditionDisplayName: 'No'
   - name: eligibleItemsNeededCondition
     displayName: eligibleItemsNeededYes
