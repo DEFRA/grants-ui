@@ -36,6 +36,7 @@ jest.mock('~/src/config/config', () => ({
         'defraId.redirectUrl': 'https://example.com/auth/callback',
         'defraId.refreshTokens': true,
         'session.cookie.password': 'at-least-32-characters-long-for-security',
+        'session.cookie.secure': false,
         isProduction: false
       }
       return mockConfig[key]

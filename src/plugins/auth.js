@@ -250,7 +250,7 @@ function getBellOptions(oidcConfig) {
     password: config.get('session.cookie.password'),
     clientId: config.get('defraId.clientId'),
     clientSecret: config.get('defraId.clientSecret'),
-    isSecure: config.get('isProduction'),
+    isSecure: config.get('session.cookie.secure'),
     location: function (request) {
       try {
         // If request includes a redirect query parameter, store it in the session to allow redirection after authentication
@@ -311,7 +311,7 @@ function getCookieOptions() {
     cookie: {
       password: config.get('session.cookie.password'),
       path: '/',
-      isSecure: config.get('isProduction'),
+      isSecure: config.get('session.cookie.secure'),
       isSameSite: 'Lax'
     },
     redirectTo: function (request) {
