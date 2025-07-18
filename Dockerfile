@@ -53,7 +53,6 @@ COPY --from=production_build /home/node/.server ./.server/
 COPY --from=production_build /home/node/.public/ ./.public/
 COPY --from=production_build /home/node/src/server/common/forms ./src/server/common/forms
 COPY --from=production_build /home/node/src/server/common/tasklist ./src/server/common/tasklist
-COPY --from=production_build /home/node/src/server/views ./src/server/views
 
 RUN npm ci --omit=dev  --ignore-scripts
 
