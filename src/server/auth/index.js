@@ -18,7 +18,39 @@ export const auth = {
         options: {
           auth: { strategy: 'defra-id', mode: 'try' }
         },
-        handler: (_request, h) => h.redirect('/home')
+        handler: (request, h) => {
+          // Log the authentication state at the /auth/sign-in endpoint
+          log(LogCodes.AUTH.AUTH_DEBUG, {
+            path: request.path,
+            isAuthenticated: request.auth?.isAuthenticated || 'unknown',
+            strategy: request.auth?.strategy || 'unknown',
+            mode: request.auth?.mode || 'unknown',
+            hasCredentials: !!request.auth?.credentials,
+            hasToken: !!request.auth?.credentials?.token,
+            hasProfile: !!request.auth?.credentials?.profile,
+            userAgent: request.headers?.['user-agent'] || 'unknown',
+            referer: request.headers?.referer || 'none',
+            queryParams: request.query || {},
+            authError: request.auth?.error?.message || 'none',
+            timestamp: new Date().toISOString()
+          })
+
+          // If there's an auth error, log it specifically
+          if (request.auth?.error) {
+            log(LogCodes.AUTH.SIGN_IN_FAILURE, {
+              userId: 'unknown',
+              error: `Authentication error at /auth/sign-in: ${request.auth.error.message}`,
+              step: 'auth_sign_in_route_error',
+              authState: {
+                isAuthenticated: request.auth.isAuthenticated,
+                strategy: request.auth.strategy,
+                mode: request.auth.mode
+              }
+            })
+          }
+
+          return h.redirect('/home')
+        }
       })
       server.route({
         method: ['GET'],

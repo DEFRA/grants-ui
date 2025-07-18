@@ -9,7 +9,78 @@ export default {
   plugin: {
     name: 'auth',
     register: async (server) => {
-      const oidcConfig = await getOidcConfig()
+      // Debug log all Defra ID configuration values
+      log(LogCodes.AUTH.AUTH_DEBUG, {
+        path: 'auth_plugin_registration',
+        isAuthenticated: 'system',
+        strategy: 'system',
+        mode: 'config_debug',
+        hasCredentials: false,
+        hasToken: false,
+        hasProfile: false,
+        userAgent: 'server',
+        referer: 'none',
+        queryParams: {},
+        authError: 'none',
+        defraIdConfig: {
+          wellKnownUrl: config.get('defraId.wellKnownUrl'),
+          clientId: config.get('defraId.clientId'),
+          clientSecret: config.get('defraId.clientSecret')
+            ? '[REDACTED]'
+            : 'NOT_SET',
+          serviceId: config.get('defraId.serviceId'),
+          redirectUrl: config.get('defraId.redirectUrl'),
+          signOutRedirectUrl: config.get('defraId.signOutRedirectUrl'),
+          refreshTokens: config.get('defraId.refreshTokens')
+        }
+      })
+
+      let oidcConfig
+      try {
+        oidcConfig = await getOidcConfig()
+        log(LogCodes.AUTH.AUTH_DEBUG, {
+          path: 'auth_plugin_registration',
+          isAuthenticated: 'system',
+          strategy: 'system',
+          mode: 'oidc_config_success',
+          hasCredentials: false,
+          hasToken: false,
+          hasProfile: false,
+          userAgent: 'server',
+          referer: 'none',
+          queryParams: {},
+          authError: 'none',
+          oidcEndpoints: {
+            authorizationEndpoint: oidcConfig.authorization_endpoint,
+            tokenEndpoint: oidcConfig.token_endpoint,
+            jwksUri: oidcConfig.jwks_uri,
+            endSessionEndpoint: oidcConfig.end_session_endpoint
+          }
+        })
+      } catch (error) {
+        log(LogCodes.AUTH.AUTH_DEBUG, {
+          path: 'auth_plugin_registration',
+          isAuthenticated: 'system',
+          strategy: 'system',
+          mode: 'oidc_config_failure',
+          hasCredentials: false,
+          hasToken: false,
+          hasProfile: false,
+          userAgent: 'server',
+          referer: 'none',
+          queryParams: {},
+          authError: `OIDC config fetch failed: ${error.message}`,
+          errorDetails: {
+            message: error.message,
+            stack: error.stack,
+            wellKnownUrl: config.get('defraId.wellKnownUrl')
+          }
+        })
+
+        // Mark error as already logged to prevent duplicate logging
+        error.alreadyLogged = true
+        throw error
+      }
 
       // Bell is a third-party plugin that provides a common interface for OAuth 2.0 authentication
       // Used to authenticate users with Defra Identity and a pre-requisite for the Cookie authentication strategy
@@ -82,64 +153,98 @@ function getBellOptions(oidcConfig) {
       token: oidcConfig.token_endpoint,
       scope: ['openid', 'offline_access', config.get('defraId.clientId')],
       profile: function (credentials) {
-        log(LogCodes.AUTH.AUTH_DEBUG, {
-          path: 'bell_profile_processing',
-          isAuthenticated: 'processing',
-          strategy: 'bell',
-          mode: 'profile_extraction',
-          hasCredentials: !!credentials,
-          hasToken: !!credentials?.token,
-          hasProfile: false,
-          userAgent: 'server',
-          referer: 'none',
-          queryParams: {},
-          authError: 'none',
-          tokenLength: credentials?.token ? credentials.token.length : 0
-        })
+        try {
+          log(LogCodes.AUTH.AUTH_DEBUG, {
+            path: 'bell_profile_processing',
+            isAuthenticated: 'processing',
+            strategy: 'bell',
+            mode: 'profile_extraction',
+            hasCredentials: !!credentials,
+            hasToken: !!credentials?.token,
+            hasProfile: false,
+            userAgent: 'server',
+            referer: 'none',
+            queryParams: {},
+            authError: 'none',
+            tokenLength: credentials?.token ? credentials.token.length : 0
+          })
 
-        const payload = Jwt.token.decode(credentials.token).decoded.payload
+          if (!credentials?.token) {
+            const error = new Error('No token received from Defra Identity')
+            log(LogCodes.AUTH.SIGN_IN_FAILURE, {
+              userId: 'unknown',
+              error: error.message,
+              step: 'bell_profile_no_token'
+            })
+            throw error
+          }
 
-        log(LogCodes.AUTH.AUTH_DEBUG, {
-          path: 'bell_profile_processing',
-          isAuthenticated: 'processing',
-          strategy: 'bell',
-          mode: 'jwt_decode',
-          hasCredentials: true,
-          hasToken: true,
-          hasProfile: !!payload,
-          userAgent: 'server',
-          referer: 'none',
-          queryParams: {},
-          authError: 'none',
-          payloadKeys: Object.keys(payload || {}).join(', ')
-        })
+          const decoded = Jwt.token.decode(credentials.token)
+          const payload = decoded.decoded.payload
 
-        // Map all JWT properties to the credentials object so it can be stored in the session
-        // Add some additional properties to the profile object for convenience
-        credentials.profile = {
-          ...payload,
-          crn: payload.contactId,
-          name: `${payload.firstName} ${payload.lastName}`,
-          organisationId: payload.currentRelationshipId
+          log(LogCodes.AUTH.AUTH_DEBUG, {
+            path: 'bell_profile_processing',
+            isAuthenticated: 'processing',
+            strategy: 'bell',
+            mode: 'jwt_decode',
+            hasCredentials: true,
+            hasToken: true,
+            hasProfile: !!payload,
+            userAgent: 'server',
+            referer: 'none',
+            queryParams: {},
+            authError: 'none',
+            payloadKeys: Object.keys(payload || {}).join(', ')
+          })
+
+          if (!payload) {
+            const error = new Error('Failed to decode JWT payload')
+            log(LogCodes.AUTH.SIGN_IN_FAILURE, {
+              userId: 'unknown',
+              error: error.message,
+              step: 'bell_profile_jwt_decode_failed'
+            })
+            throw error
+          }
+
+          // Map all JWT properties to the credentials object so it can be stored in the session
+          // Add some additional properties to the profile object for convenience
+          credentials.profile = {
+            ...payload,
+            crn: payload.contactId,
+            name: `${payload.firstName} ${payload.lastName}`,
+            organisationId: payload.currentRelationshipId
+          }
+
+          log(LogCodes.AUTH.AUTH_DEBUG, {
+            path: 'bell_profile_processing',
+            isAuthenticated: 'processing',
+            strategy: 'bell',
+            mode: 'profile_mapped',
+            hasCredentials: true,
+            hasToken: true,
+            hasProfile: true,
+            userAgent: 'server',
+            referer: 'none',
+            queryParams: {},
+            authError: 'none',
+            profileName: credentials.profile.name,
+            profileId: credentials.profile.contactId
+          })
+
+          return credentials
+        } catch (error) {
+          log(LogCodes.AUTH.SIGN_IN_FAILURE, {
+            userId: 'unknown',
+            error: `Bell profile processing failed: ${error.message}`,
+            step: 'bell_profile_processing_error',
+            errorStack: error.stack
+          })
+
+          // Mark error as already logged to prevent duplicate logging
+          error.alreadyLogged = true
+          throw error
         }
-
-        log(LogCodes.AUTH.AUTH_DEBUG, {
-          path: 'bell_profile_processing',
-          isAuthenticated: 'processing',
-          strategy: 'bell',
-          mode: 'profile_mapped',
-          hasCredentials: true,
-          hasToken: true,
-          hasProfile: true,
-          userAgent: 'server',
-          referer: 'none',
-          queryParams: {},
-          authError: 'none',
-          profileName: credentials.profile.name,
-          profileId: credentials.profile.contactId
-        })
-
-        return credentials
       }
     },
     password: config.get('session.cookie.password'),
@@ -147,32 +252,56 @@ function getBellOptions(oidcConfig) {
     clientSecret: config.get('defraId.clientSecret'),
     isSecure: config.get('isProduction'),
     location: function (request) {
-      // If request includes a redirect query parameter, store it in the session to allow redirection after authentication
-      if (request.query.redirect) {
-        // Ensure redirect is a relative path to prevent redirect attacks
-        const safeRedirect = getSafeRedirect(request.query.redirect)
-        request.yar.set('redirect', safeRedirect)
-      }
+      try {
+        // If request includes a redirect query parameter, store it in the session to allow redirection after authentication
+        if (request.query.redirect) {
+          // Ensure redirect is a relative path to prevent redirect attacks
+          const safeRedirect = getSafeRedirect(request.query.redirect)
+          request.yar.set('redirect', safeRedirect)
+        }
 
-      return config.get('defraId.redirectUrl')
+        return config.get('defraId.redirectUrl')
+      } catch (error) {
+        log(LogCodes.AUTH.SIGN_IN_FAILURE, {
+          userId: 'unknown',
+          error: `Bell location function failed: ${error.message}`,
+          step: 'bell_location_function_error'
+        })
+
+        // Mark error as already logged to prevent duplicate logging
+        error.alreadyLogged = true
+        throw error
+      }
     },
     providerParams: function (request) {
-      const params = {
-        serviceId: config.get('defraId.serviceId')
-        // p: config.get('defraId.policy')
-        // response_mode: 'query'
-      }
-
-      // If user intends to switch organisation, force Defra Identity to display the organisation selection screen
-      if (request.path === '/auth/organisation') {
-        params.forceReselection = true
-        // If user has already selected an organisation in another service, pass the organisation Id to force Defra Id to skip the organisation selection screen
-        if (request.query.organisationId) {
-          params.relationshipId = request.query.organisationId
+      try {
+        const params = {
+          serviceId: config.get('defraId.serviceId')
+          // p: config.get('defraId.policy')
+          // response_mode: 'query'
         }
-      }
 
-      return params
+        // If user intends to switch organisation, force Defra Identity to display the organisation selection screen
+        if (request.path === '/auth/organisation') {
+          params.forceReselection = true
+          // If user has already selected an organisation in another service, pass the organisation Id to force Defra Id to skip the organisation selection screen
+          if (request.query.organisationId) {
+            params.relationshipId = request.query.organisationId
+          }
+        }
+
+        return params
+      } catch (error) {
+        log(LogCodes.AUTH.SIGN_IN_FAILURE, {
+          userId: 'unknown',
+          error: `Bell provider params function failed: ${error.message}`,
+          step: 'bell_provider_params_error'
+        })
+
+        // Mark error as already logged to prevent duplicate logging
+        error.alreadyLogged = true
+        throw error
+      }
     }
   }
 }
