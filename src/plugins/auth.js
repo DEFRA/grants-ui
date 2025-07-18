@@ -24,6 +24,50 @@ export default {
       // Set the default authentication strategy to session
       // All routes will require authentication unless explicitly set to 'defra-id' or `auth: false`
       server.auth.default('session')
+
+      // Add auth debugging hook to log initial authentication attempts
+      server.ext('onPreAuth', (request, h) => {
+        // Only log debug info for auth-related routes
+        if (request.path.startsWith('/auth/')) {
+          log(LogCodes.AUTH.AUTH_DEBUG, {
+            path: request.path,
+            isAuthenticated: 'pre_auth',
+            strategy: 'unknown',
+            mode: 'initial_request',
+            hasCredentials: false,
+            hasToken: false,
+            hasProfile: false,
+            userAgent: request.headers?.['user-agent'] || 'unknown',
+            referer: request.headers?.referer || 'none',
+            queryParams: request.query || {},
+            authError: 'none',
+            timestamp: new Date().toISOString()
+          })
+        }
+        return h.continue
+      })
+
+      // Add post-auth debugging hook to log authentication results
+      server.ext('onPostAuth', (request, h) => {
+        // Only log debug info for auth-related routes
+        if (request.path.startsWith('/auth/')) {
+          log(LogCodes.AUTH.AUTH_DEBUG, {
+            path: request.path,
+            isAuthenticated: request.auth?.isAuthenticated || 'unknown',
+            strategy: request.auth?.strategy || 'unknown',
+            mode: request.auth?.mode || 'unknown',
+            hasCredentials: !!request.auth?.credentials,
+            hasToken: !!request.auth?.credentials?.token,
+            hasProfile: !!request.auth?.credentials?.profile,
+            userAgent: request.headers?.['user-agent'] || 'unknown',
+            referer: request.headers?.referer || 'none',
+            queryParams: request.query || {},
+            authError: request.auth?.error?.message || 'none',
+            timestamp: new Date().toISOString()
+          })
+        }
+        return h.continue
+      })
     }
   }
 }
@@ -91,14 +135,16 @@ function getBellOptions(oidcConfig) {
           referer: 'none',
           queryParams: {},
           authError: 'none',
-          profileKeys: Object.keys(credentials.profile || {}).join(', '),
-          userId: credentials.profile.contactId
+          profileName: credentials.profile.name,
+          profileId: credentials.profile.contactId
         })
+
+        return credentials
       }
     },
+    password: config.get('session.cookie.password'),
     clientId: config.get('defraId.clientId'),
     clientSecret: config.get('defraId.clientSecret'),
-    password: config.get('session.cookie.password'),
     isSecure: config.get('isProduction'),
     location: function (request) {
       // If request includes a redirect query parameter, store it in the session to allow redirection after authentication
