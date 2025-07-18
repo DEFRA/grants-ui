@@ -41,6 +41,11 @@ export const LogCodes = {
       level: 'error',
       messageFunc: (messageOptions) =>
         `Unauthorized access attempt to path=${messageOptions.path} from user=${messageOptions.userId || 'unknown'}`
+    },
+    AUTH_DEBUG: {
+      level: 'debug',
+      messageFunc: (messageOptions) =>
+        `Auth debug for path=${messageOptions.path}: isAuthenticated=${messageOptions.isAuthenticated}, strategy=${messageOptions.strategy}, mode=${messageOptions.mode}, hasCredentials=${messageOptions.hasCredentials}, hasToken=${messageOptions.hasToken}, hasProfile=${messageOptions.hasProfile}, userAgent=${messageOptions.userAgent}, referer=${messageOptions.referer}, queryParams=${JSON.stringify(messageOptions.queryParams)}, authError=${messageOptions.authError}`
     }
   },
   FORMS: {

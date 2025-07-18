@@ -51,22 +51,74 @@ export const auth = {
 }
 
 async function handleOidcSignIn(request, h) {
+  // First, log detailed authentication debug information
+  const authDebugInfo = {
+    path: request.path,
+    isAuthenticated: request.auth.isAuthenticated,
+    strategy: request.auth?.strategy,
+    mode: request.auth?.mode,
+    hasCredentials: !!request.auth?.credentials,
+    hasToken: !!request.auth?.credentials?.token,
+    hasProfile: !!request.auth?.credentials?.profile,
+    userAgent: request.headers?.['user-agent'] || 'unknown',
+    referer: request.headers?.referer || 'none',
+    queryParams: request.query,
+    authError: request.auth?.error?.message || 'none'
+  }
+
+  // Always log debug info to help with troubleshooting
+  log(LogCodes.AUTH.AUTH_DEBUG, authDebugInfo)
+
   // If the user is not authenticated, redirect to the home page
   // This should only occur if the user tries to access the sign-in page directly and not part of the sign-in flow
   // eg if the user has bookmarked the Defra Identity sign-in page or they have signed out and tried to go back in the browser
   if (!request.auth.isAuthenticated) {
-    log(LogCodes.AUTH.UNAUTHORIZED_ACCESS, {
+    // Log more detailed error information
+    const errorDetails = {
       path: request.path,
-      userId: 'unknown'
+      userId: 'unknown',
+      error: request.auth?.error?.message || 'Not authenticated',
+      isAuthenticated: request.auth.isAuthenticated,
+      strategy: request.auth?.strategy,
+      hasCredentials: !!request.auth?.credentials,
+      artifacts: request.auth?.artifacts ? 'present' : 'none',
+      userAgent: request.headers?.['user-agent'] || 'unknown',
+      referer: request.headers?.referer || 'none'
+    }
+
+    log(LogCodes.AUTH.UNAUTHORIZED_ACCESS, errorDetails)
+
+    // Additional detailed failure logging
+    log(LogCodes.AUTH.SIGN_IN_FAILURE, {
+      userId: 'unknown',
+      error: `Authentication failed at OIDC sign-in. Auth state: ${JSON.stringify(
+        {
+          isAuthenticated: request.auth.isAuthenticated,
+          strategy: request.auth?.strategy,
+          mode: request.auth?.mode,
+          error: request.auth?.error?.message,
+          hasCredentials: !!request.auth?.credentials
+        }
+      )}`,
+      step: 'oidc_sign_in_authentication_check'
     })
+
     return h.view('unauthorised')
   }
 
+  // Log successful authentication details
   const { profile, token, refreshToken } = request.auth.credentials
 
   log(LogCodes.AUTH.SIGN_IN_ATTEMPT, {
     userId: profile.contactId,
-    organisationId: profile.currentRelationshipId
+    organisationId: profile.currentRelationshipId,
+    profileData: JSON.stringify({
+      hasToken: !!token,
+      hasRefreshToken: !!refreshToken,
+      hasProfile: !!profile,
+      profileKeys: Object.keys(profile || {}),
+      tokenLength: token ? token.length : 0
+    })
   })
 
   // verify token returned from Defra Identity against public key
@@ -98,7 +150,10 @@ async function handleOidcSignIn(request, h) {
 
   log(LogCodes.AUTH.SIGN_IN_SUCCESS, {
     userId: profile.contactId,
-    organisationId: profile.currentRelationshipId
+    organisationId: profile.currentRelationshipId,
+    role,
+    scope: scope.join(', '),
+    sessionId: profile.sessionId
   })
 
   // Redirect user to the page they were trying to access before signing in or to the home page if no redirect was set

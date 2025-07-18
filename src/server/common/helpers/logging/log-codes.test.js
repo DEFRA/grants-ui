@@ -73,6 +73,30 @@ describe('LogCodes', () => {
         'Unauthorized access attempt to path=/admin from user=test'
       )
     })
+
+    it('should have valid AUTH_DEBUG log code', () => {
+      const logCode = LogCodes.AUTH.AUTH_DEBUG
+      expect(logCode.level).toBe('debug')
+      expect(typeof logCode.messageFunc).toBe('function')
+      const debugOptions = {
+        path: '/auth/sign-in-oidc',
+        isAuthenticated: false,
+        strategy: 'defra-id',
+        mode: 'try',
+        hasCredentials: false,
+        hasToken: false,
+        hasProfile: false,
+        userAgent: 'Mozilla/5.0',
+        referer: 'https://example.com',
+        queryParams: { test: 'value' },
+        authError: 'No token provided'
+      }
+      const result = logCode.messageFunc(debugOptions)
+      expect(result).toContain('Auth debug for path=/auth/sign-in-oidc')
+      expect(result).toContain('isAuthenticated=false')
+      expect(result).toContain('strategy=defra-id')
+      expect(result).toContain('authError=No token provided')
+    })
   })
 
   describe('FORMS log codes', () => {

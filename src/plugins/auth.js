@@ -38,7 +38,37 @@ function getBellOptions(oidcConfig) {
       token: oidcConfig.token_endpoint,
       scope: ['openid', 'offline_access', config.get('defraId.clientId')],
       profile: function (credentials) {
+        log(LogCodes.AUTH.AUTH_DEBUG, {
+          path: 'bell_profile_processing',
+          isAuthenticated: 'processing',
+          strategy: 'bell',
+          mode: 'profile_extraction',
+          hasCredentials: !!credentials,
+          hasToken: !!credentials?.token,
+          hasProfile: false,
+          userAgent: 'server',
+          referer: 'none',
+          queryParams: {},
+          authError: 'none',
+          tokenLength: credentials?.token ? credentials.token.length : 0
+        })
+
         const payload = Jwt.token.decode(credentials.token).decoded.payload
+
+        log(LogCodes.AUTH.AUTH_DEBUG, {
+          path: 'bell_profile_processing',
+          isAuthenticated: 'processing',
+          strategy: 'bell',
+          mode: 'jwt_decode',
+          hasCredentials: true,
+          hasToken: true,
+          hasProfile: !!payload,
+          userAgent: 'server',
+          referer: 'none',
+          queryParams: {},
+          authError: 'none',
+          payloadKeys: Object.keys(payload || {}).join(', ')
+        })
 
         // Map all JWT properties to the credentials object so it can be stored in the session
         // Add some additional properties to the profile object for convenience
@@ -48,6 +78,22 @@ function getBellOptions(oidcConfig) {
           name: `${payload.firstName} ${payload.lastName}`,
           organisationId: payload.currentRelationshipId
         }
+
+        log(LogCodes.AUTH.AUTH_DEBUG, {
+          path: 'bell_profile_processing',
+          isAuthenticated: 'processing',
+          strategy: 'bell',
+          mode: 'profile_mapped',
+          hasCredentials: true,
+          hasToken: true,
+          hasProfile: true,
+          userAgent: 'server',
+          referer: 'none',
+          queryParams: {},
+          authError: 'none',
+          profileKeys: Object.keys(credentials.profile || {}).join(', '),
+          userId: credentials.profile.contactId
+        })
       }
     },
     clientId: config.get('defraId.clientId'),
@@ -97,14 +143,48 @@ function getCookieOptions() {
       return `/auth/sign-in?redirect=${request.url.pathname}${request.url.search}`
     },
     validate: async function (request, session) {
+      // Log session validation attempt
+      log(LogCodes.AUTH.AUTH_DEBUG, {
+        path: request.path,
+        isAuthenticated: 'validating',
+        strategy: 'session',
+        mode: 'cookie_validation',
+        hasCredentials: !!session,
+        hasToken: 'checking',
+        hasProfile: 'checking',
+        userAgent: request.headers?.['user-agent'] || 'unknown',
+        referer: request.headers?.referer || 'none',
+        queryParams: request.query,
+        authError: 'none',
+        sessionId: session?.sessionId
+      })
+
       const userSession = await request.server.app.cache.get(session.sessionId)
 
       // If session does not exist, return an invalid session
       if (!userSession) {
         log(LogCodes.AUTH.SESSION_EXPIRED, {
           userId: 'unknown',
-          sessionId: session.sessionId
+          sessionId: session.sessionId,
+          path: request.path,
+          reason: 'Session not found in cache'
         })
+
+        log(LogCodes.AUTH.AUTH_DEBUG, {
+          path: request.path,
+          isAuthenticated: false,
+          strategy: 'session',
+          mode: 'cookie_validation',
+          hasCredentials: false,
+          hasToken: false,
+          hasProfile: false,
+          userAgent: request.headers?.['user-agent'] || 'unknown',
+          referer: request.headers?.referer || 'none',
+          queryParams: request.query,
+          authError: 'Session not found in cache',
+          sessionId: session?.sessionId
+        })
+
         return { isValid: false }
       }
 
@@ -112,16 +192,67 @@ function getCookieOptions() {
       try {
         const decoded = Jwt.token.decode(userSession.token)
         Jwt.token.verifyTime(decoded)
+
+        // Log successful session validation
+        log(LogCodes.AUTH.AUTH_DEBUG, {
+          path: request.path,
+          isAuthenticated: true,
+          strategy: 'session',
+          mode: 'cookie_validation',
+          hasCredentials: true,
+          hasToken: true,
+          hasProfile: true,
+          userAgent: request.headers?.['user-agent'] || 'unknown',
+          referer: request.headers?.referer || 'none',
+          queryParams: request.query,
+          authError: 'none',
+          sessionId: session?.sessionId,
+          userId: userSession.contactId
+        })
       } catch (error) {
+        log(LogCodes.AUTH.AUTH_DEBUG, {
+          path: request.path,
+          isAuthenticated: false,
+          strategy: 'session',
+          mode: 'token_validation',
+          hasCredentials: true,
+          hasToken: true,
+          hasProfile: true,
+          userAgent: request.headers?.['user-agent'] || 'unknown',
+          referer: request.headers?.referer || 'none',
+          queryParams: request.query,
+          authError: `Token validation failed: ${error.message}`,
+          sessionId: session?.sessionId,
+          userId: userSession.contactId
+        })
+
         if (!config.get('defraId.refreshTokens')) {
           log(LogCodes.AUTH.SESSION_EXPIRED, {
             userId: userSession.contactId,
-            sessionId: session.sessionId
+            sessionId: session.sessionId,
+            path: request.path,
+            reason: 'Token expired, refresh disabled'
           })
           return { isValid: false }
         }
 
         try {
+          log(LogCodes.AUTH.AUTH_DEBUG, {
+            path: request.path,
+            isAuthenticated: 'refreshing',
+            strategy: 'session',
+            mode: 'token_refresh',
+            hasCredentials: true,
+            hasToken: true,
+            hasProfile: true,
+            userAgent: request.headers?.['user-agent'] || 'unknown',
+            referer: request.headers?.referer || 'none',
+            queryParams: request.query,
+            authError: 'Attempting token refresh',
+            sessionId: session?.sessionId,
+            userId: userSession.contactId
+          })
+
           const { access_token: token, refresh_token: refreshToken } =
             await refreshTokens(userSession.refreshToken)
           userSession.token = token
@@ -130,13 +261,32 @@ function getCookieOptions() {
 
           log(LogCodes.AUTH.TOKEN_VERIFICATION_SUCCESS, {
             userId: userSession.contactId,
-            organisationId: userSession.organisationId
+            organisationId: userSession.organisationId,
+            step: 'token_refresh_success'
           })
         } catch (refreshError) {
           log(LogCodes.AUTH.TOKEN_VERIFICATION_FAILURE, {
             userId: userSession.contactId,
-            error: refreshError.message
+            error: refreshError.message,
+            step: 'token_refresh_failed'
           })
+
+          log(LogCodes.AUTH.AUTH_DEBUG, {
+            path: request.path,
+            isAuthenticated: false,
+            strategy: 'session',
+            mode: 'token_refresh',
+            hasCredentials: true,
+            hasToken: false,
+            hasProfile: true,
+            userAgent: request.headers?.['user-agent'] || 'unknown',
+            referer: request.headers?.referer || 'none',
+            queryParams: request.query,
+            authError: `Token refresh failed: ${refreshError.message}`,
+            sessionId: session?.sessionId,
+            userId: userSession.contactId
+          })
+
           return { isValid: false }
         }
       }
