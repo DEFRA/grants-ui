@@ -125,7 +125,7 @@ describe('Auth Plugin', () => {
       options.provider.profile(credentials)
 
       expect(Jwt.token.decode).toHaveBeenCalledWith('test-token')
-      expect(credentials.profile).toEqual({
+      expect(credentials.profile).toMatchObject({
         firstName: 'John',
         lastName: 'Doe',
         contactId: '12345',
@@ -134,6 +134,10 @@ describe('Auth Plugin', () => {
         name: 'John Doe',
         organisationId: 'org-123'
       })
+      // Check that sessionId is a valid UUID
+      expect(credentials.profile.sessionId).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+      )
     })
 
     test('location function handles redirect parameter', () => {

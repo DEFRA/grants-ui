@@ -1,3 +1,4 @@
+import crypto from 'crypto'
 import Jwt from '@hapi/jwt'
 import { config } from '~/src/config/config.js'
 import { getOidcConfig } from '~/src/server/auth/get-oidc-config.js'
@@ -213,7 +214,8 @@ function getBellOptions(oidcConfig) {
             ...payload,
             crn: payload.contactId,
             name: `${payload.firstName} ${payload.lastName}`,
-            organisationId: payload.currentRelationshipId
+            organisationId: payload.currentRelationshipId,
+            sessionId: crypto.randomUUID()
           }
 
           log(LogCodes.AUTH.AUTH_DEBUG, {

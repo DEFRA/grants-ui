@@ -3,10 +3,9 @@ import path from 'node:path'
 
 import { config } from '~/src/config/config.js'
 import { buildNavigation } from '~/src/config/nunjucks/context/build-navigation.js'
-import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
+import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { sbiStore } from '~/src/server/sbi/state.js'
 
-const logger = createLogger()
 const assetPath = config.get('assetPath')
 const manifestPath = path.join(
   config.get('root'),
@@ -27,16 +26,32 @@ export async function context(request) {
       try {
         webpackManifest = JSON.parse(readFileSync(manifestPath, 'utf-8'))
       } catch (error) {
-        logger.error(
-          `Webpack ${path.basename(manifestPath)} not found: ${error.message}`
-        )
+        log(LogCodes.SYSTEM.SERVER_ERROR, {
+          error: `Webpack ${path.basename(manifestPath)} not found: ${error.message}`
+        })
         // Don't let this break the context, just continue without manifest
       }
     }
 
-    const session = request?.auth?.isAuthenticated
-      ? await request.server.app.cache.get(request.auth.credentials.sessionId)
-      : {}
+    let session = {}
+    if (request?.auth?.isAuthenticated && request.auth.credentials?.sessionId) {
+      try {
+        session =
+          (await request.server.app.cache.get(
+            request.auth.credentials.sessionId
+          )) || {}
+      } catch (cacheError) {
+        const sessionId = String(
+          request.auth.credentials.sessionId || 'unknown'
+        )
+        log(LogCodes.AUTH.SIGN_IN_FAILURE, {
+          userId: 'unknown',
+          error: `Cache retrieval failed for session ${sessionId}: ${cacheError.message}`,
+          step: 'context_cache_retrieval'
+        })
+        session = {}
+      }
+    }
     const auth = {
       isAuthenticated: request?.auth?.isAuthenticated ?? false,
       sbi: session.sbi || tempSbi, // Use temp SBI if no session SBI
@@ -63,7 +78,9 @@ export async function context(request) {
       }
     }
   } catch (error) {
-    logger.error(`Error building context: ${error.message}`, error)
+    log(LogCodes.SYSTEM.SERVER_ERROR, {
+      error: `Error building context: ${error.message}`
+    })
     // Return a minimal context to prevent complete failure
     return {
       assetPath: `${assetPath}/assets/rebrand`,
