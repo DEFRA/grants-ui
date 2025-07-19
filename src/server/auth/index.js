@@ -19,37 +19,72 @@ export const auth = {
           auth: { strategy: 'defra-id', mode: 'try' }
         },
         handler: (request, h) => {
-          // Log the authentication state at the /auth/sign-in endpoint
-          log(LogCodes.AUTH.AUTH_DEBUG, {
-            path: request.path,
-            isAuthenticated: request.auth?.isAuthenticated || 'unknown',
-            strategy: request.auth?.strategy || 'unknown',
-            mode: request.auth?.mode || 'unknown',
-            hasCredentials: !!request.auth?.credentials,
-            hasToken: !!request.auth?.credentials?.token,
-            hasProfile: !!request.auth?.credentials?.profile,
-            userAgent: request.headers?.['user-agent'] || 'unknown',
-            referer: request.headers?.referer || 'none',
-            queryParams: request.query || {},
-            authError: request.auth?.error?.message || 'none',
-            timestamp: new Date().toISOString()
-          })
+          try {
+            // Log the authentication state at the /auth/sign-in endpoint
+            log(LogCodes.AUTH.AUTH_DEBUG, {
+              path: request.path,
+              isAuthenticated: request.auth?.isAuthenticated || 'unknown',
+              strategy: request.auth?.strategy || 'unknown',
+              mode: request.auth?.mode || 'unknown',
+              hasCredentials: !!request.auth?.credentials,
+              hasToken: !!request.auth?.credentials?.token,
+              hasProfile: !!request.auth?.credentials?.profile,
+              userAgent: request.headers?.['user-agent'] || 'unknown',
+              referer: request.headers?.referer || 'none',
+              queryParams: request.query || {},
+              authError: request.auth?.error?.message || 'none',
+              timestamp: new Date().toISOString()
+            })
 
-          // If there's an auth error, log it specifically
-          if (request.auth?.error) {
+            // If there's an auth error, log it specifically
+            if (request.auth?.error) {
+              log(LogCodes.AUTH.SIGN_IN_FAILURE, {
+                userId: 'unknown',
+                error: `Authentication error at /auth/sign-in: ${request.auth.error.message}`,
+                step: 'auth_sign_in_route_error',
+                authState: {
+                  isAuthenticated: request.auth.isAuthenticated,
+                  strategy: request.auth.strategy,
+                  mode: request.auth.mode
+                }
+              })
+            }
+
+            // Log that we're about to redirect
+            log(LogCodes.AUTH.AUTH_DEBUG, {
+              path: request.path,
+              isAuthenticated: 'redirecting',
+              strategy: 'auth_sign_in',
+              mode: 'redirect_to_home',
+              hasCredentials: false,
+              hasToken: false,
+              hasProfile: false,
+              userAgent: request.headers?.['user-agent'] || 'unknown',
+              referer: request.headers?.referer || 'none',
+              queryParams: request.query || {},
+              authError: 'none',
+              redirectTarget: '/home'
+            })
+
+            return h.redirect('/home')
+          } catch (error) {
+            // Log any errors that occur during the redirect
             log(LogCodes.AUTH.SIGN_IN_FAILURE, {
               userId: 'unknown',
-              error: `Authentication error at /auth/sign-in: ${request.auth.error.message}`,
-              step: 'auth_sign_in_route_error',
+              error: `Error during /auth/sign-in redirect: ${error.message}`,
+              step: 'auth_sign_in_redirect_error',
+              errorStack: error.stack,
               authState: {
-                isAuthenticated: request.auth.isAuthenticated,
-                strategy: request.auth.strategy,
-                mode: request.auth.mode
+                isAuthenticated: request.auth?.isAuthenticated,
+                strategy: request.auth?.strategy,
+                mode: request.auth?.mode
               }
             })
-          }
 
-          return h.redirect('/home')
+            // Instead of throwing the error, redirect to an error page or home page
+            // This prevents the 500 error from being shown to the user
+            return h.redirect('/home').code(302)
+          }
         }
       })
       server.route({
