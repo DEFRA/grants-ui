@@ -19,7 +19,14 @@ jest.mock('~/src/server/common/helpers/logging/log.js', () => ({
     AUTH: {
       SESSION_EXPIRED: { level: 'info', messageFunc: jest.fn() },
       TOKEN_VERIFICATION_SUCCESS: { level: 'info', messageFunc: jest.fn() },
-      TOKEN_VERIFICATION_FAILURE: { level: 'error', messageFunc: jest.fn() }
+      TOKEN_VERIFICATION_FAILURE: { level: 'error', messageFunc: jest.fn() },
+      AUTH_DEBUG: { level: 'debug', messageFunc: jest.fn() },
+      SIGN_IN_FAILURE: { level: 'error', messageFunc: jest.fn() },
+      UNAUTHORIZED_ACCESS: { level: 'error', messageFunc: jest.fn() }
+    },
+    SYSTEM: {
+      ENV_CONFIG_DEBUG: { level: 'debug', messageFunc: jest.fn() },
+      SERVER_ERROR: { level: 'error', messageFunc: jest.fn() }
     }
   }
 }))

@@ -48,18 +48,69 @@ import { PotentialFundingController } from '~/src/server/non-land-grants/pigs-mi
 
 const SESSION_CACHE_NAME = 'session.cache.name'
 
-const getViewPaths = () => {
+const getViewPaths = async () => {
   const currentFilePath = fileURLToPath(import.meta.url)
   const isRunningBuiltCode = currentFilePath.includes('.server')
+
+  // For Docker/production, we need to use the working directory, not relative to the built file
   const basePath = isRunningBuiltCode
-    ? path.resolve(path.dirname(currentFilePath), '..')
+    ? path.resolve(process.cwd(), 'src/server') // Docker working directory + src/server
     : path.resolve(path.dirname(currentFilePath))
-  return [
+
+  const viewPaths = [
     path.join(basePath, 'non-land-grants/pigs-might-fly/views'),
     path.join(basePath, 'land-grants/views'),
     path.join(basePath, 'views'),
     ...grantsUiPaths
   ]
+
+  // Debug logging for view path resolution using structured logging
+  const { log, LogCodes } = await import(
+    '~/src/server/common/helpers/logging/log.js'
+  )
+
+  log(LogCodes.SYSTEM.VIEW_DEBUG, {
+    currentFilePath,
+    isRunningBuiltCode,
+    basePath,
+    resolvedViewPaths: viewPaths,
+    processWorkingDir: process.cwd()
+  })
+
+  // Log runtime environment information
+  log(LogCodes.SYSTEM.ENV_CONFIG_DEBUG, {
+    configType: 'Runtime_Environment',
+    configValues: {
+      NODE_ENV: process.env.NODE_ENV ?? 'NOT_SET',
+      isDockerEnvironment: process.cwd() === '/home/node',
+      currentWorkingDirectory: process.cwd(),
+      nodeVersion: process.version,
+      platform: process.platform,
+      architecture: process.arch,
+      __dirname_equivalent: path.dirname(currentFilePath),
+      serverIndexLocation: currentFilePath
+    }
+  })
+
+  // Check if view files actually exist using structured logging
+  const fs = await import('fs')
+  viewPaths.forEach((viewPath, index) => {
+    try {
+      const exists = fs.existsSync(viewPath)
+      log(LogCodes.SYSTEM.VIEW_PATH_CHECK, {
+        index,
+        path: viewPath,
+        exists,
+        isAbsolute: path.isAbsolute(viewPath)
+      })
+    } catch (error) {
+      log(LogCodes.SYSTEM.SERVER_ERROR, {
+        error: `View path check failed for ${viewPath}: ${error.message}`
+      })
+    }
+  })
+
+  return viewPaths
 }
 
 const createHapiServer = () => {
@@ -122,7 +173,7 @@ const registerFormsPlugin = async (server, prefix = '') => {
       },
       nunjucks: {
         baseLayoutPath: 'layouts/dxt-form.njk',
-        paths: getViewPaths()
+        paths: await getViewPaths()
       },
       viewContext: context,
       controllers: {

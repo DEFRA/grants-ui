@@ -36,6 +36,41 @@ export default {
         }
       })
 
+      // Log critical environment variables for debugging
+      log(LogCodes.SYSTEM.ENV_CONFIG_DEBUG, {
+        configType: 'DefraID_Environment_Variables',
+        configValues: {
+          DEFRA_ID_WELL_KNOWN_URL:
+            process.env.DEFRA_ID_WELL_KNOWN_URL ?? 'NOT_SET',
+          DEFRA_ID_CLIENT_ID: process.env.DEFRA_ID_CLIENT_ID ?? 'NOT_SET',
+          DEFRA_ID_CLIENT_SECRET: process.env.DEFRA_ID_CLIENT_SECRET
+            ? '[REDACTED]'
+            : 'NOT_SET',
+          DEFRA_ID_SERVICE_ID: process.env.DEFRA_ID_SERVICE_ID ?? 'NOT_SET',
+          DEFRA_ID_REDIRECT_URL: process.env.DEFRA_ID_REDIRECT_URL ?? 'NOT_SET',
+          DEFRA_ID_SIGN_OUT_REDIRECT_URL:
+            process.env.DEFRA_ID_SIGN_OUT_REDIRECT_URL ?? 'NOT_SET',
+          DEFRA_ID_REFRESH_TOKENS:
+            process.env.DEFRA_ID_REFRESH_TOKENS ?? 'NOT_SET',
+          NODE_ENV: process.env.NODE_ENV ?? 'NOT_SET'
+        }
+      })
+
+      // Log session configuration that affects authentication
+      log(LogCodes.SYSTEM.ENV_CONFIG_DEBUG, {
+        configType: 'Session_Configuration',
+        configValues: {
+          SESSION_CACHE_ENGINE: process.env.SESSION_CACHE_ENGINE ?? 'NOT_SET',
+          REDIS_HOST: process.env.REDIS_HOST ?? 'NOT_SET',
+          REDIS_PORT: process.env.REDIS_PORT ?? 'NOT_SET',
+          REDIS_PASSWORD: process.env.REDIS_PASSWORD ? '[REDACTED]' : 'NOT_SET',
+          SESSION_COOKIE_PASSWORD: process.env.SESSION_COOKIE_PASSWORD
+            ? '[REDACTED]'
+            : 'NOT_SET',
+          SESSION_COOKIE_SECURE: process.env.SESSION_COOKIE_SECURE ?? 'NOT_SET'
+        }
+      })
+
       let oidcConfig
       try {
         oidcConfig = await getOidcConfig()
@@ -56,6 +91,27 @@ export default {
             tokenEndpoint: oidcConfig.token_endpoint,
             jwksUri: oidcConfig.jwks_uri,
             endSessionEndpoint: oidcConfig.end_session_endpoint
+          }
+        })
+
+        // Log full OIDC configuration from well-known endpoint
+        log(LogCodes.SYSTEM.ENV_CONFIG_DEBUG, {
+          configType: 'OIDC_WellKnown_Response',
+          configValues: {
+            issuer: oidcConfig.issuer ?? 'NOT_SET',
+            authorization_endpoint:
+              oidcConfig.authorization_endpoint ?? 'NOT_SET',
+            token_endpoint: oidcConfig.token_endpoint ?? 'NOT_SET',
+            userinfo_endpoint: oidcConfig.userinfo_endpoint ?? 'NOT_SET',
+            jwks_uri: oidcConfig.jwks_uri ?? 'NOT_SET',
+            end_session_endpoint: oidcConfig.end_session_endpoint ?? 'NOT_SET',
+            scopes_supported: oidcConfig.scopes_supported ?? 'NOT_SET',
+            response_types_supported:
+              oidcConfig.response_types_supported ?? 'NOT_SET',
+            grant_types_supported:
+              oidcConfig.grant_types_supported ?? 'NOT_SET',
+            token_endpoint_auth_methods_supported:
+              oidcConfig.token_endpoint_auth_methods_supported ?? 'NOT_SET'
           }
         })
       } catch (error) {
@@ -145,6 +201,33 @@ export default {
 }
 
 function getBellOptions(oidcConfig) {
+  // Debug log Bell configuration before creating provider
+  log(LogCodes.AUTH.AUTH_DEBUG, {
+    path: 'bell_configuration',
+    isAuthenticated: 'system',
+    strategy: 'bell',
+    mode: 'provider_setup',
+    hasCredentials: false,
+    hasToken: false,
+    hasProfile: false,
+    userAgent: 'server',
+    referer: 'none',
+    queryParams: {},
+    authError: 'none',
+    bellConfig: {
+      useParamsAuth: true,
+      authEndpoint: oidcConfig.authorization_endpoint,
+      tokenEndpoint: oidcConfig.token_endpoint,
+      scope: ['openid', 'offline_access', config.get('defraId.clientId')],
+      clientIdLength: config.get('defraId.clientId')
+        ? config.get('defraId.clientId').length
+        : 0,
+      hasClientSecret: !!config.get('defraId.clientSecret'),
+      redirectUrl: config.get('defraId.redirectUrl')
+    },
+    timestamp: new Date().toISOString()
+  })
+
   return {
     provider: {
       name: 'defra-id',
@@ -255,6 +338,23 @@ function getBellOptions(oidcConfig) {
     isSecure: config.get('session.cookie.secure'),
     location: function (request) {
       try {
+        log(LogCodes.AUTH.AUTH_DEBUG, {
+          path: request.path,
+          isAuthenticated: 'processing',
+          strategy: 'bell',
+          mode: 'location_function',
+          hasCredentials: false,
+          hasToken: false,
+          hasProfile: false,
+          userAgent: request.headers?.['user-agent'] || 'unknown',
+          referer: request.headers?.referer || 'none',
+          queryParams: request.query,
+          authError: 'none',
+          redirectQuery: request.query.redirect,
+          configuredRedirectUrl: config.get('defraId.redirectUrl'),
+          timestamp: new Date().toISOString()
+        })
+
         // If request includes a redirect query parameter, store it in the session to allow redirection after authentication
         if (request.query.redirect) {
           // Ensure redirect is a relative path to prevent redirect attacks
@@ -291,6 +391,23 @@ function getBellOptions(oidcConfig) {
             params.relationshipId = request.query.organisationId
           }
         }
+
+        log(LogCodes.AUTH.AUTH_DEBUG, {
+          path: request.path,
+          isAuthenticated: 'processing',
+          strategy: 'bell',
+          mode: 'provider_params',
+          hasCredentials: false,
+          hasToken: false,
+          hasProfile: false,
+          userAgent: request.headers?.['user-agent'] || 'unknown',
+          referer: request.headers?.referer || 'none',
+          queryParams: request.query,
+          authError: 'none',
+          providerParams: params,
+          serviceId: config.get('defraId.serviceId'),
+          timestamp: new Date().toISOString()
+        })
 
         return params
       } catch (error) {

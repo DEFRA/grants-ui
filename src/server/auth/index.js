@@ -171,7 +171,52 @@ async function handleOidcSignIn(request, h) {
         step: 'oidc_sign_in_authentication_check'
       })
 
-      return h.view('unauthorised')
+      // Debug logging before attempting to render unauthorised view
+      log(LogCodes.AUTH.AUTH_DEBUG, {
+        path: request.path,
+        isAuthenticated: false,
+        strategy: 'system',
+        mode: 'view_render_attempt',
+        hasCredentials: false,
+        hasToken: false,
+        hasProfile: false,
+        userAgent: 'server',
+        referer: 'none',
+        queryParams: {},
+        authError: 'Attempting to render unauthorised view',
+        viewAttempt: 'unauthorised.njk',
+        serverWorkingDir: process.cwd(),
+        timestamp: new Date().toISOString()
+      })
+
+      try {
+        const result = h.view('unauthorised')
+        log(LogCodes.AUTH.AUTH_DEBUG, {
+          path: request.path,
+          isAuthenticated: false,
+          strategy: 'system',
+          mode: 'view_render_success',
+          hasCredentials: false,
+          hasToken: false,
+          hasProfile: false,
+          userAgent: 'server',
+          referer: 'none',
+          queryParams: {},
+          authError: 'Successfully rendered unauthorised view',
+          timestamp: new Date().toISOString()
+        })
+        return result
+      } catch (viewError) {
+        log(LogCodes.AUTH.SIGN_IN_FAILURE, {
+          userId: 'unknown',
+          error: `Failed to render unauthorised view: ${viewError.message}`,
+          step: 'view_render_error',
+          errorStack: viewError.stack,
+          viewError: 'unauthorised.njk',
+          serverWorkingDir: process.cwd()
+        })
+        throw viewError
+      }
     }
 
     // Log successful authentication details

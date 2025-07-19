@@ -194,6 +194,21 @@ export const LogCodes = {
   },
 
   SYSTEM: {
+    VIEW_DEBUG: {
+      level: 'debug',
+      messageFunc: (messageOptions) =>
+        `View path debug: currentFile=${messageOptions.currentFilePath}, isBuilt=${messageOptions.isRunningBuiltCode}, basePath=${messageOptions.basePath}, workingDir=${messageOptions.processWorkingDir}, pathsResolved=${messageOptions.resolvedViewPaths?.length || 0}`
+    },
+    VIEW_PATH_CHECK: {
+      level: 'debug',
+      messageFunc: (messageOptions) =>
+        `View path ${messageOptions.index}: path=${messageOptions.path}, exists=${messageOptions.exists}, isAbsolute=${messageOptions.isAbsolute}`
+    },
+    ENV_CONFIG_DEBUG: {
+      level: 'debug',
+      messageFunc: (messageOptions) =>
+        `Environment configuration: ${messageOptions.configType} - ${JSON.stringify(messageOptions.configValues)}`
+    },
     SERVER_ERROR: {
       level: 'error',
       messageFunc: (messageOptions) =>
