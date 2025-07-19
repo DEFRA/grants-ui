@@ -149,10 +149,10 @@ function getBellOptions(oidcConfig) {
     provider: {
       name: 'defra-id',
       protocol: 'oauth2',
-      useParamsAuth: true,
+      useParamsAuth: false,
       auth: oidcConfig.authorization_endpoint,
       token: oidcConfig.token_endpoint,
-      scope: ['openid', 'offline_access', config.get('defraId.clientId')],
+      scope: ['openid', 'offline_access'],
       profile: function (credentials) {
         try {
           log(LogCodes.AUTH.AUTH_DEBUG, {
