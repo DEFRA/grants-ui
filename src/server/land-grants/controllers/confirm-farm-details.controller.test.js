@@ -67,7 +67,7 @@ describe('ConfirmFarmDetailsController', () => {
       const handler = controller.makeGetRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
 
-      expect(fetchBusinessAndCustomerInformation).toHaveBeenCalledWith('SBI123456', 3646257965)
+      expect(fetchBusinessAndCustomerInformation).toHaveBeenCalledWith('SBI123456', 1100014934)
       expect(mockH.view).toHaveBeenCalledWith('confirm-farm-details', {
         farmDetails: expect.objectContaining({
           rows: expect.any(Array)
@@ -328,7 +328,7 @@ describe('ConfirmFarmDetailsController', () => {
 
   describe('constants', () => {
     it('should have correct static constants', () => {
-      expect(ConfirmFarmDetailsController.CUSTOMER_ID).toBe(3646257965)
+      expect(ConfirmFarmDetailsController.CUSTOMER_ID).toBe(1100014934)
       expect(ConfirmFarmDetailsController.ERROR_MESSAGE).toBe(
         'Unable to find farm information, please try again later.'
       )
