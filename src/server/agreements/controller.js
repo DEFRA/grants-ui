@@ -12,8 +12,6 @@ function validateConfig() {
   if (!baseUrl || !token) {
     throw new Error('Missing required configuration: agreements API settings')
   }
-  /* eslint-disable-next-line no-console */
-  console.log('agreements API base URL:', String(baseUrl))
 
   return { baseUrl: String(baseUrl), token: String(token) }
 }
@@ -28,8 +26,6 @@ function buildTargetUri(baseUrl, path) {
   const cleanBaseUrl = baseUrl.replace(/\/$/, '')
   const cleanPath = path?.replace(/^\//, '') || ''
   const uri = cleanPath ? `${cleanBaseUrl}/${cleanPath}` : cleanBaseUrl
-  /* eslint-disable-next-line no-console */
-  console.log('Target URI:', uri)
   return uri
 }
 
@@ -40,15 +36,11 @@ function buildTargetUri(baseUrl, path) {
  * @param {string} method - The HTTP method
  * @returns {object} The proxy headers object
  */
-function buildProxyHeaders(token, requestHeaders, method) {
+function buildProxyHeaders(token, requestHeaders) {
   const headers = {
     Authorization: `Bearer ${token}`,
     'defra-grants-proxy': 'true',
-    ...requestHeaders
-  }
-
-  if (['POST', 'PUT', 'PATCH'].includes(method.toUpperCase())) {
-    headers['content-type'] = requestHeaders['content-type'] || 'application/x-www-form-urlencoded'
+    'content-type': requestHeaders['content-type'] || 'application/x-www-form-urlencoded'
   }
 
   return headers
@@ -56,9 +48,7 @@ function buildProxyHeaders(token, requestHeaders, method) {
 
 /**
  * Controller for the agreements API
- * @param {object} request - The incoming request
- * @param {object} h - The Hapi response toolkit
- * @returns {Promise<object>} The response from the proxy
+ * @satisfies {Partial<ServerRoute>}
  */
 export const getAgreementController = {
   async handler(request, h) {
@@ -75,23 +65,43 @@ export const getAgreementController = {
           .code(statusCodes.badRequest)
       }
 
-      const targetUri = buildTargetUri(baseUrl, path)
-      const proxyHeaders = buildProxyHeaders(token, request.headers, request.method)
+      const uri = buildTargetUri(baseUrl, path)
+      const headers = buildProxyHeaders(token, request.headers)
 
-      /* eslint-disable-next-line no-console */
-      console.log('Proxying request to agreements API', token)
+      const apiResponse = await Promise.resolve(
+        h.proxy({
+          mapUri: () => ({ uri, headers }),
+          passThrough: true,
+          rejectUnauthorized: false,
+          onResponse: (err, res, req, h) => {
+            if (err) {
+              request.logger.error('Proxy error:', err)
+              return h.response('Proxy error').code(502)
+            }
 
-      const apiResponse = await h.proxy({
-        mapUri: () => ({ uri: targetUri, headers: proxyHeaders }),
-        passThrough: true
+            return h.response(res).code(res.statusCode)
+          }
+        })
+      )
+
+      if (!apiResponse) {
+        request.logger.error('Proxy response is undefined. Possible upstream error or misconfiguration.')
+        return h
+          .response({
+            error: 'No response from upstream service',
+            message: 'The agreements API did not return any data'
+          })
+          .code(502)
+      }
+
+      request.logger.info({
+        message: 'Agreements API request successful',
+        method: request.method,
+        response: apiResponse
       })
-
-      /* eslint-disable-next-line no-console */
-      console.log('Agreements Request completed', apiResponse)
       return apiResponse
     } catch (error) {
-      /* eslint-disable-next-line no-console */
-      console.log('Request failed:', error)
+      request.logger.error('Request failed:', error)
 
       if (error.message.includes('Missing required configuration')) {
         return h

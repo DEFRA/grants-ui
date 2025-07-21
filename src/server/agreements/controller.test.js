@@ -33,7 +33,11 @@ describe('Agreements Controller', () => {
     mockRequest = {
       headers: { 'x-request-id': 'test-request-id' },
       params: { path: 'test-path' },
-      method: 'GET'
+      method: 'GET',
+      logger: {
+        info: jest.fn(),
+        error: jest.fn()
+      }
     }
 
     // Default config setup
@@ -57,7 +61,9 @@ describe('Agreements Controller', () => {
       expect(config.get).toHaveBeenCalledWith('agreements.agreementsApiToken')
       expect(mockH.proxy).toHaveBeenCalledWith({
         mapUri: expect.any(Function),
-        passThrough: true
+        passThrough: true,
+        onResponse: expect.any(Function),
+        rejectUnauthorized: false
       })
     })
 
@@ -119,7 +125,9 @@ describe('Agreements Controller', () => {
 
       expect(mockH.proxy).toHaveBeenCalledWith({
         mapUri: expect.any(Function),
-        passThrough: true
+        passThrough: true,
+        onResponse: expect.any(Function),
+        rejectUnauthorized: false
       })
     })
   })
@@ -189,8 +197,8 @@ describe('Agreements Controller', () => {
 
       expect(mapUriResult.headers).toEqual({
         Authorization: 'Bearer test-token',
-        'defra-grants-proxy': 'true',
-        'x-request-id': 'test-request-id'
+        'content-type': 'application/x-www-form-urlencoded',
+        'defra-grants-proxy': 'true'
       })
     })
 
@@ -205,8 +213,7 @@ describe('Agreements Controller', () => {
       expect(mapUriResult.headers).toEqual({
         Authorization: 'Bearer test-token',
         'defra-grants-proxy': 'true',
-        'content-type': 'application/x-www-form-urlencoded',
-        'x-request-id': 'test-request-id'
+        'content-type': 'application/x-www-form-urlencoded'
       })
     })
 
@@ -225,8 +232,7 @@ describe('Agreements Controller', () => {
       expect(mapUriResult.headers).toEqual({
         Authorization: 'Bearer test-token',
         'defra-grants-proxy': 'true',
-        'content-type': 'application/json',
-        'x-request-id': 'test-request-id'
+        'content-type': 'application/json'
       })
     })
 
@@ -241,8 +247,7 @@ describe('Agreements Controller', () => {
       expect(mapUriResult.headers).toEqual({
         Authorization: 'Bearer test-token',
         'defra-grants-proxy': 'true',
-        'content-type': 'application/x-www-form-urlencoded',
-        'x-request-id': 'test-request-id'
+        'content-type': 'application/x-www-form-urlencoded'
       })
     })
 
@@ -257,8 +262,7 @@ describe('Agreements Controller', () => {
       expect(mapUriResult.headers).toEqual({
         Authorization: 'Bearer test-token',
         'defra-grants-proxy': 'true',
-        'content-type': 'application/x-www-form-urlencoded',
-        'x-request-id': 'test-request-id'
+        'content-type': 'application/x-www-form-urlencoded'
       })
     })
 
@@ -276,8 +280,7 @@ describe('Agreements Controller', () => {
       expect(mapUriResult.headers).toEqual({
         Authorization: 'Bearer test-token',
         'defra-grants-proxy': 'true',
-        'content-type': 'application/json',
-        'x-request-id': 'test-request-id'
+        'content-type': 'application/json'
       })
     })
   })
@@ -314,7 +317,9 @@ describe('Agreements Controller', () => {
 
       expect(mockH.proxy).toHaveBeenCalledWith({
         mapUri: expect.any(Function),
-        passThrough: true
+        passThrough: true,
+        rejectUnauthorized: false,
+        onResponse: expect.any(Function)
       })
 
       const proxyCall = mockH.proxy.mock.calls[0][0]
@@ -324,7 +329,7 @@ describe('Agreements Controller', () => {
       expect(mapUriResult.headers).toEqual({
         Authorization: 'Bearer test-token',
         'defra-grants-proxy': 'true',
-        'x-request-id': 'test-request-id'
+        'content-type': 'application/x-www-form-urlencoded'
       })
     })
 
