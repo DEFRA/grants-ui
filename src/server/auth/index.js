@@ -95,6 +95,52 @@ export const auth = {
         },
         handler: handleOidcSignIn
       })
+
+      // Add error handling specifically for Bell/OAuth errors
+      server.ext('onPreResponse', (request, h) => {
+        if (request.path.startsWith('/auth/') && request.response.isBoom) {
+          const error = request.response
+
+          // Log detailed Bell/OAuth errors
+          log(LogCodes.AUTH.SIGN_IN_FAILURE, {
+            userId: 'unknown',
+            error: `Bell/OAuth error at ${request.path}: ${String(error.message)}`,
+            step: 'bell_oauth_error',
+            errorDetails: {
+              statusCode: error.output?.statusCode,
+              payload: error.output?.payload,
+              headers: error.output?.headers,
+              data: error.data,
+              stack: error.stack
+            }
+          })
+
+          // For token exchange failures, provide more user-friendly error
+          if (
+            error.message.includes('Failed obtaining') ||
+            error.message.includes('token')
+          ) {
+            log(LogCodes.AUTH.SIGN_IN_FAILURE, {
+              userId: 'unknown',
+              error:
+                'OAuth2 token exchange failed - possible configuration issue',
+              step: 'oauth_token_exchange_failure',
+              troubleshooting: {
+                checkRedirectUrl:
+                  'Verify DEFRA_ID_REDIRECT_URL matches registration',
+                checkClientCredentials:
+                  'Verify DEFRA_ID_CLIENT_ID and DEFRA_ID_CLIENT_SECRET',
+                checkNetworkAccess:
+                  'Ensure production can reach token endpoint',
+                checkWellKnownUrl:
+                  'Verify DEFRA_ID_WELL_KNOWN_URL is accessible'
+              }
+            })
+          }
+        }
+
+        return h.continue
+      })
       server.route({
         method: 'GET',
         path: '/auth/sign-out',

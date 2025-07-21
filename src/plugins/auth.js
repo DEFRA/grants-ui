@@ -248,6 +248,7 @@ function getBellOptions(oidcConfig) {
       scope: ['openid', 'offline_access', config.get('defraId.clientId')],
       profile: function (credentials) {
         try {
+          // Log detailed credentials information for debugging
           log(LogCodes.AUTH.AUTH_DEBUG, {
             path: 'bell_profile_processing',
             isAuthenticated: 'processing',
@@ -260,7 +261,8 @@ function getBellOptions(oidcConfig) {
             referer: 'none',
             queryParams: {},
             authError: 'none',
-            tokenLength: credentials?.token ? credentials.token.length : 0
+            tokenLength: credentials?.token ? credentials.token.length : 0,
+            credentialsKeys: credentials ? Object.keys(credentials) : []
           })
 
           if (!credentials?.token) {
