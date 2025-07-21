@@ -165,7 +165,7 @@ export const auth = {
 
 async function handleOidcSignIn(request, h) {
   try {
-    // First, log detailed authentication debug information
+    // First, log detailed authentication debug information including cookie state
     const authDebugInfo = {
       path: request.path,
       isAuthenticated: request.auth.isAuthenticated,
@@ -177,7 +177,13 @@ async function handleOidcSignIn(request, h) {
       userAgent: request.headers?.['user-agent'] || 'unknown',
       referer: request.headers?.referer || 'none',
       queryParams: request.query,
-      authError: request.auth?.error?.message || 'none'
+      authError: request.auth?.error?.message || 'none',
+      cookiesReceived: Object.keys(request.state || {}),
+      hasBellCookie: Object.keys(request.state || {}).some(
+        (key) => key.includes('bell') || key.includes('defra-id')
+      ),
+      requestMethod: request.method,
+      isSecure: request.server.info.protocol === 'https'
     }
 
     // Always log debug info to help with troubleshooting

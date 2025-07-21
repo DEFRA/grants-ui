@@ -48,7 +48,7 @@ export const nunjucksConfig = {
       environment: nunjucksEnvironment
     },
     relativeTo: path.resolve(process.cwd()),
-    path: 'src/server',
+    path: ['src/server/views', 'src/server'],
     isCached: config.get('isProduction'),
     context
   }

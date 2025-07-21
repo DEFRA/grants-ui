@@ -233,12 +233,16 @@ function getBellOptions(oidcConfig) {
         ? config.get('defraId.clientId').length
         : 0,
       hasClientSecret: !!config.get('defraId.clientSecret'),
-      redirectUrl: config.get('defraId.redirectUrl')
+      redirectUrl: config.get('defraId.redirectUrl'),
+      isSecure: config.get('session.cookie.secure'),
+      cookiePassword: config.get('session.cookie.password')
+        ? '[REDACTED]'
+        : 'NOT_SET'
     },
     timestamp: new Date().toISOString()
   })
 
-  return {
+  const bellOptions = {
     provider: {
       name: 'defra-id',
       protocol: 'oauth2',
@@ -435,6 +439,30 @@ function getBellOptions(oidcConfig) {
       }
     }
   }
+
+  // Log the final Bell options for debugging
+  log(LogCodes.AUTH.AUTH_DEBUG, {
+    path: 'bell_final_options',
+    isAuthenticated: 'system',
+    strategy: 'bell',
+    mode: 'final_options',
+    hasCredentials: false,
+    hasToken: false,
+    hasProfile: false,
+    userAgent: 'server',
+    referer: 'none',
+    queryParams: {},
+    authError: 'none',
+    finalOptions: {
+      isSecure: bellOptions.isSecure,
+      hasPassword: !!bellOptions.password,
+      hasClientId: !!bellOptions.clientId,
+      hasClientSecret: !!bellOptions.clientSecret
+    },
+    timestamp: new Date().toISOString()
+  })
+
+  return bellOptions
 }
 
 function getCookieOptions() {
