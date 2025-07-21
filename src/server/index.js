@@ -109,6 +109,7 @@ export const registerFormsPlugin = async (server, prefix = '') => {
       ...(prefix && { routes: { prefix } }),
       cacheName: config.get(SESSION_CACHE_NAME),
       keyGenerator: generateKey,
+      sessionPurger: createSessionPurger(server),
       services: {
         formsService: await formsService(),
         formSubmissionService,
@@ -275,6 +276,94 @@ export async function performSessionHydration(server, sbi) {
     method: 'POST',
     logContext: 'session hydration'
   })
+}
+
+async function deleteSessionFromBackend(request) {
+  const { userId, businessId, grantId } = getIdentity(request)
+  const apiUrl = `${GRANTS_UI_BACKEND_ENDPOINT}/state/?userId=${userId}&businessId=${businessId}&grantId=${grantId}`
+
+  request.logger.info(`Purging session from MongoDB for identity: ${userId}:${businessId}:${grantId}`)
+
+  try {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 10000)
+
+    const response = await fetch(apiUrl, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      signal: controller.signal
+    })
+
+    clearTimeout(timeoutId)
+
+    if (!response.ok && response.status !== statusCodes.notFound) {
+      throw new Error(`Failed to delete session from backend: ${response.status}`)
+    }
+
+    request.logger.info(`Session successfully purged from MongoDB for identity: ${userId}:${businessId}:${grantId}`)
+    return true
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      request.logger.error(['session-purger'], 'MongoDB purge timed out after 10 seconds', err)
+    } else {
+      request.logger.error(['session-purger'], 'Failed to purge session from MongoDB', err)
+    }
+    return false
+  }
+}
+
+export function createSessionPurger(server) {
+  const isEnabled = process.env.ENABLE_SESSION_PURGER !== 'false' // Enabled by default
+
+  return async (request) => {
+    if (!isEnabled) {
+      request.logger.debug('SessionPurger: Disabled, using default clearState behavior')
+      return false // Signal to use fallback
+    }
+
+    request.logger.info('SessionPurger: Starting session purge process')
+
+    let mongoSuccess = true
+    let redisSuccess = true
+
+    try {
+      // Step 1: Clear MongoDB first
+      mongoSuccess = await deleteSessionFromBackend(request)
+      if (!mongoSuccess) {
+        request.logger.warn('SessionPurger: MongoDB purge failed, continuing with Redis clearing')
+      }
+
+      // Step 2: Clear Redis cache
+      try {
+        const cache = server.app.cache
+        const sessionKey = generateKey(request)
+
+        if (request.yar.id) {
+          await cache.drop(sessionKey)
+          request.logger.info(`SessionPurger: Redis cache cleared for key: ${sessionKey}`)
+        } else {
+          request.logger.warn('SessionPurger: No session ID available for Redis clearing')
+        }
+      } catch (redisErr) {
+        redisSuccess = false
+        request.logger.error(['session-purger'], 'SessionPurger: Failed to clear Redis cache', redisErr)
+      }
+
+      const success = mongoSuccess && redisSuccess
+      if (success) {
+        request.logger.info('SessionPurger: Session purge completed successfully')
+      } else {
+        request.logger.warn('SessionPurger: Session purge completed with some failures')
+      }
+
+      return success
+    } catch (err) {
+      request.logger.error(['session-purger'], 'SessionPurger: Failed to purge session', err)
+      throw err
+    }
+  }
 }
 
 const registerPlugins = async (server) => {
