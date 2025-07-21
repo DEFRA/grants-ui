@@ -33,7 +33,6 @@ function buildTargetUri(baseUrl, path) {
  * Builds proxy headers for the request
  * @param {string} token - The API token
  * @param {object} requestHeaders - The incoming request headers
- * @param {string} method - The HTTP method
  * @returns {object} The proxy headers object
  */
 function buildProxyHeaders(token, requestHeaders) {
