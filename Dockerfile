@@ -53,9 +53,14 @@ COPY --from=production_build /home/node/.server ./.server/
 COPY --from=production_build /home/node/.public/ ./.public/
 COPY --from=production_build /home/node/src/server/common/forms ./src/server/common/forms
 COPY --from=production_build /home/node/src/server/common/tasklist ./src/server/common/tasklist
+COPY --from=production_build /home/node/src/server/common/templates ./src/server/common/templates
+COPY --from=production_build /home/node/src/server/common/components ./src/server/common/components
 COPY --from=production_build /home/node/src/server/views ./src/server/views
 COPY --from=production_build /home/node/src/server/land-grants/views ./src/server/land-grants/views
 COPY --from=production_build /home/node/src/server/non-land-grants ./src/server/non-land-grants
+COPY --from=production_build /home/node/src/server/about ./src/server/about
+COPY --from=production_build /home/node/src/server/home ./src/server/home
+COPY --from=production_build /home/node/src/server/error ./src/server/error
 
 RUN npm ci --omit=dev  --ignore-scripts
 
