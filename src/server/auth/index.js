@@ -186,29 +186,29 @@ async function handleOidcSignIn(request, h) {
       isSecure: request.server.info.protocol === 'https'
     }
 
-    // Always log debug info to help with troubleshooting
     log(LogCodes.AUTH.AUTH_DEBUG, authDebugInfo)
 
-    // If the user is not authenticated, redirect to the home page
-    // This should only occur if the user tries to access the sign-in page directly and not part of the sign-in flow
-    // eg if the user has bookmarked the Defra Identity sign-in page or they have signed out and tried to go back in the browser
     if (!request.auth.isAuthenticated) {
-      // Log more detailed error information
+      const authErrorMessage =
+        request.auth?.error?.message || 'Not authenticated'
+      const hasCredentials = !!request.auth?.credentials
+
       const errorDetails = {
         path: request.path,
         userId: 'unknown',
-        error: request.auth?.error?.message || 'Not authenticated',
+        error: authErrorMessage,
         isAuthenticated: request.auth.isAuthenticated,
         strategy: request.auth?.strategy,
-        hasCredentials: !!request.auth?.credentials,
+        mode: request.auth?.mode,
+        hasCredentials,
         artifacts: request.auth?.artifacts ? 'present' : 'none',
         userAgent: request.headers?.['user-agent'] || 'unknown',
-        referer: request.headers?.referer || 'none'
+        referer: request.headers?.referer || 'none',
+        queryParams: request.query
       }
 
       log(LogCodes.AUTH.UNAUTHORIZED_ACCESS, errorDetails)
 
-      // Additional detailed failure logging
       log(LogCodes.AUTH.SIGN_IN_FAILURE, {
         userId: 'unknown',
         error: `Authentication failed at OIDC sign-in. Auth state: ${JSON.stringify(
@@ -216,14 +216,53 @@ async function handleOidcSignIn(request, h) {
             isAuthenticated: request.auth.isAuthenticated,
             strategy: request.auth?.strategy,
             mode: request.auth?.mode,
-            error: request.auth?.error?.message,
-            hasCredentials: !!request.auth?.credentials
+            error: authErrorMessage,
+            hasCredentials
           }
         )}`,
-        step: 'oidc_sign_in_authentication_check'
+        step: 'oidc_sign_in_authentication_check',
+        failureAnalysis: {
+          failureType: hasCredentials
+            ? 'token_exchange_failure'
+            : 'oauth_redirect_failure',
+          errorMessage: authErrorMessage,
+          hasCredentials,
+          likelyIssue: hasCredentials
+            ? 'Bell.js completed OAuth redirect but failed during token exchange - check client credentials, redirect URL, and token endpoint connectivity'
+            : 'OAuth redirect failed - check authorization endpoint and initial OAuth configuration'
+        }
       })
 
-      // Debug logging before attempting to render unauthorised view
+      if (hasCredentials && authErrorMessage?.includes('access token')) {
+        log(LogCodes.AUTH.SIGN_IN_FAILURE, {
+          userId: 'unknown',
+          error:
+            'Token exchange failure detected - Bell completed OAuth redirect but cannot exchange code for token',
+          step: 'token_exchange_failure_analysis',
+          troubleshooting: {
+            issue: 'Failed obtaining access token',
+            checkList: [
+              'Verify DEFRA_ID_CLIENT_SECRET is correct',
+              'Verify DEFRA_ID_REDIRECT_URL matches registered redirect URI exactly',
+              'Check network connectivity to token endpoint from production environment',
+              'Verify token endpoint URL in well-known configuration',
+              'Check if client credentials are valid in Defra ID system'
+            ],
+            credentialsPresent: hasCredentials,
+            errorPattern:
+              'hasCredentials=true + "Failed obtaining access token" = token exchange failed',
+            nextSteps:
+              'Check Bell.js token exchange logs and verify client configuration'
+          },
+          requestContext: {
+            query: request.query,
+            cookies: Object.keys(request.state || {}),
+            hasStateParam: !!request.query.state,
+            hasCodeParam: !!request.query.code
+          }
+        })
+      }
+
       log(LogCodes.AUTH.AUTH_DEBUG, {
         path: request.path,
         isAuthenticated: false,
@@ -286,7 +325,6 @@ async function handleOidcSignIn(request, h) {
           profileKeys: Object.keys(profile || {})
         }
       })
-      // Throw an error to let the error handling middleware deal with it properly
       throw new Error('Authentication failed: Missing required profile data')
     }
 
@@ -302,9 +340,7 @@ async function handleOidcSignIn(request, h) {
       })
     })
 
-    // verify token returned from Defra Identity against public key
     await verifyToken(token)
-
     // Typically permissions for the selected organisation would be available in the `roles` property of the token
     // However, when signing in with RPA credentials, the roles only include the role name and not the permissions
     // Therefore, we need to make additional API calls to get the permissions from Siti Agri
@@ -389,7 +425,6 @@ async function handleOidcSignIn(request, h) {
         step: 'redirect_error',
         sessionId: profile.sessionId
       })
-      // Throw an error to let the error handling middleware deal with it properly
       throw new Error(
         `Failed to redirect after sign in: ${redirectError.message}`
       )

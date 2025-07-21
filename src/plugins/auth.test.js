@@ -151,7 +151,10 @@ describe('Auth Plugin', () => {
       const options = getBellOptions(mockOidcConfig)
       const mockRequest = {
         query: { redirect: '/home' },
-        yar: { set: jest.fn() }
+        yar: { set: jest.fn() },
+        url: { href: 'http://localhost:3000/auth?redirect=%2Fhome' }, // Added url.href
+        method: 'GET', // Optionally add method if used in logging
+        headers: { host: 'localhost:3000', origin: 'http://localhost:3000' }
       }
 
       const result = options.location(mockRequest)

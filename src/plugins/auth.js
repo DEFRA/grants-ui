@@ -21,9 +21,9 @@ export default {
         isAuthenticated: 'system',
         strategy: 'system',
         mode: 'config_debug',
-        hasCredentials: false,
-        hasToken: false,
-        hasProfile: false,
+        hasCredentials: 'system_level',
+        hasToken: 'system_level',
+        hasProfile: 'system_level',
         userAgent: 'server',
         referer: 'none',
         queryParams: {},
@@ -138,29 +138,115 @@ export default {
             wellKnownUrl: config.get('defraId.wellKnownUrl')
           }
         })
-
         // Mark error as already logged to prevent duplicate logging
         error.alreadyLogged = true
         throw error
       }
 
+      log(LogCodes.AUTH.AUTH_DEBUG, {
+        path: 'auth_strategy_registration',
+        isAuthenticated: 'system',
+        strategy: 'bell',
+        mode: 'strategy_registration',
+        hasCredentials: 'system_level',
+        hasToken: 'system_level',
+        hasProfile: 'system_level',
+        userAgent: 'server',
+        referer: 'none',
+        queryParams: {},
+        authError: 'none',
+        strategyName: 'defra-id',
+        timestamp: new Date().toISOString()
+      })
+
       // Bell is a third-party plugin that provides a common interface for OAuth 2.0 authentication
       // Used to authenticate users with Defra Identity and a pre-requisite for the Cookie authentication strategy
       // Also used for changing organisations and signing out
-      server.auth.strategy('defra-id', 'bell', getBellOptions(oidcConfig))
+      const bellOptions = getBellOptions(oidcConfig)
+      server.auth.strategy('defra-id', 'bell', bellOptions)
+
+      log(LogCodes.AUTH.AUTH_DEBUG, {
+        path: 'auth_strategy_registration',
+        isAuthenticated: 'system',
+        strategy: 'bell',
+        mode: 'strategy_registered',
+        hasCredentials: 'system_level',
+        hasToken: 'system_level',
+        hasProfile: 'system_level',
+        userAgent: 'server',
+        referer: 'none',
+        queryParams: {},
+        authError: 'none',
+        strategyName: 'defra-id',
+        timestamp: new Date().toISOString()
+      })
+
+      log(LogCodes.AUTH.AUTH_DEBUG, {
+        path: 'cookie_strategy_registration',
+        isAuthenticated: 'system',
+        strategy: 'cookie',
+        mode: 'strategy_registration',
+        hasCredentials: 'system_level',
+        hasToken: 'system_level',
+        hasProfile: 'system_level',
+        userAgent: 'server',
+        referer: 'none',
+        queryParams: {},
+        authError: 'none',
+        strategyName: 'session',
+        timestamp: new Date().toISOString()
+      })
 
       // Cookie is a built-in authentication strategy for hapi.js that authenticates users based on a session cookie
       // Used for all non-Defra Identity routes
       // Lax policy required to allow redirection after Defra Identity sign out
-      server.auth.strategy('session', 'cookie', getCookieOptions())
+      const cookieOptions = getCookieOptions()
+      server.auth.strategy('session', 'cookie', cookieOptions)
+
+      log(LogCodes.AUTH.AUTH_DEBUG, {
+        path: 'cookie_strategy_registration',
+        isAuthenticated: 'system',
+        strategy: 'cookie',
+        mode: 'strategy_registered',
+        hasCredentials: 'system_level',
+        hasToken: 'system_level',
+        hasProfile: 'system_level',
+        userAgent: 'server',
+        referer: 'none',
+        queryParams: {},
+        authError: 'none',
+        strategyName: 'session',
+        cookieConfig: {
+          isSecure: cookieOptions.cookie.isSecure,
+          path: cookieOptions.cookie.path,
+          isSameSite: cookieOptions.cookie.isSameSite,
+          hasPassword: !!cookieOptions.cookie.password
+        },
+        timestamp: new Date().toISOString()
+      })
 
       // Set the default authentication strategy to session
       // All routes will require authentication unless explicitly set to 'defra-id' or `auth: false`
       server.auth.default('session')
 
+      log(LogCodes.AUTH.AUTH_DEBUG, {
+        path: 'default_auth_strategy',
+        isAuthenticated: 'system',
+        strategy: 'session',
+        mode: 'default_strategy_set',
+        hasCredentials: 'system_level',
+        hasToken: 'system_level',
+        hasProfile: 'system_level',
+        userAgent: 'server',
+        referer: 'none',
+        queryParams: {},
+        authError: 'none',
+        defaultStrategy: 'session',
+        timestamp: new Date().toISOString()
+      })
+
       // Add auth debugging hook to log initial authentication attempts
       server.ext('onPreAuth', (request, h) => {
-        // Only log debug info for auth-related routes
         if (request.path.startsWith('/auth/')) {
           log(LogCodes.AUTH.AUTH_DEBUG, {
             path: request.path,
@@ -252,76 +338,219 @@ function getBellOptions(oidcConfig) {
       scope: ['openid', 'offline_access', config.get('defraId.clientId')],
       profile: function (credentials) {
         try {
-          // Log detailed credentials information for debugging
           log(LogCodes.AUTH.AUTH_DEBUG, {
             path: 'bell_profile_processing',
             isAuthenticated: 'processing',
             strategy: 'bell',
-            mode: 'profile_extraction',
+            mode: 'profile_start',
             hasCredentials: !!credentials,
             hasToken: !!credentials?.token,
-            hasProfile: false,
+            hasProfile: 'pending',
             userAgent: 'server',
             referer: 'none',
             queryParams: {},
             authError: 'none',
-            tokenLength: credentials?.token ? credentials.token.length : 0,
-            credentialsKeys: credentials ? Object.keys(credentials) : []
+            credentialsReceived: !!credentials,
+            timestamp: new Date().toISOString()
           })
 
-          if (!credentials?.token) {
-            const error = new Error('No token received from Defra Identity')
+          if (credentials) {
+            log(LogCodes.AUTH.AUTH_DEBUG, {
+              path: 'bell_profile_processing',
+              isAuthenticated: 'processing',
+              strategy: 'bell',
+              mode: 'credentials_analysis',
+              hasCredentials: true,
+              hasToken: !!credentials.token,
+              hasProfile: 'not_created_yet',
+              userAgent: 'server',
+              referer: 'none',
+              queryParams: {},
+              authError: 'none',
+              credentialsKeys: Object.keys(credentials),
+              tokenExists: !!credentials.token,
+              tokenType: credentials.token
+                ? typeof credentials.token
+                : 'undefined',
+              tokenLength: credentials.token ? credentials.token.length : 0,
+              refreshTokenExists: !!credentials.refresh_token,
+              queryExists: !!credentials.query,
+              profileExists: !!credentials.profile,
+              timestamp: new Date().toISOString()
+            })
+          } else {
             log(LogCodes.AUTH.SIGN_IN_FAILURE, {
               userId: 'unknown',
-              error: error.message,
-              step: 'bell_profile_no_token'
+              error: 'No credentials object received from Bell',
+              step: 'bell_profile_no_credentials',
+              credentialsState: 'null_or_undefined'
             })
-            throw error
+            throw new Error('No credentials received from Bell OAuth provider')
           }
 
-          const decoded = Jwt.token.decode(credentials.token)
-          const payload = decoded.decoded.payload
+          if (!credentials.token) {
+            log(LogCodes.AUTH.SIGN_IN_FAILURE, {
+              userId: 'unknown',
+              error: 'No access token received from Defra Identity',
+              step: 'bell_profile_no_token',
+              credentialsAnalysis: {
+                hasCredentials: !!credentials,
+                credentialsKeys: Object.keys(credentials || {}),
+                tokenProperty: credentials.token,
+                refreshTokenProperty: credentials.refresh_token
+              }
+            })
+            throw new Error('No token received from Defra Identity')
+          }
 
           log(LogCodes.AUTH.AUTH_DEBUG, {
             path: 'bell_profile_processing',
             isAuthenticated: 'processing',
             strategy: 'bell',
-            mode: 'jwt_decode',
+            mode: 'jwt_decode_attempt',
             hasCredentials: true,
             hasToken: true,
-            hasProfile: !!payload,
+            hasProfile: 'processing_token',
             userAgent: 'server',
             referer: 'none',
             queryParams: {},
             authError: 'none',
-            payloadKeys: Object.keys(payload || {}).join(', ')
+            tokenLength: credentials.token.length,
+            tokenPrefix: credentials.token.substring(0, 20) + '...',
+            timestamp: new Date().toISOString()
+          })
+
+          let decoded, payload
+          try {
+            decoded = Jwt.token.decode(credentials.token)
+            payload = decoded?.decoded?.payload
+          } catch (jwtError) {
+            log(LogCodes.AUTH.SIGN_IN_FAILURE, {
+              userId: 'unknown',
+              error: `JWT decode failed: ${jwtError.message}`,
+              step: 'bell_profile_jwt_decode_error',
+              jwtError: {
+                message: jwtError.message,
+                stack: jwtError.stack,
+                tokenLength: credentials.token ? credentials.token.length : 0
+              }
+            })
+            throw new Error(`Failed to decode JWT token: ${jwtError.message}`)
+          }
+
+          log(LogCodes.AUTH.AUTH_DEBUG, {
+            path: 'bell_profile_processing',
+            isAuthenticated: 'processing',
+            strategy: 'bell',
+            mode: 'jwt_decode_success',
+            hasCredentials: true,
+            hasToken: true,
+            hasProfile: payload ? 'payload_extracted' : 'payload_missing',
+            userAgent: 'server',
+            referer: 'none',
+            queryParams: {},
+            authError: 'none',
+            decodedStructure: {
+              hasDecoded: !!decoded,
+              hasDecodedDecoded: !!decoded?.decoded,
+              hasPayload: !!payload,
+              payloadType: typeof payload
+            },
+            timestamp: new Date().toISOString()
           })
 
           if (!payload) {
-            const error = new Error('Failed to decode JWT payload')
             log(LogCodes.AUTH.SIGN_IN_FAILURE, {
               userId: 'unknown',
-              error: error.message,
-              step: 'bell_profile_jwt_decode_failed'
+              error: 'JWT payload is empty or invalid',
+              step: 'bell_profile_empty_payload',
+              decodingDetails: {
+                decoded: !!decoded,
+                decodedDecoded: !!decoded?.decoded,
+                payload,
+                payloadType: typeof payload
+              }
             })
-            throw error
+            throw new Error('Failed to extract payload from JWT token')
           }
 
-          // Map all JWT properties to the credentials object so it can be stored in the session
-          // Add some additional properties to the profile object for convenience
+          log(LogCodes.AUTH.AUTH_DEBUG, {
+            path: 'bell_profile_processing',
+            isAuthenticated: 'processing',
+            strategy: 'bell',
+            mode: 'payload_analysis',
+            hasCredentials: true,
+            hasToken: true,
+            hasProfile: 'validating_payload',
+            userAgent: 'server',
+            referer: 'none',
+            queryParams: {},
+            authError: 'none',
+            payloadKeys: Object.keys(payload),
+            hasContactId: !!payload.contactId,
+            hasFirstName: !!payload.firstName,
+            hasLastName: !!payload.lastName,
+            hasCurrentRelationshipId: !!payload.currentRelationshipId,
+            hasEmail: !!payload.email,
+            payloadSize: JSON.stringify(payload).length,
+            timestamp: new Date().toISOString()
+          })
+
+          const requiredFields = ['contactId', 'firstName', 'lastName']
+          const missingFields = requiredFields.filter(
+            (field) => !payload[field]
+          )
+
+          if (missingFields.length > 0) {
+            log(LogCodes.AUTH.SIGN_IN_FAILURE, {
+              userId: payload.contactId || 'unknown',
+              error: `Missing required JWT payload fields: ${missingFields.join(', ')}`,
+              step: 'bell_profile_missing_fields',
+              payloadValidation: {
+                requiredFields,
+                missingFields,
+                presentFields: Object.keys(payload),
+                contactId: payload.contactId,
+                firstName: payload.firstName,
+                lastName: payload.lastName
+              }
+            })
+            throw new Error(
+              `Missing required fields in JWT payload: ${missingFields.join(', ')}`
+            )
+          }
+
+          const sessionId = crypto.randomUUID()
+          log(LogCodes.AUTH.AUTH_DEBUG, {
+            path: 'bell_profile_processing',
+            isAuthenticated: 'processing',
+            strategy: 'bell',
+            mode: 'session_id_generation',
+            hasCredentials: true,
+            hasToken: true,
+            hasProfile: 'creating_profile',
+            userAgent: 'server',
+            referer: 'none',
+            queryParams: {},
+            authError: 'none',
+            sessionIdGenerated: !!sessionId,
+            sessionIdLength: sessionId.length,
+            timestamp: new Date().toISOString()
+          })
+
           credentials.profile = {
             ...payload,
             crn: payload.contactId,
             name: `${payload.firstName} ${payload.lastName}`,
             organisationId: payload.currentRelationshipId,
-            sessionId: crypto.randomUUID()
+            sessionId
           }
 
           log(LogCodes.AUTH.AUTH_DEBUG, {
             path: 'bell_profile_processing',
             isAuthenticated: 'processing',
             strategy: 'bell',
-            mode: 'profile_mapped',
+            mode: 'profile_mapped_success',
             hasCredentials: true,
             hasToken: true,
             hasProfile: true,
@@ -329,8 +558,38 @@ function getBellOptions(oidcConfig) {
             referer: 'none',
             queryParams: {},
             authError: 'none',
-            profileName: credentials.profile.name,
-            profileId: credentials.profile.contactId
+            profileCreated: {
+              name: credentials.profile.name,
+              contactId: credentials.profile.contactId,
+              crn: credentials.profile.crn,
+              organisationId: credentials.profile.organisationId,
+              sessionId: credentials.profile.sessionId,
+              email: credentials.profile.email,
+              profileKeys: Object.keys(credentials.profile)
+            },
+            timestamp: new Date().toISOString()
+          })
+
+          log(LogCodes.AUTH.AUTH_DEBUG, {
+            path: 'bell_profile_processing',
+            isAuthenticated: 'processing',
+            strategy: 'bell',
+            mode: 'profile_complete',
+            hasCredentials: true,
+            hasToken: true,
+            hasProfile: true,
+            userAgent: 'server',
+            referer: 'none',
+            queryParams: {},
+            authError: 'none',
+            finalCredentials: {
+              hasToken: !!credentials.token,
+              hasRefreshToken: !!credentials.refresh_token,
+              hasProfile: !!credentials.profile,
+              profileSessionId: credentials.profile?.sessionId,
+              profileName: credentials.profile?.name
+            },
+            timestamp: new Date().toISOString()
           })
 
           return credentials
@@ -339,10 +598,19 @@ function getBellOptions(oidcConfig) {
             userId: 'unknown',
             error: `Bell profile processing failed: ${error.message}`,
             step: 'bell_profile_processing_error',
-            errorStack: error.stack
+            errorDetails: {
+              message: error.message,
+              stack: error.stack,
+              name: error.name,
+              alreadyLogged: error.alreadyLogged
+            },
+            credentialsState: {
+              received: !!credentials,
+              hasToken: !!credentials?.token,
+              tokenLength: credentials?.token?.length || 0
+            }
           })
 
-          // Mark error as already logged to prevent duplicate logging
           error.alreadyLogged = true
           throw error
         }
@@ -358,35 +626,142 @@ function getBellOptions(oidcConfig) {
           path: request.path,
           isAuthenticated: 'processing',
           strategy: 'bell',
-          mode: 'location_function',
-          hasCredentials: false,
-          hasToken: false,
-          hasProfile: false,
+          mode: 'location_function_start',
+          hasCredentials: 'not_applicable',
+          hasToken: 'not_applicable',
+          hasProfile: 'not_applicable',
           userAgent: request.headers?.['user-agent'] || 'unknown',
           referer: request.headers?.referer || 'none',
           queryParams: request.query,
           authError: 'none',
-          redirectQuery: request.query.redirect,
-          configuredRedirectUrl: config.get('defraId.redirectUrl'),
+          locationFunctionCalled: true,
           timestamp: new Date().toISOString()
         })
 
-        // If request includes a redirect query parameter, store it in the session to allow redirection after authentication
-        if (request.query.redirect) {
-          // Ensure redirect is a relative path to prevent redirect attacks
-          const safeRedirect = getSafeRedirect(request.query.redirect)
-          request.yar.set('redirect', safeRedirect)
+        log(LogCodes.AUTH.AUTH_DEBUG, {
+          path: request.path,
+          isAuthenticated: 'processing',
+          strategy: 'bell',
+          mode: 'location_request_analysis',
+          hasCredentials: 'not_applicable',
+          hasToken: 'not_applicable',
+          hasProfile: 'not_applicable',
+          userAgent: request.headers?.['user-agent'] || 'unknown',
+          referer: request.headers?.referer || 'none',
+          queryParams: request.query,
+          authError: 'none',
+          requestAnalysis: {
+            method: request.method,
+            url: request.url.href,
+            hasState: !!request.state,
+            cookieCount: Object.keys(request.state || {}).length,
+            cookieNames: Object.keys(request.state || {}),
+            hasSessionStore: !!request.yar,
+            headers: {
+              host: request.headers.host,
+              origin: request.headers.origin,
+              cookie: request.headers.cookie ? '[REDACTED]' : 'none'
+            }
+          },
+          timestamp: new Date().toISOString()
+        })
+
+        const redirectParam = request.query.redirect
+        log(LogCodes.AUTH.AUTH_DEBUG, {
+          path: request.path,
+          isAuthenticated: 'processing',
+          strategy: 'bell',
+          mode: 'location_redirect_handling',
+          hasCredentials: 'not_applicable',
+          hasToken: 'not_applicable',
+          hasProfile: 'not_applicable',
+          userAgent: request.headers?.['user-agent'] || 'unknown',
+          referer: request.headers?.referer || 'none',
+          queryParams: request.query,
+          authError: 'none',
+          redirectHandling: {
+            hasRedirectParam: !!redirectParam,
+            redirectParam,
+            configuredRedirectUrl: config.get('defraId.redirectUrl')
+          },
+          timestamp: new Date().toISOString()
+        })
+
+        if (redirectParam) {
+          try {
+            const safeRedirect = getSafeRedirect(redirectParam)
+            request.yar.set('redirect', safeRedirect)
+
+            log(LogCodes.AUTH.AUTH_DEBUG, {
+              path: request.path,
+              isAuthenticated: 'processing',
+              strategy: 'bell',
+              mode: 'location_redirect_stored',
+              hasCredentials: 'not_applicable',
+              hasToken: 'not_applicable',
+              hasProfile: 'not_applicable',
+              userAgent: request.headers?.['user-agent'] || 'unknown',
+              referer: request.headers?.referer || 'none',
+              queryParams: request.query,
+              authError: 'none',
+              redirectStorage: {
+                originalRedirect: redirectParam,
+                safeRedirect,
+                storedInSession: true
+              },
+              timestamp: new Date().toISOString()
+            })
+          } catch (redirectError) {
+            log(LogCodes.AUTH.SIGN_IN_FAILURE, {
+              userId: 'unknown',
+              error: `Failed to store redirect parameter: ${redirectError.message}`,
+              step: 'bell_location_redirect_store_error',
+              redirectError: {
+                message: redirectError.message,
+                stack: redirectError.stack,
+                originalRedirect: redirectParam
+              }
+            })
+          }
         }
 
-        return config.get('defraId.redirectUrl')
+        const finalRedirectUrl = config.get('defraId.redirectUrl')
+
+        log(LogCodes.AUTH.AUTH_DEBUG, {
+          path: request.path,
+          isAuthenticated: 'processing',
+          strategy: 'bell',
+          mode: 'location_function_complete',
+          hasCredentials: 'not_applicable',
+          hasToken: 'not_applicable',
+          hasProfile: 'not_applicable',
+          userAgent: request.headers?.['user-agent'] || 'unknown',
+          referer: request.headers?.referer || 'none',
+          queryParams: request.query,
+          authError: 'none',
+          locationResult: {
+            finalRedirectUrl,
+            urlLength: finalRedirectUrl ? finalRedirectUrl.length : 0,
+            urlValid: !!finalRedirectUrl
+          },
+          timestamp: new Date().toISOString()
+        })
+
+        return finalRedirectUrl
       } catch (error) {
         log(LogCodes.AUTH.SIGN_IN_FAILURE, {
           userId: 'unknown',
           error: `Bell location function failed: ${error.message}`,
-          step: 'bell_location_function_error'
+          step: 'bell_location_function_error',
+          locationError: {
+            message: error.message,
+            stack: error.stack,
+            name: error.name,
+            requestPath: request.path,
+            requestMethod: request.method
+          }
         })
 
-        // Mark error as already logged to prevent duplicate logging
         error.alreadyLogged = true
         throw error
       }
@@ -433,7 +808,6 @@ function getBellOptions(oidcConfig) {
           step: 'bell_provider_params_error'
         })
 
-        // Mark error as already logged to prevent duplicate logging
         error.alreadyLogged = true
         throw error
       }
