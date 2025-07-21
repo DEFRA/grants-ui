@@ -216,12 +216,52 @@ const registerPlugins = async (server) => {
 }
 
 export async function createServer() {
-  setupProxy()
-  const server = createHapiServer()
+  const { log, LogCodes } = await import(
+    '~/src/server/common/helpers/logging/log.js'
+  )
 
+  log(LogCodes.SYSTEM.STARTUP_PHASE, {
+    phase: 'server_creation',
+    status: 'starting'
+  })
+
+  setupProxy()
+  log(LogCodes.SYSTEM.STARTUP_PHASE, {
+    phase: 'proxy_setup',
+    status: 'complete'
+  })
+
+  const server = createHapiServer()
+  log(LogCodes.SYSTEM.STARTUP_PHASE, {
+    phase: 'hapi_server_creation',
+    status: 'complete'
+  })
+
+  log(LogCodes.SYSTEM.STARTUP_PHASE, {
+    phase: 'plugin_registration',
+    status: 'starting'
+  })
   await registerPlugins(server)
+  log(LogCodes.SYSTEM.STARTUP_PHASE, {
+    phase: 'core_plugins',
+    status: 'registered'
+  })
+
+  log(LogCodes.SYSTEM.STARTUP_PHASE, {
+    phase: 'forms_plugin_registration',
+    status: 'starting'
+  })
   await registerFormsPlugin(server)
+  log(LogCodes.SYSTEM.STARTUP_PHASE, {
+    phase: 'forms_plugin',
+    status: 'registered'
+  })
+
   loadSubmissionSchemaValidators()
+  log(LogCodes.SYSTEM.STARTUP_PHASE, {
+    phase: 'schema_validators',
+    status: 'loaded'
+  })
 
   server.ext('onPreHandler', (request, h) => {
     const prev = request.yar.get('visitedSubSections') || []

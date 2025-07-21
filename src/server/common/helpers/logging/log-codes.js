@@ -214,6 +214,16 @@ export const LogCodes = {
       messageFunc: (messageOptions) =>
         `Server error occurred: ${messageOptions.error}`
     },
+    STARTUP_PHASE: {
+      level: 'info',
+      messageFunc: (messageOptions) =>
+        `Startup phase: ${messageOptions.phase} - ${messageOptions.status}`
+    },
+    PLUGIN_REGISTRATION: {
+      level: 'debug',
+      messageFunc: (messageOptions) =>
+        `Plugin registration: ${messageOptions.pluginName} - ${messageOptions.status}`
+    },
     SYSTEM_STARTUP: {
       level: 'info',
       messageFunc: (messageOptions) =>

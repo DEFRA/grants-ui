@@ -10,6 +10,11 @@ export default {
   plugin: {
     name: 'auth',
     register: async (server) => {
+      log(LogCodes.SYSTEM.PLUGIN_REGISTRATION, {
+        pluginName: 'auth',
+        status: 'starting'
+      })
+
       // Debug log all Defra ID configuration values
       log(LogCodes.AUTH.AUTH_DEBUG, {
         path: 'auth_plugin_registration',
@@ -195,6 +200,11 @@ export default {
           })
         }
         return h.continue
+      })
+
+      log(LogCodes.SYSTEM.PLUGIN_REGISTRATION, {
+        pluginName: 'auth',
+        status: 'completed'
       })
     }
   }
