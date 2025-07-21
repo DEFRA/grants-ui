@@ -47,8 +47,8 @@ export const nunjucksConfig = {
     compileOptions: {
       environment: nunjucksEnvironment
     },
-    relativeTo: process.cwd(), // Use working directory instead of relative path
-    path: 'src/server',
+    relativeTo: path.resolve(dirname, '../..'),
+    path: 'server',
     isCached: config.get('isProduction'),
     context
   }
