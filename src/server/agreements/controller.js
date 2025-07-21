@@ -72,15 +72,7 @@ export const getAgreementController = {
         h.proxy({
           mapUri: () => ({ uri, headers }),
           passThrough: true,
-          rejectUnauthorized: false,
-          onResponse: (err, res, req, h) => {
-            if (err) {
-              request.logger.error('Proxy error:', err)
-              return h.response('Proxy error').code(502)
-            }
-
-            return h.response(res).code(res.statusCode)
-          }
+          rejectUnauthorized: false
         })
       )
 
@@ -91,14 +83,9 @@ export const getAgreementController = {
             error: 'No response from upstream service',
             message: 'The agreements API did not return any data'
           })
-          .code(502)
+          .code(statusCodes.badGateway)
       }
 
-      request.logger.info({
-        message: 'Agreements API request successful',
-        method: request.method,
-        response: apiResponse
-      })
       return apiResponse
     } catch (error) {
       request.logger.error('Request failed:', error)
