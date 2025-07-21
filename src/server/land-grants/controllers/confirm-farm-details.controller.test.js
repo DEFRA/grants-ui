@@ -8,7 +8,9 @@ jest.mock('~/src/server/sbi/state.js', () => ({
   }
 }))
 
-jest.mock('../../common/services/consolidated-view/consolidated-view.service.js')
+jest.mock(
+  '../../common/services/consolidated-view/consolidated-view.service.js'
+)
 jest.mock('~/src/server/common/helpers/logging/logger.js', () => ({
   createLogger: jest.fn(() => ({
     error: jest.fn()
@@ -67,7 +69,10 @@ describe('ConfirmFarmDetailsController', () => {
       const handler = controller.makeGetRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
 
-      expect(fetchBusinessAndCustomerInformation).toHaveBeenCalledWith('SBI123456', 3646257965)
+      expect(fetchBusinessAndCustomerInformation).toHaveBeenCalledWith(
+        'SBI123456',
+        1100014934
+      )
       expect(mockH.view).toHaveBeenCalledWith('confirm-farm-details', {
         farmDetails: expect.objectContaining({
           rows: expect.any(Array)
@@ -271,7 +276,10 @@ describe('ConfirmFarmDetailsController', () => {
 
   describe('createContactDetailsRow', () => {
     it('should create contact details with both mobile and email', () => {
-      const result = controller.createContactDetailsRow('07123456789', 'test@example.com')
+      const result = controller.createContactDetailsRow(
+        '07123456789',
+        'test@example.com'
+      )
 
       expect(result).toEqual({
         key: { text: 'Contact details' },
@@ -289,7 +297,10 @@ describe('ConfirmFarmDetailsController', () => {
     })
 
     it('should create contact details with only email', () => {
-      const result = controller.createContactDetailsRow(null, 'test@example.com')
+      const result = controller.createContactDetailsRow(
+        null,
+        'test@example.com'
+      )
 
       expect(result).toEqual({
         key: { text: 'Contact details' },
@@ -328,7 +339,7 @@ describe('ConfirmFarmDetailsController', () => {
 
   describe('constants', () => {
     it('should have correct static constants', () => {
-      expect(ConfirmFarmDetailsController.CUSTOMER_ID).toBe(3646257965)
+      expect(ConfirmFarmDetailsController.CUSTOMER_ID).toBe(1100014934)
       expect(ConfirmFarmDetailsController.ERROR_MESSAGE).toBe(
         'Unable to find farm information, please try again later.'
       )

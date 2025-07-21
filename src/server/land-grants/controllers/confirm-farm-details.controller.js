@@ -10,8 +10,9 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
   viewName = 'confirm-farm-details'
 
   // Constants
-  static CUSTOMER_ID = 3646257965
-  static ERROR_MESSAGE = 'Unable to find farm information, please try again later.'
+  static CUSTOMER_ID = 1100014934
+  static ERROR_MESSAGE =
+    'Unable to find farm information, please try again later.'
 
   /**
    * Handle GET requests to the confirm farm details page
@@ -35,14 +36,20 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
    */
   async buildFarmDetails() {
     const sbi = sbiStore.get('sbi')
-    const data = await fetchBusinessAndCustomerInformation(sbi, ConfirmFarmDetailsController.CUSTOMER_ID)
+    const data = await fetchBusinessAndCustomerInformation(
+      sbi,
+      ConfirmFarmDetailsController.CUSTOMER_ID
+    )
 
     const rows = [
       this.createCustomerNameRow(data.customer?.name),
       this.createBusinessNameRow(data.business?.name),
       this.createAddressRow(data.business?.address),
       this.createSbiRow(sbi),
-      this.createContactDetailsRow(data.business?.phone?.mobile, data.business?.email?.address)
+      this.createContactDetailsRow(
+        data.business?.phone?.mobile,
+        data.business?.email?.address
+      )
     ].filter(Boolean)
 
     return { rows }
@@ -57,7 +64,9 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
       return null
     }
 
-    const fullName = [name.first, name.middle, name.last].filter(Boolean).join(' ')
+    const fullName = [name.first, name.middle, name.last]
+      .filter(Boolean)
+      .join(' ')
 
     if (!fullName) {
       return null
@@ -93,7 +102,14 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
       return null
     }
 
-    const addressParts = [address.line1, address.line2, address.line3, address.street, address.city, address.postalCode]
+    const addressParts = [
+      address.line1,
+      address.line2,
+      address.line3,
+      address.street,
+      address.city,
+      address.postalCode
+    ]
       .filter(Boolean)
       .map((part) => part.trim())
       .filter((part) => part.length > 0)
@@ -150,7 +166,10 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
   handleError(error, baseViewModel, h) {
     const sbi = sbiStore.get('sbi')
 
-    logger.error({ err: error, sbi }, 'Unexpected error when fetching farm information')
+    logger.error(
+      { err: error, sbi },
+      'Unexpected error when fetching farm information'
+    )
 
     return h.view(this.viewName, {
       ...baseViewModel,
