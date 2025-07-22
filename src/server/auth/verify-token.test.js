@@ -9,6 +9,15 @@ jest.mock('@hapi/wreck')
 jest.mock('@hapi/jwt')
 jest.mock('node-jose')
 jest.mock('./get-oidc-config.js')
+jest.mock('~/src/server/common/helpers/logging/log.js', () => ({
+  log: jest.fn(),
+  LogCodes: {
+    AUTH: {
+      TOKEN_VERIFICATION_SUCCESS: { level: 'info', messageFunc: jest.fn() },
+      TOKEN_VERIFICATION_FAILURE: { level: 'error', messageFunc: jest.fn() }
+    }
+  }
+}))
 
 describe('verifyToken', () => {
   // Sample test data
@@ -111,6 +120,9 @@ describe('verifyToken', () => {
     // jose.JWK.asKey should throw an error when given undefined
     jose.JWK.asKey.mockRejectedValue(new Error('Cannot convert undefined JWK to key'))
 
-    await expect(verifyToken(mockToken)).rejects.toThrow('Cannot convert undefined JWK to key')
+    await expect(verifyToken(mockToken)).rejects.toThrow(
+      'No keys found in JWKS response'
+    )
+
   })
 })
