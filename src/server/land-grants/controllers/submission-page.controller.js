@@ -3,6 +3,7 @@ import { config } from '~/src/config/config.js'
 import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/forms-cache.js'
 import { transformStateObjectToGasApplication } from '~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
 import { submitGrantApplication } from '~/src/server/common/services/grant-application/grant-application.service.js'
+import { sbiStore } from '../../sbi/state.js'
 import { stateToLandGrantsGasAnswers } from '../mappers/state-to-gas-answers-mapper.js'
 
 export default class SubmissionPageController extends SummaryPageController {
@@ -30,7 +31,8 @@ export default class SubmissionPageController extends SummaryPageController {
    * @returns {Promise<object>} - The result of the grant application submission
    */
   async submitLandGrantApplication(context) {
-    const { sbi = 'sbi', crn = 'crn', defraId = 'defraId', frn = 'frn' } = context.state
+    const sbi = sbiStore.get('sbi')
+    const { crn = 'crn', defraId = 'defraId', frn = 'frn' } = context.state
     const identifiers = {
       sbi,
       frn,
