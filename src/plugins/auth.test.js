@@ -131,9 +131,7 @@ describe('Auth Plugin', () => {
         organisationId: 'org-123'
       })
       // Check that sessionId is a valid UUID
-      expect(credentials.profile.sessionId).toMatch(
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
-      )
+      expect(credentials.profile.sessionId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/)
     })
 
     test('location function handles redirect parameter', () => {

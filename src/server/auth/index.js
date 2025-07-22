@@ -18,25 +18,9 @@ export const auth = {
         options: {
           auth: { strategy: 'defra-id', mode: 'try' }
         },
-        
+
         handler: (request, h) => {
           try {
-            // Log the authentication state at the /auth/sign-in endpoint
-            log(LogCodes.AUTH.AUTH_DEBUG, {
-              path: request.path,
-              isAuthenticated: request.auth?.isAuthenticated || 'unknown',
-              strategy: request.auth?.strategy || 'unknown',
-              mode: request.auth?.mode || 'unknown',
-              hasCredentials: !!request.auth?.credentials,
-              hasToken: !!request.auth?.credentials?.token,
-              hasProfile: !!request.auth?.credentials?.profile,
-              userAgent: request.headers?.['user-agent'] || 'unknown',
-              referer: request.headers?.referer || 'none',
-              queryParams: request.query || {},
-              authError: request.auth?.error?.message || 'none',
-              timestamp: new Date().toISOString()
-            })
-
             // If there's an auth error, log it specifically
             if (request.auth?.error) {
               log(LogCodes.AUTH.SIGN_IN_FAILURE, {
@@ -87,7 +71,6 @@ export const auth = {
             return h.redirect('/home').code(302)
           }
         }
-
       })
       server.route({
         method: ['GET'],
@@ -118,24 +101,16 @@ export const auth = {
           })
 
           // For token exchange failures, provide more user-friendly error
-          if (
-            error.message.includes('Failed obtaining') ||
-            error.message.includes('token')
-          ) {
+          if (error.message.includes('Failed obtaining') || error.message.includes('token')) {
             log(LogCodes.AUTH.SIGN_IN_FAILURE, {
               userId: 'unknown',
-              error:
-                'OAuth2 token exchange failed - possible configuration issue',
+              error: 'OAuth2 token exchange failed - possible configuration issue',
               step: 'oauth_token_exchange_failure',
               troubleshooting: {
-                checkRedirectUrl:
-                  'Verify DEFRA_ID_REDIRECT_URL matches registration',
-                checkClientCredentials:
-                  'Verify DEFRA_ID_CLIENT_ID and DEFRA_ID_CLIENT_SECRET',
-                checkNetworkAccess:
-                  'Ensure production can reach token endpoint',
-                checkWellKnownUrl:
-                  'Verify DEFRA_ID_WELL_KNOWN_URL is accessible'
+                checkRedirectUrl: 'Verify DEFRA_ID_REDIRECT_URL matches registration',
+                checkClientCredentials: 'Verify DEFRA_ID_CLIENT_ID and DEFRA_ID_CLIENT_SECRET',
+                checkNetworkAccess: 'Ensure production can reach token endpoint',
+                checkWellKnownUrl: 'Verify DEFRA_ID_WELL_KNOWN_URL is accessible'
               }
             })
           }
@@ -181,9 +156,7 @@ async function handleOidcSignIn(request, h) {
       queryParams: request.query,
       authError: request.auth?.error?.message || 'none',
       cookiesReceived: Object.keys(request.state || {}),
-      hasBellCookie: Object.keys(request.state || {}).some(
-        (key) => key.includes('bell') || key.includes('defra-id')
-      ),
+      hasBellCookie: Object.keys(request.state || {}).some((key) => key.includes('bell') || key.includes('defra-id')),
       requestMethod: request.method,
       isSecure: request.server.info.protocol === 'https'
     }
@@ -191,8 +164,7 @@ async function handleOidcSignIn(request, h) {
     log(LogCodes.AUTH.AUTH_DEBUG, authDebugInfo)
 
     if (!request.auth.isAuthenticated) {
-      const authErrorMessage =
-        request.auth?.error?.message || 'Not authenticated'
+      const authErrorMessage = request.auth?.error?.message || 'Not authenticated'
       const hasCredentials = !!request.auth?.credentials
 
       const errorDetails = {
@@ -213,20 +185,16 @@ async function handleOidcSignIn(request, h) {
 
       log(LogCodes.AUTH.SIGN_IN_FAILURE, {
         userId: 'unknown',
-        error: `Authentication failed at OIDC sign-in. Auth state: ${JSON.stringify(
-          {
-            isAuthenticated: request.auth.isAuthenticated,
-            strategy: request.auth?.strategy,
-            mode: request.auth?.mode,
-            error: authErrorMessage,
-            hasCredentials
-          }
-        )}`,
+        error: `Authentication failed at OIDC sign-in. Auth state: ${JSON.stringify({
+          isAuthenticated: request.auth.isAuthenticated,
+          strategy: request.auth?.strategy,
+          mode: request.auth?.mode,
+          error: authErrorMessage,
+          hasCredentials
+        })}`,
         step: 'oidc_sign_in_authentication_check',
         failureAnalysis: {
-          failureType: hasCredentials
-            ? 'token_exchange_failure'
-            : 'oauth_redirect_failure',
+          failureType: hasCredentials ? 'token_exchange_failure' : 'oauth_redirect_failure',
           errorMessage: authErrorMessage,
           hasCredentials,
           likelyIssue: hasCredentials
@@ -238,8 +206,7 @@ async function handleOidcSignIn(request, h) {
       if (hasCredentials && authErrorMessage?.includes('access token')) {
         log(LogCodes.AUTH.SIGN_IN_FAILURE, {
           userId: 'unknown',
-          error:
-            'Token exchange failure detected - Bell completed OAuth redirect but cannot exchange code for token',
+          error: 'Token exchange failure detected - Bell completed OAuth redirect but cannot exchange code for token',
           step: 'token_exchange_failure_analysis',
           troubleshooting: {
             issue: 'Failed obtaining access token',
@@ -251,10 +218,8 @@ async function handleOidcSignIn(request, h) {
               'Check if client credentials are valid in Defra ID system'
             ],
             credentialsPresent: hasCredentials,
-            errorPattern:
-              'hasCredentials=true + "Failed obtaining access token" = token exchange failed',
-            nextSteps:
-              'Check Bell.js token exchange logs and verify client configuration'
+            errorPattern: 'hasCredentials=true + "Failed obtaining access token" = token exchange failed',
+            nextSteps: 'Check Bell.js token exchange logs and verify client configuration'
           },
           requestContext: {
             query: request.query,
@@ -349,11 +314,7 @@ async function handleOidcSignIn(request, h) {
     // These calls are authenticated using the token returned from Defra Identity
     let role, scope
     try {
-      const permissions = getPermissions(
-        profile.crn,
-        profile.organisationId,
-        token
-      )
+      const permissions = getPermissions(profile.crn, profile.organisationId, token)
       role = permissions.role
       scope = permissions.scope
     } catch (permissionsError) {
@@ -427,9 +388,7 @@ async function handleOidcSignIn(request, h) {
         step: 'redirect_error',
         sessionId: profile.sessionId
       })
-      throw new Error(
-        `Failed to redirect after sign in: ${redirectError.message}`
-      )
+      throw new Error(`Failed to redirect after sign in: ${redirectError.message}`)
     }
   } catch (error) {
     log(LogCodes.AUTH.SIGN_IN_FAILURE, {
@@ -458,10 +417,7 @@ async function handleSignOut(request, h) {
     sessionId: request.auth.credentials.sessionId
   })
 
-  const signOutUrl = await getSignOutUrl(
-    request,
-    request.auth.credentials.token
-  )
+  const signOutUrl = await getSignOutUrl(request, request.auth.credentials.token)
   return h.redirect(signOutUrl)
 }
 

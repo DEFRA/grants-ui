@@ -11,10 +11,7 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import { config } from '~/src/config/config.js'
 import { context } from '~/src/config/nunjucks/context/context.js'
-import {
-  grantsUiPaths,
-  nunjucksConfig
-} from '~/src/config/nunjucks/nunjucks.js'
+import { grantsUiPaths, nunjucksConfig } from '~/src/config/nunjucks/nunjucks.js'
 import auth from '~/src/plugins/auth.js'
 import csp from '~/src/plugins/content-security-policy.js'
 import sso from '~/src/plugins/sso.js'
@@ -46,7 +43,6 @@ import { PotentialFundingController } from '~/src/server/non-land-grants/pigs-mi
 import { sbiStore } from './sbi/state.js'
 import { statusCodes } from './common/constants/status-codes.js'
 
-
 const SESSION_CACHE_NAME = 'session.cache.name'
 const GRANTS_UI_BACKEND_ENDPOINT = config.get('session.cache.apiEndpoint')
 
@@ -68,7 +64,6 @@ const getViewPaths = () => {
     path.join(serverDir, 'common/components'),
     ...grantsUiPaths
   ]
-  return paths
 }
 
 const createHapiServer = () => {
@@ -289,7 +284,6 @@ export async function performSessionHydration(server, sbi) {
   })
 }
 
-
 const registerPlugins = async (server) => {
   await server.register([
     inert,
@@ -314,9 +308,7 @@ const registerPlugins = async (server) => {
 }
 
 export async function createServer() {
-  const { log, LogCodes } = await import(
-    '~/src/server/common/helpers/logging/log.js'
-  )
+  const { log, LogCodes } = await import('~/src/server/common/helpers/logging/log.js')
 
   log(LogCodes.SYSTEM.STARTUP_PHASE, {
     phase: 'server_creation',
@@ -349,9 +341,9 @@ export async function createServer() {
     phase: 'forms_plugin_registration',
     status: 'starting'
   })
-  
+
   await registerFormsPlugin(server)
-  
+
   log(LogCodes.SYSTEM.STARTUP_PHASE, {
     phase: 'forms_plugin',
     status: 'registered'

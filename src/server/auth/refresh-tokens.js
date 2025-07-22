@@ -48,10 +48,7 @@ async function refreshTokens(refreshToken) {
     let step = 'unknown'
     if (error.message.includes('OIDC')) {
       step = 'oidc_config_fetch'
-    } else if (
-      error.message.includes('ENOTFOUND') ||
-      error.message.includes('ECONNREFUSED')
-    ) {
+    } else if (error.message.includes('ENOTFOUND') || error.message.includes('ECONNREFUSED')) {
       step = 'token_endpoint_connection'
     } else if (error.message.includes('400') || error.message.includes('401')) {
       step = 'token_endpoint_auth'

@@ -88,7 +88,6 @@ describe('#startServer', () => {
 
     afterAll(async () => {
       if (server && typeof server.stop === 'function') {
-
         await server.stop({ timeout: 0 })
       }
     })
@@ -98,16 +97,10 @@ describe('#startServer', () => {
 
       expect(createServerSpy).toHaveBeenCalled()
       expect(hapiServerSpy).toHaveBeenCalled()
-      expect(mockLoggerInfo).toHaveBeenCalledWith(
-        expect.stringMatching(/Using (Redis|Catbox Memory) session cache/)
-      )
+      expect(mockLoggerInfo).toHaveBeenCalledWith(expect.stringMatching(/Using (Redis|Catbox Memory) session cache/))
 
-      expect(mockHapiLoggerInfo).toHaveBeenCalledWith(
-        'Server started successfully'
-      )
-      expect(mockHapiLoggerInfo).toHaveBeenCalledWith(
-        'Access your frontend on http://localhost:3097'
-      )
+      expect(mockHapiLoggerInfo).toHaveBeenCalledWith('Server started successfully')
+      expect(mockHapiLoggerInfo).toHaveBeenCalledWith('Access your frontend on http://localhost:3097')
     })
   })
 

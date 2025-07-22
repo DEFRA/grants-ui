@@ -120,9 +120,6 @@ describe('verifyToken', () => {
     // jose.JWK.asKey should throw an error when given undefined
     jose.JWK.asKey.mockRejectedValue(new Error('Cannot convert undefined JWK to key'))
 
-    await expect(verifyToken(mockToken)).rejects.toThrow(
-      'No keys found in JWKS response'
-    )
-
+    await expect(verifyToken(mockToken)).rejects.toThrow('No keys found in JWKS response')
   })
 })
