@@ -82,7 +82,9 @@ describe('#context', () => {
     })
 
     test('Should log that the Webpack Manifest file is not available', () => {
-      expect(mockLoggerError).toHaveBeenCalledWith('Webpack assets-manifest.json not found')
+      expect(mockLoggerError).toHaveBeenCalledWith(
+        expect.stringContaining('Webpack assets-manifest.json not found')
+      )
     })
   })
 })

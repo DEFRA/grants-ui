@@ -1,0 +1,31 @@
+{% extends 'layouts/page.njk' %}
+
+{% block pageTitle %}
+  Unauthorised access
+{% endblock %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      <h1 class="govuk-heading-l">Unauthorised access</h1>
+      
+      <p class="govuk-body">
+        You do not have permission to access this page.
+      </p>
+      
+      <p class="govuk-body">
+        This might be because:
+      </p>
+      
+      <ul class="govuk-list govuk-list--bullet">
+        <li>your session has expired</li>
+        <li>you tried to access a page directly without signing in</li>
+        <li>you don't have the correct permissions</li>
+      </ul>
+      
+      <p class="govuk-body">
+        <a href="/auth/sign-in" class="govuk-link">Sign in to continue</a>
+      </p>
+    </div>
+  </div>
+{% endblock %}

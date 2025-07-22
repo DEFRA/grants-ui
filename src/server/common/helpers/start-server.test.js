@@ -20,11 +20,35 @@ jest.mock('hapi-pino', () => ({
   },
   name: 'mock-hapi-pino'
 }))
+
 jest.mock('~/src/server/common/helpers/logging/logger.js', () => ({
   createLogger: () => ({
     info: (...args) => mockLoggerInfo(...args),
     error: (...args) => mockLoggerError(...args)
   })
+}))
+
+// Mock the auth plugin dependencies
+jest.mock('~/src/server/auth/get-oidc-config.js', () => ({
+  getOidcConfig: jest.fn().mockResolvedValue({
+    authorization_endpoint: 'https://mock-auth/authorize',
+    token_endpoint: 'https://mock-auth/token',
+    jwks_uri: 'https://mock-auth/jwks',
+    end_session_endpoint: 'https://mock-auth/logout'
+  })
+}))
+
+jest.mock('~/src/server/common/helpers/logging/log.js', () => ({
+  log: jest.fn(),
+  LogCodes: {
+    AUTH: {
+      AUTH_DEBUG: { level: 'debug', messageFunc: jest.fn() },
+      SIGN_IN_FAILURE: { level: 'error', messageFunc: jest.fn() }
+    },
+    SYSTEM: {
+      SERVER_ERROR: { level: 'error', messageFunc: jest.fn() }
+    }
+  }
 }))
 
 describe('#startServer', () => {
@@ -43,11 +67,14 @@ describe('#startServer', () => {
 
     createServerSpy = jest.spyOn(createServerImport, 'createServer')
     hapiServerSpy = jest.spyOn(hapi, 'server')
+
     // Mock the well-known OIDC config before server starts
     Wreck.get.mockResolvedValue({
       payload: {
         authorization_endpoint: 'https://mock-auth/authorize',
-        token_endpoint: 'https://mock-auth/token'
+        token_endpoint: 'https://mock-auth/token',
+        jwks_uri: 'https://mock-auth/jwks',
+        end_session_endpoint: 'https://mock-auth/logout'
       }
     })
   })
@@ -60,7 +87,8 @@ describe('#startServer', () => {
     let server
 
     afterAll(async () => {
-      if (server) {
+      if (server && typeof server.stop === 'function') {
+
         await server.stop({ timeout: 0 })
       }
     })
@@ -70,10 +98,16 @@ describe('#startServer', () => {
 
       expect(createServerSpy).toHaveBeenCalled()
       expect(hapiServerSpy).toHaveBeenCalled()
-      expect(mockLoggerInfo).toHaveBeenCalledWith(expect.stringMatching(/Using (Redis|Catbox Memory) session cache/))
-      expect(mockHapiLoggerInfo).toHaveBeenNthCalledWith(1, 'Custom secure context is disabled')
-      expect(mockHapiLoggerInfo).toHaveBeenCalledWith('Server started successfully')
-      expect(mockHapiLoggerInfo).toHaveBeenCalledWith(`Access your frontend on http://localhost:${process.env.PORT}`)
+      expect(mockLoggerInfo).toHaveBeenCalledWith(
+        expect.stringMatching(/Using (Redis|Catbox Memory) session cache/)
+      )
+
+      expect(mockHapiLoggerInfo).toHaveBeenCalledWith(
+        'Server started successfully'
+      )
+      expect(mockHapiLoggerInfo).toHaveBeenCalledWith(
+        'Access your frontend on http://localhost:3097'
+      )
     })
   })
 

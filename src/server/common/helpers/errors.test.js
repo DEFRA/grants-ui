@@ -2,9 +2,22 @@ import { createServer } from '~/src/server/index.js'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { catchAll } from '~/src/server/common/helpers/errors.js'
 import Wreck from '@hapi/wreck'
+import { log } from '~/src/server/common/helpers/logging/log.js'
 
 jest.mock('@hapi/wreck', () => ({
   get: jest.fn()
+}))
+
+jest.mock('~/src/server/common/helpers/logging/log.js', () => ({
+  log: jest.fn(),
+  LogCodes: {
+    AUTH: {
+      SIGN_IN_FAILURE: { level: 'error', messageFunc: jest.fn() }
+    },
+    SYSTEM: {
+      SERVER_ERROR: { level: 'error', messageFunc: jest.fn() }
+    }
+  }
 }))
 
 describe('#errors', () => {
@@ -46,11 +59,14 @@ describe('#catchAll', () => {
     response: {
       isBoom: true,
       stack: mockStack,
+      message: 'Mock error message',
       output: {
         statusCode
       }
     },
-    logger: { error: mockErrorLogger }
+    logger: { error: mockErrorLogger },
+    path: '/test-path',
+    method: 'GET'
   })
   const mockToolkitView = jest.fn()
   const mockToolkitCode = jest.fn()
@@ -58,6 +74,13 @@ describe('#catchAll', () => {
     view: mockToolkitView.mockReturnThis(),
     code: mockToolkitCode.mockReturnThis()
   }
+
+  beforeEach(() => {
+    mockErrorLogger.mockClear()
+    mockToolkitView.mockClear()
+    mockToolkitCode.mockClear()
+    log.mockClear()
+  })
 
   test('Should provide expected "Not Found" page', () => {
     catchAll(mockRequest(statusCodes.notFound), mockToolkit)
@@ -122,7 +145,21 @@ describe('#catchAll', () => {
   test('Should provide expected "Something went wrong" page and log error for internalServerError', () => {
     catchAll(mockRequest(statusCodes.internalServerError), mockToolkit)
 
-    expect(mockErrorLogger).toHaveBeenCalledWith(mockStack)
+    // Should use structured logging instead of old logger
+    expect(log).toHaveBeenCalledWith(
+      expect.objectContaining({
+        level: 'error',
+        messageFunc: expect.any(Function)
+      }),
+      expect.objectContaining({
+        error: expect.any(String),
+        statusCode: statusCodes.internalServerError,
+        path: expect.any(String),
+        method: expect.any(String),
+        stack: mockStack
+      })
+    )
+    expect(mockErrorLogger).not.toHaveBeenCalled()
     expect(mockToolkitView).toHaveBeenCalledWith(errorPage, {
       pageTitle: 'Something went wrong',
       heading: statusCodes.internalServerError,

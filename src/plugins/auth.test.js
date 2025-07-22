@@ -10,6 +10,23 @@ import { getSafeRedirect } from '~/src/server/auth/get-safe-redirect.js'
 import { refreshTokens } from '~/src/server/auth/refresh-tokens.js'
 
 jest.mock('@hapi/jwt')
+jest.mock('~/src/server/common/helpers/logging/log.js', () => ({
+  log: jest.fn(),
+  LogCodes: {
+    AUTH: {
+      SESSION_EXPIRED: { level: 'info', messageFunc: jest.fn() },
+      TOKEN_VERIFICATION_SUCCESS: { level: 'info', messageFunc: jest.fn() },
+      TOKEN_VERIFICATION_FAILURE: { level: 'error', messageFunc: jest.fn() },
+      AUTH_DEBUG: { level: 'debug', messageFunc: jest.fn() },
+      SIGN_IN_FAILURE: { level: 'error', messageFunc: jest.fn() },
+      UNAUTHORIZED_ACCESS: { level: 'error', messageFunc: jest.fn() }
+    },
+    SYSTEM: {
+      ENV_CONFIG_DEBUG: { level: 'debug', messageFunc: jest.fn() },
+      SERVER_ERROR: { level: 'error', messageFunc: jest.fn() }
+    }
+  }
+}))
 jest.mock('~/src/server/auth/get-oidc-config')
 jest.mock('~/src/server/auth/refresh-tokens')
 jest.mock('~/src/server/auth/get-safe-redirect')
@@ -23,6 +40,7 @@ jest.mock('~/src/config/config', () => ({
         'defraId.redirectUrl': 'https://example.com/auth/callback',
         'defraId.refreshTokens': true,
         'session.cookie.password': 'at-least-32-characters-long-for-security',
+        'session.cookie.secure': false,
         isProduction: false
       }
       return mockConfig[key]
@@ -103,7 +121,7 @@ describe('Auth Plugin', () => {
       options.provider.profile(credentials)
 
       expect(Jwt.token.decode).toHaveBeenCalledWith('test-token')
-      expect(credentials.profile).toEqual({
+      expect(credentials.profile).toMatchObject({
         firstName: 'John',
         lastName: 'Doe',
         contactId: '12345',
@@ -112,13 +130,20 @@ describe('Auth Plugin', () => {
         name: 'John Doe',
         organisationId: 'org-123'
       })
+      // Check that sessionId is a valid UUID
+      expect(credentials.profile.sessionId).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+      )
     })
 
     test('location function handles redirect parameter', () => {
       const options = getBellOptions(mockOidcConfig)
       const mockRequest = {
         query: { redirect: '/home' },
-        yar: { set: jest.fn() }
+        yar: { set: jest.fn() },
+        url: { href: 'http://localhost:3000/auth?redirect=%2Fhome' }, // Added url.href
+        method: 'GET', // Optionally add method if used in logging
+        headers: { host: 'localhost:3000', origin: 'http://localhost:3000' }
       }
 
       const result = options.location(mockRequest)
