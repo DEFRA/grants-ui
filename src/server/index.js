@@ -115,7 +115,7 @@ export const registerFormsPlugin = async (server, prefix = '') => {
       ...(prefix && { routes: { prefix } }),
       cacheName: config.get(SESSION_CACHE_NAME),
       baseUrl: config.get('baseUrl'),
-      keyGenerator: generateKey,
+      keyGenerator: () => getIdentity().cacheKey,
       services: {
         formsService: await formsService(),
         formSubmissionService,
@@ -146,9 +146,6 @@ export const registerFormsPlugin = async (server, prefix = '') => {
   })
 }
 
-let cachedKey = null
-let cachedSbi = null
-
 const createLogger = (serverLogger) => ({
   info: serverLogger.info.bind(serverLogger),
   error: serverLogger.error.bind(serverLogger),
@@ -156,18 +153,30 @@ const createLogger = (serverLogger) => ({
   debug: serverLogger.debug?.bind(serverLogger) || serverLogger.info.bind(serverLogger)
 })
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const getIdentity = (_) => {
-  if (process.env.SBI_SELECTOR_ENABLED === 'true') {
+export const getIdentity = (isSbiChange = false) => {
+  if (process.env.SBI_SELECTOR_ENABLED === 'true' || isSbiChange) {
     const sbi = sbiStore.get('sbi')
-    return {
-      userId: `user_${sbi}`,
-      businessId: `business_${sbi}`,
-      grantId: `grant_${sbi}`
+
+    if (sbi) {
+      return {
+        redis: {
+          userId: `user_${sbi}`,
+          businessId: `business_${sbi}`,
+          grantId: `grant_${sbi}`
+        },
+        mongo: {
+          userId: sbi,
+          businessId: sbi,
+          grantId: sbi
+        },
+        sbi,
+        cacheKey: `user_${sbi}:business_${sbi}:grant_${sbi}`
+      }
     }
   }
 
   // If there are credentials from DEFRA ID, use those
+  // const identity = request.something.something
   // if (identity) {
   //   return {
   //     userId: identity.userId,
@@ -185,16 +194,16 @@ const getIdentity = (_) => {
   }
 }
 
-async function fetchSavedStateFromApi(request) {
+async function fetchSavedStateFromApi(server, identity) {
   if (!GRANTS_UI_BACKEND_ENDPOINT) {
-    request.logger.warn('Backend not configured - skipping API call')
+    server.logger.warn('Backend not configured - skipping API call')
     return null
   }
 
-  const { userId, businessId, grantId } = getIdentity(request)
+  const { userId, businessId, grantId } = identity.mongo
   const apiUrl = `${GRANTS_UI_BACKEND_ENDPOINT}/state/?userId=${userId}&businessId=${businessId}&grantId=${grantId}`
 
-  request.logger.info(`Fetching state from backend for identity: ${userId}:${businessId}:${grantId}`)
+  server.logger.info(`Fetching state from backend for identity: ${userId}:${businessId}:${grantId}`)
 
   let json = {}
   try {
@@ -215,73 +224,63 @@ async function fetchSavedStateFromApi(request) {
 
     json = await response.json()
   } catch (err) {
-    request.logger.error(['fetch-saved-state'], 'Failed to fetch saved state from API', err)
+    server.logger.error(['fetch-saved-state'], 'Failed to fetch saved state from API', err)
     throw err
   }
 
   return json || null
 }
 
-const generateKey = (request) => {
-  const currentSbi = sbiStore.get('sbi')
-
-  if (cachedKey === null || cachedSbi !== currentSbi) {
-    const { userId, businessId, grantId } = getIdentity(request)
-    cachedKey = `${userId}:${businessId}:${grantId}`
-    cachedSbi = currentSbi
+export async function isSessionHydratedFromCache(server, identity) {
+  try {
+    // THIS ISN'T WORKING
+    const cachedData = await server.app.formSubmissionCache.get(identity.cacheKey)
+    return !!cachedData
+  } catch (error) {
+    server.logger.error('Failed to check cache:', error)
+    // If cache fails, assume not hydrated and continue with API call
+    return false
   }
-
-  return cachedKey
 }
 
-export const clearCachedKey = () => {
-  cachedKey = null
-  cachedSbi = null
-}
-
-async function performSessionHydrationInternal(server, sbi, options = {}) {
-  const { pathname = '/server-startup', method = 'GET', logContext = 'session hydration' } = options
-
-  server.logger.info(`Starting ${logContext} for SBI:`, sbi)
+export async function performSessionHydrationFromApi(server, identity) {
+  server.logger.info(`Starting session hydration for identity: ${JSON.stringify(identity)}`)
 
   try {
-    const request = {
-      auth: {
-        credentials: {
-          userId: `user_${sbi}`,
-          businessId: `business_${sbi}`,
-          grantId: `grant_${sbi}`
-        }
-      },
-      logger: createLogger(server.logger),
-      url: { pathname },
-      method
+    const result = await fetchSavedStateFromApi(server, identity)
+    server.logger.info(`API call result: ${JSON.stringify(result)}`)
+
+    // Only cache non-null results
+    if (result !== null) {
+      await server.app.cache.set(identity.cacheKey, result)
+      server.logger.info('Result cached successfully')
+    } else {
+      server.logger.info('Result is null/undefined - skipping cache operation')
     }
 
-    const result = await fetchSavedStateFromApi(request)
-    server.logger.info(`${logContext} completed for SBI:`, sbi)
     return result
   } catch (error) {
-    server.logger.error(`${logContext} failed for SBI:`, sbi, error.message)
+    server.logger.error(`Session hydration failed for identity: ${JSON.stringify(identity)}`)
+
     throw error
   }
 }
 
-async function performInitialSessionHydration(server) {
-  const defaultSbi = sbiStore.get('sbi')
-  return performSessionHydrationInternal(server, defaultSbi, {
-    pathname: '/server-startup',
-    method: 'GET',
-    logContext: 'initial session hydration'
-  })
-}
+export async function performSessionLoading(server, isSbiChange = false) {
+  try {
+    server.logger.info(`Starting performSessionLoading (isSbiChange: ${isSbiChange})`)
+    const identity = getIdentity(isSbiChange)
+    server.logger.info('Checking if session is hydrated from cache...')
+    const isHydrated = await isSessionHydratedFromCache(server, identity)
 
-export async function performSessionHydration(server, sbi) {
-  return performSessionHydrationInternal(server, sbi, {
-    pathname: '/sbi-change',
-    method: 'POST',
-    logContext: 'session hydration'
-  })
+    if (!isHydrated) {
+      server.logger.info('Session not hydrated - calling API...')
+      await performSessionHydrationFromApi(server, identity)
+    }
+  } catch (error) {
+    server.logger.error('performSessionLoading failed:', error)
+    throw error
+  }
 }
 
 const registerPlugins = async (server) => {
@@ -314,11 +313,11 @@ export async function createServer() {
   await registerPlugins(server)
   await registerFormsPlugin(server)
 
-  if (process.env.SBI_SELECTOR_ENABLED === 'true') {
-    await performInitialSessionHydration(server)
-  }
+  await performSessionLoading(server, false)
 
+  server.logger.info('Loading submission schema validators...')
   loadSubmissionSchemaValidators()
+  server.logger.info('Schema validators loaded')
 
   server.ext('onPreHandler', (request, h) => {
     const prev = request.yar.get('visitedSubSections') || []
@@ -331,18 +330,6 @@ export async function createServer() {
     request.yar.set('visitedSubSections', prev)
 
     return h.continue
-  })
-
-  server.app.cache = server.cache({
-    cache: config.get(SESSION_CACHE_NAME),
-    segment: 'test-segment', // config.get('session.cache.segment')
-    expiresIn: config.get('session.cache.ttl')
-  })
-
-  server.app.cacheTemp = server.cache({
-    cache: config.get(SESSION_CACHE_NAME),
-    segment: 'section-data',
-    expiresIn: config.get('session.cache.ttl')
   })
 
   server.ext('onPreResponse', catchAll)

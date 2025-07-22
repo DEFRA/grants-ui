@@ -10,16 +10,16 @@ import agreements from './agreements.js'
 
 const dirname = path.dirname(fileURLToPath(import.meta.url))
 
-convict.addFormat('url', function (val) {
-  if (!val) {
-    return
-  }
-  try {
-    URL(val)
-  } catch {
-    throw new Error('must be a valid URL')
-  }
-})
+// convict.addFormat('url', function (val) {
+//   if (!val) {
+//     return
+//   }
+//   try {
+//     URL(val)
+//   } catch {
+//     throw new Error('must be a valid URL')
+//   }
+// })
 
 const fourHoursMs = 14400000
 const oneWeekMs = 604800000
@@ -228,7 +228,7 @@ export const config = convict({
       },
       apiEndpoint: {
         doc: 'Grants UI Backend API endpoint',
-        format: 'url',
+        format: String,
         default: '',
         env: 'GRANTS_UI_BACKEND_URL'
       }
