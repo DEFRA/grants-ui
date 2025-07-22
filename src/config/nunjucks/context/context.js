@@ -7,10 +7,7 @@ import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { sbiStore } from '~/src/server/sbi/state.js'
 
 const assetPath = config.get('assetPath')
-const manifestPath = path.join(
-  config.get('root'),
-  '.public/assets-manifest.json'
-)
+const manifestPath = path.join(config.get('root'), '.public/assets-manifest.json')
 
 /** @type {Record<string, string> | undefined} */
 let webpackManifest

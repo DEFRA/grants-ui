@@ -4,10 +4,7 @@ import Hapi from '@hapi/hapi'
 import Jwt from '@hapi/jwt'
 import Yar from '@hapi/yar'
 import { config } from '~/src/config/config.js'
-import AuthPlugin, {
-  getBellOptions,
-  getCookieOptions
-} from '~/src/plugins/auth.js'
+import AuthPlugin, { getBellOptions, getCookieOptions } from '~/src/plugins/auth.js'
 import { getOidcConfig } from '~/src/server/auth/get-oidc-config.js'
 import { getSafeRedirect } from '~/src/server/auth/get-safe-redirect.js'
 import { refreshTokens } from '~/src/server/auth/refresh-tokens.js'
@@ -100,16 +97,8 @@ describe('Auth Plugin', () => {
     await AuthPlugin.plugin.register(server)
 
     expect(server.auth.strategy).toHaveBeenCalledTimes(2)
-    expect(server.auth.strategy).toHaveBeenCalledWith(
-      'defra-id',
-      'bell',
-      expect.any(Object)
-    )
-    expect(server.auth.strategy).toHaveBeenCalledWith(
-      'session',
-      'cookie',
-      expect.any(Object)
-    )
+    expect(server.auth.strategy).toHaveBeenCalledWith('defra-id', 'bell', expect.any(Object))
+    expect(server.auth.strategy).toHaveBeenCalledWith('session', 'cookie', expect.any(Object))
 
     expect(server.auth.default).toHaveBeenCalledWith('session')
   })
@@ -194,9 +183,7 @@ describe('Auth Plugin', () => {
     test('returns the correct cookie options', () => {
       const options = getCookieOptions()
 
-      expect(options.cookie.password).toBe(
-        'at-least-32-characters-long-for-security'
-      )
+      expect(options.cookie.password).toBe('at-least-32-characters-long-for-security')
       expect(options.cookie.isSecure).toBe(false)
       expect(options.cookie.isSameSite).toBe('Lax')
     })

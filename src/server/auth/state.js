@@ -5,9 +5,7 @@ function createState(request) {
   // Defra Identity will pass this value back to the application during redirection
   // The value should be verified when the user is redirected back to the application to prevent CSRF attacks
   // The format must be base64 encoded
-  const state = Buffer.from(
-    JSON.stringify({ id: crypto.randomUUID() })
-  ).toString('base64')
+  const state = Buffer.from(JSON.stringify({ id: crypto.randomUUID() })).toString('base64')
   request.yar.set('state', state)
   return state
 }

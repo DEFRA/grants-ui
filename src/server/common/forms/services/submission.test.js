@@ -1,8 +1,4 @@
-import {
-  formSubmissionService,
-  loadSubmissionSchemaValidators,
-  validateSubmissionAnswers
-} from './submission.js'
+import { formSubmissionService, loadSubmissionSchemaValidators, validateSubmissionAnswers } from './submission.js'
 
 describe('formSubmissionService', () => {
   test('submit resolves with expected structure when formData is empty', async () => {
@@ -52,8 +48,7 @@ describe('Validate submission answers', () => {
 
   const validPayload = {
     referenceNumber: 'AV-108-333',
-    businessNature:
-      'A grower or producer of agricultural or horticultural produce',
+    businessNature: 'A grower or producer of agricultural or horticultural produce',
     businessLegalStatus: 'Sole trader',
     isInEngland: true,
     planningPermissionStatus: 'Not needed',
@@ -130,10 +125,7 @@ describe('Validate submission answers', () => {
     const payloadWithoutOptionalField = { ...validPayload }
     delete payloadWithoutOptionalField.agentFirstName
 
-    const result = validateSubmissionAnswers(
-      payloadWithoutOptionalField,
-      GRANT_CODE
-    )
+    const result = validateSubmissionAnswers(payloadWithoutOptionalField, GRANT_CODE)
     expect(result.errors).toBeUndefined()
     expect(result.value.agentFirstName).toBeUndefined()
   })
@@ -152,15 +144,10 @@ describe('Validate submission answers', () => {
     const payloadWithoutRequiredField = { ...validPayload }
     delete payloadWithoutRequiredField.applicantFirstName
 
-    const result = validateSubmissionAnswers(
-      payloadWithoutRequiredField,
-      GRANT_CODE
-    )
+    const result = validateSubmissionAnswers(payloadWithoutRequiredField, GRANT_CODE)
 
     expect(result.valid).toBe(false)
     expect(result.errors).toBeDefined()
-    expect(result.errors[0].message).toContain(
-      "must have required property 'applicantFirstName'"
-    )
+    expect(result.errors[0].message).toContain("must have required property 'applicantFirstName'")
   })
 })

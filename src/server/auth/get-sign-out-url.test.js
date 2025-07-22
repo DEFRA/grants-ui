@@ -39,9 +39,7 @@ describe('getSignOutUrl', () => {
   it('should handle special characters in redirect URL correctly', async () => {
     const mockRequest = { session: {} }
     const mockToken = 'mock-id-token'
-    config.get.mockReturnValue(
-      'https://myapp.example.com/signed-out?param=value&special=true'
-    )
+    config.get.mockReturnValue('https://myapp.example.com/signed-out?param=value&special=true')
 
     const result = await getSignOutUrl(mockRequest, mockToken)
 
@@ -73,9 +71,7 @@ describe('getSignOutUrl', () => {
     const mockToken = 'mock-id-token'
     getOidcConfig.mockRejectedValue(new Error('Failed to fetch OIDC config'))
 
-    await expect(getSignOutUrl(mockRequest, mockToken)).rejects.toThrow(
-      'Failed to fetch OIDC config'
-    )
+    await expect(getSignOutUrl(mockRequest, mockToken)).rejects.toThrow('Failed to fetch OIDC config')
   })
 
   it('should handle different end_session_endpoint values', async () => {

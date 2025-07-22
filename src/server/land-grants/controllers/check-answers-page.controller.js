@@ -72,9 +72,7 @@ export default class CheckAnswersPageController extends SummaryPageController {
    */
   calculateTotalActions(landParcels) {
     return Object.values(landParcels).reduce((total, parcelData) => {
-      const actionsCount = parcelData?.actionsObj
-        ? Object.keys(parcelData.actionsObj).length
-        : 0
+      const actionsCount = parcelData?.actionsObj ? Object.keys(parcelData.actionsObj).length : 0
       return total + actionsCount
     }, 0)
   }
@@ -144,14 +142,7 @@ export default class CheckAnswersPageController extends SummaryPageController {
     const parcelBasedRow = createParcelBasedActionsRow()
     const parcelActionRows = this.createParcelActionRows(landParcels)
 
-    return [
-      businessRow,
-      paymentRow,
-      ...baseRows,
-      totalActionsRow,
-      parcelBasedRow,
-      ...parcelActionRows
-    ]
+    return [businessRow, paymentRow, ...baseRows, totalActionsRow, parcelBasedRow, ...parcelActionRows]
   }
 
   /**
@@ -161,7 +152,7 @@ export default class CheckAnswersPageController extends SummaryPageController {
    * @returns {Promise<object>} - The summary view model
    */
   async getSummaryViewModel(request, context) {
-    const viewModel = await super.getSummaryViewModel(request, context)
+    const viewModel = super.getSummaryViewModel(request, context)
     const { checkAnswers = [] } = viewModel
 
     if (!checkAnswers.length) {

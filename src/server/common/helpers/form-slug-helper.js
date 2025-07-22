@@ -17,10 +17,7 @@ export function storeSlugInContext(request, context, controllerName) {
 
   if (request?.params?.slug && !context.state.formSlug) {
     context.state.formSlug = request.params.slug
-    request.logger.debug(
-      `${controllerName}: Storing slug in context:`,
-      request.params.slug
-    )
+    request.logger.debug(`${controllerName}: Storing slug in context:`, request.params.slug)
     return request.params.slug
   }
   return null
@@ -40,10 +37,7 @@ export function getFormSlug(request, context, controllerName) {
   // Next try to get it from context state (available during form submission)
   if (!slug && context?.state?.formSlug) {
     slug = context.state.formSlug
-    request?.logger?.debug(
-      `${controllerName}: Using slug from context.state.formSlug:`,
-      slug
-    )
+    request?.logger?.debug(`${controllerName}: Using slug from context.state.formSlug:`, slug)
   }
 
   if (slug) {

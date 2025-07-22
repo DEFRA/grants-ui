@@ -12,11 +12,7 @@ jest.mock('./get-permissions', () => {
     __esModule: true,
     getPermissions: async (crn, organisationId, token) => {
       const personId = await mockGetPersonId({ crn, token })
-      const { role, privileges } = await mockGetRolesAndPrivileges(
-        personId,
-        organisationId,
-        { crn, token }
-      )
+      const { role, privileges } = await mockGetRolesAndPrivileges(personId, organisationId, { crn, token })
       const scope = [DEFAULT_SCOPE, ...privileges]
       return { role, scope }
     },
@@ -48,11 +44,7 @@ describe('getPermissions', () => {
     const result = await getPermissions(crn, organisationId, token)
 
     expect(permissionsModule.getPersonId).toHaveBeenCalledWith({ crn, token })
-    expect(permissionsModule.getRolesAndPrivileges).toHaveBeenCalledWith(
-      personId,
-      organisationId,
-      { crn, token }
-    )
+    expect(permissionsModule.getRolesAndPrivileges).toHaveBeenCalledWith(personId, organisationId, { crn, token })
     expect(result).toEqual({
       role: 'Farmer',
       scope: ['user', 'Full permission - business']
@@ -113,9 +105,7 @@ describe('getPermissions', () => {
 
     permissionsModule.getPersonId.mockRejectedValue(error)
 
-    await expect(getPermissions(crn, organisationId, token)).rejects.toThrow(
-      'API error'
-    )
+    await expect(getPermissions(crn, organisationId, token)).rejects.toThrow('API error')
     expect(permissionsModule.getPersonId).toHaveBeenCalledWith({ crn, token })
     expect(permissionsModule.getRolesAndPrivileges).not.toHaveBeenCalled()
   })
@@ -130,15 +120,9 @@ describe('getPermissions', () => {
     permissionsModule.getPersonId.mockResolvedValue(personId)
     permissionsModule.getRolesAndPrivileges.mockRejectedValue(error)
 
-    await expect(getPermissions(crn, organisationId, token)).rejects.toThrow(
-      'Permission error'
-    )
+    await expect(getPermissions(crn, organisationId, token)).rejects.toThrow('Permission error')
     expect(permissionsModule.getPersonId).toHaveBeenCalledWith({ crn, token })
-    expect(permissionsModule.getRolesAndPrivileges).toHaveBeenCalledWith(
-      personId,
-      organisationId,
-      { crn, token }
-    )
+    expect(permissionsModule.getRolesAndPrivileges).toHaveBeenCalledWith(personId, organisationId, { crn, token })
   })
 })
 
@@ -150,11 +134,7 @@ describe('Integration tests for permission functions', () => {
     const organisationId = 'org123'
     const token = 'valid-token'
 
-    const result = await originalModule.getPermissions(
-      crn,
-      organisationId,
-      token
-    )
+    const result = await originalModule.getPermissions(crn, organisationId, token)
 
     expect(result).toEqual({
       role: 'Farmer',

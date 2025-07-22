@@ -19,9 +19,7 @@ const validators = new Map()
 
 export function loadSubmissionSchemaValidators() {
   // Load all YAML files in the grants folder
-  const files = fs
-    .readdirSync(DEFINITIONS_BASE_PATH)
-    .filter((f) => f.endsWith('.yaml'))
+  const files = fs.readdirSync(DEFINITIONS_BASE_PATH).filter((f) => f.endsWith('.yaml'))
 
   for (const file of files) {
     const yamlPath = path.join(DEFINITIONS_BASE_PATH, file)
@@ -34,10 +32,7 @@ export function loadSubmissionSchemaValidators() {
       continue
     }
 
-    const fullSchemaPath = path.resolve(
-      SCHEMAS_BASE_PATH,
-      path.basename(schemaPath)
-    )
+    const fullSchemaPath = path.resolve(SCHEMAS_BASE_PATH, path.basename(schemaPath))
     const schema = JSON.parse(fs.readFileSync(fullSchemaPath, 'utf8'))
     const validate = ajv.compile(schema)
 

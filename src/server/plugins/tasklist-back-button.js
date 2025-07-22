@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync, existsSync } from 'fs'
 import { join } from 'path'
-import { loadTasklistConfig } from '../common/tasklist/config-loader.js'
+import { loadTasklistConfig } from '../tasklist/services/config-loader.js'
 import { allForms } from '../common/forms/services/forms-config.js'
 import { parse } from 'yaml'
 
@@ -43,15 +43,13 @@ function safeYarClear(request, key) {
 }
 
 async function loadAllTasklistConfigs() {
-  const configsPath = join(process.cwd(), 'src/server/common/tasklist/configs')
+  const configsPath = join(process.cwd(), 'src/server/common/forms/definitions/tasklists')
 
   if (!existsSync(configsPath)) {
     return
   }
 
-  const files = readdirSync(configsPath).filter((f) =>
-    f.endsWith('-tasklist.yaml')
-  )
+  const files = readdirSync(configsPath).filter((f) => f.endsWith('-tasklist.yaml'))
 
   await Promise.all(
     files.map(async (file) => {
@@ -78,9 +76,7 @@ function extractFirstPageForSubsection(subsection) {
     const formContent = readFileSync(formConfig.path, 'utf8')
     const formDef = parse(formContent)
 
-    const firstPage = formDef.pages.find(
-      (p) => !p.controller || p.controller !== 'TerminalPageController'
-    )
+    const firstPage = formDef.pages.find((p) => !p.controller || p.controller !== 'TerminalPageController')
 
     return firstPage ? `/${subsection.href}${firstPage.path}` : null
   } catch {
@@ -115,11 +111,7 @@ function getTasklistIdFromSession(request) {
 }
 
 function isRedirectResponse(response) {
-  return (
-    response?.isBoom === false &&
-    response?.variety === 'plain' &&
-    response?.headers?.location
-  )
+  return response?.isBoom === false && response?.variety === 'plain' && response?.headers?.location
 }
 
 function preserveSourceParameterInRedirect(response, tasklistId) {
@@ -213,10 +205,7 @@ function createOnPreResponseHandler() {
         return h.continue
       }
 
-      if (
-        isViewResponse(request.response) &&
-        hasViewContext(request.response)
-      ) {
+      if (isViewResponse(request.response) && hasViewContext(request.response)) {
         addTasklistIdToContext(request.response, tasklistId)
       }
     }

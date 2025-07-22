@@ -30,12 +30,9 @@ jest.mock('~/src/server/common/helpers/logging/logger.js', () => ({
     error: jest.fn()
   })
 }))
-jest.mock(
-  '~/src/server/common/services/consolidated-view/consolidated-view.service.js',
-  () => ({
-    fetchParcelsForSbi: jest.fn()
-  })
-)
+jest.mock('~/src/server/common/services/consolidated-view/consolidated-view.service.js', () => ({
+  fetchParcelsForSbi: jest.fn()
+}))
 
 global.fetch = jest.fn()
 
@@ -133,9 +130,7 @@ describe('land-grants service', () => {
         statusText: 'Not Found'
       })
 
-      await expect(postToLandGrantsApi('/invalid', {})).rejects.toThrow(
-        'Not Found'
-      )
+      await expect(postToLandGrantsApi('/invalid', {})).rejects.toThrow('Not Found')
 
       let code, message
       try {
@@ -155,9 +150,7 @@ describe('land-grants service', () => {
         statusText: 'Internal Server Error'
       })
 
-      await expect(postToLandGrantsApi('/error', {})).rejects.toThrow(
-        'Internal Server Error'
-      )
+      await expect(postToLandGrantsApi('/error', {})).rejects.toThrow('Internal Server Error')
 
       let code, message
       try {
@@ -174,9 +167,7 @@ describe('land-grants service', () => {
     it('should handle network error', async () => {
       fetch.mockRejectedValueOnce(new Error('Network error'))
 
-      await expect(postToLandGrantsApi('/test', {})).rejects.toThrow(
-        'Network error'
-      )
+      await expect(postToLandGrantsApi('/test', {})).rejects.toThrow('Network error')
     })
 
     it('should handle empty endpoint', async () => {
@@ -315,9 +306,7 @@ describe('land-grants service', () => {
       })
 
       expect(result.paymentTotal).toBeNull()
-      expect(result.errorMessage).toBe(
-        'Error calculating payment. Please try again later.'
-      )
+      expect(result.errorMessage).toBe('Error calculating payment. Please try again later.')
     })
 
     it('should handle null payment total with error message', async () => {
@@ -335,9 +324,7 @@ describe('land-grants service', () => {
       })
 
       expect(result.paymentTotal).toBeNull()
-      expect(result.errorMessage).toBe(
-        'Error calculating payment. Please try again later.'
-      )
+      expect(result.errorMessage).toBe('Error calculating payment. Please try again later.')
     })
 
     it('should propagate API errors', async () => {
@@ -666,9 +653,7 @@ describe('land-grants service', () => {
     it('should handle fetchParcelsForSbi error', async () => {
       fetchParcelsForSbi.mockRejectedValueOnce(new Error('SBI service error'))
 
-      await expect(fetchParcels('106284736')).rejects.toThrow(
-        'SBI service error'
-      )
+      await expect(fetchParcels('106284736')).rejects.toThrow('SBI service error')
     })
 
     it('should handle size API error', async () => {

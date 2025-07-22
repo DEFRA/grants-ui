@@ -18,6 +18,7 @@ export const auth = {
         options: {
           auth: { strategy: 'defra-id', mode: 'try' }
         },
+        
         handler: (request, h) => {
           try {
             // Log the authentication state at the /auth/sign-in endpoint
@@ -86,6 +87,7 @@ export const auth = {
             return h.redirect('/home').code(302)
           }
         }
+
       })
       server.route({
         method: ['GET'],

@@ -70,9 +70,7 @@ describe('SSO Plugin', () => {
 
     const result = onRequestHandler(request, h)
 
-    expect(h.redirect).toHaveBeenCalledWith(
-      '/auth/organisation?organisationId=org-123&redirect=/home'
-    )
+    expect(h.redirect).toHaveBeenCalledWith('/auth/organisation?organisationId=org-123&redirect=/home')
     expect(h.takeover).toHaveBeenCalled()
     expect(result).toBeDefined()
   })
@@ -137,8 +135,7 @@ describe('SSO Plugin', () => {
       },
       url: {
         pathname: '/home',
-        search:
-          '?ssoOrgId=org-123&filters=active&filters=pending&search=test%26special'
+        search: '?ssoOrgId=org-123&filters=active&filters=pending&search=test%26special'
       }
     }
 
@@ -147,16 +144,10 @@ describe('SSO Plugin', () => {
     // Verify redirect preserves other parameters
     // The exact string depends on URLSearchParams encoding, but should contain the parameters
     expect(h.redirect).toHaveBeenCalledWith(
-      expect.stringContaining(
-        '/auth/organisation?organisationId=org-123&redirect=/home?'
-      )
+      expect.stringContaining('/auth/organisation?organisationId=org-123&redirect=/home?')
     )
-    expect(h.redirect).toHaveBeenCalledWith(
-      expect.stringContaining('filters=active')
-    )
-    expect(h.redirect).toHaveBeenCalledWith(
-      expect.stringContaining('filters=pending')
-    )
+    expect(h.redirect).toHaveBeenCalledWith(expect.stringContaining('filters=active'))
+    expect(h.redirect).toHaveBeenCalledWith(expect.stringContaining('filters=pending'))
     expect(h.redirect).toHaveBeenCalledWith(expect.stringContaining('search='))
   })
 })

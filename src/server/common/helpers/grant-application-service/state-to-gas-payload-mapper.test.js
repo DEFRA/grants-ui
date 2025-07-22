@@ -39,11 +39,7 @@ describe('transformStateObjectToGasApplication', () => {
       year: 2025
     })
 
-    const result = transformStateObjectToGasApplication(
-      identifiers,
-      state,
-      mockAnswersTransformer
-    )
+    const result = transformStateObjectToGasApplication(identifiers, state, mockAnswersTransformer)
 
     expect(result).toEqual({
       metadata: {
@@ -74,11 +70,7 @@ describe('transformStateObjectToGasApplication', () => {
       scheme: 'Test Scheme'
     })
 
-    const result = transformStateObjectToGasApplication(
-      identifiers,
-      state,
-      mockAnswersTransformer
-    )
+    const result = transformStateObjectToGasApplication(identifiers, state, mockAnswersTransformer)
 
     expect(result).toEqual({
       metadata: {
@@ -130,11 +122,7 @@ describe('transformStateObjectToGasApplication', () => {
       actionApplications: state.actionApplications
     }))
 
-    const result = transformStateObjectToGasApplication(
-      identifiers,
-      state,
-      mockAnswersTransformer
-    )
+    const result = transformStateObjectToGasApplication(identifiers, state, mockAnswersTransformer)
 
     expect(result).toEqual({
       metadata: {
@@ -185,11 +173,7 @@ describe('transformStateObjectToGasApplication', () => {
     const state = { sbi: '12345678' }
     const mockAnswersTransformer = jest.fn().mockReturnValue({})
 
-    transformStateObjectToGasApplication(
-      identifiers,
-      state,
-      mockAnswersTransformer
-    )
+    transformStateObjectToGasApplication(identifiers, state, mockAnswersTransformer)
 
     expect(mockAnswersTransformer).toHaveBeenCalledTimes(1)
     expect(mockAnswersTransformer).toHaveBeenCalledWith(state)

@@ -28,9 +28,7 @@ describe('State Management Functions', () => {
 
       expect(crypto.randomUUID).toHaveBeenCalledTimes(1)
 
-      const expectedState = Buffer.from(
-        JSON.stringify({ id: 'test-uuid-123' })
-      ).toString('base64')
+      const expectedState = Buffer.from(JSON.stringify({ id: 'test-uuid-123' })).toString('base64')
       expect(state).toBe(expectedState)
     })
 

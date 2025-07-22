@@ -79,16 +79,13 @@ export async function refreshToken() {
   try {
     const params = createTokenRequestParams(clientId, scope, clientSecret)
 
-    const response = await fetch(
-      `${tokenEndpoint}/${tenantId}/oauth2/v2.0/token`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        body: params
-      }
-    )
+    const response = await fetch(`${tokenEndpoint}/${tenantId}/oauth2/v2.0/token`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: params
+    })
 
     if (!response.ok) {
       const errorText = await response.text()

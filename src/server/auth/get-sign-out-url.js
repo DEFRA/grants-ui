@@ -15,11 +15,7 @@ async function getSignOutUrl(request, token) {
   // The `createState` function generates a unique state value and stores it in the session
   const state = createState(request)
 
-  const query = [
-    `post_logout_redirect_uri=${signOutRedirectUrl}`,
-    `id_token_hint=${token}`,
-    `state=${state}`
-  ].join('&')
+  const query = [`post_logout_redirect_uri=${signOutRedirectUrl}`, `id_token_hint=${token}`, `state=${state}`].join('&')
   return encodeURI(`${url}?${query}`)
 }
 

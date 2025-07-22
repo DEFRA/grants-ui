@@ -40,11 +40,6 @@ describe('#context', () => {
             isActive: true,
             text: 'Home',
             url: '/'
-          },
-          {
-            isActive: false,
-            text: 'About',
-            url: '/about'
           }
         ],
         serviceName: 'Manage land-based actions',
@@ -62,17 +57,13 @@ describe('#context', () => {
 
     describe('With valid asset path', () => {
       test('Should provide expected asset path', () => {
-        expect(contextResult.getAssetPath('application.js')).toBe(
-          '/public/javascripts/application.js'
-        )
+        expect(contextResult.getAssetPath('application.js')).toBe('/public/javascripts/application.js')
       })
     })
 
     describe('With invalid asset path', () => {
       test('Should provide expected asset', () => {
-        expect(contextResult.getAssetPath('an-image.png')).toBe(
-          '/public/an-image.png'
-        )
+        expect(contextResult.getAssetPath('an-image.png')).toBe('/public/an-image.png')
       })
     })
   })
@@ -137,11 +128,6 @@ describe('#context cache', () => {
             isActive: true,
             text: 'Home',
             url: '/'
-          },
-          {
-            isActive: false,
-            text: 'About',
-            url: '/about'
           }
         ],
         serviceName: 'Manage land-based actions',

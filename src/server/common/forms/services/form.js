@@ -14,14 +14,10 @@ export function configureFormDefinition(definition) {
       if (events) {
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
         if (events.onLoad?.options.url && environment !== 'local') {
-          events.onLoad.options.url = events.onLoad.options.url.replace(
-            'cdpEnvironment',
-            environment
-          )
+          events.onLoad.options.url = events.onLoad.options.url.replace('cdpEnvironment', environment)
           // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
         } else if (events.onLoad?.options.url && environment === 'local') {
-          events.onLoad.options.url =
-            'http://localhost:3001/scoring/api/v1/adding-value/score?allowPartialScoring=true'
+          events.onLoad.options.url = 'http://localhost:3001/scoring/api/v1/adding-value/score?allowPartialScoring=true'
         } else {
           // If we have a URL but environment is neither 'local' nor a non-local environment,
           // we should log this unexpected case but not modify the URL

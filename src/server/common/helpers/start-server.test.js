@@ -63,9 +63,7 @@ describe('#startServer', () => {
     process.env.PORT = '3097' // Set to obscure port to avoid conflicts
 
     createServerImport = await import('~/src/server/index.js')
-    startServerImport = await import(
-      '~/src/server/common/helpers/start-server.js'
-    )
+    startServerImport = await import('~/src/server/common/helpers/start-server.js')
 
     createServerSpy = jest.spyOn(createServerImport, 'createServer')
     hapiServerSpy = jest.spyOn(hapi, 'server')
@@ -90,6 +88,7 @@ describe('#startServer', () => {
 
     afterAll(async () => {
       if (server && typeof server.stop === 'function') {
+
         await server.stop({ timeout: 0 })
       }
     })
@@ -103,7 +102,6 @@ describe('#startServer', () => {
         expect.stringMatching(/Using (Redis|Catbox Memory) session cache/)
       )
 
-      // Check for server startup messages - these may vary based on configuration
       expect(mockHapiLoggerInfo).toHaveBeenCalledWith(
         'Server started successfully'
       )
@@ -122,9 +120,7 @@ describe('#startServer', () => {
       await startServerImport.startServer()
 
       expect(mockLoggerInfo).toHaveBeenCalledWith('Server failed to start :(')
-      expect(mockLoggerError).toHaveBeenCalledWith(
-        Error('Server failed to start')
-      )
+      expect(mockLoggerError).toHaveBeenCalledWith(Error('Server failed to start'))
     })
   })
 })

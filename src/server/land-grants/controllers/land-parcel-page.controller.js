@@ -12,10 +12,7 @@ export default class LandParcelPageController extends QuestionPageController {
   formatParcelForView = (parcel) => ({
     text: `${parcel.sheetId} ${parcel.parcelId}`,
     value: `${parcel.sheetId}-${parcel.parcelId}`,
-    hint:
-      parcel.area.value && parcel.area.unit
-        ? `Total size: ${parcel.area.value} ${parcel.area.unit}`
-        : undefined
+    hint: parcel.area.value && parcel.area.unit ? `Total size: ${parcel.area.value} ${parcel.area.unit}` : undefined
   })
 
   makePostRouteHandler() {
@@ -81,12 +78,8 @@ export default class LandParcelPageController extends QuestionPageController {
 
         return h.view(viewName, viewModel)
       } catch (error) {
-        logger.error(
-          { err: error, sbi },
-          'Unexpected error when fetching parcel data'
-        )
-        const errorMessage =
-          'Unable to find parcel information, please try again later.'
+        logger.error({ err: error, sbi }, 'Unexpected error when fetching parcel data')
+        const errorMessage = 'Unable to find parcel information, please try again later.'
 
         return h.view(viewName, {
           ...baseViewModel,

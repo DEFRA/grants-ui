@@ -23,9 +23,7 @@ export function getCacheEngine(engine) {
   }
 
   if (config.get('isProduction')) {
-    logger.error(
-      'Catbox Memory is for local development only, it should not be used in production!'
-    )
+    logger.error('Catbox Memory is for local development only, it should not be used in production!')
   }
 
   logger.info('Using Catbox Memory session cache')

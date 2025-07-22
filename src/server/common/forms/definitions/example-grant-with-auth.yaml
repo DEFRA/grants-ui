@@ -1,0 +1,423 @@
+engine: V2
+name: Example grant with auth
+metadata:
+  referenceNumberPrefix: EGWA
+  submission:
+    grantCode: example-grant-with-auth-v3
+    submissionSchemaPath: ./schemas/example-grant-with-auth-submission.schema.json
+pages:
+  - title: Example Grant
+    path: '/start'
+    controller: StartPageController
+    components:
+      - name: startInfoOne
+        title: Html
+        type: Html
+        content: |-
+          <p class="govuk-body">This service uses DefraID and the Save and Return feature, and demonstrates the use of the following components and page types:</p>
+
+      - name: startComponentsDetail
+        title: Components
+        type: Details
+        content: |+
+          <ul class="govuk-list govuk-list--bullet">
+            <li>AutocompleteField</li>
+            <li>CheckboxesField</li>
+            <li>DatePartsField</li>
+            <li>EmailAddressField</li>
+            <li>MonthYearField</li>
+            <li>MultilineTextField</li>
+            <li>NumberField</li>
+            <li>RadiosField</li>
+            <li>SelectField</li>
+            <li>TelephoneNumberField</li>
+            <li>TextField</li>
+            <li>UkAddressField</li>
+            <li>YesNoField</li>
+          </ul>
+
+      - name: startPagesDetails
+        title: Page types
+        type: Details
+        content: |+
+          <ul class="govuk-list govuk-list--bullet">
+            <li>Summary page</li>
+            <li>Declaration page</li>
+            <li>Confirmation page</li>
+            <li>Terminal page</li>
+          </ul>
+
+      - name: startInsetText
+        title: Inset text
+        type: InsetText
+        content: |
+          This page demonstrates the use of guidance components:
+          <br>
+          Details, InsetText, Html and Markdown.
+      - name: startMarkdown
+        title: Markdown
+        type: Markdown
+        content: |
+          Pages can use Markdown like headers and text formatting
+          e.g. *italic*, **bold** and ~~strikethrough~~
+
+  - title: YesNoField Example
+    path: '/yes-no-field'
+    components:
+      - name: yesNoField
+        title: Do you want to continue
+        hint:
+          Selecting 'No' will demonstrate navigating to a Terminal page to end the application
+        type: YesNoField
+        options:
+          customValidationMessages:
+            any.required: Select 'Yes' to continue
+  - title: Terminal Page Example
+    path: '/terminal-page'
+    controller: TerminalPageController
+    components:
+      - name: cannotApplyInfo
+        title: Html
+        type: Html
+        content: |-
+          <p class="govuk-body">This is an example of a Terminal page to give details on what conditions have not been met to continue applying for the grant.</p>
+    condition: terminalCondition
+
+  - title: AutocompleteField Example
+    path: '/autocomplete-field'
+    components:
+      - name: listComponentInfo
+        title: Html
+        type: Html
+        content: |-
+          <p class="govuk-body">This is an example of a List guidance component and an AutocompleteField.</p>
+      - name: supportedCountries
+        title: Countries
+        type: List
+        list: countryList
+      - name: autocompleteField
+        title: Country
+        type: AutocompleteField
+        list: countryList
+        hint: Start typing to see a filtered list of countries to select from
+        options:
+          customValidationMessages:
+            any.required: Enter a country
+
+  - title: RadiosField Example
+    path: '/radios-field'
+    components:
+      - name: radiosInfo
+        title: Html
+        type: Html
+        content: |-
+          <p class="govuk-body">This is an example of a RadiosField component. Options can be configured to go to Terminal pages or Conditional pages.</p>
+      - name: radiosField
+        title: Which option?
+        type: RadiosField
+        list: radiosFieldList
+        hint: Selecting the first option demonstrates navigating to an optional page before continuing
+        options:
+          customValidationMessages:
+            any.required: Select the option that applies
+
+  - title: Conditional Page Example
+    path: '/conditional-page'
+    components:
+      - name: conditionalPageInfo
+        title: Html
+        type: Html
+        content:
+          '<p class="govuk-body">This is an example of a Conditional Page.
+          You must meet certain conditions before you submit a full application.</p>
+          '
+    condition: choiceOneCondition
+
+  - title: CheckboxesField Example
+    path: '/checkboxes-field'
+    components:
+      - name: checkboxesField
+        title: Option
+        hint: |
+          Use checkboxes to allow selection of one or more options.
+          This example requires at least one selection, but the component can be set to optional.
+        type: CheckboxesField
+        list: checkboxesFieldList
+        options:
+          required: true
+
+  - title: NumberField Example
+    path: '/number-field'
+    components:
+      - name: projectCostInfo
+        type: Html
+        title: Html
+        content:
+          '<p class="govuk-hint">Enter cost of items, for example 695000</p>'
+      - name: numberField
+        type: NumberField
+        title: Enter amount
+        options:
+          prefix: '£'
+          required: true
+          autocomplete: off
+          classes: govuk-!-width-one-third
+          customValidationMessages:
+            any.required: Enter the numeric value
+            number.max: Enter a value less than £1 million
+            number.min: Enter a value of £10000 or more
+        schema:
+          min: 10000
+          max: 999999
+          precision: 0
+
+  - title: DatePartsField Example
+    path: '/date-parts-field'
+    components:
+      - name: datePartsField
+        title: Date field
+        hint: |
+          Cannot be in the past and must be within the next 90 days.
+        type: DatePartsField
+        options:
+          autocomplete: off
+          maxDaysInPast: 1
+          maxDaysInFuture: 90
+          required: true
+
+  - title: MonthYearField Example
+    path: '/month-year-field'
+    components:
+      - name: monthYearField
+        title: Month and year field
+        hint: |
+          Allows entry of dates with just a month and year.
+        type: MonthYearField
+        options:
+          required: true
+
+  - title: SelectField Example
+    path: '/select-field'
+    components:
+      - name: selectFieldInfo
+        title: Html
+        type: Html
+        content: |-
+          <p class="govuk-body">This is an example of a SelectField.</p>
+      - name: selectField
+        title: Select field
+        type: SelectField
+        list: selectFieldList
+        options:
+          required: true
+
+  - title: MultilineTextField Example
+    path: '/multiline-text-field'
+    components:
+      - name: multilineTextField
+        title: Description
+        type: MultilineTextField
+        options:
+          required: true
+          rows: 10
+          maxWords: 400
+          customValidationMessages:
+            string.empty: Enter a description
+
+  - title: Multi Field Form Example
+    path: '/multi-field-form'
+    components:
+      - name: formInfo
+        title: Html
+        type: Html
+        content: |-
+          <p class="govuk-body">This is an example of a form containing multiple components:<br>
+          TextField, EmailAddressField, TelephoneNumberField and UkAddressField.</p>
+          <p class="govuk-body">UkAddressField is a component that renders multiple fields, some of which are optional.</p>
+      - type: TextField
+        name: applicantName
+        title: Name
+        options:
+          required: true
+          customValidationMessages:
+            string.empty: Enter your name
+            string.max: Name must be 30 characters or fewer
+            string.pattern.base: Name must only include letters, hyphens and apostrophes
+        schema:
+          regex: "^[a-zA-Z' -]*$"
+          max: 30
+      - type: EmailAddressField
+        name: applicantEmail
+        title: Email address
+        hint: Example of a hint
+        options:
+          required: true
+          customValidationMessages:
+            string.empty: Enter your email address
+            string.email: Enter an email address in the correct format, like name@example.com
+        schema:
+          regex: "^\\w+([.-]\\w+)*@[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*(\\.[a-zA-Z]{2,})+$"
+      - type: TelephoneNumberField
+        name: applicantMobile
+        title: Mobile number
+        options:
+          required: true
+          customValidationMessages:
+            string.empty: Enter a mobile number
+            string.pattern.base:
+              Enter a telephone number, like 01632 960 001, 07700 900
+              982 or +44 0808 157 0192
+          autocomplete: tel
+        schema:
+          regex: "^\\+?[0-9\\s()-]{10,}$"
+      - type: Html
+        name: applicantBusinessAddressHeader
+        title: Html
+        content: <h1 class="govuk-heading-m">Business address</h1>
+      - type: UkAddressField
+        title: Address
+        name: applicantBusinessAddress
+
+  - title: Check your details
+    path: '/check-details'
+  - title: Confirm and send
+    path: '/declaration'
+    controller: DeclarationPageController
+    view: declaration-page.html
+  - title: Confirmation
+    path: '/confirmation'
+    controller: ConfirmationPageController
+lists:
+  - title: RadiosField List
+    name: radiosFieldList
+    type: string
+    items:
+      - text: Option one
+        description: This is a hint - this option leads to a conditional page
+        value: radiosFieldOption-A1
+      - text: Option two
+        description: Another hint
+        value: radiosFieldOption-A2
+      - text: Option three
+        value: radiosFieldOption-A3
+      - text: None of the above
+        value: radiosFieldOption-A4
+  - title: SelectField List
+    name: selectFieldList
+    type: string
+    items:
+      - text: Option one
+        value: selectFieldOption-A1
+      - text: Option two
+        value: selectFieldOption-A2
+      - text: Option three
+        value: selectFieldOption-A3
+      - text: Option four
+        value: selectFieldOption-A4
+      - text: Option five
+        value: selectFieldOption-A5
+      - text: Option six
+        value: selectFieldOption-A6
+      - text: Option seven
+        value: selectFieldOption-A7
+      - text: None of the above
+        value: selectFieldOption-A8
+  - title: CheckboxesField List
+    name: checkboxesFieldList
+    type: string
+    items:
+      - text: Option one
+        description: Example hint
+        value: checkboxesFieldOption-A1
+      - text: Option two
+        description: Hint two
+        value: checkboxesFieldOption-A2
+      - text: Option three
+        value: checkboxesFieldOption-A3
+  - title: Country
+    name: countryList
+    type: string
+    items:
+      - text: Afghanistan
+        value: AFG
+      - text: Benin
+        value: BEN
+      - text: Cambodia
+        value: KHM
+      - text: Denmark
+        value: DNK
+      - text: England
+        value: ENG
+      - text: France
+        value: FRA
+      - text: Germany
+        value: DEU
+      - text: Hungary
+        value: HUN
+      - text: Ireland
+        value: IRL
+      - text: Jamaica
+        value: JAM
+      - text: Kenya
+        value: KEN
+      - text: Laos
+        value: LAO
+      - text: Mexico
+        value: MEX
+      - text: Netherlands
+        value: NLD
+      - text: Oman
+        value: OMN
+      - text: Pakistan
+        value: PAK
+      - text: Qatar
+        value: QAT
+      - text: Romania
+        value: ROU
+      - text: Spain
+        value: ESP
+      - text: Thailand
+        value: THA
+      - text: Uganda
+        value: UGA
+      - text: Vietnam
+        value: VNM
+      - text: Wales
+        value: WLS
+      - text: Yemen
+        value: YEM
+      - text: Zimbabwe
+        value: ZWE
+sections:
+  - title: Eligibility
+    name: EligibilitySection
+    hideTitle: false
+conditions:
+  - name: terminalCondition
+    displayName: continueNo
+    value:
+      name: continueNo
+      conditions:
+        - field:
+            name: doYouWantToContinue
+            type: YesNoField
+            display: Do you want to continue?
+          operator: is
+          value:
+            type: Value
+            value: 'false'
+            display: 'No'
+  - name: choiceOneCondition
+    displayName: choiceOne
+    value:
+      name: choiceOne
+      conditions:
+        - field:
+            name: radiosField
+            type: RadiosField
+            display: RadiosField Example
+          operator: is
+          value:
+            type: Value
+            value: radiosFieldOption-A1
+            display: Conditional page example

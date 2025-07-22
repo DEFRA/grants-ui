@@ -8,7 +8,7 @@ pages:
       - name: projectCostInfo
         type: Html
         title: Html
-        content: '<p class="govuk-hint">Do not include VAT<br><br>Enter cost of items, for example {{ 695000 | formatCurrency: ''en-GB'', ''GBP'', 0, ''decimal'' }}</p>'
+        content: '<p class="govuk-hint">Do not include VAT<br><br>Enter cost of items, for example 695000</p>'
       - name: estimatedCost
         type: NumberField
         title: Enter amount
@@ -98,7 +98,7 @@ pages:
         content: |
           <p class="govuk-body">You cannot use public money (for example, grant funding from government or local authorities) towards the project costs.</br></br>You also cannot use money from a producer organisation under the Fresh Fruit and Vegetable Aid Scheme.</br></br>For example, you can use:</p>
 
-          <ul class="govuk-t govuk-list--bullet">
+          <ul class="govuk-list govuk-list--bullet">
           <li>loans</li>
           <li>overdrafts</li>
           <li>delinked payments</li></ul>

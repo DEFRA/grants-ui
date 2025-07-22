@@ -21,11 +21,9 @@ jest.mock('~/src/server/common/helpers/logging/log.js', () => ({
 
 describe('verifyToken', () => {
   // Sample test data
-  const mockToken =
-    'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.signature'
+  const mockToken = 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.signature'
   const mockJwk = { kty: 'RSA', n: 'test-n', e: 'test-e' }
-  const mockPem =
-    '-----BEGIN PUBLIC KEY-----\nMIIBIjANBgk...\n-----END PUBLIC KEY-----'
+  const mockPem = '-----BEGIN PUBLIC KEY-----\nMIIBIjANBgk...\n-----END PUBLIC KEY-----'
   const mockDecodedToken = {
     header: { alg: 'RS256' },
     payload: { sub: '1234567890' }
@@ -94,9 +92,7 @@ describe('verifyToken', () => {
   it('should throw an error if the OIDC config fetch fails', async () => {
     getOidcConfig.mockRejectedValue(new Error('Failed to fetch OIDC config'))
 
-    await expect(verifyToken(mockToken)).rejects.toThrow(
-      'Failed to fetch OIDC config'
-    )
+    await expect(verifyToken(mockToken)).rejects.toThrow('Failed to fetch OIDC config')
   })
 
   it('should throw an error if the JWKS fetch fails', async () => {
@@ -110,9 +106,7 @@ describe('verifyToken', () => {
       throw new Error('Invalid token signature')
     })
 
-    await expect(verifyToken(mockToken)).rejects.toThrow(
-      'Invalid token signature'
-    )
+    await expect(verifyToken(mockToken)).rejects.toThrow('Invalid token signature')
   })
 
   it('should throw an error when no keys are returned from JWKS', async () => {
@@ -124,12 +118,11 @@ describe('verifyToken', () => {
     })
 
     // jose.JWK.asKey should throw an error when given undefined
-    jose.JWK.asKey.mockRejectedValue(
-      new Error('Cannot convert undefined JWK to key')
-    )
+    jose.JWK.asKey.mockRejectedValue(new Error('Cannot convert undefined JWK to key'))
 
     await expect(verifyToken(mockToken)).rejects.toThrow(
       'No keys found in JWKS response'
     )
+
   })
 })

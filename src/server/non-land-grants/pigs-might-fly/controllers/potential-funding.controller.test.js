@@ -2,9 +2,7 @@ import { PotentialFundingController } from './potential-funding.controller.js'
 import { invokeGasPostAction } from '~/src/server/common/services/grant-application/grant-application.service.js'
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 
-jest.mock(
-  '~/src/server/common/services/grant-application/grant-application.service.js'
-)
+jest.mock('~/src/server/common/services/grant-application/grant-application.service.js')
 
 describe('PotentialFundingController', () => {
   let controller
@@ -76,18 +74,14 @@ describe('PotentialFundingController', () => {
       await handler(mockRequest, mockContext, mockResponseToolkit)
 
       expect(invokeGasPostAction).toHaveBeenCalledTimes(1)
-      expect(invokeGasPostAction).toHaveBeenCalledWith(
-        'pigs-might-fly',
-        'calculate-pig-totals',
-        {
-          pigTypes: [
-            { pigType: 'largeWhite', quantity: 10 },
-            { pigType: 'britishLandrace', quantity: 5 },
-            { pigType: 'berkshire', quantity: 3 },
-            { pigType: 'other', quantity: 2 }
-          ]
-        }
-      )
+      expect(invokeGasPostAction).toHaveBeenCalledWith('pigs-might-fly', 'calculate-pig-totals', {
+        pigTypes: [
+          { pigType: 'largeWhite', quantity: 10 },
+          { pigType: 'britishLandrace', quantity: 5 },
+          { pigType: 'berkshire', quantity: 3 },
+          { pigType: 'other', quantity: 2 }
+        ]
+      })
 
       expect(mockContext.pigData).toEqual({
         largeWhite: { type: 'largeWhite', value: 50 },
@@ -95,13 +89,8 @@ describe('PotentialFundingController', () => {
         berkshire: { type: 'berkshire', value: 15 },
         other: { type: 'other', value: 10 }
       })
-      expect(mockContext.pigDataJson).toEqual(
-        JSON.stringify({ totalPigs: 100 })
-      )
-      expect(mockResponseToolkit.view).toHaveBeenCalledWith(
-        'potential-funding',
-        expect.any(Object)
-      )
+      expect(mockContext.pigDataJson).toEqual(JSON.stringify({ totalPigs: 100 }))
+      expect(mockResponseToolkit.view).toHaveBeenCalledWith('potential-funding', expect.any(Object))
     })
 
     it('should handle undefined pig counts with fallback to 0', async () => {
@@ -128,18 +117,14 @@ describe('PotentialFundingController', () => {
 
       await handler(mockRequest, mockContext, mockResponseToolkit)
 
-      expect(invokeGasPostAction).toHaveBeenCalledWith(
-        'pigs-might-fly',
-        'calculate-pig-totals',
-        {
-          pigTypes: [
-            { pigType: 'largeWhite', quantity: 0 }, // undefined || 0
-            { pigType: 'britishLandrace', quantity: 0 }, // null || 0
-            { pigType: 'berkshire', quantity: 0 }, // 0 || 0
-            { pigType: 'other', quantity: 5 } // 5 || 0
-          ]
-        }
-      )
+      expect(invokeGasPostAction).toHaveBeenCalledWith('pigs-might-fly', 'calculate-pig-totals', {
+        pigTypes: [
+          { pigType: 'largeWhite', quantity: 0 }, // undefined || 0
+          { pigType: 'britishLandrace', quantity: 0 }, // null || 0
+          { pigType: 'berkshire', quantity: 0 }, // 0 || 0
+          { pigType: 'other', quantity: 5 } // 5 || 0
+        ]
+      })
     })
 
     it('should log and throw an error if invokeGasPostAction fails', async () => {
@@ -148,14 +133,9 @@ describe('PotentialFundingController', () => {
       const mockError = new Error('Test Error')
       invokeGasPostAction.mockRejectedValue(mockError)
 
-      await expect(
-        handler(mockRequest, mockContext, mockResponseToolkit)
-      ).rejects.toThrow(mockError)
+      await expect(handler(mockRequest, mockContext, mockResponseToolkit)).rejects.toThrow(mockError)
 
-      expect(mockRequest.logger.error).toHaveBeenCalledWith(
-        'Error invoking GAS action:',
-        mockError
-      )
+      expect(mockRequest.logger.error).toHaveBeenCalledWith('Error invoking GAS action:', mockError)
     })
   })
 

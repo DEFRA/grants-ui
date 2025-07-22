@@ -13,17 +13,14 @@ export const grantsUiPaths = [
   path.resolve(dirname, '../../server/common/templates'),
   path.resolve(dirname, '../../server/common/components')
 ]
-const nunjucksEnvironment = nunjucks.configure(
-  ['node_modules/govuk-frontend/dist/', ...grantsUiPaths],
-  {
-    autoescape: true,
-    throwOnUndefined: false,
-    trimBlocks: true,
-    lstripBlocks: true,
-    watch: config.get('nunjucks.watch'),
-    noCache: config.get('nunjucks.noCache')
-  }
-)
+const nunjucksEnvironment = nunjucks.configure(['node_modules/govuk-frontend/dist/', ...grantsUiPaths], {
+  autoescape: true,
+  throwOnUndefined: false,
+  trimBlocks: true,
+  lstripBlocks: true,
+  watch: config.get('nunjucks.watch'),
+  noCache: config.get('nunjucks.noCache')
+})
 
 /**
  * @satisfies {ServerRegisterPluginObject<ServerViewsConfiguration>}
