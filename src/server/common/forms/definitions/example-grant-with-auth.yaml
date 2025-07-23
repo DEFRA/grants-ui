@@ -65,7 +65,7 @@ pages:
     path: '/yes-no-field'
     components:
       - name: yesNoField
-        title: Do you want to continue
+        title: Yes or No
         hint:
           Selecting 'No' will demonstrate navigating to a Terminal page to end the application
         type: YesNoField
@@ -113,7 +113,7 @@ pages:
         content: |-
           <p class="govuk-body">This is an example of a RadiosField component. Options can be configured to go to Terminal pages or Conditional pages.</p>
       - name: radiosField
-        title: Which option?
+        title: Radio option
         type: RadiosField
         list: radiosFieldList
         hint: Selecting the first option demonstrates navigating to an optional page before continuing
@@ -137,7 +137,7 @@ pages:
     path: '/checkboxes-field'
     components:
       - name: checkboxesField
-        title: Option
+        title: Checkbox options
         hint: |
           Use checkboxes to allow selection of one or more options.
           This example requires at least one selection, but the component can be set to optional.
@@ -175,7 +175,7 @@ pages:
     path: '/date-parts-field'
     components:
       - name: datePartsField
-        title: Date field
+        title: Date
         hint: |
           Cannot be in the past and must be within the next 90 days.
         type: DatePartsField
@@ -189,7 +189,7 @@ pages:
     path: '/month-year-field'
     components:
       - name: monthYearField
-        title: Month and year field
+        title: Month and year
         hint: |
           Allows entry of dates with just a month and year.
         type: MonthYearField
@@ -205,7 +205,7 @@ pages:
         content: |-
           <p class="govuk-body">This is an example of a SelectField.</p>
       - name: selectField
-        title: Select field
+        title: Select option
         type: SelectField
         list: selectFieldList
         options:
@@ -279,7 +279,8 @@ pages:
         name: applicantBusinessAddress
 
   - title: Check your details
-    path: '/check-details'
+    path: '/summary'
+    controller: SummaryPageController
   - title: Confirm and send
     path: '/declaration'
     controller: DeclarationPageController
@@ -399,7 +400,7 @@ conditions:
       name: continueNo
       conditions:
         - field:
-            name: doYouWantToContinue
+            name: yesNoField
             type: YesNoField
             display: Do you want to continue?
           operator: is

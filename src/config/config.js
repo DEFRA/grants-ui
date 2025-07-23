@@ -15,7 +15,8 @@ convict.addFormat('url', function (val) {
     return
   }
   try {
-    URL(val)
+    // eslint-disable-next-line no-new
+    new URL(val)
   } catch {
     throw new Error('must be a valid URL')
   }
