@@ -40,11 +40,11 @@ import SectionEndController from './section-end/section-end.controller.js'
 import { router } from './router.js'
 import FlyingPigsSubmissionPageController from '~/src/server/non-land-grants/pigs-might-fly/controllers/pig-types-submission.controller.js'
 import { PotentialFundingController } from '~/src/server/non-land-grants/pigs-might-fly/controllers/potential-funding.controller.js'
-import { statusCodes } from './common/constants/status-codes.js'
 import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
+import { getCacheKey } from './common/helpers/state/get-cache-key-helper.js'
+import { fetchSavedStateFromApi } from './common/helpers/state/fetch-saved-state-helper.js'
 
 const SESSION_CACHE_NAME = 'session.cache.name'
-const GRANTS_UI_BACKEND_ENDPOINT = config.get('session.cache.apiEndpoint')
 
 const getViewPaths = () => {
   const serverDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)))
@@ -151,53 +151,6 @@ const registerFormsPlugin = async (server, prefix = '') => {
       }
     }
   })
-}
-
-const getCacheKey = (request) => {
-  const { userId, businessId } = request.auth.credentials || {}
-
-  const grantId = request.params.slug
-
-  if (!userId || !businessId) {
-    throw new Error('Missing identity')
-  }
-  if (!grantId) {
-    throw new Error('Missing grantId')
-  }
-  return { userId, businessId, grantId }
-}
-
-async function fetchSavedStateFromApi(request) {
-  const { userId, businessId, grantId } = getCacheKey(request)
-
-  let json = {}
-  try {
-    const response = await fetch(
-      `${GRANTS_UI_BACKEND_ENDPOINT}/state/?userId=${userId}&businessId=${businessId}&grantId=${grantId}`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      }
-    )
-
-    if (!response.ok) {
-      // Specifically treat 404 as "no state"
-      if (response.status === statusCodes.notFound) {
-        return null
-      }
-      // Handle other error statuses differently, or throw
-      throw new Error(`Failed to fetch saved state: ${response.status}`)
-    }
-
-    json = await response.json()
-  } catch (err) {
-    request.logger.error(['fetch-saved-state'], 'Failed to fetch saved state from API', err)
-    throw err
-  }
-
-  return json || null
 }
 
 const registerPlugins = async (server) => {
