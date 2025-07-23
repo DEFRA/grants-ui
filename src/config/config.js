@@ -7,18 +7,16 @@ import { fileURLToPath } from 'node:url'
 import defraId from './defra-id.js'
 import landGrants from './land-grants.js'
 import agreements from './agreements.js'
+import isURL from 'validator/lib/isURL.js'
 
 const dirname = path.dirname(fileURLToPath(import.meta.url))
 
-convict.addFormat('url', function (val) {
-  if (!val) {
-    return
-  }
-  try {
-    // eslint-disable-next-line no-new
-    new URL(val)
-  } catch {
-    throw new Error('must be a valid URL')
+convict.addFormat({
+  name: 'url',
+  validate: (val) => {
+    if (!isURL(val, { require_tld: false })) {
+      throw new Error(`must be a valid URL`)
+    }
   }
 })
 
@@ -230,7 +228,7 @@ export const config = convict({
       apiEndpoint: {
         doc: 'Grants UI Backend API endpoint',
         format: 'url',
-        default: '',
+        default: 'http://localhost:3002',
         env: 'GRANTS_UI_BACKEND_URL'
       }
     },
