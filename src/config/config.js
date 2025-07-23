@@ -17,7 +17,8 @@ convict.addFormat({
     if (!isURL(val, { require_tld: false })) {
       throw new Error(`must be a valid URL`)
     }
-  }
+  },
+  coerce: (val) => val.trim()
 })
 
 const fourHoursMs = 14400000
