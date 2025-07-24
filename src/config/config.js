@@ -10,19 +10,8 @@ import agreements from './agreements.js'
 
 const dirname = path.dirname(fileURLToPath(import.meta.url))
 
-convict.addFormat('url', function (val) {
-  if (!val) {
-    return
-  }
-  try {
-    // eslint-disable-next-line no-new
-    new URL(val)
-  } catch {
-    throw new Error('must be a valid URL')
-  }
-})
-
-const fourHoursMs = 14400000
+const oneHourMs = 3600000
+const fourHoursMs = oneHourMs * 4
 const oneWeekMs = 604800000
 
 const isProduction = process.env.NODE_ENV === 'production'
@@ -58,7 +47,7 @@ export const config = convict({
   baseUrl: {
     doc: 'Base URL for the application',
     format: String,
-    default: 'http://localhost:3000',
+    default: '',
     env: 'BASE_URL'
   },
   staticCacheTimeout: {
@@ -207,6 +196,11 @@ export const config = convict({
     default: isProduction,
     env: 'ENABLE_METRICS'
   },
+  sessionTimeout: {
+    format: Number,
+    default: fourHoursMs,
+    env: 'SESSION_TIMEOUT'
+  },
   session: {
     cache: {
       engine: {
@@ -229,7 +223,7 @@ export const config = convict({
       },
       apiEndpoint: {
         doc: 'Grants UI Backend API endpoint',
-        format: 'url',
+        format: String,
         default: '',
         env: 'GRANTS_UI_BACKEND_URL'
       }

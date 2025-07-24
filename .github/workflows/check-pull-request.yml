@@ -51,7 +51,7 @@ jobs:
         run: |
           set -e
           docker build --no-cache --tag grants-ui-build-test .
-          CONTAINER_ID=$(docker run --rm -d -p 3000:3000 -e SESSION_CACHE_ENGINE=memory grants-ui-build-test)
+          CONTAINER_ID=$(docker run --rm -d -p 3000:3000 -e SESSION_CACHE_ENGINE=memory -e BASE_URL=http://localhost:3000 grants-ui-build-test)
           echo "Container ID: $CONTAINER_ID"
           ATTEMPTS=0
           MAX_ATTEMPTS=15
