@@ -228,7 +228,7 @@ export const config = convict({
       },
       apiEndpoint: {
         doc: 'Grants UI Backend API endpoint',
-        format: 'url',
+        format: String,
         default: '',
         env: 'GRANTS_UI_BACKEND_URL'
       }

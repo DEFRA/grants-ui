@@ -42,9 +42,11 @@ import FlyingPigsSubmissionPageController from '~/src/server/non-land-grants/pig
 import { PotentialFundingController } from '~/src/server/non-land-grants/pigs-might-fly/controllers/potential-funding.controller.js'
 import { sbiStore } from './sbi/state.js'
 import { statusCodes } from './common/constants/status-codes.js'
+import { sessionPurger } from '~/src/server/save-and-return/session-purger.js'
+import { GRANTS_UI_BACKEND_ENDPOINT } from '~/src/server/common/constants/grants-ui-backend.js'
+import { getIdentity, keyGenerator } from '~/src/server/save-and-return/key-generator.js'
 
 const SESSION_CACHE_NAME = 'session.cache.name'
-const GRANTS_UI_BACKEND_ENDPOINT = config.get('session.cache.apiEndpoint')
 
 const getViewPaths = () => {
   const currentFilePath = fileURLToPath(import.meta.url)
@@ -115,7 +117,12 @@ export const registerFormsPlugin = async (server, prefix = '') => {
       ...(prefix && { routes: { prefix } }),
       cacheName: config.get(SESSION_CACHE_NAME),
       baseUrl: config.get('baseUrl'),
-      keyGenerator: generateKey,
+      saveAndReturn: {
+        keyGenerator,
+        // TODO sessionHydrator
+        // TODO sessionPersister
+        sessionPurger
+      },
       services: {
         formsService: await formsService(),
         formSubmissionService,
@@ -146,44 +153,12 @@ export const registerFormsPlugin = async (server, prefix = '') => {
   })
 }
 
-let cachedKey = null
-let cachedSbi = null
-
-const createLogger = (serverLogger) => ({
+const createMockLogger = (serverLogger) => ({
   info: serverLogger.info.bind(serverLogger),
   error: serverLogger.error.bind(serverLogger),
   warn: serverLogger.warn?.bind(serverLogger) || serverLogger.info.bind(serverLogger),
   debug: serverLogger.debug?.bind(serverLogger) || serverLogger.info.bind(serverLogger)
 })
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const getIdentity = (_) => {
-  if (process.env.SBI_SELECTOR_ENABLED === 'true') {
-    const sbi = sbiStore.get('sbi')
-    return {
-      userId: `user_${sbi}`,
-      businessId: `business_${sbi}`,
-      grantId: `grant_${sbi}`
-    }
-  }
-
-  // If there are credentials from DEFRA ID, use those
-  // if (identity) {
-  //   return {
-  //     userId: identity.userId,
-  //     businessId: identity.businessId,
-  //     grantId: identity.grantId
-  //   }
-  // }
-
-  // Backup
-
-  return {
-    userId: 'placeholder-user-id',
-    businessId: 'placeholder-business-id',
-    grantId: 'placeholder-grant-id'
-  }
-}
 
 async function fetchSavedStateFromApi(request) {
   if (!GRANTS_UI_BACKEND_ENDPOINT) {
@@ -222,30 +197,13 @@ async function fetchSavedStateFromApi(request) {
   return json || null
 }
 
-const generateKey = (request) => {
-  const currentSbi = sbiStore.get('sbi')
-
-  if (cachedKey === null || cachedSbi !== currentSbi) {
-    const { userId, businessId, grantId } = getIdentity(request)
-    cachedKey = `${userId}:${businessId}:${grantId}`
-    cachedSbi = currentSbi
-  }
-
-  return cachedKey
-}
-
-export const clearCachedKey = () => {
-  cachedKey = null
-  cachedSbi = null
-}
-
 async function performSessionHydrationInternal(server, sbi, options = {}) {
   const { pathname = '/server-startup', method = 'GET', logContext = 'session hydration' } = options
 
   server.logger.info(`Starting ${logContext} for SBI:`, sbi)
 
   try {
-    const request = {
+    const mockRequest = {
       auth: {
         credentials: {
           userId: `user_${sbi}`,
@@ -253,12 +211,12 @@ async function performSessionHydrationInternal(server, sbi, options = {}) {
           grantId: `grant_${sbi}`
         }
       },
-      logger: createLogger(server.logger),
+      logger: createMockLogger(server.logger),
       url: { pathname },
       method
     }
 
-    const result = await fetchSavedStateFromApi(request)
+    const result = await fetchSavedStateFromApi(mockRequest)
     server.logger.info(`${logContext} completed for SBI:`, sbi)
     return result
   } catch (error) {
