@@ -42,6 +42,7 @@ import FlyingPigsSubmissionPageController from '~/src/server/non-land-grants/pig
 import { PotentialFundingController } from '~/src/server/non-land-grants/pigs-might-fly/controllers/potential-funding.controller.js'
 import { sbiStore } from './sbi/state.js'
 import { statusCodes } from './common/constants/status-codes.js'
+import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
 
 const SESSION_CACHE_NAME = 'session.cache.name'
 const GRANTS_UI_BACKEND_ENDPOINT = config.get('session.cache.apiEndpoint')
@@ -140,7 +141,8 @@ export const registerFormsPlugin = async (server, prefix = '') => {
         LandActionsCheckPageController,
         SectionEndController,
         FlyingPigsSubmissionPageController,
-        PotentialFundingController
+        PotentialFundingController,
+        SummaryPageController
       }
     }
   })
