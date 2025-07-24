@@ -59,7 +59,7 @@ describe('fetchSavedStateFromApi', () => {
     it('returns null when response JSON is invalid or missing state', async () => {
       fetch.mockResolvedValue({
         ok: true,
-        json: () => ({ invalid: true })
+        json: () => 123
       })
 
       const request = mockRequestWithIdentity({ params: { slug: 'test-slug' } })
