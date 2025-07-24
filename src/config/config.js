@@ -7,21 +7,11 @@ import { fileURLToPath } from 'node:url'
 import defraId from './defra-id.js'
 import landGrants from './land-grants.js'
 import agreements from './agreements.js'
-import isURL from 'validator/lib/isURL.js'
 
 const dirname = path.dirname(fileURLToPath(import.meta.url))
 
-convict.addFormat({
-  name: 'url',
-  validate: (val) => {
-    if (!isURL(val, { require_tld: false })) {
-      throw new Error(`must be a valid URL`)
-    }
-  },
-  coerce: (val) => val.trim()
-})
-
-const fourHoursMs = 14400000
+const oneHourMs = 3600000
+const fourHoursMs = oneHourMs * 4
 const oneWeekMs = 604800000
 
 const isProduction = process.env.NODE_ENV === 'production'
@@ -206,6 +196,11 @@ export const config = convict({
     default: isProduction,
     env: 'ENABLE_METRICS'
   },
+  sessionTimeout: {
+    format: Number,
+    default: fourHoursMs,
+    env: 'SESSION_TIMEOUT'
+  },
   session: {
     cache: {
       engine: {
@@ -228,8 +223,8 @@ export const config = convict({
       },
       apiEndpoint: {
         doc: 'Grants UI Backend API endpoint',
-        format: 'url',
-        default: 'http://localhost:3002',
+        format: String,
+        default: '',
         env: 'GRANTS_UI_BACKEND_URL'
       }
     },
