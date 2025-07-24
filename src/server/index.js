@@ -115,12 +115,14 @@ const registerFormsPlugin = async (server, prefix = '') => {
       ...(prefix && { routes: { prefix } }),
       cacheName: config.get(SESSION_CACHE_NAME),
       baseUrl: config.get('baseUrl'),
-      keyGenerator: (request) => {
-        const { userId, businessId, grantId } = getCacheKey(request)
-        return `${userId}:${businessId}:${grantId}`
-      },
-      sessionHydrator: async (request) => {
-        return await fetchSavedStateFromApi(request)
+      saveAndReturn: {
+        keyGenerator: (request) => {
+          const { userId, businessId, grantId } = getCacheKey(request)
+          return `${userId}:${businessId}:${grantId}`
+        },
+        sessionHydrator: async (request) => {
+          return await fetchSavedStateFromApi(request)
+        }
       },
       services: {
         formsService: await formsService(),

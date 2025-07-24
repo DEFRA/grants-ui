@@ -13,15 +13,17 @@ export async function fetchSavedStateFromApi(request) {
 
   let json = null
   try {
-    const response = await fetch(
-      `${GRANTS_UI_BACKEND_ENDPOINT}/state/?userId=${userId}&businessId=${businessId}&grantId=${grantId}`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        }
+    const url = new URL('/state/', GRANTS_UI_BACKEND_ENDPOINT)
+    url.searchParams.set('userId', userId)
+    url.searchParams.set('businessId', businessId)
+    url.searchParams.set('grantId', grantId)
+
+    const response = await fetch(url.href, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
       }
-    )
+    })
 
     if (!response.ok) {
       if (response.status === statusCodes.notFound) {
@@ -32,7 +34,7 @@ export async function fetchSavedStateFromApi(request) {
 
     json = await response.json()
 
-    if (!json || typeof json !== 'object' || !json.state) {
+    if (!json || typeof json !== 'object') {
       request.logger.warn(['fetch-saved-state'], 'Unexpected or empty state format', { json })
       return null
     }
