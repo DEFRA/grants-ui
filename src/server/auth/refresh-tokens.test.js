@@ -2,6 +2,7 @@ import Wreck from '@hapi/wreck'
 import { config } from '~/src/config/config.js'
 import { getOidcConfig } from '~/src/server/auth/get-oidc-config.js'
 import { refreshTokens } from './refresh-tokens.js'
+import { log } from '~/src/server/common/helpers/logging/log.js'
 
 jest.mock('@hapi/wreck')
 jest.mock('~/src/server/auth/get-oidc-config.js')
@@ -79,5 +80,79 @@ describe('refreshTokens', () => {
     await expect(refreshTokens('old-refresh-token')).rejects.toThrow('Configuration error')
 
     expect(Wreck.post).not.toHaveBeenCalled()
+  })
+
+  it('should error when no access token is returned', async () => {
+    Wreck.post.mockResolvedValue({ payload: {} })
+    await expect(refreshTokens('refresh-token')).rejects.toThrow('No access token in refresh response')
+  })
+
+  describe('refreshTokens - error scenarios', () => {
+    test.each([
+      {
+        errorMessage: 'OIDC',
+        stepValue: 'oidc_config_fetch'
+      },
+      {
+        errorMessage: 'ENOTFOUND',
+        stepValue: 'token_endpoint_connection'
+      },
+      {
+        errorMessage: '400',
+        stepValue: 'token_endpoint_auth'
+      },
+      {
+        errorMessage: 'access_token',
+        stepValue: 'token_refresh_response_validation'
+      }
+    ])(
+      'Should log the correct step when an error occurs containing "$errorMessage"',
+      async ({ errorMessage, stepValue }) => {
+        const mockError = new Error(errorMessage)
+        getOidcConfig.mockRejectedValue(mockError)
+
+        await expect(refreshTokens('refresh-token')).rejects.toThrow(errorMessage)
+
+        expect(log).toHaveBeenCalledTimes(1)
+        expect(log).toHaveBeenCalledWith(
+          expect.any(Object),
+          expect.objectContaining({
+            step: stepValue
+          })
+        )
+      }
+    )
+
+    it('should log the step when an unknown error occurs', async () => {
+      const mockError = new Error('not in list')
+      getOidcConfig.mockRejectedValue(mockError)
+
+      await expect(refreshTokens('refresh-token')).rejects.toThrow('not in list')
+
+      expect(log).toHaveBeenCalledTimes(1)
+      expect(log).toHaveBeenCalledWith(
+        expect.any(Object),
+        expect.objectContaining({
+          step: 'unknown'
+        })
+      )
+    })
+
+    it('should log the step when an unknown error occurs and statusCode is set', async () => {
+      const mockError = new Error('not in list')
+      mockError.statusCode = 500
+
+      getOidcConfig.mockRejectedValue(mockError)
+
+      await expect(refreshTokens('refresh-token')).rejects.toThrow('not in list')
+
+      expect(log).toHaveBeenCalledTimes(1)
+      expect(log).toHaveBeenCalledWith(
+        expect.any(Object),
+        expect.objectContaining({
+          step: 'token_endpoint_response'
+        })
+      )
+    })
   })
 })
