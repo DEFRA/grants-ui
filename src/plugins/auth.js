@@ -57,7 +57,7 @@ export default {
             wellKnownUrl: config.get('defraId.wellKnownUrl')
           }
         })
-        // Mark error as already logged to prevent duplicate logging
+        // Mark the error as already logged to prevent duplicate logging
         error.alreadyLogged = true
         throw error
       }
@@ -87,7 +87,7 @@ export default {
 }
 
 function getBellOptions(oidcConfig) {
-  const bellOptions = {
+  return {
     provider: {
       name: 'defra-id',
       protocol: 'oauth2',
@@ -218,8 +218,7 @@ function getBellOptions(oidcConfig) {
           }
         }
 
-        const finalRedirectUrl = config.get('defraId.redirectUrl')
-        return finalRedirectUrl
+        return config.get('defraId.redirectUrl')
       } catch (error) {
         log(LogCodes.AUTH.SIGN_IN_FAILURE, {
           userId: 'unknown',
@@ -238,38 +237,12 @@ function getBellOptions(oidcConfig) {
         throw error
       }
     },
-    providerParams: function (request) {
-      try {
-        const params = {
-          serviceId: config.get('defraId.serviceId')
-          // p: config.get('defraId.policy')
-          // response_mode: 'query'
-        }
-
-        // If user intends to switch organisation, force Defra Identity to display the organisation selection screen
-        if (request.path === '/auth/organisation') {
-          params.forceReselection = true
-          // If user has already selected an organisation in another service, pass the organisation Id to force Defra Id to skip the organisation selection screen
-          if (request.query.organisationId) {
-            params.relationshipId = request.query.organisationId
-          }
-        }
-
-        return params
-      } catch (error) {
-        log(LogCodes.AUTH.SIGN_IN_FAILURE, {
-          userId: 'unknown',
-          error: `Bell provider params function failed: ${error.message}`,
-          step: 'bell_provider_params_error'
-        })
-
-        error.alreadyLogged = true
-        throw error
+    providerParams: function () {
+      return {
+        serviceId: config.get('defraId.serviceId')
       }
     }
   }
-
-  return bellOptions
 }
 
 function getCookieOptions() {
@@ -286,7 +259,7 @@ function getCookieOptions() {
     validate: async function (request, session) {
       const userSession = await request.server.app.cache.get(session.sessionId)
 
-      // If session does not exist, return an invalid session
+      // If a session does not exist, return an invalid session
       if (!userSession) {
         log(LogCodes.AUTH.SESSION_EXPIRED, {
           userId: 'unknown',

@@ -8,6 +8,7 @@ import AuthPlugin, { getBellOptions, getCookieOptions } from '~/src/plugins/auth
 import { getOidcConfig } from '~/src/server/auth/get-oidc-config.js'
 import { getSafeRedirect } from '~/src/server/auth/get-safe-redirect.js'
 import { refreshTokens } from '~/src/server/auth/refresh-tokens.js'
+import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
 jest.mock('@hapi/jwt')
 jest.mock('~/src/server/common/helpers/logging/log.js', () => ({
@@ -103,6 +104,12 @@ describe('Auth Plugin', () => {
     expect(server.auth.default).toHaveBeenCalledWith('session')
   })
 
+  test('throws an error if OIDC config cannot be fetched', async () => {
+    getOidcConfig.mockRejectedValue(new Error('Failed to fetch OIDC config'))
+    await expect(AuthPlugin.plugin.register(server)).rejects.toThrow('Failed to fetch OIDC config')
+    await expect(AuthPlugin.plugin.register(server)).rejects.toMatchObject({ alreadyLogged: true })
+  })
+
   describe('getBellOptions', () => {
     test('returns the correct bell options', () => {
       const options = getBellOptions(mockOidcConfig)
@@ -151,30 +158,97 @@ describe('Auth Plugin', () => {
       expect(result).toBe('https://example.com/auth/callback')
     })
 
-    test('providerParams function includes required parameters', () => {
+    test('location function throws error if setting redirect yar key fails and logs it', () => {
       const options = getBellOptions(mockOidcConfig)
-      const mockRequestDefault = {
-        path: '/something-else',
-        query: {}
+      const mockRequest = {
+        query: { redirect: '/home' },
+        yar: {
+          set: jest.fn(() => {
+            throw new Error('Yar set error')
+          })
+        },
+        url: { href: 'http://localhost:3000/auth?redirect=%2Fhome' }, // Added url.href
+        method: 'GET',
+        headers: { host: 'localhost:3000', origin: 'http://localhost:3000' }
       }
 
-      const params = options.providerParams(mockRequestDefault)
+      options.location(mockRequest)
+
+      expect(log).toHaveBeenCalledWith(LogCodes.AUTH.SIGN_IN_FAILURE, {
+        userId: 'unknown',
+        error: `Failed to store redirect parameter: Yar set error`,
+        step: 'bell_location_redirect_store_error',
+        redirectError: {
+          message: 'Yar set error',
+          stack: expect.any(String),
+          originalRedirect: expect.any(String)
+        }
+      })
+    })
+
+    test('providerParams function includes required parameters', () => {
+      const options = getBellOptions(mockOidcConfig)
+
+      const params = options.providerParams()
       expect(params).toEqual({
         serviceId: 'test-service-id'
       })
-
-      const mockRequestOrg = {
-        path: '/auth/organisation',
-        query: { organisationId: 'org-456' }
-      }
-
-      const orgParams = options.providerParams(mockRequestOrg)
-      expect(orgParams).toEqual({
-        serviceId: 'test-service-id',
-        forceReselection: true,
-        relationshipId: 'org-456'
-      })
     })
+
+    test('throws error if credentials are undefined after retrieving from Bell OAuth provider', () => {
+      const options = getBellOptions(mockOidcConfig)
+      const credentials = undefined
+
+      expect(() => {
+        options.provider.profile(credentials)
+      }).toThrow('No credentials received from Bell OAuth provider')
+    })
+
+    test('throws error if token is missing after retrieving from Bell OAuth provider', () => {
+      const options = getBellOptions(mockOidcConfig)
+      const credentials = { profile: {} }
+
+      expect(() => {
+        options.provider.profile(credentials)
+      }).toThrow('No token received from Defra Identity')
+    })
+
+    test('throws error if JWT decoding fails', () => {
+      const options = getBellOptions(mockOidcConfig)
+      const credentials = { token: 'a_test_token' }
+      Jwt.token.decode.mockImplementation(() => {
+        throw new Error('JWT decode error')
+      })
+      expect(() => {
+        options.provider.profile(credentials)
+      }).toThrow('Failed to decode JWT token: JWT decode error')
+    })
+  })
+
+  test('throws error if payload is undefined', () => {
+    const options = getBellOptions(mockOidcConfig)
+    const credentials = { token: 'test-token' }
+
+    Jwt.token.decode.mockReturnValueOnce(undefined)
+
+    expect(() => {
+      options.provider.profile(credentials)
+    }).toThrow('Failed to extract payload from JWT token')
+  })
+
+  test('throws error if payload is missing required fields', () => {
+    const options = getBellOptions(mockOidcConfig)
+    const credentials = { token: 'test-token' }
+
+    Jwt.token.decode.mockReturnValueOnce({
+      decoded: {
+        payload: {}
+      }
+    })
+
+    expect(() => {
+      options.provider.profile(credentials)
+    }).toThrow('Missing required fields in JWT payload: contactId, firstName, lastName')
   })
 
   describe('getCookieOptions', () => {
