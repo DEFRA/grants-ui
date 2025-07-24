@@ -47,7 +47,7 @@ export const config = convict({
   baseUrl: {
     doc: 'Base URL for the application',
     format: String,
-    default: 'http://localhost:3000',
+    default: '',
     env: 'BASE_URL'
   },
   staticCacheTimeout: {
