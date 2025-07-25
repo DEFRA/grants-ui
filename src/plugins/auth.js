@@ -324,11 +324,6 @@ function getCookieOptions() {
 
           return { isValid: false }
         }
-
-        const { access_token: token, refresh_token: refreshToken } = await refreshTokens(userSession.refreshToken)
-        userSession.token = token
-        userSession.refreshToken = refreshToken
-        await request.server.app.cache.set(session.sessionId, userSession)
       }
 
       // Set the user's details on the request object and allow the request to continue

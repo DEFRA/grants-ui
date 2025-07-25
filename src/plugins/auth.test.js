@@ -395,6 +395,38 @@ describe('Auth Plugin', () => {
       })
     })
 
+    test('location function throws error if config keys are not set', () => {
+      config.get.mockImplementation((key) => {
+        if (key === 'defraId.redirectUrl') {
+          throw createMockError('Config read error')
+        }
+        return DEFAULT_CONFIG[key]
+      })
+
+      const options = getBellOptions(mockOidcConfig)
+      const mockRequest = {
+        query: { redirect: '/home' },
+        yar: {
+          set: jest.fn()
+        },
+        url: { href: 'http://localhost:3000/auth?redirect=%2Fhome' },
+        method: 'GET',
+        headers: { host: 'localhost:3000', origin: 'http://localhost:3000' }
+      }
+
+      expect(() => options.location(mockRequest)).toThrow('Config read error')
+
+      expect(log).toHaveBeenCalledWith(LogCodes.AUTH.SIGN_IN_FAILURE, {
+        ...LOG_MESSAGES.signInFailure.baseFields,
+        error: `Bell location function failed: Config read error`,
+        step: LOG_MESSAGES.signInFailure.steps.LOCATION_FUNCTION_ERROR,
+        locationError: expect.objectContaining({
+          message: 'Config read error',
+          stack: expect.anything()
+        })
+      })
+    })
+
     test('providerParams function includes required parameters', () => {
       const options = getBellOptions(mockOidcConfig)
 
