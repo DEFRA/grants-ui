@@ -14,18 +14,7 @@ async function setupOidcConfig() {
     // Keep for when we deploy to higher environments, won't be needed beyond that
     log(LogCodes.SYSTEM.ENV_CONFIG_DEBUG, {
       configType: 'OIDC_WellKnown_Response',
-      configValues: {
-        issuer: oidcConfig.issuer ?? 'NOT_SET',
-        authorization_endpoint: oidcConfig.authorization_endpoint ?? 'NOT_SET',
-        token_endpoint: oidcConfig.token_endpoint ?? 'NOT_SET',
-        userinfo_endpoint: oidcConfig.userinfo_endpoint ?? 'NOT_SET',
-        jwks_uri: oidcConfig.jwks_uri ?? 'NOT_SET',
-        end_session_endpoint: oidcConfig.end_session_endpoint ?? 'NOT_SET',
-        scopes_supported: oidcConfig.scopes_supported ?? 'NOT_SET',
-        response_types_supported: oidcConfig.response_types_supported ?? 'NOT_SET',
-        grant_types_supported: oidcConfig.grant_types_supported ?? 'NOT_SET',
-        token_endpoint_auth_methods_supported: oidcConfig.token_endpoint_auth_methods_supported ?? 'NOT_SET'
-      }
+      configValues: getLoggingDetails(oidcConfig)
     })
 
     return oidcConfig
@@ -52,6 +41,21 @@ async function setupOidcConfig() {
     // Mark the error as already logged to prevent duplicate logging
     error.alreadyLogged = true
     throw error
+  }
+}
+
+function getLoggingDetails(oidcConfig) {
+  return {
+    issuer: oidcConfig.issuer ?? 'NOT_SET',
+    authorization_endpoint: oidcConfig.authorization_endpoint ?? 'NOT_SET',
+    token_endpoint: oidcConfig.token_endpoint ?? 'NOT_SET',
+    userinfo_endpoint: oidcConfig.userinfo_endpoint ?? 'NOT_SET',
+    jwks_uri: oidcConfig.jwks_uri ?? 'NOT_SET',
+    end_session_endpoint: oidcConfig.end_session_endpoint ?? 'NOT_SET',
+    scopes_supported: oidcConfig.scopes_supported ?? 'NOT_SET',
+    response_types_supported: oidcConfig.response_types_supported ?? 'NOT_SET',
+    grant_types_supported: oidcConfig.grant_types_supported ?? 'NOT_SET',
+    token_endpoint_auth_methods_supported: oidcConfig.token_endpoint_auth_methods_supported ?? 'NOT_SET'
   }
 }
 
