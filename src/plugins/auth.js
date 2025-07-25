@@ -6,6 +6,73 @@ import { getSafeRedirect } from '~/src/server/auth/get-safe-redirect.js'
 import { refreshTokens } from '~/src/server/auth/refresh-tokens.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
+async function setupOidcConfig() {
+  try {
+    const oidcConfig = await getOidcConfig()
+
+    // Log full OIDC configuration from well-known endpoint
+    // Keep for when we deploy to higher environments, won't be needed beyond that
+    log(LogCodes.SYSTEM.ENV_CONFIG_DEBUG, {
+      configType: 'OIDC_WellKnown_Response',
+      configValues: {
+        issuer: oidcConfig.issuer ?? 'NOT_SET',
+        authorization_endpoint: oidcConfig.authorization_endpoint ?? 'NOT_SET',
+        token_endpoint: oidcConfig.token_endpoint ?? 'NOT_SET',
+        userinfo_endpoint: oidcConfig.userinfo_endpoint ?? 'NOT_SET',
+        jwks_uri: oidcConfig.jwks_uri ?? 'NOT_SET',
+        end_session_endpoint: oidcConfig.end_session_endpoint ?? 'NOT_SET',
+        scopes_supported: oidcConfig.scopes_supported ?? 'NOT_SET',
+        response_types_supported: oidcConfig.response_types_supported ?? 'NOT_SET',
+        grant_types_supported: oidcConfig.grant_types_supported ?? 'NOT_SET',
+        token_endpoint_auth_methods_supported: oidcConfig.token_endpoint_auth_methods_supported ?? 'NOT_SET'
+      }
+    })
+
+    return oidcConfig
+  } catch (error) {
+    // Keep for when we deploy to higher environments, won't be needed beyond that
+    log(LogCodes.AUTH.AUTH_DEBUG, {
+      path: 'auth_plugin_registration',
+      isAuthenticated: 'system',
+      strategy: 'system',
+      mode: 'oidc_config_failure',
+      hasCredentials: false,
+      hasToken: false,
+      hasProfile: false,
+      userAgent: 'server',
+      referer: 'none',
+      queryParams: {},
+      authError: `OIDC config fetch failed: ${error.message}`,
+      errorDetails: {
+        message: error.message,
+        stack: error.stack,
+        wellKnownUrl: config.get('defraId.wellKnownUrl')
+      }
+    })
+    // Mark the error as already logged to prevent duplicate logging
+    error.alreadyLogged = true
+    throw error
+  }
+}
+
+function setupAuthStrategies(server, oidcConfig) {
+  // Bell is a third-party plugin that provides a common interface for OAuth 2.0 authentication
+  // Used to authenticate users with Defra Identity and a pre-requisite for the Cookie authentication strategy
+  // Also used for changing organisations and signing out
+  const bellOptions = getBellOptions(oidcConfig)
+  server.auth.strategy('defra-id', 'bell', bellOptions)
+
+  // Cookie is a built-in authentication strategy for hapi.js that authenticates users based on a session cookie
+  // Used for all non-Defra Identity routes
+  // Lax policy required to allow redirection after Defra Identity sign out
+  const cookieOptions = getCookieOptions()
+  server.auth.strategy('session', 'cookie', cookieOptions)
+
+  // Set the default authentication strategy to session
+  // All routes will require authentication unless explicitly set to 'defra-id' or `auth: false`
+  server.auth.default('session')
+}
+
 export default {
   plugin: {
     name: 'auth',
@@ -14,69 +81,9 @@ export default {
         pluginName: 'auth',
         status: 'starting'
       })
-      let oidcConfig
-      try {
-        oidcConfig = await getOidcConfig()
 
-        // Log full OIDC configuration from well-known endpoint
-        // Keep for when we deploy to higher environments, won't be needed beyond that
-        // @todo remove after higher environment deployment
-        log(LogCodes.SYSTEM.ENV_CONFIG_DEBUG, {
-          configType: 'OIDC_WellKnown_Response',
-          configValues: {
-            issuer: oidcConfig.issuer ?? 'NOT_SET',
-            authorization_endpoint: oidcConfig.authorization_endpoint ?? 'NOT_SET',
-            token_endpoint: oidcConfig.token_endpoint ?? 'NOT_SET',
-            userinfo_endpoint: oidcConfig.userinfo_endpoint ?? 'NOT_SET',
-            jwks_uri: oidcConfig.jwks_uri ?? 'NOT_SET',
-            end_session_endpoint: oidcConfig.end_session_endpoint ?? 'NOT_SET',
-            scopes_supported: oidcConfig.scopes_supported ?? 'NOT_SET',
-            response_types_supported: oidcConfig.response_types_supported ?? 'NOT_SET',
-            grant_types_supported: oidcConfig.grant_types_supported ?? 'NOT_SET',
-            token_endpoint_auth_methods_supported: oidcConfig.token_endpoint_auth_methods_supported ?? 'NOT_SET'
-          }
-        })
-      } catch (error) {
-        // Keep for when we deploy to higher environments, won't be needed beyond that
-        // @todo remove after higher environment deployment
-        log(LogCodes.AUTH.AUTH_DEBUG, {
-          path: 'auth_plugin_registration',
-          isAuthenticated: 'system',
-          strategy: 'system',
-          mode: 'oidc_config_failure',
-          hasCredentials: false,
-          hasToken: false,
-          hasProfile: false,
-          userAgent: 'server',
-          referer: 'none',
-          queryParams: {},
-          authError: `OIDC config fetch failed: ${error.message}`,
-          errorDetails: {
-            message: error.message,
-            stack: error.stack,
-            wellKnownUrl: config.get('defraId.wellKnownUrl')
-          }
-        })
-        // Mark the error as already logged to prevent duplicate logging
-        error.alreadyLogged = true
-        throw error
-      }
-
-      // Bell is a third-party plugin that provides a common interface for OAuth 2.0 authentication
-      // Used to authenticate users with Defra Identity and a pre-requisite for the Cookie authentication strategy
-      // Also used for changing organisations and signing out
-      const bellOptions = getBellOptions(oidcConfig)
-      server.auth.strategy('defra-id', 'bell', bellOptions)
-
-      // Cookie is a built-in authentication strategy for hapi.js that authenticates users based on a session cookie
-      // Used for all non-Defra Identity routes
-      // Lax policy required to allow redirection after Defra Identity sign out
-      const cookieOptions = getCookieOptions()
-      server.auth.strategy('session', 'cookie', cookieOptions)
-
-      // Set the default authentication strategy to session
-      // All routes will require authentication unless explicitly set to 'defra-id' or `auth: false`
-      server.auth.default('session')
+      const oidcConfig = await setupOidcConfig()
+      setupAuthStrategies(server, oidcConfig)
 
       log(LogCodes.SYSTEM.PLUGIN_REGISTRATION, {
         pluginName: 'auth',
@@ -293,21 +300,24 @@ function getCookieOptions() {
       try {
         const decoded = Jwt.token.decode(userSession.token)
         Jwt.token.verifyTime(decoded)
-      } catch (error) {
+      } catch (tokenError) {
         if (!config.get('defraId.refreshTokens')) {
           log(LogCodes.AUTH.SESSION_EXPIRED, {
             userId: userSession.contactId,
             sessionId: session.sessionId,
             path: request.path,
-            reason: 'Token expired, refresh disabled'
+            reason: 'Token expired, refresh disabled',
+            error: tokenError.message
           })
           return { isValid: false }
         }
 
         try {
-          const { access_token: token, refresh_token: refreshToken } = await refreshTokens(userSession.refreshToken)
-          userSession.token = token
-          userSession.refreshToken = refreshToken
+          const { access_token: newToken, refresh_token: newRefreshToken } = await refreshTokens(
+            userSession.refreshToken
+          )
+          userSession.token = newToken
+          userSession.refreshToken = newRefreshToken
           await request.server.app.cache.set(session.sessionId, userSession)
 
           log(LogCodes.AUTH.TOKEN_VERIFICATION_SUCCESS, {
@@ -319,7 +329,8 @@ function getCookieOptions() {
           log(LogCodes.AUTH.TOKEN_VERIFICATION_FAILURE, {
             userId: userSession.contactId,
             error: refreshError.message,
-            step: 'token_refresh_failed'
+            step: 'token_refresh_failed',
+            originalTokenError: tokenError.message
           })
 
           return { isValid: false }

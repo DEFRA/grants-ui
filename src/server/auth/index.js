@@ -7,6 +7,141 @@ import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
 const UNKNOWN_USER = 'unknown'
 const USER_AGENT = 'user-agent'
+const HTTP_FOUND = 302
+
+function handleAuthSignIn(request, h) {
+  try {
+    // If there's an auth error, log it specifically
+    if (request.auth?.error) {
+      log(LogCodes.AUTH.SIGN_IN_FAILURE, {
+        userId: UNKNOWN_USER,
+        error: `Authentication error at /auth/sign-in: ${request.auth.error.message}`,
+        step: 'auth_sign_in_route_error',
+        authState: {
+          isAuthenticated: request.auth.isAuthenticated,
+          strategy: request.auth.strategy,
+          mode: request.auth.mode
+        }
+      })
+    }
+
+    // Log that we're about to redirect
+    log(LogCodes.AUTH.AUTH_DEBUG, {
+      path: request.path,
+      isAuthenticated: 'redirecting',
+      strategy: 'auth_sign_in',
+      mode: 'redirect_to_home',
+      hasCredentials: false,
+      hasToken: false,
+      hasProfile: false,
+      userAgent: request.headers?.[USER_AGENT] || UNKNOWN_USER,
+      referer: request.headers?.referer || 'none',
+      queryParams: request.query || {},
+      authError: 'none',
+      redirectTarget: '/home'
+    })
+
+    return h.redirect('/home')
+  } catch (error) {
+    // Log any errors that occur during the redirect
+    log(LogCodes.AUTH.SIGN_IN_FAILURE, {
+      userId: UNKNOWN_USER,
+      error: `Error during /auth/sign-in redirect: ${error.message}`,
+      step: 'auth_sign_in_redirect_error',
+      errorStack: error.stack,
+      authState: {
+        isAuthenticated: request.auth?.isAuthenticated,
+        strategy: request.auth?.strategy,
+        mode: request.auth?.mode
+      }
+    })
+
+    // Instead of throwing the error, redirect to an error page or home page
+    // This prevents the 500 error from being shown to the user
+    return h.redirect('/home').code(HTTP_FOUND)
+  }
+}
+
+function setupBellOAuthErrorHandling(server) {
+  // Add error handling specifically for Bell/OAuth errors
+  server.ext('onPreResponse', (request, h) => {
+    if (request.path.startsWith('/auth/') && request.response.isBoom) {
+      const error = request.response
+
+      // Log detailed Bell/OAuth errors
+      log(LogCodes.AUTH.SIGN_IN_FAILURE, {
+        userId: UNKNOWN_USER,
+        error: `Bell/OAuth error at ${request.path}: ${String(error.message)}`,
+        step: 'bell_oauth_error',
+        errorDetails: {
+          statusCode: error.output?.statusCode,
+          payload: error.output?.payload,
+          headers: error.output?.headers,
+          data: error.data,
+          stack: error.stack
+        }
+      })
+
+      // For token exchange failures, provide more user-friendly error
+      if (error.message.includes('Failed obtaining') || error.message.includes('token')) {
+        log(LogCodes.AUTH.SIGN_IN_FAILURE, {
+          userId: UNKNOWN_USER,
+          error: 'OAuth2 token exchange failed - possible configuration issue',
+          step: 'oauth_token_exchange_failure',
+          troubleshooting: {
+            checkRedirectUrl: 'Verify DEFRA_ID_REDIRECT_URL matches registration',
+            checkClientCredentials: 'Verify DEFRA_ID_CLIENT_ID and DEFRA_ID_CLIENT_SECRET',
+            checkNetworkAccess: 'Ensure production can reach token endpoint',
+            checkWellKnownUrl: 'Verify DEFRA_ID_WELL_KNOWN_URL is accessible'
+          }
+        })
+      }
+    }
+
+    return h.continue
+  })
+}
+
+function setupAuthRoutes(server) {
+  server.route({
+    method: 'GET',
+    path: '/auth/sign-in',
+    options: {
+      auth: { strategy: 'defra-id', mode: 'try' }
+    },
+    handler: handleAuthSignIn
+  })
+
+  server.route({
+    method: ['GET'],
+    path: '/auth/sign-in-oidc',
+    options: {
+      auth: { strategy: 'defra-id', mode: 'try' }
+    },
+    handler: handleOidcSignIn
+  })
+
+  server.route({
+    method: 'GET',
+    path: '/auth/sign-out',
+    handler: handleSignOut
+  })
+
+  server.route({
+    method: 'GET',
+    path: '/auth/sign-out-oidc',
+    handler: handleOidcSignOut
+  })
+
+  server.route({
+    method: 'GET',
+    path: '/auth/organisation',
+    options: {
+      auth: 'defra-id'
+    },
+    handler: handleOrganisationRedirect
+  })
+}
 
 /**
  * @satisfies {ServerRegisterPluginObject<void>}
@@ -15,130 +150,8 @@ export const auth = {
   plugin: {
     name: 'auth-router',
     register(server) {
-      server.route({
-        method: 'GET',
-        path: '/auth/sign-in',
-        options: {
-          auth: { strategy: 'defra-id', mode: 'try' }
-        },
-
-        handler: (request, h) => {
-          try {
-            // If there's an auth error, log it specifically
-            if (request.auth?.error) {
-              log(LogCodes.AUTH.SIGN_IN_FAILURE, {
-                userId: UNKNOWN_USER,
-                error: `Authentication error at /auth/sign-in: ${request.auth.error.message}`,
-                step: 'auth_sign_in_route_error',
-                authState: {
-                  isAuthenticated: request.auth.isAuthenticated,
-                  strategy: request.auth.strategy,
-                  mode: request.auth.mode
-                }
-              })
-            }
-
-            // Log that we're about to redirect
-            log(LogCodes.AUTH.AUTH_DEBUG, {
-              path: request.path,
-              isAuthenticated: 'redirecting',
-              strategy: 'auth_sign_in',
-              mode: 'redirect_to_home',
-              hasCredentials: false,
-              hasToken: false,
-              hasProfile: false,
-              userAgent: request.headers?.[USER_AGENT] || UNKNOWN_USER,
-              referer: request.headers?.referer || 'none',
-              queryParams: request.query || {},
-              authError: 'none',
-              redirectTarget: '/home'
-            })
-
-            return h.redirect('/home')
-          } catch (error) {
-            // Log any errors that occur during the redirect
-            log(LogCodes.AUTH.SIGN_IN_FAILURE, {
-              userId: UNKNOWN_USER,
-              error: `Error during /auth/sign-in redirect: ${error.message}`,
-              step: 'auth_sign_in_redirect_error',
-              errorStack: error.stack,
-              authState: {
-                isAuthenticated: request.auth?.isAuthenticated,
-                strategy: request.auth?.strategy,
-                mode: request.auth?.mode
-              }
-            })
-
-            // Instead of throwing the error, redirect to an error page or home page
-            // This prevents the 500 error from being shown to the user
-            return h.redirect('/home').code(302)
-          }
-        }
-      })
-      server.route({
-        method: ['GET'],
-        path: '/auth/sign-in-oidc',
-        options: {
-          auth: { strategy: 'defra-id', mode: 'try' }
-        },
-        handler: handleOidcSignIn
-      })
-
-      // Add error handling specifically for Bell/OAuth errors
-      server.ext('onPreResponse', (request, h) => {
-        if (request.path.startsWith('/auth/') && request.response.isBoom) {
-          const error = request.response
-
-          // Log detailed Bell/OAuth errors
-          log(LogCodes.AUTH.SIGN_IN_FAILURE, {
-            userId: UNKNOWN_USER,
-            error: `Bell/OAuth error at ${request.path}: ${String(error.message)}`,
-            step: 'bell_oauth_error',
-            errorDetails: {
-              statusCode: error.output?.statusCode,
-              payload: error.output?.payload,
-              headers: error.output?.headers,
-              data: error.data,
-              stack: error.stack
-            }
-          })
-
-          // For token exchange failures, provide more user-friendly error
-          if (error.message.includes('Failed obtaining') || error.message.includes('token')) {
-            log(LogCodes.AUTH.SIGN_IN_FAILURE, {
-              userId: UNKNOWN_USER,
-              error: 'OAuth2 token exchange failed - possible configuration issue',
-              step: 'oauth_token_exchange_failure',
-              troubleshooting: {
-                checkRedirectUrl: 'Verify DEFRA_ID_REDIRECT_URL matches registration',
-                checkClientCredentials: 'Verify DEFRA_ID_CLIENT_ID and DEFRA_ID_CLIENT_SECRET',
-                checkNetworkAccess: 'Ensure production can reach token endpoint',
-                checkWellKnownUrl: 'Verify DEFRA_ID_WELL_KNOWN_URL is accessible'
-              }
-            })
-          }
-        }
-
-        return h.continue
-      })
-      server.route({
-        method: 'GET',
-        path: '/auth/sign-out',
-        handler: handleSignOut
-      })
-      server.route({
-        method: 'GET',
-        path: '/auth/sign-out-oidc',
-        handler: handleOidcSignOut
-      })
-      server.route({
-        method: 'GET',
-        path: '/auth/organisation',
-        options: {
-          auth: 'defra-id'
-        },
-        handler: handleOrganisationRedirect
-      })
+      setupAuthRoutes(server)
+      setupBellOAuthErrorHandling(server)
     }
   }
 }

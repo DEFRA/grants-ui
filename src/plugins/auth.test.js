@@ -810,7 +810,8 @@ describe('Auth Plugin', () => {
         userId: MOCK_USERS.user123.contactId,
         sessionId: 'test-session',
         path: '/protected-route',
-        reason: LOG_MESSAGES.sessionExpired.reasons.TOKEN_EXPIRED_REFRESH_DISABLED
+        reason: LOG_MESSAGES.sessionExpired.reasons.TOKEN_EXPIRED_REFRESH_DISABLED,
+        error: 'Token expired'
       })
     })
 
@@ -864,7 +865,8 @@ describe('Auth Plugin', () => {
       expect(log).toHaveBeenCalledWith(LogCodes.AUTH.TOKEN_VERIFICATION_FAILURE, {
         userId: MOCK_USERS.user456.contactId,
         error: 'Refresh service unavailable',
-        step: LOG_MESSAGES.tokenVerification.steps.REFRESH_FAILED
+        step: LOG_MESSAGES.tokenVerification.steps.REFRESH_FAILED,
+        originalTokenError: 'Token expired'
       })
     })
 
