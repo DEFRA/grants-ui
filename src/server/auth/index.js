@@ -5,6 +5,9 @@ import { verifyToken } from '~/src/server/auth/verify-token.js'
 import { getSignOutUrl } from './get-sign-out-url.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
+const UNKNOWN_USER = 'unknown'
+const USER_AGENT = 'user-agent'
+
 /**
  * @satisfies {ServerRegisterPluginObject<void>}
  */
@@ -24,7 +27,7 @@ export const auth = {
             // If there's an auth error, log it specifically
             if (request.auth?.error) {
               log(LogCodes.AUTH.SIGN_IN_FAILURE, {
-                userId: 'unknown',
+                userId: UNKNOWN_USER,
                 error: `Authentication error at /auth/sign-in: ${request.auth.error.message}`,
                 step: 'auth_sign_in_route_error',
                 authState: {
@@ -44,7 +47,7 @@ export const auth = {
               hasCredentials: false,
               hasToken: false,
               hasProfile: false,
-              userAgent: request.headers?.['user-agent'] || 'unknown',
+              userAgent: request.headers?.[USER_AGENT] || UNKNOWN_USER,
               referer: request.headers?.referer || 'none',
               queryParams: request.query || {},
               authError: 'none',
@@ -55,7 +58,7 @@ export const auth = {
           } catch (error) {
             // Log any errors that occur during the redirect
             log(LogCodes.AUTH.SIGN_IN_FAILURE, {
-              userId: 'unknown',
+              userId: UNKNOWN_USER,
               error: `Error during /auth/sign-in redirect: ${error.message}`,
               step: 'auth_sign_in_redirect_error',
               errorStack: error.stack,
@@ -88,7 +91,7 @@ export const auth = {
 
           // Log detailed Bell/OAuth errors
           log(LogCodes.AUTH.SIGN_IN_FAILURE, {
-            userId: 'unknown',
+            userId: UNKNOWN_USER,
             error: `Bell/OAuth error at ${request.path}: ${String(error.message)}`,
             step: 'bell_oauth_error',
             errorDetails: {
@@ -103,7 +106,7 @@ export const auth = {
           // For token exchange failures, provide more user-friendly error
           if (error.message.includes('Failed obtaining') || error.message.includes('token')) {
             log(LogCodes.AUTH.SIGN_IN_FAILURE, {
-              userId: 'unknown',
+              userId: UNKNOWN_USER,
               error: 'OAuth2 token exchange failed - possible configuration issue',
               step: 'oauth_token_exchange_failure',
               troubleshooting: {
@@ -140,259 +143,291 @@ export const auth = {
   }
 }
 
-async function handleOidcSignIn(request, h) {
-  try {
-    // First, log detailed authentication debug information including cookie state
-    const authDebugInfo = {
-      path: request.path,
+function logAuthDebugInfo(request) {
+  const authDebugInfo = {
+    path: request.path,
+    isAuthenticated: request.auth.isAuthenticated,
+    strategy: request.auth?.strategy,
+    mode: request.auth?.mode,
+    hasCredentials: !!request.auth?.credentials,
+    hasToken: !!request.auth?.credentials?.token,
+    hasProfile: !!request.auth?.credentials?.profile,
+    userAgent: request.headers?.[USER_AGENT] || UNKNOWN_USER,
+    referer: request.headers?.referer || 'none',
+    queryParams: request.query,
+    authError: request.auth?.error?.message || 'none',
+    cookiesReceived: Object.keys(request.state || {}),
+    hasBellCookie: Object.keys(request.state || {}).some((key) => key.includes('bell') || key.includes('defra-id')),
+    requestMethod: request.method,
+    isSecure: request.server.info.protocol === 'https'
+  }
+
+  log(LogCodes.AUTH.AUTH_DEBUG, authDebugInfo)
+}
+
+function handleUnauthenticatedRequest(request, h) {
+  const authErrorMessage = request.auth?.error?.message || 'Not authenticated'
+  const hasCredentials = !!request.auth?.credentials
+
+  logAuthFailure(request, authErrorMessage, hasCredentials)
+
+  if (hasCredentials && authErrorMessage?.includes('access token')) {
+    logTokenExchangeFailure(request, hasCredentials)
+  }
+
+  return renderUnauthorisedView(request, h)
+}
+
+function logAuthFailure(request, authErrorMessage, hasCredentials) {
+  const errorDetails = {
+    path: request.path,
+    userId: UNKNOWN_USER,
+    error: authErrorMessage,
+    isAuthenticated: request.auth.isAuthenticated,
+    strategy: request.auth?.strategy,
+    mode: request.auth?.mode,
+    hasCredentials,
+    artifacts: request.auth?.artifacts ? 'present' : 'none',
+    userAgent: request.headers?.[USER_AGENT] || UNKNOWN_USER,
+    referer: request.headers?.referer || 'none',
+    queryParams: request.query
+  }
+
+  log(LogCodes.AUTH.UNAUTHORIZED_ACCESS, errorDetails)
+
+  log(LogCodes.AUTH.SIGN_IN_FAILURE, {
+    userId: UNKNOWN_USER,
+    error: `Authentication failed at OIDC sign-in. Auth state: ${JSON.stringify({
       isAuthenticated: request.auth.isAuthenticated,
       strategy: request.auth?.strategy,
       mode: request.auth?.mode,
-      hasCredentials: !!request.auth?.credentials,
-      hasToken: !!request.auth?.credentials?.token,
-      hasProfile: !!request.auth?.credentials?.profile,
-      userAgent: request.headers?.['user-agent'] || 'unknown',
-      referer: request.headers?.referer || 'none',
-      queryParams: request.query,
-      authError: request.auth?.error?.message || 'none',
-      cookiesReceived: Object.keys(request.state || {}),
-      hasBellCookie: Object.keys(request.state || {}).some((key) => key.includes('bell') || key.includes('defra-id')),
-      requestMethod: request.method,
-      isSecure: request.server.info.protocol === 'https'
+      error: authErrorMessage,
+      hasCredentials
+    })}`,
+    step: 'oidc_sign_in_authentication_check',
+    failureAnalysis: {
+      failureType: hasCredentials ? 'token_exchange_failure' : 'oauth_redirect_failure',
+      errorMessage: authErrorMessage,
+      hasCredentials,
+      likelyIssue: hasCredentials
+        ? 'Bell.js completed OAuth redirect but failed during token exchange - check client credentials, redirect URL, and token endpoint connectivity'
+        : 'OAuth redirect failed - check authorization endpoint and initial OAuth configuration'
     }
+  })
+}
 
-    log(LogCodes.AUTH.AUTH_DEBUG, authDebugInfo)
-
-    if (!request.auth.isAuthenticated) {
-      const authErrorMessage = request.auth?.error?.message || 'Not authenticated'
-      const hasCredentials = !!request.auth?.credentials
-
-      const errorDetails = {
-        path: request.path,
-        userId: 'unknown',
-        error: authErrorMessage,
-        isAuthenticated: request.auth.isAuthenticated,
-        strategy: request.auth?.strategy,
-        mode: request.auth?.mode,
-        hasCredentials,
-        artifacts: request.auth?.artifacts ? 'present' : 'none',
-        userAgent: request.headers?.['user-agent'] || 'unknown',
-        referer: request.headers?.referer || 'none',
-        queryParams: request.query
-      }
-
-      log(LogCodes.AUTH.UNAUTHORIZED_ACCESS, errorDetails)
-
-      log(LogCodes.AUTH.SIGN_IN_FAILURE, {
-        userId: 'unknown',
-        error: `Authentication failed at OIDC sign-in. Auth state: ${JSON.stringify({
-          isAuthenticated: request.auth.isAuthenticated,
-          strategy: request.auth?.strategy,
-          mode: request.auth?.mode,
-          error: authErrorMessage,
-          hasCredentials
-        })}`,
-        step: 'oidc_sign_in_authentication_check',
-        failureAnalysis: {
-          failureType: hasCredentials ? 'token_exchange_failure' : 'oauth_redirect_failure',
-          errorMessage: authErrorMessage,
-          hasCredentials,
-          likelyIssue: hasCredentials
-            ? 'Bell.js completed OAuth redirect but failed during token exchange - check client credentials, redirect URL, and token endpoint connectivity'
-            : 'OAuth redirect failed - check authorization endpoint and initial OAuth configuration'
-        }
-      })
-
-      if (hasCredentials && authErrorMessage?.includes('access token')) {
-        log(LogCodes.AUTH.SIGN_IN_FAILURE, {
-          userId: 'unknown',
-          error: 'Token exchange failure detected - Bell completed OAuth redirect but cannot exchange code for token',
-          step: 'token_exchange_failure_analysis',
-          troubleshooting: {
-            issue: 'Failed obtaining access token',
-            checkList: [
-              'Verify DEFRA_ID_CLIENT_SECRET is correct',
-              'Verify DEFRA_ID_REDIRECT_URL matches registered redirect URI exactly',
-              'Check network connectivity to token endpoint from production environment',
-              'Verify token endpoint URL in well-known configuration',
-              'Check if client credentials are valid in Defra ID system'
-            ],
-            credentialsPresent: hasCredentials,
-            errorPattern: 'hasCredentials=true + "Failed obtaining access token" = token exchange failed',
-            nextSteps: 'Check Bell.js token exchange logs and verify client configuration'
-          },
-          requestContext: {
-            query: request.query,
-            cookies: Object.keys(request.state || {}),
-            hasStateParam: !!request.query.state,
-            hasCodeParam: !!request.query.code
-          }
-        })
-      }
-
-      log(LogCodes.AUTH.AUTH_DEBUG, {
-        path: request.path,
-        isAuthenticated: false,
-        strategy: 'system',
-        mode: 'view_render_attempt',
-        hasCredentials: false,
-        hasToken: false,
-        hasProfile: false,
-        userAgent: 'server',
-        referer: 'none',
-        queryParams: {},
-        authError: 'Attempting to render unauthorised view',
-        viewAttempt: 'unauthorised.njk',
-        serverWorkingDir: process.cwd(),
-        timestamp: new Date().toISOString()
-      })
-
-      try {
-        const result = h.view('unauthorised')
-        log(LogCodes.AUTH.AUTH_DEBUG, {
-          path: request.path,
-          isAuthenticated: false,
-          strategy: 'system',
-          mode: 'view_render_success',
-          hasCredentials: false,
-          hasToken: false,
-          hasProfile: false,
-          userAgent: 'server',
-          referer: 'none',
-          queryParams: {},
-          authError: 'Successfully rendered unauthorised view',
-          timestamp: new Date().toISOString()
-        })
-        return result
-      } catch (viewError) {
-        log(LogCodes.AUTH.SIGN_IN_FAILURE, {
-          userId: 'unknown',
-          error: `Failed to render unauthorised view: ${viewError.message}`,
-          step: 'view_render_error',
-          errorStack: viewError.stack,
-          viewError: 'unauthorised.njk',
-          serverWorkingDir: process.cwd()
-        })
-        throw viewError
-      }
+function logTokenExchangeFailure(request, hasCredentials) {
+  log(LogCodes.AUTH.SIGN_IN_FAILURE, {
+    userId: UNKNOWN_USER,
+    error: 'Token exchange failure detected - Bell completed OAuth redirect but cannot exchange code for token',
+    step: 'token_exchange_failure_analysis',
+    troubleshooting: {
+      issue: 'Failed obtaining access token',
+      checkList: [
+        'Verify DEFRA_ID_CLIENT_SECRET is correct',
+        'Verify DEFRA_ID_REDIRECT_URL matches registered redirect URI exactly',
+        'Check network connectivity to token endpoint from production environment',
+        'Verify token endpoint URL in well-known configuration',
+        'Check if client credentials are valid in Defra ID system'
+      ],
+      credentialsPresent: hasCredentials,
+      errorPattern: 'hasCredentials=true + "Failed obtaining access token" = token exchange failed',
+      nextSteps: 'Check Bell.js token exchange logs and verify client configuration'
+    },
+    requestContext: {
+      query: request.query,
+      cookies: Object.keys(request.state || {}),
+      hasStateParam: !!request.query.state,
+      hasCodeParam: !!request.query.code
     }
+  })
+}
 
-    // Log successful authentication details
-    const { profile, token, refreshToken } = request.auth.credentials
+function renderUnauthorisedView(request, h) {
+  log(LogCodes.AUTH.AUTH_DEBUG, {
+    path: request.path,
+    isAuthenticated: false,
+    strategy: 'system',
+    mode: 'view_render_attempt',
+    hasCredentials: false,
+    hasToken: false,
+    hasProfile: false,
+    userAgent: 'server',
+    referer: 'none',
+    queryParams: {},
+    authError: 'Attempting to render unauthorised view',
+    viewAttempt: 'unauthorised.njk',
+    serverWorkingDir: process.cwd(),
+    timestamp: new Date().toISOString()
+  })
 
-    // Validate that we have the required profile data
-    if (!profile?.sessionId) {
-      log(LogCodes.AUTH.SIGN_IN_FAILURE, {
-        userId: profile?.contactId || 'unknown',
-        error: 'Missing required profile data or sessionId',
-        step: 'profile_validation',
-        profileData: {
-          hasProfile: !!profile,
-          hasSessionId: !!profile?.sessionId,
-          profileKeys: Object.keys(profile || {})
-        }
-      })
-      throw new Error('Authentication failed: Missing required profile data')
-    }
-
-    log(LogCodes.AUTH.SIGN_IN_ATTEMPT, {
-      userId: profile.contactId,
-      organisationId: profile.currentRelationshipId,
-      profileData: JSON.stringify({
-        hasToken: !!token,
-        hasRefreshToken: !!refreshToken,
-        hasProfile: !!profile,
-        profileKeys: Object.keys(profile || {}),
-        tokenLength: token ? token.length : 0
-      })
+  try {
+    const result = h.view('unauthorised')
+    log(LogCodes.AUTH.AUTH_DEBUG, {
+      path: request.path,
+      isAuthenticated: false,
+      strategy: 'system',
+      mode: 'view_render_success',
+      hasCredentials: false,
+      hasToken: false,
+      hasProfile: false,
+      userAgent: 'server',
+      referer: 'none',
+      queryParams: {},
+      authError: 'Successfully rendered unauthorised view',
+      timestamp: new Date().toISOString()
     })
+    return result
+  } catch (viewError) {
+    log(LogCodes.AUTH.SIGN_IN_FAILURE, {
+      userId: UNKNOWN_USER,
+      error: `Failed to render unauthorised view: ${viewError.message}`,
+      step: 'view_render_error',
+      errorStack: viewError.stack,
+      viewError: 'unauthorised.njk',
+      serverWorkingDir: process.cwd()
+    })
+    throw viewError
+  }
+}
 
-    await verifyToken(token)
-    // Typically permissions for the selected organisation would be available in the `roles` property of the token
-    // However, when signing in with RPA credentials, the roles only include the role name and not the permissions
-    // Therefore, we need to make additional API calls to get the permissions from Siti Agri
-    // These calls are authenticated using the token returned from Defra Identity
-    let role, scope
-    try {
-      const permissions = getPermissions(profile.crn, profile.organisationId, token)
-      role = permissions.role
-      scope = permissions.scope
-    } catch (permissionsError) {
-      log(LogCodes.AUTH.SIGN_IN_FAILURE, {
-        userId: profile.contactId,
-        error: `Failed to get permissions: ${permissionsError.message}`,
-        step: 'get_permissions_error',
-        profileData: {
-          crn: profile.crn,
-          organisationId: profile.organisationId,
-          hasToken: !!token
-        }
-      })
-      // Use default permissions if getPermissions fails
-      role = 'user'
-      scope = ['user']
-    }
+async function processAuthenticatedSignIn(request, h) {
+  const { profile, token, refreshToken } = request.auth.credentials
 
-    // Store token and all useful data in the session cache
-    try {
-      await request.server.app.cache.set(profile.sessionId, {
-        isAuthenticated: true,
-        ...profile,
-        role,
-        scope,
-        token,
-        refreshToken
-      })
-    } catch (cacheError) {
-      log(LogCodes.AUTH.SIGN_IN_FAILURE, {
-        userId: profile.contactId,
-        error: `Failed to store session in cache: ${cacheError.message}`,
-        step: 'cache_set_error',
-        sessionId: profile.sessionId
-      })
-      throw cacheError
-    }
+  validateProfileData(profile)
 
-    // Create a new session using cookie authentication strategy which is used for all subsequent requests
-    try {
-      request.cookieAuth.set({ sessionId: profile.sessionId })
-    } catch (cookieError) {
-      log(LogCodes.AUTH.SIGN_IN_FAILURE, {
-        userId: profile.contactId,
-        error: `Failed to set cookie auth: ${cookieError.message}`,
-        step: 'cookie_auth_set_error',
-        sessionId: profile.sessionId
-      })
-      throw cookieError
-    }
+  log(LogCodes.AUTH.SIGN_IN_ATTEMPT, {
+    userId: profile.contactId,
+    organisationId: profile.currentRelationshipId,
+    profileData: JSON.stringify({
+      hasToken: !!token,
+      hasRefreshToken: !!refreshToken,
+      hasProfile: !!profile,
+      profileKeys: Object.keys(profile || {}),
+      tokenLength: token ? token.length : 0
+    })
+  })
 
-    log(LogCodes.AUTH.SIGN_IN_SUCCESS, {
+  await verifyToken(token)
+
+  const { role, scope } = getPermissionsOrDefaults(profile, token)
+  await storeSessionData(request, profile, role, scope, token, refreshToken)
+  setCookieAuth(request, profile)
+
+  logSuccessfulSignIn(profile, role, scope)
+
+  return redirectAfterSignIn(request, h, profile)
+}
+
+function validateProfileData(profile) {
+  if (!profile?.sessionId) {
+    log(LogCodes.AUTH.SIGN_IN_FAILURE, {
+      userId: profile?.contactId || UNKNOWN_USER,
+      error: 'Missing required profile data or sessionId',
+      step: 'profile_validation',
+      profileData: {
+        hasProfile: !!profile,
+        hasSessionId: !!profile?.sessionId,
+        profileKeys: Object.keys(profile || {})
+      }
+    })
+    throw new Error('Authentication failed: Missing required profile data')
+  }
+}
+
+function getPermissionsOrDefaults(profile, token) {
+  try {
+    const permissions = getPermissions(profile.crn, profile.organisationId, token)
+    return { role: permissions.role, scope: permissions.scope }
+  } catch (permissionsError) {
+    log(LogCodes.AUTH.SIGN_IN_FAILURE, {
       userId: profile.contactId,
-      organisationId: profile.currentRelationshipId,
+      error: `Failed to get permissions: ${permissionsError.message}`,
+      step: 'get_permissions_error',
+      profileData: {
+        crn: profile.crn,
+        organisationId: profile.organisationId,
+        hasToken: !!token
+      }
+    })
+    return { role: 'user', scope: ['user'] }
+  }
+}
+
+async function storeSessionData(request, profile, role, scope, token, refreshToken) {
+  try {
+    await request.server.app.cache.set(profile.sessionId, {
+      isAuthenticated: true,
+      ...profile,
       role,
-      scope: scope.join(', '),
+      scope,
+      token,
+      refreshToken
+    })
+  } catch (cacheError) {
+    log(LogCodes.AUTH.SIGN_IN_FAILURE, {
+      userId: profile.contactId,
+      error: `Failed to store session in cache: ${cacheError.message}`,
+      step: 'cache_set_error',
       sessionId: profile.sessionId
     })
+    throw cacheError
+  }
+}
 
-    // Redirect user to the page they were trying to access before signing in or to the home page if no redirect was set
-    try {
-      const redirect = request.yar.get('redirect') ?? '/home'
-      request.yar.clear('redirect')
-      // Ensure redirect is a relative path to prevent redirect attacks
-      const safeRedirect = getSafeRedirect(redirect)
-      return h.redirect(safeRedirect)
-    } catch (redirectError) {
-      log(LogCodes.AUTH.SIGN_IN_FAILURE, {
-        userId: profile.contactId,
-        error: `Failed to redirect after sign in: ${redirectError.message}`,
-        step: 'redirect_error',
-        sessionId: profile.sessionId
-      })
-      throw new Error(`Failed to redirect after sign in: ${redirectError.message}`)
+function setCookieAuth(request, profile) {
+  try {
+    request.cookieAuth.set({ sessionId: profile.sessionId })
+  } catch (cookieError) {
+    log(LogCodes.AUTH.SIGN_IN_FAILURE, {
+      userId: profile.contactId,
+      error: `Failed to set cookie auth: ${cookieError.message}`,
+      step: 'cookie_auth_set_error',
+      sessionId: profile.sessionId
+    })
+    throw cookieError
+  }
+}
+
+function logSuccessfulSignIn(profile, role, scope) {
+  log(LogCodes.AUTH.SIGN_IN_SUCCESS, {
+    userId: profile.contactId,
+    organisationId: profile.currentRelationshipId,
+    role,
+    scope: scope.join(', '),
+    sessionId: profile.sessionId
+  })
+}
+
+function redirectAfterSignIn(request, h, profile) {
+  try {
+    const redirect = request.yar.get('redirect') ?? '/home'
+    request.yar.clear('redirect')
+    const safeRedirect = getSafeRedirect(redirect)
+    return h.redirect(safeRedirect)
+  } catch (redirectError) {
+    log(LogCodes.AUTH.SIGN_IN_FAILURE, {
+      userId: profile.contactId,
+      error: `Failed to redirect after sign in: ${redirectError.message}`,
+      step: 'redirect_error',
+      sessionId: profile.sessionId
+    })
+    throw new Error(`Failed to redirect after sign in: ${redirectError.message}`)
+  }
+}
+
+async function handleOidcSignIn(request, h) {
+  try {
+    logAuthDebugInfo(request)
+
+    if (!request.auth.isAuthenticated) {
+      return handleUnauthenticatedRequest(request, h)
     }
+
+    return await processAuthenticatedSignIn(request, h)
   } catch (error) {
     log(LogCodes.AUTH.SIGN_IN_FAILURE, {
-      userId: 'unknown',
+      userId: UNKNOWN_USER,
       error: `Unexpected error in handleOidcSignIn: ${error.message}`,
       step: 'unexpected_error',
       errorStack: error.stack
@@ -407,7 +442,7 @@ async function handleSignOut(request, h) {
   if (!request.auth.isAuthenticated) {
     log(LogCodes.AUTH.UNAUTHORIZED_ACCESS, {
       path: request.path,
-      userId: 'unknown'
+      userId: UNKNOWN_USER
     })
     return h.redirect('/')
   }

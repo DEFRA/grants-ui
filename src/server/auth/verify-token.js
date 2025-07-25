@@ -6,70 +6,89 @@ import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
 async function verifyToken(token) {
   try {
-    const { jwks_uri: uri } = await getOidcConfig()
-
-    const { payload } = await Wreck.get(uri, {
-      json: true
-    })
-    const { keys } = payload
-
-    if (!keys || keys.length === 0) {
-      log(LogCodes.AUTH.TOKEN_VERIFICATION_FAILURE, {
-        userId: 'unknown',
-        error: 'No keys found in JWKS response',
-        step: 'jwks_fetch'
-      })
-      throw new Error('No keys found in JWKS response')
-    }
-
-    // Convert the JWK to a PEM-encoded public key using node-jose
-    const key = await jose.JWK.asKey(keys[0])
-
-    // Check that the token is signed with the appropriate key by decoding it and verifying the signature using the public key
-    const decoded = Jwt.token.decode(token)
-    Jwt.token.verify(decoded, { key: key.toPEM(), algorithm: 'RS256' })
-
-    // Extract user info from token for detailed success logging
-    const tokenPayload = decoded.decoded?.payload || decoded.payload || {}
-    const userId = tokenPayload.contactId || 'unknown'
-
-    log(LogCodes.AUTH.TOKEN_VERIFICATION_SUCCESS, {
-      userId,
-      organisationId: tokenPayload.currentRelationshipId || 'unknown',
-      step: 'token_verification_complete'
-    })
+    const keys = await fetchJwksKeys()
+    const key = await convertJwkToPem(keys)
+    const decoded = verifyTokenSignature(token, key)
+    logSuccessfulVerification(decoded)
   } catch (error) {
-    // Try to extract user info from token for detailed error logging
-    let userId = 'unknown'
-    let step = 'unknown'
-
-    try {
-      const decoded = Jwt.token.decode(token)
-      const tokenPayload = decoded.decoded?.payload || decoded.payload || {}
-      userId = tokenPayload.contactId || 'unknown'
-    } catch {}
-
-    // Determine the step where verification failed
-    if (error.message.includes('JWKS')) {
-      step = 'jwks_fetch'
-    } else if (error.message.includes('JWK')) {
-      step = 'jwk_conversion'
-    } else if (error.message.includes('decode')) {
-      step = 'token_decode'
-    } else if (error.message.includes('verify')) {
-      step = 'signature_verification'
-    }
-
-    log(LogCodes.AUTH.TOKEN_VERIFICATION_FAILURE, {
-      userId,
-      error: error.message,
-      step,
-      tokenPresent: !!token
-    })
-
-    // Mark error as already logged to prevent duplicate logging in global handler
-    error.alreadyLogged = true
+    handleVerificationError(error, token)
     throw error
+  }
+}
+
+async function fetchJwksKeys() {
+  const { jwks_uri: uri } = await getOidcConfig()
+  const { payload } = await Wreck.get(uri, { json: true })
+  const { keys } = payload
+
+  if (!keys || keys.length === 0) {
+    log(LogCodes.AUTH.TOKEN_VERIFICATION_FAILURE, {
+      userId: 'unknown',
+      error: 'No keys found in JWKS response',
+      step: 'jwks_fetch'
+    })
+    throw new Error('No keys found in JWKS response')
+  }
+
+  return keys
+}
+
+async function convertJwkToPem(keys) {
+  return await jose.JWK.asKey(keys[0])
+}
+
+function verifyTokenSignature(token, key) {
+  const decoded = Jwt.token.decode(token)
+  Jwt.token.verify(decoded, { key: key.toPEM(), algorithm: 'RS256' })
+  return decoded
+}
+
+function logSuccessfulVerification(decoded) {
+  const tokenPayload = decoded.decoded?.payload || decoded.payload || {}
+  const userId = tokenPayload.contactId || 'unknown'
+
+  log(LogCodes.AUTH.TOKEN_VERIFICATION_SUCCESS, {
+    userId,
+    organisationId: tokenPayload.currentRelationshipId || 'unknown',
+    step: 'token_verification_complete'
+  })
+}
+
+function handleVerificationError(error, token) {
+  let userId = 'unknown'
+  let step = 'unknown'
+
+  try {
+    const decoded = Jwt.token.decode(token)
+    const tokenPayload = decoded.decoded?.payload || decoded.payload || {}
+    userId = tokenPayload.contactId || 'unknown'
+  } catch {
+    step = 'token_decode_failed'
+  }
+
+  step = determineVerificationStep(error, step)
+
+  log(LogCodes.AUTH.TOKEN_VERIFICATION_FAILURE, {
+    userId,
+    error: error.message,
+    step,
+    tokenPresent: !!token
+  })
+
+  error.alreadyLogged = true
+}
+
+function determineVerificationStep(error, defaultStep) {
+  if (error.message.includes('JWKS')) {
+    return 'jwks_fetch'
+  } else if (error.message.includes('JWK')) {
+    return 'jwk_conversion'
+  } else if (error.message.includes('decode')) {
+    return 'token_decode'
+  } else if (error.message.includes('verify')) {
+    return 'signature_verification'
+  } else {
+    return defaultStep
   }
 }
 

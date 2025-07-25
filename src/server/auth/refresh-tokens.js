@@ -44,8 +44,7 @@ async function refreshTokens(refreshToken) {
 
     return payload
   } catch (error) {
-    // Determine the step where refresh failed
-    let step = 'unknown'
+    let step
     if (error.message.includes('OIDC')) {
       step = 'oidc_config_fetch'
     } else if (error.message.includes('ENOTFOUND') || error.message.includes('ECONNREFUSED')) {
@@ -56,6 +55,8 @@ async function refreshTokens(refreshToken) {
       step = 'token_refresh_response_validation'
     } else if (error.statusCode) {
       step = 'token_endpoint_response'
+    } else {
+      step = 'unknown'
     }
 
     log(LogCodes.AUTH.TOKEN_VERIFICATION_FAILURE, {

@@ -86,6 +86,117 @@ export default {
   }
 }
 
+function processCredentialsProfile(credentials) {
+  try {
+    validateCredentials(credentials)
+    const payload = decodeTokenPayload(credentials.token)
+    validatePayload(payload)
+    return createCredentialsProfile(credentials, payload)
+  } catch (error) {
+    log(LogCodes.AUTH.SIGN_IN_FAILURE, {
+      userId: 'unknown',
+      error: `Bell profile processing failed: ${error.message}`,
+      step: 'bell_profile_processing_error',
+      errorDetails: {
+        message: error.message,
+        stack: error.stack,
+        name: error.name,
+        alreadyLogged: error.alreadyLogged
+      },
+      credentialsState: {
+        received: !!credentials,
+        hasToken: !!credentials?.token,
+        tokenLength: credentials?.token?.length || 0
+      }
+    })
+
+    error.alreadyLogged = true
+    throw error
+  }
+}
+
+function validateCredentials(credentials) {
+  if (!credentials) {
+    throw new Error('No credentials received from Bell OAuth provider')
+  }
+
+  if (!credentials.token) {
+    throw new Error('No token received from Defra Identity')
+  }
+}
+
+function decodeTokenPayload(token) {
+  try {
+    const decoded = Jwt.token.decode(token)
+    const payload = decoded?.decoded?.payload
+
+    if (!payload) {
+      log(LogCodes.AUTH.SIGN_IN_FAILURE, {
+        userId: 'unknown',
+        error: 'JWT payload is empty or invalid',
+        step: 'bell_profile_empty_payload',
+        decodingDetails: {
+          decoded: !!decoded,
+          decodedDecoded: !!decoded?.decoded,
+          payload,
+          payloadType: typeof payload
+        }
+      })
+      throw new Error('Failed to extract payload from JWT token')
+    }
+
+    return payload
+  } catch (jwtError) {
+    log(LogCodes.AUTH.SIGN_IN_FAILURE, {
+      userId: 'unknown',
+      error: `JWT decode failed: ${jwtError.message}`,
+      step: 'bell_profile_jwt_decode_error',
+      jwtError: {
+        message: jwtError.message,
+        stack: jwtError.stack,
+        tokenLength: token ? token.length : 0
+      }
+    })
+    throw new Error(`Failed to decode JWT token: ${jwtError.message}`)
+  }
+}
+
+function validatePayload(payload) {
+  const requiredFields = ['contactId', 'firstName', 'lastName']
+  const missingFields = requiredFields.filter((field) => !payload[field])
+
+  if (missingFields.length > 0) {
+    log(LogCodes.AUTH.SIGN_IN_FAILURE, {
+      userId: payload.contactId || 'unknown',
+      error: `Missing required JWT payload fields: ${missingFields.join(', ')}`,
+      step: 'bell_profile_missing_fields',
+      payloadValidation: {
+        requiredFields,
+        missingFields,
+        presentFields: Object.keys(payload),
+        contactId: payload.contactId,
+        firstName: payload.firstName,
+        lastName: payload.lastName
+      }
+    })
+    throw new Error(`Missing required fields in JWT payload: ${missingFields.join(', ')}`)
+  }
+}
+
+function createCredentialsProfile(credentials, payload) {
+  const sessionId = crypto.randomUUID()
+
+  credentials.profile = {
+    ...payload,
+    crn: payload.contactId,
+    name: `${payload.firstName} ${payload.lastName}`,
+    organisationId: payload.currentRelationshipId,
+    sessionId
+  }
+
+  return credentials
+}
+
 function getBellOptions(oidcConfig) {
   return {
     provider: {
@@ -96,100 +207,7 @@ function getBellOptions(oidcConfig) {
       token: oidcConfig.token_endpoint,
       scope: ['openid', 'offline_access', config.get('defraId.clientId')],
       profile: function (credentials) {
-        try {
-          if (!credentials) {
-            throw new Error('No credentials received from Bell OAuth provider')
-          }
-
-          if (!credentials.token) {
-            throw new Error('No token received from Defra Identity')
-          }
-
-          let decoded, payload
-          try {
-            decoded = Jwt.token.decode(credentials.token)
-            payload = decoded?.decoded?.payload
-          } catch (jwtError) {
-            log(LogCodes.AUTH.SIGN_IN_FAILURE, {
-              userId: 'unknown',
-              error: `JWT decode failed: ${jwtError.message}`,
-              step: 'bell_profile_jwt_decode_error',
-              jwtError: {
-                message: jwtError.message,
-                stack: jwtError.stack,
-                tokenLength: credentials.token ? credentials.token.length : 0
-              }
-            })
-            throw new Error(`Failed to decode JWT token: ${jwtError.message}`)
-          }
-
-          if (!payload) {
-            log(LogCodes.AUTH.SIGN_IN_FAILURE, {
-              userId: 'unknown',
-              error: 'JWT payload is empty or invalid',
-              step: 'bell_profile_empty_payload',
-              decodingDetails: {
-                decoded: !!decoded,
-                decodedDecoded: !!decoded?.decoded,
-                payload,
-                payloadType: typeof payload
-              }
-            })
-            throw new Error('Failed to extract payload from JWT token')
-          }
-
-          const requiredFields = ['contactId', 'firstName', 'lastName']
-          const missingFields = requiredFields.filter((field) => !payload[field])
-
-          if (missingFields.length > 0) {
-            log(LogCodes.AUTH.SIGN_IN_FAILURE, {
-              userId: payload.contactId || 'unknown',
-              error: `Missing required JWT payload fields: ${missingFields.join(', ')}`,
-              step: 'bell_profile_missing_fields',
-              payloadValidation: {
-                requiredFields,
-                missingFields,
-                presentFields: Object.keys(payload),
-                contactId: payload.contactId,
-                firstName: payload.firstName,
-                lastName: payload.lastName
-              }
-            })
-            throw new Error(`Missing required fields in JWT payload: ${missingFields.join(', ')}`)
-          }
-
-          const sessionId = crypto.randomUUID()
-
-          credentials.profile = {
-            ...payload,
-            crn: payload.contactId,
-            name: `${payload.firstName} ${payload.lastName}`,
-            organisationId: payload.currentRelationshipId,
-            sessionId
-          }
-
-          return credentials
-        } catch (error) {
-          log(LogCodes.AUTH.SIGN_IN_FAILURE, {
-            userId: 'unknown',
-            error: `Bell profile processing failed: ${error.message}`,
-            step: 'bell_profile_processing_error',
-            errorDetails: {
-              message: error.message,
-              stack: error.stack,
-              name: error.name,
-              alreadyLogged: error.alreadyLogged
-            },
-            credentialsState: {
-              received: !!credentials,
-              hasToken: !!credentials?.token,
-              tokenLength: credentials?.token?.length || 0
-            }
-          })
-
-          error.alreadyLogged = true
-          throw error
-        }
+        return processCredentialsProfile(credentials)
       }
     },
     password: config.get('session.cookie.password'),
