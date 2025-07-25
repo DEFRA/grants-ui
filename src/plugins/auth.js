@@ -1,30 +1,219 @@
+import crypto from 'crypto'
 import Jwt from '@hapi/jwt'
 import { config } from '~/src/config/config.js'
 import { getOidcConfig } from '~/src/server/auth/get-oidc-config.js'
 import { getSafeRedirect } from '~/src/server/auth/get-safe-redirect.js'
 import { refreshTokens } from '~/src/server/auth/refresh-tokens.js'
+import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+
+async function setupOidcConfig() {
+  try {
+    const oidcConfig = await getOidcConfig()
+
+    // Log full OIDC configuration from well-known endpoint
+    // Keep for when we deploy to higher environments, won't be needed beyond that
+    log(LogCodes.SYSTEM.ENV_CONFIG_DEBUG, {
+      configType: 'OIDC_WellKnown_Response',
+      configValues: getLoggingDetails(oidcConfig)
+    })
+
+    return oidcConfig
+  } catch (error) {
+    // Keep for when we deploy to higher environments, won't be needed beyond that
+    log(LogCodes.AUTH.AUTH_DEBUG, {
+      path: 'auth_plugin_registration',
+      isAuthenticated: 'system',
+      strategy: 'system',
+      mode: 'oidc_config_failure',
+      hasCredentials: false,
+      hasToken: false,
+      hasProfile: false,
+      userAgent: 'server',
+      referer: 'none',
+      queryParams: {},
+      authError: `OIDC config fetch failed: ${error.message}`,
+      errorDetails: {
+        message: error.message,
+        stack: error.stack,
+        wellKnownUrl: config.get('defraId.wellKnownUrl')
+      }
+    })
+    // Mark the error as already logged to prevent duplicate logging
+    error.alreadyLogged = true
+    throw error
+  }
+}
+
+function getLoggingDetails(oidcConfig) {
+  function setConfiguration(baseConfig) {
+    return function (key, defaultValue = 'NOT_SET') {
+      return baseConfig[key] ?? defaultValue
+    }
+  }
+
+  const getOidcValue = setConfiguration(oidcConfig)
+
+  return {
+    issuer: getOidcValue('issuer'),
+    authorization_endpoint: getOidcValue('authorization_endpoint'),
+    token_endpoint: getOidcValue('token_endpoint'),
+    userinfo_endpoint: getOidcValue('userinfo_endpoint'),
+    jwks_uri: getOidcValue('jwks_uri'),
+    end_session_endpoint: getOidcValue('end_session_endpoint'),
+    scopes_supported: getOidcValue('scopes_supported'),
+    response_types_supported: getOidcValue('response_types_supported'),
+    grant_types_supported: getOidcValue('grant_types_supported'),
+    token_endpoint_auth_methods_supported: getOidcValue('token_endpoint_auth_methods_supported')
+  }
+}
+
+function setupAuthStrategies(server, oidcConfig) {
+  // Bell is a third-party plugin that provides a common interface for OAuth 2.0 authentication
+  // Used to authenticate users with Defra Identity and a pre-requisite for the Cookie authentication strategy
+  // Also used for changing organisations and signing out
+  const bellOptions = getBellOptions(oidcConfig)
+  server.auth.strategy('defra-id', 'bell', bellOptions)
+
+  // Cookie is a built-in authentication strategy for hapi.js that authenticates users based on a session cookie
+  // Used for all non-Defra Identity routes
+  // Lax policy required to allow redirection after Defra Identity sign out
+  const cookieOptions = getCookieOptions()
+  server.auth.strategy('session', 'cookie', cookieOptions)
+
+  // Set the default authentication strategy to session
+  // All routes will require authentication unless explicitly set to 'defra-id' or `auth: false`
+  server.auth.default('session')
+}
 
 export default {
   plugin: {
     name: 'auth',
     register: async (server) => {
-      const oidcConfig = await getOidcConfig()
+      log(LogCodes.SYSTEM.PLUGIN_REGISTRATION, {
+        pluginName: 'auth',
+        status: 'starting'
+      })
 
-      // Bell is a third-party plugin that provides a common interface for OAuth 2.0 authentication
-      // Used to authenticate users with Defra Identity and a pre-requisite for the Cookie authentication strategy
-      // Also used for changing organisations and signing out
-      server.auth.strategy('defra-id', 'bell', getBellOptions(oidcConfig))
+      const oidcConfig = await setupOidcConfig()
+      setupAuthStrategies(server, oidcConfig)
 
-      // Cookie is a built-in authentication strategy for hapi.js that authenticates users based on a session cookie
-      // Used for all non-Defra Identity routes
-      // Lax policy required to allow redirection after Defra Identity sign out
-      server.auth.strategy('session', 'cookie', getCookieOptions())
-
-      // Set the default authentication strategy to session
-      // All routes will require authentication unless explicitly set to 'defra-id' or `auth: false`
-      server.auth.default('session')
+      log(LogCodes.SYSTEM.PLUGIN_REGISTRATION, {
+        pluginName: 'auth',
+        status: 'completed'
+      })
     }
   }
+}
+
+function processCredentialsProfile(credentials) {
+  try {
+    validateCredentials(credentials)
+    const payload = decodeTokenPayload(credentials.token)
+    validatePayload(payload)
+    return createCredentialsProfile(credentials, payload)
+  } catch (error) {
+    log(LogCodes.AUTH.SIGN_IN_FAILURE, {
+      userId: 'unknown',
+      error: `Bell profile processing failed: ${error.message}`,
+      step: 'bell_profile_processing_error',
+      errorDetails: {
+        message: error.message,
+        stack: error.stack,
+        name: error.name,
+        alreadyLogged: error.alreadyLogged
+      },
+      credentialsState: {
+        received: !!credentials,
+        hasToken: !!credentials?.token,
+        tokenLength: credentials?.token?.length || 0
+      }
+    })
+
+    error.alreadyLogged = true
+    throw error
+  }
+}
+
+function validateCredentials(credentials) {
+  if (!credentials) {
+    throw new Error('No credentials received from Bell OAuth provider')
+  }
+
+  if (!credentials.token) {
+    throw new Error('No token received from Defra Identity')
+  }
+}
+
+function decodeTokenPayload(token) {
+  try {
+    const decoded = Jwt.token.decode(token)
+    const payload = decoded?.decoded?.payload
+
+    if (!payload) {
+      log(LogCodes.AUTH.SIGN_IN_FAILURE, {
+        userId: 'unknown',
+        error: 'JWT payload is empty or invalid',
+        step: 'bell_profile_empty_payload',
+        decodingDetails: {
+          decoded: !!decoded,
+          decodedDecoded: !!decoded?.decoded,
+          payload,
+          payloadType: typeof payload
+        }
+      })
+      throw new Error('Failed to extract payload from JWT token')
+    }
+
+    return payload
+  } catch (jwtError) {
+    log(LogCodes.AUTH.SIGN_IN_FAILURE, {
+      userId: 'unknown',
+      error: `JWT decode failed: ${jwtError.message}`,
+      step: 'bell_profile_jwt_decode_error',
+      jwtError: {
+        message: jwtError.message,
+        stack: jwtError.stack,
+        tokenLength: token ? token.length : 0
+      }
+    })
+    throw new Error(`Failed to decode JWT token: ${jwtError.message}`)
+  }
+}
+
+function validatePayload(payload) {
+  const requiredFields = ['contactId', 'firstName', 'lastName']
+  const missingFields = requiredFields.filter((field) => !payload[field])
+
+  if (missingFields.length > 0) {
+    log(LogCodes.AUTH.SIGN_IN_FAILURE, {
+      userId: payload.contactId || 'unknown',
+      error: `Missing required JWT payload fields: ${missingFields.join(', ')}`,
+      step: 'bell_profile_missing_fields',
+      payloadValidation: {
+        requiredFields,
+        missingFields,
+        presentFields: Object.keys(payload),
+        contactId: payload.contactId,
+        firstName: payload.firstName,
+        lastName: payload.lastName
+      }
+    })
+    throw new Error(`Missing required fields in JWT payload: ${missingFields.join(', ')}`)
+  }
+}
+
+function createCredentialsProfile(credentials, payload) {
+  const sessionId = crypto.randomUUID()
+
+  credentials.profile = {
+    ...payload,
+    crn: payload.contactId,
+    name: `${payload.firstName} ${payload.lastName}`,
+    organisationId: payload.currentRelationshipId,
+    sessionId
+  }
+
+  return credentials
 }
 
 function getBellOptions(oidcConfig) {
@@ -35,51 +224,60 @@ function getBellOptions(oidcConfig) {
       useParamsAuth: true,
       auth: oidcConfig.authorization_endpoint,
       token: oidcConfig.token_endpoint,
-      scope: ['openid', 'offline_access'],
+      scope: ['openid', 'offline_access', config.get('defraId.clientId')],
       profile: function (credentials) {
-        const payload = Jwt.token.decode(credentials.token).decoded.payload
-
-        // Map all JWT properties to the credentials object so it can be stored in the session
-        // Add some additional properties to the profile object for convenience
-        credentials.profile = {
-          ...payload,
-          crn: payload.contactId,
-          name: `${payload.firstName} ${payload.lastName}`,
-          organisationId: payload.currentRelationshipId
-        }
+        return processCredentialsProfile(credentials)
       }
     },
+    password: config.get('session.cookie.password'),
     clientId: config.get('defraId.clientId'),
     clientSecret: config.get('defraId.clientSecret'),
-    password: config.get('session.cookie.password'),
-    isSecure: config.get('isProduction'),
+    isSecure: config.get('session.cookie.secure'),
     location: function (request) {
-      // If request includes a redirect query parameter, store it in the session to allow redirection after authentication
-      if (request.query.redirect) {
-        // Ensure redirect is a relative path to prevent redirect attacks
-        const safeRedirect = getSafeRedirect(request.query.redirect)
-        request.yar.set('redirect', safeRedirect)
-      }
+      try {
+        const redirectParam = request.query.redirect
 
-      return config.get('defraId.redirectUrl')
-    },
-    providerParams: function (request) {
-      const params = {
-        serviceId: config.get('defraId.serviceId')
-        // p: config.get('defraId.policy'), // TODO - This doesn't work with cdp stub, we need to figure out if we can use it on a real environment
-        // response_mode: 'query'
-      }
-
-      // If user intends to switch organisation, force Defra Identity to display the organisation selection screen
-      if (request.path === '/auth/organisation') {
-        params.forceReselection = true
-        // If user has already selected an organisation in another service, pass the organisation Id to force Defra Id to skip the organisation selection screen
-        if (request.query.organisationId) {
-          params.relationshipId = request.query.organisationId
+        if (redirectParam) {
+          try {
+            const safeRedirect = getSafeRedirect(redirectParam)
+            request.yar.set('redirect', safeRedirect)
+          } catch (redirectError) {
+            log(LogCodes.AUTH.SIGN_IN_FAILURE, {
+              userId: 'unknown',
+              error: `Failed to store redirect parameter: ${redirectError.message}`,
+              step: 'bell_location_redirect_store_error',
+              redirectError: {
+                message: redirectError.message,
+                stack: redirectError.stack,
+                originalRedirect: redirectParam
+              }
+            })
+          }
         }
-      }
 
-      return params
+        return config.get('defraId.redirectUrl')
+      } catch (error) {
+        log(LogCodes.AUTH.SIGN_IN_FAILURE, {
+          userId: 'unknown',
+          error: `Bell location function failed: ${error.message}`,
+          step: 'bell_location_function_error',
+          locationError: {
+            message: error.message,
+            stack: error.stack,
+            name: error.name,
+            requestPath: request.path,
+            requestMethod: request.method
+          }
+        })
+
+        error.alreadyLogged = true
+        throw error
+      }
+    },
+    providerParams: function () {
+      return {
+        serviceId: config.get('defraId.serviceId')
+      }
     }
   }
 }
@@ -89,7 +287,7 @@ function getCookieOptions() {
     cookie: {
       password: config.get('session.cookie.password'),
       path: '/',
-      isSecure: config.get('isProduction'),
+      isSecure: config.get('session.cookie.secure'),
       isSameSite: 'Lax'
     },
     redirectTo: function (request) {
@@ -98,8 +296,15 @@ function getCookieOptions() {
     validate: async function (request, session) {
       const userSession = await request.server.app.cache.get(session.sessionId)
 
-      // If session does not exist, return an invalid session
+      // If a session does not exist, return an invalid session
       if (!userSession) {
+        log(LogCodes.AUTH.SESSION_EXPIRED, {
+          userId: 'unknown',
+          sessionId: session.sessionId,
+          path: request.path,
+          reason: 'Session not found in cache'
+        })
+
         return { isValid: false }
       }
 
@@ -107,14 +312,41 @@ function getCookieOptions() {
       try {
         const decoded = Jwt.token.decode(userSession.token)
         Jwt.token.verifyTime(decoded)
-      } catch (error) {
+      } catch (tokenError) {
         if (!config.get('defraId.refreshTokens')) {
+          log(LogCodes.AUTH.SESSION_EXPIRED, {
+            userId: userSession.contactId,
+            sessionId: session.sessionId,
+            path: request.path,
+            reason: 'Token expired, refresh disabled',
+            error: tokenError.message
+          })
           return { isValid: false }
         }
-        const { access_token: token, refresh_token: refreshToken } = await refreshTokens(userSession.refreshToken)
-        userSession.token = token
-        userSession.refreshToken = refreshToken
-        await request.server.app.cache.set(session.sessionId, userSession)
+
+        try {
+          const { access_token: newToken, refresh_token: newRefreshToken } = await refreshTokens(
+            userSession.refreshToken
+          )
+          userSession.token = newToken
+          userSession.refreshToken = newRefreshToken
+          await request.server.app.cache.set(session.sessionId, userSession)
+
+          log(LogCodes.AUTH.TOKEN_VERIFICATION_SUCCESS, {
+            userId: userSession.contactId,
+            organisationId: userSession.organisationId,
+            step: 'token_refresh_success'
+          })
+        } catch (refreshError) {
+          log(LogCodes.AUTH.TOKEN_VERIFICATION_FAILURE, {
+            userId: userSession.contactId,
+            error: refreshError.message,
+            step: 'token_refresh_failed',
+            originalTokenError: tokenError.message
+          })
+
+          return { isValid: false }
+        }
       }
 
       // Set the user's details on the request object and allow the request to continue

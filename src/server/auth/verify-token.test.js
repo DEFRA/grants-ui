@@ -3,12 +3,22 @@ import Wreck from '@hapi/wreck'
 import jose from 'node-jose'
 import { getOidcConfig } from './get-oidc-config.js'
 import { verifyToken } from './verify-token.js'
+import { log } from '~/src/server/common/helpers/logging/log.js'
 
 // Mock dependencies
 jest.mock('@hapi/wreck')
 jest.mock('@hapi/jwt')
 jest.mock('node-jose')
 jest.mock('./get-oidc-config.js')
+jest.mock('~/src/server/common/helpers/logging/log.js', () => ({
+  log: jest.fn(),
+  LogCodes: {
+    AUTH: {
+      TOKEN_VERIFICATION_SUCCESS: { level: 'info', messageFunc: jest.fn() },
+      TOKEN_VERIFICATION_FAILURE: { level: 'error', messageFunc: jest.fn() }
+    }
+  }
+}))
 
 describe('verifyToken', () => {
   // Sample test data
@@ -111,6 +121,43 @@ describe('verifyToken', () => {
     // jose.JWK.asKey should throw an error when given undefined
     jose.JWK.asKey.mockRejectedValue(new Error('Cannot convert undefined JWK to key'))
 
-    await expect(verifyToken(mockToken)).rejects.toThrow('Cannot convert undefined JWK to key')
+    await expect(verifyToken(mockToken)).rejects.toThrow('No keys found in JWKS response')
   })
+
+  test.each([
+    {
+      errorMessage: 'JWKS',
+      stepValue: 'jwks_fetch'
+    },
+    {
+      errorMessage: 'JWK',
+      stepValue: 'jwk_conversion'
+    },
+    {
+      errorMessage: 'decode',
+      stepValue: 'token_decode'
+    },
+    {
+      errorMessage: 'verify',
+      stepValue: 'signature_verification'
+    }
+  ])(
+    'Should log the correct step when an error occurs containing "$errorMessage"',
+    async ({ errorMessage, stepValue }) => {
+      // This could be anything to force the block to throw an error
+      Jwt.token.verify.mockImplementation(() => {
+        throw new Error(errorMessage)
+      })
+
+      await expect(verifyToken('token')).rejects.toThrow(errorMessage)
+
+      expect(log).toHaveBeenCalledTimes(1)
+      expect(log).toHaveBeenCalledWith(
+        expect.any(Object),
+        expect.objectContaining({
+          step: stepValue
+        })
+      )
+    }
+  )
 })

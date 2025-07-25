@@ -22,6 +22,7 @@ describe('#homeController', () => {
 
   beforeAll(async () => {
     process.env.SESSION_COOKIE_PASSWORD = 'the-password-must-be-at-least-32-characters-long'
+    process.env.SBI_SELECTOR_ENABLED = 'false'
 
     // Mock the well-known OIDC config before server starts
     Wreck.get.mockResolvedValue({

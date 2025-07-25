@@ -12,7 +12,7 @@ import { fileURLToPath } from 'url'
 import { config } from '~/src/config/config.js'
 import { context } from '~/src/config/nunjucks/context/context.js'
 import { grantsUiPaths, nunjucksConfig } from '~/src/config/nunjucks/nunjucks.js'
-// import auth from '~/src/plugins/auth.js'
+import auth from '~/src/plugins/auth.js'
 import csp from '~/src/plugins/content-security-policy.js'
 import sso from '~/src/plugins/sso.js'
 import { formsService } from '~/src/server/common/forms/services/form.js'
@@ -48,23 +48,23 @@ const SESSION_CACHE_NAME = 'session.cache.name'
 const GRANTS_UI_BACKEND_ENDPOINT = config.get('session.cache.apiEndpoint')
 
 const getViewPaths = () => {
-  const currentFilePath = fileURLToPath(import.meta.url)
-  const isRunningBuiltCode = currentFilePath.includes('.server')
-  const basePath = isRunningBuiltCode ? '.server/server' : 'src/server'
-  const paths = [
-    `${basePath}/non-land-grants/pigs-might-fly/views`,
-    `${basePath}/land-grants/views`,
-    `${basePath}/views`,
-    `${basePath}/home/views`,
-    `${basePath}/declaration/views`,
-    `${basePath}/confirmation/views`,
-    `${basePath}/score-results/views`,
-    `${basePath}/section-end/views`,
-    `${basePath}/tasklist/views`,
-    `${basePath}/common/components`,
+  const serverDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)))
+  return [
+    path.join(serverDir, 'views'),
+    path.join(serverDir, 'land-grants/views'),
+    path.join(serverDir, 'non-land-grants/pigs-might-fly/views'),
+    path.join(serverDir, 'about'),
+    path.join(serverDir, 'home'),
+    path.join(serverDir, 'home/views'),
+    path.join(serverDir, 'error'),
+    path.join(serverDir, 'confirmation/views'),
+    path.join(serverDir, 'declaration/views'),
+    path.join(serverDir, 'score-results/views'),
+    path.join(serverDir, 'section-end/views'),
+    path.join(serverDir, 'tasklist/views'),
+    path.join(serverDir, 'common/components'),
     ...grantsUiPaths
   ]
-  return paths
 }
 
 const createHapiServer = () => {
@@ -76,10 +76,10 @@ const createHapiServer = () => {
           abortEarly: false
         }
       },
-      // auth: {
-      //   mode: 'try',
-      //   strategy: 'session'
-      // },
+      auth: {
+        mode: 'try',
+        strategy: 'session'
+      },
       files: {
         relativeTo: path.resolve(config.get('root'), '.public')
       },
@@ -287,8 +287,6 @@ export async function performSessionHydration(server, sbi) {
 }
 
 const registerPlugins = async (server) => {
-  await server.register([router])
-
   await server.register([
     inert,
     crumb,
@@ -297,7 +295,7 @@ const registerPlugins = async (server) => {
     Scooter,
     csp,
     h2o2,
-    // auth,
+    auth,
     requestLogger,
     requestTracing,
     secureContext,
@@ -307,20 +305,61 @@ const registerPlugins = async (server) => {
     tasklistBackButton,
     sso
   ])
+
+  await server.register([router])
 }
 
 export async function createServer() {
-  setupProxy()
-  const server = createHapiServer()
+  const { log, LogCodes } = await import('~/src/server/common/helpers/logging/log.js')
 
+  log(LogCodes.SYSTEM.STARTUP_PHASE, {
+    phase: 'server_creation',
+    status: 'starting'
+  })
+
+  setupProxy()
+  log(LogCodes.SYSTEM.STARTUP_PHASE, {
+    phase: 'proxy_setup',
+    status: 'complete'
+  })
+
+  const server = createHapiServer()
+  log(LogCodes.SYSTEM.STARTUP_PHASE, {
+    phase: 'hapi_server_creation',
+    status: 'complete'
+  })
+
+  log(LogCodes.SYSTEM.STARTUP_PHASE, {
+    phase: 'plugin_registration',
+    status: 'starting'
+  })
   await registerPlugins(server)
+  log(LogCodes.SYSTEM.STARTUP_PHASE, {
+    phase: 'core_plugins',
+    status: 'registered'
+  })
+
+  log(LogCodes.SYSTEM.STARTUP_PHASE, {
+    phase: 'forms_plugin_registration',
+    status: 'starting'
+  })
+
   await registerFormsPlugin(server)
+
+  log(LogCodes.SYSTEM.STARTUP_PHASE, {
+    phase: 'forms_plugin',
+    status: 'registered'
+  })
 
   if (process.env.SBI_SELECTOR_ENABLED === 'true') {
     await performInitialSessionHydration(server)
   }
 
   loadSubmissionSchemaValidators()
+  log(LogCodes.SYSTEM.STARTUP_PHASE, {
+    phase: 'schema_validators',
+    status: 'loaded'
+  })
 
   server.ext('onPreHandler', (request, h) => {
     const prev = request.yar.get('visitedSubSections') || []
