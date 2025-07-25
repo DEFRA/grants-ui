@@ -3,6 +3,7 @@ import Wreck from '@hapi/wreck'
 import jose from 'node-jose'
 import { getOidcConfig } from './get-oidc-config.js'
 import { verifyToken } from './verify-token.js'
+import { log } from '~/src/server/common/helpers/logging/log.js'
 
 // Mock dependencies
 jest.mock('@hapi/wreck')
@@ -122,4 +123,41 @@ describe('verifyToken', () => {
 
     await expect(verifyToken(mockToken)).rejects.toThrow('No keys found in JWKS response')
   })
+
+  test.each([
+    {
+      errorMessage: 'JWKS',
+      stepValue: 'jwks_fetch'
+    },
+    {
+      errorMessage: 'JWK',
+      stepValue: 'jwk_conversion'
+    },
+    {
+      errorMessage: 'decode',
+      stepValue: 'token_decode'
+    },
+    {
+      errorMessage: 'verify',
+      stepValue: 'signature_verification'
+    }
+  ])(
+    'Should log the correct step when an error occurs containing "$errorMessage"',
+    async ({ errorMessage, stepValue }) => {
+      // This could be anything to force the block to throw an error
+      Jwt.token.verify.mockImplementation(() => {
+        throw new Error(errorMessage)
+      })
+
+      await expect(verifyToken('token')).rejects.toThrow(errorMessage)
+
+      expect(log).toHaveBeenCalledTimes(1)
+      expect(log).toHaveBeenCalledWith(
+        expect.any(Object),
+        expect.objectContaining({
+          step: stepValue
+        })
+      )
+    }
+  )
 })

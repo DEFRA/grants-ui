@@ -47,9 +47,7 @@ async function verifyToken(token) {
       const decoded = Jwt.token.decode(token)
       const tokenPayload = decoded.decoded?.payload || decoded.payload || {}
       userId = tokenPayload.contactId || 'unknown'
-    } catch {
-      step = 'token_decode_failed'
-    }
+    } catch {}
 
     // Determine the step where verification failed
     if (error.message.includes('JWKS')) {
