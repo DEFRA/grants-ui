@@ -45,17 +45,21 @@ async function setupOidcConfig() {
 }
 
 function getLoggingDetails(oidcConfig) {
+  function getOidcValue(key, config, defaultValue = 'NOT_SET') {
+    return config[key] ?? defaultValue
+  }
+
   return {
-    issuer: oidcConfig.issuer ?? 'NOT_SET',
-    authorization_endpoint: oidcConfig.authorization_endpoint ?? 'NOT_SET',
-    token_endpoint: oidcConfig.token_endpoint ?? 'NOT_SET',
-    userinfo_endpoint: oidcConfig.userinfo_endpoint ?? 'NOT_SET',
-    jwks_uri: oidcConfig.jwks_uri ?? 'NOT_SET',
-    end_session_endpoint: oidcConfig.end_session_endpoint ?? 'NOT_SET',
-    scopes_supported: oidcConfig.scopes_supported ?? 'NOT_SET',
-    response_types_supported: oidcConfig.response_types_supported ?? 'NOT_SET',
-    grant_types_supported: oidcConfig.grant_types_supported ?? 'NOT_SET',
-    token_endpoint_auth_methods_supported: oidcConfig.token_endpoint_auth_methods_supported ?? 'NOT_SET'
+    issuer: getOidcValue('issuer', oidcConfig),
+    authorization_endpoint: getOidcValue('authorization_endpoint', oidcConfig),
+    token_endpoint: getOidcValue('token_endpoint', oidcConfig),
+    userinfo_endpoint: getOidcValue('userinfo_endpoint', oidcConfig),
+    jwks_uri: getOidcValue('jwks_uri', oidcConfig),
+    end_session_endpoint: getOidcValue('end_session_endpoint', oidcConfig),
+    scopes_supported: getOidcValue('scopes_supported', oidcConfig),
+    response_types_supported: getOidcValue('response_types_supported', oidcConfig),
+    grant_types_supported: getOidcValue('grant_types_supported', oidcConfig),
+    token_endpoint_auth_methods_supported: getOidcValue('token_endpoint_auth_methods_supported', oidcConfig)
   }
 }
 
