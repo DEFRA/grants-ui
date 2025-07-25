@@ -117,6 +117,7 @@ export const registerFormsPlugin = async (server, prefix = '') => {
       cacheName: config.get(SESSION_CACHE_NAME),
       baseUrl: config.get('baseUrl'),
       keyGenerator: generateKey,
+      sessionPersister,
       services: {
         formsService: await formsService(),
         formSubmissionService,
@@ -222,6 +223,40 @@ async function fetchSavedStateFromApi(request) {
   }
 
   return json || null
+}
+
+const sessionPersister = async (key, state, request) => {
+  if (!GRANTS_UI_BACKEND_ENDPOINT) {
+    request.logger.warn('Backend not configured - skipping saving data to backend')
+    return
+  }
+
+  const { userId, businessId, grantId } = getIdentity(request)
+  const apiUrl = `${GRANTS_UI_BACKEND_ENDPOINT}/state/`
+
+  request.logger.info(`Persisting state to backend for identity: ${userId}:${businessId}:${grantId}`)
+
+  try {
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        userId,
+        businessId,
+        grantId,
+        state
+      })
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to persist state: ${response.status}`)
+    }
+  } catch (err) {
+    request.logger.error(['session-persister'], 'Failed to persist state to API', err)
+    throw err
+  }
 }
 
 const generateKey = (request) => {
