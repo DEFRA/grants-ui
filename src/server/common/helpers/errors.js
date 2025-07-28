@@ -34,6 +34,12 @@ export function catchAll(request, h) {
   }
 
   const statusCode = response.output.statusCode
+
+  // Handle redirects properly
+  if (statusCode === 302 && response.output.headers.location) {
+    return h.redirect(response.output.headers.location)
+  }
+
   const errorMessage = statusCodeMessage(statusCode)
 
   handleErrorLogging(request, response, statusCode)

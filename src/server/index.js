@@ -1,5 +1,6 @@
 import plugin from '@defra/forms-engine-plugin'
 import Bell from '@hapi/bell'
+import Boom from '@hapi/boom'
 import Cookie from '@hapi/cookie'
 import crumb from '@hapi/crumb'
 import hapi from '@hapi/hapi'
@@ -109,6 +110,25 @@ const createHapiServer = () => {
   })
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const formsAuthCallback = (request, _params, _definition, _metadata) => {
+  if (!request.auth.isAuthenticated) {
+    const currentPath = request.url.pathname + request.url.search
+    const redirectUrl = `/auth/sign-in?redirect=${encodeURIComponent(currentPath)}`
+    const redirectError = new Error('Redirect')
+    redirectError.output = {
+      statusCode: 302,
+      payload: '',
+      headers: {
+        location: redirectUrl
+      }
+    }
+    redirectError.isBoom = true
+
+    throw redirectError
+  }
+}
+
 export const registerFormsPlugin = async (server, prefix = '') => {
   await server.register({
     plugin,
@@ -117,6 +137,7 @@ export const registerFormsPlugin = async (server, prefix = '') => {
       cacheName: config.get(SESSION_CACHE_NAME),
       baseUrl: config.get('baseUrl'),
       keyGenerator: generateKey,
+      onRequest: formsAuthCallback,
       services: {
         formsService: await formsService(),
         formSubmissionService,
