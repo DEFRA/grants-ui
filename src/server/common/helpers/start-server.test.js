@@ -61,7 +61,6 @@ describe('#startServer', () => {
   beforeAll(async () => {
     process.env = { ...PROCESS_ENV }
     process.env.PORT = '3097' // Set to obscure port to avoid conflicts
-    process.env.SBI_SELECTOR_ENABLED = 'false' // Disable SBI selector to avoid API calls
 
     createServerImport = await import('~/src/server/index.js')
     startServerImport = await import('~/src/server/common/helpers/start-server.js')

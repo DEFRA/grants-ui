@@ -68,26 +68,21 @@ instance of the service and it will not persist between restarts.
 
 ## Session Rehydration
 
-The application includes session rehydration functionality that allows user sessions to be restored from a backend API. This is particularly useful for maintaining user state across different services. The SBI (Single Business Identifier) changes allows developers to mimic changing users.
+The application includes session rehydration functionality that allows user sessions to be restored from a backend API. This is particularly useful for maintaining user state across different services.
 
 ### How Session Rehydration Works
 
-1. **Initial Hydration**: When the server starts and a user is logged in, or SBI selector is enabled, the application performs an initial session hydration to restore any existing user state.
+The application fetches saved state from the backend API using the endpoint configured in `GRANTS_UI_BACKEND_URL`.
+When a user is authenticated, the serivce:
 
-2. **SBI-based Identity**: The system generates a unique identity key based on the user's SBI in the format `user_{sbi}:business_{sbi}:grant_{sbi}`.
-
-3. **Backend Integration**: The application fetches saved state from the backend API using the endpoint configured in `GRANTS_UI_BACKEND_URL`.
-
-4. **Dynamic Rehydration**: When a user is authenticated, the serivce:
-   - Checks for existing cache
-   - If there is none, fetches data from Mongo
-   - Performs session rehydration
+- Checks for existing cache
+- If there is none, fetches data from Mongo
+- Performs session rehydration
 
 ### Configuration
 
 Session rehydration is controlled by the following environment variables:
 
-- `SBI_SELECTOR_ENABLED`: Set to `'true'` to enable mock user switching
 - `GRANTS_UI_BACKEND_URL`: The backend API endpoint for fetching/storing session state
 
 ### Error Handling

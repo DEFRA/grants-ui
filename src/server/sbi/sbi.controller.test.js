@@ -1,7 +1,6 @@
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { sbiSelectorController } from './sbi.controller.js'
 import { sbiStore } from './state.js'
-import { performSessionHydration } from '~/src/server/index.js'
 
 jest.mock('~/src/server/common/constants/status-codes.js', () => ({
   statusCodes: {
@@ -14,11 +13,6 @@ jest.mock('./state.js', () => ({
   sbiStore: {
     set: jest.fn()
   }
-}))
-
-jest.mock('~/src/server/index.js', () => ({
-  clearCachedKey: jest.fn(),
-  performSessionHydration: jest.fn().mockResolvedValue(true)
 }))
 
 describe('sbiSelectorController', () => {
@@ -40,17 +34,12 @@ describe('sbiSelectorController', () => {
         method: 'post',
         payload: {
           sbi: 'test-sbi-value'
-        },
-        logger: {
-          info: jest.fn(),
-          error: jest.fn()
-        },
-        server: {}
+        }
       }
     })
 
-    it('should successfully update SBI and return success message', async () => {
-      await sbiSelectorController.handler(mockRequest, mockH)
+    it('should successfully update SBI and return success message', () => {
+      sbiSelectorController.handler(mockRequest, mockH)
 
       expect(sbiStore.set).toHaveBeenCalledWith('sbi', 'test-sbi-value')
       expect(mockH.response).toHaveBeenCalledWith({
@@ -59,10 +48,10 @@ describe('sbiSelectorController', () => {
       expect(mockH.code).toHaveBeenCalledWith(statusCodes.ok)
     })
 
-    it('should handle empty SBI value', async () => {
+    it('should handle empty SBI value', () => {
       mockRequest.payload.sbi = ''
 
-      await sbiSelectorController.handler(mockRequest, mockH)
+      sbiSelectorController.handler(mockRequest, mockH)
 
       expect(sbiStore.set).toHaveBeenCalledWith('sbi', '')
       expect(mockH.response).toHaveBeenCalledWith({
@@ -71,10 +60,10 @@ describe('sbiSelectorController', () => {
       expect(mockH.code).toHaveBeenCalledWith(statusCodes.ok)
     })
 
-    it('should handle null SBI value', async () => {
+    it('should handle null SBI value', () => {
       mockRequest.payload.sbi = null
 
-      await sbiSelectorController.handler(mockRequest, mockH)
+      sbiSelectorController.handler(mockRequest, mockH)
 
       expect(sbiStore.set).toHaveBeenCalledWith('sbi', null)
       expect(mockH.response).toHaveBeenCalledWith({
@@ -83,7 +72,7 @@ describe('sbiSelectorController', () => {
       expect(mockH.code).toHaveBeenCalledWith(statusCodes.ok)
     })
 
-    it('should handle complex SBI object', async () => {
+    it('should handle complex SBI object', () => {
       const complexSbi = {
         id: 123,
         name: 'Test SBI',
@@ -91,26 +80,9 @@ describe('sbiSelectorController', () => {
       }
       mockRequest.payload.sbi = complexSbi
 
-      await sbiSelectorController.handler(mockRequest, mockH)
+      sbiSelectorController.handler(mockRequest, mockH)
 
       expect(sbiStore.set).toHaveBeenCalledWith('sbi', complexSbi)
-      expect(mockH.response).toHaveBeenCalledWith({
-        message: 'SBI updated successfully'
-      })
-      expect(mockH.code).toHaveBeenCalledWith(statusCodes.ok)
-    })
-
-    it('should handle session hydration errors gracefully', async () => {
-      const testError = new Error('Session hydration failed')
-      performSessionHydration.mockRejectedValueOnce(testError)
-
-      await sbiSelectorController.handler(mockRequest, mockH)
-
-      expect(sbiStore.set).toHaveBeenCalledWith('sbi', 'test-sbi-value')
-      expect(mockRequest.logger.error).toHaveBeenCalledWith(
-        'Session hydration failed for SBI: test-sbi-value',
-        testError
-      )
       expect(mockH.response).toHaveBeenCalledWith({
         message: 'SBI updated successfully'
       })
@@ -119,13 +91,13 @@ describe('sbiSelectorController', () => {
   })
 
   describe('Non-POST requests', () => {
-    it('should return method not allowed for GET requests', async () => {
+    it('should return method not allowed for GET requests', () => {
       mockRequest = {
         method: 'get',
         payload: {}
       }
 
-      await sbiSelectorController.handler(mockRequest, mockH)
+      sbiSelectorController.handler(mockRequest, mockH)
 
       expect(sbiStore.set).not.toHaveBeenCalled()
       expect(mockH.response).toHaveBeenCalledWith({
@@ -134,13 +106,13 @@ describe('sbiSelectorController', () => {
       expect(mockH.code).toHaveBeenCalledWith(statusCodes.methodNotAllowed)
     })
 
-    it('should return method not allowed for PUT requests', async () => {
+    it('should return method not allowed for PUT requests', () => {
       mockRequest = {
         method: 'put',
         payload: { sbi: 'test-value' }
       }
 
-      await sbiSelectorController.handler(mockRequest, mockH)
+      sbiSelectorController.handler(mockRequest, mockH)
 
       expect(sbiStore.set).not.toHaveBeenCalled()
       expect(mockH.response).toHaveBeenCalledWith({
@@ -149,13 +121,13 @@ describe('sbiSelectorController', () => {
       expect(mockH.code).toHaveBeenCalledWith(statusCodes.methodNotAllowed)
     })
 
-    it('should return method not allowed for DELETE requests', async () => {
+    it('should return method not allowed for DELETE requests', () => {
       mockRequest = {
         method: 'delete',
         payload: {}
       }
 
-      await sbiSelectorController.handler(mockRequest, mockH)
+      sbiSelectorController.handler(mockRequest, mockH)
 
       expect(sbiStore.set).not.toHaveBeenCalled()
       expect(mockH.response).toHaveBeenCalledWith({
@@ -164,13 +136,13 @@ describe('sbiSelectorController', () => {
       expect(mockH.code).toHaveBeenCalledWith(statusCodes.methodNotAllowed)
     })
 
-    it('should return method not allowed for PATCH requests', async () => {
+    it('should return method not allowed for PATCH requests', () => {
       mockRequest = {
         method: 'patch',
         payload: { sbi: 'test-value' }
       }
 
-      await sbiSelectorController.handler(mockRequest, mockH)
+      sbiSelectorController.handler(mockRequest, mockH)
 
       expect(sbiStore.set).not.toHaveBeenCalled()
       expect(mockH.response).toHaveBeenCalledWith({
@@ -181,33 +153,23 @@ describe('sbiSelectorController', () => {
   })
 
   describe('Edge cases', () => {
-    it('should handle missing payload', async () => {
+    it('should handle missing payload', () => {
       mockRequest = {
-        method: 'post',
-        logger: {
-          info: jest.fn(),
-          error: jest.fn()
-        },
-        server: {}
+        method: 'post'
       }
 
-      await expect(async () => {
-        await sbiSelectorController.handler(mockRequest, mockH)
-      }).rejects.toThrow()
+      expect(() => {
+        sbiSelectorController.handler(mockRequest, mockH)
+      }).toThrow()
     })
 
-    it('should handle payload without sbi property', async () => {
+    it('should handle payload without sbi property', () => {
       mockRequest = {
         method: 'post',
-        payload: {},
-        logger: {
-          info: jest.fn(),
-          error: jest.fn()
-        },
-        server: {}
+        payload: {}
       }
 
-      await sbiSelectorController.handler(mockRequest, mockH)
+      sbiSelectorController.handler(mockRequest, mockH)
 
       expect(sbiStore.set).toHaveBeenCalledWith('sbi', undefined)
       expect(mockH.response).toHaveBeenCalledWith({
@@ -218,59 +180,49 @@ describe('sbiSelectorController', () => {
   })
 
   describe('Response chaining', () => {
-    it('should return the result of the response chain for POST requests', async () => {
+    it('should return the result of the response chain for POST requests', () => {
       mockRequest = {
         method: 'post',
-        payload: { sbi: 'test-value' },
-        logger: {
-          info: jest.fn(),
-          error: jest.fn()
-        },
-        server: {}
+        payload: { sbi: 'test-value' }
       }
 
-      const result = await sbiSelectorController.handler(mockRequest, mockH)
+      const result = sbiSelectorController.handler(mockRequest, mockH)
 
       expect(result).toBe(mockH)
     })
 
-    it('should return the result of the response chain for non-POST requests', async () => {
+    it('should return the result of the response chain for non-POST requests', () => {
       mockRequest = {
         method: 'get',
         payload: {}
       }
 
-      const result = await sbiSelectorController.handler(mockRequest, mockH)
+      const result = sbiSelectorController.handler(mockRequest, mockH)
 
       expect(result).toBe(mockH)
     })
   })
 
   describe('sbiStore integration', () => {
-    it('should call sbiStore.set with correct parameters only once per request', async () => {
+    it('should call sbiStore.set with correct parameters only once per request', () => {
       mockRequest = {
         method: 'post',
-        payload: { sbi: 'unique-sbi-value' },
-        logger: {
-          info: jest.fn(),
-          error: jest.fn()
-        },
-        server: {}
+        payload: { sbi: 'unique-sbi-value' }
       }
 
-      await sbiSelectorController.handler(mockRequest, mockH)
+      sbiSelectorController.handler(mockRequest, mockH)
 
       expect(sbiStore.set).toHaveBeenCalledTimes(1)
       expect(sbiStore.set).toHaveBeenCalledWith('sbi', 'unique-sbi-value')
     })
 
-    it('should not call sbiStore.set for non-POST requests', async () => {
+    it('should not call sbiStore.set for non-POST requests', () => {
       mockRequest = {
         method: 'get',
         payload: { sbi: 'should-not-be-stored' }
       }
 
-      await sbiSelectorController.handler(mockRequest, mockH)
+      sbiSelectorController.handler(mockRequest, mockH)
 
       expect(sbiStore.set).not.toHaveBeenCalled()
     })
