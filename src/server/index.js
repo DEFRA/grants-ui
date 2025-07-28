@@ -121,7 +121,7 @@ const registerFormsPlugin = async (server, prefix = '') => {
           return `${userId}:${businessId}:${grantId}`
         },
         sessionHydrator: async (request) => {
-          return await fetchSavedStateFromApi(request)
+          return fetchSavedStateFromApi(request)
         }
       },
       services: {
@@ -219,10 +219,6 @@ export async function createServer() {
     phase: 'forms_plugin',
     status: 'registered'
   })
-
-  if (process.env.SBI_SELECTOR_ENABLED === 'true') {
-    await performInitialSessionHydration(server)
-  }
 
   loadSubmissionSchemaValidators()
   log(LogCodes.SYSTEM.STARTUP_PHASE, {

@@ -11,8 +11,6 @@ describe('#serveStaticFiles', () => {
 
   describe('When secure context is disabled', () => {
     beforeEach(async () => {
-      process.env.SBI_SELECTOR_ENABLED = 'false'
-
       // Mock the well-known OIDC config before server starts
       Wreck.get.mockResolvedValue({
         payload: {

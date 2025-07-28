@@ -25,8 +25,6 @@ describe('#errors', () => {
   let server
 
   beforeAll(async () => {
-    process.env.SBI_SELECTOR_ENABLED = 'false'
-
     // Mock the well-known OIDC config before server starts
     Wreck.get.mockResolvedValue({
       payload: {
