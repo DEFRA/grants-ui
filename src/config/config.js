@@ -48,7 +48,7 @@ export const config = convict({
     doc: 'Base URL for the application',
     format: String,
     default: '',
-    env: 'BASE_URL'
+    env: 'APP_BASE_URL'
   },
   staticCacheTimeout: {
     doc: 'Static cache timeout in milliseconds',
