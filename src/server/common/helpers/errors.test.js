@@ -257,6 +257,65 @@ describe('#catchAll', () => {
   })
 })
 
+describe('#catchAll Redirect Handling', () => {
+  const mockToolkitRedirect = jest.fn()
+  const mockToolkit = {
+    redirect: mockToolkitRedirect,
+    view: jest.fn().mockReturnThis(),
+    code: jest.fn().mockReturnThis()
+  }
+
+  beforeEach(() => {
+    mockToolkitRedirect.mockClear()
+  })
+
+  test('should handle redirects when status code is 302 and location header is present', () => {
+    const redirectUrl = '/somewhere-else'
+    const mockRequest = {
+      response: {
+        isBoom: true,
+        output: {
+          statusCode: statusCodes.redirect,
+          headers: {
+            location: redirectUrl
+          }
+        }
+      }
+    }
+    catchAll(mockRequest, mockToolkit)
+    expect(mockToolkitRedirect).toHaveBeenCalledWith(redirectUrl)
+  })
+
+  test('should not handle redirect if location header is missing', () => {
+    const mockRequest = {
+      response: {
+        isBoom: true,
+        output: {
+          statusCode: statusCodes.redirect,
+          headers: {}
+        }
+      }
+    }
+    catchAll(mockRequest, mockToolkit)
+    expect(mockToolkitRedirect).not.toHaveBeenCalled()
+  })
+
+  test('should not handle redirect if status code is not 302', () => {
+    const mockRequest = {
+      response: {
+        isBoom: true,
+        output: {
+          statusCode: statusCodes.notFound,
+          headers: {
+            location: '/not-a-redirect'
+          }
+        }
+      }
+    }
+    catchAll(mockRequest, mockToolkit)
+    expect(mockToolkitRedirect).not.toHaveBeenCalled()
+  })
+})
 /**
  * @import { Server } from '@hapi/hapi'
  */

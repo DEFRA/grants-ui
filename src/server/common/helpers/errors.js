@@ -26,17 +26,16 @@ function statusCodeMessage(statusCode) {
  * @param { ResponseToolkit } h
  */
 export function catchAll(request, h) {
-  const successCode = 200
   const { response } = request
 
   if (!response?.isBoom) {
-    return h.response(response).code(response?.statusCode ?? successCode)
+    return h.response(response).code(response?.statusCode ?? statusCodes.ok)
   }
 
   const statusCode = response.output.statusCode
 
   // Handle redirects properly
-  if (statusCode === 302 && response.output.headers.location) {
+  if (statusCode === statusCodes.redirect && response.output.headers.location) {
     return h.redirect(response.output.headers.location)
   }
 

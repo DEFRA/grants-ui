@@ -3,6 +3,7 @@
  */
 export const statusCodes = {
   ok: 200,
+  redirect: 302,
   noContent: 204,
   badRequest: 400,
   unauthorized: 401,
