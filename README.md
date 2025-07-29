@@ -211,6 +211,18 @@ These are required only if DEFRA ID authentication is enabled:
 | `DEFRA_ID_REDIRECT_URL`          | URL DEFRA ID redirects to after login. **Must match exactly what DEFRA ID has on file.** |
 | `DEFRA_ID_SIGN_OUT_REDIRECT_URL` | Redirect after logout. Same note as above.                                               |
 
+Note: for local development it is neccessary to remove config.get('defraId.clientId') from provider.scope in getBellOptions(oidcConfig) in auth.js so change from:
+
+```
+scope: ['openid', 'offline_access', config.get('defraId.clientId')],
+```
+
+to:
+
+```
+scope: ['openid', 'offline_access'],
+```
+
 #### Session and Cookie security
 
 | Variable                  | Description                                                    | Default |
