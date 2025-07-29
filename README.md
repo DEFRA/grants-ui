@@ -194,15 +194,15 @@ To run the application in `development` mode run:
 npm run dev
 ```
 
+To successfully run `grants-ui` locally there is a requirement to have the cdp-defra-id-stub (https://github.com/DEFRA/cdp-defra-id-stub) checked out, installed and running locally with this command:
+
+```bash
+npm run dev
+```
+
 ### Environment variables
 
 Below is a list of required environment variables to configure and run the Grants UI application locally or in an environment (e.g., Dev, Test, Perf Test, Prod).
-
-To successfully run it locally there is a requirement to have the cdp-defra-id-stub (https://github.com/DEFRA/cdp-defra-id-stub) checked out and running locally with this command:
-
-```
-npm run dev
-```
 
 #### DEFRA ID Integration
 
