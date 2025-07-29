@@ -1,5 +1,8 @@
 export const getCacheKey = (request) => {
-  const { userId, businessId } = request.auth.credentials || {}
+  const { id: userId, relationships } = request.auth.credentials || {}
+
+  // Support single-business users for now
+  const businessId = (Array.isArray(relationships) && relationships[0]?.split(':')[1]) || null
 
   const grantId = request.params?.slug
 

@@ -5,8 +5,8 @@ describe('getCacheKey', () => {
     const request = {
       auth: {
         credentials: {
-          userId: 'user123',
-          businessId: 'business456'
+          id: 'user123',
+          relationships: ['relationship123:business456']
         }
       },
       params: {
@@ -27,7 +27,7 @@ describe('getCacheKey', () => {
     const request = {
       auth: {
         credentials: {
-          businessId: 'business456'
+          relationships: ['relationship123:business456']
         }
       },
       params: {
@@ -42,7 +42,8 @@ describe('getCacheKey', () => {
     const request = {
       auth: {
         credentials: {
-          userId: 'user123'
+          id: 'user123',
+          relationships: []
         }
       },
       params: {
@@ -68,8 +69,8 @@ describe('getCacheKey', () => {
     const request = {
       auth: {
         credentials: {
-          userId: 'user123',
-          businessId: 'business456'
+          id: 'user123',
+          relationships: ['relationship123:business456']
         }
       },
       params: {}
@@ -82,8 +83,8 @@ describe('getCacheKey', () => {
     const request = {
       auth: {
         credentials: {
-          userId: 'user123',
-          businessId: 'business456'
+          id: 'user123',
+          relationships: ['relationship123:business456']
         }
       }
       // no params property
