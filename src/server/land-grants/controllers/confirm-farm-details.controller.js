@@ -3,6 +3,7 @@ import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
 import { formatPhone } from '~/src/server/land-grants/utils/format-phone.js'
 import { sbiStore } from '~/src/server/sbi/state.js'
 import { fetchBusinessAndCustomerInformation } from '../../common/services/consolidated-view/consolidated-view.service.js'
+import { config } from '~/src/config/config.js'
 
 const logger = createLogger()
 
@@ -10,7 +11,7 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
   viewName = 'confirm-farm-details'
 
   // Constants
-  static CUSTOMER_ID = 1100014934
+  static CUSTOMER_ID = config.get('landGrants.customerReferenceNumber')
   static ERROR_MESSAGE = 'Unable to find farm information, please try again later.'
 
   /**
