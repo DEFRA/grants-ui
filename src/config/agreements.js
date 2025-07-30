@@ -18,8 +18,14 @@ const agreements = convict({
   },
   agreementsApiUrl: {
     format: String,
-    default: 'http://localhost:3003',
+    default: 'http://localhost:3555',
     env: 'AGREEMENTS_API_URL'
+  },
+  jwtToken: {
+    doc: 'JWT token',
+    format: String,
+    default: 'default-agreements-jwt-token',
+    env: 'AGREEMENTS_JWT_TOKEN'
   }
 })
 
