@@ -26,6 +26,12 @@ const landGrants = convict({
     format: String,
     default: '',
     env: 'LAND_GRANTS_API_URL'
+  },
+  customerReferenceNumber: {
+    doc: 'Customer Reference Number for the land grants forms',
+    format: Number,
+    default: 1100014934,
+    env: 'LAND_GRANTS_CUSTOMER_REFERENCE_NUMBER'
   }
 })
 
