@@ -68,17 +68,20 @@ function getLoggingDetails(oidcConfig) {
 }
 
 function setupAuthStrategies(server, oidcConfig) {
-  // Bell is a third-party plugin that provides a common interface for OAuth 2.0 authentication
-  // Used to authenticate users with Defra Identity and a pre-requisite for the Cookie authentication strategy
-  // Also used for changing organisations and signing out
-  const bellOptions = getBellOptions(oidcConfig)
-  server.auth.strategy('defra-id', 'bell', bellOptions)
-
   // Cookie is a built-in authentication strategy for hapi.js that authenticates users based on a session cookie
   // Used for all non-Defra Identity routes
   // Lax policy required to allow redirection after Defra Identity sign out
   const cookieOptions = getCookieOptions()
   server.auth.strategy('session', 'cookie', cookieOptions)
+
+  // Only register the defra-id strategy if it's enabled in the config and oidcConfig is available
+  if (config.get('defraId.enabled') && oidcConfig) {
+    // Bell is a third-party plugin that provides a common interface for OAuth 2.0 authentication
+    // Used to authenticate users with Defra Identity and a pre-requisite for the Cookie authentication strategy
+    // Also used for changing organisations and signing out
+    const bellOptions = getBellOptions(oidcConfig)
+    server.auth.strategy('defra-id', 'bell', bellOptions)
+  }
 
   // Set the default authentication strategy to session
   // All routes will require authentication unless explicitly set to 'defra-id' or `auth: false`
@@ -94,7 +97,12 @@ export default {
         status: 'starting'
       })
 
-      const oidcConfig = await setupOidcConfig()
+      let oidcConfig = null
+      // Only fetch OIDC configuration if defra-id is enabled
+      if (config.get('defraId.enabled')) {
+        oidcConfig = await setupOidcConfig()
+      }
+
       setupAuthStrategies(server, oidcConfig)
 
       log(LogCodes.SYSTEM.PLUGIN_REGISTRATION, {
@@ -291,7 +299,11 @@ function getCookieOptions() {
       isSameSite: 'Lax'
     },
     redirectTo: function (request) {
-      return `/auth/sign-in?redirect=${request.url.pathname}${request.url.search}`
+      // If defra-id is enabled, redirect to sign-in
+      if (config.get('defraId.enabled')) {
+        return `/auth/sign-in?redirect=${request.url.pathname}${request.url.search}`
+      }
+      return '/'
     },
     validate: async function (request, session) {
       const userSession = await request.server.app.cache.get(session.sessionId)
@@ -308,44 +320,47 @@ function getCookieOptions() {
         return { isValid: false }
       }
 
-      // Verify Defra Identity token has not expired
-      try {
-        const decoded = Jwt.token.decode(userSession.token)
-        Jwt.token.verifyTime(decoded)
-      } catch (tokenError) {
-        if (!config.get('defraId.refreshTokens')) {
-          log(LogCodes.AUTH.SESSION_EXPIRED, {
-            userId: userSession.contactId,
-            sessionId: session.sessionId,
-            path: request.path,
-            reason: 'Token expired, refresh disabled',
-            error: tokenError.message
-          })
-          return { isValid: false }
-        }
-
+      // Skip token verification if defra-id is disabled
+      if (config.get('defraId.enabled') && userSession.token) {
+        // Verify Defra Identity token has not expired
         try {
-          const { access_token: newToken, refresh_token: newRefreshToken } = await refreshTokens(
-            userSession.refreshToken
-          )
-          userSession.token = newToken
-          userSession.refreshToken = newRefreshToken
-          await request.server.app.cache.set(session.sessionId, userSession)
+          const decoded = Jwt.token.decode(userSession.token)
+          Jwt.token.verifyTime(decoded)
+        } catch (tokenError) {
+          if (!config.get('defraId.refreshTokens')) {
+            log(LogCodes.AUTH.SESSION_EXPIRED, {
+              userId: userSession.contactId,
+              sessionId: session.sessionId,
+              path: request.path,
+              reason: 'Token expired, refresh disabled',
+              error: tokenError.message
+            })
+            return { isValid: false }
+          }
 
-          log(LogCodes.AUTH.TOKEN_VERIFICATION_SUCCESS, {
-            userId: userSession.contactId,
-            organisationId: userSession.organisationId,
-            step: 'token_refresh_success'
-          })
-        } catch (refreshError) {
-          log(LogCodes.AUTH.TOKEN_VERIFICATION_FAILURE, {
-            userId: userSession.contactId,
-            error: refreshError.message,
-            step: 'token_refresh_failed',
-            originalTokenError: tokenError.message
-          })
+          try {
+            const { access_token: newToken, refresh_token: newRefreshToken } = await refreshTokens(
+              userSession.refreshToken
+            )
+            userSession.token = newToken
+            userSession.refreshToken = newRefreshToken
+            await request.server.app.cache.set(session.sessionId, userSession)
 
-          return { isValid: false }
+            log(LogCodes.AUTH.TOKEN_VERIFICATION_SUCCESS, {
+              userId: userSession.contactId,
+              organisationId: userSession.organisationId,
+              step: 'token_refresh_success'
+            })
+          } catch (refreshError) {
+            log(LogCodes.AUTH.TOKEN_VERIFICATION_FAILURE, {
+              userId: userSession.contactId,
+              error: refreshError.message,
+              step: 'token_refresh_failed',
+              originalTokenError: tokenError.message
+            })
+
+            return { isValid: false }
+          }
         }
       }
 

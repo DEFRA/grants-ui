@@ -43,6 +43,7 @@ import { PotentialFundingController } from '~/src/server/non-land-grants/pigs-mi
 import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
 import { getCacheKey } from './common/helpers/state/get-cache-key-helper.js'
 import { fetchSavedStateFromApi } from './common/helpers/state/fetch-saved-state-helper.js'
+import { formsAuthCallback } from '~/src/server/auth/forms-engine-plugin-auth-helpers.js'
 
 const SESSION_CACHE_NAME = 'session.cache.name'
 
@@ -124,6 +125,7 @@ const registerFormsPlugin = async (server, prefix = '') => {
           return fetchSavedStateFromApi(request)
         }
       },
+      onRequest: formsAuthCallback,
       services: {
         formsService: await formsService(),
         formSubmissionService,
@@ -235,6 +237,50 @@ export async function createServer() {
     }
 
     request.yar.set('visitedSubSections', prev)
+
+    return h.continue
+  })
+
+  // Create a server extension to handle session creation when defra-id is disabled
+  server.ext('onPreAuth', async (request, h) => {
+    if (!config.get('defraId.enabled') && (!request.state.sid || !request.auth.isAuthenticated)) {
+      try {
+        const crypto = await import('crypto')
+        const sessionId = crypto.randomUUID()
+
+        const sessionData = {
+          isAuthenticated: true,
+          sessionId,
+          contactId: 'anonymous-user',
+          firstName: 'Anonymous',
+          lastName: 'User',
+          name: 'Anonymous User',
+          role: 'user',
+          scope: ['user'],
+          id: 'anonymous-user',
+          relationships: ['business:default-business']
+        }
+
+        await request.server.app.cache.set(sessionId, sessionData)
+
+        request.cookieAuth.set({ sessionId })
+
+        log(LogCodes.AUTH.SIGN_IN_SUCCESS, {
+          userId: 'anonymous-user',
+          sessionId,
+          role: 'user',
+          scope: 'user',
+          authMethod: 'auto-session'
+        })
+      } catch (error) {
+        log(LogCodes.AUTH.SIGN_IN_FAILURE, {
+          userId: 'unknown',
+          error: `Failed to create auto-session: ${error.message}`,
+          step: 'auto_session_creation_error',
+          errorStack: error.stack
+        })
+      }
+    }
 
     return h.continue
   })
