@@ -13,6 +13,7 @@ Core delivery platform Node.js Frontend Template.
 - [Local Development](#local-development)
   - [Setup](#setup)
   - [Development](#development)
+  - [Environment variables](#environment-variables)
   - [GAS Integration](#gas-integration)
   - [Production](#production)
   - [Npm scripts](#npm-scripts)
@@ -192,6 +193,88 @@ To run the application in `development` mode run:
 ```bash
 npm run dev
 ```
+
+To successfully run `grants-ui` locally there is a requirement to have the cdp-defra-id-stub (https://github.com/DEFRA/cdp-defra-id-stub) checked out, installed and running locally with this command:
+
+```bash
+npm run dev
+```
+
+### Environment variables
+
+Below is a list of required environment variables to configure and run the Grants UI application locally or in an environment (e.g., Dev, Test, Perf Test, Prod).
+
+#### DEFRA ID Integration
+
+These are required only if DEFRA ID authentication is enabled:
+
+| Variable                         | Description                                                                              |
+| -------------------------------- | ---------------------------------------------------------------------------------------- |
+| `DEFRA_ID_WELL_KNOWN_URL`        | The OIDC discovery URL used by DEFRA ID (must be reachable at startup).                  |
+| `DEFRA_ID_CLIENT_ID`             | Provided by DEFRA ID — used to identify the app.                                         |
+| `DEFRA_ID_CLIENT_SECRET`         | Secret from DEFRA ID — **must be kept confidential**.                                    |
+| `DEFRA_ID_SERVICE_ID`            | Used by DEFRA ID to display your service name on the login screen.                       |
+| `DEFRA_ID_REDIRECT_URL`          | URL DEFRA ID redirects to after login. **Must match exactly what DEFRA ID has on file.** |
+| `DEFRA_ID_SIGN_OUT_REDIRECT_URL` | Redirect after logout. Same note as above.                                               |
+
+Note: for local development it is neccessary to remove config.get('defraId.clientId') from provider.scope in getBellOptions(oidcConfig) in auth.js so change from:
+
+```
+scope: ['openid', 'offline_access', config.get('defraId.clientId')],
+```
+
+to:
+
+```
+scope: ['openid', 'offline_access'],
+```
+
+#### Session and Cookie security
+
+| Variable                  | Description                                                    | Default |
+| ------------------------- | -------------------------------------------------------------- | ------- |
+| `SESSION_COOKIE_PASSWORD` | High-entropy password (e.g., 32+ chars) for cookie encryption. |
+| `SESSION_COOKIE_TTL`      | Cookie duration in milliseconds.                               |
+| `SESSION_TIMEOUT`         | Inactivity timeout before logout.                              |
+| `SESSION_CACHE_TTL`       | TTL for session data in the cache.                             |
+| `SESSION_CACHE_ENGINE`    | Session store engine — `memory` or `redis`.                    |
+| `SESSION_CACHE_NAME`      | Cache segment name used in Hapi for session caching.           |
+
+#### Application URLs
+
+| Variable                | Description                                    |
+| ----------------------- | ---------------------------------------------- |
+| `APP_BASE_URL`          | Base URL of the Grants UI app.                 |
+| `GRANTS_UI_BACKEND_URL` | Local or remote backend endpoint.              |
+| `GAS_API_URL`           | Endpoint for Grants Application Service (GAS). |
+| `MANAGER_URL`           | Used for internal routing or redirects.        |
+| `DESIGNER_URL`          | Form designer UI base URL.                     |
+| `SUBMISSION_URL`        | Backend submission URL (Docker-safe format).   |
+| `UPLOADER_URL`          | File uploader service endpoint.                |
+| `UPLOADER_BUCKET_NAME`  | Name of the S3 or storage bucket.              |
+
+#### GOV.UK Notify
+
+| Variable             | Description                                           |
+| -------------------- | ----------------------------------------------------- |
+| `NOTIFY_TEMPLATE_ID` | ID of the Notify template used for user-facing comms. |
+| `NOTIFY_API_KEY`     | GOV.UK Notify API key — **treat as a secret**.        |
+
+#### Redis Configuration
+
+| Variable           | Description                              |
+| ------------------ | ---------------------------------------- |
+| `REDIS_HOST`       | Redis host (e.g., `localhost` or Docker) |
+| `REDIS_USERNAME`   | Username for Redis, if using ACL.        |
+| `REDIS_PASSWORD`   | Password for Redis connection.           |
+| `REDIS_KEY_PREFIX` | Prefix for all Redis keys used.          |
+
+#### Feature Flags & Misc
+
+| Variable               | Description                                              |
+| ---------------------- | -------------------------------------------------------- |
+| `SBI_SELECTOR_ENABLED` | Enables the SBI selector UI for multiple-business users. |
+| `FEEDBACK_LINK`        | URL to feedback (e.g., GitHub issue, form).              |
 
 ### GAS Integration
 
