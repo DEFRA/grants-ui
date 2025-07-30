@@ -180,6 +180,45 @@ const registerPlugins = async (server) => {
   await server.register([router])
 }
 
+const mockSessionData = async (request, log, LogCodes) => {
+  try {
+    const crypto = await import('crypto')
+    const sessionId = crypto.randomUUID()
+
+    const sessionData = {
+      isAuthenticated: true,
+      sessionId,
+      contactId: 'anonymous',
+      firstName: 'Anonymous',
+      lastName: 'User',
+      name: 'Anonymous User',
+      role: 'user',
+      scope: ['user'],
+      id: 'anonymous-user',
+      relationships: ['business:default-business']
+    }
+
+    await request.server.app.cache.set(sessionId, sessionData)
+
+    request.cookieAuth.set({ sessionId })
+
+    log(LogCodes.AUTH.SIGN_IN_SUCCESS, {
+      userId: 'anonymous-user-id',
+      sessionId,
+      role: 'user',
+      scope: 'user',
+      authMethod: 'auto-session'
+    })
+  } catch (error) {
+    log(LogCodes.AUTH.SIGN_IN_FAILURE, {
+      userId: 'unknown',
+      error: `Failed to create auto-session: ${error.message}`,
+      step: 'auto_session_creation_error',
+      errorStack: error.stack
+    })
+  }
+}
+
 export async function createServer() {
   const { log, LogCodes } = await import('~/src/server/common/helpers/logging/log.js')
 
@@ -244,44 +283,8 @@ export async function createServer() {
   // Create a server extension to handle session creation when defra-id is disabled
   server.ext('onPreAuth', async (request, h) => {
     if (!config.get('defraId.enabled') && (!request.state.sid || !request.auth.isAuthenticated)) {
-      try {
-        const crypto = await import('crypto')
-        const sessionId = crypto.randomUUID()
-
-        const sessionData = {
-          isAuthenticated: true,
-          sessionId,
-          contactId: 'anonymous-user',
-          firstName: 'Anonymous',
-          lastName: 'User',
-          name: 'Anonymous User',
-          role: 'user',
-          scope: ['user'],
-          id: 'anonymous-user',
-          relationships: ['business:default-business']
-        }
-
-        await request.server.app.cache.set(sessionId, sessionData)
-
-        request.cookieAuth.set({ sessionId })
-
-        log(LogCodes.AUTH.SIGN_IN_SUCCESS, {
-          userId: 'anonymous-user',
-          sessionId,
-          role: 'user',
-          scope: 'user',
-          authMethod: 'auto-session'
-        })
-      } catch (error) {
-        log(LogCodes.AUTH.SIGN_IN_FAILURE, {
-          userId: 'unknown',
-          error: `Failed to create auto-session: ${error.message}`,
-          step: 'auto_session_creation_error',
-          errorStack: error.stack
-        })
-      }
+      await mockSessionData(request, log, LogCodes)
     }
-
     return h.continue
   })
 

@@ -6,6 +6,8 @@ import { getSafeRedirect } from '~/src/server/auth/get-safe-redirect.js'
 import { refreshTokens } from '~/src/server/auth/refresh-tokens.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
+const defraIdEnabled = config.get('defraId.enabled')
+
 async function setupOidcConfig() {
   try {
     const oidcConfig = await getOidcConfig()
@@ -75,7 +77,7 @@ function setupAuthStrategies(server, oidcConfig) {
   server.auth.strategy('session', 'cookie', cookieOptions)
 
   // Only register the defra-id strategy if it's enabled in the config and oidcConfig is available
-  if (config.get('defraId.enabled') && oidcConfig) {
+  if (defraIdEnabled && oidcConfig) {
     // Bell is a third-party plugin that provides a common interface for OAuth 2.0 authentication
     // Used to authenticate users with Defra Identity and a pre-requisite for the Cookie authentication strategy
     // Also used for changing organisations and signing out
@@ -99,7 +101,7 @@ export default {
 
       let oidcConfig = null
       // Only fetch OIDC configuration if defra-id is enabled
-      if (config.get('defraId.enabled')) {
+      if (defraIdEnabled) {
         oidcConfig = await setupOidcConfig()
       }
 
@@ -300,7 +302,7 @@ function getCookieOptions() {
     },
     redirectTo: function (request) {
       // If defra-id is enabled, redirect to sign-in
-      if (config.get('defraId.enabled')) {
+      if (defraIdEnabled) {
         return `/auth/sign-in?redirect=${request.url.pathname}${request.url.search}`
       }
       return '/'
@@ -321,7 +323,7 @@ function getCookieOptions() {
       }
 
       // Skip token verification if defra-id is disabled
-      if (config.get('defraId.enabled') && userSession.token) {
+      if (defraIdEnabled && userSession.token) {
         // Verify Defra Identity token has not expired
         try {
           const decoded = Jwt.token.decode(userSession.token)
