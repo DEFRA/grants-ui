@@ -291,7 +291,8 @@ export async function createServer() {
 
       if (h.request.path === '/auth/sign-in' && h.request.query.redirect) {
         return h.redirect(h.request.query.redirect).takeover()
-      } else if (h.request.path === '/auth/sign-in') {
+      }
+      if (h.request.path === '/auth/sign-in') {
         return h.redirect('/home').takeover()
       }
     }
