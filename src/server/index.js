@@ -183,7 +183,7 @@ const registerPlugins = async (server) => {
 const mockSessionData = async (request, log, LogCodes) => {
   try {
     const crypto = await import('crypto')
-    const sessionId = crypto.randomUUID()
+    const sessionId = request.state.sid?.sessionId || crypto.randomUUID()
 
     const sessionData = {
       isAuthenticated: true,
@@ -282,8 +282,18 @@ export async function createServer() {
 
   // Create a server extension to handle session creation when defra-id is disabled
   server.ext('onPreAuth', async (request, h) => {
-    if (!config.get('defraId.enabled') && (!request.state.sid || !request.auth.isAuthenticated)) {
+    if (!config.get('defraId.enabled')) {
+      if (h.request.path === '/auth/sign-out') {
+        return h.redirect('/home').takeover()
+      }
+
       await mockSessionData(request, log, LogCodes)
+
+      if (h.request.path === '/auth/sign-in' && h.request.query.redirect) {
+        return h.redirect(h.request.query.redirect).takeover()
+      } else if (h.request.path === '/auth/sign-in') {
+        return h.redirect('/home').takeover()
+      }
     }
     return h.continue
   })
