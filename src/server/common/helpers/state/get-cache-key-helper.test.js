@@ -5,8 +5,8 @@ describe('getCacheKey', () => {
     const request = {
       auth: {
         credentials: {
-          userId: 'user123',
-          businessId: 'business456'
+          id: 'user123',
+          relationships: ['relationship123:business456']
         }
       },
       params: {
@@ -27,7 +27,7 @@ describe('getCacheKey', () => {
     const request = {
       auth: {
         credentials: {
-          businessId: 'business456'
+          relationships: ['relationship123:business456']
         }
       },
       params: {
@@ -35,14 +35,14 @@ describe('getCacheKey', () => {
       }
     }
 
-    expect(() => getCacheKey(request)).toThrow('Missing identity')
+    expect(() => getCacheKey(request)).toThrow('Missing user ID in credentials')
   })
 
   it('throws error if businessId is missing', () => {
     const request = {
       auth: {
         credentials: {
-          userId: 'user123'
+          id: 'user123'
         }
       },
       params: {
@@ -50,7 +50,7 @@ describe('getCacheKey', () => {
       }
     }
 
-    expect(() => getCacheKey(request)).toThrow('Missing identity')
+    expect(() => getCacheKey(request)).toThrow('Missing or malformed business relationship in credentials: undefined')
   })
 
   it('throws error if auth.credentials is missing', () => {
@@ -61,15 +61,15 @@ describe('getCacheKey', () => {
       }
     }
 
-    expect(() => getCacheKey(request)).toThrow('Missing identity')
+    expect(() => getCacheKey(request)).toThrow('Missing auth credentials')
   })
 
   it('throws error if grantId (params.slug) is missing', () => {
     const request = {
       auth: {
         credentials: {
-          userId: 'user123',
-          businessId: 'business456'
+          id: 'user123',
+          relationships: ['relationship123:business456']
         }
       },
       params: {}
@@ -82,8 +82,8 @@ describe('getCacheKey', () => {
     const request = {
       auth: {
         credentials: {
-          userId: 'user123',
-          businessId: 'business456'
+          id: 'user123',
+          relationships: ['relationship123:business456']
         }
       }
       // no params property
