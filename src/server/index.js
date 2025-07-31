@@ -219,6 +219,24 @@ const mockSessionData = async (request, log, LogCodes) => {
   }
 }
 
+const handleMockDefraAuth = async (request, h, log, LogCodes) => {
+  if (!config.get('defraId.enabled')) {
+    if (h.request.path === '/auth/sign-out') {
+      return h.redirect('/home').takeover()
+    }
+
+    await mockSessionData(request, log, LogCodes)
+
+    if (h.request.path === '/auth/sign-in' && h.request.query.redirect) {
+      return h.redirect(h.request.query.redirect).takeover()
+    }
+    if (h.request.path === '/auth/sign-in') {
+      return h.redirect('/home').takeover()
+    }
+  }
+  return h.continue
+}
+
 export async function createServer() {
   const { log, LogCodes } = await import('~/src/server/common/helpers/logging/log.js')
 
@@ -282,21 +300,7 @@ export async function createServer() {
 
   // Create a server extension to handle session creation when defra-id is disabled
   server.ext('onPreAuth', async (request, h) => {
-    if (!config.get('defraId.enabled')) {
-      if (h.request.path === '/auth/sign-out') {
-        return h.redirect('/home').takeover()
-      }
-
-      await mockSessionData(request, log, LogCodes)
-
-      if (h.request.path === '/auth/sign-in' && h.request.query.redirect) {
-        return h.redirect(h.request.query.redirect).takeover()
-      }
-      if (h.request.path === '/auth/sign-in') {
-        return h.redirect('/home').takeover()
-      }
-    }
-    return h.continue
+    return handleMockDefraAuth(request, h, log, LogCodes)
   })
 
   server.app.cache = server.cache({
