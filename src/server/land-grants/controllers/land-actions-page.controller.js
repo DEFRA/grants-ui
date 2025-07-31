@@ -4,6 +4,7 @@ import {
   parseLandParcel,
   triggerApiActionsValidation
 } from '~/src/server/land-grants/services/land-grants.service.js'
+import unitRatesForActions from './__mocks__/unitRatesForActions.js'
 
 const NOT_AVAILABLE = 'Not available'
 
@@ -33,7 +34,8 @@ export default class LandActionsPageController extends QuestionPageController {
         actionsObj[code] = {
           description: actionInfo.description,
           value: payload[key],
-          unit: actionInfo ? actionInfo.availableArea?.unit : ''
+          unit: actionInfo ? actionInfo.availableArea?.unit : '',
+          annualPaymentPence: unitRatesForActions[code]
         }
       }
     }

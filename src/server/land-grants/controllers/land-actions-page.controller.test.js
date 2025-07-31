@@ -114,12 +114,14 @@ describe('LandActionsPageController', () => {
           CMOR1: {
             description: 'CMOR1: Assess moorland and produce a written record',
             value: 10,
-            unit: 'ha'
+            unit: 'ha',
+            annualPaymentPence: 100
           },
           UPL1: {
             description: 'UPL1: Moderate livestock grazing on moorland',
             value: 5,
-            unit: 'ha'
+            unit: 'ha',
+            annualPaymentPence: 200
           }
         },
         selectedActionsQuantities: {
@@ -163,7 +165,8 @@ describe('LandActionsPageController', () => {
           CMOR1: {
             description: 'CMOR1: Assess moorland and produce a written record',
             value: 10,
-            unit: 'ha'
+            unit: 'ha',
+            annualPaymentPence: 100
           }
         },
         selectedActionsQuantities: { 'qty-CMOR1': 10 }
@@ -184,7 +187,8 @@ describe('LandActionsPageController', () => {
           CMOR1: {
             description: 'CMOR1: Assess moorland and produce a written record',
             value: 10,
-            unit: 'ha'
+            unit: 'ha',
+            annualPaymentPence: 100
           }
         },
         selectedActionsQuantities: { 'qty-CMOR1': 10 }
@@ -212,7 +216,8 @@ describe('LandActionsPageController', () => {
           CMOR1: {
             description: 'CMOR1: Assess moorland and produce a written record',
             value: 10,
-            unit: undefined
+            unit: undefined,
+            annualPaymentPence: 100
           }
         },
         selectedActionsQuantities: { 'qty-CMOR1': 10 }
@@ -420,7 +425,8 @@ describe('LandActionsPageController', () => {
                 CMOR1: {
                   description: 'CMOR1: Assess moorland and produce a written record',
                   unit: 'ha',
-                  value: 10
+                  value: 10,
+                  annualPaymentPence: 100
                 }
               }
             }
@@ -581,7 +587,8 @@ describe('LandActionsPageController', () => {
             UPL1: {
               description: 'UPL1: Moderate livestock grazing on moorland',
               value: 5,
-              unit: 'ha'
+              unit: 'ha',
+              annualPaymentPence: 200
             }
           }
         })
@@ -619,7 +626,8 @@ describe('LandActionsPageController', () => {
           CMOR1: {
             description: 'CMOR1: Assess moorland and produce a written record',
             value: 10,
-            unit: 'ha'
+            unit: 'ha',
+            annualPaymentPence: 100
           }
         }
       })
@@ -664,7 +672,8 @@ describe('LandActionsPageController', () => {
           CMOR1: {
             description: 'CMOR1: Assess moorland and produce a written record',
             value: 10,
-            unit: 'ha'
+            unit: 'ha',
+            annualPaymentPence: 100
           }
         }
       })
@@ -768,12 +777,14 @@ describe('LandActionsPageController', () => {
                 CMOR1: {
                   description: 'CMOR1: Assess moorland and produce a written record',
                   value: 10,
-                  unit: 'ha'
+                  unit: 'ha',
+                  annualPaymentPence: 100
                 },
                 UPL1: {
                   description: 'UPL1: Moderate livestock grazing on moorland',
                   value: 5,
-                  unit: 'ha'
+                  unit: 'ha',
+                  annualPaymentPence: 200
                 }
               }
             }
