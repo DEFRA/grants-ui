@@ -73,9 +73,9 @@ describe('Agreements Controller', () => {
     // Default config setup
     config.get.mockImplementation((key) => {
       switch (key) {
-        case 'agreements.agreementsApiUrl':
+        case 'agreements.apiUrl':
           return 'http://localhost:3003'
-        case 'agreements.agreementsApiToken':
+        case 'agreements.apiToken':
           return 'test-token'
         case 'agreements.jwtToken':
           return 'test-jwt-secret'
@@ -89,8 +89,8 @@ describe('Agreements Controller', () => {
     test('should validate configuration successfully with valid values', async () => {
       await getAgreementController.handler(mockRequest, mockH)
 
-      expect(config.get).toHaveBeenCalledWith('agreements.agreementsApiUrl')
-      expect(config.get).toHaveBeenCalledWith('agreements.agreementsApiToken')
+      expect(config.get).toHaveBeenCalledWith('agreements.apiUrl')
+      expect(config.get).toHaveBeenCalledWith('agreements.apiToken')
       expect(config.get).toHaveBeenCalledWith('agreements.jwtToken')
       expect(mockH.proxy).toHaveBeenCalledWith({
         mapUri: expect.any(Function),
@@ -102,9 +102,9 @@ describe('Agreements Controller', () => {
     test('should return 503 when agreements API URL is missing', async () => {
       config.get.mockImplementation((key) => {
         switch (key) {
-          case 'agreements.agreementsApiUrl':
+          case 'agreements.apiUrl':
             return undefined
-          case 'agreements.agreementsApiToken':
+          case 'agreements.apiToken':
             return 'test-token'
           case 'agreements.jwtToken':
             return 'test-jwt-secret'
@@ -125,9 +125,9 @@ describe('Agreements Controller', () => {
     test('should return 503 when agreements API token is missing', async () => {
       config.get.mockImplementation((key) => {
         switch (key) {
-          case 'agreements.agreementsApiUrl':
+          case 'agreements.apiUrl':
             return 'http://localhost:3003'
-          case 'agreements.agreementsApiToken':
+          case 'agreements.apiToken':
             return undefined
           default:
             return undefined
@@ -146,9 +146,9 @@ describe('Agreements Controller', () => {
     test('should handle baseUrl with trailing slashes', async () => {
       config.get.mockImplementation((key) => {
         switch (key) {
-          case 'agreements.agreementsApiUrl':
+          case 'agreements.apiUrl':
             return 'http://localhost:3003///'
-          case 'agreements.agreementsApiToken':
+          case 'agreements.apiToken':
             return 'test-token'
           case 'agreements.jwtToken':
             return 'test-jwt-secret'
@@ -204,9 +204,9 @@ describe('Agreements Controller', () => {
     test('should build target URI correctly with base URL having trailing slash', async () => {
       config.get.mockImplementation((key) => {
         switch (key) {
-          case 'agreements.agreementsApiUrl':
+          case 'agreements.apiUrl':
             return 'http://localhost:3003/'
-          case 'agreements.agreementsApiToken':
+          case 'agreements.apiToken':
             return 'test-token'
           case 'agreements.jwtToken':
             return 'test-jwt-secret'

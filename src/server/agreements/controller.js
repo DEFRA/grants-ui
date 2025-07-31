@@ -10,8 +10,8 @@ import { LogCodes } from '~/.server/server/common/helpers/logging/log-codes.js'
  * @throws {Error} If required config is missing
  */
 function validateConfig() {
-  const baseUrl = config.get('agreements.agreementsApiUrl')
-  const token = config.get('agreements.agreementsApiToken')
+  const baseUrl = config.get('agreements.apiUrl')
+  const token = config.get('agreements.apiToken')
 
   if (!baseUrl || !token) {
     throw new Error('Missing required configuration: agreements API settings')
