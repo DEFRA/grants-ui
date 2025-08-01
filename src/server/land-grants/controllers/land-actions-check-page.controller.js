@@ -1,4 +1,5 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
+import { formatCurrency } from '~/.server/config/nunjucks/filters/filters.js'
 
 export default class LandActionsCheckPageController extends QuestionPageController {
   viewName = 'land-actions-check'
@@ -88,6 +89,9 @@ export default class LandActionsCheckPageController extends QuestionPageControll
         },
         {
           text: `${actionData.value} ${actionData.unit}`
+        },
+        {
+          text: formatCurrency(actionData.annualPaymentPence, 'en-GB', 'GBP', 2, 'currency')
         }
       ])
     })

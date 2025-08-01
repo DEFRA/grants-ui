@@ -409,7 +409,8 @@ describe('LandActionsCheckPageController', () => {
                 action1: {
                   description: 'Test Action',
                   value: 10,
-                  unit: 'hectares'
+                  unit: 'hectares',
+                  annualPaymentPence: 1000
                 }
               }
             },
@@ -418,12 +419,14 @@ describe('LandActionsCheckPageController', () => {
                 action1: {
                   description: 'Test Action 1',
                   value: 10,
-                  unit: 'hectares'
+                  unit: 'hectares',
+                  annualPaymentPence: 1000
                 },
                 action2: {
                   description: 'Test Action 2',
                   value: 15,
-                  unit: 'hectares'
+                  unit: 'hectares',
+                  annualPaymentPence: 2000
                 }
               }
             }
@@ -432,9 +435,9 @@ describe('LandActionsCheckPageController', () => {
         const controller = new LandActionsCheckPageController()
         const rows = controller.getSelectedActionRows(state)
         expect(rows).toEqual([
-          [{ text: 'sheet1-parcel1' }, { text: 'Test Action' }, { text: '10 hectares' }],
-          [{ text: 'sheet2-parcel1' }, { text: 'Test Action 1' }, { text: '10 hectares' }],
-          [{ text: 'sheet2-parcel1' }, { text: 'Test Action 2' }, { text: '15 hectares' }]
+          [{ text: 'sheet1-parcel1' }, { text: 'Test Action' }, { text: '10 hectares' }, { text: '£1,000.00' }],
+          [{ text: 'sheet2-parcel1' }, { text: 'Test Action 1' }, { text: '10 hectares' }, { text: '£1,000.00' }],
+          [{ text: 'sheet2-parcel1' }, { text: 'Test Action 2' }, { text: '15 hectares' }, { text: '£2,000.00' }]
         ])
       })
 
