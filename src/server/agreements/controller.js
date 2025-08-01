@@ -44,9 +44,9 @@ function buildTargetUri(baseUrl, path) {
 function buildProxyHeaders(token, request) {
   const sbi = sbiStore.get('sbi')
   const source = 'defra'
-  const jwtSecret = config.get('agreements.jwtToken')
+  const jwtSecret = config.get('agreements.jwtSecret')
   try {
-    const encryptedAuth = Jwt.token.generate({ sbi, source }, jwtSecret)
+    const encryptedAuth = Jwt.token.generate({ sbi: sbi.toString(), source }, jwtSecret)
     return {
       Authorization: `Bearer ${token}`,
       'defra-grants-proxy': 'true',

@@ -7,7 +7,7 @@ import 'dotenv/config'
  * @typedef {object} AgreementsConfig
  * @property {string} apiToken
  * @property {string} apiUrl
- * @property {string} jwtToken
+ * @property {string} jwtSecret
  */
 
 const agreements = convict({
@@ -22,11 +22,11 @@ const agreements = convict({
     default: 'http://localhost:3555',
     env: 'AGREEMENTS_API_URL'
   },
-  jwtToken: {
-    doc: 'JWT token',
+  jwtSecret: {
+    doc: 'JWT Secret',
     format: String,
-    default: 'default-agreements-jwt-token',
-    env: 'AGREEMENTS_JWT_TOKEN'
+    default: 'default-agreements-jwt-secret',
+    env: 'AGREEMENTS_JWT_SECRET'
   }
 })
 

@@ -77,7 +77,7 @@ describe('Agreements Controller', () => {
           return 'http://localhost:3003'
         case 'agreements.apiToken':
           return 'test-token'
-        case 'agreements.jwtToken':
+        case 'agreements.jwtSecret':
           return 'test-jwt-secret'
         default:
           return undefined
@@ -91,7 +91,7 @@ describe('Agreements Controller', () => {
 
       expect(config.get).toHaveBeenCalledWith('agreements.apiUrl')
       expect(config.get).toHaveBeenCalledWith('agreements.apiToken')
-      expect(config.get).toHaveBeenCalledWith('agreements.jwtToken')
+      expect(config.get).toHaveBeenCalledWith('agreements.jwtSecret')
       expect(mockH.proxy).toHaveBeenCalledWith({
         mapUri: expect.any(Function),
         passThrough: true,
@@ -106,7 +106,7 @@ describe('Agreements Controller', () => {
             return undefined
           case 'agreements.apiToken':
             return 'test-token'
-          case 'agreements.jwtToken':
+          case 'agreements.jwtSecret':
             return 'test-jwt-secret'
           default:
             return undefined
@@ -150,7 +150,7 @@ describe('Agreements Controller', () => {
             return 'http://localhost:3003///'
           case 'agreements.apiToken':
             return 'test-token'
-          case 'agreements.jwtToken':
+          case 'agreements.jwtSecret':
             return 'test-jwt-secret'
           default:
             return undefined
@@ -208,7 +208,7 @@ describe('Agreements Controller', () => {
             return 'http://localhost:3003/'
           case 'agreements.apiToken':
             return 'test-token'
-          case 'agreements.jwtToken':
+          case 'agreements.jwtSecret':
             return 'test-jwt-secret'
           default:
             return undefined
