@@ -34,7 +34,7 @@ export default class LandActionsPageController extends QuestionPageController {
         actionsObj[code] = {
           description: actionInfo.description,
           value: payload[key],
-          unit: actionInfo ? actionInfo.availableArea?.unit : '',
+          unit: actionInfo?.availableArea?.unit ?? '',
           annualPaymentPence: unitRatesForActions[code]
         }
       }

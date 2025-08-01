@@ -200,7 +200,7 @@ describe('LandActionsPageController', () => {
         {
           code: 'CMOR1',
           description: 'CMOR1: Assess moorland and produce a written record',
-          availableArea: null
+          availableArea: ''
         }
       ]
 
@@ -216,7 +216,7 @@ describe('LandActionsPageController', () => {
           CMOR1: {
             description: 'CMOR1: Assess moorland and produce a written record',
             value: 10,
-            unit: undefined,
+            unit: '',
             annualPaymentPence: 100
           }
         },
