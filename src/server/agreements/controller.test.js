@@ -1,5 +1,8 @@
 import { getAgreementController } from './controller.js'
 import { config } from '~/src/config/config.js'
+import Jwt from '@hapi/jwt'
+import { log } from '~/.server/server/common/helpers/logging/log.js'
+import { LogCodes } from '~/.server/server/common/helpers/logging/log-codes.js'
 
 jest.mock('~/src/config/config.js', () => ({
   config: {
@@ -14,6 +17,30 @@ jest.mock('~/src/server/common/helpers/logging/logger.js', () => ({
   }))
 }))
 
+jest.mock('~/src/server/sbi/state.js', () => ({
+  sbiStore: {
+    get: jest.fn(() => 'test-sbi-value')
+  }
+}))
+
+jest.mock('@hapi/jwt', () => ({
+  token: {
+    generate: jest.fn(() => 'mocked-jwt-token')
+  }
+}))
+
+jest.mock('~/.server/server/common/helpers/logging/log.js', () => ({
+  log: jest.fn()
+}))
+
+jest.mock('~/.server/server/common/helpers/logging/log-codes.js', () => ({
+  LogCodes: {
+    AGREEMENTS: {
+      AGREEMENT_ERROR: 'AGREEMENTS_AGREEMENT_ERROR'
+    }
+  }
+}))
+
 describe('Agreements Controller', () => {
   let mockRequest
   let mockH
@@ -21,6 +48,9 @@ describe('Agreements Controller', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+
+    // Reset JWT mock to default behavior
+    Jwt.token.generate.mockReturnValue('mocked-jwt-token')
 
     mockProxy = jest.fn()
     mockH = {
@@ -43,10 +73,12 @@ describe('Agreements Controller', () => {
     // Default config setup
     config.get.mockImplementation((key) => {
       switch (key) {
-        case 'agreements.agreementsApiUrl':
+        case 'agreements.apiUrl':
           return 'http://localhost:3003'
-        case 'agreements.agreementsApiToken':
+        case 'agreements.apiToken':
           return 'test-token'
+        case 'agreements.jwtSecret':
+          return 'test-jwt-secret'
         default:
           return undefined
       }
@@ -57,8 +89,9 @@ describe('Agreements Controller', () => {
     test('should validate configuration successfully with valid values', async () => {
       await getAgreementController.handler(mockRequest, mockH)
 
-      expect(config.get).toHaveBeenCalledWith('agreements.agreementsApiUrl')
-      expect(config.get).toHaveBeenCalledWith('agreements.agreementsApiToken')
+      expect(config.get).toHaveBeenCalledWith('agreements.apiUrl')
+      expect(config.get).toHaveBeenCalledWith('agreements.apiToken')
+      expect(config.get).toHaveBeenCalledWith('agreements.jwtSecret')
       expect(mockH.proxy).toHaveBeenCalledWith({
         mapUri: expect.any(Function),
         passThrough: true,
@@ -69,10 +102,12 @@ describe('Agreements Controller', () => {
     test('should return 503 when agreements API URL is missing', async () => {
       config.get.mockImplementation((key) => {
         switch (key) {
-          case 'agreements.agreementsApiUrl':
+          case 'agreements.apiUrl':
             return undefined
-          case 'agreements.agreementsApiToken':
+          case 'agreements.apiToken':
             return 'test-token'
+          case 'agreements.jwtSecret':
+            return 'test-jwt-secret'
           default:
             return undefined
         }
@@ -90,9 +125,9 @@ describe('Agreements Controller', () => {
     test('should return 503 when agreements API token is missing', async () => {
       config.get.mockImplementation((key) => {
         switch (key) {
-          case 'agreements.agreementsApiUrl':
+          case 'agreements.apiUrl':
             return 'http://localhost:3003'
-          case 'agreements.agreementsApiToken':
+          case 'agreements.apiToken':
             return undefined
           default:
             return undefined
@@ -111,10 +146,12 @@ describe('Agreements Controller', () => {
     test('should handle baseUrl with trailing slashes', async () => {
       config.get.mockImplementation((key) => {
         switch (key) {
-          case 'agreements.agreementsApiUrl':
+          case 'agreements.apiUrl':
             return 'http://localhost:3003///'
-          case 'agreements.agreementsApiToken':
+          case 'agreements.apiToken':
             return 'test-token'
+          case 'agreements.jwtSecret':
+            return 'test-jwt-secret'
           default:
             return undefined
         }
@@ -167,10 +204,12 @@ describe('Agreements Controller', () => {
     test('should build target URI correctly with base URL having trailing slash', async () => {
       config.get.mockImplementation((key) => {
         switch (key) {
-          case 'agreements.agreementsApiUrl':
+          case 'agreements.apiUrl':
             return 'http://localhost:3003/'
-          case 'agreements.agreementsApiToken':
+          case 'agreements.apiToken':
             return 'test-token'
+          case 'agreements.jwtSecret':
+            return 'test-jwt-secret'
           default:
             return undefined
         }
@@ -196,8 +235,10 @@ describe('Agreements Controller', () => {
       expect(mapUriResult.headers).toEqual({
         Authorization: 'Bearer test-token',
         'content-type': 'application/x-www-form-urlencoded',
-        'defra-grants-proxy': 'true'
+        'defra-grants-proxy': 'true',
+        'x-encrypted-auth': 'mocked-jwt-token'
       })
+      expect(Jwt.token.generate).toHaveBeenCalledWith({ sbi: 'test-sbi-value', source: 'defra' }, 'test-jwt-secret')
     })
 
     test('should build proxy headers for POST request with default content-type', async () => {
@@ -211,7 +252,8 @@ describe('Agreements Controller', () => {
       expect(mapUriResult.headers).toEqual({
         Authorization: 'Bearer test-token',
         'defra-grants-proxy': 'true',
-        'content-type': 'application/x-www-form-urlencoded'
+        'content-type': 'application/x-www-form-urlencoded',
+        'x-encrypted-auth': 'mocked-jwt-token'
       })
     })
 
@@ -230,7 +272,8 @@ describe('Agreements Controller', () => {
       expect(mapUriResult.headers).toEqual({
         Authorization: 'Bearer test-token',
         'defra-grants-proxy': 'true',
-        'content-type': 'application/json'
+        'content-type': 'application/json',
+        'x-encrypted-auth': 'mocked-jwt-token'
       })
     })
 
@@ -245,7 +288,8 @@ describe('Agreements Controller', () => {
       expect(mapUriResult.headers).toEqual({
         Authorization: 'Bearer test-token',
         'defra-grants-proxy': 'true',
-        'content-type': 'application/x-www-form-urlencoded'
+        'content-type': 'application/x-www-form-urlencoded',
+        'x-encrypted-auth': 'mocked-jwt-token'
       })
     })
 
@@ -260,7 +304,8 @@ describe('Agreements Controller', () => {
       expect(mapUriResult.headers).toEqual({
         Authorization: 'Bearer test-token',
         'defra-grants-proxy': 'true',
-        'content-type': 'application/x-www-form-urlencoded'
+        'content-type': 'application/x-www-form-urlencoded',
+        'x-encrypted-auth': 'mocked-jwt-token'
       })
     })
 
@@ -278,7 +323,31 @@ describe('Agreements Controller', () => {
       expect(mapUriResult.headers).toEqual({
         Authorization: 'Bearer test-token',
         'defra-grants-proxy': 'true',
-        'content-type': 'application/json'
+        'content-type': 'application/json',
+        'x-encrypted-auth': 'mocked-jwt-token'
+      })
+    })
+
+    test('should handle JWT generation error and log failure', async () => {
+      const jwtError = new Error('JWT secret invalid')
+      jwtError.stack = 'Error: JWT secret invalid\n    at Object.generate'
+      Jwt.token.generate.mockImplementationOnce(() => {
+        throw jwtError
+      })
+
+      mockRequest.userId = 'test-user-123'
+
+      await getAgreementController.handler(mockRequest, mockH)
+
+      expect(log).toHaveBeenCalledWith(LogCodes.AGREEMENTS.AGREEMENT_ERROR, {
+        userId: 'test-user-123',
+        error: 'JWT generate failed: JWT secret invalid'
+      })
+
+      expect(mockH.response).toHaveBeenCalledWith({
+        error: 'External Service Unavailable',
+        message: 'Unable to process request',
+        details: 'Failed to generate JWT token: JWT secret invalid'
       })
     })
   })
@@ -326,7 +395,8 @@ describe('Agreements Controller', () => {
       expect(mapUriResult.headers).toEqual({
         Authorization: 'Bearer test-token',
         'defra-grants-proxy': 'true',
-        'content-type': 'application/x-www-form-urlencoded'
+        'content-type': 'application/x-www-form-urlencoded',
+        'x-encrypted-auth': 'mocked-jwt-token'
       })
     })
 
