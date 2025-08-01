@@ -144,31 +144,6 @@ function setupAuthRoutes(server) {
       },
       handler: handleOrganisationRedirect
     })
-  } else {
-    // When defra-id is disabled, add a catch-all route for '/auth/*' that redirects to '/home' to avoid 500 errors
-    server.route({
-      method: '*',
-      path: '/auth/{path*}',
-      options: { auth: false },
-      handler: function (request, h) {
-        log(LogCodes.AUTH.AUTH_DEBUG, {
-          path: request.path,
-          isAuthenticated: 'redirecting',
-          strategy: 'disabled',
-          mode: 'redirect_to_home',
-          hasCredentials: false,
-          hasToken: false,
-          hasProfile: false,
-          userAgent: request.headers?.[USER_AGENT] || UNKNOWN_USER,
-          referer: request.headers?.referer || 'none',
-          queryParams: request.query || {},
-          authError: 'none',
-          redirectTarget: '/home',
-          message: 'Redirecting to home because defra-id is disabled'
-        })
-        return h.redirect('/home')
-      }
-    })
   }
 }
 
