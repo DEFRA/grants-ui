@@ -459,6 +459,64 @@ describe('LandActionsPageController', () => {
         )
       })
 
+      // Test that triggerApiActionsValidation is called with correct arguments
+      test('should call triggerApiActionsValidation with correct parameters', async () => {
+        const controller = new LandActionsPageController()
+        const sheetId = 'sheet1'
+        const parcelId = 'parcel1'
+        const readyForValidationsActionsObj = { CMOR1: { value: 10 } }
+
+        triggerApiActionsValidation.mockResolvedValue({ valid: true, errorMessages: [] })
+
+        await controller.validatePayload(
+          { selectedActions: ['CMOR1'], 'qty-CMOR1': 10 },
+          readyForValidationsActionsObj,
+          sheetId,
+          parcelId
+        )
+
+        expect(triggerApiActionsValidation).toHaveBeenCalledWith({
+          sheetId,
+          parcelId,
+          actionsObj: readyForValidationsActionsObj
+        })
+      })
+
+      // Test that valid response returns no errors
+      test('should not add errors if API validation is valid', async () => {
+        const controller = new LandActionsPageController()
+        triggerApiActionsValidation.mockResolvedValue({ valid: true, errorMessages: [] })
+
+        const result = await controller.validatePayload(
+          { selectedActions: ['CMOR1'], 'qty-CMOR1': 10 },
+          { CMOR1: { value: 10 } },
+          'sheet1',
+          'parcel1'
+        )
+
+        expect(result.errors).toEqual({})
+        expect(result.errorSummary).toEqual([])
+      })
+
+      // Test that invalid response adds errors from errorMessages
+      test('should add errors from API errorMessages if not valid', async () => {
+        const controller = new LandActionsPageController()
+        const errorMessages = [{ code: 'CMOR1', description: 'Invalid quantity for CMOR1' }]
+        triggerApiActionsValidation.mockResolvedValue({ valid: false, errorMessages })
+
+        const result = await controller.validatePayload(
+          { selectedActions: ['CMOR1'], 'qty-CMOR1': 10 },
+          { CMOR1: { value: 10 } },
+          'sheet1',
+          'parcel1'
+        )
+
+        expect(result.errors).toEqual({
+          CMOR1: { text: 'Invalid quantity for CMOR1' }
+        })
+        expect(result.errorSummary).toEqual([{ text: 'Invalid quantity for CMOR1', href: '#qty-CMOR1' }])
+      })
+
       test('should handle no actions selected', async () => {
         mockRequest.payload = {
           selectedActions: [],
