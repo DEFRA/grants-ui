@@ -4,7 +4,14 @@ import {
   parseLandParcel,
   triggerApiActionsValidation
 } from '~/src/server/land-grants/services/land-grants.service.js'
-import unitRatesForActions from './__mocks__/unitRatesForActions.js'
+
+const unitRatesForActions = {
+  CMOR1: 100,
+  UPL1: 200,
+  UPL2: 300,
+  UPL3: 400,
+  UPL4: 500
+}
 
 const NOT_AVAILABLE = 'Not available'
 
