@@ -21,7 +21,7 @@ export const getCacheKey = (request) => {
     outputLog(request, 'Missing auth credentials')
     throw new Error('1Missing auth credentials')
   }
-  const { id: userId, relationships } = credentials
+  const { crn: userId, relationships } = credentials
 
   if (!userId) {
     outputLog(request, 'Missing user ID in credentials')
