@@ -104,7 +104,7 @@ export async function calculateGrantPayment({ landParcels }) {
  */
 export async function fetchAvailableActionsForParcel({ parcelId = '', sheetId = '' }) {
   const parcelIds = [stringifyParcel({ sheetId, parcelId })]
-  const fields = ['actions', 'actions.availableArea', 'size']
+  const fields = ['actions', 'size']
   const data = await postToLandGrantsApi('/parcels', { parcelIds, fields })
 
   return data.parcels?.find((p) => p.parcelId === parcelId && p.sheetId === sheetId)
