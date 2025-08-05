@@ -194,7 +194,7 @@ const mockSessionData = async (request, log, LogCodes) => {
       name: 'Anonymous User',
       role: 'user',
       scope: ['user'],
-      id: 'anonymous-user',
+      crn: 'anonymous-user',
       relationships: ['business:default-business']
     }
 
