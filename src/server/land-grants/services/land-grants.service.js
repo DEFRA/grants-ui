@@ -57,9 +57,9 @@ export const landActionsToApiPayload = ({ sheetId, parcelId, actionsObj }) => {
     sbi,
     actions: actionsObj
       ? Object.entries(actionsObj).map(([code, area]) => ({
-        code,
-        quantity: Number(area.value)
-      }))
+          code,
+          quantity: Number(area.value)
+        }))
       : []
   }
 }
