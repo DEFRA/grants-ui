@@ -12,10 +12,7 @@ export async function persistStateToApi(state, request) {
   const { userId, businessId, grantId } = getCacheKey(request)
   const url = new URL('/state/', GRANTS_UI_BACKEND_ENDPOINT)
 
-  request.logger.info(
-    ['session-persister'],
-    `Persisting state to backend for identity: ${userId}:${businessId}:${grantId}`
-  )
+  request.logger.info(`Persisting state to backend for identity: ${userId}:${businessId}:${grantId}`)
 
   try {
     const response = await fetch(url.href, {
@@ -27,6 +24,7 @@ export async function persistStateToApi(state, request) {
         userId,
         businessId,
         grantId,
+        grantVersion: 'v1', // TODO: Update when support for same grant versioning is implemented
         state
       })
     })
@@ -35,7 +33,12 @@ export async function persistStateToApi(state, request) {
       throw new Error(`Failed to persist state: ${response.status}`)
     }
   } catch (err) {
-    request.logger.error(['session-persister'], 'Failed to persist state to API', err)
-    throw err
+    request.logger.error({
+      message: `Failed to persist state to API`,
+      err
+    })
+
+    // TODO: See TGC-781
+    // throw err
   }
 }

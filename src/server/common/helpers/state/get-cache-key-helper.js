@@ -19,26 +19,26 @@ export const getCacheKey = (request) => {
 
   if (!credentials) {
     outputLog(request, 'Missing auth credentials')
-    throw new Error('1Missing auth credentials')
+    throw new Error('Missing auth credentials')
   }
   const { crn: userId, relationships } = credentials
 
   if (!userId) {
     outputLog(request, 'Missing user ID in credentials')
-    throw new Error('2Missing user ID in credentials')
+    throw new Error('Missing user ID in credentials')
   }
 
   // Support single-business users for now
   const businessId = (Array.isArray(relationships) && relationships[0]?.split(':')[1]) || null
   if (!businessId) {
     outputLog(request, 'Missing or malformed business relationship in credentials')
-    throw new Error(`3Missing or malformed business relationship in credentials: ${JSON.stringify(relationships)}`)
+    throw new Error(`Missing or malformed business relationship in credentials: ${JSON.stringify(relationships)}`)
   }
 
   const grantId = request.params?.slug
   if (!grantId) {
     outputLog(request, 'Missing grantId')
-    throw new Error('4Missing grantId')
+    throw new Error('Missing grantId')
   }
   return { userId, businessId, grantId }
 }

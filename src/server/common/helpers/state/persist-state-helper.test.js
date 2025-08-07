@@ -1,12 +1,25 @@
 import { jest } from '@jest/globals'
-
 import { mockRequestWithIdentity } from './mock-request-with-identity.test-helper.js'
+
+const mockGetCacheKey = jest.fn()
+
+jest.mock('~/src/server/common/helpers/state/get-cache-key-helper.js', () => ({
+  getCacheKey: mockGetCacheKey
+}))
 
 global.fetch = jest.fn()
 
 let persistStateToApi
 
 describe('persistStateToApi', () => {
+  beforeEach(() => {
+    mockGetCacheKey.mockReturnValue({
+      userId: 'user_test',
+      businessId: 'biz_test',
+      grantId: 'test-slug'
+    })
+  })
+
   describe('With backend configured correctly', () => {
     beforeEach(async () => {
       process.env.GRANTS_UI_BACKEND_URL = 'http://localhost:3002'
@@ -35,16 +48,16 @@ describe('persistStateToApi', () => {
           userId: 'user_test',
           businessId: 'biz_test',
           grantId: 'test-slug',
+          grantVersion: 'v1', // TODO: Update when support for same grant versioning is implemented
           state: testState
         })
       })
       expect(request.logger.info).toHaveBeenCalledWith(
-        ['session-persister'],
         'Persisting state to backend for identity: user_test:biz_test:test-slug'
       )
     })
 
-    it('throws error when response is not ok', async () => {
+    it('logs error when response is not ok', async () => {
       fetch.mockResolvedValue({
         ok: false,
         status: 500
@@ -53,84 +66,40 @@ describe('persistStateToApi', () => {
       const request = mockRequestWithIdentity({ params: { slug: 'test-slug' } })
       const testState = { foo: 'bar' }
 
-      await expect(persistStateToApi(testState, request)).rejects.toThrow('Failed to persist state: 500')
+      await persistStateToApi(testState, request)
 
-      expect(request.logger.error).toHaveBeenCalledWith(
-        ['session-persister'],
-        'Failed to persist state to API',
-        expect.any(Error)
-      )
+      expect(request.logger.error).toHaveBeenCalledWith({
+        message: 'Failed to persist state to API',
+        err: expect.any(Error)
+      })
     })
 
-    it('throws error and logs when fetch fails', async () => {
+    it('logs error when fetch fails', async () => {
       const networkError = new Error('Network error')
       fetch.mockRejectedValue(networkError)
 
       const request = mockRequestWithIdentity({ params: { slug: 'test-slug' } })
       const testState = { foo: 'bar' }
 
-      await expect(persistStateToApi(testState, request)).rejects.toThrow('Network error')
+      await persistStateToApi(testState, request)
 
-      expect(request.logger.error).toHaveBeenCalledWith(
-        ['session-persister'],
-        'Failed to persist state to API',
-        networkError
-      )
+      expect(request.logger.error).toHaveBeenCalledWith({
+        message: 'Failed to persist state to API',
+        err: networkError
+      })
     })
 
-    it('throws error when getCacheKey fails due to missing credentials', async () => {
+    it('throws error when getCacheKey fails', async () => {
+      mockGetCacheKey.mockImplementationOnce(() => {
+        throw new Error('Network error')
+      })
       const request = mockRequestWithIdentity({
         auth: { credentials: null },
         params: { slug: 'test-slug' }
       })
       const testState = { foo: 'bar' }
 
-      await expect(persistStateToApi(testState, request)).rejects.toThrow('Missing auth credentials')
-
-      expect(fetch).not.toHaveBeenCalled()
-    })
-
-    it('throws error when getCacheKey fails due to missing user ID', async () => {
-      const request = mockRequestWithIdentity({
-        auth: {
-          credentials: {
-            id: null,
-            relationships: ['rel_test:biz_test:other_test']
-          }
-        },
-        params: { slug: 'test-slug' }
-      })
-      const testState = { foo: 'bar' }
-
-      await expect(persistStateToApi(testState, request)).rejects.toThrow('Missing user ID in credentials')
-
-      expect(fetch).not.toHaveBeenCalled()
-    })
-
-    it('throws error when getCacheKey fails due to missing business relationship', async () => {
-      const request = mockRequestWithIdentity({
-        auth: {
-          credentials: {
-            id: 'user_test',
-            relationships: []
-          }
-        },
-        params: { slug: 'test-slug' }
-      })
-      const testState = { foo: 'bar' }
-
-      await expect(persistStateToApi(testState, request)).rejects.toThrow(
-        'Missing or malformed business relationship in credentials'
-      )
-
-      expect(fetch).not.toHaveBeenCalled()
-    })
-
-    it('throws error when getCacheKey fails due to missing grantId', async () => {
-      const request = mockRequestWithIdentity({ params: {} })
-      const testState = { foo: 'bar' }
-
-      await expect(persistStateToApi(testState, request)).rejects.toThrow('Missing grantId')
+      await expect(persistStateToApi(testState, request)).rejects.toThrow('Network error')
 
       expect(fetch).not.toHaveBeenCalled()
     })
@@ -144,10 +113,11 @@ describe('persistStateToApi', () => {
       const request = mockRequestWithIdentity({ params: { slug: 'test-slug' } })
       const testState = { foo: 'bar' }
 
-      await persistStateToApi(testState, request)
+      const result = await persistStateToApi(testState, request)
 
       expect(fetch).not.toHaveBeenCalled()
       expect(request.logger.info).not.toHaveBeenCalled()
+      expect(result).toBeUndefined()
     })
 
     it('throws error when endpoint is whitespace only', async () => {

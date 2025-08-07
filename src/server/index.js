@@ -125,7 +125,7 @@ const registerFormsPlugin = async (server, prefix = '') => {
         sessionHydrator: async (request) => {
           return fetchSavedStateFromApi(request)
         },
-        sessionPersister: async (request, state) => {
+        sessionPersister: async (state, request) => {
           return persistStateToApi(state, request)
         }
       },
