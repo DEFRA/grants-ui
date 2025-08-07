@@ -77,6 +77,8 @@ describe('Agreements Controller', () => {
           return 'http://localhost:3003'
         case 'agreements.apiToken':
           return 'test-token'
+        case 'agreements.baseUrl':
+          return '/agreement'
         case 'agreements.jwtSecret':
           return 'test-jwt-secret'
         default:
@@ -235,7 +237,7 @@ describe('Agreements Controller', () => {
       expect(mapUriResult.headers).toEqual({
         Authorization: 'Bearer test-token',
         'content-type': 'application/x-www-form-urlencoded',
-        'defra-grants-proxy': 'true',
+        'x-base-url': '/agreement',
         'x-encrypted-auth': 'mocked-jwt-token'
       })
       expect(Jwt.token.generate).toHaveBeenCalledWith({ sbi: 'test-sbi-value', source: 'defra' }, 'test-jwt-secret')
@@ -251,7 +253,7 @@ describe('Agreements Controller', () => {
 
       expect(mapUriResult.headers).toEqual({
         Authorization: 'Bearer test-token',
-        'defra-grants-proxy': 'true',
+        'x-base-url': '/agreement',
         'content-type': 'application/x-www-form-urlencoded',
         'x-encrypted-auth': 'mocked-jwt-token'
       })
@@ -271,7 +273,7 @@ describe('Agreements Controller', () => {
 
       expect(mapUriResult.headers).toEqual({
         Authorization: 'Bearer test-token',
-        'defra-grants-proxy': 'true',
+        'x-base-url': '/agreement',
         'content-type': 'application/json',
         'x-encrypted-auth': 'mocked-jwt-token'
       })
@@ -287,7 +289,7 @@ describe('Agreements Controller', () => {
 
       expect(mapUriResult.headers).toEqual({
         Authorization: 'Bearer test-token',
-        'defra-grants-proxy': 'true',
+        'x-base-url': '/agreement',
         'content-type': 'application/x-www-form-urlencoded',
         'x-encrypted-auth': 'mocked-jwt-token'
       })
@@ -303,7 +305,7 @@ describe('Agreements Controller', () => {
 
       expect(mapUriResult.headers).toEqual({
         Authorization: 'Bearer test-token',
-        'defra-grants-proxy': 'true',
+        'x-base-url': '/agreement',
         'content-type': 'application/x-www-form-urlencoded',
         'x-encrypted-auth': 'mocked-jwt-token'
       })
@@ -322,7 +324,7 @@ describe('Agreements Controller', () => {
 
       expect(mapUriResult.headers).toEqual({
         Authorization: 'Bearer test-token',
-        'defra-grants-proxy': 'true',
+        'x-base-url': '/agreement',
         'content-type': 'application/json',
         'x-encrypted-auth': 'mocked-jwt-token'
       })
@@ -394,7 +396,7 @@ describe('Agreements Controller', () => {
       expect(mapUriResult.uri).toBe('http://localhost:3003/test/endpoint')
       expect(mapUriResult.headers).toEqual({
         Authorization: 'Bearer test-token',
-        'defra-grants-proxy': 'true',
+        'x-base-url': '/agreement',
         'content-type': 'application/x-www-form-urlencoded',
         'x-encrypted-auth': 'mocked-jwt-token'
       })

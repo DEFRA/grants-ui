@@ -1,4 +1,5 @@
 import { getAgreementController } from '~/src/server/agreements/controller.js'
+import { config } from '~/src/config/config.js'
 
 /**
  * Sets up the routes used in the /agreements page.
@@ -11,7 +12,7 @@ export const agreements = {
       server.route([
         {
           method: 'GET',
-          path: '/agreement/{path*}',
+          path: `${String(config.get('agreements.baseUrl'))}/{path*}`,
           options: {
             auth: false
           },
@@ -19,7 +20,7 @@ export const agreements = {
         },
         {
           method: 'POST',
-          path: '/agreement/{path*}',
+          path: `${String(config.get('agreements.baseUrl'))}/{path*}`,
           options: {
             auth: false,
             plugins: {
