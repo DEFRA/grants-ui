@@ -11,7 +11,8 @@ import * as globals from './globals.js'
 const dirname = path.dirname(fileURLToPath(import.meta.url))
 export const grantsUiPaths = [
   path.resolve(dirname, '../../server/common/templates'),
-  path.resolve(dirname, '../../server/common/components')
+  path.resolve(dirname, '../../server/common/components'),
+  path.resolve(dirname, '../../server/land-grants/components')
 ]
 const nunjucksEnvironment = nunjucks.configure(['node_modules/govuk-frontend/dist/', ...grantsUiPaths], {
   autoescape: true,
