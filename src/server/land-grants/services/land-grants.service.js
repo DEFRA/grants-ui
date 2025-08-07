@@ -66,28 +66,14 @@ export const landActionsToApiPayload = ({ sheetId, parcelId, actionsObj }) => {
 
 /**
  * Calculates grant payment for land actions.
- * @param {{ sheetId: string, parcelId: string, actionsObj: object }} payload
+ * @param {{ sheetId: string, parcelId: string, actionsObj: object }} landParcels
  * @returns {Promise<object>} - Payment calculation result
  * @throws {Error}
  */
-export async function calculateGrantPayment({ landParcels }) {
-  const landActions = []
-  for (const [parcel, { actionsObj }] of Object.entries(landParcels)) {
-    const [sheetId, parcelId] = parseLandParcel(parcel)
-    landActions.push(
-      landActionsToApiPayload({
-        sheetId,
-        parcelId,
-        actionsObj
-      })
-    )
-  }
+export async function calculateGrantPayment(landParcels) {
+  const data = await postToLandGrantsApi('/payments/calculate', landParcels)
 
-  const data = await postToLandGrantsApi('/payments/calculate', {
-    landActions
-  })
-
-  const paymentTotal = formatCurrency(data.payment?.total)
+  const paymentTotal = formatCurrency(data.payment?.annualTotalPence / 100)
 
   return {
     ...data,

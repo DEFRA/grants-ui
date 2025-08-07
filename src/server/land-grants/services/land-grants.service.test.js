@@ -228,8 +228,8 @@ describe('land-grants service', () => {
   describe('calculateGrantPayment', () => {
     it('should calculate payment and format amount', async () => {
       const mockApiResponse = {
-        payment: { total: 1234.56 },
-        breakdown: { CMOR1: 1000, action2: 234.56 }
+        payment: { annualTotalPence: 123456 },
+        breakdown: { CMOR1: 1000, action2: 23456 }
       }
       fetch.mockResolvedValueOnce({
         ok: true,
@@ -238,32 +238,27 @@ describe('land-grants service', () => {
       formatCurrency.mockReturnValue('£1,234.56')
 
       const result = await calculateGrantPayment({
-        landParcels: {
-          'SHEET123-PARCEL456': {
-            actionsObj: { CMOR1: { value: 10 } }
-          }
-        }
+        sheetId: 'SHEET123',
+        parcelId: 'PARCEL456',
+        sbi: 106284736,
+        actions: [{ code: 'CMOR1', quantity: 10 }]
       })
 
       expect(fetch).toHaveBeenCalledWith(
         `${mockApiEndpoint}/payments/calculate`,
         expect.objectContaining({
           body: JSON.stringify({
-            landActions: [
-              {
-                sheetId: 'SHEET123',
-                parcelId: 'PARCEL456',
-                sbi: 106284736,
-                actions: [{ code: 'CMOR1', quantity: 10 }]
-              }
-            ]
+            sheetId: 'SHEET123',
+            parcelId: 'PARCEL456',
+            sbi: 106284736,
+            actions: [{ code: 'CMOR1', quantity: 10 }]
           })
         })
       )
       expect(formatCurrency).toHaveBeenCalledWith(1234.56)
       expect(result).toEqual({
-        payment: { total: 1234.56 },
-        breakdown: { CMOR1: 1000, action2: 234.56 },
+        payment: { annualTotalPence: 123456 },
+        breakdown: { CMOR1: 1000, action2: 23456 },
         paymentTotal: '£1,234.56',
         errorMessage: undefined
       })

@@ -2,7 +2,8 @@ import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/Q
 import {
   fetchAvailableActionsForParcel,
   parseLandParcel,
-  triggerApiActionsValidation
+  triggerApiActionsValidation,
+  calculateGrantPayment
 } from '~/src/server/land-grants/services/land-grants.service.js'
 import LandActionsPageController from './land-actions-page.controller.js'
 
@@ -411,6 +412,22 @@ describe('LandActionsPageController', () => {
 
   describe('POST route handler', () => {
     test('should update state with form values and proceed', async () => {
+      // Mock the calculateGrantPayment function
+      calculateGrantPayment.mockResolvedValue({
+        payment: {
+          annualTotalPence: 100, // Example value: £500.00 in pence
+          parcelItems: [
+            {
+              sheetId: 'sheet1',
+              parcelId: 'parcel1',
+              code: 'CMOR1',
+              annualPaymentPence: 100 // £200.00 in pence
+            }
+          ]
+        },
+        paymentTotal: '£1.00'
+      })
+
       const handler = controller.makePostRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
 
@@ -442,6 +459,28 @@ describe('LandActionsPageController', () => {
     describe('validations', () => {
       test('should handle empty payload gracefully', async () => {
         mockRequest.payload = null
+
+        // Mock the calculateGrantPayment function
+        calculateGrantPayment.mockResolvedValue({
+          payment: {
+            annualTotalPence: 50000, // Example value: £500.00 in pence
+            parcelItems: [
+              {
+                sheetId: 'sheet1',
+                parcelId: 'parcel1',
+                code: 'CMOR1',
+                annualPaymentPence: 20000 // £200.00 in pence
+              },
+              {
+                sheetId: 'sheet1',
+                parcelId: 'parcel1',
+                code: 'UPL1',
+                annualPaymentPence: 30000 // £300.00 in pence
+              }
+            ]
+          },
+          paymentTotal: '£500.00'
+        })
 
         const handler = controller.makePostRouteHandler()
         await handler(mockRequest, mockContext, mockH)
@@ -522,6 +561,28 @@ describe('LandActionsPageController', () => {
           selectedActions: [],
           action: 'validate'
         }
+
+        // Mock the calculateGrantPayment function
+        calculateGrantPayment.mockResolvedValue({
+          payment: {
+            annualTotalPence: 50000, // Example value: £500.00 in pence
+            parcelItems: [
+              {
+                sheetId: 'sheet1',
+                parcelId: 'parcel1',
+                code: 'CMOR1',
+                annualPaymentPence: 20000 // £200.00 in pence
+              },
+              {
+                sheetId: 'sheet1',
+                parcelId: 'parcel1',
+                code: 'UPL1',
+                annualPaymentPence: 30000 // £300.00 in pence
+              }
+            ]
+          },
+          paymentTotal: '£500.00'
+        })
 
         const handler = controller.makePostRouteHandler()
         await handler(mockRequest, mockContext, mockH)
@@ -635,6 +696,28 @@ describe('LandActionsPageController', () => {
           errorMessages
         })
 
+        // Mock the calculateGrantPayment function
+        calculateGrantPayment.mockResolvedValue({
+          payment: {
+            annualTotalPence: 50000, // Example value: £500.00 in pence
+            parcelItems: [
+              {
+                sheetId: 'sheet1',
+                parcelId: 'parcel1',
+                code: 'CMOR1',
+                annualPaymentPence: 20000 // £200.00 in pence
+              },
+              {
+                sheetId: 'sheet1',
+                parcelId: 'parcel1',
+                code: 'UPL1',
+                annualPaymentPence: 30000 // £300.00 in pence
+              }
+            ]
+          },
+          paymentTotal: '£500.00'
+        })
+
         const handler = controller.makePostRouteHandler()
         await handler(mockRequest, mockContext, mockH)
 
@@ -646,7 +729,7 @@ describe('LandActionsPageController', () => {
               description: 'UPL1: Moderate livestock grazing on moorland',
               value: 5,
               unit: 'ha',
-              annualPaymentPence: 200
+              annualPaymentPence: 30000
             }
           }
         })
@@ -674,6 +757,28 @@ describe('LandActionsPageController', () => {
         errorMessages: []
       })
 
+      // Mock the calculateGrantPayment function
+      calculateGrantPayment.mockResolvedValue({
+        payment: {
+          annualTotalPence: 50000, // Example value: £500.00 in pence
+          parcelItems: [
+            {
+              sheetId: 'sheet1',
+              parcelId: 'parcel1',
+              code: 'CMOR1',
+              annualPaymentPence: 20000 // £200.00 in pence
+            },
+            {
+              sheetId: 'sheet1',
+              parcelId: 'parcel1',
+              code: 'UPL1',
+              annualPaymentPence: 30000 // £300.00 in pence
+            }
+          ]
+        },
+        paymentTotal: '£500.00'
+      })
+
       const handler = controller.makePostRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
@@ -685,7 +790,7 @@ describe('LandActionsPageController', () => {
             description: 'CMOR1: Assess moorland and produce a written record',
             value: 10,
             unit: 'ha',
-            annualPaymentPence: 100
+            annualPaymentPence: 20000
           }
         }
       })
@@ -731,7 +836,7 @@ describe('LandActionsPageController', () => {
             description: 'CMOR1: Assess moorland and produce a written record',
             value: 10,
             unit: 'ha',
-            annualPaymentPence: 100
+            annualPaymentPence: 20000
           }
         }
       })
@@ -757,6 +862,22 @@ describe('LandActionsPageController', () => {
       triggerApiActionsValidation.mockResolvedValue({
         valid: true,
         errorMessages: []
+      })
+
+      // Mock the calculateGrantPayment function
+      calculateGrantPayment.mockResolvedValue({
+        payment: {
+          annualTotalPence: 50000,
+          parcelItems: [
+            {
+              sheetId: 'sheet1',
+              parcelId: 'parcel1',
+              code: 'CMOR1',
+              annualPaymentPence: 20000
+            }
+          ]
+        },
+        paymentTotal: '£500.00'
       })
 
       const handler = controller.makePostRouteHandler()
@@ -814,6 +935,28 @@ describe('LandActionsPageController', () => {
       triggerApiActionsValidation.mockResolvedValue({
         valid: false,
         errorMessages
+      })
+
+      // Mock the calculateGrantPayment function
+      calculateGrantPayment.mockResolvedValue({
+        payment: {
+          annualTotalPence: 300, // Example value: £500.00 in pence
+          parcelItems: [
+            {
+              sheetId: 'sheet1',
+              parcelId: 'parcel1',
+              code: 'CMOR1',
+              annualPaymentPence: 100 // £200.00 in pence
+            },
+            {
+              sheetId: 'sheet1',
+              parcelId: 'parcel1',
+              code: 'UPL1',
+              annualPaymentPence: 200 // £300.00 in pence
+            }
+          ]
+        },
+        paymentTotal: '£3.00'
       })
 
       const handler = controller.makePostRouteHandler()

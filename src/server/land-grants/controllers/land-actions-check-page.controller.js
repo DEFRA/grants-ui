@@ -91,7 +91,7 @@ export default class LandActionsCheckPageController extends QuestionPageControll
           text: `${actionData.value} ${actionData.unit}`
         },
         {
-          text: formatCurrency(actionData.annualPaymentPence, 'en-GB', 'GBP', 2, 'currency')
+          text: formatCurrency(actionData.annualPaymentPence / 100, 'en-GB', 'GBP', 2, 'currency')
         }
       ])
     })
