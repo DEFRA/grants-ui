@@ -3,6 +3,7 @@
 {% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
 {% from "govuk/components/summary-list/macro.njk" import govukSummaryList %}
 {% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "support-details/macro.njk" import defraSupportDetails %}
 
 {% block content %}
   <div class="govuk-grid-row">
@@ -26,9 +27,12 @@
         {{ govukButton({
             text: "Continue",
             preventDoubleClick: true
-          }) 
+          })
         }}
       </form>
+
+<!--      Add support details component -->
+      {{ defraSupportDetails() }}
     </div>
   </div>
 
