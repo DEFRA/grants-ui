@@ -44,6 +44,7 @@ import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/Su
 import { getCacheKey } from './common/helpers/state/get-cache-key-helper.js'
 import { fetchSavedStateFromApi } from './common/helpers/state/fetch-saved-state-helper.js'
 import { formsAuthCallback } from '~/src/server/auth/forms-engine-plugin-auth-helpers.js'
+import { persistStateToApi } from './common/helpers/state/persist-state-helper.js'
 
 const SESSION_CACHE_NAME = 'session.cache.name'
 
@@ -123,6 +124,9 @@ const registerFormsPlugin = async (server, prefix = '') => {
         },
         sessionHydrator: async (request) => {
           return fetchSavedStateFromApi(request)
+        },
+        sessionPersister: async (state, request) => {
+          return persistStateToApi(state, request)
         }
       },
       onRequest: formsAuthCallback,
