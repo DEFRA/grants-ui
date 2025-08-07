@@ -23,7 +23,8 @@ describe('persistStateToApi', () => {
   describe('With backend configured correctly', () => {
     beforeEach(async () => {
       process.env.GRANTS_UI_BACKEND_URL = 'http://localhost:3002'
-      ;({ persistStateToApi } = await import('~/src/server/common/helpers/state/persist-state-helper.js'))
+      const helper = await import('~/src/server/common/helpers/state/persist-state-helper.js')
+      persistStateToApi = helper.persistStateToApi
       jest.clearAllMocks()
     })
 
@@ -108,7 +109,7 @@ describe('persistStateToApi', () => {
   describe('Without backend configured', () => {
     it('returns early when endpoint is not defined', async () => {
       process.env.GRANTS_UI_BACKEND_URL = ''
-      ;({ persistStateToApi } = await import('~/src/server/common/helpers/state/persist-state-helper.js'))
+      const { persistStateToApi } = await import('~/src/server/common/helpers/state/persist-state-helper.js')
 
       const request = mockRequestWithIdentity({ params: { slug: 'test-slug' } })
       const testState = { foo: 'bar' }
@@ -122,7 +123,7 @@ describe('persistStateToApi', () => {
 
     it('throws error when endpoint is whitespace only', async () => {
       process.env.GRANTS_UI_BACKEND_URL = '   '
-      ;({ persistStateToApi } = await import('~/src/server/common/helpers/state/persist-state-helper.js'))
+      const { persistStateToApi } = await import('~/src/server/common/helpers/state/persist-state-helper.js')
 
       const request = mockRequestWithIdentity({ params: { slug: 'test-slug' } })
       const testState = { foo: 'bar' }
