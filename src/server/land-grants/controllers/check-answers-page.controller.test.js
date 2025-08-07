@@ -1,5 +1,5 @@
 import { sbiStore } from '../../sbi/state.js'
-import { calculateGrantPayment } from '../services/land-grants.service.js'
+// import { calculateGrantPayment } from '../services/land-grants.service.js'
 import CheckAnswersPageController from './check-answers-page.controller.js'
 
 jest.mock('../../sbi/state.js', () => ({
@@ -7,9 +7,9 @@ jest.mock('../../sbi/state.js', () => ({
     get: jest.fn()
   }
 }))
-jest.mock('../services/land-grants.service.js', () => ({
-  calculateGrantPayment: jest.fn()
-}))
+// jest.mock('../services/land-grants.service.js', () => ({
+//   calculateGrantPayment: jest.fn()
+// }))
 
 describe('CheckAnswersPageController', () => {
   let controller
@@ -59,7 +59,8 @@ describe('CheckAnswersPageController', () => {
 
     mockContext = {
       state: {
-        landParcels: createMockLandParcels()
+        landParcels: createMockLandParcels(),
+        draftApplicationAnnualTotalPence: 150000
       }
     }
 
@@ -68,9 +69,6 @@ describe('CheckAnswersPageController', () => {
     }
 
     sbiStore.get.mockReturnValue('123456789')
-    calculateGrantPayment.mockResolvedValue({
-      paymentTotal: '£1,500.00'
-    })
 
     controller = new CheckAnswersPageController(mockModel, mockPageDef)
     controller.getNextPath = jest.fn().mockReturnValue('/next-path')
@@ -264,49 +262,10 @@ describe('CheckAnswersPageController', () => {
     })
   })
 
-  describe('calculatePaymentData', () => {
-    it('should calculate payment data', async () => {
-      const landParcels = createMockLandParcels()
-      const paymentData = await controller.calculatePaymentData(landParcels)
-
-      expect(paymentData).toEqual({
-        paymentTotal: '£1,500.00'
-      })
-
-      expect(calculateGrantPayment).toHaveBeenCalledWith({ landParcels })
-    })
-
-    it('should handle null payment response', async () => {
-      calculateGrantPayment.mockResolvedValue(null)
-
-      const landParcels = createMockLandParcels()
-      const paymentData = await controller.calculatePaymentData(landParcels)
-
-      expect(paymentData).toEqual({
-        paymentTotal: undefined
-      })
-    })
-
-    it('should fail if calculateGrantPayment errors', async () => {
-      const error = new Error('Payment calculation failed')
-      calculateGrantPayment.mockRejectedValue(error)
-
-      const landParcels = createMockLandParcels()
-
-      await expect(controller.calculatePaymentData(landParcels)).rejects.toThrow('Payment calculation failed')
-    })
-  })
-
   describe('getViewRows', () => {
-    beforeEach(() => {
-      calculateGrantPayment.mockResolvedValue({
-        paymentTotal: '£1,500.00'
-      })
-    })
-
-    it('should create all required rows in correct order', async () => {
+    it('should create all required rows in correct order', () => {
       const summaryList = { rows: ['base-row'] }
-      const rows = await controller.getViewRows(summaryList, mockContext)
+      const rows = controller.getViewRows(summaryList, mockContext)
 
       expect(rows).toHaveLength(8) // SBI + payment + base + total actions + parcel based + 3 parcel actions
 
@@ -381,38 +340,20 @@ describe('CheckAnswersPageController', () => {
       )
     })
 
-    it('should handle empty summaryList rows', async () => {
+    it('should handle empty summaryList rows', () => {
       const summaryList = {}
-      const rows = await controller.getViewRows(summaryList, mockContext)
+      const rows = controller.getViewRows(summaryList, mockContext)
 
       expect(rows).toHaveLength(7) // SBI + payment + total actions + parcel based + 3 parcel actions (no base rows)
     })
 
-    it('should calculate grant payment', async () => {
-      const summaryList = { rows: [] }
-      await controller.getViewRows(summaryList, mockContext)
-
-      expect(calculateGrantPayment).toHaveBeenCalledWith({
-        landParcels: mockContext.state.landParcels
-      })
-    })
-
-    it('should handle context validation failure', async () => {
+    it('should handle context validation failure', () => {
       const invalidContext = { state: {} }
       const summaryList = { rows: [] }
 
-      await expect(controller.getViewRows(summaryList, invalidContext)).rejects.toThrow(
+      expect(() => controller.getViewRows(summaryList, invalidContext)).toThrow(
         'Land parcels data is missing from context'
       )
-    })
-
-    it('should handle calculateGrantPayment failure', async () => {
-      const error = new Error('Payment service unavailable')
-      calculateGrantPayment.mockRejectedValue(error)
-
-      const summaryList = { rows: [] }
-
-      await expect(controller.getViewRows(summaryList, mockContext)).rejects.toThrow('Payment service unavailable')
     })
   })
 
@@ -488,10 +429,10 @@ describe('CheckAnswersPageController', () => {
       expect(result.otherProperty).toBe('original')
     })
 
-    it('should handle getViewRows failure', async () => {
+    it('should handle getViewRows failure', () => {
       mockContext.state = undefined
 
-      await expect(controller.getSummaryViewModel(mockRequest, mockContext)).rejects.toThrow(
+      expect(() => controller.getSummaryViewModel(mockRequest, mockContext)).toThrow(
         'Land parcels data is missing from context'
       )
     })

@@ -1,6 +1,6 @@
 import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
 import { sbiStore } from '../../sbi/state.js'
-import { calculateGrantPayment } from '../services/land-grants.service.js'
+import { formatCurrency } from '~/src/config/nunjucks/filters/format-currency.js'
 
 const SELECT_LAND_PARCEL_ACTIONS = {
   items: [
@@ -17,11 +17,11 @@ const createSbiRow = (sbi) => ({
   value: { text: sbi }
 })
 
-const createPaymentRow = (paymentTotal) => ({
+const createPaymentRow = (draftApplicationAnnualTotalPence) => ({
   key: {
     text: 'Indicative annual payment (excluding management payment)'
   },
-  value: { text: paymentTotal }
+  value: { text: formatCurrency(draftApplicationAnnualTotalPence / 100) }
 })
 
 const createTotalActionsRow = (totalActions) => ({
@@ -110,34 +110,21 @@ export default class CheckAnswersPageController extends SummaryPageController {
   }
 
   /**
-   * Calculates payment information for the land parcels
-   * @param {object} landParcels - The land parcels data
-   * @returns {Promise<object>} Payment calculation results
-   */
-  async calculatePaymentData(landParcels) {
-    const applicationPayment = await calculateGrantPayment({ landParcels })
-    return {
-      paymentTotal: applicationPayment?.paymentTotal
-    }
-  }
-
-  /**
    * Gets the rows for the summary list view.
    * @param {PageSummary} summaryList - The summary list definition
    * @param {FormContext} context - The form context containing state
    * @returns {Promise<Array>} - The rows for the summary list
    */
-  async getViewRows(summaryList, context) {
+  getViewRows(summaryList, context) {
     this.validateContext(context)
 
-    const { landParcels } = context.state
+    const { draftApplicationAnnualTotalPence, landParcels } = context.state
     const baseRows = summaryList.rows || []
 
     const sbi = sbiStore.get('sbi') // TODO: Get sbi from defraID
-    const { paymentTotal } = await calculateGrantPayment({ landParcels })
     const totalActions = this.calculateTotalActions(landParcels)
     const businessRow = createSbiRow(sbi)
-    const paymentRow = createPaymentRow(paymentTotal)
+    const paymentRow = createPaymentRow(draftApplicationAnnualTotalPence)
     const totalActionsRow = createTotalActionsRow(totalActions)
     const parcelBasedRow = createParcelBasedActionsRow()
     const parcelActionRows = this.createParcelActionRows(landParcels)
@@ -151,7 +138,7 @@ export default class CheckAnswersPageController extends SummaryPageController {
    * @param {FormContext} context - The form context
    * @returns {Promise<object>} - The summary view model
    */
-  async getSummaryViewModel(request, context) {
+  getSummaryViewModel(request, context) {
     const viewModel = super.getSummaryViewModel(request, context)
     const { checkAnswers = [] } = viewModel
 
@@ -160,7 +147,7 @@ export default class CheckAnswersPageController extends SummaryPageController {
     }
 
     const summaryList = checkAnswers[0].summaryList
-    const rows = await this.getViewRows(summaryList, context)
+    const rows = this.getViewRows(summaryList, context)
 
     return {
       ...viewModel,

@@ -435,9 +435,9 @@ describe('LandActionsCheckPageController', () => {
         const controller = new LandActionsCheckPageController()
         const rows = controller.getSelectedActionRows(state)
         expect(rows).toEqual([
-          [{ text: 'sheet1-parcel1' }, { text: 'Test Action' }, { text: '10 hectares' }, { text: '£1,000.00' }],
-          [{ text: 'sheet2-parcel1' }, { text: 'Test Action 1' }, { text: '10 hectares' }, { text: '£1,000.00' }],
-          [{ text: 'sheet2-parcel1' }, { text: 'Test Action 2' }, { text: '15 hectares' }, { text: '£2,000.00' }]
+          [{ text: 'sheet1-parcel1' }, { text: 'Test Action' }, { text: '10 hectares' }, { text: '£10.00' }],
+          [{ text: 'sheet2-parcel1' }, { text: 'Test Action 1' }, { text: '10 hectares' }, { text: '£10.00' }],
+          [{ text: 'sheet2-parcel1' }, { text: 'Test Action 2' }, { text: '15 hectares' }, { text: '£20.00' }]
         ])
       })
 
