@@ -4,147 +4,6 @@
   },
   "interactions": [
     {
-      "description": "a complete grant application submission",
-      "providerState": "application submission service is available",
-      "request": {
-        "body": {
-          "applicantDetails": {
-            "address": {
-              "county": "Somerset",
-              "line1": "Green Valley Farm",
-              "line2": "Mill Lane",
-              "postcode": "TA1 2BB",
-              "town": "Taunton"
-            },
-            "email": "sarah.johnson@greenvalley.com",
-            "firstName": "Sarah",
-            "lastName": "Johnson",
-            "phone": "07777 123456"
-          },
-          "businessDetails": {
-            "companyNumber": "12345678",
-            "employees": 25,
-            "name": "Green Valley Farms Ltd",
-            "sbi": "123456789",
-            "turnover": 8500000
-          },
-          "declaration": true,
-          "fundingDetails": {
-            "ownContribution": 210000,
-            "requestedAmount": 140000
-          },
-          "projectDetails": {
-            "completionDate": "2024-12-31",
-            "cost": 350000,
-            "planningPermission": "approved",
-            "startDate": "2024-06-01",
-            "type": "fruit-storage"
-          },
-          "projectName": "Advanced Fruit Processing Facility",
-          "submittedAt": "2024-01-15T14:30:00Z"
-        },
-        "headers": {
-          "Authorization": "Bearer token123",
-          "Content-Type": "application/json"
-        },
-        "method": "POST",
-        "path": "/api/grants/adding-value/applications"
-      },
-      "response": {
-        "body": {
-          "applicationId": "AV240115001",
-          "estimatedDecisionDate": "2024-03-15",
-          "message": "Application submitted successfully",
-          "referenceNumber": "AV-2024-001",
-          "status": "submitted",
-          "submittedAt": "2024-01-15T14:30:00Z"
-        },
-        "headers": {
-          "Content-Type": "application/json"
-        },
-        "status": 201
-      }
-    },
-    {
-      "description": "a request for non-existent action",
-      "providerState": "grant exists but action does not",
-      "request": {
-        "body": {
-          "test": "data"
-        },
-        "headers": {
-          "Content-Type": "application/json"
-        },
-        "method": "POST",
-        "path": "/grants/adding-value/actions/non-existent-action/invoke"
-      },
-      "response": {
-        "body": {
-          "error": "Not Found",
-          "message": "Action not found",
-          "statusCode": 404
-        },
-        "headers": {
-          "Content-Type": "application/json"
-        },
-        "status": 404
-      }
-    },
-    {
-      "description": "a request for non-existent application",
-      "providerState": "application AV-2024-999 does not exist",
-      "request": {
-        "headers": {
-          "Authorization": "Bearer token123"
-        },
-        "method": "GET",
-        "path": "/api/grants/applications/AV-2024-999"
-      },
-      "response": {
-        "body": {
-          "error": "Application not found",
-          "message": "Application with reference AV-2024-999 does not exist"
-        },
-        "headers": {
-          "Content-Type": "application/json"
-        },
-        "status": 404
-      }
-    },
-    {
-      "description": "a request to check grant eligibility",
-      "providerState": "adding value grant scheme is available",
-      "request": {
-        "body": {
-          "businessType": "grower-producer",
-          "country": "england",
-          "hasPlanning": false,
-          "legalStatus": "limited-company",
-          "projectCost": 250000
-        },
-        "headers": {
-          "Authorization": "Bearer token123",
-          "Content-Type": "application/json"
-        },
-        "method": "POST",
-        "path": "/api/grants/adding-value/eligibility"
-      },
-      "response": {
-        "body": {
-          "eligible": true,
-          "fundingPercentage": 40,
-          "maxFunding": 100000,
-          "warnings": [
-            "Planning permission required before full application"
-          ]
-        },
-        "headers": {
-          "Content-Type": "application/json"
-        },
-        "status": 200
-      }
-    },
-    {
       "description": "a request to get all grants",
       "providerState": "grants are available in the system",
       "request": {
@@ -154,13 +13,6 @@
       "response": {
         "body": [
           {
-            "actions": [
-              {
-                "method": "POST",
-                "name": "score",
-                "url": "https://ffc-grants-scoring.dev.cdp-int.defra.cloud/scoring/api/v1/adding-value/score"
-              }
-            ],
             "code": "frps-private-beta",
             "metadata": {
               "description": "Farming Resilience Private Beta",
@@ -168,48 +20,6 @@
             }
           }
         ],
-        "headers": {
-          "Content-Type": "application/json"
-        },
-        "status": 200
-      }
-    },
-    {
-      "description": "a request to get application status",
-      "providerState": "application AV-2024-001 exists and is under review",
-      "request": {
-        "headers": {
-          "Authorization": "Bearer token123"
-        },
-        "method": "GET",
-        "path": "/api/grants/applications/AV-2024-001"
-      },
-      "response": {
-        "body": {
-          "applicationId": "AV240115001",
-          "lastUpdated": "2024-01-20T10:15:00Z",
-          "projectName": "Advanced Fruit Processing Facility",
-          "referenceNumber": "AV-2024-001",
-          "requestedAmount": 140000,
-          "stages": [
-            {
-              "completedAt": "2024-01-15T14:30:00Z",
-              "name": "Application Received",
-              "status": "completed"
-            },
-            {
-              "completedAt": "2024-01-18T09:00:00Z",
-              "name": "Initial Review",
-              "status": "completed"
-            },
-            {
-              "name": "Technical Assessment",
-              "status": "in-progress"
-            }
-          ],
-          "status": "under-review",
-          "submittedAt": "2024-01-15T14:30:00Z"
-        },
         "headers": {
           "Content-Type": "application/json"
         },
@@ -225,13 +35,6 @@
       },
       "response": {
         "body": {
-          "actions": [
-            {
-              "method": "POST",
-              "name": "score",
-              "url": "https://ffc-grants-scoring.dev.cdp-int.defra.cloud/scoring/api/v1/adding-value/score"
-            }
-          ],
           "code": "frps-private-beta",
           "metadata": {
             "description": "Farming Resilience Private Beta",
@@ -246,80 +49,12 @@
                 "type": "number"
               }
             },
+            "required": [
+              "scheme",
+              "year"
+            ],
             "type": "object"
           }
-        },
-        "headers": {
-          "Content-Type": "application/json"
-        },
-        "status": 200
-      }
-    },
-    {
-      "description": "a request to invoke scoring action",
-      "providerState": "scoring action is configured for adding-value grant",
-      "request": {
-        "body": {
-          "data": {
-            "main": {
-              "/adding-value": "adding-value-A1",
-              "/collaboration": "collaboration-A1",
-              "/environmental-impact": [
-                "environmental-impact-A1"
-              ]
-            }
-          }
-        },
-        "headers": {
-          "Content-Type": "application/json"
-        },
-        "method": "POST",
-        "path": "/grants/adding-value/actions/score/invoke"
-      },
-      "response": {
-        "body": {
-          "answers": [
-            {
-              "questionId": "/collaboration",
-              "score": {
-                "band": "Strong",
-                "value": 7
-              }
-            }
-          ],
-          "score": 25,
-          "scoreBand": "Strong",
-          "status": "Eligible"
-        },
-        "headers": {
-          "Content-Type": "application/json"
-        },
-        "status": 200
-      }
-    },
-    {
-      "description": "a request with project cost below minimum",
-      "providerState": "adding value grant has minimum cost threshold",
-      "request": {
-        "body": {
-          "businessType": "grower-producer",
-          "country": "england",
-          "legalStatus": "limited-company",
-          "projectCost": 5000
-        },
-        "headers": {
-          "Authorization": "Bearer token123",
-          "Content-Type": "application/json"
-        },
-        "method": "POST",
-        "path": "/api/grants/adding-value/eligibility"
-      },
-      "response": {
-        "body": {
-          "eligible": false,
-          "fundingPercentage": 0,
-          "maxFunding": 0,
-          "reason": "Project cost below minimum threshold of £12,000"
         },
         "headers": {
           "Content-Type": "application/json"
@@ -349,9 +84,9 @@
             "year": 2024
           },
           "metadata": {
-            "clientRef": "TEST-REF-123456",
+            "clientRef": "test-ref-123456",
             "crn": "555666777",
-            "defraId": "DEF123456",
+            "defraId": "def123456",
             "frn": "987654321",
             "sbi": "123456789",
             "submittedAt": "2024-01-15T14:30:00Z"
@@ -373,10 +108,13 @@
       "request": {
         "body": {
           "answers": {
-            "scheme": "SFI"
+            "scheme": "SFI",
+            "year": 2024
           },
           "metadata": {
-            "clientRef": "TEST-REF-123456",
+            "clientRef": "test-ref-123456",
+            "crn": "555666777",
+            "defraId": "def123456",
             "frn": "987654321",
             "sbi": "123456789"
           }
@@ -390,7 +128,7 @@
       "response": {
         "body": {
           "error": "Not Found",
-          "message": "Grant not found",
+          "message": "Grant with code invalid-grant-code not found",
           "statusCode": 404
         },
         "headers": {
@@ -401,14 +139,17 @@
     },
     {
       "description": "an application with duplicate clientRef",
-      "providerState": "application with clientRef DUPLICATE-REF-123 already exists",
+      "providerState": "application with clientRef duplicate-ref-123 already exists",
       "request": {
         "body": {
           "answers": {
-            "scheme": "SFI"
+            "scheme": "SFI",
+            "year": 2024
           },
           "metadata": {
-            "clientRef": "DUPLICATE-REF-123",
+            "clientRef": "duplicate-ref-123",
+            "crn": "555666777",
+            "defraId": "def123456",
             "frn": "987654321",
             "sbi": "123456789"
           }
@@ -422,54 +163,13 @@
       "response": {
         "body": {
           "error": "Conflict",
-          "message": "Duplicate clientRef",
+          "message": "Application with clientRef \"duplicate-ref-123\" exists",
           "statusCode": 409
         },
         "headers": {
           "Content-Type": "application/json"
         },
         "status": 409
-      }
-    },
-    {
-      "description": "an incomplete grant application",
-      "providerState": "application validation is enforced",
-      "request": {
-        "body": {
-          "businessDetails": {
-            "name": "Test Farm Ltd"
-          },
-          "projectName": ""
-        },
-        "headers": {
-          "Authorization": "Bearer token123",
-          "Content-Type": "application/json"
-        },
-        "method": "POST",
-        "path": "/api/grants/adding-value/applications"
-      },
-      "response": {
-        "body": {
-          "details": [
-            {
-              "field": "projectName",
-              "message": "Project name is required"
-            },
-            {
-              "field": "applicantDetails",
-              "message": "Applicant details are required"
-            },
-            {
-              "field": "projectDetails.cost",
-              "message": "Project cost is required"
-            }
-          ],
-          "error": "Validation failed"
-        },
-        "headers": {
-          "Content-Type": "application/json"
-        },
-        "status": 400
       }
     }
   ],

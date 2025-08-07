@@ -11,13 +11,9 @@ const { NODE_ENV = 'development' } = process.env
 const require = createRequire(import.meta.url)
 const dirname = path.dirname(fileURLToPath(import.meta.url))
 
-const govukFrontendPath = path.dirname(
-  require.resolve('govuk-frontend/package.json')
-)
+const govukFrontendPath = path.dirname(require.resolve('govuk-frontend/package.json'))
 
-const defraFormsPath = path.dirname(
-  require.resolve('@defra/forms-engine-plugin/package.json')
-)
+const defraFormsPath = path.dirname(require.resolve('@defra/forms-engine-plugin/package.json'))
 
 const ruleTypeAssetResource = 'asset/resource'
 
@@ -41,15 +37,9 @@ export default {
     poll: 1000
   },
   output: {
-    filename:
-      NODE_ENV === 'production'
-        ? 'javascripts/[name].[contenthash:7].min.js'
-        : 'javascripts/[name].js',
+    filename: NODE_ENV === 'production' ? 'javascripts/[name].[contenthash:7].min.js' : 'javascripts/[name].js',
 
-    chunkFilename:
-      NODE_ENV === 'production'
-        ? 'javascripts/[name].[chunkhash:7].min.js'
-        : 'javascripts/[name].js',
+    chunkFilename: NODE_ENV === 'production' ? 'javascripts/[name].[chunkhash:7].min.js' : 'javascripts/[name].js',
 
     path: path.join(dirname, '.public'),
     publicPath: '/public/',
@@ -101,10 +91,7 @@ export default {
         type: ruleTypeAssetResource,
         generator: {
           binary: false,
-          filename:
-            NODE_ENV === 'production'
-              ? 'stylesheets/[name].[contenthash:7].min.css'
-              : 'stylesheets/[name].css'
+          filename: NODE_ENV === 'production' ? 'stylesheets/[name].[contenthash:7].min.css' : 'stylesheets/[name].css'
         },
         use: [
           'postcss-loader',
@@ -186,12 +173,6 @@ export default {
         {
           from: path.join(govukFrontendPath, 'dist/govuk/assets'),
           to: 'assets'
-        },
-        {
-          from: require.resolve(
-            '@defra/forms-engine-plugin/application.min.js'
-          ),
-          to: 'javascripts/dxt-application.min.js'
         },
         {
           from: path.join(defraFormsPath, '.public/assets'),

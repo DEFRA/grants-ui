@@ -1,8 +1,4 @@
-import {
-  storeSlugInContext,
-  getFormSlug,
-  getConfirmationPath
-} from './form-slug-helper.js'
+import { storeSlugInContext, getFormSlug, getConfirmationPath } from './form-slug-helper.js'
 
 describe('form-slug-helper', () => {
   describe('storeSlugInContext', () => {
@@ -21,18 +17,11 @@ describe('form-slug-helper', () => {
       }
       const mockContext = { state: {} }
 
-      const result = storeSlugInContext(
-        mockRequest,
-        mockContext,
-        controllerName
-      )
+      const result = storeSlugInContext(mockRequest, mockContext, controllerName)
 
       expect(result).toBe(mockSlug)
       expect(mockContext.state.formSlug).toBe(mockSlug)
-      expect(mockDebug).toHaveBeenCalledWith(
-        `${controllerName}: Storing slug in context:`,
-        mockSlug
-      )
+      expect(mockDebug).toHaveBeenCalledWith(`${controllerName}: Storing slug in context:`, mockSlug)
     })
 
     test('should not store slug in context when already present', () => {
@@ -44,11 +33,7 @@ describe('form-slug-helper', () => {
       }
       const mockContext = { state: { formSlug: existingSlug } }
 
-      const result = storeSlugInContext(
-        mockRequest,
-        mockContext,
-        controllerName
-      )
+      const result = storeSlugInContext(mockRequest, mockContext, controllerName)
 
       expect(result).toBeNull()
       expect(mockContext.state.formSlug).toBe(existingSlug) // Should not change
@@ -62,11 +47,7 @@ describe('form-slug-helper', () => {
       }
       const mockContext = { state: {} }
 
-      const result = storeSlugInContext(
-        mockRequest,
-        mockContext,
-        controllerName
-      )
+      const result = storeSlugInContext(mockRequest, mockContext, controllerName)
 
       expect(result).toBeNull()
       expect(mockContext.state.formSlug).toBeUndefined()
@@ -90,11 +71,7 @@ describe('form-slug-helper', () => {
       }
       const mockContext = {}
 
-      const result = storeSlugInContext(
-        mockRequest,
-        mockContext,
-        controllerName
-      )
+      const result = storeSlugInContext(mockRequest, mockContext, controllerName)
 
       expect(result).toBeNull()
       expect(mockDebug).not.toHaveBeenCalled()
@@ -120,10 +97,7 @@ describe('form-slug-helper', () => {
       const result = getFormSlug(mockRequest, mockContext, controllerName)
 
       expect(result).toBe(mockSlug)
-      expect(mockDebug).toHaveBeenCalledWith(
-        `${controllerName}: Using slug:`,
-        mockSlug
-      )
+      expect(mockDebug).toHaveBeenCalledWith(`${controllerName}: Using slug:`, mockSlug)
     })
 
     test('should get slug from context.state when not in request.params', () => {
@@ -137,14 +111,8 @@ describe('form-slug-helper', () => {
       const result = getFormSlug(mockRequest, mockContext, controllerName)
 
       expect(result).toBe(mockSlug)
-      expect(mockDebug).toHaveBeenCalledWith(
-        `${controllerName}: Using slug from context.state.formSlug:`,
-        mockSlug
-      )
-      expect(mockDebug).toHaveBeenCalledWith(
-        `${controllerName}: Using slug:`,
-        mockSlug
-      )
+      expect(mockDebug).toHaveBeenCalledWith(`${controllerName}: Using slug from context.state.formSlug:`, mockSlug)
+      expect(mockDebug).toHaveBeenCalledWith(`${controllerName}: Using slug:`, mockSlug)
     })
 
     test('should prioritize request.params over context.state', () => {
@@ -159,10 +127,7 @@ describe('form-slug-helper', () => {
       const result = getFormSlug(mockRequest, mockContext, controllerName)
 
       expect(result).toBe(paramsSlug)
-      expect(mockDebug).toHaveBeenCalledWith(
-        `${controllerName}: Using slug:`,
-        paramsSlug
-      )
+      expect(mockDebug).toHaveBeenCalledWith(`${controllerName}: Using slug:`, paramsSlug)
       expect(mockDebug).not.toHaveBeenCalledWith(
         `${controllerName}: Using slug from context.state.formSlug:`,
         expect.anything()
@@ -179,9 +144,7 @@ describe('form-slug-helper', () => {
       const result = getFormSlug(mockRequest, mockContext, controllerName)
 
       expect(result).toBe('')
-      expect(mockDebug).toHaveBeenCalledWith(
-        `${controllerName}: No slug found, using default path`
-      )
+      expect(mockDebug).toHaveBeenCalledWith(`${controllerName}: No slug found, using default path`)
     })
 
     test('should handle null request or context', () => {
@@ -202,11 +165,7 @@ describe('form-slug-helper', () => {
       }
       const mockContext = { state: {} }
 
-      const result = getConfirmationPath(
-        mockRequest,
-        mockContext,
-        controllerName
-      )
+      const result = getConfirmationPath(mockRequest, mockContext, controllerName)
 
       expect(result).toBe(`/${mockSlug}/confirmation`)
     })
@@ -218,11 +177,7 @@ describe('form-slug-helper', () => {
       }
       const mockContext = { state: {} }
 
-      const result = getConfirmationPath(
-        mockRequest,
-        mockContext,
-        controllerName
-      )
+      const result = getConfirmationPath(mockRequest, mockContext, controllerName)
 
       expect(result).toBe('/confirmation')
     })

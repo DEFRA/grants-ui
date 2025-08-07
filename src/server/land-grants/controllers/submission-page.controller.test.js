@@ -2,15 +2,12 @@ import { jest } from '@jest/globals'
 import { config } from '~/src/config/config.js'
 import { submitGrantApplication } from '~/src/server/common/services/grant-application/grant-application.service.js'
 import { transformStateObjectToGasApplication } from '../../common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
+import { sbiStore } from '../../sbi/state.js'
 import { stateToLandGrantsGasAnswers } from '../mappers/state-to-gas-answers-mapper.js'
 import SubmissionPageController from './submission-page.controller.js'
 
-jest.mock(
-  '~/src/server/common/services/grant-application/grant-application.service.js'
-)
-jest.mock(
-  '~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
-)
+jest.mock('~/src/server/common/services/grant-application/grant-application.service.js')
+jest.mock('~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js')
 jest.mock('../mappers/state-to-gas-answers-mapper.js')
 jest.mock('~/src/server/common/helpers/forms-cache/forms-cache.js', () => ({
   getFormsCacheService: () => ({
@@ -37,8 +34,8 @@ describe('SubmissionPageController', () => {
   })
 
   describe('constructor', () => {
-    it('should set viewName to "submission"', () => {
-      expect(controller.viewName).toBe('submission')
+    it('should set viewName to "submit-your-application"', () => {
+      expect(controller.viewName).toBe('submit-your-application')
     })
 
     it('should set grantCode', () => {
@@ -70,7 +67,7 @@ describe('SubmissionPageController', () => {
 
       expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
         {
-          sbi: 'sbi',
+          sbi: String(sbiStore.get('sbi')),
           frn: 'frn',
           crn: 'crn',
           defraId: 'defraId',
@@ -79,10 +76,7 @@ describe('SubmissionPageController', () => {
         mockContext.state,
         stateToLandGrantsGasAnswers
       )
-      expect(submitGrantApplication).toHaveBeenCalledWith(
-        code,
-        mockApplicationData
-      )
+      expect(submitGrantApplication).toHaveBeenCalledWith(code, mockApplicationData)
       expect(result).toEqual(mockResult)
     })
   })
@@ -101,21 +95,14 @@ describe('SubmissionPageController', () => {
       }
       const mockResult = { success: true }
 
-      jest
-        .spyOn(controller, 'submitLandGrantApplication')
-        .mockResolvedValue(mockResult)
+      jest.spyOn(controller, 'submitLandGrantApplication').mockResolvedValue(mockResult)
       jest.spyOn(controller, 'getStatusPath').mockReturnValue('/mock-path')
 
       const handler = controller.makePostRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
-      expect(controller.submitLandGrantApplication).toHaveBeenCalledWith(
-        mockContext
-      )
-      expect(mockRequest.logger.info).toHaveBeenCalledWith(
-        'Form submission completed',
-        mockResult
-      )
+      expect(controller.submitLandGrantApplication).toHaveBeenCalledWith(mockContext)
+      expect(mockRequest.logger.info).toHaveBeenCalledWith('Form submission completed', mockResult)
     })
 
     it('should handle errors and rethrow them', async () => {
@@ -131,14 +118,10 @@ describe('SubmissionPageController', () => {
         redirect: jest.fn()
       }
 
-      jest
-        .spyOn(controller, 'submitLandGrantApplication')
-        .mockRejectedValue(mockError)
+      jest.spyOn(controller, 'submitLandGrantApplication').mockRejectedValue(mockError)
 
       const handler = controller.makePostRouteHandler()
-      await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow(
-        mockError
-      )
+      await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow(mockError)
       expect(mockH.redirect).not.toHaveBeenCalled()
     })
   })

@@ -9,18 +9,11 @@ function mockRequest(options) {
 
 describe('#buildNavigation', () => {
   test('Should provide expected navigation details', () => {
-    expect(
-      buildNavigation(mockRequest({ path: '/non-existent-path' }))
-    ).toEqual([
+    expect(buildNavigation(mockRequest({ path: '/non-existent-path' }))).toEqual([
       {
         isActive: false,
         text: 'Home',
         url: '/'
-      },
-      {
-        isActive: false,
-        text: 'About',
-        url: '/about'
       }
     ])
   })
@@ -31,11 +24,6 @@ describe('#buildNavigation', () => {
         isActive: true,
         text: 'Home',
         url: '/'
-      },
-      {
-        isActive: false,
-        text: 'About',
-        url: '/about'
       }
     ])
   })

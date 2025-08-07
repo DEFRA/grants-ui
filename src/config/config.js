@@ -6,10 +6,12 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import defraId from './defra-id.js'
 import landGrants from './land-grants.js'
+import agreements from './agreements.js'
 
 const dirname = path.dirname(fileURLToPath(import.meta.url))
 
-const fourHoursMs = 14400000
+const oneHourMs = 3600000
+const fourHoursMs = oneHourMs * 4
 const oneWeekMs = 604800000
 
 const isProduction = process.env.NODE_ENV === 'production'
@@ -32,16 +34,7 @@ export const config = convict({
   },
   cdpEnvironment: {
     doc: 'The CDP environment the app is currently in, with the addition of "local"',
-    format: [
-      'local',
-      'infra-dev',
-      'management',
-      'dev',
-      'test',
-      'perf-test',
-      'ext-test',
-      'prod'
-    ],
+    format: ['local', 'infra-dev', 'management', 'dev', 'test', 'perf-test', 'ext-test', 'prod'],
     default: 'local',
     env: 'ENVIRONMENT'
   },
@@ -50,6 +43,12 @@ export const config = convict({
     format: 'port',
     default: 3000,
     env: 'PORT'
+  },
+  baseUrl: {
+    doc: 'Base URL for the application',
+    format: String,
+    default: '',
+    env: 'APP_BASE_URL'
   },
   staticCacheTimeout: {
     doc: 'Static cache timeout in milliseconds',
@@ -175,9 +174,7 @@ export const config = convict({
     redact: {
       doc: 'Log paths to redact',
       format: Array,
-      default: isProduction
-        ? ['req.headers.authorization', 'req.headers.cookie', 'res.headers']
-        : []
+      default: isProduction ? ['req.headers.authorization', 'req.headers.cookie', 'res.headers'] : []
     }
   },
   httpProxy: /** @type {SchemaObj<string | null>} */ ({
@@ -199,6 +196,11 @@ export const config = convict({
     default: isProduction,
     env: 'ENABLE_METRICS'
   },
+  sessionTimeout: {
+    format: Number,
+    default: fourHoursMs,
+    env: 'SESSION_TIMEOUT'
+  },
   session: {
     cache: {
       engine: {
@@ -218,6 +220,12 @@ export const config = convict({
         format: Number,
         default: fourHoursMs,
         env: 'SESSION_CACHE_TTL'
+      },
+      apiEndpoint: {
+        doc: 'Grants UI Backend API endpoint',
+        format: String,
+        default: '',
+        env: 'GRANTS_UI_BACKEND_URL'
       }
     },
     cookie: {
@@ -302,9 +310,8 @@ export const config = convict({
     }
   },
   defraId: defraId.getProperties(),
-  landGrants: /** @type {Schema<LandGrantsConfig>} */ (
-    landGrants.getProperties()
-  )
+  landGrants: /** @type {Schema<LandGrantsConfig>} */ (landGrants.getProperties()),
+  agreements: /** @type {Schema<AgreementsConfig>} */ (agreements.getProperties())
 })
 
 config.validate({ allowed: 'strict' })

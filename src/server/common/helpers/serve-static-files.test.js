@@ -22,10 +22,15 @@ describe('#serveStaticFiles', () => {
     })
 
     afterEach(async () => {
-      await server.stop({ timeout: 0 })
+      if (server && typeof server.stop === 'function') {
+        await server.stop({ timeout: 0 })
+      }
     })
 
     test('Should serve favicon as expected', async () => {
+      expect(server).toBeDefined()
+      expect(typeof server.inject).toBe('function')
+
       const { statusCode } = await server.inject({
         method: 'GET',
         url: '/favicon.ico'

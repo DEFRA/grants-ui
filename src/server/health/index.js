@@ -1,4 +1,4 @@
-import { healthController } from '~/src/server/health/controller.js'
+import { healthController } from './health.controller.js'
 
 /**
  * @satisfies {ServerRegisterPluginObject<void>}
@@ -10,9 +10,9 @@ export const health = {
       server.route({
         method: 'GET',
         path: '/health',
-        // options: {
-        //   auth: { mode: 'optional' }
-        // },
+        options: {
+          auth: { mode: 'optional' }
+        },
         ...healthController
       })
     }

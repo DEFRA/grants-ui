@@ -12,10 +12,7 @@ export default class LandParcelPageController extends QuestionPageController {
   formatParcelForView = (parcel) => ({
     text: `${parcel.sheetId} ${parcel.parcelId}`,
     value: `${parcel.sheetId}-${parcel.parcelId}`,
-    hint:
-      parcel.area.value && parcel.area.unit
-        ? `Total size: ${parcel.area.value} ${parcel.area.unit}`
-        : undefined
+    hint: parcel.area.value && parcel.area.unit ? `Total size: ${parcel.area.value} ${parcel.area.unit}` : undefined
   })
 
   makePostRouteHandler() {
@@ -29,9 +26,9 @@ export default class LandParcelPageController extends QuestionPageController {
     const fn = async (request, context, h) => {
       const { state } = context
       const payload = request.payload ?? {}
-      const { landParcel, action } = payload
+      const { selectedLandParcel, action } = payload
 
-      if (action === 'validate' && !landParcel) {
+      if (action === 'validate' && !selectedLandParcel) {
         return h.view(this.viewName, {
           ...super.getViewModel(request, context),
           ...state,
@@ -42,7 +39,7 @@ export default class LandParcelPageController extends QuestionPageController {
 
       await this.setState(request, {
         ...state,
-        landParcel
+        selectedLandParcel
       })
       return this.proceed(request, h, this.getNextPath(context))
     }
@@ -63,7 +60,7 @@ export default class LandParcelPageController extends QuestionPageController {
      * @param {Pick} h
      */
     const fn = async (request, context, h) => {
-      const { landParcel = '' } = context.state || {}
+      const { selectedLandParcel = '' } = context.state || {}
       const sbi = sbiStore.get('sbi')
 
       const { viewName } = this
@@ -76,17 +73,13 @@ export default class LandParcelPageController extends QuestionPageController {
         const viewModel = {
           ...baseViewModel,
           parcels: this.parcels,
-          landParcel
+          selectedLandParcel
         }
 
         return h.view(viewName, viewModel)
       } catch (error) {
-        logger.error(
-          { err: error, sbi },
-          'Unexpected error when fetching parcel data'
-        )
-        const errorMessage =
-          'Unable to find parcel information, please try again later.'
+        logger.error({ err: error, sbi }, 'Unexpected error when fetching parcel data')
+        const errorMessage = 'Unable to find parcel information, please try again later.'
 
         return h.view(viewName, {
           ...baseViewModel,

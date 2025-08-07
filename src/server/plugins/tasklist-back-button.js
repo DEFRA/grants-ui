@@ -1,183 +1,239 @@
-const FIRST_PAGES = [
-  '/business-status/nature-of-business',
-  '/project-preparation/planning-permission',
-  '/facilities/smaller-abattoir',
-  '/costs/project-cost',
-  '/produce-processed/produce-processed',
-  '/project-impact/how-adding-value',
-  '/manual-labour-amount/mechanisation',
-  '/future-customers/future-customers',
-  '/collaboration/collaboration',
-  '/environmental-impact/environmental-impact',
-  '/score-results/score-results',
-  '/business-details/business-details',
-  '/who-is-applying/applying',
-  '/agent-details/agent-details',
-  '/applicant-details/applicant-details',
-  '/check-details/check-details',
-  '/declaration/declaration'
-]
+import { readdirSync, readFileSync, existsSync } from 'fs'
+import { join } from 'path'
+import { loadTasklistConfig } from '../tasklist/services/config-loader.js'
+import { allForms } from '../common/forms/services/forms-config.js'
+import { parse } from 'yaml'
 
-const CLEANUP_INTERVAL_MS = 60 * 60 * 1000
+const tasklistFirstPages = new Map()
+const tasklistIds = new Set()
 
-function isSourceTasklist(request) {
-  return request.query?.source === 'adding-value-tasklist'
-}
-
-function getSessionId(request) {
-  return request.yar?.id
-}
-
-function isFromTasklist(request) {
+function safeYarGet(request, key) {
+  if (!request.yar) {
+    return null
+  }
   try {
-    return request.yar?.get('fromTasklist') === true
+    return request.yar.get(key)
+  } catch {
+    return null
+  }
+}
+
+function safeYarSet(request, key, value) {
+  if (!request.yar) {
+    return false
+  }
+  try {
+    request.yar.set(key, value)
+    return true
   } catch {
     return false
   }
 }
 
-function isRedirectResponse(response) {
-  return (
-    response?.isBoom === false &&
-    response?.variety === 'plain' &&
-    response?.headers?.location
+function safeYarClear(request, key) {
+  if (!request.yar) {
+    return false
+  }
+  try {
+    request.yar.clear(key)
+    return true
+  } catch {
+    return false
+  }
+}
+
+async function loadAllTasklistConfigs() {
+  const configsPath = join(process.cwd(), 'src/server/common/forms/definitions/tasklists')
+
+  if (!existsSync(configsPath)) {
+    return
+  }
+
+  const files = readdirSync(configsPath).filter((f) => f.endsWith('-tasklist.yaml'))
+
+  await Promise.all(
+    files.map(async (file) => {
+      const tasklistId = file.replace('-tasklist.yaml', '')
+      const config = await loadTasklistConfig(tasklistId)
+
+      if (config?.tasklist) {
+        const firstPages = extractFirstPages(config.tasklist)
+        tasklistFirstPages.set(`${tasklistId}-tasklist`, firstPages)
+        tasklistIds.add(`${tasklistId}-tasklist`)
+      }
+    })
   )
 }
 
-function preserveSourceParameterInRedirect(response) {
+function extractFirstPageForSubsection(subsection) {
+  try {
+    const formConfig = allForms.find((f) => f.slug === subsection.href)
+
+    if (!formConfig) {
+      return null
+    }
+
+    const formContent = readFileSync(formConfig.path, 'utf8')
+    const formDef = parse(formContent)
+
+    const firstPage = formDef.pages.find((p) => !p.controller || p.controller !== 'TerminalPageController')
+
+    return firstPage ? `/${subsection.href}${firstPage.path}` : null
+  } catch {
+    return null
+  }
+}
+
+function extractFirstPages(tasklistConfig) {
+  return (tasklistConfig.sections || [])
+    .flatMap((section) => section.subsections || [])
+    .map((subsection) => extractFirstPageForSubsection(subsection))
+    .filter(Boolean)
+}
+
+function isSourceTasklist(request) {
+  const source = request.query?.source
+  return source && tasklistIds.has(source)
+}
+
+function getTasklistIdFromSource(request) {
+  return request.query?.source
+}
+
+function isFromTasklist(request) {
+  const tasklistContext = safeYarGet(request, 'tasklistContext')
+  return tasklistContext?.fromTasklist === true
+}
+
+function getTasklistIdFromSession(request) {
+  const tasklistContext = safeYarGet(request, 'tasklistContext')
+  return tasklistContext?.tasklistId || null
+}
+
+function isRedirectResponse(response) {
+  return response?.isBoom === false && response?.variety === 'plain' && response?.headers?.location
+}
+
+function preserveSourceParameterInRedirect(response, tasklistId) {
   const location = response.headers.location
   const separator = location.includes('?') ? '&' : '?'
-  response.headers.location = `${location}${separator}source=adding-value-tasklist`
+  response.headers.location = `${location}${separator}source=${tasklistId}`
 }
 
 function isViewResponse(response) {
   return response?.variety === 'view'
 }
 
-function isFirstPage(path) {
-  return FIRST_PAGES.includes(path)
+function isFirstPage(path, tasklistId) {
+  const firstPages = tasklistFirstPages.get(tasklistId)
+  return firstPages ? firstPages.includes(path) : false
 }
 
 function hasViewContext(response) {
   return response?.source?.context !== undefined
 }
 
-function addBackLinkToContext(response) {
+function addBackLinkToContext(response, tasklistId) {
   response.source.context.backLink = {
-    text: 'Back to task list',
-    href: '/adding-value-tasklist/tasklist'
+    text: 'Back to tasklist',
+    href: `/${tasklistId}/tasklist`
   }
 }
 
-function createSessionCleanupInterval(tasklistSessions) {
-  return setInterval(() => {
-    /* istanbul ignore next */ // NOSONAR - timer callback, tested indirectly
-    tasklistSessions.clear()
-  }, CLEANUP_INTERVAL_MS)
-}
-
-function handleTasklistSourceRequest(request, tasklistSessions, sessionId) {
-  request.yar.set('fromTasklist', true)
-  tasklistSessions.add(sessionId)
-
-  if (isRedirectResponse(request.response)) {
-    preserveSourceParameterInRedirect(request.response)
+function addTasklistIdToContext(response, tasklistId) {
+  if (hasViewContext(response)) {
+    response.source.context.tasklistId = tasklistId
   }
 }
 
-function shouldProcessTasklistRequest(
-  sessionId,
-  tasklistSessions,
-  fromTasklistSession
-) {
-  return sessionId && (tasklistSessions.has(sessionId) || fromTasklistSession)
+function shouldProcessTasklistRequest(fromTasklistSession) {
+  return fromTasklistSession
 }
 
-function handleFirstPageRequest(
-  request,
-  fromTasklistSession,
-  tasklistSessions,
-  sessionId
-) {
-  if (isFirstPage(request.path) && hasViewContext(request.response)) {
-    addBackLinkToContext(request.response)
-  } else if (!isFirstPage(request.path) && fromTasklistSession) {
-    request.yar.set('fromTasklist', false)
-    tasklistSessions.delete(sessionId)
-  } else {
-    // No action needed - either first page without context or non-first page without session
+function handleFirstPageRequest(request, fromTasklistSession) {
+  const tasklistId = getTasklistIdFromSession(request)
+
+  if (tasklistId) {
+    const isFirst = isFirstPage(request.path, tasklistId)
+    const hasContext = hasViewContext(request.response)
+
+    if (isFirst && hasContext) {
+      addBackLinkToContext(request.response, tasklistId)
+    } else if (!isFirst && fromTasklistSession) {
+      safeYarClear(request, 'tasklistContext')
+    } else {
+      // No action needed for other cases
+    }
   }
 }
 
-function processTasklistSourceRequest(request, tasklistSessions, sessionId, h) {
-  handleTasklistSourceRequest(request, tasklistSessions, sessionId)
-  return h.continue
-}
-
-function processExistingTasklistSession(
-  request,
-  fromTasklistSession,
-  tasklistSessions,
-  sessionId,
-  h
-) {
+function processExistingTasklistSession(request, fromTasklistSession, h) {
   if (!isViewResponse(request.response)) {
     return h.continue
   }
 
-  handleFirstPageRequest(
-    request,
-    fromTasklistSession,
-    tasklistSessions,
-    sessionId
-  )
+  const tasklistId = getTasklistIdFromSession(request)
+  if (tasklistId) {
+    addTasklistIdToContext(request.response, tasklistId)
+  }
+
+  handleFirstPageRequest(request, fromTasklistSession)
   return h.continue
 }
 
-function createOnPreResponseHandler(tasklistSessions) {
+function createOnPreHandlerHook() {
   return (request, h) => {
-    const sessionId = getSessionId(request)
+    if (isSourceTasklist(request)) {
+      const tasklistId = getTasklistIdFromSource(request)
+      safeYarSet(request, 'tasklistContext', {
+        fromTasklist: true,
+        tasklistId
+      })
+    }
 
-    if (isSourceTasklist(request) && sessionId) {
-      return processTasklistSourceRequest(
-        request,
-        tasklistSessions,
-        sessionId,
-        h
-      )
+    return h.continue
+  }
+}
+
+function createOnPreResponseHandler() {
+  return (request, h) => {
+    if (isSourceTasklist(request)) {
+      const tasklistId = getTasklistIdFromSource(request)
+
+      if (isRedirectResponse(request.response)) {
+        preserveSourceParameterInRedirect(request.response, tasklistId)
+        return h.continue
+      }
+
+      if (isViewResponse(request.response) && hasViewContext(request.response)) {
+        addTasklistIdToContext(request.response, tasklistId)
+      }
     }
 
     const fromTasklistSession = isFromTasklist(request)
 
-    if (
-      !shouldProcessTasklistRequest(
-        sessionId,
-        tasklistSessions,
-        fromTasklistSession
-      )
-    ) {
+    if (!shouldProcessTasklistRequest(fromTasklistSession)) {
       return h.continue
     }
 
-    return processExistingTasklistSession(
-      request,
-      fromTasklistSession,
-      tasklistSessions,
-      sessionId,
-      h
-    )
+    if (fromTasklistSession && isRedirectResponse(request.response)) {
+      const tasklistId = getTasklistIdFromSession(request)
+      if (tasklistId) {
+        preserveSourceParameterInRedirect(request.response, tasklistId)
+      }
+    }
+
+    return processExistingTasklistSession(request, fromTasklistSession, h)
   }
 }
 
 export const tasklistBackButton = {
   plugin: {
     name: 'tasklist-back-button',
-    register(server) {
-      const tasklistSessions = new Set()
-
-      server.ext('onPreResponse', createOnPreResponseHandler(tasklistSessions))
-
-      createSessionCleanupInterval(tasklistSessions)
+    async register(server) {
+      await loadAllTasklistConfigs()
+      server.ext('onPreHandler', createOnPreHandlerHook())
+      server.ext('onPreResponse', createOnPreResponseHandler())
     }
   }
 }

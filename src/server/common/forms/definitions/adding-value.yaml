@@ -351,8 +351,7 @@ pages:
         type: Html
         title: Html
         content:
-          '<p class="govuk-hint">Do not include VAT<br><br>Enter cost of items,
-          for example {{ 695000 | formatCurrency: ''en-GB'', ''GBP'', 0, ''decimal'' }}</p>'
+          '<p class="govuk-hint">Do not include VAT<br><br>Enter cost of items, for example 695000</p>'
       - name: estimatedCost
         type: NumberField
         title: Enter amount
@@ -767,7 +766,7 @@ pages:
   - title: Confirm and send
     path: '/declaration'
     controller: DeclarationPageController
-    view: grants/declaration.html
+    view: declaration-page.html
   - title: Confirmation
     path: '/confirmation'
     controller: ConfirmationPageController
@@ -1175,7 +1174,7 @@ conditions:
             type: Value
             value: 'true'
             display: 'Yes'
-  - name: fruitStorageCondition
+  - name: fruitStorageConditionNo
     displayName: fruitStorageConditionNo
     value:
       name: fruitStorageConditionNo
@@ -1194,10 +1193,10 @@ conditions:
     value:
       name: otherFarmersYesOrFruitStorage
       conditions:
-        - conditionName: otherFarmersConditionYes
+        - conditionName: cond_otherFarmersConditionYes
           conditionDisplayName: 'Yes'
         - coordinator: or
-          conditionName: fruitStorageCondition
+          conditionName: cond_fruitStorageConditionNo
           conditionDisplayName: 'No'
   - name: eligibleItemsNeededCondition
     displayName: eligibleItemsNeededYes

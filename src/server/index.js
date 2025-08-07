@@ -5,25 +5,19 @@ import crumb from '@hapi/crumb'
 import hapi from '@hapi/hapi'
 import inert from '@hapi/inert'
 import Scooter from '@hapi/scooter'
+import h2o2 from '@hapi/h2o2'
 
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { config } from '~/src/config/config.js'
 import { context } from '~/src/config/nunjucks/context/context.js'
-import {
-  grantsUiPaths,
-  nunjucksConfig
-} from '~/src/config/nunjucks/nunjucks.js'
-// import auth from '~/src/plugins/auth.js'
+import { grantsUiPaths, nunjucksConfig } from '~/src/config/nunjucks/nunjucks.js'
+import auth from '~/src/plugins/auth.js'
 import csp from '~/src/plugins/content-security-policy.js'
 import sso from '~/src/plugins/sso.js'
-import { tasklistBackButton } from '~/src/server/plugins/tasklist-back-button.js'
 import { formsService } from '~/src/server/common/forms/services/form.js'
 import { outputService } from '~/src/server/common/forms/services/output.js'
-import {
-  formSubmissionService,
-  loadSubmissionSchemaValidators
-} from '~/src/server/common/forms/services/submission.js'
+import { formSubmissionService, loadSubmissionSchemaValidators } from '~/src/server/common/forms/services/submission.js'
 import { catchAll } from '~/src/server/common/helpers/errors.js'
 import { requestLogger } from '~/src/server/common/helpers/logging/request-logger.js'
 import { setupProxy } from '~/src/server/common/helpers/proxy/setup-proxy.js'
@@ -32,25 +26,43 @@ import { requestTracing } from '~/src/server/common/helpers/request-tracing.js'
 import { secureContext } from '~/src/server/common/helpers/secure-context/index.js'
 import { getCacheEngine } from '~/src/server/common/helpers/session-cache/cache-engine.js'
 import { sessionCache } from '~/src/server/common/helpers/session-cache/session-cache.js'
-import ConfirmationPageController from '~/src/server/controllers/confirmation/controller.js'
-import DeclarationPageController from '~/src/server/controllers/declaration/controller.js'
-import LandActionsPageController from '~/src/server/land-grants/controllers/land-actions-page.controller.js'
+import ConfirmationPageController from '~/src/server/confirmation/confirmation.controller.js'
+import DeclarationPageController from '~/src/server/declaration/declaration.controller.js'
+import CheckAnswersPageController from '~/src/server/land-grants/controllers/check-answers-page.controller.js'
+import ConfirmFarmDetailsController from '~/src/server/land-grants/controllers/confirm-farm-details.controller.js'
 import LandActionsCheckPageController from '~/src/server/land-grants/controllers/land-actions-check-page.controller.js'
+import LandActionsPageController from '~/src/server/land-grants/controllers/land-actions-page.controller.js'
 import LandParcelPageController from '~/src/server/land-grants/controllers/land-parcel-page.controller.js'
 import SubmissionPageController from '~/src/server/land-grants/controllers/submission-page.controller.js'
-import SectionEndController from './controllers/section-end/section-end-controller.js'
+import { tasklistBackButton } from '~/src/server/plugins/tasklist-back-button.js'
 import { formatCurrency } from '../config/nunjucks/filters/format-currency.js'
+import SectionEndController from './section-end/section-end.controller.js'
 import { router } from './router.js'
+import FlyingPigsSubmissionPageController from '~/src/server/non-land-grants/pigs-might-fly/controllers/pig-types-submission.controller.js'
+import { PotentialFundingController } from '~/src/server/non-land-grants/pigs-might-fly/controllers/potential-funding.controller.js'
+import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
+import { getCacheKey } from './common/helpers/state/get-cache-key-helper.js'
+import { fetchSavedStateFromApi } from './common/helpers/state/fetch-saved-state-helper.js'
+import { formsAuthCallback } from '~/src/server/auth/forms-engine-plugin-auth-helpers.js'
 
 const SESSION_CACHE_NAME = 'session.cache.name'
 
 const getViewPaths = () => {
-  const currentFilePath = fileURLToPath(import.meta.url)
-  const isRunningBuiltCode = currentFilePath.includes('.server')
-  const basePath = isRunningBuiltCode ? '.server/server' : 'src/server'
+  const serverDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)))
   return [
-    `${basePath}/land-grants/views`,
-    `${basePath}/views`,
+    path.join(serverDir, 'views'),
+    path.join(serverDir, 'land-grants/views'),
+    path.join(serverDir, 'non-land-grants/pigs-might-fly/views'),
+    path.join(serverDir, 'about'),
+    path.join(serverDir, 'home'),
+    path.join(serverDir, 'home/views'),
+    path.join(serverDir, 'error'),
+    path.join(serverDir, 'confirmation/views'),
+    path.join(serverDir, 'declaration/views'),
+    path.join(serverDir, 'score-results/views'),
+    path.join(serverDir, 'section-end/views'),
+    path.join(serverDir, 'tasklist/views'),
+    path.join(serverDir, 'common/components'),
     ...grantsUiPaths
   ]
 }
@@ -64,10 +76,10 @@ const createHapiServer = () => {
           abortEarly: false
         }
       },
-      // auth: {
-      //   mode: 'try',
-      //   strategy: 'session'
-      // },
+      auth: {
+        mode: 'try',
+        strategy: 'session'
+      },
       files: {
         relativeTo: path.resolve(config.get('root'), '.public')
       },
@@ -88,9 +100,7 @@ const createHapiServer = () => {
     cache: [
       {
         name: config.get(SESSION_CACHE_NAME),
-        engine: getCacheEngine(
-          /** @type {Engine} */ (config.get('session.cache.engine'))
-        )
+        engine: getCacheEngine(/** @type {Engine} */ (config.get('session.cache.engine')))
       }
     ],
     state: {
@@ -99,11 +109,23 @@ const createHapiServer = () => {
   })
 }
 
-const registerFormsPlugin = async (server) => {
+const registerFormsPlugin = async (server, prefix = '') => {
   await server.register({
     plugin,
     options: {
+      ...(prefix && { routes: { prefix } }),
       cacheName: config.get(SESSION_CACHE_NAME),
+      baseUrl: config.get('baseUrl'),
+      saveAndReturn: {
+        keyGenerator: (request) => {
+          const { userId, businessId, grantId } = getCacheKey(request)
+          return `${userId}:${businessId}:${grantId}`
+        },
+        sessionHydrator: async (request) => {
+          return fetchSavedStateFromApi(request)
+        }
+      },
+      onRequest: formsAuthCallback,
       services: {
         formsService: await formsService(),
         formSubmissionService,
@@ -120,11 +142,16 @@ const registerFormsPlugin = async (server) => {
       controllers: {
         ConfirmationPageController,
         DeclarationPageController,
+        CheckAnswersPageController,
         SubmissionPageController,
+        ConfirmFarmDetailsController,
         LandParcelPageController,
         LandActionsPageController,
         LandActionsCheckPageController,
-        SectionEndController
+        SectionEndController,
+        FlyingPigsSubmissionPageController,
+        PotentialFundingController,
+        SummaryPageController
       }
     }
   })
@@ -138,7 +165,8 @@ const registerPlugins = async (server) => {
     Cookie,
     Scooter,
     csp,
-    // auth,
+    h2o2,
+    auth,
     requestLogger,
     requestTracing,
     secureContext,
@@ -146,18 +174,116 @@ const registerPlugins = async (server) => {
     sessionCache,
     nunjucksConfig,
     tasklistBackButton,
-    router,
     sso
   ])
+
+  await server.register([router])
+}
+
+const mockSessionData = async (request, log, LogCodes) => {
+  try {
+    const crypto = await import('crypto')
+    const sessionId = request.state.sid?.sessionId || crypto.randomUUID()
+
+    const sessionData = {
+      isAuthenticated: true,
+      sessionId,
+      contactId: 'anonymous',
+      firstName: 'Anonymous',
+      lastName: 'User',
+      name: 'Anonymous User',
+      role: 'user',
+      scope: ['user'],
+      id: 'anonymous-user',
+      relationships: ['business:default-business']
+    }
+
+    await request.server.app.cache.set(sessionId, sessionData)
+
+    request.cookieAuth.set({ sessionId })
+
+    log(LogCodes.AUTH.SIGN_IN_SUCCESS, {
+      userId: 'anonymous-user-id',
+      sessionId,
+      role: 'user',
+      scope: 'user',
+      authMethod: 'auto-session'
+    })
+  } catch (error) {
+    log(LogCodes.AUTH.SIGN_IN_FAILURE, {
+      userId: 'unknown',
+      error: `Failed to create auto-session: ${error.message}`,
+      step: 'auto_session_creation_error',
+      errorStack: error.stack
+    })
+  }
+}
+
+const handleMockDefraAuth = async (request, h, log, LogCodes) => {
+  if (!config.get('defraId.enabled')) {
+    if (h.request.path === '/auth/sign-out') {
+      return h.redirect('/home').takeover()
+    }
+
+    await mockSessionData(request, log, LogCodes)
+
+    if (h.request.path === '/auth/sign-in' && h.request.query.redirect) {
+      return h.redirect(h.request.query.redirect).takeover()
+    }
+    if (h.request.path === '/auth/sign-in') {
+      return h.redirect('/home').takeover()
+    }
+  }
+  return h.continue
 }
 
 export async function createServer() {
-  setupProxy()
-  const server = createHapiServer()
+  const { log, LogCodes } = await import('~/src/server/common/helpers/logging/log.js')
 
+  log(LogCodes.SYSTEM.STARTUP_PHASE, {
+    phase: 'server_creation',
+    status: 'starting'
+  })
+
+  setupProxy()
+  log(LogCodes.SYSTEM.STARTUP_PHASE, {
+    phase: 'proxy_setup',
+    status: 'complete'
+  })
+
+  const server = createHapiServer()
+  log(LogCodes.SYSTEM.STARTUP_PHASE, {
+    phase: 'hapi_server_creation',
+    status: 'complete'
+  })
+
+  log(LogCodes.SYSTEM.STARTUP_PHASE, {
+    phase: 'plugin_registration',
+    status: 'starting'
+  })
   await registerPlugins(server)
+  log(LogCodes.SYSTEM.STARTUP_PHASE, {
+    phase: 'core_plugins',
+    status: 'registered'
+  })
+
+  log(LogCodes.SYSTEM.STARTUP_PHASE, {
+    phase: 'forms_plugin_registration',
+    status: 'starting'
+  })
+
   await registerFormsPlugin(server)
+
+  log(LogCodes.SYSTEM.STARTUP_PHASE, {
+    phase: 'forms_plugin',
+    status: 'registered'
+  })
+
   loadSubmissionSchemaValidators()
+  log(LogCodes.SYSTEM.STARTUP_PHASE, {
+    phase: 'schema_validators',
+    status: 'loaded'
+  })
 
   server.ext('onPreHandler', (request, h) => {
     const prev = request.yar.get('visitedSubSections') || []
@@ -170,6 +296,11 @@ export async function createServer() {
     request.yar.set('visitedSubSections', prev)
 
     return h.continue
+  })
+
+  // Create a server extension to handle session creation when defra-id is disabled
+  server.ext('onPreAuth', async (request, h) => {
+    return handleMockDefraAuth(request, h, log, LogCodes)
   })
 
   server.app.cache = server.cache({

@@ -1,3 +1,5 @@
+{% set govukRebrand = true %}
+
 {% extends "govuk/template.njk" %}
 
 {# Import GOVUK components globally #}
@@ -21,7 +23,7 @@
     homepageUrl: "https://www.gov.uk/",
     classes: "govuk-header--full-width-border",
     containerClasses: "govuk-width-container",
-    useTudorCrown: true
+    rebrand: true
   }) }}
 
   {{ govukServiceNavigation({ serviceName: serviceName, serviceUrl: serviceUrl }) }}
@@ -52,7 +54,7 @@
     <div class="gov-grid-row">
       <div style="float:right;clear:both;text-align:right;">
         <p class="govuk-body govuk-!-margin-bottom-0">Signed in as <a href="/home" class="govuk-link">{{ auth.name }}</a></p>
-        <p class="govuk-body govuk-!-margin-bottom-0"><a href="/auth/organisation" class="govuk-link">Switch organisation</a></p>
+        <!-- <p class="govuk-body govuk-!-margin-bottom-0"><a href="/auth/organisation" class="govuk-link">Switch organisation</a></p> -->
         <p class="govuk-body govuk-!-margin-bottom-0"><a href="/auth/sign-out" class="govuk-link">Sign out</a></p>
       </div>
     </div>
@@ -85,7 +87,8 @@
           text: "Accessibility statement"
         }
       ]
-    }
+    },
+    rebrand: true
   }) }}
 {% endblock %}
 

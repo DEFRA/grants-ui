@@ -5,9 +5,7 @@ import { requestLogger } from '~/src/server/common/helpers/logging/request-logge
 import { config } from '~/src/config/config.js'
 
 const mockAddCACert = jest.fn()
-const mockTlsCreateSecureContext = jest
-  .fn()
-  .mockReturnValue({ context: { addCACert: mockAddCACert } })
+const mockTlsCreateSecureContext = jest.fn().mockReturnValue({ context: { addCACert: mockAddCACert } })
 
 jest.mock('hapi-pino', () => ({
   register: (server) => {
@@ -39,9 +37,7 @@ describe('#secureContext', () => {
     })
 
     test('secureContext decorator should not be available', () => {
-      expect(server.logger.info).toHaveBeenCalledWith(
-        'Custom secure context is disabled'
-      )
+      expect(server.logger.info).toHaveBeenCalledWith('Custom secure context is disabled')
     })
 
     test('Logger should give us disabled message', () => {
@@ -100,9 +96,7 @@ describe('#secureContext', () => {
     })
 
     test('Should log about not finding any TRUSTSTORE_ certs', () => {
-      expect(server.logger.info).toHaveBeenCalledWith(
-        'Could not find any TRUSTSTORE_ certificates'
-      )
+      expect(server.logger.info).toHaveBeenCalledWith('Could not find any TRUSTSTORE_ certificates')
     })
   })
 })

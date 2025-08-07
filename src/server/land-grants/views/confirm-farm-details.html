@@ -1,0 +1,38 @@
+{% extends baseLayoutPath %}
+
+{% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
+{% from "govuk/components/summary-list/macro.njk" import govukSummaryList %}
+{% from "govuk/components/button/macro.njk" import govukButton %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds-from-desktop">
+      {% if previewMode %}
+        {% include "partials/preview-banner.html" %}
+      {% endif %}
+
+      {% if error %}
+        {{ govukErrorSummary(error) }}
+      {% endif %}
+
+      <h1 class="govuk-heading-l">
+        {{ pageTitle }}
+      </h1>
+
+        {{ govukSummaryList(farmDetails) }}
+
+      <form method="post" novalidate>
+        <input type="hidden" name="crumb" value="{{ crumb }}">
+        {{ govukButton({
+            text: "Continue",
+            preventDoubleClick: true
+          }) 
+        }}
+      </form>
+    </div>
+  </div>
+
+  {% if config.cdpEnvironment == 'local' and context | length and not context.isForceAccess %}
+    {% include "partials/debug.html" %}
+  {% endif %}
+{% endblock %}

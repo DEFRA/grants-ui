@@ -1,6 +1,12 @@
 import convict from 'convict'
 
 const config = convict({
+  enabled: {
+    doc: 'Enable Defra Identity authentication strategy. If set to false, mock data will be used.',
+    format: Boolean,
+    default: true,
+    env: 'DEFRA_ID_ENABLED'
+  },
   wellKnownUrl: {
     doc: 'The Defra Identity well known URL.',
     format: String,
@@ -24,12 +30,6 @@ const config = convict({
     format: String,
     default: 'default-service-id',
     env: 'DEFRA_ID_SERVICE_ID'
-  },
-  policy: {
-    doc: 'The Defra Identity policy.',
-    format: String,
-    default: 'default-policy',
-    env: 'DEFRA_ID_POLICY'
   },
   redirectUrl: {
     doc: 'The Defra Identity redirect URL.',

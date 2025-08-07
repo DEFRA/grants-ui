@@ -15,6 +15,12 @@ export const allForms = [
     title: 'Example grant'
   },
   {
+    path: 'src/server/common/forms/definitions/flying-pigs.yaml',
+    id: '95e92559-968d-44ae-8666-2b1ad3dffd33',
+    slug: 'flying-pigs',
+    title: 'Flying pigs'
+  },
+  {
     path: 'src/server/common/forms/definitions/find-funding-for-land-or-farms.yaml',
     id: '5c67688f-3c61-4839-a6e1-d48b598257f1',
     slug: 'find-funding-for-land-or-farms',
@@ -121,6 +127,12 @@ export const allForms = [
     id: '7ccfcdda-6e8f-4963-be8e-2b16f12d7ebf',
     slug: 'declaration',
     title: 'Confirm and send'
+  },
+  {
+    path: 'src/server/common/forms/definitions/example-grant-with-auth.yaml',
+    id: '9f9c5ec4-e237-4e6e-b67c-f232a6377d76',
+    slug: 'example-grant-with-auth',
+    title: 'Example grant with auth'
   }
 ]
 /* c8 ignore stop */

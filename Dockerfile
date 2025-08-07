@@ -52,6 +52,19 @@ COPY --from=production_build /home/node/package*.json ./
 COPY --from=production_build /home/node/.server ./.server/
 COPY --from=production_build /home/node/.public/ ./.public/
 COPY --from=production_build /home/node/src/server/common/forms ./src/server/common/forms
+COPY --from=production_build /home/node/src/server/common/templates ./src/server/common/templates
+COPY --from=production_build /home/node/src/server/common/components ./src/server/common/components
+COPY --from=production_build /home/node/src/server/views ./src/server/views
+COPY --from=production_build /home/node/src/server/land-grants/views ./src/server/land-grants/views
+COPY --from=production_build /home/node/src/server/non-land-grants ./src/server/non-land-grants
+COPY --from=production_build /home/node/src/server/home ./src/server/home
+COPY --from=production_build /home/node/src/server/error ./src/server/error
+COPY --from=production_build /home/node/src/server/tasklist/tasklist.controller.js ./src/server/tasklist/
+COPY --from=production_build /home/node/src/server/tasklist/index.js ./src/server/tasklist/
+COPY --from=production_build /home/node/src/server/tasklist/views ./src/server/tasklist/views
+COPY --from=production_build /home/node/src/server/tasklist/services/tasklist-generator.js ./src/server/tasklist/services/
+COPY --from=production_build /home/node/src/server/tasklist/services/config-loader.js ./src/server/tasklist/services/
+COPY --from=production_build /home/node/src/server/tasklist/services/config-driven-condition-evaluator.js ./src/server/tasklist/services/
 
 RUN npm ci --omit=dev  --ignore-scripts
 

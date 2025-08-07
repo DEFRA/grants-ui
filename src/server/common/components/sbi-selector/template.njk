@@ -5,17 +5,17 @@
     text: "Development",
     classes: "govuk-tag--red"
   },
-  html: 'Single business identifier (SBI): ' + 
-        '<select 
+  html: '<label for="sbi-select">Single business identifier (SBI):</label> ' +
+        '<select
             id="sbi-select"
+            class="govuk-!-font-size-16 govuk-!-margin-left-1"
             name="sbi"
-            style="margin-left: 5px; font-size: 16px;"
           >
             <option value="121428499"' + (params.sbi == "121428499" and " selected" or "") + '>121428499 - SE & HB Robinson</option>
             <option value="106284736"' + (params.sbi == "106284736" and " selected" or "") + '>106284736 - J&S Hartley</option>
             <option value="106238988"' + (params.sbi == "106238988" and " selected" or "") + '>106238988 - JT & E Thornber</option>
           </select>
-          <span id="sbi-status" class="sbi-status" style="margin-left: 10px; font-size: 14px;"></span>'
+          <span id="sbi-status" class="govuk-!-font-size-16 govuk-!-margin-left-2"></span>'
 }) }}
 
 <script>
@@ -26,7 +26,7 @@
     if (sbiSelect) {
       sbiSelect.addEventListener('change', function(e) {
         const newSbiValue = e.target.value;
-        
+
         if (newSbiValue && newSbiValue.trim() !== '') {
           sbiStatus.textContent = 'Updating...';
           sbiStatus.style.color = '#666';
@@ -36,9 +36,9 @@
         }
       });
 
-      function updateSbi(sbiValue) {     
+      function updateSbi(sbiValue) {
         const csrfToken = document.querySelector('#csrf-token')?.value;
-  
+
         if (!sbiValue || sbiValue.trim() === '') {
           console.error('SBI value is empty');
           sbiStatus.textContent = 'Please select a valid SBI';
@@ -56,7 +56,7 @@
             'Content-Type': 'application/json',
             'X-Requested-With': 'XMLHttpRequest'
           },
-          body: JSON.stringify({ 
+          body: JSON.stringify({
             sbi: sbiValue,
             crumb: csrfToken
           })
@@ -70,9 +70,9 @@
         .then(data => {
           sbiStatus.textContent = 'Saved';
           sbiStatus.style.color = '#00703c';
-          
+
           setTimeout(() => {
-            window.location.replace('/find-funding-for-land-or-farms/start'); 
+            window.location.replace('/find-funding-for-land-or-farms/start');
           }, 1000);
 
           setTimeout(() => {
@@ -83,7 +83,7 @@
           console.error('Error updating SBI:', error);
           sbiStatus.textContent = 'Error saving';
           sbiStatus.style.color = '#d4351c';
-          
+
           setTimeout(() => {
             sbiStatus.textContent = '';
           }, 3000);

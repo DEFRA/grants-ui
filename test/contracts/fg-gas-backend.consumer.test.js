@@ -3,6 +3,7 @@ import { resolve } from 'path'
 import { fileURLToPath } from 'url'
 import fetch from 'node-fetch'
 import net from 'net'
+import fs from 'fs/promises'
 
 // Setup __dirname for ES modules
 const filename = fileURLToPath(import.meta.url)
@@ -35,6 +36,16 @@ describe('grants-ui → fg-gas-backend Contract', () => {
   let mockServerPort
 
   beforeAll(async () => {
+    // Clean up old pact file to prevent stale contracts
+    const pactFile = resolve(dirname, '../pacts/grants-ui-fg-gas-backend.json')
+    try {
+      await fs.unlink(pactFile)
+      console.log('Removed old pact file')
+    } catch (err) {
+      // File doesn't exist, that's fine
+      console.log('No existing pact file to remove')
+    }
+
     // Find an actually available port
     mockServerPort = await findAvailablePort(9200, 9299)
     console.log(`Using port ${mockServerPort} for fg-gas-backend mock server`)
@@ -53,7 +64,7 @@ describe('grants-ui → fg-gas-backend Contract', () => {
 
   afterEach(async () => {
     // Small delay between tests to ensure mock server is ready
-    await new Promise(resolve => setTimeout(resolve, 100))
+    await new Promise((resolve) => setTimeout(resolve, 100))
   })
 
   afterAll(async () => {
@@ -63,35 +74,33 @@ describe('grants-ui → fg-gas-backend Contract', () => {
       console.log('Provider finalize error (non-critical):', err.message)
     }
     // Longer delay to ensure complete cleanup
-    await new Promise(resolve => setTimeout(resolve, 500))
+    await new Promise((resolve) => setTimeout(resolve, 500))
   })
 
   describe('Grant Application Submission API', () => {
     it('should submit grant application successfully', async () => {
       const applicationRequest = {
         metadata: {
-          clientRef: 'TEST-REF-123456',
+          clientRef: 'test-ref-123456',
           sbi: '123456789',
           frn: '987654321',
           crn: '555666777',
-          defraId: 'DEF123456',
+          defraId: 'def123456',
           submittedAt: '2024-01-15T14:30:00Z'
         },
         answers: {
           scheme: 'SFI',
           year: 2024,
           agreementName: 'Test Agreement',
-          actionApplications: [
-            {
-              parcelId: '1234',
-              sheetId: 'SX1234',
-              code: 'CSAM1',
-              appliedFor: {
-                unit: 'ha',
-                quantity: 10.5
-              }
+          actionApplications: [{
+            parcelId: '1234',
+            sheetId: 'SX1234',
+            code: 'CSAM1',
+            appliedFor: {
+              unit: 'ha',
+              quantity: 10.5
             }
-          ]
+          }]
         }
       }
 
@@ -112,16 +121,13 @@ describe('grants-ui → fg-gas-backend Contract', () => {
         }
       })
 
-      const response = await fetch(
-        `http://localhost:${mockServerPort}/grants/frps-private-beta/applications`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(applicationRequest)
-        }
-      )
+      const response = await fetch(`http://localhost:${mockServerPort}/grants/frps-private-beta/applications`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(applicationRequest)
+      })
 
       expect(response.status).toBe(204)
 
@@ -131,19 +137,22 @@ describe('grants-ui → fg-gas-backend Contract', () => {
     it('should reject application with invalid grant code', async () => {
       const applicationRequest = {
         metadata: {
-          clientRef: 'TEST-REF-123456',
+          clientRef: 'test-ref-123456',
           sbi: '123456789',
-          frn: '987654321'
+          frn: '987654321',
+          crn: '555666777',
+          defraId: 'def123456'
         },
         answers: {
-          scheme: 'SFI'
+          scheme: 'SFI',
+          year: 2024
         }
       }
 
       const expectedResponse = {
         statusCode: 404,
         error: 'Not Found',
-        message: 'Grant not found'
+        message: 'Grant with code invalid-grant-code not found'
       }
 
       await provider.addInteraction({
@@ -166,21 +175,19 @@ describe('grants-ui → fg-gas-backend Contract', () => {
         }
       })
 
-      const response = await fetch(
-        `http://localhost:${mockServerPort}/grants/invalid-grant-code/applications`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(applicationRequest)
-        }
-      )
+      const response = await fetch(`http://localhost:${mockServerPort}/grants/invalid-grant-code/applications`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(applicationRequest)
+      })
 
       const result = await response.json()
 
       expect(response.status).toBe(404)
       expect(result.error).toBe('Not Found')
+      expect(result.message).toBe('Grant with code invalid-grant-code not found')
 
       await provider.verify()
     })
@@ -188,23 +195,26 @@ describe('grants-ui → fg-gas-backend Contract', () => {
     it('should reject application with duplicate clientRef', async () => {
       const applicationRequest = {
         metadata: {
-          clientRef: 'DUPLICATE-REF-123',
+          clientRef: 'duplicate-ref-123',
           sbi: '123456789',
-          frn: '987654321'
+          frn: '987654321',
+          crn: '555666777',
+          defraId: 'def123456'
         },
         answers: {
-          scheme: 'SFI'
+          scheme: 'SFI',
+          year: 2024
         }
       }
 
       const expectedResponse = {
         statusCode: 409,
         error: 'Conflict',
-        message: 'Duplicate clientRef'
+        message: 'Application with clientRef "duplicate-ref-123" exists'
       }
 
       await provider.addInteraction({
-        state: 'application with clientRef DUPLICATE-REF-123 already exists',
+        state: 'application with clientRef duplicate-ref-123 already exists',
         uponReceiving: 'an application with duplicate clientRef',
         withRequest: {
           method: 'POST',
@@ -223,135 +233,19 @@ describe('grants-ui → fg-gas-backend Contract', () => {
         }
       })
 
-      const response = await fetch(
-        `http://localhost:${mockServerPort}/grants/frps-private-beta/applications`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(applicationRequest)
-        }
-      )
+      const response = await fetch(`http://localhost:${mockServerPort}/grants/frps-private-beta/applications`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(applicationRequest)
+      })
 
       const result = await response.json()
 
       expect(response.status).toBe(409)
       expect(result.error).toBe('Conflict')
-
-      await provider.verify()
-    })
-  })
-
-  describe('Grant Action Invocation API', () => {
-    it('should invoke scoring action via GAS backend', async () => {
-      const scoringRequest = {
-        data: {
-          main: {
-            '/collaboration': 'collaboration-A1',
-            '/environmental-impact': ['environmental-impact-A1'],
-            '/adding-value': 'adding-value-A1'
-          }
-        }
-      }
-
-      const expectedResponse = {
-        score: 25,
-        scoreBand: 'Strong',
-        status: 'Eligible',
-        answers: [
-          {
-            questionId: '/collaboration',
-            score: { value: 7, band: 'Strong' }
-          }
-        ]
-      }
-
-      await provider.addInteraction({
-        state: 'scoring action is configured for adding-value grant',
-        uponReceiving: 'a request to invoke scoring action',
-        withRequest: {
-          method: 'POST',
-          path: '/grants/adding-value/actions/score/invoke',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: scoringRequest
-        },
-        willRespondWith: {
-          status: 200,
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: expectedResponse
-        }
-      })
-
-      const response = await fetch(
-        `http://localhost:${mockServerPort}/grants/adding-value/actions/score/invoke`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(scoringRequest)
-        }
-      )
-
-      const result = await response.json()
-
-      expect(response.status).toBe(200)
-      expect(result.score).toBeDefined()
-      expect(result.scoreBand).toBeDefined()
-      expect(result.status).toBeDefined()
-
-      await provider.verify()
-    })
-
-    it('should handle action not found error', async () => {
-      const requestData = { test: 'data' }
-
-      const expectedResponse = {
-        statusCode: 404,
-        error: 'Not Found',
-        message: 'Action not found'
-      }
-
-      await provider.addInteraction({
-        state: 'grant exists but action does not',
-        uponReceiving: 'a request for non-existent action',
-        withRequest: {
-          method: 'POST',
-          path: '/grants/adding-value/actions/non-existent-action/invoke',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: requestData
-        },
-        willRespondWith: {
-          status: 404,
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: expectedResponse
-        }
-      })
-
-      const response = await fetch(
-        `http://localhost:${mockServerPort}/grants/adding-value/actions/non-existent-action/invoke`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(requestData)
-        }
-      )
-
-      const result = await response.json()
-
-      expect(response.status).toBe(404)
-      expect(result.error).toBe('Not Found')
+      expect(result.message).toBe('Application with clientRef "duplicate-ref-123" exists')
 
       await provider.verify()
     })
@@ -365,14 +259,8 @@ describe('grants-ui → fg-gas-backend Contract', () => {
           metadata: {
             description: 'Farming Resilience Private Beta',
             startDate: '2024-01-01T00:00:00.000Z'
-          },
-          actions: [
-            {
-              name: 'score',
-              method: 'POST',
-              url: 'https://ffc-grants-scoring.dev.cdp-int.defra.cloud/scoring/api/v1/adding-value/score'
-            }
-          ]
+          }
+          // No actions array - FRPS Private Beta doesn't use scoring
         }
       ]
 
@@ -381,8 +269,7 @@ describe('grants-ui → fg-gas-backend Contract', () => {
         uponReceiving: 'a request to get all grants',
         withRequest: {
           method: 'GET',
-          path: '/grants',
-          headers: {}
+          path: '/grants'
         },
         willRespondWith: {
           status: 200,
@@ -394,39 +281,35 @@ describe('grants-ui → fg-gas-backend Contract', () => {
       })
 
       const response = await fetch(`http://localhost:${mockServerPort}/grants`)
-
       const result = await response.json()
 
       expect(response.status).toBe(200)
       expect(Array.isArray(result)).toBe(true)
-      expect(result.length).toBeGreaterThan(0)
-      expect(result[0]).toHaveProperty('code')
-      expect(result[0]).toHaveProperty('metadata')
+      expect(result[0].code).toBe('frps-private-beta')
 
       await provider.verify()
     })
 
-    it('should retrieve specific grant by code', async () => {
+    it('should retrieve specific grant', async () => {
       const expectedResponse = {
         code: 'frps-private-beta',
         metadata: {
           description: 'Farming Resilience Private Beta',
           startDate: '2024-01-01T00:00:00.000Z'
         },
-        actions: [
-          {
-            name: 'score',
-            method: 'POST',
-            url: 'https://ffc-grants-scoring.dev.cdp-int.defra.cloud/scoring/api/v1/adding-value/score'
-          }
-        ],
         questions: {
           type: 'object',
           properties: {
-            scheme: { type: 'string' },
-            year: { type: 'number' }
-          }
+            scheme: {
+              type: 'string'
+            },
+            year: {
+              type: 'number'
+            }
+          },
+          required: ['scheme', 'year']
         }
+        // No actions array - FRPS Private Beta doesn't use scoring
       }
 
       await provider.addInteraction({
@@ -434,8 +317,7 @@ describe('grants-ui → fg-gas-backend Contract', () => {
         uponReceiving: 'a request to get specific grant',
         withRequest: {
           method: 'GET',
-          path: '/grants/frps-private-beta',
-          headers: {}
+          path: '/grants/frps-private-beta'
         },
         willRespondWith: {
           status: 200,
@@ -447,13 +329,11 @@ describe('grants-ui → fg-gas-backend Contract', () => {
       })
 
       const response = await fetch(`http://localhost:${mockServerPort}/grants/frps-private-beta`)
-
       const result = await response.json()
 
       expect(response.status).toBe(200)
       expect(result.code).toBe('frps-private-beta')
       expect(result.metadata).toBeDefined()
-      expect(result.actions).toBeDefined()
 
       await provider.verify()
     })

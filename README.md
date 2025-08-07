@@ -13,6 +13,7 @@ Core delivery platform Node.js Frontend Template.
 - [Local Development](#local-development)
   - [Setup](#setup)
   - [Development](#development)
+  - [Environment variables](#environment-variables)
   - [GAS Integration](#gas-integration)
   - [Production](#production)
   - [Npm scripts](#npm-scripts)
@@ -25,6 +26,20 @@ Core delivery platform Node.js Frontend Template.
   - [Docker Compose](#docker-compose)
   - [Dependabot](#dependabot)
   - [SonarCloud](#sonarcloud)
+- [Structured Logging System](#structured-logging-system)
+  - [Core Components](#core-components)
+  - [Directory Structure](#directory-structure)
+  - [Log Code Categories](#log-code-categories)
+  - [Usage Examples](#usage-examples)
+  - [Log Code Structure](#log-code-structure)
+  - [Configuration](#configuration)
+  - [Best Practices](#best-practices)
+  - [Integration Points](#integration-points)
+  - [Testing](#testing)
+  - [Monitoring and Observability](#monitoring-and-observability)
+  - [Migration from Manual Logging](#migration-from-manual-logging)
+  - [Adding New Log Codes](#adding-new-log-codes)
+  - [Development Workflow](#development-workflow)
 - [Licence](#licence)
   - [About the licence](#about-the-licence)
 
@@ -51,6 +66,33 @@ You can override the default behaviour by setting the `SESSION_CACHE_ENGINE` env
 
 Please note: CatboxMemory (`memory`) is _not_ suitable for production use! The cache will not be shared between each
 instance of the service and it will not persist between restarts.
+
+## Session Rehydration
+
+The application includes session rehydration functionality that allows user sessions to be restored from a backend API. This is particularly useful for maintaining user state across different services.
+
+### How Session Rehydration Works
+
+The application fetches saved state from the backend API using the endpoint configured in `GRANTS_UI_BACKEND_URL`.
+When a user is authenticated, the serivce:
+
+- Checks for existing cache
+- If there is none, fetches data from Mongo
+- Performs session rehydration
+
+### Configuration
+
+Session rehydration is controlled by the following environment variables:
+
+- `GRANTS_UI_BACKEND_URL`: The backend API endpoint for fetching/storing session state
+
+### Error Handling
+
+If session rehydration fails (e.g., backend unavailable, network issues), the application will:
+
+- Log the error for debugging
+- Continue normal operation without restored state
+- Allow the user to proceed with a fresh session
 
 ## Redis
 
@@ -81,6 +123,59 @@ return await fetch(url, {
 })
 ```
 
+## Feature Structure
+
+The repository has been structured to follow a feature-based structure, where each feature is organized into its own directory with all related components (controllers, views, tests, and utilities).
+
+### Feature Organization
+
+Each feature follows a consistent structure:
+
+```
+src/server/{feature-name}/
+├── {feature-name}.controller.js          # Main controller logic
+├── {feature-name}.controller.test.js     # Controller tests
+├── views/                                # Feature-specific views/templates
+│   └── {feature-page}.html/.njk
+├── index.js                              # Feature entry point (if needed)
+└── {additional-utilities}.js             # Feature-specific utilities
+```
+
+#### Optional Subfolder Organization
+
+For more complex features, additional subfolders can be used to further organize the code:
+
+```
+src/server/{feature-name}/
+├── controllers/                          # Multiple controllers for different pages
+│   ├── page1.controller.js
+│   ├── page1.controller.test.js
+│   ├── page2.controller.js
+│   └── page2.controller.test.js
+├── services/                             # Business logic and external service calls
+│   ├── {feature-name}.service.js
+│   └── {feature-name}.service.test.js
+├── mappers/                              # Data transformation utilities
+│   ├── state-to-gas-answers-mapper.js
+│   └── state-to-gas-answers-mapper.test.js
+├── utils/                                # Feature-specific utility functions
+│   ├── format-phone.js
+│   └── format-phone.test.js
+├── views/                                # Feature-specific views/templates
+│   └── {feature-page}.html/.njk
+└── index.js                              # Feature entry point
+```
+
+This subfolder approach is particularly useful for features with multiple pages, complex business logic, or extensive data transformation requirements.
+
+### Benefits of Feature-Based Structure
+
+- **Co-location**: Related files are grouped together, making it easier to find and modify feature-specific code
+- **Maintainability**: Clear separation of concerns with each feature self-contained
+- **Scalability**: New features can be added following the same pattern
+- **Testing**: Feature-specific tests are located alongside the code they test
+- **Navigation**: Developers can quickly understand the structure and locate relevant files
+
 ## Local Development
 
 ### Setup
@@ -98,6 +193,88 @@ To run the application in `development` mode run:
 ```bash
 npm run dev
 ```
+
+To successfully run `grants-ui` locally there is a requirement to have the cdp-defra-id-stub (https://github.com/DEFRA/cdp-defra-id-stub) checked out, installed and running locally with this command:
+
+```bash
+npm run dev
+```
+
+### Environment variables
+
+Below is a list of required environment variables to configure and run the Grants UI application locally or in an environment (e.g., Dev, Test, Perf Test, Prod).
+
+#### DEFRA ID Integration
+
+These are required only if DEFRA ID authentication is enabled:
+
+| Variable                         | Description                                                                              |
+| -------------------------------- | ---------------------------------------------------------------------------------------- |
+| `DEFRA_ID_WELL_KNOWN_URL`        | The OIDC discovery URL used by DEFRA ID (must be reachable at startup).                  |
+| `DEFRA_ID_CLIENT_ID`             | Provided by DEFRA ID — used to identify the app.                                         |
+| `DEFRA_ID_CLIENT_SECRET`         | Secret from DEFRA ID — **must be kept confidential**.                                    |
+| `DEFRA_ID_SERVICE_ID`            | Used by DEFRA ID to display your service name on the login screen.                       |
+| `DEFRA_ID_REDIRECT_URL`          | URL DEFRA ID redirects to after login. **Must match exactly what DEFRA ID has on file.** |
+| `DEFRA_ID_SIGN_OUT_REDIRECT_URL` | Redirect after logout. Same note as above.                                               |
+
+Note: for local development it is neccessary to remove config.get('defraId.clientId') from provider.scope in getBellOptions(oidcConfig) in auth.js so change from:
+
+```
+scope: ['openid', 'offline_access', config.get('defraId.clientId')],
+```
+
+to:
+
+```
+scope: ['openid', 'offline_access'],
+```
+
+#### Session and Cookie security
+
+| Variable                  | Description                                                    | Default |
+| ------------------------- | -------------------------------------------------------------- | ------- |
+| `SESSION_COOKIE_PASSWORD` | High-entropy password (e.g., 32+ chars) for cookie encryption. |
+| `SESSION_COOKIE_TTL`      | Cookie duration in milliseconds.                               |
+| `SESSION_TIMEOUT`         | Inactivity timeout before logout.                              |
+| `SESSION_CACHE_TTL`       | TTL for session data in the cache.                             |
+| `SESSION_CACHE_ENGINE`    | Session store engine — `memory` or `redis`.                    |
+| `SESSION_CACHE_NAME`      | Cache segment name used in Hapi for session caching.           |
+
+#### Application URLs
+
+| Variable                | Description                                    |
+| ----------------------- | ---------------------------------------------- |
+| `APP_BASE_URL`          | Base URL of the Grants UI app.                 |
+| `GRANTS_UI_BACKEND_URL` | Local or remote backend endpoint.              |
+| `GAS_API_URL`           | Endpoint for Grants Application Service (GAS). |
+| `MANAGER_URL`           | Used for internal routing or redirects.        |
+| `DESIGNER_URL`          | Form designer UI base URL.                     |
+| `SUBMISSION_URL`        | Backend submission URL (Docker-safe format).   |
+| `UPLOADER_URL`          | File uploader service endpoint.                |
+| `UPLOADER_BUCKET_NAME`  | Name of the S3 or storage bucket.              |
+
+#### GOV.UK Notify
+
+| Variable             | Description                                           |
+| -------------------- | ----------------------------------------------------- |
+| `NOTIFY_TEMPLATE_ID` | ID of the Notify template used for user-facing comms. |
+| `NOTIFY_API_KEY`     | GOV.UK Notify API key — **treat as a secret**.        |
+
+#### Redis Configuration
+
+| Variable           | Description                              |
+| ------------------ | ---------------------------------------- |
+| `REDIS_HOST`       | Redis host (e.g., `localhost` or Docker) |
+| `REDIS_USERNAME`   | Username for Redis, if using ACL.        |
+| `REDIS_PASSWORD`   | Password for Redis connection.           |
+| `REDIS_KEY_PREFIX` | Prefix for all Redis keys used.          |
+
+#### Feature Flags & Misc
+
+| Variable               | Description                                              |
+| ---------------------- | -------------------------------------------------------- |
+| `SBI_SELECTOR_ENABLED` | Enables the SBI selector UI for multiple-business users. |
+| `FEEDBACK_LINK`        | URL to feedback (e.g., GitHub issue, form).              |
 
 ### GAS Integration
 
@@ -335,6 +512,189 @@ the [.github/example.dependabot.yml](.github/example.dependabot.yml) to `.github
 ### SonarCloud
 
 Instructions for setting up SonarCloud can be found in [sonar-project.properties](./sonar-project.properties).
+
+## Structured Logging System
+
+The application implements a comprehensive structured logging system providing consistent, searchable, and maintainable logging across all components.
+
+### Core Components
+
+- **Logger**: Pino-based logger with ECS format support
+- **Log Codes**: Structured, hierarchical log definitions
+- **Validation**: Runtime validation of log code definitions
+- **Tracing**: Distributed tracing with request correlation
+
+### Directory Structure
+
+```
+src/server/common/helpers/logging/
+├── logger.js              # Logger factory
+├── logger-options.js      # Logger configuration
+├── request-logger.js      # Hapi request logger plugin
+├── log.js                 # Structured logging wrapper
+├── log-codes.js           # Structured log definitions
+├── log-code-validator.js  # Log code validation
+└── *.test.js             # Test files
+```
+
+### Log Code Categories
+
+The system organizes log codes into logical categories:
+
+- **AUTH**: Authentication and authorization events
+- **FORMS**: Form processing and validation
+- **SUBMISSION**: Grant submission lifecycle
+- **DECLARATION**: Declaration page processing
+- **CONFIRMATION**: Confirmation page processing
+- **TASKLIST**: Task list management
+- **LAND_GRANTS**: Land grant specific functionality
+- **AGREEMENTS**: Agreement processing
+- **SYSTEM**: System-level events and errors
+
+### Usage Examples
+
+#### Basic Structured Logging
+
+```javascript
+import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+
+// Log successful authentication
+log(LogCodes.AUTH.SIGN_IN_SUCCESS, {
+  userId: 'user123',
+  organisationId: 'org456'
+})
+
+// Log form submission
+log(LogCodes.SUBMISSION.SUBMISSION_SUCCESS, {
+  grantType: 'adding-value',
+  referenceNumber: 'REF123456'
+})
+
+// Log validation error
+log(LogCodes.FORMS.FORM_VALIDATION_ERROR, {
+  formName: 'declaration',
+  error: 'Required field missing'
+})
+```
+
+#### Direct Logger Access
+
+```javascript
+import { logger } from '~/src/server/common/helpers/logging/log.js'
+
+// For simple logging when structured codes aren't needed
+logger.info('Simple info message')
+logger.error(error, 'Error with context')
+```
+
+### Log Code Structure
+
+Each log code must have two required properties:
+
+```javascript
+{
+  level: 'info' | 'debug' | 'error',
+  messageFunc: (messageOptions) => string
+}
+```
+
+Example log code definition:
+
+```javascript
+AUTH: {
+  SIGN_IN_SUCCESS: {
+    level: 'info',
+    messageFunc: (messageOptions) =>
+      `User sign-in successful for user=${messageOptions.userId}, organisation=${messageOptions.organisationId}`
+  }
+}
+```
+
+### Configuration
+
+Logging is configured via environment variables:
+
+- `LOG_ENABLED`: Enable/disable logging (default: enabled except in test)
+- `LOG_LEVEL`: Log level (debug, info, warn, error, etc.)
+- `LOG_FORMAT`: Output format (ecs for production, pino-pretty for development)
+
+### Best Practices
+
+1. **Use Structured Logging**: Prefer log codes over direct logger calls
+2. **Include Context**: Always include relevant identifiers (userId, grantType, etc.)
+3. **Consistent Naming**: Use consistent parameter names across log codes
+4. **Error Handling**: Log errors with sufficient context for debugging
+5. **Performance**: Use debug level for detailed logs that may impact performance
+6. **Security**: Never log sensitive information (passwords, tokens, etc.)
+
+### Integration Points
+
+The structured logging system is integrated throughout the application:
+
+- **Authentication**: All auth events (sign-in, sign-out, token verification)
+- **Form Processing**: Load, submission, validation events
+- **Controllers**: Declaration, confirmation, and other page controllers
+- **Error Handling**: Global error handler with structured error logging
+- **Services**: Form services, submission services, and external API calls
+
+### Testing
+
+All logging components include comprehensive test coverage:
+
+- **Unit Tests**: Test individual log codes and validation
+- **Integration Tests**: Test logging in request/response cycles
+- **Mock Testing**: Mock logger for testing without actual log output
+
+### Monitoring and Observability
+
+The structured logging system supports:
+
+- **ECS Format**: Elasticsearch Common Schema for log aggregation
+- **Distributed Tracing**: Request correlation across service boundaries
+- **Log Aggregation**: Searchable logs with consistent structure
+- **Alerting**: Structured data enables automated alerting on specific events
+
+### Migration from Manual Logging
+
+When updating existing code:
+
+1. Replace `request.logger.info()` with structured log codes
+2. Replace `logger.error()` with appropriate error log codes
+3. Add relevant context parameters (userId, grantType, etc.)
+4. Use appropriate log levels (info, debug, error)
+5. Test that logging works correctly in different environments
+
+### Adding New Log Codes
+
+To add new log codes:
+
+1. **Define the log code** in `log-codes.js` with proper structure
+2. **Add to appropriate category** or create new category if needed
+3. **Include both level and messageFunc** properties
+4. **Write comprehensive tests** in the corresponding test file
+5. **Update documentation** if introducing new patterns
+
+Example:
+
+```javascript
+FORMS: {
+  FORM_CACHE_ERROR: {
+    level: 'error',
+    messageFunc: (messageOptions) =>
+      `Form cache error for ${messageOptions.formName}: ${messageOptions.error}`
+  }
+}
+```
+
+### Development Workflow
+
+1. **Use existing log codes** when possible
+2. **Create new log codes** when needed following established patterns
+3. **Test thoroughly** including edge cases and error scenarios
+4. **Document changes** in code comments and this guide
+5. **Review logs** in development to ensure proper formatting
+
+This structured logging system provides a robust foundation for monitoring, debugging, and maintaining the Grants UI application with consistent, searchable, and actionable logging throughout the system.
 
 ## Licence
 

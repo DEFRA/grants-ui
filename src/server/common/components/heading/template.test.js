@@ -17,15 +17,11 @@ describe('Heading Component', () => {
     })
 
     test('Should contain expected heading', () => {
-      expect($heading('[data-testid="app-heading-title"]').text().trim()).toBe(
-        'Services'
-      )
+      expect($heading('[data-testid="app-heading-title"]').text().trim()).toBe('Services')
     })
 
     test('Should have expected heading caption', () => {
-      expect(
-        $heading('[data-testid="app-heading-caption"]').text().trim()
-      ).toBe('A page showing available services')
+      expect($heading('[data-testid="app-heading-caption"]').text().trim()).toBe('A page showing available services')
     })
   })
 })

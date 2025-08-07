@@ -30,10 +30,7 @@ export default class LandActionsCheckPageController extends QuestionPageControll
         })
       }
 
-      const nextPath =
-        addMoreActions === 'true'
-          ? '/select-land-parcel'
-          : this.getNextPath(context)
+      const nextPath = addMoreActions === 'true' ? '/select-land-parcel' : this.getNextPath(context)
       return this.proceed(request, h, nextPath)
     }
 
@@ -57,8 +54,7 @@ export default class LandActionsCheckPageController extends QuestionPageControll
 
       // Build the selected action rows from the collection
       this.selectedActionRows = this.getSelectedActionRows(state, context)
-      const pluralize = (count, singular, plural) =>
-        count === 1 ? singular : plural || `${singular}s`
+      const pluralize = (count, singular, plural) => (count === 1 ? singular : plural || `${singular}s`)
 
       const getPageTitle = (parcelsCount, actionsCount) => {
         const parcelsText = pluralize(parcelsCount, 'parcel')
@@ -71,10 +67,7 @@ export default class LandActionsCheckPageController extends QuestionPageControll
         ...this.getViewModel(request, context),
         ...state,
         selectedActionRows: this.selectedActionRows,
-        pageTitle: getPageTitle(
-          Object.keys(state.landParcels).length,
-          this.selectedActionRows.length
-        ),
+        pageTitle: getPageTitle(Object.keys(state.landParcels).length, this.selectedActionRows.length),
         errors: collection.getErrors(collection.getErrors())
       }
 
@@ -85,21 +78,19 @@ export default class LandActionsCheckPageController extends QuestionPageControll
   }
 
   getSelectedActionRows = (state) => {
-    return Object.entries(state.landParcels).flatMap(
-      ([sheetParcelId, parcelData]) => {
-        return Object.entries(parcelData.actionsObj).map(([, actionData]) => [
-          {
-            text: sheetParcelId
-          },
-          {
-            text: actionData.description
-          },
-          {
-            text: `${actionData.value} ${actionData.unit}`
-          }
-        ])
-      }
-    )
+    return Object.entries(state.landParcels).flatMap(([sheetParcelId, parcelData]) => {
+      return Object.entries(parcelData.actionsObj).map(([, actionData]) => [
+        {
+          text: sheetParcelId
+        },
+        {
+          text: actionData.description
+        },
+        {
+          text: `${actionData.value} ${actionData.unit}`
+        }
+      ])
+    })
   }
 }
 
