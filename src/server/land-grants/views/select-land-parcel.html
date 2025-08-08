@@ -36,17 +36,17 @@
           {% endfor %}
 
           {% if radioItems.length > 0 %}
-            <h1 class="govuk-heading-l">
-              Select land parcel for actions
-            </h1>
-
             {{ govukRadios({
                 name: "selectedLandParcel",
                 fieldset: {
                   legend: {
-                    text: "Use your map to check these reference numbers against your land parcels.",
-                    isPageHeading: false
+                    text: "Select land parcel for actions",
+                    isPageHeading: true,
+                    classes: "govuk-fieldset__legend--l"
                   }
+                },
+                hint: {
+                  text: "Use your map to check these reference numbers against your land parcels."
                 },
                 items: radioItems,
                 value: parcelId,
