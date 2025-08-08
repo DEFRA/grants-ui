@@ -22,25 +22,6 @@
 
       <h1 class="govuk-heading-l">Choose which actions to do</h1>
 
-      {{ govukSummaryList({
-          card: {
-            title: {
-              text: "Chosen parcel: " + selectedLandParcelSummary.name
-            },
-            actions: {
-              items: [
-                {
-                  href: backLink.href,
-                  text: "Change",
-                  visuallyHiddenText: "land parcel to do actions on"
-                }
-              ]
-            }
-          },
-          rows: selectedLandParcelSummary.rows
-        })
-      }}
-
       {% if availableActions %}
         <form method="post" novalidate>
           {% set actionsCheckboxes = [] %}

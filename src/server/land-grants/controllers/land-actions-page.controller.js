@@ -78,24 +78,6 @@ export default class LandActionsPageController extends QuestionPageController {
     }
   }
 
-  getSelectedLandParcelData(context) {
-    const { state } = context
-
-    return {
-      name: state.selectedLandParcel,
-      rows: [
-        {
-          key: {
-            text: 'Total size'
-          },
-          value: {
-            text: this.currentParcelSize
-          }
-        }
-      ]
-    }
-  }
-
   /**
    * Transforms land parcels data into the format required for payment calculation API
    * @param {object} landParcels - Object containing land parcels data
@@ -261,7 +243,6 @@ export default class LandActionsPageController extends QuestionPageController {
 
     return {
       ...state,
-      selectedLandParcelSummary: this.getSelectedLandParcelData(context),
       selectedActionsQuantities,
       draftApplicationAnnualTotalPence: paymentDetails.payment.annualTotalPence,
       landParcels: updatedLandParcels
@@ -322,7 +303,6 @@ export default class LandActionsPageController extends QuestionPageController {
       const viewModel = {
         ...this.getViewModel(request, context),
         ...state,
-        selectedLandParcelSummary: this.getSelectedLandParcelData(context),
         selectedActions,
         selectedActionsQuantities,
         errors: collection.getErrors(collection.getErrors())
