@@ -2,11 +2,9 @@
 
 {% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
 {% from "govuk/components/checkboxes/macro.njk" import govukCheckboxes %}
-{% from "govuk/components/input/macro.njk" import govukInput %}
 {% from "govuk/components/warning-text/macro.njk" import govukWarningText %}
 {% from "govuk/components/button/macro.njk" import govukButton %}
-{% from "govuk/components/input/macro.njk" import govukInput %}
-{% from "govuk/components/summary-list/macro.njk" import govukSummaryList %}
+{% from "govuk/components/details/macro.njk" import govukDetails %}
 
 {% block content %}
 <div class="govuk-body">
@@ -21,25 +19,6 @@
       {% endif %}
 
       <h1 class="govuk-heading-l">Choose which actions to do</h1>
-
-      {{ govukSummaryList({
-          card: {
-            title: {
-              text: "Chosen parcel: " + selectedLandParcelSummary.name
-            },
-            actions: {
-              items: [
-                {
-                  href: backLink.href,
-                  text: "Change",
-                  visuallyHiddenText: "land parcel to do actions on"
-                }
-              ]
-            }
-          },
-          rows: selectedLandParcelSummary.rows
-        })
-      }}
 
       {% if availableActions %}
         <form method="post" novalidate>

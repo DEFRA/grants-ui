@@ -16,20 +16,6 @@ describe('LandActionsPageController', () => {
   let mockContext
   let mockH
 
-  const selectedLandParcelSummary = {
-    name: 'sheet1-parcel1',
-    rows: [
-      {
-        key: {
-          text: 'Total size'
-        },
-        value: {
-          text: 'Not available'
-        }
-      }
-    ]
-  }
-
   const availableActions = [
     {
       code: 'CMOR1',
@@ -297,7 +283,6 @@ describe('LandActionsPageController', () => {
         expect.objectContaining({
           selectedLandParcel: 'sheet1-parcel1',
           availableActions,
-          selectedLandParcelSummary,
           selectedActions: ['CMOR1', 'UPL1'],
           selectedActionsQuantities: { 'qty-CMOR1': 10, 'qty-UPL1': 5 }
         })
@@ -374,7 +359,6 @@ describe('LandActionsPageController', () => {
         'choose-which-actions-to-do',
         expect.objectContaining({
           availableActions: [],
-          selectedLandParcelSummary,
           selectedLandParcel: 'sheet1-parcel1',
           selectedActions: [],
           selectedActionsQuantities: {}
@@ -435,7 +419,6 @@ describe('LandActionsPageController', () => {
         mockRequest,
         expect.objectContaining({
           selectedLandParcel: 'sheet1-parcel1',
-          selectedLandParcelSummary,
           landParcels: {
             'sheet1-parcel1': {
               actionsObj: {
