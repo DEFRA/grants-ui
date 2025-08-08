@@ -24,10 +24,10 @@
  * Transforms answer keys in a FormContext object to their corresponding text values
  * @param {object} state - FormContext object
  * @param {object} componentDefMap - Component definitions map
- * @param {object} listDefMap - List definitions map
+ * @param {object} listDefIdMap - List definitions map by id
  * @returns {object} - FormContext object with answer keys replaced with text values
  */
-export function transformAnswerKeysToText(state, componentDefMap, listDefMap) {
+export function transformAnswerKeysToText(state, componentDefMap, listDefIdMap) {
   const transformedState = {}
 
   for (const [key, value] of Object.entries(state)) {
@@ -35,7 +35,7 @@ export function transformAnswerKeysToText(state, componentDefMap, listDefMap) {
 
     if (componentDef?.list) {
       const listId = componentDef.list
-      const listEntries = listDefMap.get(listId).items
+      const listEntries = listDefIdMap.get(listId).items
 
       if (Array.isArray(value)) {
         // Handle array values (like checkboxes)

@@ -4,79 +4,126 @@ metadata:
     grantCode: pigs-might-fly
 pages:
   - title: Check if you can apply for a Pigs Might Fly Grant
-    path: '/start'
+    path: /start
     controller: StartPageController
     components:
       - name: startInfoOne
         title: Html
         type: Html
-        content: |-
+        content: >-
           <p class="govuk-body">Use this service to:</p>
 
+
           <ul class="govuk-list govuk-list--bullet">
-          <li>check if you can apply for wings for your pigs (takes about 3 minutes)</li>
-          <li>get an estimate of your grant funding (takes about 5 minutes if you have all the pig details)</li>
+
+          <li>check if you can apply for wings for your pigs (takes about 3
+          minutes)</li>
+
+          <li>get an estimate of your grant funding (takes about 5 minutes if
+          you have all the pig details)</li>
+
           </ul>
+
 
           <p class="govuk-body">You can apply if you:</p>
 
+
           <ul class="govuk-list govuk-list--bullet">
+
           <li>are a pig farmer</li>
+
           <li>have between 1 and 1,000 pigs</li>
+
           <li>will use the wings in England</li>
+
           <li>want to super-power your pigs</li>
+
           </ul>
+        id: eb6eda3b-57ee-4440-bb0f-18e2a189bd8e
+        options: {}
+        schema: {}
       - name: startInsetText
         title: Inset text
         type: InsetText
-        content:
-          If your project is eligible, you can submit your answers to the Rural
+        content: If your project is eligible, you can submit your answers to the Rural
           Payments Agency (RPA) to request the full application form.
+        id: bbceb617-7602-49f1-8a53-251c6b3dccef
+        options: {}
+        schema: {}
       - name: startInfoTwo
         title: Html
         type: Html
-        content: |+
+        content: >
           <h2 class="govuk-heading-s">Grant funding rates</h2>
+
           <p class="govuk-body">You can get funding for:</p>
+
           <ul class="govuk-list govuk-list--bullet">
+
           <li>£10 per pig for Large White breeds</li>
+
           <li>£15 per pig for British Landrace breeds</li>
+
           <li>£18 per pig for Berkshire breeds</li>
+
           <li>£10 per pig for other breeds</li>
+
           </ul>
+
 
           <h2 class="govuk-heading-s">Before you start</h2>
+
           <p class="govuk-body">To use the checker, you need:</p>
+
           <ul class="govuk-list govuk-list--bullet">
+
           <li>information about your farming business</li>
+
           <li>the number and breeds of pigs you have</li>
+
           <li>your contact details and business address</li>
+
           </ul>
-          <p class="govuk-body">If you do not enter any information for more than 20 minutes, your application will time out and you will have to start again.</p>
+
+          <p class="govuk-body">If you do not enter any information for more
+          than 20 minutes, your application will time out and you will have to
+          start again.</p>
+
 
           <h2 class="govuk-heading-s">Problems using the online service</h2>
-          <p class="govuk-body">If you have any problems using the online service, contact the RPA.</p>
+
+          <p class="govuk-body">If you have any problems using the online
+          service, contact the RPA.</p>
+
 
           <h2 class="govuk-heading-s">Telephone</h2>
+
           <p class="govuk-body">Telephone: 03000 200 301</p>
-          <p class="govuk-body">Monday to Friday, 9am to 5pm (except public holidays)</p>
+
+          <p class="govuk-body">Monday to Friday, 9am to 5pm (except public
+          holidays)</p>
+        id: 24172324-4841-445c-b1fb-4f377596d826
+        options: {}
+        schema: {}
     next:
       - path: /are-you-pig-farmer
-
+    id: 4afc672b-71d6-4889-999d-c7934184f3cc
   - title: Are you a pig farmer?
     path: /are-you-pig-farmer
     next:
       - path: /you-must-be-pig-farmer
-        condition: uFOrmA
+        condition: 341c2742-74d4-439e-91ee-641f4e56093f
       - path: /pig-count
     components:
       - name: isPigFarmer
         title: Are you a pig farmer?
         type: YesNoField
-        hint: ''
+        hint: ""
         options: {}
         schema: {}
-
+        shortDescription: Are you a pig farmer?
+        id: 45052db5-d620-4382-b2ec-918168c98bc7
+    id: d40c01ac-f492-4665-90c6-b62a6e58d6aa
   - title: You are not eligible for this grant
     path: /you-must-be-pig-farmer
     next: []
@@ -84,24 +131,29 @@ pages:
       - name: FGyiLS
         title: You are not eligible for this grant
         type: Html
-        hint: ''
-        content: |
-          <p class="govuk-body">Sorry, this grant is only available for pig farmers.</p>
+        hint: ""
+        content: >
+          <p class="govuk-body">Sorry, this grant is only available for pig
+          farmers.</p>
         options: {}
         schema: {}
-
+        id: 2324fb1a-5c1d-4f49-ace0-5a9d5eaa088c
+    id: 21347447-b831-4074-bc25-a35ac5a9fd8f
   - title: How many pigs do you have?
     path: /pig-count
     next:
       - path: /not-eligible
-        condition: tooManyPigsCondition
+        condition: 53386d88-be5b-4637-8b90-7843f4473d4e
       - path: /what-type-of-pigs
     components:
       - name: pigCountInfo
         type: Html
         title: Html
-        content:
-          '<p class="govuk-hint">Enter the total number of pigs you have<br><br>You can apply for wings for up to 1,000 pigs</p>'
+        content: <p class="govuk-hint">Enter the total number of pigs you
+          have<br><br>You can apply for wings for up to 1,000 pigs</p>
+        id: d22f5165-8952-4fb7-9fd3-139f4fb73e53
+        options: {}
+        schema: {}
       - name: totalPigs
         type: NumberField
         title: Enter number of pigs
@@ -115,244 +167,222 @@ pages:
         schema:
           min: 1
           precision: 0
-
+        shortDescription: Enter number of pigs
+        id: 11311189-f228-449a-90ee-68bbb6640fac
+    id: f04b730c-b5f3-4c37-9c89-fb2297153c73
   - title: You are not eligible for this grant
     path: /not-eligible
     controller: TerminalPageController
-    next: [ ]
+    next: []
     components:
       - name: FGyiLA
         title: You are not eligible for this grant
         type: Html
-        hint: ''
-        content: |
-          <p class="govuk-body">Sorry, this grant is only available for pig farmers with up to 1,000 pigs</p>
-        options: { }
-        schema: { }
-    condition: tooManyPigsCondition
-
+        hint: ""
+        content: >
+          <p class="govuk-body">Sorry, this grant is only available for pig
+          farmers with up to 1,000 pigs</p>
+        options: {}
+        schema: {}
+        id: 10a9cac2-e419-42ee-9baa-b36240aca0c3
+    condition: 53386d88-be5b-4637-8b90-7843f4473d4e
+    id: d7848b42-24b3-4ed0-abcc-1c31f967cb25
   - title: What type of pigs?
     path: /what-type-of-pigs
     components:
       - name: pigBreeds
         title: What type of pigs?
         type: CheckboxesField
-        list: pigBreedsList
+        list: 3fdc57b9-f644-4255-886a-474e2b6743b0
         hint: Select all that apply.
         options: {}
         schema: {}
+        shortDescription: What type of pigs?
+        id: b9e18c89-64fb-466d-8e2c-46021b3b8a76
     next:
       - path: /how-many-white-pigs
-        condition: selectedWhitePig
+        condition: 90d64978-0714-41fb-b3d5-b37ad3537a57
       - path: /how-many-british-landrace
-        condition: selectedBritishLandrace
+        condition: 506f0683-d615-40ec-b746-b31797dac464
       - path: /how-many-berkshire-pigs
-        condition: selectedBerkshirePig
+        condition: 850d2d80-d0a4-492a-8927-19b5ad89a6c1
       - path: /how-many-other-pigs
-        condition: selectedOtherPig
+        condition: 1f672a37-ad80-40fd-8675-54265ece3ef8
       - path: /potential-funding
-
+    id: 3c71604b-92e9-4729-a67a-c7ac0f77dca2
   - title: How many White pigs do you have?
     path: /how-many-white-pigs
     components:
       - name: whitePigsCount
         title: How many White pigs do you have?
         type: NumberField
-        hint: ''
+        hint: ""
         options: {}
         schema: {}
+        shortDescription: How many White pigs do you have?
+        id: c35baac6-cfc7-4984-a099-9965f7479ca5
     next:
       - path: /how-many-british-landrace
-        condition: selectedBritishLandrace
+        condition: 506f0683-d615-40ec-b746-b31797dac464
       - path: /how-many-berkshire-pigs
-        condition: selectedBerkshirePig
+        condition: 850d2d80-d0a4-492a-8927-19b5ad89a6c1
       - path: /how-many-other-pigs
-        condition: selectedOtherPig
+        condition: 1f672a37-ad80-40fd-8675-54265ece3ef8
       - path: /potential-funding
-
+    id: 39d6d558-d0b3-43bd-855f-d09cf810db7a
   - title: How many British Landrace pigs do you have?
     path: /how-many-british-landrace
     components:
       - name: britishLandracePigsCount
         title: How many British Landrace pigs do you have?
         type: NumberField
-        hint: ''
+        hint: ""
         options: {}
         schema: {}
+        shortDescription: How many British Landrace pigs do you have?
+        id: 95be4663-635e-4d97-beca-ea383df0ba15
     next:
       - path: /how-many-berkshire-pigs
-        condition: selectedBerkshirePig
+        condition: 850d2d80-d0a4-492a-8927-19b5ad89a6c1
       - path: /how-many-other-pigs
-        condition: selectedOtherPig
+        condition: 1f672a37-ad80-40fd-8675-54265ece3ef8
       - path: /potential-funding
-
+    id: 114798d7-622e-46da-943d-729f4d102d8c
   - title: How many Berkshire pigs do you have?
     path: /how-many-berkshire-pigs
     components:
       - name: berkshirePigsCount
         title: How many Berkshire pigs do you have?
         type: NumberField
-        hint: ''
+        hint: ""
         options: {}
         schema: {}
+        shortDescription: How many Berkshire pigs do you have?
+        id: 66316a29-4e30-4ee5-821b-c33eb9ce888b
     next:
       - path: /how-many-other-pigs
-        condition: selectedOtherPig
+        condition: 1f672a37-ad80-40fd-8675-54265ece3ef8
       - path: /potential-funding
-
+    id: 2377d567-2723-4bc1-b51b-10aaf8047980
   - title: How many Other pigs do you have?
     path: /how-many-other-pigs
     components:
       - name: otherPigsCount
         title: How many Other pigs do you have?
         type: NumberField
-        hint: ''
+        hint: ""
         options: {}
         schema: {}
+        shortDescription: How many Other pigs do you have?
+        id: d24f82c6-a82c-45fb-987e-44ec73149567
     next:
       - path: /potential-funding
-
+    id: 534eed46-bd88-4e37-823f-5dc9d23409e8
   - title: Potential grant funding
-    path: '/potential-funding'
+    path: /potential-funding
     controller: PotentialFundingController
     next:
-      - path: /summary
-
-  - path: /summary
+      - path: /check-answers
+    id: 0ca92c0d-1318-491f-a461-bad92554dae3
+  - path: /check-answers
     controller: FlyingPigsSubmissionPageController
     title: Check your answers
-
+    next: []
+    id: e18e2a8f-4dcf-4f70-ae75-235752260c51
   - title: Confirmation
-    path: '/confirmation'
+    path: /confirmation
     controller: ConfirmationPageController
-
+    next: []
+    id: bbbd6009-c4b7-4d34-8cf4-9d2ee3dd094c
+  - title: Check your answers
+    controller: SummaryPageController
+    path: /summary
+    components: []
+    next: []
+    id: 9e18a0c5-21d5-4090-8fd6-d259f069e510
 lists:
   - title: What type of pigs do you have?
     name: pigBreedsList
     type: string
     items:
-      - text: 'Large White'
+      - text: Large White
         description: £10 per pig funding rate
         value: largeWhite
-      - text: 'British Landrace'
+        id: 4b9b35f6-16e8-434d-b9a5-267377c25a9a
+      - text: British Landrace
         description: £15 per pig funding rate
         value: britishLandrace
+        id: 6e4dc730-3a3b-41f2-9f76-ee2b30ce0946
       - text: Berkshire
         description: £18 per pig funding rate
         value: berkshire
+        id: 2b55f154-b759-4ab2-9e58-dc8e6f420571
       - text: Other
         description: £10 per pig funding rate
         value: other
-
+        id: f0973fe0-c200-44ad-9fdf-80707c4710dd
+    id: 3fdc57b9-f644-4255-886a-474e2b6743b0
 sections:
   - title: Contact details
     name: dhpiZu
     hideTitle: false
-
 conditions:
-  - name: uFOrmA
+  - id: 341c2742-74d4-439e-91ee-641f4e56093f
     displayName: notPigFarmer
-    value:
-      name: notPigFarmer
-      conditions:
-        - field:
-            name: isPigFarmer
-            type: YesNoField
-            display: Are you a pig farmer?
-          operator: is
-          value:
-            type: Value
-            value: 'false'
-            display: No
-
-  - name: uFOrmB
-    displayName: notEligible
-    value:
-      name: notEligible
-      conditions:
-        - field:
-            name: isPigFarmer
-            type: YesNoField
-            display: Are you a pig farmer?
-          operator: is
-          value:
-            type: Value
-            value: 'false'
-            display: No
-
-  - name: tooManyPigsCondition
+    items:
+      - id: 47977a3b-2c17-42c4-b9ab-1f10e831df84
+        componentId: 45052db5-d620-4382-b2ec-918168c98bc7
+        operator: is
+        type: BooleanValue
+        value: false
+  - id: 53386d88-be5b-4637-8b90-7843f4473d4e
     displayName: Too many pigs entered
-    value:
-      name: tooManyPigs
-      conditions:
-        - field:
-            name: totalPigs
-            type: NumberField
-            display: Enter number of pigs
-          operator: is more than
-          value:
-            type: Value
-            value: '1000'
-            display: Enter number of pigs
-
-  - name: selectedWhitePig
+    items:
+      - id: 8dfd0741-5b42-4feb-97b5-e233d2f26da5
+        componentId: 11311189-f228-449a-90ee-68bbb6640fac
+        operator: is more than
+        type: NumberValue
+        value: 1000
+  - id: 90d64978-0714-41fb-b3d5-b37ad3537a57
     displayName: User selected white pig
-    value:
-      name: selectedWhitePig
-      conditions:
-        - field:
-            name: pigBreeds
-            type: CheckboxesField
-            display: What type of pigs?
-          operator: contains
-          value:
-            type: Value
-            value: 'largeWhite'
-            display: 'Large White'
-
-  - name: selectedBritishLandrace
+    items:
+      - id: 767a51ff-7d3b-4fe3-a96b-b31de6864dca
+        componentId: b9e18c89-64fb-466d-8e2c-46021b3b8a76
+        operator: contains
+        type: ListItemRef
+        value:
+          listId: 3fdc57b9-f644-4255-886a-474e2b6743b0
+          itemId: 4b9b35f6-16e8-434d-b9a5-267377c25a9a
+  - id: 506f0683-d615-40ec-b746-b31797dac464
     displayName: User selected british landrace
-    value:
-      name: selectedBritishLandrace
-      conditions:
-        - field:
-            name: pigBreeds
-            type: CheckboxesField
-            display: What type of pigs?
-          operator: contains
-          value:
-            type: Value
-            value: 'britishLandrace'
-            display: 'British Landrace'
-
-  - name: selectedBerkshirePig
+    items:
+      - id: fff3b27f-49bf-42e3-8b08-1ab7813d4f9d
+        componentId: b9e18c89-64fb-466d-8e2c-46021b3b8a76
+        operator: contains
+        type: ListItemRef
+        value:
+          listId: 3fdc57b9-f644-4255-886a-474e2b6743b0
+          itemId: 6e4dc730-3a3b-41f2-9f76-ee2b30ce0946
+  - id: 850d2d80-d0a4-492a-8927-19b5ad89a6c1
     displayName: User selected berkshire
-    value:
-      name: selectedBerkshirePig
-      conditions:
-        - field:
-            name: pigBreeds
-            type: CheckboxesField
-            display: What type of pigs?
-          operator: contains
-          value:
-            type: Value
-            value: 'berkshire'
-            display: 'Berkshire'
-
-  - name: selectedOtherPig
+    items:
+      - id: 098d44ee-a400-4a49-83a6-c75dfb709f9f
+        componentId: b9e18c89-64fb-466d-8e2c-46021b3b8a76
+        operator: contains
+        type: ListItemRef
+        value:
+          listId: 3fdc57b9-f644-4255-886a-474e2b6743b0
+          itemId: 2b55f154-b759-4ab2-9e58-dc8e6f420571
+  - id: 1f672a37-ad80-40fd-8675-54265ece3ef8
     displayName: User selected other pig
-    value:
-      name: selectedOtherPig
-      conditions:
-        - field:
-            name: pigBreeds
-            type: CheckboxesField
-            display: What type of pigs?
-          operator: contains
-          value:
-            type: Value
-            value: 'other'
-            display: 'other'
-
+    items:
+      - id: ad002d54-47e8-4851-918a-9ef06c714581
+        componentId: b9e18c89-64fb-466d-8e2c-46021b3b8a76
+        operator: contains
+        type: ListItemRef
+        value:
+          listId: 3fdc57b9-f644-4255-886a-474e2b6743b0
+          itemId: f0973fe0-c200-44ad-9fdf-80707c4710dd
 startPage: /start
+engine: V2
+schema: 2

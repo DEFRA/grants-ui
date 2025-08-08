@@ -67,7 +67,7 @@ export default class DeclarationPageController extends SummaryPageController {
         const stateWithTextAnswers = transformAnswerKeysToText(
           context.relevantState,
           this.model.componentDefMap,
-          this.model.listDefMap
+          this.model.listDefIdMap
         )
         stateWithTextAnswers.referenceNumber = context.referenceNumber
 

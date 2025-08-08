@@ -48,7 +48,7 @@ describe('DeclarationPageController', () => {
         }
       },
       componentDefMap: {},
-      listDefMap: {}
+      listDefIdMap: {}
     }
     mockPageDef = {}
 
@@ -192,7 +192,7 @@ describe('DeclarationPageController', () => {
       expect(transformAnswerKeysToText).toHaveBeenCalledWith(
         mockContext.relevantState,
         mockModel.componentDefMap,
-        mockModel.listDefMap
+        mockModel.listDefIdMap
       )
 
       expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
