@@ -12,8 +12,8 @@ describe('stateToLandGrantsGasAnswers', () => {
     const input = {
       hasCheckedLandIsUpToDate: true,
       scheme: 'SFI',
-      agreementName: "Joe's farm funding 2025",
       year: 2025,
+      agreementName: 'NO_LONGER_REQUIRED',
       landParcels: {
         'SX0679-9238': {
           actionsObj: {
@@ -30,7 +30,7 @@ describe('stateToLandGrantsGasAnswers', () => {
       scheme: 'SFI',
       year: 2025,
       hasCheckedLandIsUpToDate: true,
-      agreementName: "Joe's farm funding 2025",
+      agreementName: 'NO_LONGER_REQUIRED',
       actionApplications: [
         {
           parcelId: '9238',
@@ -72,6 +72,7 @@ describe('stateToLandGrantsGasAnswers', () => {
     const expected = {
       scheme: 'SFI',
       year: 2025,
+      agreementName: 'NO_LONGER_REQUIRED',
       actionApplications: [
         {
           parcelId: '9238',
@@ -118,6 +119,7 @@ describe('stateToLandGrantsGasAnswers', () => {
       hasCheckedLandIsUpToDate: true,
       scheme: 'SFI',
       year: 2025,
+      agreementName: 'NO_LONGER_REQUIRED',
       actionApplications: []
     }
 
@@ -138,6 +140,7 @@ describe('stateToLandGrantsGasAnswers', () => {
       scheme: 'SFI',
       year: 2025,
       hasCheckedLandIsUpToDate: true,
+      agreementName: 'NO_LONGER_REQUIRED',
       actionApplications: []
     }
 
@@ -161,6 +164,7 @@ describe('stateToLandGrantsGasAnswers', () => {
     const expected = {
       scheme: 'SFI',
       year: 2025,
+      agreementName: 'NO_LONGER_REQUIRED',
       actionApplications: [
         {
           parcelId: '9238',
@@ -194,6 +198,7 @@ describe('stateToLandGrantsGasAnswers', () => {
     const expected = {
       scheme: 'SFI',
       year: 2025,
+      agreementName: 'NO_LONGER_REQUIRED',
       actionApplications: [
         {
           parcelId: '9238',
@@ -226,6 +231,7 @@ describe('stateToLandGrantsGasAnswers', () => {
     const expected = {
       scheme: 'SFI',
       year: 2025,
+      agreementName: 'NO_LONGER_REQUIRED',
       actionApplications: [
         {
           parcelId: '9238',
@@ -258,6 +264,7 @@ describe('stateToLandGrantsGasAnswers', () => {
     const expected = {
       scheme: 'SFI',
       year: 2025,
+      agreementName: 'NO_LONGER_REQUIRED',
       actionApplications: [
         {
           parcelId: '9238',
@@ -287,6 +294,7 @@ describe('stateToLandGrantsGasAnswers', () => {
     const expected = {
       scheme: 'SFI',
       year: 2025,
+      agreementName: 'NO_LONGER_REQUIRED',
       actionApplications: [
         {
           parcelId: '9238',
@@ -313,6 +321,7 @@ describe('stateToLandGrantsGasAnswers', () => {
     const expected = {
       scheme: 'SFI',
       year: 2025,
+      agreementName: 'NO_LONGER_REQUIRED',
       actionApplications: [
         {
           parcelId: '9238',
@@ -334,6 +343,7 @@ describe('stateToLandGrantsGasAnswers', () => {
     const expected = {
       scheme: 'SFI',
       year: 2025,
+      agreementName: 'NO_LONGER_REQUIRED',
       actionApplications: []
     }
 
@@ -345,6 +355,7 @@ describe('stateToLandGrantsGasAnswers', () => {
     const expected = {
       scheme: 'SFI',
       year: 2025,
+      agreementName: 'NO_LONGER_REQUIRED',
       actionApplications: []
     }
 
@@ -368,6 +379,7 @@ describe('stateToLandGrantsGasAnswers', () => {
     const expected = {
       scheme: 'SFI',
       year: 2025,
+      agreementName: 'NO_LONGER_REQUIRED',
       actionApplications: [
         {
           sheetId: 'SX06799238', // The entire value becomes sheetId
@@ -400,6 +412,7 @@ describe('stateToLandGrantsGasAnswers', () => {
     const expected = {
       scheme: 'SFI',
       year: 2025,
+      agreementName: 'NO_LONGER_REQUIRED',
       actionApplications: [
         {
           parcelId: '9238',
@@ -433,6 +446,7 @@ describe('stateToLandGrantsGasAnswers', () => {
     const expected = {
       scheme: 'SFI',
       year: 2025,
+      agreementName: 'NO_LONGER_REQUIRED',
       actionApplications: [
         {
           sheetId: 'SX0679',
@@ -463,6 +477,7 @@ describe('stateToLandGrantsGasAnswers', () => {
     const expected = {
       scheme: 'SFI',
       year: 2025,
+      agreementName: 'NO_LONGER_REQUIRED',
       actionApplications: [
         {
           parcelId: '9238',
@@ -495,6 +510,7 @@ describe('stateToLandGrantsGasAnswers', () => {
     const expected = {
       scheme: 'SFI',
       year: 2025,
+      agreementName: 'NO_LONGER_REQUIRED',
       actionApplications: [
         {
           parcelId: '9238',
@@ -543,6 +559,7 @@ describe('stateToLandGrantsGasAnswers', () => {
     const expected = {
       scheme: 'SFI',
       year: 2025,
+      agreementName: 'NO_LONGER_REQUIRED',
       actionApplications: [
         {
           parcelId: '9238',
@@ -576,6 +593,7 @@ describe('stateToLandGrantsGasAnswers', () => {
     const expected = {
       scheme: 'SFI',
       year: 2025,
+      agreementName: 'NO_LONGER_REQUIRED',
       actionApplications: [
         {
           parcelId: '9238',
@@ -606,6 +624,7 @@ describe('stateToLandGrantsGasAnswers', () => {
     const expected = {
       scheme: 'SFI',
       year: 2025,
+      agreementName: 'NO_LONGER_REQUIRED',
       actionApplications: [
         {
           parcelId: '9238',
@@ -632,7 +651,7 @@ describe('schema validation', () => {
         frn: 'frn-1234',
         crn: 'crn-1234',
         defraId: 'defra-id-1234',
-        agreementName: "Joe's farm funding 2025",
+        agreementName: 'NO_LONGER_REQUIRED',
         scheme: 'SFI',
         year: 2025,
         hasCheckedLandIsUpToDate: true,
@@ -649,7 +668,7 @@ describe('schema validation', () => {
       },
       // Minimal object with actions
       {
-        agreementName: "Joe's farm funding 2025",
+        agreementName: 'NO_LONGER_REQUIRED',
         hasCheckedLandIsUpToDate: true,
         landParcels: {
           'SX0679-9238': {

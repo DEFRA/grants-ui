@@ -92,7 +92,7 @@ export function stateToLandGrantsGasAnswers(state) {
   const { landParcels } = state
   const result = {
     hasCheckedLandIsUpToDate: state.hasCheckedLandIsUpToDate,
-    agreementName: state.agreementName,
+    agreementName: 'NO_LONGER_REQUIRED',
     scheme: 'SFI',
     year: 2025,
     actionApplications: []
