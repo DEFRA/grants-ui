@@ -49,7 +49,7 @@ function buildProxyHeaders(token, request) {
     const encryptedAuth = Jwt.token.generate({ sbi: sbi.toString(), source }, jwtSecret)
     return {
       Authorization: `Bearer ${token}`,
-      'defra-grants-proxy': 'true',
+      'x-base-url': config.get('agreements.baseUrl'),
       'content-type': request.headers['content-type'] || 'application/x-www-form-urlencoded',
       'x-encrypted-auth': encryptedAuth
     }

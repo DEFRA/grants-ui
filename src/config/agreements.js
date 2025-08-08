@@ -22,6 +22,12 @@ const agreements = convict({
     default: 'http://localhost:3555',
     env: 'AGREEMENTS_API_URL'
   },
+  baseUrl: {
+    doc: 'Agreements base URL',
+    format: String,
+    default: '/agreement',
+    env: 'AGREEMENTS_BASE_URL'
+  },
   jwtSecret: {
     doc: 'JWT Secret',
     format: String,
