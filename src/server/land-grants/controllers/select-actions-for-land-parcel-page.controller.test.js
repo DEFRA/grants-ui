@@ -5,12 +5,12 @@ import {
   triggerApiActionsValidation,
   calculateGrantPayment
 } from '~/src/server/land-grants/services/land-grants.service.js'
-import LandActionsPageController from './land-actions-page.controller.js'
+import SelectActionsForLandParcelPageController from './select-actions-for-land-parcel-page.controller.js'
 
 jest.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js')
 jest.mock('~/src/server/land-grants/services/land-grants.service.js')
 
-describe('LandActionsPageController', () => {
+describe('SelectActionsForLandParcelPageController', () => {
   let controller
   let mockRequest
   let mockContext
@@ -40,7 +40,7 @@ describe('LandActionsPageController', () => {
       pageTitle: 'Land Actions'
     })
 
-    controller = new LandActionsPageController()
+    controller = new SelectActionsForLandParcelPageController()
     controller.availableActions = availableActions
     controller.collection = {
       getErrors: jest.fn().mockReturnValue([])
@@ -82,7 +82,7 @@ describe('LandActionsPageController', () => {
   })
 
   test('should have the correct viewName', () => {
-    expect(controller.viewName).toBe('choose-which-actions-to-do')
+    expect(controller.viewName).toBe('select-actions-for-land-parcel')
   })
 
   describe('extractActionsDataFromPayload', () => {
@@ -279,7 +279,7 @@ describe('LandActionsPageController', () => {
         sheetId: 'sheet1'
       })
       expect(mockH.view).toHaveBeenCalledWith(
-        'choose-which-actions-to-do',
+        'select-actions-for-land-parcel',
         expect.objectContaining({
           selectedLandParcel: 'sheet1-parcel1',
           availableActions,
@@ -297,7 +297,7 @@ describe('LandActionsPageController', () => {
       await handler(mockRequest, mockContext, mockH)
 
       expect(mockH.view).toHaveBeenCalledWith(
-        'choose-which-actions-to-do',
+        'select-actions-for-land-parcel',
         expect.objectContaining({
           availableActions: []
         })
@@ -337,7 +337,7 @@ describe('LandActionsPageController', () => {
         sheetId: ''
       })
       expect(mockH.view).toHaveBeenCalledWith(
-        'choose-which-actions-to-do',
+        'select-actions-for-land-parcel',
         expect.objectContaining({
           availableActions: []
         })
@@ -356,7 +356,7 @@ describe('LandActionsPageController', () => {
       const result = await handler(mockRequest, mockContext, mockH)
 
       expect(mockH.view).toHaveBeenCalledWith(
-        'choose-which-actions-to-do',
+        'select-actions-for-land-parcel',
         expect.objectContaining({
           availableActions: [],
           selectedLandParcel: 'sheet1-parcel1',
@@ -483,7 +483,7 @@ describe('LandActionsPageController', () => {
 
       // Test that triggerApiActionsValidation is called with correct arguments
       test('should call triggerApiActionsValidation with correct parameters', async () => {
-        const controller = new LandActionsPageController()
+        const controller = new SelectActionsForLandParcelPageController()
         const sheetId = 'sheet1'
         const parcelId = 'parcel1'
         const readyForValidationsActionsObj = { CMOR1: { value: 10 } }
@@ -506,7 +506,7 @@ describe('LandActionsPageController', () => {
 
       // Test that valid response returns no errors
       test('should not add errors if API validation is valid', async () => {
-        const controller = new LandActionsPageController()
+        const controller = new SelectActionsForLandParcelPageController()
         triggerApiActionsValidation.mockResolvedValue({ valid: true, errorMessages: [] })
 
         const result = await controller.validatePayload(
@@ -522,7 +522,7 @@ describe('LandActionsPageController', () => {
 
       // Test that invalid response adds errors from errorMessages
       test('should add errors from API errorMessages if not valid', async () => {
-        const controller = new LandActionsPageController()
+        const controller = new SelectActionsForLandParcelPageController()
         const errorMessages = [{ code: 'CMOR1', description: 'Invalid quantity for CMOR1' }]
         triggerApiActionsValidation.mockResolvedValue({ valid: false, errorMessages })
 
@@ -573,7 +573,7 @@ describe('LandActionsPageController', () => {
         expect(triggerApiActionsValidation).not.toHaveBeenCalled()
 
         expect(mockH.view).toHaveBeenCalledWith(
-          'choose-which-actions-to-do',
+          'select-actions-for-land-parcel',
           expect.objectContaining({
             errorSummary: [
               {
@@ -603,7 +603,7 @@ describe('LandActionsPageController', () => {
         expect(triggerApiActionsValidation).not.toHaveBeenCalled()
 
         expect(mockH.view).toHaveBeenCalledWith(
-          'choose-which-actions-to-do',
+          'select-actions-for-land-parcel',
           expect.objectContaining({
             errorSummary: [
               {
@@ -633,7 +633,7 @@ describe('LandActionsPageController', () => {
         expect(triggerApiActionsValidation).not.toHaveBeenCalled()
 
         expect(mockH.view).toHaveBeenCalledWith(
-          'choose-which-actions-to-do',
+          'select-actions-for-land-parcel',
           expect.objectContaining({
             errorSummary: [
               {
@@ -718,7 +718,7 @@ describe('LandActionsPageController', () => {
         })
 
         expect(mockH.view).toHaveBeenCalledWith(
-          'choose-which-actions-to-do',
+          'select-actions-for-land-parcel',
           expect.objectContaining({
             errors,
             errorSummary,
@@ -825,7 +825,7 @@ describe('LandActionsPageController', () => {
       })
 
       expect(mockH.view).toHaveBeenCalledWith(
-        'choose-which-actions-to-do',
+        'select-actions-for-land-parcel',
         expect.objectContaining({
           errors,
           errorSummary,
@@ -867,7 +867,7 @@ describe('LandActionsPageController', () => {
       const result = await handler(mockRequest, mockContext, mockH)
 
       expect(mockH.view).toHaveBeenCalledWith(
-        'choose-which-actions-to-do',
+        'select-actions-for-land-parcel',
         expect.objectContaining({
           errorSummary: [
             {
@@ -947,7 +947,7 @@ describe('LandActionsPageController', () => {
 
       // The view should be rendered with the user's submitted values
       expect(mockH.view).toHaveBeenCalledWith(
-        'choose-which-actions-to-do',
+        'select-actions-for-land-parcel',
         expect.objectContaining({
           errors,
           errorSummary,
