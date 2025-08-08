@@ -6,6 +6,7 @@
 {% from "govuk/components/button/macro.njk" import govukButton %}
 {% from "govuk/components/input/macro.njk" import govukInput %}
 {% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
+{% from "support-details/macro.njk" import defraSupportDetails %}
 
 {% block content %}
 <div class="govuk-body">
@@ -35,20 +36,27 @@
           {% endfor %}
 
           {% if radioItems.length > 0 %}
+            <h1 class="govuk-heading-l">
+              Select land parcel for actions
+            </h1>
+
             {{ govukRadios({
                 name: "selectedLandParcel",
                 fieldset: {
                   legend: {
-                    text: "Select land parcel for actions",
-                    isPageHeading: true,
-                    classes: "govuk-fieldset__legend--l"
+                    text: "Use your map to check these reference numbers against your land parcels.",
+                    isPageHeading: false
                   }
                 },
-                items: radioItems,
+                items: radioItems.slice(0, 3),
                 value: parcelId,
                 errorMessage: errorMessage and { text: errorMessage }
               })
             }}
+
+            <p class="govuk-body">
+              You will be able to add actions to the other land parcels before submitting your application.
+            </p>
 
             <div id="landParcels" class="govuk-button-group">
               <input type="hidden" name="crumb" value="{{ crumb }}">
@@ -67,6 +75,8 @@
           {% endif %}
         </form>
       {% endif %}
+
+      {{ defraSupportDetails() }}
     </div>
   </div>
 </div>
