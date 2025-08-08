@@ -17,8 +17,9 @@ const unitRatesForActions = {
 
 const NOT_AVAILABLE = 'Not available'
 
-export default class LandActionsPageController extends QuestionPageController {
-  viewName = 'choose-which-actions-to-do'
+export default class SelectActionsForLandParcelPageController extends QuestionPageController {
+  viewName = 'select-actions-for-land-parcel'
+  areaPrefix = 'area-'
   quantityPrefix = 'qty-'
   availableActions = []
   currentParcelSize = NOT_AVAILABLE
