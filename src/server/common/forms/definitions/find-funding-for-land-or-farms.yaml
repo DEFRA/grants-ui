@@ -11,37 +11,43 @@ pages:
     next:
       - path: /land-details
     components: []
-
+    id: 5c24d5a2-7a66-4e2e-93d7-2ab7952e2b91
   - title: Confirm your details
     path: /confirm-farm-details
     controller: ConfirmFarmDetailsController
-
+    next: []
+    id: 84edb875-aad2-41c6-958e-738ce0f39c8a
   - title: Do your digital maps show the correct land details?
     path: /land-details
     components:
       - name: hasCheckedLandIsUpToDate
         title: Do your digital maps show the correct land details?
         type: YesNoField
-        hint: ''
+        hint: ""
         options: {}
         schema: {}
-
+        shortDescription: Do your digital maps show the correct land details?
+        id: 048c0e48-20ab-4371-b901-64bb4af3f317
+    next: []
+    id: bbd92c37-173a-4617-aab9-7a92f94a22a7
   - title: You must correct your land details
     path: /you-must-correct-your-details
     controller: TerminalPageController
-    condition: landIsUpToDateCondition
+    condition: 44362f53-ef2f-45b9-acb0-19a96ae7fe3a
     components:
       - name: FGyiLS
         title: You must correct your land details
         type: Html
-        hint: ''
-        content: |+
+        hint: ""
+        content: |
           <p class="govuk-body">
             You must correct your land details.
           </p>
         options: {}
         schema: {}
-
+        id: e77462bf-4c0d-42e8-b038-7430f48966c9
+    next: []
+    id: 81fb1b07-6c29-4952-a825-22fcb5ea3c98
   - title: Enter your agreement name
     path: /agreement-name
     next:
@@ -50,51 +56,56 @@ pages:
       - type: TextField
         name: agreementName
         title: Agreement name
-        hint: This will appear on your agreement documents, it is for your own use. For example 'Joe's Farm Funding 2025'.
+        hint: This will appear on your agreement documents, it is for your own use. For
+          example 'Joe's Farm Funding 2025'.
         options:
           required: true
           classes: govuk-input--width-30
           customValidationMessages:
             string.empty: Enter your agreement name
-
+        shortDescription: Agreement name
+        id: 358bcf16-ca50-4483-a04a-1a1853e1d7cd
+        schema: {}
+    id: 9f2c3cf3-d726-4a17-a6f6-85e27b4e24ba
   - title: Select Land Parcel
     controller: LandParcelPageController
     path: /select-land-parcel
-
+    next: []
+    id: 0f1596e3-1c88-4c14-acc4-bb0ba22e2641
   - title: Choose which actions to do
     controller: LandActionsPageController
     path: /choose-which-actions-to-do
-
+    next: []
+    id: 2f727074-5095-44a3-8bb0-61b9b225f362
   - title: Check selected land actions
     path: /check-selected-land-actions
     controller: LandActionsCheckPageController
-
+    next: []
+    id: 41ac245d-acd4-4481-8000-46acee2cc804
   - title: Check your answers before sending your application
     path: /summary
     controller: CheckAnswersPageController
-
+    next: []
+    id: 0de1a4dd-6820-4f5c-916c-78b11d5ce270
   - title: Submit your application
     path: /submit-your-application
     controller: SubmissionPageController
-
+    next: []
+    id: 9aa7b09d-2e38-4ab9-9512-f6e4710b8ec9
   - title: Confirmation
     path: /confirmation
     controller: ConfirmationPageController
-
+    next: []
+    id: 24724314-d31f-4ccb-a050-2b8aba9b34c2
 lists: []
 sections: []
 conditions:
-  - name: landIsUpToDateCondition
+  - id: 44362f53-ef2f-45b9-acb0-19a96ae7fe3a
     displayName: notCorrect
-    value:
-      name: notCorrect
-      conditions:
-        - field:
-            name: hasCheckedLandIsUpToDate
-            type: YesNoField
-            display: Do your digital maps show the correct land details?
-          operator: is
-          value:
-            type: Value
-            value: 'false'
-            display: 'No'
+    items:
+      - id: b4a1a9fb-8532-4b08-a81a-e1d529627d43
+        componentId: 048c0e48-20ab-4371-b901-64bb4af3f317
+        operator: is
+        type: BooleanValue
+        value: false
+schema: 2
