@@ -47,28 +47,12 @@
           {% set action = actionId or actions[0].id %}
 
           {% for action in availableActions %}
+            <input type="hidden" name="{{quantityPrefix + action.code }}" value="{{ action.availableArea.value}}">
+
             {% set actionsCheckboxes = actionsCheckboxes.concat([{
               value: action.code,
               text: action.description,
-              checked: actions and actions.includes(action.code),
-              conditional: {
-                html: govukInput({
-                  name: quantityPrefix + action.code,
-                  spellcheck: false,
-                  classes: "govuk-input--width-10",
-                  label: {
-                    text: "Quantity"
-                  },
-                  hint: {
-                    text: action.availableArea.value + " " + action.availableArea.unit + " available"
-                  },
-                  value: selectedActionsQuantities[ quantityPrefix + action.code ] or "",
-                  errorMessage: errors[action.code],
-                  suffix: {
-                    text: action.availableArea.unit
-                  }
-                })
-              }
+              checked: actions and actions.includes(action.code)
             }]) %}
           {% endfor %}
 
