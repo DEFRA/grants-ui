@@ -20,26 +20,7 @@
         }) }}
       {% endif %}
 
-      <h1 class="govuk-heading-l">Choose which actions to do</h1>
-
-      {{ govukSummaryList({
-          card: {
-            title: {
-              text: "Chosen parcel: " + selectedLandParcelSummary.name
-            },
-            actions: {
-              items: [
-                {
-                  href: backLink.href,
-                  text: "Change",
-                  visuallyHiddenText: "land parcel to do actions on"
-                }
-              ]
-            }
-          },
-          rows: selectedLandParcelSummary.rows
-        })
-      }}
+      <h1 class="govuk-heading-l">Select actions for land parcel</h1>
 
       {% if availableActions %}
         <form method="post" novalidate>

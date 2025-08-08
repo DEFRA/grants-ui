@@ -46,9 +46,9 @@ pages:
     controller: LandParcelPageController
     path: /select-land-parcel
 
-  - title: Choose which actions to do
-    controller: LandActionsPageController
-    path: /choose-which-actions-to-do
+  - title: Select actions for land parcel
+    controller: SelectActionsForLandParcelPageController
+    path: /select-actions-for-land-parcel
 
   - title: Check selected land actions
     path: /check-selected-land-actions
