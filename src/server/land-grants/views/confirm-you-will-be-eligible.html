@@ -1,0 +1,36 @@
+{% extends baseLayoutPath %}
+
+{% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "support-details/macro.njk" import defraSupportDetails %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds-from-desktop">
+      <h1 class="govuk-heading-l">
+        {{ pageTitle }}
+      </h1>
+
+      <p class="govuk-body">You confirm you will:</p>
+
+      <ul class="govuk-list govuk-list--bullet govuk-list--spaced">
+        <li>have management control of the land you are including in your application for the duration of the actions you select</li>
+        <li>make sure your land remains eligible for the duration of the actions you select including land type, land cover and land use code</li>
+        <li>get an Historic Environment Farm Environment Record (HEFER) from Historic England if you apply for actions on land with historic or archaeological features - you must not start doing these actions until you have your HEFER</li>
+        <li>get site of special scientific interest (SSSI) consent from Natural England if you select to do actions on SSSI land - you must not start doing these actions until you have your SSSI consent</li>
+        <li>check if you can do your selected actions on your land if you have land with a conditional exemption from inheritance tax or maintenance fund</li>
+        <li>not apply for actions that include activities you are legally required to carry out or are already funded by other sources - this applies to public bodies</li>
+      </ul>
+
+      <form method="post" novalidate>
+        <input type="hidden" name="crumb" value="{{ crumb }}">
+        {{ govukButton({
+            text: "Continue",
+            preventDoubleClick: true
+          })
+        }}
+      </form>
+
+      {{ defraSupportDetails() }}
+    </div>
+  </div>
+{% endblock %}
