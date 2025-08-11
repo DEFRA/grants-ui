@@ -20,6 +20,10 @@ pages:
     path: /confirm-you-will-be-eligible
     view: confirm-you-will-be-eligible.html
 
+  - title: Confirm your land details are up to date
+    path: /confirm-your-land-details-are-up-to-date
+    view: confirm-your-land-details-are-up-to-date.html
+
   - title: Select Land Parcel
     controller: LandParcelPageController
     path: /select-land-parcel
