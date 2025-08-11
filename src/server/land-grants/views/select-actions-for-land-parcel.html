@@ -9,7 +9,7 @@
 {% block content %}
 <div class="govuk-body">
   <div class="govuk-grid-row">
-    <div class="govuk-grid-column-two-thirds">
+    <div class="govuk-grid-column-two-thirds-from-desktop">
 
       {% if errorSummary.length > 0 %}
         {{ govukErrorSummary({
@@ -18,7 +18,9 @@
         }) }}
       {% endif %}
 
-      <h1 class="govuk-heading-l">Select actions for land parcel</h1>
+      <h1 class="govuk-heading-l">
+        Select actions for land parcel <span style="white-space: nowrap">{{ parcelName }}</span>
+      </h1>
 
       {% if availableActions %}
         <form method="post" novalidate>

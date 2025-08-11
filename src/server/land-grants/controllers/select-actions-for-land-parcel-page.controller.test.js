@@ -283,6 +283,7 @@ describe('SelectActionsForLandParcelPageController', () => {
         expect.objectContaining({
           selectedLandParcel: 'sheet1-parcel1',
           availableActions,
+          parcelName: 'sheet1 parcel1',
           selectedActions: ['CMOR1', 'UPL1'],
           selectedActionsQuantities: { 'qty-CMOR1': 10, 'qty-UPL1': 5 }
         })
@@ -575,6 +576,7 @@ describe('SelectActionsForLandParcelPageController', () => {
         expect(mockH.view).toHaveBeenCalledWith(
           'select-actions-for-land-parcel',
           expect.objectContaining({
+            parcelName: 'sheet1 parcel1',
             errorSummary: [
               {
                 text: 'Please select at least one action',
@@ -605,6 +607,7 @@ describe('SelectActionsForLandParcelPageController', () => {
         expect(mockH.view).toHaveBeenCalledWith(
           'select-actions-for-land-parcel',
           expect.objectContaining({
+            parcelName: 'sheet1 parcel1',
             errorSummary: [
               {
                 text: 'Please provide a quantity for CMOR1',
@@ -635,6 +638,7 @@ describe('SelectActionsForLandParcelPageController', () => {
         expect(mockH.view).toHaveBeenCalledWith(
           'select-actions-for-land-parcel',
           expect.objectContaining({
+            parcelName: 'sheet1 parcel1',
             errorSummary: [
               {
                 text: 'Please provide a quantity for CMOR1',
@@ -720,6 +724,7 @@ describe('SelectActionsForLandParcelPageController', () => {
         expect(mockH.view).toHaveBeenCalledWith(
           'select-actions-for-land-parcel',
           expect.objectContaining({
+            parcelName: 'sheet1 parcel1',
             errors,
             errorSummary,
             availableActions
@@ -829,7 +834,8 @@ describe('SelectActionsForLandParcelPageController', () => {
         expect.objectContaining({
           errors,
           errorSummary,
-          availableActions
+          availableActions,
+          parcelName: 'sheet1 parcel1'
         })
       )
 
@@ -869,6 +875,7 @@ describe('SelectActionsForLandParcelPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'select-actions-for-land-parcel',
         expect.objectContaining({
+          parcelName: 'sheet1 parcel1',
           errorSummary: [
             {
               text: 'Please select at least one action',
@@ -951,6 +958,7 @@ describe('SelectActionsForLandParcelPageController', () => {
         expect.objectContaining({
           errors,
           errorSummary,
+          parcelName: 'sheet1 parcel1',
           availableActions,
           selectedActions: ['CMOR1', 'UPL1'],
           selectedActionsQuantities: { 'qty-CMOR1': 10, 'qty-UPL1': 5 },

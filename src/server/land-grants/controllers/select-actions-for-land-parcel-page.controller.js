@@ -145,6 +145,7 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
           return h.view(viewName, {
             ...this.getViewModel(request, context),
             ...newState,
+            parcelName: `${sheetId} ${parcelId}`,
             selectedActions: payload.selectedActions,
             selectedActionsQuantities,
             errorSummary,
@@ -303,6 +304,7 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
       const viewModel = {
         ...this.getViewModel(request, context),
         ...state,
+        parcelName: `${sheetId} ${parcelId}`,
         selectedActions,
         selectedActionsQuantities,
         errors: collection.getErrors(collection.getErrors())
