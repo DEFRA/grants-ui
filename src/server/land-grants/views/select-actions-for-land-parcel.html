@@ -2,16 +2,14 @@
 
 {% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
 {% from "govuk/components/checkboxes/macro.njk" import govukCheckboxes %}
-{% from "govuk/components/input/macro.njk" import govukInput %}
 {% from "govuk/components/warning-text/macro.njk" import govukWarningText %}
 {% from "govuk/components/button/macro.njk" import govukButton %}
-{% from "govuk/components/input/macro.njk" import govukInput %}
-{% from "govuk/components/summary-list/macro.njk" import govukSummaryList %}
+{% from "govuk/components/details/macro.njk" import govukDetails %}
 
 {% block content %}
 <div class="govuk-body">
   <div class="govuk-grid-row">
-    <div class="govuk-grid-column-two-thirds">
+    <div class="govuk-grid-column-two-thirds-from-desktop">
 
       {% if errorSummary.length > 0 %}
         {{ govukErrorSummary({
@@ -20,26 +18,36 @@
         }) }}
       {% endif %}
 
-      <h1 class="govuk-heading-l">Choose which actions to do</h1>
+      <h1 class="govuk-heading-l">
+        Select actions for land parcel <span style="white-space: nowrap">{{ parcelName }}</span>
+      </h1>
 
-      {{ govukSummaryList({
-          card: {
-            title: {
-              text: "Chosen parcel: " + selectedLandParcelSummary.name
-            },
-            actions: {
-              items: [
-                {
-                  href: backLink.href,
-                  text: "Change",
-                  visuallyHiddenText: "land parcel to do actions on"
-                }
-              ]
-            }
-          },
-          rows: selectedLandParcelSummary.rows
-        })
-      }}
+      <p>The list shows actions you can do on this parcel that are compatible with:</p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>the land details registered with the Rural Payments service</li>
+        <li>actions you are already doing on this parcel</li>
+      </ul>
+
+      <p>
+        The service has automatically calculated the total available area in each land parcel that
+        is eligible for the action.
+      </p>
+
+
+      {{ govukDetails({
+        summaryText: "If you need to make an update",
+        html: '
+          <p>Contact the Rural Payments Agency if you think:</p>
+          <ul class="govuk-list govuk-list--bullet">
+            <li>the land details registered on the Rural Payments service need updating</li>
+            <li>the information about existing actions or options on this parcel is incorrect</li>
+          </ul>
+          <p>Telephone: 03000 200 301<br>
+            Monday to Friday, 8:30am to 5pm (except bank holidays)</p>
+          <p>
+            <a class="govuk-link" href="https://www.gov.uk/call-charges" target="_blank">Find out about call charges (opens in new tab)</a>
+          </p>'
+      }) }}
 
       {% if availableActions %}
         <form method="post" novalidate>
