@@ -15,13 +15,10 @@ const unitRatesForActions = {
   UPL4: 500
 }
 
-const NOT_AVAILABLE = 'Not available'
-
 export default class SelectActionsForLandParcelPageController extends QuestionPageController {
   viewName = 'select-actions-for-land-parcel'
   quantityPrefix = 'qty-'
   availableActions = []
-  currentParcelSize = NOT_AVAILABLE
 
   /**
    * Extract action data from the form payload
@@ -270,7 +267,6 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
       // Load available actions for the land parcel
       try {
         const data = await fetchAvailableActionsForParcel({ parcelId, sheetId })
-        this.currentParcelSize = data.size ? `${data.size.value} ${data.size.unit}` : NOT_AVAILABLE
         this.availableActions = data.actions || []
         if (!this.availableActions.length) {
           request.logger.error({
