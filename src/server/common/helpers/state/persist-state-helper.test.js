@@ -49,7 +49,7 @@ describe('persistStateToApi', () => {
           userId: 'user_test',
           businessId: 'biz_test',
           grantId: 'test-slug',
-          grantVersion: 'v1', // TODO: Update when support for same grant versioning is implemented
+          grantVersion: 1, // TODO: Update when support for same grant versioning is implemented
           state: testState
         })
       })
