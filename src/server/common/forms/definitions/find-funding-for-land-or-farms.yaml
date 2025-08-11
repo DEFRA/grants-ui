@@ -20,22 +20,6 @@ pages:
     path: /confirm-you-will-be-eligible
     view: confirm-you-will-be-eligible.html
 
-  - title: You must correct your land details
-    path: /you-must-correct-your-details
-    controller: TerminalPageController
-    condition: landIsUpToDateCondition
-    components:
-      - name: FGyiLS
-        title: You must correct your land details
-        type: Html
-        hint: ''
-        content: |+
-          <p class="govuk-body">
-            You must correct your land details.
-          </p>
-        options: {}
-        schema: {}
-
   - title: Select Land Parcel
     controller: LandParcelPageController
     path: /select-land-parcel
@@ -62,3 +46,4 @@ pages:
 
 lists: []
 sections: []
+conditions: []
