@@ -284,8 +284,7 @@ describe('SelectActionsForLandParcelPageController', () => {
           selectedLandParcel: 'sheet1-parcel1',
           availableActions,
           parcelName: 'sheet1 parcel1',
-          selectedActions: ['CMOR1', 'UPL1'],
-          selectedActionsQuantities: { 'qty-CMOR1': 10, 'qty-UPL1': 5 }
+          selectedActions: ['CMOR1', 'UPL1']
         })
       )
       expect(result).toBe('rendered view')
@@ -361,8 +360,7 @@ describe('SelectActionsForLandParcelPageController', () => {
         expect.objectContaining({
           availableActions: [],
           selectedLandParcel: 'sheet1-parcel1',
-          selectedActions: [],
-          selectedActionsQuantities: {}
+          selectedActions: []
         })
       )
       expect(result).toBe('rendered view')

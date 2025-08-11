@@ -281,28 +281,12 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
 
       const selectedActions = Object.keys(state.landParcels?.[state.selectedLandParcel]?.actionsObj || {})
 
-      const selectedActionsQuantities = {}
-
-      if (state?.landParcels) {
-        // Access actionsObj for the selected parcel
-        const actionsObj = state.landParcels[state.selectedLandParcel]?.actionsObj
-
-        selectedActions.forEach((action) => {
-          const actionData = actionsObj[action]
-
-          if (actionData) {
-            selectedActionsQuantities[`${this.quantityPrefix}${action}`] = actionData.value
-          }
-        })
-      }
-
       // Build the view model exactly as in the original code
       const viewModel = {
         ...this.getViewModel(request, context),
         ...state,
         parcelName: `${sheetId} ${parcelId}`,
         selectedActions,
-        selectedActionsQuantities,
         errors: collection.getErrors(collection.getErrors())
       }
 
