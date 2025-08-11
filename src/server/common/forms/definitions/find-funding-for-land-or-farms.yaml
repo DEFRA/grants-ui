@@ -16,6 +16,10 @@ pages:
     path: /confirm-farm-details
     controller: ConfirmFarmDetailsController
 
+  - title: Confirm you will be eligible
+    path: /confirm-you-will-be-eligible
+    view: confirm-you-will-be-eligible.html
+
   - title: Do your digital maps show the correct land details?
     path: /land-details
     components:
