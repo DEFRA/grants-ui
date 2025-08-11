@@ -22,6 +22,33 @@
         Select actions for land parcel <span style="white-space: nowrap">{{ parcelName }}</span>
       </h1>
 
+      <p>The list shows actions you can do on this parcel that are compatible with:</p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>the land details registered with the Rural Payments service</li>
+        <li>actions you are already doing on this parcel</li>
+      </ul>
+
+      <p>
+        The service has automatically calculated the total available area in each land parcel that
+        is eligible for the action.
+      </p>
+
+
+      {{ govukDetails({
+        summaryText: "If you need to make an update",
+        html: '
+          <p>Contact the Rural Payments Agency if you think:</p>
+          <ul class="govuk-list govuk-list--bullet">
+            <li>the land details registered on the Rural Payments service need updating</li>
+            <li>the information about existing actions or options on this parcel is incorrect</li>
+          </ul>
+          <p>Telephone: 03000 200 301<br>
+            Monday to Friday, 8:30am to 5pm (except bank holidays)</p>
+          <p>
+            <a class="govuk-link" href="https://www.gov.uk/call-charges" target="_blank">Find out about call charges (opens in new tab)</a>
+          </p>'
+      }) }}
+
       {% if availableActions %}
         <form method="post" novalidate>
           {% set actionsCheckboxes = [] %}
