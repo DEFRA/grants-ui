@@ -20,16 +20,6 @@ pages:
     path: /confirm-you-will-be-eligible
     view: confirm-you-will-be-eligible.html
 
-  - title: Do your digital maps show the correct land details?
-    path: /land-details
-    components:
-      - name: hasCheckedLandIsUpToDate
-        title: Do your digital maps show the correct land details?
-        type: YesNoField
-        hint: ''
-        options: {}
-        schema: {}
-
   - title: You must correct your land details
     path: /you-must-correct-your-details
     controller: TerminalPageController
