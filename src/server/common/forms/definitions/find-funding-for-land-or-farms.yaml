@@ -62,18 +62,3 @@ pages:
 
 lists: []
 sections: []
-conditions:
-  - name: landIsUpToDateCondition
-    displayName: notCorrect
-    value:
-      name: notCorrect
-      conditions:
-        - field:
-            name: hasCheckedLandIsUpToDate
-            type: YesNoField
-            display: Do your digital maps show the correct land details?
-          operator: is
-          value:
-            type: Value
-            value: 'false'
-            display: 'No'
