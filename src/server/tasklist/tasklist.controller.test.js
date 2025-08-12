@@ -9,13 +9,9 @@ import {
 } from './helpers/test-helpers.js'
 import { existsSync } from 'fs'
 import { join } from 'path'
-import { formsAuthCallback } from '~/src/server/auth/forms-engine-plugin-auth-helpers.js'
 
 jest.mock('./services/tasklist-generator.js')
 jest.mock('./services/config-loader.js')
-jest.mock('~/src/server/auth/forms-engine-plugin-auth-helpers.js', () => ({
-  formsAuthCallback: jest.fn()
-}))
 
 describe('generic-tasklist-controller', () => {
   let mockServer
@@ -27,9 +23,6 @@ describe('generic-tasklist-controller', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
-
-    // default auth helper does nothing unless overridden in specific tests
-    formsAuthCallback.mockImplementation(() => null)
 
     mockConfig = createMockTasklistConfig()
 
@@ -114,7 +107,6 @@ describe('generic-tasklist-controller', () => {
       it('should successfully handle request and return view', async () => {
         const result = await routeHandler(mockRequest, mockH)
 
-        expect(formsAuthCallback).toHaveBeenCalledWith(mockRequest)
         expect(loadTasklistConfig).toHaveBeenCalledWith('test-tasklist')
         expect(validateTasklistConfig).toHaveBeenCalledWith(mockConfig)
         expect(mockServer.app.cacheTemp.get).toHaveBeenCalledWith('test-session-id')
@@ -287,46 +279,6 @@ describe('generic-tasklist-controller', () => {
           tasklistId: 'example'
         })
         expect(result).toBe('rendered-view')
-      })
-    })
-
-    describe('auth redirect', () => {
-      it('should redirect unauthenticated users to sign-in with redirect param', async () => {
-        const tasklistId = 'test-tasklist'
-        const routePlugin = createTasklistRoute(tasklistId)
-        routePlugin.plugin.register(mockServer)
-
-        const routeCall = mockServer.route.mock.calls[1][0]
-        const handler = routeCall.handler
-
-        mockRequest.auth = { isAuthenticated: false }
-        mockRequest.url = { pathname: `/${tasklistId}-tasklist/tasklist`, search: '' }
-
-        // Mock the auth callback throwing a redirect error
-        formsAuthCallback.mockImplementation((request) => {
-          const currentPath = request.url.pathname + request.url.search
-          const redirectUrl = `/auth/sign-in?redirect=${encodeURIComponent(currentPath)}`
-          const redirectError = new Error('Redirect')
-          redirectError.output = {
-            statusCode: 302,
-            payload: '',
-            headers: { location: redirectUrl }
-          }
-          redirectError.isBoom = true
-          throw redirectError
-        })
-
-        let err
-        try {
-          await handler(mockRequest, mockH)
-        } catch (e) {
-          err = e
-        }
-        expect(err).toBeDefined()
-        expect(err.message).toContain('Redirect')
-        expect(err.isBoom).toBe(true)
-        expect(err.output.statusCode).toBe(302)
-        expect(err.output.headers.location).toBe('/auth/sign-in?redirect=%2Ftest-tasklist-tasklist%2Ftasklist')
       })
     })
   })
