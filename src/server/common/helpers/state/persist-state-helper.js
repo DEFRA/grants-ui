@@ -24,7 +24,7 @@ export async function persistStateToApi(state, request) {
         userId,
         businessId,
         grantId,
-        grantVersion: 'v1', // TODO: Update when support for same grant versioning is implemented
+        grantVersion: 1, // TODO: Update when support for same grant versioning is implemented
         state
       })
     })

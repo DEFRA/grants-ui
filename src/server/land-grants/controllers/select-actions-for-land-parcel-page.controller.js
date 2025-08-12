@@ -17,8 +17,8 @@ const unitRatesForActions = {
 
 const NOT_AVAILABLE = 'Not available'
 
-export default class LandActionsPageController extends QuestionPageController {
-  viewName = 'choose-which-actions-to-do'
+export default class SelectActionsForLandParcelPageController extends QuestionPageController {
+  viewName = 'select-actions-for-land-parcel'
   quantityPrefix = 'qty-'
   availableActions = []
   currentParcelSize = NOT_AVAILABLE
@@ -75,24 +75,6 @@ export default class LandActionsPageController extends QuestionPageController {
       ...super.getViewModel(request, context),
       quantityPrefix: this.quantityPrefix,
       availableActions: this.availableActions
-    }
-  }
-
-  getSelectedLandParcelData(context) {
-    const { state } = context
-
-    return {
-      name: state.selectedLandParcel,
-      rows: [
-        {
-          key: {
-            text: 'Total size'
-          },
-          value: {
-            text: this.currentParcelSize
-          }
-        }
-      ]
     }
   }
 
@@ -154,7 +136,7 @@ export default class LandActionsPageController extends QuestionPageController {
       const { actionsObj, selectedActionsQuantities } = this.extractActionsDataFromPayload(payload)
 
       // Create an updated state with the new action data
-      const newState = await this.buildNewState(state, context, selectedActionsQuantities, actionsObj)
+      const newState = await this.buildNewState(state, selectedActionsQuantities, actionsObj)
 
       if (payload.action === 'validate') {
         const { errors, errorSummary } = await this.validatePayload(payload, actionsObj, sheetId, parcelId)
@@ -163,6 +145,7 @@ export default class LandActionsPageController extends QuestionPageController {
           return h.view(viewName, {
             ...this.getViewModel(request, context),
             ...newState,
+            parcelName: `${sheetId} ${parcelId}`,
             selectedActions: payload.selectedActions,
             selectedActionsQuantities,
             errorSummary,
@@ -232,7 +215,7 @@ export default class LandActionsPageController extends QuestionPageController {
     )
   }
 
-  buildNewState = async (state, context, selectedActionsQuantities, actionsObj) => {
+  buildNewState = async (state, selectedActionsQuantities, actionsObj) => {
     // Add the current actions to the land parcels object
     const updatedLandParcels = {
       ...state.landParcels, // Spread existing land parcels
@@ -261,7 +244,6 @@ export default class LandActionsPageController extends QuestionPageController {
 
     return {
       ...state,
-      selectedLandParcelSummary: this.getSelectedLandParcelData(context),
       selectedActionsQuantities,
       draftApplicationAnnualTotalPence: paymentDetails.payment.annualTotalPence,
       landParcels: updatedLandParcels
@@ -322,7 +304,7 @@ export default class LandActionsPageController extends QuestionPageController {
       const viewModel = {
         ...this.getViewModel(request, context),
         ...state,
-        selectedLandParcelSummary: this.getSelectedLandParcelData(context),
+        parcelName: `${sheetId} ${parcelId}`,
         selectedActions,
         selectedActionsQuantities,
         errors: collection.getErrors(collection.getErrors())
