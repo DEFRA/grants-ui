@@ -264,29 +264,13 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
 
       const [sheetId = '', parcelId = ''] = parseLandParcel(state.selectedLandParcel)
 
-      // Load available actions for the land parcel
-      try {
-        const data = await fetchAvailableActionsForParcel({ parcelId, sheetId })
-        this.availableActions = data.actions || []
-        if (!this.availableActions.length) {
-          request.logger.error({
-            message: `No actions found for parcel ${sheetId}-${parcelId}`,
-            selectedLandParcel: state.selectedLandParcel
-          })
-        }
-      } catch (error) {
-        this.availableActions = []
-        request.logger.error(error, `Failed to fetch land parcel data for id ${sheetId}-${parcelId}`)
-      }
-
-      const selectedActions = Object.keys(state.landParcels?.[state.selectedLandParcel]?.actionsObj || {})
+      await this.fetchAvailableActionsForParcel(parcelId, sheetId, request, state)
 
       // Build the view model exactly as in the original code
       const viewModel = {
         ...this.getViewModel(request, context),
         ...state,
         parcelName: `${sheetId} ${parcelId}`,
-        selectedActions,
         errors: collection.getErrors(collection.getErrors())
       }
 
@@ -294,6 +278,23 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
     }
 
     return fn
+  }
+
+  fetchAvailableActionsForParcel = async (parcelId, sheetId, request, state) => {
+    // Load available actions for the land parcel
+    try {
+      const data = await fetchAvailableActionsForParcel({ parcelId, sheetId })
+      this.availableActions = data.actions || []
+      if (!this.availableActions.length) {
+        request.logger.error({
+          message: `No actions found for parcel ${sheetId}-${parcelId}`,
+          selectedLandParcel: state.selectedLandParcel
+        })
+      }
+    } catch (error) {
+      this.availableActions = []
+      request.logger.error(error, `Failed to fetch land parcel data for id ${sheetId}-${parcelId}`)
+    }
   }
 }
 
