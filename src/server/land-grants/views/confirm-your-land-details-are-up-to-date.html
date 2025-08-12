@@ -1,0 +1,42 @@
+{% extends baseLayoutPath %}
+
+{% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "support-details/macro.njk" import defraSupportDetails %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds-from-desktop">
+      <h1 class="govuk-heading-l">
+        {{ pageTitle }}
+      </h1>
+
+      <p class="govuk-body">You confirm you have checked your digital maps are up to date and show:</p>
+
+      <ul class="govuk-list govuk-list--bullet">
+        <li>all the land parcels you want to include in your application</li>
+        <li>the correct total area (in hectares) for each land parcel</li>
+        <li>the correct land covers for each land parcel, for example, arable land, permanent grassland, permanent crops or relevant non-agricultural land cover</li>
+      </ul>
+
+      <p class="govuk-body">You confirm you have declared the correct land use codes for each land parcel in the Rural Payments service.</p>
+
+      <p class="govuk-body">If your land details are not up to date:</p>
+
+      <ul class="govuk-list govuk-list--bullet">
+        <li>you may not be able to apply for the actions you select</li>
+        <li>the total area of land available to enter into an action may not be accurate</li>
+      </ul>
+
+      <form method="post" novalidate>
+        <input type="hidden" name="crumb" value="{{ crumb }}">
+        {{ govukButton({
+            text: "Continue",
+            preventDoubleClick: true
+          })
+        }}
+      </form>
+
+      {{ defraSupportDetails() }}
+    </div>
+  </div>
+{% endblock %}

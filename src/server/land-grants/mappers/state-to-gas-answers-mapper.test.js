@@ -70,6 +70,7 @@ describe('stateToLandGrantsGasAnswers', () => {
     }
 
     const expected = {
+      hasCheckedLandIsUpToDate: true,
       scheme: 'SFI',
       year: 2025,
       agreementName: 'NO_LONGER_REQUIRED',
@@ -162,6 +163,7 @@ describe('stateToLandGrantsGasAnswers', () => {
     }
 
     const expected = {
+      hasCheckedLandIsUpToDate: true,
       scheme: 'SFI',
       year: 2025,
       agreementName: 'NO_LONGER_REQUIRED',
@@ -196,6 +198,7 @@ describe('stateToLandGrantsGasAnswers', () => {
     }
 
     const expected = {
+      hasCheckedLandIsUpToDate: true,
       scheme: 'SFI',
       year: 2025,
       agreementName: 'NO_LONGER_REQUIRED',
@@ -229,6 +232,7 @@ describe('stateToLandGrantsGasAnswers', () => {
     }
 
     const expected = {
+      hasCheckedLandIsUpToDate: true,
       scheme: 'SFI',
       year: 2025,
       agreementName: 'NO_LONGER_REQUIRED',
@@ -262,6 +266,7 @@ describe('stateToLandGrantsGasAnswers', () => {
     }
 
     const expected = {
+      hasCheckedLandIsUpToDate: true,
       scheme: 'SFI',
       year: 2025,
       agreementName: 'NO_LONGER_REQUIRED',
@@ -292,6 +297,7 @@ describe('stateToLandGrantsGasAnswers', () => {
     }
 
     const expected = {
+      hasCheckedLandIsUpToDate: true,
       scheme: 'SFI',
       year: 2025,
       agreementName: 'NO_LONGER_REQUIRED',
@@ -319,6 +325,7 @@ describe('stateToLandGrantsGasAnswers', () => {
     }
 
     const expected = {
+      hasCheckedLandIsUpToDate: true,
       scheme: 'SFI',
       year: 2025,
       agreementName: 'NO_LONGER_REQUIRED',
@@ -341,6 +348,7 @@ describe('stateToLandGrantsGasAnswers', () => {
     }
 
     const expected = {
+      hasCheckedLandIsUpToDate: true,
       scheme: 'SFI',
       year: 2025,
       agreementName: 'NO_LONGER_REQUIRED',
@@ -353,6 +361,7 @@ describe('stateToLandGrantsGasAnswers', () => {
   it('should return minimal object when input is empty', () => {
     const input = {}
     const expected = {
+      hasCheckedLandIsUpToDate: true,
       scheme: 'SFI',
       year: 2025,
       agreementName: 'NO_LONGER_REQUIRED',
@@ -377,6 +386,7 @@ describe('stateToLandGrantsGasAnswers', () => {
     }
 
     const expected = {
+      hasCheckedLandIsUpToDate: true,
       scheme: 'SFI',
       year: 2025,
       agreementName: 'NO_LONGER_REQUIRED',
@@ -410,6 +420,7 @@ describe('stateToLandGrantsGasAnswers', () => {
     }
 
     const expected = {
+      hasCheckedLandIsUpToDate: true,
       scheme: 'SFI',
       year: 2025,
       agreementName: 'NO_LONGER_REQUIRED',
@@ -444,6 +455,7 @@ describe('stateToLandGrantsGasAnswers', () => {
     }
 
     const expected = {
+      hasCheckedLandIsUpToDate: true,
       scheme: 'SFI',
       year: 2025,
       agreementName: 'NO_LONGER_REQUIRED',
@@ -475,6 +487,7 @@ describe('stateToLandGrantsGasAnswers', () => {
     }
 
     const expected = {
+      hasCheckedLandIsUpToDate: true,
       scheme: 'SFI',
       year: 2025,
       agreementName: 'NO_LONGER_REQUIRED',
@@ -508,6 +521,7 @@ describe('stateToLandGrantsGasAnswers', () => {
     }
 
     const expected = {
+      hasCheckedLandIsUpToDate: true,
       scheme: 'SFI',
       year: 2025,
       agreementName: 'NO_LONGER_REQUIRED',
@@ -557,6 +571,7 @@ describe('stateToLandGrantsGasAnswers', () => {
     }
 
     const expected = {
+      hasCheckedLandIsUpToDate: true,
       scheme: 'SFI',
       year: 2025,
       agreementName: 'NO_LONGER_REQUIRED',
@@ -591,6 +606,7 @@ describe('stateToLandGrantsGasAnswers', () => {
     }
 
     const expected = {
+      hasCheckedLandIsUpToDate: true,
       scheme: 'SFI',
       year: 2025,
       agreementName: 'NO_LONGER_REQUIRED',
@@ -622,6 +638,7 @@ describe('stateToLandGrantsGasAnswers', () => {
     }
 
     const expected = {
+      hasCheckedLandIsUpToDate: true,
       scheme: 'SFI',
       year: 2025,
       agreementName: 'NO_LONGER_REQUIRED',

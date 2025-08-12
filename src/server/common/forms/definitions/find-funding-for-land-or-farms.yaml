@@ -20,31 +20,9 @@ pages:
     path: /confirm-you-will-be-eligible
     view: confirm-you-will-be-eligible.html
 
-  - title: Do your digital maps show the correct land details?
-    path: /land-details
-    components:
-      - name: hasCheckedLandIsUpToDate
-        title: Do your digital maps show the correct land details?
-        type: YesNoField
-        hint: ''
-        options: {}
-        schema: {}
-
-  - title: You must correct your land details
-    path: /you-must-correct-your-details
-    controller: TerminalPageController
-    condition: landIsUpToDateCondition
-    components:
-      - name: FGyiLS
-        title: You must correct your land details
-        type: Html
-        hint: ''
-        content: |+
-          <p class="govuk-body">
-            You must correct your land details.
-          </p>
-        options: {}
-        schema: {}
+  - title: Confirm your land details are up to date
+    path: /confirm-your-land-details-are-up-to-date
+    view: confirm-your-land-details-are-up-to-date.html
 
   - title: Select Land Parcel
     controller: LandParcelPageController
@@ -72,18 +50,4 @@ pages:
 
 lists: []
 sections: []
-conditions:
-  - name: landIsUpToDateCondition
-    displayName: notCorrect
-    value:
-      name: notCorrect
-      conditions:
-        - field:
-            name: hasCheckedLandIsUpToDate
-            type: YesNoField
-            display: Do your digital maps show the correct land details?
-          operator: is
-          value:
-            type: Value
-            value: 'false'
-            display: 'No'
+conditions: []

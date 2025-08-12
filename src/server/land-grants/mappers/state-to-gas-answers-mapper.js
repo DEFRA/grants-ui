@@ -91,7 +91,7 @@ function processParcelActions(actionsObj, sheetId, parcelId) {
 export function stateToLandGrantsGasAnswers(state) {
   const { landParcels } = state
   const result = {
-    hasCheckedLandIsUpToDate: state.hasCheckedLandIsUpToDate,
+    hasCheckedLandIsUpToDate: true,
     agreementName: 'NO_LONGER_REQUIRED',
     scheme: 'SFI',
     year: 2025,
