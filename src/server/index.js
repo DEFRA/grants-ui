@@ -43,7 +43,6 @@ import { PotentialFundingController } from '~/src/server/non-land-grants/pigs-mi
 import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
 import { getCacheKey } from './common/helpers/state/get-cache-key-helper.js'
 import { fetchSavedStateFromApi } from './common/helpers/state/fetch-saved-state-helper.js'
-import { formsAuthCallback } from '~/src/server/auth/forms-engine-plugin-auth-helpers.js'
 import { persistStateToApi } from './common/helpers/state/persist-state-helper.js'
 
 const SESSION_CACHE_NAME = 'session.cache.name'
@@ -129,7 +128,6 @@ const registerFormsPlugin = async (server, prefix = '') => {
           return persistStateToApi(state, request)
         }
       },
-      onRequest: formsAuthCallback,
       services: {
         formsService: await formsService(),
         formSubmissionService,
@@ -182,63 +180,6 @@ const registerPlugins = async (server) => {
   ])
 
   await server.register([router])
-}
-
-const mockSessionData = async (request, log, LogCodes) => {
-  try {
-    const crypto = await import('crypto')
-    const sessionId = request.state.sid?.sessionId || crypto.randomUUID()
-
-    const sessionData = {
-      isAuthenticated: true,
-      sessionId,
-      contactId: 'anonymous',
-      firstName: 'Anonymous',
-      lastName: 'User',
-      name: 'Anonymous User',
-      role: 'user',
-      scope: ['user'],
-      crn: 'anonymous-user',
-      relationships: ['business:default-business']
-    }
-
-    await request.server.app.cache.set(sessionId, sessionData)
-
-    request.cookieAuth.set({ sessionId })
-
-    log(LogCodes.AUTH.SIGN_IN_SUCCESS, {
-      userId: 'anonymous-user-id',
-      sessionId,
-      role: 'user',
-      scope: 'user',
-      authMethod: 'auto-session'
-    })
-  } catch (error) {
-    log(LogCodes.AUTH.SIGN_IN_FAILURE, {
-      userId: 'unknown',
-      error: `Failed to create auto-session: ${error.message}`,
-      step: 'auto_session_creation_error',
-      errorStack: error.stack
-    })
-  }
-}
-
-const handleMockDefraAuth = async (request, h, log, LogCodes) => {
-  if (!config.get('defraId.enabled')) {
-    if (h.request.path === '/auth/sign-out') {
-      return h.redirect('/home').takeover()
-    }
-
-    await mockSessionData(request, log, LogCodes)
-
-    if (h.request.path === '/auth/sign-in' && h.request.query.redirect) {
-      return h.redirect(h.request.query.redirect).takeover()
-    }
-    if (h.request.path === '/auth/sign-in') {
-      return h.redirect('/home').takeover()
-    }
-  }
-  return h.continue
 }
 
 export async function createServer() {
@@ -300,11 +241,6 @@ export async function createServer() {
     request.yar.set('visitedSubSections', prev)
 
     return h.continue
-  })
-
-  // Create a server extension to handle session creation when defra-id is disabled
-  server.ext('onPreAuth', async (request, h) => {
-    return handleMockDefraAuth(request, h, log, LogCodes)
   })
 
   server.app.cache = server.cache({
