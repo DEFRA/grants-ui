@@ -75,7 +75,6 @@ pages:
         id: 5bc4496e-c806-478e-9287-907fa317bff2
         options: {}
         schema: {}
-    next: []
     id: 89f408cd-6953-4f6b-b31c-f957c520fb67
   - title: YesNoField Example
     path: /yes-no-field
@@ -91,7 +90,6 @@ pages:
         shortDescription: Yes or No
         id: 33b2a118-efb3-45b3-a926-22fed2360bf7
         schema: {}
-    next: []
     id: d02c043c-6ca2-4d9d-a4a8-b299e5735f7d
   - title: Terminal Page Example
     path: /terminal-page
@@ -107,7 +105,6 @@ pages:
         options: {}
         schema: {}
     condition: 048e4fdd-6c54-4a9d-9bc5-c9d90470b07b
-    next: []
     id: 94e31c5a-b58e-45bb-b4e0-5960f442dd65
   - title: AutocompleteField Example
     path: /autocomplete-field
@@ -138,7 +135,6 @@ pages:
         shortDescription: Country
         id: 26958e3c-d6d7-4bec-833b-7661e37a62e7
         schema: {}
-    next: []
     id: 728cd1be-ed3b-453c-aaf6-acacfc57742f
   - title: RadiosField Example
     path: /radios-field
@@ -164,7 +160,6 @@ pages:
         shortDescription: Radio option
         id: b48a816e-a810-4346-a111-5c7a0cac8a5b
         schema: {}
-    next: []
     id: 5cd9ac2a-d211-4f8e-b1b9-1a377d121148
   - title: Conditional Page Example
     path: /conditional-page
@@ -179,7 +174,6 @@ pages:
         options: {}
         schema: {}
     condition: 7fd31ec4-1e35-4ed8-9f81-c41928f4c8a7
-    next: []
     id: ec8b2f9b-efcc-4019-b4ff-f64675becf4c
   - title: CheckboxesField Example
     path: /checkboxes-field
@@ -198,7 +192,6 @@ pages:
         shortDescription: Checkbox options
         id: b9c60a2f-2c1a-43fd-96f0-7ea6a566ca9a
         schema: {}
-    next: []
     id: 738a8007-fc6e-4a23-b284-d68be8bf02ee
   - title: NumberField Example
     path: /number-field
@@ -228,7 +221,6 @@ pages:
           precision: 0
         shortDescription: Enter amount
         id: 4643daa8-d84a-4a1b-942c-3e5f8b53a5ad
-    next: []
     id: 57ee940c-a2ab-4c98-8733-887fb5c0d396
   - title: DatePartsField Example
     path: /date-parts-field
@@ -245,7 +237,6 @@ pages:
         shortDescription: Date
         id: 70367a37-e152-4db3-94f8-8b1249481234
         schema: {}
-    next: []
     id: ae8788f2-a495-4e95-9ae0-34e7ee177788
   - title: MonthYearField Example
     path: /month-year-field
@@ -259,7 +250,6 @@ pages:
         shortDescription: Month and year
         id: d357b94e-ca25-4ea1-8b01-daa4851a8767
         schema: {}
-    next: []
     id: 16d61e73-68bb-465a-a9c3-fa05c41de16c
   - title: SelectField Example
     path: /select-field
@@ -280,7 +270,6 @@ pages:
         shortDescription: Select option
         id: e21204ba-abb5-4b1d-9d84-c7750d877af2
         schema: {}
-    next: []
     id: ee00619a-ee21-45cf-a28f-05d28098a103
   - title: MultilineTextField Example
     path: /multiline-text-field
@@ -297,7 +286,6 @@ pages:
         shortDescription: Description
         id: 264fbff1-35f6-49d3-98ae-b7582b1e41b5
         schema: {}
-    next: []
     id: 88d7b067-68c2-4fe1-9a9a-ea98f0752e03
   - title: Multi Field Form Example
     path: /multi-field-form
@@ -372,25 +360,21 @@ pages:
         id: 509a72f9-4c5a-4375-a58d-b056094fd7b9
         options: {}
         schema: {}
-    next: []
     id: 089374a5-13e7-494d-994e-9b38c4b7392c
-  - title: Confirm and send
-    path: /declaration
-    controller: DeclarationPageController
-    view: declaration-page.html
-    next: []
-    id: 8ee401e7-76c5-456b-a1f4-d84fca115e01
-  - title: Confirmation
-    path: /confirmation
-    controller: ConfirmationPageController
-    next: []
-    id: b920e9bb-e211-4e6d-9da9-5199b3636149
   - title: Check your details
     path: /summary
     controller: SummaryPageController
     components: []
-    next: []
     id: aa34c1e0-e119-4e69-ab91-06d6b092055e
+  - title: Confirm and send
+    path: /declaration
+    controller: DeclarationPageController
+    view: declaration-page.html
+    id: 8ee401e7-76c5-456b-a1f4-d84fca115e01
+  - title: Confirmation
+    path: /confirmation
+    controller: ConfirmationPageController
+    id: b920e9bb-e211-4e6d-9da9-5199b3636149
 lists:
   - title: RadiosField List
     name: radiosFieldList

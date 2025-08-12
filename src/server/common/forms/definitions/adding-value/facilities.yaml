@@ -1,20 +1,25 @@
 engine: V2
+schema: 2
 name: Facilities
 pages:
   - title: Do you want to build a new smaller abattoir?
     path: /smaller-abattoir
-    section: facilitiesSection
     components:
       - name: isBuildingSmallerAbattoir
         title: Do you want to build a new smaller abattoir?
         type: YesNoField
-        hint: A smaller abattoir is a red meat abattoir that processes up to 10,000 livestock units each year or a poultry abattoir that slaughters up to 500,000 birds each year.
+        hint: A smaller abattoir is a red meat abattoir that processes up to 10,000
+          livestock units each year or a poultry abattoir that slaughters up to
+          500,000 birds each year.
         options:
           customValidationMessages:
             any.required: Select yes if you want to build a new smaller abattoir
+        shortDescription: Do you want to build a new smaller abattoir?
+        id: 32decb0a-76ed-4b3b-afc8-278535a901fd
+        schema: {}
+    id: 36ab1019-0445-43d1-8e4a-8ebd1dd84138
   - title: Will this abattoir provide services to other farmers?
     path: /other-farmers
-    section: facilitiesSection
     components:
       - name: isProvidingServicesToOtherFarmers
         title: Will this abattoir provide services to other farmers?
@@ -23,204 +28,242 @@ pages:
         options:
           customValidationMessages:
             any.required: Select yes if this abattoir will provide services to other farmers
-    condition: smallerAbattoirConditionYes
+        shortDescription: Will this abattoir provide services to other farmers?
+        id: c9426c71-e697-41fc-9a29-1c6dc7d7c4a8
+        schema: {}
+    condition: 35a1e331-833a-477a-82f7-d052b45fc737
+    id: ff2641f3-0139-468e-acde-9d8b3824bc77
   - title: You cannot apply for a grant from this scheme
     path: /cannot-apply-other-farmers
-    section: facilitiesSection
     controller: TerminalPageController
     components:
       - type: Html
         name: cannotApplyOtherFarmersInfo
         title: Html
-        content: |
-          <p class="govuk-body">You must provide some abattoir services to other farmers if you are building a new smaller abattoir with this grant.</p>
-          <p class="govuk-body"><a href='https://www.gov.uk/guidance/funding-for-farmers' class='govuk-link govuk-link--no-visited-state'>See other grants you may be eligible for</a></p>
-    condition: otherFarmersConditionNo
+        content: >-
+          <p class="govuk-body">You must provide some abattoir services to other
+          farmers if you are building a new smaller abattoir with this
+          grant.</p>
+
+          <p class="govuk-body"><a
+          href='https://www.gov.uk/guidance/funding-for-farmers'
+          class='govuk-link govuk-link--no-visited-state'>See other grants you
+          may be eligible for</a></p>
+        id: b85ea683-1cd4-4e73-8ac3-dd8f9f3642de
+        options: {}
+        schema: {}
+    condition: 00d872a9-1728-4a7c-bd9b-b55d48537d5c
+    id: 78f26446-d531-4bfb-b215-f56da53f1b6c
   - title: Do you want to build new controlled atmosphere storage for top fruit?
     path: /fruit-storage
-    section: facilitiesSection
     components:
       - name: isBuildingFruitStorage
         title: Do you want to build new controlled atmosphere storage for top fruit?
-        hint: Fruit that grows on trees, for example apples, pears, quinces, medlars, plums, peaches, apricots and cherries
+        hint: Fruit that grows on trees, for example apples, pears, quinces, medlars,
+          plums, peaches, apricots and cherries
         type: YesNoField
         options:
           customValidationMessages:
-            any.required: Select yes if you want to build new controlled atmosphere storage for top fruit
-    condition: smallerAbattoirConditionNo
+            any.required: Select yes if you want to build new controlled atmosphere storage
+              for top fruit
+        shortDescription: Do you want to build new controlled atmosphere storage for top fruit?
+        id: 2d3c08cd-e0e0-401f-85e7-29681ec2f4ef
+        schema: {}
+    condition: 58975020-9808-4f47-b8de-062fbd933a6a
+    id: 969b9b50-cf48-43ac-9797-579b620b9fa1
+  - title: Does your project need eligible items?
+    path: /project-items-needed
+    components:
+      - name: projectItemsNeeded
+        title: Does your project need eligible items?
+        type: YesNoField
+        options:
+          customValidationMessages:
+            any.required: Select yes if you will need eligible items
+        shortDescription: Does your project need eligible items?
+        id: 1388a75c-5368-4557-9089-7c6bfc12901c
+        schema: {}
+    id: 2fefde46-284e-4457-944f-c6575919cf62
+    condition: 2fff2224-834d-46be-b6f3-faf4dd85d1b2
   - title: What eligible items does your project need?
     path: /project-items
-    section: facilitiesSection
     components:
-      - name: eligibleItemsNeeded
+      - name: eligibleItems
         title: What eligible items does your project need?
-        hint: |
-          Storage facilities will only be funded as part of a bigger project and cannot be more than 50% of the total grant funding.
+        hint: >-
+          Storage facilities will only be funded as part of a bigger project and
+          cannot be more than 50% of the total grant funding.
+
 
           Select all the items your project needs
         type: CheckboxesField
-        list: projectItemsList
+        list: 2ab87708-b778-433a-8677-1a1244174160
         options:
           customValidationMessages:
             any.required: Select all the items your project needs
-    condition: otherFarmersYesOrFruitStorageCondition
+        shortDescription: What eligible items does your project need?
+        id: 4e3d0389-4414-46a7-8791-304dd09d858f
+        schema: {}
+    condition: c441162f-87ce-46c6-bcb7-e084b23f6927
+    id: 14bd8487-8732-4df8-9deb-cd3703c95d50
   - title: You cannot apply for a grant from this scheme
     path: /cannot-apply-project-items
-    section: facilitiesSection
     controller: TerminalPageController
     components:
       - type: Html
         name: cannotApplyProjectItemsInfo
         title: Html
-        content: |
+        content: >-
           <p class="govuk-body">This grant is for:</p>
 
+
           <ul class="govuk-list govuk-list--bullet">
+
           <li>constructing or improving buildings for processing</li>
+
           <li>processing equipment or machinery</li>
+
           <li>retail facilities</li>
+
           </ul>
-          <p class="govuk-body"><a href='https://www.gov.uk/guidance/funding-for-farmers' class='govuk-link govuk-link--no-visited-state'>See other grants you may be eligible for</a></p>
-    condition: projectItemsCondition
+
+          <p class="govuk-body"><a
+          href='https://www.gov.uk/guidance/funding-for-farmers'
+          class='govuk-link govuk-link--no-visited-state'>See other grants you
+          may be eligible for</a></p>
+        id: 03c1e1ff-7b8b-4db9-8fb9-7a15c262eab2
+        options: {}
+        schema: {}
+    condition: 1c0243a4-8ad6-42cc-95e9-c6e0ff23c938
+    id: b0ce5697-5637-47bf-99e1-638e83eabbf0
   - title: Does your project also need storage facilities?
     path: /storage
-    section: facilitiesSection
     components:
       - name: needsStorageFacilities
         title: Does your project also need storage facilities?
         hint: For example, cold stores or controlled atmosphere storage
         type: RadiosField
-        list: storageRadiosList
+        list: 735a18e6-6518-4c01-9ae2-a3993a0e8da8
         options:
           customValidationMessages:
             any.required: Select yes if you will need storage facilities
+        shortDescription: Does your project also need storage facilities?
+        id: b8d695bf-54a8-4e9b-82f1-47bf5f0289e1
+        schema: {}
       - type: Html
         name: storageWarning
         title: Html
-        content: '<div class="govuk-warning-text"> <span class="govuk-warning-text__icon" aria-hidden="true">!</span> <strong class="govuk-warning-text__text"> <span class="govuk-visually-hidden">Warning</span>Storage facilities cannot be more than 50% of the total grant funding.</strong></div>'
-    condition: otherFarmersYesOrFruitStorageCondition
+        content: <div class="govuk-warning-text"> <span class="govuk-warning-text__icon"
+          aria-hidden="true">!</span> <strong class="govuk-warning-text__text">
+          <span class="govuk-visually-hidden">Warning</span>Storage facilities
+          cannot be more than 50% of the total grant funding.</strong></div>
+        id: 51faf12a-0825-4aa5-8bdf-ff6b0f75e2a2
+        options: {}
+        schema: {}
+    id: a5eace6e-8f74-4c33-90aa-1f974626f31d
+    condition: 2fff2224-834d-46be-b6f3-faf4dd85d1b2
   - title: "Check your answers: Facilities"
     path: /summary
     controller: SectionEndController
+    id: 9ed038f9-179d-4cb8-9f0f-545792db03cf
 lists:
   - title: What eligible items does your project need?
     name: projectItemsList
     type: string
     items:
-      - text: Constructing or improving buildings for processing
-        description: For example, a new building for cheese making, extending an existing building to install a new meat-cutting and packing line
+      - id: efbdeede-f68c-4cc3-90cf-d5e59b2fe8c5
+        text: Constructing or improving buildings for processing
+        description: For example, a new building for cheese making, extending an
+          existing building to install a new meat-cutting and packing line
         value: projectItems-A1
-      - text: Processing equipment or machinery
-        description: For example, equipment and machinery for pasteurising and bottling milk, a meat cutting and packing line or vegetable washing and packing
+      - id: 857bfbf4-b22e-47f0-a77b-8dd19f7774db
+        text: Processing equipment or machinery
+        description: For example, equipment and machinery for pasteurising and bottling
+          milk, a meat cutting and packing line or vegetable washing and packing
         value: projectItems-A2
-      - text: Retail facilities
+      - id: 1084a5fa-1f16-45dd-8bf3-013678ccbffe
+        text: Retail facilities
         description: For example, shops or display cabinets
         value: projectItems-A3
-      - text: None of the above
-        value: projectItems-A4
+    id: 2ab87708-b778-433a-8677-1a1244174160
   - title: Does your project also need storage facilities?
     name: storageRadiosList
     type: string
     items:
-      - text: Yes, we will need storage facilities
+      - id: bd142e8e-859f-4e39-9a7f-513e56fe18ab
+        text: Yes, we will need storage facilities
         value: storageRadios-A1
-      - text: No, we do not need storage facilities
+      - id: d23de5e9-ce0c-4a44-8ade-b0668b424f3d
+        text: No, we do not need storage facilities
         value: storageRadios-A2
+    id: 735a18e6-6518-4c01-9ae2-a3993a0e8da8
 conditions:
-  - name: smallerAbattoirConditionYes
+  - id: 35a1e331-833a-477a-82f7-d052b45fc737
     displayName: smallerAbattoirConditionYes
-    value:
-      name: smallerAbattoirConditionYes
-      conditions:
-        - field:
-            name: isBuildingSmallerAbattoir
-            type: YesNoField
-            display: Do you want to build a new smaller abattoir?
-          operator: is
-          value:
-            type: Value
-            value: "true"
-            display: "Yes"
-  - name: otherFarmersConditionNo
-    displayName: otherFarmersConditionNo
-    value:
-      name: otherFarmersConditionNo
-      conditions:
-        - field:
-            name: isProvidingServicesToOtherFarmers
-            type: YesNoField
-            display: Will this abattoir provide services to other farmers?
-          operator: is
-          value:
-            type: Value
-            value: "false"
-            display: "No"
-  - name: smallerAbattoirConditionNo
+    items:
+      - id: 816f1ff7-ddc8-4179-9a73-65db1714e0ba
+        componentId: 32decb0a-76ed-4b3b-afc8-278535a901fd
+        operator: is
+        type: BooleanValue
+        value: true
+  - id: 58975020-9808-4f47-b8de-062fbd933a6a
     displayName: smallerAbattoirConditionNo
-    value:
-      name: smallerAbattoirConditionNo
-      conditions:
-        - field:
-            name: isBuildingSmallerAbattoir
-            type: YesNoField
-            display: Do you want to build a new smaller abattoir?
-          operator: is
-          value:
-            type: Value
-            value: "false"
-            display: "No"
-  - name: otherFarmersConditionYes
+    items:
+      - id: aa25e666-b34a-4736-b460-082f7dfe978b
+        componentId: 32decb0a-76ed-4b3b-afc8-278535a901fd
+        operator: is
+        type: BooleanValue
+        value: false
+  - id: 00d872a9-1728-4a7c-bd9b-b55d48537d5c
+    displayName: otherFarmersConditionNo
+    items:
+      - id: 45c39708-cb31-4066-88e6-cedfd49eec93
+        componentId: c9426c71-e697-41fc-9a29-1c6dc7d7c4a8
+        operator: is
+        type: BooleanValue
+        value: false
+  - id: d7d99527-fc60-4895-a069-7d4f03d240c1
     displayName: otherFarmersConditionYes
-    value:
-      name: otherFarmersConditionYes
-      conditions:
-        - field:
-            name: isProvidingServicesToOtherFarmers
-            type: YesNoField
-            display: Will this abattoir provide services to other farmers?
-          operator: is
-          value:
-            type: Value
-            value: "true"
-            display: "Yes"
-  - name: fruitStorageCondition
+    items:
+      - id: 08928ecc-0961-48d8-8ae4-a747c69dac83
+        componentId: c9426c71-e697-41fc-9a29-1c6dc7d7c4a8
+        operator: is
+        type: BooleanValue
+        value: true
+  - id: 807142b4-7723-47e8-b4ea-b3c8c0b60ccb
     displayName: fruitStorageConditionNo
-    value:
-      name: fruitStorageConditionNo
-      conditions:
-        - field:
-            name: isBuildingFruitStorage
-            type: YesNoField
-            display: Do you want to build new controlled atmosphere storage for top fruit?
-          operator: is
-          value:
-            type: Value
-            value: "false"
-            display: "No"
-  - name: otherFarmersYesOrFruitStorageCondition
+    items:
+      - id: 1c363243-079e-477d-bf81-11a0cb50c255
+        componentId: 2d3c08cd-e0e0-401f-85e7-29681ec2f4ef
+        operator: is
+        type: BooleanValue
+        value: false
+  - id: c441162f-87ce-46c6-bcb7-e084b23f6927
+    displayName: eligibleItemsNeededYes
+    items:
+      - id: bc27b19c-f8ec-44b8-9192-12b365553d17
+        componentId: 1388a75c-5368-4557-9089-7c6bfc12901c
+        operator: is
+        type: BooleanValue
+        value: true
+  - id: 1c0243a4-8ad6-42cc-95e9-c6e0ff23c938
+    displayName: eligibleItemsNeededNo
+    items:
+      - id: 0f25666a-9b96-4a92-a678-d1254689c0ee
+        componentId: 1388a75c-5368-4557-9089-7c6bfc12901c
+        operator: is
+        type: BooleanValue
+        value: false
+  - id: 2fff2224-834d-46be-b6f3-faf4dd85d1b2
     displayName: otherFarmersYesOrFruitStorage
-    value:
-      name: otherFarmersYesOrFruitStorage
-      conditions:
-        - conditionName: otherFarmersConditionYes
-          conditionDisplayName: "Yes"
-        - coordinator: or
-          conditionName: fruitStorageCondition
-          conditionDisplayName: "No"
-  - name: projectItemsCondition
-    displayName: projectItemsConditionNone
-    value:
-      name: projectItemsConditionNone
-      conditions:
-        - field:
-            name: eligibleItemsNeeded
-            type: CheckboxesField
-            display: What eligible items does your project need?
-          operator: contains
-          value:
-            type: Value
-            value: projectItems-A4
-            display: None of the above
+    items:
+      - id: d7d99527-fc60-4895-a069-7d4f03d240c1
+        conditionId: d7d99527-fc60-4895-a069-7d4f03d240c1
+      #        conditionName: 'otherFarmersConditionYes'
+      - id: ca3278a5-6116-47bc-86be-97c62a36a1c5
+        conditionId: 807142b4-7723-47e8-b4ea-b3c8c0b60ccb
+    #        conditionName: 'fruitStorageConditionNo'
+    coordinator: or
 sections:
   - title: Facilities
     name: facilitiesSection

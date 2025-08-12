@@ -1,12 +1,15 @@
 engine: V2
 name: Collaboration
 pages:
-  - title: Will you work in partnership or collaborate with other farmers or producers?
+  - title: Will you work in partnership or collaborate with other farmers or
+      producers?
     path: /collaboration
     section: collaborationSection
+    id: ff6eb1f7-91e9-4c7d-b047-3d36478263b5
   - title: "Check your answers: Collaboration"
     path: /summary
     controller: SectionEndController
+    id: b47705c4-9c59-4675-b46b-52f1ed8a580a
 sections:
   - title: Collaboration
     name: collaborationSection
@@ -14,3 +17,4 @@ sections:
 lists: []
 conditions: []
 startPage: /collaboration
+schema: 2

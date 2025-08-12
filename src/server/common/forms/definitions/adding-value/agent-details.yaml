@@ -1,9 +1,9 @@
 engine: V2
+schema: 2
 name: Agent
 pages:
   - title: Agent's details
     path: /agent-details
-    section: agentSection
     components:
       - type: TextField
         name: agentFirstName
@@ -17,6 +17,8 @@ pages:
         schema:
           regex: ^[a-zA-Z' -]*$
           max: 30
+        shortDescription: First name
+        id: b61f1940-2bdb-41e4-9886-926c2303558b
       - type: TextField
         name: agentLastName
         title: Last name
@@ -29,6 +31,8 @@ pages:
         schema:
           regex: ^[a-zA-Z' -]*$
           max: 30
+        shortDescription: Last name
+        id: ae8c088b-74c3-475b-8533-b0e0154fca65
       - type: TextField
         name: agentBusinessName
         title: Business name
@@ -39,6 +43,8 @@ pages:
             string.max: Business name must be 30 characters or fewer
         schema:
           max: 30
+        shortDescription: Business name
+        id: 39d4cb1a-eae9-476f-82b2-37e3bb3814c9
       - type: EmailAddressField
         name: agentEmail
         title: Email address
@@ -49,7 +55,9 @@ pages:
             string.empty: Enter your email address
             string.email: Enter an email address in the correct format, like name@example.com
         schema:
-          regex: ^\w+([-.]?\w+)*@[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*(\.[a-zA-Z]{2,})+$
+          regex: ^\w+([.-]\w+)*@[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*(\.[a-zA-Z]{2,})+$
+        shortDescription: Email address
+        id: 5d971729-c437-45aa-8783-3af24c0c1bbf
       - type: EmailAddressField
         name: agentEmailConfirmation
         title: Confirm email address
@@ -59,7 +67,9 @@ pages:
             string.empty: Confirm your email address
             string.email: Enter an email address that matches
         schema:
-          regex: ^\w+([-.]?\w+)*@[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*(\.[a-zA-Z]{2,})+$
+          regex: ^\w+([.-]\w+)*@[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*(\.[a-zA-Z]{2,})+$
+        shortDescription: Confirm email address
+        id: a5220a98-ce02-4458-97d6-bdbec572b2b5
       - type: TelephoneNumberField
         name: agentMobile
         title: Mobile number
@@ -68,9 +78,12 @@ pages:
           required: true
           customValidationMessages:
             string.empty: Enter a mobile number
-            string.pattern.base: Enter a telephone number, like 01632 960 001, 07700 900 982 or +44 0808 157 0192
+            string.pattern.base: Enter a telephone number, like 01632 960 001, 07700 900 982
+              or +44 0808 157 0192
         schema:
           regex: ^\+?[0-9\s()-]{10,}$
+        shortDescription: Mobile number
+        id: b94036ab-6bec-4638-a25a-810aaba2f29f
       - type: TelephoneNumberField
         name: agentLandline
         title: Landline number
@@ -79,36 +92,33 @@ pages:
           required: true
           customValidationMessages:
             string.empty: Enter a landline number
-            string.pattern.base: Enter a telephone number, like 01632 960 001, 07700 900 982 or +44 0808 157 0192
+            string.pattern.base: Enter a telephone number, like 01632 960 001, 07700 900 982
+              or +44 0808 157 0192
         schema:
           regex: ^\+?[0-9\s()-]{10,}$
+        shortDescription: Landline number
+        id: cdc5f79a-bb90-4a4e-97be-908c530c1da5
       - type: Html
         name: agentBusinessAddressHeader
         title: Html
-        content: '<h1 class="govuk-heading-m">Business address</h1>'
+        content: <h1 class="govuk-heading-m">Business address</h1>
+        id: 9e690be9-a6bd-4d75-8374-ffde27a94b56
+        options: {}
+        schema: {}
       - type: UkAddressField
         title: Address
         name: agentBusinessAddress
-    condition: agentDetailsSelected
+        shortDescription: Address
+        id: e927bceb-c166-427e-931f-fff6be6217ba
+        options: {}
+        schema: {}
+    id: c0d7417d-8155-46e4-adab-5ff741e30e5a
   - title: "Check your answers: Agent"
     path: /summary
     controller: SectionEndController
+    id: 1f592de7-a72e-46f7-bf49-81f7b91069ed
 lists: []
-conditions:
-  - name: agentDetailsSelected
-    displayName: agentDetailsSelected
-    value:
-      name: agentDetailsSelected
-      conditions:
-        - field:
-            name: grantApplicantType
-            type: RadiosField
-            display: Who is applying for this grant?
-          operator: is
-          value:
-            type: Value
-            value: applying-A2
-            display: Agent
+conditions: []
 sections:
   - title: Agent
     name: agentSection

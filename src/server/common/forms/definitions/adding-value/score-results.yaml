@@ -5,6 +5,13 @@ pages:
     path: /score-results
     section: scoreResultsSection
     view: score-results-tasklist.html
+    events:
+      onLoad:
+        type: http
+        options:
+          method: POST
+          url: https://ffc-grants-scoring.cdpEnvironment.cdp-int.defra.cloud/scoring/api/v1/adding-value/score?allowPartialScoring=true
+    id: a961ff25-9a67-45c4-b452-85754a6f9fc9
 lists: []
 conditions: []
 sections:
@@ -12,3 +19,4 @@ sections:
     name: scoreResultsSection
     hideTitle: false
 startPage: /score-results
+schema: 2

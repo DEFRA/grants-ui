@@ -105,15 +105,9 @@ pages:
         id: 24172324-4841-445c-b1fb-4f377596d826
         options: {}
         schema: {}
-    next:
-      - path: /are-you-pig-farmer
     id: 4afc672b-71d6-4889-999d-c7934184f3cc
   - title: Are you a pig farmer?
     path: /are-you-pig-farmer
-    next:
-      - path: /you-must-be-pig-farmer
-        condition: 341c2742-74d4-439e-91ee-641f4e56093f
-      - path: /pig-count
     components:
       - name: isPigFarmer
         title: Are you a pig farmer?
@@ -126,7 +120,6 @@ pages:
     id: d40c01ac-f492-4665-90c6-b62a6e58d6aa
   - title: You are not eligible for this grant
     path: /you-must-be-pig-farmer
-    next: []
     components:
       - name: FGyiLS
         title: You are not eligible for this grant
@@ -139,12 +132,9 @@ pages:
         schema: {}
         id: 2324fb1a-5c1d-4f49-ace0-5a9d5eaa088c
     id: 21347447-b831-4074-bc25-a35ac5a9fd8f
+    condition: 341c2742-74d4-439e-91ee-641f4e56093f
   - title: How many pigs do you have?
     path: /pig-count
-    next:
-      - path: /not-eligible
-        condition: 53386d88-be5b-4637-8b90-7843f4473d4e
-      - path: /what-type-of-pigs
     components:
       - name: pigCountInfo
         type: Html
@@ -173,7 +163,6 @@ pages:
   - title: You are not eligible for this grant
     path: /not-eligible
     controller: TerminalPageController
-    next: []
     components:
       - name: FGyiLA
         title: You are not eligible for this grant
@@ -199,16 +188,6 @@ pages:
         schema: {}
         shortDescription: What type of pigs?
         id: b9e18c89-64fb-466d-8e2c-46021b3b8a76
-    next:
-      - path: /how-many-white-pigs
-        condition: 90d64978-0714-41fb-b3d5-b37ad3537a57
-      - path: /how-many-british-landrace
-        condition: 506f0683-d615-40ec-b746-b31797dac464
-      - path: /how-many-berkshire-pigs
-        condition: 850d2d80-d0a4-492a-8927-19b5ad89a6c1
-      - path: /how-many-other-pigs
-        condition: 1f672a37-ad80-40fd-8675-54265ece3ef8
-      - path: /potential-funding
     id: 3c71604b-92e9-4729-a67a-c7ac0f77dca2
   - title: How many White pigs do you have?
     path: /how-many-white-pigs
@@ -221,14 +200,7 @@ pages:
         schema: {}
         shortDescription: How many White pigs do you have?
         id: c35baac6-cfc7-4984-a099-9965f7479ca5
-    next:
-      - path: /how-many-british-landrace
-        condition: 506f0683-d615-40ec-b746-b31797dac464
-      - path: /how-many-berkshire-pigs
-        condition: 850d2d80-d0a4-492a-8927-19b5ad89a6c1
-      - path: /how-many-other-pigs
-        condition: 1f672a37-ad80-40fd-8675-54265ece3ef8
-      - path: /potential-funding
+    condition: 90d64978-0714-41fb-b3d5-b37ad3537a57
     id: 39d6d558-d0b3-43bd-855f-d09cf810db7a
   - title: How many British Landrace pigs do you have?
     path: /how-many-british-landrace
@@ -241,12 +213,7 @@ pages:
         schema: {}
         shortDescription: How many British Landrace pigs do you have?
         id: 95be4663-635e-4d97-beca-ea383df0ba15
-    next:
-      - path: /how-many-berkshire-pigs
-        condition: 850d2d80-d0a4-492a-8927-19b5ad89a6c1
-      - path: /how-many-other-pigs
-        condition: 1f672a37-ad80-40fd-8675-54265ece3ef8
-      - path: /potential-funding
+    condition: 506f0683-d615-40ec-b746-b31797dac464
     id: 114798d7-622e-46da-943d-729f4d102d8c
   - title: How many Berkshire pigs do you have?
     path: /how-many-berkshire-pigs
@@ -259,10 +226,7 @@ pages:
         schema: {}
         shortDescription: How many Berkshire pigs do you have?
         id: 66316a29-4e30-4ee5-821b-c33eb9ce888b
-    next:
-      - path: /how-many-other-pigs
-        condition: 1f672a37-ad80-40fd-8675-54265ece3ef8
-      - path: /potential-funding
+    condition: 850d2d80-d0a4-492a-8927-19b5ad89a6c1
     id: 2377d567-2723-4bc1-b51b-10aaf8047980
   - title: How many Other pigs do you have?
     path: /how-many-other-pigs
@@ -275,31 +239,20 @@ pages:
         schema: {}
         shortDescription: How many Other pigs do you have?
         id: d24f82c6-a82c-45fb-987e-44ec73149567
-    next:
-      - path: /potential-funding
+    condition: 1f672a37-ad80-40fd-8675-54265ece3ef8
     id: 534eed46-bd88-4e37-823f-5dc9d23409e8
   - title: Potential grant funding
     path: /potential-funding
     controller: PotentialFundingController
-    next:
-      - path: /check-answers
     id: 0ca92c0d-1318-491f-a461-bad92554dae3
   - path: /check-answers
     controller: FlyingPigsSubmissionPageController
     title: Check your answers
-    next: []
     id: e18e2a8f-4dcf-4f70-ae75-235752260c51
   - title: Confirmation
     path: /confirmation
     controller: ConfirmationPageController
-    next: []
     id: bbbd6009-c4b7-4d34-8cf4-9d2ee3dd094c
-  - title: Check your answers
-    controller: SummaryPageController
-    path: /summary
-    components: []
-    next: []
-    id: 9e18a0c5-21d5-4090-8fd6-d259f069e510
 lists:
   - title: What type of pigs do you have?
     name: pigBreedsList

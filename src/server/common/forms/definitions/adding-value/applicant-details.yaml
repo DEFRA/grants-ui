@@ -17,6 +17,8 @@ pages:
         schema:
           regex: ^[a-zA-Z' -]*$
           max: 30
+        shortDescription: First name
+        id: ac2972b3-fc92-4eb1-b063-521d14fd942a
       - type: TextField
         name: applicantLastName
         title: Last name
@@ -29,6 +31,8 @@ pages:
         schema:
           regex: ^[a-zA-Z' -]*$
           max: 30
+        shortDescription: Last name
+        id: 0156d515-95e4-4f8f-b795-897adeaaff36
       - type: EmailAddressField
         name: applicantEmail
         title: Email address
@@ -40,6 +44,8 @@ pages:
             string.email: Enter an email address in the correct format, like name@example.com
         schema:
           regex: ^\w+([.-]\w+)*@[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*(\.[a-zA-Z]{2,})+$
+        shortDescription: Email address
+        id: 268937db-48db-400d-9fea-cd84eb0211b1
       - type: EmailAddressField
         name: applicantEmailConfirmation
         title: Confirm email address
@@ -50,6 +56,8 @@ pages:
             string.email: Enter an email address that matches
         schema:
           regex: ^\w+([.-]\w+)*@[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*(\.[a-zA-Z]{2,})+$
+        shortDescription: Confirm email address
+        id: 97c90637-f2e0-4767-a1f2-6141223da0b9
       - type: TelephoneNumberField
         name: applicantMobile
         title: Mobile number
@@ -58,10 +66,13 @@ pages:
           required: true
           customValidationMessages:
             string.empty: Enter a mobile number
-            string.pattern.base: Enter a telephone number, like 01632 960 001, 07700 900 982 or +44 0808 157 0192
+            string.pattern.base: Enter a telephone number, like 01632 960 001, 07700 900 982
+              or +44 0808 157 0192
           autocomplete: tel
         schema:
           regex: ^\+?[0-9\s()-]{10,}$
+        shortDescription: Mobile number
+        id: f9cf7cac-dc3e-41c8-85f4-6b065972e173
       - type: TelephoneNumberField
         name: applicantLandline
         title: Landline number
@@ -71,17 +82,27 @@ pages:
           customValidationMessages:
             string.empty: Enter a landline number
             string.min: Your landline number must have at least 10 characters
-            string.pattern.base: Enter a telephone number, like 01632 960 001, 07700 900 982 or +44 0808 157 0192
+            string.pattern.base: Enter a telephone number, like 01632 960 001, 07700 900 982
+              or +44 0808 157 0192
           autocomplete: tel
         schema:
           regex: ^\+?[0-9\s()-]{10,}$
+        shortDescription: Landline number
+        id: 1385fb16-ea7a-4f56-b305-b89a53d791b4
       - type: Html
         name: applicantBusinessAddressHeader
         title: Html
-        content: '<h1 class="govuk-heading-m">Business address</h1>'
+        content: <h1 class="govuk-heading-m">Business address</h1>
+        id: 42717a31-7267-4866-8e50-cb8c1c546ecb
+        options: {}
+        schema: {}
       - type: UkAddressField
         title: Address
         name: applicantBusinessAddress
+        shortDescription: Address
+        id: ecf1ccb2-2a64-43af-b935-36afdaaf4545
+        options: {}
+        schema: {}
       - type: TextField
         name: applicantProjectPostcode
         title: Project postcode
@@ -93,9 +114,13 @@ pages:
             string.pattern.base: Enter a valid postcode
         schema:
           regex: ^[a-zA-Z]{1,2}\d[a-zA-Z\d]?\s?\d[a-zA-Z]{2}$
+        shortDescription: Project postcode
+        id: 0ba77157-6c70-48ff-8156-84249e8e9b1d
+    id: 9530d5f6-0370-439f-80a7-f6a8122c18f7
   - title: "Check your answers: Applicant"
     path: /summary
     controller: SectionEndController
+    id: 2146cc65-3fc3-428e-aad4-df2f0b4637fe
 lists: []
 conditions: []
 sections:
@@ -103,3 +128,4 @@ sections:
     name: applicantSection
     hideTitle: false
 startPage: /applicant-details
+schema: 2

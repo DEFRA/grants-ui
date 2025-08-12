@@ -7,11 +7,17 @@ pages:
     components:
       - name: hasMechanisationUsage
         title: Will this project use any mechanisation instead of manual labour?
-        hint: For example, a fruit grading and sorting machine that does the work of 2 farm labourers
+        hint: For example, a fruit grading and sorting machine that does the work of 2
+          farm labourers
         type: YesNoField
         options:
           customValidationMessages:
-            any.required: Select yes if this project will use any mechanisation instead of manual labour
+            any.required: Select yes if this project will use any mechanisation instead of
+              manual labour
+        shortDescription: Will this project use any mechanisation instead of manual labour?
+        id: 06c9e6c7-905f-4274-af18-0f677b5595f9
+        schema: {}
+    id: c9294fe4-dc25-46ca-8168-7aba9fa489bc
   - title: How much manual labour will the mechanisation be equal to?
     path: /manual-labour-amount
     section: manualLabourAmountSection
@@ -19,15 +25,20 @@ pages:
       - name: manualLabourEquivalence
         title: How much manual labour will the mechanisation be equal to?
         type: RadiosField
-        list: manualLabourAmountList
+        list: 857ac181-baa4-4bb8-a0ac-97a07bbfd425
         hint: Based on your current staff numbers
         options:
           customValidationMessages:
             any.required: Select how much manual labour the mechanisation will be equal to
-    condition: mechanisationCondition
+        shortDescription: How much manual labour will the mechanisation be equal to?
+        id: ffe65000-372f-4fc0-8dd3-fff455d3ba3f
+        schema: {}
+    condition: e789ea59-bec9-40fb-aa32-12198d85c850
+    id: aab2bd1b-d720-4504-9d10-2151d61a2b9e
   - title: "Check your answers: Manual Labour Amount"
     path: /summary
     controller: SectionEndController
+    id: e6fcdef1-dfd5-4597-b9d2-24960fc66260
 lists:
   - title: How much manual labour will the mechanisation be equal to?
     name: manualLabourAmountList
@@ -35,27 +46,26 @@ lists:
     items:
       - text: Up to 5% of workforce
         value: manualLabourAmount-A1
+        id: 5d927f03-fdb0-459d-92a0-95ef13c433a8
       - text: Between 5% and 10%
         value: manualLabourAmount-A2
+        id: bcc5adea-d578-4afb-945a-aeff91156026
       - text: More than 10%
         value: manualLabourAmount-A3
+        id: 9f74bbe0-249b-4a02-92b5-c0f2c71c2b4d
+    id: 857ac181-baa4-4bb8-a0ac-97a07bbfd425
 conditions:
-  - name: mechanisationCondition
+  - id: e789ea59-bec9-40fb-aa32-12198d85c850
     displayName: mechanisationYes
-    value:
-      name: mechanisationYes
-      conditions:
-        - field:
-            name: hasMechanisationUsage
-            type: YesNoField
-            display: Will this project use any mechanisation instead of manual labour?
-          operator: is
-          value:
-            type: Value
-            value: "true"
-            display: "Yes"
+    items:
+      - id: e00cfcdd-48f5-47e8-b147-721f60aef15f
+        componentId: 06c9e6c7-905f-4274-af18-0f677b5595f9
+        operator: is
+        type: BooleanValue
+        value: true
 sections:
   - title: Manual Labour Amount
     name: manualLabourAmountSection
     hideTitle: false
 startPage: /mechanisation
+schema: 2

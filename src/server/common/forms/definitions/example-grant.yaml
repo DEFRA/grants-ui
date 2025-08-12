@@ -12,15 +12,9 @@ pages:
         options: {}
         schema: {}
         id: 9ed76e01-3aad-451c-8982-2ec07d677f7a
-    next:
-      - path: /are-you-in-england
     id: 58333e05-0560-42dc-b45b-23d49b1f4552
   - title: Are you in England?
     path: /are-you-in-england
-    next:
-      - path: /you-must-be-in-england
-        condition: ce922c19-bdff-43b7-82ab-1c9d9fe39c46
-      - path: /what-is-your-business
     components:
       - name: TKsWbP
         title: Are you in England?
@@ -33,7 +27,6 @@ pages:
     id: a1e0d380-6fa7-4575-a4d1-023ef4202b78
   - title: You must be in England
     path: /you-must-be-in-england
-    next: []
     components:
       - name: FGyiLS
         title: You must be in England
@@ -45,10 +38,9 @@ pages:
         schema: {}
         id: 2e32b0e2-d041-4a88-9144-9156e3dd1d0f
     id: d40adda3-1d6e-4456-b3e3-f09a474ce5b5
+    condition: ce922c19-bdff-43b7-82ab-1c9d9fe39c46
   - title: What is your business?
     path: /what-is-your-business
-    next:
-      - path: /summary
     components:
       - name: sdFYHf
         title: What is your business?
@@ -64,7 +56,6 @@ pages:
     controller: SummaryPageController
     title: Check your answers before submitting your form
     components: []
-    next: []
     id: 520d5cf5-995d-4c2f-b908-1b056046e1db
 lists:
   - title: What is the nature of your business?
