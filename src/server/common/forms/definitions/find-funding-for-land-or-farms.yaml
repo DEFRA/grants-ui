@@ -24,7 +24,7 @@ pages:
     path: /confirm-your-land-details-are-up-to-date
     view: confirm-your-land-details-are-up-to-date.html
 
-  - title: Select Land Parcel
+  - title: Select land parcel for actions
     controller: LandParcelPageController
     path: /select-land-parcel
 
