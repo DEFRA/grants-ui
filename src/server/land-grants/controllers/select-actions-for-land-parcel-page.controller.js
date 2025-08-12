@@ -279,23 +279,6 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
 
     return fn
   }
-
-  fetchAvailableActionsForParcel = async (parcelId, sheetId, request, state) => {
-    // Load available actions for the land parcel
-    try {
-      const data = await fetchAvailableActionsForParcel({ parcelId, sheetId })
-      this.availableActions = data.actions || []
-      if (!this.availableActions.length) {
-        request.logger.error({
-          message: `No actions found for parcel ${sheetId}-${parcelId}`,
-          selectedLandParcel: state.selectedLandParcel
-        })
-      }
-    } catch (error) {
-      this.availableActions = []
-      request.logger.error(error, `Failed to fetch land parcel data for id ${sheetId}-${parcelId}`)
-    }
-  }
 }
 
 /**
