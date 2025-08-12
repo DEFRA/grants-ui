@@ -234,7 +234,7 @@ function getBellOptions(oidcConfig) {
       useParamsAuth: true,
       auth: oidcConfig.authorization_endpoint,
       token: oidcConfig.token_endpoint,
-      scope: ['openid', 'offline_access'],
+      scope: ['openid', 'offline_access', config.get('defraId.clientId')],
       profile: function (credentials) {
         return processCredentialsProfile(credentials)
       }
