@@ -241,7 +241,7 @@ describe('Auth Plugin', () => {
     expect(server.auth.strategy).toHaveBeenCalledWith('defra-id', 'bell', expect.any(Object))
     expect(server.auth.strategy).toHaveBeenCalledWith('session', 'cookie', expect.any(Object))
 
-    expect(server.auth.default).toHaveBeenCalledWith('session')
+    expect(server.auth.default).toHaveBeenCalledWith({ mode: 'required', strategy: 'session' })
   })
 
   test('logs plugin registration start and completion', async () => {

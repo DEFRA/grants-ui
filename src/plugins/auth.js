@@ -76,18 +76,22 @@ function setupAuthStrategies(server, oidcConfig) {
   const cookieOptions = getCookieOptions()
   server.auth.strategy('session', 'cookie', cookieOptions)
 
-  // Only register the defra-id strategy if it's enabled in the config and oidcConfig is available
+  let bellConfig
+
   if (defraIdEnabled && oidcConfig) {
-    // Bell is a third-party plugin that provides a common interface for OAuth 2.0 authentication
-    // Used to authenticate users with Defra Identity and a pre-requisite for the Cookie authentication strategy
-    // Also used for changing organisations and signing out
-    const bellOptions = getBellOptions(oidcConfig)
-    server.auth.strategy('defra-id', 'bell', bellOptions)
+    bellConfig = getBellOptions(oidcConfig)
+  } else {
+    bellConfig = getDefraIdDisabledConfig()
   }
+
+  server.auth.strategy('defra-id', 'bell', bellConfig)
 
   // Set the default authentication strategy to session
   // All routes will require authentication unless explicitly set to 'defra-id' or `auth: false`
-  server.auth.default('session')
+  server.auth.default({
+    strategy: 'session',
+    mode: 'required'
+  })
 }
 
 export default {
@@ -287,6 +291,30 @@ function getBellOptions(oidcConfig) {
     providerParams: function () {
       return {
         serviceId: config.get('defraId.serviceId')
+      }
+    }
+  }
+}
+
+async function getDefraIdDisabledConfig() {
+  const crypto = await import('crypto')
+  const sessionId = crypto.randomUUID()
+  return {
+    validate: () => {
+      return {
+        isValid: true,
+        credentials: {
+          isAuthenticated: true,
+          sessionId,
+          contactId: 'anonymous',
+          firstName: 'Anonymous',
+          lastName: 'User',
+          name: 'Anonymous User',
+          role: 'user',
+          scope: ['user'],
+          crn: 'anonymous-user',
+          relationships: ['business:default-business']
+        }
       }
     }
   }
