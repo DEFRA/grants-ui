@@ -87,10 +87,7 @@ function setupAuthStrategies(server, oidcConfig) {
 
   // Set the default authentication strategy to session
   // All routes will require authentication unless explicitly set to 'defra-id' or `auth: false`
-  server.auth.default({
-    strategy: 'session',
-    mode: 'required'
-  })
+  server.auth.default('session')
 }
 
 export default {
