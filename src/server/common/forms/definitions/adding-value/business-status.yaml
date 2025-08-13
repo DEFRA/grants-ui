@@ -8,11 +8,15 @@ pages:
       - name: natureOfBusinessRadiosField
         title: What is your business?
         type: RadiosField
-        list: natureOfBusinessList
+        list: a4cf4b62-a6c3-479b-ac16-8420db5d576e
         hint: Select one option
         options:
           customValidationMessages:
             any.required: Select the option that applies to your business
+        shortDescription: What is your business?
+        id: cbc029a2-ed51-42fa-bc2a-40badca4f38d
+        schema: {}
+    id: 52f92465-303e-4578-a0d5-d559bfa67080
   - title: You cannot apply for a grant from this scheme
     path: /cannot-apply-nature-of-business
     section: businessStatusSection
@@ -21,16 +25,27 @@ pages:
       - name: natureOfBusinessCannotApply
         title: Html
         type: Html
-        content: |
+        content: >
           <p class="govuk-body">This grant is for businesses who:</p>
 
+
           <ul class="govuk-list govuk-list--bullet">
+
           <li>are agricultural or horticultural growers or producers</li>
-          <li>are a business processing agricultural or horticultural products that is at least 50% owned by agricultural or horticultural producers</li>
+
+          <li>are a business processing agricultural or horticultural products
+          that is at least 50% owned by agricultural or horticultural
+          producers</li>
+
           </ul>
 
+
           <p class="govuk-body">See other grants you may be eligible for.</p>
-    condition: natureOfBusinessCondition
+        id: 34f64903-d4c6-46a9-874e-e9d66e7e1fa8
+        options: {}
+        schema: {}
+    condition: dbfca7d1-7a9f-48c1-89c0-662eb1567f2e
+    id: 1f6e4861-e465-453d-a463-4902c9545c32
   - title: What is the legal status of the business?
     path: /legal-status
     section: businessStatusSection
@@ -38,10 +53,14 @@ pages:
       - name: legalStatusRadiosField
         title: What is the legal status of the business?
         type: RadiosField
-        list: legalStatusList
+        list: 3a43fa5c-0809-4a27-a8cf-89414cf97855
         options:
           customValidationMessages:
             any.required: Select the legal status of the business
+        shortDescription: What is the legal status of the business?
+        id: 07cf4595-4157-4381-9773-bd938956b35e
+        schema: {}
+    id: dd6c05dd-eb61-4272-af03-5caf7c4daa7f
   - title: You cannot apply for a grant from this scheme
     path: /legal-status-cannot-apply
     section: businessStatusSection
@@ -50,13 +69,24 @@ pages:
       - name: legalStatusCannotApplyInfo
         title: Html
         type: Html
-        content: |
-          <p class="govuk-body">Your business does not have an eligible legal status.</p>
+        content: >
+          <p class="govuk-body">Your business does not have an eligible legal
+          status.</p>
+        id: 92617b8a-6e7a-4fa6-933d-4c61d042a461
+        options: {}
+        schema: {}
       - type: Html
         name: legalStatusWarning
         title: Html
-        content: '<div class="govuk-warning-text"> <span class="govuk-warning-text__icon" aria-hidden="true">!</span> <strong class="govuk-warning-text__text"> <span class="govuk-visually-hidden">Warning</span>Other types of business may be supported in future schemes.</strong></div>'
-    condition: legalStatusCondition
+        content: <div class="govuk-warning-text"> <span class="govuk-warning-text__icon"
+          aria-hidden="true">!</span> <strong class="govuk-warning-text__text">
+          <span class="govuk-visually-hidden">Warning</span>Other types of
+          business may be supported in future schemes.</strong></div>
+        id: a6c94893-0a73-436a-b2dc-e4cb0d9c180f
+        options: {}
+        schema: {}
+    condition: 6eb4061b-eacb-41c1-bffe-12502b60593f
+    id: cc470d9f-ae3b-40b0-8a6c-33c5341358d0
   - title: Is the planned project in England?
     path: /country
     section: businessStatusSection
@@ -68,6 +98,10 @@ pages:
         options:
           customValidationMessages:
             any.required: Select yes if the project is in England
+        shortDescription: Is the planned project in England?
+        id: 689b0ffd-46aa-42a4-8c71-41ff287a547f
+        schema: {}
+    id: 8e0f3cbc-49d8-49ee-b6cf-ce8d1af3a848
   - title: You cannot apply for a grant from this scheme
     path: /cannot-apply-country
     section: businessStatusSection
@@ -76,13 +110,20 @@ pages:
       - name: countryCannotApplyInfo
         title: Html
         type: Html
-        content: |
+        content: >
           <p class="govuk-body">This grant is only for projects in England.</p>
-          <div class="govuk-inset-text">Scotland, Wales and Northern Ireland have other grants available.</div>
-    condition: countryCondition
+
+          <div class="govuk-inset-text">Scotland, Wales and Northern Ireland
+          have other grants available.</div>
+        id: 32f86489-2c4a-48b9-b462-faf6a6187eef
+        options: {}
+        schema: {}
+    condition: 4cdc0305-aa64-4cd7-b50c-fa2e8cc87ff7
+    id: 27c2b90f-417a-4fce-bb30-364618cf8e58
   - title: "Check your answers: Business status"
     path: /summary
     controller: SectionEndController
+    id: 9b15c139-8385-4959-91ae-5ad352e14470
 lists:
   - title: What is the legal status of your business?
     name: legalStatusList
@@ -90,28 +131,41 @@ lists:
     items:
       - text: Sole trader
         value: legalStatus-A1
+        id: fbca2d86-ac28-43ff-9c9c-4c6ce46f510c
       - text: Partnership
         value: legalStatus-A2
+        id: 5d7fd04e-b809-4cbd-8e2c-bf1bf1e7aa90
       - text: Limited company
         value: legalStatus-A3
+        id: 319ce33e-944f-47a7-90bd-65f75b289b1f
       - text: Charity
         value: legalStatus-A4
+        id: 4dadc602-e1e4-4ca9-b28d-dfe031a8585d
       - text: Trust
         value: legalStatus-A5
+        id: 06569cef-cc96-408f-8425-1ecb9062a3c0
       - text: Limited liability partnership
         value: legalStatus-A6
+        id: f74651f0-20cc-497e-b2db-1f42361289bb
       - text: Community interest company
         value: legalStatus-A7
+        id: 56b59046-623c-4fa9-9e47-6526f4991cd3
       - text: Limited partnership
         value: legalStatus-A8
+        id: 5cf6981f-b7b2-494e-8291-f80223a41bde
       - text: Industrial and provident society
         value: legalStatus-A9
+        id: 47a59066-1ed2-4217-9e72-8d635f7aaf4e
       - text: Co-operative society (Co-Op)
         value: legalStatus-A10
+        id: 3942c7f0-fab3-4414-952e-0a61a03a48af
       - text: Community benefit society (BenCom)
         value: legalStatus-A11
+        id: eaa03a74-fc7f-4210-9c8d-80cf784deb15
       - text: None of the above
         value: legalStatus-A12
+        id: 1e2196bc-5c80-4cea-b541-d0a38189404f
+    id: 3a43fa5c-0809-4a27-a8cf-89414cf97855
   - title: What is your business?
     name: natureOfBusinessList
     type: string
@@ -119,58 +173,51 @@ lists:
       - text: A grower or producer of agricultural or horticultural produce
         description: For example, arable or livestock farmer, fruit producer, salad grower
         value: natureOfBusiness-A1
-      - text: A business processing agricultural or horticultural products that is at least 50% owned by agricultural or horticultural producers
+        id: 9a96648c-0c04-43eb-bb6c-e942b2b80529
+      - text: A business processing agricultural or horticultural products that is at
+          least 50% owned by agricultural or horticultural producers
         description: For example, a cheese production business owned by a group of farmers
         value: natureOfBusiness-A2
+        id: 06e1032d-dcf3-46d7-bc42-9c1e8a805014
       - text: A woodland manager processing wild venison products
         value: natureOfBusiness-A3
+        id: 8938e88e-62e1-48b9-95a9-407b0d945ac1
       - text: None of the above
         value: natureOfBusiness-A4
+        id: be1c257f-1908-49d7-b333-3c96e698fac4
+    id: a4cf4b62-a6c3-479b-ac16-8420db5d576e
 conditions:
-  - name: natureOfBusinessCondition
+  - id: dbfca7d1-7a9f-48c1-89c0-662eb1567f2e
     displayName: natureOfBusinessNone
-    value:
-      name: natureOfBusinessNone
-      conditions:
-        - field:
-            name: natureOfBusinessRadiosField
-            type: RadiosField
-            display: What is your business?
-          operator: is
-          value:
-            type: Value
-            value: natureOfBusiness-A4
-            display: None of the above
-  - name: legalStatusCondition
+    items:
+      - id: eaf1a0e3-c9f8-43f5-ae27-9e82ac3a8b05
+        componentId: cbc029a2-ed51-42fa-bc2a-40badca4f38d
+        operator: is
+        type: ListItemRef
+        value:
+          listId: a4cf4b62-a6c3-479b-ac16-8420db5d576e
+          itemId: be1c257f-1908-49d7-b333-3c96e698fac4
+  - id: 6eb4061b-eacb-41c1-bffe-12502b60593f
     displayName: legalStatusNone
-    value:
-      name: legalStatusNone
-      conditions:
-        - field:
-            name: legalStatusRadiosField
-            type: RadiosField
-            display: What is the legal status of the business?
-          operator: is
-          value:
-            type: Value
-            value: legalStatus-A12
-            display: None of the above
-  - name: countryCondition
+    items:
+      - id: 85986454-d824-4fb2-a0cc-42f50370d3cc
+        componentId: 07cf4595-4157-4381-9773-bd938956b35e
+        operator: is
+        type: ListItemRef
+        value:
+          listId: 3a43fa5c-0809-4a27-a8cf-89414cf97855
+          itemId: 1e2196bc-5c80-4cea-b541-d0a38189404f
+  - id: 4cdc0305-aa64-4cd7-b50c-fa2e8cc87ff7
     displayName: plannedProjectNo
-    value:
-      name: plannedProjectNo
-      conditions:
-        - field:
-            name: countryYesNoField
-            type: YesNoField
-            display: Is the planned project in England?
-          operator: is
-          value:
-            type: Value
-            value: "false"
-            display: "No"
+    items:
+      - id: ef25283b-946f-4d9f-8b6b-1ecbdc845148
+        componentId: 689b0ffd-46aa-42a4-8c71-41ff287a547f
+        operator: is
+        type: BooleanValue
+        value: false
 sections:
   - title: Business status
     name: businessStatusSection
     hideTitle: false
 startPage: /nature-of-business
+schema: 2

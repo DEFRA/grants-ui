@@ -4,9 +4,11 @@ pages:
   - title: Business Details
     path: /business-details
     section: businessDetailsSection
+    id: a16b5dc1-e286-4a61-be6c-18e937e5fb7b
   - title: "Check your answers: Business details"
     path: /summary
     controller: SectionEndController
+    id: 56a600e8-48cb-4d40-8eae-61d5707617f5
 lists: []
 conditions: []
 sections:
@@ -14,3 +16,4 @@ sections:
     name: businessDetailsSection
     hideTitle: false
 startPage: /business-details
+schema: 2

@@ -105,7 +105,6 @@ pages:
         id: 49f93c34-f818-40b8-91bc-201c92b878c1
         options: {}
         schema: {}
-    next: []
     id: a7317f91-6f12-44a5-913b-15c7f4a65485
   - title: What is your business?
     path: /nature-of-business
@@ -121,7 +120,6 @@ pages:
         shortDescription: What is your business?
         id: 9d6b5c3e-5097-44bf-9303-284f0a3af7c2
         schema: {}
-    next: []
     id: 622a77c6-72e3-4e43-b8ba-8cf780280e44
   - title: You cannot apply for a grant from this scheme
     path: /cannot-apply-nature-of-business
@@ -150,7 +148,6 @@ pages:
         options: {}
         schema: {}
     condition: d5563320-13fd-4cf6-aaae-c45f8ea36dbc
-    next: []
     id: 4cf64167-9495-4d23-af42-fe6f8bdffa71
   - title: What is the legal status of the business?
     path: /legal-status
@@ -165,7 +162,6 @@ pages:
         shortDescription: What is the legal status of the business?
         id: 9110e834-93e2-455b-bd2e-36734cd972fd
         schema: {}
-    next: []
     id: d69f0188-6bbd-4ba7-ae09-f9de5a5016cf
   - title: You cannot apply for a grant from this scheme
     path: /legal-status-cannot-apply
@@ -191,7 +187,6 @@ pages:
         options: {}
         schema: {}
     condition: 5125aee5-af6f-4357-90d9-63ad8e1750eb
-    next: []
     id: b0b4cb27-2533-4476-92ff-eb9d3c9ee34c
   - title: Is the planned project in England?
     path: /country
@@ -206,7 +201,6 @@ pages:
         shortDescription: Is the planned project in England?
         id: a2790bb5-ee64-4ba1-9c0a-3def4cf5278c
         schema: {}
-    next: []
     id: ae15b197-55f7-495f-bfec-eb4426e90700
   - title: You cannot apply for a grant from this scheme
     path: /cannot-apply-country
@@ -224,7 +218,6 @@ pages:
         options: {}
         schema: {}
     condition: b3fb0de1-f72e-40c1-a0d6-165203933156
-    next: []
     id: a2d2ceed-4380-47e5-b1ca-9522ff79b89b
   - title: Does the project have planning permission?
     path: /planning-permission
@@ -239,7 +232,6 @@ pages:
         shortDescription: Does the project have planning permission?
         id: cb39706d-50c7-4d57-81d1-7fcf2b8b9573
         schema: {}
-    next: []
     id: fbae64bf-77d1-47fc-a9cd-d50160e9f462
   - title: You may be able to apply for a grant from this scheme
     path: /planning-permission-may-apply
@@ -265,7 +257,6 @@ pages:
         options: {}
         schema: {}
     condition: be3a9620-acc1-4345-8d15-259d5d8829f9
-    next: []
     id: 9be1f6a2-5638-4c4f-8115-e5f07ebec47c
   - title: You cannot apply for a grant from this scheme
     path: /planning-permission-cannot-apply
@@ -286,7 +277,6 @@ pages:
         options: {}
         schema: {}
     condition: 5ec9eba3-576b-4366-9cb6-a97794bd91c6
-    next: []
     id: a2bf8e32-2856-4580-bf39-cb60e455b22e
   - title: Have you already started work on the project?
     path: /project-start
@@ -301,7 +291,6 @@ pages:
         shortDescription: Have you already started work on the project?
         id: ccc745e6-d5a5-495c-bc4d-a816f9e9d984
         schema: {}
-    next: []
     id: f1b52d52-34be-49de-9c43-ab6092458caa
   - title: You cannot apply for a grant from this scheme
     path: /cannot-apply-project-start
@@ -324,7 +313,6 @@ pages:
         options: {}
         schema: {}
     condition: e4d5e137-39d3-4bce-8f47-a6dbc52209f2
-    next: []
     id: 0bc396a7-2511-4f55-9729-f6a9e0852ded
   - title: Is the planned project on land the business owns?
     path: /tenancy
@@ -338,7 +326,6 @@ pages:
         shortDescription: Is the planned project on land the business owns?
         id: 42c748a7-32fb-433e-a1b5-1261743174f7
         schema: {}
-    next: []
     id: c54bfca4-b565-437f-b453-649be16c2169
   - title: Do you have a tenancy agreement for 5 years after the final grant payment?
     path: /tenancy-length
@@ -356,7 +343,6 @@ pages:
         id: 99e4cda4-dd85-4dfb-83ca-c169b99a3b61
         schema: {}
     condition: 997014fd-47f6-4b64-bf45-8a0bd965dcd8
-    next: []
     id: 496a0f49-14a9-4a06-b4d6-35c792d03c6e
   - title: You may be able to apply for a grant from this scheme
     path: /may-apply-tenancy-length
@@ -370,7 +356,6 @@ pages:
         options: {}
         schema: {}
     condition: c058007e-2420-48d8-9d36-82d943e94b60
-    next: []
     id: 7d456d20-1512-45f7-bec0-8fea6bdc3822
   - title: Do you want to build a new smaller abattoir?
     path: /smaller-abattoir
@@ -387,7 +372,6 @@ pages:
         shortDescription: Do you want to build a new smaller abattoir?
         id: 32decb0a-76ed-4b3b-afc8-278535a901fd
         schema: {}
-    next: []
     id: 36ab1019-0445-43d1-8e4a-8ebd1dd84138
   - title: Will this abattoir provide services to other farmers?
     path: /other-farmers
@@ -403,7 +387,6 @@ pages:
         id: c9426c71-e697-41fc-9a29-1c6dc7d7c4a8
         schema: {}
     condition: 35a1e331-833a-477a-82f7-d052b45fc737
-    next: []
     id: ff2641f3-0139-468e-acde-9d8b3824bc77
   - title: You cannot apply for a grant from this scheme
     path: /cannot-apply-other-farmers
@@ -425,7 +408,6 @@ pages:
         options: {}
         schema: {}
     condition: 00d872a9-1728-4a7c-bd9b-b55d48537d5c
-    next: []
     id: 78f26446-d531-4bfb-b215-f56da53f1b6c
   - title: Do you want to build new controlled atmosphere storage for top fruit?
     path: /fruit-storage
@@ -443,7 +425,6 @@ pages:
         id: 2d3c08cd-e0e0-401f-85e7-29681ec2f4ef
         schema: {}
     condition: 58975020-9808-4f47-b8de-062fbd933a6a
-    next: []
     id: 969b9b50-cf48-43ac-9797-579b620b9fa1
   - title: Does your project need eligible items?
     path: /project-items-needed
@@ -457,7 +438,6 @@ pages:
         shortDescription: Does your project need eligible items?
         id: 1388a75c-5368-4557-9089-7c6bfc12901c
         schema: {}
-    next: []
     id: 2fefde46-284e-4457-944f-c6575919cf62
     condition: 2fff2224-834d-46be-b6f3-faf4dd85d1b2
   - title: What eligible items does your project need?
@@ -480,7 +460,6 @@ pages:
         id: 4e3d0389-4414-46a7-8791-304dd09d858f
         schema: {}
     condition: c441162f-87ce-46c6-bcb7-e084b23f6927
-    next: []
     id: 14bd8487-8732-4df8-9deb-cd3703c95d50
   - title: You cannot apply for a grant from this scheme
     path: /cannot-apply-project-items
@@ -511,7 +490,6 @@ pages:
         options: {}
         schema: {}
     condition: 1c0243a4-8ad6-42cc-95e9-c6e0ff23c938
-    next: []
     id: b0ce5697-5637-47bf-99e1-638e83eabbf0
   - title: Does your project also need storage facilities?
     path: /storage
@@ -537,7 +515,6 @@ pages:
         id: 51faf12a-0825-4aa5-8bdf-ff6b0f75e2a2
         options: {}
         schema: {}
-    next: []
     id: a5eace6e-8f74-4c33-90aa-1f974626f31d
     condition: 2fff2224-834d-46be-b6f3-faf4dd85d1b2
   - title: What is the estimated cost of the items?
@@ -568,7 +545,6 @@ pages:
           precision: 0
         shortDescription: Enter amount
         id: e0dafaad-b36c-49ea-9221-86aeb91f5eea
-    next: []
     id: 9181272e-8e04-42c9-ad7b-e6fab4a939df
   - title: You cannot apply for a grant from this scheme
     path: /project-cost-cannot-apply
@@ -590,7 +566,6 @@ pages:
         options: {}
         schema: {}
     condition: 60d1c9a2-9d6d-4169-8339-ae2534d618f3
-    next: []
     id: 202d0c57-49f6-44c3-bf03-09c087d45e3e
   - title: Potential grant funding
     path: /potential-funding
@@ -627,7 +602,6 @@ pages:
         options: {}
         schema: {}
         id: 40d4527a-5ac3-48b8-80a1-11a77bc5b141
-    next: []
     id: 3877e300-d992-4566-9162-b7cccd081a0a
   - title: "{% assign estimatedCost = 'estimatedCost' | answer %} {% assign
       applicantPayMultiplier = 0.6 %} {% assign applicantPayAmount =
@@ -647,7 +621,6 @@ pages:
         shortDescription: Can you pay the remaining costs?
         id: 5c6c64f3-effe-4ad7-a16c-e34f641386e8
         schema: {}
-    next: []
     id: 51c889c9-6e7e-454d-a1cc-c9ec1259ad52
   - title: You cannot apply for a grant from this scheme
     path: /cannot-apply-remaining-costs
@@ -681,7 +654,6 @@ pages:
         options: {}
         schema: {}
     condition: 91ffb883-402a-4151-8eac-aa711b8fc5a8
-    next: []
     id: 62fddc17-4cb8-45e9-9e99-18bda475ec78
   - title: What type of produce is being processed?
     path: /produce-processed
@@ -697,7 +669,6 @@ pages:
         shortDescription: What type of produce is being processed?
         id: 271bec25-6eff-4882-8c55-83fc51bab67e
         schema: {}
-    next: []
     id: afbdd8b2-3ca4-4d60-ada4-8cdb0ccfb30f
     condition: 2fff2224-834d-46be-b6f3-faf4dd85d1b2
   - title: How will this project add value to the produce?
@@ -714,7 +685,6 @@ pages:
         shortDescription: How will this project add value to the produce?
         id: fccb1bd3-9c0b-44fe-bfe3-16e96c15dbd3
         schema: {}
-    next: []
     id: 4317a1ae-b726-44a0-9a27-43dbd454c951
     condition: 2fff2224-834d-46be-b6f3-faf4dd85d1b2
   - title: What impact will this project have?
@@ -731,7 +701,6 @@ pages:
         shortDescription: What impact will the project have?
         id: cd0b5f1c-1699-407d-bdbe-07065e6f67e5
         schema: {}
-    next: []
     id: 2d2af44f-c5e3-4c2a-8012-a351a3014bde
     condition: 2fff2224-834d-46be-b6f3-faf4dd85d1b2
   - title: Will this project use any mechanisation instead of manual labour?
@@ -749,7 +718,6 @@ pages:
         shortDescription: Will this project use any mechanisation instead of manual labour?
         id: aaceefc9-7f2e-4529-b00d-a32f3573a5ac
         schema: {}
-    next: []
     id: 328c8810-b947-4e2b-bac6-e63206e665ce
   - title: How much manual labour will the mechanisation be equal to?
     path: /manual-labour-amount
@@ -766,7 +734,6 @@ pages:
         id: ded6e822-bec8-4479-9b9f-7fc9959a4c47
         schema: {}
     condition: 1f0bdf8b-df25-4ade-8f4b-3f7651dbe737
-    next: []
     id: c86c21f8-3875-400b-b026-bd197c3f9a95
   - title: Will you have new customers after this project?
     path: /future-customers-exist
@@ -780,7 +747,6 @@ pages:
         shortDescription: Will you have new customers after this project?
         id: 56141d5b-0e59-46f7-959c-696dd7549f37
         schema: {}
-    next: []
     id: d4e9c0bc-4ca9-436c-adbe-dc2894237002
   - title: Who will your new customers be after this project?
     path: /future-customers
@@ -800,7 +766,6 @@ pages:
         id: d10178a4-b84d-4713-b9a7-bf47a35f5478
         schema: {}
     condition: 55021f52-8749-4119-aa54-4054f961d51d
-    next: []
     id: d866aeff-e9eb-4876-b2ea-927f58e8b0d6
   - title: Will you work in partnership or collaborate with other farmers or
       producers?
@@ -820,7 +785,6 @@ pages:
           or producers?
         id: 81f13ac5-2969-4378-abdd-e4fbee7a7971
         schema: {}
-    next: []
     id: 53970f7b-40fa-4f6d-9392-a03029387dad
   - title: Will this project improve the environment?
     path: /environmental-impact-exist
@@ -834,7 +798,6 @@ pages:
         shortDescription: Will this project improve the environment?
         id: 1752fcde-a1e1-4299-aed8-5f08a3071cee
         schema: {}
-    next: []
     id: dce48326-62af-495b-a386-dc1744689bbe
   - title: How will this project improve the environment?
     path: /environmental-impact
@@ -851,7 +814,6 @@ pages:
         id: e7250a9c-16d3-435c-a3da-40076097d636
         schema: {}
     condition: fd9f432a-b8bf-42fe-b888-c0068cb3f9ae
-    next: []
     id: c293e9a2-efb5-402a-8559-1305a32475d1
   - title: Score results
     path: /score-results
@@ -862,11 +824,9 @@ pages:
         options:
           method: POST
           url: https://ffc-grants-scoring.cdpEnvironment.cdp-int.defra.cloud/scoring/api/v1/adding-value/score?allowPartialScoring=true
-    next: []
     id: 0408cd1b-0a6a-43ef-9d41-ffa0ea4b7f02
   - title: Business Details
     path: /business-details
-    next: []
     id: a92adfd8-7c7b-4248-a819-88a9f57f0a71
   - title: Who is applying for this grant?
     path: /applying
@@ -881,7 +841,6 @@ pages:
         shortDescription: Who is applying for this grant?
         id: 4250bb64-e707-4f3f-b029-c4ce60df812f
         schema: {}
-    next: []
     id: b164a654-932d-4046-8006-dd3ccbcd9a85
   - title: Agent's details
     path: /agent-details
@@ -994,7 +953,6 @@ pages:
         options: {}
         schema: {}
     condition: 655e4d44-6141-4d6c-b6dd-e5dc797ed633
-    next: []
     id: c0d7417d-8155-46e4-adab-5ff741e30e5a
   - title: Applicant's details
     path: /applicant-details
@@ -1110,29 +1068,19 @@ pages:
           regex: ^[a-zA-Z]{1,2}\d[a-zA-Z\d]?\s?\d[a-zA-Z]{2}$
         shortDescription: Project postcode
         id: abcddf63-8379-40f7-aa5e-941c663b273a
-    next: []
     id: 0e08708a-f393-40fa-86a6-d30bc736a354
   - title: Check your details
     path: /check-details
-    next: []
-    id: 3e14d00d-faa0-4ccb-b2e5-88c917c53e73
+    id: 8de1f74b-f328-4363-a3de-a5fae6b891b0
   - title: Confirm and send
     path: /declaration
     controller: DeclarationPageController
     view: declaration-page.html
-    next: []
     id: bc087fb8-e499-4344-a0bf-d427ded069b8
   - title: Confirmation
     path: /confirmation
     controller: ConfirmationPageController
-    next: []
     id: 85366057-0706-468e-90c3-43b276569718
-  - title: Check your answers
-    controller: SummaryPageController
-    path: /summary
-    components: []
-    next: []
-    id: 8de1f74b-f328-4363-a3de-a5fae6b891b0
 lists:
   - title: What is your business?
     name: natureOfBusinessList

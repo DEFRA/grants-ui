@@ -7,15 +7,18 @@ metadata:
     submissionSchemaPath: ./schemas/example-grant-with-auth-submission.schema.json
 pages:
   - title: Example Grant
-    path: '/start'
+    path: /start
     controller: StartPageController
     components:
       - name: startInfoOne
         title: Html
         type: Html
-        content: |-
-          <p class="govuk-body">This service uses DefraID and the Save and Return feature, and demonstrates the use of the following components and page types:</p>
-
+        content: <p class="govuk-body">This service uses DefraID and the Save and Return
+          feature, and demonstrates the use of the following components and page
+          types:</p>
+        id: 434ab3dc-fad9-44c5-8601-b19477a1d77e
+        options: {}
+        schema: {}
       - name: startComponentsDetail
         title: Components
         type: Details
@@ -36,6 +39,9 @@ pages:
             <li>YesNoField</li>
           </ul>
 
+        id: dc4b8bac-ac3d-43ba-ae28-575997f8836d
+        options: {}
+        schema: {}
       - name: startPagesDetails
         title: Page types
         type: Details
@@ -47,6 +53,9 @@ pages:
             <li>Terminal page</li>
           </ul>
 
+        id: 884fd5d0-12da-4156-8396-348cce116c96
+        options: {}
+        schema: {}
       - name: startInsetText
         title: Inset text
         type: InsetText
@@ -54,111 +63,151 @@ pages:
           This page demonstrates the use of guidance components:
           <br>
           Details, InsetText, Html and Markdown.
+        id: 4e5014d2-7f6a-4e9f-9fa4-01fd5978db4e
+        options: {}
+        schema: {}
       - name: startMarkdown
         title: Markdown
         type: Markdown
         content: |
           Pages can use Markdown like headers and text formatting
           e.g. *italic*, **bold** and ~~strikethrough~~
-
+        id: 5bc4496e-c806-478e-9287-907fa317bff2
+        options: {}
+        schema: {}
+    id: 89f408cd-6953-4f6b-b31c-f957c520fb67
   - title: YesNoField Example
-    path: '/yes-no-field'
+    path: /yes-no-field
     components:
       - name: yesNoField
         title: Yes or No
-        hint:
-          Selecting 'No' will demonstrate navigating to a Terminal page to end the application
+        hint: Selecting 'No' will demonstrate navigating to a Terminal page to end the
+          application
         type: YesNoField
         options:
           customValidationMessages:
             any.required: Select 'Yes' to continue
+        shortDescription: Yes or No
+        id: 33b2a118-efb3-45b3-a926-22fed2360bf7
+        schema: {}
+    id: d02c043c-6ca2-4d9d-a4a8-b299e5735f7d
   - title: Terminal Page Example
-    path: '/terminal-page'
+    path: /terminal-page
     controller: TerminalPageController
     components:
       - name: cannotApplyInfo
         title: Html
         type: Html
-        content: |-
-          <p class="govuk-body">This is an example of a Terminal page to give details on what conditions have not been met to continue applying for the grant.</p>
-    condition: terminalCondition
-
+        content: <p class="govuk-body">This is an example of a Terminal page to give
+          details on what conditions have not been met to continue applying for
+          the grant.</p>
+        id: 19aa43e5-3d6c-45fc-a7f8-8c7d0b43ea0e
+        options: {}
+        schema: {}
+    condition: 048e4fdd-6c54-4a9d-9bc5-c9d90470b07b
+    id: 94e31c5a-b58e-45bb-b4e0-5960f442dd65
   - title: AutocompleteField Example
-    path: '/autocomplete-field'
+    path: /autocomplete-field
     components:
       - name: listComponentInfo
         title: Html
         type: Html
-        content: |-
-          <p class="govuk-body">This is an example of a List guidance component and an AutocompleteField.</p>
+        content: <p class="govuk-body">This is an example of a List guidance component
+          and an AutocompleteField.</p>
+        id: b0e40157-875a-4fda-97b4-9809cd4f2f28
+        options: {}
+        schema: {}
       - name: supportedCountries
         title: Countries
         type: List
-        list: countryList
+        list: bf5432a9-a4b1-4e01-b4c8-3052ad4be056
+        id: f1831087-fc60-4384-8ffb-b82d7522ab01
+        options: {}
+        schema: {}
       - name: autocompleteField
         title: Country
         type: AutocompleteField
-        list: countryList
+        list: bf5432a9-a4b1-4e01-b4c8-3052ad4be056
         hint: Start typing to see a filtered list of countries to select from
         options:
           customValidationMessages:
             any.required: Enter a country
-
+        shortDescription: Country
+        id: 26958e3c-d6d7-4bec-833b-7661e37a62e7
+        schema: {}
+    id: 728cd1be-ed3b-453c-aaf6-acacfc57742f
   - title: RadiosField Example
-    path: '/radios-field'
+    path: /radios-field
     components:
       - name: radiosInfo
         title: Html
         type: Html
-        content: |-
-          <p class="govuk-body">This is an example of a RadiosField component. Options can be configured to go to Terminal pages or Conditional pages.</p>
+        content: <p class="govuk-body">This is an example of a RadiosField component.
+          Options can be configured to go to Terminal pages or Conditional
+          pages.</p>
+        id: 545895da-dc16-4bd6-8d6a-4308277982df
+        options: {}
+        schema: {}
       - name: radiosField
         title: Radio option
         type: RadiosField
-        list: radiosFieldList
-        hint: Selecting the first option demonstrates navigating to an optional page before continuing
+        list: 57f1e7a6-d27a-4144-ace6-6ddacad103df
+        hint: Selecting the first option demonstrates navigating to an optional page
+          before continuing
         options:
           customValidationMessages:
             any.required: Select the option that applies
-
+        shortDescription: Radio option
+        id: b48a816e-a810-4346-a111-5c7a0cac8a5b
+        schema: {}
+    id: 5cd9ac2a-d211-4f8e-b1b9-1a377d121148
   - title: Conditional Page Example
-    path: '/conditional-page'
+    path: /conditional-page
     components:
       - name: conditionalPageInfo
         title: Html
         type: Html
-        content:
-          '<p class="govuk-body">This is an example of a Conditional Page.
-          You must meet certain conditions before you submit a full application.</p>
+        content: '<p class="govuk-body">This is an example of a Conditional Page. You
+          must meet certain conditions before you submit a full application.</p>
           '
-    condition: choiceOneCondition
-
+        id: c62adf1e-8175-4226-a614-2f889a254036
+        options: {}
+        schema: {}
+    condition: 7fd31ec4-1e35-4ed8-9f81-c41928f4c8a7
+    id: ec8b2f9b-efcc-4019-b4ff-f64675becf4c
   - title: CheckboxesField Example
-    path: '/checkboxes-field'
+    path: /checkboxes-field
     components:
       - name: checkboxesField
         title: Checkbox options
-        hint: |
+        hint: >-
           Use checkboxes to allow selection of one or more options.
-          This example requires at least one selection, but the component can be set to optional.
+
+          This example requires at least one selection, but the component can be
+          set to optional.
         type: CheckboxesField
-        list: checkboxesFieldList
+        list: aae88d9a-2b7b-4a49-a7f4-1482d86e6be6
         options:
           required: true
-
+        shortDescription: Checkbox options
+        id: b9c60a2f-2c1a-43fd-96f0-7ea6a566ca9a
+        schema: {}
+    id: 738a8007-fc6e-4a23-b284-d68be8bf02ee
   - title: NumberField Example
-    path: '/number-field'
+    path: /number-field
     components:
       - name: projectCostInfo
         type: Html
         title: Html
-        content:
-          '<p class="govuk-hint">Enter cost of items, for example 695000</p>'
+        content: <p class="govuk-hint">Enter cost of items, for example 695000</p>
+        id: dc6894f1-b7b1-4873-8adb-7ac869da21f7
+        options: {}
+        schema: {}
       - name: numberField
         type: NumberField
         title: Enter amount
         options:
-          prefix: '£'
+          prefix: £
           required: true
           autocomplete: off
           classes: govuk-!-width-one-third
@@ -170,49 +219,60 @@ pages:
           min: 10000
           max: 999999
           precision: 0
-
+        shortDescription: Enter amount
+        id: 4643daa8-d84a-4a1b-942c-3e5f8b53a5ad
+    id: 57ee940c-a2ab-4c98-8733-887fb5c0d396
   - title: DatePartsField Example
-    path: '/date-parts-field'
+    path: /date-parts-field
     components:
       - name: datePartsField
         title: Date
-        hint: |
-          Cannot be in the past and must be within the next 90 days.
+        hint: Cannot be in the past and must be within the next 90 days.
         type: DatePartsField
         options:
           autocomplete: off
           maxDaysInPast: 1
           maxDaysInFuture: 90
           required: true
-
+        shortDescription: Date
+        id: 70367a37-e152-4db3-94f8-8b1249481234
+        schema: {}
+    id: ae8788f2-a495-4e95-9ae0-34e7ee177788
   - title: MonthYearField Example
-    path: '/month-year-field'
+    path: /month-year-field
     components:
       - name: monthYearField
         title: Month and year
-        hint: |
-          Allows entry of dates with just a month and year.
+        hint: Allows entry of dates with just a month and year.
         type: MonthYearField
         options:
           required: true
-
+        shortDescription: Month and year
+        id: d357b94e-ca25-4ea1-8b01-daa4851a8767
+        schema: {}
+    id: 16d61e73-68bb-465a-a9c3-fa05c41de16c
   - title: SelectField Example
-    path: '/select-field'
+    path: /select-field
     components:
       - name: selectFieldInfo
         title: Html
         type: Html
-        content: |-
-          <p class="govuk-body">This is an example of a SelectField.</p>
+        content: <p class="govuk-body">This is an example of a SelectField.</p>
+        id: 6ea49c90-ae00-426a-8491-4586b9e6a5f1
+        options: {}
+        schema: {}
       - name: selectField
         title: Select option
         type: SelectField
-        list: selectFieldList
+        list: d43f6210-34f7-4619-a6cc-30fd579ae85f
         options:
           required: true
-
+        shortDescription: Select option
+        id: e21204ba-abb5-4b1d-9d84-c7750d877af2
+        schema: {}
+    id: ee00619a-ee21-45cf-a28f-05d28098a103
   - title: MultilineTextField Example
-    path: '/multiline-text-field'
+    path: /multiline-text-field
     components:
       - name: multilineTextField
         title: Description
@@ -223,17 +283,28 @@ pages:
           maxWords: 400
           customValidationMessages:
             string.empty: Enter a description
-
+        shortDescription: Description
+        id: 264fbff1-35f6-49d3-98ae-b7582b1e41b5
+        schema: {}
+    id: 88d7b067-68c2-4fe1-9a9a-ea98f0752e03
   - title: Multi Field Form Example
-    path: '/multi-field-form'
+    path: /multi-field-form
     components:
       - name: formInfo
         title: Html
         type: Html
-        content: |-
-          <p class="govuk-body">This is an example of a form containing multiple components:<br>
-          TextField, EmailAddressField, TelephoneNumberField and UkAddressField.</p>
-          <p class="govuk-body">UkAddressField is a component that renders multiple fields, some of which are optional.</p>
+        content: >-
+          <p class="govuk-body">This is an example of a form containing multiple
+          components:<br>
+
+          TextField, EmailAddressField, TelephoneNumberField and
+          UkAddressField.</p>
+
+          <p class="govuk-body">UkAddressField is a component that renders
+          multiple fields, some of which are optional.</p>
+        id: 96f851a6-8758-42dd-9df5-e85e89b8cc14
+        options: {}
+        schema: {}
       - type: TextField
         name: applicantName
         title: Name
@@ -244,8 +315,10 @@ pages:
             string.max: Name must be 30 characters or fewer
             string.pattern.base: Name must only include letters, hyphens and apostrophes
         schema:
-          regex: "^[a-zA-Z' -]*$"
+          regex: ^[a-zA-Z' -]*$
           max: 30
+        shortDescription: Name
+        id: a0a4c5de-fad5-4901-9b48-3e3a72eb9763
       - type: EmailAddressField
         name: applicantEmail
         title: Email address
@@ -256,7 +329,9 @@ pages:
             string.empty: Enter your email address
             string.email: Enter an email address in the correct format, like name@example.com
         schema:
-          regex: "^\\w+([.-]\\w+)*@[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*(\\.[a-zA-Z]{2,})+$"
+          regex: ^\w+([.-]\w+)*@[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*(\.[a-zA-Z]{2,})+$
+        shortDescription: Email address
+        id: da81e4a3-1557-4a1c-9be3-be0d0d96b767
       - type: TelephoneNumberField
         name: applicantMobile
         title: Mobile number
@@ -264,30 +339,42 @@ pages:
           required: true
           customValidationMessages:
             string.empty: Enter a mobile number
-            string.pattern.base:
-              Enter a telephone number, like 01632 960 001, 07700 900
-              982 or +44 0808 157 0192
+            string.pattern.base: Enter a telephone number, like 01632 960 001, 07700 900 982
+              or +44 0808 157 0192
           autocomplete: tel
         schema:
-          regex: "^\\+?[0-9\\s()-]{10,}$"
+          regex: ^\+?[0-9\s()-]{10,}$
+        shortDescription: Mobile number
+        id: b3bce07d-4897-4124-a965-7ca02d9356a5
       - type: Html
         name: applicantBusinessAddressHeader
         title: Html
         content: <h1 class="govuk-heading-m">Business address</h1>
+        id: 601ef0e8-bfe6-431f-b11f-1ca851edae3c
+        options: {}
+        schema: {}
       - type: UkAddressField
         title: Address
         name: applicantBusinessAddress
-
+        shortDescription: Address
+        id: 509a72f9-4c5a-4375-a58d-b056094fd7b9
+        options: {}
+        schema: {}
+    id: 089374a5-13e7-494d-994e-9b38c4b7392c
   - title: Check your details
-    path: '/summary'
+    path: /summary
     controller: SummaryPageController
+    components: []
+    id: aa34c1e0-e119-4e69-ab91-06d6b092055e
   - title: Confirm and send
-    path: '/declaration'
+    path: /declaration
     controller: DeclarationPageController
     view: declaration-page.html
+    id: 8ee401e7-76c5-456b-a1f4-d84fca115e01
   - title: Confirmation
-    path: '/confirmation'
+    path: /confirmation
     controller: ConfirmationPageController
+    id: b920e9bb-e211-4e6d-9da9-5199b3636149
 lists:
   - title: RadiosField List
     name: radiosFieldList
@@ -296,33 +383,47 @@ lists:
       - text: Option one
         description: This is a hint - this option leads to a conditional page
         value: radiosFieldOption-A1
+        id: 277989e5-7414-47d0-93d5-b8b6469daeea
       - text: Option two
         description: Another hint
         value: radiosFieldOption-A2
+        id: 6a18e5e5-a705-4f8d-9139-678400ac35c8
       - text: Option three
         value: radiosFieldOption-A3
+        id: 69367b70-028c-449c-9031-4a35bb949016
       - text: None of the above
         value: radiosFieldOption-A4
+        id: 2349cdc9-6aa0-43f6-888c-2f9f54f8ce80
+    id: 57f1e7a6-d27a-4144-ace6-6ddacad103df
   - title: SelectField List
     name: selectFieldList
     type: string
     items:
       - text: Option one
         value: selectFieldOption-A1
+        id: 82e3ed58-0236-4217-971e-3e78d79c1e53
       - text: Option two
         value: selectFieldOption-A2
+        id: 4603103f-402c-4944-8830-4a73e8495fa6
       - text: Option three
         value: selectFieldOption-A3
+        id: 889b5fb5-7f3a-49f2-ad37-3374f1d94164
       - text: Option four
         value: selectFieldOption-A4
+        id: b862e383-40bb-488f-b7b9-8247f8a69d01
       - text: Option five
         value: selectFieldOption-A5
+        id: cc4c8808-a3f6-435a-a815-ee056d230686
       - text: Option six
         value: selectFieldOption-A6
+        id: 6ca32a1e-df1f-4482-bd95-41bc31a1b092
       - text: Option seven
         value: selectFieldOption-A7
+        id: dbb1a1b4-9a0a-4b04-a442-8fb121c51f0b
       - text: None of the above
         value: selectFieldOption-A8
+        id: 6420f153-54e7-4dbd-abbe-4416a4b2317a
+    id: d43f6210-34f7-4619-a6cc-30fd579ae85f
   - title: CheckboxesField List
     name: checkboxesFieldList
     type: string
@@ -330,95 +431,116 @@ lists:
       - text: Option one
         description: Example hint
         value: checkboxesFieldOption-A1
+        id: 21a7fe17-097f-49d1-b82d-63c1fe3de394
       - text: Option two
         description: Hint two
         value: checkboxesFieldOption-A2
+        id: 12ab72d8-dcca-48e0-b898-9b2553c2343b
       - text: Option three
         value: checkboxesFieldOption-A3
+        id: 7da1ec83-d30e-49ad-80f9-f433969b2e23
+    id: aae88d9a-2b7b-4a49-a7f4-1482d86e6be6
   - title: Country
     name: countryList
     type: string
     items:
       - text: Afghanistan
         value: AFG
+        id: e54a5643-df33-4547-bd76-9d9450fc76e7
       - text: Benin
         value: BEN
+        id: 86b90a31-fcd3-44dc-946b-ebde377ce007
       - text: Cambodia
         value: KHM
+        id: 7ed1bcf8-1a90-4f53-8be1-16725aa68576
       - text: Denmark
         value: DNK
+        id: 9aae2583-f9e0-4ad5-bedb-43a2185bb704
       - text: England
         value: ENG
+        id: dc310792-26e3-4946-b584-0cdb8a373e20
       - text: France
         value: FRA
+        id: fd549a18-7f95-4847-a358-f425751ff6c1
       - text: Germany
         value: DEU
+        id: 2458c906-9fdf-4ac9-ba4b-69ee7267d956
       - text: Hungary
         value: HUN
+        id: a145b214-1697-4d3f-a7f8-199559d35584
       - text: Ireland
         value: IRL
+        id: 5fd5a0ce-a14f-4a2c-9b2b-2470d8c2fb3e
       - text: Jamaica
         value: JAM
+        id: 5d726070-2373-43eb-aa3c-9515d22b4989
       - text: Kenya
         value: KEN
+        id: 1d51f459-74e2-4e58-b87c-52dbcd827e8e
       - text: Laos
         value: LAO
+        id: 4e3b899d-ed4c-4a13-860e-92d73d5ea31f
       - text: Mexico
         value: MEX
+        id: cc47160a-843b-46d0-bed3-24672ce5c507
       - text: Netherlands
         value: NLD
+        id: e862d8be-2c92-4e52-ab1c-a0cc33efc64c
       - text: Oman
         value: OMN
+        id: c712bc31-09dc-4e0e-82f2-984010055b65
       - text: Pakistan
         value: PAK
+        id: 16f8c3e3-dcab-4186-9807-b3a6006e4bbc
       - text: Qatar
         value: QAT
+        id: 1e893c47-a513-46fc-9997-b6373a71daa7
       - text: Romania
         value: ROU
+        id: 1f8968d7-72f6-45c0-b9bf-3bdbb203d995
       - text: Spain
         value: ESP
+        id: 2c70c05b-59d1-430a-8fb0-d484a95c8a56
       - text: Thailand
         value: THA
+        id: b5103529-2823-42fd-82e1-9c02c17f8348
       - text: Uganda
         value: UGA
+        id: 8ef9c505-6d22-4ada-8d3f-2bb6bfba3062
       - text: Vietnam
         value: VNM
+        id: 7589d2d7-c688-4597-8c87-de070229defd
       - text: Wales
         value: WLS
+        id: c36e0c1e-b2a8-4f14-9f73-0f959e2dfb39
       - text: Yemen
         value: YEM
+        id: d7ec2f7c-e548-463a-95c2-0f386bfd56e1
       - text: Zimbabwe
         value: ZWE
+        id: 893ff486-07ab-4615-b0fd-2ecd664c47f2
+    id: bf5432a9-a4b1-4e01-b4c8-3052ad4be056
 sections:
   - title: Eligibility
     name: EligibilitySection
     hideTitle: false
 conditions:
-  - name: terminalCondition
+  - id: 048e4fdd-6c54-4a9d-9bc5-c9d90470b07b
     displayName: continueNo
-    value:
-      name: continueNo
-      conditions:
-        - field:
-            name: yesNoField
-            type: YesNoField
-            display: Do you want to continue?
-          operator: is
-          value:
-            type: Value
-            value: 'false'
-            display: 'No'
-  - name: choiceOneCondition
+    items:
+      - id: 04273b55-2931-45e1-81d2-5005fac14034
+        componentId: 33b2a118-efb3-45b3-a926-22fed2360bf7
+        operator: is
+        type: BooleanValue
+        value: false
+  - id: 7fd31ec4-1e35-4ed8-9f81-c41928f4c8a7
     displayName: choiceOne
-    value:
-      name: choiceOne
-      conditions:
-        - field:
-            name: radiosField
-            type: RadiosField
-            display: RadiosField Example
-          operator: is
-          value:
-            type: Value
-            value: radiosFieldOption-A1
-            display: Conditional page example
+    items:
+      - id: adab7eae-e062-4bc1-8dc0-f62ff06119ff
+        componentId: b48a816e-a810-4346-a111-5c7a0cac8a5b
+        operator: is
+        type: ListItemRef
+        value:
+          listId: 57f1e7a6-d27a-4144-ace6-6ddacad103df
+          itemId: 277989e5-7414-47d0-93d5-b8b6469daeea
+schema: 2

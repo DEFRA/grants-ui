@@ -4,9 +4,11 @@ pages:
   - title: Check your details
     path: /check-details
     section: checkDetailsSection
+    id: ab8d7571-ca61-4258-89fc-809815283eee
   - title: "Check your answers: Check your details"
     path: /summary
     controller: SectionEndController
+    id: fd3fcb0c-7b5a-4a90-af49-9d508e983fb1
 lists: []
 conditions: []
 sections:
@@ -14,3 +16,4 @@ sections:
     name: checkDetailsSection
     hideTitle: false
 startPage: /check-details
+schema: 2

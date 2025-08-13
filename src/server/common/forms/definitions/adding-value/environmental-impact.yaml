@@ -4,9 +4,11 @@ pages:
   - title: How will this project improve the environment?
     path: /environmental-impact
     section: environmentSection
+    id: c6b1800f-b1f8-4874-a455-f1e007f1e0b5
   - title: "Check your answers: Environment"
     path: /summary
     controller: SectionEndController
+    id: 0d9d1728-b4cc-47b8-9527-dd7de25cc44b
 lists: []
 conditions: []
 sections:
@@ -14,3 +16,4 @@ sections:
     name: environmentSection
     hideTitle: false
 startPage: /environmental-impact
+schema: 2
