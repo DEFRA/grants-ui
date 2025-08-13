@@ -51,7 +51,7 @@ describe('SelectActionsForLandParcelPageController', () => {
 
     mockRequest = {
       payload: {
-        selectedActions: ['CMOR1', 'UPL1']
+        landAction: 'CMOR1'
       },
       logger: {
         error: jest.fn()
@@ -87,7 +87,7 @@ describe('SelectActionsForLandParcelPageController', () => {
   describe('extractActionsDataFromPayload', () => {
     test('should extract action data correctly from payload', () => {
       const payload = {
-        selectedActions: ['CMOR1', 'UPL1']
+        landAction: 'CMOR1'
       }
 
       const result = controller.extractActionsDataFromPayload(payload)
@@ -99,12 +99,6 @@ describe('SelectActionsForLandParcelPageController', () => {
             value: 10,
             unit: 'ha',
             annualPaymentPence: 100
-          },
-          UPL1: {
-            description: 'UPL1: Moderate livestock grazing on moorland',
-            value: 5,
-            unit: 'ha',
-            annualPaymentPence: 200
           }
         }
       })
@@ -112,7 +106,7 @@ describe('SelectActionsForLandParcelPageController', () => {
 
     test('should ignore action codes not present in availableActions', () => {
       const payload = {
-        selectedActions: ['unknownAction']
+        landAction: 'unknownAction'
       }
 
       const result = controller.extractActionsDataFromPayload(payload)
@@ -130,7 +124,7 @@ describe('SelectActionsForLandParcelPageController', () => {
 
     test('should skip actions not included in actions array', () => {
       const payload = {
-        selectedActions: ['CMOR1']
+        landAction: 'CMOR1'
       }
 
       const result = controller.extractActionsDataFromPayload(payload)
@@ -142,31 +136,6 @@ describe('SelectActionsForLandParcelPageController', () => {
             value: 10,
             unit: 'ha',
             annualPaymentPence: 100
-          }
-        }
-      })
-    })
-
-    test('should skip actions with empty quantity values', () => {
-      const payload = {
-        selectedActions: ['CMOR1', 'UPL1']
-      }
-
-      const result = controller.extractActionsDataFromPayload(payload)
-
-      expect(result).toEqual({
-        actionsObj: {
-          CMOR1: {
-            description: 'CMOR1: Assess moorland and produce a written record',
-            value: 10,
-            unit: 'ha',
-            annualPaymentPence: 100
-          },
-          UPL1: {
-            description: 'UPL1: Moderate livestock grazing on moorland',
-            unit: 'ha',
-            value: 5,
-            annualPaymentPence: 200
           }
         }
       })
@@ -182,7 +151,7 @@ describe('SelectActionsForLandParcelPageController', () => {
       ]
 
       const payload = {
-        selectedActions: ['CMOR1']
+        landAction: 'CMOR1'
       }
 
       const result = controller.extractActionsDataFromPayload(payload)
@@ -238,7 +207,7 @@ describe('SelectActionsForLandParcelPageController', () => {
         actions: availableActions
       })
 
-      mockContext.state.selectedActions = ['CMOR1', 'UPL1']
+      mockContext.state.landAction = 'CMOR1'
       if (!mockContext.state.landParcels) {
         mockContext.state.landParcels = {}
       }
@@ -389,12 +358,6 @@ describe('SelectActionsForLandParcelPageController', () => {
               parcelId: 'parcel1',
               code: 'CMOR1',
               annualPaymentPence: 50
-            },
-            {
-              sheetId: 'sheet1',
-              parcelId: 'parcel1',
-              code: 'UPL1',
-              annualPaymentPence: 50
             }
           ]
         },
@@ -419,13 +382,7 @@ describe('SelectActionsForLandParcelPageController', () => {
                   description: 'CMOR1: Assess moorland and produce a written record',
                   unit: 'ha',
                   value: 10,
-                  annualPaymentPence: 50
-                },
-                UPL1: {
-                  description: 'UPL1: Moderate livestock grazing on moorland',
-                  unit: 'ha',
-                  value: 5,
-                  annualPaymentPence: 50
+                  annualPaymentPence: 100
                 }
               }
             }
@@ -470,12 +427,7 @@ describe('SelectActionsForLandParcelPageController', () => {
 
         triggerApiActionsValidation.mockResolvedValue({ valid: true, errorMessages: [] })
 
-        await controller.validatePayload(
-          { selectedActions: ['CMOR1'] },
-          readyForValidationsActionsObj,
-          sheetId,
-          parcelId
-        )
+        await controller.validatePayload({ landAction: 'CMOR1' }, readyForValidationsActionsObj, sheetId, parcelId)
 
         expect(triggerApiActionsValidation).toHaveBeenCalledWith({
           sheetId,
@@ -490,7 +442,7 @@ describe('SelectActionsForLandParcelPageController', () => {
         triggerApiActionsValidation.mockResolvedValue({ valid: true, errorMessages: [] })
 
         const result = await controller.validatePayload(
-          { selectedActions: ['CMOR1'] },
+          { landAction: 'CMOR1' },
           { CMOR1: { value: 10 } },
           'sheet1',
           'parcel1'
@@ -507,7 +459,7 @@ describe('SelectActionsForLandParcelPageController', () => {
         triggerApiActionsValidation.mockResolvedValue({ valid: false, errorMessages })
 
         const result = await controller.validatePayload(
-          { selectedActions: ['CMOR1'] },
+          { landAction: 'CMOR1' },
           { CMOR1: { value: 10 } },
           'sheet1',
           'parcel1'
@@ -516,12 +468,12 @@ describe('SelectActionsForLandParcelPageController', () => {
         expect(result.errors).toEqual({
           CMOR1: { text: 'Invalid quantity for CMOR1' }
         })
-        expect(result.errorSummary).toEqual([{ text: 'Invalid quantity for CMOR1', href: '#selectedActions' }])
+        expect(result.errorSummary).toEqual([{ text: 'Invalid quantity for CMOR1', href: '#landAction' }])
       })
 
       test('should handle no actions selected', async () => {
         mockRequest.payload = {
-          selectedActions: [],
+          landAction: '',
           action: 'validate'
         }
 
@@ -537,11 +489,11 @@ describe('SelectActionsForLandParcelPageController', () => {
             errorSummary: [
               {
                 text: 'Please select at least one action',
-                href: '#selectedActions'
+                href: '#landAction'
               }
             ],
             errors: {
-              selectedActions: {
+              landAction: {
                 text: 'Please select at least one action'
               }
             }
@@ -552,7 +504,7 @@ describe('SelectActionsForLandParcelPageController', () => {
 
     test('should validate actions when validate action is requested', async () => {
       mockRequest.payload = {
-        selectedActions: ['CMOR1'],
+        landAction: 'CMOR1',
         action: 'validate'
       }
 
@@ -625,11 +577,11 @@ describe('SelectActionsForLandParcelPageController', () => {
           errorSummary: [
             {
               text: 'Please select at least one action',
-              href: '#selectedActions'
+              href: '#landAction'
             }
           ],
           errors: {
-            selectedActions: {
+            landAction: {
               text: 'Please select at least one action'
             }
           },

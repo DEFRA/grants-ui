@@ -19,10 +19,10 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
   viewName = 'select-actions-for-land-parcel'
   availableActions = []
 
-  processPayloadAction(selectedActions, landAction) {
+  processPayloadAction(landAction) {
     const actionInfo = this.availableActions.find((a) => a.code === landAction)
 
-    if (!selectedActions.includes(landAction) || !actionInfo) {
+    if (!actionInfo) {
       return {}
     }
 
@@ -41,20 +41,11 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
    */
   extractActionsDataFromPayload(payload) {
     const actionsObj = {}
-    const { selectedActions = [] } = payload
+    const { landAction } = payload
 
-    if (Array.isArray(selectedActions) && selectedActions.length > 0) {
-      for (const landAction of selectedActions) {
-        const result = this.processPayloadAction(selectedActions, landAction)
-        if (Object.keys(result).length > 0) {
-          actionsObj[landAction] = result
-        }
-      }
-    } else {
-      const result = this.processPayloadAction(selectedActions, selectedActions)
-      if (Object.keys(result).length > 0) {
-        actionsObj[selectedActions] = result
-      }
+    const result = this.processPayloadAction(landAction)
+    if (Object.keys(result).length > 0) {
+      actionsObj[landAction] = result
     }
 
     return { actionsObj }
@@ -159,8 +150,8 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
   validatePayload = async (payload, actionsObj, sheetId, parcelId) => {
     const errors = {}
 
-    if (!payload?.selectedActions || payload.selectedActions.length === 0) {
-      errors.selectedActions = {
+    if (!payload?.landAction || payload.landAction.length === 0) {
+      errors.landAction = {
         text: 'Please select at least one action'
       }
     }
@@ -186,7 +177,7 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
 
     const errorSummary = Object.entries(errors).map(([, { text }]) => ({
       text,
-      href: '#selectedActions'
+      href: '#landAction'
     }))
 
     return { errors, errorSummary }
