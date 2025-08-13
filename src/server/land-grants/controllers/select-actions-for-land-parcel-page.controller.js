@@ -156,10 +156,7 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
       }
     }
 
-    // Filter actionsObj to only include items with non-null values and ready to be validated by the api
-    const readyForValidationsActionsObj = this.getCompletedFormFieldsForApiValidation(actionsObj)
-
-    if (Object.keys(readyForValidationsActionsObj).length > 0) {
+    if (Object.keys(actionsObj).length > 0) {
       const { valid, errorMessages = [] } = await triggerApiActionsValidation({
         sheetId,
         parcelId,
@@ -181,14 +178,6 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
     }))
 
     return { errors, errorSummary }
-  }
-
-  getCompletedFormFieldsForApiValidation = (actionsObj) => {
-    return Object.fromEntries(
-      Object.entries(actionsObj).filter(
-        ([, action]) => action.value !== null && action.value !== undefined && action.value !== ''
-      )
-    )
   }
 
   buildNewState = async (state, selectedActionsQuantities, actionsObj) => {
