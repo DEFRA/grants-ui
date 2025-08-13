@@ -43,7 +43,6 @@ import { PotentialFundingController } from '~/src/server/non-land-grants/pigs-mi
 import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
 import { getCacheKey } from './common/helpers/state/get-cache-key-helper.js'
 import { fetchSavedStateFromApi } from './common/helpers/state/fetch-saved-state-helper.js'
-import { formsAuthCallback } from '~/src/server/auth/forms-engine-plugin-auth-helpers.js'
 import { persistStateToApi } from './common/helpers/state/persist-state-helper.js'
 
 const SESSION_CACHE_NAME = 'session.cache.name'
@@ -129,7 +128,6 @@ const registerFormsPlugin = async (server, prefix = '') => {
           return persistStateToApi(state, request)
         }
       },
-      onRequest: formsAuthCallback,
       services: {
         formsService: await formsService(),
         formSubmissionService,
