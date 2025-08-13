@@ -405,12 +405,6 @@ describe('SelectActionsForLandParcelPageController', () => {
               parcelId: 'parcel1',
               code: 'CMOR1',
               annualPaymentPence: 100
-            },
-            {
-              sheetId: 'sheet1',
-              parcelId: 'parcel1',
-              code: 'UPL1',
-              annualPaymentPence: 200
             }
           ]
         },
@@ -432,12 +426,6 @@ describe('SelectActionsForLandParcelPageController', () => {
                   unit: 'ha',
                   value: 10,
                   annualPaymentPence: 100
-                },
-                UPL1: {
-                  description: 'UPL1: Moderate livestock grazing on moorland',
-                  value: 20,
-                  unit: 'ha',
-                  annualPaymentPence: 200
                 }
               }
             }
@@ -478,16 +466,16 @@ describe('SelectActionsForLandParcelPageController', () => {
         const controller = new SelectActionsForLandParcelPageController()
         const sheetId = 'sheet1'
         const parcelId = 'parcel1'
-        const actionsObj = { CMOR1: { value: 10 } }
+        const readyForValidationsActionsObj = { CMOR1: { value: 10 } }
 
         triggerApiActionsValidation.mockResolvedValue({ valid: true, errorMessages: [] })
 
-        await controller.validatePayload({ landAction: 'CMOR1' }, actionsObj, sheetId, parcelId)
+        await controller.validatePayload({ landAction: 'CMOR1' }, readyForValidationsActionsObj, sheetId, parcelId)
 
         expect(triggerApiActionsValidation).toHaveBeenCalledWith({
           sheetId,
           parcelId,
-          actionsObj
+          actionsObj: readyForValidationsActionsObj
         })
       })
 

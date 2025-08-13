@@ -120,7 +120,6 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
       const { viewName } = this
       const payload = request.payload ?? {}
       const [sheetId, parcelId] = parseLandParcel(state.selectedLandParcel)
-
       const { actionsObj, selectedActionsQuantities } = this.extractActionsDataFromPayload(payload)
       // Create an updated state with the new action data
       const newState = await this.buildNewState(state, selectedActionsQuantities, actionsObj)
