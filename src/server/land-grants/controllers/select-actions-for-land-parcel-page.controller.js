@@ -15,13 +15,24 @@ const unitRatesForActions = {
   UPL4: 500
 }
 
-const NOT_AVAILABLE = 'Not available'
-
 export default class SelectActionsForLandParcelPageController extends QuestionPageController {
   viewName = 'select-actions-for-land-parcel'
-  quantityPrefix = 'qty-'
   availableActions = []
-  currentParcelSize = NOT_AVAILABLE
+
+  processPayloadAction(selectedActions, landAction) {
+    const actionInfo = this.availableActions.find((a) => a.code === landAction)
+
+    if (!selectedActions.includes(landAction) || !actionInfo) {
+      return {}
+    }
+
+    return {
+      description: actionInfo.description,
+      value: actionInfo?.availableArea?.value ?? '',
+      unit: actionInfo?.availableArea?.unit ?? '',
+      annualPaymentPence: unitRatesForActions[landAction]
+    }
+  }
 
   /**
    * Extract action data from the form payload
@@ -32,35 +43,21 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
     const actionsObj = {}
     const { selectedActions = [] } = payload
 
-    for (const key in payload) {
-      if (key.startsWith(this.quantityPrefix)) {
-        const [, code] = key.split('-')
-        const actionInfo = this.availableActions.find((a) => a.code === code)
-        if (!selectedActions.includes(code) || !payload[key] || !actionInfo) {
-          continue
+    if (Array.isArray(selectedActions) && selectedActions.length > 0) {
+      for (const landAction of selectedActions) {
+        const result = this.processPayloadAction(selectedActions, landAction)
+        if (Object.keys(result).length > 0) {
+          actionsObj[landAction] = result
         }
-
-        actionsObj[code] = {
-          description: actionInfo.description,
-          value: payload[key],
-          unit: actionInfo?.availableArea?.unit ?? '',
-          annualPaymentPence: unitRatesForActions[code]
-        }
+      }
+    } else {
+      const result = this.processPayloadAction(selectedActions, selectedActions)
+      if (Object.keys(result).length > 0) {
+        actionsObj[selectedActions] = result
       }
     }
 
-    const selectedActionsQuantities = Object.fromEntries(
-      Object.entries(payload).filter(([key, value]) => {
-        if (!key.startsWith(this.quantityPrefix)) {
-          return false
-        }
-        const code = key.split('-')[1]
-        const actionInfo = this.availableActions.find((a) => a.code === code)
-        return selectedActions.includes(code) && value && actionInfo
-      })
-    )
-
-    return { actionsObj, selectedActionsQuantities }
+    return { actionsObj }
   }
 
   /**
@@ -73,7 +70,6 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
   getViewModel(request, context) {
     return {
       ...super.getViewModel(request, context),
-      quantityPrefix: this.quantityPrefix,
       availableActions: this.availableActions
     }
   }
@@ -134,7 +130,6 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
       const payload = request.payload ?? {}
       const [sheetId, parcelId] = parseLandParcel(state.selectedLandParcel)
       const { actionsObj, selectedActionsQuantities } = this.extractActionsDataFromPayload(payload)
-
       // Create an updated state with the new action data
       const newState = await this.buildNewState(state, selectedActionsQuantities, actionsObj)
 
@@ -164,22 +159,12 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
   validatePayload = async (payload, actionsObj, sheetId, parcelId) => {
     const errors = {}
 
-    if (!payload.selectedActions || payload.selectedActions.length === 0) {
+    if (!payload?.selectedActions || payload.selectedActions.length === 0) {
       errors.selectedActions = {
         text: 'Please select at least one action'
       }
     }
 
-    if (payload?.selectedActions?.length > 0) {
-      // for each selected action, check if a quantity is provided
-      for (const code of [payload.selectedActions].flat()) {
-        if (!payload[`${this.quantityPrefix}${code}`]) {
-          errors[code] = {
-            text: `Please provide a quantity for ${code}`
-          }
-        }
-      }
-    }
     // Filter actionsObj to only include items with non-null values and ready to be validated by the api
     const readyForValidationsActionsObj = this.getCompletedFormFieldsForApiValidation(actionsObj)
 
@@ -199,9 +184,9 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
       }
     }
 
-    const errorSummary = Object.entries(errors).map(([key, { text }]) => ({
+    const errorSummary = Object.entries(errors).map(([, { text }]) => ({
       text,
-      href: key === 'selectedActions' ? '#selectedActions' : `#qty-${key}`
+      href: '#selectedActions'
     }))
 
     return { errors, errorSummary }
@@ -223,6 +208,7 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
         actionsObj
       }
     }
+    let draftApplicationAnnualTotalPence = state.draftApplicationAnnualTotalPence || 0
 
     // Get all land actions across all parcels
     const landActions = this.prepareLandActionsForPayment(updatedLandParcels, sbiStore.get('sbi'))
@@ -240,12 +226,14 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
             item.annualPaymentPence
         }
       }
+
+      draftApplicationAnnualTotalPence = paymentDetails.payment.annualTotalPence
     }
 
     return {
       ...state,
       selectedActionsQuantities,
-      draftApplicationAnnualTotalPence: paymentDetails.payment.annualTotalPence,
+      draftApplicationAnnualTotalPence,
       landParcels: updatedLandParcels
     }
   }
@@ -270,7 +258,6 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
       // Load available actions for the land parcel
       try {
         const data = await fetchAvailableActionsForParcel({ parcelId, sheetId })
-        this.currentParcelSize = data.size ? `${data.size.value} ${data.size.unit}` : NOT_AVAILABLE
         this.availableActions = data.actions || []
         if (!this.availableActions.length) {
           request.logger.error({
@@ -283,30 +270,11 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
         request.logger.error(error, `Failed to fetch land parcel data for id ${sheetId}-${parcelId}`)
       }
 
-      const selectedActions = Object.keys(state.landParcels?.[state.selectedLandParcel]?.actionsObj || {})
-
-      const selectedActionsQuantities = {}
-
-      if (state?.landParcels) {
-        // Access actionsObj for the selected parcel
-        const actionsObj = state.landParcels[state.selectedLandParcel]?.actionsObj
-
-        selectedActions.forEach((action) => {
-          const actionData = actionsObj[action]
-
-          if (actionData) {
-            selectedActionsQuantities[`${this.quantityPrefix}${action}`] = actionData.value
-          }
-        })
-      }
-
       // Build the view model exactly as in the original code
       const viewModel = {
         ...this.getViewModel(request, context),
         ...state,
         parcelName: `${sheetId} ${parcelId}`,
-        selectedActions,
-        selectedActionsQuantities,
         errors: collection.getErrors(collection.getErrors())
       }
 

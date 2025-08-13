@@ -51,12 +51,12 @@
 
       {% if availableActions %}
         <form method="post" novalidate>
+          <input type="hidden" name="crumb" value="{{ crumb }}">
+
           {% set actionsCheckboxes = [] %}
           {% set action = actionId or actions[0].id %}
 
           {% for action in availableActions %}
-            <input type="hidden" name="{{quantityPrefix + action.code }}" value="{{ action.availableArea.value}}">
-
             {% set actionsCheckboxes = actionsCheckboxes.concat([{
               value: action.code,
               text: action.description,
@@ -78,13 +78,11 @@
                 text: "Select all the actions you want to do for this land parcel"
               },
               items: actionsCheckboxes,
-              values: selectedActions or [],
               errorMessage: errors["selectedActions"]
 
             }) }}
 
             <div class="govuk-button-group">
-              <input type="hidden" name="crumb" value="{{ crumb }}">
               {% block form %}
                 {{ govukButton({
                   text: "Continue",

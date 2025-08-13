@@ -22,7 +22,7 @@ describe('SelectActionsForLandParcelPageController', () => {
       description: 'CMOR1: Assess moorland and produce a written record',
       availableArea: {
         unit: 'ha',
-        value: 792.43
+        value: 10
       }
     },
     {
@@ -30,7 +30,7 @@ describe('SelectActionsForLandParcelPageController', () => {
       description: 'UPL1: Moderate livestock grazing on moorland',
       availableArea: {
         unit: 'ha',
-        value: 792.43
+        value: 5
       }
     }
   ]
@@ -51,7 +51,6 @@ describe('SelectActionsForLandParcelPageController', () => {
 
     mockRequest = {
       payload: {
-        'qty-CMOR1': 10,
         selectedActions: ['CMOR1', 'UPL1']
       },
       logger: {
@@ -88,10 +87,7 @@ describe('SelectActionsForLandParcelPageController', () => {
   describe('extractActionsDataFromPayload', () => {
     test('should extract action data correctly from payload', () => {
       const payload = {
-        selectedActions: ['CMOR1', 'UPL1'],
-        'qty-CMOR1': 10,
-        'qty-UPL1': 5,
-        'other-field': 'value'
+        selectedActions: ['CMOR1', 'UPL1']
       }
 
       const result = controller.extractActionsDataFromPayload(payload)
@@ -110,39 +106,31 @@ describe('SelectActionsForLandParcelPageController', () => {
             unit: 'ha',
             annualPaymentPence: 200
           }
-        },
-        selectedActionsQuantities: {
-          'qty-CMOR1': 10,
-          'qty-UPL1': 5
         }
       })
     })
 
     test('should ignore action codes not present in availableActions', () => {
       const payload = {
-        selectedActions: ['unknownAction'],
-        'qty-unknownAction': 15
+        selectedActions: ['unknownAction']
       }
 
       const result = controller.extractActionsDataFromPayload(payload)
 
       expect(result).toEqual({
-        actionsObj: {},
-        selectedActionsQuantities: {}
+        actionsObj: {}
       })
     })
 
     test('should handle empty payload', () => {
       const result = controller.extractActionsDataFromPayload({})
 
-      expect(result).toEqual({ actionsObj: {}, selectedActionsQuantities: {} })
+      expect(result).toEqual({ actionsObj: {} })
     })
 
     test('should skip actions not included in actions array', () => {
       const payload = {
-        selectedActions: ['CMOR1'],
-        'qty-CMOR1': 10,
-        'qty-UPL1': 5
+        selectedActions: ['CMOR1']
       }
 
       const result = controller.extractActionsDataFromPayload(payload)
@@ -155,16 +143,13 @@ describe('SelectActionsForLandParcelPageController', () => {
             unit: 'ha',
             annualPaymentPence: 100
           }
-        },
-        selectedActionsQuantities: { 'qty-CMOR1': 10 }
+        }
       })
     })
 
     test('should skip actions with empty quantity values', () => {
       const payload = {
-        selectedActions: ['CMOR1', 'UPL1'],
-        'qty-CMOR1': 10,
-        'qty-UPL1': ''
+        selectedActions: ['CMOR1', 'UPL1']
       }
 
       const result = controller.extractActionsDataFromPayload(payload)
@@ -176,9 +161,14 @@ describe('SelectActionsForLandParcelPageController', () => {
             value: 10,
             unit: 'ha',
             annualPaymentPence: 100
+          },
+          UPL1: {
+            description: 'UPL1: Moderate livestock grazing on moorland',
+            unit: 'ha',
+            value: 5,
+            annualPaymentPence: 200
           }
-        },
-        selectedActionsQuantities: { 'qty-CMOR1': 10 }
+        }
       })
     })
 
@@ -192,8 +182,7 @@ describe('SelectActionsForLandParcelPageController', () => {
       ]
 
       const payload = {
-        selectedActions: ['CMOR1'],
-        'qty-CMOR1': 10
+        selectedActions: ['CMOR1']
       }
 
       const result = controller.extractActionsDataFromPayload(payload)
@@ -202,12 +191,11 @@ describe('SelectActionsForLandParcelPageController', () => {
         actionsObj: {
           CMOR1: {
             description: 'CMOR1: Assess moorland and produce a written record',
-            value: 10,
+            value: '',
             unit: '',
             annualPaymentPence: 100
           }
-        },
-        selectedActionsQuantities: { 'qty-CMOR1': 10 }
+        }
       })
     })
   })
@@ -226,7 +214,6 @@ describe('SelectActionsForLandParcelPageController', () => {
       expect(QuestionPageController.prototype.getViewModel).toHaveBeenCalledWith(mockRequest, mockContext)
       expect(result).toEqual({
         ...mockParentViewModel,
-        quantityPrefix: 'qty-',
         availableActions
       })
     })
@@ -240,7 +227,6 @@ describe('SelectActionsForLandParcelPageController', () => {
 
       expect(result).toEqual({
         ...mockParentViewModel,
-        quantityPrefix: 'qty-',
         availableActions: []
       })
     })
@@ -283,9 +269,7 @@ describe('SelectActionsForLandParcelPageController', () => {
         expect.objectContaining({
           selectedLandParcel: 'sheet1-parcel1',
           availableActions,
-          parcelName: 'sheet1 parcel1',
-          selectedActions: ['CMOR1', 'UPL1'],
-          selectedActionsQuantities: { 'qty-CMOR1': 10, 'qty-UPL1': 5 }
+          parcelName: 'sheet1 parcel1'
         })
       )
       expect(result).toBe('rendered view')
@@ -360,9 +344,7 @@ describe('SelectActionsForLandParcelPageController', () => {
         'select-actions-for-land-parcel',
         expect.objectContaining({
           availableActions: [],
-          selectedLandParcel: 'sheet1-parcel1',
-          selectedActions: [],
-          selectedActionsQuantities: {}
+          selectedLandParcel: 'sheet1-parcel1'
         })
       )
       expect(result).toBe('rendered view')
@@ -400,13 +382,19 @@ describe('SelectActionsForLandParcelPageController', () => {
       // Mock the calculateGrantPayment function
       calculateGrantPayment.mockResolvedValue({
         payment: {
-          annualTotalPence: 100, // Example value: £500.00 in pence
+          annualTotalPence: 100,
           parcelItems: [
             {
               sheetId: 'sheet1',
               parcelId: 'parcel1',
               code: 'CMOR1',
-              annualPaymentPence: 100 // £200.00 in pence
+              annualPaymentPence: 100
+            },
+            {
+              sheetId: 'sheet1',
+              parcelId: 'parcel1',
+              code: 'UPL1',
+              annualPaymentPence: 200
             }
           ]
         },
@@ -428,6 +416,12 @@ describe('SelectActionsForLandParcelPageController', () => {
                   unit: 'ha',
                   value: 10,
                   annualPaymentPence: 100
+                },
+                UPL1: {
+                  description: 'UPL1: Moderate livestock grazing on moorland',
+                  unit: 'ha',
+                  value: 5,
+                  annualPaymentPence: 200
                 }
               }
             }
@@ -445,26 +439,7 @@ describe('SelectActionsForLandParcelPageController', () => {
         mockRequest.payload = null
 
         // Mock the calculateGrantPayment function
-        calculateGrantPayment.mockResolvedValue({
-          payment: {
-            annualTotalPence: 50000, // Example value: £500.00 in pence
-            parcelItems: [
-              {
-                sheetId: 'sheet1',
-                parcelId: 'parcel1',
-                code: 'CMOR1',
-                annualPaymentPence: 20000 // £200.00 in pence
-              },
-              {
-                sheetId: 'sheet1',
-                parcelId: 'parcel1',
-                code: 'UPL1',
-                annualPaymentPence: 30000 // £300.00 in pence
-              }
-            ]
-          },
-          paymentTotal: '£500.00'
-        })
+        calculateGrantPayment.mockResolvedValue({})
 
         const handler = controller.makePostRouteHandler()
         await handler(mockRequest, mockContext, mockH)
@@ -492,7 +467,7 @@ describe('SelectActionsForLandParcelPageController', () => {
         triggerApiActionsValidation.mockResolvedValue({ valid: true, errorMessages: [] })
 
         await controller.validatePayload(
-          { selectedActions: ['CMOR1'], 'qty-CMOR1': 10 },
+          { selectedActions: ['CMOR1'] },
           readyForValidationsActionsObj,
           sheetId,
           parcelId
@@ -511,7 +486,7 @@ describe('SelectActionsForLandParcelPageController', () => {
         triggerApiActionsValidation.mockResolvedValue({ valid: true, errorMessages: [] })
 
         const result = await controller.validatePayload(
-          { selectedActions: ['CMOR1'], 'qty-CMOR1': 10 },
+          { selectedActions: ['CMOR1'] },
           { CMOR1: { value: 10 } },
           'sheet1',
           'parcel1'
@@ -528,7 +503,7 @@ describe('SelectActionsForLandParcelPageController', () => {
         triggerApiActionsValidation.mockResolvedValue({ valid: false, errorMessages })
 
         const result = await controller.validatePayload(
-          { selectedActions: ['CMOR1'], 'qty-CMOR1': 10 },
+          { selectedActions: ['CMOR1'] },
           { CMOR1: { value: 10 } },
           'sheet1',
           'parcel1'
@@ -537,7 +512,7 @@ describe('SelectActionsForLandParcelPageController', () => {
         expect(result.errors).toEqual({
           CMOR1: { text: 'Invalid quantity for CMOR1' }
         })
-        expect(result.errorSummary).toEqual([{ text: 'Invalid quantity for CMOR1', href: '#qty-CMOR1' }])
+        expect(result.errorSummary).toEqual([{ text: 'Invalid quantity for CMOR1', href: '#selectedActions' }])
       })
 
       test('should handle no actions selected', async () => {
@@ -545,28 +520,6 @@ describe('SelectActionsForLandParcelPageController', () => {
           selectedActions: [],
           action: 'validate'
         }
-
-        // Mock the calculateGrantPayment function
-        calculateGrantPayment.mockResolvedValue({
-          payment: {
-            annualTotalPence: 50000, // Example value: £500.00 in pence
-            parcelItems: [
-              {
-                sheetId: 'sheet1',
-                parcelId: 'parcel1',
-                code: 'CMOR1',
-                annualPaymentPence: 20000 // £200.00 in pence
-              },
-              {
-                sheetId: 'sheet1',
-                parcelId: 'parcel1',
-                code: 'UPL1',
-                annualPaymentPence: 30000 // £300.00 in pence
-              }
-            ]
-          },
-          paymentTotal: '£500.00'
-        })
 
         const handler = controller.makePostRouteHandler()
         await handler(mockRequest, mockContext, mockH)
@@ -591,151 +544,10 @@ describe('SelectActionsForLandParcelPageController', () => {
           })
         )
       })
-
-      test('should handle no quantity provided for selected action', async () => {
-        mockRequest.payload = {
-          selectedActions: ['CMOR1'],
-          'qty-CMOR1': '',
-          action: 'validate'
-        }
-
-        const handler = controller.makePostRouteHandler()
-        await handler(mockRequest, mockContext, mockH)
-
-        expect(triggerApiActionsValidation).not.toHaveBeenCalled()
-
-        expect(mockH.view).toHaveBeenCalledWith(
-          'select-actions-for-land-parcel',
-          expect.objectContaining({
-            parcelName: 'sheet1 parcel1',
-            errorSummary: [
-              {
-                text: 'Please provide a quantity for CMOR1',
-                href: '#qty-CMOR1'
-              }
-            ],
-            errors: {
-              CMOR1: {
-                text: 'Please provide a quantity for CMOR1'
-              }
-            }
-          })
-        )
-      })
-
-      test('should be able to display error message for qty if only one action is selected', async () => {
-        mockRequest.payload = {
-          selectedActions: 'CMOR1',
-          'qty-CMOR1': '',
-          action: 'validate'
-        }
-
-        const handler = controller.makePostRouteHandler()
-        await handler(mockRequest, mockContext, mockH)
-
-        expect(triggerApiActionsValidation).not.toHaveBeenCalled()
-
-        expect(mockH.view).toHaveBeenCalledWith(
-          'select-actions-for-land-parcel',
-          expect.objectContaining({
-            parcelName: 'sheet1 parcel1',
-            errorSummary: [
-              {
-                text: 'Please provide a quantity for CMOR1',
-                href: '#qty-CMOR1'
-              }
-            ],
-            errors: {
-              CMOR1: {
-                text: 'Please provide a quantity for CMOR1'
-              }
-            }
-          })
-        )
-      })
-
-      test('should be able to display error messages from the UI and API at the same time', async () => {
-        mockRequest.payload = {
-          selectedActions: ['CMOR1', 'UPL1'],
-          'qty-CMOR1': '',
-          'qty-UPL1': 5,
-          action: 'validate'
-        }
-
-        const errorMessages = [{ code: 'UPL1', description: 'UPL1 is not available for this parcel' }]
-
-        const errors = {
-          CMOR1: {
-            text: 'Please provide a quantity for CMOR1'
-          },
-          UPL1: {
-            text: 'UPL1 is not available for this parcel'
-          }
-        }
-
-        const errorSummary = [
-          { text: 'Please provide a quantity for CMOR1', href: '#qty-CMOR1' },
-          { text: 'UPL1 is not available for this parcel', href: '#qty-UPL1' }
-        ]
-
-        triggerApiActionsValidation.mockResolvedValue({
-          valid: false,
-          errorMessages
-        })
-
-        // Mock the calculateGrantPayment function
-        calculateGrantPayment.mockResolvedValue({
-          payment: {
-            annualTotalPence: 50000, // Example value: £500.00 in pence
-            parcelItems: [
-              {
-                sheetId: 'sheet1',
-                parcelId: 'parcel1',
-                code: 'CMOR1',
-                annualPaymentPence: 20000 // £200.00 in pence
-              },
-              {
-                sheetId: 'sheet1',
-                parcelId: 'parcel1',
-                code: 'UPL1',
-                annualPaymentPence: 30000 // £300.00 in pence
-              }
-            ]
-          },
-          paymentTotal: '£500.00'
-        })
-
-        const handler = controller.makePostRouteHandler()
-        await handler(mockRequest, mockContext, mockH)
-
-        expect(triggerApiActionsValidation).toHaveBeenCalledWith({
-          sheetId: 'sheet1',
-          parcelId: 'parcel1',
-          actionsObj: {
-            UPL1: {
-              description: 'UPL1: Moderate livestock grazing on moorland',
-              value: 5,
-              unit: 'ha',
-              annualPaymentPence: 30000
-            }
-          }
-        })
-
-        expect(mockH.view).toHaveBeenCalledWith(
-          'select-actions-for-land-parcel',
-          expect.objectContaining({
-            parcelName: 'sheet1 parcel1',
-            errors,
-            errorSummary,
-            availableActions
-          })
-        )
-      })
     })
 
     test('should validate actions when validate action is requested', async () => {
       mockRequest.payload = {
-        'qty-CMOR1': 10,
         selectedActions: ['CMOR1'],
         action: 'validate'
       }
@@ -786,63 +598,6 @@ describe('SelectActionsForLandParcelPageController', () => {
       expect(controller.proceed).toHaveBeenCalled()
     })
 
-    test('should render view with validation errors when validation fails', async () => {
-      mockRequest.payload = {
-        'qty-CMOR1': 10,
-        selectedActions: ['CMOR1'],
-        action: 'validate'
-      }
-
-      const errorMessages = [
-        {
-          code: 'CMOR1',
-          description: 'Please provide a quantity for CMOR1'
-        }
-      ]
-
-      const errors = {
-        CMOR1: {
-          text: 'Please provide a quantity for CMOR1'
-        }
-      }
-
-      const errorSummary = [{ text: 'Please provide a quantity for CMOR1', href: '#qty-CMOR1' }]
-
-      triggerApiActionsValidation.mockResolvedValue({
-        valid: false,
-        errorMessages
-      })
-
-      const handler = controller.makePostRouteHandler()
-      const result = await handler(mockRequest, mockContext, mockH)
-
-      expect(triggerApiActionsValidation).toHaveBeenCalledWith({
-        sheetId: 'sheet1',
-        parcelId: 'parcel1',
-        actionsObj: {
-          CMOR1: {
-            description: 'CMOR1: Assess moorland and produce a written record',
-            value: 10,
-            unit: 'ha',
-            annualPaymentPence: 20000
-          }
-        }
-      })
-
-      expect(mockH.view).toHaveBeenCalledWith(
-        'select-actions-for-land-parcel',
-        expect.objectContaining({
-          errors,
-          errorSummary,
-          availableActions,
-          parcelName: 'sheet1 parcel1'
-        })
-      )
-
-      expect(controller.proceed).not.toHaveBeenCalled()
-      expect(result).toBe('rendered view')
-    })
-
     test('should render view with errors when no action is selected', async () => {
       mockRequest.payload = {
         action: 'validate'
@@ -854,20 +609,7 @@ describe('SelectActionsForLandParcelPageController', () => {
       })
 
       // Mock the calculateGrantPayment function
-      calculateGrantPayment.mockResolvedValue({
-        payment: {
-          annualTotalPence: 50000,
-          parcelItems: [
-            {
-              sheetId: 'sheet1',
-              parcelId: 'parcel1',
-              code: 'CMOR1',
-              annualPaymentPence: 20000
-            }
-          ]
-        },
-        paymentTotal: '£500.00'
-      })
+      calculateGrantPayment.mockResolvedValue({})
 
       const handler = controller.makePostRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
@@ -892,97 +634,6 @@ describe('SelectActionsForLandParcelPageController', () => {
       )
 
       expect(controller.proceed).not.toHaveBeenCalled()
-      expect(result).toBe('rendered view')
-    })
-
-    test('should replay user input values if validation fails', async () => {
-      // Simulate user input
-      mockRequest.payload = {
-        'qty-CMOR1': 10,
-        'qty-UPL1': 5,
-        selectedActions: ['CMOR1', 'UPL1'],
-        action: 'validate'
-      }
-
-      // Simulate validation failure
-      const errorMessages = [
-        { code: 'CMOR1', description: 'Please provide a quantity for CMOR1' },
-        { code: 'UPL1', description: 'Please provide a quantity for UPL1' }
-      ]
-
-      const errors = {
-        CMOR1: {
-          text: 'Please provide a quantity for CMOR1'
-        },
-        UPL1: { text: 'Please provide a quantity for UPL1' }
-      }
-
-      const errorSummary = [
-        { text: 'Please provide a quantity for CMOR1', href: '#qty-CMOR1' },
-        { text: 'Please provide a quantity for UPL1', href: '#qty-UPL1' }
-      ]
-
-      triggerApiActionsValidation.mockResolvedValue({
-        valid: false,
-        errorMessages
-      })
-
-      // Mock the calculateGrantPayment function
-      calculateGrantPayment.mockResolvedValue({
-        payment: {
-          annualTotalPence: 300, // Example value: £500.00 in pence
-          parcelItems: [
-            {
-              sheetId: 'sheet1',
-              parcelId: 'parcel1',
-              code: 'CMOR1',
-              annualPaymentPence: 100 // £200.00 in pence
-            },
-            {
-              sheetId: 'sheet1',
-              parcelId: 'parcel1',
-              code: 'UPL1',
-              annualPaymentPence: 200 // £300.00 in pence
-            }
-          ]
-        },
-        paymentTotal: '£3.00'
-      })
-
-      const handler = controller.makePostRouteHandler()
-      const result = await handler(mockRequest, mockContext, mockH)
-
-      // The view should be rendered with the user's submitted values
-      expect(mockH.view).toHaveBeenCalledWith(
-        'select-actions-for-land-parcel',
-        expect.objectContaining({
-          errors,
-          errorSummary,
-          parcelName: 'sheet1 parcel1',
-          availableActions,
-          selectedActions: ['CMOR1', 'UPL1'],
-          selectedActionsQuantities: { 'qty-CMOR1': 10, 'qty-UPL1': 5 },
-          // The state should include the user's submitted actionsObj
-          landParcels: expect.objectContaining({
-            'sheet1-parcel1': {
-              actionsObj: {
-                CMOR1: {
-                  description: 'CMOR1: Assess moorland and produce a written record',
-                  value: 10,
-                  unit: 'ha',
-                  annualPaymentPence: 100
-                },
-                UPL1: {
-                  description: 'UPL1: Moderate livestock grazing on moorland',
-                  value: 5,
-                  unit: 'ha',
-                  annualPaymentPence: 200
-                }
-              }
-            }
-          })
-        })
-      )
       expect(result).toBe('rendered view')
     })
   })

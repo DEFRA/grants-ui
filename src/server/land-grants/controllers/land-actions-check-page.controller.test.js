@@ -29,7 +29,6 @@ describe('LandActionsCheckPageController', () => {
 
     mockRequest = {
       payload: {
-        'qty-action1': 10,
         actions: ['action1', 'action2']
       },
       logger: {
