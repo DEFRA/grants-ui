@@ -45,6 +45,7 @@ import { getCacheKey } from './common/helpers/state/get-cache-key-helper.js'
 import { fetchSavedStateFromApi } from './common/helpers/state/fetch-saved-state-helper.js'
 import { formsAuthCallback } from '~/src/server/auth/forms-engine-plugin-auth-helpers.js'
 import { persistStateToApi } from './common/helpers/state/persist-state-helper.js'
+import CheckDetailsPageController from '~/src/server/check-details/check-details.controller.js'
 
 const SESSION_CACHE_NAME = 'session.cache.name'
 
@@ -63,6 +64,7 @@ const getViewPaths = () => {
     path.join(serverDir, 'score-results/views'),
     path.join(serverDir, 'section-end/views'),
     path.join(serverDir, 'tasklist/views'),
+    path.join(serverDir, 'check-details/views'),
     path.join(serverDir, 'common/components'),
     ...grantsUiPaths
   ]
@@ -155,7 +157,8 @@ const registerFormsPlugin = async (server, prefix = '') => {
         SectionEndController,
         FlyingPigsSubmissionPageController,
         PotentialFundingController,
-        SummaryPageController
+        SummaryPageController,
+        CheckDetailsPageController
       }
     }
   })
