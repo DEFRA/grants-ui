@@ -128,7 +128,15 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
       // console.log('state', state.landParcels)
       // console.log('newState', newState)
       if (payload.action === 'validate') {
+        /* eslint-disable no-console */
+        console.log('payload', payload)
+        console.log('actionsObj', actionsObj)
+        console.log('sheetId', sheetId)
+        console.log('parcelId', parcelId)
+
         const { errors, errorSummary } = await this.validatePayload(payload, actionsObj, sheetId, parcelId)
+        console.log('errors', errors)
+        /* eslint-enable no-console */
 
         if (Object.keys(errors).length > 0) {
           return h.view(viewName, {
@@ -158,6 +166,9 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
     }
 
     if (Object.keys(actionsObj).length > 0) {
+      /* eslint-disable no-console */
+      console.log('before call to api validations', { sheetId, parcelId, actionsObj })
+      /* eslint-enable no-console */
       const { valid, errorMessages = [] } = await triggerApiActionsValidation({
         sheetId,
         parcelId,
