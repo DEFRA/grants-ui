@@ -5,7 +5,8 @@ import {
   HTTP_STATUS,
   TEST_USER_IDS,
   ERROR_MESSAGES,
-  LOG_MESSAGES
+  LOG_MESSAGES,
+  createMockConfig
 } from './test-helpers/auth-test-helpers.js'
 
 const GRANT_VERSION = 1
@@ -45,10 +46,16 @@ describe('persistStateToApi', () => {
 
   describe('With backend configured correctly', () => {
     beforeEach(async () => {
+      jest.resetModules()
+      jest.doMock('~/src/config/config.js', createMockConfig)
       const helper = await import('~/src/server/common/helpers/state/persist-state-helper.js')
       persistStateToApi = helper.persistStateToApi
       setupMockCacheKey()
       jest.clearAllMocks()
+    })
+
+    afterEach(() => {
+      jest.dontMock('~/src/config/config.js')
     })
 
     const createSuccessfulFetchResponse = () => ({

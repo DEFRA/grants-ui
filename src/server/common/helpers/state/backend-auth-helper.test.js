@@ -38,11 +38,12 @@ async function importBackendAuthHelper() {
 }
 
 function setupMockConfig(value, encryptionKey = TEST_ENCRYPTION_KEY) {
-  mockConfig.get.mockImplementation((key) => {
-    if (key === CONFIG_SESSION_CACHE_AUTH_TOKEN) return value
-    if (key === CONFIG_SESSION_CACHE_ENCRYPTION_KEY) return encryptionKey
-    return null
-  })
+  const configValues = {
+    [CONFIG_SESSION_CACHE_AUTH_TOKEN]: value,
+    [CONFIG_SESSION_CACHE_ENCRYPTION_KEY]: encryptionKey
+  }
+
+  mockConfig.get.mockImplementation((key) => configValues[key] || null)
 }
 
 describe('Backend Auth Helper', () => {
@@ -194,11 +195,12 @@ describe('Backend Auth Helper', () => {
     })
 
     it('should encrypt token when encryption key is configured', async () => {
-      mockConfig.get.mockImplementation((key) => {
-        if (key === CONFIG_SESSION_CACHE_AUTH_TOKEN) return MOCK_TOKENS.DEFAULT
-        if (key === CONFIG_SESSION_CACHE_ENCRYPTION_KEY) return TEST_ENCRYPTION_KEY
-        return null
-      })
+      const configValues = {
+        [CONFIG_SESSION_CACHE_AUTH_TOKEN]: MOCK_TOKENS.DEFAULT,
+        [CONFIG_SESSION_CACHE_ENCRYPTION_KEY]: TEST_ENCRYPTION_KEY
+      }
+
+      mockConfig.get.mockImplementation((key) => configValues[key] || null)
 
       const { createAuthenticatedHeaders } = await importBackendAuthHelper()
       const headers = createAuthenticatedHeaders(HEADER_OBJECTS.CONTENT_TYPE_JSON)
@@ -216,11 +218,12 @@ describe('Backend Auth Helper', () => {
     })
 
     it('should throw error when no encryption key is configured', async () => {
-      mockConfig.get.mockImplementation((key) => {
-        if (key === CONFIG_SESSION_CACHE_AUTH_TOKEN) return MOCK_TOKENS.DEFAULT
-        if (key === CONFIG_SESSION_CACHE_ENCRYPTION_KEY) return ''
-        return null
-      })
+      const configValues = {
+        [CONFIG_SESSION_CACHE_AUTH_TOKEN]: MOCK_TOKENS.DEFAULT,
+        [CONFIG_SESSION_CACHE_ENCRYPTION_KEY]: ''
+      }
+
+      mockConfig.get.mockImplementation((key) => configValues[key] || null)
 
       const { createAuthenticatedHeaders } = await importBackendAuthHelper()
 
@@ -230,11 +233,12 @@ describe('Backend Auth Helper', () => {
     })
 
     it('should throw error when encryption key is null', async () => {
-      mockConfig.get.mockImplementation((key) => {
-        if (key === CONFIG_SESSION_CACHE_AUTH_TOKEN) return MOCK_TOKENS.DEFAULT
-        if (key === CONFIG_SESSION_CACHE_ENCRYPTION_KEY) return null
-        return null
-      })
+      const configValues = {
+        [CONFIG_SESSION_CACHE_AUTH_TOKEN]: MOCK_TOKENS.DEFAULT,
+        [CONFIG_SESSION_CACHE_ENCRYPTION_KEY]: null
+      }
+
+      mockConfig.get.mockImplementation((key) => configValues[key] || null)
 
       const { createAuthenticatedHeaders } = await importBackendAuthHelper()
 
@@ -246,11 +250,12 @@ describe('Backend Auth Helper', () => {
     it('should throw error when encryptToken is called without encryption key', async () => {
       jest.resetModules()
 
-      mockConfig.get.mockImplementation((key) => {
-        if (key === CONFIG_SESSION_CACHE_AUTH_TOKEN) return MOCK_TOKENS.DEFAULT
-        if (key === CONFIG_SESSION_CACHE_ENCRYPTION_KEY) return null
-        return null
-      })
+      const configValues = {
+        [CONFIG_SESSION_CACHE_AUTH_TOKEN]: MOCK_TOKENS.DEFAULT,
+        [CONFIG_SESSION_CACHE_ENCRYPTION_KEY]: null
+      }
+
+      mockConfig.get.mockImplementation((key) => configValues[key] || null)
 
       const { encryptToken } = await importBackendAuthHelper()
 
