@@ -382,6 +382,89 @@ describe('SelectActionsForLandParcelPageController', () => {
                   description: 'CMOR1: Assess moorland and produce a written record',
                   unit: 'ha',
                   value: 10,
+                  annualPaymentPence: 50
+                }
+              }
+            }
+          }
+        })
+      )
+
+      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-path')
+
+      expect(result).toBe('redirected')
+    })
+
+    test('add more land actions to existing land parcel', async () => {
+      // Mock the calculateGrantPayment function
+      const paymentDetails = {
+        payment: {
+          annualTotalPence: 150,
+          parcelItems: [
+            {
+              sheetId: 'sheet1',
+              parcelId: 'parcel1',
+              code: 'CMOR1',
+              annualPaymentPence: 50
+            },
+            {
+              sheetId: 'sheet1',
+              parcelId: 'parcel1',
+              code: 'UPL1',
+              annualPaymentPence: 100
+            }
+          ]
+        },
+        paymentTotal: '£1.00'
+      }
+
+      calculateGrantPayment.mockResolvedValue(paymentDetails)
+
+      mockRequest = {
+        payload: {
+          landAction: 'UPL1'
+        },
+        logger: {
+          error: jest.fn()
+        }
+      }
+
+      // Set up state with existing CMOR1 action
+      mockContext.state.landParcels = {
+        'sheet1-parcel1': {
+          actionsObj: {
+            CMOR1: {
+              annualPaymentPence: 50,
+              description: 'CMOR1: Assess moorland and produce a written record',
+              unit: 'ha',
+              value: 10
+            }
+          }
+        }
+      }
+
+      const handler = controller.makePostRouteHandler()
+      const result = await handler(mockRequest, mockContext, mockH)
+
+      expect(controller.setState).toHaveBeenCalledWith(
+        mockRequest,
+        expect.objectContaining({
+          selectedLandParcel: 'sheet1-parcel1',
+          payment: paymentDetails.payment,
+          draftApplicationAnnualTotalPence: 150,
+          landParcels: {
+            'sheet1-parcel1': {
+              actionsObj: {
+                CMOR1: {
+                  description: 'CMOR1: Assess moorland and produce a written record',
+                  unit: 'ha',
+                  value: 10,
+                  annualPaymentPence: 50
+                },
+                UPL1: {
+                  description: 'UPL1: Moderate livestock grazing on moorland',
+                  value: 5,
+                  unit: 'ha',
                   annualPaymentPence: 100
                 }
               }
@@ -423,16 +506,16 @@ describe('SelectActionsForLandParcelPageController', () => {
         const controller = new SelectActionsForLandParcelPageController()
         const sheetId = 'sheet1'
         const parcelId = 'parcel1'
-        const readyForValidationsActionsObj = { CMOR1: { value: 10 } }
+        const actionsObj = { CMOR1: { value: 10 } }
 
         triggerApiActionsValidation.mockResolvedValue({ valid: true, errorMessages: [] })
 
-        await controller.validatePayload({ landAction: 'CMOR1' }, readyForValidationsActionsObj, sheetId, parcelId)
+        await controller.validatePayload({ landAction: 'CMOR1' }, actionsObj, sheetId, parcelId)
 
         expect(triggerApiActionsValidation).toHaveBeenCalledWith({
           sheetId,
           parcelId,
-          actionsObj: readyForValidationsActionsObj
+          actionsObj
         })
       })
 
@@ -477,6 +560,14 @@ describe('SelectActionsForLandParcelPageController', () => {
           action: 'validate'
         }
 
+        // Mock the calculateGrantPayment function to return default values
+        calculateGrantPayment.mockResolvedValue({
+          payment: {
+            annualTotalPence: 0,
+            parcelItems: []
+          }
+        })
+
         const handler = controller.makePostRouteHandler()
         await handler(mockRequest, mockContext, mockH)
 
@@ -488,13 +579,13 @@ describe('SelectActionsForLandParcelPageController', () => {
             parcelName: 'sheet1 parcel1',
             errorSummary: [
               {
-                text: 'Please select at least one action',
+                text: 'Please select one action',
                 href: '#landAction'
               }
             ],
             errors: {
               landAction: {
-                text: 'Please select at least one action'
+                text: 'Please select one action'
               }
             }
           })
@@ -552,45 +643,6 @@ describe('SelectActionsForLandParcelPageController', () => {
       })
 
       expect(controller.proceed).toHaveBeenCalled()
-    })
-
-    test('should render view with errors when no action is selected', async () => {
-      mockRequest.payload = {
-        action: 'validate'
-      }
-
-      triggerApiActionsValidation.mockResolvedValue({
-        valid: true,
-        errorMessages: []
-      })
-
-      // Mock the calculateGrantPayment function
-      calculateGrantPayment.mockResolvedValue({})
-
-      const handler = controller.makePostRouteHandler()
-      const result = await handler(mockRequest, mockContext, mockH)
-
-      expect(mockH.view).toHaveBeenCalledWith(
-        'select-actions-for-land-parcel',
-        expect.objectContaining({
-          parcelName: 'sheet1 parcel1',
-          errorSummary: [
-            {
-              text: 'Please select at least one action',
-              href: '#landAction'
-            }
-          ],
-          errors: {
-            landAction: {
-              text: 'Please select at least one action'
-            }
-          },
-          availableActions
-        })
-      )
-
-      expect(controller.proceed).not.toHaveBeenCalled()
-      expect(result).toBe('rendered view')
     })
   })
 })
