@@ -124,18 +124,14 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
       // Create an updated state with the new action data
       const newState = await this.buildNewState(state, selectedActionsQuantities, actionsObj)
 
-      // console.log('state', state.landParcels)
-      // console.log('newState', newState)
       if (payload.action === 'validate') {
-        /* eslint-disable no-console */
-        console.log('payload', payload)
-        console.log('actionsObj', actionsObj)
-        console.log('sheetId', sheetId)
-        console.log('parcelId', parcelId)
+        request.logger.info('payload', payload)
+        request.logger.info('actionsObj', actionsObj)
+        request.logger.info('sheetId', sheetId)
+        request.logger.info('parcelId', parcelId)
 
-        const { errors, errorSummary } = await this.validatePayload(payload, actionsObj, sheetId, parcelId)
-        console.log('errors', errors)
-        /* eslint-enable no-console */
+        const { errors, errorSummary } = await this.validatePayload(request, payload, actionsObj, sheetId, parcelId)
+        request.logger.info('errors', errors)
 
         if (Object.keys(errors).length > 0) {
           return h.view(viewName, {
@@ -155,7 +151,7 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
     return fn
   }
 
-  validatePayload = async (payload, actionsObj, sheetId, parcelId) => {
+  validatePayload = async (request, payload, actionsObj, sheetId, parcelId) => {
     const errors = {}
 
     if (payload?.landAction?.length === 0) {
@@ -165,9 +161,7 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
     }
 
     if (Object.keys(actionsObj).length > 0) {
-      /* eslint-disable no-console */
-      console.log('before call to api validations', { sheetId, parcelId, actionsObj })
-      /* eslint-enable no-console */
+      request.logger.info('before call to api validations', { sheetId, parcelId, actionsObj })
       const { valid, errorMessages = [] } = await triggerApiActionsValidation({
         sheetId,
         parcelId,
