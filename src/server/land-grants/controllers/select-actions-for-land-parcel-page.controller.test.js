@@ -391,6 +391,61 @@ describe('SelectActionsForLandParcelPageController', () => {
       expect(result).toBe('redirected')
     })
 
+    test('add more land actions to existing land parcel', async () => {
+      calculateGrantPayment.mockResolvedValue({
+        payment: {
+          annualTotalPence: 100,
+          parcelItems: [
+            {
+              sheetId: 'sheet1',
+              parcelId: 'parcel1',
+              code: 'CMOR1',
+              annualPaymentPence: 100
+            },
+            {
+              sheetId: 'sheet1',
+              parcelId: 'parcel1',
+              code: 'UPL1',
+              annualPaymentPence: 200
+            }
+          ]
+        },
+        paymentTotal: '£3.00'
+      })
+
+      const handler = controller.makePostRouteHandler()
+      const result = await handler(mockRequest, mockContext, mockH)
+
+      expect(controller.setState).toHaveBeenCalledWith(
+        mockRequest,
+        expect.objectContaining({
+          selectedLandParcel: 'sheet1-parcel1',
+          landParcels: {
+            'sheet1-parcel1': {
+              actionsObj: {
+                CMOR1: {
+                  description: 'CMOR1: Assess moorland and produce a written record',
+                  unit: 'ha',
+                  value: 10,
+                  annualPaymentPence: 100
+                },
+                UPL1: {
+                  description: 'UPL1: Moderate livestock grazing on moorland',
+                  value: 20,
+                  unit: 'ha',
+                  annualPaymentPence: 200
+                }
+              }
+            }
+          }
+        })
+      )
+
+      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-path')
+
+      expect(result).toBe('redirected')
+    })
+
     describe('validations', () => {
       test('should handle empty payload gracefully', async () => {
         mockRequest.payload = null
@@ -419,16 +474,16 @@ describe('SelectActionsForLandParcelPageController', () => {
         const controller = new SelectActionsForLandParcelPageController()
         const sheetId = 'sheet1'
         const parcelId = 'parcel1'
-        const readyForValidationsActionsObj = { CMOR1: { value: 10 } }
+        const actionsObj = { CMOR1: { value: 10 } }
 
         triggerApiActionsValidation.mockResolvedValue({ valid: true, errorMessages: [] })
 
-        await controller.validatePayload({ landAction: 'CMOR1' }, readyForValidationsActionsObj, sheetId, parcelId)
+        await controller.validatePayload({ landAction: 'CMOR1' }, actionsObj, sheetId, parcelId)
 
         expect(triggerApiActionsValidation).toHaveBeenCalledWith({
           sheetId,
           parcelId,
-          actionsObj: readyForValidationsActionsObj
+          actionsObj
         })
       })
 

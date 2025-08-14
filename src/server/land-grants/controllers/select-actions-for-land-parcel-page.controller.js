@@ -120,10 +120,13 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
       const { viewName } = this
       const payload = request.payload ?? {}
       const [sheetId, parcelId] = parseLandParcel(state.selectedLandParcel)
+
       const { actionsObj, selectedActionsQuantities } = this.extractActionsDataFromPayload(payload)
       // Create an updated state with the new action data
       const newState = await this.buildNewState(state, selectedActionsQuantities, actionsObj)
 
+      console.log('state', state.landParcels)
+      console.log('newState', newState)
       if (payload.action === 'validate') {
         const { errors, errorSummary } = await this.validatePayload(payload, actionsObj, sheetId, parcelId)
 
@@ -132,8 +135,6 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
             ...this.getViewModel(request, context),
             ...newState,
             parcelName: `${sheetId} ${parcelId}`,
-            selectedActions: payload.selectedActions,
-            selectedActionsQuantities,
             errorSummary,
             errors
           })
@@ -150,9 +151,9 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
   validatePayload = async (payload, actionsObj, sheetId, parcelId) => {
     const errors = {}
 
-    if (!payload?.landAction || payload.landAction.length === 0) {
+    if (payload?.landAction?.length === 0) {
       errors.landAction = {
-        text: 'Please select at least one action'
+        text: 'Please select one action'
       }
     }
 
@@ -160,7 +161,7 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
       const { valid, errorMessages = [] } = await triggerApiActionsValidation({
         sheetId,
         parcelId,
-        actionsObj: readyForValidationsActionsObj
+        actionsObj
       })
 
       if (!valid) {
@@ -185,9 +186,14 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
     const updatedLandParcels = {
       ...state.landParcels, // Spread existing land parcels
       [state.selectedLandParcel]: {
-        actionsObj
+        ...state.landParcels?.[state.selectedLandParcel], // Preserve existing parcel data
+        actionsObj: {
+          ...state.landParcels?.[state.selectedLandParcel]?.actionsObj, // Merge existing actions
+          ...actionsObj // Add new actions
+        }
       }
     }
+
     let draftApplicationAnnualTotalPence = state.draftApplicationAnnualTotalPence || 0
 
     // Get all land actions across all parcels
