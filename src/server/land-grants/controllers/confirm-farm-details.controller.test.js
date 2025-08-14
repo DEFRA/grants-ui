@@ -18,6 +18,23 @@ jest.mock('~/src/server/land-grants/utils/format-phone.js', () => ({
   formatPhone: jest.fn((phone) => (phone ? `formatted-${phone}` : ''))
 }))
 
+const mockData = {
+  business: {
+    name: 'Test Farm Business',
+    address: {
+      line1: 'Line 1',
+      line2: 'Line 2',
+      city: 'Test City',
+      postalCode: 'TE1 1ST'
+    },
+    phone: { mobile: '07123456789' },
+    email: { address: 'test@farm.com' }
+  },
+  customer: {
+    name: { first: 'Sarah', middle: 'A', last: 'Farmer' }
+  }
+}
+
 describe('ConfirmFarmDetailsController', () => {
   let controller
   let mockRequest
@@ -26,16 +43,53 @@ describe('ConfirmFarmDetailsController', () => {
 
   beforeEach(() => {
     controller = new ConfirmFarmDetailsController()
+    controller.proceed = jest.fn().mockResolvedValue('redirected')
+    controller.getNextPath = jest.fn().mockReturnValue('/next-path')
+    controller.setState = jest.fn()
     mockRequest = {}
     mockContext = {}
     mockH = {
       view: jest.fn().mockReturnValue('mocked-view')
     }
     sbiStore.get = jest.fn().mockReturnValue('SBI123456')
+    fetchBusinessAndCustomerInformation.mockResolvedValue(mockData)
   })
 
   afterEach(() => {
     jest.clearAllMocks()
+  })
+
+  describe('POST route handler', () => {
+    test('should not update state and proceed if no sbi', async () => {
+      sbiStore.get = jest.fn().mockReturnValue(null)
+      const handler = controller.makePostRouteHandler()
+      const result = await handler(mockRequest, mockContext, mockH)
+
+      expect(fetchBusinessAndCustomerInformation).not.toHaveBeenCalled()
+      expect(controller.setState).not.toHaveBeenCalled()
+
+      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-path')
+      expect(result).toBe('redirected')
+    })
+
+    test('should update state with sbi and farmer details and proceed', async () => {
+      const handler = controller.makePostRouteHandler()
+      const result = await handler(mockRequest, mockContext, mockH)
+
+      expect(fetchBusinessAndCustomerInformation).toHaveBeenCalledWith('SBI123456', 1100014934)
+      expect(controller.setState).toHaveBeenCalledWith(
+        mockRequest,
+        expect.objectContaining({
+          farmer: {
+            ...mockData
+          },
+          sbi: 'SBI123456'
+        })
+      )
+
+      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-path')
+      expect(result).toBe('redirected')
+    })
   })
 
   describe('makeGetRouteHandler', () => {
@@ -45,25 +99,6 @@ describe('ConfirmFarmDetailsController', () => {
     })
 
     it('should handle successful data fetch and render view', async () => {
-      const mockData = {
-        business: {
-          name: 'Test Farm Business',
-          address: {
-            line1: 'Line 1',
-            line2: 'Line 2',
-            city: 'Test City',
-            postalCode: 'TE1 1ST'
-          },
-          phone: { mobile: '07123456789' },
-          email: { address: 'test@farm.com' }
-        },
-        customer: {
-          name: { first: 'Sarah', middle: 'A', last: 'Farmer' }
-        }
-      }
-
-      fetchBusinessAndCustomerInformation.mockResolvedValue(mockData)
-
       const handler = controller.makeGetRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
 
