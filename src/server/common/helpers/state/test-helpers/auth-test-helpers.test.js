@@ -1,4 +1,14 @@
-import { createExpectedAuthHeader, encryptTokenForTest } from './auth-test-helpers.js'
+import { jest } from '@jest/globals'
+import {
+  createExpectedAuthHeader,
+  encryptTokenForTest,
+  createMockConfig,
+  createMockConfigWithoutEndpoint,
+  createCustomMockConfig,
+  MOCK_CONFIG_VALUES,
+  CONFIG_KEYS,
+  TEST_CONSTANTS
+} from './auth-test-helpers.js'
 
 describe('Auth Test Helpers', () => {
   describe('createExpectedAuthHeader', () => {
@@ -49,5 +59,89 @@ describe('Auth Test Helpers', () => {
         encryptTokenForTest(TEST_TOKEN, '')
       }).toThrow('Encryption key not configured')
     })
+  })
+})
+
+describe('Config Mock Helpers', () => {
+  describe('createMockConfig', () => {
+    it('should return a mock config with all required properties', () => {
+      const mockConfig = createMockConfig()
+
+      expect(mockConfig).toHaveProperty('config')
+      expect(mockConfig.config).toHaveProperty('get')
+      expect(mockConfig.config.get).toEqual(expect.any(Function))
+    })
+
+    it('should return expected values for standard config keys', () => {
+      const {
+        config: { get }
+      } = createMockConfig()
+
+      expect(get(CONFIG_KEYS.API_ENDPOINT)).toBe(MOCK_CONFIG_VALUES.DEFAULT[CONFIG_KEYS.API_ENDPOINT])
+      expect(get(CONFIG_KEYS.AUTH_TOKEN)).toBe(MOCK_CONFIG_VALUES.DEFAULT[CONFIG_KEYS.AUTH_TOKEN])
+      expect(get(CONFIG_KEYS.ENCRYPTION_KEY)).toBe(MOCK_CONFIG_VALUES.DEFAULT[CONFIG_KEYS.ENCRYPTION_KEY])
+      expect(get(CONFIG_KEYS.LOG)).toEqual(MOCK_CONFIG_VALUES.DEFAULT[CONFIG_KEYS.LOG])
+      expect(get(CONFIG_KEYS.GIT_REPOSITORY_NAME)).toBe(MOCK_CONFIG_VALUES.DEFAULT[CONFIG_KEYS.GIT_REPOSITORY_NAME])
+      expect(get(CONFIG_KEYS.SERVICE_VERSION)).toBe(MOCK_CONFIG_VALUES.DEFAULT[CONFIG_KEYS.SERVICE_VERSION])
+    })
+
+    it('should return null for unknown keys', () => {
+      const {
+        config: { get }
+      } = createMockConfig()
+
+      expect(get(TEST_CONSTANTS.UNKNOWN_KEY)).toBeNull()
+    })
+  })
+
+  describe('createMockConfigWithoutEndpoint', () => {
+    it('should return null for session.cache.apiEndpoint', () => {
+      const {
+        config: { get }
+      } = createMockConfigWithoutEndpoint()
+
+      expect(get(CONFIG_KEYS.API_ENDPOINT)).toBeNull()
+    })
+
+    it('should still return other config values', () => {
+      const {
+        config: { get }
+      } = createMockConfigWithoutEndpoint()
+
+      expect(get(CONFIG_KEYS.LOG)).toEqual(MOCK_CONFIG_VALUES.WITHOUT_ENDPOINT[CONFIG_KEYS.LOG])
+      expect(get(CONFIG_KEYS.GIT_REPOSITORY_NAME)).toBe(
+        MOCK_CONFIG_VALUES.WITHOUT_ENDPOINT[CONFIG_KEYS.GIT_REPOSITORY_NAME]
+      )
+      expect(get(CONFIG_KEYS.SERVICE_VERSION)).toBe(MOCK_CONFIG_VALUES.WITHOUT_ENDPOINT[CONFIG_KEYS.SERVICE_VERSION])
+    })
+  })
+
+  describe('createCustomMockConfig', () => {
+    it('should allow custom values to override defaults', () => {
+      const customValues = {
+        [CONFIG_KEYS.API_ENDPOINT]: TEST_CONSTANTS.CUSTOM_BACKEND_URL,
+        [TEST_CONSTANTS.CUSTOM_KEY]: TEST_CONSTANTS.CUSTOM_VALUE
+      }
+
+      const {
+        config: { get }
+      } = createCustomMockConfig(customValues)
+
+      expect(get(CONFIG_KEYS.API_ENDPOINT)).toBe(TEST_CONSTANTS.CUSTOM_BACKEND_URL)
+      expect(get(TEST_CONSTANTS.CUSTOM_KEY)).toBe(TEST_CONSTANTS.CUSTOM_VALUE)
+      expect(get(CONFIG_KEYS.AUTH_TOKEN)).toBe(MOCK_CONFIG_VALUES.DEFAULT[CONFIG_KEYS.AUTH_TOKEN]) // default preserved
+    })
+
+    it('should work with empty custom values', () => {
+      const {
+        config: { get }
+      } = createCustomMockConfig({})
+
+      expect(get(CONFIG_KEYS.API_ENDPOINT)).toBe(MOCK_CONFIG_VALUES.DEFAULT[CONFIG_KEYS.API_ENDPOINT])
+    })
+  })
+
+  afterEach(() => {
+    jest.clearAllMocks()
   })
 })

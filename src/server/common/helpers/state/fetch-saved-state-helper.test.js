@@ -5,7 +5,9 @@ import {
   HTTP_STATUS,
   TEST_USER_IDS,
   ERROR_MESSAGES,
-  LOG_MESSAGES
+  LOG_MESSAGES,
+  createMockConfig,
+  createMockConfigWithoutEndpoint
 } from './test-helpers/auth-test-helpers.js'
 
 const LOG_TAGS = {
@@ -41,9 +43,15 @@ describe('fetchSavedStateFromApi', () => {
 
   describe('With backend configured correctly', () => {
     beforeEach(async () => {
+      jest.resetModules()
+      jest.doMock('~/src/config/config.js', createMockConfig)
       const helper = await import('~/src/server/common/helpers/state/fetch-saved-state-helper.js')
       fetchSavedStateFromApi = helper.fetchSavedStateFromApi
       jest.clearAllMocks()
+    })
+
+    afterEach(() => {
+      jest.dontMock('~/src/config/config.js')
     })
 
     it('returns state when response is valid', async () => {
@@ -136,17 +144,7 @@ describe('fetchSavedStateFromApi', () => {
   describe('Without backend endpoint configured', () => {
     beforeEach(async () => {
       jest.resetModules()
-      jest.doMock('~/src/config/config.js', () => ({
-        config: {
-          get: jest.fn().mockImplementation((key) => {
-            if (key === 'session.cache.apiEndpoint') return null
-            if (key === 'log') return { enabled: false, redact: [], level: 'info', format: 'ecs' }
-            if (key === 'gitRepositoryName') return 'test-repo'
-            if (key === 'serviceVersion') return '1.0.0'
-            return null
-          })
-        }
-      }))
+      jest.doMock('~/src/config/config.js', createMockConfigWithoutEndpoint)
       const helper = await import('~/src/server/common/helpers/state/fetch-saved-state-helper.js')
       fetchSavedStateFromApi = helper.fetchSavedStateFromApi
       jest.clearAllMocks()
