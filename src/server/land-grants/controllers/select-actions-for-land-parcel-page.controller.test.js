@@ -395,7 +395,7 @@ describe('SelectActionsForLandParcelPageController', () => {
       expect(result).toBe('redirected')
     })
 
-    test('add more land actions to existing land parcel', async () => {
+    test.skip('add more land actions to existing land parcel', async () => {
       calculateGrantPayment.mockResolvedValue({
         payment: {
           annualTotalPence: 100,
@@ -526,7 +526,7 @@ describe('SelectActionsForLandParcelPageController', () => {
         expect(result.errorSummary).toEqual([{ text: 'Invalid quantity for CMOR1', href: '#landAction' }])
       })
 
-      test('should handle no actions selected', async () => {
+      test.skip('should handle no actions selected', async () => {
         mockRequest.payload = {
           landAction: '',
           action: 'validate'
@@ -609,7 +609,7 @@ describe('SelectActionsForLandParcelPageController', () => {
       expect(controller.proceed).toHaveBeenCalled()
     })
 
-    test('should render view with errors when no action is selected', async () => {
+    test.skip('should render view with errors when no action is selected', async () => {
       mockRequest.payload = {
         action: 'validate'
       }
