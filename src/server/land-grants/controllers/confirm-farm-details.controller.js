@@ -177,10 +177,9 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
      */
     const fn = async (request, context, h) => {
       const { state } = context
-      const { action } = request.payload ?? {}
       const sbi = sbiStore.get('sbi')
 
-      if (action === 'validate' && sbi) {
+      if (sbi) {
         const farmer = await fetchBusinessAndCustomerInformation(sbi, ConfirmFarmDetailsController.CUSTOMER_ID)
         await this.setState(request, {
           ...state,
