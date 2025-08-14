@@ -362,9 +362,7 @@ describe('SelectActionsForLandParcelPageController', () => {
           ]
         },
         paymentTotal: '£1.00'
-      }
-
-      calculateGrantPayment.mockResolvedValue(paymentDetails)
+      })
 
       const handler = controller.makePostRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
@@ -437,6 +435,60 @@ describe('SelectActionsForLandParcelPageController', () => {
 
       expect(result).toBe('redirected')
     })
+    // test.skip('add more land actions to existing land parcel', async () => {
+    //   calculateGrantPayment.mockResolvedValue({
+    //     payment: {
+    //       annualTotalPence: 100,
+    //       parcelItems: [
+    //         {
+    //           sheetId: 'sheet1',
+    //           parcelId: 'parcel1',
+    //           code: 'CMOR1',
+    //           annualPaymentPence: 100
+    //         },
+    //         {
+    //           sheetId: 'sheet1',
+    //           parcelId: 'parcel1',
+    //           code: 'UPL1',
+    //           annualPaymentPence: 200
+    //         }
+    //       ]
+    //     },
+    //     paymentTotal: '£3.00'
+    //   })
+    //
+    //   const handler = controller.makePostRouteHandler()
+    //   const result = await handler(mockRequest, mockContext, mockH)
+    //
+    //   expect(controller.setState).toHaveBeenCalledWith(
+    //     mockRequest,
+    //     expect.objectContaining({
+    //       selectedLandParcel: 'sheet1-parcel1',
+    //       landParcels: {
+    //         'sheet1-parcel1': {
+    //           actionsObj: {
+    //             CMOR1: {
+    //               description: 'CMOR1: Assess moorland and produce a written record',
+    //               unit: 'ha',
+    //               value: 10,
+    //               annualPaymentPence: 100
+    //             },
+    //             UPL1: {
+    //               description: 'UPL1: Moderate livestock grazing on moorland',
+    //               value: 20,
+    //               unit: 'ha',
+    //               annualPaymentPence: 200
+    //             }
+    //           }
+    //         }
+    //       }
+    //     })
+    //   )
+    //
+    //   expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-path')
+    //
+    //   expect(result).toBe('redirected')
+    // })
 
     describe('validations', () => {
       test('should handle empty payload gracefully', async () => {
@@ -466,16 +518,16 @@ describe('SelectActionsForLandParcelPageController', () => {
         const controller = new SelectActionsForLandParcelPageController()
         const sheetId = 'sheet1'
         const parcelId = 'parcel1'
-        const readyForValidationsActionsObj = { CMOR1: { value: 10 } }
+        const actionsObj = { CMOR1: { value: 10 } }
 
         triggerApiActionsValidation.mockResolvedValue({ valid: true, errorMessages: [] })
 
-        await controller.validatePayload({ landAction: 'CMOR1' }, readyForValidationsActionsObj, sheetId, parcelId)
+        await controller.validatePayload({ landAction: 'CMOR1' }, actionsObj, sheetId, parcelId)
 
         expect(triggerApiActionsValidation).toHaveBeenCalledWith({
           sheetId,
           parcelId,
-          actionsObj: readyForValidationsActionsObj
+          actionsObj
         })
       })
 
@@ -514,35 +566,35 @@ describe('SelectActionsForLandParcelPageController', () => {
         expect(result.errorSummary).toEqual([{ text: 'Invalid quantity for CMOR1', href: '#landAction' }])
       })
 
-      test.skip('should handle no actions selected', async () => {
-        mockRequest.payload = {
-          landAction: '',
-          action: 'validate'
-        }
-
-        const handler = controller.makePostRouteHandler()
-        await handler(mockRequest, mockContext, mockH)
-
-        expect(triggerApiActionsValidation).not.toHaveBeenCalled()
-
-        expect(mockH.view).toHaveBeenCalledWith(
-          'select-actions-for-land-parcel',
-          expect.objectContaining({
-            parcelName: 'sheet1 parcel1',
-            errorSummary: [
-              {
-                text: 'Please select at least one action',
-                href: '#landAction'
-              }
-            ],
-            errors: {
-              landAction: {
-                text: 'Please select at least one action'
-              }
-            }
-          })
-        )
-      })
+      // test.skip('should handle no actions selected', async () => {
+      //   mockRequest.payload = {
+      //     landAction: '',
+      //     action: 'validate'
+      //   }
+      //
+      //   const handler = controller.makePostRouteHandler()
+      //   await handler(mockRequest, mockContext, mockH)
+      //
+      //   expect(triggerApiActionsValidation).not.toHaveBeenCalled()
+      //
+      //   expect(mockH.view).toHaveBeenCalledWith(
+      //     'select-actions-for-land-parcel',
+      //     expect.objectContaining({
+      //       parcelName: 'sheet1 parcel1',
+      //       errorSummary: [
+      //         {
+      //           text: 'Please select at least one action',
+      //           href: '#landAction'
+      //         }
+      //       ],
+      //       errors: {
+      //         landAction: {
+      //           text: 'Please select at least one action'
+      //         }
+      //       }
+      //     })
+      //   )
+      // })
     })
 
     test('should validate actions when validate action is requested', async () => {
@@ -597,7 +649,7 @@ describe('SelectActionsForLandParcelPageController', () => {
       expect(controller.proceed).toHaveBeenCalled()
     })
 
-    test.skip('should render view with errors when no action is selected', async () => {
+    test('should render view with errors when no action is selected', async () => {
       mockRequest.payload = {
         action: 'validate'
       }
