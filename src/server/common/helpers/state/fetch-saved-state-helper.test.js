@@ -1,104 +1,163 @@
 import { jest } from '@jest/globals'
-
 import { mockRequestWithIdentity } from './mock-request-with-identity.test-helper.js'
+import {
+  MOCK_STATE_DATA,
+  HTTP_STATUS,
+  TEST_USER_IDS,
+  ERROR_MESSAGES,
+  LOG_MESSAGES
+} from './test-helpers/auth-test-helpers.js'
+
+const LOG_TAGS = {
+  FETCH_SAVED_STATE: 'fetch-saved-state'
+}
 
 global.fetch = jest.fn()
 
 let fetchSavedStateFromApi
 
 describe('fetchSavedStateFromApi', () => {
+  const createMockRequest = () => mockRequestWithIdentity({ params: { slug: TEST_USER_IDS.GRANT_ID } })
+
+  const createMockRequestWithLogger = () => {
+    const request = createMockRequest()
+    request.logger = { warn: jest.fn(), error: jest.fn() }
+    return request
+  }
+
+  const createSuccessfulResponse = (data = MOCK_STATE_DATA.DEFAULT) => ({
+    ok: true,
+    json: () => data
+  })
+
+  const createFailedResponse = (status, statusText = 'Error') => ({
+    ok: false,
+    status,
+    statusText,
+    json: () => {
+      throw new Error(ERROR_MESSAGES.NO_CONTENT)
+    }
+  })
+
   describe('With backend configured correctly', () => {
     beforeEach(async () => {
-      process.env.GRANTS_UI_BACKEND_URL = 'http://localhost:3002'
-      ;({ fetchSavedStateFromApi } = await import('~/src/server/common/helpers/state/fetch-saved-state-helper.js'))
+      const helper = await import('~/src/server/common/helpers/state/fetch-saved-state-helper.js')
+      fetchSavedStateFromApi = helper.fetchSavedStateFromApi
       jest.clearAllMocks()
     })
 
     it('returns state when response is valid', async () => {
-      fetch.mockResolvedValue({
-        ok: true,
-        json: () => ({ state: { foo: 'bar' } })
-      })
+      fetch.mockResolvedValue(createSuccessfulResponse())
 
-      const request = mockRequestWithIdentity({ params: { slug: 'test-slug' } })
+      const request = createMockRequest()
       const result = await fetchSavedStateFromApi(request)
 
       expect(result).toHaveProperty('state')
       expect(fetch).toHaveBeenCalledTimes(1)
     })
 
-    it('returns null on 404', async () => {
-      fetch.mockResolvedValue({
-        ok: false,
-        status: 404,
-        statusText: 'Not Found',
-        json: () => {
-          throw new Error('No content')
-        }
-      })
+    it('includes authorization header in fetch request', async () => {
+      fetch.mockResolvedValue(createSuccessfulResponse())
 
-      const request = mockRequestWithIdentity({ params: { slug: 'test-slug' } })
+      const request = createMockRequest()
+      await fetchSavedStateFromApi(request)
+
+      expect(fetch).toHaveBeenCalledTimes(1)
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringMatching(
+          new RegExp(
+            `/state/\\?userId=${TEST_USER_IDS.DEFAULT}&businessId=${TEST_USER_IDS.BUSINESS_ID}&grantId=${TEST_USER_IDS.GRANT_ID}`
+          )
+        ),
+        expect.objectContaining({
+          method: 'GET',
+          headers: expect.objectContaining({
+            'Content-Type': 'application/json',
+            Authorization: expect.any(String)
+          })
+        })
+      )
+    })
+
+    it('returns null on 404', async () => {
+      fetch.mockResolvedValue(createFailedResponse(HTTP_STATUS.NOT_FOUND, ERROR_MESSAGES.NOT_FOUND))
+
+      const request = createMockRequest()
       const result = await fetchSavedStateFromApi(request)
 
       expect(result).toBeNull()
+      expect(fetch).toHaveBeenCalledTimes(1)
     })
 
     it('returns null on non-200 (not 404)', async () => {
-      fetch.mockResolvedValue({
-        ok: false,
-        status: 500,
-        statusText: 'Internal Server Error'
-      })
+      fetch.mockResolvedValue(
+        createFailedResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, ERROR_MESSAGES.INTERNAL_SERVER_ERROR)
+      )
 
-      const request = mockRequestWithIdentity({ params: { slug: 'test-slug' } })
+      const request = createMockRequest()
       const result = await fetchSavedStateFromApi(request)
 
       expect(result).toBeNull()
+      expect(fetch).toHaveBeenCalledTimes(1)
     })
 
     it('returns null when response JSON is invalid or missing state', async () => {
-      fetch.mockResolvedValue({
-        ok: true,
-        json: () => 123
-      })
+      fetch.mockResolvedValue(createSuccessfulResponse(123))
 
-      const request = mockRequestWithIdentity({ params: { slug: 'test-slug' } })
-      request.logger = { warn: jest.fn(), error: jest.fn() }
+      const request = createMockRequestWithLogger()
 
       const result = await fetchSavedStateFromApi(request)
 
       expect(result).toBeNull()
       expect(request.logger.warn).toHaveBeenCalledWith(
-        ['fetch-saved-state'],
-        'Unexpected or empty state format',
+        [LOG_TAGS.FETCH_SAVED_STATE],
+        LOG_MESSAGES.UNEXPECTED_STATE_FORMAT,
         expect.any(Object)
       )
     })
 
     it('returns null and logs error on fetch failure', async () => {
-      fetch.mockRejectedValue(new Error('Network error'))
+      const networkError = new Error(ERROR_MESSAGES.NETWORK_ERROR)
+      fetch.mockRejectedValue(networkError)
 
-      const request = mockRequestWithIdentity({ params: { slug: 'test-slug' } })
-      request.logger = { error: jest.fn(), warn: jest.fn() }
+      const request = createMockRequestWithLogger()
 
       const result = await fetchSavedStateFromApi(request)
 
       expect(result).toBeNull()
       expect(request.logger.error).toHaveBeenCalledWith(
-        ['fetch-saved-state'],
-        'Failed to fetch saved state from API',
-        expect.any(Error)
+        [LOG_TAGS.FETCH_SAVED_STATE],
+        LOG_MESSAGES.FETCH_FAILED,
+        networkError
       )
     })
   })
 
-  describe('Without backend configured', () => {
-    it('returns null when endpoint is not defined', async () => {
-      process.env.GRANTS_UI_BACKEND_URL = ''
-      ;({ fetchSavedStateFromApi } = await import('~/src/server/common/helpers/state/fetch-saved-state-helper.js'))
+  describe('Without backend endpoint configured', () => {
+    beforeEach(async () => {
+      jest.resetModules()
+      jest.doMock('~/src/config/config.js', () => ({
+        config: {
+          get: jest.fn().mockImplementation((key) => {
+            if (key === 'session.cache.apiEndpoint') return null
+            if (key === 'log') return { enabled: false, redact: [], level: 'info', format: 'ecs' }
+            if (key === 'gitRepositoryName') return 'test-repo'
+            if (key === 'serviceVersion') return '1.0.0'
+            return null
+          })
+        }
+      }))
+      const helper = await import('~/src/server/common/helpers/state/fetch-saved-state-helper.js')
+      fetchSavedStateFromApi = helper.fetchSavedStateFromApi
+      jest.clearAllMocks()
+    })
 
-      const request = mockRequestWithIdentity({ params: { slug: 'test-slug' } })
+    afterEach(() => {
+      jest.dontMock('~/src/config/config.js')
+    })
 
+    it('returns null when GRANTS_UI_BACKEND_ENDPOINT is not configured', async () => {
+      const request = createMockRequest()
       const result = await fetchSavedStateFromApi(request)
 
       expect(result).toBeNull()

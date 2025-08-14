@@ -1,6 +1,7 @@
 import 'dotenv/config'
 import { config } from '~/src/config/config.js'
 import { getCacheKey } from './get-cache-key-helper.js'
+import { createApiHeaders } from './backend-auth-helper.js'
 
 const GRANTS_UI_BACKEND_ENDPOINT = config.get('session.cache.apiEndpoint')
 
@@ -17,9 +18,7 @@ export async function persistStateToApi(state, request) {
   try {
     const response = await fetch(url.href, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: createApiHeaders(),
       body: JSON.stringify({
         userId,
         businessId,
@@ -30,13 +29,10 @@ export async function persistStateToApi(state, request) {
     })
 
     if (!response.ok) {
-      throw new Error(`Failed to persist state: ${response.status}`)
+      request.logger.error(`Failed to persist state to API: ${response.status} - ${response.statusText}`)
     }
   } catch (err) {
-    request.logger.error({
-      message: `Failed to persist state to API`,
-      err
-    })
+    request.logger.error(`Failed to persist state to API: ${err.message}`)
 
     // TODO: See TGC-781
     // throw err

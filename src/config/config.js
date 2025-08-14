@@ -226,6 +226,20 @@ export const config = convict({
         format: String,
         default: '',
         env: 'GRANTS_UI_BACKEND_URL'
+      },
+      authToken: {
+        doc: 'Bearer token for authenticating with Grants UI Backend',
+        format: String,
+        default: '',
+        env: 'GRANTS_UI_BACKEND_AUTH_TOKEN',
+        sensitive: true
+      },
+      encryptionKey: {
+        doc: 'Encryption key for securing bearer token transmission',
+        format: String,
+        default: '',
+        env: 'GRANTS_UI_BACKEND_ENCRYPTION_KEY',
+        sensitive: true
       }
     },
     cookie: {
