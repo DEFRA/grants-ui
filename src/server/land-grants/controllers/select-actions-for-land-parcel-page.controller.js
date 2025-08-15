@@ -21,21 +21,6 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
   viewName = 'select-actions-for-land-parcel'
   availableActions = []
 
-  processPayloadAction(landAction) {
-    const actionInfo = this.availableActions.find((a) => a.code === landAction)
-
-    if (!actionInfo) {
-      return {}
-    }
-
-    return {
-      description: actionInfo.description,
-      value: actionInfo?.availableArea?.value ?? '',
-      unit: actionInfo?.availableArea?.unit ?? '',
-      annualPaymentPence: unitRatesForActions[landAction]
-    }
-  }
-
   /**
    * Extract action data from the form payload
    * @param {object} payload - The form payload
@@ -45,7 +30,20 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
     const actionsObj = {}
     const { landAction } = payload
 
-    const result = this.processPayloadAction(landAction)
+    const actionInfo = this.availableActions.find((a) => a.code === landAction)
+
+    logger.info(JSON.stringify({ landAction, actionInfo, availableActions: this.availableActions }))
+    if (!actionInfo) {
+      return {}
+    }
+
+    const result = {
+      description: actionInfo.description,
+      value: actionInfo?.availableArea?.value ?? '',
+      unit: actionInfo?.availableArea?.unit ?? '',
+      annualPaymentPence: unitRatesForActions[landAction]
+    }
+
     if (Object.keys(result).length > 0) {
       actionsObj[landAction] = result
     }
