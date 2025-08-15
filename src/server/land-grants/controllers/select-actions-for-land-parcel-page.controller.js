@@ -262,6 +262,8 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
         request.logger.error(error, `Failed to fetch land parcel data for id ${sheetId}-${parcelId}`)
       }
 
+      logger.info(JSON.stringify({ sheetId, parcelId, availableActions: this.availableActions }))
+
       // Build the view model exactly as in the original code
       const viewModel = {
         ...this.getViewModel(request, context),
