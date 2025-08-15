@@ -380,7 +380,7 @@ describe('SelectActionsForLandParcelPageController', () => {
   describe('POST route handler', () => {
     test('should update state with form values and proceed', async () => {
       // Mock the calculateGrantPayment function
-      calculateGrantPayment.mockResolvedValue({
+      const paymentDetails = {
         payment: {
           annualTotalPence: 100,
           parcelItems: [
@@ -388,18 +388,20 @@ describe('SelectActionsForLandParcelPageController', () => {
               sheetId: 'sheet1',
               parcelId: 'parcel1',
               code: 'CMOR1',
-              annualPaymentPence: 100
+              annualPaymentPence: 50
             },
             {
               sheetId: 'sheet1',
               parcelId: 'parcel1',
               code: 'UPL1',
-              annualPaymentPence: 200
+              annualPaymentPence: 50
             }
           ]
         },
         paymentTotal: '£1.00'
-      })
+      }
+
+      calculateGrantPayment.mockResolvedValue(paymentDetails)
 
       const handler = controller.makePostRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
@@ -408,6 +410,8 @@ describe('SelectActionsForLandParcelPageController', () => {
         mockRequest,
         expect.objectContaining({
           selectedLandParcel: 'sheet1-parcel1',
+          payment: paymentDetails.payment,
+          draftApplicationAnnualTotalPence: 100,
           landParcels: {
             'sheet1-parcel1': {
               actionsObj: {
@@ -415,13 +419,13 @@ describe('SelectActionsForLandParcelPageController', () => {
                   description: 'CMOR1: Assess moorland and produce a written record',
                   unit: 'ha',
                   value: 10,
-                  annualPaymentPence: 100
+                  annualPaymentPence: 50
                 },
                 UPL1: {
                   description: 'UPL1: Moderate livestock grazing on moorland',
                   unit: 'ha',
                   value: 5,
-                  annualPaymentPence: 200
+                  annualPaymentPence: 50
                 }
               }
             }

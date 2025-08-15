@@ -166,6 +166,33 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
       }
     })
   }
+
+  makePostRouteHandler() {
+    /**
+     * Handle POST requests to the confirm farm details page.
+     * @param {FormRequest} request
+     * @param {FormContext} context
+     * @param {Pick} h
+     * @returns {Promise<void>}
+     */
+    const fn = async (request, context, h) => {
+      const { state } = context
+      const sbi = sbiStore.get('sbi')
+
+      if (sbi) {
+        const applicant = await fetchBusinessAndCustomerInformation(sbi, ConfirmFarmDetailsController.CUSTOMER_ID)
+        await this.setState(request, {
+          ...state,
+          sbi,
+          applicant
+        })
+      }
+
+      return this.proceed(request, h, this.getNextPath(context))
+    }
+
+    return fn
+  }
 }
 
 /**

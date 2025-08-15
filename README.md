@@ -283,6 +283,10 @@ The Grants Application Service (GAS) is used to store grant definitions that the
 Creating a Grant Definition
 A grant definition is created via the GAS backend by making a POST request to the /grants endpoint (see postman folder in the root of the project). This defines the structure and schema of the grant application payload, which the app will later submit.
 
+You can also create a grant using the swagger link below.
+
+https://fg-gas-backend.dev.cdp-int.defra.cloud/documentation#/
+
 Example request:
 
 ```
@@ -398,6 +402,24 @@ This map is used at runtime to validate payloads prior to submission using:
 `validateSubmissionAnswers(payload, grantCode)`
 
 This ensures each grant submission matches the expected schema defined in GAS and prevents invalid data from being submitted.
+
+#### Grant Schema Updates
+
+In order to update a grant schema, visit:
+
+- https://fg-gas-backend.dev.cdp-int.defra.cloud/documentation#/
+
+Find the endpoint `GET /grants/{code}`, pass in the code, e.g. `frps-private-beta`, will return the grant.
+
+When changes have been made to the schema, use the endpoint `PUT /tmp/grants/{code}` to update the grant schema.
+
+In order to test if your schema change has worked, send through an application, and view the case tool, to see if your new data exists in the case:
+
+https://fg-cw-frontend.dev.cdp-int.defra.cloud/cases
+
+From here you can find the `caseId`, use the below swagger to query the `GET /cases/{caseId}`
+
+https://fg-cw-backend.dev.cdp-int.defra.cloud/documentation#/
 
 ### Production
 

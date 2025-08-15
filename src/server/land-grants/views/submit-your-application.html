@@ -2,6 +2,7 @@
 
 {% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
 {% from "govuk/components/summary-list/macro.njk" import govukSummaryList %}
+{% from "support-details/macro.njk" import defraSupportDetails %}
 
 {% block content %}
   <div class="govuk-grid-row">
@@ -10,36 +11,27 @@
         {% include "partials/preview-banner.html" %}
       {% endif %}
 
-     
-      <h1 class="govuk-heading-l">Submit your application</h1>
 
-      <p class="govuk-body">Your annual payment of £16,467.49 will be paid in quarterly instalments.</p>
+      <h1 class="govuk-heading-l">{{ pageTitle }}</h1>
+
+      <p class="govuk-body">By submitting your application you confirm that:</p>
       <ul class="govuk-list govuk-list--bullet">
-        <li>You’ll usually receive your first payment in the fourth month after your agreement’s start date.</li>
-        <li>The first 3 instalments will be paid by an automated BACS transfer.</li>
-        <li>You must submit an annual declaration (a simple tick box form) before you’re paid the fourth instalment.</li>
-      </ul>
-    
-      <p class="govuk-body">You confirm that:</p>
-      <ul class="govuk-list govuk-list--bullet">
-        <li>you’ll have management control of the land for the 3-year duration of the agreement</li>
-        <li>you’re entering into an agreement with the RPA and confirm you have read and accepted the terms and conditions</li>
+        <li>the information you have provided is correct to the best of your knowledge</li>
+        <li>you will follow the guidance on <a href="https://fcp-future-rps-93c8d625018a.herokuapp.com/not-testing" target="_blank">funding for land or farms</a> to complete your selected actions</li>
+        <li>you will carry out the actions for the duration set out in the guidance on <a href="https://fcp-future-rps-93c8d625018a.herokuapp.com/not-testing" target="_blank">funding for land or farms</a></li>
+        <li>you have read, understood and agree to the <a href="https://fcp-future-rps-93c8d625018a.herokuapp.com/not-testing" target="_blank">terms and conditions</a> for your selected actions</li>
       </ul>
 
-      <p class="govuk-body">By submitting this application you confirm that:</p>
-      <ul class="govuk-list govuk-list--bullet">
-        <li>the information you have given is correct</li>
-        <li>you'll complete the actions you have applied for</li>
-        <li>you'll have management control of the land parcels selected for the duration of the actions you have applied for</li>
-      </ul>
       <br>
       <form class="form" method="post">
         <input type="hidden" name="action" value="send">
         <input type="hidden" name="crumb" value="{{ crumb }}">
         <button data-prevent-double-click="true" class="govuk-button" data-module="govuk-button">
-          I agree - submit my application
+          Submit
         </button>
       </form>
+
+      {{ defraSupportDetails() }}
 
     </div>
   </div>
