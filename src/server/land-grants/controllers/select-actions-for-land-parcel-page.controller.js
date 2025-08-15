@@ -127,13 +127,10 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
       const newState = await this.buildNewState(state, selectedActionsQuantities, actionsObj)
 
       if (payload.action === 'validate') {
-        logger.info(payload, 'This is the payload')
-        logger.info(JSON.stringify(actionsObj))
-        logger.info(sheetId)
-        logger.info(parcelId)
+        logger.info(JSON.stringify({ newState, actionsObj, sheetId, parcelId }))
 
         const { errors, errorSummary } = await this.validatePayload(request, payload, actionsObj, sheetId, parcelId)
-        logger.info('errors', errors)
+        logger.info(errors)
 
         if (Object.keys(errors).length > 0) {
           return h.view(viewName, {
@@ -163,7 +160,7 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
     }
 
     if (Object.keys(actionsObj).length > 0) {
-      request.logger.info({ sheetId, parcelId, actionsObj }, 'before call to api validations')
+      logger.info({ sheetId, parcelId, actionsObj })
       const { valid, errorMessages = [] } = await triggerApiActionsValidation({
         sheetId,
         parcelId,
