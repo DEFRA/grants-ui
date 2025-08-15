@@ -7,6 +7,8 @@ import {
 } from '~/src/server/land-grants/services/land-grants.service.js'
 import { sbiStore } from '~/.server/server/sbi/state.js'
 
+import { logger } from '~/src/server/common/helpers/logging/log.js'
+
 const unitRatesForActions = {
   CMOR1: 100,
   UPL1: 200,
@@ -126,13 +128,13 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
       const newState = await this.buildNewState(state, selectedActionsQuantities, actionsObj)
 
       if (payload.action === 'validate') {
-        request.logger.info('payload', payload)
-        request.logger.info('actionsObj', actionsObj)
-        request.logger.info('sheetId', sheetId)
-        request.logger.info('parcelId', parcelId)
+        logger.info(payload, 'This is the payload')
+        logger.info(JSON.stringify(actionsObj))
+        logger.info(sheetId)
+        logger.info(parcelId)
 
         const { errors, errorSummary } = await this.validatePayload(request, payload, actionsObj, sheetId, parcelId)
-        request.logger.info('errors', errors)
+        logger.info('errors', errors)
 
         if (Object.keys(errors).length > 0) {
           return h.view(viewName, {
@@ -162,7 +164,7 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
     }
 
     if (Object.keys(actionsObj).length > 0) {
-      request.logger.info('before call to api validations', { sheetId, parcelId, actionsObj })
+      request.logger.info({ sheetId, parcelId, actionsObj }, 'before call to api validations')
       const { valid, errorMessages = [] } = await triggerApiActionsValidation({
         sheetId,
         parcelId,
