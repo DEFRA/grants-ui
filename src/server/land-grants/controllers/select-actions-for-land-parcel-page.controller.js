@@ -122,16 +122,18 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
       const { viewName } = this
       const payload = request.payload ?? {}
       const [sheetId, parcelId] = parseLandParcel(state.selectedLandParcel)
-
+      logger.info(
+        JSON.stringify({ sheetId, parcelId, selectedLandParcel: state.selectedLandParcel, area: this.availableActions })
+      )
       const { actionsObj, selectedActionsQuantities } = this.extractActionsDataFromPayload(payload)
       // Create an updated state with the new action data
       const newState = await this.buildNewState(state, selectedActionsQuantities, actionsObj)
 
       if (payload.action === 'validate') {
-        logger.info(JSON.stringify({ newState, actionsObj, sheetId, parcelId }))
+        // logger.info(JSON.stringify({ newState, actionsObj, sheetId, parcelId }))
 
         const { errors, errorSummary } = await this.validatePayload(request, payload, actionsObj, sheetId, parcelId)
-        logger.info(errors)
+        // logger.info(errors)
 
         if (Object.keys(errors).length > 0) {
           return h.view(viewName, {
