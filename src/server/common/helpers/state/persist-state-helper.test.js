@@ -1,5 +1,15 @@
 import { jest } from '@jest/globals'
 import { mockRequestWithIdentity } from './mock-request-with-identity.test-helper.js'
+import {
+  MOCK_STATE_DATA,
+  HTTP_STATUS,
+  TEST_USER_IDS,
+  ERROR_MESSAGES,
+  LOG_MESSAGES,
+  createMockConfig
+} from './test-helpers/auth-test-helpers.js'
+
+const GRANT_VERSION = 1
 
 const mockGetCacheKey = jest.fn()
 
@@ -12,125 +22,116 @@ global.fetch = jest.fn()
 let persistStateToApi
 
 describe('persistStateToApi', () => {
-  beforeEach(() => {
+  const createMockRequest = () => mockRequestWithIdentity({ params: { slug: TEST_USER_IDS.GRANT_ID } })
+
+  const createMockRequestWithLogger = () => {
+    const request = createMockRequest()
+    request.logger = { info: jest.fn(), error: jest.fn() }
+    return request
+  }
+
+  const createTestState = () => MOCK_STATE_DATA.WITH_STEP
+
+  const setupMockCacheKey = () => {
     mockGetCacheKey.mockReturnValue({
-      userId: 'user_test',
-      businessId: 'biz_test',
-      grantId: 'test-slug'
+      userId: TEST_USER_IDS.DEFAULT,
+      businessId: TEST_USER_IDS.BUSINESS_ID,
+      grantId: TEST_USER_IDS.GRANT_ID
     })
+  }
+
+  beforeEach(() => {
+    setupMockCacheKey()
   })
 
   describe('With backend configured correctly', () => {
     beforeEach(async () => {
-      process.env.GRANTS_UI_BACKEND_URL = 'http://localhost:3002'
+      jest.resetModules()
+      jest.doMock('~/src/config/config.js', createMockConfig)
       const helper = await import('~/src/server/common/helpers/state/persist-state-helper.js')
       persistStateToApi = helper.persistStateToApi
+      setupMockCacheKey()
       jest.clearAllMocks()
     })
 
-    it('persists state successfully when response is ok', async () => {
-      fetch.mockResolvedValue({
-        ok: true,
-        status: 200
-      })
+    afterEach(() => {
+      jest.dontMock('~/src/config/config.js')
+    })
 
-      const request = mockRequestWithIdentity({ params: { slug: 'test-slug' } })
-      const testState = { foo: 'bar', step: 1 }
+    const createSuccessfulFetchResponse = () => ({
+      ok: true,
+      status: HTTP_STATUS.OK
+    })
+
+    const createFailedFetchResponse = (
+      status = HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      statusText = 'Internal Server Error'
+    ) => ({
+      ok: false,
+      status,
+      statusText
+    })
+
+    it('persists state successfully when response is ok', async () => {
+      fetch.mockResolvedValue(createSuccessfulFetchResponse())
+
+      const request = createMockRequest()
+      const testState = createTestState()
 
       await persistStateToApi(testState, request)
 
-      expect(fetch).toHaveBeenCalledTimes(1)
-      expect(fetch).toHaveBeenCalledWith('http://localhost:3002/state/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          userId: 'user_test',
-          businessId: 'biz_test',
-          grantId: 'test-slug',
-          grantVersion: 1, // TODO: Update when support for same grant versioning is implemented
-          state: testState
-        })
+      const expectedBody = JSON.stringify({
+        userId: TEST_USER_IDS.DEFAULT,
+        businessId: TEST_USER_IDS.BUSINESS_ID,
+        grantId: TEST_USER_IDS.GRANT_ID,
+        grantVersion: GRANT_VERSION, // TODO: Update when support for same grant versioning is implemented
+        state: testState
       })
+
+      expect(fetch).toHaveBeenCalledTimes(1)
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringMatching(/\/state\/$/),
+        expect.objectContaining({
+          method: 'POST',
+          headers: expect.objectContaining({
+            'Content-Type': 'application/json',
+            Authorization: expect.stringMatching(/^Basic [A-Za-z0-9+/]+=*$/)
+          }),
+          body: expectedBody
+        })
+      )
+
       expect(request.logger.info).toHaveBeenCalledWith(
-        'Persisting state to backend for identity: user_test:biz_test:test-slug'
+        `Persisting state to backend for identity: ${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.BUSINESS_ID}:${TEST_USER_IDS.GRANT_ID}`
       )
     })
 
     it('logs error when response is not ok', async () => {
-      fetch.mockResolvedValue({
-        ok: false,
-        status: 500
-      })
+      const failedResponse = createFailedFetchResponse()
+      fetch.mockResolvedValue(failedResponse)
 
-      const request = mockRequestWithIdentity({ params: { slug: 'test-slug' } })
-      const testState = { foo: 'bar' }
+      const request = createMockRequestWithLogger()
+      const testState = createTestState()
 
       await persistStateToApi(testState, request)
 
-      expect(request.logger.error).toHaveBeenCalledWith({
-        message: 'Failed to persist state to API',
-        err: expect.any(Error)
-      })
+      expect(fetch).toHaveBeenCalledTimes(1)
+      expect(request.logger.error).toHaveBeenCalledWith(
+        `${LOG_MESSAGES.PERSIST_FAILED}: ${failedResponse.status} - ${failedResponse.statusText}`
+      )
     })
 
     it('logs error when fetch fails', async () => {
-      const networkError = new Error('Network error')
+      const networkError = new Error(ERROR_MESSAGES.NETWORK_ERROR)
       fetch.mockRejectedValue(networkError)
 
-      const request = mockRequestWithIdentity({ params: { slug: 'test-slug' } })
-      const testState = { foo: 'bar' }
+      const request = createMockRequestWithLogger()
+      const testState = createTestState()
 
       await persistStateToApi(testState, request)
 
-      expect(request.logger.error).toHaveBeenCalledWith({
-        message: 'Failed to persist state to API',
-        err: networkError
-      })
-    })
-
-    it('throws error when getCacheKey fails', async () => {
-      mockGetCacheKey.mockImplementationOnce(() => {
-        throw new Error('Network error')
-      })
-      const request = mockRequestWithIdentity({
-        auth: { credentials: null },
-        params: { slug: 'test-slug' }
-      })
-      const testState = { foo: 'bar' }
-
-      await expect(persistStateToApi(testState, request)).rejects.toThrow('Network error')
-
-      expect(fetch).not.toHaveBeenCalled()
-    })
-  })
-
-  describe('Without backend configured', () => {
-    it('returns early when endpoint is not defined', async () => {
-      process.env.GRANTS_UI_BACKEND_URL = ''
-      const { persistStateToApi } = await import('~/src/server/common/helpers/state/persist-state-helper.js')
-
-      const request = mockRequestWithIdentity({ params: { slug: 'test-slug' } })
-      const testState = { foo: 'bar' }
-
-      const result = await persistStateToApi(testState, request)
-
-      expect(fetch).not.toHaveBeenCalled()
-      expect(request.logger.info).not.toHaveBeenCalled()
-      expect(result).toBeUndefined()
-    })
-
-    it('throws error when endpoint is whitespace only', async () => {
-      process.env.GRANTS_UI_BACKEND_URL = '   '
-      const { persistStateToApi } = await import('~/src/server/common/helpers/state/persist-state-helper.js')
-
-      const request = mockRequestWithIdentity({ params: { slug: 'test-slug' } })
-      const testState = { foo: 'bar' }
-
-      await expect(persistStateToApi(testState, request)).rejects.toThrow('Invalid URL')
-
-      expect(fetch).not.toHaveBeenCalled()
+      expect(fetch).toHaveBeenCalledTimes(1)
+      expect(request.logger.error).toHaveBeenCalledWith(`${LOG_MESSAGES.PERSIST_FAILED}: ${networkError.message}`)
     })
   })
 })

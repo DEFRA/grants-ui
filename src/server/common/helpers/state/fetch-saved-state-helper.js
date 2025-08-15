@@ -2,6 +2,7 @@ import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import 'dotenv/config'
 import { config } from '~/src/config/config.js'
 import { getCacheKey } from './get-cache-key-helper.js'
+import { createApiHeaders } from './backend-auth-helper.js'
 
 const GRANTS_UI_BACKEND_ENDPOINT = config.get('session.cache.apiEndpoint')
 
@@ -20,9 +21,7 @@ export async function fetchSavedStateFromApi(request) {
 
     const response = await fetch(url.href, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json'
-      }
+      headers: createApiHeaders()
     })
 
     if (!response.ok) {
