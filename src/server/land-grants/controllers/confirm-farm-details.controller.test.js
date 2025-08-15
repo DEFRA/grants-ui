@@ -72,7 +72,7 @@ describe('ConfirmFarmDetailsController', () => {
       expect(result).toBe('redirected')
     })
 
-    test('should update state with sbi and farmer details and proceed', async () => {
+    test('should update state with sbi and applicant details and proceed', async () => {
       const handler = controller.makePostRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
 
@@ -80,7 +80,7 @@ describe('ConfirmFarmDetailsController', () => {
       expect(controller.setState).toHaveBeenCalledWith(
         mockRequest,
         expect.objectContaining({
-          farmer: {
+          applicant: {
             ...mockData
           },
           sbi: 'SBI123456'

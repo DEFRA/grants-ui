@@ -180,11 +180,11 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
       const sbi = sbiStore.get('sbi')
 
       if (sbi) {
-        const farmer = await fetchBusinessAndCustomerInformation(sbi, ConfirmFarmDetailsController.CUSTOMER_ID)
+        const applicant = await fetchBusinessAndCustomerInformation(sbi, ConfirmFarmDetailsController.CUSTOMER_ID)
         await this.setState(request, {
           ...state,
           sbi,
-          farmer
+          applicant
         })
       }
 

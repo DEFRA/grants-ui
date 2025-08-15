@@ -52,12 +52,7 @@
     "ActionApplication": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "parcelId",
-        "sheetId",
-        "code",
-        "appliedFor"
-      ],
+      "required": ["parcelId", "sheetId", "code", "appliedFor"],
       "properties": {
         "parcelId": {
           "type": "string",
@@ -76,23 +71,12 @@
         "appliedFor": {
           "type": "object",
           "additionalProperties": false,
-          "required": [
-            "unit",
-            "quantity"
-          ],
+          "required": ["unit", "quantity"],
           "properties": {
             "unit": {
               "type": "string",
               "title": "Unit of measurement",
-              "enum": [
-                "kg",
-                "m",
-                "100m",
-                "count",
-                "ha",
-                "m2",
-                "sqm"
-              ]
+              "enum": ["kg", "m", "100m", "count", "ha", "m2", "sqm"]
             },
             "quantity": {
               "type": "number",
@@ -118,11 +102,7 @@
         },
         "frequency": {
           "type": "string",
-          "enum": [
-            "Quarterly",
-            "Monthly",
-            "Annually"
-          ],
+          "enum": ["Quarterly", "Monthly", "Annually"],
           "description": "Payment frequency"
         },
         "agreementTotalPence": {
@@ -224,12 +204,7 @@
                   "description": "Annual payment for this item in pence"
                 }
               },
-              "required": [
-                "code",
-                "description",
-                "version",
-                "annualPaymentPence"
-              ]
+              "required": ["code", "description", "version", "annualPaymentPence"]
             }
           },
           "additionalProperties": false
@@ -272,18 +247,12 @@
                       "description": "Payment amount in pence"
                     }
                   },
-                  "required": [
-                    "paymentPence"
-                  ],
+                  "required": ["paymentPence"],
                   "additionalProperties": false
                 }
               }
             },
-            "required": [
-              "totalPaymentPence",
-              "paymentDate",
-              "lineItems"
-            ]
+            "required": ["totalPaymentPence", "paymentDate", "lineItems"]
           }
         }
       },
@@ -319,9 +288,7 @@
                   "description": "Business email address"
                 }
               },
-              "required": [
-                "address"
-              ]
+              "required": ["address"]
             },
             "phone": {
               "type": "object",
@@ -332,9 +299,7 @@
                   "description": "Mobile phone number"
                 }
               },
-              "required": [
-                "mobile"
-              ]
+              "required": ["mobile"]
             },
             "address": {
               "type": "object",
@@ -349,24 +314,15 @@
                   "description": "Address line 2"
                 },
                 "line3": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
+                  "type": ["string", "null"],
                   "description": "Address line 3"
                 },
                 "line4": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
+                  "type": ["string", "null"],
                   "description": "Address line 4"
                 },
                 "line5": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
+                  "type": ["string", "null"],
                   "description": "Address line 5"
                 },
                 "street": {
@@ -383,21 +339,10 @@
                   "description": "UK postal code"
                 }
               },
-              "required": [
-                "line1",
-                "line2",
-                "street",
-                "city",
-                "postalCode"
-              ]
+              "required": ["line1", "line2", "street", "city", "postalCode"]
             }
           },
-          "required": [
-            "name",
-            "email",
-            "phone",
-            "address"
-          ]
+          "required": ["name", "email", "phone", "address"]
         },
         "customer": {
           "type": "object",
@@ -424,22 +369,13 @@
                   "description": "Last name"
                 }
               },
-              "required": [
-                "title",
-                "first",
-                "last"
-              ]
+              "required": ["title", "first", "last"]
             }
           },
-          "required": [
-            "name"
-          ]
+          "required": ["name"]
         }
       },
-      "required": [
-        "business",
-        "customer"
-      ]
+      "required": ["business", "customer"]
     }
   }
 }
