@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url'
 import defraId from './defra-id.js'
 import landGrants from './land-grants.js'
 import agreements from './agreements.js'
+import { validateBackendAuthConfig } from './validate-backend-auth.js'
 
 const dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -329,6 +330,8 @@ export const config = convict({
 })
 
 config.validate({ allowed: 'strict' })
+
+validateBackendAuthConfig(config)
 
 /**
  * @import { Schema, SchemaObj } from 'convict'

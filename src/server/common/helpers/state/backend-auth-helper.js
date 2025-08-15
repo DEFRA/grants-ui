@@ -13,11 +13,6 @@ const ENCODING = {
 const CONTENT_TYPE_JSON = 'application/json'
 const AUTH_SCHEME = 'Basic'
 
-const ERROR_MESSAGES = {
-  ENCRYPTION_KEY_NOT_CONFIGURED: 'Encryption key not configured',
-  ENCRYPTION_KEY_REQUIRED: 'Encryption key is required for secure token transmission'
-}
-
 const GRANTS_UI_BACKEND_AUTH_TOKEN = config.get('session.cache.authToken')
 const ENCRYPTION_KEY = config.get('session.cache.encryptionKey')
 
@@ -27,10 +22,6 @@ const ENCRYPTION_KEY = config.get('session.cache.encryptionKey')
  * @returns {string} Encrypted token in format: iv:authTag:encryptedData (base64)
  */
 export function encryptToken(token) {
-  if (!ENCRYPTION_KEY) {
-    throw new Error(ERROR_MESSAGES.ENCRYPTION_KEY_NOT_CONFIGURED)
-  }
-
   const iv = crypto.randomBytes(IV_LENGTH_BYTES)
   const key = crypto.scryptSync(ENCRYPTION_KEY, SCRYPT_SALT, KEY_LENGTH_BYTES)
   const cipher = crypto.createCipheriv(CIPHER_ALGORITHM, key, iv)
@@ -52,9 +43,6 @@ export function createAuthenticatedHeaders(baseHeaders = {}) {
   const headers = { ...baseHeaders }
 
   if (GRANTS_UI_BACKEND_AUTH_TOKEN) {
-    if (!ENCRYPTION_KEY) {
-      throw new Error(ERROR_MESSAGES.ENCRYPTION_KEY_REQUIRED)
-    }
     const encryptedToken = encryptToken(GRANTS_UI_BACKEND_AUTH_TOKEN)
     const authCredentials = Buffer.from(`:${encryptedToken}`).toString(ENCODING.BASE64)
     headers.Authorization = `${AUTH_SCHEME} ${authCredentials}`

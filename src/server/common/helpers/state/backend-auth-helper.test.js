@@ -216,52 +216,5 @@ describe('Backend Auth Helper', () => {
 
       expect(tokenPart).toMatch(/^[A-Za-z0-9+/]+=*:[A-Za-z0-9+/]+=*:[A-Za-z0-9+/]+=*$/)
     })
-
-    it('should throw error when no encryption key is configured', async () => {
-      const configValues = {
-        [CONFIG_SESSION_CACHE_AUTH_TOKEN]: MOCK_TOKENS.DEFAULT,
-        [CONFIG_SESSION_CACHE_ENCRYPTION_KEY]: ''
-      }
-
-      mockConfig.get.mockImplementation((key) => configValues[key] || null)
-
-      const { createAuthenticatedHeaders } = await importBackendAuthHelper()
-
-      expect(() => {
-        createAuthenticatedHeaders(HEADER_OBJECTS.CONTENT_TYPE_JSON)
-      }).toThrow('Encryption key is required for secure token transmission')
-    })
-
-    it('should throw error when encryption key is null', async () => {
-      const configValues = {
-        [CONFIG_SESSION_CACHE_AUTH_TOKEN]: MOCK_TOKENS.DEFAULT,
-        [CONFIG_SESSION_CACHE_ENCRYPTION_KEY]: null
-      }
-
-      mockConfig.get.mockImplementation((key) => configValues[key] || null)
-
-      const { createAuthenticatedHeaders } = await importBackendAuthHelper()
-
-      expect(() => {
-        createAuthenticatedHeaders(HEADER_OBJECTS.CONTENT_TYPE_JSON)
-      }).toThrow('Encryption key is required for secure token transmission')
-    })
-
-    it('should throw error when encryptToken is called without encryption key', async () => {
-      jest.resetModules()
-
-      const configValues = {
-        [CONFIG_SESSION_CACHE_AUTH_TOKEN]: MOCK_TOKENS.DEFAULT,
-        [CONFIG_SESSION_CACHE_ENCRYPTION_KEY]: null
-      }
-
-      mockConfig.get.mockImplementation((key) => configValues[key] || null)
-
-      const { encryptToken } = await importBackendAuthHelper()
-
-      expect(() => {
-        encryptToken(MOCK_TOKENS.DEFAULT)
-      }).toThrow('Encryption key not configured')
-    })
   })
 })
