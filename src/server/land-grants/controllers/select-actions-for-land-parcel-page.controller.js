@@ -26,26 +26,29 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
    * @param {object} payload - The form payload
    * @returns {object} - Extracted action data
    */
-  extractActionsDataFromPayload(payload) {
+  buildActionsObject(payload) {
     const actionsObj = {}
     const { landAction } = payload
 
     const actionInfo = this.availableActions.find((a) => a.code === landAction)
 
-    logger.info(JSON.stringify({ landAction, actionInfo, availableActions: this.availableActions }))
+    logger.info(
+      JSON.stringify({
+        from: 'extractActionsDataFromPayload',
+        landAction,
+        actionInfo,
+        availableActions: this.availableActions
+      })
+    )
     if (!actionInfo) {
       return {}
     }
 
-    const result = {
+    actionsObj[landAction] = {
       description: actionInfo.description,
       value: actionInfo?.availableArea?.value ?? '',
       unit: actionInfo?.availableArea?.unit ?? '',
       annualPaymentPence: unitRatesForActions[landAction]
-    }
-
-    if (Object.keys(result).length > 0) {
-      actionsObj[landAction] = result
     }
 
     return { actionsObj }
@@ -123,25 +126,23 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
       logger.info(
         JSON.stringify({ sheetId, parcelId, selectedLandParcel: state.selectedLandParcel, area: this.availableActions })
       )
-      const { actionsObj, selectedActionsQuantities } = this.extractActionsDataFromPayload(payload)
+
+      const { actionsObj } = this.buildActionsObject(payload)
       // Create an updated state with the new action data
-      const newState = await this.buildNewState(state, selectedActionsQuantities, actionsObj)
 
-      if (payload.action === 'validate') {
-        // logger.info(JSON.stringify({ newState, actionsObj, sheetId, parcelId }))
+      const newState = await this.createNewState(state, actionsObj)
 
-        const { errors, errorSummary } = await this.validatePayload(request, payload, actionsObj, sheetId, parcelId)
-        // logger.info(errors)
+      // Validate the payload and update the state if there are errors
+      const { errors, errorSummary } = await this.validatePayload(request, payload, actionsObj, sheetId, parcelId)
 
-        if (Object.keys(errors).length > 0) {
-          return h.view(viewName, {
-            ...this.getViewModel(request, context),
-            ...newState,
-            parcelName: `${sheetId} ${parcelId}`,
-            errorSummary,
-            errors
-          })
-        }
+      if (Object.keys(errors).length > 0) {
+        return h.view(viewName, {
+          ...this.getViewModel(request, context),
+          ...newState,
+          parcelName: `${sheetId} ${parcelId}`,
+          errorSummary,
+          errors
+        })
       }
 
       await this.setState(request, newState)
@@ -185,7 +186,7 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
     return { errors, errorSummary }
   }
 
-  buildNewState = async (state, selectedActionsQuantities, actionsObj) => {
+  createNewState = async (state, actionsObj) => {
     // Add the current actions to the land parcels object
     const updatedLandParcels = {
       ...state.landParcels, // Spread existing land parcels
@@ -223,7 +224,6 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
     return {
       ...state,
       payment: paymentDetails.payment,
-      selectedActionsQuantities,
       draftApplicationAnnualTotalPence,
       landParcels: updatedLandParcels
     }
