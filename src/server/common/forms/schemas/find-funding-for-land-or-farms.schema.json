@@ -1,61 +1,445 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "FRPS Land Grants Schema",
   "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "scheme",
+    "year",
+    "hasCheckedLandIsUpToDate",
+    "actionApplications",
+    "agreementName",
+    "payment",
+    "applicant"
+  ],
   "properties": {
     "scheme": {
       "type": "string",
-      "description": "The funding scheme identifier"
+      "title": "Defra scheme name"
     },
     "year": {
       "type": "integer",
-      "description": "The year of the grant period"
+      "title": "Scheme year"
     },
     "agreementName": {
       "type": "string",
-      "description": "The name of the agreement"
+      "title": "Applicant provided name of the agreement",
+      "minLength": 1
     },
     "hasCheckedLandIsUpToDate": {
       "type": "boolean",
-      "description": "Indicates whether the land information has been verified as up to date"
+      "title": "Has the applicant checked that their land data is up to date?"
     },
     "actionApplications": {
       "type": "array",
-      "description": "List of actions applied for under this submission",
+      "title": "Details of the actions applied for",
+      "minItems": 1,
       "items": {
-        "type": "object",
-        "properties": {
-          "parcelId": {
-            "type": "string",
-            "description": "The identifier for the land parcel"
-          },
-          "sheetId": {
-            "type": "string",
-            "description": "The sheet identifier for the land parcel"
-          },
-          "code": {
-            "type": "string",
-            "description": "The code identifying the type of action"
-          },
-          "appliedFor": {
-            "type": "object",
-            "description": "Details of the application quantity",
-            "properties": {
-              "unit": {
-                "type": "string",
-                "description": "The unit of measurement (e.g., hectares, sqm)"
-              },
-              "quantity": {
-                "type": "number",
-                "description": "The quantity applied for in the specified unit"
-              }
-            },
-            "required": ["unit", "quantity"]
-          }
-        },
-        "required": ["parcelId", "sheetId", "code", "appliedFor"]
+        "$ref": "#/$defs/ActionApplication"
       }
+    },
+    "payment": {
+      "type": "object",
+      "title": "The payment schedule calculated for the grant",
+      "$ref": "#/$defs/Payment"
+    },
+    "applicant": {
+      "type": "object",
+      "title": "Applicant information including business and customer details",
+      "$ref": "#/$defs/Applicant"
     }
   },
-  "required": ["scheme", "year", "agreementName", "hasCheckedLandIsUpToDate", "actionApplications"]
+  "$defs": {
+    "ActionApplication": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "parcelId",
+        "sheetId",
+        "code",
+        "appliedFor"
+      ],
+      "properties": {
+        "parcelId": {
+          "type": "string",
+          "title": "Land parcel ID, unique within a OS Sheet ID",
+          "pattern": "^\\d+$"
+        },
+        "sheetId": {
+          "type": "string",
+          "title": "OS Sheet ID",
+          "pattern": "[A-Z]{2}[0-9]{4}"
+        },
+        "code": {
+          "type": "string",
+          "title": "Code for the action to be taken on the land parcel"
+        },
+        "appliedFor": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "unit",
+            "quantity"
+          ],
+          "properties": {
+            "unit": {
+              "type": "string",
+              "title": "Unit of measurement",
+              "enum": [
+                "kg",
+                "m",
+                "100m",
+                "count",
+                "ha",
+                "m2",
+                "sqm"
+              ]
+            },
+            "quantity": {
+              "type": "number",
+              "title": "Quantity of units applied for"
+            }
+          }
+        }
+      }
+    },
+    "Payment": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "agreementStartDate": {
+          "type": "string",
+          "format": "date",
+          "description": "Agreement start date in YYYY-MM-DD format"
+        },
+        "agreementEndDate": {
+          "type": "string",
+          "format": "date",
+          "description": "Agreement end date in YYYY-MM-DD format"
+        },
+        "frequency": {
+          "type": "string",
+          "enum": [
+            "Quarterly",
+            "Monthly",
+            "Annually"
+          ],
+          "description": "Payment frequency"
+        },
+        "agreementTotalPence": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total agreement amount in pence"
+        },
+        "annualTotalPence": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Annual total amount in pence"
+        },
+        "parcelItems": {
+          "type": "object",
+          "description": "Parcel-specific payment items",
+          "patternProperties": {
+            "^[0-9]+$": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string",
+                  "description": "Action code"
+                },
+                "description": {
+                  "type": "string",
+                  "description": "Action description"
+                },
+                "version": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "Action version number"
+                },
+                "unit": {
+                  "type": "string",
+                  "description": "Unit of measurement"
+                },
+                "quantity": {
+                  "type": "number",
+                  "minimum": 0,
+                  "description": "Quantity in specified units"
+                },
+                "rateInPence": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Rate per unit in pence"
+                },
+                "annualPaymentPence": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Annual payment for this item in pence"
+                },
+                "sheetId": {
+                  "type": "string",
+                  "description": "Sheet identifier"
+                },
+                "parcelId": {
+                  "type": "string",
+                  "description": "Parcel identifier"
+                }
+              },
+              "required": [
+                "code",
+                "description",
+                "version",
+                "unit",
+                "quantity",
+                "rateInPence",
+                "annualPaymentPence",
+                "sheetId",
+                "parcelId"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "agreementLevelItems": {
+          "type": "object",
+          "description": "Agreement-level payment items",
+          "patternProperties": {
+            "^[0-9]+$": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string",
+                  "description": "Action code"
+                },
+                "description": {
+                  "type": "string",
+                  "description": "Action description"
+                },
+                "version": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "Action version number"
+                },
+                "annualPaymentPence": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Annual payment for this item in pence"
+                }
+              },
+              "required": [
+                "code",
+                "description",
+                "version",
+                "annualPaymentPence"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "payments": {
+          "type": "array",
+          "description": "Array of payment schedules",
+          "items": {
+            "type": "object",
+            "properties": {
+              "totalPaymentPence": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Total payment amount for this period in pence"
+              },
+              "paymentDate": {
+                "type": "string",
+                "format": "date",
+                "description": "Payment date in YYYY-MM-DD format"
+              },
+              "lineItems": {
+                "type": "array",
+                "description": "Individual line items for this payment",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "parcelItemId": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "description": "Reference to parcel item"
+                    },
+                    "agreementLevelItemId": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "description": "Reference to agreement level item"
+                    },
+                    "paymentPence": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "Payment amount in pence"
+                    }
+                  },
+                  "required": [
+                    "paymentPence"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "totalPaymentPence",
+              "paymentDate",
+              "lineItems"
+            ]
+          }
+        }
+      },
+      "required": [
+        "agreementStartDate",
+        "agreementEndDate",
+        "frequency",
+        "agreementTotalPence",
+        "annualTotalPence",
+        "parcelItems",
+        "agreementLevelItems",
+        "payments"
+      ]
+    },
+    "Applicant": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "business": {
+          "type": "object",
+          "description": "Business information for the applicant",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Business name"
+            },
+            "email": {
+              "type": "object",
+              "properties": {
+                "address": {
+                  "type": "string",
+                  "format": "email",
+                  "description": "Business email address"
+                }
+              },
+              "required": [
+                "address"
+              ]
+            },
+            "phone": {
+              "type": "object",
+              "properties": {
+                "mobile": {
+                  "type": "string",
+                  "pattern": "^[0-9]+$",
+                  "description": "Mobile phone number"
+                }
+              },
+              "required": [
+                "mobile"
+              ]
+            },
+            "address": {
+              "type": "object",
+              "description": "Business address information",
+              "properties": {
+                "line1": {
+                  "type": "string",
+                  "description": "Address line 1"
+                },
+                "line2": {
+                  "type": "string",
+                  "description": "Address line 2"
+                },
+                "line3": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Address line 3"
+                },
+                "line4": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Address line 4"
+                },
+                "line5": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Address line 5"
+                },
+                "street": {
+                  "type": "string",
+                  "description": "Street name"
+                },
+                "city": {
+                  "type": "string",
+                  "description": "City name"
+                },
+                "postalCode": {
+                  "type": "string",
+                  "pattern": "^[A-Z]{1,2}[0-9][A-Z0-9]? ?[0-9][A-Z]{2}$",
+                  "description": "UK postal code"
+                }
+              },
+              "required": [
+                "line1",
+                "line2",
+                "street",
+                "city",
+                "postalCode"
+              ]
+            }
+          },
+          "required": [
+            "name",
+            "email",
+            "phone",
+            "address"
+          ]
+        },
+        "customer": {
+          "type": "object",
+          "description": "Customer/individual information",
+          "properties": {
+            "name": {
+              "type": "object",
+              "description": "Customer name details",
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "description": "Name title (e.g., Mr., Mrs., Dr.)"
+                },
+                "first": {
+                  "type": "string",
+                  "description": "First name"
+                },
+                "middle": {
+                  "type": "string",
+                  "description": "Middle name"
+                },
+                "last": {
+                  "type": "string",
+                  "description": "Last name"
+                }
+              },
+              "required": [
+                "title",
+                "first",
+                "last"
+              ]
+            }
+          },
+          "required": [
+            "name"
+          ]
+        }
+      },
+      "required": [
+        "business",
+        "customer"
+      ]
+    }
+  }
 }
