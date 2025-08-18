@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url'
 import defraId from './defra-id.js'
 import landGrants from './land-grants.js'
 import agreements from './agreements.js'
+import { validateBackendAuthConfig } from './validate-backend-auth.js'
 
 const dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -226,6 +227,20 @@ export const config = convict({
         format: String,
         default: '',
         env: 'GRANTS_UI_BACKEND_URL'
+      },
+      authToken: {
+        doc: 'Bearer token for authenticating with Grants UI Backend',
+        format: String,
+        default: '',
+        env: 'GRANTS_UI_BACKEND_AUTH_TOKEN',
+        sensitive: true
+      },
+      encryptionKey: {
+        doc: 'Encryption key for securing bearer token transmission',
+        format: String,
+        default: '',
+        env: 'GRANTS_UI_BACKEND_ENCRYPTION_KEY',
+        sensitive: true
       }
     },
     cookie: {
@@ -315,6 +330,8 @@ export const config = convict({
 })
 
 config.validate({ allowed: 'strict' })
+
+validateBackendAuthConfig(config)
 
 /**
  * @import { Schema, SchemaObj } from 'convict'

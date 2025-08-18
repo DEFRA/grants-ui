@@ -98,6 +98,13 @@ export function stateToLandGrantsGasAnswers(state) {
     actionApplications: []
   }
 
+  if (state.payment) {
+    result.payment = state.payment
+  }
+  if (state.applicant) {
+    result.applicant = state.applicant
+  }
+
   if (!landParcels || Object.keys(landParcels).length === 0) {
     return result
   }
