@@ -95,9 +95,14 @@ export function stateToLandGrantsGasAnswers(state) {
     agreementName: 'NO_LONGER_REQUIRED',
     scheme: 'SFI',
     year: 2025,
-    actionApplications: [],
-    payment: state.payment ? { ...state.payment, explanations: undefined } : undefined,
-    applicant: state.applicant || undefined
+    actionApplications: []
+  }
+
+  if (state.payment) {
+    result.payment = state.payment
+  }
+  if (state.applicant) {
+    result.applicant = state.applicant
   }
 
   if (!landParcels || Object.keys(landParcels).length === 0) {
