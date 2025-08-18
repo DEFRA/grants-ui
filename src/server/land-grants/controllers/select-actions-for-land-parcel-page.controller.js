@@ -232,6 +232,7 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
 
     return {
       ...state,
+      payment: paymentDetails.payment,
       selectedActionsQuantities,
       draftApplicationAnnualTotalPence,
       landParcels: updatedLandParcels
