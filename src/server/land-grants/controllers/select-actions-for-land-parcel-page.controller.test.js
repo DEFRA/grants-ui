@@ -202,6 +202,24 @@ describe('SelectActionsForLandParcelPageController', () => {
   })
 
   describe('GET route handler', () => {
+    test('should parse valid land parcel with both sheetId and parcelId', async () => {
+      // Mock parseLandParcel to return both values
+      parseLandParcel.mockReturnValue(['sheet1', 'parcel1'])
+
+      mockContext.state.selectedLandParcel = 'sheet1-parcel1'
+
+      const handler = controller.makeGetRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(parseLandParcel).toHaveBeenCalledWith('sheet1-parcel1')
+
+      // Verify fetchAvailableActionsForParcel was called with correct parsed values
+      expect(fetchAvailableActionsForParcel).toHaveBeenCalledWith({
+        parcelId: 'parcel1',
+        sheetId: 'sheet1'
+      })
+    })
+
     test('should get available actions and render view with correct data', async () => {
       fetchAvailableActionsForParcel.mockResolvedValue({
         actions: availableActions
@@ -365,6 +383,11 @@ describe('SelectActionsForLandParcelPageController', () => {
       }
 
       calculateGrantPayment.mockResolvedValue(paymentDetails)
+
+      // Mock fetchAvailableActionsForParcel to return available actions
+      fetchAvailableActionsForParcel.mockResolvedValue({
+        actions: availableActions
+      })
 
       const handler = controller.makePostRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
@@ -599,6 +622,11 @@ describe('SelectActionsForLandParcelPageController', () => {
         action: 'validate'
       }
 
+      // Mock fetchAvailableActionsForParcel to return available actions
+      fetchAvailableActionsForParcel.mockResolvedValue({
+        actions: availableActions
+      })
+
       triggerApiActionsValidation.mockResolvedValue({
         valid: true,
         errorMessages: []
@@ -643,6 +671,166 @@ describe('SelectActionsForLandParcelPageController', () => {
       })
 
       expect(controller.proceed).toHaveBeenCalled()
+    })
+
+    describe('fetching available actions', () => {
+      test('should get available actions and render view with correct data', async () => {
+        mockRequest.payload = {
+          landAction: 'CMOR1',
+          action: 'validate'
+        }
+
+        // Mock the calculateGrantPayment function
+        const paymentDetails = {
+          payment: {
+            annualTotalPence: 100,
+            parcelItems: [
+              {
+                sheetId: 'sheet1',
+                parcelId: 'parcel1',
+                code: 'CMOR1',
+                annualPaymentPence: 50
+              }
+            ]
+          },
+          paymentTotal: '£1.00'
+        }
+
+        calculateGrantPayment.mockResolvedValue(paymentDetails)
+
+        fetchAvailableActionsForParcel.mockResolvedValue({
+          actions: availableActions
+        })
+
+        mockContext.state.landAction = 'CMOR1'
+        if (!mockContext.state.landParcels) {
+          mockContext.state.landParcels = {}
+        }
+        mockContext.state.landParcels['sheet1-parcel1'] = {
+          actionsObj: {
+            CMOR1: {
+              description: 'CMOR1: Assess moorland and produce a written record',
+              value: 10,
+              unit: 'ha'
+            }
+          }
+        }
+
+        const handler = controller.makePostRouteHandler()
+        const result = await handler(mockRequest, mockContext, mockH)
+
+        expect(fetchAvailableActionsForParcel).toHaveBeenCalledWith({
+          parcelId: 'parcel1',
+          sheetId: 'sheet1'
+        })
+        expect(controller.setState).toHaveBeenCalledWith(
+          mockRequest,
+          expect.objectContaining({
+            selectedLandParcel: 'sheet1-parcel1',
+            payment: paymentDetails.payment,
+            draftApplicationAnnualTotalPence: 100,
+            landParcels: {
+              'sheet1-parcel1': {
+                actionsObj: {
+                  CMOR1: {
+                    description: 'CMOR1: Assess moorland and produce a written record',
+                    unit: 'ha',
+                    value: 10,
+                    annualPaymentPence: 50 // Updated by the payment API response
+                  }
+                }
+              }
+            }
+          })
+        )
+
+        expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-path')
+
+        expect(result).toBe('redirected')
+      })
+
+      test('should handle fetch errors gracefully', async () => {
+        mockRequest.payload = {
+          landAction: '', // Empty string has length 0
+          action: 'validate' // This is required to trigger validation
+        }
+
+        fetchAvailableActionsForParcel.mockRejectedValue(new Error('API error'))
+
+        // Mock the calculateGrantPayment function to return default values
+        calculateGrantPayment.mockResolvedValue({
+          payment: {
+            annualTotalPence: 0,
+            parcelItems: []
+          }
+        })
+
+        // Mock triggerApiActionsValidation (won't be called since actionsObj is empty)
+        triggerApiActionsValidation.mockResolvedValue({
+          valid: true,
+          errorMessages: []
+        })
+
+        const handler = controller.makePostRouteHandler()
+        await handler(mockRequest, mockContext, mockH)
+
+        // Verify that fetchAvailableActionsForParcel was called
+        expect(fetchAvailableActionsForParcel).toHaveBeenCalledWith({
+          parcelId: 'parcel1',
+          sheetId: 'sheet1'
+        })
+
+        // Verify that h.view was called with error information
+        expect(mockH.view).toHaveBeenCalledWith(
+          'select-actions-for-land-parcel',
+          expect.objectContaining({
+            availableActions: [], // Empty because mock returns empty actions
+            parcelName: 'sheet1 parcel1',
+            errorSummary: [
+              {
+                text: 'Please select one action',
+                href: '#landAction'
+              }
+            ],
+            errors: {
+              landAction: {
+                text: 'Please select one action'
+              }
+            }
+          })
+        )
+
+        expect(mockRequest.logger.error).toHaveBeenCalled()
+
+        const result = await handler(mockRequest, mockContext, mockH)
+
+        // Verify that proceed was NOT called due to validation errors
+        expect(controller.proceed).not.toHaveBeenCalled()
+        expect(result).toBe('rendered view')
+      })
+
+      test('should log error when no actions found', async () => {
+        fetchAvailableActionsForParcel.mockResolvedValue({
+          parcel: {
+            actions: []
+          }
+        })
+
+        const handler = controller.makePostRouteHandler()
+        await handler(mockRequest, mockContext, mockH)
+
+        expect(mockRequest.logger.error).toHaveBeenCalledWith({
+          selectedLandParcel: 'sheet1-parcel1',
+          message: 'No actions found for parcel sheet1-parcel1'
+        })
+
+        expect(controller.availableActions).toEqual([])
+
+        expect(mockRequest.logger.error).toHaveBeenCalledWith({
+          message: `No actions found for parcel sheet1-parcel1`,
+          selectedLandParcel: 'sheet1-parcel1'
+        })
+      })
     })
   })
 })
