@@ -1,9 +1,9 @@
 import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
 import { existsSync } from 'fs'
 import { join } from 'path'
-import CheckDetailsPageController from '~/src/server/check-details/check-details.controller.js'
+import CheckResponsesPageController from '~/src/server/check-responses/check-responses.controller.js'
 
-describe('CheckDetailsPageController', () => {
+describe('CheckResponsesPageController', () => {
   let controller
   let mockModel
   let mockPageDef
@@ -13,10 +13,10 @@ describe('CheckDetailsPageController', () => {
       basePath: '/test-form'
     }
     mockPageDef = {
-      path: '/check-details',
-      title: 'Check your details'
+      path: '/check-answers',
+      title: 'Check your answers'
     }
-    controller = new CheckDetailsPageController(mockModel, mockPageDef)
+    controller = new CheckResponsesPageController(mockModel, mockPageDef)
   })
 
   describe('constructor', () => {
@@ -24,8 +24,8 @@ describe('CheckDetailsPageController', () => {
       expect(controller).toBeInstanceOf(SummaryPageController)
     })
 
-    it('should set viewName to check-details-page', () => {
-      expect(controller.viewName).toBe('check-details-page')
+    it('should set viewName to check-responses-page', () => {
+      expect(controller.viewName).toBe('check-responses-page')
     })
   })
 
@@ -82,7 +82,7 @@ describe('CheckDetailsPageController', () => {
   describe('integration with SummaryPageController', () => {
     it('should properly set up the controller instance', () => {
       expect(controller).toBeDefined()
-      expect(controller.viewName).toBe('check-details-page')
+      expect(controller.viewName).toBe('check-responses-page')
       expect(controller).toHaveProperty('makePostRouteHandler')
     })
 
@@ -96,15 +96,15 @@ describe('CheckDetailsPageController', () => {
   describe('view file existence', () => {
     it('should reference a view file that actually exists', () => {
       const viewPath = controller.viewName
-      expect(viewPath).toBe('check-details-page')
+      expect(viewPath).toBe('check-responses-page')
 
       // Check that the view file exists at the expected location
-      const absoluteViewPath = join(process.cwd(), 'src/server/check-details/views', `${viewPath}.html`)
+      const absoluteViewPath = join(process.cwd(), 'src/server/check-responses/views', `${viewPath}.html`)
       expect(existsSync(absoluteViewPath)).toBe(true)
     })
 
     it('should have view file in the feature-based location', () => {
-      const featureViewPath = join(process.cwd(), 'src/server/check-details/views/check-details-page.html')
+      const featureViewPath = join(process.cwd(), 'src/server/check-responses/views/check-responses-page.html')
       expect(existsSync(featureViewPath)).toBe(true)
     })
   })
