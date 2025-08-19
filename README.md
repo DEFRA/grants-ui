@@ -210,6 +210,7 @@ These are required only if DEFRA ID authentication is enabled:
 
 | Variable                         | Description                                                                              |
 | -------------------------------- | ---------------------------------------------------------------------------------------- |
+| `DEFRA_ID_ENABLED`               | Feature flag to enable DEFRA ID (disable locally to run without using the stub).         |
 | `DEFRA_ID_WELL_KNOWN_URL`        | The OIDC discovery URL used by DEFRA ID (must be reachable at startup).                  |
 | `DEFRA_ID_CLIENT_ID`             | Provided by DEFRA ID — used to identify the app.                                         |
 | `DEFRA_ID_CLIENT_SECRET`         | Secret from DEFRA ID — **must be kept confidential**.                                    |
