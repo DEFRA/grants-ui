@@ -54,7 +54,7 @@ pages:
     id: 5a1535ca-0c2a-4d34-80d7-385f17dfbf5e
   - title: Confirmation
     path: /confirmation
-    controller: ConfirmationPageController
+    controller: LandGrantsConfirmationController
     next: []
     id: 59ff2511-0145-4a7f-8dee-b7104a235dea
 lists: []

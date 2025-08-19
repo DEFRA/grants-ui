@@ -31,6 +31,7 @@ import DeclarationPageController from '~/src/server/declaration/declaration.cont
 import CheckAnswersPageController from '~/src/server/land-grants/controllers/check-answers-page.controller.js'
 import ConfirmFarmDetailsController from '~/src/server/land-grants/controllers/confirm-farm-details.controller.js'
 import LandActionsCheckPageController from '~/src/server/land-grants/controllers/land-actions-check-page.controller.js'
+import LandGrantsConfirmationController from '~/src/server/land-grants/controllers/land-grants-confirmation-controller.js'
 import SelectActionsForLandParcelPageController from '~/src/server/land-grants/controllers/select-actions-for-land-parcel-page.controller.js'
 import LandParcelPageController from '~/src/server/land-grants/controllers/land-parcel-page.controller.js'
 import SubmissionPageController from '~/src/server/land-grants/controllers/submission-page.controller.js'
@@ -155,7 +156,8 @@ const registerFormsPlugin = async (server, prefix = '') => {
         SectionEndController,
         FlyingPigsSubmissionPageController,
         PotentialFundingController,
-        SummaryPageController
+        SummaryPageController,
+        LandGrantsConfirmationController
       }
     }
   })
