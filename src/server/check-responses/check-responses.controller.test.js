@@ -29,6 +29,28 @@ describe('CheckResponsesPageController', () => {
     })
   })
 
+  describe('getSummaryPath', () => {
+    it('returns this.path when set', () => {
+      controller.path = mockPageDef.path
+
+      const result = controller.getSummaryPath()
+
+      expect(result).toBe('/check-answers')
+    })
+
+    it('reflects updates to this.path', () => {
+      controller.path = '/check-answers'
+      expect(controller.getSummaryPath()).toBe('/check-answers')
+
+      controller.path = '/updated-check-answers'
+      expect(controller.getSummaryPath()).toBe('/updated-check-answers')
+    })
+
+    it('returns undefined if this.path is not set - plugin will then use fallback /summary', () => {
+      expect(controller.getSummaryPath()).toBeUndefined()
+    })
+  })
+
   describe('makePostRouteHandler', () => {
     let handler
 
@@ -84,6 +106,10 @@ describe('CheckResponsesPageController', () => {
       expect(controller).toBeDefined()
       expect(controller.viewName).toBe('check-responses-page')
       expect(controller).toHaveProperty('makePostRouteHandler')
+    })
+
+    it('should override getSummaryPath from parent', () => {
+      expect(controller.getSummaryPath).toBeDefined()
     })
 
     it('should override makePostRouteHandler from parent', () => {
