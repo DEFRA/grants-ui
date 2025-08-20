@@ -2,6 +2,7 @@ engine: V2
 name: Example grant with auth
 metadata:
   referenceNumberPrefix: EGWA
+  whitelistEnvVar: EXAMPLE_GRANT_WITH_AUTH_WHITELIST_CRNS
   submission:
     grantCode: example-grant-with-auth-v3
     submissionSchemaPath: ./schemas/example-grant-with-auth-submission.schema.json
