@@ -1,0 +1,54 @@
+{% extends baseLayoutPath %}
+
+{% from "govuk/components/summary-list/macro.njk" import govukSummaryList %}
+{% from "govuk/components/button/macro.njk" import govukButton %}
+
+{% block pageTitle %}
+{{ pageTitle | evaluate }} | {{ serviceName }}
+{% endblock %}
+
+{% block content %}
+<div class="govuk-grid-row">
+  <div class="govuk-grid-column-two-thirds">
+    {% block table %}
+      <h1 class="govuk-heading-l">{{ pageTitle }}</h1>
+<!--      {{ govukSummaryList(checkAnswers.summaryList) }}-->
+
+      {% for section in checkAnswers %}
+        {% if section.title.text %}
+          <h2 class="govuk-heading-m">
+            {{ section.title.text }}
+          </h2>
+        {% endif %}
+
+        {{ govukSummaryList(section.summaryList) }}
+      {% endfor %}
+
+    {% endblock %}
+
+    {% block form %}
+      <form method="post" novalidate>
+        <input type="hidden" name="crumb" value="{{ crumb }}">
+
+        <div class="govuk-button-group">
+          {{ govukButton({
+            text: "Continue",
+            preventDoubleClick: true
+          }) }}
+
+          {% set allowSaveAndReturn = true %}
+          {% if allowSaveAndReturn %}
+            {{ govukButton({
+              text: "Save and return",
+              classes: "govuk-button--secondary",
+              name: "action",
+              value: "save-and-return",
+              preventDoubleClick: true
+            }) }}
+          {% endif %}
+        </div>
+      </form>
+    {% endblock %}
+  </div>
+</div>
+{% endblock %}
