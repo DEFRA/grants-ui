@@ -109,8 +109,9 @@ pages:
         hint: The site postcode where the work will happen
         options:
           required: true
+          classes: govuk-!-width-one-third
           customValidationMessages:
-            string.empty: Enter postcode
+            string.empty: Enter project postcode
             string.pattern.base: Enter a valid postcode
         schema:
           regex: ^[a-zA-Z]{1,2}\d[a-zA-Z\d]?\s?\d[a-zA-Z]{2}$

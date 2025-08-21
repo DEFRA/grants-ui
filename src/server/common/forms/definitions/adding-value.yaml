@@ -1061,6 +1061,7 @@ pages:
         hint: The site postcode where the work will happen
         options:
           required: true
+          classes: govuk-!-width-one-third
           customValidationMessages:
             string.empty: Enter postcode
             string.pattern.base: Enter a valid postcode

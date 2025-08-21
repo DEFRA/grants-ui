@@ -1,7 +1,7 @@
 {% extends baseLayoutPath %}
 
 {% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
-{% from "govuk/components/checkboxes/macro.njk" import govukCheckboxes %}
+{% from "govuk/components/radios/macro.njk" import govukRadios %}
 {% from "govuk/components/warning-text/macro.njk" import govukWarningText %}
 {% from "govuk/components/button/macro.njk" import govukButton %}
 {% from "govuk/components/details/macro.njk" import govukDetails %}
@@ -53,50 +53,60 @@
         <form method="post" novalidate>
           <input type="hidden" name="crumb" value="{{ crumb }}">
 
-          {% set actionsCheckboxes = [] %}
-          {% set action = actionId or actions[0].id %}
+          {{ govukRadios({
+            name: "landAction",
+            fieldset: {
+              legend: {
+                text: "Assess moorland",
+                classes: "govuk-fieldset__legend--m"
+              }
+            },
+            items: [
+              {
+                value: "CMOR1",
+                text: "CMOR1: Assess moorland and produce a written record"
+              }
+            ]
+          }) }}
 
-          {% for action in availableActions %}
-            {% set actionsCheckboxes = actionsCheckboxes.concat([{
-              value: action.code,
-              text: action.description,
-              checked: actions and actions.includes(action.code)
-            }]) %}
-          {% endfor %}
-
-          {% if actionsCheckboxes.length > 0 %}
-
-            {{ govukCheckboxes({
-              name: "selectedActions",
-              fieldset: {
-                legend: {
-                  text: "Available actions",
-                  classes: "govuk-fieldset__legend--m"
-                }
+          {{ govukRadios({
+            name: "landAction",
+            fieldset: {
+              legend: {
+                text: "Livestock grazing on moorland",
+                classes: "govuk-fieldset__legend--m"
+              }
+            },
+            items: [
+              {
+                value: "UPL1",
+                text: "UPL1: Moderate livestock grazing on moorland"
               },
-              hint: {
-                text: "Select all the actions you want to do for this land parcel"
+              {
+                value: "UPL2",
+                text: "UPL2: Low livestock grazing on moorland"
               },
-              items: actionsCheckboxes,
-              errorMessage: errors["selectedActions"]
+              {
+                value: "UPL3",
+                text: "UPL3: Limited livestock grazing on moorland"
+              }
+            ]
+          }) }}
 
-            }) }}
-
-            <div class="govuk-button-group">
-              {% block form %}
-                {{ govukButton({
-                  text: "Continue",
-                  preventDoubleClick: true
-                }) }}
-              {% endblock %}
-            </div>
-          {% else %}
-            {{ govukWarningText({
-              text: "No actions available to select.",
-              iconFallbackText: "Warning"
-            }) }}
-          {% endif %}
+          <div class="govuk-button-group">
+            {% block form %}
+              {{ govukButton({
+                text: "Continue",
+                preventDoubleClick: true
+              }) }}
+            {% endblock %}
+          </div>
         </form>
+      {% else %}
+        {{ govukWarningText({
+          text: "No actions available to select.",
+          iconFallbackText: "Warning"
+        }) }}
       {% endif %}
     </div>
   </div>

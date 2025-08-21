@@ -19,10 +19,10 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
   viewName = 'select-actions-for-land-parcel'
   availableActions = []
 
-  processPayloadAction(selectedActions, landAction) {
+  processPayloadAction(landAction) {
     const actionInfo = this.availableActions.find((a) => a.code === landAction)
 
-    if (!selectedActions.includes(landAction) || !actionInfo) {
+    if (!actionInfo) {
       return {}
     }
 
@@ -41,20 +41,11 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
    */
   extractActionsDataFromPayload(payload) {
     const actionsObj = {}
-    const { selectedActions = [] } = payload
+    const { landAction } = payload
 
-    if (Array.isArray(selectedActions) && selectedActions.length > 0) {
-      for (const landAction of selectedActions) {
-        const result = this.processPayloadAction(selectedActions, landAction)
-        if (Object.keys(result).length > 0) {
-          actionsObj[landAction] = result
-        }
-      }
-    } else {
-      const result = this.processPayloadAction(selectedActions, selectedActions)
-      if (Object.keys(result).length > 0) {
-        actionsObj[selectedActions] = result
-      }
+    const result = this.processPayloadAction(landAction)
+    if (Object.keys(result).length > 0) {
+      actionsObj[landAction] = result
     }
 
     return { actionsObj }
@@ -129,9 +120,25 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
       const { viewName } = this
       const payload = request.payload ?? {}
       const [sheetId, parcelId] = parseLandParcel(state.selectedLandParcel)
-      const { actionsObj, selectedActionsQuantities } = this.extractActionsDataFromPayload(payload)
+
+      // Load available actions for the land parcel
+      try {
+        const data = await fetchAvailableActionsForParcel({ parcelId, sheetId })
+        this.availableActions = data.actions || []
+        if (!this.availableActions.length) {
+          request.logger.error({
+            message: `No actions found for parcel ${sheetId}-${parcelId}`,
+            selectedLandParcel: state.selectedLandParcel
+          })
+        }
+      } catch (error) {
+        this.availableActions = []
+        request.logger.error(error, `Failed to fetch land parcel data for id ${sheetId}-${parcelId}`)
+      }
+
+      const { actionsObj } = this.extractActionsDataFromPayload(payload)
       // Create an updated state with the new action data
-      const newState = await this.buildNewState(state, selectedActionsQuantities, actionsObj)
+      const newState = await this.buildNewState(state, actionsObj)
 
       if (payload.action === 'validate') {
         const { errors, errorSummary } = await this.validatePayload(payload, actionsObj, sheetId, parcelId)
@@ -141,8 +148,6 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
             ...this.getViewModel(request, context),
             ...newState,
             parcelName: `${sheetId} ${parcelId}`,
-            selectedActions: payload.selectedActions,
-            selectedActionsQuantities,
             errorSummary,
             errors
           })
@@ -159,20 +164,17 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
   validatePayload = async (payload, actionsObj, sheetId, parcelId) => {
     const errors = {}
 
-    if (!payload?.selectedActions || payload.selectedActions.length === 0) {
-      errors.selectedActions = {
-        text: 'Please select at least one action'
+    if (payload?.landAction?.length === 0) {
+      errors.landAction = {
+        text: 'Please select one action'
       }
     }
 
-    // Filter actionsObj to only include items with non-null values and ready to be validated by the api
-    const readyForValidationsActionsObj = this.getCompletedFormFieldsForApiValidation(actionsObj)
-
-    if (Object.keys(readyForValidationsActionsObj).length > 0) {
+    if (Object.keys(actionsObj).length > 0) {
       const { valid, errorMessages = [] } = await triggerApiActionsValidation({
         sheetId,
         parcelId,
-        actionsObj: readyForValidationsActionsObj
+        actionsObj
       })
 
       if (!valid) {
@@ -186,28 +188,25 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
 
     const errorSummary = Object.entries(errors).map(([, { text }]) => ({
       text,
-      href: '#selectedActions'
+      href: '#landAction'
     }))
 
     return { errors, errorSummary }
   }
 
-  getCompletedFormFieldsForApiValidation = (actionsObj) => {
-    return Object.fromEntries(
-      Object.entries(actionsObj).filter(
-        ([, action]) => action.value !== null && action.value !== undefined && action.value !== ''
-      )
-    )
-  }
-
-  buildNewState = async (state, selectedActionsQuantities, actionsObj) => {
+  buildNewState = async (state, actionsObj) => {
     // Add the current actions to the land parcels object
     const updatedLandParcels = {
       ...state.landParcels, // Spread existing land parcels
       [state.selectedLandParcel]: {
-        actionsObj
+        ...state.landParcels?.[state.selectedLandParcel], // Preserve existing parcel data
+        actionsObj: {
+          ...state.landParcels?.[state.selectedLandParcel]?.actionsObj, // Merge existing actions
+          ...actionsObj // Add new actions
+        }
       }
     }
+
     let draftApplicationAnnualTotalPence = state.draftApplicationAnnualTotalPence || 0
 
     // Get all land actions across all parcels
@@ -232,8 +231,7 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
 
     return {
       ...state,
-      payment: paymentDetails.payment,
-      selectedActionsQuantities,
+      payment: paymentDetails?.payment,
       draftApplicationAnnualTotalPence,
       landParcels: updatedLandParcels
     }

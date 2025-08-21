@@ -1,0 +1,32 @@
+{% extends baseLayoutPath %}
+{% set backLink = false %}
+{% from "govuk/components/panel/macro.njk" import govukPanel %}
+{% from "support-details/macro.njk" import defraSupportDetails %}
+
+{% set mainClasses = "govuk-main-wrapper--l" %}
+
+{% block content %}
+<div class="govuk-grid-row">
+  <div class="govuk-grid-column-two-thirds">
+    {{ govukPanel({
+    titleText: "Application complete",
+    html: ("Your application number<br><strong>" + referenceNumber + "</strong>") | safe
+    }) }}
+
+    <p class="govuk-body">It may be useful to write down your application number, so you have it ready if you need to
+      contact us.</p>
+
+    <h2 class="govuk-heading-m">What happens next</h2>
+    <p class="govuk-body">Defra will email you when your funding offer is available to review. This will be within 5
+      working days.</p>
+    <p class="govuk-body">You will need to sign in to the service to accept your funding offer.</p>
+    <p class="govuk-body">You should not start work on the actions you have applied for until:</p>
+    <ul class="govuk-list govuk-list--bullet govuk-!-margin-bottom-6">
+      <li>you have accepted your offer</li>
+      <li>the Rural Payments Agency confirms your start date</li>
+    </ul>
+
+    {{ defraSupportDetails() }}
+  </div>
+</div>
+{% endblock %}
