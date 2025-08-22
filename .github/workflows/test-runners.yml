@@ -12,112 +12,15 @@ on:
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Environment to run against'
-        required: false
-        default: 'development'
-        type: choice
-        options:
-        - development
-      log_level:
-        description: 'Log level'
-        required: false
-        default: 'info'
-        type: choice
-        options:
-        - debug
-        - info
-        - warning
-        - error
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
   build:
-    # conditional statement from a GitHub Actions workflow that decides whether a step or job should run a forked PR
-    if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name != 'pull_request'
-    # The type of runner that the job will run on
     runs-on: self-hosted
-
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v4
 
-      # Display workflow inputs when manually triggered
-      - name: Display manual trigger inputs
-        if: github.event_name == 'workflow_dispatch'
-        run: |
-          echo "Environment: ${{ github.event.inputs.environment }}"
-          echo "Log level: ${{ github.event.inputs.log_level }}"
-
-
-      # Runs a single command using the runners shell.
-      # Test network connectivity from Container App to VMs
-      - name: Test network connectivity
-        run: |
-          echo "Testing network connectivity from Container App to VMs..."
-          
-          # Function to test connectivity
-          test_connectivity() {
-            local host=$1
-            local port=${2:-22}
-            echo "Testing connectivity to $host:$port..."
-            
-            # Test with netcat (if available)
-            if command -v nc >/dev/null 2>&1; then
-              timeout 5 nc -zv $host $port 2>&1 && echo "✅ $host:$port is reachable" || echo "❌ $host:$port is not reachable"
-            else
-              # Fallback to telnet-like test with bash
-              timeout 5 bash -c "echo >/dev/tcp/$host/$port" 2>/dev/null && echo "✅ $host:$port is reachable" || echo "❌ $host:$port is not reachable"
-            fi
-          }
-          
-          # Test traceroute to show network path
-          test_traceroute() {
-            local host=$1
-            echo "Testing route to $host..."
-            if command -v traceroute >/dev/null 2>&1; then
-              traceroute -m 10 $host 2>&1 | head -10
-            elif command -v tracepath >/dev/null 2>&1; then
-              tracepath $host 2>&1 | head -10
-            else
-              echo "❌ No traceroute tools available"
-            fi
-          }
-          
-          echo "=== Container App Network Environment ==="
-          echo "Container hostname: $(hostname)"
-          echo "Container IP info:"
-          ip addr show || ifconfig || echo "No network info tools available"
-          echo ""
-          echo "Container routing table:"
-          ip route show || route -n || echo "No routing info tools available"
-          echo ""
-          
-          echo "=== Testing Internal Connectivity ==="
-          
-          echo "Testing Pact Broker (ffc-pact-broker.azure.defra.cloud):"
-          test_connectivity ffc-pact-broker.azure.defra.cloud 443
-
-          echo "DNS lookup for ffc-pact-broker.azure.defra.cloud:"
-          if command -v getent >/dev/null 2>&1; then
-            getent hosts ffc-pact-broker.azure.defra.cloud || echo "getent lookup failed"
-          elif command -v dig >/dev/null 2>&1; then
-            dig +short ffc-pact-broker.azure.defra.cloud || echo "dig lookup failed"
-          elif command -v nslookup >/dev/null 2>&1; then
-            nslookup ffc-pact-broker.azure.defra.cloud || echo "nslookup lookup failed"
-          else
-            echo "❌ No DNS lookup tool available"
-          fi
-          
-          # Test external connectivity for comparison
-          echo "=== External Connectivity Test ==="
-          test_connectivity google.com 80
-          
-          echo "=== Network Tests Complete ==="
-
+      - name: Run a one-line script
+        run: echo Hello, world!
 
       - name: Pact Broker connectivity
         env:
