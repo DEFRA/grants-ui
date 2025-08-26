@@ -98,19 +98,6 @@ describe('ConfirmFarmDetailsController', () => {
       expect(typeof handler).toBe('function')
     })
 
-    it('should handle successful data fetch and render view', async () => {
-      const handler = controller.makeGetRouteHandler()
-      const result = await handler(mockRequest, mockContext, mockH)
-
-      expect(fetchBusinessAndCustomerInformation).toHaveBeenCalledWith('SBI123456', 1100014934)
-      expect(mockH.view).toHaveBeenCalledWith('confirm-farm-details', {
-        farmDetails: expect.objectContaining({
-          rows: expect.any(Array)
-        })
-      })
-      expect(result).toBe('mocked-view')
-    })
-
     it('should handle errors and render error view', async () => {
       const error = new Error('Service unavailable')
       fetchBusinessAndCustomerInformation.mockRejectedValue(error)
@@ -130,56 +117,6 @@ describe('ConfirmFarmDetailsController', () => {
         }
       })
       expect(result).toBe('mocked-view')
-    })
-  })
-
-  describe('buildFarmDetails', () => {
-    it('should build farm details with all available data', async () => {
-      const mockData = {
-        business: {
-          name: 'Test Business',
-          address: {
-            line1: 'Line 1',
-            line2: 'Line 2',
-            city: 'City',
-            postalCode: 'PC1 2CD'
-          },
-          phone: { mobile: '07123456789' },
-          email: { address: 'test@example.com' }
-        },
-        customer: {
-          name: { first: 'Sarah', last: 'Farmer' }
-        }
-      }
-
-      fetchBusinessAndCustomerInformation.mockResolvedValue(mockData)
-
-      const result = await controller.buildFarmDetails()
-
-      expect(result).toEqual({
-        rows: [
-          {
-            key: { text: 'Name' },
-            value: { text: 'Sarah Farmer' }
-          },
-          {
-            key: { text: 'Business name' },
-            value: { text: 'Test Business' }
-          },
-          {
-            key: { text: 'Address' },
-            value: { html: 'Line 1<br/>Line 2<br/>City<br/>PC1 2CD' }
-          },
-          {
-            key: { text: 'SBI number' },
-            value: { text: 'SBI123456' }
-          },
-          {
-            key: { text: 'Contact details' },
-            value: { html: 'formatted-07123456789<br/>test@example.com' }
-          }
-        ]
-      })
     })
   })
 

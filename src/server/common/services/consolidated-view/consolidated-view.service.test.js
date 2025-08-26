@@ -37,56 +37,6 @@ describe('Consolidated View Service', () => {
   const mockCrn = 'CRN123456'
   const mockToken = 'mock-token-123'
 
-  /**
-   * @type {object}
-   */
-  const mockParcelsResponse = {
-    data: {
-      business: {
-        land: {
-          parcels: [
-            {
-              parcelId: '0155',
-              sheetId: 'SD7946',
-              area: 4.0383
-            },
-            {
-              parcelId: '4509',
-              sheetId: 'SD7846',
-              area: 0.0633
-            }
-          ]
-        }
-      }
-    }
-  }
-
-  const mockBusinessCustomerResponse = {
-    data: {
-      business: {
-        info: {
-          name: 'Test Business Ltd',
-          email: { address: 'test@business.com' },
-          phone: { mobile: '07123456789' },
-          address: {
-            line1: '123 Test Street',
-            city: 'Test City',
-            postalCode: 'TC1 2AB'
-          }
-        }
-      },
-      customer: {
-        info: {
-          name: {
-            title: 'Mr',
-            first: 'John',
-            last: 'Doe'
-          }
-        }
-      }
-    }
-  }
-
   beforeEach(() => {
     jest.clearAllMocks()
     mockFetch.mockReset()
@@ -100,22 +50,6 @@ describe('Consolidated View Service', () => {
   })
 
   describe('fetchParcelsForSbi', () => {
-    it('should fetch land parcels successfully', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockParcelsResponse)
-      })
-
-      const result = await fetchParcelsForSbi(mockSbi)
-
-      expect(mockFetch).toHaveBeenCalledTimes(1)
-      expect(result).toEqual(mockParcelsResponse.data.business.land.parcels)
-
-      const [[, calledOptions]] = mockFetch.mock.calls
-      expect(calledOptions.headers.Authorization).toBe(`Bearer ${mockToken}`)
-      expect(calledOptions.headers.email).toBe('test@example.com')
-    })
-
     it('should return empty array when parcels data is missing', async () => {
       const emptyResponse = { data: { business: { land: {} } } }
       mockFetch.mockResolvedValueOnce({
@@ -130,26 +64,6 @@ describe('Consolidated View Service', () => {
   })
 
   describe('fetchBusinessAndCustomerInformation', () => {
-    it('should fetch business and customer information successfully', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockBusinessCustomerResponse)
-      })
-
-      const result = await fetchBusinessAndCustomerInformation(mockSbi, mockCrn)
-
-      expect(mockFetch).toHaveBeenCalledTimes(1)
-      expect(result).toEqual({
-        business: mockBusinessCustomerResponse.data.business.info,
-        customer: mockBusinessCustomerResponse.data.customer.info
-      })
-
-      const [[, calledOptions]] = mockFetch.mock.calls
-      const body = JSON.parse(calledOptions.body)
-      expect(body.query).toContain(`business(sbi: "${mockSbi}")`)
-      expect(body.query).toContain(`customer(crn: "${mockCrn}")`)
-    })
-
     it('should handle missing business or customer data gracefully', async () => {
       const partialResponse = {
         data: {

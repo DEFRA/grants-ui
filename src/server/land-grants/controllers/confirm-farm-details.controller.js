@@ -38,6 +38,8 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
     const sbi = sbiStore.get('sbi')
     const data = await fetchBusinessAndCustomerInformation(sbi, ConfirmFarmDetailsController.CUSTOMER_ID)
 
+    logger.info(`buildFarmDetails ${JSON.stringify({ sbi, data })}`)
+
     const rows = [
       this.createCustomerNameRow(data.customer?.name),
       this.createBusinessNameRow(data.business?.name),
