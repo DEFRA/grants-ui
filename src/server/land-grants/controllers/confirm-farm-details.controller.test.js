@@ -64,7 +64,7 @@ describe('ConfirmFarmDetailsController', () => {
     }
     sbiStore.get = jest.fn().mockReturnValue('SBI123456')
     fetchBusinessAndCustomerInformation.mockResolvedValue(mockData)
-    config.get.mockReturnValue(false).mockReturnValue('SBI123456')
+    config.get.mockReturnValue(false)
   })
 
   afterEach(() => {
@@ -386,6 +386,15 @@ describe('ConfirmFarmDetailsController', () => {
 
   describe('selectSbiAndCrn', () => {
     it('should select the current applicants sbi and crn when defraId is disabled', async () => {
+      config.get.mockImplementation((key) => {
+        if (key === 'defraId.enabled') {
+          return false
+        }
+        if (key === 'landGrants.customerReferenceNumber') {
+          return '1100014934'
+        }
+        return 'SBI123456'
+      })
       fetchBusinessAndCustomerInformation.mockResolvedValue(mockData)
       const result = await controller.selectSbiAndCrn(mockRequest)
       expect(result).toEqual({ crn: '1100014934', sbi: 'SBI123456' })
