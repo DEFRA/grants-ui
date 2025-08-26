@@ -15,10 +15,6 @@ const govukFrontendPath = path.dirname(
   require.resolve('govuk-frontend/package.json')
 )
 
-const defraFormsPath = path.dirname(
-  require.resolve('@defra/forms-engine-plugin/package.json')
-)
-
 const ruleTypeAssetResource = 'asset/resource'
 
 /**
@@ -186,10 +182,6 @@ export default {
         {
           from: path.join(govukFrontendPath, 'dist/govuk/assets'),
           to: 'assets'
-        },
-        {
-          from: path.join(defraFormsPath, '.public/assets'),
-          to: 'dxt-assets'
         }
       ]
     })

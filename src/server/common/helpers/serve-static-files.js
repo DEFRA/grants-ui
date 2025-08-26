@@ -19,24 +19,6 @@ export const serveStaticFiles = {
       server.route([
         {
           method: 'GET',
-          path: '/javascripts/application.min.js',
-          handler: {
-            file: './javascripts/dxt-application.min.js'
-          },
-          options
-        },
-        {
-          method: 'GET',
-          path: '/assets/{path*}',
-          handler: {
-            directory: {
-              path: './dxt-assets/'
-            }
-          },
-          options
-        },
-        {
-          method: 'GET',
           path: '/favicon.ico',
           handler(_request, h) {
             return h.response().code(statusCodes.noContent).type('image/x-icon')
