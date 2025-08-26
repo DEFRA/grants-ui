@@ -53,6 +53,7 @@ const getViewPaths = () => {
   const serverDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)))
   return [
     path.join(serverDir, 'views'),
+    path.join(serverDir, 'auth/views'),
     path.join(serverDir, 'land-grants/views'),
     path.join(serverDir, 'non-land-grants/pigs-might-fly/views'),
     path.join(serverDir, 'about'),
@@ -200,7 +201,7 @@ const mockSessionData = async (request, log, LogCodes) => {
       name: 'Anonymous User',
       role: 'user',
       scope: ['user'],
-      crn: 'anonymous-user',
+      crn: '1101009926',
       relationships: ['business:default-business']
     }
 

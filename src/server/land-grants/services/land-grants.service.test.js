@@ -199,7 +199,7 @@ describe('land-grants service', () => {
       expect(result).toEqual({
         sheetId: 'sheetId',
         parcelId: 'parcelId',
-        sbi: 106284736,
+        sbi: 106953974,
         actions: [
           { code: 'CMOR1', quantity: 10.5 },
           { code: 'UPL1', quantity: 20.75 }
@@ -219,7 +219,7 @@ describe('land-grants service', () => {
       expect(result).toEqual({
         sheetId: 'sheetId',
         parcelId: 'parcelId',
-        sbi: 106284736,
+        sbi: 106953974,
         actions: []
       })
     })
@@ -240,7 +240,7 @@ describe('land-grants service', () => {
       const result = await calculateGrantPayment({
         sheetId: 'SHEET123',
         parcelId: 'PARCEL456',
-        sbi: 106284736,
+        sbi: 106953974,
         actions: [{ code: 'CMOR1', quantity: 10 }]
       })
 
@@ -250,7 +250,7 @@ describe('land-grants service', () => {
           body: JSON.stringify({
             sheetId: 'SHEET123',
             parcelId: 'PARCEL456',
-            sbi: 106284736,
+            sbi: 106953974,
             actions: [{ code: 'CMOR1', quantity: 10 }]
           })
         })
@@ -463,7 +463,7 @@ describe('land-grants service', () => {
               {
                 sheetId: 'SHEET123',
                 parcelId: 'PARCEL456',
-                sbi: 106284736,
+                sbi: 106953974,
                 actions: [
                   { code: 'CMOR1', quantity: 10.5 },
                   { code: 'UPL1', quantity: 20.75 }
@@ -516,7 +516,7 @@ describe('land-grants service', () => {
               {
                 sheetId: 'SHEET123',
                 parcelId: 'PARCEL456',
-                sbi: 106284736,
+                sbi: 106953974,
                 actions: []
               }
             ]
@@ -566,9 +566,9 @@ describe('land-grants service', () => {
         json: () => mockSizeResponse
       })
 
-      const result = await fetchParcels('106284736')
+      const result = await fetchParcels('106953974')
 
-      expect(fetchParcelsForSbi).toHaveBeenCalledWith('106284736')
+      expect(fetchParcelsForSbi).toHaveBeenCalledWith('106953974')
       expect(fetch).toHaveBeenCalledWith(
         `${mockApiEndpoint}/parcels`,
         expect.objectContaining({
@@ -614,7 +614,7 @@ describe('land-grants service', () => {
         json: () => mockSizeResponse
       })
 
-      const result = await fetchParcels('106284736')
+      const result = await fetchParcels('106953974')
 
       expect(result).toEqual([
         {
@@ -640,7 +640,7 @@ describe('land-grants service', () => {
         json: () => mockSizeResponse
       })
 
-      const result = await fetchParcels('106284736')
+      const result = await fetchParcels('106953974')
 
       expect(result).toEqual([])
     })
@@ -648,7 +648,7 @@ describe('land-grants service', () => {
     it('should handle fetchParcelsForSbi error', async () => {
       fetchParcelsForSbi.mockRejectedValueOnce(new Error('SBI service error'))
 
-      await expect(fetchParcels('106284736')).rejects.toThrow('SBI service error')
+      await expect(fetchParcels('106953974')).rejects.toThrow('SBI service error')
     })
 
     it('should handle size API error', async () => {
@@ -656,7 +656,7 @@ describe('land-grants service', () => {
       fetchParcelsForSbi.mockResolvedValueOnce(mockParcels)
       fetch.mockRejectedValueOnce(new Error('Size API error'))
 
-      await expect(fetchParcels('106284736')).rejects.toThrow('Size API error')
+      await expect(fetchParcels('106953974')).rejects.toThrow('Size API error')
     })
   })
 })

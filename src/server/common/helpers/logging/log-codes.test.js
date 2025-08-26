@@ -95,6 +95,61 @@ describe('LogCodes', () => {
       expect(result).toContain('strategy=defra-id')
       expect(result).toContain('authError=No token provided')
     })
+
+    it('should have valid WHITELIST_ACCESS_GRANTED log code', () => {
+      const logCode = LogCodes.AUTH.WHITELIST_ACCESS_GRANTED
+      expect(logCode.level).toBe('info')
+      expect(typeof logCode.messageFunc).toBe('function')
+      expect(
+        logCode.messageFunc({
+          path: '/example-grant',
+          userId: 'test123',
+          sbi: '123456789',
+          validationType: 'CRN and SBI validation passed'
+        })
+      ).toBe(
+        'Whitelist access granted to path=/example-grant for user=test123, sbi=123456789: CRN and SBI validation passed'
+      )
+    })
+
+    it('should have valid WHITELIST_ACCESS_DENIED_BOTH log code', () => {
+      const logCode = LogCodes.AUTH.WHITELIST_ACCESS_DENIED_BOTH
+      expect(logCode.level).toBe('info')
+      expect(typeof logCode.messageFunc).toBe('function')
+      expect(
+        logCode.messageFunc({
+          path: '/example-grant',
+          userId: 'test123',
+          sbi: '123456789'
+        })
+      ).toBe('Whitelist access denied to path=/example-grant: Both CRN test123 and SBI 123456789 failed validation')
+    })
+
+    it('should have valid WHITELIST_ACCESS_DENIED_CRN_PASSED log code', () => {
+      const logCode = LogCodes.AUTH.WHITELIST_ACCESS_DENIED_CRN_PASSED
+      expect(logCode.level).toBe('info')
+      expect(typeof logCode.messageFunc).toBe('function')
+      expect(
+        logCode.messageFunc({
+          path: '/example-grant',
+          userId: 'test123',
+          sbi: '123456789'
+        })
+      ).toBe('Whitelist access denied to path=/example-grant: CRN test123 passed but SBI 123456789 failed validation')
+    })
+
+    it('should have valid WHITELIST_ACCESS_DENIED_SBI_PASSED log code', () => {
+      const logCode = LogCodes.AUTH.WHITELIST_ACCESS_DENIED_SBI_PASSED
+      expect(logCode.level).toBe('info')
+      expect(typeof logCode.messageFunc).toBe('function')
+      expect(
+        logCode.messageFunc({
+          path: '/example-grant',
+          userId: 'test123',
+          sbi: '123456789'
+        })
+      ).toBe('Whitelist access denied to path=/example-grant: SBI 123456789 passed but CRN test123 failed validation')
+    })
   })
 
   describe('FORMS log codes', () => {
@@ -404,6 +459,73 @@ describe('LogCodes', () => {
           error: 'Connection failed'
         })
       ).toBe('External API error for /api/grants: Connection failed')
+    })
+
+    it('should have valid VIEW_DEBUG log code', () => {
+      const logCode = LogCodes.SYSTEM.VIEW_DEBUG
+      expect(logCode.level).toBe('debug')
+      expect(typeof logCode.messageFunc).toBe('function')
+      const debugOptions = {
+        currentFilePath: '/app/src/server/index.js',
+        isRunningBuiltCode: true,
+        basePath: '/app',
+        processWorkingDir: '/app',
+        resolvedViewPaths: ['/app/views', '/app/templates']
+      }
+      const result = logCode.messageFunc(debugOptions)
+      expect(result).toContain('View path debug: currentFile=/app/src/server/index.js')
+      expect(result).toContain('isBuilt=true')
+      expect(result).toContain('pathsResolved=2')
+    })
+
+    it('should have valid VIEW_PATH_CHECK log code', () => {
+      const logCode = LogCodes.SYSTEM.VIEW_PATH_CHECK
+      expect(logCode.level).toBe('debug')
+      expect(typeof logCode.messageFunc).toBe('function')
+      expect(
+        logCode.messageFunc({
+          index: 0,
+          path: '/app/views',
+          exists: true,
+          isAbsolute: true
+        })
+      ).toBe('View path 0: path=/app/views, exists=true, isAbsolute=true')
+    })
+
+    it('should have valid ENV_CONFIG_DEBUG log code', () => {
+      const logCode = LogCodes.SYSTEM.ENV_CONFIG_DEBUG
+      expect(logCode.level).toBe('debug')
+      expect(typeof logCode.messageFunc).toBe('function')
+      expect(
+        logCode.messageFunc({
+          configType: 'database',
+          configValues: { host: 'localhost', port: 5432 }
+        })
+      ).toBe('Environment configuration: database - {"host":"localhost","port":5432}')
+    })
+
+    it('should have valid STARTUP_PHASE log code', () => {
+      const logCode = LogCodes.SYSTEM.STARTUP_PHASE
+      expect(logCode.level).toBe('info')
+      expect(typeof logCode.messageFunc).toBe('function')
+      expect(
+        logCode.messageFunc({
+          phase: 'plugins',
+          status: 'completed'
+        })
+      ).toBe('Startup phase: plugins - completed')
+    })
+
+    it('should have valid PLUGIN_REGISTRATION log code', () => {
+      const logCode = LogCodes.SYSTEM.PLUGIN_REGISTRATION
+      expect(logCode.level).toBe('debug')
+      expect(typeof logCode.messageFunc).toBe('function')
+      expect(
+        logCode.messageFunc({
+          pluginName: 'auth-plugin',
+          status: 'registered'
+        })
+      ).toBe('Plugin registration: auth-plugin - registered')
     })
   })
 
