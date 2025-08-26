@@ -23,7 +23,7 @@ export const router = {
       await server.register([health])
 
       // Dev specific routes
-      if (defraIdEnabled) {
+      if (!defraIdEnabled) {
         await server.register([sbi])
       }
 
