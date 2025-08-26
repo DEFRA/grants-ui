@@ -70,6 +70,7 @@ describe('ConfirmFarmDetailsController', () => {
 
       expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-path')
       expect(result).toBe('redirected')
+      expect(sbiStore.get).toHaveBeenCalledWith('sbi')
     })
 
     test('should update state with sbi and applicant details and proceed', async () => {
@@ -89,6 +90,7 @@ describe('ConfirmFarmDetailsController', () => {
 
       expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-path')
       expect(result).toBe('redirected')
+      expect(sbiStore.get).toHaveBeenCalledWith('sbi')
     })
   })
 
@@ -109,6 +111,7 @@ describe('ConfirmFarmDetailsController', () => {
         })
       })
       expect(result).toBe('mocked-view')
+      expect(sbiStore.get).toHaveBeenCalledWith('sbi')
     })
 
     it('should handle errors and render error view', async () => {
@@ -154,7 +157,7 @@ describe('ConfirmFarmDetailsController', () => {
 
       fetchBusinessAndCustomerInformation.mockResolvedValue(mockData)
 
-      const result = await controller.buildFarmDetails()
+      const result = await controller.buildFarmDetails('1100014934', 'SBI123456')
 
       expect(result).toEqual({
         rows: [
@@ -363,10 +366,59 @@ describe('ConfirmFarmDetailsController', () => {
 
   describe('constants', () => {
     it('should have correct static constants', () => {
-      expect(ConfirmFarmDetailsController.CUSTOMER_ID).toBe(1100014934)
       expect(ConfirmFarmDetailsController.ERROR_MESSAGE).toBe(
         'Unable to find farm information, please try again later.'
       )
+    })
+  })
+
+  describe('selectSbiAndCrn', () => {
+    it('should select the current applicants sbi and crn', async () => {
+      const mockData = {
+        business: {
+          name: 'Test Business',
+          address: {
+            line1: 'Line 1',
+            line2: 'Line 2',
+            city: 'City',
+            postalCode: 'PC1 2CD'
+          },
+          phone: { mobile: '07123456789' },
+          email: { address: 'test@example.com' }
+        },
+        customer: {
+          name: { first: 'Sarah', last: 'Farmer' }
+        }
+      }
+
+      fetchBusinessAndCustomerInformation.mockResolvedValue(mockData)
+
+      const result = await controller.buildFarmDetails('1100014934', 'SBI123456')
+
+      expect(result).toEqual({
+        rows: [
+          {
+            key: { text: 'Name' },
+            value: { text: 'Sarah Farmer' }
+          },
+          {
+            key: { text: 'Business name' },
+            value: { text: 'Test Business' }
+          },
+          {
+            key: { text: 'Address' },
+            value: { html: 'Line 1<br/>Line 2<br/>City<br/>PC1 2CD' }
+          },
+          {
+            key: { text: 'SBI number' },
+            value: { text: 'SBI123456' }
+          },
+          {
+            key: { text: 'Contact details' },
+            value: { html: 'formatted-07123456789<br/>test@example.com' }
+          }
+        ]
+      })
     })
   })
 })
