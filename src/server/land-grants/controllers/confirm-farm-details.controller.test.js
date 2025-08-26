@@ -64,7 +64,7 @@ describe('ConfirmFarmDetailsController', () => {
     }
     sbiStore.get = jest.fn().mockReturnValue('SBI123456')
     fetchBusinessAndCustomerInformation.mockResolvedValue(mockData)
-    config.get.mockReturnValue(false)
+    config.get.mockReturnValue(true)
   })
 
   afterEach(() => {
