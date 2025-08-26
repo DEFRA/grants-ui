@@ -56,7 +56,7 @@ export async function context(request) {
       assetPath: `${assetPath}/assets/rebrand`,
       serviceName: config.get('serviceName'),
       serviceUrl: '/',
-      enableSbiSelector: config.get('landGrants.enableSbiSelector'),
+      defraIdEnabled: config.get('defraId.enabled'),
       auth,
       breadcrumbs: [],
       navigation: buildNavigation(request),
@@ -78,7 +78,7 @@ export async function context(request) {
       assetPath: `${assetPath}/assets/rebrand`,
       serviceName: config.get('serviceName'),
       serviceUrl: '/',
-      enableSbiSelector: config.get('landGrants.enableSbiSelector'),
+      defraIdEnabled: config.get('defraId.enabled'),
       auth: {
         isAuthenticated: false,
         sbi: null,
