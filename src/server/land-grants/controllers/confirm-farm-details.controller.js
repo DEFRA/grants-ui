@@ -11,7 +11,7 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
   viewName = 'confirm-farm-details'
 
   // Constants
-  // static CUSTOMER_ID = config.get('landGrants.customerReferenceNumber')
+  static CUSTOMER_ID = config.get('landGrants.customerReferenceNumber')
   static ERROR_MESSAGE = 'Unable to find farm information, please try again later.'
 
   /**
@@ -22,28 +22,11 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
       const baseViewModel = super.getViewModel(request, context)
 
       try {
-        const { sbi, crn } = this.selectSbiAndCrn(request)
-        const farmDetails = await this.buildFarmDetails(crn, sbi)
+        const farmDetails = await this.buildFarmDetails()
         return h.view(this.viewName, { ...baseViewModel, farmDetails })
       } catch (error) {
         return this.handleError(error, baseViewModel, h)
       }
-    }
-  }
-
-  selectSbiAndCrn(request) {
-    if (config.get('defraId.enabled')) {
-      logger.info('Defra ID is enabled, using CRN and SBI from Defra ID')
-      sbiStore.set(request.auth.credentials.currentRelationshipId)
-      return {
-        crn: request.auth.credentials.contactId,
-        sbi: request.auth.credentials.currentRelationshipId
-      }
-    }
-
-    return {
-      crn: config.get('landGrants.customerReferenceNumber'),
-      sbi: sbiStore.get('sbi')
     }
   }
 
@@ -52,7 +35,7 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
    * @returns {Promise<object>} Farm details object with rows array
    */
   async buildFarmDetails(crn, sbi) {
-    logger.info({ crn, sbi }, 'Building farm details')
+    logger.info(`Building farm details ${JSON.stringify({ crn, sbi })}`)
 
     const data = await fetchBusinessAndCustomerInformation(sbi, crn)
 
@@ -195,10 +178,10 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
      */
     const fn = async (request, context, h) => {
       const { state } = context
-      const { sbi, crn } = this.selectSbiAndCrn(request)
+      const sbi = sbiStore.get('sbi')
 
       if (sbi) {
-        const applicant = await fetchBusinessAndCustomerInformation(sbi, crn)
+        const applicant = await fetchBusinessAndCustomerInformation(sbi, ConfirmFarmDetailsController.CUSTOMER_ID)
         await this.setState(request, {
           ...state,
           sbi,
