@@ -362,7 +362,7 @@ pages:
         schema: {}
     id: 089374a5-13e7-494d-994e-9b38c4b7392c
   - title: Check your answers
-    path: /check-your-answers
+    path: /summary
     controller: CheckResponsesPageController
     id: aa34c1e0-e119-4e69-ab91-06d6b092055e
   - title: Confirm and send

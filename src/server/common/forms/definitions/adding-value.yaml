@@ -1071,7 +1071,7 @@ pages:
         id: abcddf63-8379-40f7-aa5e-941c663b273a
     id: 0e08708a-f393-40fa-86a6-d30bc736a354
   - title: Check your answers
-    path: /check-your-answers
+    path: /summary
     controller: CheckResponsesPageController
     id: 8de1f74b-f328-4363-a3de-a5fae6b891b0
   - title: Confirm and send
