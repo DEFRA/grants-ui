@@ -5,6 +5,7 @@ import { config } from '~/src/config/config.js'
 import { buildNavigation } from '~/src/config/nunjucks/context/build-navigation.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { sbiStore } from '~/src/server/sbi/state.js'
+import { logger } from '~/.server/server/common/helpers/logging/log.js'
 
 const assetPath = config.get('assetPath')
 const manifestPath = path.join(config.get('root'), '.public/assets-manifest.json')
@@ -51,6 +52,8 @@ export async function context(request) {
       organisationId: session.organisationId,
       role: session.role
     }
+
+    logger.info(`Auth ${JSON.stringify(auth)}`)
 
     return {
       assetPath: `${assetPath}/assets/rebrand`,
