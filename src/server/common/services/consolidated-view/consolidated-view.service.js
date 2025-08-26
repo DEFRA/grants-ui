@@ -90,7 +90,11 @@ async function fetchMockDataForBusiness(sbi) {
  */
 async function makeConsolidatedViewRequest(query, sbi) {
   const CV_API_ENDPOINT = config.get('consolidatedView.apiEndpoint')
-  const response = await fetch(CV_API_ENDPOINT, await getConsolidatedViewRequestOptions({ query }))
+  const DAL_SETTINGS = JSON.stringify(await getConsolidatedViewRequestOptions({ query }))
+
+  logger.info(`DAL SETTINGS -${DAL_SETTINGS}`)
+
+  const response = await fetch(CV_API_ENDPOINT, DAL_SETTINGS)
 
   if (!response.ok) {
     const errorText = await response.text()

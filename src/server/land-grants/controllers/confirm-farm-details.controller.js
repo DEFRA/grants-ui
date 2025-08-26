@@ -33,6 +33,7 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
 
   selectSbiAndCrn(request) {
     if (config.get('defraId.enabled')) {
+      logger.info('Defra ID is enabled, using CRN and SBI from Defra ID')
       sbiStore.set(request.auth.credentials.currentRelationshipId)
       return {
         crn: request.auth.credentials.contactId,
@@ -51,6 +52,8 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
    * @returns {Promise<object>} Farm details object with rows array
    */
   async buildFarmDetails(crn, sbi) {
+    logger.info({ crn, sbi }, 'Building farm details')
+
     const data = await fetchBusinessAndCustomerInformation(sbi, crn)
 
     const rows = [
