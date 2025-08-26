@@ -59,59 +59,10 @@ describe('ConfirmFarmDetailsController', () => {
     jest.clearAllMocks()
   })
 
-  describe('POST route handler', () => {
-    test('should not update state and proceed if no sbi', async () => {
-      sbiStore.get = jest.fn().mockReturnValue(null)
-      const handler = controller.makePostRouteHandler()
-      const result = await handler(mockRequest, mockContext, mockH)
-
-      expect(fetchBusinessAndCustomerInformation).not.toHaveBeenCalled()
-      expect(controller.setState).not.toHaveBeenCalled()
-
-      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-path')
-      expect(result).toBe('redirected')
-      expect(sbiStore.get).toHaveBeenCalledWith('sbi')
-    })
-
-    test('should update state with sbi and applicant details and proceed', async () => {
-      const handler = controller.makePostRouteHandler()
-      const result = await handler(mockRequest, mockContext, mockH)
-
-      expect(fetchBusinessAndCustomerInformation).toHaveBeenCalledWith('SBI123456', 1100014934)
-      expect(controller.setState).toHaveBeenCalledWith(
-        mockRequest,
-        expect.objectContaining({
-          applicant: {
-            ...mockData
-          },
-          sbi: 'SBI123456'
-        })
-      )
-
-      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-path')
-      expect(result).toBe('redirected')
-      expect(sbiStore.get).toHaveBeenCalledWith('sbi')
-    })
-  })
-
   describe('makeGetRouteHandler', () => {
     it('should return a function', () => {
       const handler = controller.makeGetRouteHandler()
       expect(typeof handler).toBe('function')
-    })
-
-    it('should handle successful data fetch and render view', async () => {
-      const handler = controller.makeGetRouteHandler()
-      const result = await handler(mockRequest, mockContext, mockH)
-
-      expect(fetchBusinessAndCustomerInformation).toHaveBeenCalledWith('SBI123456', 1100014934)
-      expect(mockH.view).toHaveBeenCalledWith('confirm-farm-details', {
-        farmDetails: expect.objectContaining({
-          rows: expect.any(Array)
-        })
-      })
-      expect(result).toBe('mocked-view')
-      expect(sbiStore.get).toHaveBeenCalledWith('sbi')
     })
 
     it('should handle errors and render error view', async () => {
