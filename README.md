@@ -271,10 +271,10 @@ scope: ['openid', 'offline_access'],
 
 #### Feature Flags & Misc
 
-| Variable           | Description                                                                |
-| ------------------ | -------------------------------------------------------------------------- |
-| `DEFRA_ID_ENABLED` | Enables defraId auth, and the SBI selector UI for multiple-business users. |
-| `FEEDBACK_LINK`    | URL to feedback (e.g., GitHub issue, form).                                |
+| Variable           | Description                                          |
+| ------------------ | ---------------------------------------------------- |
+| `DEFRA_ID_ENABLED` | Enables defraId auth, and hides the SBI selector UI. |
+| `FEEDBACK_LINK`    | URL to feedback (e.g., GitHub issue, form).          |
 
 ### GAS Integration
 
