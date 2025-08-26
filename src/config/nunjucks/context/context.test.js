@@ -28,7 +28,7 @@ const getExpectedContext = () => ({
   ],
   serviceName: 'Manage land-based actions',
   serviceUrl: '/',
-  enableSbiSelector: expect.any(Boolean),
+  defraIdEnabled: expect.any(Boolean),
   auth: {
     isAuthenticated: false,
     name: undefined,
@@ -42,7 +42,7 @@ const getMinimalFallbackContext = () => ({
   assetPath: '/public/assets/rebrand',
   serviceName: 'Manage land-based actions',
   serviceUrl: '/',
-  enableSbiSelector: expect.any(Boolean),
+  defraIdEnabled: expect.any(Boolean),
   auth: {
     isAuthenticated: false,
     sbi: null,
@@ -178,7 +178,7 @@ describe('context', () => {
         navigation: expect.any(Array),
         serviceName: 'Manage land-based actions',
         serviceUrl: '/',
-        enableSbiSelector: expect.any(Boolean),
+        defraIdEnabled: expect.any(Boolean),
         auth: {
           isAuthenticated: false,
           name: undefined,

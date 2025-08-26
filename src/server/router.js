@@ -8,7 +8,7 @@ import { sbi } from '~/src/server/sbi/index.js'
 import { createTasklistRoute } from '~/src/server/tasklist/tasklist.controller.js'
 import { agreements } from '~/src/server/agreements/index.js'
 
-const enableSbiSelector = config.get('landGrants.enableSbiSelector')
+const defraIdEnabled = config.get('defraId.enabled')
 
 /**
  * @satisfies {ServerRegisterPluginObject<void>}
@@ -23,7 +23,7 @@ export const router = {
       await server.register([health])
 
       // Dev specific routes
-      if (enableSbiSelector) {
+      if (defraIdEnabled) {
         await server.register([sbi])
       }
 
