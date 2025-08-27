@@ -54,7 +54,8 @@ describe('ConfirmFarmDetailsController', () => {
       auth: {
         credentials: {
           currentRelationshipId: 'SBI123456',
-          contactId: '1100014934'
+          contactId: '1100014934',
+          relationships: ['1101629797:SBI123456']
         }
       }
     }

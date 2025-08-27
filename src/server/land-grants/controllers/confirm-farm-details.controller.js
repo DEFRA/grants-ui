@@ -32,10 +32,14 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
 
   selectSbiAndCrn(request) {
     if (config.get('defraId.enabled')) {
-      sbiStore.set(request.auth.credentials.currentRelationshipId)
+      const sbi =
+        (Array.isArray(request.auth.credentials.relationships) &&
+          request.auth.credentials.relationships[0]?.split(':')[1]) ||
+        null
+      sbiStore.set(sbi)
       return {
         crn: request.auth.credentials.contactId,
-        sbi: request.auth.credentials.currentRelationshipId
+        sbi
       }
     }
 
