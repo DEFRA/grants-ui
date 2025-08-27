@@ -407,5 +407,13 @@ describe('ConfirmFarmDetailsController', () => {
       const result = await controller.selectSbiAndCrn(mockRequest)
       expect(result).toEqual({ crn: '1100014934', sbi: 'SBI123456' })
     })
+
+    it('should return null sbi when no relationships in the request', async () => {
+      config.get.mockReturnValue(true)
+      mockRequest.auth.credentials.relationships = null
+      fetchBusinessAndCustomerInformation.mockResolvedValue(mockData)
+      const result = await controller.selectSbiAndCrn(mockRequest)
+      expect(result).toEqual({ crn: '1100014934', sbi: null })
+    })
   })
 })
