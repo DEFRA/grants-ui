@@ -5,7 +5,7 @@ import {
   parseLandParcel,
   triggerApiActionsValidation
 } from '~/src/server/land-grants/services/land-grants.service.js'
-import { sbiStore } from '~/.server/server/sbi/state.js'
+// import { sbiStore } from '~/.server/server/sbi/state.js'
 
 const unitRatesForActions = {
   CMOR1: 100,
@@ -138,10 +138,10 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
 
       const { actionsObj } = this.extractActionsDataFromPayload(payload)
       // Create an updated state with the new action data
-      const newState = await this.buildNewState(state, actionsObj)
+      const newState = await this.buildNewState(state, request, actionsObj)
 
       if (payload.action === 'validate') {
-        const { errors, errorSummary } = await this.validatePayload(payload, actionsObj, sheetId, parcelId)
+        const { errors, errorSummary } = await this.validatePayload(payload, request, actionsObj, sheetId, parcelId)
 
         if (Object.keys(errors).length > 0) {
           return h.view(viewName, {
@@ -161,7 +161,7 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
     return fn
   }
 
-  validatePayload = async (payload, actionsObj, sheetId, parcelId) => {
+  validatePayload = async (payload, request, actionsObj, sheetId, parcelId) => {
     const errors = {}
 
     if (payload?.landAction?.length === 0) {
@@ -171,7 +171,10 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
     }
 
     if (Object.keys(actionsObj).length > 0) {
+      const { sbi } = request.auth.credentials
+
       const { valid, errorMessages = [] } = await triggerApiActionsValidation({
+        sbi,
         sheetId,
         parcelId,
         actionsObj
@@ -194,7 +197,7 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
     return { errors, errorSummary }
   }
 
-  buildNewState = async (state, actionsObj) => {
+  buildNewState = async (state, request, actionsObj) => {
     // Add the current actions to the land parcels object
     const updatedLandParcels = {
       ...state.landParcels, // Spread existing land parcels
@@ -209,8 +212,10 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
 
     let draftApplicationAnnualTotalPence = state.draftApplicationAnnualTotalPence || 0
 
+    const { sbi } = request.auth.credentials
+
     // Get all land actions across all parcels
-    const landActions = this.prepareLandActionsForPayment(updatedLandParcels, sbiStore.get('sbi'))
+    const landActions = this.prepareLandActionsForPayment(updatedLandParcels, sbi)
 
     // Call the API with all land actions
     const paymentDetails = await calculateGrantPayment({

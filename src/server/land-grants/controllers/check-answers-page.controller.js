@@ -101,15 +101,6 @@ export default class CheckAnswersPageController extends SummaryPageController {
   }
 
   /**
-   * Gets the business data needed for the summary
-   * @returns {Promise<object>} Business data
-   */
-  getBusinessData() {
-    const sbi = sbiStore.get('sbi') // TODO: Get sbi from defraID
-    return { sbi }
-  }
-
-  /**
    * Gets the rows for the summary list view.
    * @param {PageSummary} summaryList - The summary list definition
    * @param {FormContext} context - The form context containing state
@@ -118,10 +109,9 @@ export default class CheckAnswersPageController extends SummaryPageController {
   getViewRows(summaryList, context) {
     this.validateContext(context)
 
-    const { draftApplicationAnnualTotalPence, landParcels } = context.state
+    const { draftApplicationAnnualTotalPence, sbi, landParcels } = context.state
     const baseRows = summaryList.rows || []
 
-    const sbi = sbiStore.get('sbi') // TODO: Get sbi from defraID
     const totalActions = this.calculateTotalActions(landParcels)
     const businessRow = createSbiRow(sbi)
     const paymentRow = createPaymentRow(draftApplicationAnnualTotalPence)
@@ -146,8 +136,9 @@ export default class CheckAnswersPageController extends SummaryPageController {
       return viewModel
     }
 
+    const { sbi } = request.auth.credentials
     const summaryList = checkAnswers[0].summaryList
-    const rows = this.getViewRows(summaryList, context)
+    const rows = this.getViewRows(summaryList, sbi, context)
 
     return {
       ...viewModel,

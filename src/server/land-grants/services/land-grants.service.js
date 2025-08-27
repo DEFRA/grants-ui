@@ -46,11 +46,10 @@ export async function postToLandGrantsApi(endpoint, body) {
 
 /**
  * Maps land actions into the expected payload structure for the API.
- * @param {{ sheetId: string, parcelId: string, actionsObj: object }} param0
+ * @param {{ sheetId: string, parcelId: string, actionsObj: object, sbi: string }} param0
  * @returns {object}
  */
-export const landActionsToApiPayload = ({ sheetId, parcelId, actionsObj }) => {
-  const sbi = sbiStore.get('sbi') // TODO: change this once DefraID is in place
+export const landActionsToApiPayload = ({ sheetId, parcelId, actionsObj, sbi }) => {
   return {
     sheetId,
     parcelId,
@@ -98,13 +97,13 @@ export async function fetchAvailableActionsForParcel({ parcelId = '', sheetId = 
 
 /**
  * Validates land actions through the Land Grants API.
- * @param {{ sheetId: string, parcelId: string, actionsObj: object }} payload
+ * @param {{ sbi: string, sheetId: string, parcelId: string, actionsObj: object }} payload
  * @returns {Promise<object>} - Validation result
  * @throws {Error}
  */
-export async function triggerApiActionsValidation({ sheetId, parcelId, actionsObj = {} }) {
+export async function triggerApiActionsValidation({ sbi, sheetId, parcelId, actionsObj = {} }) {
   return postToLandGrantsApi('/actions/validate', {
-    landActions: [landActionsToApiPayload({ sheetId, parcelId, actionsObj })]
+    landActions: [landActionsToApiPayload({ sheetId, parcelId, actionsObj, sbi })]
   })
 }
 
@@ -115,14 +114,18 @@ export async function triggerApiActionsValidation({ sheetId, parcelId, actionsOb
  * @throws {Error}
  */
 async function fetchParcelsSize(parcelIds) {
-  const data = await postToLandGrantsApi('/parcels', {
-    parcelIds,
-    fields: ['size']
-  })
-  return data.parcels.reduce((acc, p) => {
-    acc[stringifyParcel(p)] = p.size
-    return acc
-  }, {})
+  try {
+    const data = await postToLandGrantsApi('/parcels', {
+      parcelIds,
+      fields: ['size']
+    })
+    return data.parcels.reduce((acc, p) => {
+      acc[stringifyParcel(p)] = p.size
+      return acc
+    }, {})
+  } catch (error) {
+    return {}
+  }
 }
 
 /**

@@ -67,7 +67,7 @@ describe('SubmissionPageController', () => {
 
       expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
         {
-          sbi: String(sbiStore.get('sbi')),
+          sbi: 'sbi',
           frn: 'frn',
           crn: 'crn',
           defraId: 'defraId',

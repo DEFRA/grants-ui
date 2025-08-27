@@ -17,7 +17,7 @@ let webpackManifest
  */
 export async function context(request) {
   try {
-    const tempSbi = sbiStore.get('sbi')
+    const { sbi } = request.auth.credentials
 
     if (!webpackManifest) {
       try {
@@ -46,7 +46,7 @@ export async function context(request) {
     }
     const auth = {
       isAuthenticated: request?.auth?.isAuthenticated ?? false,
-      sbi: session.sbi || tempSbi, // Use temp SBI if no session SBI
+      sbi: session.sbi || sbi, // Use temp SBI if no session SBI
       name: session.name,
       organisationId: session.organisationId,
       role: session.role

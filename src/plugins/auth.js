@@ -5,6 +5,7 @@ import { getOidcConfig } from '~/src/server/auth/get-oidc-config.js'
 import { getSafeRedirect } from '~/src/server/auth/get-safe-redirect.js'
 import { refreshTokens } from '~/src/server/auth/refresh-tokens.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { sbiStore } from '~/src/server/sbi/state.js'
 
 const defraIdEnabled = config.get('defraId.enabled')
 
@@ -69,12 +70,40 @@ function getLoggingDetails(oidcConfig) {
   }
 }
 
+function findByRelationshipId(relationships, targetId) {
+  const sbi = relationships.find((relationship) => relationship.split(':')[0] === targetId)
+  return sbi.split(':')[1]
+}
+
+function setSbiAndCrn(request) {
+  if (request.auth.isAuthenticated) {
+    if (config.get('defraId.enabled')) {
+      const sbi = findByRelationshipId(
+        request.auth.credentials.relationships,
+        request.auth.credentials.currentRelationshipId
+      )
+      request.auth.credentials.sbi = sbi
+      request.auth.credentials.crn = request.auth.credentials.contactId
+    } else {
+      request.auth.credentials.crn = config.get('landGrants.customerReferenceNumber')
+      request.auth.credentials.sbi = sbiStore.get('sbi')
+    }
+  }
+}
+
 function setupAuthStrategies(server, oidcConfig) {
   // Cookie is a built-in authentication strategy for hapi.js that authenticates users based on a session cookie
   // Used for all non-Defra Identity routes
   // Lax policy required to allow redirection after Defra Identity sign out
   const cookieOptions = getCookieOptions()
   server.auth.strategy('session', 'cookie', cookieOptions)
+
+  server.ext('onPostAuth', (request, h) => {
+    // On post authentication, hook into the request to set the sbi and crn, defraId is disabled, default to the sbi from sbiStore
+    setSbiAndCrn(request)
+    console.log('------request.auth.credentials------', request.auth.credentials)
+    return h.continue
+  })
 
   // Only register the defra-id strategy if it's enabled in the config and oidcConfig is available
   if (defraIdEnabled && oidcConfig) {
@@ -346,6 +375,9 @@ function getCookieOptions() {
             )
             userSession.token = newToken
             userSession.refreshToken = newRefreshToken
+            console.log('------userSession------', userSession)
+            userSession.andrew = true
+
             await request.server.app.cache.set(session.sessionId, userSession)
 
             log(LogCodes.AUTH.TOKEN_VERIFICATION_SUCCESS, {
