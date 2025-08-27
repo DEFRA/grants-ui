@@ -54,7 +54,8 @@ describe('ConfirmFarmDetailsController', () => {
       auth: {
         credentials: {
           currentRelationshipId: 'SBI123456',
-          contactId: '1100014934'
+          contactId: '1100014934',
+          relationships: ['1101629797:SBI123456']
         }
       }
     }
@@ -405,6 +406,14 @@ describe('ConfirmFarmDetailsController', () => {
       fetchBusinessAndCustomerInformation.mockResolvedValue(mockData)
       const result = await controller.selectSbiAndCrn(mockRequest)
       expect(result).toEqual({ crn: '1100014934', sbi: 'SBI123456' })
+    })
+
+    it('should return null sbi when no relationships in the request', async () => {
+      config.get.mockReturnValue(true)
+      mockRequest.auth.credentials.relationships = null
+      fetchBusinessAndCustomerInformation.mockResolvedValue(mockData)
+      const result = await controller.selectSbiAndCrn(mockRequest)
+      expect(result).toEqual({ crn: '1100014934', sbi: null })
     })
   })
 })
