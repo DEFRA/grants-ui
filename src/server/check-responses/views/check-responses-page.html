@@ -34,17 +34,6 @@
             text: "Continue",
             preventDoubleClick: true
           }) }}
-
-          {% set allowSaveAndReturn = true %}
-          {% if allowSaveAndReturn %}
-            {{ govukButton({
-              text: "Save and return",
-              classes: "govuk-button--secondary",
-              name: "action",
-              value: "save-and-return",
-              preventDoubleClick: true
-            }) }}
-          {% endif %}
         </div>
       </form>
     {% endblock %}

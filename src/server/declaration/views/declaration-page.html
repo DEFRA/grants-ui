@@ -15,20 +15,20 @@
   }]
 }
 %}
+{% set mainClasses = "govuk-body" %}
 
 {% block content %}
-<div class="govuk-body">
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
       <h1 class="govuk-heading-l">Confirm and send</h1>
-      <p>I confirm that, to the best of my knowledge, the details I have provided are correct.</p>
-      <p>I understand the score was based on the answers I provided</p>
-      <p>I am aware the information I submit will be checked.</p>
-      <p>I am happy to be contacted by Defra and RPA (or a third-party on their behalf) about my application.</p>
+      <p class="govuk-body">I confirm that, to the best of my knowledge, the details I have provided are correct.</p>
+      <p class="govuk-body">I understand the score was based on the answers I provided</p>
+      <p class="govuk-body">I am aware the information I submit will be checked.</p>
+      <p class="govuk-body">I am happy to be contacted by Defra and RPA (or a third-party on their behalf) about my application.</p>
 
       <h2 class="govuk-heading-m">Improving our schemes</h2>
-      <p>As we develop new services we get feedback from farmers and agents.</p>
-      <p>You may be contacted by us or a third party that we work with.</p>
+      <p class="govuk-body">As we develop new services we get feedback from farmers and agents.</p>
+      <p class="govuk-body">You may be contacted by us or a third party that we work with.</p>
 
       {{ govukCheckboxes({
         idPrefix: 'consentOptional',
@@ -53,11 +53,10 @@
     </div>
     <div class="govuk-grid-column-full">
       <hr/>
-      <p>
+      <p class="govuk-body">
         The Department for Environment, Food and Rural Affairs (Defra) is the data controller for personal data you give to RPA. For information on how we handle personal data go to <a class="govuk-link" href="https://www.gov.uk" target="_blank" rel="noopener noreferrer">GOV.UK (opens in new tab)</a> and search
         <a class="govuk-link" href="https://www.gov.uk/government/organisations/rural-payments-agency/about/personal-information-charter" target="_blank" rel="noopener noreferrer">Rural Payments Agency personal information charter (opens in new tab).</a>
       </p>
     </div>
   </div>
-</div>
 {% endblock %}
