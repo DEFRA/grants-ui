@@ -17,12 +17,6 @@ jest.mock('~/src/server/common/helpers/logging/logger.js', () => ({
   }))
 }))
 
-jest.mock('~/src/server/sbi/state.js', () => ({
-  sbiStore: {
-    get: jest.fn(() => 'test-sbi-value')
-  }
-}))
-
 jest.mock('@hapi/jwt', () => ({
   token: {
     generate: jest.fn(() => 'mocked-jwt-token')
@@ -67,6 +61,12 @@ describe('Agreements Controller', () => {
       logger: {
         info: jest.fn(),
         error: jest.fn()
+      },
+      auth: {
+        credentials: {
+          sbi: '106284736',
+          crn: '1100014934'
+        }
       }
     }
 
@@ -240,7 +240,7 @@ describe('Agreements Controller', () => {
         'x-base-url': '/agreement',
         'x-encrypted-auth': 'mocked-jwt-token'
       })
-      expect(Jwt.token.generate).toHaveBeenCalledWith({ sbi: 'test-sbi-value', source: 'defra' }, 'test-jwt-secret')
+      expect(Jwt.token.generate).toHaveBeenCalledWith({ sbi: '106284736', source: 'defra' }, 'test-jwt-secret')
     })
 
     test('should build proxy headers for POST request with default content-type', async () => {

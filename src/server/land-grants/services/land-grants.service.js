@@ -1,7 +1,6 @@
 import { config } from '~/src/config/config.js'
 import { formatCurrency } from '~/src/config/nunjucks/filters/format-currency.js'
 import { fetchParcelsForSbi } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
-import { sbiStore } from '../../sbi/state.js'
 
 const LAND_GRANTS_API_URL = config.get('landGrants.grantsServiceApiEndpoint')
 
@@ -46,11 +45,10 @@ export async function postToLandGrantsApi(endpoint, body) {
 
 /**
  * Maps land actions into the expected payload structure for the API.
- * @param {{ sheetId: string, parcelId: string, actionsObj: object }} param0
+ * @param {{ sbi: string, sheetId: string, parcelId: string, actionsObj: object }} param0
  * @returns {object}
  */
-export const landActionsToApiPayload = ({ sheetId, parcelId, actionsObj }) => {
-  const sbi = sbiStore.get('sbi') // TODO: change this once DefraID is in place
+export const landActionsToApiPayload = ({ sbi, sheetId, parcelId, actionsObj }) => {
   return {
     sheetId,
     parcelId,
@@ -102,9 +100,9 @@ export async function fetchAvailableActionsForParcel({ parcelId = '', sheetId = 
  * @returns {Promise<object>} - Validation result
  * @throws {Error}
  */
-export async function triggerApiActionsValidation({ sheetId, parcelId, actionsObj = {} }) {
+export async function triggerApiActionsValidation({ sbi, sheetId, parcelId, actionsObj = {} }) {
   return postToLandGrantsApi('/actions/validate', {
-    landActions: [landActionsToApiPayload({ sheetId, parcelId, actionsObj })]
+    landActions: [landActionsToApiPayload({ sbi, sheetId, parcelId, actionsObj })]
   })
 }
 

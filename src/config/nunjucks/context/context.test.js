@@ -75,7 +75,7 @@ const setupSbiStoreError = (errorMessage = 'SBI store access failed') => {
 }
 
 describe('context', () => {
-  const mockRequest = { path: '/' }
+  const mockRequest = { path: '/', auth: { credentials: { sbi: 106284736 } } }
 
   afterEach(() => {
     jest.clearAllMocks()
@@ -266,7 +266,7 @@ describe('context', () => {
           app: {
             cache: {
               get: jest.fn().mockReturnValue({
-                sbi: '123456789',
+                sbi: '106284736',
                 name: 'John Doe',
                 organisationId: 'org123',
                 role: 'admin'
@@ -284,7 +284,7 @@ describe('context', () => {
 
       expect(contextResult.auth).toEqual({
         isAuthenticated: true,
-        sbi: '123456789',
+        sbi: 106284736,
         name: 'John Doe',
         organisationId: 'org123',
         role: 'admin'

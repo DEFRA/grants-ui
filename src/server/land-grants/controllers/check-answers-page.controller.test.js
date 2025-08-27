@@ -1,15 +1,4 @@
-import { sbiStore } from '../../sbi/state.js'
-// import { calculateGrantPayment } from '../services/land-grants.service.js'
 import CheckAnswersPageController from './check-answers-page.controller.js'
-
-jest.mock('../../sbi/state.js', () => ({
-  sbiStore: {
-    get: jest.fn()
-  }
-}))
-// jest.mock('../services/land-grants.service.js', () => ({
-//   calculateGrantPayment: jest.fn()
-// }))
 
 describe('CheckAnswersPageController', () => {
   let controller
@@ -54,6 +43,11 @@ describe('CheckAnswersPageController', () => {
       payload: {},
       logger: {
         error: jest.fn()
+      },
+      auth: {
+        credentials: {
+          sbi: '106284736'
+        }
       }
     }
 
@@ -67,8 +61,6 @@ describe('CheckAnswersPageController', () => {
     mockH = {
       view: jest.fn().mockReturnValue('mocked-view-response')
     }
-
-    sbiStore.get.mockReturnValue('123456789')
 
     controller = new CheckAnswersPageController(mockModel, mockPageDef)
     controller.getNextPath = jest.fn().mockReturnValue('/next-path')
@@ -240,38 +232,16 @@ describe('CheckAnswersPageController', () => {
     })
   })
 
-  describe('getBusinessData', () => {
-    it('should get SBI data', () => {
-      const businessData = controller.getBusinessData()
-
-      expect(businessData).toEqual({
-        sbi: '123456789'
-      })
-
-      expect(sbiStore.get).toHaveBeenCalledWith('sbi')
-    })
-
-    it('should handle missing SBI', () => {
-      sbiStore.get.mockReturnValue(null)
-
-      const businessData = controller.getBusinessData()
-
-      expect(businessData).toEqual({
-        sbi: null
-      })
-    })
-  })
-
   describe('getViewRows', () => {
     it('should create all required rows in correct order', () => {
       const summaryList = { rows: ['base-row'] }
-      const rows = controller.getViewRows(summaryList, mockContext)
+      const rows = controller.getViewRows(summaryList, mockRequest.auth.credentials.sbi, mockContext)
 
       expect(rows).toHaveLength(8) // SBI + payment + base + total actions + parcel based + 3 parcel actions
 
       expect(rows[0]).toEqual({
         key: { text: 'Single business identifier (SBI)' },
-        value: { text: '123456789' }
+        value: { text: '106284736' }
       })
 
       expect(rows[1]).toEqual({
@@ -342,7 +312,7 @@ describe('CheckAnswersPageController', () => {
 
     it('should handle empty summaryList rows', () => {
       const summaryList = {}
-      const rows = controller.getViewRows(summaryList, mockContext)
+      const rows = controller.getViewRows(summaryList, mockRequest.auth.credentials.sbi, mockContext)
 
       expect(rows).toHaveLength(7) // SBI + payment + total actions + parcel based + 3 parcel actions (no base rows)
     })
@@ -351,7 +321,7 @@ describe('CheckAnswersPageController', () => {
       const invalidContext = { state: {} }
       const summaryList = { rows: [] }
 
-      expect(() => controller.getViewRows(summaryList, invalidContext)).toThrow(
+      expect(() => controller.getViewRows(summaryList, mockRequest.auth.credentials.sbi, invalidContext)).toThrow(
         'Land parcels data is missing from context'
       )
     })
@@ -390,7 +360,7 @@ describe('CheckAnswersPageController', () => {
 
       const sbiRow = rows.find((row) => row.key && row.key.text === 'Single business identifier (SBI)')
       expect(sbiRow).toBeDefined()
-      expect(sbiRow.value.text).toBe('123456789')
+      expect(sbiRow.value.text).toBe('106284736')
     })
 
     it('should return original view model when no checkAnswers', async () => {
