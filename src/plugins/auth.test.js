@@ -4,7 +4,7 @@ import Hapi from '@hapi/hapi'
 import Jwt from '@hapi/jwt'
 import Yar from '@hapi/yar'
 import { config } from '~/src/config/config.js'
-import AuthPlugin, { getBellOptions, getCookieOptions } from '~/src/plugins/auth.js'
+import AuthPlugin, { getBellOptions, getCookieOptions, setSbiAndCrn } from '~/src/plugins/auth.js'
 import { getOidcConfig } from '~/src/server/auth/get-oidc-config.js'
 import { getSafeRedirect } from '~/src/server/auth/get-safe-redirect.js'
 import { refreshTokens } from '~/src/server/auth/refresh-tokens.js'
@@ -219,6 +219,7 @@ describe('Auth Plugin', () => {
 
     server.auth.strategy = jest.fn()
     server.auth.default = jest.fn()
+    server.ext = jest.fn()
 
     getOidcConfig.mockResolvedValue(mockOidcConfig)
 
@@ -240,8 +241,53 @@ describe('Auth Plugin', () => {
     expect(server.auth.strategy).toHaveBeenCalledTimes(2)
     expect(server.auth.strategy).toHaveBeenCalledWith('defra-id', 'bell', expect.any(Object))
     expect(server.auth.strategy).toHaveBeenCalledWith('session', 'cookie', expect.any(Object))
-
+    expect(server.ext).toHaveBeenCalledWith('onPostAuth', expect.any(Function))
     expect(server.auth.default).toHaveBeenCalledWith('session')
+  })
+
+  test('on auth sets sbi and crn when defraId is enabled', () => {
+    const mockRequest = {
+      auth: {
+        isAuthenticated: true,
+        credentials: {
+          currentRelationshipId: '5604452',
+          contactId: '1100014934',
+          relationships: ['5604452:106705779:Mrs Jane Doe:1:External:0']
+        }
+      }
+    }
+
+    setSbiAndCrn(mockRequest, { continue: jest.fn() })
+    expect(mockRequest.auth.credentials).toEqual({
+      ...mockRequest.auth.credentials,
+      crn: '1100014934',
+      sbi: '106705779'
+    })
+  })
+
+  test('on auth sets default sbi and crn when defraId is disabled', () => {
+    config.get.mockImplementation((key) => {
+      if (key === 'defraId.enabled') {
+        return false
+      }
+      if (key === 'landGrants.customerReferenceNumber') {
+        return '1100014934'
+      }
+      return '106284736'
+    })
+
+    const mockRequest = {
+      auth: {
+        isAuthenticated: true,
+        credentials: {}
+      }
+    }
+
+    setSbiAndCrn(mockRequest, { continue: jest.fn() })
+    expect(mockRequest.auth.credentials).toEqual({
+      crn: '1100014934',
+      sbi: '106284736'
+    })
   })
 
   test('logs plugin registration start and completion', async () => {
