@@ -46,9 +46,10 @@ export async function context(request) {
     }
     const auth = {
       isAuthenticated: request?.auth?.isAuthenticated ?? false,
-      sbi: session.sbi || tempSbi, // Use temp SBI if no session SBI
-      name: session.name,
-      organisationId: session.organisationId,
+      sbi: request?.auth?.credentials?.sbi || session.sbi || tempSbi, // Use temp SBI if no session SBI
+      name: request?.auth?.credentials?.name,
+      organisationId: request?.auth?.credentials?.organisationId,
+      organisationName: request?.auth?.credentials?.organisationName,
       role: session.role
     }
 

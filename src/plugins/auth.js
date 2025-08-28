@@ -74,8 +74,8 @@ function setupAuthStrategies(server, oidcConfig) {
   // Used for all non-Defra Identity routes
   // Lax policy required to allow redirection after Defra Identity sign out
   const cookieOptions = getCookieOptions()
-  server.auth.strategy('session', 'cookie', cookieOptions)
 
+  server.auth.strategy('session', 'cookie', cookieOptions)
   // Only register the defra-id strategy if it's enabled in the config and oidcConfig is available
   if (defraIdEnabled && oidcConfig) {
     // Bell is a third-party plugin that provides a common interface for OAuth 2.0 authentication
@@ -88,6 +88,8 @@ function setupAuthStrategies(server, oidcConfig) {
   // Set the default authentication strategy to session
   // All routes will require authentication unless explicitly set to 'defra-id' or `auth: false`
   server.auth.default('session')
+
+  server.ext('onPostAuth', (request, h) => mapPayloadToProfile(request, h))
 }
 
 export default {
@@ -217,13 +219,37 @@ function createCredentialsProfile(credentials, payload) {
 
   credentials.profile = {
     ...payload,
-    crn: payload.contactId,
-    name: `${payload.firstName} ${payload.lastName}`,
-    organisationId: payload.currentRelationshipId,
     sessionId
   }
 
   return credentials
+}
+
+export function mapPayloadToProfile(request, h) {
+  if (request.auth.isAuthenticated) {
+    // Get the actual user data, handling both nested and flat structures
+    const userData = request.auth.credentials.profile || request.auth.credentials
+
+    const currentRelationship = (userData?.relationships || [])
+      .find((relationship) => relationship.split(':')[0] === userData.currentRelationshipId)
+      .split(':')
+    // eslint-disable-next-line no-unused-vars
+    const [_relationshipId, organisationId, organisationName, _organisationLoa, _relationship, _relationshipLoa] =
+      currentRelationship
+
+    const existingCreds = request.auth.credentials
+
+    request.auth.credentials = {
+      ...existingCreds,
+      sbi: Number(organisationId),
+      crn: Number(userData.contactId),
+      name: `${userData.firstName} ${userData.lastName}`,
+      organisationId: Number(organisationId),
+      organisationName
+    }
+  }
+
+  return h.continue
 }
 
 function getBellOptions(oidcConfig) {
