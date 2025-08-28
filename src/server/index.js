@@ -47,6 +47,7 @@ import { fetchSavedStateFromApi } from './common/helpers/state/fetch-saved-state
 import { formsAuthCallback } from '~/src/server/auth/forms-engine-plugin-auth-helpers.js'
 import { persistStateToApi } from './common/helpers/state/persist-state-helper.js'
 import CheckResponsesPageController from '~/src/server/check-responses/check-responses.controller.js'
+import { sbiStore } from '~/src/server/sbi/state.js'
 
 const SESSION_CACHE_NAME = 'session.cache.name'
 
@@ -196,14 +197,15 @@ const mockSessionData = async (request, log, LogCodes) => {
     const sessionData = {
       isAuthenticated: true,
       sessionId,
-      contactId: 'anonymous',
+      contactId: sbiStore.get('sbi'),
       firstName: 'Anonymous',
       lastName: 'User',
       name: 'Anonymous User',
       role: 'user',
       scope: ['user'],
-      crn: 'anonymous-user',
-      relationships: ['business:default-business']
+      currentRelationshipId: `${sbiStore.get('sbi')}1234`,
+      crn: sbiStore.get('sbi'),
+      relationships: [`${sbiStore.get('sbi')}1234:${sbiStore.get('sbi')}:Farm ${sbiStore.get('sbi')}`]
     }
 
     await request.server.app.cache.set(sessionId, sessionData)

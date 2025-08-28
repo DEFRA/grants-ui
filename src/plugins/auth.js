@@ -84,6 +84,8 @@ function setupAuthStrategies(server, oidcConfig) {
     const bellOptions = getBellOptions(oidcConfig)
     server.auth.strategy('defra-id', 'bell', bellOptions)
   }
+
+  server.ext('onPostAuth', (request, h) => mapPayloadToProfile(request, h))
 }
 
 export default {
@@ -213,13 +215,37 @@ function createCredentialsProfile(credentials, payload) {
 
   credentials.profile = {
     ...payload,
-    crn: payload.contactId,
-    name: `${payload.firstName} ${payload.lastName}`,
-    organisationId: payload.currentRelationshipId,
     sessionId
   }
 
   return credentials
+}
+
+export function mapPayloadToProfile(request, h) {
+  if (request.auth.isAuthenticated) {
+    // Get the actual user data, handling both nested and flat structures
+    const userData = request.auth.credentials.profile || request.auth.credentials
+
+    const currentRelationship = (userData?.relationships || [])
+      .find((relationship) => relationship.split(':')[0] === userData.currentRelationshipId)
+      .split(':')
+    // eslint-disable-next-line no-unused-vars
+    const [_relationshipId, organisationId, organisationName, _organisationLoa, _relationship, _relationshipLoa] =
+      currentRelationship
+
+    const existingCreds = request.auth.credentials
+
+    request.auth.credentials = {
+      ...existingCreds,
+      sbi: Number(organisationId),
+      crn: Number(userData.contactId),
+      name: `${userData.firstName} ${userData.lastName}`,
+      organisationId: Number(organisationId),
+      organisationName
+    }
+  }
+
+  return h.continue
 }
 
 function getBellOptions(oidcConfig) {
