@@ -5,6 +5,7 @@ import { getOidcConfig } from '~/src/server/auth/get-oidc-config.js'
 import { getSafeRedirect } from '~/src/server/auth/get-safe-redirect.js'
 import { refreshTokens } from '~/src/server/auth/refresh-tokens.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { sbiStore } from '~/src/server/sbi/state.js'
 
 const defraIdEnabled = config.get('defraId.enabled')
 
@@ -74,6 +75,7 @@ function setupAuthStrategies(server, oidcConfig) {
   // Used for all non-Defra Identity routes
   // Lax policy required to allow redirection after Defra Identity sign out
   const cookieOptions = getCookieOptions()
+
   server.auth.strategy('session', 'cookie', cookieOptions)
 
   // Only register the defra-id strategy if it's enabled in the config and oidcConfig is available
@@ -88,6 +90,8 @@ function setupAuthStrategies(server, oidcConfig) {
   // Set the default authentication strategy to session
   // All routes will require authentication unless explicitly set to 'defra-id' or `auth: false`
   server.auth.default('session')
+
+  server.ext('onPostAuth', (request, h) => mapPayloadToProfile(request, h))
 }
 
 export default {
@@ -224,32 +228,33 @@ function createCredentialsProfile(credentials, payload) {
   return credentials
 }
 
-function mapPayloadToProfile(payload) {
-  const { currentRelationshipId, contactId, firstName, lastName, relationships } = payload
+function mapPayloadToProfile(request, h) {
 
-  // "relationships":[
-  //     "5604996:123456789:Farm 1:1:External:0",
-  //     "5567443:987654321:Farm 2:1:External:0"
-  // ]
+  console.log('-----called mapping ----')
 
-  // A relationship is in the format (delimited by a colon):
-  // relationshipId:organisationId:organisationName:organisationLoa:relationship:relationshipLoa
-  // 5604996 - relationshipId - Unique ID of a relationship the user has selected (i.e should match the currentRelationshipId)
-  // 123456789 - organisationId/SBI - Business Identifier Number of the organisation the user has selected
-  // Farm 1 - organisationName - Name of the organisation the user has selected
+  if (request.auth.isAuthenticated) {
+    if (defraIdEnabled) {
+      const currentRelationship = (request.auth.credentials?.profile?.relationships || [])
+        .find((relationship) => relationship.split(':')[0] === request.auth.credentials.profile.currentRelationshipId)
+        .split(':')
+      const [_relationshipId, organisationId, organisationName, _organisationLoa, _relationship, _relationshipLoa] = currentRelationship
 
-  const foundRelationship = relationships.find((relationship) => {
-    const relationshipId = relationship.split(':')[0]
-    return relationshipId === currentRelationshipId
-  })
+      request.auth.credentials.profile.sbi = organisationId
+      request.auth.credentials.profile.crn = request.auth.credentials.profile.contactId
+      request.auth.credentials.profile.name = `${request.auth.credentials.firstName} ${request.auth.credentials.lastName}`
+      request.auth.credentials.profile.organisationId = organisationId
+      request.auth.credentials.profile.organisationName = organisationName
+    } else {
 
-  return {
-    sbi: foundRelationship?.split(':')[1],
-    organisationId: foundRelationship?.split(':')[1],
-    businessName: foundRelationship?.split(':')[2],
-    name: `${firstName} ${lastName}`,
-    crn: contactId
+      request.auth.credentials.profile.sbi = String(sbiStore.get('sbi'))
+      request.auth.credentials.profile.crn = config.get('landGrants.customerReferenceNumber')
+      request.auth.credentials.profile.name = `Edward Jones`
+      request.auth.credentials.profile.organisationId = String(sbiStore.get('sbi'))
+      request.auth.credentials.profile.organisationName = `J&S Hartley`
+    }
   }
+
+  return h.continue
 }
 
 function getBellOptions(oidcConfig) {
