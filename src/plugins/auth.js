@@ -245,9 +245,9 @@ function mapPayloadToProfile(payload) {
 
   return {
     sbi: foundRelationship?.split(':')[1],
+    organisationId: foundRelationship?.split(':')[1],
     businessName: foundRelationship?.split(':')[2],
     name: `${firstName} ${lastName}`,
-    organisationId: currentRelationshipId,
     crn: contactId
   }
 }

@@ -354,7 +354,7 @@ describe('Auth Plugin', () => {
         sbi: 'sbi-1234',
         businessName: 'Farm 1',
         name: `${MOCK_USERS.valid.firstName} ${MOCK_USERS.valid.lastName}`,
-        organisationId: MOCK_USERS.valid.currentRelationshipId
+        organisationId: 'sbi-1234'
       })
       // Check that sessionId is a valid UUID
       expect(credentials.profile.sessionId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/)
