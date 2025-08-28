@@ -51,7 +51,8 @@ const MOCK_USERS = {
     firstName: 'John',
     lastName: 'Doe',
     contactId: '12345',
-    currentRelationshipId: 'org-123'
+    currentRelationshipId: '123456',
+    relationships: ['org-456:sbi-5678:Farm 2:1234567890', '123456:987654:Farm 1:1234567890']
   },
   incomplete: {
     firstName: 'John'
@@ -346,10 +347,7 @@ describe('Auth Plugin', () => {
 
       expect(Jwt.token.decode).toHaveBeenCalledWith('test-token')
       expect(credentials.profile).toMatchObject({
-        ...MOCK_USERS.valid,
-        crn: MOCK_USERS.valid.contactId,
-        name: `${MOCK_USERS.valid.firstName} ${MOCK_USERS.valid.lastName}`,
-        organisationId: MOCK_USERS.valid.currentRelationshipId
+        ...MOCK_USERS.valid
       })
       // Check that sessionId is a valid UUID
       expect(credentials.profile.sessionId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/)
@@ -910,6 +908,104 @@ describe('Auth Plugin', () => {
         userId: MOCK_USERS.user789.contactId,
         organisationId: MOCK_USERS.user789.organisationId,
         step: LOG_MESSAGES.tokenVerification.steps.REFRESH_SUCCESS
+      })
+    })
+  })
+
+  describe('Setting up users details', () => {
+    let server
+
+    beforeEach(async () => {
+      server = Hapi.server()
+
+      // Mock the config to provide required values for testing
+      config.get.mockImplementation((key) => {
+        const testConfig = {
+          ...DEFAULT_CONFIG,
+          'session.cookie.password': 'at-least-32-characters-long-password-for-testing-purposes-only'
+        }
+        return testConfig[key]
+      })
+
+      // Register required plugins with proper configuration
+      await server.register([
+        Bell,
+        Cookie,
+        {
+          plugin: Yar,
+          options: {
+            storeBlank: false,
+            cookieOptions: {
+              password: 'at-least-32-characters-long-password-for-testing-purposes-only',
+              isSecure: false
+            }
+          }
+        }
+      ])
+
+      // Mock the cache that auth plugin expects
+      server.app.cache = {
+        get: jest.fn().mockResolvedValue(null),
+        set: jest.fn().mockResolvedValue(true)
+      }
+
+      // Register your auth plugin
+      await server.register(AuthPlugin)
+
+      // Add a test route that bypasses authentication for testing
+      server.route({
+        method: 'GET',
+        path: '/test-auth',
+        options: {
+          auth: false // Disable auth for this test route
+        },
+        handler: (request, h) => {
+          // Manually simulate an authenticated request
+          request.auth = {
+            isAuthenticated: true,
+            credentials: {
+              profile: {
+                contactId: '12345',
+                firstName: 'John',
+                lastName: 'Doe',
+                currentRelationshipId: '123456',
+                relationships: ['123456:987654:Farm 1:1234567890:relationship:relationshipLoa']
+              }
+            }
+          }
+
+          // Manually call the mapPayloadToProfile function
+          const { mapPayloadToProfile } = require('~/src/plugins/auth.js')
+          mapPayloadToProfile(request, h)
+
+          return {
+            credentials: request.auth.credentials,
+            isAuthenticated: request.auth.isAuthenticated
+          }
+        }
+      })
+    })
+
+    afterEach(() => {
+      jest.clearAllMocks()
+    })
+
+    test('should transform credentials through manual mapPayloadToProfile call', async () => {
+      const response = await server.inject({
+        method: 'GET',
+        url: '/test-auth'
+      })
+
+      expect(response.statusCode).toBe(200)
+      const payload = JSON.parse(response.payload)
+
+      expect(payload.credentials).toEqual({
+        profile: expect.any(Object),
+        sbi: 987654,
+        crn: 12345,
+        name: 'John Doe',
+        organisationId: 987654,
+        organisationName: 'Farm 1'
       })
     })
   })
