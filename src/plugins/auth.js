@@ -217,13 +217,39 @@ function createCredentialsProfile(credentials, payload) {
 
   credentials.profile = {
     ...payload,
-    crn: payload.contactId,
-    name: `${payload.firstName} ${payload.lastName}`,
-    organisationId: payload.currentRelationshipId,
+    ...mapPayloadToProfile(payload),
     sessionId
   }
 
   return credentials
+}
+
+function mapPayloadToProfile(payload) {
+  const { currentRelationshipId, contactId, firstName, lastName, relationships } = payload
+
+  // "relationships":[
+  //     "5604996:123456789:Farm 1:1:External:0",
+  //     "5567443:987654321:Farm 2:1:External:0"
+  // ]
+
+  // A relationship is in the format (delimited by a colon):
+  // relationshipId:organisationId:organisationName:organisationLoa:relationship:relationshipLoa
+  // 5604996 - relationshipId - Unique ID of a relationship the user has selected (i.e should match the currentRelationshipId)
+  // 123456789 - organisationId/SBI - Business Identifier Number of the organisation the user has selected
+  // Farm 1 - organisationName - Name of the organisation the user has selected
+
+  const foundRelationship = relationships.find((relationship) => {
+    const relationshipId = relationship.split(':')[0]
+    return relationshipId === currentRelationshipId
+  })
+
+  return {
+    sbi: foundRelationship?.split(':')[1],
+    businessName: foundRelationship?.split(':')[2],
+    name: `${firstName} ${lastName}`,
+    organisationId: currentRelationshipId,
+    crn: contactId
+  }
 }
 
 function getBellOptions(oidcConfig) {

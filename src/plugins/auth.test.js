@@ -51,7 +51,8 @@ const MOCK_USERS = {
     firstName: 'John',
     lastName: 'Doe',
     contactId: '12345',
-    currentRelationshipId: 'org-123'
+    currentRelationshipId: 'org-123',
+    relationships: ['org-456:sbi-5678:Farm 2:1234567890', 'org-123:sbi-1234:Farm 1:1234567890']
   },
   incomplete: {
     firstName: 'John'
@@ -350,6 +351,8 @@ describe('Auth Plugin', () => {
       expect(credentials.profile).toMatchObject({
         ...MOCK_USERS.valid,
         crn: MOCK_USERS.valid.contactId,
+        sbi: 'sbi-1234',
+        businessName: 'Farm 1',
         name: `${MOCK_USERS.valid.firstName} ${MOCK_USERS.valid.lastName}`,
         organisationId: MOCK_USERS.valid.currentRelationshipId
       })
