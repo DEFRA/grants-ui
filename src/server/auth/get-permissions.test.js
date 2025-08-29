@@ -40,7 +40,7 @@ describe('getPermissions', () => {
       role,
       privileges
     })
-    // eslint-disable-next-line
+
     const result = await getPermissions(crn, organisationId, token)
 
     expect(permissionsModule.getPersonId).toHaveBeenCalledWith({ crn, token })
@@ -64,8 +64,6 @@ describe('getPermissions', () => {
       role,
       privileges
     })
-
-    // eslint-disable-next-line
     const result = await getPermissions(crn, organisationId, token)
 
     expect(result).toEqual({
@@ -88,7 +86,6 @@ describe('getPermissions', () => {
       privileges
     })
 
-    // eslint-disable-next-line
     const result = await getPermissions(crn, organisationId, token)
 
     expect(result).toEqual({

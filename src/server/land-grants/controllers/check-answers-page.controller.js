@@ -180,7 +180,7 @@ export default class CheckAnswersPageController extends SummaryPageController {
         return h.view(this.viewName, viewModel)
       } catch (error) {
         request.logger.error({
-          message: `Error in CheckAnswersPageController GET handler`,
+          message: 'Error in CheckAnswersPageController GET handler',
           error
         })
         throw error

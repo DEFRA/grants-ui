@@ -386,7 +386,7 @@ describe('Auth Plugin', () => {
 
       expect(log).toHaveBeenCalledWith(LogCodes.AUTH.SIGN_IN_FAILURE, {
         ...LOG_MESSAGES.signInFailure.baseFields,
-        error: `Failed to store redirect parameter: Yar set error`,
+        error: 'Failed to store redirect parameter: Yar set error',
         step: LOG_MESSAGES.signInFailure.steps.REDIRECT_STORE_ERROR,
         redirectError: {
           message: 'Yar set error',
@@ -419,7 +419,7 @@ describe('Auth Plugin', () => {
 
       expect(log).toHaveBeenCalledWith(LogCodes.AUTH.SIGN_IN_FAILURE, {
         ...LOG_MESSAGES.signInFailure.baseFields,
-        error: `Bell location function failed: Config read error`,
+        error: 'Bell location function failed: Config read error',
         step: LOG_MESSAGES.signInFailure.steps.LOCATION_FUNCTION_ERROR,
         locationError: expect.objectContaining({
           message: 'Config read error',

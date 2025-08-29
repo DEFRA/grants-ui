@@ -2,7 +2,6 @@ import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { log } from '~/src/server/common/helpers/logging/log.js'
 import { LogCodes } from '~/src/server/common/helpers/logging/log-codes.js'
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const formsAuthCallback = (request, _params, _definition, _metadata) => {
   if (!request.auth.isAuthenticated) {
     log(LogCodes.AUTH.AUTH_DEBUG, {

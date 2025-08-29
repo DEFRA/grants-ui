@@ -19,7 +19,6 @@ function getPermissions(crn, organisationId, token) {
   return { role, scope }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function getPersonId(_headers) {
   // simulate call to RPS API
   // Only id is needed for mapping roles, but other fields shown for context for what else is available
@@ -58,7 +57,6 @@ function getPersonId(_headers) {
   return mockResponse._data.id
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function getRolesAndPrivileges(_personId, _organisationId, { _headers }) {
   // simulate call to Siti Agri API
   // returns all roles and privileges for so need to filter for logged in user

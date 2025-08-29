@@ -126,7 +126,7 @@ async function fetchFromConsolidatedView({ sbi, query, formatResponse }) {
     const responseJson = await makeConsolidatedViewRequest(query, sbi)
     return formatResponse(responseJson)
   } catch (error) {
-    logger.error({ err: error }, `Unexpected error fetching business data from Consolidated View API`)
+    logger.error({ err: error }, 'Unexpected error fetching business data from Consolidated View API')
     throw new ConsolidatedViewApiError(
       'Failed to fetch business data: ' + error.message,
       error.status,

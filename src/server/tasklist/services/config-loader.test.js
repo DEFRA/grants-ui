@@ -55,7 +55,7 @@ tasklist:
       readFile.mockRejectedValue(fileError)
 
       await expect(loadTasklistConfig(mockTasklistId)).rejects.toThrow(
-        `Failed to load tasklist config for 'test-tasklist': File not found`
+        "Failed to load tasklist config for 'test-tasklist': File not found"
       )
     })
 
@@ -67,7 +67,7 @@ tasklist:
       })
 
       await expect(loadTasklistConfig(mockTasklistId)).rejects.toThrow(
-        `Failed to load tasklist config for 'test-tasklist': Invalid YAML`
+        "Failed to load tasklist config for 'test-tasklist': Invalid YAML"
       )
     })
 

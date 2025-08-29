@@ -220,7 +220,7 @@ export const LogCodes = {
     },
     SYSTEM_SHUTDOWN: {
       level: 'info',
-      messageFunc: () => `System shutdown initiated`
+      messageFunc: () => 'System shutdown initiated'
     },
     EXTERNAL_API_CALL: {
       level: 'info',
