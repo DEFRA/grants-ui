@@ -1,5 +1,5 @@
 import { config } from '~/src/config/config.js'
-import { configureFormDefinition, formsService, addAllForms } from './form.js'
+import { configureFormDefinition, formsService, addAllForms, validateWhitelistConfiguration } from './form.js'
 
 const mockUrl = { pathname: '/mock/path' }
 global.URL = jest.fn(() => mockUrl)
@@ -24,11 +24,13 @@ jest.mock('~/src/config/config.js', () => ({
 }))
 
 const mockWarn = jest.fn()
+const mockInfo = jest.fn()
+const mockError = jest.fn()
 jest.mock('~/src/server/common/helpers/logging/logger.js', () => ({
   createLogger: jest.fn(() => ({
     warn: mockWarn,
-    info: jest.fn(),
-    error: jest.fn(),
+    info: mockInfo,
+    error: mockError,
     debug: jest.fn()
   }))
 }))
@@ -41,32 +43,87 @@ jest.mock('../config.js', () => ({
   }
 }))
 
+jest.mock('./forms-config.js', () => ({
+  allForms: [
+    {
+      path: 'src/server/common/forms/definitions/test-form.yaml',
+      id: 'test-form-id',
+      slug: 'test-form',
+      title: 'Test Form'
+    },
+    {
+      path: 'src/server/common/forms/definitions/test-form-with-whitelist.yaml',
+      id: 'test-form-with-whitelist-id',
+      slug: 'test-form-with-whitelist',
+      title: 'Test Form with Whitelist'
+    }
+  ]
+}))
+
+const mockGetFormDefinition = jest.fn()
+const mockAddForm = jest.fn()
+const mockToFormsService = jest.fn()
+
+jest.mock('@defra/forms-engine-plugin/file-form-service.js', () => ({
+  FileFormService: jest.fn().mockImplementation(() => ({
+    getFormDefinition: mockGetFormDefinition,
+    addForm: mockAddForm,
+    toFormsService: mockToFormsService
+  }))
+}))
+
 describe('form', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     config.get.mockImplementation((key) => defaultConfigMock[key])
+    mockGetFormDefinition.mockReset()
+    mockAddForm.mockResolvedValue(undefined)
+    mockToFormsService.mockReturnValue({
+      getFormDefinition: jest.fn()
+    })
+    delete process.env.TEST_CRN_WHITELIST
+    delete process.env.TEST_SBI_WHITELIST
   })
 
   describe('formsService', () => {
     test('returns exampleGrantDefinition for matching id', async () => {
+      mockGetFormDefinition.mockReturnValue({ metadata: {} })
+      mockToFormsService.mockReturnValue({
+        getFormDefinition: mockGetFormDefinition
+      })
       const service = await formsService()
       const result = service.getFormDefinition('5eeb9f71-44f8-46ed-9412-3d5e2c5ab2bc')
-      await expect(result).resolves.toBeDefined()
+      expect(result).toBeDefined()
     })
 
     test('returns landGrantsDefinition for matching id', async () => {
+      mockGetFormDefinition.mockReturnValue({ metadata: {} })
+      mockToFormsService.mockReturnValue({
+        getFormDefinition: mockGetFormDefinition
+      })
       const service = await formsService()
       const result = service.getFormDefinition('5c67688f-3c61-4839-a6e1-d48b598257f1')
-      await expect(result).resolves.toBeDefined()
+      expect(result).toBeDefined()
     })
 
     test('returns addingValueDefinition for matching id', async () => {
+      mockGetFormDefinition.mockReturnValue({ metadata: {} })
+      mockToFormsService.mockReturnValue({
+        getFormDefinition: mockGetFormDefinition
+      })
       const service = await formsService()
       const result = service.getFormDefinition('95e92559-968d-44ae-8666-2b1ad3dffd31')
-      await expect(result).resolves.toBeDefined()
+      expect(result).toBeDefined()
     })
 
     test('throws error for unknown id', async () => {
+      mockGetFormDefinition.mockImplementation((id) => {
+        if (id === 'unknown-id') throw new Error('Unknown form ID')
+        return { metadata: {} }
+      })
+      mockToFormsService.mockReturnValue({
+        getFormDefinition: mockGetFormDefinition
+      })
       const service = await formsService()
       expect(() => service.getFormDefinition('unknown-id')).toThrow()
     })
@@ -295,6 +352,147 @@ describe('form', () => {
       expect(result).toBe(2)
       expect(mockLoader.addForm).toHaveBeenCalledTimes(2)
       expect(mockWarn).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('whitelist validation', () => {
+    describe('formsService with whitelist validation', () => {
+      test('validates forms without whitelist configuration successfully', async () => {
+        mockGetFormDefinition.mockReturnValue({ metadata: {} })
+
+        await formsService()
+
+        expect(mockError).not.toHaveBeenCalled()
+        expect(mockInfo).not.toHaveBeenCalled()
+      })
+
+      test('validates forms with complete whitelist configuration', async () => {
+        process.env.TEST_CRN_WHITELIST = '1101009926 1101010029'
+        process.env.TEST_SBI_WHITELIST = '123456789 987654321'
+
+        mockGetFormDefinition.mockReturnValue({
+          metadata: {
+            whitelistCrnEnvVar: 'TEST_CRN_WHITELIST',
+            whitelistSbiEnvVar: 'TEST_SBI_WHITELIST'
+          }
+        })
+
+        await formsService()
+
+        expect(mockError).not.toHaveBeenCalled()
+        expect(mockInfo).toHaveBeenCalledWith('Whitelist configuration validated for form: Test Form')
+
+        delete process.env.TEST_CRN_WHITELIST
+        delete process.env.TEST_SBI_WHITELIST
+      })
+
+      test.each([
+        [
+          'missing SBI',
+          { whitelistCrnEnvVar: 'TEST_CRN_WHITELIST' },
+          'whitelistCrnEnvVar is defined but whitelistSbiEnvVar is missing'
+        ],
+        [
+          'missing CRN',
+          { whitelistSbiEnvVar: 'TEST_SBI_WHITELIST' },
+          'whitelistSbiEnvVar is defined but whitelistCrnEnvVar is missing'
+        ]
+      ])('throws error for incomplete whitelist configuration - %s', async (description, metadata, expectedError) => {
+        mockGetFormDefinition.mockReturnValue({ metadata })
+
+        await expect(formsService()).rejects.toThrow(
+          `Incomplete whitelist configuration in form Test Form: ${expectedError}. Both CRN and SBI whitelist variables must be configured together.`
+        )
+
+        expect(mockError).toHaveBeenCalledWith(
+          `Whitelist validation failed during startup: Incomplete whitelist configuration in form Test Form: ${expectedError}. Both CRN and SBI whitelist variables must be configured together.`
+        )
+      })
+
+      test.each([
+        ['CRN', 'TEST_SBI_WHITELIST', '123456789 987654321', 'TEST_CRN_WHITELIST'],
+        ['SBI', 'TEST_CRN_WHITELIST', '1101009926 1101010029', 'TEST_SBI_WHITELIST']
+      ])(
+        'throws error when %s environment variable is not configured',
+        async (type, envToSet, envValue, missingEnv) => {
+          process.env[envToSet] = envValue
+
+          mockGetFormDefinition.mockReturnValue({
+            metadata: {
+              whitelistCrnEnvVar: 'TEST_CRN_WHITELIST',
+              whitelistSbiEnvVar: 'TEST_SBI_WHITELIST'
+            }
+          })
+
+          await expect(formsService()).rejects.toThrow(
+            `${type} whitelist environment variable ${missingEnv} is defined in form Test Form but not configured in environment`
+          )
+
+          expect(mockError).toHaveBeenCalledWith(
+            `Whitelist validation failed during startup: ${type} whitelist environment variable ${missingEnv} is defined in form Test Form but not configured in environment`
+          )
+
+          delete process.env[envToSet]
+        }
+      )
+
+      test('throws error for incomplete whitelist configuration - missing CRN (covers line 79 branch)', async () => {
+        mockGetFormDefinition.mockImplementation((formId) => {
+          if (formId === 'test-form-id') {
+            return {
+              metadata: {
+                whitelistSbiEnvVar: 'TEST_SBI_WHITELIST'
+              }
+            }
+          }
+          return { metadata: {} }
+        })
+
+        await expect(formsService()).rejects.toThrow(
+          'Incomplete whitelist configuration in form Test Form: whitelistSbiEnvVar is defined but whitelistCrnEnvVar is missing'
+        )
+      })
+    })
+
+    describe('validateWhitelistConfiguration direct tests', () => {
+      test('covers line 79 branch - SBI defined but CRN missing', () => {
+        const form = { title: 'Test Form' }
+        const definition = {
+          metadata: {
+            whitelistSbiEnvVar: 'TEST_SBI_WHITELIST'
+          }
+        }
+
+        expect(() => validateWhitelistConfiguration(form, definition)).toThrow(
+          'Incomplete whitelist configuration in form Test Form: whitelistSbiEnvVar is defined but whitelistCrnEnvVar is missing'
+        )
+      })
+
+      test('validates multiple forms with mixed whitelist configurations', async () => {
+        process.env.TEST_CRN_WHITELIST = '1101009926 1101010029'
+        process.env.TEST_SBI_WHITELIST = '123456789 987654321'
+
+        mockGetFormDefinition.mockImplementation((formId) => {
+          if (formId === 'test-form-id') {
+            return { metadata: {} }
+          }
+          if (formId === 'test-form-with-whitelist-id') {
+            return {
+              metadata: {
+                whitelistCrnEnvVar: 'TEST_CRN_WHITELIST',
+                whitelistSbiEnvVar: 'TEST_SBI_WHITELIST'
+              }
+            }
+          }
+          return { metadata: {} }
+        })
+
+        await formsService()
+
+        expect(mockError).not.toHaveBeenCalled()
+        expect(mockInfo).toHaveBeenCalledWith('Whitelist configuration validated for form: Test Form with Whitelist')
+        expect(mockInfo).toHaveBeenCalledTimes(1)
+      })
     })
   })
 })

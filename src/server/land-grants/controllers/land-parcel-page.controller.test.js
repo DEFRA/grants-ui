@@ -85,7 +85,7 @@ describe('LandParcelPageController', () => {
     it('gets parcels info and renders view', async () => {
       const result = await controller.makeGetRouteHandler()(mockRequest, mockContext, mockH)
 
-      expect(fetchParcels).toHaveBeenCalledWith(106284736)
+      expect(fetchParcels).toHaveBeenCalledWith(106953974)
       expect(mockH.view).toHaveBeenCalledWith(
         'select-land-parcel',
         expect.objectContaining({
