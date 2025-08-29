@@ -40,17 +40,17 @@ jobs:
           name: coverage
           path: coverage
 
-   docker:
-     name: Test Docker Build
-     runs-on: ubuntu-latest
-     steps:
-       - name: Checkout code
-         uses: actions/checkout@v4
+  docker:
+    name: Test Docker Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
   
-       - name: Test Docker Compose Services
-         run: |
-           chmod +x ./tools/docker-compose-smoke-test.sh
-           ./tools/docker-compose-smoke-test.sh
+      - name: Test Docker Compose Services
+        run: |
+          chmod +x ./tools/docker-compose-smoke-test.sh
+          ./tools/docker-compose-smoke-test.sh
 
   security:
     name: Snyk Security Scan
