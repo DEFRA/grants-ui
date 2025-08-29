@@ -50,7 +50,7 @@
       }) }}
 
       {% if availableActions %}
-        <form method="post" novalidate>
+        <form method="post" novalidate data-actions="{{ actions }}" >
           <input type="hidden" name="crumb" value="{{ crumb }}">
 
           {{ govukRadios({
@@ -66,7 +66,8 @@
                 value: "CMOR1",
                 text: "CMOR1: Assess moorland and produce a written record"
               }
-            ]
+            ],
+          errorMessage: errors.landAction
           }) }}
 
           {{ govukRadios({

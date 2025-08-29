@@ -112,29 +112,29 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
       const { state } = context
       const { viewName } = this
       const payload = request.payload ?? {}
+      const landAction = payload.landAction ?? ''
       const [sheetId, parcelId] = parseLandParcel(state.selectedLandParcel)
+      const validateUserInput = this.validateUserInput(landAction)
+
+      // Validate user input
+      if (validateUserInput?.errors?.landAction) {
+        return h.view(viewName, {
+          ...this.getViewModel(request, context),
+          parcelName: `${sheetId} ${parcelId}`,
+          errorSummary: validateUserInput.errorSummary,
+          errors: validateUserInput.errors
+        })
+      }
 
       // Load available actions for the land parcel
-      try {
-        const data = await fetchAvailableActionsForParcel({ parcelId, sheetId })
-        this.availableActions = data.actions || []
-        if (!this.availableActions.length) {
-          request.logger.error({
-            message: `No actions found for parcel ${sheetId}-${parcelId}`,
-            selectedLandParcel: state.selectedLandParcel
-          })
-        }
-      } catch (error) {
-        this.availableActions = []
-        request.logger.error(error, `Failed to fetch land parcel data for id ${sheetId}-${parcelId}`)
-      }
+      await this.fetchAvailableActionsFromApi(parcelId, sheetId, request, state)
 
       const { actionsObj } = this.extractActionsDataFromPayload(payload)
       // Create an updated state with the new action data
       const newState = await this.buildNewState(state, actionsObj)
 
       if (payload.action === 'validate') {
-        const { errors, errorSummary } = await this.validatePayload(payload, actionsObj, sheetId, parcelId)
+        const { errors, errorSummary } = await this.validateActionsWithApiData(actionsObj, sheetId, parcelId)
 
         if (Object.keys(errors).length > 0) {
           return h.view(viewName, {
@@ -154,14 +154,49 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
     return fn
   }
 
-  validatePayload = async (payload, actionsObj, sheetId, parcelId) => {
+  fetchAvailableActionsFromApi = async (parcelId, sheetId, request, state) => {
+    try {
+      const data = await fetchAvailableActionsForParcel({ parcelId, sheetId })
+      this.availableActions = data.actions || []
+      if (!this.availableActions.length) {
+        request.logger.error({
+          message: `No actions found for parcel ${sheetId}-${parcelId}`,
+          selectedLandParcel: state.selectedLandParcel
+        })
+      }
+    } catch (error) {
+      this.availableActions = []
+      request.logger.error(error, `Failed to fetch land parcel data for id ${sheetId}-${parcelId}`)
+    }
+  }
+
+  /**
+   * Validate the user input submitted from the page
+   * @param {string} landAction - The land action selected by the user
+   * @returns {object} - An object containing errors and error summary
+   */
+  validateUserInput(landAction) {
+    const result = {}
     const errors = {}
 
-    if (payload?.landAction?.length === 0) {
+    if (landAction === '') {
       errors.landAction = {
-        text: 'Please select one action'
+        text: 'Select an action to do on this land parcel'
       }
+      const errorSummary = Object.entries(errors).map(([, { text }]) => ({
+        text,
+        href: '#landAction'
+      }))
+
+      result.errors = errors
+      result.errorSummary = errorSummary
     }
+
+    return result
+  }
+
+  validateActionsWithApiData = async (actionsObj, sheetId, parcelId) => {
+    const errors = {}
 
     if (Object.keys(actionsObj).length > 0) {
       const { valid, errorMessages = [] } = await triggerApiActionsValidation({
