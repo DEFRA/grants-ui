@@ -6,19 +6,19 @@ if ! command -v docker &> /dev/null; then
     exit 1
 fi
 
-echo "Starting services with docker-compose..."
-docker-compose up -d --build
+echo "Starting services with docker compose..."
+docker compose up -d --build
 
 echo "Waiting for services to be healthy..."
 ATTEMPTS=0
 MAX_ATTEMPTS=60
 
 echo "Waiting for grants-ui service to start..."
-until docker-compose ps grants-ui | grep -q "Up"; do
+until docker compose ps grants-ui | grep -q "Up"; do
     if [ ${ATTEMPTS} -eq ${MAX_ATTEMPTS} ]; then
         echo "Error: Timed out waiting for grants-ui service to start."
-        docker-compose ps
-        docker-compose down
+        docker compose ps
+        docker compose down
         exit 1
     fi
     printf '.'
@@ -34,12 +34,12 @@ until curl -f http://localhost:3000/health >/dev/null 2>&1; do
     if [ ${ATTEMPTS} -eq ${MAX_ATTEMPTS} ]; then
         echo "Error: Timed out waiting for grants-ui service to be accessible."
         echo "--- Current Service Status ---"
-        docker-compose ps
+        docker compose ps
         echo "--- grants-ui Service Logs ---"
-        docker-compose logs grants-ui
+        docker compose logs grants-ui
         echo "--- Redis Service Logs ---"
-        docker-compose logs redis
-        docker-compose down
+        docker compose logs redis
+        docker compose down
         exit 1
     fi
     printf 'h'
@@ -51,7 +51,7 @@ echo ""
 echo "All services are healthy!"
 echo ""
 echo "Service Status:"
-docker-compose ps
-docker-compose down
+docker compose ps
+docker compose down
 echo ""
 echo "Test complete."
