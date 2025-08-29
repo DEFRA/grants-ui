@@ -40,36 +40,17 @@ jobs:
           name: coverage
           path: coverage
 
-  #  docker:
-  #    name: Test Docker Build
-  #    runs-on: ubuntu-latest
-  #    steps:
-  #      - name: Checkout code
-  #        uses: actions/checkout@v4
-  #
-  #      - name: Test Docker Image Build and Run
-  #        run: |
-  #          set -e
-  #          docker build --no-cache --tag grants-ui-build-test .
-  #          CONTAINER_ID=$(docker run --rm -d -p 3000:3000 -e SESSION_CACHE_ENGINE=memory grants-ui-build-test)
-  #          echo "Container ID: $CONTAINER_ID"
-  #          ATTEMPTS=0
-  #          MAX_ATTEMPTS=15
-  #          echo "Waiting for container to be healthy..."
-  #          until $(curl --output /dev/null --silent --head --fail http://localhost:3000/health); do
-  #              if [ ${ATTEMPTS} -eq ${MAX_ATTEMPTS} ]; then
-  #                  echo "Error: Timed out waiting for container to be healthy."
-  #                  echo "--- Container Logs ---"
-  #                  docker logs $CONTAINER_ID
-  #                  docker stop $CONTAINER_ID > /dev/null
-  #                  exit 1
-  #              fi
-  #              printf '.'
-  #              ATTEMPTS=$(($ATTEMPTS+1))
-  #              sleep 2
-  #          done
-  #          echo -e "\nContainer is healthy!"
-  #          docker stop $CONTAINER_ID > /dev/null
+   docker:
+     name: Test Docker Build
+     runs-on: ubuntu-latest
+     steps:
+       - name: Checkout code
+         uses: actions/checkout@v4
+  
+       - name: Test Docker Compose Services
+         run: |
+           chmod +x ./tools/docker-compose-smoke-test.sh
+           ./tools/docker-compose-smoke-test.sh
 
   security:
     name: Snyk Security Scan
