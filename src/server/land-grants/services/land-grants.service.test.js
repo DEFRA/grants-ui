@@ -186,6 +186,7 @@ describe('land-grants service', () => {
   describe('landActionsToApiPayload', () => {
     it('should convert land actions to API payload format', () => {
       const input = {
+        sbi: '106284736',
         sheetId: 'sheetId',
         parcelId: 'parcelId',
         actionsObj: {
@@ -197,9 +198,9 @@ describe('land-grants service', () => {
       const result = landActionsToApiPayload(input)
 
       expect(result).toEqual({
+        sbi: '106284736',
         sheetId: 'sheetId',
         parcelId: 'parcelId',
-        sbi: 106284736,
         actions: [
           { code: 'CMOR1', quantity: 10.5 },
           { code: 'UPL1', quantity: 20.75 }
@@ -209,6 +210,7 @@ describe('land-grants service', () => {
 
     it('should handle empty actions object', () => {
       const input = {
+        sbi: '106284736',
         sheetId: 'sheetId',
         parcelId: 'parcelId',
         actionsObj: {}
@@ -217,9 +219,9 @@ describe('land-grants service', () => {
       const result = landActionsToApiPayload(input)
 
       expect(result).toEqual({
+        sbi: '106284736',
         sheetId: 'sheetId',
         parcelId: 'parcelId',
-        sbi: 106284736,
         actions: []
       })
     })
@@ -449,6 +451,7 @@ describe('land-grants service', () => {
       const result = await triggerApiActionsValidation({
         sheetId: 'SHEET123',
         parcelId: 'PARCEL456',
+        sbi: '106284736',
         actionsObj: {
           CMOR1: { value: 10.5 },
           UPL1: { value: 20.75 }
@@ -463,7 +466,7 @@ describe('land-grants service', () => {
               {
                 sheetId: 'SHEET123',
                 parcelId: 'PARCEL456',
-                sbi: 106284736,
+                sbi: '106284736',
                 actions: [
                   { code: 'CMOR1', quantity: 10.5 },
                   { code: 'UPL1', quantity: 20.75 }
@@ -488,6 +491,7 @@ describe('land-grants service', () => {
       })
 
       const result = await triggerApiActionsValidation({
+        sbi: '106284736',
         sheetId: 'SHEET123',
         parcelId: 'PARCEL456',
         actionsObj: { CMOR1: { value: 100 } }
@@ -504,6 +508,7 @@ describe('land-grants service', () => {
       })
 
       const result = await triggerApiActionsValidation({
+        sbi: '106284736',
         sheetId: 'SHEET123',
         parcelId: 'PARCEL456'
       })
@@ -516,7 +521,7 @@ describe('land-grants service', () => {
               {
                 sheetId: 'SHEET123',
                 parcelId: 'PARCEL456',
-                sbi: 106284736,
+                sbi: '106284736',
                 actions: []
               }
             ]
@@ -531,6 +536,7 @@ describe('land-grants service', () => {
 
       await expect(
         triggerApiActionsValidation({
+          sbi: '106284736',
           sheetId: 'SHEET123',
           parcelId: 'PARCEL456',
           actionsObj: { CMOR1: { value: 10 } }

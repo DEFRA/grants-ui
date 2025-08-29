@@ -1,9 +1,7 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
 import { formatPhone } from '~/src/server/land-grants/utils/format-phone.js'
-import { sbiStore } from '~/src/server/sbi/state.js'
 import { fetchBusinessAndCustomerInformation } from '../../common/services/consolidated-view/consolidated-view.service.js'
-import { config } from '~/src/config/config.js'
 
 const logger = createLogger()
 
@@ -21,31 +19,12 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
       const baseViewModel = super.getViewModel(request, context)
 
       try {
-        const { sbi, crn } = this.selectSbiAndCrn(request)
+        const { sbi, crn } = request.auth.credentials
         const farmDetails = await this.buildFarmDetails(crn, sbi)
         return h.view(this.viewName, { ...baseViewModel, farmDetails })
       } catch (error) {
-        return this.handleError(error, baseViewModel, h)
+        return this.handleError(request, error, baseViewModel, h)
       }
-    }
-  }
-
-  selectSbiAndCrn(request) {
-    if (config.get('defraId.enabled')) {
-      const sbi =
-        (Array.isArray(request.auth.credentials.relationships) &&
-          request.auth.credentials.relationships[0]?.split(':')[1]) ||
-        null
-      sbiStore.set(sbi)
-      return {
-        crn: request.auth.credentials.contactId,
-        sbi
-      }
-    }
-
-    return {
-      crn: config.get('landGrants.customerReferenceNumber'),
-      sbi: sbiStore.get('sbi')
     }
   }
 
@@ -166,8 +145,8 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
   /**
    * Handle errors and return error view
    */
-  handleError(error, baseViewModel, h) {
-    const sbi = sbiStore.get('sbi')
+  handleError(request, error, baseViewModel, h) {
+    const { sbi } = request.auth.credentials
 
     logger.error({ err: error, sbi }, 'Unexpected error when fetching farm information')
 
@@ -195,7 +174,7 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
      */
     const fn = async (request, context, h) => {
       const { state } = context
-      const { sbi, crn } = this.selectSbiAndCrn(request)
+      const { sbi, crn } = request.auth.credentials
 
       if (sbi) {
         const applicant = await fetchBusinessAndCustomerInformation(sbi, crn)

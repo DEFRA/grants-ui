@@ -55,6 +55,11 @@ describe('SelectActionsForLandParcelPageController', () => {
       },
       logger: {
         error: jest.fn()
+      },
+      auth: {
+        credentials: {
+          sbi: '106284736'
+        }
       }
     }
 
@@ -449,6 +454,11 @@ describe('SelectActionsForLandParcelPageController', () => {
         },
         logger: {
           error: jest.fn()
+        },
+        auth: {
+          credentials: {
+            sbi: '106284736'
+          }
         }
       }
 
@@ -533,9 +543,10 @@ describe('SelectActionsForLandParcelPageController', () => {
 
         triggerApiActionsValidation.mockResolvedValue({ valid: true, errorMessages: [] })
 
-        await controller.validatePayload({ landAction: 'CMOR1' }, actionsObj, sheetId, parcelId)
+        await controller.validatePayload(mockRequest, { landAction: 'CMOR1' }, actionsObj, sheetId, parcelId)
 
         expect(triggerApiActionsValidation).toHaveBeenCalledWith({
+          sbi: '106284736',
           sheetId,
           parcelId,
           actionsObj
@@ -548,6 +559,7 @@ describe('SelectActionsForLandParcelPageController', () => {
         triggerApiActionsValidation.mockResolvedValue({ valid: true, errorMessages: [] })
 
         const result = await controller.validatePayload(
+          mockRequest,
           { landAction: 'CMOR1' },
           { CMOR1: { value: 10 } },
           'sheet1',
@@ -565,6 +577,7 @@ describe('SelectActionsForLandParcelPageController', () => {
         triggerApiActionsValidation.mockResolvedValue({ valid: false, errorMessages })
 
         const result = await controller.validatePayload(
+          mockRequest,
           { landAction: 'CMOR1' },
           { CMOR1: { value: 10 } },
           'sheet1',
@@ -658,6 +671,7 @@ describe('SelectActionsForLandParcelPageController', () => {
       await handler(mockRequest, mockContext, mockH)
 
       expect(triggerApiActionsValidation).toHaveBeenCalledWith({
+        sbi: '106284736',
         sheetId: 'sheet1',
         parcelId: 'parcel1',
         actionsObj: {
