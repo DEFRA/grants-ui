@@ -302,6 +302,24 @@ export const config = convict({
       format: Boolean,
       default: isProduction,
       env: 'REDIS_TLS'
+    },
+    connectTimeout: {
+      doc: 'Redis connection timeout in milliseconds',
+      format: Number,
+      default: 30000,
+      env: 'REDIS_CONNECT_TIMEOUT'
+    },
+    retryDelay: {
+      doc: 'Redis retry delay in milliseconds',
+      format: Number,
+      default: 1000,
+      env: 'REDIS_RETRY_DELAY'
+    },
+    maxRetries: {
+      doc: 'Redis max retries per request',
+      format: Number,
+      default: 10,
+      env: 'REDIS_MAX_RETRIES'
     }
   }),
   nunjucks: {
