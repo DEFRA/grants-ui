@@ -827,7 +827,7 @@ describe('SelectActionsForLandParcelPageController', () => {
         expect(controller.availableActions).toEqual([])
 
         expect(mockRequest.logger.error).toHaveBeenCalledWith({
-          message: `No actions found for parcel sheet1-parcel1`,
+          message: 'No actions found for parcel sheet1-parcel1',
           selectedLandParcel: 'sheet1-parcel1'
         })
       })

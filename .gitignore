@@ -11,3 +11,4 @@ coverage
 .env
 .envrc
 tsconfig.tsbuildinfo
+.eslintcache

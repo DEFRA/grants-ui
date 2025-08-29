@@ -23,7 +23,6 @@ describe('isStrictObject', () => {
   })
 
   it('returns false for functions', () => {
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
     expect(isStrictObject(() => {})).toBe(false)
   })
 

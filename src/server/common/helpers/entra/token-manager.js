@@ -104,7 +104,7 @@ export async function refreshToken() {
 
     return tokenState.currentToken // ?? '' - Removed as line is unreachable
   } catch (error) {
-    logger.error(error, `Failed to refresh token`)
+    logger.error(error, 'Failed to refresh token')
     throw error
   }
 }

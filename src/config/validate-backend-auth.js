@@ -19,7 +19,7 @@ export function validateBackendAuthConfig(config) {
     }
 
     throw new Error(
-      `Backend authentication configuration incomplete. ` +
+      'Backend authentication configuration incomplete. ' +
         `When GRANTS_UI_BACKEND_URL is set, the following environment variables are required: ${missingKeys.join(', ')}`
     )
   }
