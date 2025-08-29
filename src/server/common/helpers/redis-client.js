@@ -10,6 +10,9 @@ import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
  * @property {string} keyPrefix
  * @property {boolean} useSingleInstanceCache
  * @property {boolean} useTLS
+ * @property {number} [connectTimeout]
+ * @property {number} [retryDelay]
+ * @property {number} [maxRetries]
  */
 
 /**
@@ -38,14 +41,26 @@ export function buildRedisClient(redisConfig) {
   const tls = redisConfig.useTLS ? { tls: {} } : {}
 
   if (redisConfig.useSingleInstanceCache) {
-    redisClient = new Redis({
+    const redisOptions = {
       port,
       host,
       db,
       keyPrefix,
       ...credentials,
       ...tls
-    })
+    }
+
+    if (redisConfig.connectTimeout !== undefined) {
+      redisOptions.connectTimeout = redisConfig.connectTimeout
+    }
+    if (redisConfig.retryDelay !== undefined) {
+      redisOptions.retryDelayOnFailover = redisConfig.retryDelay
+    }
+    if (redisConfig.maxRetries !== undefined) {
+      redisOptions.maxRetriesPerRequest = redisConfig.maxRetries
+    }
+
+    redisClient = new Redis(redisOptions)
   } else {
     redisClient = new Cluster(
       [
