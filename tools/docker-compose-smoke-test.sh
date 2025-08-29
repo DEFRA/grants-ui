@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
 
-if ! command -v docker-compose &> /dev/null; then
-    echo "Error: docker-compose is not installed or not in PATH"
+if ! command -v docker &> /dev/null; then
+    echo "Error: docker is not installed or not in PATH"
     exit 1
 fi
 
