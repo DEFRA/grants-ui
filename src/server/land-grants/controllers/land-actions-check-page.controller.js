@@ -3,7 +3,8 @@ import { formatCurrency } from '~/src/config/nunjucks/filters/filters.js'
 
 export default class LandActionsCheckPageController extends QuestionPageController {
   viewName = 'land-actions-check'
-  selectedActionRows = []
+  parcelItems = []
+  additionalYearlyPayments = []
 
   /**
    * This method is called when there is a POST request on the check selected land actions page.
@@ -26,7 +27,9 @@ export default class LandActionsCheckPageController extends QuestionPageControll
         return h.view(this.viewName, {
           ...this.getViewModel(request, context),
           ...state,
-          selectedActionRows: this.selectedActionRows,
+          parcelItems: this.parcelItems,
+          additionalYearlyPayments: this.additionalYearlyPayments,
+          totalYearlyPayment: this.getPrice(state.payment.annualTotalPence),
           errorMessage: 'Please select if you want to add more actions'
         })
       }
@@ -54,21 +57,16 @@ export default class LandActionsCheckPageController extends QuestionPageControll
       const { state } = context
 
       // Build the selected action rows from the collection
-      this.selectedActionRows = this.getSelectedActionRows(state, context)
-      const pluralize = (count, singular, plural) => (count === 1 ? singular : plural || `${singular}s`)
-
-      const getPageTitle = (parcelsCount, actionsCount) => {
-        const parcelsText = pluralize(parcelsCount, 'parcel')
-        const actionsText = pluralize(actionsCount, 'action')
-        return `You have selected ${actionsCount} ${actionsText} to ${parcelsCount} ${parcelsText}`
-      }
+      this.parcelItems = this.getParcelItems(state)
+      this.additionalYearlyPayments = this.getAdditionalYearlyPayments(state)
 
       // Build the view model exactly as in the original code
       const viewModel = {
         ...this.getViewModel(request, context),
         ...state,
-        selectedActionRows: this.selectedActionRows,
-        pageTitle: getPageTitle(Object.keys(state.landParcels).length, this.selectedActionRows.length),
+        parcelItems: this.parcelItems,
+        additionalYearlyPayments: this.additionalYearlyPayments,
+        totalYearlyPayment: this.getPrice(state.payment.annualTotalPence),
         errors: collection.getErrors(collection.getErrors())
       }
 
@@ -78,22 +76,48 @@ export default class LandActionsCheckPageController extends QuestionPageControll
     return fn
   }
 
-  getSelectedActionRows = (state) => {
-    return Object.entries(state.landParcels).flatMap(([sheetParcelId, parcelData]) => {
-      return Object.entries(parcelData.actionsObj).map(([, actionData]) => [
-        {
-          text: sheetParcelId
-        },
-        {
-          text: actionData.description
-        },
-        {
-          text: `${actionData.value} ${actionData.unit}`
-        },
-        {
-          text: formatCurrency(actionData.annualPaymentPence / 100, 'en-GB', 'GBP', 2, 'currency')
-        }
-      ])
+  getPrice = (value) => {
+    return formatCurrency(value / 100, 'en-GB', 'GBP', 2, 'currency')
+  }
+
+  getAdditionalYearlyPayments = (state) => {
+    return Object.values(state.payment.agreementLevelItems).map((data) => {
+      return {
+        items: [
+          [
+            {
+              text: `One-off payment per agreement per year for ${data.description}`
+            },
+            {
+              text: this.getPrice(data.annualPaymentPence)
+            }
+          ]
+        ]
+      }
+    })
+  }
+
+  getParcelItems = (state) => {
+    return Object.values(state.payment.parcelItems).map((data) => {
+      return {
+        parcelId: `${data.sheetId} ${data.parcelId}`,
+        items: [
+          [
+            {
+              text: data.description
+            },
+            {
+              text: `${data.quantity} ${data.unit}`
+            },
+            {
+              text: this.getPrice(data.annualPaymentPence)
+            },
+            {
+              html: "<a class='govuk-link' href='confirm-delete-parcel' style='display: none'>Remove</a>"
+            }
+          ]
+        ]
+      }
     })
   }
 }

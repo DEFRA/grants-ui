@@ -6,6 +6,8 @@
 {% from "govuk/components/button/macro.njk" import govukButton %}
 {% from "govuk/components/radios/macro.njk" import govukRadios %}
 {% from "govuk/components/table/macro.njk" import govukTable %}
+{% from "summaryCard/macro.njk" import summaryCard %}
+{% from "support-details/macro.njk" import defraSupportDetails %}
 
 {% block content %}
 <div class="govuk-body">
@@ -36,25 +38,66 @@
 
       <h1 class="govuk-heading-l">{{ pageTitle }}</h1>
 
-      {{ govukTable({
-          caption: "List of parcel actions selected for this application",
-          captionClasses: "govuk-visually-hidden",
-          head: [
-            {
-              classes: "govuk-visually-hidden",
-              text: "Parcel"
-            },
-            {
-              classes: "govuk-visually-hidden",
-              text: "Action"
-            },
-            {
-              classes: "govuk-visually-hidden",
-              text: "Quantity"
-            }
-          ],
-          rows: selectedActionRows
-      }) }}
+      <p class="govuk-body-l">The total yearly payment is <strong>{{ totalYearlyPayment }}</strong>.</p>
+
+      {% for item in parcelItems %}
+        {% call summaryCard({
+          title: {
+            text: "Land parcel " + item.parcelId
+          },
+          headerActions: {
+            html: "<a class='govuk-link' href='confirm-delete-parcel' style='display: none'>Remove</a>"
+          },
+          footerActions: {
+            html: "<a class='govuk-link' href='select-base-action2' style='display: none'>Add another action</a>"
+          }
+        }) %}
+
+          {{ govukTable({
+            caption: "List of parcel actions selected for this application",
+            captionClasses: "govuk-visually-hidden",
+            head: [
+              {
+                text: "Action"
+              },
+              {
+                text: "Quantity (ha)"
+              },
+              {
+                text: "Yearly payment"
+              },
+              {
+                text: ""
+              }
+            ],
+            rows: item.items,
+            classes: "govuk-table--no-bottom-border"
+          }) }}
+        {% endcall %}
+      {% endfor %}
+
+      {% for item in additionalYearlyPayments %}
+        {% call summaryCard({
+          title: {
+            text: "Additional yearly payments"
+          }
+        }) %}
+          {{ govukTable({
+            caption: "List of additional yearly payments",
+            captionClasses: "govuk-visually-hidden",
+            head: [
+              {
+                text: "Action"
+              },
+              {
+                text: "Yearly payment"
+              }
+            ],
+            rows: item.items,
+            classes: "govuk-table--no-bottom-border"
+          }) }}
+        {% endcall %}
+      {% endfor %}
     </div>
     <div class="govuk-grid-column-two-thirds">
       <form method="post" novalidate>
@@ -63,7 +106,7 @@
               name: "addMoreActions",
               fieldset: {
                 legend: {
-                  text: "Do you want to add more actions to your land?",
+                  text: "Do you want to add actions to another land parcel?",
                   classes: "govuk-fieldset__legend--m"
                 }
               },
@@ -89,6 +132,8 @@
             }) }}
           {% endblock %}
         </div>
+
+        {{ defraSupportDetails() }}
       </form>
     </div>
   </div>

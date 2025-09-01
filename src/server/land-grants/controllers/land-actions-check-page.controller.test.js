@@ -10,6 +10,46 @@ describe('LandActionsCheckPageController', () => {
   let mockContext
   let mockH
 
+  const mockPaymentData = {
+    agreementStartDate: '2025-10-01',
+    agreementEndDate: '2028-10-01',
+    frequency: 'Quarterly',
+    agreementTotalPence: 96018,
+    annualTotalPence: 32006,
+    parcelItems: {
+      1: {
+        code: 'CMOR1',
+        description: 'CMOR1: Assess moorland and produce a written record',
+        version: 1,
+        unit: 'ha',
+        quantity: 4.53411078,
+        rateInPence: 1060,
+        annualPaymentPence: 4806,
+        sheetId: 'SD6743',
+        parcelId: '8083'
+      },
+      2: {
+        code: 'CMOR1',
+        description: 'CMOR1: Assess moorland and produce a written record',
+        version: 1,
+        unit: 'ha',
+        quantity: 0,
+        rateInPence: 1060,
+        annualPaymentPence: 0,
+        sheetId: 'SD6943',
+        parcelId: '0085'
+      }
+    },
+    agreementLevelItems: {
+      1: {
+        code: 'CMOR1',
+        description: 'CMOR1: Assess moorland and produce a written record',
+        version: 1,
+        annualPaymentPence: 27200
+      }
+    }
+  }
+
   beforeEach(() => {
     QuestionPageController.prototype.getViewModel = jest.fn().mockReturnValue({
       pageTitle: 'Check selected land actions'
@@ -23,9 +63,31 @@ describe('LandActionsCheckPageController', () => {
     controller.setState = jest.fn().mockResolvedValue(true)
     controller.proceed = jest.fn().mockReturnValue('redirected')
     controller.getNextPath = jest.fn().mockReturnValue('/next-path')
-    controller.getSelectedActionRows = jest
-      .fn()
-      .mockReturnValue([[{ text: 'sheet1-parcel1' }, { text: 'Test Action' }, { text: '10 hectares' }]])
+    controller.parcelItems = [
+      {
+        parcelId: 'SD6743 8083',
+        items: [
+          [
+            { text: 'CMOR1: Assess moorland and produce a written record' },
+            { text: '4.53411078 ha' },
+            { text: '£48.06' },
+            { html: "<a class='govuk-link' href='confirm-delete-parcel' style='display: none'>Remove</a>" }
+          ]
+        ]
+      }
+    ]
+    controller.additionalYearlyPayments = [
+      {
+        items: [
+          [
+            {
+              text: 'One-off payment per agreement per year for CMOR1: Assess moorland and produce a written record'
+            },
+            { text: '£272.00' }
+          ]
+        ]
+      }
+    ]
 
     mockRequest = {
       payload: {
@@ -39,31 +101,7 @@ describe('LandActionsCheckPageController', () => {
     mockContext = {
       state: {
         landParcel: 'sheet1-parcel1',
-        landParcels: {
-          'sheet1-parcel1': {
-            actionsObj: {
-              action1: {
-                description: 'Test Action',
-                value: 10,
-                unit: 'hectares'
-              }
-            }
-          },
-          'sheet2-parcel1': {
-            actionsObj: {
-              action1: {
-                description: 'Test Action 1',
-                value: 10,
-                unit: 'hectares'
-              },
-              action2: {
-                description: 'Test Action 2',
-                value: 15,
-                unit: 'hectares'
-              }
-            }
-          }
-        }
+        payment: mockPaymentData
       }
     }
 
@@ -91,32 +129,33 @@ describe('LandActionsCheckPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith('land-actions-check', {
         pageTitle: 'Check selected land actions',
         landParcel: 'sheet1-parcel1',
-        landParcels: {
-          'sheet1-parcel1': {
-            actionsObj: {
-              action1: {
-                description: 'Test Action',
-                unit: 'hectares',
-                value: 10
-              }
-            }
-          },
-          'sheet2-parcel1': {
-            actionsObj: {
-              action1: {
-                description: 'Test Action 1',
-                unit: 'hectares',
-                value: 10
-              },
-              action2: {
-                description: 'Test Action 2',
-                unit: 'hectares',
-                value: 15
-              }
-            }
+        payment: mockPaymentData,
+        parcelItems: [
+          {
+            parcelId: 'SD6743 8083',
+            items: [
+              [
+                { text: 'CMOR1: Assess moorland and produce a written record' },
+                { text: '4.53411078 ha' },
+                { text: '£48.06' },
+                { html: "<a class='govuk-link' href='confirm-delete-parcel' style='display: none'>Remove</a>" }
+              ]
+            ]
           }
-        },
-        selectedActionRows: [],
+        ],
+        additionalYearlyPayments: [
+          {
+            items: [
+              [
+                {
+                  text: 'One-off payment per agreement per year for CMOR1: Assess moorland and produce a written record'
+                },
+                { text: '£272.00' }
+              ]
+            ]
+          }
+        ],
+        totalYearlyPayment: '£320.06',
         errorMessage: 'Please select if you want to add more actions'
       })
       expect(result).toBe('rendered view')
@@ -131,32 +170,33 @@ describe('LandActionsCheckPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith('land-actions-check', {
         pageTitle: 'Check selected land actions',
         landParcel: 'sheet1-parcel1',
-        landParcels: {
-          'sheet1-parcel1': {
-            actionsObj: {
-              action1: {
-                description: 'Test Action',
-                unit: 'hectares',
-                value: 10
-              }
-            }
-          },
-          'sheet2-parcel1': {
-            actionsObj: {
-              action1: {
-                description: 'Test Action 1',
-                unit: 'hectares',
-                value: 10
-              },
-              action2: {
-                description: 'Test Action 2',
-                unit: 'hectares',
-                value: 15
-              }
-            }
+        payment: mockPaymentData,
+        parcelItems: [
+          {
+            parcelId: 'SD6743 8083',
+            items: [
+              [
+                { text: 'CMOR1: Assess moorland and produce a written record' },
+                { text: '4.53411078 ha' },
+                { text: '£48.06' },
+                { html: "<a class='govuk-link' href='confirm-delete-parcel' style='display: none'>Remove</a>" }
+              ]
+            ]
           }
-        },
-        selectedActionRows: [],
+        ],
+        additionalYearlyPayments: [
+          {
+            items: [
+              [
+                {
+                  text: 'One-off payment per agreement per year for CMOR1: Assess moorland and produce a written record'
+                },
+                { text: '£272.00' }
+              ]
+            ]
+          }
+        ],
+        totalYearlyPayment: '£320.06',
         errorMessage: 'Please select if you want to add more actions'
       })
       expect(result).toBe('rendered view')
@@ -171,32 +211,33 @@ describe('LandActionsCheckPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith('land-actions-check', {
         pageTitle: 'Check selected land actions',
         landParcel: 'sheet1-parcel1',
-        landParcels: {
-          'sheet1-parcel1': {
-            actionsObj: {
-              action1: {
-                description: 'Test Action',
-                unit: 'hectares',
-                value: 10
-              }
-            }
-          },
-          'sheet2-parcel1': {
-            actionsObj: {
-              action1: {
-                description: 'Test Action 1',
-                unit: 'hectares',
-                value: 10
-              },
-              action2: {
-                description: 'Test Action 2',
-                unit: 'hectares',
-                value: 15
-              }
-            }
+        payment: mockPaymentData,
+        parcelItems: [
+          {
+            parcelId: 'SD6743 8083',
+            items: [
+              [
+                { text: 'CMOR1: Assess moorland and produce a written record' },
+                { text: '4.53411078 ha' },
+                { text: '£48.06' },
+                { html: "<a class='govuk-link' href='confirm-delete-parcel' style='display: none'>Remove</a>" }
+              ]
+            ]
           }
-        },
-        selectedActionRows: [],
+        ],
+        additionalYearlyPayments: [
+          {
+            items: [
+              [
+                {
+                  text: 'One-off payment per agreement per year for CMOR1: Assess moorland and produce a written record'
+                },
+                { text: '£272.00' }
+              ]
+            ]
+          }
+        ],
+        totalYearlyPayment: '£320.06',
         errorMessage: 'Please select if you want to add more actions'
       })
       expect(result).toBe('rendered view')
@@ -241,32 +282,33 @@ describe('LandActionsCheckPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith('land-actions-check', {
         pageTitle: 'Check selected land actions',
         landParcel: 'sheet1-parcel1',
-        landParcels: {
-          'sheet1-parcel1': {
-            actionsObj: {
-              action1: {
-                description: 'Test Action',
-                unit: 'hectares',
-                value: 10
-              }
-            }
-          },
-          'sheet2-parcel1': {
-            actionsObj: {
-              action1: {
-                description: 'Test Action 1',
-                unit: 'hectares',
-                value: 10
-              },
-              action2: {
-                description: 'Test Action 2',
-                unit: 'hectares',
-                value: 15
-              }
-            }
+        payment: mockPaymentData,
+        parcelItems: [
+          {
+            parcelId: 'SD6743 8083',
+            items: [
+              [
+                { text: 'CMOR1: Assess moorland and produce a written record' },
+                { text: '4.53411078 ha' },
+                { text: '£48.06' },
+                { html: "<a class='govuk-link' href='confirm-delete-parcel' style='display: none'>Remove</a>" }
+              ]
+            ]
           }
-        },
-        selectedActionRows: [],
+        ],
+        additionalYearlyPayments: [
+          {
+            items: [
+              [
+                {
+                  text: 'One-off payment per agreement per year for CMOR1: Assess moorland and produce a written record'
+                },
+                { text: '£272.00' }
+              ]
+            ]
+          }
+        ],
+        totalYearlyPayment: '£320.06',
         errorMessage: 'Please select if you want to add more actions'
       })
       expect(result).toBe('rendered view')
@@ -281,16 +323,56 @@ describe('LandActionsCheckPageController', () => {
       expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-path')
       expect(result).toBe('redirected')
     })
+
+    test('should handle null payload gracefully', async () => {
+      mockRequest.payload = null
+
+      const handler = controller.makePostRouteHandler()
+      const result = await handler(mockRequest, mockContext, mockH)
+
+      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-path')
+      expect(result).toBe('redirected')
+    })
+
+    test('should handle undefined payload gracefully', async () => {
+      mockRequest.payload = undefined
+
+      const handler = controller.makePostRouteHandler()
+      const result = await handler(mockRequest, mockContext, mockH)
+
+      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-path')
+      expect(result).toBe('redirected')
+    })
   })
 
   describe('makeGetRouteHandler', () => {
     test('should call h.view with correct viewName and viewModel', () => {
       // Arrange
       controller.getViewModel = jest.fn().mockReturnValue({ foo: 'bar' })
-      controller.getSelectedActionRows = jest.fn().mockReturnValue([
-        [{ text: 'sheet1-parcel1' }, { text: 'Test Action' }, { text: '10 hectares' }],
-        [{ text: 'sheet2-parcel1' }, { text: 'Test Action 1' }, { text: '10 hectares' }],
-        [{ text: 'sheet2-parcel1' }, { text: 'Test Action 2' }, { text: '15 hectares' }]
+      controller.getParcelItems = jest.fn().mockReturnValue([
+        {
+          parcelId: 'SD6743 8083',
+          items: [
+            [
+              { text: 'CMOR1: Assess moorland and produce a written record' },
+              { text: '4.53411078 ha' },
+              { text: '£48.06' },
+              { html: "<a class='govuk-link' href='confirm-delete-parcel' style='display: none'>Remove</a>" }
+            ]
+          ]
+        }
+      ])
+      controller.getAdditionalYearlyPayments = jest.fn().mockReturnValue([
+        {
+          items: [
+            [
+              {
+                text: 'One-off payment per agreement per year for CMOR1: Assess moorland and produce a written record'
+              },
+              { text: '£272.00' }
+            ]
+          ]
+        }
       ])
       controller.collection = {
         getErrors: jest.fn().mockReturnValue([])
@@ -301,16 +383,18 @@ describe('LandActionsCheckPageController', () => {
       const result = handler(mockRequest, mockContext, mockH)
 
       // Assert
-      expect(controller.getSelectedActionRows).toHaveBeenCalledWith(mockContext.state, mockContext)
+      expect(controller.getParcelItems).toHaveBeenCalledWith(mockContext.state)
+      expect(controller.getAdditionalYearlyPayments).toHaveBeenCalledWith(mockContext.state)
 
       expect(mockH.view).toHaveBeenCalledWith(
         'land-actions-check',
         expect.objectContaining({
           foo: 'bar',
           landParcel: expect.any(String),
-          landParcels: expect.any(Object),
-          selectedActionRows: expect.any(Array),
-          pageTitle: 'You have selected 3 actions to 2 parcels',
+          payment: expect.any(Object),
+          parcelItems: expect.any(Array),
+          additionalYearlyPayments: expect.any(Array),
+          totalYearlyPayment: expect.any(String),
           errors: []
         })
       )
@@ -318,77 +402,10 @@ describe('LandActionsCheckPageController', () => {
       expect(result).toBe('rendered view')
     })
 
-    test('should pluralize correctly for single parcel and action', () => {
-      controller.getSelectedActionRows = jest
-        .fn()
-        .mockReturnValue([[{ text: 'sheet1-parcel1' }, { text: 'Test Action' }, { text: '10 hectares' }]])
-      const singleParcelContext = {
-        state: {
-          landParcels: {
-            'sheet1-parcel1': {
-              actionsObj: {
-                action1: {
-                  description: 'Test Action',
-                  value: 10,
-                  unit: 'hectares'
-                }
-              }
-            }
-          }
-        }
-      }
-      const handler = controller.makeGetRouteHandler()
-      handler(mockRequest, singleParcelContext, mockH)
-      expect(mockH.view).toHaveBeenCalledWith(
-        'land-actions-check',
-        expect.objectContaining({
-          pageTitle: 'You have selected 1 action to 1 parcel'
-        })
-      )
-    })
-
-    test('should pluralize correctly for multiple parcels and actions', () => {
-      controller.getSelectedActionRows = jest.fn().mockReturnValue([
-        [{ text: 'sheet1-parcel1' }, { text: 'Test Action' }, { text: '10 hectares' }],
-        [{ text: 'sheet2-parcel1' }, { text: 'Test Action 1' }, { text: '10 hectares' }]
-      ])
-      const multiParcelContext = {
-        state: {
-          landParcels: {
-            'sheet1-parcel1': {
-              actionsObj: {
-                action1: {
-                  description: 'Test Action',
-                  value: 10,
-                  unit: 'hectares'
-                }
-              }
-            },
-            'sheet2-parcel1': {
-              actionsObj: {
-                action1: {
-                  description: 'Test Action 1',
-                  value: 10,
-                  unit: 'hectares'
-                }
-              }
-            }
-          }
-        }
-      }
-      const handler = controller.makeGetRouteHandler()
-      handler(mockRequest, multiParcelContext, mockH)
-      expect(mockH.view).toHaveBeenCalledWith(
-        'land-actions-check',
-        expect.objectContaining({
-          pageTitle: 'You have selected 2 actions to 2 parcels'
-        })
-      )
-    })
-
     test('should pass errors from collection.getErrors', () => {
       controller.collection.getErrors = jest.fn().mockReturnValue(['error1'])
-      controller.getSelectedActionRows = jest.fn().mockReturnValue([])
+      controller.getParcelItems = jest.fn().mockReturnValue([])
+      controller.getAdditionalYearlyPayments = jest.fn().mockReturnValue([])
       const handler = controller.makeGetRouteHandler()
       handler(mockRequest, mockContext, mockH)
       expect(mockH.view).toHaveBeenCalledWith(
@@ -398,65 +415,70 @@ describe('LandActionsCheckPageController', () => {
         })
       )
     })
+  })
 
-    describe('getSelectedActionRows', () => {
-      test('should return correct rows for multiple parcels and actions', () => {
-        const state = {
-          landParcels: {
-            'sheet1-parcel1': {
-              actionsObj: {
-                action1: {
-                  description: 'Test Action',
-                  value: 10,
-                  unit: 'hectares',
-                  annualPaymentPence: 1000
-                }
+  describe('getAdditionalYearlyPayments', () => {
+    test('should return formatted additional yearly payments', () => {
+      const controller = new LandActionsCheckPageController()
+      const state = {
+        payment: {
+          agreementLevelItems: mockPaymentData.agreementLevelItems
+        }
+      }
+
+      const result = controller.getAdditionalYearlyPayments(state)
+
+      expect(result).toEqual([
+        {
+          items: [
+            [
+              {
+                text: 'One-off payment per agreement per year for CMOR1: Assess moorland and produce a written record'
+              },
+              {
+                text: '£272.00'
               }
-            },
-            'sheet2-parcel1': {
-              actionsObj: {
-                action1: {
-                  description: 'Test Action 1',
-                  value: 10,
-                  unit: 'hectares',
-                  annualPaymentPence: 1000
-                },
-                action2: {
-                  description: 'Test Action 2',
-                  value: 15,
-                  unit: 'hectares',
-                  annualPaymentPence: 2000
-                }
-              }
-            }
+            ]
+          ]
+        }
+      ])
+    })
+  })
+
+  describe('getParcelItems', () => {
+    test('should return formatted parcel items', () => {
+      const controller = new LandActionsCheckPageController()
+      const state = {
+        payment: {
+          parcelItems: {
+            1: mockPaymentData.parcelItems[1]
           }
         }
-        const controller = new LandActionsCheckPageController()
-        const rows = controller.getSelectedActionRows(state)
-        expect(rows).toEqual([
-          [{ text: 'sheet1-parcel1' }, { text: 'Test Action' }, { text: '10 hectares' }, { text: '£10.00' }],
-          [{ text: 'sheet2-parcel1' }, { text: 'Test Action 1' }, { text: '10 hectares' }, { text: '£10.00' }],
-          [{ text: 'sheet2-parcel1' }, { text: 'Test Action 2' }, { text: '15 hectares' }, { text: '£20.00' }]
-        ])
-      })
+      }
 
-      test('should return empty array if no landParcels', () => {
-        const state = { landParcels: {} }
-        const controller = new LandActionsCheckPageController()
-        const rows = controller.getSelectedActionRows(state)
-        expect(rows).toEqual([])
-      })
+      const result = controller.getParcelItems(state)
 
-      test('should handle parcels with no actionsObj', () => {
-        const state = {
-          landParcels: {
-            'sheet1-parcel1': {}
-          }
+      expect(result).toEqual([
+        {
+          parcelId: 'SD6743 8083',
+          items: [
+            [
+              {
+                text: 'CMOR1: Assess moorland and produce a written record'
+              },
+              {
+                text: '4.53411078 ha'
+              },
+              {
+                text: '£48.06'
+              },
+              {
+                html: "<a class='govuk-link' href='confirm-delete-parcel' style='display: none'>Remove</a>"
+              }
+            ]
+          ]
         }
-        const controller = new LandActionsCheckPageController()
-        // Should not throw, but will return [undefined] due to map on undefined, so we should guard in production
-        expect(() => controller.getSelectedActionRows(state)).toThrow()
-      })
+      ])
     })
   })
 })
