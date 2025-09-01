@@ -1,0 +1,39 @@
+{%- set headingLevel = params.title.headingLevel if params.title.headingLevel else 2 -%}
+
+<div class="govuk-summary-card {%- if params.classes %} {{ params.classes }}{% endif %}">
+  <div class="govuk-summary-card__title-wrapper">
+    {% if params.title %}
+      <h{{ headingLevel }} class="govuk-summary-card__title {%- if params.title.classes %} {{ params.title.classes }}{% endif %}">
+        {{ params.title.text }}
+      </h{{ headingLevel }}>
+    {% endif %}
+    {% if params.headerActions %}
+      <ul class="govuk-summary-card__actions">
+        <li class="govuk-summary-card__action">
+          {{ params.headerActions.html | safe }}
+        </li>
+      </ul>
+    {% endif %}
+  </div>
+
+  <div class="govuk-summary-card__content">
+    {% if caller %}
+      <tbody class="govuk-table__body">
+        {{ caller() | trim }}
+        {% if params.footerActions %}
+          <tr class="govuk-table__row no-bottom-border">
+            <td class="govuk-table__cell"></td>
+            <td class="govuk-table__cell"></td>
+            <td colspan="2" class="govuk-table__cell">
+              <ul class="govuk-summary-list__actions-list" style="text-align: right">
+                <li class="govuk-summary-list__actions-list-item">
+                  {{ params.footerActions.html | safe }}
+                </li>
+              </ul>
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    {% endif %}
+  </div>
+</div>
