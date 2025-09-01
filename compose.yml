@@ -63,7 +63,6 @@ services:
       FEEDBACK_LINK: "mailto:defraforms@defra.gov.uk"
       CV_API_MOCK_ENABLED: true
       SBI_SELECTOR_ENABLED: true
-      SCORING_SERVICE_URL: http://grants-ui-backend:3001/scoring/api/v1/adding-value/score?allowPartialScoring=true
       DEFRA_ID_ENABLED: false
       GRANTS_UI_BACKEND_URL: http://grants-ui-backend:3001
       GRANTS_UI_BACKEND_AUTH_TOKEN: test-token-test-token-test-token-test-token-test-t-64-chars-long
