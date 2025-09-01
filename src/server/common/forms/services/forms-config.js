@@ -9,12 +9,6 @@ export const allForms = [
     title: 'Adding value'
   },
   {
-    path: 'src/server/common/forms/definitions/example-grant.yaml',
-    id: '5eeb9f71-44f8-46ed-9412-3d5e2c5ab2bc',
-    slug: 'example-grant',
-    title: 'Example grant'
-  },
-  {
     path: 'src/server/common/forms/definitions/flying-pigs.yaml',
     id: '95e92559-968d-44ae-8666-2b1ad3dffd33',
     slug: 'flying-pigs',

@@ -1,5 +1,5 @@
 import { config } from '~/src/config/config.js'
-import { configureFormDefinition, formsService, addAllForms } from './form.js'
+import { addAllForms, configureFormDefinition, formsService } from './form.js'
 
 const mockUrl = { pathname: '/mock/path' }
 global.URL = jest.fn(() => mockUrl)
@@ -48,12 +48,6 @@ describe('form', () => {
   })
 
   describe('formsService', () => {
-    test('returns exampleGrantDefinition for matching id', async () => {
-      const service = await formsService()
-      const result = service.getFormDefinition('5eeb9f71-44f8-46ed-9412-3d5e2c5ab2bc')
-      await expect(result).resolves.toBeDefined()
-    })
-
     test('returns landGrantsDefinition for matching id', async () => {
       const service = await formsService()
       const result = service.getFormDefinition('5c67688f-3c61-4839-a6e1-d48b598257f1')
