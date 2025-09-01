@@ -1,33 +1,15 @@
 services:
 
-  localstack:
-    image: localstack/localstack:3.0.2
-    ports:
-      - '4566:4566' # LocalStack Gateway
-      - '4510-4559:4510-4559' # external services port range
-    env_file:
-      - 'compose/aws.env'
-    environment:
-      DEBUG: ${DEBUG:-1}
-      LS_LOG: WARN # Localstack DEBUG Level
-      SERVICES: s3,sqs,sns,firehose
-      LOCALSTACK_HOST: 127.0.0.1
-    volumes:
-      - '${TMPDIR:-/tmp}/localstack:/var/lib/localstack'
-      - ./compose/start-localstack.sh:/etc/localstack/init/ready.d/start-localstack.sh
-    healthcheck:
-      test: ['CMD', 'curl', 'localhost:4566']
-      interval: 5s
-      start_period: 5s
-      retries: 3
-    networks:
-      - cdp-tenant
-
   redis:
     image: redis:7.2.3-alpine3.18
     ports:
-      - '6379:6379'
+      - '6380:6379'
     restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
     networks:
       - cdp-tenant
 
@@ -40,40 +22,88 @@ services:
     volumes:
       - mongodb-data:/data
     restart: always
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
 ################################################################################
 
-  your-frontend:
+  grants-ui:
     build:
-      context: ./
-      target: development
+      context: .
+      # target: development
     ports:
       - '3000:3000'
       - '9229:9229'
-    links:
-      - 'localstack:localstack'
-      - 'redis:redis'
     depends_on:
-      localstack:
-        condition: service_healthy
       redis:
+        condition: service_healthy
+      grants-ui-backend:
         condition: service_started
-    env_file:
-      - 'compose/aws.env'
     environment:
       PORT: 3000
-      NODE_ENV: development
+      # NODE_ENV: development
       ENVIRONMENT: local
       REDIS_HOST: redis
-      LOCALSTACK_ENDPOINT: http://localstack:4566
       USE_SINGLE_INSTANCE_CACHE: true
-      CHOKIDAR_USEPOLLING: true
-      CHOKIDAR_INTERVAL: 1000
+      SESSION_CACHE_ENGINE: redis
+      REDIS_KEY_PREFIX: "grants-ui:"
+      SESSION_CACHE_NAME: session
+      REDIS_CONNECT_TIMEOUT: 30000
+      REDIS_RETRY_DELAY: 1000
+      REDIS_MAX_RETRIES: 10
+      REDIS_USERNAME: ""
+      REDIS_PASSWORD: ""
+      LOG_LEVEL: debug
+      SESSION_COOKIE_PASSWORD: "53409gjhfcdiklgjidfglkgjidfglkelrku634"
+      SESSION_COOKIE_TTL: 2419200000
+      SESSION_CACHE_TTL: 14400000
+      FEEDBACK_LINK: "mailto:defraforms@defra.gov.uk"
+      CV_API_MOCK_ENABLED: true
+      SBI_SELECTOR_ENABLED: true
+      DEFRA_ID_ENABLED: false
+      GRANTS_UI_BACKEND_URL: http://grants-ui-backend:3001
+      GRANTS_UI_BACKEND_AUTH_TOKEN: test-token-test-token-test-token-test-token-test-t-64-chars-long
+      GRANTS_UI_BACKEND_ENCRYPTION_KEY: test-encryption-key-test-encryption-key-test-encry-64-chars-long
+      APP_BASE_URL: http://localhost:3000
+      HOST: 0.0.0.0
     volumes:
       - ./src:/home/node/src
       - /home/node/node_modules
     networks:
       - cdp-tenant
+    healthcheck:
+      test: ["CMD-SHELL", "ps aux | grep 'node .' | grep -v grep || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 60s
+
+  grants-ui-backend:
+    build:
+      context: https://github.com/DEFRA/grants-ui-backend.git#main
+      target: development
+    ports:
+      - '3001:3001'
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    environment:
+      PORT: 3001
+      NODE_ENV: development
+      MONGO_URI: mongodb://mongodb:27017/
+      GRANTS_UI_BACKEND_AUTH_TOKEN: test-token-test-token-test-token-test-token-test-t-64-chars-long
+      GRANTS_UI_BACKEND_ENCRYPTION_KEY: test-encryption-key-test-encryption-key-test-encry-64-chars-long
+    networks:
+      - cdp-tenant
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
 ################################################################################
 
