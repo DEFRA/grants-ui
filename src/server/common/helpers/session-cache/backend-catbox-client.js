@@ -2,8 +2,6 @@ import { createLogger } from '../logging/logger.js'
 import { fetchSavedStateFromApi } from '../state/fetch-saved-state-helper.js'
 import { persistStateToApi } from '../state/persist-state-helper.js'
 
-const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000
-
 const logger = createLogger()
 
 // Custom Catbox client that uses backend API for storage
@@ -33,9 +31,7 @@ export class BackendCatboxClient {
     logger.debug('Fetched State from API:', state)
 
     return {
-      item: state ?? null,
-      stored: Date.now(), // Current timestamp so we never consider it stale
-      ttl: ONE_YEAR_MS // Set a long TTL since backend manages actual expiry
+      item: state ?? null
     }
   }
 
