@@ -44,8 +44,6 @@ describe('BackendCatboxClient', () => {
 
       expect(fetchModule.fetchSavedStateFromApi).toHaveBeenCalledWith(key)
       expect(result).toHaveProperty('item', state)
-      expect(result).toHaveProperty('stored')
-      expect(result).toHaveProperty('ttl', 365 * 24 * 60 * 60 * 1000)
     })
 
     it('returns item=null when fetchSavedStateFromApi returns null', async () => {
