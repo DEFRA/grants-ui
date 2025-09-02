@@ -130,11 +130,11 @@ const registerFormsPlugin = async (server, prefix = '') => {
           return `${userId}:${businessId}:${grantId}`
         },
         // dummy: returns null, does nothing
-        sessionHydrator: async (request) => {
+        sessionHydrator: async (_request) => {
           return null
         },
         // dummy: returns null, does nothing
-        sessionPersister: async (state, request) => {
+        sessionPersister: async (_state, _request) => {
           return null
         }
       },
