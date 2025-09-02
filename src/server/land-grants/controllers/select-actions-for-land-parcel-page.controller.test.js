@@ -55,6 +55,17 @@ describe('SelectActionsForLandParcelPageController', () => {
       },
       logger: {
         error: jest.fn()
+      },
+      auth: {
+        isAuthenticated: true,
+        credentials: {
+          sbi: '123456789',
+          name: 'John Doe',
+          organisationId: 'org123',
+          organisationName: ' Farm 1',
+          role: 'admin',
+          sessionId: 'valid-session-id'
+        }
       }
     }
 
@@ -474,6 +485,17 @@ describe('SelectActionsForLandParcelPageController', () => {
         },
         logger: {
           error: jest.fn()
+        },
+        auth: {
+          isAuthenticated: true,
+          credentials: {
+            sbi: '123456789',
+            name: 'John Doe',
+            organisationId: 'org123',
+            organisationName: ' Farm 1',
+            role: 'admin',
+            sessionId: 'valid-session-id'
+          }
         }
       }
 

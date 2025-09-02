@@ -1,6 +1,5 @@
 import { config } from '~/src/config/config.js'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
-import { sbiStore } from '~/src/server/sbi/state.js'
 import Jwt from '@hapi/jwt'
 import { log } from '~/.server/server/common/helpers/logging/log.js'
 import { LogCodes } from '~/.server/server/common/helpers/logging/log-codes.js'
@@ -42,7 +41,7 @@ function buildTargetUri(baseUrl, path) {
  * @returns {object} The proxy headers object
  */
 function buildProxyHeaders(token, request) {
-  const sbi = sbiStore.get('sbi')
+  const sbi = request.auth.credentials.sbi
   const source = 'defra'
   const jwtSecret = config.get('agreements.jwtSecret')
   try {

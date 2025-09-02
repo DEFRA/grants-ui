@@ -5,7 +5,6 @@ import {
   parseLandParcel,
   triggerApiActionsValidation
 } from '~/src/server/land-grants/services/land-grants.service.js'
-import { sbiStore } from '~/.server/server/sbi/state.js'
 
 const unitRatesForActions = {
   CMOR1: 100,
@@ -115,6 +114,7 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
       const landAction = payload.landAction ?? ''
       const [sheetId, parcelId] = parseLandParcel(state.selectedLandParcel)
       const validateUserInput = this.validateUserInput(landAction)
+      const { sbi } = request.auth.credentials
 
       // Validate user input
       if (validateUserInput?.errors?.landAction) {
@@ -131,7 +131,7 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
 
       const { actionsObj } = this.extractActionsDataFromPayload(payload)
       // Create an updated state with the new action data
-      const newState = await this.buildNewState(state, actionsObj)
+      const newState = await this.buildNewState(sbi, state, actionsObj)
 
       if (payload.action === 'validate') {
         const { errors, errorSummary } = await this.validateActionsWithApiData(actionsObj, sheetId, parcelId)
@@ -222,7 +222,7 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
     return { errors, errorSummary }
   }
 
-  buildNewState = async (state, actionsObj) => {
+  buildNewState = async (sbi, state, actionsObj) => {
     // Add the current actions to the land parcels object
     const updatedLandParcels = {
       ...state.landParcels, // Spread existing land parcels
@@ -238,7 +238,7 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
     let draftApplicationAnnualTotalPence = state.draftApplicationAnnualTotalPence || 0
 
     // Get all land actions across all parcels
-    const landActions = this.prepareLandActionsForPayment(updatedLandParcels, sbiStore.get('sbi'))
+    const landActions = this.prepareLandActionsForPayment(updatedLandParcels, sbi)
 
     // Call the API with all land actions
     const paymentDetails = await calculateGrantPayment({

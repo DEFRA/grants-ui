@@ -3,7 +3,6 @@ import { config } from '~/src/config/config.js'
 import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/forms-cache.js'
 import { transformStateObjectToGasApplication } from '~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
 import { submitGrantApplication } from '~/src/server/common/services/grant-application/grant-application.service.js'
-import { sbiStore } from '../../sbi/state.js'
 import { stateToLandGrantsGasAnswers } from '../mappers/state-to-gas-answers-mapper.js'
 
 export default class SubmissionPageController extends SummaryPageController {
@@ -27,11 +26,11 @@ export default class SubmissionPageController extends SummaryPageController {
 
   /**
    * Submits the land grant application by transforming the state and calling the service.
+   * @param {string} sbi - The single business identifier (SBI) of the user
    * @param {object} context - The form context containing state and reference number
    * @returns {Promise<object>} - The result of the grant application submission
    */
-  async submitLandGrantApplication(context) {
-    const sbi = String(sbiStore.get('sbi'))
+  async submitLandGrantApplication(sbi, context) {
     const { crn = 'crn', defraId = 'defraId', frn = 'frn' } = context.state
     const identifiers = {
       sbi,
@@ -55,7 +54,8 @@ export default class SubmissionPageController extends SummaryPageController {
    */
   makePostRouteHandler() {
     const fn = async (request, context, h) => {
-      const result = await this.submitLandGrantApplication(context)
+      const { sbi } = request.auth.credentials
+      const result = await this.submitLandGrantApplication(sbi, context)
       request.logger.info('Form submission completed', result)
 
       const cacheService = getFormsCacheService(request.server)
