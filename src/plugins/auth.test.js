@@ -1,3 +1,4 @@
+import { vi } from 'vitest'
 import Bell from '@hapi/bell'
 import Cookie from '@hapi/cookie'
 import Hapi from '@hapi/hapi'
@@ -10,28 +11,28 @@ import { getSafeRedirect } from '~/src/server/auth/get-safe-redirect.js'
 import { refreshTokens } from '~/src/server/auth/refresh-tokens.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
-jest.mock('@hapi/jwt')
-jest.mock('~/src/server/common/helpers/logging/log.js', () => ({
-  log: jest.fn(),
+vi.mock('@hapi/jwt')
+vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
+  log: vi.fn(),
   LogCodes: {
     AUTH: {
-      SESSION_EXPIRED: { level: 'info', messageFunc: jest.fn() },
-      TOKEN_VERIFICATION_SUCCESS: { level: 'info', messageFunc: jest.fn() },
-      TOKEN_VERIFICATION_FAILURE: { level: 'error', messageFunc: jest.fn() },
-      AUTH_DEBUG: { level: 'debug', messageFunc: jest.fn() },
-      SIGN_IN_FAILURE: { level: 'error', messageFunc: jest.fn() },
-      UNAUTHORIZED_ACCESS: { level: 'error', messageFunc: jest.fn() }
+      SESSION_EXPIRED: { level: 'info', messageFunc: vi.fn() },
+      TOKEN_VERIFICATION_SUCCESS: { level: 'info', messageFunc: vi.fn() },
+      TOKEN_VERIFICATION_FAILURE: { level: 'error', messageFunc: vi.fn() },
+      AUTH_DEBUG: { level: 'debug', messageFunc: vi.fn() },
+      SIGN_IN_FAILURE: { level: 'error', messageFunc: vi.fn() },
+      UNAUTHORIZED_ACCESS: { level: 'error', messageFunc: vi.fn() }
     },
     SYSTEM: {
-      ENV_CONFIG_DEBUG: { level: 'debug', messageFunc: jest.fn() },
-      SERVER_ERROR: { level: 'error', messageFunc: jest.fn() },
-      PLUGIN_REGISTRATION: { level: 'info', messageFunc: jest.fn() }
+      ENV_CONFIG_DEBUG: { level: 'debug', messageFunc: vi.fn() },
+      SERVER_ERROR: { level: 'error', messageFunc: vi.fn() },
+      PLUGIN_REGISTRATION: { level: 'info', messageFunc: vi.fn() }
     }
   }
 }))
-jest.mock('~/src/server/auth/get-oidc-config')
-jest.mock('~/src/server/auth/refresh-tokens')
-jest.mock('~/src/server/auth/get-safe-redirect')
+vi.mock('~/src/server/auth/get-oidc-config')
+vi.mock('~/src/server/auth/refresh-tokens')
+vi.mock('~/src/server/auth/get-safe-redirect')
 
 const DEFAULT_CONFIG = {
   'defraId.enabled': true,
@@ -78,7 +79,7 @@ const MOCK_USERS = {
 const MOCK_REQUESTS = {
   withRedirect: {
     query: { redirect: '/home' },
-    yar: { set: jest.fn() },
+    yar: { set: vi.fn() },
     url: { href: 'http://localhost:3000/auth?redirect=%2Fhome', pathname: '/home', search: '?filter=active' },
     method: 'GET',
     headers: { host: 'localhost:3000', origin: 'http://localhost:3000' }
@@ -192,9 +193,12 @@ const createMockError = (message, name = 'Error', stack = null) => {
   return error
 }
 
-jest.mock('~/src/config/config', () => ({
+vi.mock('~/src/config/config', () => ({
   config: {
-    get: jest.fn((key) => DEFAULT_CONFIG[key])
+    get: vi.fn((key) => {
+      if (key === 'defraId.enabled') return true
+      return undefined
+    })
   }
 }))
 
@@ -212,25 +216,28 @@ describe('Auth Plugin', () => {
     server = Hapi.server()
 
     server.app.cache = {
-      get: jest.fn(),
-      set: jest.fn()
+      get: vi.fn(),
+      set: vi.fn()
     }
 
     await server.register([Bell, Cookie, Yar])
 
-    server.auth.strategy = jest.fn()
-    server.auth.default = jest.fn()
+    server.auth.strategy = vi.fn()
+    server.auth.default = vi.fn()
 
     getOidcConfig.mockResolvedValue(mockOidcConfig)
 
     Jwt.token.decode.mockReturnValue(mockDecodedToken)
-    Jwt.token.verifyTime = jest.fn()
+    Jwt.token.verifyTime = vi.fn()
 
     getSafeRedirect.mockImplementation((path) => path)
+
+    // Set up config mock with DEFAULT_CONFIG
+    config.get.mockImplementation((key) => DEFAULT_CONFIG[key])
   })
 
   afterEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   test('registers the plugin correctly', async () => {
@@ -369,7 +376,7 @@ describe('Auth Plugin', () => {
       const mockRequest = {
         query: { redirect: '/home' },
         yar: {
-          set: jest.fn(() => {
+          set: vi.fn(() => {
             throw new Error('Yar set error')
           })
         },
@@ -404,7 +411,7 @@ describe('Auth Plugin', () => {
       const mockRequest = {
         query: { redirect: '/home' },
         yar: {
-          set: jest.fn()
+          set: vi.fn()
         },
         url: { href: 'http://localhost:3000/auth?redirect=%2Fhome' },
         method: 'GET',

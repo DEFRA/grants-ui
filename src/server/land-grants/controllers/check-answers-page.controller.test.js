@@ -1,7 +1,24 @@
+<<<<<<< HEAD
+=======
+import { vi } from 'vitest'
+import { sbiStore } from '../../sbi/state.js'
+// import { calculateGrantPayment } from '../services/land-grants.service.js'
+>>>>>>> c8b7900 (vitest change - more complex changes with mocking and test changing)
 import CheckAnswersPageController from './check-answers-page.controller.js'
+import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
 
+<<<<<<< HEAD
 // jest.mock('../services/land-grants.service.js', () => ({
 //   calculateGrantPayment: jest.fn()
+=======
+vi.mock('../../sbi/state.js', () => ({
+  sbiStore: {
+    get: vi.fn()
+  }
+}))
+// vi.mock('../services/land-grants.service.js', () => ({
+//   calculateGrantPayment: vi.fn()
+>>>>>>> c8b7900 (vitest change - more complex changes with mocking and test changing)
 // }))
 
 describe('CheckAnswersPageController', () => {
@@ -36,7 +53,7 @@ describe('CheckAnswersPageController', () => {
   })
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
 
     mockModel = { name: 'test-model' }
     mockPageDef = { title: 'Test Page' }
@@ -46,6 +63,7 @@ describe('CheckAnswersPageController', () => {
       query: {},
       payload: {},
       logger: {
+<<<<<<< HEAD
         error: jest.fn()
       },
       auth: {
@@ -58,6 +76,9 @@ describe('CheckAnswersPageController', () => {
           role: 'admin',
           sessionId: 'valid-session-id'
         }
+=======
+        error: vi.fn()
+>>>>>>> c8b7900 (vitest change - more complex changes with mocking and test changing)
       }
     }
 
@@ -69,12 +90,12 @@ describe('CheckAnswersPageController', () => {
     }
 
     mockH = {
-      view: jest.fn().mockReturnValue('mocked-view-response')
+      view: vi.fn().mockReturnValue('mocked-view-response')
     }
 
     controller = new CheckAnswersPageController(mockModel, mockPageDef)
-    controller.getNextPath = jest.fn().mockReturnValue('/next-path')
-    controller.proceed = jest.fn().mockReturnValue('redirected')
+    controller.getNextPath = vi.fn().mockReturnValue('/next-path')
+    controller.proceed = vi.fn().mockReturnValue('redirected')
   })
 
   afterEach(() => {
@@ -342,17 +363,15 @@ describe('CheckAnswersPageController', () => {
 
     beforeEach(() => {
       // Mock parent class method
-      superGetSummaryViewModelSpy = jest
-        .spyOn(Object.getPrototypeOf(CheckAnswersPageController.prototype), 'getSummaryViewModel')
-        .mockReturnValue({
-          checkAnswers: [
-            {
-              summaryList: {
-                rows: []
-              }
+      superGetSummaryViewModelSpy = vi.spyOn(SummaryPageController.prototype, 'getSummaryViewModel').mockReturnValue({
+        checkAnswers: [
+          {
+            summaryList: {
+              rows: []
             }
-          ]
-        })
+          }
+        ]
+      })
     })
 
     afterEach(() => {
@@ -426,7 +445,7 @@ describe('CheckAnswersPageController', () => {
 
     it('should call getSummaryViewModel and return view', async () => {
       const mockViewModel = { test: 'data' }
-      jest.spyOn(controller, 'getSummaryViewModel').mockResolvedValue(mockViewModel)
+      vi.spyOn(controller, 'getSummaryViewModel').mockResolvedValue(mockViewModel)
 
       const handler = controller.makeGetRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
@@ -438,7 +457,7 @@ describe('CheckAnswersPageController', () => {
 
     it('should log and re-throw errors', async () => {
       const error = new Error('Test error')
-      jest.spyOn(controller, 'getSummaryViewModel').mockRejectedValue(error)
+      vi.spyOn(controller, 'getSummaryViewModel').mockRejectedValue(error)
 
       const handler = controller.makeGetRouteHandler()
 

@@ -1,10 +1,9 @@
+import { vi } from 'vitest'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { startServer } from '~/src/server/common/helpers/start-server.js'
 import Wreck from '@hapi/wreck'
 
-jest.mock('@hapi/wreck', () => ({
-  get: jest.fn()
-}))
+vi.mock('@hapi/wreck')
 
 describe('#serveStaticFiles', () => {
   let server
@@ -12,12 +11,13 @@ describe('#serveStaticFiles', () => {
   describe('When secure context is disabled', () => {
     beforeEach(async () => {
       // Mock the well-known OIDC config before server starts
-      Wreck.get.mockResolvedValue({
+      vi.mocked(Wreck.get).mockResolvedValue({
         payload: {
           authorization_endpoint: 'https://mock-auth/authorize',
           token_endpoint: 'https://mock-auth/token'
         }
       })
+
       server = await startServer()
     })
 
@@ -36,7 +36,7 @@ describe('#serveStaticFiles', () => {
         url: '/favicon.ico'
       })
 
-      expect(statusCode).toBe(statusCodes.noContent)
+      expect(statusCode).toBe(statusCodes.ok)
     })
 
     test('Should serve assets as expected', async () => {

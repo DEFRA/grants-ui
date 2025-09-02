@@ -1,21 +1,47 @@
-import { createServer } from '~/src/server/index.js'
+import { vi } from 'vitest'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { catchAll } from '~/src/server/common/helpers/errors.js'
 import Wreck from '@hapi/wreck'
 import { log } from '~/src/server/common/helpers/logging/log.js'
+import { createServer } from '~/src/server/index.js'
 
-jest.mock('@hapi/wreck', () => ({
-  get: jest.fn()
+vi.unmock('~/src/server/index.js')
+
+vi.mock('hapi-pino', () => {
+  const mockPlugin = {
+    register: (server) => {
+      server.decorate('server', 'logger', {
+        info: vi.fn(),
+        error: vi.fn(),
+        warn: vi.fn(),
+        debug: vi.fn()
+      })
+    },
+    name: 'mock-hapi-pino'
+  }
+  return {
+    default: mockPlugin,
+    ...mockPlugin
+  }
+})
+
+vi.mock('@defra/forms-engine-plugin', () => ({
+  default: {
+    plugin: {
+      name: 'forms-engine-plugin',
+      register: vi.fn()
+    }
+  }
 }))
 
-jest.mock('~/src/server/common/helpers/logging/log.js', () => ({
-  log: jest.fn(),
+vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
+  log: vi.fn(),
   LogCodes: {
     AUTH: {
-      SIGN_IN_FAILURE: { level: 'error', messageFunc: jest.fn() }
+      SIGN_IN_FAILURE: { level: 'error', messageFunc: vi.fn() }
     },
     SYSTEM: {
-      SERVER_ERROR: { level: 'error', messageFunc: jest.fn() }
+      SERVER_ERROR: { level: 'error', messageFunc: vi.fn() }
     }
   }
 }))
@@ -52,7 +78,7 @@ describe('#errors', () => {
 })
 
 describe('#catchAll', () => {
-  const mockErrorLogger = jest.fn()
+  const mockErrorLogger = vi.fn()
   const mockStack = 'Mock error stack'
   const errorPage = 'error/index'
   const mockRequest = (/** @type {number} */ statusCode) => ({
@@ -68,8 +94,8 @@ describe('#catchAll', () => {
     path: '/test-path',
     method: 'GET'
   })
-  const mockToolkitView = jest.fn()
-  const mockToolkitCode = jest.fn()
+  const mockToolkitView = vi.fn()
+  const mockToolkitCode = vi.fn()
   const mockToolkit = {
     view: mockToolkitView.mockReturnThis(),
     code: mockToolkitCode.mockReturnThis()
@@ -247,8 +273,8 @@ describe('#catchAll', () => {
 
   test('Should default to 200 if no statusCode on non-Boom response', () => {
     const responseObj = { payload: 'OK' }
-    const mockResponse = jest.fn().mockReturnThis()
-    const mockCode = jest.fn().mockReturnThis()
+    const mockResponse = vi.fn().mockReturnThis()
+    const mockCode = vi.fn().mockReturnThis()
 
     catchAll({ response: responseObj }, { response: mockResponse, code: mockCode })
 
@@ -258,11 +284,11 @@ describe('#catchAll', () => {
 })
 
 describe('#catchAll Redirect Handling', () => {
-  const mockToolkitRedirect = jest.fn()
+  const mockToolkitRedirect = vi.fn()
   const mockToolkit = {
     redirect: mockToolkitRedirect,
-    view: jest.fn().mockReturnThis(),
-    code: jest.fn().mockReturnThis()
+    view: vi.fn().mockReturnThis(),
+    code: vi.fn().mockReturnThis()
   }
 
   beforeEach(() => {

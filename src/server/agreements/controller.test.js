@@ -1,33 +1,49 @@
+import { vi } from 'vitest'
 import { getAgreementController } from './controller.js'
 import { config } from '~/src/config/config.js'
 import Jwt from '@hapi/jwt'
 import { log } from '~/src/server/common/helpers/logging/log.js'
 import { LogCodes } from '~/src/server/common/helpers/logging/log-codes.js'
 
-jest.mock('~/src/config/config.js', () => ({
+vi.mock('~/src/config/config.js', () => ({
   config: {
-    get: jest.fn()
+    get: vi.fn()
   }
 }))
 
-jest.mock('~/src/server/common/helpers/logging/logger.js', () => ({
-  createLogger: jest.fn(() => ({
-    info: jest.fn(),
-    error: jest.fn()
+vi.mock('~/src/server/common/helpers/logging/logger.js', () => ({
+  createLogger: vi.fn(() => ({
+    info: vi.fn(),
+    error: vi.fn()
   }))
 }))
 
+<<<<<<< HEAD
 jest.mock('@hapi/jwt', () => ({
-  token: {
-    generate: jest.fn(() => 'mocked-jwt-token')
+=======
+vi.mock('~/src/server/sbi/state.js', () => ({
+  sbiStore: {
+    get: vi.fn(() => 'test-sbi-value')
   }
 }))
 
-jest.mock('~/src/server/common/helpers/logging/log.js', () => ({
-  log: jest.fn()
+vi.mock('@hapi/jwt', () => ({
+  default: {
+    token: {
+      generate: vi.fn(() => 'mocked-jwt-token')
+    }
+  },
+>>>>>>> c8b7900 (vitest change - more complex changes with mocking and test changing)
+  token: {
+    generate: vi.fn(() => 'mocked-jwt-token')
+  }
 }))
 
-jest.mock('~/src/server/common/helpers/logging/log-codes.js', () => ({
+vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
+  log: vi.fn()
+}))
+
+vi.mock('~/src/server/common/helpers/logging/log-codes.js', () => ({
   LogCodes: {
     AGREEMENTS: {
       AGREEMENT_ERROR: 'AGREEMENTS_AGREEMENT_ERROR'
@@ -41,16 +57,16 @@ describe('Agreements Controller', () => {
   let mockProxy
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
 
     // Reset JWT mock to default behavior
     Jwt.token.generate.mockReturnValue('mocked-jwt-token')
 
-    mockProxy = jest.fn()
+    mockProxy = vi.fn()
     mockH = {
       proxy: mockProxy,
-      response: jest.fn(() => ({
-        code: jest.fn(() => ({ code: jest.fn() }))
+      response: vi.fn(() => ({
+        code: vi.fn(() => ({ code: vi.fn() }))
       }))
     }
 
@@ -59,6 +75,7 @@ describe('Agreements Controller', () => {
       params: { path: 'test-path' },
       method: 'GET',
       logger: {
+<<<<<<< HEAD
         info: jest.fn(),
         error: jest.fn()
       },
@@ -72,6 +89,10 @@ describe('Agreements Controller', () => {
           role: 'admin',
           sessionId: 'valid-session-id'
         }
+=======
+        info: vi.fn(),
+        error: vi.fn()
+>>>>>>> c8b7900 (vitest change - more complex changes with mocking and test changing)
       }
     }
 
