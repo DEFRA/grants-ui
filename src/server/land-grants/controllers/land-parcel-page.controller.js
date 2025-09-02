@@ -1,6 +1,5 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
-import { sbiStore } from '~/src/server/sbi/state.js'
 import { fetchParcels } from '../services/land-grants.service.js'
 
 const logger = createLogger()
@@ -61,7 +60,7 @@ export default class LandParcelPageController extends QuestionPageController {
      */
     const fn = async (request, context, h) => {
       const { selectedLandParcel = '' } = context.state || {}
-      const sbi = sbiStore.get('sbi')
+      const sbi = request.auth.credentials.sbi
 
       const { viewName } = this
       const baseViewModel = super.getViewModel(request, context)
