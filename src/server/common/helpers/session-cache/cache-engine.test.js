@@ -1,20 +1,21 @@
+import { vi } from 'vitest'
 import { Engine as CatboxRedis } from '@hapi/catbox-redis'
 import { Engine as CatboxMemory } from '@hapi/catbox-memory'
 
 import { getCacheEngine } from '~/src/server/common/helpers/session-cache/cache-engine.js'
 import { config } from '~/src/config/config.js'
 
-const mockLoggerInfo = jest.fn()
-const mockLoggerError = jest.fn()
+const mockLoggerInfo = vi.fn()
+const mockLoggerError = vi.fn()
 
-jest.mock('ioredis', () => ({
-  ...jest.requireActual('ioredis'),
-  Cluster: jest.fn().mockReturnValue({ on: () => ({}) }),
-  Redis: jest.fn().mockReturnValue({ on: () => ({}) })
+vi.mock('ioredis', async () => ({
+  ...(await vi.importActual('ioredis')),
+  Cluster: vi.fn().mockReturnValue({ on: () => ({}) }),
+  Redis: vi.fn().mockReturnValue({ on: () => ({}) })
 }))
-jest.mock('@hapi/catbox-redis')
-jest.mock('@hapi/catbox-memory')
-jest.mock('~/src/server/common/helpers/logging/logger.js', () => ({
+vi.mock('@hapi/catbox-redis')
+vi.mock('@hapi/catbox-memory')
+vi.mock('~/src/server/common/helpers/logging/logger.js', () => ({
   createLogger: () => ({
     info: (...args) => mockLoggerInfo(...args),
     error: (...args) => mockLoggerError(...args)
@@ -22,6 +23,10 @@ jest.mock('~/src/server/common/helpers/logging/logger.js', () => ({
 }))
 
 describe('#getCacheEngine', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
   describe('When Redis cache engine has been requested', () => {
     beforeEach(() => {
       getCacheEngine('redis')

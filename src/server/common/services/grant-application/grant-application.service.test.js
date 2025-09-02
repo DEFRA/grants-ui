@@ -1,3 +1,4 @@
+import { vi } from 'vitest'
 import { config } from '~/src/config/config.js'
 import {
   invokeGasGetAction,
@@ -43,13 +44,13 @@ describe('submitGrantApplication', () => {
   }
 
   beforeEach(() => {
-    jest.resetAllMocks()
+    vi.resetAllMocks()
   })
 
   test('should successfully submit a grant application', async () => {
     const mockRawResponse = {
       ok: true,
-      json: jest.fn().mockResolvedValueOnce(mockResponse)
+      json: vi.fn().mockResolvedValueOnce(mockResponse)
     }
 
     fetch.mockResolvedValueOnce(mockRawResponse)
@@ -72,9 +73,9 @@ describe('submitGrantApplication', () => {
     fetch.mockResolvedValue({
       ok: false,
       status: 400,
-      text: jest.fn().mockResolvedValueOnce(mockMessage),
+      text: vi.fn().mockResolvedValueOnce(mockMessage),
       statusText: 'Bad Request',
-      json: jest.fn().mockResolvedValueOnce({ message: mockMessage })
+      json: vi.fn().mockResolvedValueOnce({ message: mockMessage })
     })
 
     await expect(submitGrantApplication(code, payload)).rejects.toThrow(mockMessage)
@@ -123,13 +124,13 @@ describe('invokeGasPostAction', () => {
   }
 
   beforeEach(() => {
-    jest.resetAllMocks()
+    vi.resetAllMocks()
   })
 
   test('should successfully invoke a POST action', async () => {
     const mockRawResponse = {
       ok: true,
-      json: jest.fn().mockResolvedValueOnce(mockResponse)
+      json: vi.fn().mockResolvedValueOnce(mockResponse)
     }
 
     fetch.mockResolvedValueOnce(mockRawResponse)
@@ -153,9 +154,9 @@ describe('invokeGasPostAction', () => {
     fetch.mockResolvedValue({
       ok: false,
       status: 400,
-      text: jest.fn().mockResolvedValueOnce(mockMessage),
+      text: vi.fn().mockResolvedValueOnce(mockMessage),
       statusText: 'Bad Request',
-      json: jest.fn().mockResolvedValueOnce({ message: mockMessage })
+      json: vi.fn().mockResolvedValueOnce({ message: mockMessage })
     })
 
     await expect(invokeGasPostAction(code, actionName, payload)).rejects.toThrow(mockMessage)
@@ -191,7 +192,7 @@ describe('invokeGasPostAction', () => {
     fetch.mockResolvedValue({
       ok: false,
       status: errorStatus,
-      text: jest.fn().mockResolvedValueOnce(errorText),
+      text: vi.fn().mockResolvedValueOnce(errorText),
       statusText: 'API error'
     })
 
@@ -228,13 +229,13 @@ describe('invokeGasGetAction', () => {
   }
 
   beforeEach(() => {
-    jest.resetAllMocks()
+    vi.resetAllMocks()
   })
 
   test('should successfully invoke a GET action without query params', async () => {
     const mockRawResponse = {
       ok: true,
-      json: jest.fn().mockResolvedValueOnce(mockResponse)
+      json: vi.fn().mockResolvedValueOnce(mockResponse)
     }
 
     fetch.mockResolvedValueOnce(mockRawResponse)
@@ -254,7 +255,7 @@ describe('invokeGasGetAction', () => {
   test('should successfully invoke a GET action with query params', async () => {
     const mockRawResponse = {
       ok: true,
-      json: jest.fn().mockResolvedValueOnce(mockResponse)
+      json: vi.fn().mockResolvedValueOnce(mockResponse)
     }
 
     fetch.mockResolvedValueOnce(mockRawResponse)
@@ -278,7 +279,7 @@ describe('invokeGasGetAction', () => {
   test('should handle empty query params object', async () => {
     const mockRawResponse = {
       ok: true,
-      json: jest.fn().mockResolvedValueOnce(mockResponse)
+      json: vi.fn().mockResolvedValueOnce(mockResponse)
     }
 
     fetch.mockResolvedValueOnce(mockRawResponse)
@@ -301,7 +302,7 @@ describe('invokeGasGetAction', () => {
     fetch.mockResolvedValue({
       ok: false,
       status: 403,
-      text: jest.fn().mockResolvedValueOnce(mockMessage),
+      text: vi.fn().mockResolvedValueOnce(mockMessage),
       statusText: 'Forbidden'
     })
 
@@ -322,7 +323,7 @@ describe('invokeGasGetAction', () => {
     fetch.mockResolvedValue({
       ok: false,
       status: errorStatus,
-      text: jest.fn().mockResolvedValueOnce(errorText),
+      text: vi.fn().mockResolvedValueOnce(errorText),
       statusText: 'API error'
     })
 
@@ -346,13 +347,13 @@ describe('makeGasApiRequest', () => {
   const testGrantCode = 'TEST_GRANT'
 
   beforeEach(() => {
-    jest.resetAllMocks()
+    vi.resetAllMocks()
   })
 
   test('should use default options when none provided', async () => {
     const mockRawResponse = {
       ok: true,
-      json: jest.fn().mockResolvedValueOnce({ success: true })
+      json: vi.fn().mockResolvedValueOnce({ success: true })
     }
 
     fetch.mockResolvedValueOnce(mockRawResponse)
@@ -372,7 +373,7 @@ describe('makeGasApiRequest', () => {
   test('should use default method when only payload provided', async () => {
     const mockRawResponse = {
       ok: true,
-      json: jest.fn().mockResolvedValueOnce({ success: true })
+      json: vi.fn().mockResolvedValueOnce({ success: true })
     }
     const payload = { test: 'data' }
 
@@ -393,7 +394,7 @@ describe('makeGasApiRequest', () => {
   test('should handle GET request with query params', async () => {
     const mockRawResponse = {
       ok: true,
-      json: jest.fn().mockResolvedValueOnce({ success: true })
+      json: vi.fn().mockResolvedValueOnce({ success: true })
     }
     const queryParams = { param1: 'value1', param2: 'value2' }
 
@@ -416,7 +417,7 @@ describe('makeGasApiRequest', () => {
   test('should handle GET request without query params', async () => {
     const mockRawResponse = {
       ok: true,
-      json: jest.fn().mockResolvedValueOnce({ success: true })
+      json: vi.fn().mockResolvedValueOnce({ success: true })
     }
 
     fetch.mockResolvedValueOnce(mockRawResponse)
@@ -437,7 +438,7 @@ describe('makeGasApiRequest', () => {
   test('should filter out null and undefined query params', async () => {
     const mockRawResponse = {
       ok: true,
-      json: jest.fn().mockResolvedValueOnce({ success: true })
+      json: vi.fn().mockResolvedValueOnce({ success: true })
     }
     const queryParams = {
       valid: 'value',
@@ -471,7 +472,7 @@ describe('makeGasApiRequest', () => {
       ok: false,
       status: errorStatus,
       statusText,
-      text: jest.fn().mockResolvedValueOnce(errorText)
+      text: vi.fn().mockResolvedValueOnce(errorText)
     })
 
     let thrownError
@@ -498,7 +499,7 @@ describe('makeGasApiRequest', () => {
       ok: false,
       status: errorStatus,
       statusText,
-      text: jest.fn().mockResolvedValueOnce(errorText)
+      text: vi.fn().mockResolvedValueOnce(errorText)
     })
 
     await expect(makeGasApiRequest(testUrl, testGrantCode)).rejects.toMatchObject({
@@ -529,7 +530,7 @@ describe('makeGasApiRequest', () => {
 
 describe('makeGasApiRequest edge cases', () => {
   beforeEach(() => {
-    jest.resetAllMocks()
+    vi.resetAllMocks()
   })
 
   test('should handle GrantApplicationServiceApiError being re-thrown', async () => {
@@ -538,7 +539,7 @@ describe('makeGasApiRequest edge cases', () => {
     fetch.mockResolvedValue({
       ok: false,
       status: 500,
-      text: jest.fn().mockResolvedValueOnce(mockMessage),
+      text: vi.fn().mockResolvedValueOnce(mockMessage),
       statusText: 'Internal Server Error'
     })
 
@@ -548,7 +549,7 @@ describe('makeGasApiRequest edge cases', () => {
   test('should handle empty query params object for GET requests', async () => {
     const mockRawResponse = {
       ok: true,
-      json: jest.fn().mockResolvedValueOnce({ success: true })
+      json: vi.fn().mockResolvedValueOnce({ success: true })
     }
 
     fetch.mockResolvedValueOnce(mockRawResponse)
@@ -568,7 +569,7 @@ describe('makeGasApiRequest edge cases', () => {
   test('should handle query params with falsy but valid values', async () => {
     const mockRawResponse = {
       ok: true,
-      json: jest.fn().mockResolvedValueOnce({ success: true })
+      json: vi.fn().mockResolvedValueOnce({ success: true })
     }
 
     fetch.mockResolvedValueOnce(mockRawResponse)

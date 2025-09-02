@@ -1,12 +1,13 @@
+import { vi } from 'vitest'
 import { storeSlugInContext, getFormSlug, getConfirmationPath } from './form-slug-helper.js'
 
 describe('form-slug-helper', () => {
   describe('storeSlugInContext', () => {
     const controllerName = 'TestController'
-    const mockDebug = jest.fn()
+    const mockDebug = vi.fn()
 
     afterEach(() => {
-      jest.clearAllMocks()
+      vi.clearAllMocks()
     })
 
     test('should store slug in context when available in request.params', () => {
@@ -80,10 +81,10 @@ describe('form-slug-helper', () => {
 
   describe('getFormSlug', () => {
     const controllerName = 'TestController'
-    const mockDebug = jest.fn()
+    const mockDebug = vi.fn()
 
     afterEach(() => {
-      jest.clearAllMocks()
+      vi.clearAllMocks()
     })
 
     test('should get slug from request.params when available', () => {
@@ -161,7 +162,7 @@ describe('form-slug-helper', () => {
       const mockSlug = 'test-slug'
       const mockRequest = {
         params: { slug: mockSlug },
-        logger: { debug: jest.fn() }
+        logger: { debug: vi.fn() }
       }
       const mockContext = { state: {} }
 
@@ -173,7 +174,7 @@ describe('form-slug-helper', () => {
     test('should return default path when no slug is found', () => {
       const mockRequest = {
         params: {},
-        logger: { debug: jest.fn() }
+        logger: { debug: vi.fn() }
       }
       const mockContext = { state: {} }
 

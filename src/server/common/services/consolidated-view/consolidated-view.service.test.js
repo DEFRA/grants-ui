@@ -1,3 +1,4 @@
+import { vi } from 'vitest'
 import fs from 'fs/promises'
 import path from 'path'
 import { config } from '~/src/config/config.js'
@@ -7,11 +8,11 @@ import {
   fetchParcelsForSbi
 } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
 
-jest.mock('~/src/server/common/helpers/entra/token-manager.js', () => ({
-  getValidToken: jest.fn()
+vi.mock('~/src/server/common/helpers/entra/token-manager.js', () => ({
+  getValidToken: vi.fn()
 }))
 
-jest.mock('fs/promises')
+vi.mock('fs/promises')
 
 const getMockFilePath = (sbi) => {
   return path.join(
@@ -27,9 +28,9 @@ const getMockFilePath = (sbi) => {
 }
 
 /**
- * @type {jest.Mock}
+ * @type {import('vitest').Mock}
  */
-const mockFetch = jest.fn()
+const mockFetch = vi.fn()
 global.fetch = mockFetch
 
 describe('Consolidated View Service', () => {
@@ -88,7 +89,7 @@ describe('Consolidated View Service', () => {
   }
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
     mockFetch.mockReset()
     getValidToken.mockResolvedValue(mockToken)
 

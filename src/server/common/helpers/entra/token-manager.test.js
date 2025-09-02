@@ -1,3 +1,4 @@
+import { vi } from 'vitest'
 import { config } from '~/src/config/config.js'
 import {
   clearTokenState,
@@ -7,7 +8,7 @@ import {
   refreshToken
 } from '~/src/server/common/helpers/entra/token-manager.js'
 
-const mockFetch = jest.fn()
+const mockFetch = vi.fn()
 global.fetch = mockFetch
 
 describe('Token Manager', () => {
@@ -19,6 +20,7 @@ describe('Token Manager', () => {
       clientSecret: 'mock-client-secret'
     })
     clearTokenState()
+    vi.clearAllMocks()
   })
 
   describe('isTokenExpired', () => {

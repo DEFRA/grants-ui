@@ -1,11 +1,12 @@
+import { vi } from 'vitest'
 import { log, logger, LogCodes } from './log.js'
 
 // Mock the logger
-jest.mock('./logger.js', () => ({
+vi.mock('./logger.js', () => ({
   createLogger: () => ({
-    info: jest.fn(),
-    debug: jest.fn(),
-    error: jest.fn()
+    info: vi.fn(),
+    debug: vi.fn(),
+    error: vi.fn()
   })
 }))
 
@@ -17,7 +18,7 @@ describe('Logger Functionality', () => {
   const messageOptions = { mock: 'test' }
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   it('should call the info logger with the correct interpolated message', () => {

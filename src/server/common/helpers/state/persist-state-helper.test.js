@@ -1,4 +1,4 @@
-import { jest } from '@jest/globals'
+import { vi } from 'vitest'
 import { mockRequestWithIdentity } from './mock-request-with-identity.test-helper.js'
 import {
   MOCK_STATE_DATA,
@@ -11,13 +11,13 @@ import {
 
 const GRANT_VERSION = 1
 
-const mockGetCacheKey = jest.fn()
+const mockGetCacheKey = vi.fn()
 
-jest.mock('~/src/server/common/helpers/state/get-cache-key-helper.js', () => ({
+vi.mock('~/src/server/common/helpers/state/get-cache-key-helper.js', () => ({
   getCacheKey: mockGetCacheKey
 }))
 
-global.fetch = jest.fn()
+global.fetch = vi.fn()
 
 let persistStateToApi
 
@@ -26,7 +26,7 @@ describe('persistStateToApi', () => {
 
   const createMockRequestWithLogger = () => {
     const request = createMockRequest()
-    request.logger = { info: jest.fn(), error: jest.fn() }
+    request.logger = { info: vi.fn(), error: vi.fn() }
     return request
   }
 
@@ -46,16 +46,16 @@ describe('persistStateToApi', () => {
 
   describe('With backend configured correctly', () => {
     beforeEach(async () => {
-      jest.resetModules()
-      jest.doMock('~/src/config/config.js', createMockConfig)
+      vi.resetAllMocks()
+      vi.doMock('~/src/config/config.js', createMockConfig)
       const helper = await import('~/src/server/common/helpers/state/persist-state-helper.js')
       persistStateToApi = helper.persistStateToApi
       setupMockCacheKey()
-      jest.clearAllMocks()
+      vi.clearAllMocks()
     })
 
     afterEach(() => {
-      jest.dontMock('~/src/config/config.js')
+      vi.unmock('~/src/config/config.js')
     })
 
     const createSuccessfulFetchResponse = () => ({

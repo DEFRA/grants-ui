@@ -2,10 +2,6 @@ import { createServer } from '~/src/server/index.js'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import Wreck from '@hapi/wreck'
 
-jest.mock('@hapi/wreck', () => ({
-  get: jest.fn()
-}))
-
 describe('#healthController', () => {
   /** @type {Server} */
   let server

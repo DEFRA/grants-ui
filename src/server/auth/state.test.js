@@ -1,21 +1,25 @@
+import { vi } from 'vitest'
 import crypto from 'crypto'
 import { createState, validateState } from './state.js'
 
-jest.mock('crypto', () => ({
-  randomUUID: jest.fn()
+vi.mock('crypto', () => ({
+  default: {
+    randomUUID: vi.fn()
+  },
+  randomUUID: vi.fn()
 }))
 
 describe('State Management Functions', () => {
   let mockRequest
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
 
     mockRequest = {
       yar: {
-        set: jest.fn(),
-        get: jest.fn(),
-        clear: jest.fn()
+        set: vi.fn(),
+        get: vi.fn(),
+        clear: vi.fn()
       }
     }
 

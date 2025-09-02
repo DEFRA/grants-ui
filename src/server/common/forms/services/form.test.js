@@ -1,8 +1,9 @@
+import { vi } from 'vitest'
 import { config } from '~/src/config/config.js'
 import { addAllForms, configureFormDefinition, formsService } from './form.js'
 
 const mockUrl = { pathname: '/mock/path' }
-global.URL = jest.fn(() => mockUrl)
+global.URL = vi.fn(() => mockUrl)
 global.import = { meta: { url: 'file:///mock/path' } }
 
 const defaultConfigMock = {
@@ -17,23 +18,23 @@ const defaultConfigMock = {
   serviceVersion: '1.0.0'
 }
 
-jest.mock('~/src/config/config.js', () => ({
+vi.mock('~/src/config/config.js', () => ({
   config: {
-    get: jest.fn((key) => defaultConfigMock[key])
+    get: vi.fn((key) => defaultConfigMock[key])
   }
 }))
 
-const mockWarn = jest.fn()
-jest.mock('~/src/server/common/helpers/logging/logger.js', () => ({
-  createLogger: jest.fn(() => ({
+const mockWarn = vi.fn()
+vi.mock('~/src/server/common/helpers/logging/logger.js', () => ({
+  createLogger: vi.fn(() => ({
     warn: mockWarn,
-    info: jest.fn(),
-    error: jest.fn(),
-    debug: jest.fn()
+    info: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn()
   }))
 }))
 
-jest.mock('../config.js', () => ({
+vi.mock('../config.js', () => ({
   metadata: {
     organisation: 'Test Org',
     teamName: 'Test Team',
@@ -43,7 +44,7 @@ jest.mock('../config.js', () => ({
 
 describe('form', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
     config.get.mockImplementation((key) => defaultConfigMock[key])
   })
 
@@ -187,7 +188,7 @@ describe('form', () => {
   describe('addAllForms', () => {
     test('handles duplicate forms and logs warning', async () => {
       const mockLoader = {
-        addForm: jest.fn().mockResolvedValue(undefined)
+        addForm: vi.fn().mockResolvedValue(undefined)
       }
 
       const testForms = [
@@ -254,7 +255,7 @@ describe('form', () => {
 
     test('handles empty forms array', async () => {
       const mockLoader = {
-        addForm: jest.fn()
+        addForm: vi.fn()
       }
 
       const result = await addAllForms(mockLoader, [])
@@ -266,7 +267,7 @@ describe('form', () => {
 
     test('handles all unique forms', async () => {
       const mockLoader = {
-        addForm: jest.fn().mockResolvedValue(undefined)
+        addForm: vi.fn().mockResolvedValue(undefined)
       }
 
       const testForms = [

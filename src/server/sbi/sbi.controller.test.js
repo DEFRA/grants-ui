@@ -1,17 +1,18 @@
+import { vi } from 'vitest'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { sbiSelectorController } from './sbi.controller.js'
 import { sbiStore } from './state.js'
 
-jest.mock('~/src/server/common/constants/status-codes.js', () => ({
+vi.mock('~/src/server/common/constants/status-codes.js', () => ({
   statusCodes: {
     ok: 200,
     methodNotAllowed: 405
   }
 }))
 
-jest.mock('./state.js', () => ({
+vi.mock('./state.js', () => ({
   sbiStore: {
-    set: jest.fn()
+    set: vi.fn()
   }
 }))
 
@@ -20,11 +21,11 @@ describe('sbiSelectorController', () => {
   let mockH
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
 
     mockH = {
-      response: jest.fn().mockReturnThis(),
-      code: jest.fn().mockReturnThis()
+      response: vi.fn().mockReturnThis(),
+      code: vi.fn().mockReturnThis()
     }
   })
 

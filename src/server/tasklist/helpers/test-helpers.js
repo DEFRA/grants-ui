@@ -1,6 +1,6 @@
-import jest, { fn as jestMockFn } from 'jest-mock'
+import { vi } from 'vitest'
 
-const mockFn = typeof jest !== 'undefined' ? jest.fn : jestMockFn
+const mockFn = vi.fn
 
 const TEST_TASKLIST_ID = 'test-tasklist'
 const TEST_TASKLIST_TITLE = 'Test Tasklist'

@@ -1,4 +1,4 @@
-import { jest } from '@jest/globals'
+import { vi } from 'vitest'
 import { validateBackendAuthConfig } from './validate-backend-auth.js'
 
 const CONFIG_SESSION_CACHE_API_ENDPOINT = 'session.cache.apiEndpoint'
@@ -18,7 +18,7 @@ describe('validateBackendAuthConfig', () => {
 
   beforeEach(() => {
     mockConfig = {
-      get: jest.fn()
+      get: vi.fn()
     }
   })
 

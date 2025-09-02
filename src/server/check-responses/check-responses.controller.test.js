@@ -1,3 +1,4 @@
+import { vi } from 'vitest'
 import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
 import { existsSync } from 'fs'
 import { join } from 'path'
@@ -65,13 +66,13 @@ describe('CheckResponsesPageController', () => {
     it('should call getNextPath with context and proceed with correct arguments, returning its result', () => {
       const request = { method: 'post', path: '/some-path' }
       const context = { payload: { foo: 'bar' } }
-      const h = { redirect: jest.fn() }
+      const h = { redirect: vi.fn() }
 
       const nextPath = '/test-form/declaration'
 
-      controller.getNextPath = jest.fn().mockReturnValue(nextPath)
+      controller.getNextPath = vi.fn().mockReturnValue(nextPath)
       const proceedResult = Symbol('proceed-result')
-      controller.proceed = jest.fn().mockReturnValue(proceedResult)
+      controller.proceed = vi.fn().mockReturnValue(proceedResult)
 
       const result = handler(request, context, h)
 
@@ -90,8 +91,8 @@ describe('CheckResponsesPageController', () => {
       const context = {}
       const h = {}
 
-      controller.getNextPath = jest.fn().mockReturnValue('/next')
-      controller.proceed = jest.fn().mockReturnValue('ok')
+      controller.getNextPath = vi.fn().mockReturnValue('/next')
+      controller.proceed = vi.fn().mockReturnValue('ok')
 
       const fn = controller.makePostRouteHandler()
       const ret = fn(request, context, h)

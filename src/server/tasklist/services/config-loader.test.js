@@ -1,3 +1,4 @@
+import { vi } from 'vitest'
 import { loadTasklistConfig, validateTasklistConfig } from './config-loader.js'
 import { readFile } from 'fs/promises'
 import { parse } from 'yaml'
@@ -10,14 +11,14 @@ import {
   createSubsectionConfig
 } from '../helpers/test-helpers.js'
 
-jest.mock('fs/promises')
-jest.mock('yaml')
+vi.mock('fs/promises')
+vi.mock('yaml')
 
 describe('config-loader', () => {
   const mockTasklistId = 'test-tasklist'
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   describe('loadTasklistConfig', () => {

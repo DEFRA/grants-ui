@@ -1,18 +1,19 @@
+import { vi } from 'vitest'
 import { StatusPageController } from '@defra/forms-engine-plugin/controllers/StatusPageController.js'
 import ConfirmationPageController from './confirmation.controller.js'
 import * as formSlugHelper from '~/src/server/common/helpers/form-slug-helper.js'
 
 const mockFormsCacheService = {
-  getConfirmationState: jest.fn(),
-  setConfirmationState: jest.fn(),
-  clearState: jest.fn()
+  getConfirmationState: vi.fn(),
+  setConfirmationState: vi.fn(),
+  clearState: vi.fn()
 }
 
-jest.mock('@defra/forms-engine-plugin/controllers/StatusPageController.js')
-jest.mock('~/src/server/common/helpers/forms-cache/forms-cache.js', () => ({
+vi.mock('@defra/forms-engine-plugin/controllers/StatusPageController.js')
+vi.mock('~/src/server/common/helpers/forms-cache/forms-cache.js', () => ({
   getFormsCacheService: () => mockFormsCacheService
 }))
-jest.mock('~/src/server/common/helpers/form-slug-helper.js')
+vi.mock('~/src/server/common/helpers/form-slug-helper.js')
 
 describe('ConfirmationPageController', () => {
   let controller
@@ -21,22 +22,22 @@ describe('ConfirmationPageController', () => {
   let mockH
 
   beforeEach(() => {
-    StatusPageController.prototype.getViewModel = jest.fn().mockReturnValue({
+    StatusPageController.prototype.getViewModel = vi.fn().mockReturnValue({
       pageTitle: 'Confirmation'
     })
-    StatusPageController.prototype.getStartPath = jest.fn().mockReturnValue('/default-start')
+    StatusPageController.prototype.getStartPath = vi.fn().mockReturnValue('/default-start')
 
     controller = new ConfirmationPageController()
     controller.collection = {
-      getErrors: jest.fn().mockReturnValue([])
+      getErrors: vi.fn().mockReturnValue([])
     }
-    controller.proceed = jest.fn().mockReturnValue('redirected')
+    controller.proceed = vi.fn().mockReturnValue('redirected')
 
     mockRequest = {
       logger: {
-        error: jest.fn(),
-        debug: jest.fn(),
-        info: jest.fn()
+        error: vi.fn(),
+        debug: vi.fn(),
+        info: vi.fn()
       },
       path: '/test-path',
       server: {}
@@ -52,7 +53,7 @@ describe('ConfirmationPageController', () => {
     }
 
     mockH = {
-      view: jest.fn().mockReturnValue('rendered view')
+      view: vi.fn().mockReturnValue('rendered view')
     }
 
     // Mock the form-slug-helper functions
@@ -61,7 +62,7 @@ describe('ConfirmationPageController', () => {
   })
 
   afterEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   test('should have the correct viewName', () => {
@@ -173,7 +174,7 @@ describe('ConfirmationPageController', () => {
     test('should handle case when confirmationState is undefined', async () => {
       // Mock the controller's behavior to handle undefined confirmationState
       const originalGetConfirmationState = mockFormsCacheService.getConfirmationState
-      mockFormsCacheService.getConfirmationState = jest.fn().mockResolvedValueOnce({ confirmed: false })
+      mockFormsCacheService.getConfirmationState = vi.fn().mockResolvedValueOnce({ confirmed: false })
 
       const handler = controller.makeGetRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)

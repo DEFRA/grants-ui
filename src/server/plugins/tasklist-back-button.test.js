@@ -1,12 +1,13 @@
+import { vi } from 'vitest'
 import { tasklistBackButton } from './tasklist-back-button.js'
 
 const createMockRequest = (overrides = {}) => ({
   query: {},
   path: '/default-path',
   yar: {
-    get: jest.fn().mockReturnValue(null),
-    set: jest.fn(),
-    clear: jest.fn()
+    get: vi.fn().mockReturnValue(null),
+    set: vi.fn(),
+    clear: vi.fn()
   },
   ...overrides,
   ...(overrides.yar && {
@@ -64,9 +65,9 @@ tasklist:
 `
 
 const mockFsModule = (options = {}) => ({
-  existsSync: jest.fn().mockReturnValue(options.existsSync ?? false),
-  readdirSync: jest.fn().mockReturnValue(options.files ?? []),
-  readFileSync: options.readFileSync ?? jest.fn()
+  existsSync: vi.fn().mockReturnValue(options.existsSync ?? false),
+  readdirSync: vi.fn().mockReturnValue(options.files ?? []),
+  readFileSync: options.readFileSync ?? vi.fn()
 })
 
 const mockFormsConfig = (forms = []) => ({
@@ -97,8 +98,8 @@ const createYarClearErrorRequest = (path, tasklistContext) =>
   createMockRequest({
     path,
     yar: {
-      get: jest.fn().mockReturnValue(tasklistContext),
-      clear: jest.fn().mockImplementation(mockThrowingYarClear)
+      get: vi.fn().mockReturnValue(tasklistContext),
+      clear: vi.fn().mockImplementation(mockThrowingYarClear)
     },
     response: createMockResponse('view')
   })
@@ -107,7 +108,7 @@ const createYarGetErrorRequest = (path) =>
   createMockRequest({
     path,
     yar: {
-      get: jest.fn().mockImplementation(mockThrowingYarGet)
+      get: vi.fn().mockImplementation(mockThrowingYarGet)
     },
     response: createMockResponse('view')
   })
@@ -118,7 +119,7 @@ describe('tasklistBackButton plugin', () => {
 
   beforeEach(() => {
     server = {
-      ext: jest.fn()
+      ext: vi.fn()
     }
 
     h = {
@@ -127,20 +128,20 @@ describe('tasklistBackButton plugin', () => {
   })
 
   afterEach(() => {
-    jest.clearAllMocks()
-    jest.restoreAllMocks()
+    vi.clearAllMocks()
+    vi.restoreAllMocks()
   })
 
   describe('plugin registration with mocked modules', () => {
     beforeEach(() => {
-      jest.doMock('fs', () => mockFsModule())
-      jest.resetModules()
+      vi.doMock('fs', () => mockFsModule())
+      vi.resetAllMocks()
     })
 
     afterEach(() => {
-      jest.dontMock('fs')
-      jest.dontMock('../common/forms/services/forms-config.js')
-      jest.resetModules()
+      vi.unmock('fs')
+      vi.unmock('../common/forms/services/forms-config.js')
+      vi.resetAllMocks()
     })
 
     const testMissingConfigDirectory = async () => {
@@ -154,14 +155,14 @@ describe('tasklistBackButton plugin', () => {
     })
 
     const setupMissingFormConfigMocks = () => {
-      jest.doMock('fs', () =>
+      vi.doMock('fs', () =>
         mockFsModule({
           existsSync: true,
           files: ['example-tasklist.yaml'],
-          readFileSync: jest.fn().mockReturnValueOnce(createTasklistYaml())
+          readFileSync: vi.fn().mockReturnValueOnce(createTasklistYaml())
         })
       )
-      jest.doMock('../common/forms/services/forms-config.js', () => mockFormsConfig([]))
+      vi.doMock('../common/forms/services/forms-config.js', () => mockFormsConfig([]))
     }
 
     const testMissingFormConfig = async () => {
@@ -175,12 +176,12 @@ describe('tasklistBackButton plugin', () => {
     })
 
     const setupFileReadErrorMocks = () => {
-      const readFileImpl = jest
+      const readFileImpl = vi
         .fn()
         .mockImplementationOnce(() => createTasklistYaml('business-status'))
         .mockImplementationOnce(mockThrowingFileRead)
 
-      jest.doMock('fs', () =>
+      vi.doMock('fs', () =>
         mockFsModule({
           existsSync: true,
           files: ['example-tasklist.yaml'],
@@ -188,7 +189,7 @@ describe('tasklistBackButton plugin', () => {
         })
       )
 
-      jest.doMock('../common/forms/services/forms-config.js', () =>
+      vi.doMock('../common/forms/services/forms-config.js', () =>
         mockFormsConfig([
           {
             slug: 'business-status',
@@ -268,7 +269,7 @@ describe('tasklistBackButton plugin', () => {
         query: { source: 'example-tasklist' },
         path: '/business-status',
         yar: {
-          set: jest.fn().mockImplementation(mockThrowingYarSet)
+          set: vi.fn().mockImplementation(mockThrowingYarSet)
         }
       })
 
@@ -300,7 +301,7 @@ describe('tasklistBackButton plugin', () => {
       expect(request.response.headers.location).toBe(expected)
     }
 
-    // eslint-disable-next-line jest/expect-expect
+    // eslint-disable-next-line vitest/expect-expect
     it.each(redirectTestCases)('when source=example-tasklist should $description', ({ location, expected }) =>
       testRedirectCase(location, expected)
     )
@@ -349,7 +350,7 @@ describe('tasklistBackButton plugin', () => {
       const request = createMockRequest({
         path: firstPagePath,
         yar: {
-          get: jest.fn().mockReturnValue(tasklistContext)
+          get: vi.fn().mockReturnValue(tasklistContext)
         },
         response: createMockResponse('view')
       })
@@ -367,8 +368,8 @@ describe('tasklistBackButton plugin', () => {
       const request = createMockRequest({
         path: nonFirstPagePath,
         yar: {
-          get: jest.fn().mockReturnValue(tasklistContext),
-          clear: jest.fn()
+          get: vi.fn().mockReturnValue(tasklistContext),
+          clear: vi.fn()
         },
         response: createMockResponse('view')
       })
@@ -379,7 +380,7 @@ describe('tasklistBackButton plugin', () => {
       expect(request.response.source.context.backLink).toBeUndefined()
     })
 
-    // eslint-disable-next-line jest/expect-expect
+    // eslint-disable-next-line vitest/expect-expect
     it('when processing first pages should handle Yar clear errors gracefully', () => {
       const request = createYarClearErrorRequest(nonFirstPagePath, tasklistContext)
       executeWithoutError(() => responseHandler(request, h))
@@ -395,7 +396,7 @@ describe('tasklistBackButton plugin', () => {
       const request = createMockRequest({
         path: '/business-status',
         yar: {
-          get: jest.fn().mockReturnValue(tasklistContext)
+          get: vi.fn().mockReturnValue(tasklistContext)
         },
         response: createMockResponse('redirect', {
           headers: { location: '/next-page' }
@@ -411,7 +412,7 @@ describe('tasklistBackButton plugin', () => {
       const request = createMockRequest({
         path: firstPagePath,
         yar: {
-          get: jest.fn().mockReturnValue(tasklistContext)
+          get: vi.fn().mockReturnValue(tasklistContext)
         },
         response: createMockResponse('view')
       })
@@ -448,7 +449,7 @@ describe('tasklistBackButton plugin', () => {
           createMockRequest({
             path: firstPagePath,
             yar: {
-              get: jest.fn().mockReturnValue(tasklistContext)
+              get: vi.fn().mockReturnValue(tasklistContext)
             },
             response: { variety: 'view', source: {} }
           })
@@ -462,7 +463,7 @@ describe('tasklistBackButton plugin', () => {
       expect(request.response?.source?.context?.backLink).toBeUndefined()
     }
 
-    // eslint-disable-next-line jest/expect-expect
+    // eslint-disable-next-line vitest/expect-expect
     it.each(continueCases)('when processing first pages should continue when $description', ({ mockRequest }) =>
       testContinueCase(mockRequest)
     )
@@ -482,7 +483,7 @@ describe('tasklistBackButton plugin', () => {
         request: createMockRequest({
           path: '/business-status/nature-of-business',
           yar: {
-            get: jest.fn().mockReturnValue(createTasklistContext())
+            get: vi.fn().mockReturnValue(createTasklistContext())
           },
           response: createMockResponse('plain')
         }),
@@ -495,7 +496,7 @@ describe('tasklistBackButton plugin', () => {
         request: createMockRequest({
           path: '/business-status/download',
           yar: {
-            get: jest.fn().mockReturnValue(createTasklistContext())
+            get: vi.fn().mockReturnValue(createTasklistContext())
           },
           response: createMockResponse('file')
         }),

@@ -1,3 +1,4 @@
+import { vi } from 'vitest'
 import Hapi from '@hapi/hapi'
 import SsoPlugin from '~/src/plugins/sso.js'
 
@@ -10,15 +11,15 @@ describe('SSO Plugin', () => {
 
     h = {
       continue: Symbol('continue'),
-      redirect: jest.fn().mockReturnThis(),
-      takeover: jest.fn().mockReturnValue(Symbol('takeover'))
+      redirect: vi.fn().mockReturnThis(),
+      takeover: vi.fn().mockReturnValue(Symbol('takeover'))
     }
 
-    server.ext = jest.fn()
+    server.ext = vi.fn()
   })
 
   afterEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   test('registers the plugin correctly', () => {

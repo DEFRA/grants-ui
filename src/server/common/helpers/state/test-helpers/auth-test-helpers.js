@@ -1,5 +1,5 @@
 import crypto from 'crypto'
-import { jest } from '@jest/globals'
+import { vi } from 'vitest'
 
 const IV_LENGTH_BYTES = 12
 const KEY_LENGTH_BYTES = 32
@@ -165,7 +165,7 @@ export const createMockConfigWithoutEndpoint = () => {
  */
 export const createCustomMockConfig = (customValues = {}) => {
   const configValues = { ...MOCK_CONFIG_VALUES.DEFAULT, ...customValues }
-  const mockGet = jest.fn().mockImplementation((key) => configValues[key] || null)
+  const mockGet = vi.fn().mockImplementation((key) => configValues[key] || null)
 
   return { config: { get: mockGet } }
 }

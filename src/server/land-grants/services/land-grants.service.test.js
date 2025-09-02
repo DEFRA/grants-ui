@@ -1,4 +1,4 @@
-import { jest } from '@jest/globals'
+import { vi } from 'vitest'
 import { formatCurrency } from '~/src/config/nunjucks/filters/format-currency.js'
 import { fetchParcelsForSbi } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
 import {
@@ -14,10 +14,10 @@ import {
 
 const mockApiEndpoint = 'https://land-grants-api'
 
-jest.mock('~/src/config/nunjucks/filters/format-currency.js')
-jest.mock('~/src/config/config', () => ({
+vi.mock('~/src/config/nunjucks/filters/format-currency.js')
+vi.mock('~/src/config/config', () => ({
   config: {
-    get: jest.fn((key) => {
+    get: vi.fn((key) => {
       const mockConfig = {
         'landGrants.grantsServiceApiEndpoint': 'https://land-grants-api'
       }
@@ -25,20 +25,20 @@ jest.mock('~/src/config/config', () => ({
     })
   }
 }))
-jest.mock('~/src/server/common/helpers/logging/logger.js', () => ({
-  createLogger: jest.fn().mockReturnValue({
-    error: jest.fn()
+vi.mock('~/src/server/common/helpers/logging/logger.js', () => ({
+  createLogger: vi.fn().mockReturnValue({
+    error: vi.fn()
   })
 }))
-jest.mock('~/src/server/common/services/consolidated-view/consolidated-view.service.js', () => ({
-  fetchParcelsForSbi: jest.fn()
+vi.mock('~/src/server/common/services/consolidated-view/consolidated-view.service.js', () => ({
+  fetchParcelsForSbi: vi.fn()
 }))
 
-global.fetch = jest.fn()
+global.fetch = vi.fn()
 
 describe('land-grants service', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   describe('parseLandParcel', () => {

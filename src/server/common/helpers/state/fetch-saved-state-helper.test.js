@@ -1,4 +1,4 @@
-import { jest } from '@jest/globals'
+import { vi } from 'vitest'
 import { mockRequestWithIdentity } from './mock-request-with-identity.test-helper.js'
 import {
   MOCK_STATE_DATA,
@@ -14,7 +14,7 @@ const LOG_TAGS = {
   FETCH_SAVED_STATE: 'fetch-saved-state'
 }
 
-global.fetch = jest.fn()
+global.fetch = vi.fn()
 
 let fetchSavedStateFromApi
 
@@ -23,7 +23,7 @@ describe('fetchSavedStateFromApi', () => {
 
   const createMockRequestWithLogger = () => {
     const request = createMockRequest()
-    request.logger = { warn: jest.fn(), error: jest.fn() }
+    request.logger = { warn: vi.fn(), error: vi.fn() }
     return request
   }
 
@@ -43,15 +43,16 @@ describe('fetchSavedStateFromApi', () => {
 
   describe('With backend configured correctly', () => {
     beforeEach(async () => {
-      jest.resetModules()
-      jest.doMock('~/src/config/config.js', createMockConfig)
+      vi.resetAllMocks()
+      vi.resetModules()
+      vi.doMock('~/src/config/config.js', createMockConfig)
       const helper = await import('~/src/server/common/helpers/state/fetch-saved-state-helper.js')
       fetchSavedStateFromApi = helper.fetchSavedStateFromApi
-      jest.clearAllMocks()
+      vi.clearAllMocks()
     })
 
     afterEach(() => {
-      jest.dontMock('~/src/config/config.js')
+      vi.unmock('~/src/config/config.js')
     })
 
     it('returns state when response is valid', async () => {
@@ -143,15 +144,16 @@ describe('fetchSavedStateFromApi', () => {
 
   describe('Without backend endpoint configured', () => {
     beforeEach(async () => {
-      jest.resetModules()
-      jest.doMock('~/src/config/config.js', createMockConfigWithoutEndpoint)
+      vi.resetAllMocks()
+      vi.resetModules()
+      vi.doMock('~/src/config/config.js', createMockConfigWithoutEndpoint)
       const helper = await import('~/src/server/common/helpers/state/fetch-saved-state-helper.js')
       fetchSavedStateFromApi = helper.fetchSavedStateFromApi
-      jest.clearAllMocks()
+      vi.clearAllMocks()
     })
 
     afterEach(() => {
-      jest.dontMock('~/src/config/config.js')
+      vi.unmock('~/src/config/config.js')
     })
 
     it('returns null when GRANTS_UI_BACKEND_ENDPOINT is not configured', async () => {

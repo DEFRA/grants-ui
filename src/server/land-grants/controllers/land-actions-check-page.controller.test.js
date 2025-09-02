@@ -1,11 +1,15 @@
+import { vi } from 'vitest'
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { sbiStore } from '~/src/server/sbi/state.js'
 import { calculateGrantPayment } from '../services/land-grants.service.js'
 import LandActionsCheckPageController from './land-actions-check-page.controller.js'
 
-jest.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js')
-jest.mock('~/src/server/land-grants/services/land-grants.service.js')
-jest.mock('~/src/server/sbi/state.js')
+vi.mock('~/src/server/land-grants/services/land-grants.service.js')
+vi.mock('~/src/server/sbi/state.js', () => ({
+  sbiStore: {
+    get: vi.fn()
+  }
+}))
 
 describe('LandActionsCheckPageController', () => {
   let controller
@@ -35,20 +39,30 @@ describe('LandActionsCheckPageController', () => {
   }
 
   beforeEach(() => {
-    QuestionPageController.prototype.getViewModel = jest.fn().mockReturnValue({
+    QuestionPageController.prototype.getViewModel = vi.fn().mockReturnValue({
       pageTitle: 'Check selected land actions'
     })
 
     controller = new LandActionsCheckPageController()
-    controller.setState = jest.fn()
-    controller.proceed = jest.fn().mockReturnValue('redirected')
-    controller.getNextPath = jest.fn().mockReturnValue('/next-path')
-    controller.collection = { getErrors: jest.fn().mockReturnValue([]) }
+    controller.collection = {
+      getErrors: vi.fn().mockReturnValue([])
+    }
+    controller.setState = vi.fn().mockResolvedValue(true)
+    controller.proceed = vi.fn().mockReturnValue('redirected')
+    controller.getNextPath = vi.fn().mockReturnValue('/next-path')
+    controller.getSelectedActionRows = vi
+      .fn()
+      .mockReturnValue([[{ text: 'sheet1-parcel1' }, { text: 'Test Action' }, { text: '10 hectares' }]])
 
     calculateGrantPayment.mockResolvedValue(mockPaymentResponse)
-    sbiStore.get = jest.fn().mockReturnValue('123456789')
+    sbiStore.get = vi.fn().mockReturnValue('123456789')
 
-    mockRequest = { payload: {} }
+    mockRequest = {
+      payload: {},
+      logger: {
+        error: vi.fn()
+      }
+    }
     mockContext = {
       state: {
         landParcels: {
@@ -59,13 +73,13 @@ describe('LandActionsCheckPageController', () => {
       }
     }
     mockH = {
-      view: jest.fn().mockReturnValue('view-result'),
-      redirect: jest.fn().mockReturnValue('redirect-result')
+      view: vi.fn().mockReturnValue('rendered view'),
+      redirect: vi.fn().mockReturnValue('redirected')
     }
   })
 
   afterEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   describe('Payment Calculation', () => {
@@ -271,6 +285,127 @@ describe('LandActionsCheckPageController', () => {
 
       expect(result[0].items[0][0].text).toBe('One-off payment per agreement per year for Management fee')
       expect(result[0].items[0][1].text).toBe('£50.00')
+    })
+  })
+
+  describe('makeGetRouteHandler', () => {
+    test('should call h.view with correct viewName and viewModel', () => {
+      // Arrange
+      controller.getViewModel = vi.fn().mockReturnValue({ foo: 'bar' })
+      controller.getSelectedActionRows = vi.fn().mockReturnValue([
+        [{ text: 'sheet1-parcel1' }, { text: 'Test Action' }, { text: '10 hectares' }],
+        [{ text: 'sheet2-parcel1' }, { text: 'Test Action 1' }, { text: '10 hectares' }],
+        [{ text: 'sheet2-parcel1' }, { text: 'Test Action 2' }, { text: '15 hectares' }]
+      ])
+      controller.collection = {
+        getErrors: vi.fn().mockReturnValue([])
+      }
+      const handler = controller.makeGetRouteHandler()
+
+      // Act
+      const result = handler(mockRequest, mockContext, mockH)
+
+      // Assert
+      expect(controller.getSelectedActionRows).toHaveBeenCalledWith(mockContext.state, mockContext)
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'land-actions-check',
+        expect.objectContaining({
+          foo: 'bar',
+          landParcel: expect.any(String),
+          landParcels: expect.any(Object),
+          selectedActionRows: expect.any(Array),
+          pageTitle: 'You have selected 3 actions to 2 parcels',
+          errors: []
+        })
+      )
+
+      expect(result).toBe('rendered view')
+    })
+
+    test('should pluralize correctly for single parcel and action', () => {
+      controller.getSelectedActionRows = vi
+        .fn()
+        .mockReturnValue([[{ text: 'sheet1-parcel1' }, { text: 'Test Action' }, { text: '10 hectares' }]])
+      const singleParcelContext = {
+        state: {
+          landParcels: {
+            'sheet1-parcel1': {
+              actionsObj: {
+                action1: {
+                  description: 'Test Action',
+                  value: 10,
+                  unit: 'hectares'
+                }
+              }
+            }
+          }
+        }
+      }
+
+      const handler = controller.makeGetRouteHandler()
+      handler(mockRequest, singleParcelContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'land-actions-check',
+        expect.objectContaining({
+          pageTitle: 'You have selected 1 action to 1 parcel'
+        })
+      )
+    })
+
+    test('should pluralize correctly for multiple parcels and actions', () => {
+      controller.getSelectedActionRows = vi.fn().mockReturnValue([
+        [{ text: 'sheet1-parcel1' }, { text: 'Test Action' }, { text: '10 hectares' }],
+        [{ text: 'sheet2-parcel1' }, { text: 'Test Action 1' }, { text: '10 hectares' }]
+      ])
+      const multiParcelContext = {
+        state: {
+          landParcels: {
+            'sheet1-parcel1': {
+              actionsObj: {
+                action1: {
+                  description: 'Test Action',
+                  value: 10,
+                  unit: 'hectares'
+                }
+              }
+            },
+            'sheet2-parcel1': {
+              actionsObj: {
+                action1: {
+                  description: 'Test Action 1',
+                  value: 10,
+                  unit: 'hectares'
+                }
+              }
+            }
+          }
+        }
+      }
+
+      const handler = controller.makeGetRouteHandler()
+      handler(mockRequest, multiParcelContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'land-actions-check',
+        expect.objectContaining({
+          pageTitle: 'You have selected 2 actions to 2 parcels'
+        })
+      )
+    })
+
+    test('should pass errors from collection.getErrors', () => {
+      controller.collection.getErrors = vi.fn().mockReturnValue(['error1'])
+      controller.getSelectedActionRows = vi.fn().mockReturnValue([])
+      const handler = controller.makeGetRouteHandler()
+      handler(mockRequest, mockContext, mockH)
+      expect(mockH.view).toHaveBeenCalledWith(
+        'land-actions-check',
+        expect.objectContaining({
+          errors: ['error1']
+        })
+      )
     })
   })
 })
