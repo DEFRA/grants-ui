@@ -196,8 +196,17 @@ pages:
         title: How many White pigs do you have?
         type: NumberField
         hint: ""
-        options: {}
-        schema: {}
+        options:
+          required: true
+          classes: govuk-!-width-one-third
+          customValidationMessages:
+            any.required: Enter the number of white pigs you have
+            number.min: You must have at least 1 pig
+            number.max: You can apply for wings for up to 1,000 pigs
+        schema:
+          min: 1
+          max: 1000
+          precision: 0
         shortDescription: How many White pigs do you have?
         id: c35baac6-cfc7-4984-a099-9965f7479ca5
     condition: 90d64978-0714-41fb-b3d5-b37ad3537a57
@@ -209,8 +218,17 @@ pages:
         title: How many British Landrace pigs do you have?
         type: NumberField
         hint: ""
-        options: {}
-        schema: {}
+        options:
+          required: true
+          classes: govuk-!-width-one-third
+          customValidationMessages:
+            any.required: Enter the number of British Landrace pigs you have
+            number.min: You must have at least 1 pig
+            number.max: You can apply for wings for up to 1,000 pigs
+        schema:
+          min: 1
+          max: 1000
+          precision: 0
         shortDescription: How many British Landrace pigs do you have?
         id: 95be4663-635e-4d97-beca-ea383df0ba15
     condition: 506f0683-d615-40ec-b746-b31797dac464
@@ -222,8 +240,17 @@ pages:
         title: How many Berkshire pigs do you have?
         type: NumberField
         hint: ""
-        options: {}
-        schema: {}
+        options:
+          required: true
+          classes: govuk-!-width-one-third
+          customValidationMessages:
+            any.required: Enter the number of Berkshire pigs you have
+            number.min: You must have at least 1 pig
+            number.max: You can apply for wings for up to 1,000 pigs
+        schema:
+          min: 1
+          max: 1000
+          precision: 0
         shortDescription: How many Berkshire pigs do you have?
         id: 66316a29-4e30-4ee5-821b-c33eb9ce888b
     condition: 850d2d80-d0a4-492a-8927-19b5ad89a6c1
@@ -235,8 +262,17 @@ pages:
         title: How many Other pigs do you have?
         type: NumberField
         hint: ""
-        options: {}
-        schema: {}
+        options:
+          required: true
+          classes: govuk-!-width-one-third
+          customValidationMessages:
+            any.required: Enter the number of Other pigs you have
+            number.min: You must have at least 1 pig
+            number.max: You can apply for wings for up to 1,000 pigs
+        schema:
+          min: 1
+          max: 1000
+          precision: 0
         shortDescription: How many Other pigs do you have?
         id: d24f82c6-a82c-45fb-987e-44ec73149567
     condition: 1f672a37-ad80-40fd-8675-54265ece3ef8
