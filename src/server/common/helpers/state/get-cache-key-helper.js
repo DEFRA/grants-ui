@@ -14,6 +14,13 @@ const outputLog = (request, message) => {
   })
 }
 
+/**
+ * Generates a cache key from a Hapi request by extracting user, business, and grant identifiers.
+ *
+ * @param {import('@hapi/hapi').Request} request - The Hapi request object containing authentication credentials and route parameters.
+ * @returns {{ userId: string, businessId: string, grantId: string }} An object containing identifiers to be used as a cache key.
+ * @throws {Error} If authentication credentials, user ID, business relationship, or grant ID are missing or malformed.
+ */
 export const getCacheKey = (request) => {
   const credentials = request.auth?.credentials
 
@@ -39,5 +46,26 @@ export const getCacheKey = (request) => {
     outputLog(request, 'Missing grantId')
     throw new Error('Missing grantId')
   }
+  return { userId, organisationId, grantId }
+}
+
+/**
+ * Parses a session key into its components.
+ *
+ * @param {string} sessionKey - Colon-separated key (userId:businessId:grantId)
+ * @returns {{ userId: string, organisationId: string, grantId: string }} Parsed values
+ * @throws {Error} If sessionKey is invalid or missing parts
+ */
+export function parseSessionKey(sessionKey) {
+  if (!sessionKey || typeof sessionKey !== 'string') {
+    throw new Error('Invalid session key: must be a non-empty string')
+  }
+
+  const [userId, organisationId, grantId] = sessionKey.split(':')
+
+  if (!userId || !organisationId || !grantId) {
+    throw new Error(`Invalid session key format: ${sessionKey}`)
+  }
+
   return { userId, organisationId, grantId }
 }

@@ -47,9 +47,11 @@ import { persistStateToApi } from './common/helpers/state/persist-state-helper.j
 import { contentSecurityPolicy } from '~/src/server/common/helpers/csp.js'
 import RemoveActionPageController from './land-grants/controllers/remove-action-page.controller.js'
 import { router } from './router.js'
+import { formsAuthCallback } from '~/src/server/auth/forms-engine-plugin-auth-helpers.js'
 import SectionEndController from './section-end/section-end.controller.js'
 
 const SESSION_CACHE_NAME = 'session.cache.name'
+const SESSION_BACKEND_NAME = 'session.backend.name'
 
 const getViewPaths = () => {
   const serverDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)))
@@ -106,6 +108,10 @@ const createHapiServer = () => {
       {
         name: config.get(SESSION_CACHE_NAME),
         engine: getCacheEngine(/** @type {Engine} */ (config.get('session.cache.engine')))
+      },
+      {
+        name: config.get(SESSION_BACKEND_NAME),
+        engine: new BackendCatboxClient()
       }
     ],
     state: {
@@ -119,18 +125,20 @@ const registerFormsPlugin = async (server, prefix = '') => {
     plugin,
     options: {
       ...(prefix && { routes: { prefix } }),
-      cacheName: config.get(SESSION_CACHE_NAME),
+      cacheName: config.get(SESSION_BACKEND_NAME),
       baseUrl: config.get('baseUrl'),
       saveAndReturn: {
         keyGenerator: (request) => {
           const { userId, organisationId, grantId } = getCacheKey(request)
           return `${userId}:${organisationId}:${grantId}`
         },
+        // dummy: returns null, does nothing
         sessionHydrator: async (request) => {
-          return fetchSavedStateFromApi(request)
+          return null
         },
+        // dummy: returns null, does nothing
         sessionPersister: async (state, request) => {
-          return persistStateToApi(state, request)
+          return null
         }
       },
       onRequest: formsAuthCallback,

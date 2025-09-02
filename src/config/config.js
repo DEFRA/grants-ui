@@ -243,6 +243,14 @@ export const config = convict({
         sensitive: true
       }
     },
+    backend: {
+      name: {
+        doc: 'Persistent backend cache used for save-and-continue and long-term storage',
+        format: String,
+        default: 'backendSession',
+        env: 'BACKEND_CACHE_NAME'
+      }
+    },
     cookie: {
       ttl: {
         doc: 'Session cookie ttl',

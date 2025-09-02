@@ -2,6 +2,7 @@ import { vi } from 'vitest'
 import Wreck from '@hapi/wreck'
 const mockLoggerInfo = vi.fn()
 const mockLoggerError = vi.fn()
+const mockLoggerDebug = jest.fn()
 
 const mockHapiLoggerInfo = vi.fn()
 const mockHapiLoggerError = vi.fn()
@@ -21,7 +22,8 @@ vi.mock('~/src/server/common/helpers/logging/logger.js', async () => {
   const { mockLoggerFactoryWithCustomMethods } = await import('~/src/__mocks__')
   return mockLoggerFactoryWithCustomMethods({
     info: (...args) => mockLoggerInfo(...args),
-    error: (...args) => mockLoggerError(...args)
+    error: (...args) => mockLoggerError(...args),
+    debug: (...args) => mockLoggerDebug(...args)
   })
 })
 
