@@ -197,14 +197,14 @@ const mockSessionData = async (request, log, LogCodes) => {
     const sessionData = {
       isAuthenticated: true,
       sessionId,
-      contactId: sbiStore.get('sbi'),
+      contactId: `987654321`,
       firstName: 'Anonymous',
       lastName: 'User',
       name: 'Anonymous User',
       role: 'user',
       scope: ['user'],
       currentRelationshipId: `${sbiStore.get('sbi')}1234`,
-      crn: sbiStore.get('sbi'),
+      crn: '987654321',
       relationships: [`${sbiStore.get('sbi')}1234:${sbiStore.get('sbi')}:Farm ${sbiStore.get('sbi')}`]
     }
 
