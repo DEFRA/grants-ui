@@ -1,10 +1,10 @@
 import neostandard from 'neostandard'
 import prettier from 'eslint-config-prettier'
-import jestPlugin from 'eslint-plugin-jest'
+import vitestPlugin from 'eslint-plugin-vitest'
 
 export default [
   ...neostandard({
-    env: ['node', 'jest'],
+    env: ['node'],
     jsx: false,
     style: false,
     ignores: ['.server', '.public', 'coverage', 'node_modules']
@@ -24,10 +24,15 @@ export default [
   {
     files: ['**/*.test.{js,cjs}'],
     plugins: {
-      jest: jestPlugin
+      vitest: vitestPlugin
+    },
+    languageOptions: {
+      globals: {
+        ...vitestPlugin.environments.env.globals
+      }
     },
     rules: {
-      ...jestPlugin.configs.recommended.rules
+      ...vitestPlugin.configs.recommended.rules
     }
   }
 ]
