@@ -43,12 +43,12 @@ import FlyingPigsSubmissionPageController from '~/src/server/non-land-grants/pig
 import { PotentialFundingController } from '~/src/server/non-land-grants/pigs-might-fly/controllers/potential-funding.controller.js'
 import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
 import { getCacheKey } from './common/helpers/state/get-cache-key-helper.js'
-import { fetchSavedStateFromApi } from './common/helpers/state/fetch-saved-state-helper.js'
 import { formsAuthCallback } from '~/src/server/auth/forms-engine-plugin-auth-helpers.js'
-import { persistStateToApi } from './common/helpers/state/persist-state-helper.js'
 import CheckResponsesPageController from '~/src/server/check-responses/check-responses.controller.js'
+import { BackendCatboxClient } from './common/helpers/session-cache/backend-catbox-client.js'
 
 const SESSION_CACHE_NAME = 'session.cache.name'
+const SESSION_BACKEND_NAME = 'session.backend.name'
 
 const getViewPaths = () => {
   const serverDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)))
@@ -105,6 +105,10 @@ const createHapiServer = () => {
       {
         name: config.get(SESSION_CACHE_NAME),
         engine: getCacheEngine(/** @type {Engine} */ (config.get('session.cache.engine')))
+      },
+      {
+        name: config.get(SESSION_BACKEND_NAME),
+        engine: new BackendCatboxClient()
       }
     ],
     state: {
@@ -118,18 +122,20 @@ const registerFormsPlugin = async (server, prefix = '') => {
     plugin,
     options: {
       ...(prefix && { routes: { prefix } }),
-      cacheName: config.get(SESSION_CACHE_NAME),
+      cacheName: config.get(SESSION_BACKEND_NAME),
       baseUrl: config.get('baseUrl'),
       saveAndReturn: {
         keyGenerator: (request) => {
           const { userId, businessId, grantId } = getCacheKey(request)
           return `${userId}:${businessId}:${grantId}`
         },
+        // dummy: returns null, does nothing
         sessionHydrator: async (request) => {
-          return fetchSavedStateFromApi(request)
+          return null
         },
+        // dummy: returns null, does nothing
         sessionPersister: async (state, request) => {
-          return persistStateToApi(state, request)
+          return null
         }
       },
       onRequest: formsAuthCallback,

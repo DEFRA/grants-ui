@@ -7,6 +7,7 @@ jest.mock('@hapi/wreck', () => ({
 
 const mockLoggerInfo = jest.fn()
 const mockLoggerError = jest.fn()
+const mockLoggerDebug = jest.fn()
 
 const mockHapiLoggerInfo = jest.fn()
 const mockHapiLoggerError = jest.fn()
@@ -24,7 +25,8 @@ jest.mock('hapi-pino', () => ({
 jest.mock('~/src/server/common/helpers/logging/logger.js', () => ({
   createLogger: () => ({
     info: (...args) => mockLoggerInfo(...args),
-    error: (...args) => mockLoggerError(...args)
+    error: (...args) => mockLoggerError(...args),
+    debug: (...args) => mockLoggerDebug(...args)
   })
 }))
 
