@@ -2,7 +2,6 @@ import { jest } from '@jest/globals'
 import { config } from '~/src/config/config.js'
 import { submitGrantApplication } from '~/src/server/common/services/grant-application/grant-application.service.js'
 import { transformStateObjectToGasApplication } from '../../common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
-import { sbiStore } from '../../sbi/state.js'
 import { stateToLandGrantsGasAnswers } from '../mappers/state-to-gas-answers-mapper.js'
 import SubmissionPageController from './submission-page.controller.js'
 
@@ -63,11 +62,11 @@ describe('SubmissionPageController', () => {
       transformStateObjectToGasApplication.mockReturnValue(mockApplicationData)
       submitGrantApplication.mockResolvedValue(mockResult)
 
-      const result = await controller.submitLandGrantApplication(mockContext)
+      const result = await controller.submitLandGrantApplication('123456789', mockContext)
 
       expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
         {
-          sbi: String(sbiStore.get('sbi')),
+          sbi: '123456789',
           frn: 'frn',
           crn: 'crn',
           defraId: 'defraId',
@@ -87,6 +86,17 @@ describe('SubmissionPageController', () => {
         logger: {
           info: jest.fn(),
           error: jest.fn()
+        },
+        auth: {
+          isAuthenticated: true,
+          credentials: {
+            sbi: '123456789',
+            name: 'John Doe',
+            organisationId: 'org123',
+            organisationName: ' Farm 1',
+            role: 'admin',
+            sessionId: 'valid-session-id'
+          }
         }
       }
       const mockContext = { state: {} }
@@ -101,7 +111,7 @@ describe('SubmissionPageController', () => {
       const handler = controller.makePostRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
-      expect(controller.submitLandGrantApplication).toHaveBeenCalledWith(mockContext)
+      expect(controller.submitLandGrantApplication).toHaveBeenCalledWith('123456789', mockContext)
       expect(mockRequest.logger.info).toHaveBeenCalledWith('Form submission completed', mockResult)
     })
 
@@ -111,6 +121,17 @@ describe('SubmissionPageController', () => {
         logger: {
           info: jest.fn(),
           error: jest.fn()
+        },
+        auth: {
+          isAuthenticated: true,
+          credentials: {
+            sbi: '123456789',
+            name: 'John Doe',
+            organisationId: 'org123',
+            organisationName: ' Farm 1',
+            role: 'admin',
+            sessionId: 'valid-session-id'
+          }
         }
       }
       const mockContext = { state: {} }
