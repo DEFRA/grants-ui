@@ -18,7 +18,7 @@ export async function fetchSavedStateFromApi(key) {
 
   let json = null
   try {
-    logger.debug(`Fetching saved state from backend for identity: ${key}`)
+    logger.debug(`fetch-saved-state: Fetching saved state from backend for identity: ${JSON.stringify(key)}`)
 
     const url = new URL('/state/', GRANTS_UI_BACKEND_ENDPOINT)
     url.searchParams.set('userId', userId)
@@ -32,7 +32,7 @@ export async function fetchSavedStateFromApi(key) {
 
     if (!response.ok) {
       if (response.status === statusCodes.notFound) {
-        logger.debug(`No state found in backend for identity: ${key}`)
+        logger.debug(`fetch-saved-state: No state found in backend for identity: ${JSON.stringify(key)}`)
         return null
       }
       throw new Error(`Failed to fetch saved state: ${response.status}`)

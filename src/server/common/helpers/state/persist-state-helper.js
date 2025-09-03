@@ -36,7 +36,7 @@ export async function persistStateToApi(state, key) {
       logger.error(`Failed to persist state to API: ${response.status} - ${response.statusText}`)
     }
   } catch (err) {
-    logger.error(`Failed to persist state to API: ${err.message}`)
+    logger.error(`persist-state: Failed to persist state to API: ${err.message}`)
 
     // TODO: See TGC-781
     // throw err

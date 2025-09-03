@@ -26,9 +26,9 @@ export class BackendCatboxClient {
    * @returns {Promise<CacheItem<T>|null>}
    */
   async get(key) {
-    logger.debug(`Cache GET - Key: ${JSON.stringify(key)}`)
+    logger.debug(`backend-catbox-client: Cache GET - Key: ${JSON.stringify(key)}`)
     const state = await fetchSavedStateFromApi(key)
-    logger.debug('Fetched State from API:', state)
+    logger.debug(`backend-catbox-client: Fetched State from API: ${JSON.stringify(state)}`)
 
     return {
       item: state ?? null
@@ -43,7 +43,9 @@ export class BackendCatboxClient {
    * @returns {Promise<void>}
    */
   async set(key, value, ttl) {
-    logger.debug(`Cache SET - Value: ${JSON.stringify(value)}, Key: ${JSON.stringify(key)}, TTL: ${ttl}`)
+    logger.debug(
+      `backend-catbox-client: Cache SET - Value: ${JSON.stringify(value)}, Key: ${JSON.stringify(key)}, TTL: ${ttl}`
+    )
     return persistStateToApi(value, key)
   }
 
@@ -54,7 +56,7 @@ export class BackendCatboxClient {
    */
   async drop(key) {
     // optional: no-op
-    logger.debug(`Cache DROP - Key: ${JSON.stringify(key)}`)
+    logger.debug(`backend-catbox-client: Cache DROP - Key: ${JSON.stringify(key)}`)
   }
 
   /**
@@ -66,7 +68,7 @@ export class BackendCatboxClient {
    * @returns {Promise<void>}
    */
   async start() {
-    logger.debug('BackendCatboxClient start() called')
+    logger.debug('backend-catbox-client: BackendCatboxClient start() called')
   }
 
   /**
@@ -78,7 +80,7 @@ export class BackendCatboxClient {
    * @returns {Promise<void>}
    */
   async stop() {
-    logger.debug('BackendCatboxClient stop() called')
+    logger.debug('backend-catbox-client: BackendCatboxClient stop() called')
   }
 
   /**
