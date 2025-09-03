@@ -2,6 +2,7 @@ import { jest } from '@jest/globals'
 import {
   MOCK_STATE_DATA,
   HTTP_STATUS,
+  TEST_USER_IDS,
   ERROR_MESSAGES,
   createMockConfig,
   createMockConfigWithoutEndpoint
@@ -9,29 +10,18 @@ import {
 
 global.fetch = jest.fn()
 
-const mockLogger = {
-  debug: jest.fn(),
-  warn: jest.fn(),
-  error: jest.fn()
-}
-
-jest.mock('../logging/logger.js', () => ({
-  createLogger: () => mockLogger
-}))
-
 // Mock parseSessionKey
+const mockParseSessionKey = jest.fn()
 jest.mock('./get-cache-key-helper.js', () => ({
-  parseSessionKey: jest.fn(() => ({
-    userId: 'user-1',
-    businessId: 'business-1',
-    grantId: 'grant-1'
-  }))
+  parseSessionKey: mockParseSessionKey
 }))
 
 let fetchSavedStateFromApi
+let log
+let LogCodes
 
 describe('fetchSavedStateFromApi', () => {
-  const key = { id: 'user-1:business-1:grant-1' }
+  const key = { id: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.BUSINESS_ID}:${TEST_USER_IDS.GRANT_ID}` }
 
   const createSuccessfulResponse = (data = MOCK_STATE_DATA.DEFAULT) => ({
     ok: true,
@@ -46,12 +36,31 @@ describe('fetchSavedStateFromApi', () => {
     }
   })
 
+  beforeEach(() => {
+    mockParseSessionKey.mockReturnValue({
+      userId: TEST_USER_IDS.DEFAULT,
+      businessId: TEST_USER_IDS.BUSINESS_ID,
+      grantId: TEST_USER_IDS.GRANT_ID
+    })
+  })
+
   describe('With backend configured correctly', () => {
     beforeEach(async () => {
       jest.resetModules()
       jest.doMock('~/src/config/config.js', createMockConfig)
+      jest.doMock('../logging/log.js', () => ({
+        log: jest.fn(),
+        LogCodes: {
+          SYSTEM: {
+            EXTERNAL_API_CALL_DEBUG: { level: 'debug', messageFunc: jest.fn() },
+            EXTERNAL_API_ERROR: { level: 'error', messageFunc: jest.fn() }
+          }
+        }
+      }))
       const helper = await import('~/src/server/common/helpers/state/fetch-saved-state-helper.js')
       fetchSavedStateFromApi = helper.fetchSavedStateFromApi
+      log = (await import('../logging/log.js')).log
+      LogCodes = (await import('../logging/log.js')).LogCodes
       jest.clearAllMocks()
     })
 
@@ -66,7 +75,13 @@ describe('fetchSavedStateFromApi', () => {
 
       expect(result).toHaveProperty('state')
       expect(fetch).toHaveBeenCalledTimes(1)
-      expect(mockLogger.debug).toHaveBeenCalled()
+      expect(log).toHaveBeenCalledWith(
+        LogCodes.SYSTEM.EXTERNAL_API_CALL_DEBUG,
+        expect.objectContaining({
+          endpoint: expect.stringContaining('/state/'),
+          identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.BUSINESS_ID}:${TEST_USER_IDS.GRANT_ID}`
+        })
+      )
     })
 
     it('includes authorization header in fetch request', async () => {
@@ -76,7 +91,7 @@ describe('fetchSavedStateFromApi', () => {
 
       expect(fetch).toHaveBeenCalledTimes(1)
       expect(fetch).toHaveBeenCalledWith(
-        expect.stringMatching(/\/state\/\?userId=user-1&businessId=business-1&grantId=grant-1/),
+        expect.stringMatching(/\/state\/\?userId=user_test&businessId=biz_test&grantId=test-slug/),
         expect.objectContaining({
           method: 'GET',
           headers: expect.objectContaining({
@@ -93,7 +108,14 @@ describe('fetchSavedStateFromApi', () => {
       const result = await fetchSavedStateFromApi(key)
 
       expect(result).toBeNull()
-      expect(mockLogger.debug).toHaveBeenCalledWith(expect.stringContaining('No state found'))
+      expect(log).toHaveBeenCalledWith(
+        LogCodes.SYSTEM.EXTERNAL_API_CALL_DEBUG,
+        expect.objectContaining({
+          endpoint: expect.stringContaining('/state/'),
+          identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.BUSINESS_ID}:${TEST_USER_IDS.GRANT_ID}`,
+          stateSummary: 'No state found in backend'
+        })
+      )
     })
 
     it('returns null on non-200 (not 404)', async () => {
@@ -102,7 +124,14 @@ describe('fetchSavedStateFromApi', () => {
       const result = await fetchSavedStateFromApi(key)
 
       expect(result).toBeNull()
-      expect(mockLogger.error).toHaveBeenCalled()
+      expect(log).toHaveBeenCalledWith(
+        LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+        expect.objectContaining({
+          endpoint: expect.stringContaining('/state/'),
+          identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.BUSINESS_ID}:${TEST_USER_IDS.GRANT_ID}`,
+          error: 'Failed to fetch saved state: 500'
+        })
+      )
     })
 
     it('returns null when response JSON is invalid', async () => {
@@ -111,7 +140,14 @@ describe('fetchSavedStateFromApi', () => {
       const result = await fetchSavedStateFromApi(key)
 
       expect(result).toBeNull()
-      expect(mockLogger.warn).toHaveBeenCalledWith(expect.stringContaining('Unexpected or empty state format'))
+      expect(log).toHaveBeenCalledWith(
+        LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+        expect.objectContaining({
+          endpoint: expect.stringContaining('/state/'),
+          identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.BUSINESS_ID}:${TEST_USER_IDS.GRANT_ID}`,
+          error: 'Unexpected or empty state format: 123'
+        })
+      )
     })
 
     it('returns null and logs error on fetch failure', async () => {
@@ -121,7 +157,14 @@ describe('fetchSavedStateFromApi', () => {
       const result = await fetchSavedStateFromApi(key)
 
       expect(result).toBeNull()
-      expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('fetch-saved-state'))
+      expect(log).toHaveBeenCalledWith(
+        LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+        expect.objectContaining({
+          endpoint: expect.stringContaining('/state/'),
+          identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.BUSINESS_ID}:${TEST_USER_IDS.GRANT_ID}`,
+          error: 'Network error'
+        })
+      )
     })
   })
 
