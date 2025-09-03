@@ -217,8 +217,24 @@ function createCredentialsProfile(credentials, payload) {
     ...payload,
     sessionId
   }
-
   return credentials
+}
+
+function extractFarmDetails(relationships) {
+  const parts = relationships.split(':')
+
+  if (parts.length < 6) {
+    throw new Error('Invalid format: not enough fields')
+  }
+
+  if (parts.length === 6) {
+    return parts
+  }
+
+  // Organisation name spans from index 2 to (length - 4)
+  const orgName = parts.slice(2, parts.length - 3).join(':')
+
+  return [parts[0], parts[1], orgName, parts[3], parts[4], parts[5]]
 }
 
 export function mapPayloadToProfile(request, h) {
@@ -226,21 +242,21 @@ export function mapPayloadToProfile(request, h) {
     // Get the actual user data, handling both nested and flat structures
     const userData = request.auth.credentials.profile || request.auth.credentials
 
-    const currentRelationship = (userData?.relationships || [])
-      .find((relationship) => relationship.split(':')[0] === userData.currentRelationshipId)
-      .split(':')
+    const currentRelationship = (userData?.relationships || []).find(
+      (relationship) => relationship.split(':')[0] === userData.currentRelationshipId
+    )
     // eslint-disable-next-line no-unused-vars
     const [_relationshipId, organisationId, organisationName, _organisationLoa, _relationship, _relationshipLoa] =
-      currentRelationship
+      extractFarmDetails(currentRelationship)
 
     const existingCreds = request.auth.credentials
 
     request.auth.credentials = {
       ...existingCreds,
-      sbi: Number(organisationId),
+      sbi: String(organisationId),
       crn: Number(userData.contactId),
       name: `${userData.firstName} ${userData.lastName}`,
-      organisationId: Number(organisationId),
+      organisationId: String(organisationId),
       organisationName
     }
   }
