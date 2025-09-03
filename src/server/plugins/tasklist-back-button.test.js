@@ -521,5 +521,77 @@ describe('tasklistBackButton plugin', () => {
     ])('edge cases: should handle $description', ({ request, expectation }) =>
       expectation(responseHandler(request, h), request)
     )
+
+    it('should handle yar.clear errors in session clearing', async () => {
+      const request = createYarClearErrorRequest('/not-first-page', createTasklistContext())
+
+      const result = responseHandler(request, h)
+
+      expect(request.yar.clear).toHaveBeenCalledWith('tasklistContext')
+      expect(result).toBe(h.continue)
+    })
+
+    it('should handle yar.get errors gracefully', async () => {
+      const request = createYarGetErrorRequest('/business-status/nature-of-business')
+
+      const result = responseHandler(request, h)
+
+      expect(result).toBe(h.continue)
+    })
+  })
+
+  describe('error handling coverage', () => {
+    it('should handle missing configs directory', async () => {
+      vi.doMock('fs', () => mockFsModule({ existsSync: false }))
+
+      const { tasklistBackButton: mockPlugin } = await import('./tasklist-back-button.js?t=' + Date.now())
+
+      await expect(mockPlugin.plugin.register(server)).resolves.not.toThrow()
+
+      vi.unmock('fs')
+    })
+
+    it('should handle missing form config gracefully', async () => {
+      vi.doMock('fs', () =>
+        mockFsModule({
+          existsSync: true,
+          files: ['test-tasklist.yaml'],
+          readFileSync: vi.fn().mockReturnValue(createTasklistYaml('missing-form'))
+        })
+      )
+      vi.doMock('../common/forms/services/forms-config.js', () => mockFormsConfig([]))
+
+      const { tasklistBackButton: mockPlugin } = await import('./tasklist-back-button.js?t=' + Date.now())
+
+      await expect(mockPlugin.plugin.register(server)).resolves.not.toThrow()
+
+      vi.unmock('fs')
+      vi.unmock('../common/forms/services/forms-config.js')
+    })
+
+    it('should handle file read errors when extracting first page', async () => {
+      vi.doMock('fs', () =>
+        mockFsModule({
+          existsSync: true,
+          files: ['test-tasklist.yaml'],
+          readFileSync: vi
+            .fn()
+            .mockReturnValueOnce(createTasklistYaml('business-status'))
+            .mockImplementationOnce(() => {
+              throw new Error('File read error')
+            })
+        })
+      )
+      vi.doMock('../common/forms/services/forms-config.js', () =>
+        mockFormsConfig([{ slug: 'business-status', path: 'test-path.yaml' }])
+      )
+
+      const { tasklistBackButton: mockPlugin } = await import('./tasklist-back-button.js?t=' + Date.now())
+
+      await expect(mockPlugin.plugin.register(server)).resolves.not.toThrow()
+
+      vi.unmock('fs')
+      vi.unmock('../common/forms/services/forms-config.js')
+    })
   })
 })

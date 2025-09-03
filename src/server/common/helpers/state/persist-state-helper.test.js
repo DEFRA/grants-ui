@@ -6,7 +6,8 @@ import {
   TEST_USER_IDS,
   ERROR_MESSAGES,
   LOG_MESSAGES,
-  createMockConfig
+  createMockConfig,
+  createMockConfigWithoutEndpoint
 } from './test-helpers/auth-test-helpers.js'
 import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
 
@@ -133,6 +134,33 @@ describe('persistStateToApi', () => {
 
       expect(fetch).toHaveBeenCalledTimes(1)
       expect(request.logger.error).toHaveBeenCalledWith(`${LOG_MESSAGES.PERSIST_FAILED}: ${networkError.message}`)
+    })
+  })
+
+  describe('With backend not configured', () => {
+    beforeEach(async () => {
+      vi.resetAllMocks()
+      vi.resetModules()
+      vi.doMock('~/src/config/config.js', createMockConfigWithoutEndpoint)
+      const helper = await import('~/src/server/common/helpers/state/persist-state-helper.js')
+      persistStateToApi = helper.persistStateToApi
+      setupMockCacheKey()
+      vi.clearAllMocks()
+    })
+
+    afterEach(() => {
+      vi.unmock('~/src/config/config.js')
+    })
+
+    it('should return early when backend endpoint is not configured', async () => {
+      const request = createMockRequestWithLogger()
+      const testState = createTestState()
+
+      await persistStateToApi(testState, request)
+
+      expect(fetch).not.toHaveBeenCalled()
+      expect(request.logger.info).not.toHaveBeenCalled()
+      expect(request.logger.error).not.toHaveBeenCalled()
     })
   })
 })

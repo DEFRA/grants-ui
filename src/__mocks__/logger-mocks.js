@@ -46,13 +46,13 @@ export const mockLogHelperWithCustomCodes = (customCodes = {}) => ({
       AUTH_DEBUG: { level: 'debug', messageFunc: vi.fn() },
       SIGN_IN_FAILURE: { level: 'error', messageFunc: vi.fn() },
       UNAUTHORIZED_ACCESS: { level: 'error', messageFunc: vi.fn() },
-      ...customCodes.AUTH
+      ...(customCodes.AUTH || {})
     },
     SYSTEM: {
       SERVER_ERROR: { level: 'error', messageFunc: vi.fn() },
-      ...customCodes.SYSTEM
+      ...(customCodes.SYSTEM || {})
     },
-    ...customCodes
+    ...Object.fromEntries(Object.entries(customCodes).filter(([key]) => key !== 'AUTH' && key !== 'SYSTEM'))
   }
 })
 

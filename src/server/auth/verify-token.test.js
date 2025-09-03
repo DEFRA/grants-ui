@@ -154,4 +154,24 @@ describe('verifyToken', () => {
       )
     }
   )
+
+  it('should handle token decode failure in error handler', async () => {
+    Jwt.token.verify.mockImplementation(() => {
+      throw new Error('Token verification failed')
+    })
+
+    Jwt.token.decode.mockReturnValueOnce(mockDecodedToken).mockImplementationOnce(() => {
+      throw new Error('Token decode failed in error handler')
+    })
+
+    await expect(verifyToken(mockToken)).rejects.toThrow('Token verification failed')
+
+    expect(log).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({
+        step: 'token_decode_failed',
+        userId: 'unknown'
+      })
+    )
+  })
 })

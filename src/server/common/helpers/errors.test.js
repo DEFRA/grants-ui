@@ -254,6 +254,53 @@ describe('#catchAll', () => {
     expect(mockToolkitCode).toHaveBeenCalledWith(statusCode)
   })
 
+  test('Should log auth error when path starts with /auth', () => {
+    const statusCode = statusCodes.internalServerError
+    const request = mockRequest(statusCode)
+    request.response.alreadyLogged = false
+    request.path = '/auth/login'
+    request.response.message = 'Authentication failed'
+    request.auth = {
+      credentials: { contactId: 'user123' },
+      isAuthenticated: false,
+      strategy: 'session',
+      mode: 'required'
+    }
+    request.headers = {
+      'user-agent': 'Test Browser',
+      referer: 'https://example.com'
+    }
+    request.query = { redirect: '/dashboard' }
+
+    catchAll(request, mockToolkit)
+
+    expect(log).toHaveBeenCalledWith(
+      expect.objectContaining({
+        level: expect.anything(),
+        messageFunc: expect.any(Function)
+      }),
+      expect.objectContaining({
+        userId: 'user123',
+        error: 'Authentication failed',
+        step: 'auth_flow_error',
+        authContext: expect.objectContaining({
+          path: '/auth/login',
+          isAuthenticated: false,
+          strategy: 'session',
+          mode: 'required',
+          hasCredentials: true,
+          hasToken: false,
+          hasProfile: false,
+          userAgent: 'Test Browser',
+          referer: 'https://example.com',
+          queryParams: { redirect: '/dashboard' },
+          isBellError: false,
+          statusCode
+        })
+      })
+    )
+  })
+
   test('Should default to 200 if no statusCode on non-Boom response', () => {
     const responseObj = { payload: 'OK' }
     const mockResponse = vi.fn().mockReturnThis()

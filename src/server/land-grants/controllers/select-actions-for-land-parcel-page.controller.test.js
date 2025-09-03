@@ -765,6 +765,60 @@ describe('SelectActionsForLandParcelPageController', () => {
           selectedLandParcel: 'sheet1-parcel1'
         })
       })
+
+      test('should handle API validation errors and return error view', async () => {
+        mockRequest.payload = {
+          landAction: 'CMOR1',
+          action: 'validate'
+        }
+
+        fetchAvailableActionsForParcel.mockResolvedValue({
+          actions: availableActions
+        })
+
+        triggerApiActionsValidation.mockResolvedValue({
+          valid: false,
+          errorMessages: [{ code: 'CMOR1', description: 'Invalid area specified for CMOR1' }]
+        })
+
+        calculateGrantPayment.mockResolvedValue({
+          payment: {
+            annualTotalPence: 100,
+            parcelItems: []
+          }
+        })
+
+        const handler = controller.makePostRouteHandler()
+        const result = await handler(mockRequest, mockContext, mockH)
+
+        expect(controller.proceed).not.toHaveBeenCalled()
+
+        expect(mockH.view).toHaveBeenCalledWith(
+          'select-actions-for-land-parcel',
+          expect.objectContaining({
+            parcelName: 'sheet1 parcel1',
+            errorSummary: [{ text: 'Invalid area specified for CMOR1', href: '#landAction' }],
+            errors: {
+              CMOR1: { text: 'Invalid area specified for CMOR1' }
+            }
+          })
+        )
+
+        expect(result).toBe('rendered view')
+      })
+
+      test('should handle fetchAvailableActionsFromApi error and log properly', async () => {
+        const error = new Error('Network error')
+        fetchAvailableActionsForParcel.mockRejectedValue(error)
+
+        await controller.fetchAvailableActionsFromApi('parcel1', 'sheet1', mockRequest, mockContext.state)
+
+        expect(controller.availableActions).toEqual([])
+        expect(mockRequest.logger.error).toHaveBeenCalledWith(
+          error,
+          'Failed to fetch land parcel data for id sheet1-parcel1'
+        )
+      })
     })
   })
 })
