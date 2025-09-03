@@ -4,24 +4,14 @@ import { catchAll } from '~/src/server/common/helpers/errors.js'
 import Wreck from '@hapi/wreck'
 import { log } from '~/src/server/common/helpers/logging/log.js'
 import { createServer } from '~/src/server/index.js'
-
 vi.unmock('~/src/server/index.js')
 
-vi.mock('hapi-pino', () => {
-  const mockPlugin = {
-    register: (server) => {
-      server.decorate('server', 'logger', {
-        info: vi.fn(),
-        error: vi.fn(),
-        warn: vi.fn(),
-        debug: vi.fn()
-      })
-    },
-    name: 'mock-hapi-pino'
-  }
+vi.mock('hapi-pino', async () => {
+  const { mockHapiPino } = await import('~/src/__mocks__')
+  const hapiPino = mockHapiPino()
   return {
-    default: mockPlugin,
-    ...mockPlugin
+    default: hapiPino,
+    ...hapiPino
   }
 })
 
@@ -34,17 +24,10 @@ vi.mock('@defra/forms-engine-plugin', () => ({
   }
 }))
 
-vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
-  log: vi.fn(),
-  LogCodes: {
-    AUTH: {
-      SIGN_IN_FAILURE: { level: 'error', messageFunc: vi.fn() }
-    },
-    SYSTEM: {
-      SERVER_ERROR: { level: 'error', messageFunc: vi.fn() }
-    }
-  }
-}))
+vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
+  const { mockLogHelper } = await import('~/src/__mocks__')
+  return mockLogHelper()
+})
 
 describe('#errors', () => {
   /** @type {Server} */

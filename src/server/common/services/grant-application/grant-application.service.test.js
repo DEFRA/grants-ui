@@ -6,6 +6,7 @@ import {
   makeGasApiRequest,
   submitGrantApplication
 } from '~/src/server/common/services/grant-application/grant-application.service.js'
+import { mockFetchWithResponse } from '~/src/__mocks__/hapi-mocks.js'
 
 const gasApi = config.get('gas.apiEndpoint')
 const code = config.get('landGrants.grantCode')
@@ -48,23 +49,18 @@ describe('submitGrantApplication', () => {
   })
 
   test('should successfully submit a grant application', async () => {
-    const mockRawResponse = {
-      ok: true,
-      json: vi.fn().mockResolvedValueOnce(mockResponse)
-    }
-
-    fetch.mockResolvedValueOnce(mockRawResponse)
+    const mockFetchInstance = mockFetchWithResponse(mockResponse)
 
     const result = await submitGrantApplication(code, payload)
 
-    expect(fetch).toHaveBeenCalledWith(`${gasApi}/grants/${code}/applications`, {
+    expect(mockFetchInstance).toHaveBeenCalledWith(`${gasApi}/grants/${code}/applications`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(payload)
     })
-    expect(result).toEqual(mockRawResponse)
+    expect(result.ok).toBe(true)
   })
 
   test('should throw an error when the request fails', async () => {

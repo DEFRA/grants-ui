@@ -2,6 +2,7 @@ import { vi } from 'vitest'
 import fs from 'fs/promises'
 import path from 'path'
 import { config } from '~/src/config/config.js'
+import { mockFetch } from '~/src/__mocks__'
 import { getValidToken } from '~/src/server/common/helpers/entra/token-manager.js'
 import {
   fetchBusinessAndCustomerInformation,
@@ -27,11 +28,7 @@ const getMockFilePath = (sbi) => {
   )
 }
 
-/**
- * @type {import('vitest').Mock}
- */
-const mockFetch = vi.fn()
-global.fetch = mockFetch
+const mockFetchInstance = mockFetch()
 
 describe('Consolidated View Service', () => {
   const mockSbi = 123456789
@@ -90,7 +87,7 @@ describe('Consolidated View Service', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    mockFetch.mockReset()
+    mockFetchInstance.mockReset()
     getValidToken.mockResolvedValue(mockToken)
 
     config.set('consolidatedView', {
@@ -102,24 +99,24 @@ describe('Consolidated View Service', () => {
 
   describe('fetchParcelsForSbi', () => {
     it('should fetch land parcels successfully', async () => {
-      mockFetch.mockResolvedValueOnce({
+      mockFetchInstance.mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve(mockParcelsResponse)
       })
 
       const result = await fetchParcelsForSbi(mockSbi)
 
-      expect(mockFetch).toHaveBeenCalledTimes(1)
+      expect(mockFetchInstance).toHaveBeenCalledTimes(1)
       expect(result).toEqual(mockParcelsResponse.data.business.land.parcels)
 
-      const [[, calledOptions]] = mockFetch.mock.calls
+      const [[, calledOptions]] = mockFetchInstance.mock.calls
       expect(calledOptions.headers.Authorization).toBe(`Bearer ${mockToken}`)
       expect(calledOptions.headers.email).toBe('test@example.com')
     })
 
     it('should return empty array when parcels data is missing', async () => {
       const emptyResponse = { data: { business: { land: {} } } }
-      mockFetch.mockResolvedValueOnce({
+      mockFetchInstance.mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve(emptyResponse)
       })
@@ -132,20 +129,20 @@ describe('Consolidated View Service', () => {
 
   describe('fetchBusinessAndCustomerInformation', () => {
     it('should fetch business and customer information successfully', async () => {
-      mockFetch.mockResolvedValueOnce({
+      mockFetchInstance.mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve(mockBusinessCustomerResponse)
       })
 
       const result = await fetchBusinessAndCustomerInformation(mockSbi, mockCrn)
 
-      expect(mockFetch).toHaveBeenCalledTimes(1)
+      expect(mockFetchInstance).toHaveBeenCalledTimes(1)
       expect(result).toEqual({
         business: mockBusinessCustomerResponse.data.business.info,
         customer: mockBusinessCustomerResponse.data.customer.info
       })
 
-      const [[, calledOptions]] = mockFetch.mock.calls
+      const [[, calledOptions]] = mockFetchInstance.mock.calls
       const body = JSON.parse(calledOptions.body)
       expect(body.query).toContain(`business(sbi: "${mockSbi}")`)
       expect(body.query).toContain(`customer(crn: "${mockCrn}")`)
@@ -158,7 +155,7 @@ describe('Consolidated View Service', () => {
           customer: { info: null }
         }
       }
-      mockFetch.mockResolvedValueOnce({
+      mockFetchInstance.mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve(partialResponse)
       })
@@ -172,7 +169,7 @@ describe('Consolidated View Service', () => {
     })
 
     it('should throw error when API call fails', async () => {
-      mockFetch.mockResolvedValueOnce({
+      mockFetchInstance.mockResolvedValueOnce({
         ok: false,
         status: 500,
         statusText: 'Internal Server Error',
@@ -234,7 +231,7 @@ describe('Consolidated View Service', () => {
       expect(result).toEqual(mockFileData.data.business.land.parcels)
       expect(fs.readFile).toHaveBeenCalledTimes(1)
       expect(fs.readFile).toHaveBeenCalledWith(getMockFilePath(mockSbi), 'utf8')
-      expect(mockFetch).not.toHaveBeenCalled()
+      expect(mockFetchInstance).not.toHaveBeenCalled()
       expect(getValidToken).not.toHaveBeenCalled()
     })
 
@@ -248,7 +245,7 @@ describe('Consolidated View Service', () => {
         customer: mockFileData.data.customer.info
       })
       expect(fs.readFile).toHaveBeenCalledTimes(1)
-      expect(mockFetch).not.toHaveBeenCalled()
+      expect(mockFetchInstance).not.toHaveBeenCalled()
     })
 
     it('should handle file not found error', async () => {
@@ -279,7 +276,7 @@ describe('Consolidated View Service', () => {
 
   describe('Error handling', () => {
     it('should preserve ConsolidatedViewApiError properties', async () => {
-      mockFetch.mockResolvedValueOnce({
+      mockFetchInstance.mockResolvedValueOnce({
         ok: false,
         status: 403,
         statusText: 'Forbidden',
@@ -290,7 +287,7 @@ describe('Consolidated View Service', () => {
     })
 
     it('should wrap non-API errors in ConsolidatedViewApiError', async () => {
-      mockFetch.mockImplementation(() => {
+      mockFetchInstance.mockImplementation(() => {
         throw new Error('Cannot read property of undefined')
       })
 

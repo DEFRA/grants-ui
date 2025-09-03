@@ -1,28 +1,29 @@
 import { vi } from 'vitest'
 import Wreck from '@hapi/wreck'
-
 const mockLoggerInfo = vi.fn()
 const mockLoggerError = vi.fn()
 
 const mockHapiLoggerInfo = vi.fn()
 const mockHapiLoggerError = vi.fn()
 
-vi.mock('hapi-pino', () => ({
-  register: (server) => {
-    server.decorate('server', 'logger', {
+vi.mock('hapi-pino', async () => {
+  const { mockHapiPino } = await import('~/src/__mocks__')
+  return {
+    ...mockHapiPino({
       info: mockHapiLoggerInfo,
       error: mockHapiLoggerError
-    })
-  },
-  name: 'mock-hapi-pino'
-}))
+    }),
+    name: 'mock-hapi-pino'
+  }
+})
 
-vi.mock('~/src/server/common/helpers/logging/logger.js', () => ({
-  createLogger: () => ({
+vi.mock('~/src/server/common/helpers/logging/logger.js', async () => {
+  const { mockLoggerFactoryWithCustomMethods } = await import('~/src/__mocks__')
+  return mockLoggerFactoryWithCustomMethods({
     info: (...args) => mockLoggerInfo(...args),
     error: (...args) => mockLoggerError(...args)
   })
-}))
+})
 
 // Mock the auth plugin dependencies
 vi.mock('~/src/server/auth/get-oidc-config.js', () => ({
@@ -34,18 +35,10 @@ vi.mock('~/src/server/auth/get-oidc-config.js', () => ({
   })
 }))
 
-vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
-  log: vi.fn(),
-  LogCodes: {
-    AUTH: {
-      AUTH_DEBUG: { level: 'debug', messageFunc: vi.fn() },
-      SIGN_IN_FAILURE: { level: 'error', messageFunc: vi.fn() }
-    },
-    SYSTEM: {
-      SERVER_ERROR: { level: 'error', messageFunc: vi.fn() }
-    }
-  }
-}))
+vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
+  const { mockLogHelper } = await import('~/src/__mocks__')
+  return mockLogHelper()
+})
 
 describe('#startServer', () => {
   const PROCESS_ENV = process.env

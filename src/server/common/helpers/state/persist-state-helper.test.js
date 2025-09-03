@@ -8,6 +8,7 @@ import {
   LOG_MESSAGES,
   createMockConfig
 } from './test-helpers/auth-test-helpers.js'
+import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
 
 const GRANT_VERSION = 1
 
@@ -26,7 +27,7 @@ describe('persistStateToApi', () => {
 
   const createMockRequestWithLogger = () => {
     const request = createMockRequest()
-    request.logger = { info: vi.fn(), error: vi.fn() }
+    request.logger = mockRequestLogger()
     return request
   }
 

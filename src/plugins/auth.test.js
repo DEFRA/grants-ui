@@ -10,26 +10,16 @@ import { getOidcConfig } from '~/src/server/auth/get-oidc-config.js'
 import { getSafeRedirect } from '~/src/server/auth/get-safe-redirect.js'
 import { refreshTokens } from '~/src/server/auth/refresh-tokens.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
-
 vi.mock('@hapi/jwt')
-vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
-  log: vi.fn(),
-  LogCodes: {
-    AUTH: {
-      SESSION_EXPIRED: { level: 'info', messageFunc: vi.fn() },
-      TOKEN_VERIFICATION_SUCCESS: { level: 'info', messageFunc: vi.fn() },
-      TOKEN_VERIFICATION_FAILURE: { level: 'error', messageFunc: vi.fn() },
-      AUTH_DEBUG: { level: 'debug', messageFunc: vi.fn() },
-      SIGN_IN_FAILURE: { level: 'error', messageFunc: vi.fn() },
-      UNAUTHORIZED_ACCESS: { level: 'error', messageFunc: vi.fn() }
-    },
+vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
+  const { mockLogHelperWithCustomCodes } = await import('~/src/__mocks__')
+  return mockLogHelperWithCustomCodes({
     SYSTEM: {
       ENV_CONFIG_DEBUG: { level: 'debug', messageFunc: vi.fn() },
-      SERVER_ERROR: { level: 'error', messageFunc: vi.fn() },
       PLUGIN_REGISTRATION: { level: 'info', messageFunc: vi.fn() }
     }
-  }
-}))
+  })
+})
 vi.mock('~/src/server/auth/get-oidc-config')
 vi.mock('~/src/server/auth/refresh-tokens')
 vi.mock('~/src/server/auth/get-safe-redirect')

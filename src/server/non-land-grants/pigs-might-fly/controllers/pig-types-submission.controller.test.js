@@ -4,6 +4,7 @@ import { stateToPigsMightFlyGasAnswers } from '~/src/server/non-land-grants/pigs
 import { transformStateObjectToGasApplication } from '~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
 import { submitGrantApplication } from '~/src/server/common/services/grant-application/grant-application.service.js'
 import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/forms-cache.js'
+import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
 
 vi.mock('~/src/server/non-land-grants/pigs-might-fly/mappers/state-to-gas-pigs-mapper.js')
 vi.mock('~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js')
@@ -68,7 +69,7 @@ describe('FlyingPigsSubmissionPageController', () => {
 
   it('should handle POST route and redirect to /confirmation', async () => {
     const mockRequest = {
-      logger: { info: vi.fn(), debug: vi.fn() },
+      logger: mockRequestLogger(),
       server: {}
     }
     const mockResponseToolkit = { redirect: vi.fn() }

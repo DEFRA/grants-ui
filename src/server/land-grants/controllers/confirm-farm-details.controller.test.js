@@ -3,22 +3,18 @@ import { config } from '~/src/config/config.js'
 import { fetchBusinessAndCustomerInformation } from '../../common/services/consolidated-view/consolidated-view.service.js'
 import { sbiStore } from '~/src/server/sbi/state.js'
 import ConfirmFarmDetailsController from './confirm-farm-details.controller.js'
-
 vi.mock('~/src/config/config.js')
-
-vi.mock('~/src/server/sbi/state.js', () => ({
-  sbiStore: {
-    get: vi.fn(),
-    set: vi.fn()
-  }
-}))
-
+vi.mock('~/src/server/sbi/state.js', async () => {
+  const { mockSbiState } = await import('~/src/__mocks__')
+  return mockSbiState()
+})
 vi.mock('../../common/services/consolidated-view/consolidated-view.service.js')
-vi.mock('~/src/server/common/helpers/logging/logger.js', () => ({
-  createLogger: vi.fn(() => ({
+vi.mock('~/src/server/common/helpers/logging/logger.js', async () => {
+  const { mockLoggerFactoryWithCustomMethods } = await import('~/src/__mocks__')
+  return mockLoggerFactoryWithCustomMethods({
     error: vi.fn()
-  }))
-}))
+  })
+})
 vi.mock('~/src/server/land-grants/utils/format-phone.js', () => ({
   formatPhone: vi.fn((phone) => (phone ? `formatted-${phone}` : ''))
 }))

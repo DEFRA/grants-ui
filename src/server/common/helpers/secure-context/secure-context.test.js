@@ -5,19 +5,12 @@ import { secureContext } from '~/src/server/common/helpers/secure-context/secure
 import { requestLogger } from '~/src/server/common/helpers/logging/request-logger.js'
 import { config } from '~/src/config/config.js'
 
-vi.mock('hapi-pino', () => {
-  const mockPlugin = {
-    register: (server) => {
-      server.decorate('server', 'logger', {
-        info: vi.fn(),
-        error: vi.fn()
-      })
-    },
-    name: 'mock-hapi-pino'
-  }
+vi.mock('hapi-pino', async () => {
+  const { mockHapiPino } = await import('~/src/__mocks__')
+  const hapiPino = mockHapiPino()
   return {
-    default: mockPlugin,
-    ...mockPlugin
+    default: hapiPino,
+    ...hapiPino
   }
 })
 

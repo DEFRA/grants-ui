@@ -2,8 +2,9 @@ import { vi } from 'vitest'
 import { StatusPageController } from '@defra/forms-engine-plugin/controllers/StatusPageController.js'
 import ConfirmationPageController from './confirmation.controller.js'
 import * as formSlugHelper from '~/src/server/common/helpers/form-slug-helper.js'
+import { mockHapiRequest, mockHapiResponseToolkit, mockContext as mockHapiContext } from '~/src/__mocks__/hapi-mocks.js'
 
-const mockFormsCacheService = {
+const mockFormsCacheServiceMethods = {
   getConfirmationState: vi.fn(),
   setConfirmationState: vi.fn(),
   clearState: vi.fn()
@@ -11,7 +12,7 @@ const mockFormsCacheService = {
 
 vi.mock('@defra/forms-engine-plugin/controllers/StatusPageController.js')
 vi.mock('~/src/server/common/helpers/forms-cache/forms-cache.js', () => ({
-  getFormsCacheService: () => mockFormsCacheService
+  getFormsCacheService: () => mockFormsCacheServiceMethods
 }))
 vi.mock('~/src/server/common/helpers/form-slug-helper.js')
 
@@ -33,28 +34,23 @@ describe('ConfirmationPageController', () => {
     }
     controller.proceed = vi.fn().mockReturnValue('redirected')
 
-    mockRequest = {
-      logger: {
-        error: vi.fn(),
-        debug: vi.fn(),
-        info: vi.fn()
-      },
+    mockRequest = mockHapiRequest({
       path: '/test-path',
       server: {}
-    }
+    })
 
-    mockFormsCacheService.getConfirmationState.mockResolvedValue({
+    mockFormsCacheServiceMethods.getConfirmationState.mockResolvedValue({
       confirmed: true
     })
 
-    mockContext = {
+    mockContext = mockHapiContext({
       referenceNumber: 'REF123',
       state: {}
-    }
+    })
 
-    mockH = {
+    mockH = mockHapiResponseToolkit({
       view: vi.fn().mockReturnValue('rendered view')
-    }
+    })
 
     // Mock the form-slug-helper functions
     formSlugHelper.storeSlugInContext.mockImplementation(() => null)
@@ -87,7 +83,7 @@ describe('ConfirmationPageController', () => {
     })
 
     test('should redirect to start page if confirmation state is not confirmed', async () => {
-      mockFormsCacheService.getConfirmationState.mockResolvedValueOnce({
+      mockFormsCacheServiceMethods.getConfirmationState.mockResolvedValueOnce({
         confirmed: false
       })
       const handler = controller.makeGetRouteHandler()
@@ -104,14 +100,14 @@ describe('ConfirmationPageController', () => {
     })
 
     test('should clear state when confirmed', async () => {
-      mockFormsCacheService.getConfirmationState.mockResolvedValueOnce({
+      mockFormsCacheServiceMethods.getConfirmationState.mockResolvedValueOnce({
         confirmed: true
       })
       const handler = controller.makeGetRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
-      expect(mockFormsCacheService.setConfirmationState).toHaveBeenCalledWith(mockRequest, { confirmed: false })
-      expect(mockFormsCacheService.clearState).toHaveBeenCalledWith(mockRequest)
+      expect(mockFormsCacheServiceMethods.setConfirmationState).toHaveBeenCalledWith(mockRequest, { confirmed: false })
+      expect(mockFormsCacheServiceMethods.clearState).toHaveBeenCalledWith(mockRequest)
     })
 
     test('should log debug information', async () => {
@@ -144,7 +140,7 @@ describe('ConfirmationPageController', () => {
       const error = new Error('Cache error')
 
       // We need to implement the mock to call debug before throwing
-      mockFormsCacheService.getConfirmationState.mockImplementationOnce(() => {
+      mockFormsCacheServiceMethods.getConfirmationState.mockImplementationOnce(() => {
         mockRequest.logger.debug('ConfirmationController: Current path:', mockRequest.path)
         return Promise.reject(error)
       })
@@ -157,7 +153,7 @@ describe('ConfirmationPageController', () => {
 
     test('should handle error when setConfirmationState fails', async () => {
       const error = new Error('Cache error')
-      mockFormsCacheService.setConfirmationState.mockRejectedValueOnce(error)
+      mockFormsCacheServiceMethods.setConfirmationState.mockRejectedValueOnce(error)
 
       const handler = controller.makeGetRouteHandler()
       await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow(error)
@@ -165,7 +161,7 @@ describe('ConfirmationPageController', () => {
 
     test('should handle error when clearState fails', async () => {
       const error = new Error('Cache error')
-      mockFormsCacheService.clearState.mockRejectedValueOnce(error)
+      mockFormsCacheServiceMethods.clearState.mockRejectedValueOnce(error)
 
       const handler = controller.makeGetRouteHandler()
       await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow(error)
@@ -173,8 +169,8 @@ describe('ConfirmationPageController', () => {
 
     test('should handle case when confirmationState is undefined', async () => {
       // Mock the controller's behavior to handle undefined confirmationState
-      const originalGetConfirmationState = mockFormsCacheService.getConfirmationState
-      mockFormsCacheService.getConfirmationState = vi.fn().mockResolvedValueOnce({ confirmed: false })
+      const originalGetConfirmationState = mockFormsCacheServiceMethods.getConfirmationState
+      mockFormsCacheServiceMethods.getConfirmationState = vi.fn().mockResolvedValueOnce({ confirmed: false })
 
       const handler = controller.makeGetRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
@@ -183,7 +179,7 @@ describe('ConfirmationPageController', () => {
       expect(result).toBe('redirected')
 
       // Restore the original mock
-      mockFormsCacheService.getConfirmationState = originalGetConfirmationState
+      mockFormsCacheServiceMethods.getConfirmationState = originalGetConfirmationState
     })
   })
 

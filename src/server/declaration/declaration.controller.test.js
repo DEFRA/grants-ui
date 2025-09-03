@@ -5,13 +5,9 @@ import { transformStateObjectToGasApplication } from '~/src/server/common/helper
 import DeclarationPageController from './declaration.controller.js'
 import { transformAnswerKeysToText } from './state-to-gas-answers-mapper.js'
 import { vi } from 'vitest'
+import { mockHapiRequest, mockFormsCacheService } from '~/src/__mocks__'
 
-const mockCacheService = {
-  getConfirmationState: vi.fn().mockResolvedValue({ confirmed: true }),
-  setConfirmationState: vi.fn(),
-  clearState: vi.fn()
-}
-
+const mockCacheService = mockFormsCacheService().getFormsCacheService()
 vi.mock('~/src/server/common/helpers/form-slug-helper.js')
 vi.mock('~/src/server/common/helpers/forms-cache/forms-cache.js', () => ({
   getFormsCacheService: () => mockCacheService
@@ -61,21 +57,16 @@ describe('DeclarationPageController', () => {
 
     controller = new DeclarationPageController(mockModel, mockPageDef)
 
-    mockRequest = {
+    mockRequest = mockHapiRequest({
       payload: {
         declaration: true
-      },
-      logger: {
-        error: vi.fn(),
-        debug: vi.fn(),
-        info: vi.fn()
       },
       params: {
         slug: 'adding-value'
       },
       path: '/adding-value/declaration',
       server: {}
-    }
+    })
 
     mockContext = {
       relevantState: {

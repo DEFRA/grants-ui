@@ -1,19 +1,21 @@
 import { vi } from 'vitest'
 import { tasklistBackButton } from './tasklist-back-button.js'
+import { mockSimpleRequest } from '~/src/__mocks__/hapi-mocks.js'
 
-const createMockRequest = (overrides = {}) => ({
-  query: {},
-  path: '/default-path',
-  yar: {
-    get: vi.fn().mockReturnValue(null),
-    set: vi.fn(),
-    clear: vi.fn()
-  },
-  ...overrides,
-  ...(overrides.yar && {
-    yar: { ...overrides.yar }
+const createMockRequest = (overrides = {}) =>
+  mockSimpleRequest({
+    query: {},
+    path: '/default-path',
+    yar: {
+      get: vi.fn().mockReturnValue(null),
+      set: vi.fn(),
+      clear: vi.fn()
+    },
+    ...overrides,
+    ...(overrides.yar && {
+      yar: { ...overrides.yar }
+    })
   })
-})
 
 const createMockResponse = (type, overrides = {}) => {
   const baseResponses = {

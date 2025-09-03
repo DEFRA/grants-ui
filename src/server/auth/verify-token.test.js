@@ -5,20 +5,14 @@ import jose from 'node-jose'
 import { getOidcConfig } from './get-oidc-config.js'
 import { verifyToken } from './verify-token.js'
 import { log } from '~/src/server/common/helpers/logging/log.js'
-
 // Mock dependencies
 vi.mock('@hapi/jwt')
 vi.mock('node-jose')
 vi.mock('./get-oidc-config.js')
-vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
-  log: vi.fn(),
-  LogCodes: {
-    AUTH: {
-      TOKEN_VERIFICATION_SUCCESS: { level: 'info', messageFunc: vi.fn() },
-      TOKEN_VERIFICATION_FAILURE: { level: 'error', messageFunc: vi.fn() }
-    }
-  }
-}))
+vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
+  const { mockLogHelper } = await import('~/src/__mocks__')
+  return mockLogHelper()
+})
 
 describe('verifyToken', () => {
   // Sample test data

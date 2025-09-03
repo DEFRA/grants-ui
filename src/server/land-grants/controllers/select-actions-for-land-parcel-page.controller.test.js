@@ -6,6 +6,7 @@ import {
   triggerApiActionsValidation
 } from '~/src/server/land-grants/services/land-grants.service.js'
 import SelectActionsForLandParcelPageController from './select-actions-for-land-parcel-page.controller.js'
+import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
 
 vi.mock('~/src/server/land-grants/services/land-grants.service.js')
 
@@ -52,9 +53,7 @@ describe('SelectActionsForLandParcelPageController', () => {
       payload: {
         landAction: 'CMOR1'
       },
-      logger: {
-        error: vi.fn()
-      },
+      logger: mockRequestLogger(),
       auth: {
         isAuthenticated: true,
         credentials: {

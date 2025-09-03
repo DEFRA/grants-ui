@@ -11,25 +11,21 @@ import {
   stringifyParcel,
   triggerApiActionsValidation
 } from './land-grants.service.js'
-
 const mockApiEndpoint = 'https://land-grants-api'
 
 vi.mock('~/src/config/nunjucks/filters/format-currency.js')
-vi.mock('~/src/config/config', () => ({
-  config: {
-    get: vi.fn((key) => {
-      const mockConfig = {
-        'landGrants.grantsServiceApiEndpoint': 'https://land-grants-api'
-      }
-      return mockConfig[key]
-    })
-  }
-}))
-vi.mock('~/src/server/common/helpers/logging/logger.js', () => ({
-  createLogger: vi.fn().mockReturnValue({
+vi.mock('~/src/config/config', async () => {
+  const { mockConfig } = await import('~/src/__mocks__')
+  return mockConfig({
+    'landGrants.grantsServiceApiEndpoint': 'https://land-grants-api'
+  })
+})
+vi.mock('~/src/server/common/helpers/logging/logger.js', async () => {
+  const { mockLoggerFactoryWithCustomMethods } = await import('~/src/__mocks__')
+  return mockLoggerFactoryWithCustomMethods({
     error: vi.fn()
   })
-}))
+})
 vi.mock('~/src/server/common/services/consolidated-view/consolidated-view.service.js', () => ({
   fetchParcelsForSbi: vi.fn()
 }))

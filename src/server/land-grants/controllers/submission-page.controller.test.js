@@ -8,13 +8,10 @@ import SubmissionPageController from './submission-page.controller.js'
 vi.mock('~/src/server/common/services/grant-application/grant-application.service.js')
 vi.mock('~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js')
 vi.mock('../mappers/state-to-gas-answers-mapper.js')
-vi.mock('~/src/server/common/helpers/forms-cache/forms-cache.js', () => ({
-  getFormsCacheService: () => ({
-    getConfirmationState: vi.fn().mockResolvedValue({ confirmed: true }),
-    setConfirmationState: vi.fn(),
-    clearState: vi.fn()
-  })
-}))
+vi.mock('~/src/server/common/helpers/forms-cache/forms-cache.js', async () => {
+  const { mockFormsCacheService } = await import('~/src/__mocks__')
+  return mockFormsCacheService()
+})
 
 const code = config.get('landGrants.grantCode')
 

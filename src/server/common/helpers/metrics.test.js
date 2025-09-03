@@ -3,7 +3,6 @@ import { StorageResolution, Unit } from 'aws-embedded-metrics'
 
 import { config } from '~/src/config/config.js'
 import { metricsCounter } from '~/src/server/common/helpers/metrics.js'
-
 const mockPutMetric = vi.fn()
 const mockFlush = vi.fn()
 const mockLoggerError = vi.fn()
@@ -18,9 +17,12 @@ vi.mock('aws-embedded-metrics', async () => {
     })
   }
 })
-vi.mock('~/src/server/common/helpers/logging/logger.js', () => ({
-  createLogger: () => ({ error: (...args) => mockLoggerError(...args) })
-}))
+vi.mock('~/src/server/common/helpers/logging/logger.js', async () => {
+  const { mockLoggerFactoryWithCustomMethods } = await import('~/src/__mocks__')
+  return mockLoggerFactoryWithCustomMethods({
+    error: (...args) => mockLoggerError(...args)
+  })
+})
 
 const mockMetricsName = 'mock-metrics-name'
 const defaultMetricsValue = 1

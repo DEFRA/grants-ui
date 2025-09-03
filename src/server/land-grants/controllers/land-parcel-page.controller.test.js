@@ -2,6 +2,7 @@ import { vi } from 'vitest'
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { fetchParcels } from '~/src/server/land-grants/services/land-grants.service.js'
 import LandParcelPageController from './land-parcel-page.controller.js'
+import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
 
 vi.mock('~/src/server/land-grants/services/land-grants.service.js', () => ({
   fetchParcels: vi.fn()
@@ -44,7 +45,7 @@ describe('LandParcelPageController', () => {
 
   const setupRequest = () => ({
     query: {},
-    logger: { error: vi.fn() },
+    logger: mockRequestLogger(),
     auth: {
       isAuthenticated: true,
       credentials: {

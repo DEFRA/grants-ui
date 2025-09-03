@@ -6,15 +6,10 @@ import { refreshTokens } from './refresh-tokens.js'
 import { log } from '~/src/server/common/helpers/logging/log.js'
 
 vi.mock('~/src/server/auth/get-oidc-config.js')
-vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
-  log: vi.fn(),
-  LogCodes: {
-    AUTH: {
-      TOKEN_VERIFICATION_SUCCESS: { level: 'info', messageFunc: vi.fn() },
-      TOKEN_VERIFICATION_FAILURE: { level: 'error', messageFunc: vi.fn() }
-    }
-  }
-}))
+vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
+  const { mockLogHelper } = await import('~/src/__mocks__')
+  return mockLogHelper()
+})
 
 describe('refreshTokens', () => {
   beforeEach(() => {

@@ -1,6 +1,7 @@
 import { vi } from 'vitest'
 import { config } from '~/src/config/config.js'
-import { addAllForms, configureFormDefinition, formsService } from './form.js'
+import { configureFormDefinition, formsService, addAllForms } from './form.js'
+import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
 
 const mockUrl = { pathname: '/mock/path' }
 global.URL = vi.fn(() => mockUrl)
@@ -18,21 +19,29 @@ const defaultConfigMock = {
   serviceVersion: '1.0.0'
 }
 
-vi.mock('~/src/config/config.js', () => ({
-  config: {
-    get: vi.fn((key) => defaultConfigMock[key])
+vi.mock('~/src/config/config.js', async () => {
+  const { mockConfig } = await import('~/src/__mocks__')
+  const configData = {
+    cdpEnvironment: 'local',
+    log: {
+      enabled: true,
+      level: 'info',
+      format: 'pino-pretty',
+      redact: []
+    },
+    serviceName: 'test-service',
+    serviceVersion: '1.0.0'
   }
-}))
+  return mockConfig(configData)
+})
 
-const mockWarn = vi.fn()
-vi.mock('~/src/server/common/helpers/logging/logger.js', () => ({
-  createLogger: vi.fn(() => ({
-    warn: mockWarn,
-    info: vi.fn(),
-    error: vi.fn(),
-    debug: vi.fn()
-  }))
-}))
+vi.mock('~/src/server/common/helpers/logging/logger.js', async () => {
+  const { mockLoggerFactoryWithCustomMethods } = await import('~/src/__mocks__')
+  const { vi: vitest } = await import('vitest')
+  return mockLoggerFactoryWithCustomMethods({
+    warn: vitest.fn()
+  })
+})
 
 vi.mock('../config.js', () => ({
   metadata: {
@@ -43,9 +52,13 @@ vi.mock('../config.js', () => ({
 }))
 
 describe('form', () => {
+  let mockWarn
+
   beforeEach(() => {
     vi.clearAllMocks()
     config.get.mockImplementation((key) => defaultConfigMock[key])
+    // Get the warn function from the mocked logger
+    mockWarn = vi.mocked(createLogger)().warn
   })
 
   describe('formsService', () => {

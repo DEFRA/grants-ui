@@ -1,4 +1,6 @@
 import { vi } from 'vitest'
+import { mockLogHelperWithCustomCodes } from '~/src/__mocks__'
+import { mockSimpleRequest } from '~/src/__mocks__/hapi-mocks.js'
 
 const mockReadFileSync = vi.fn()
 const mockLog = vi.fn()
@@ -11,15 +13,15 @@ vi.mock('node:fs', async (importOriginal) => {
   }
 })
 vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
-  log: (...args) => mockLog(...args),
-  LogCodes: {
+  ...mockLogHelperWithCustomCodes({
     SYSTEM: {
       SERVER_ERROR: 'SYSTEM_SERVER_ERROR'
     },
     AUTH: {
       SIGN_IN_FAILURE: 'AUTH_SIGN_IN_FAILURE'
     }
-  }
+  }),
+  log: (...args) => mockLog(...args)
 }))
 const mockSbiStoreGet = vi.fn(() => 106284736)
 vi.mock('~/src/server/sbi/state.js', () => ({
@@ -28,19 +30,15 @@ vi.mock('~/src/server/sbi/state.js', () => ({
   }
 }))
 
-vi.mock('~/src/config/config.js', () => ({
-  config: {
-    get: (key) => {
-      const values = {
-        assetPath: '/public',
-        root: '/test/root',
-        serviceName: 'Manage land-based actions',
-        'defraId.enabled': true
-      }
-      return values[key]
-    }
-  }
-}))
+vi.mock('~/src/config/config.js', async () => {
+  const { mockConfig } = await import('~/src/__mocks__')
+  return mockConfig({
+    assetPath: '/public',
+    root: '/test/root',
+    serviceName: 'Manage land-based actions',
+    'defraId.enabled': true
+  })
+})
 
 vi.mock('~/src/config/nunjucks/context/build-navigation.js', () => ({
   buildNavigation: () => [
@@ -112,7 +110,7 @@ const setupSbiStoreError = (errorMessage = 'SBI store access failed') => {
 }
 
 describe('context', () => {
-  const mockRequest = { path: '/' }
+  const mockRequest = mockSimpleRequest({ path: '/' })
 
   afterEach(() => {
     vi.clearAllMocks()

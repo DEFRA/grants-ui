@@ -5,6 +5,7 @@ import Iron, { seal } from '@hapi/iron'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { homeController } from './home.controller.js'
 import { createServer } from '~/src/server/common/helpers/start-server.js'
+import { mockSimpleRequest, mockHapiResponseToolkit } from '~/src/__mocks__/hapi-mocks.js'
 
 // Mock cache for integration tests
 const mockCache = {
@@ -44,8 +45,8 @@ describe('#homeController', () => {
   })
 
   test('Should call home controller handler correctly', async () => {
-    const mockRequest = {}
-    const mockH = {
+    const mockRequest = mockSimpleRequest()
+    const mockH = mockHapiResponseToolkit({
       view: (template, context) => {
         expect(template).toBe('home/views/home')
         expect(context).toEqual({
@@ -54,7 +55,7 @@ describe('#homeController', () => {
         })
         return `<html><head><title>${context.pageTitle} | Test Service</title></head><body>Home Page</body></html>`
       }
-    }
+    })
 
     const result = homeController.handler(mockRequest, mockH)
     expect(result).toEqual(expect.stringContaining('Home |'))

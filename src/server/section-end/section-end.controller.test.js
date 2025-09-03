@@ -3,6 +3,7 @@ import SectionEndController from './section-end.controller.js'
 import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
 import { existsSync } from 'fs'
 import { join } from 'path'
+import { mockSimpleRequest, mockContext as mockHapiContext } from '~/src/__mocks__/hapi-mocks.js'
 
 describe('SectionEndController', () => {
   let controller
@@ -37,8 +38,8 @@ describe('SectionEndController', () => {
     let parentGetSummaryViewModel
 
     beforeEach(() => {
-      mockRequest = {}
-      mockContext = {}
+      mockRequest = mockSimpleRequest()
+      mockContext = mockHapiContext()
 
       originalParentMethod = Object.getPrototypeOf(Object.getPrototypeOf(controller)).getSummaryViewModel
 

@@ -4,28 +4,20 @@ import { config } from '~/src/config/config.js'
 import Jwt from '@hapi/jwt'
 import { log } from '~/src/server/common/helpers/logging/log.js'
 import { LogCodes } from '~/src/server/common/helpers/logging/log-codes.js'
+import { mockHapiRequest, mockHapiResponseToolkit } from '~/src/__mocks__/hapi-mocks.js'
 
-vi.mock('~/src/config/config.js', () => ({
-  config: {
-    get: vi.fn()
-  }
-}))
-
-vi.mock('~/src/server/common/helpers/logging/logger.js', () => ({
-  createLogger: vi.fn(() => ({
-    info: vi.fn(),
-    error: vi.fn()
-  }))
-}))
-
-<<<<<<< HEAD
-jest.mock('@hapi/jwt', () => ({
-=======
-vi.mock('~/src/server/sbi/state.js', () => ({
-  sbiStore: {
-    get: vi.fn(() => 'test-sbi-value')
-  }
-}))
+vi.mock('~/src/config/config.js', async () => {
+  const { mockConfigSimple } = await import('~/src/__mocks__')
+  return mockConfigSimple()
+})
+vi.mock('~/src/server/common/helpers/logging/logger.js', async () => {
+  const { mockLoggerFactory } = await import('~/src/__mocks__')
+  return mockLoggerFactory()
+})
+vi.mock('~/src/server/sbi/state.js', async () => {
+  const { mockSbiStateWithValue } = await import('~/src/__mocks__')
+  return mockSbiStateWithValue('test-sbi-value')
+})
 
 vi.mock('@hapi/jwt', () => ({
   default: {
@@ -33,15 +25,15 @@ vi.mock('@hapi/jwt', () => ({
       generate: vi.fn(() => 'mocked-jwt-token')
     }
   },
->>>>>>> c8b7900 (vitest change - more complex changes with mocking and test changing)
   token: {
     generate: vi.fn(() => 'mocked-jwt-token')
   }
 }))
 
-vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
-  log: vi.fn()
-}))
+vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
+  const { mockLogHelper } = await import('~/src/__mocks__')
+  return mockLogHelper()
+})
 
 vi.mock('~/src/server/common/helpers/logging/log-codes.js', () => ({
   LogCodes: {
@@ -63,38 +55,18 @@ describe('Agreements Controller', () => {
     Jwt.token.generate.mockReturnValue('mocked-jwt-token')
 
     mockProxy = vi.fn()
-    mockH = {
+    mockH = mockHapiResponseToolkit({
       proxy: mockProxy,
       response: vi.fn(() => ({
         code: vi.fn(() => ({ code: vi.fn() }))
       }))
-    }
+    })
 
-    mockRequest = {
+    mockRequest = mockHapiRequest({
       headers: { 'x-request-id': 'test-request-id' },
       params: { path: 'test-path' },
-      method: 'GET',
-      logger: {
-<<<<<<< HEAD
-        info: jest.fn(),
-        error: jest.fn()
-      },
-      auth: {
-        isAuthenticated: true,
-        credentials: {
-          sbi: '123456789',
-          name: 'John Doe',
-          organisationId: 'org123',
-          organisationName: ' Farm 1',
-          role: 'admin',
-          sessionId: 'valid-session-id'
-        }
-=======
-        info: vi.fn(),
-        error: vi.fn()
->>>>>>> c8b7900 (vitest change - more complex changes with mocking and test changing)
-      }
-    }
+      method: 'GET'
+    })
 
     // Default config setup
     config.get.mockImplementation((key) => {

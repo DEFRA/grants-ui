@@ -3,6 +3,7 @@ import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/Q
 import { sbiStore } from '~/src/server/sbi/state.js'
 import { calculateGrantPayment } from '../services/land-grants.service.js'
 import LandActionsCheckPageController from './land-actions-check-page.controller.js'
+import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
 
 vi.mock('~/src/server/land-grants/services/land-grants.service.js')
 vi.mock('~/src/server/sbi/state.js', () => ({
@@ -59,9 +60,7 @@ describe('LandActionsCheckPageController', () => {
 
     mockRequest = {
       payload: {},
-      logger: {
-        error: vi.fn()
-      }
+      logger: mockRequestLogger()
     }
     mockContext = {
       state: {

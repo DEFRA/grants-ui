@@ -9,6 +9,7 @@ import {
   createMockConfig,
   createMockConfigWithoutEndpoint
 } from './test-helpers/auth-test-helpers.js'
+import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
 
 const LOG_TAGS = {
   FETCH_SAVED_STATE: 'fetch-saved-state'
@@ -23,7 +24,7 @@ describe('fetchSavedStateFromApi', () => {
 
   const createMockRequestWithLogger = () => {
     const request = createMockRequest()
-    request.logger = { warn: vi.fn(), error: vi.fn() }
+    request.logger = mockRequestLogger()
     return request
   }
 
