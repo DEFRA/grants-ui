@@ -1,11 +1,9 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import {
-  calculateGrantPayment,
   fetchAvailableActionsForParcel,
   parseLandParcel,
   triggerApiActionsValidation
 } from '~/src/server/land-grants/services/land-grants.service.js'
-import { sbiStore } from '~/.server/server/sbi/state.js'
 
 const unitRatesForActions = {
   CMOR1: 100,
@@ -195,47 +193,22 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
   }
 
   buildNewState = async (state, actionsObj) => {
-    // Add the current actions to the land parcels object
-    const updatedLandParcels = {
-      ...state.landParcels, // Spread existing land parcels
-      [state.selectedLandParcel]: {
-        ...state.landParcels?.[state.selectedLandParcel], // Preserve existing parcel data
-        actionsObj: {
-          ...state.landParcels?.[state.selectedLandParcel]?.actionsObj, // Merge existing actions
-          ...actionsObj // Add new actions
-        }
-      }
-    }
-
-    let draftApplicationAnnualTotalPence = state.draftApplicationAnnualTotalPence || 0
-
-    // Get all land actions across all parcels
-    const landActions = this.prepareLandActionsForPayment(updatedLandParcels, sbiStore.get('sbi'))
-
-    // Call the API with all land actions
-    const paymentDetails = await calculateGrantPayment({
-      landActions
-    })
-
-    // Update payment information for the current actions object
-    if (paymentDetails?.payment?.parcelItems) {
-      for (const item of Object.values(paymentDetails.payment.parcelItems)) {
-        if (actionsObj[item.code]) {
-          updatedLandParcels[`${item.sheetId}-${item.parcelId}`].actionsObj[item.code].annualPaymentPence =
-            item.annualPaymentPence
-        }
-      }
-
-      draftApplicationAnnualTotalPence = paymentDetails.payment.annualTotalPence
-    }
+    const { selectedLandParcel, landParcels = {} } = state;
 
     return {
       ...state,
-      payment: paymentDetails?.payment,
-      draftApplicationAnnualTotalPence,
-      landParcels: updatedLandParcels
-    }
-  }
+      landParcels: {
+        ...landParcels,
+        [selectedLandParcel]: {
+          ...landParcels[selectedLandParcel],
+          actionsObj: {
+            ...landParcels[selectedLandParcel]?.actionsObj, // Merge existing actions
+            ...actionsObj // Add new actions on top
+          }
+        }
+      }
+    };
+  };
 
   /**
    * This method is called when there is a GET request to the land grants actions page.
