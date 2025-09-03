@@ -17,7 +17,7 @@ export async function persistStateToApi(state, key) {
 
   const { userId, businessId, grantId } = parseSessionKey(key.id)
 
-  logger.debug(`Persisting state to backend for identity: ${key.userId}:${key.businessId}:${key.grantId}`)
+  logger.debug(`persist-state: Persisting state to backend for identity: ${userId}:${businessId}:${grantId}`)
 
   try {
     const response = await fetch(url.href, {
@@ -36,7 +36,7 @@ export async function persistStateToApi(state, key) {
       logger.error(`Failed to persist state to API: ${response.status} - ${response.statusText}`)
     }
   } catch (err) {
-    logger.error(`Failed to persist state to API: ${err.message}`)
+    logger.error(`persist-state: Failed to persist state to API: ${err.message}`)
 
     // TODO: See TGC-781
     // throw err

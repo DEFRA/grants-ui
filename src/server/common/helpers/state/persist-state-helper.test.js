@@ -27,7 +27,7 @@ global.fetch = jest.fn()
 let persistStateToApi
 
 describe('persistStateToApi', () => {
-  const key = { id: 'user-1:business-1:grant-1', userId: 'user-1', businessId: 'business-1', grantId: 'grant-1' }
+  const key = { id: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.BUSINESS_ID}:${TEST_USER_IDS.GRANT_ID}` }
   const testState = MOCK_STATE_DATA.WITH_STEP
 
   beforeEach(() => {
@@ -92,7 +92,7 @@ describe('persistStateToApi', () => {
       )
 
       expect(mockLogger.debug).toHaveBeenCalledWith(
-        `Persisting state to backend for identity: ${key.userId}:${key.businessId}:${key.grantId}`
+        `persist-state: Persisting state to backend for identity: ${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.BUSINESS_ID}:${TEST_USER_IDS.GRANT_ID}`
       )
     })
 
@@ -115,7 +115,9 @@ describe('persistStateToApi', () => {
       await persistStateToApi(testState, key)
 
       expect(fetch).toHaveBeenCalledTimes(1)
-      expect(mockLogger.error).toHaveBeenCalledWith(`${LOG_MESSAGES.PERSIST_FAILED}: ${networkError.message}`)
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        `persist-state: ${LOG_MESSAGES.PERSIST_FAILED}: ${networkError.message}`
+      )
     })
   })
 })
