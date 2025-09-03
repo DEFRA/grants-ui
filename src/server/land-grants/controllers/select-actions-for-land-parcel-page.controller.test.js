@@ -23,7 +23,9 @@ describe('SelectActionsForLandParcelPageController', () => {
       availableArea: {
         unit: 'ha',
         value: 10
-      }
+      },
+      ratePerUnitGbp: 16,
+      ratePerAgreementPerYearGbp: 272
     },
     {
       code: 'UPL1',
@@ -31,7 +33,8 @@ describe('SelectActionsForLandParcelPageController', () => {
       availableArea: {
         unit: 'ha',
         value: 5
-      }
+      },
+      ratePerUnitGbp: 33
     }
   ]
 
@@ -208,7 +211,27 @@ describe('SelectActionsForLandParcelPageController', () => {
       expect(QuestionPageController.prototype.getViewModel).toHaveBeenCalledWith(mockRequest, mockContext)
       expect(result).toEqual({
         ...mockParentViewModel,
-        availableActions
+        availableActions,
+        assessMoorlandArea: 10,
+        livestockGrazingArea: 5,
+        assessMoorlandAction: [
+          {
+            value: 'CMOR1',
+            text: 'CMOR1: Assess moorland and produce a written record',
+            hint: {
+              text: 'Payment rate per year: £16 per ha and £272 per agreement'
+            }
+          }
+        ],
+        displayActions: [
+          {
+            value: 'UPL1',
+            text: 'UPL1: Moderate livestock grazing on moorland',
+            hint: {
+              text: 'Payment rate per year: £33 per ha'
+            }
+          }
+        ]
       })
     })
 
@@ -221,7 +244,63 @@ describe('SelectActionsForLandParcelPageController', () => {
 
       expect(result).toEqual({
         ...mockParentViewModel,
-        availableActions: []
+        availableActions: [],
+        assessMoorlandArea: 0,
+        livestockGrazingArea: 0,
+        assessMoorlandAction: [],
+        displayActions: []
+      })
+    })
+
+    test('should add assess moorland area and livestock grazing area to view model', () => {
+      const aa = [
+        ...availableActions,
+        {
+          code: 'UPL2',
+          description: 'UPL2: Moderate livestock grazing on moorland',
+          availableArea: {
+            unit: 'ha',
+            value: 6
+          },
+          ratePerUnitGbp: 63
+        }
+      ]
+      controller.availableActions = aa
+      const mockParentViewModel = { pageTitle: 'Land Actions' }
+      QuestionPageController.prototype.getViewModel.mockReturnValue(mockParentViewModel)
+
+      const result = controller.getViewModel(mockRequest, mockContext)
+
+      expect(result).toEqual({
+        ...mockParentViewModel,
+        availableActions: aa,
+        assessMoorlandArea: 10,
+        livestockGrazingArea: 6,
+        assessMoorlandAction: [
+          {
+            value: 'CMOR1',
+            text: 'CMOR1: Assess moorland and produce a written record',
+            hint: {
+              text: 'Payment rate per year: £16 per ha and £272 per agreement'
+            }
+          }
+        ],
+        displayActions: [
+          {
+            value: 'UPL1',
+            text: 'UPL1: Moderate livestock grazing on moorland',
+            hint: {
+              text: 'Payment rate per year: £33 per ha'
+            }
+          },
+          {
+            value: 'UPL2',
+            text: 'UPL2: Moderate livestock grazing on moorland',
+            hint: {
+              text: 'Payment rate per year: £63 per ha'
+            }
+          }
+        ]
       })
     })
   })
@@ -596,12 +675,15 @@ describe('SelectActionsForLandParcelPageController', () => {
               {
                 availableArea: { unit: 'ha', value: 10 },
                 code: 'CMOR1',
-                description: 'CMOR1: Assess moorland and produce a written record'
+                description: 'CMOR1: Assess moorland and produce a written record',
+                ratePerUnitGbp: 16,
+                ratePerAgreementPerYearGbp: 272
               },
               {
                 availableArea: { unit: 'ha', value: 5 },
                 code: 'UPL1',
-                description: 'UPL1: Moderate livestock grazing on moorland'
+                description: 'UPL1: Moderate livestock grazing on moorland',
+                ratePerUnitGbp: 33
               }
             ],
             parcelName: 'sheet1 parcel1',
@@ -785,12 +867,15 @@ describe('SelectActionsForLandParcelPageController', () => {
               {
                 availableArea: { unit: 'ha', value: 10 },
                 code: 'CMOR1',
-                description: 'CMOR1: Assess moorland and produce a written record'
+                description: 'CMOR1: Assess moorland and produce a written record',
+                ratePerUnitGbp: 16,
+                ratePerAgreementPerYearGbp: 272
               },
               {
                 availableArea: { unit: 'ha', value: 5 },
                 code: 'UPL1',
-                description: 'UPL1: Moderate livestock grazing on moorland'
+                description: 'UPL1: Moderate livestock grazing on moorland',
+                ratePerUnitGbp: 33
               }
             ],
             errorSummary: [

@@ -61,13 +61,11 @@
                 classes: "govuk-fieldset__legend--m"
               }
             },
-            items: [
-              {
-                value: "CMOR1",
-                text: "CMOR1: Assess moorland and produce a written record"
-              }
-            ],
-          errorMessage: errors.landAction
+            hint: {
+              text: "Total available area: " + assessMoorlandArea.toFixed(4) + "ha"
+            },
+            items: assessMoorlandAction
+            errorMessage: errors.landAction
           }) }}
 
           {{ govukRadios({
@@ -79,20 +77,10 @@
                 classes: "govuk-fieldset__legend--m"
               }
             },
-            items: [
-              {
-                value: "UPL1",
-                text: "UPL1: Moderate livestock grazing on moorland"
-              },
-              {
-                value: "UPL2",
-                text: "UPL2: Low livestock grazing on moorland"
-              },
-              {
-                value: "UPL3",
-                text: "UPL3: Limited livestock grazing on moorland"
-              }
-            ]
+            hint: {
+              text: "Total available area: " + livestockGrazingArea.toFixed(4) + "ha"
+            },
+            items: displayActions
           }) }}
 
           <div class="govuk-button-group">
