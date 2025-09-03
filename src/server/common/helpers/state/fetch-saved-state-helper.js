@@ -3,11 +3,9 @@ import 'dotenv/config'
 import { config } from '~/src/config/config.js'
 import { parseSessionKey } from './get-cache-key-helper.js'
 import { createApiHeaders } from './backend-auth-helper.js'
-import { createLogger } from '../logging/logger.js'
+import { log, LogCodes } from '../logging/log.js'
 
 const GRANTS_UI_BACKEND_ENDPOINT = config.get('session.cache.apiEndpoint')
-
-const logger = createLogger()
 
 export async function fetchSavedStateFromApi(key) {
   if (!GRANTS_UI_BACKEND_ENDPOINT?.length) {
@@ -17,10 +15,13 @@ export async function fetchSavedStateFromApi(key) {
   const { userId, organisationId, grantId } = parseSessionKey(key.id)
 
   let json = null
+  const url = new URL('/state/', GRANTS_UI_BACKEND_ENDPOINT)
   try {
-    logger.debug(`fetch-saved-state: Fetching saved state from backend for identity: ${JSON.stringify(key)}`)
+    log(LogCodes.SYSTEM.EXTERNAL_API_CALL_DEBUG, {
+      endpoint: url.href,
+      identity: key.id
+    })
 
-    const url = new URL('/state/', GRANTS_UI_BACKEND_ENDPOINT)
     url.searchParams.set('userId', userId)
     url.searchParams.set('businessId', organisationId)
     url.searchParams.set('grantId', grantId)
@@ -32,7 +33,11 @@ export async function fetchSavedStateFromApi(key) {
 
     if (!response.ok) {
       if (response.status === statusCodes.notFound) {
-        logger.debug(`fetch-saved-state: No state found in backend for identity: ${JSON.stringify(key)}`)
+        log(LogCodes.SYSTEM.EXTERNAL_API_CALL_DEBUG, {
+          endpoint: url.href,
+          identity: key.id,
+          stateSummary: 'No state found in backend'
+        })
         return null
       }
       throw new Error(`Failed to fetch saved state: ${response.status}`)
@@ -41,11 +46,19 @@ export async function fetchSavedStateFromApi(key) {
     json = await response.json()
 
     if (!json || typeof json !== 'object') {
-      logger.warn(`fetch-saved-state: Unexpected or empty state format: ${json}`)
+      log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
+        endpoint: url.href,
+        identity: key.id,
+        error: `Unexpected or empty state format: ${json}`
+      })
       return null
     }
   } catch (err) {
-    logger.error(`fetch-saved-state: Failed to fetch saved state from API: ${err}`)
+    log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
+      endpoint: url.href,
+      identity: key.id,
+      error: err.message
+    })
     return null
   }
 

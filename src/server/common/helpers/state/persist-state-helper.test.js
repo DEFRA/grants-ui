@@ -17,17 +17,22 @@ const mockParseSessionKey = vi.fn()
 vi.mock('./get-cache-key-helper.js', () => ({
   parseSessionKey: mockParseSessionKey
 }))
-const mockLogger = {
-  debug: vi.fn(),
-  error: vi.fn()
-}
-vi.mock('../logging/logger.js', () => ({
-  createLogger: () => mockLogger
-}))
 
 global.fetch = vi.fn()
 
+vi.doMock('../logging/log.js', () => ({
+  log: vi.fn(),
+  LogCodes: {
+    SYSTEM: {
+      EXTERNAL_API_CALL_DEBUG: { level: 'debug', messageFunc: vi.fn() },
+      EXTERNAL_API_ERROR: { level: 'error', messageFunc: vi.fn() }
+    }
+  }
+}))
+
 let persistStateToApi
+let log
+let LogCodes
 
 describe('persistStateToApi', () => {
   const key = { id: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.BUSINESS_ID}:${TEST_USER_IDS.GRANT_ID}` }
@@ -43,10 +48,13 @@ describe('persistStateToApi', () => {
 
   describe('With backend configured correctly', () => {
     beforeEach(async () => {
-      vi.clearAllMocks()
+      vi.resetModules()
       vi.doMock('~/src/config/config.js', createMockConfig)
       const helper = await import('~/src/server/common/helpers/state/persist-state-helper.js')
       persistStateToApi = helper.persistStateToApi
+      const logModule = await import('../logging/log.js')
+      log = logModule.log
+      LogCodes = logModule.LogCodes
       vi.clearAllMocks()
     })
 
@@ -94,8 +102,16 @@ describe('persistStateToApi', () => {
         })
       )
 
-      expect(mockLogger.debug).toHaveBeenCalledWith(
-        `persist-state: Persisting state to backend for identity: ${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.BUSINESS_ID}:${TEST_USER_IDS.GRANT_ID}`
+      expect(log).toHaveBeenCalledWith(
+        LogCodes.SYSTEM.EXTERNAL_API_CALL_DEBUG,
+        expect.objectContaining({
+          endpoint: expect.stringContaining('/state/'),
+          identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.BUSINESS_ID}:${TEST_USER_IDS.GRANT_ID}`,
+          stateSummary: {
+            hasReference: Boolean(testState?.$$__referenceNumber),
+            keyCount: Object.keys(testState).length
+          }
+        })
       )
     })
 
@@ -106,8 +122,13 @@ describe('persistStateToApi', () => {
       await persistStateToApi(testState, key)
 
       expect(fetch).toHaveBeenCalledTimes(1)
-      expect(mockLogger.error).toHaveBeenCalledWith(
-        `${LOG_MESSAGES.PERSIST_FAILED}: ${failedResponse.status} - ${failedResponse.statusText}`
+      expect(log).toHaveBeenCalledWith(
+        LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+        expect.objectContaining({
+          endpoint: expect.stringContaining('/state/'),
+          identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.BUSINESS_ID}:${TEST_USER_IDS.GRANT_ID}`,
+          error: `${failedResponse.status} - ${failedResponse.statusText}`
+        })
       )
     })
 
@@ -118,8 +139,13 @@ describe('persistStateToApi', () => {
       await persistStateToApi(testState, key)
 
       expect(fetch).toHaveBeenCalledTimes(1)
-      expect(mockLogger.error).toHaveBeenCalledWith(
-        `persist-state: ${LOG_MESSAGES.PERSIST_FAILED}: ${networkError.message}`
+      expect(log).toHaveBeenCalledWith(
+        LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+        expect.objectContaining({
+          endpoint: expect.stringContaining('/state/'),
+          identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.BUSINESS_ID}:${TEST_USER_IDS.GRANT_ID}`,
+          error: networkError.message
+        })
       )
     })
   })

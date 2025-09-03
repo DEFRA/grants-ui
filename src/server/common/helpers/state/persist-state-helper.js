@@ -2,11 +2,9 @@ import 'dotenv/config'
 import { config } from '~/src/config/config.js'
 import { parseSessionKey } from './get-cache-key-helper.js'
 import { createApiHeaders } from './backend-auth-helper.js'
-import { createLogger } from '../logging/logger.js'
+import { log, LogCodes } from '../logging/log.js'
 
 const GRANTS_UI_BACKEND_ENDPOINT = config.get('session.cache.apiEndpoint')
-
-const logger = createLogger()
 
 export async function persistStateToApi(state, key) {
   if (!GRANTS_UI_BACKEND_ENDPOINT?.length) {
@@ -17,7 +15,14 @@ export async function persistStateToApi(state, key) {
 
   const { userId, organisationId, grantId } = parseSessionKey(key.id)
 
-  logger.debug(`Persisting state to backend for identity: ${key.userId}:${key.organisationId}:${key.grantId}`)
+  log(LogCodes.SYSTEM.EXTERNAL_API_CALL_DEBUG, {
+    endpoint: url.href,
+    identity: key.id,
+    stateSummary: {
+      hasReference: Boolean(state?.$$__referenceNumber),
+      keyCount: Object.keys(state || {}).length
+    }
+  })
 
   try {
     const response = await fetch(url.href, {
@@ -33,11 +38,18 @@ export async function persistStateToApi(state, key) {
     })
 
     if (!response.ok) {
-      logger.error(`Failed to persist state to API: ${response.status} - ${response.statusText}`)
+      log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
+        endpoint: url.href,
+        identity: key.id,
+        error: `${response.status} - ${response.statusText}`
+      })
     }
   } catch (err) {
-    logger.error(`persist-state: Failed to persist state to API: ${err.message}`)
-
+    log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
+      endpoint: url.href,
+      identity: key.id,
+      error: err.message
+    })
     // TODO: See TGC-781
     // throw err
   }
