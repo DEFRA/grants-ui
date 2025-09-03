@@ -222,19 +222,38 @@ function createCredentialsProfile(credentials, payload) {
 
 function extractFarmDetails(relationships) {
   const parts = relationships.split(':')
+  const LENGTH_OF_NORMAL_RELATIONSHIP_ENTRY = 6
+  const LAST_INDEX_BEFORE_ORGANISATION_NAME = 2
+  const INDEX_OF_LAST_KNOWN_PARTS_IN_COLLECTION = 3
 
-  if (parts.length < 6) {
+  // Define indices for relationship parts
+  const RELATIONSHIP_ID_INDEX = 0
+  const ORGANISATION_ID_INDEX = 1
+  const ORGANISATION_LOA_INDEX = parts.length - 3
+  const RELATIONSHIP_INDEX = parts.length - 2
+  const RELATIONSHIP_LOA_INDEX = parts.length - 1
+
+  if (parts.length < LENGTH_OF_NORMAL_RELATIONSHIP_ENTRY) {
     throw new Error('Invalid format: not enough fields')
   }
 
-  if (parts.length === 6) {
+  if (parts.length === LENGTH_OF_NORMAL_RELATIONSHIP_ENTRY) {
     return parts
   }
 
   // Organisation name spans from index 2 to (length - 4)
-  const orgName = parts.slice(2, parts.length - 3).join(':')
+  const orgName = parts
+    .slice(LAST_INDEX_BEFORE_ORGANISATION_NAME, parts.length - INDEX_OF_LAST_KNOWN_PARTS_IN_COLLECTION)
+    .join(':')
 
-  return [parts[0], parts[1], orgName, parts[3], parts[4], parts[5]]
+  return [
+    parts[RELATIONSHIP_ID_INDEX],
+    parts[ORGANISATION_ID_INDEX],
+    orgName,
+    parts[ORGANISATION_LOA_INDEX],
+    parts[RELATIONSHIP_INDEX],
+    parts[RELATIONSHIP_LOA_INDEX]
+  ]
 }
 
 export function mapPayloadToProfile(request, h) {
