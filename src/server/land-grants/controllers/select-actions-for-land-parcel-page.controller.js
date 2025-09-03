@@ -136,7 +136,7 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
 
       const { actionsObj } = this.extractActionsDataFromPayload(payload)
       // Create an updated state with the new action data
-      const newState = await this.buildNewState(state, actionsObj)
+      const newState = this.buildNewState(state, actionsObj)
 
       if (payload.action === 'validate') {
         const { errors, errorSummary } = await this.validatePayload(payload, actionsObj, sheetId, parcelId)
@@ -192,9 +192,8 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
     return { errors, errorSummary }
   }
 
-  buildNewState = async (state, actionsObj) => {
+  buildNewState = (state, actionsObj) => {
     const { selectedLandParcel, landParcels = {} } = state;
-
     return {
       ...state,
       landParcels: {
