@@ -1,9 +1,33 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { formatCurrency } from '~/src/config/nunjucks/filters/filters.js'
+import { sbiStore } from '~/src/server/sbi/state.js'
+import { calculateGrantPayment } from '../services/land-grants.service.js'
 
 export default class LandActionsCheckPageController extends QuestionPageController {
   viewName = 'land-actions-check'
-  selectedActionRows = []
+  parcelItems = []
+  additionalYearlyPayments = []
+
+  /**
+  * Calculates payment for an existing land parcels and actions state
+  * @param {object} state - Object containing land parcels data and actions
+  * @returns {Array} - Array of land actions for API
+  */
+  async calculatePaymentInformationFromState(state) {
+    const landActions = Object.entries(state.landParcels || {})
+      .filter(([, parcelData]) => parcelData?.actionsObj && Object.keys(parcelData.actionsObj).length > 0)
+      .map(([parcelKey, parcelData]) => {
+        const [sheetId, parcelId] = parcelKey.split('-')
+        const actions = Object.entries(parcelData.actionsObj).map(([code, actionData]) => ({
+          code,
+          quantity: parseFloat(actionData.value)
+        }))
+
+        return { sbi: sbiStore.get('sbi'), sheetId, parcelId, actions }
+      })
+
+    return await calculateGrantPayment({ landActions })
+  }
 
   /**
    * This method is called when there is a POST request on the check selected land actions page.
@@ -26,7 +50,9 @@ export default class LandActionsCheckPageController extends QuestionPageControll
         return h.view(this.viewName, {
           ...this.getViewModel(request, context),
           ...state,
-          selectedActionRows: this.selectedActionRows,
+          parcelItems: this.parcelItems,
+          additionalYearlyPayments: this.additionalYearlyPayments,
+          totalYearlyPayment: this.getPrice(state.payment?.annualTotalPence || 0),
           errorMessage: 'Please select if you want to add more actions'
         })
       }
@@ -49,26 +75,28 @@ export default class LandActionsCheckPageController extends QuestionPageControll
      * @param {FormContext} context
      * @param {Pick<ResponseToolkit, 'redirect' | 'view'>} h
      */
-    const fn = (request, context, h) => {
+    const fn = async (request, context, h) => {
       const { collection, viewName } = this
       const { state } = context
+      const { payment } = await this.calculatePaymentInformationFromState(state)
 
       // Build the selected action rows from the collection
-      this.selectedActionRows = this.getSelectedActionRows(state, context)
-      const pluralize = (count, singular, plural) => (count === 1 ? singular : plural || `${singular}s`)
+      this.parcelItems = this.getParcelItems(payment)
+      this.additionalYearlyPayments = this.getAdditionalYearlyPayments(payment)
 
-      const getPageTitle = (parcelsCount, actionsCount) => {
-        const parcelsText = pluralize(parcelsCount, 'parcel')
-        const actionsText = pluralize(actionsCount, 'action')
-        return `You have selected ${actionsCount} ${actionsText} to ${parcelsCount} ${parcelsText}`
-      }
+      this.setState(request, {
+        ...state,
+        payment,
+        draftApplicationAnnualTotalPence: payment?.annualTotalPence
+      })
 
       // Build the view model exactly as in the original code
       const viewModel = {
         ...this.getViewModel(request, context),
         ...state,
-        selectedActionRows: this.selectedActionRows,
-        pageTitle: getPageTitle(Object.keys(state.landParcels).length, this.selectedActionRows.length),
+        parcelItems: this.parcelItems,
+        additionalYearlyPayments: this.additionalYearlyPayments,
+        totalYearlyPayment: this.getPrice(payment?.annualTotalPence || 0),
         errors: collection.getErrors(collection.getErrors())
       }
 
@@ -78,23 +106,57 @@ export default class LandActionsCheckPageController extends QuestionPageControll
     return fn
   }
 
-  getSelectedActionRows = (state) => {
-    return Object.entries(state.landParcels).flatMap(([sheetParcelId, parcelData]) => {
-      return Object.entries(parcelData.actionsObj).map(([, actionData]) => [
+  getPrice = (value) => {
+    return formatCurrency(value / 100, 'en-GB', 'GBP', 2, 'currency')
+  }
+
+  getAdditionalYearlyPayments = (paymentInfo) => {
+    return Object.values(paymentInfo?.agreementLevelItems || {}).map((data) => {
+      return {
+        items: [
+          [
+            {
+              text: `One-off payment per agreement per year for ${data.description}`
+            },
+            {
+              text: this.getPrice(data.annualPaymentPence)
+            }
+          ]
+        ]
+      }
+    })
+  }
+
+  getParcelItems = (paymentInfo) => {
+    const groupedByParcel = Object.values(paymentInfo?.parcelItems || {}).reduce((acc, data) => {
+      const parcelKey = `${data.sheetId} ${data.parcelId}`
+
+      if (!acc[parcelKey]) {
+        acc[parcelKey] = {
+          parcelId: parcelKey,
+          items: []
+        }
+      }
+
+      acc[parcelKey].items.push([
         {
-          text: sheetParcelId
+          text: data.description
         },
         {
-          text: actionData.description
+          text: data.quantity
         },
         {
-          text: `${actionData.value} ${actionData.unit}`
+          text: this.getPrice(data.annualPaymentPence)
         },
         {
-          text: formatCurrency(actionData.annualPaymentPence / 100, 'en-GB', 'GBP', 2, 'currency')
+          html: "<a class='govuk-link' href='confirm-delete-parcel' style='display: none'>Remove</a>"
         }
       ])
-    })
+
+      return acc
+    }, {})
+
+    return Object.values(groupedByParcel)
   }
 }
 
