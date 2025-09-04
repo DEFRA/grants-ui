@@ -14,7 +14,6 @@ vi.mock('hapi-pino', async () => {
   }
 })
 
-// Mock tls module
 vi.mock('node:tls', () => {
   const mockAddCACert = vi.fn()
   return {
