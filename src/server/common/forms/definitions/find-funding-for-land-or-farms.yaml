@@ -37,7 +37,7 @@ pages:
     path: /select-actions-for-land-parcel
     next: []
     id: 7b0a5e2f-4c31-4a45-95ee-abc000da0473
-  - title: Check selected land actions
+  - title: Review the actions you have selected
     path: /check-selected-land-actions
     controller: LandActionsCheckPageController
     next: []

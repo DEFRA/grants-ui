@@ -2,8 +2,7 @@ import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/Q
 import {
   fetchAvailableActionsForParcel,
   parseLandParcel,
-  triggerApiActionsValidation,
-  calculateGrantPayment
+  triggerApiActionsValidation
 } from '~/src/server/land-grants/services/land-grants.service.js'
 import SelectActionsForLandParcelPageController from './select-actions-for-land-parcel-page.controller.js'
 
@@ -391,24 +390,6 @@ describe('SelectActionsForLandParcelPageController', () => {
 
   describe('POST route handler', () => {
     test('should update state with form values and proceed', async () => {
-      // Mock the calculateGrantPayment function
-      const paymentDetails = {
-        payment: {
-          annualTotalPence: 100,
-          parcelItems: [
-            {
-              sheetId: 'sheet1',
-              parcelId: 'parcel1',
-              code: 'CMOR1',
-              annualPaymentPence: 50
-            }
-          ]
-        },
-        paymentTotal: '£1.00'
-      }
-
-      calculateGrantPayment.mockResolvedValue(paymentDetails)
-
       // Mock fetchAvailableActionsForParcel to return available actions
       fetchAvailableActionsForParcel.mockResolvedValue({
         actions: availableActions
@@ -421,8 +402,6 @@ describe('SelectActionsForLandParcelPageController', () => {
         mockRequest,
         expect.objectContaining({
           selectedLandParcel: 'sheet1-parcel1',
-          payment: paymentDetails.payment,
-          draftApplicationAnnualTotalPence: 100,
           landParcels: {
             'sheet1-parcel1': {
               actionsObj: {
@@ -430,7 +409,7 @@ describe('SelectActionsForLandParcelPageController', () => {
                   description: 'CMOR1: Assess moorland and produce a written record',
                   unit: 'ha',
                   value: 10,
-                  annualPaymentPence: 50
+                  annualPaymentPence: 100
                 }
               }
             }
@@ -444,30 +423,6 @@ describe('SelectActionsForLandParcelPageController', () => {
     })
 
     test('add more land actions to existing land parcel', async () => {
-      // Mock the calculateGrantPayment function
-      const paymentDetails = {
-        payment: {
-          annualTotalPence: 150,
-          parcelItems: [
-            {
-              sheetId: 'sheet1',
-              parcelId: 'parcel1',
-              code: 'CMOR1',
-              annualPaymentPence: 50
-            },
-            {
-              sheetId: 'sheet1',
-              parcelId: 'parcel1',
-              code: 'UPL1',
-              annualPaymentPence: 100
-            }
-          ]
-        },
-        paymentTotal: '£1.00'
-      }
-
-      calculateGrantPayment.mockResolvedValue(paymentDetails)
-
       mockRequest = {
         payload: {
           landAction: 'UPL1'
@@ -498,8 +453,6 @@ describe('SelectActionsForLandParcelPageController', () => {
         mockRequest,
         expect.objectContaining({
           selectedLandParcel: 'sheet1-parcel1',
-          payment: paymentDetails.payment,
-          draftApplicationAnnualTotalPence: 150,
           landParcels: {
             'sheet1-parcel1': {
               actionsObj: {
@@ -513,7 +466,7 @@ describe('SelectActionsForLandParcelPageController', () => {
                   description: 'UPL1: Moderate livestock grazing on moorland',
                   value: 5,
                   unit: 'ha',
-                  annualPaymentPence: 100
+                  annualPaymentPence: 200
                 }
               }
             }
@@ -527,6 +480,15 @@ describe('SelectActionsForLandParcelPageController', () => {
     })
 
     describe('validations', () => {
+      test('should handle empty payload gracefully', async () => {
+        mockRequest.payload = null
+
+        const handler = controller.makePostRouteHandler()
+        await handler(mockRequest, mockContext, mockH)
+
+        expect(mockH.view).toHaveBeenCalledWith('select-actions-for-land-parcel', expect.any(Object))
+      })
+
       // Test that triggerApiActionsValidation is called with correct arguments
       test('should call triggerApiActionsValidation with correct parameters', async () => {
         const controller = new SelectActionsForLandParcelPageController()
@@ -575,14 +537,6 @@ describe('SelectActionsForLandParcelPageController', () => {
           landAction: '',
           action: 'validate'
         }
-
-        // Mock the calculateGrantPayment function to return default values
-        calculateGrantPayment.mockResolvedValue({
-          payment: {
-            annualTotalPence: 0,
-            parcelItems: []
-          }
-        })
 
         const handler = controller.makePostRouteHandler()
         await handler(mockRequest, mockContext, mockH)
@@ -637,28 +591,6 @@ describe('SelectActionsForLandParcelPageController', () => {
         errorMessages: []
       })
 
-      // Mock the calculateGrantPayment function
-      calculateGrantPayment.mockResolvedValue({
-        payment: {
-          annualTotalPence: 50000, // Example value: £500.00 in pence
-          parcelItems: [
-            {
-              sheetId: 'sheet1',
-              parcelId: 'parcel1',
-              code: 'CMOR1',
-              annualPaymentPence: 20000 // £200.00 in pence
-            },
-            {
-              sheetId: 'sheet1',
-              parcelId: 'parcel1',
-              code: 'UPL1',
-              annualPaymentPence: 30000 // £300.00 in pence
-            }
-          ]
-        },
-        paymentTotal: '£500.00'
-      })
-
       const handler = controller.makePostRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
@@ -670,7 +602,7 @@ describe('SelectActionsForLandParcelPageController', () => {
             description: 'CMOR1: Assess moorland and produce a written record',
             value: 10,
             unit: 'ha',
-            annualPaymentPence: 20000
+            annualPaymentPence: 100
           }
         }
       })
@@ -684,24 +616,6 @@ describe('SelectActionsForLandParcelPageController', () => {
           landAction: 'CMOR1',
           action: 'validate'
         }
-
-        // Mock the calculateGrantPayment function
-        const paymentDetails = {
-          payment: {
-            annualTotalPence: 100,
-            parcelItems: [
-              {
-                sheetId: 'sheet1',
-                parcelId: 'parcel1',
-                code: 'CMOR1',
-                annualPaymentPence: 50
-              }
-            ]
-          },
-          paymentTotal: '£1.00'
-        }
-
-        calculateGrantPayment.mockResolvedValue(paymentDetails)
 
         fetchAvailableActionsForParcel.mockResolvedValue({
           actions: availableActions
@@ -732,8 +646,6 @@ describe('SelectActionsForLandParcelPageController', () => {
           mockRequest,
           expect.objectContaining({
             selectedLandParcel: 'sheet1-parcel1',
-            payment: paymentDetails.payment,
-            draftApplicationAnnualTotalPence: 100,
             landParcels: {
               'sheet1-parcel1': {
                 actionsObj: {
@@ -741,7 +653,7 @@ describe('SelectActionsForLandParcelPageController', () => {
                     description: 'CMOR1: Assess moorland and produce a written record',
                     unit: 'ha',
                     value: 10,
-                    annualPaymentPence: 50 // Updated by the payment API response
+                    annualPaymentPence: 100
                   }
                 }
               }
@@ -760,13 +672,7 @@ describe('SelectActionsForLandParcelPageController', () => {
           action: 'validate' // This is required to trigger validation
         }
 
-        // Mock the calculateGrantPayment function to return default values
-        calculateGrantPayment.mockResolvedValue({
-          payment: {
-            annualTotalPence: 0,
-            parcelItems: []
-          }
-        })
+        fetchAvailableActionsForParcel.mockRejectedValue(new Error('API error'))
 
         // Mock triggerApiActionsValidation (won't be called since actionsObj is empty)
         triggerApiActionsValidation.mockResolvedValue({
