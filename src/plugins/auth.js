@@ -229,7 +229,7 @@ function extractFarmDetails(relationships) {
   // Define indices for relationship parts
   const RELATIONSHIP_ID_INDEX = 0
   const ORGANISATION_ID_INDEX = 1
-  const ORGANISATION_LOA_INDEX = parts.length - 3
+  const ORGANISATION_LOA_INDEX = parts.length - INDEX_OF_LAST_KNOWN_PARTS_IN_COLLECTION
   const RELATIONSHIP_INDEX = parts.length - 2
   const RELATIONSHIP_LOA_INDEX = parts.length - 1
 
@@ -242,9 +242,7 @@ function extractFarmDetails(relationships) {
   }
 
   // Organisation name spans from index 2 to (length - 4)
-  const orgName = parts
-    .slice(LAST_INDEX_BEFORE_ORGANISATION_NAME, parts.length - INDEX_OF_LAST_KNOWN_PARTS_IN_COLLECTION)
-    .join(':')
+  const orgName = parts.slice(LAST_INDEX_BEFORE_ORGANISATION_NAME, ORGANISATION_LOA_INDEX).join(':')
 
   return [
     parts[RELATIONSHIP_ID_INDEX],
