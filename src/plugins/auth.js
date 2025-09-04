@@ -84,10 +84,6 @@ function setupAuthStrategies(server, oidcConfig) {
     const bellOptions = getBellOptions(oidcConfig)
     server.auth.strategy('defra-id', 'bell', bellOptions)
   }
-
-  // Set the default authentication strategy to session
-  // All routes will require authentication unless explicitly set to 'defra-id' or `auth: false`
-  server.auth.default('session')
 }
 
 export default {

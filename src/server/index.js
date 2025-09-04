@@ -81,7 +81,7 @@ const createHapiServer = () => {
         }
       },
       auth: {
-        mode: 'try',
+        mode: 'required',
         strategy: 'session'
       },
       files: {
