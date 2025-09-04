@@ -11,7 +11,7 @@ export default class LandActionsCheckPageController extends QuestionPageControll
   /**
    * Calculates payment for an existing land parcels and actions state
    * @param {object} state - Object containing land parcels data and actions
-   * @returns {Array} - Array of land actions for API
+   * @returns {Promise<Array>} - Promise with payment information object
    */
   async calculatePaymentInformationFromState(state) {
     const landActions = Object.entries(state.landParcels || {})
@@ -26,7 +26,7 @@ export default class LandActionsCheckPageController extends QuestionPageControll
         return { sbi: sbiStore.get('sbi'), sheetId, parcelId, actions }
       })
 
-    return await calculateGrantPayment({ landActions })
+    return calculateGrantPayment({ landActions })
   }
 
   /**
