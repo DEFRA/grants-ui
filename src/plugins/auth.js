@@ -271,7 +271,7 @@ export function mapPayloadToProfile(request, h) {
     request.auth.credentials = {
       ...existingCreds,
       sbi: String(organisationId),
-      crn: Number(userData.contactId),
+      crn: String(userData.contactId),
       name: `${userData.firstName} ${userData.lastName}`,
       organisationId: String(organisationId),
       organisationName
