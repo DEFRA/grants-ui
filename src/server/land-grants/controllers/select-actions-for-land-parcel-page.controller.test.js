@@ -460,13 +460,13 @@ describe('SelectActionsForLandParcelPageController', () => {
                   description: 'CMOR1: Assess moorland and produce a written record',
                   unit: 'ha',
                   value: 10,
-                  annualPaymentPence: 50,
+                  annualPaymentPence: 50
                 },
                 UPL1: {
                   description: 'UPL1: Moderate livestock grazing on moorland',
                   value: 5,
                   unit: 'ha',
-                  annualPaymentPence: 200,
+                  annualPaymentPence: 200
                 }
               }
             }
@@ -486,10 +486,7 @@ describe('SelectActionsForLandParcelPageController', () => {
         const handler = controller.makePostRouteHandler()
         await handler(mockRequest, mockContext, mockH)
 
-        expect(mockH.view).toHaveBeenCalledWith(
-          'select-actions-for-land-parcel',
-          expect.any(Object)
-        )
+        expect(mockH.view).toHaveBeenCalledWith('select-actions-for-land-parcel', expect.any(Object))
       })
 
       // Test that triggerApiActionsValidation is called with correct arguments
@@ -656,7 +653,7 @@ describe('SelectActionsForLandParcelPageController', () => {
                     description: 'CMOR1: Assess moorland and produce a written record',
                     unit: 'ha',
                     value: 10,
-                    annualPaymentPence: 100,
+                    annualPaymentPence: 100
                   }
                 }
               }

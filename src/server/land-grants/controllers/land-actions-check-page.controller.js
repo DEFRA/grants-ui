@@ -9,10 +9,10 @@ export default class LandActionsCheckPageController extends QuestionPageControll
   additionalYearlyPayments = []
 
   /**
-  * Calculates payment for an existing land parcels and actions state
-  * @param {object} state - Object containing land parcels data and actions
-  * @returns {Array} - Array of land actions for API
-  */
+   * Calculates payment for an existing land parcels and actions state
+   * @param {object} state - Object containing land parcels data and actions
+   * @returns {Array} - Array of land actions for API
+   */
   async calculatePaymentInformationFromState(state) {
     const landActions = Object.entries(state.landParcels || {})
       .filter(([, parcelData]) => parcelData?.actionsObj && Object.keys(parcelData.actionsObj).length > 0)

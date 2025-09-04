@@ -103,9 +103,7 @@ describe('LandActionsCheckPageController', () => {
             sbi: '123456789',
             sheetId: 'SD6944',
             parcelId: '0085',
-            actions: [
-              { code: 'CMOR1', quantity: 1.0 }
-            ]
+            actions: [{ code: 'CMOR1', quantity: 1.0 }]
           }
         ]
       })
@@ -149,13 +147,19 @@ describe('LandActionsCheckPageController', () => {
       await handler(mockRequest, mockContext, mockH)
 
       expect(calculateGrantPayment).toHaveBeenCalled()
-      expect(controller.setState).toHaveBeenCalledWith(mockRequest, expect.objectContaining({
-        payment: mockPaymentResponse.payment,
-        draftApplicationAnnualTotalPence: 32006
-      }))
-      expect(mockH.view).toHaveBeenCalledWith('land-actions-check', expect.objectContaining({
-        totalYearlyPayment: '£320.06'
-      }))
+      expect(controller.setState).toHaveBeenCalledWith(
+        mockRequest,
+        expect.objectContaining({
+          payment: mockPaymentResponse.payment,
+          draftApplicationAnnualTotalPence: 32006
+        })
+      )
+      expect(mockH.view).toHaveBeenCalledWith(
+        'land-actions-check',
+        expect.objectContaining({
+          totalYearlyPayment: '£320.06'
+        })
+      )
     })
 
     test('should handle zero payment correctly', async () => {
@@ -166,9 +170,12 @@ describe('LandActionsCheckPageController', () => {
       const handler = controller.makeGetRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
-      expect(mockH.view).toHaveBeenCalledWith('land-actions-check', expect.objectContaining({
-        totalYearlyPayment: '£0.00'
-      }))
+      expect(mockH.view).toHaveBeenCalledWith(
+        'land-actions-check',
+        expect.objectContaining({
+          totalYearlyPayment: '£0.00'
+        })
+      )
     })
   })
 
@@ -179,7 +186,8 @@ describe('LandActionsCheckPageController', () => {
       const handler = controller.makePostRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
-      expect(mockH.view).toHaveBeenCalledWith('land-actions-check',
+      expect(mockH.view).toHaveBeenCalledWith(
+        'land-actions-check',
         expect.objectContaining({
           errorMessage: 'Please select if you want to add more actions'
         })
