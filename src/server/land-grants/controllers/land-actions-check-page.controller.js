@@ -78,7 +78,8 @@ export default class LandActionsCheckPageController extends QuestionPageControll
     const fn = async (request, context, h) => {
       const { collection, viewName } = this
       const { state } = context
-      const { payment } = await this.calculatePaymentInformationFromState(state)
+      const paymentResult = await this.calculatePaymentInformationFromState(state)
+      const { payment } = paymentResult
 
       // Build the selected action rows from the collection
       this.parcelItems = this.getParcelItems(payment)
