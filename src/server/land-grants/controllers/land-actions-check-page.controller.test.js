@@ -53,7 +53,7 @@ describe('LandActionsCheckPageController', () => {
       state: {
         landParcels: {
           'sheet1-parcel1': {
-            actionsObj: { 'ACTION1': { value: '10.5' } }
+            actionsObj: { ACTION1: { value: '10.5' } }
           }
         }
       }
@@ -74,13 +74,13 @@ describe('LandActionsCheckPageController', () => {
         landParcels: {
           'SD6743-8083': {
             actionsObj: {
-              'CMOR1': { value: '4.53' },
-              'ACTION2': { value: '2.1' }
+              CMOR1: { value: '4.53' },
+              ACTION2: { value: '2.1' }
             }
           },
           'SD6944-0085': {
             actionsObj: {
-              'CMOR1': { value: '1.0' }
+              CMOR1: { value: '1.0' }
             }
           }
         }
@@ -121,7 +121,7 @@ describe('LandActionsCheckPageController', () => {
     test('should skip parcels without actions', async () => {
       const testState = {
         landParcels: {
-          'sheet1-parcel1': { actionsObj: { 'ACTION1': { value: '10' } } },
+          'sheet1-parcel1': { actionsObj: { ACTION1: { value: '10' } } },
           'sheet2-parcel2': {}, // No actions
           'sheet3-parcel3': { actionsObj: {} } // Empty actions
         }
@@ -177,7 +177,7 @@ describe('LandActionsCheckPageController', () => {
       mockRequest.payload = { action: 'validate' } // No addMoreActions provided
 
       const handler = controller.makePostRouteHandler()
-      const result = await handler(mockRequest, mockContext, mockH)
+      await handler(mockRequest, mockContext, mockH)
 
       expect(mockH.view).toHaveBeenCalledWith('land-actions-check',
         expect.objectContaining({

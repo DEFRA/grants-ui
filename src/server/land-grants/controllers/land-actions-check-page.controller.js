@@ -129,13 +129,13 @@ export default class LandActionsCheckPageController extends QuestionPageControll
 
   getParcelItems = (paymentInfo) => {
     const groupedByParcel = Object.values(paymentInfo?.parcelItems || {}).reduce((acc, data) => {
-      const parcelKey = `${data.sheetId} ${data.parcelId}`;
+      const parcelKey = `${data.sheetId} ${data.parcelId}`
 
       if (!acc[parcelKey]) {
         acc[parcelKey] = {
           parcelId: parcelKey,
           items: []
-        };
+        }
       }
 
       acc[parcelKey].items.push([
@@ -151,12 +151,12 @@ export default class LandActionsCheckPageController extends QuestionPageControll
         {
           html: "<a class='govuk-link' href='confirm-delete-parcel' style='display: none'>Remove</a>"
         }
-      ]);
+      ])
 
-      return acc;
-    }, {});
+      return acc
+    }, {})
 
-    return Object.values(groupedByParcel);
+    return Object.values(groupedByParcel)
   }
 }
 
