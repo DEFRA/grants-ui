@@ -56,7 +56,6 @@ export const mockLogHelperWithCustomCodes = (customCodes = {}) => ({
   }
 })
 
-// Simple logger mock without custom methods (for basic cases)
 export const mockLoggerSimple = () => ({
   info: vi.fn(),
   error: vi.fn(),
@@ -64,16 +63,7 @@ export const mockLoggerSimple = () => ({
   debug: vi.fn()
 })
 
-// Request logger mock for request.logger patterns
 export const mockRequestLogger = () => ({
-  info: vi.fn(),
-  error: vi.fn(),
-  warn: vi.fn(),
-  debug: vi.fn()
-})
-
-// Server logger mock for server.logger patterns
-export const mockServerLogger = () => ({
   info: vi.fn(),
   error: vi.fn(),
   warn: vi.fn(),

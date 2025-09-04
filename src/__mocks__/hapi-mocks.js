@@ -111,28 +111,6 @@ export const mockAuthRequest = (customProps = {}) => ({
   ...customProps
 })
 
-export const mockCacheRequest = (customProps = {}) => ({
-  server: {
-    app: {
-      cache: {
-        get: vi.fn(),
-        set: vi.fn(),
-        drop: vi.fn()
-      }
-    }
-  },
-  auth: {
-    credentials: {
-      crn: 'test-crn',
-      relationships: ['relationship123:business456']
-    }
-  },
-  params: {
-    slug: 'test-grant'
-  },
-  ...customProps
-})
-
 export const mockSimpleRequest = (customProps = {}) => ({
   method: 'GET',
   path: '/test',

@@ -4,29 +4,12 @@ export {
   mockLogHelper,
   mockLogHelperWithCustomCodes,
   mockLoggerSimple,
-  mockRequestLogger,
-  mockServerLogger
+  mockRequestLogger
 } from './logger-mocks.js'
 
-export {
-  mockConfig,
-  mockConfigSimple,
-  mockConfigWithAuth,
-  mockConfigWithBackend,
-  createMockConfig
-} from './config-mocks.js'
+export { mockConfig, mockConfigSimple, createMockConfig } from './config-mocks.js'
 
-export {
-  mockFormsCacheService,
-  mockSbiState,
-  mockSbiStateWithValue,
-  mockFormsCacheServiceWithError,
-  mockFormsCacheServiceNotConfirmed,
-  mockSbiStateWithError,
-  mockLandParcelData,
-  mockGrantApplicationData,
-  mockTasklistData
-} from './service-mocks.js'
+export { mockFormsCacheService, mockSbiState, mockSbiStateWithValue, mockLandParcelData } from './service-mocks.js'
 
 export {
   mockHapiPino,
@@ -37,7 +20,6 @@ export {
   mockHapiServer,
   mockSsoRequest,
   mockAuthRequest,
-  mockCacheRequest,
   mockSimpleRequest,
   mockContext
 } from './hapi-mocks.js'
