@@ -1008,7 +1008,7 @@ describe('Auth Plugin', () => {
       expect(payload.credentials).toEqual({
         profile: expect.any(Object),
         sbi: '987654',
-        crn: 12345,
+        crn: '12345',
         name: 'John Doe',
         organisationId: '987654',
         organisationName: 'Farm 1'
@@ -1034,7 +1034,7 @@ describe('Auth Plugin', () => {
       expect(payload.credentials).toEqual({
         profile: expect.any(Object),
         sbi: '987654',
-        crn: 12345,
+        crn: '12345',
         name: 'John Doe',
         organisationId: '987654',
         organisationName: 'Farm 1'
@@ -1057,7 +1057,7 @@ describe('Auth Plugin', () => {
       expect(payload.credentials).toEqual({
         profile: expect.any(Object),
         sbi: '111222',
-        crn: 12345,
+        crn: '12345',
         name: 'John Doe',
         organisationId: '111222',
         organisationName: 'Test Organisation'
