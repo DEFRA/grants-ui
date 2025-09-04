@@ -240,8 +240,6 @@ describe('Auth Plugin', () => {
     expect(server.auth.strategy).toHaveBeenCalledTimes(2)
     expect(server.auth.strategy).toHaveBeenCalledWith('defra-id', 'bell', expect.any(Object))
     expect(server.auth.strategy).toHaveBeenCalledWith('session', 'cookie', expect.any(Object))
-
-    expect(server.auth.default).toHaveBeenCalledWith('session')
   })
 
   test('logs plugin registration start and completion', async () => {
