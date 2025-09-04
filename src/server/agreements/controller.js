@@ -103,7 +103,7 @@ export const getAgreementController = {
 
       return apiResponse
     } catch (error) {
-      request.logger.error('Request failed:', error)
+      request.logger.error('Request failed: %O', error)
 
       if (error.message.includes('Missing required configuration')) {
         return h
