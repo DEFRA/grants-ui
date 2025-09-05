@@ -1,8 +1,8 @@
 import { getAgreementController } from './controller.js'
 import { config } from '~/src/config/config.js'
 import Jwt from '@hapi/jwt'
-import { log } from '~/.server/server/common/helpers/logging/log.js'
-import { LogCodes } from '~/.server/server/common/helpers/logging/log-codes.js'
+import { log } from '~/src/server/common/helpers/logging/log.js'
+import { LogCodes } from '~/src/server/common/helpers/logging/log-codes.js'
 
 jest.mock('~/src/config/config.js', () => ({
   config: {
@@ -17,23 +17,17 @@ jest.mock('~/src/server/common/helpers/logging/logger.js', () => ({
   }))
 }))
 
-jest.mock('~/src/server/sbi/state.js', () => ({
-  sbiStore: {
-    get: jest.fn(() => 'test-sbi-value')
-  }
-}))
-
 jest.mock('@hapi/jwt', () => ({
   token: {
     generate: jest.fn(() => 'mocked-jwt-token')
   }
 }))
 
-jest.mock('~/.server/server/common/helpers/logging/log.js', () => ({
+jest.mock('~/src/server/common/helpers/logging/log.js', () => ({
   log: jest.fn()
 }))
 
-jest.mock('~/.server/server/common/helpers/logging/log-codes.js', () => ({
+jest.mock('~/src/server/common/helpers/logging/log-codes.js', () => ({
   LogCodes: {
     AGREEMENTS: {
       AGREEMENT_ERROR: 'AGREEMENTS_AGREEMENT_ERROR'
@@ -67,6 +61,17 @@ describe('Agreements Controller', () => {
       logger: {
         info: jest.fn(),
         error: jest.fn()
+      },
+      auth: {
+        isAuthenticated: true,
+        credentials: {
+          sbi: '123456789',
+          name: 'John Doe',
+          organisationId: 'org123',
+          organisationName: ' Farm 1',
+          role: 'admin',
+          sessionId: 'valid-session-id'
+        }
       }
     }
 
@@ -240,7 +245,7 @@ describe('Agreements Controller', () => {
         'x-base-url': '/agreement',
         'x-encrypted-auth': 'mocked-jwt-token'
       })
-      expect(Jwt.token.generate).toHaveBeenCalledWith({ sbi: 'test-sbi-value', source: 'defra' }, 'test-jwt-secret')
+      expect(Jwt.token.generate).toHaveBeenCalledWith({ sbi: '123456789', source: 'defra' }, 'test-jwt-secret')
     })
 
     test('should build proxy headers for POST request with default content-type', async () => {

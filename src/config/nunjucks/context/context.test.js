@@ -262,6 +262,17 @@ describe('context', () => {
     test('Should provide correct auth properties when authenticated', async () => {
       const request = {
         ...mockRequest,
+        auth: {
+          isAuthenticated: true,
+          credentials: {
+            sbi: '123456789',
+            name: 'John Doe',
+            organisationId: 'org123',
+            organisationName: ' Farm 1',
+            role: 'admin',
+            sessionId: 'valid-session-id'
+          }
+        },
         server: {
           app: {
             cache: {
@@ -279,7 +290,17 @@ describe('context', () => {
       const contextImport = await import('~/src/config/nunjucks/context/context.js')
       const contextResult = await contextImport.context({
         ...request,
-        auth: { isAuthenticated: true, credentials: { sessionId: 'valid-session-id' } }
+        auth: {
+          isAuthenticated: true,
+          credentials: {
+            sbi: '123456789',
+            name: 'John Doe',
+            organisationId: 'org123',
+            organisationName: ' Farm 1',
+            role: 'admin',
+            sessionId: 'valid-session-id'
+          }
+        }
       })
 
       expect(contextResult.auth).toEqual({
@@ -287,6 +308,7 @@ describe('context', () => {
         sbi: '123456789',
         name: 'John Doe',
         organisationId: 'org123',
+        organisationName: ' Farm 1',
         role: 'admin'
       })
     })

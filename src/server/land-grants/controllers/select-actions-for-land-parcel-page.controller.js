@@ -1,11 +1,9 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import {
-  calculateGrantPayment,
   fetchAvailableActionsForParcel,
   parseLandParcel,
   triggerApiActionsValidation
 } from '~/src/server/land-grants/services/land-grants.service.js'
-import { sbiStore } from '~/.server/server/sbi/state.js'
 
 const unitRatesForActions = {
   CMOR1: 100,
@@ -90,44 +88,6 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
   }
 
   /**
-   * Transforms land parcels data into the format required for payment calculation API
-   * @param {object} landParcels - Object containing land parcels data
-   * @param {string} sbi - Single Business Identifier
-   * @returns {Array} - Array of land actions for API
-   */
-  prepareLandActionsForPayment(landParcels, sbi) {
-    const landActions = []
-
-    // Iterate through each land parcel
-    for (const [parcelKey, parcelData] of Object.entries(landParcels)) {
-      // Skip parcels without actionsObj
-      if (!parcelData?.actionsObj || Object.keys(parcelData.actionsObj).length === 0) {
-        continue
-      }
-
-      // Extract sheetId and parcelId from the key (format: 'sheetId-parcelId')
-      const [sheetId, parcelId] = parcelKey.split('-')
-
-      // Map actions object to the array of actions with code and quantity
-      const actions = Object.entries(parcelData.actionsObj).map(([code, actionData]) => ({
-        code,
-        quantity: parseFloat(actionData.value)
-      }))
-
-      // Only add parcels that have actions
-      if (actions.length > 0) {
-        landActions.push({
-          sbi,
-          sheetId,
-          parcelId,
-          actions
-        })
-      }
-    }
-    return landActions
-  }
-
-  /**
    * This method is called when there is a POST request to the select land actions page.
    * It gets the land parcel id and redirects to the next step in the journey.
    */
@@ -162,7 +122,7 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
 
       const { actionsObj } = this.extractActionsDataFromPayload(payload)
       // Create an updated state with the new action data
-      const newState = await this.buildNewState(state, actionsObj)
+      const newState = this.buildNewState(state, actionsObj)
 
       if (payload.action === 'validate') {
         const { errors, errorSummary } = await this.validateActionsWithApiData(actionsObj, sheetId, parcelId)
@@ -253,46 +213,20 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
     return { errors, errorSummary }
   }
 
-  buildNewState = async (state, actionsObj) => {
-    // Add the current actions to the land parcels object
-    const updatedLandParcels = {
-      ...state.landParcels, // Spread existing land parcels
-      [state.selectedLandParcel]: {
-        ...state.landParcels?.[state.selectedLandParcel], // Preserve existing parcel data
-        actionsObj: {
-          ...state.landParcels?.[state.selectedLandParcel]?.actionsObj, // Merge existing actions
-          ...actionsObj // Add new actions
-        }
-      }
-    }
-
-    let draftApplicationAnnualTotalPence = state.draftApplicationAnnualTotalPence || 0
-
-    // Get all land actions across all parcels
-    const landActions = this.prepareLandActionsForPayment(updatedLandParcels, sbiStore.get('sbi'))
-
-    // Call the API with all land actions
-    const paymentDetails = await calculateGrantPayment({
-      landActions
-    })
-
-    // Update payment information for the current actions object
-    if (paymentDetails?.payment?.parcelItems) {
-      for (const item of Object.values(paymentDetails.payment.parcelItems)) {
-        if (actionsObj[item.code]) {
-          updatedLandParcels[`${item.sheetId}-${item.parcelId}`].actionsObj[item.code].annualPaymentPence =
-            item.annualPaymentPence
-        }
-      }
-
-      draftApplicationAnnualTotalPence = paymentDetails.payment.annualTotalPence
-    }
-
+  buildNewState = (state, actionsObj) => {
+    const { selectedLandParcel, landParcels = {} } = state
     return {
       ...state,
-      payment: paymentDetails?.payment,
-      draftApplicationAnnualTotalPence,
-      landParcels: updatedLandParcels
+      landParcels: {
+        ...landParcels,
+        [selectedLandParcel]: {
+          ...landParcels[selectedLandParcel],
+          actionsObj: {
+            ...landParcels[selectedLandParcel]?.actionsObj, // Merge existing actions
+            ...actionsObj // Add new actions on top
+          }
+        }
+      }
     }
   }
 

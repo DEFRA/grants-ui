@@ -84,6 +84,8 @@ function setupAuthStrategies(server, oidcConfig) {
     const bellOptions = getBellOptions(oidcConfig)
     server.auth.strategy('defra-id', 'bell', bellOptions)
   }
+
+  server.ext('onPostAuth', (request, h) => mapPayloadToProfile(request, h))
 }
 
 export default {
@@ -213,13 +215,70 @@ function createCredentialsProfile(credentials, payload) {
 
   credentials.profile = {
     ...payload,
-    crn: payload.contactId,
-    name: `${payload.firstName} ${payload.lastName}`,
-    organisationId: payload.currentRelationshipId,
     sessionId
   }
-
   return credentials
+}
+
+function extractFarmDetails(relationships) {
+  const parts = relationships.split(':')
+  const LENGTH_OF_NORMAL_RELATIONSHIP_ENTRY = 6
+  const LAST_INDEX_BEFORE_ORGANISATION_NAME = 2
+  const INDEX_OF_LAST_KNOWN_PARTS_IN_COLLECTION = 3
+
+  // Define indices for relationship parts
+  const RELATIONSHIP_ID_INDEX = 0
+  const ORGANISATION_ID_INDEX = 1
+  const ORGANISATION_LOA_INDEX = parts.length - INDEX_OF_LAST_KNOWN_PARTS_IN_COLLECTION
+  const RELATIONSHIP_INDEX = parts.length - 2
+  const RELATIONSHIP_LOA_INDEX = parts.length - 1
+
+  if (parts.length < LENGTH_OF_NORMAL_RELATIONSHIP_ENTRY) {
+    throw new Error('Invalid format: not enough fields')
+  }
+
+  if (parts.length === LENGTH_OF_NORMAL_RELATIONSHIP_ENTRY) {
+    return parts
+  }
+
+  // Organisation name spans from index 2 to (length - 4)
+  const orgName = parts.slice(LAST_INDEX_BEFORE_ORGANISATION_NAME, ORGANISATION_LOA_INDEX).join(':')
+
+  return [
+    parts[RELATIONSHIP_ID_INDEX],
+    parts[ORGANISATION_ID_INDEX],
+    orgName,
+    parts[ORGANISATION_LOA_INDEX],
+    parts[RELATIONSHIP_INDEX],
+    parts[RELATIONSHIP_LOA_INDEX]
+  ]
+}
+
+export function mapPayloadToProfile(request, h) {
+  if (request.auth.isAuthenticated) {
+    // Get the actual user data, handling both nested and flat structures
+    const userData = request.auth.credentials.profile || request.auth.credentials
+
+    const currentRelationship = (userData?.relationships || []).find(
+      (relationship) => relationship.split(':')[0] === userData.currentRelationshipId
+    )
+    // eslint-disable-next-line no-unused-vars
+    const [_relationshipId, organisationId, organisationName, _organisationLoa, _relationship, _relationshipLoa] =
+      extractFarmDetails(currentRelationship)
+
+    const existingCreds = request.auth.credentials
+
+    request.auth.credentials = {
+      ...existingCreds,
+      sbi: String(organisationId),
+      crn: String(userData.contactId),
+      name: `${userData.firstName} ${userData.lastName}`,
+      organisationId: String(organisationId),
+      organisationName
+    }
+  }
+
+  return h.continue
 }
 
 function getBellOptions(oidcConfig) {

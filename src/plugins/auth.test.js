@@ -51,7 +51,8 @@ const MOCK_USERS = {
     firstName: 'John',
     lastName: 'Doe',
     contactId: '12345',
-    currentRelationshipId: 'org-123'
+    currentRelationshipId: '123456',
+    relationships: ['org-456:sbi-5678:Farm 2:1234567890', '123456:987654:Farm 1:1234567890']
   },
   incomplete: {
     firstName: 'John'
@@ -346,10 +347,7 @@ describe('Auth Plugin', () => {
 
       expect(Jwt.token.decode).toHaveBeenCalledWith('test-token')
       expect(credentials.profile).toMatchObject({
-        ...MOCK_USERS.valid,
-        crn: MOCK_USERS.valid.contactId,
-        name: `${MOCK_USERS.valid.firstName} ${MOCK_USERS.valid.lastName}`,
-        organisationId: MOCK_USERS.valid.currentRelationshipId
+        ...MOCK_USERS.valid
       })
       // Check that sessionId is a valid UUID
       expect(credentials.profile.sessionId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/)
@@ -911,6 +909,232 @@ describe('Auth Plugin', () => {
         organisationId: MOCK_USERS.user789.organisationId,
         step: LOG_MESSAGES.tokenVerification.steps.REFRESH_SUCCESS
       })
+    })
+  })
+
+  describe('Setting up users details', () => {
+    let server
+
+    beforeEach(async () => {
+      server = Hapi.server()
+
+      // Mock the config to provide required values for testing
+      config.get.mockImplementation((key) => {
+        const testConfig = {
+          ...DEFAULT_CONFIG,
+          'session.cookie.password': 'at-least-32-characters-long-password-for-testing-purposes-only'
+        }
+        return testConfig[key]
+      })
+
+      // Register required plugins with proper configuration
+      await server.register([
+        Bell,
+        Cookie,
+        {
+          plugin: Yar,
+          options: {
+            storeBlank: false,
+            cookieOptions: {
+              password: 'at-least-32-characters-long-password-for-testing-purposes-only',
+              isSecure: false
+            }
+          }
+        }
+      ])
+
+      // Mock the cache that auth plugin expects
+      server.app.cache = {
+        get: jest.fn().mockResolvedValue(null),
+        set: jest.fn().mockResolvedValue(true)
+      }
+
+      // Register auth plugin
+      await server.register(AuthPlugin)
+    })
+
+    afterEach(() => {
+      jest.clearAllMocks()
+    })
+
+    // Helper function to create test route with dynamic relationships
+    const createTestRoute = (currentRelationshipId, relationships) => {
+      return {
+        method: 'GET',
+        path: '/test-auth',
+        options: {
+          auth: false // Disable auth for this test route
+        },
+        handler: (request, h) => {
+          // Manually simulate an authenticated request
+          request.auth = {
+            isAuthenticated: true,
+            credentials: {
+              profile: {
+                contactId: '12345',
+                firstName: 'John',
+                lastName: 'Doe',
+                currentRelationshipId,
+                relationships
+              }
+            }
+          }
+
+          // Manually call the mapPayloadToProfile function
+          const { mapPayloadToProfile } = require('~/src/plugins/auth.js')
+          mapPayloadToProfile(request, h)
+
+          return {
+            credentials: request.auth.credentials,
+            isAuthenticated: request.auth.isAuthenticated
+          }
+        }
+      }
+    }
+
+    test('should transform credentials through manual mapPayloadToProfile call', async () => {
+      const relationships = ['123456:987654:Farm 1:1234567890:relationship:relationshipLoa']
+      const currentRelationshipId = '123456'
+      server.route(createTestRoute(currentRelationshipId, relationships))
+
+      const response = await server.inject({
+        method: 'GET',
+        url: '/test-auth'
+      })
+
+      expect(response.statusCode).toBe(200)
+      const payload = JSON.parse(response.payload)
+
+      expect(payload.credentials).toEqual({
+        profile: expect.any(Object),
+        sbi: '987654',
+        crn: '12345',
+        name: 'John Doe',
+        organisationId: '987654',
+        organisationName: 'Farm 1'
+      })
+    })
+
+    test('should handle multiple relationships and find correct current one', async () => {
+      const relationships = [
+        '123456:987654:Farm 1:1234567890:relationship:relationshipLoa',
+        '789012:555666:Farm 2:9876543210:relationship:relationshipLoa'
+      ]
+      const currentRelationshipId = '123456'
+      server.route(createTestRoute(currentRelationshipId, relationships))
+
+      const response = await server.inject({
+        method: 'GET',
+        url: '/test-auth'
+      })
+
+      expect(response.statusCode).toBe(200)
+      const payload = JSON.parse(response.payload)
+
+      expect(payload.credentials).toEqual({
+        profile: expect.any(Object),
+        sbi: '987654',
+        crn: '12345',
+        name: 'John Doe',
+        organisationId: '987654',
+        organisationName: 'Farm 1'
+      })
+    })
+
+    test('should handle different organisation details', async () => {
+      const relationships = ['123456:111222:Test Organisation:5555555555:relationship:relationshipLoa']
+      const currentRelationshipId = '123456'
+      server.route(createTestRoute(currentRelationshipId, relationships))
+
+      const response = await server.inject({
+        method: 'GET',
+        url: '/test-auth'
+      })
+
+      expect(response.statusCode).toBe(200)
+      const payload = JSON.parse(response.payload)
+
+      expect(payload.credentials).toEqual({
+        profile: expect.any(Object),
+        sbi: '111222',
+        crn: '12345',
+        name: 'John Doe',
+        organisationId: '111222',
+        organisationName: 'Test Organisation'
+      })
+    })
+
+    // You can also create a parameterized test using test.each for multiple scenarios
+    test.each([
+      {
+        scenario: 'single relationship',
+        currentRelationshipId: '123456',
+        relationships: ['123456:987654:Farm 1:1234567890:relationship:relationshipLoa'],
+        expectedSbi: '987654',
+        expectedOrgName: 'Farm 1'
+      },
+      {
+        scenario: 'different organisation',
+        currentRelationshipId: '123456',
+        relationships: ['123456:555777:Another Farm:9999999999:relationship:relationshipLoa'],
+        expectedSbi: '555777',
+        expectedOrgName: 'Another Farm'
+      },
+      {
+        scenario: 'organisation with spaces in name',
+        currentRelationshipId: '123456',
+        relationships: ['123456:333444:My Test Farm Ltd:1111111111:relationship:relationshipLoa'],
+        expectedSbi: '333444',
+        expectedOrgName: 'My Test Farm Ltd'
+      },
+      {
+        scenario: 'organisation with single colon in name',
+        currentRelationshipId: '123456',
+        relationships: ['123456:333444:Farm 1: Mr Bloggs:1111111111:relationship:relationshipLoa'],
+        expectedSbi: '333444',
+        expectedOrgName: 'Farm 1: Mr Bloggs'
+      },
+      {
+        scenario: 'organisation with multiple colon in name',
+        currentRelationshipId: '123456',
+        relationships: [
+          '123456:333444:Farm 1: Mr Bloggs: Boggy Patch: In the Valley:1111111111:relationship:relationshipLoa'
+        ],
+        expectedSbi: '333444',
+        expectedOrgName: 'Farm 1: Mr Bloggs: Boggy Patch: In the Valley'
+      },
+      {
+        scenario: 'Supports instances where relationship id is UUID',
+        currentRelationshipId: 'b8027742-53e7-409a-93dd-3e80a296a986',
+        relationships: [
+          'b8027742-53e7-409a-93dd-3e80a296a986:333444:Farm 1: Mr Bloggs: Boggy Patch: In the Valley:1111111111:relationship:relationshipLoa'
+        ],
+        expectedSbi: '333444',
+        expectedOrgName: 'Farm 1: Mr Bloggs: Boggy Patch: In the Valley'
+      },
+      {
+        scenario: 'Supports instances where SBI id is UUID',
+        currentRelationshipId: 'b8027742-53e7-409a-93dd-3e80a296a986',
+        relationships: [
+          'b8027742-53e7-409a-93dd-3e80a296a986:c97d000d-0d31-4fb1-96d5-82b9977efea6:Farm 1: Mr Bloggs: Boggy Patch: In the Valley:1111111111:relationship:relationshipLoa'
+        ],
+        expectedSbi: 'c97d000d-0d31-4fb1-96d5-82b9977efea6',
+        expectedOrgName: 'Farm 1: Mr Bloggs: Boggy Patch: In the Valley'
+      }
+    ])('should handle $scenario', async ({ currentRelationshipId, relationships, expectedSbi, expectedOrgName }) => {
+      server.route(createTestRoute(currentRelationshipId, relationships))
+
+      const response = await server.inject({
+        method: 'GET',
+        url: '/test-auth'
+      })
+
+      expect(response.statusCode).toBe(200)
+      const payload = JSON.parse(response.payload)
+
+      expect(payload.credentials.sbi).toBe(expectedSbi)
+      expect(payload.credentials.organisationId).toBe(expectedSbi)
+      expect(payload.credentials.organisationName).toBe(expectedOrgName)
     })
   })
 })
