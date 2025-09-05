@@ -1,8 +1,8 @@
 import { getAgreementController } from './controller.js'
 import { config } from '~/src/config/config.js'
 import Jwt from '@hapi/jwt'
-import { log } from '~/.server/server/common/helpers/logging/log.js'
-import { LogCodes } from '~/.server/server/common/helpers/logging/log-codes.js'
+import { log } from '~/src/server/common/helpers/logging/log.js'
+import { LogCodes } from '~/src/server/common/helpers/logging/log-codes.js'
 
 jest.mock('~/src/config/config.js', () => ({
   config: {
@@ -29,11 +29,11 @@ jest.mock('@hapi/jwt', () => ({
   }
 }))
 
-jest.mock('~/.server/server/common/helpers/logging/log.js', () => ({
+jest.mock('~/src/server/common/helpers/logging/log.js', () => ({
   log: jest.fn()
 }))
 
-jest.mock('~/.server/server/common/helpers/logging/log-codes.js', () => ({
+jest.mock('~/src/server/common/helpers/logging/log-codes.js', () => ({
   LogCodes: {
     AGREEMENTS: {
       AGREEMENT_ERROR: 'AGREEMENTS_AGREEMENT_ERROR'
