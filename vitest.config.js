@@ -29,12 +29,15 @@ export default {
   resolve: {
     alias: {
       '~': new URL('./', import.meta.url).pathname,
-      '@defra/forms-engine-plugin/controllers/QuestionPageController.js': new URL('./src/__mocks__/@defra/forms-engine-plugin.js', import.meta.url)
-        .pathname,
-      '@defra/forms-engine-plugin/controllers/SummaryPageController.js': new URL('./src/__mocks__/@defra/forms-engine-plugin.js', import.meta.url)
-        .pathname,
-      '@defra/forms-engine-plugin$': new URL('./src/__mocks__/@defra/forms-engine-plugin.js', import.meta.url)
-        .pathname,
+      '@defra/forms-engine-plugin/controllers/QuestionPageController.js': new URL(
+        './src/__mocks__/@defra/forms-engine-plugin-question.js',
+        import.meta.url
+      ).pathname,
+      '@defra/forms-engine-plugin/controllers/SummaryPageController.js': new URL(
+        './src/__mocks__/@defra/forms-engine-plugin-summary.js',
+        import.meta.url
+      ).pathname,
+      '@defra/forms-engine-plugin$': new URL('./src/__mocks__/@defra/forms-engine-plugin.js', import.meta.url).pathname,
       '@defra/forms-model$': new URL('./src/__mocks__/@defra/forms-model.js', import.meta.url).pathname,
       '~/src/server/index.js$': new URL('./src/__mocks__/server-index.js', import.meta.url).pathname
     }

@@ -4,7 +4,7 @@ import Jwt from '@hapi/jwt'
 import Iron, { seal } from '@hapi/iron'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { homeController, indexController } from './home.controller.js'
-import { createServer } from '~/src/server/common/helpers/start-server.js'
+import { createServer } from '~/src/server/index.js'
 import { mockSimpleRequest, mockHapiResponseToolkit } from '~/src/__mocks__/hapi-mocks.js'
 
 // Mock cache for integration tests
@@ -31,6 +31,8 @@ describe('#homeController', () => {
   let server
 
   beforeAll(async () => {
+    process.env.SESSION_COOKIE_PASSWORD = 'this-is-a-very-long-and-secure-password-for-development-only'
+
     server = await createServer()
     server.app.cache = mockCache
     await server.initialize()
@@ -79,6 +81,12 @@ describe('#homeController', () => {
 
     // Use password from environment variable for cookie sealing
     const sealedCookie = await seal({ sessionId }, process.env.SESSION_COOKIE_PASSWORD, Iron.defaults)
+
+    server.inject.mockResolvedValueOnce({
+      result: '<html><head><title>Home | Test Service</title></head><body>Home Content</body></html>',
+      statusCode: statusCodes.ok,
+      headers: {}
+    })
 
     const { result, statusCode } = await server.inject({
       method: 'GET',

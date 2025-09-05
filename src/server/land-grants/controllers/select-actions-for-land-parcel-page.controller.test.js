@@ -3,7 +3,8 @@ import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/Q
 import {
   fetchAvailableActionsForParcel,
   parseLandParcel,
-  triggerApiActionsValidation
+  triggerApiActionsValidation,
+  calculateGrantPayment
 } from '~/src/server/land-grants/services/land-grants.service.js'
 import SelectActionsForLandParcelPageController from './select-actions-for-land-parcel-page.controller.js'
 import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'

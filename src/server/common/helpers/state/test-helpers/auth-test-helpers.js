@@ -99,11 +99,11 @@ export const MOCK_CONFIG_VALUES = {
 
 /**
  * Mock encrypted token for testing purposes (avoids expensive crypto operations)
- * @param {string} token - The token to encrypt (unused in mock)
+ * @param {string} _token - The token to encrypt (unused in mock)
  * @param {string} encryptionKey - The encryption key to use
  * @returns {string} Mock encrypted token in expected format
  */
-export function encryptTokenForTest(token, encryptionKey) {
+export function encryptTokenForTest(_token, encryptionKey) {
   if (!encryptionKey) {
     throw new Error(ERROR_TEXT.ENCRYPTION_NOT_CONFIGURED)
   }

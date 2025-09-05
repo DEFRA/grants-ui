@@ -5,7 +5,7 @@ import Hapi from '@hapi/hapi'
 import Jwt from '@hapi/jwt'
 import Yar from '@hapi/yar'
 import { config } from '~/src/config/config.js'
-import AuthPlugin, { getBellOptions, getCookieOptions } from '~/src/plugins/auth.js'
+import AuthPlugin, { getBellOptions, getCookieOptions, mapPayloadToProfile } from '~/src/plugins/auth.js'
 import { getOidcConfig } from '~/src/server/auth/get-oidc-config.js'
 import { getSafeRedirect } from '~/src/server/auth/get-safe-redirect.js'
 import { refreshTokens } from '~/src/server/auth/refresh-tokens.js'
@@ -942,8 +942,8 @@ describe('Auth Plugin', () => {
 
       // Mock the cache that auth plugin expects
       server.app.cache = {
-        get: jest.fn().mockResolvedValue(null),
-        set: jest.fn().mockResolvedValue(true)
+        get: vi.fn().mockResolvedValue(null),
+        set: vi.fn().mockResolvedValue(true)
       }
 
       // Register auth plugin
@@ -951,7 +951,7 @@ describe('Auth Plugin', () => {
     })
 
     afterEach(() => {
-      jest.clearAllMocks()
+      vi.clearAllMocks()
     })
 
     // Helper function to create test route with dynamic relationships
@@ -978,7 +978,6 @@ describe('Auth Plugin', () => {
           }
 
           // Manually call the mapPayloadToProfile function
-          const { mapPayloadToProfile } = require('~/src/plugins/auth.js')
           mapPayloadToProfile(request, h)
 
           return {

@@ -288,33 +288,26 @@ describe('LandActionsCheckPageController', () => {
   })
 
   describe('makeGetRouteHandler', () => {
-    test('should call h.view with correct viewName and viewModel', () => {
+    test('should call h.view with correct viewName and viewModel', async () => {
       // Arrange
       controller.getViewModel = vi.fn().mockReturnValue({ foo: 'bar' })
-      controller.getSelectedActionRows = vi.fn().mockReturnValue([
-        [{ text: 'sheet1-parcel1' }, { text: 'Test Action' }, { text: '10 hectares' }],
-        [{ text: 'sheet2-parcel1' }, { text: 'Test Action 1' }, { text: '10 hectares' }],
-        [{ text: 'sheet2-parcel1' }, { text: 'Test Action 2' }, { text: '15 hectares' }]
-      ])
       controller.collection = {
         getErrors: vi.fn().mockReturnValue([])
       }
       const handler = controller.makeGetRouteHandler()
 
       // Act
-      const result = handler(mockRequest, mockContext, mockH)
+      const result = await handler(mockRequest, mockContext, mockH)
 
       // Assert
-      expect(controller.getSelectedActionRows).toHaveBeenCalledWith(mockContext.state, mockContext)
-
       expect(mockH.view).toHaveBeenCalledWith(
         'land-actions-check',
         expect.objectContaining({
           foo: 'bar',
-          landParcel: expect.any(String),
           landParcels: expect.any(Object),
-          selectedActionRows: expect.any(Array),
-          pageTitle: 'You have selected 3 actions to 2 parcels',
+          parcelItems: expect.any(Array),
+          additionalYearlyPayments: expect.any(Array),
+          totalYearlyPayment: expect.any(String),
           errors: []
         })
       )
@@ -322,10 +315,7 @@ describe('LandActionsCheckPageController', () => {
       expect(result).toBe('rendered view')
     })
 
-    test('should pluralize correctly for single parcel and action', () => {
-      controller.getSelectedActionRows = vi
-        .fn()
-        .mockReturnValue([[{ text: 'sheet1-parcel1' }, { text: 'Test Action' }, { text: '10 hectares' }]])
+    test('should pluralize correctly for single parcel and action', async () => {
       const singleParcelContext = {
         state: {
           landParcels: {
@@ -343,21 +333,20 @@ describe('LandActionsCheckPageController', () => {
       }
 
       const handler = controller.makeGetRouteHandler()
-      handler(mockRequest, singleParcelContext, mockH)
+      await handler(mockRequest, singleParcelContext, mockH)
 
       expect(mockH.view).toHaveBeenCalledWith(
         'land-actions-check',
         expect.objectContaining({
-          pageTitle: 'You have selected 1 action to 1 parcel'
+          landParcels: expect.any(Object),
+          parcelItems: expect.any(Array),
+          additionalYearlyPayments: expect.any(Array),
+          totalYearlyPayment: expect.any(String)
         })
       )
     })
 
-    test('should pluralize correctly for multiple parcels and actions', () => {
-      controller.getSelectedActionRows = vi.fn().mockReturnValue([
-        [{ text: 'sheet1-parcel1' }, { text: 'Test Action' }, { text: '10 hectares' }],
-        [{ text: 'sheet2-parcel1' }, { text: 'Test Action 1' }, { text: '10 hectares' }]
-      ])
+    test('should pluralize correctly for multiple parcels and actions', async () => {
       const multiParcelContext = {
         state: {
           landParcels: {
@@ -384,21 +373,23 @@ describe('LandActionsCheckPageController', () => {
       }
 
       const handler = controller.makeGetRouteHandler()
-      handler(mockRequest, multiParcelContext, mockH)
+      await handler(mockRequest, multiParcelContext, mockH)
 
       expect(mockH.view).toHaveBeenCalledWith(
         'land-actions-check',
         expect.objectContaining({
-          pageTitle: 'You have selected 2 actions to 2 parcels'
+          landParcels: expect.any(Object),
+          parcelItems: expect.any(Array),
+          additionalYearlyPayments: expect.any(Array),
+          totalYearlyPayment: expect.any(String)
         })
       )
     })
 
-    test('should pass errors from collection.getErrors', () => {
+    test('should pass errors from collection.getErrors', async () => {
       controller.collection.getErrors = vi.fn().mockReturnValue(['error1'])
-      controller.getSelectedActionRows = vi.fn().mockReturnValue([])
       const handler = controller.makeGetRouteHandler()
-      handler(mockRequest, mockContext, mockH)
+      await handler(mockRequest, mockContext, mockH)
       expect(mockH.view).toHaveBeenCalledWith(
         'land-actions-check',
         expect.objectContaining({

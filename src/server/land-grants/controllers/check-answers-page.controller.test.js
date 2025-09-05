@@ -1,6 +1,5 @@
 import { vi } from 'vitest'
 import { mockSbiState, mockHapiRequest, mockHapiResponseToolkit, mockLandParcelData } from '~/src/__mocks__'
-import { sbiStore } from '../../sbi/state.js'
 import CheckAnswersPageController from './check-answers-page.controller.js'
 import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
 
@@ -26,7 +25,13 @@ describe('CheckAnswersPageController', () => {
     mockRequest = mockHapiRequest({
       params: {},
       query: {},
-      payload: {}
+      payload: {},
+      auth: {
+        isAuthenticated: true,
+        credentials: {
+          sbi: '123456789'
+        }
+      }
     })
 
     mockContext = {

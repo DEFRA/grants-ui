@@ -85,6 +85,7 @@ vi.mock('@defra/forms-engine-plugin', () => ({
 vi.mock('@defra/forms-model')
 
 vi.mock('@hapi/h2o2', () => ({
+  default: { name: 'h2o2', register: vi.fn() },
   plugin: { name: 'h2o2', register: vi.fn() }
 }))
 

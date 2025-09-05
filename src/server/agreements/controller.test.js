@@ -65,7 +65,13 @@ describe('Agreements Controller', () => {
     mockRequest = mockHapiRequest({
       headers: { 'x-request-id': 'test-request-id' },
       params: { path: 'test-path' },
-      method: 'GET'
+      method: 'GET',
+      auth: {
+        isAuthenticated: true,
+        credentials: {
+          sbi: '123456789'
+        }
+      }
     })
 
     // Default config setup
