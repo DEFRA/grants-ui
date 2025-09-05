@@ -1,16 +1,16 @@
-{% if params is defined and params.userName != null and params.userName | length > 0 and params.businessName != null and params.businessName | length > 0 %}
+{% if params is defined and params.name != null and params.name | length > 0 and params.organisationName != null and params.organisationName | length > 0 %}
   <div class="govuk-width-container">
     <div class="defra-account-bar">
       <div class="govuk-grid-row govuk-!-padding-top-3">
         <div class="govuk-grid-column-two-thirds-from-desktop defra-account-bar__headings govuk-!-margin-bottom-2">
             <span class="govuk-visually-hidden">Acting on behalf of </span>
-            {{ params.businessName }}
-            <div class="govuk-!-font-size-16 govuk-!-font-weight-regular govuk-!-margin-top-1">Single business identifier (SBI): {{ params.sbi }} </div>
+            {{ params.organisationName }}
+            <div class="govuk-!-font-size-16 govuk-!-font-weight-regular govuk-!-margin-top-1">Single business identifier (SBI): {{ params.organisationId }} </div>
         </div>
 
         <div class="govuk-grid-column-one-third-from-desktop govuk-!-margin-bottom-2 defra-account-bar__headings defra-account-bar__headings--right-aligned">
           <span class="govuk-visually-hidden">Signed in as </span>
-          {{ params.userName }}
+          {{ params.name }}
         </div>
       </div>
     </div>
