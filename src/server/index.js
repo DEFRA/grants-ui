@@ -207,7 +207,7 @@ const mockSessionData = async (request, log, LogCodes) => {
       organisationId: `${sbiStore.get('sbi')}`,
       currentRelationshipId: `${sbiStore.get('sbi')}1234`,
       crn: String(config.get('landGrants.customerReferenceNumber')),
-      relationships: [`${sbiStore.get('sbi')}1234:${sbiStore.get('sbi')}:Farm ${sbiStore.get('sbi')}`]
+      relationships: [`${sbiStore.get('sbi')}1234:${sbiStore.get('sbi')}:Farm ${sbiStore.get('sbi')}:1:External:0`]
     }
 
     await request.server.app.cache.set(sessionId, sessionData)

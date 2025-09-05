@@ -234,7 +234,9 @@ function extractFarmDetails(relationships) {
   const RELATIONSHIP_LOA_INDEX = parts.length - 1
 
   if (parts.length < LENGTH_OF_NORMAL_RELATIONSHIP_ENTRY) {
-    throw new Error('Invalid format: not enough fields')
+    throw new Error(
+      'extractFarmDetails: Attempting to extract farm details from relationship: Invalid format: not enough fields'
+    )
   }
 
   if (parts.length === LENGTH_OF_NORMAL_RELATIONSHIP_ENTRY) {

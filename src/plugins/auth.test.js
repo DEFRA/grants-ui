@@ -1041,6 +1041,19 @@ describe('Auth Plugin', () => {
       })
     })
 
+    test('should through an error is the relationship is not in the correct format of at least 6 elements', async () => {
+      const relationships = ['123456:987654:Farm 1:1234567890']
+      const currentRelationshipId = '123456'
+      server.route(createTestRoute(currentRelationshipId, relationships))
+
+      const response = await server.inject({
+        method: 'GET',
+        url: '/test-auth'
+      })
+
+      expect(response.statusCode).toBe(500)
+    })
+
     test('should handle different organisation details', async () => {
       const relationships = ['123456:111222:Test Organisation:5555555555:relationship:relationshipLoa']
       const currentRelationshipId = '123456'
