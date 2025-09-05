@@ -1,5 +1,4 @@
 import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
-import { sbiStore } from '../../sbi/state.js'
 import { formatCurrency } from '~/src/config/nunjucks/filters/format-currency.js'
 
 const SELECT_LAND_PARCEL_ACTIONS = {
@@ -101,27 +100,18 @@ export default class CheckAnswersPageController extends SummaryPageController {
   }
 
   /**
-   * Gets the business data needed for the summary
-   * @returns {Promise<object>} Business data
-   */
-  getBusinessData() {
-    const sbi = sbiStore.get('sbi') // TODO: Get sbi from defraID
-    return { sbi }
-  }
-
-  /**
    * Gets the rows for the summary list view.
+   * @param {string} sbi - The single business identifier (SBI)
    * @param {PageSummary} summaryList - The summary list definition
    * @param {FormContext} context - The form context containing state
    * @returns {Promise<Array>} - The rows for the summary list
    */
-  getViewRows(summaryList, context) {
+  getViewRows(sbi, summaryList, context) {
     this.validateContext(context)
 
     const { draftApplicationAnnualTotalPence, landParcels } = context.state
     const baseRows = summaryList.rows || []
 
-    const sbi = sbiStore.get('sbi') // TODO: Get sbi from defraID
     const totalActions = this.calculateTotalActions(landParcels)
     const businessRow = createSbiRow(sbi)
     const paymentRow = createPaymentRow(draftApplicationAnnualTotalPence)
@@ -139,6 +129,7 @@ export default class CheckAnswersPageController extends SummaryPageController {
    * @returns {Promise<object>} - The summary view model
    */
   getSummaryViewModel(request, context) {
+    const { sbi } = request.auth.credentials
     const viewModel = super.getSummaryViewModel(request, context)
     const { checkAnswers = [] } = viewModel
 
@@ -147,7 +138,7 @@ export default class CheckAnswersPageController extends SummaryPageController {
     }
 
     const summaryList = checkAnswers[0].summaryList
-    const rows = this.getViewRows(summaryList, context)
+    const rows = this.getViewRows(sbi, summaryList, context)
 
     return {
       ...viewModel,

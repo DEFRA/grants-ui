@@ -45,7 +45,18 @@ describe('LandParcelPageController', () => {
 
   const setupRequest = () => ({
     query: {},
-    logger: { error: jest.fn() }
+    logger: { error: jest.fn() },
+    auth: {
+      isAuthenticated: true,
+      credentials: {
+        sbi: '123456789',
+        name: 'John Doe',
+        organisationId: 'org123',
+        organisationName: ' Farm 1',
+        role: 'admin',
+        sessionId: 'valid-session-id'
+      }
+    }
   })
 
   const setupContext = (state = {}) => ({ state })
@@ -85,7 +96,7 @@ describe('LandParcelPageController', () => {
     it('gets parcels info and renders view', async () => {
       const result = await controller.makeGetRouteHandler()(mockRequest, mockContext, mockH)
 
-      expect(fetchParcels).toHaveBeenCalledWith(106284736)
+      expect(fetchParcels).toHaveBeenCalledWith('123456789')
       expect(mockH.view).toHaveBeenCalledWith(
         'select-land-parcel',
         expect.objectContaining({

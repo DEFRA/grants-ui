@@ -57,44 +57,6 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
   }
 
   /**
-   * Transforms land parcels data into the format required for payment calculation API
-   * @param {object} landParcels - Object containing land parcels data
-   * @param {string} sbi - Single Business Identifier
-   * @returns {Array} - Array of land actions for API
-   */
-  prepareLandActionsForPayment(landParcels, sbi) {
-    const landActions = []
-
-    // Iterate through each land parcel
-    for (const [parcelKey, parcelData] of Object.entries(landParcels)) {
-      // Skip parcels without actionsObj
-      if (!parcelData?.actionsObj || Object.keys(parcelData.actionsObj).length === 0) {
-        continue
-      }
-
-      // Extract sheetId and parcelId from the key (format: 'sheetId-parcelId')
-      const [sheetId, parcelId] = parcelKey.split('-')
-
-      // Map actions object to the array of actions with code and quantity
-      const actions = Object.entries(parcelData.actionsObj).map(([code, actionData]) => ({
-        code,
-        quantity: parseFloat(actionData.value)
-      }))
-
-      // Only add parcels that have actions
-      if (actions.length > 0) {
-        landActions.push({
-          sbi,
-          sheetId,
-          parcelId,
-          actions
-        })
-      }
-    }
-    return landActions
-  }
-
-  /**
    * This method is called when there is a POST request to the select land actions page.
    * It gets the land parcel id and redirects to the next step in the journey.
    */

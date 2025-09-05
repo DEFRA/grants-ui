@@ -1,16 +1,8 @@
 import { config } from '~/src/config/config.js'
-import { sbiStore } from '~/src/server/sbi/state.js'
 import { fetchBusinessAndCustomerInformation } from '../../common/services/consolidated-view/consolidated-view.service.js'
 import ConfirmFarmDetailsController from './confirm-farm-details.controller.js'
 
 jest.mock('~/src/config/config.js')
-
-jest.mock('~/src/server/sbi/state.js', () => ({
-  sbiStore: {
-    get: jest.fn(),
-    set: jest.fn()
-  }
-}))
 
 jest.mock('../../common/services/consolidated-view/consolidated-view.service.js')
 jest.mock('~/src/server/common/helpers/logging/logger.js', () => ({
@@ -52,10 +44,18 @@ describe('ConfirmFarmDetailsController', () => {
     controller.setState = jest.fn()
     mockRequest = {
       auth: {
+        isAuthenticated: true,
         credentials: {
           currentRelationshipId: 'SBI123456',
           contactId: '1100014934',
-          relationships: ['1101629797:SBI123456']
+          relationships: ['1101629797:SBI123456'],
+          sbi: 'SBI123456',
+          crn: '1100014934',
+          name: 'John Doe',
+          organisationId: 'SBI123456',
+          organisationName: ' Farm 1',
+          role: 'admin',
+          sessionId: 'valid-session-id'
         }
       }
     }
@@ -63,7 +63,6 @@ describe('ConfirmFarmDetailsController', () => {
     mockH = {
       view: jest.fn().mockReturnValue('mocked-view')
     }
-    sbiStore.get = jest.fn().mockReturnValue('SBI123456')
     fetchBusinessAndCustomerInformation.mockResolvedValue(mockData)
     config.get.mockReturnValue(true)
   })
@@ -74,7 +73,6 @@ describe('ConfirmFarmDetailsController', () => {
 
   describe('POST route handler', () => {
     test('should not update state and proceed if no sbi', async () => {
-      sbiStore.get = jest.fn().mockReturnValue(null)
       const handler = controller.makePostRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
 
@@ -83,7 +81,6 @@ describe('ConfirmFarmDetailsController', () => {
 
       expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-path')
       expect(result).toBe('redirected')
-      expect(sbiStore.set).toHaveBeenCalledWith('SBI123456')
     })
 
     test('should update state with sbi and applicant details and proceed', async () => {
@@ -103,7 +100,6 @@ describe('ConfirmFarmDetailsController', () => {
 
       expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-path')
       expect(result).toBe('redirected')
-      expect(sbiStore.set).toHaveBeenCalledWith('SBI123456')
     })
   })
 
@@ -124,7 +120,6 @@ describe('ConfirmFarmDetailsController', () => {
         })
       })
       expect(result).toBe('mocked-view')
-      expect(sbiStore.set).toHaveBeenCalledWith('SBI123456')
     })
 
     it('should handle errors and render error view', async () => {
@@ -359,7 +354,7 @@ describe('ConfirmFarmDetailsController', () => {
       const error = new Error('Test error')
       const baseViewModel = { baseProperty: 'value' }
 
-      const result = controller.handleError(error, baseViewModel, mockH)
+      const result = controller.handleError('sbi-123', error, baseViewModel, mockH)
 
       expect(mockH.view).toHaveBeenCalledWith('confirm-farm-details', {
         baseProperty: 'value',
@@ -382,38 +377,6 @@ describe('ConfirmFarmDetailsController', () => {
       expect(ConfirmFarmDetailsController.ERROR_MESSAGE).toBe(
         'Unable to find farm information, please try again later.'
       )
-    })
-  })
-
-  describe('selectSbiAndCrn', () => {
-    it('should select the current applicants sbi and crn when defraId is disabled', async () => {
-      config.get.mockImplementation((key) => {
-        if (key === 'defraId.enabled') {
-          return false
-        }
-        if (key === 'landGrants.customerReferenceNumber') {
-          return '1100014934'
-        }
-        return 'SBI123456'
-      })
-      fetchBusinessAndCustomerInformation.mockResolvedValue(mockData)
-      const result = await controller.selectSbiAndCrn(mockRequest)
-      expect(result).toEqual({ crn: '1100014934', sbi: 'SBI123456' })
-    })
-
-    it('should select the current applicants sbi and crn when defraId is enabled', async () => {
-      config.get.mockReturnValue(true)
-      fetchBusinessAndCustomerInformation.mockResolvedValue(mockData)
-      const result = await controller.selectSbiAndCrn(mockRequest)
-      expect(result).toEqual({ crn: '1100014934', sbi: 'SBI123456' })
-    })
-
-    it('should return null sbi when no relationships in the request', async () => {
-      config.get.mockReturnValue(true)
-      mockRequest.auth.credentials.relationships = null
-      fetchBusinessAndCustomerInformation.mockResolvedValue(mockData)
-      const result = await controller.selectSbiAndCrn(mockRequest)
-      expect(result).toEqual({ crn: '1100014934', sbi: null })
     })
   })
 })
