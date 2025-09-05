@@ -1,5 +1,7 @@
-jest.mock('@defra/forms-engine-plugin/shared.js', () => ({
-  initAll: jest.fn()
+import { vi } from 'vitest'
+
+vi.mock('@defra/forms-engine-plugin/shared.js', () => ({
+  initAll: vi.fn()
 }))
 
 describe('#application', () => {

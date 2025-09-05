@@ -4,18 +4,15 @@ import { submitGrantApplication } from '~/src/server/common/services/grant-appli
 import { transformStateObjectToGasApplication } from '~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
 import DeclarationPageController from './declaration.controller.js'
 import { transformAnswerKeysToText } from './state-to-gas-answers-mapper.js'
+import { vi } from 'vitest'
+import { mockHapiRequest, mockFormsCacheService } from '~/src/__mocks__'
 
-const mockCacheService = {
-  getConfirmationState: jest.fn().mockResolvedValue({ confirmed: true }),
-  setConfirmationState: jest.fn(),
-  clearState: jest.fn()
-}
-
-jest.mock('~/src/server/common/helpers/form-slug-helper.js')
-jest.mock('~/src/server/common/helpers/forms-cache/forms-cache.js', () => ({
+const mockCacheService = mockFormsCacheService().getFormsCacheService()
+vi.mock('~/src/server/common/helpers/form-slug-helper.js')
+vi.mock('~/src/server/common/helpers/forms-cache/forms-cache.js', () => ({
   getFormsCacheService: () => mockCacheService
 }))
-jest.mock('@defra/forms-engine-plugin/controllers/SummaryPageController.js', () => {
+vi.mock('@defra/forms-engine-plugin/controllers/SummaryPageController.js', () => {
   return {
     SummaryPageController: class {
       constructor(model, pageDef) {
@@ -25,9 +22,9 @@ jest.mock('@defra/forms-engine-plugin/controllers/SummaryPageController.js', () 
     }
   }
 })
-jest.mock('~/src/server/common/services/grant-application/grant-application.service.js')
-jest.mock('~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js')
-jest.mock('./state-to-gas-answers-mapper.js')
+vi.mock('~/src/server/common/services/grant-application/grant-application.service.js')
+vi.mock('~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js')
+vi.mock('./state-to-gas-answers-mapper.js')
 
 describe('DeclarationPageController', () => {
   let controller
@@ -53,28 +50,23 @@ describe('DeclarationPageController', () => {
     mockPageDef = {}
 
     // Mock the parent's GET handler
-    parentGetHandler = jest.fn().mockImplementation(() => {
+    parentGetHandler = vi.fn().mockImplementation(() => {
       return Promise.resolve('parent handler response')
     })
-    SummaryPageController.prototype.makeGetRouteHandler = jest.fn().mockReturnValue(parentGetHandler)
+    SummaryPageController.prototype.makeGetRouteHandler = vi.fn().mockReturnValue(parentGetHandler)
 
     controller = new DeclarationPageController(mockModel, mockPageDef)
 
-    mockRequest = {
+    mockRequest = mockHapiRequest({
       payload: {
         declaration: true
-      },
-      logger: {
-        error: jest.fn(),
-        debug: jest.fn(),
-        info: jest.fn()
       },
       params: {
         slug: 'adding-value'
       },
       path: '/adding-value/declaration',
       server: {}
-    }
+    })
 
     mockContext = {
       relevantState: {
@@ -85,8 +77,8 @@ describe('DeclarationPageController', () => {
     }
 
     mockH = {
-      redirect: jest.fn().mockReturnValue('redirected'),
-      view: jest.fn().mockReturnValue('rendered view')
+      redirect: vi.fn().mockReturnValue('redirected'),
+      view: vi.fn().mockReturnValue('rendered view')
     }
 
     transformAnswerKeysToText.mockReturnValue({ transformedState: true })
@@ -103,7 +95,7 @@ describe('DeclarationPageController', () => {
   })
 
   afterEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   test('should have the correct viewName', () => {

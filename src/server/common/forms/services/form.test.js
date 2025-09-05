@@ -1,8 +1,10 @@
+import { vi } from 'vitest'
 import { config } from '~/src/config/config.js'
-import { addAllForms, configureFormDefinition, formsService } from './form.js'
+import { configureFormDefinition, formsService, addAllForms } from './form.js'
+import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
 
 const mockUrl = { pathname: '/mock/path' }
-global.URL = jest.fn(() => mockUrl)
+global.URL = vi.fn(() => mockUrl)
 global.import = { meta: { url: 'file:///mock/path' } }
 
 const defaultConfigMock = {
@@ -17,23 +19,31 @@ const defaultConfigMock = {
   serviceVersion: '1.0.0'
 }
 
-jest.mock('~/src/config/config.js', () => ({
-  config: {
-    get: jest.fn((key) => defaultConfigMock[key])
+vi.mock('~/src/config/config.js', async () => {
+  const { mockConfig } = await import('~/src/__mocks__')
+  const configData = {
+    cdpEnvironment: 'local',
+    log: {
+      enabled: true,
+      level: 'info',
+      format: 'pino-pretty',
+      redact: []
+    },
+    serviceName: 'test-service',
+    serviceVersion: '1.0.0'
   }
-}))
+  return mockConfig(configData)
+})
 
-const mockWarn = jest.fn()
-jest.mock('~/src/server/common/helpers/logging/logger.js', () => ({
-  createLogger: jest.fn(() => ({
-    warn: mockWarn,
-    info: jest.fn(),
-    error: jest.fn(),
-    debug: jest.fn()
-  }))
-}))
+vi.mock('~/src/server/common/helpers/logging/logger.js', async () => {
+  const { mockLoggerFactoryWithCustomMethods } = await import('~/src/__mocks__')
+  const { vi: vitest } = await import('vitest')
+  return mockLoggerFactoryWithCustomMethods({
+    warn: vitest.fn()
+  })
+})
 
-jest.mock('../config.js', () => ({
+vi.mock('../config.js', () => ({
   metadata: {
     organisation: 'Test Org',
     teamName: 'Test Team',
@@ -42,9 +52,13 @@ jest.mock('../config.js', () => ({
 }))
 
 describe('form', () => {
+  let mockWarn
+
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
     config.get.mockImplementation((key) => defaultConfigMock[key])
+    // Get the warn function from the mocked logger
+    mockWarn = vi.mocked(createLogger)().warn
   })
 
   describe('formsService', () => {
@@ -187,7 +201,7 @@ describe('form', () => {
   describe('addAllForms', () => {
     test('handles duplicate forms and logs warning', async () => {
       const mockLoader = {
-        addForm: jest.fn().mockResolvedValue(undefined)
+        addForm: vi.fn().mockResolvedValue(undefined)
       }
 
       const testForms = [
@@ -254,7 +268,7 @@ describe('form', () => {
 
     test('handles empty forms array', async () => {
       const mockLoader = {
-        addForm: jest.fn()
+        addForm: vi.fn()
       }
 
       const result = await addAllForms(mockLoader, [])
@@ -266,7 +280,7 @@ describe('form', () => {
 
     test('handles all unique forms', async () => {
       const mockLoader = {
-        addForm: jest.fn().mockResolvedValue(undefined)
+        addForm: vi.fn().mockResolvedValue(undefined)
       }
 
       const testForms = [

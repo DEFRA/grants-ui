@@ -1,3 +1,4 @@
+import { vi } from 'vitest'
 import { createTasklistRoute } from './tasklist.controller.js'
 import { TasklistGenerator } from './services/tasklist-generator.js'
 import { loadTasklistConfig, validateTasklistConfig } from './services/config-loader.js'
@@ -11,10 +12,10 @@ import { existsSync } from 'fs'
 import { join } from 'path'
 import { formsAuthCallback } from '~/src/server/auth/forms-engine-plugin-auth-helpers.js'
 
-jest.mock('./services/tasklist-generator.js')
-jest.mock('./services/config-loader.js')
-jest.mock('~/src/server/auth/forms-engine-plugin-auth-helpers.js', () => ({
-  formsAuthCallback: jest.fn()
+vi.mock('./services/tasklist-generator.js')
+vi.mock('./services/config-loader.js')
+vi.mock('~/src/server/auth/forms-engine-plugin-auth-helpers.js', () => ({
+  formsAuthCallback: vi.fn()
 }))
 
 describe('generic-tasklist-controller', () => {
@@ -26,7 +27,7 @@ describe('generic-tasklist-controller', () => {
   let mockGenerateTasklist
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
 
     // default auth helper does nothing unless overridden in specific tests
     formsAuthCallback.mockImplementation(() => null)
@@ -38,7 +39,7 @@ describe('generic-tasklist-controller', () => {
       sections: []
     }
 
-    mockGenerateTasklist = jest.fn().mockReturnValue(mockTasklistModel)
+    mockGenerateTasklist = vi.fn().mockReturnValue(mockTasklistModel)
 
     mockServer = createMockHapiServer()
     mockRequest = createMockHapiRequest()
@@ -90,7 +91,7 @@ describe('generic-tasklist-controller', () => {
         const routeCall = mockServer.route.mock.calls[0][0]
         const redirectHandler = routeCall.handler
 
-        const mockRedirect = jest.fn().mockReturnValue({ code: jest.fn() })
+        const mockRedirect = vi.fn().mockReturnValue({ code: vi.fn() })
         const mockH = { redirect: mockRedirect }
 
         redirectHandler(mockRequest, mockH)
@@ -261,7 +262,7 @@ describe('generic-tasklist-controller', () => {
         mockServer.app.cacheTemp.get.mockResolvedValueOnce(complexData)
         mockRequest.yar.get.mockReturnValueOnce(['sub1'])
 
-        const complexMockGenerateTasklist = jest.fn().mockReturnValue(complexTasklistModel)
+        const complexMockGenerateTasklist = vi.fn().mockReturnValue(complexTasklistModel)
         const createComplexTasklistGenerator = () => ({
           generateTasklist: complexMockGenerateTasklist
         })

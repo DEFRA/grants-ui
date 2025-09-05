@@ -1,5 +1,7 @@
+import { vi } from 'vitest'
 import Hapi from '@hapi/hapi'
 import SsoPlugin from '~/src/plugins/sso.js'
+import { mockHapiResponseToolkit, mockSsoRequest } from '~/src/__mocks__/hapi-mocks.js'
 
 describe('SSO Plugin', () => {
   let server
@@ -8,17 +10,15 @@ describe('SSO Plugin', () => {
   beforeEach(() => {
     server = Hapi.server()
 
-    h = {
-      continue: Symbol('continue'),
-      redirect: jest.fn().mockReturnThis(),
-      takeover: jest.fn().mockReturnValue(Symbol('takeover'))
-    }
+    h = mockHapiResponseToolkit({
+      takeover: vi.fn().mockReturnValue(Symbol('takeover'))
+    })
 
-    server.ext = jest.fn()
+    server.ext = vi.fn()
   })
 
   afterEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   test('registers the plugin correctly', () => {
@@ -33,7 +33,7 @@ describe('SSO Plugin', () => {
 
     const onRequestHandler = server.ext.mock.calls[0][1]
 
-    const request = {
+    const request = mockSsoRequest({
       query: {
         ssoOrgId: 'org-123',
         someOtherParam: 'value'
@@ -42,7 +42,7 @@ describe('SSO Plugin', () => {
         pathname: '/home',
         search: '?ssoOrgId=org-123&someOtherParam=value'
       }
-    }
+    })
 
     const result = onRequestHandler(request, h)
 
@@ -58,7 +58,7 @@ describe('SSO Plugin', () => {
 
     const onRequestHandler = server.ext.mock.calls[0][1]
 
-    const request = {
+    const request = mockSsoRequest({
       query: {
         ssoOrgId: 'org-123'
       },
@@ -66,7 +66,7 @@ describe('SSO Plugin', () => {
         pathname: '/home',
         search: '?ssoOrgId=org-123'
       }
-    }
+    })
 
     const result = onRequestHandler(request, h)
 
@@ -80,7 +80,7 @@ describe('SSO Plugin', () => {
 
     const onRequestHandler = server.ext.mock.calls[0][1]
 
-    const request = {
+    const request = mockSsoRequest({
       query: {
         someOtherParam: 'value'
       },
@@ -88,7 +88,7 @@ describe('SSO Plugin', () => {
         pathname: '/home',
         search: '?someOtherParam=value'
       }
-    }
+    })
 
     const result = onRequestHandler(request, h)
 
@@ -102,7 +102,7 @@ describe('SSO Plugin', () => {
 
     const onRequestHandler = server.ext.mock.calls[0][1]
 
-    const request = {
+    const request = mockSsoRequest({
       query: {
         ssoOrgId: 'org-123',
         redirectUrl: '/some/path?param=value'
@@ -111,7 +111,7 @@ describe('SSO Plugin', () => {
         pathname: '/home',
         search: '?ssoOrgId=org-123&redirectUrl=%2Fsome%2Fpath%3Fparam%3Dvalue'
       }
-    }
+    })
 
     const result = onRequestHandler(request, h)
 
@@ -127,7 +127,7 @@ describe('SSO Plugin', () => {
 
     const onRequestHandler = server.ext.mock.calls[0][1]
 
-    const request = {
+    const request = mockSsoRequest({
       query: {
         ssoOrgId: 'org-123',
         filters: ['active', 'pending'],
@@ -137,7 +137,7 @@ describe('SSO Plugin', () => {
         pathname: '/home',
         search: '?ssoOrgId=org-123&filters=active&filters=pending&search=test%26special'
       }
-    }
+    })
 
     onRequestHandler(request, h)
 

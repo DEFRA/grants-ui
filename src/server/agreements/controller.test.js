@@ -1,33 +1,41 @@
+import { vi } from 'vitest'
 import { getAgreementController } from './controller.js'
 import { config } from '~/src/config/config.js'
 import Jwt from '@hapi/jwt'
 import { log } from '~/src/server/common/helpers/logging/log.js'
 import { LogCodes } from '~/src/server/common/helpers/logging/log-codes.js'
+import { mockHapiRequest, mockHapiResponseToolkit } from '~/src/__mocks__/hapi-mocks.js'
 
-jest.mock('~/src/config/config.js', () => ({
-  config: {
-    get: jest.fn()
-  }
-}))
+vi.mock('~/src/config/config.js', async () => {
+  const { mockConfigSimple } = await import('~/src/__mocks__')
+  return mockConfigSimple()
+})
+vi.mock('~/src/server/common/helpers/logging/logger.js', async () => {
+  const { mockLoggerFactory } = await import('~/src/__mocks__')
+  return mockLoggerFactory()
+})
+vi.mock('~/src/server/sbi/state.js', async () => {
+  const { mockSbiStateWithValue } = await import('~/src/__mocks__')
+  return mockSbiStateWithValue('test-sbi-value')
+})
 
-jest.mock('~/src/server/common/helpers/logging/logger.js', () => ({
-  createLogger: jest.fn(() => ({
-    info: jest.fn(),
-    error: jest.fn()
-  }))
-}))
-
-jest.mock('@hapi/jwt', () => ({
+vi.mock('@hapi/jwt', () => ({
+  default: {
+    token: {
+      generate: vi.fn(() => 'mocked-jwt-token')
+    }
+  },
   token: {
-    generate: jest.fn(() => 'mocked-jwt-token')
+    generate: vi.fn(() => 'mocked-jwt-token')
   }
 }))
 
-jest.mock('~/src/server/common/helpers/logging/log.js', () => ({
-  log: jest.fn()
-}))
+vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
+  const { mockLogHelper } = await import('~/src/__mocks__')
+  return mockLogHelper()
+})
 
-jest.mock('~/src/server/common/helpers/logging/log-codes.js', () => ({
+vi.mock('~/src/server/common/helpers/logging/log-codes.js', () => ({
   LogCodes: {
     AGREEMENTS: {
       AGREEMENT_ERROR: 'AGREEMENTS_AGREEMENT_ERROR'
@@ -41,39 +49,30 @@ describe('Agreements Controller', () => {
   let mockProxy
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
 
     // Reset JWT mock to default behavior
     Jwt.token.generate.mockReturnValue('mocked-jwt-token')
 
-    mockProxy = jest.fn()
-    mockH = {
+    mockProxy = vi.fn()
+    mockH = mockHapiResponseToolkit({
       proxy: mockProxy,
-      response: jest.fn(() => ({
-        code: jest.fn(() => ({ code: jest.fn() }))
+      response: vi.fn(() => ({
+        code: vi.fn(() => ({ code: vi.fn() }))
       }))
-    }
+    })
 
-    mockRequest = {
+    mockRequest = mockHapiRequest({
       headers: { 'x-request-id': 'test-request-id' },
       params: { path: 'test-path' },
       method: 'GET',
-      logger: {
-        info: jest.fn(),
-        error: jest.fn()
-      },
       auth: {
         isAuthenticated: true,
         credentials: {
-          sbi: '123456789',
-          name: 'John Doe',
-          organisationId: 'org123',
-          organisationName: ' Farm 1',
-          role: 'admin',
-          sessionId: 'valid-session-id'
+          sbi: '123456789'
         }
       }
-    }
+    })
 
     // Default config setup
     config.get.mockImplementation((key) => {

@@ -1,10 +1,11 @@
 import { buildNavigation } from '~/src/config/nunjucks/context/build-navigation.js'
+import { mockSimpleRequest } from '~/src/__mocks__/hapi-mocks.js'
 
 /**
  * @param {Partial<Request>} [options]
  */
 function mockRequest(options) {
-  return { ...options }
+  return mockSimpleRequest({ ...options })
 }
 
 describe('#buildNavigation', () => {

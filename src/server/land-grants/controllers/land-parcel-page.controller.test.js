@@ -1,11 +1,11 @@
+import { vi } from 'vitest'
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { fetchParcels } from '~/src/server/land-grants/services/land-grants.service.js'
 import LandParcelPageController from './land-parcel-page.controller.js'
+import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
 
-jest.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js')
-
-jest.mock('~/src/server/land-grants/services/land-grants.service.js', () => ({
-  fetchParcels: jest.fn()
+vi.mock('~/src/server/land-grants/services/land-grants.service.js', () => ({
+  fetchParcels: vi.fn()
 }))
 
 const mockParcelsResponse = [
@@ -45,7 +45,7 @@ describe('LandParcelPageController', () => {
 
   const setupRequest = () => ({
     query: {},
-    logger: { error: jest.fn() },
+    logger: mockRequestLogger(),
     auth: {
       isAuthenticated: true,
       credentials: {
@@ -62,19 +62,19 @@ describe('LandParcelPageController', () => {
   const setupContext = (state = {}) => ({ state })
 
   const setupH = () => ({
-    view: jest.fn().mockReturnValue(renderedViewMock),
-    redirect: jest.fn().mockReturnValue('redirected')
+    view: vi.fn().mockReturnValue(renderedViewMock),
+    redirect: vi.fn().mockReturnValue('redirected')
   })
 
   beforeEach(() => {
-    QuestionPageController.prototype.getViewModel = jest.fn().mockReturnValue({
+    QuestionPageController.prototype.getViewModel = vi.fn().mockReturnValue({
       pageTitle: 'Select Land Parcel'
     })
 
     controller = new LandParcelPageController()
-    controller.proceed = jest.fn().mockResolvedValue('next')
-    controller.getNextPath = jest.fn().mockReturnValue('/next-page')
-    controller.setState = jest.fn()
+    controller.proceed = vi.fn().mockResolvedValue('next')
+    controller.getNextPath = vi.fn().mockReturnValue('/next-page')
+    controller.setState = vi.fn()
 
     fetchParcels.mockResolvedValue(mockParcelsResponse)
 
@@ -86,7 +86,7 @@ describe('LandParcelPageController', () => {
     mockH = setupH()
   })
 
-  afterEach(jest.clearAllMocks)
+  afterEach(vi.clearAllMocks)
 
   it('should have the correct viewName', () => {
     expect(controller.viewName).toBe('select-land-parcel')

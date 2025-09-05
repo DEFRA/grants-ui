@@ -1,11 +1,16 @@
+import { vi } from 'vitest'
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { sbiStore } from '~/src/server/sbi/state.js'
 import { calculateGrantPayment } from '../services/land-grants.service.js'
 import LandActionsCheckPageController from './land-actions-check-page.controller.js'
+import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
 
-jest.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js')
-jest.mock('~/src/server/land-grants/services/land-grants.service.js')
-jest.mock('~/src/server/sbi/state.js')
+vi.mock('~/src/server/land-grants/services/land-grants.service.js')
+vi.mock('~/src/server/sbi/state.js', () => ({
+  sbiStore: {
+    get: vi.fn()
+  }
+}))
 
 describe('LandActionsCheckPageController', () => {
   let controller
@@ -35,20 +40,28 @@ describe('LandActionsCheckPageController', () => {
   }
 
   beforeEach(() => {
-    QuestionPageController.prototype.getViewModel = jest.fn().mockReturnValue({
+    QuestionPageController.prototype.getViewModel = vi.fn().mockReturnValue({
       pageTitle: 'Check selected land actions'
     })
 
     controller = new LandActionsCheckPageController()
-    controller.setState = jest.fn()
-    controller.proceed = jest.fn().mockReturnValue('redirected')
-    controller.getNextPath = jest.fn().mockReturnValue('/next-path')
-    controller.collection = { getErrors: jest.fn().mockReturnValue([]) }
+    controller.collection = {
+      getErrors: vi.fn().mockReturnValue([])
+    }
+    controller.setState = vi.fn().mockResolvedValue(true)
+    controller.proceed = vi.fn().mockReturnValue('redirected')
+    controller.getNextPath = vi.fn().mockReturnValue('/next-path')
+    controller.getSelectedActionRows = vi
+      .fn()
+      .mockReturnValue([[{ text: 'sheet1-parcel1' }, { text: 'Test Action' }, { text: '10 hectares' }]])
 
     calculateGrantPayment.mockResolvedValue(mockPaymentResponse)
-    sbiStore.get = jest.fn().mockReturnValue('123456789')
+    sbiStore.get = vi.fn().mockReturnValue('123456789')
 
-    mockRequest = { payload: {} }
+    mockRequest = {
+      payload: {},
+      logger: mockRequestLogger()
+    }
     mockContext = {
       state: {
         landParcels: {
@@ -59,13 +72,13 @@ describe('LandActionsCheckPageController', () => {
       }
     }
     mockH = {
-      view: jest.fn().mockReturnValue('view-result'),
-      redirect: jest.fn().mockReturnValue('redirect-result')
+      view: vi.fn().mockReturnValue('rendered view'),
+      redirect: vi.fn().mockReturnValue('redirected')
     }
   })
 
   afterEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   describe('Payment Calculation', () => {
@@ -271,6 +284,118 @@ describe('LandActionsCheckPageController', () => {
 
       expect(result[0].items[0][0].text).toBe('One-off payment per agreement per year for Management fee')
       expect(result[0].items[0][1].text).toBe('£50.00')
+    })
+  })
+
+  describe('makeGetRouteHandler', () => {
+    test('should call h.view with correct viewName and viewModel', async () => {
+      // Arrange
+      controller.getViewModel = vi.fn().mockReturnValue({ foo: 'bar' })
+      controller.collection = {
+        getErrors: vi.fn().mockReturnValue([])
+      }
+      const handler = controller.makeGetRouteHandler()
+
+      // Act
+      const result = await handler(mockRequest, mockContext, mockH)
+
+      // Assert
+      expect(mockH.view).toHaveBeenCalledWith(
+        'land-actions-check',
+        expect.objectContaining({
+          foo: 'bar',
+          landParcels: expect.any(Object),
+          parcelItems: expect.any(Array),
+          additionalYearlyPayments: expect.any(Array),
+          totalYearlyPayment: expect.any(String),
+          errors: []
+        })
+      )
+
+      expect(result).toBe('rendered view')
+    })
+
+    test('should pluralize correctly for single parcel and action', async () => {
+      const singleParcelContext = {
+        state: {
+          landParcels: {
+            'sheet1-parcel1': {
+              actionsObj: {
+                action1: {
+                  description: 'Test Action',
+                  value: 10,
+                  unit: 'hectares'
+                }
+              }
+            }
+          }
+        }
+      }
+
+      const handler = controller.makeGetRouteHandler()
+      await handler(mockRequest, singleParcelContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'land-actions-check',
+        expect.objectContaining({
+          landParcels: expect.any(Object),
+          parcelItems: expect.any(Array),
+          additionalYearlyPayments: expect.any(Array),
+          totalYearlyPayment: expect.any(String)
+        })
+      )
+    })
+
+    test('should pluralize correctly for multiple parcels and actions', async () => {
+      const multiParcelContext = {
+        state: {
+          landParcels: {
+            'sheet1-parcel1': {
+              actionsObj: {
+                action1: {
+                  description: 'Test Action',
+                  value: 10,
+                  unit: 'hectares'
+                }
+              }
+            },
+            'sheet2-parcel1': {
+              actionsObj: {
+                action1: {
+                  description: 'Test Action 1',
+                  value: 10,
+                  unit: 'hectares'
+                }
+              }
+            }
+          }
+        }
+      }
+
+      const handler = controller.makeGetRouteHandler()
+      await handler(mockRequest, multiParcelContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'land-actions-check',
+        expect.objectContaining({
+          landParcels: expect.any(Object),
+          parcelItems: expect.any(Array),
+          additionalYearlyPayments: expect.any(Array),
+          totalYearlyPayment: expect.any(String)
+        })
+      )
+    })
+
+    test('should pass errors from collection.getErrors', async () => {
+      controller.collection.getErrors = vi.fn().mockReturnValue(['error1'])
+      const handler = controller.makeGetRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+      expect(mockH.view).toHaveBeenCalledWith(
+        'land-actions-check',
+        expect.objectContaining({
+          errors: ['error1']
+        })
+      )
     })
   })
 })

@@ -1,3 +1,4 @@
+import { vi } from 'vitest'
 import { loadTasklistConfig, validateTasklistConfig } from './config-loader.js'
 import { readFile } from 'fs/promises'
 import { parse } from 'yaml'
@@ -10,14 +11,14 @@ import {
   createSubsectionConfig
 } from '../helpers/test-helpers.js'
 
-jest.mock('fs/promises')
-jest.mock('yaml')
+vi.mock('fs/promises')
+vi.mock('yaml')
 
 describe('config-loader', () => {
   const mockTasklistId = 'test-tasklist'
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   describe('loadTasklistConfig', () => {
@@ -54,9 +55,21 @@ tasklist:
       const fileError = new Error('File not found')
       readFile.mockRejectedValue(fileError)
 
-      await expect(loadTasklistConfig(mockTasklistId)).rejects.toThrow(
-        "Failed to load tasklist config for 'test-tasklist': File not found"
-      )
+      const errorPromise = loadTasklistConfig(mockTasklistId)
+
+      await expect(errorPromise).rejects.toThrow("Failed to load tasklist config for 'test-tasklist': File not found")
+
+      try {
+        await errorPromise
+      } catch (error) {
+        expect(error.name).toBe('TasklistNotFoundError')
+        expect(error.status).toBe(404)
+        expect(error.tasklistId).toBe('test-tasklist')
+        expect(error.responseBody).toBe('File not found')
+      }
+
+      expect(readFile).toHaveBeenCalledWith(expect.stringContaining('test-tasklist-tasklist.yaml'), 'utf8')
+      expect(readFile).toHaveBeenCalledTimes(1)
     })
 
     it('should throw error when YAML parsing fails', async () => {
@@ -66,9 +79,23 @@ tasklist:
         throw parseError
       })
 
-      await expect(loadTasklistConfig(mockTasklistId)).rejects.toThrow(
-        "Failed to load tasklist config for 'test-tasklist': Invalid YAML"
-      )
+      const errorPromise = loadTasklistConfig(mockTasklistId)
+
+      await expect(errorPromise).rejects.toThrow("Failed to load tasklist config for 'test-tasklist': Invalid YAML")
+
+      try {
+        await errorPromise
+      } catch (error) {
+        expect(error.name).toBe('TasklistNotFoundError')
+        expect(error.status).toBe(404)
+        expect(error.tasklistId).toBe('test-tasklist')
+        expect(error.responseBody).toBe('Invalid YAML')
+      }
+
+      expect(readFile).toHaveBeenCalledWith(expect.stringContaining('test-tasklist-tasklist.yaml'), 'utf8')
+      expect(readFile).toHaveBeenCalledTimes(1)
+      expect(parse).toHaveBeenCalledWith('invalid yaml content')
+      expect(parse).toHaveBeenCalledTimes(1)
     })
 
     it('should handle empty tasklist ID', async () => {

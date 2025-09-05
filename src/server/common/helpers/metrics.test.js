@@ -1,22 +1,28 @@
+import { vi } from 'vitest'
 import { StorageResolution, Unit } from 'aws-embedded-metrics'
 
 import { config } from '~/src/config/config.js'
 import { metricsCounter } from '~/src/server/common/helpers/metrics.js'
+const mockPutMetric = vi.fn()
+const mockFlush = vi.fn()
+const mockLoggerError = vi.fn()
 
-const mockPutMetric = jest.fn()
-const mockFlush = jest.fn()
-const mockLoggerError = jest.fn()
-
-jest.mock('aws-embedded-metrics', () => ({
-  ...jest.requireActual('aws-embedded-metrics'),
-  createMetricsLogger: () => ({
-    putMetric: mockPutMetric,
-    flush: mockFlush
+vi.mock('aws-embedded-metrics', async () => {
+  const actual = await vi.importActual('aws-embedded-metrics')
+  return {
+    ...actual,
+    createMetricsLogger: () => ({
+      putMetric: mockPutMetric,
+      flush: mockFlush
+    })
+  }
+})
+vi.mock('~/src/server/common/helpers/logging/logger.js', async () => {
+  const { mockLoggerFactoryWithCustomMethods } = await import('~/src/__mocks__')
+  return mockLoggerFactoryWithCustomMethods({
+    error: (...args) => mockLoggerError(...args)
   })
-}))
-jest.mock('~/src/server/common/helpers/logging/logger.js', () => ({
-  createLogger: () => ({ error: (...args) => mockLoggerError(...args) })
-}))
+})
 
 const mockMetricsName = 'mock-metrics-name'
 const defaultMetricsValue = 1
@@ -60,7 +66,7 @@ describe('#metrics', () => {
       expect(mockPutMetric).toHaveBeenCalledWith(mockMetricsName, mockValue, Unit.Count, StorageResolution.Standard)
     })
 
-    test('Should not call flush', async () => {
+    test('Should call flush', async () => {
       await metricsCounter(mockMetricsName, mockValue)
       expect(mockFlush).toHaveBeenCalled()
     })

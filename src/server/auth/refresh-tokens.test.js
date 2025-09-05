@@ -1,26 +1,21 @@
+import { vi } from 'vitest'
 import Wreck from '@hapi/wreck'
 import { config } from '~/src/config/config.js'
 import { getOidcConfig } from '~/src/server/auth/get-oidc-config.js'
 import { refreshTokens } from './refresh-tokens.js'
 import { log } from '~/src/server/common/helpers/logging/log.js'
 
-jest.mock('@hapi/wreck')
-jest.mock('~/src/server/auth/get-oidc-config.js')
-jest.mock('~/src/server/common/helpers/logging/log.js', () => ({
-  log: jest.fn(),
-  LogCodes: {
-    AUTH: {
-      TOKEN_VERIFICATION_SUCCESS: { level: 'info', messageFunc: jest.fn() },
-      TOKEN_VERIFICATION_FAILURE: { level: 'error', messageFunc: jest.fn() }
-    }
-  }
-}))
+vi.mock('~/src/server/auth/get-oidc-config.js')
+vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
+  const { mockLogHelper } = await import('~/src/__mocks__')
+  return mockLogHelper()
+})
 
 describe('refreshTokens', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
 
-    config.get = jest.fn((param) => {
+    config.get = vi.fn((param) => {
       const configValues = {
         'defraId.clientId': 'test-client-id',
         'defraId.clientSecret': 'test-client-secret',

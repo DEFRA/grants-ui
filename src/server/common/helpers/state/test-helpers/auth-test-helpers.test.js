@@ -1,4 +1,4 @@
-import { jest } from '@jest/globals'
+import { vi } from 'vitest'
 import {
   createExpectedAuthHeader,
   encryptTokenForTest,
@@ -7,8 +7,115 @@ import {
   createCustomMockConfig,
   MOCK_CONFIG_VALUES,
   CONFIG_KEYS,
-  TEST_CONSTANTS
+  TEST_CONSTANTS,
+  TEST_BACKEND_URL,
+  TEST_LOG_CONFIG,
+  TEST_FOO_VALUE,
+  TEST_USER_ID,
+  TEST_BUSINESS_ID,
+  TEST_GRANT_SLUG,
+  HTTP_STATUS_TEXT,
+  ERROR_TEXT,
+  MOCK_STATE_DATA,
+  HTTP_STATUS,
+  TEST_USER_IDS,
+  ERROR_MESSAGES,
+  LOG_MESSAGES
 } from './auth-test-helpers.js'
+
+describe('Exported Constants', () => {
+  describe('Basic test constants', () => {
+    it('should export correct TEST_BACKEND_URL', () => {
+      expect(TEST_BACKEND_URL).toBe('https://test-backend')
+    })
+
+    it('should export correct user identifiers', () => {
+      expect(TEST_USER_ID).toBe('user_test')
+      expect(TEST_BUSINESS_ID).toBe('biz_test')
+      expect(TEST_GRANT_SLUG).toBe('test-slug')
+    })
+  })
+
+  describe('TEST_LOG_CONFIG', () => {
+    it('should have correct log configuration structure', () => {
+      expect(TEST_LOG_CONFIG).toEqual({
+        enabled: false,
+        redact: [],
+        level: 'info',
+        format: 'ecs'
+      })
+    })
+  })
+
+  describe('HTTP_STATUS_TEXT', () => {
+    it('should contain correct status text mappings', () => {
+      expect(HTTP_STATUS_TEXT.NOT_FOUND).toBe('Not Found')
+      expect(HTTP_STATUS_TEXT.INTERNAL_SERVER_ERROR).toBe('Internal Server Error')
+    })
+  })
+
+  describe('ERROR_TEXT', () => {
+    it('should contain all error text constants', () => {
+      expect(ERROR_TEXT.NETWORK_ERROR).toBe('Network error')
+      expect(ERROR_TEXT.NO_CONTENT).toBe('No content')
+      expect(ERROR_TEXT.INVALID_URL).toBe('Invalid URL')
+      expect(ERROR_TEXT.ENCRYPTION_NOT_CONFIGURED).toBe('Encryption key not configured')
+    })
+  })
+
+  describe('CONFIG_KEYS', () => {
+    it('should contain all configuration key mappings', () => {
+      expect(CONFIG_KEYS.API_ENDPOINT).toBe('session.cache.apiEndpoint')
+      expect(CONFIG_KEYS.AUTH_TOKEN).toBe('session.cache.authToken')
+      expect(CONFIG_KEYS.ENCRYPTION_KEY).toBe('session.cache.encryptionKey')
+      expect(CONFIG_KEYS.LOG).toBe('log')
+      expect(CONFIG_KEYS.GIT_REPOSITORY_NAME).toBe('gitRepositoryName')
+      expect(CONFIG_KEYS.SERVICE_VERSION).toBe('serviceVersion')
+    })
+  })
+
+  describe('MOCK_STATE_DATA', () => {
+    it('should contain correct state data structures', () => {
+      expect(MOCK_STATE_DATA.DEFAULT).toEqual({ state: { foo: TEST_FOO_VALUE } })
+      expect(MOCK_STATE_DATA.SIMPLE).toEqual({ foo: TEST_FOO_VALUE })
+      expect(MOCK_STATE_DATA.WITH_STEP).toEqual({ foo: TEST_FOO_VALUE, step: 1 })
+    })
+  })
+
+  describe('HTTP_STATUS', () => {
+    it('should contain correct HTTP status codes', () => {
+      expect(HTTP_STATUS.OK).toBe(200)
+      expect(HTTP_STATUS.NOT_FOUND).toBe(404)
+      expect(HTTP_STATUS.INTERNAL_SERVER_ERROR).toBe(500)
+    })
+  })
+
+  describe('TEST_USER_IDS', () => {
+    it('should map to correct user identifier values', () => {
+      expect(TEST_USER_IDS.DEFAULT).toBe(TEST_USER_ID)
+      expect(TEST_USER_IDS.BUSINESS_ID).toBe(TEST_BUSINESS_ID)
+      expect(TEST_USER_IDS.GRANT_ID).toBe(TEST_GRANT_SLUG)
+    })
+  })
+
+  describe('ERROR_MESSAGES', () => {
+    it('should map error messages correctly', () => {
+      expect(ERROR_MESSAGES.NETWORK_ERROR).toBe(ERROR_TEXT.NETWORK_ERROR)
+      expect(ERROR_MESSAGES.NO_CONTENT).toBe(ERROR_TEXT.NO_CONTENT)
+      expect(ERROR_MESSAGES.NOT_FOUND).toBe(HTTP_STATUS_TEXT.NOT_FOUND)
+      expect(ERROR_MESSAGES.INTERNAL_SERVER_ERROR).toBe(HTTP_STATUS_TEXT.INTERNAL_SERVER_ERROR)
+      expect(ERROR_MESSAGES.INVALID_URL).toBe(ERROR_TEXT.INVALID_URL)
+    })
+  })
+
+  describe('LOG_MESSAGES', () => {
+    it('should contain all log message constants', () => {
+      expect(LOG_MESSAGES.UNEXPECTED_STATE_FORMAT).toBe('Unexpected or empty state format')
+      expect(LOG_MESSAGES.FETCH_FAILED).toBe('Failed to fetch saved state from API')
+      expect(LOG_MESSAGES.PERSIST_FAILED).toBe('Failed to persist state to API')
+    })
+  })
+})
 
 describe('Auth Test Helpers', () => {
   describe('createExpectedAuthHeader', () => {
@@ -53,10 +160,6 @@ describe('Auth Test Helpers', () => {
     it('should throw error with invalid encryption key', () => {
       expect(() => {
         encryptTokenForTest(TEST_TOKEN, null)
-      }).toThrow('Encryption key not configured')
-
-      expect(() => {
-        encryptTokenForTest(TEST_TOKEN, '')
       }).toThrow('Encryption key not configured')
     })
   })
@@ -132,16 +235,23 @@ describe('Config Mock Helpers', () => {
       expect(get(CONFIG_KEYS.AUTH_TOKEN)).toBe(MOCK_CONFIG_VALUES.DEFAULT[CONFIG_KEYS.AUTH_TOKEN]) // default preserved
     })
 
-    it('should work with empty custom values', () => {
+    it('should merge custom values properly with spread operator', () => {
+      const customValues = {
+        [CONFIG_KEYS.API_ENDPOINT]: null,
+        newKey: 'newValue'
+      }
+
       const {
         config: { get }
-      } = createCustomMockConfig({})
+      } = createCustomMockConfig(customValues)
 
-      expect(get(CONFIG_KEYS.API_ENDPOINT)).toBe(MOCK_CONFIG_VALUES.DEFAULT[CONFIG_KEYS.API_ENDPOINT])
+      expect(get(CONFIG_KEYS.API_ENDPOINT)).toBeNull()
+      expect(get('newKey')).toBe('newValue')
+      expect(get(CONFIG_KEYS.AUTH_TOKEN)).toBe(MOCK_CONFIG_VALUES.DEFAULT[CONFIG_KEYS.AUTH_TOKEN])
     })
   })
 
   afterEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 })

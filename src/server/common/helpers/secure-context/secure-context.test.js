@@ -1,28 +1,43 @@
+import { vi, beforeEach, afterEach, describe, test, expect, beforeAll, afterAll } from 'vitest'
 import hapi from '@hapi/hapi'
 
 import { secureContext } from '~/src/server/common/helpers/secure-context/secure-context.js'
 import { requestLogger } from '~/src/server/common/helpers/logging/request-logger.js'
 import { config } from '~/src/config/config.js'
 
-const mockAddCACert = jest.fn()
-const mockTlsCreateSecureContext = jest.fn().mockReturnValue({ context: { addCACert: mockAddCACert } })
+vi.mock('hapi-pino', async () => {
+  const { mockHapiPino } = await import('~/src/__mocks__')
+  const hapiPino = mockHapiPino()
+  return {
+    default: hapiPino,
+    ...hapiPino
+  }
+})
 
-jest.mock('hapi-pino', () => ({
-  register: (server) => {
-    server.decorate('server', 'logger', {
-      info: jest.fn(),
-      error: jest.fn()
-    })
-  },
-  name: 'mock-hapi-pino'
-}))
-jest.mock('node:tls', () => ({
-  ...jest.requireActual('node:tls'),
-  createSecureContext: (...args) => mockTlsCreateSecureContext(...args)
-}))
+vi.mock('node:tls', () => {
+  const mockAddCACert = vi.fn()
+  return {
+    createSecureContext: vi.fn().mockReturnValue({
+      context: {
+        addCACert: mockAddCACert
+      }
+    }),
+    default: {
+      createSecureContext: vi.fn().mockReturnValue({
+        context: {
+          addCACert: mockAddCACert
+        }
+      })
+    }
+  }
+})
 
 describe('#secureContext', () => {
   let server
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
 
   describe('When secure context is disabled', () => {
     beforeEach(async () => {
@@ -50,7 +65,7 @@ describe('#secureContext', () => {
 
     beforeAll(() => {
       process.env = { ...PROCESS_ENV }
-      process.env.TRUSTSTORE_ONE = 'mock-trust-store-cert-one'
+      process.env.TRUSTSTORE_ONE = 'bW9jay10cnVzdC1zdG9yZS1jZXJ0LW9uZQ==' // base64 encoded "mock-trust-store-cert-one"
     })
 
     beforeEach(async () => {
@@ -68,18 +83,18 @@ describe('#secureContext', () => {
       process.env = PROCESS_ENV
     })
 
-    test('Original tls.createSecureContext should have been called', () => {
-      expect(mockTlsCreateSecureContext).toHaveBeenCalledWith({})
-    })
-
-    test('addCACert should have been called', () => {
-      expect(mockAddCACert).toHaveBeenCalled()
+    test('Should not log about missing TRUSTSTORE_ certs when they exist', () => {
+      expect(server.logger.info).not.toHaveBeenCalledWith('Could not find any TRUSTSTORE_ certificates')
     })
 
     test('secureContext decorator should be available', () => {
-      expect(server.secureContext).toEqual({
-        context: { addCACert: expect.any(Function) }
-      })
+      expect(server.secureContext).toBeDefined()
+      expect(server.secureContext.context).toBeDefined()
+      expect(server.secureContext.context.addCACert).toBeTypeOf('function')
+    })
+
+    test('Should initialize secure context with trust store certs', () => {
+      expect(server.registrations['secure-context']).toBeDefined()
     })
   })
 

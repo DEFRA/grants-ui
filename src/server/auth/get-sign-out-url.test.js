@@ -1,16 +1,16 @@
-import { jest } from '@jest/globals'
+import { vi } from 'vitest'
 import { config } from '~/src/config/config.js'
 import { getOidcConfig } from '~/src/server/auth/get-oidc-config.js'
 import { getSignOutUrl } from '~/src/server/auth/get-sign-out-url.js'
 import { createState } from '~/src/server/auth/state.js'
 
-jest.mock('~/src/config/config.js')
-jest.mock('~/src/server/auth/get-oidc-config.js')
-jest.mock('~/src/server/auth/state.js')
+vi.mock('~/src/config/config.js')
+vi.mock('~/src/server/auth/get-oidc-config.js')
+vi.mock('~/src/server/auth/state.js')
 
 describe('getSignOutUrl', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
 
     getOidcConfig.mockResolvedValue({
       end_session_endpoint: 'https://auth.example.com/logout'

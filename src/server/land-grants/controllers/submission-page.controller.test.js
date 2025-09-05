@@ -1,20 +1,17 @@
-import { jest } from '@jest/globals'
+import { vi } from 'vitest'
 import { config } from '~/src/config/config.js'
 import { submitGrantApplication } from '~/src/server/common/services/grant-application/grant-application.service.js'
 import { transformStateObjectToGasApplication } from '../../common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
 import { stateToLandGrantsGasAnswers } from '../mappers/state-to-gas-answers-mapper.js'
 import SubmissionPageController from './submission-page.controller.js'
 
-jest.mock('~/src/server/common/services/grant-application/grant-application.service.js')
-jest.mock('~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js')
-jest.mock('../mappers/state-to-gas-answers-mapper.js')
-jest.mock('~/src/server/common/helpers/forms-cache/forms-cache.js', () => ({
-  getFormsCacheService: () => ({
-    getConfirmationState: jest.fn().mockResolvedValue({ confirmed: true }),
-    setConfirmationState: jest.fn(),
-    clearState: jest.fn()
-  })
-}))
+vi.mock('~/src/server/common/services/grant-application/grant-application.service.js')
+vi.mock('~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js')
+vi.mock('../mappers/state-to-gas-answers-mapper.js')
+vi.mock('~/src/server/common/helpers/forms-cache/forms-cache.js', async () => {
+  const { mockFormsCacheService } = await import('~/src/__mocks__')
+  return mockFormsCacheService()
+})
 
 const code = config.get('landGrants.grantCode')
 
@@ -24,7 +21,7 @@ describe('SubmissionPageController', () => {
   let mockPageDef
 
   beforeEach(() => {
-    jest.resetAllMocks()
+    vi.resetAllMocks()
 
     mockModel = {}
     mockPageDef = {}
@@ -84,8 +81,8 @@ describe('SubmissionPageController', () => {
     it('should return a function that submits the application and redirects on success', async () => {
       const mockRequest = {
         logger: {
-          info: jest.fn(),
-          error: jest.fn()
+          info: vi.fn(),
+          error: vi.fn()
         },
         auth: {
           isAuthenticated: true,
@@ -101,12 +98,12 @@ describe('SubmissionPageController', () => {
       }
       const mockContext = { state: {} }
       const mockH = {
-        redirect: jest.fn().mockReturnValue('redirected')
+        redirect: vi.fn().mockReturnValue('redirected')
       }
       const mockResult = { success: true }
 
-      jest.spyOn(controller, 'submitLandGrantApplication').mockResolvedValue(mockResult)
-      jest.spyOn(controller, 'getStatusPath').mockReturnValue('/mock-path')
+      vi.spyOn(controller, 'submitLandGrantApplication').mockResolvedValue(mockResult)
+      vi.spyOn(controller, 'getStatusPath').mockReturnValue('/mock-path')
 
       const handler = controller.makePostRouteHandler()
       await handler(mockRequest, mockContext, mockH)
@@ -119,8 +116,8 @@ describe('SubmissionPageController', () => {
       const mockError = new Error('Submission failed')
       const mockRequest = {
         logger: {
-          info: jest.fn(),
-          error: jest.fn()
+          info: vi.fn(),
+          error: vi.fn()
         },
         auth: {
           isAuthenticated: true,
@@ -136,10 +133,10 @@ describe('SubmissionPageController', () => {
       }
       const mockContext = { state: {} }
       const mockH = {
-        redirect: jest.fn()
+        redirect: vi.fn()
       }
 
-      jest.spyOn(controller, 'submitLandGrantApplication').mockRejectedValue(mockError)
+      vi.spyOn(controller, 'submitLandGrantApplication').mockRejectedValue(mockError)
 
       const handler = controller.makePostRouteHandler()
       await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow(mockError)

@@ -1,6 +1,7 @@
-import jest, { fn as jestMockFn } from 'jest-mock'
+import { vi } from 'vitest'
+import { mockHapiServer, mockHapiRequest, mockHapiResponseToolkit } from '~/src/__mocks__/hapi-mocks.js'
 
-const mockFn = typeof jest !== 'undefined' ? jest.fn : jestMockFn
+const mockFn = vi.fn
 
 const TEST_TASKLIST_ID = 'test-tasklist'
 const TEST_TASKLIST_TITLE = 'Test Tasklist'
@@ -29,33 +30,30 @@ export const createMockConditionEvaluatorData = (overrides = {}) => ({
   ...overrides
 })
 
-export const createMockHapiServer = () => ({
-  route: mockFn(),
-  app: {
-    cacheTemp: {
-      get: mockFn().mockResolvedValue({ testData: 'value' })
+export const createMockHapiServer = () =>
+  mockHapiServer({
+    route: mockFn(),
+    app: {
+      cacheTemp: {
+        get: mockFn().mockResolvedValue({ testData: 'value' })
+      }
     }
-  }
-})
+  })
 
-export const createMockHapiRequest = (overrides = {}) => ({
-  yar: {
-    id: 'test-session-id',
-    get: mockFn().mockReturnValue(['visited1', 'visited2'])
-  },
-  log: mockFn(),
-  logger: {
-    warn: mockFn(),
-    error: mockFn(),
-    info: mockFn(),
-    debug: mockFn()
-  },
-  ...overrides
-})
+export const createMockHapiRequest = (overrides = {}) =>
+  mockHapiRequest({
+    yar: {
+      id: 'test-session-id',
+      get: mockFn().mockReturnValue(['visited1', 'visited2'])
+    },
+    log: mockFn(),
+    ...overrides
+  })
 
-export const createMockHapiResponseToolkit = () => ({
-  view: mockFn().mockReturnValue('rendered-view')
-})
+export const createMockHapiResponseToolkit = () =>
+  mockHapiResponseToolkit({
+    view: mockFn().mockReturnValue('rendered-view')
+  })
 
 export const createComplexTasklistConfig = () => ({
   tasklist: {

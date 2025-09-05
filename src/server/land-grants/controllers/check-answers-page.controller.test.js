@@ -1,7 +1,11 @@
+import { vi } from 'vitest'
+import { mockSbiState, mockHapiRequest, mockHapiResponseToolkit, mockLandParcelData } from '~/src/__mocks__'
 import CheckAnswersPageController from './check-answers-page.controller.js'
+import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
 
-// jest.mock('../services/land-grants.service.js', () => ({
-//   calculateGrantPayment: jest.fn()
+vi.mock('../../sbi/state.js', () => mockSbiState())
+// vi.mock('../services/land-grants.service.js', () => ({
+//   calculateGrantPayment: vi.fn()
 // }))
 
 describe('CheckAnswersPageController', () => {
@@ -12,69 +16,38 @@ describe('CheckAnswersPageController', () => {
   let mockContext
   let mockH
 
-  // Test data factories
-  const createMockAction = (id, description = 'Test Action', value = '10', unit = 'hectares') => ({
-    [id]: {
-      description,
-      value,
-      unit
-    }
-  })
-
-  const createMockParcel = (actions) => ({
-    actionsObj: actions
-  })
-
-  const createMockLandParcels = () => ({
-    'parcel-1': createMockParcel({
-      ...createMockAction('action-1', 'Test Action 1'),
-      ...createMockAction('action-2', 'Test Action 2', '5')
-    }),
-    'parcel-2': createMockParcel({
-      ...createMockAction('action-3', 'Test Action 3', '15')
-    })
-  })
-
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
 
     mockModel = { name: 'test-model' }
     mockPageDef = { title: 'Test Page' }
 
-    mockRequest = {
+    mockRequest = mockHapiRequest({
       params: {},
       query: {},
       payload: {},
-      logger: {
-        error: jest.fn()
-      },
       auth: {
         isAuthenticated: true,
         credentials: {
-          sbi: '123456789',
-          name: 'John Doe',
-          organisationId: 'org123',
-          organisationName: ' Farm 1',
-          role: 'admin',
-          sessionId: 'valid-session-id'
+          sbi: '123456789'
         }
       }
-    }
+    })
 
     mockContext = {
       state: {
-        landParcels: createMockLandParcels(),
+        landParcels: mockLandParcelData(),
         draftApplicationAnnualTotalPence: 150000
       }
     }
 
-    mockH = {
-      view: jest.fn().mockReturnValue('mocked-view-response')
-    }
+    mockH = mockHapiResponseToolkit({
+      view: vi.fn().mockReturnValue('mocked-view-response')
+    })
 
     controller = new CheckAnswersPageController(mockModel, mockPageDef)
-    controller.getNextPath = jest.fn().mockReturnValue('/next-path')
-    controller.proceed = jest.fn().mockReturnValue('redirected')
+    controller.getNextPath = vi.fn().mockReturnValue('/next-path')
+    controller.proceed = vi.fn().mockReturnValue('redirected')
   })
 
   afterEach(() => {
@@ -107,7 +80,7 @@ describe('CheckAnswersPageController', () => {
 
   describe('calculateTotalActions', () => {
     it('should calculate total actions correctly', () => {
-      const landParcels = createMockLandParcels()
+      const landParcels = mockLandParcelData()
       const total = controller.calculateTotalActions(landParcels)
 
       expect(total).toBe(3) // 2 + 1
@@ -122,7 +95,15 @@ describe('CheckAnswersPageController', () => {
     it('should handle parcels without actionsObj', () => {
       const landParcels = {
         'parcel-1': {},
-        'parcel-2': createMockParcel(createMockAction('action-1'))
+        'parcel-2': {
+          actionsObj: {
+            'action-1': {
+              description: 'Test Action',
+              value: '10',
+              unit: 'hectares'
+            }
+          }
+        }
       }
 
       const total = controller.calculateTotalActions(landParcels)
@@ -133,7 +114,15 @@ describe('CheckAnswersPageController', () => {
     it('should handle parcels with null actionsObj', () => {
       const landParcels = {
         'parcel-1': { actionsObj: null },
-        'parcel-2': createMockParcel(createMockAction('action-1'))
+        'parcel-2': {
+          actionsObj: {
+            'action-1': {
+              description: 'Test Action',
+              value: '10',
+              unit: 'hectares'
+            }
+          }
+        }
       }
 
       const total = controller.calculateTotalActions(landParcels)
@@ -144,7 +133,15 @@ describe('CheckAnswersPageController', () => {
     it('should handle parcels with undefined actionsObj', () => {
       const landParcels = {
         'parcel-1': { actionsObj: undefined },
-        'parcel-2': createMockParcel(createMockAction('action-1'))
+        'parcel-2': {
+          actionsObj: {
+            'action-1': {
+              description: 'Test Action',
+              value: '10',
+              unit: 'hectares'
+            }
+          }
+        }
       }
 
       const total = controller.calculateTotalActions(landParcels)
@@ -155,7 +152,7 @@ describe('CheckAnswersPageController', () => {
 
   describe('createParcelActionRows', () => {
     it('should create correct parcel action rows', () => {
-      const landParcels = createMockLandParcels()
+      const landParcels = mockLandParcelData()
       const rows = controller.createParcelActionRows(landParcels)
 
       expect(rows).toHaveLength(3)
@@ -191,7 +188,15 @@ describe('CheckAnswersPageController', () => {
     it('should skip parcels with no actions', () => {
       const landParcels = {
         'parcel-1': {},
-        'parcel-2': createMockParcel(createMockAction('action-1'))
+        'parcel-2': {
+          actionsObj: {
+            'action-1': {
+              description: 'Test Action',
+              value: '10',
+              unit: 'hectares'
+            }
+          }
+        }
       }
 
       const rows = controller.createParcelActionRows(landParcels)
@@ -203,7 +208,15 @@ describe('CheckAnswersPageController', () => {
     it('should skip parcels with empty actionsObj', () => {
       const landParcels = {
         'parcel-1': { actionsObj: {} },
-        'parcel-2': createMockParcel(createMockAction('action-1'))
+        'parcel-2': {
+          actionsObj: {
+            'action-1': {
+              description: 'Test Action',
+              value: '10',
+              unit: 'hectares'
+            }
+          }
+        }
       }
 
       const rows = controller.createParcelActionRows(landParcels)
@@ -342,17 +355,15 @@ describe('CheckAnswersPageController', () => {
 
     beforeEach(() => {
       // Mock parent class method
-      superGetSummaryViewModelSpy = jest
-        .spyOn(Object.getPrototypeOf(CheckAnswersPageController.prototype), 'getSummaryViewModel')
-        .mockReturnValue({
-          checkAnswers: [
-            {
-              summaryList: {
-                rows: []
-              }
+      superGetSummaryViewModelSpy = vi.spyOn(SummaryPageController.prototype, 'getSummaryViewModel').mockReturnValue({
+        checkAnswers: [
+          {
+            summaryList: {
+              rows: []
             }
-          ]
-        })
+          }
+        ]
+      })
     })
 
     afterEach(() => {
@@ -426,7 +437,7 @@ describe('CheckAnswersPageController', () => {
 
     it('should call getSummaryViewModel and return view', async () => {
       const mockViewModel = { test: 'data' }
-      jest.spyOn(controller, 'getSummaryViewModel').mockResolvedValue(mockViewModel)
+      vi.spyOn(controller, 'getSummaryViewModel').mockResolvedValue(mockViewModel)
 
       const handler = controller.makeGetRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
@@ -438,7 +449,7 @@ describe('CheckAnswersPageController', () => {
 
     it('should log and re-throw errors', async () => {
       const error = new Error('Test error')
-      jest.spyOn(controller, 'getSummaryViewModel').mockRejectedValue(error)
+      vi.spyOn(controller, 'getSummaryViewModel').mockRejectedValue(error)
 
       const handler = controller.makeGetRouteHandler()
 

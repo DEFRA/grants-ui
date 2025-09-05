@@ -1,7 +1,9 @@
+import { vi } from 'vitest'
 import SectionEndController from './section-end.controller.js'
 import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
 import { existsSync } from 'fs'
 import { join } from 'path'
+import { mockSimpleRequest, mockContext as mockHapiContext } from '~/src/__mocks__/hapi-mocks.js'
 
 describe('SectionEndController', () => {
   let controller
@@ -36,12 +38,12 @@ describe('SectionEndController', () => {
     let parentGetSummaryViewModel
 
     beforeEach(() => {
-      mockRequest = {}
-      mockContext = {}
+      mockRequest = mockSimpleRequest()
+      mockContext = mockHapiContext()
 
       originalParentMethod = Object.getPrototypeOf(Object.getPrototypeOf(controller)).getSummaryViewModel
 
-      parentGetSummaryViewModel = jest.fn()
+      parentGetSummaryViewModel = vi.fn()
       Object.getPrototypeOf(Object.getPrototypeOf(controller)).getSummaryViewModel = parentGetSummaryViewModel
     })
 
@@ -99,14 +101,14 @@ describe('SectionEndController', () => {
         server: {
           app: {
             cacheTemp: {
-              get: jest.fn(),
-              set: jest.fn()
+              get: vi.fn(),
+              set: vi.fn()
             }
           }
         },
         yar: {
           id: 'session-123',
-          get: jest.fn()
+          get: vi.fn()
         },
         query: {},
         url: {
@@ -122,7 +124,7 @@ describe('SectionEndController', () => {
       }
 
       mockH = {
-        redirect: jest.fn()
+        redirect: vi.fn()
       }
 
       handler = controller.makePostRouteHandler()
@@ -223,7 +225,7 @@ describe('SectionEndController', () => {
       const existingData = { '/test-form': { existingField: 'value' } }
       mockRequest.server.app.cacheTemp.get.mockResolvedValue(existingData)
 
-      const objectAssignSpy = jest.spyOn(Object, 'assign')
+      const objectAssignSpy = vi.spyOn(Object, 'assign')
 
       await handler(mockRequest, mockContext, mockH)
 

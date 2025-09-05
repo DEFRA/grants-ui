@@ -1,4 +1,4 @@
-import { fn } from 'jest-mock'
+import { vi } from 'vitest'
 
 export function mockRequestWithIdentity(overrides = {}) {
   return {
@@ -11,9 +11,9 @@ export function mockRequestWithIdentity(overrides = {}) {
       }
     },
     logger: {
-      error: fn(),
-      warn: fn(),
-      info: fn()
+      error: vi.fn(),
+      warn: vi.fn(),
+      info: vi.fn()
     },
     ...overrides
   }

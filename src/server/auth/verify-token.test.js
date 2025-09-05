@@ -1,24 +1,18 @@
+import { vi } from 'vitest'
 import Jwt from '@hapi/jwt'
 import Wreck from '@hapi/wreck'
 import jose from 'node-jose'
 import { getOidcConfig } from './get-oidc-config.js'
 import { verifyToken } from './verify-token.js'
 import { log } from '~/src/server/common/helpers/logging/log.js'
-
 // Mock dependencies
-jest.mock('@hapi/wreck')
-jest.mock('@hapi/jwt')
-jest.mock('node-jose')
-jest.mock('./get-oidc-config.js')
-jest.mock('~/src/server/common/helpers/logging/log.js', () => ({
-  log: jest.fn(),
-  LogCodes: {
-    AUTH: {
-      TOKEN_VERIFICATION_SUCCESS: { level: 'info', messageFunc: jest.fn() },
-      TOKEN_VERIFICATION_FAILURE: { level: 'error', messageFunc: jest.fn() }
-    }
-  }
-}))
+vi.mock('@hapi/jwt')
+vi.mock('node-jose')
+vi.mock('./get-oidc-config.js')
+vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
+  const { mockLogHelper } = await import('~/src/__mocks__')
+  return mockLogHelper()
+})
 
 describe('verifyToken', () => {
   // Sample test data
@@ -30,12 +24,12 @@ describe('verifyToken', () => {
     payload: { sub: '1234567890' }
   }
   const mockJoseKey = {
-    toPEM: jest.fn().mockReturnValue(mockPem)
+    toPEM: vi.fn().mockReturnValue(mockPem)
   }
 
   beforeEach(() => {
     // Clear all mocks before each test
-    jest.clearAllMocks()
+    vi.clearAllMocks()
 
     // Setup mock return values
     getOidcConfig.mockResolvedValue({ jwks_uri: 'https://example.com/jwks' })
@@ -48,7 +42,7 @@ describe('verifyToken', () => {
 
     // Setup jose.JWK.asKey mock
     jose.JWK = {
-      asKey: jest.fn().mockResolvedValue(mockJoseKey)
+      asKey: vi.fn().mockResolvedValue(mockJoseKey)
     }
 
     Jwt.token.decode.mockReturnValue(mockDecodedToken)
@@ -160,4 +154,24 @@ describe('verifyToken', () => {
       )
     }
   )
+
+  it('should handle token decode failure in error handler', async () => {
+    Jwt.token.verify.mockImplementation(() => {
+      throw new Error('Token verification failed')
+    })
+
+    Jwt.token.decode.mockReturnValueOnce(mockDecodedToken).mockImplementationOnce(() => {
+      throw new Error('Token decode failed in error handler')
+    })
+
+    await expect(verifyToken(mockToken)).rejects.toThrow('Token verification failed')
+
+    expect(log).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({
+        step: 'token_decode_failed',
+        userId: 'unknown'
+      })
+    )
+  })
 })

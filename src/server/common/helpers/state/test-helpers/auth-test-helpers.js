@@ -1,10 +1,5 @@
-import crypto from 'crypto'
-import { jest } from '@jest/globals'
+import { vi } from 'vitest'
 
-const IV_LENGTH_BYTES = 12
-const KEY_LENGTH_BYTES = 32
-const SCRYPT_SALT = 'salt'
-const CIPHER_ALGORITHM = 'aes-256-gcm'
 const CRYPTO_ENCODING = {
   UTF8: 'utf8',
   BASE64: 'base64'
@@ -103,26 +98,21 @@ export const MOCK_CONFIG_VALUES = {
 }
 
 /**
- * Encrypts a token for testing purposes using AES-256-GCM
- * @param {string} token - The token to encrypt
+ * Mock encrypted token for testing purposes (avoids expensive crypto operations)
+ * @param {string} _token - The token to encrypt (unused in mock)
  * @param {string} encryptionKey - The encryption key to use
- * @returns {string} Encrypted token in format: iv:authTag:encryptedData (base64)
+ * @returns {string} Mock encrypted token in expected format
  */
-export function encryptTokenForTest(token, encryptionKey) {
+export function encryptTokenForTest(_token, encryptionKey) {
   if (!encryptionKey) {
     throw new Error(ERROR_TEXT.ENCRYPTION_NOT_CONFIGURED)
   }
 
-  const iv = crypto.randomBytes(IV_LENGTH_BYTES)
-  const key = crypto.scryptSync(encryptionKey, SCRYPT_SALT, KEY_LENGTH_BYTES)
-  const cipher = crypto.createCipheriv(CIPHER_ALGORITHM, key, iv)
+  const mockIv = 'dGVzdGl2MTIzNA=='
+  const mockAuthTag = 'dGVzdGF1dGh0YWc='
+  const mockEncrypted = 'dGVzdGVuY3J5cHRlZA=='
 
-  let encrypted = cipher.update(token, CRYPTO_ENCODING.UTF8, CRYPTO_ENCODING.BASE64)
-  encrypted += cipher.final(CRYPTO_ENCODING.BASE64)
-
-  const authTag = cipher.getAuthTag()
-
-  return `${iv.toString(CRYPTO_ENCODING.BASE64)}:${authTag.toString(CRYPTO_ENCODING.BASE64)}:${encrypted}`
+  return `${mockIv}:${mockAuthTag}:${mockEncrypted}`
 }
 
 /**
@@ -165,7 +155,7 @@ export const createMockConfigWithoutEndpoint = () => {
  */
 export const createCustomMockConfig = (customValues = {}) => {
   const configValues = { ...MOCK_CONFIG_VALUES.DEFAULT, ...customValues }
-  const mockGet = jest.fn().mockImplementation((key) => configValues[key] || null)
+  const mockGet = vi.fn().mockImplementation((key) => configValues[key] || null)
 
   return { config: { get: mockGet } }
 }

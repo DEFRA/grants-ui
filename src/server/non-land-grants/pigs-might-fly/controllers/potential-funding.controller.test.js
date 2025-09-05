@@ -1,8 +1,9 @@
+import { vi } from 'vitest'
 import { PotentialFundingController } from './potential-funding.controller.js'
 import { invokeGasPostAction } from '~/src/server/common/services/grant-application/grant-application.service.js'
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 
-jest.mock('~/src/server/common/services/grant-application/grant-application.service.js')
+vi.mock('~/src/server/common/services/grant-application/grant-application.service.js')
 
 describe('PotentialFundingController', () => {
   let controller
@@ -11,7 +12,7 @@ describe('PotentialFundingController', () => {
   let mockResponseToolkit
 
   beforeEach(() => {
-    QuestionPageController.prototype.getViewModel = jest.fn().mockReturnValue({
+    QuestionPageController.prototype.getViewModel = vi.fn().mockReturnValue({
       pageTitle: 'Potential Funding'
     })
 
@@ -33,7 +34,7 @@ describe('PotentialFundingController', () => {
     mockRequest = {
       method: 'GET',
       logger: {
-        error: jest.fn()
+        error: vi.fn()
       }
     }
 
@@ -49,8 +50,8 @@ describe('PotentialFundingController', () => {
     }
 
     mockResponseToolkit = {
-      view: jest.fn(),
-      redirect: jest.fn()
+      view: vi.fn(),
+      redirect: vi.fn()
     }
 
     invokeGasPostAction.mockReset()
@@ -142,14 +143,14 @@ describe('PotentialFundingController', () => {
   describe('makePostRouteHandler', () => {
     beforeEach(() => {
       // Mock `proceed` and `getNextPath` in the controller
-      controller.proceed = jest.fn().mockReturnValue('redirectedPath')
-      controller.getNextPath = jest.fn().mockReturnValue('/next-path')
+      controller.proceed = vi.fn().mockReturnValue('redirectedPath')
+      controller.getNextPath = vi.fn().mockReturnValue('/next-path')
     })
 
     it('should call proceed with the next path', () => {
       const handler = controller.makePostRouteHandler()
 
-      jest.spyOn(controller, 'proceed').mockReturnValue('nextPath')
+      vi.spyOn(controller, 'proceed').mockReturnValue('nextPath')
 
       const result = handler(mockRequest, mockContext, mockResponseToolkit)
 
