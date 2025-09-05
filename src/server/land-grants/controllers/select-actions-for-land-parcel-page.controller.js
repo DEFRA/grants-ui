@@ -42,6 +42,19 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
     return { actionsObj }
   }
 
+  /** Map actions for radio buttons */
+  mapActionToViewModel(action) {
+    return {
+      value: action.code,
+      text: action.description,
+      hint: {
+        text:
+          `Payment rate per year: £${action.ratePerUnitGbp} per ha` +
+          (action.ratePerAgreementPerYearGbp ? ` and £${action.ratePerAgreementPerYearGbp} per agreement` : '')
+      }
+    }
+  }
+
   /**
    * This method is called to get the view model for the page.
    * It adds the area prefix and available actions to the view model.
@@ -50,9 +63,27 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
    * @returns {object} - The view model for the page
    */
   getViewModel(request, context) {
+    const assessMoorlandArea = this.availableActions.find((a) => a.code === 'CMOR1')?.availableArea?.value
+    const livestockGrazingAreas = this.availableActions
+      .filter((a) => a.code !== 'CMOR1')
+      .map((a) => a.availableArea?.value)
+
+    const livestockGrazingArea = livestockGrazingAreas.length > 0 ? Math.max(...livestockGrazingAreas) : 0
+
+    const assessMoorlandAction = this.availableActions
+      .filter((a) => a.code === 'CMOR1')
+      .map((a) => this.mapActionToViewModel(a))
+    const displayActions = this.availableActions
+      .filter((a) => a.code !== 'CMOR1')
+      .map((a) => this.mapActionToViewModel(a))
+
     return {
       ...super.getViewModel(request, context),
-      availableActions: this.availableActions
+      availableActions: this.availableActions,
+      assessMoorlandArea: assessMoorlandArea || 0,
+      livestockGrazingArea,
+      assessMoorlandAction,
+      displayActions
     }
   }
 
