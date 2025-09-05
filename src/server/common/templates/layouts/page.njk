@@ -28,14 +28,7 @@
 
   {{ govukServiceNavigation({ serviceName: serviceName, serviceUrl: serviceUrl }) }}
 
-  {{ defraAccountBar({
-    businessName: "",
-    sbi: auth.sbi | default(""),
-    userName: ""
-  }) }}
-
   <div class="govuk-width-container">
-
     {{ govukPhaseBanner({
       tag: {
         text: "Beta"
@@ -43,6 +36,11 @@
       text: 'This is a new service - your feedback will help us to improve it.'
     }) }}
   </div>
+    {{ defraAccountBar({
+      organisationName: auth.organisationName,
+      organisationId: auth.organisationId | default(""),
+      name: auth.name
+    }) }}
 {% endblock %}
 
 {% block pageTitle %}
@@ -50,15 +48,6 @@
 {% endblock %}
 
 {% block beforeContent %}
-  {% if auth.isAuthenticated %}
-    <div class="gov-grid-row">
-      <div style="float:right;clear:both;text-align:right;">
-        <p class="govuk-body govuk-!-margin-bottom-0">Signed in as <a href="/home" class="govuk-link govuk-link--no-visited-state">{{ auth.name }}</a></p>
-        <!-- <p class="govuk-body govuk-!-margin-bottom-0"><a href="/auth/organisation" class="govuk-link govuk-link--no-visited-state">Switch organisation</a></p> -->
-        <p class="govuk-body govuk-!-margin-bottom-0"><a href="/auth/sign-out" class="govuk-link govuk-link--no-visited-state">Sign out</a></p>
-      </div>
-    </div>
-  {% endif %}
   {% if breadcrumbs.length > 1 %}
     {{ govukBreadcrumbs({
       items: breadcrumbs
