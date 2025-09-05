@@ -1,56 +1,54 @@
 import { jest } from '@jest/globals'
-import { mockRequestWithIdentity } from './mock-request-with-identity.test-helper.js'
 import {
   MOCK_STATE_DATA,
   HTTP_STATUS,
   TEST_USER_IDS,
   ERROR_MESSAGES,
-  LOG_MESSAGES,
   createMockConfig
 } from './test-helpers/auth-test-helpers.js'
 
 const GRANT_VERSION = 1
 
-const mockGetCacheKey = jest.fn()
-
+const mockParseSessionKey = jest.fn()
 jest.mock('~/src/server/common/helpers/state/get-cache-key-helper.js', () => ({
-  getCacheKey: mockGetCacheKey
+  parseSessionKey: mockParseSessionKey
 }))
 
 global.fetch = jest.fn()
 
 let persistStateToApi
+let log
+let LogCodes
 
 describe('persistStateToApi', () => {
-  const createMockRequest = () => mockRequestWithIdentity({ params: { slug: TEST_USER_IDS.GRANT_ID } })
+  const key = { id: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.BUSINESS_ID}:${TEST_USER_IDS.GRANT_ID}` }
+  const testState = MOCK_STATE_DATA.WITH_STEP
 
-  const createMockRequestWithLogger = () => {
-    const request = createMockRequest()
-    request.logger = { info: jest.fn(), error: jest.fn() }
-    return request
-  }
-
-  const createTestState = () => MOCK_STATE_DATA.WITH_STEP
-
-  const setupMockCacheKey = () => {
-    mockGetCacheKey.mockReturnValue({
+  beforeEach(() => {
+    mockParseSessionKey.mockReturnValue({
       userId: TEST_USER_IDS.DEFAULT,
       businessId: TEST_USER_IDS.BUSINESS_ID,
       grantId: TEST_USER_IDS.GRANT_ID
     })
-  }
-
-  beforeEach(() => {
-    setupMockCacheKey()
   })
 
   describe('With backend configured correctly', () => {
     beforeEach(async () => {
       jest.resetModules()
       jest.doMock('~/src/config/config.js', createMockConfig)
+      jest.doMock('../logging/log.js', () => ({
+        log: jest.fn(),
+        LogCodes: {
+          SYSTEM: {
+            EXTERNAL_API_CALL_DEBUG: { level: 'debug', messageFunc: jest.fn() },
+            EXTERNAL_API_ERROR: { level: 'error', messageFunc: jest.fn() }
+          }
+        }
+      }))
       const helper = await import('~/src/server/common/helpers/state/persist-state-helper.js')
       persistStateToApi = helper.persistStateToApi
-      setupMockCacheKey()
+      log = (await import('../logging/log.js')).log
+      LogCodes = (await import('../logging/log.js')).LogCodes
       jest.clearAllMocks()
     })
 
@@ -75,16 +73,13 @@ describe('persistStateToApi', () => {
     it('persists state successfully when response is ok', async () => {
       fetch.mockResolvedValue(createSuccessfulFetchResponse())
 
-      const request = createMockRequest()
-      const testState = createTestState()
-
-      await persistStateToApi(testState, request)
+      await persistStateToApi(testState, key)
 
       const expectedBody = JSON.stringify({
         userId: TEST_USER_IDS.DEFAULT,
         businessId: TEST_USER_IDS.BUSINESS_ID,
         grantId: TEST_USER_IDS.GRANT_ID,
-        grantVersion: GRANT_VERSION, // TODO: Update when support for same grant versioning is implemented
+        grantVersion: GRANT_VERSION,
         state: testState
       })
 
@@ -101,8 +96,16 @@ describe('persistStateToApi', () => {
         })
       )
 
-      expect(request.logger.info).toHaveBeenCalledWith(
-        `Persisting state to backend for identity: ${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.BUSINESS_ID}:${TEST_USER_IDS.GRANT_ID}`
+      expect(log).toHaveBeenCalledWith(
+        LogCodes.SYSTEM.EXTERNAL_API_CALL_DEBUG,
+        expect.objectContaining({
+          endpoint: expect.stringContaining('/state/'),
+          identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.BUSINESS_ID}:${TEST_USER_IDS.GRANT_ID}`,
+          stateSummary: {
+            hasReference: Boolean(testState?.$$__referenceNumber),
+            keyCount: Object.keys(testState).length
+          }
+        })
       )
     })
 
@@ -110,14 +113,16 @@ describe('persistStateToApi', () => {
       const failedResponse = createFailedFetchResponse()
       fetch.mockResolvedValue(failedResponse)
 
-      const request = createMockRequestWithLogger()
-      const testState = createTestState()
-
-      await persistStateToApi(testState, request)
+      await persistStateToApi(testState, key)
 
       expect(fetch).toHaveBeenCalledTimes(1)
-      expect(request.logger.error).toHaveBeenCalledWith(
-        `${LOG_MESSAGES.PERSIST_FAILED}: ${failedResponse.status} - ${failedResponse.statusText}`
+      expect(log).toHaveBeenCalledWith(
+        LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+        expect.objectContaining({
+          endpoint: expect.stringContaining('/state/'),
+          identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.BUSINESS_ID}:${TEST_USER_IDS.GRANT_ID}`,
+          error: `${failedResponse.status} - ${failedResponse.statusText}`
+        })
       )
     })
 
@@ -125,13 +130,17 @@ describe('persistStateToApi', () => {
       const networkError = new Error(ERROR_MESSAGES.NETWORK_ERROR)
       fetch.mockRejectedValue(networkError)
 
-      const request = createMockRequestWithLogger()
-      const testState = createTestState()
-
-      await persistStateToApi(testState, request)
+      await persistStateToApi(testState, key)
 
       expect(fetch).toHaveBeenCalledTimes(1)
-      expect(request.logger.error).toHaveBeenCalledWith(`${LOG_MESSAGES.PERSIST_FAILED}: ${networkError.message}`)
+      expect(log).toHaveBeenCalledWith(
+        LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+        expect.objectContaining({
+          endpoint: expect.stringContaining('/state/'),
+          identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.BUSINESS_ID}:${TEST_USER_IDS.GRANT_ID}`,
+          error: networkError.message
+        })
+      )
     })
   })
 })
