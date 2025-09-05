@@ -41,7 +41,7 @@ function buildTargetUri(baseUrl, path) {
  * @returns {object} The proxy headers object
  */
 function buildProxyHeaders(token, request) {
-  const sbi = request.auth.credentials.sbi
+  const sbi = request?.auth?.credentials?.sbi
   const source = 'defra'
   const jwtSecret = config.get('agreements.jwtSecret')
   try {

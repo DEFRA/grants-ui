@@ -203,8 +203,10 @@ const mockSessionData = async (request, log, LogCodes) => {
       name: 'Anonymous User',
       role: 'user',
       scope: ['user'],
+      sbi: `${sbiStore.get('sbi')}`,
+      organisationId: `${sbiStore.get('sbi')}`,
       currentRelationshipId: `${sbiStore.get('sbi')}1234`,
-      crn: config.get('landGrants.customerReferenceNumber'),
+      crn: String(config.get('landGrants.customerReferenceNumber')),
       relationships: [`${sbiStore.get('sbi')}1234:${sbiStore.get('sbi')}:Farm ${sbiStore.get('sbi')}`]
     }
 
