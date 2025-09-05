@@ -72,6 +72,13 @@ describe('#homeController', () => {
       url: '/home',
       headers: {
         cookie: `sid=${encodeURIComponent(sealedCookie)}`
+      },
+      auth: {
+        strategy: 'session',
+        credentials: {
+          accountId: 'test-user-123',
+          token: 'mock-token'
+        }
       }
     })
 
