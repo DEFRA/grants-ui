@@ -21,12 +21,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Run a one-line script
-        run: echo Hello, world!
-
-      - name: Pact Broker connectivity
+      - name: Pact Broker publish
         env:
-          PACT_USER: ${{ secrets.PACT_USER }}
-          PACT_PASS: ${{ secrets.PACT_PASS }}
+          PACT_BROKER_BASE_URL: https://ffc-pact-broker.azure.defra.cloud
+          PACT_BROKER_USERNAME: ${{ secrets.PACT_USER }}
+          PACT_BROKER_PASSWORD: ${{ secrets.PACT_PASS }}
         run: |
-          curl -s -u "$PACT_USER:$PACT_PASS" -o /dev/null -w "%{http_code}\n" https://ffc-pact-broker.azure.defra.cloud
+          docker run --rm \
+            -e PACT_BROKER_BASE_URL \
+            -e PACT_BROKER_USERNAME \
+            -e PACT_BROKER_PASSWORD \
+            -v "$PWD/contracts/pacts:/pacts" \
+            pactfoundation/pact-cli:latest \
+            pact-broker publish /pacts --consumer-app-version "test"

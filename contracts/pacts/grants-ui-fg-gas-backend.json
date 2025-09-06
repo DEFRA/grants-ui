@@ -1,0 +1,191 @@
+{
+  "consumer": {
+    "name": "grants-ui"
+  },
+  "interactions": [
+    {
+      "description": "a request to get all grants",
+      "providerState": "grants are available in the system",
+      "request": {
+        "method": "GET",
+        "path": "/grants"
+      },
+      "response": {
+        "body": [
+          {
+            "code": "frps-private-beta",
+            "metadata": {
+              "description": "Farming Resilience Private Beta",
+              "startDate": "2024-01-01T00:00:00.000Z"
+            }
+          }
+        ],
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a request to get specific grant",
+      "providerState": "grant frps-private-beta exists",
+      "request": {
+        "method": "GET",
+        "path": "/grants/frps-private-beta"
+      },
+      "response": {
+        "body": {
+          "code": "frps-private-beta",
+          "metadata": {
+            "description": "Farming Resilience Private Beta",
+            "startDate": "2024-01-01T00:00:00.000Z"
+          },
+          "questions": {
+            "properties": {
+              "scheme": {
+                "type": "string"
+              },
+              "year": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "scheme",
+              "year"
+            ],
+            "type": "object"
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a valid grant application submission",
+      "providerState": "grant system is available for application submission",
+      "request": {
+        "body": {
+          "answers": {
+            "actionApplications": [
+              {
+                "appliedFor": {
+                  "quantity": 10.5,
+                  "unit": "ha"
+                },
+                "code": "CSAM1",
+                "parcelId": "1234",
+                "sheetId": "SX1234"
+              }
+            ],
+            "agreementName": "Test Agreement",
+            "scheme": "SFI",
+            "year": 2024
+          },
+          "metadata": {
+            "clientRef": "test-ref-123456",
+            "crn": "555666777",
+            "defraId": "def123456",
+            "frn": "987654321",
+            "sbi": "123456789",
+            "submittedAt": "2024-01-15T14:30:00Z"
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "method": "POST",
+        "path": "/grants/frps-private-beta/applications"
+      },
+      "response": {
+        "status": 204
+      }
+    },
+    {
+      "description": "an application for non-existent grant",
+      "providerState": "grant system validates grant codes",
+      "request": {
+        "body": {
+          "answers": {
+            "scheme": "SFI",
+            "year": 2024
+          },
+          "metadata": {
+            "clientRef": "test-ref-123456",
+            "crn": "555666777",
+            "defraId": "def123456",
+            "frn": "987654321",
+            "sbi": "123456789"
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "method": "POST",
+        "path": "/grants/invalid-grant-code/applications"
+      },
+      "response": {
+        "body": {
+          "error": "Not Found",
+          "message": "Grant with code invalid-grant-code not found",
+          "statusCode": 404
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "status": 404
+      }
+    },
+    {
+      "description": "an application with duplicate clientRef",
+      "providerState": "application with clientRef duplicate-ref-123 already exists",
+      "request": {
+        "body": {
+          "answers": {
+            "scheme": "SFI",
+            "year": 2024
+          },
+          "metadata": {
+            "clientRef": "duplicate-ref-123",
+            "crn": "555666777",
+            "defraId": "def123456",
+            "frn": "987654321",
+            "sbi": "123456789"
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "method": "POST",
+        "path": "/grants/frps-private-beta/applications"
+      },
+      "response": {
+        "body": {
+          "error": "Conflict",
+          "message": "Application with clientRef \"duplicate-ref-123\" exists",
+          "statusCode": 409
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "status": 409
+      }
+    }
+  ],
+  "metadata": {
+    "pact-js": {
+      "version": "13.2.0"
+    },
+    "pactRust": {
+      "ffi": "0.4.22",
+      "models": "1.2.3"
+    },
+    "pactSpecification": {
+      "version": "2.0.0"
+    }
+  },
+  "provider": {
+    "name": "fg-gas-backend"
+  }
+}
