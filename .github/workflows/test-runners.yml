@@ -1,0 +1,36 @@
+# This is a basic workflow to help you get started with Actions
+
+name: Test-Runners
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the "main" branch.
+  push:
+    branches: [ "enable-runners" ]
+  pull_request:
+    branches: [ "enable-runners" ]
+
+  # Allows you to run this workflow manually from the Actions tab.
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: self-hosted
+    if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name != 'pull_request'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pact Broker publish
+        env:
+          PACT_BROKER_BASE_URL: https://ffc-pact-broker.azure.defra.cloud
+          PACT_BROKER_USERNAME: ${{ secrets.PACT_USER }}
+          PACT_BROKER_PASSWORD: ${{ secrets.PACT_PASS }}
+        run: |
+          docker run --rm \
+            -e PACT_BROKER_BASE_URL \
+            -e PACT_BROKER_USERNAME \
+            -e PACT_BROKER_PASSWORD \
+            -v "$PWD/contracts/pacts:/pacts" \
+            pactfoundation/pact-cli:latest \
+            pact-broker publish /pacts --consumer-app-version "test"
