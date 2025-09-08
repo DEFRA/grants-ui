@@ -43,7 +43,7 @@
       {% for item in parcelItems %}
         {% call summaryCard({
           title: {
-            text: "Land parcel " + item.parcelId
+            text: item.cardTitle
           },
           headerActions: {
             html: "<a class='govuk-link' href='confirm-delete-parcel' style='display: none'>Remove</a>"
@@ -52,6 +52,8 @@
             html: "<a class='govuk-link' href='select-base-action2' style='display: none'>Add another action</a>"
           }
         }) %}
+
+      {{ item | dump }}
 
           {{ govukTable({
             caption: "List of parcel actions selected for this application",

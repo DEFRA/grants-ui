@@ -134,6 +134,7 @@ export default class LandActionsCheckPageController extends QuestionPageControll
 
       if (!acc[parcelKey]) {
         acc[parcelKey] = {
+          cardTitle: `Land parcel ${parcelKey}`,
           parcelId: parcelKey,
           items: []
         }

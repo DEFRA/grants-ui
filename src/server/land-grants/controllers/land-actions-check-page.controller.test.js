@@ -266,9 +266,11 @@ describe('LandActionsCheckPageController', () => {
 
       const result = controller.getParcelItems(paymentData)
 
+      expect(result[0].cardTitle).toBe('Land parcel SD01 001')
       expect(result).toHaveLength(2) // Two different parcels
       expect(result[0].parcelId).toBe('SD01 001')
       expect(result[0].items).toHaveLength(2) // Two actions for first parcel
+      expect(result[1].cardTitle).toBe('Land parcel SD02 002')
       expect(result[1].parcelId).toBe('SD02 002')
       expect(result[1].items).toHaveLength(1) // One action for second parcel
     })
