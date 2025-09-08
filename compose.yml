@@ -3,7 +3,7 @@ services:
   redis:
     image: redis:7.2.3-alpine3.18
     ports:
-      - '6380:6379'
+      - '6379:6379'
     restart: always
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
@@ -28,12 +28,32 @@ services:
       timeout: 5s
       retries: 3
 
+  fcp-defra-id-stub:
+    image: defradigital/fcp-defra-id-stub
+    networks:
+      - cdp-tenant
+    environment:
+      PORT: 3007
+      AUTH_MODE: ${AUTH_MODE:-basic}
+      AUTH_OVERRIDE: ${AUTH_OVERRIDE}
+      AUTH_OVERRIDE_FILE: ${AUTH_OVERRIDE_FILE}
+    ports:
+      - "3007:3007"
+    volumes:
+      - ./example.data.json:/data/example.data.json
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3007/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 3s
+
 ################################################################################
 
   grants-ui:
     build:
       context: .
-      # target: development
+      target: ${BUILD_TARGET:-development}
     ports:
       - '3000:3000'
       - '9229:9229'
@@ -42,9 +62,11 @@ services:
         condition: service_healthy
       grants-ui-backend:
         condition: service_started
+      fcp-defra-id-stub:
+        condition: service_healthy
     environment:
       PORT: 3000
-      # NODE_ENV: development
+      NODE_ENV: ${NODE_ENV:-development}
       ENVIRONMENT: local
       REDIS_HOST: redis
       USE_SINGLE_INSTANCE_CACHE: true
@@ -56,24 +78,31 @@ services:
       REDIS_MAX_RETRIES: 10
       REDIS_USERNAME: ""
       REDIS_PASSWORD: ""
-      LOG_LEVEL: debug
+      LOG_LEVEL: ${LOG_LEVEL:-debug}
       SESSION_COOKIE_PASSWORD: "53409gjhfcdiklgjidfglkgjidfglkelrku634"
       SESSION_COOKIE_TTL: 2419200000
       SESSION_CACHE_TTL: 14400000
       FEEDBACK_LINK: "mailto:defraforms@defra.gov.uk"
-      CV_API_MOCK_ENABLED: true
-      SBI_SELECTOR_ENABLED: true
-      DEFRA_ID_ENABLED: false
-      GRANTS_UI_BACKEND_URL: http://grants-ui-backend:3001
-      GRANTS_UI_BACKEND_AUTH_TOKEN: test-token-test-token-test-token-test-token-test-t-64-chars-long
-      GRANTS_UI_BACKEND_ENCRYPTION_KEY: test-encryption-key-test-encryption-key-test-encry-64-chars-long
-      APP_BASE_URL: http://localhost:3000
+      CV_API_MOCK_ENABLED: ${CV_API_MOCK_ENABLED:-true}
+      DEFRA_ID_ENABLED: ${DEFRA_ID_ENABLED:-false}
+      DEFRA_ID_WELL_KNOWN_URL: ${DEFRA_ID_WELL_KNOWN_URL:-}
+      DEFRA_ID_CLIENT_ID: ${DEFRA_ID_CLIENT_ID:-}
+      DEFRA_ID_CLIENT_SECRET: ${DEFRA_ID_CLIENT_SECRET:-}
+      DEFRA_ID_SERVICE_ID: ${DEFRA_ID_SERVICE_ID:-}
+      DEFRA_ID_REDIRECT_URL: ${DEFRA_ID_REDIRECT_URL:-}
+      DEFRA_ID_SIGN_OUT_REDIRECT_URL: ${DEFRA_ID_SIGN_OUT_REDIRECT_URL:-}
+      COOKIE_PASSWORD: ${COOKIE_PASSWORD:-}
+      GRANTS_UI_BACKEND_URL: ${GRANTS_UI_BACKEND_URL:-}
+      GRANTS_UI_BACKEND_AUTH_TOKEN: ${GRANTS_UI_BACKEND_AUTH_TOKEN:-}
+      GRANTS_UI_BACKEND_ENCRYPTION_KEY: ${GRANTS_UI_BACKEND_ENCRYPTION_KEY:-}
+      APP_BASE_URL: ${APP_BASE_URL:-http://localhost:3000}
       HOST: 0.0.0.0
     volumes:
       - ./src:/home/node/src
       - /home/node/node_modules
     networks:
       - cdp-tenant
+    restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "ps aux | grep 'node .' | grep -v grep || exit 1"]
       interval: 10s
@@ -82,9 +111,7 @@ services:
       start_period: 60s
 
   grants-ui-backend:
-    build:
-      context: https://github.com/DEFRA/grants-ui-backend.git#main
-      target: development
+    image: defradigital/grants-ui-backend
     ports:
       - '3001:3001'
     depends_on:
@@ -98,6 +125,7 @@ services:
       GRANTS_UI_BACKEND_ENCRYPTION_KEY: test-encryption-key-test-encryption-key-test-encry-64-chars-long
     networks:
       - cdp-tenant
+    restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
       interval: 30s
