@@ -1,6 +1,6 @@
 import neostandard from 'neostandard'
 import prettier from 'eslint-config-prettier'
-import vitestPlugin from 'eslint-plugin-vitest'
+import vitestPlugin from '@vitest/eslint-plugin'
 
 export default [
   ...neostandard({
