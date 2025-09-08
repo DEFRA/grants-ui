@@ -57,9 +57,9 @@ export const landActionsToApiPayload = ({ sheetId, parcelId, actionsObj }) => {
     sbi,
     actions: actionsObj
       ? Object.entries(actionsObj).map(([code, area]) => ({
-        code,
-        quantity: Number(area.value)
-      }))
+          code,
+          quantity: Number(area.value)
+        }))
       : []
   }
 }
@@ -106,23 +106,26 @@ export async function fetchAvailableActionsForParcel({ parcelId = '', sheetId = 
   })
 
   // TODO: This needs to come from the backend
-  const actionGroups = [{
-    name: 'Assess moorland',
-    actions: ['CMOR1'],
-  }, {
-    name: 'Livestock grazing on moorland',
-    actions: ['UPL1', 'UPL2', 'UPL3']
-  }]
+  const actionGroups = [
+    {
+      name: 'Assess moorland',
+      actions: ['CMOR1']
+    },
+    {
+      name: 'Livestock grazing on moorland',
+      actions: ['UPL1', 'UPL2', 'UPL3']
+    }
+  ]
 
-  actionGroups.forEach(group => {
-    const groupActions = actions.filter(a => group.actions.includes(a.code))
+  actionGroups.forEach((group) => {
+    const groupActions = actions.filter((a) => group.actions.includes(a.code))
     if (groupActions.length > 0) {
-      groupActions.forEach(a => usedCodes.add(a.code))
+      groupActions.forEach((a) => usedCodes.add(a.code))
       result.push(createGroup(group.name, groupActions))
     }
   })
 
-  const ungroupedActions = actions.filter(a => !usedCodes.has(a.code))
+  const ungroupedActions = actions.filter((a) => !usedCodes.has(a.code))
   if (ungroupedActions.length > 0) {
     result.push(createGroup('', ungroupedActions))
   }

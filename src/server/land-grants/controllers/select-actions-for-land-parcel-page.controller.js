@@ -19,8 +19,8 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
     const actionsObj = {}
     const { landAction } = payload
     let result = {}
-    const availableActions = this.groupedActions.flatMap(g => g.actions)
-    const actionInfo = availableActions.find(a => a.code === landAction)
+    const availableActions = this.groupedActions.flatMap((g) => g.actions)
+    const actionInfo = availableActions.find((a) => a.code === landAction)
     if (actionInfo) {
       result = {
         description: actionInfo.description,
@@ -47,14 +47,18 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
       hint: {
         html:
           `Payment rate per year: <strong>£${action.ratePerUnitGbp.toFixed(2)} per ha</strong>` +
-          (action.ratePerAgreementPerYearGbp ? ` and <strong>£${action.ratePerAgreementPerYearGbp}</strong> per agreement` : '')
+          (action.ratePerAgreementPerYearGbp
+            ? ` and <strong>£${action.ratePerAgreementPerYearGbp}</strong> per agreement`
+            : '')
       }
     })
 
     return {
       ...super.getViewModel(request, context),
-      groupedActions: this.groupedActions.map(group =>
-        ({ ...group, actions: group.actions.map(mapActionToViewModel) }))
+      groupedActions: this.groupedActions.map((group) => ({
+        ...group,
+        actions: group.actions.map(mapActionToViewModel)
+      }))
     }
   }
 

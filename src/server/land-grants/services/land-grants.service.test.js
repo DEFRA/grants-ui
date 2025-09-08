@@ -382,9 +382,7 @@ describe('land-grants service', () => {
             unit: 'ha',
             value: 10.5
           },
-          actions: [
-            { code: 'CMOR1', availableArea: { value: 10.5, unit: 'ha' } }
-          ]
+          actions: [{ code: 'CMOR1', availableArea: { value: 10.5, unit: 'ha' } }]
         },
         {
           name: 'Livestock grazing on moorland',
@@ -440,9 +438,7 @@ describe('land-grants service', () => {
             unit: 'ha',
             value: 10.5
           },
-          actions: [
-            { code: 'CMOR1', availableArea: { value: 10.5, unit: 'ha' } }
-          ]
+          actions: [{ code: 'CMOR1', availableArea: { value: 10.5, unit: 'ha' } }]
         },
         {
           name: '',
@@ -602,9 +598,7 @@ describe('land-grants service', () => {
             unit: 'ha',
             value: 20.75
           },
-          actions: [
-            { code: 'UPL1', availableArea: { value: 20.75, unit: 'ha' } }
-          ]
+          actions: [{ code: 'UPL1', availableArea: { value: 20.75, unit: 'ha' } }]
         }
       ])
     })
