@@ -5,17 +5,10 @@ import {
   triggerApiActionsValidation
 } from '~/src/server/land-grants/services/land-grants.service.js'
 
-const unitRatesForActions = {
-  CMOR1: 100,
-  UPL1: 200,
-  UPL2: 300,
-  UPL3: 400,
-  UPL4: 500
-}
-
 export default class SelectActionsForLandParcelPageController extends QuestionPageController {
   viewName = 'select-actions-for-land-parcel'
   availableActions = []
+  groupedActions = []
 
   /**
    * Extract action data from the form payload
@@ -26,33 +19,18 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
     const actionsObj = {}
     const { landAction } = payload
     let result = {}
-
-    const actionInfo = this.availableActions.find((a) => a.code === landAction) || {}
-
-    if (Object.keys(actionInfo).length > 0) {
+    const availableActions = this.groupedActions.flatMap(g => g.actions)
+    const actionInfo = availableActions.find(a => a.code === landAction)
+    if (actionInfo) {
       result = {
         description: actionInfo.description,
         value: actionInfo?.availableArea?.value ?? '',
-        unit: actionInfo?.availableArea?.unit ?? '',
-        annualPaymentPence: unitRatesForActions[landAction]
+        unit: actionInfo?.availableArea?.unit ?? ''
       }
       actionsObj[landAction] = result
     }
 
     return { actionsObj }
-  }
-
-  /** Map actions for radio buttons */
-  mapActionToViewModel(action) {
-    return {
-      value: action.code,
-      text: action.description,
-      hint: {
-        text:
-          `Payment rate per year: £${action.ratePerUnitGbp} per ha` +
-          (action.ratePerAgreementPerYearGbp ? ` and £${action.ratePerAgreementPerYearGbp} per agreement` : '')
-      }
-    }
   }
 
   /**
@@ -63,27 +41,20 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
    * @returns {object} - The view model for the page
    */
   getViewModel(request, context) {
-    const assessMoorlandArea = this.availableActions.find((a) => a.code === 'CMOR1')?.availableArea?.value
-    const livestockGrazingAreas = this.availableActions
-      .filter((a) => a.code !== 'CMOR1')
-      .map((a) => a.availableArea?.value)
-
-    const livestockGrazingArea = livestockGrazingAreas.length > 0 ? Math.max(...livestockGrazingAreas) : 0
-
-    const assessMoorlandAction = this.availableActions
-      .filter((a) => a.code === 'CMOR1')
-      .map((a) => this.mapActionToViewModel(a))
-    const displayActions = this.availableActions
-      .filter((a) => a.code !== 'CMOR1')
-      .map((a) => this.mapActionToViewModel(a))
+    const mapActionToViewModel = (action) => ({
+      value: action.code,
+      text: action.description,
+      hint: {
+        html:
+          `Payment rate per year: <strong>£${action.ratePerUnitGbp.toFixed(2)} per ha</strong>` +
+          (action.ratePerAgreementPerYearGbp ? ` and <strong>£${action.ratePerAgreementPerYearGbp}</strong> per agreement` : '')
+      }
+    })
 
     return {
       ...super.getViewModel(request, context),
-      availableActions: this.availableActions,
-      assessMoorlandArea: assessMoorlandArea || 0,
-      livestockGrazingArea,
-      assessMoorlandAction,
-      displayActions
+      groupedActions: this.groupedActions.map(group =>
+        ({ ...group, actions: group.actions.map(mapActionToViewModel) }))
     }
   }
 
@@ -117,9 +88,6 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
         })
       }
 
-      // Load available actions for the land parcel
-      await this.fetchAvailableActionsFromApi(parcelId, sheetId, request, state)
-
       const { actionsObj } = this.extractActionsDataFromPayload(payload)
       // Create an updated state with the new action data
       const newState = this.buildNewState(state, actionsObj)
@@ -143,22 +111,6 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
     }
 
     return fn
-  }
-
-  fetchAvailableActionsFromApi = async (parcelId, sheetId, request, state) => {
-    try {
-      const data = await fetchAvailableActionsForParcel({ parcelId, sheetId })
-      this.availableActions = data.actions || []
-      if (!this.availableActions.length) {
-        request.logger.error({
-          message: `No actions found for parcel ${sheetId}-${parcelId}`,
-          selectedLandParcel: state.selectedLandParcel
-        })
-      }
-    } catch (error) {
-      this.availableActions = []
-      request.logger.error(error, `Failed to fetch land parcel data for id ${sheetId}-${parcelId}`)
-    }
   }
 
   /**
@@ -244,21 +196,18 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
     const fn = async (request, context, h) => {
       const { collection, viewName } = this
       const { state } = context
-
       const [sheetId = '', parcelId = ''] = parseLandParcel(state.selectedLandParcel)
-
       // Load available actions for the land parcel
       try {
-        const data = await fetchAvailableActionsForParcel({ parcelId, sheetId })
-        this.availableActions = data.actions || []
-        if (!this.availableActions.length) {
+        this.groupedActions = await fetchAvailableActionsForParcel({ parcelId, sheetId })
+        if (!this.groupedActions.length) {
           request.logger.error({
             message: `No actions found for parcel ${sheetId}-${parcelId}`,
             selectedLandParcel: state.selectedLandParcel
           })
         }
       } catch (error) {
-        this.availableActions = []
+        this.groupedActions = []
         request.logger.error(error, `Failed to fetch land parcel data for id ${sheetId}-${parcelId}`)
       }
 
