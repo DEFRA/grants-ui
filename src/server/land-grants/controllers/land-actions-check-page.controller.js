@@ -135,6 +135,11 @@ export default class LandActionsCheckPageController extends QuestionPageControll
       if (!acc[parcelKey]) {
         acc[parcelKey] = {
           cardTitle: `Land parcel ${parcelKey}`,
+          footerActions: {
+            text: 'Add another action',
+            href: `select-actions-for-land-parcel?parcelId=${parcelKey}`,
+            hiddenTextValue: parcelKey
+          },
           parcelId: parcelKey,
           items: []
         }

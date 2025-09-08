@@ -275,6 +275,24 @@ describe('LandActionsCheckPageController', () => {
       expect(result[1].items).toHaveLength(1) // One action for second parcel
     })
 
+    describe('"Add another action" links', () => {
+      test('should display Add another action for land parcels with only one action', () => {
+        const paymentData = {
+          parcelItems: {
+            1: { description: 'CMOR1', quantity: 5, annualPaymentPence: 1000, sheetId: 'SD01', parcelId: '001' }
+          }
+        }
+
+        const result = controller.getParcelItems(paymentData)
+
+        expect(result[0].footerActions).toEqual({
+          text: 'Add another action',
+          href: 'select-actions-for-land-parcel?parcelId=SD01 001',
+          hiddenTextValue: 'SD01 001'
+        })
+      })
+    })
+
     test('should format additional yearly payments', () => {
       const paymentData = {
         agreementLevelItems: {
