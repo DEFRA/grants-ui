@@ -1,3 +1,4 @@
+import { vi } from 'vitest'
 import { transformStateObjectToGasApplication } from '~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
 
 const mockDate = new Date('2025-04-22T12:00:00Z')
@@ -34,7 +35,7 @@ describe('transformStateObjectToGasApplication', () => {
     }
     const state = {}
 
-    const mockAnswersTransformer = jest.fn().mockReturnValue({
+    const mockAnswersTransformer = vi.fn().mockReturnValue({
       scheme: 'Test Scheme',
       year: 2025
     })
@@ -66,7 +67,7 @@ describe('transformStateObjectToGasApplication', () => {
 
     const state = {}
 
-    const mockAnswersTransformer = jest.fn().mockReturnValue({
+    const mockAnswersTransformer = vi.fn().mockReturnValue({
       scheme: 'Test Scheme'
     })
 
@@ -115,7 +116,7 @@ describe('transformStateObjectToGasApplication', () => {
       ]
     }
 
-    const mockAnswersTransformer = jest.fn().mockImplementation((state) => ({
+    const mockAnswersTransformer = vi.fn().mockImplementation((state) => ({
       scheme: 'Land Grants',
       year: 2025,
       hasCheckedLandIsUpToDate: true,
@@ -171,7 +172,7 @@ describe('transformStateObjectToGasApplication', () => {
     }
 
     const state = { sbi: '12345678' }
-    const mockAnswersTransformer = jest.fn().mockReturnValue({})
+    const mockAnswersTransformer = vi.fn().mockReturnValue({})
 
     transformStateObjectToGasApplication(identifiers, state, mockAnswersTransformer)
 

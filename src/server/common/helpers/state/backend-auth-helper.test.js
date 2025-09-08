@@ -1,4 +1,4 @@
-import { jest } from '@jest/globals'
+import { vi } from 'vitest'
 
 const TEST_ENCRYPTION_KEY = 'test-encryption-key-for-unit-tests-32-chars'
 const CONTENT_TYPE_JSON = 'application/json'
@@ -25,12 +25,16 @@ const TEST_HEADERS = {
   CUSTOM_VALUE: 'custom-value'
 }
 
-const mockConfig = {
-  get: jest.fn()
-}
+const mockConfigGet = vi.fn((key) => {
+  if (key === 'session.cache.authToken') return 'default-token'
+  if (key === 'session.cache.encryptionKey') return TEST_ENCRYPTION_KEY
+  return null
+})
 
-jest.mock('~/src/config/config.js', () => ({
-  config: mockConfig
+vi.mock('~/src/config/config.js', () => ({
+  config: {
+    get: mockConfigGet
+  }
 }))
 
 async function importBackendAuthHelper() {
@@ -43,13 +47,13 @@ function setupMockConfig(value, encryptionKey = TEST_ENCRYPTION_KEY) {
     [CONFIG_SESSION_CACHE_ENCRYPTION_KEY]: encryptionKey
   }
 
-  mockConfig.get.mockImplementation((key) => configValues[key] || null)
+  mockConfigGet.mockImplementation((key) => configValues[key] || null)
 }
 
 describe('Backend Auth Helper', () => {
   beforeEach(() => {
-    jest.resetModules()
-    mockConfig.get.mockClear()
+    vi.clearAllMocks()
+    vi.resetModules()
   })
 
   describe('createAuthenticatedHeaders', () => {
@@ -60,7 +64,7 @@ describe('Backend Auth Helper', () => {
         const { createAuthenticatedHeaders } = await importBackendAuthHelper()
         const headers = createAuthenticatedHeaders(HEADER_OBJECTS.CONTENT_TYPE_JSON)
 
-        expect(mockConfig.get).toHaveBeenCalledWith(CONFIG_SESSION_CACHE_AUTH_TOKEN)
+        expect(mockConfigGet).toHaveBeenCalledWith(CONFIG_SESSION_CACHE_AUTH_TOKEN)
         expect(headers).toEqual(HEADER_OBJECTS.CONTENT_TYPE_JSON)
         expect(headers.Authorization).toBeUndefined()
       })
@@ -73,7 +77,7 @@ describe('Backend Auth Helper', () => {
         const { createAuthenticatedHeaders } = await importBackendAuthHelper()
         const headers = createAuthenticatedHeaders(HEADER_OBJECTS.CONTENT_TYPE_JSON)
 
-        expect(mockConfig.get).toHaveBeenCalledWith(CONFIG_SESSION_CACHE_AUTH_TOKEN)
+        expect(mockConfigGet).toHaveBeenCalledWith(CONFIG_SESSION_CACHE_AUTH_TOKEN)
         expect(headers).toHaveProperty('Content-Type', 'application/json')
         expect(headers).toHaveProperty('Authorization')
         expect(headers.Authorization).toMatch(/^Basic [A-Za-z0-9+/]+=*$/)
@@ -89,7 +93,7 @@ describe('Backend Auth Helper', () => {
         const { createAuthenticatedHeaders } = await importBackendAuthHelper()
         const headers = createAuthenticatedHeaders(undefined)
 
-        expect(mockConfig.get).toHaveBeenCalledWith(CONFIG_SESSION_CACHE_AUTH_TOKEN)
+        expect(mockConfigGet).toHaveBeenCalledWith(CONFIG_SESSION_CACHE_AUTH_TOKEN)
         expect(headers).toHaveProperty('Authorization')
         expect(headers.Authorization).toMatch(/^Basic [A-Za-z0-9+/]+=*$/)
 
@@ -110,7 +114,7 @@ describe('Backend Auth Helper', () => {
         const { createAuthenticatedHeaders } = await importBackendAuthHelper()
         const headers = createAuthenticatedHeaders(baseHeaders)
 
-        expect(mockConfig.get).toHaveBeenCalledWith(CONFIG_SESSION_CACHE_AUTH_TOKEN)
+        expect(mockConfigGet).toHaveBeenCalledWith(CONFIG_SESSION_CACHE_AUTH_TOKEN)
         expect(headers).toHaveProperty('Content-Type', CONTENT_TYPE_JSON)
         expect(headers).toHaveProperty('User-Agent', TEST_HEADERS.USER_AGENT)
         expect(headers).toHaveProperty('X-Custom-Header', TEST_HEADERS.CUSTOM_VALUE)
@@ -190,8 +194,8 @@ describe('Backend Auth Helper', () => {
 
   describe('Token Encryption', () => {
     beforeEach(() => {
-      jest.resetModules()
-      mockConfig.get.mockClear()
+      vi.resetAllMocks()
+      // No longer needed with new mock structure
     })
 
     it('should encrypt token when encryption key is configured', async () => {
@@ -200,13 +204,13 @@ describe('Backend Auth Helper', () => {
         [CONFIG_SESSION_CACHE_ENCRYPTION_KEY]: TEST_ENCRYPTION_KEY
       }
 
-      mockConfig.get.mockImplementation((key) => configValues[key] || null)
+      mockConfigGet.mockImplementation((key) => configValues[key] || null)
 
       const { createAuthenticatedHeaders } = await importBackendAuthHelper()
       const headers = createAuthenticatedHeaders(HEADER_OBJECTS.CONTENT_TYPE_JSON)
 
-      expect(mockConfig.get).toHaveBeenCalledWith(CONFIG_SESSION_CACHE_AUTH_TOKEN)
-      expect(mockConfig.get).toHaveBeenCalledWith(CONFIG_SESSION_CACHE_ENCRYPTION_KEY)
+      expect(mockConfigGet).toHaveBeenCalledWith(CONFIG_SESSION_CACHE_AUTH_TOKEN)
+      expect(mockConfigGet).toHaveBeenCalledWith(CONFIG_SESSION_CACHE_ENCRYPTION_KEY)
       expect(headers.Authorization).toBeDefined()
       expect(headers.Authorization).toMatch(/^Basic /)
 

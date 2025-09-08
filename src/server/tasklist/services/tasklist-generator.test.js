@@ -1,9 +1,10 @@
+import { vi } from 'vitest'
 import { TasklistGenerator } from './tasklist-generator.js'
 import { ConfigDrivenConditionEvaluator } from './config-driven-condition-evaluator.js'
 import { TaskListStatus, taskListStatusComponents } from '../../common/constants/tasklist-status-components.js'
 import { createComplexTasklistConfig } from '../helpers/test-helpers.js'
 
-jest.mock('./config-driven-condition-evaluator.js')
+vi.mock('./config-driven-condition-evaluator.js')
 
 describe('TasklistGenerator', () => {
   let mockConfig
@@ -12,7 +13,7 @@ describe('TasklistGenerator', () => {
   let visitedSubSections
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
 
     mockConfig = createComplexTasklistConfig()
 
@@ -23,8 +24,8 @@ describe('TasklistGenerator', () => {
     visitedSubSections = ['subsection2']
 
     ConfigDrivenConditionEvaluator.mockImplementation(() => ({
-      evaluateCondition: jest.fn().mockReturnValue(TaskListStatus.NOT_YET_STARTED),
-      checkDependencies: jest.fn().mockReturnValue(true)
+      evaluateCondition: vi.fn().mockReturnValue(TaskListStatus.NOT_YET_STARTED),
+      checkDependencies: vi.fn().mockReturnValue(true)
     }))
 
     generator = new TasklistGenerator(mockConfig)
@@ -102,7 +103,7 @@ describe('TasklistGenerator', () => {
         }
       }
 
-      const mockEvaluateCondition = jest.fn().mockReturnValueOnce(null)
+      const mockEvaluateCondition = vi.fn().mockReturnValueOnce(null)
 
       ConfigDrivenConditionEvaluator.mockImplementation(() => ({
         evaluateCondition: mockEvaluateCondition
@@ -224,7 +225,7 @@ describe('TasklistGenerator', () => {
       }
 
       const mockConditions = {
-        evaluateCondition: jest.fn().mockReturnValue(TaskListStatus.HIDDEN)
+        evaluateCondition: vi.fn().mockReturnValue(TaskListStatus.HIDDEN)
       }
 
       const status = generator.getSubsectionStatus(subsection, data, visitedSubSections, mockConditions, {})
@@ -253,7 +254,7 @@ describe('TasklistGenerator', () => {
       }
 
       const errorConditions = {
-        evaluateCondition: jest.fn().mockImplementation(() => {
+        evaluateCondition: vi.fn().mockImplementation(() => {
           throw new Error('Condition evaluation failed')
         })
       }

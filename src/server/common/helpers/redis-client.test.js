@@ -1,7 +1,10 @@
+import { vi } from 'vitest'
 import { Cluster, Redis } from 'ioredis'
 import { config } from '~/src/config/config.js'
 
 import { buildRedisClient } from '~/src/server/common/helpers/redis-client.js'
+
+vi.mock('ioredis')
 
 describe('#buildRedisClient', () => {
   describe('When Redis Single InstanceCache is requested', () => {
@@ -17,7 +20,7 @@ describe('#buildRedisClient', () => {
     })
 
     test('Should instantiate a single Redis client', () => {
-      expect(Redis).toHaveBeenCalledWith({
+      expect(vi.mocked(Redis)).toHaveBeenCalledWith({
         db: 0,
         host: '127.0.0.1',
         keyPrefix: 'grants-ui:',
@@ -26,12 +29,12 @@ describe('#buildRedisClient', () => {
     })
 
     test('Should log Redis connect and error events', () => {
-      const mockOn = jest.fn((event, cb) => {
+      const mockOn = vi.fn((event, cb) => {
         if (event === 'connect') cb()
         if (event === 'error') cb(new Error('fail'))
       })
 
-      Redis.mockReturnValue({ on: mockOn })
+      vi.mocked(Redis).mockReturnValue({ on: mockOn })
 
       buildRedisClient({
         ...config.get('redis'),
@@ -43,10 +46,10 @@ describe('#buildRedisClient', () => {
     })
 
     test('Should resolve DNS lookup in cluster mode', () => {
-      const mockOn = jest.fn()
+      const mockOn = vi.fn()
       let dnsCallback
 
-      Cluster.mockImplementation((nodes, options) => {
+      vi.mocked(Cluster).mockImplementation((nodes, options) => {
         dnsCallback = options.dnsLookup
         return { on: mockOn }
       })
@@ -56,7 +59,7 @@ describe('#buildRedisClient', () => {
         useSingleInstanceCache: false
       })
 
-      const mockCb = jest.fn()
+      const mockCb = vi.fn()
       dnsCallback('localhost', mockCb)
 
       expect(mockCb).toHaveBeenCalledWith(null, 'localhost')
@@ -76,7 +79,7 @@ describe('#buildRedisClient', () => {
     })
 
     test('Should instantiate a Redis Cluster client', () => {
-      expect(Cluster).toHaveBeenCalledWith([{ host: '127.0.0.1', port: 6379 }], {
+      expect(vi.mocked(Cluster)).toHaveBeenCalledWith([{ host: '127.0.0.1', port: 6379 }], {
         dnsLookup: expect.any(Function),
         keyPrefix: 'grants-ui:',
         redisOptions: { db: 0, password: 'pass', tls: {}, username: 'user' },

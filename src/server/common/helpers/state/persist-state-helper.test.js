@@ -1,4 +1,4 @@
-import { jest } from '@jest/globals'
+import { vi } from 'vitest'
 import { mockRequestWithIdentity } from './mock-request-with-identity.test-helper.js'
 import {
   MOCK_STATE_DATA,
@@ -6,18 +6,20 @@ import {
   TEST_USER_IDS,
   ERROR_MESSAGES,
   LOG_MESSAGES,
-  createMockConfig
+  createMockConfig,
+  createMockConfigWithoutEndpoint
 } from './test-helpers/auth-test-helpers.js'
+import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
 
 const GRANT_VERSION = 1
 
-const mockGetCacheKey = jest.fn()
+const mockGetCacheKey = vi.fn()
 
-jest.mock('~/src/server/common/helpers/state/get-cache-key-helper.js', () => ({
+vi.mock('~/src/server/common/helpers/state/get-cache-key-helper.js', () => ({
   getCacheKey: mockGetCacheKey
 }))
 
-global.fetch = jest.fn()
+global.fetch = vi.fn()
 
 let persistStateToApi
 
@@ -26,7 +28,7 @@ describe('persistStateToApi', () => {
 
   const createMockRequestWithLogger = () => {
     const request = createMockRequest()
-    request.logger = { info: jest.fn(), error: jest.fn() }
+    request.logger = mockRequestLogger()
     return request
   }
 
@@ -46,16 +48,16 @@ describe('persistStateToApi', () => {
 
   describe('With backend configured correctly', () => {
     beforeEach(async () => {
-      jest.resetModules()
-      jest.doMock('~/src/config/config.js', createMockConfig)
+      vi.resetAllMocks()
+      vi.doMock('~/src/config/config.js', createMockConfig)
       const helper = await import('~/src/server/common/helpers/state/persist-state-helper.js')
       persistStateToApi = helper.persistStateToApi
       setupMockCacheKey()
-      jest.clearAllMocks()
+      vi.clearAllMocks()
     })
 
     afterEach(() => {
-      jest.dontMock('~/src/config/config.js')
+      vi.unmock('~/src/config/config.js')
     })
 
     const createSuccessfulFetchResponse = () => ({
@@ -132,6 +134,33 @@ describe('persistStateToApi', () => {
 
       expect(fetch).toHaveBeenCalledTimes(1)
       expect(request.logger.error).toHaveBeenCalledWith(`${LOG_MESSAGES.PERSIST_FAILED}: ${networkError.message}`)
+    })
+  })
+
+  describe('With backend not configured', () => {
+    beforeEach(async () => {
+      vi.resetAllMocks()
+      vi.resetModules()
+      vi.doMock('~/src/config/config.js', createMockConfigWithoutEndpoint)
+      const helper = await import('~/src/server/common/helpers/state/persist-state-helper.js')
+      persistStateToApi = helper.persistStateToApi
+      setupMockCacheKey()
+      vi.clearAllMocks()
+    })
+
+    afterEach(() => {
+      vi.unmock('~/src/config/config.js')
+    })
+
+    it('should return early when backend endpoint is not configured', async () => {
+      const request = createMockRequestWithLogger()
+      const testState = createTestState()
+
+      await persistStateToApi(testState, request)
+
+      expect(fetch).not.toHaveBeenCalled()
+      expect(request.logger.info).not.toHaveBeenCalled()
+      expect(request.logger.error).not.toHaveBeenCalled()
     })
   })
 })

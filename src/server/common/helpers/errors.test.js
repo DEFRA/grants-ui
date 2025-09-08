@@ -1,24 +1,33 @@
-import { createServer } from '~/src/server/index.js'
+import { vi } from 'vitest'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { catchAll } from '~/src/server/common/helpers/errors.js'
 import Wreck from '@hapi/wreck'
 import { log } from '~/src/server/common/helpers/logging/log.js'
+import { createServer } from '~/src/server/index.js'
+vi.unmock('~/src/server/index.js')
 
-jest.mock('@hapi/wreck', () => ({
-  get: jest.fn()
-}))
+vi.mock('hapi-pino', async () => {
+  const { mockHapiPino } = await import('~/src/__mocks__')
+  const hapiPino = mockHapiPino()
+  return {
+    default: hapiPino,
+    ...hapiPino
+  }
+})
 
-jest.mock('~/src/server/common/helpers/logging/log.js', () => ({
-  log: jest.fn(),
-  LogCodes: {
-    AUTH: {
-      SIGN_IN_FAILURE: { level: 'error', messageFunc: jest.fn() }
-    },
-    SYSTEM: {
-      SERVER_ERROR: { level: 'error', messageFunc: jest.fn() }
+vi.mock('@defra/forms-engine-plugin', () => ({
+  default: {
+    plugin: {
+      name: 'forms-engine-plugin',
+      register: vi.fn()
     }
   }
 }))
+
+vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
+  const { mockLogHelper } = await import('~/src/__mocks__')
+  return mockLogHelper()
+})
 
 describe('#errors', () => {
   /** @type {Server} */
@@ -52,7 +61,7 @@ describe('#errors', () => {
 })
 
 describe('#catchAll', () => {
-  const mockErrorLogger = jest.fn()
+  const mockErrorLogger = vi.fn()
   const mockStack = 'Mock error stack'
   const errorPage = 'error/index'
   const mockRequest = (/** @type {number} */ statusCode) => ({
@@ -68,8 +77,8 @@ describe('#catchAll', () => {
     path: '/test-path',
     method: 'GET'
   })
-  const mockToolkitView = jest.fn()
-  const mockToolkitCode = jest.fn()
+  const mockToolkitView = vi.fn()
+  const mockToolkitCode = vi.fn()
   const mockToolkit = {
     view: mockToolkitView.mockReturnThis(),
     code: mockToolkitCode.mockReturnThis()
@@ -245,10 +254,57 @@ describe('#catchAll', () => {
     expect(mockToolkitCode).toHaveBeenCalledWith(statusCode)
   })
 
+  test('Should log auth error when path starts with /auth', () => {
+    const statusCode = statusCodes.internalServerError
+    const request = mockRequest(statusCode)
+    request.response.alreadyLogged = false
+    request.path = '/auth/login'
+    request.response.message = 'Authentication failed'
+    request.auth = {
+      credentials: { contactId: 'user123' },
+      isAuthenticated: false,
+      strategy: 'session',
+      mode: 'required'
+    }
+    request.headers = {
+      'user-agent': 'Test Browser',
+      referer: 'https://example.com'
+    }
+    request.query = { redirect: '/dashboard' }
+
+    catchAll(request, mockToolkit)
+
+    expect(log).toHaveBeenCalledWith(
+      expect.objectContaining({
+        level: expect.anything(),
+        messageFunc: expect.any(Function)
+      }),
+      expect.objectContaining({
+        userId: 'user123',
+        error: 'Authentication failed',
+        step: 'auth_flow_error',
+        authContext: expect.objectContaining({
+          path: '/auth/login',
+          isAuthenticated: false,
+          strategy: 'session',
+          mode: 'required',
+          hasCredentials: true,
+          hasToken: false,
+          hasProfile: false,
+          userAgent: 'Test Browser',
+          referer: 'https://example.com',
+          queryParams: { redirect: '/dashboard' },
+          isBellError: false,
+          statusCode
+        })
+      })
+    )
+  })
+
   test('Should default to 200 if no statusCode on non-Boom response', () => {
     const responseObj = { payload: 'OK' }
-    const mockResponse = jest.fn().mockReturnThis()
-    const mockCode = jest.fn().mockReturnThis()
+    const mockResponse = vi.fn().mockReturnThis()
+    const mockCode = vi.fn().mockReturnThis()
 
     catchAll({ response: responseObj }, { response: mockResponse, code: mockCode })
 
@@ -258,11 +314,11 @@ describe('#catchAll', () => {
 })
 
 describe('#catchAll Redirect Handling', () => {
-  const mockToolkitRedirect = jest.fn()
+  const mockToolkitRedirect = vi.fn()
   const mockToolkit = {
     redirect: mockToolkitRedirect,
-    view: jest.fn().mockReturnThis(),
-    code: jest.fn().mockReturnThis()
+    view: vi.fn().mockReturnThis(),
+    code: vi.fn().mockReturnThis()
   }
 
   beforeEach(() => {

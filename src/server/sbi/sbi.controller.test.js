@@ -1,17 +1,19 @@
+import { vi } from 'vitest'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { sbiSelectorController } from './sbi.controller.js'
 import { sbiStore } from './state.js'
+import { mockHapiRequest, mockHapiResponseToolkit } from '~/src/__mocks__/hapi-mocks.js'
 
-jest.mock('~/src/server/common/constants/status-codes.js', () => ({
+vi.mock('~/src/server/common/constants/status-codes.js', () => ({
   statusCodes: {
     ok: 200,
     methodNotAllowed: 405
   }
 }))
 
-jest.mock('./state.js', () => ({
+vi.mock('./state.js', () => ({
   sbiStore: {
-    set: jest.fn()
+    set: vi.fn()
   }
 }))
 
@@ -20,22 +22,22 @@ describe('sbiSelectorController', () => {
   let mockH
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
 
-    mockH = {
-      response: jest.fn().mockReturnThis(),
-      code: jest.fn().mockReturnThis()
-    }
+    mockH = mockHapiResponseToolkit({
+      response: vi.fn().mockReturnThis(),
+      code: vi.fn().mockReturnThis()
+    })
   })
 
   describe('POST requests', () => {
     beforeEach(() => {
-      mockRequest = {
+      mockRequest = mockHapiRequest({
         method: 'post',
         payload: {
           sbi: 'test-sbi-value'
         }
-      }
+      })
     })
 
     it('should successfully update SBI and return success message', () => {
@@ -92,10 +94,10 @@ describe('sbiSelectorController', () => {
 
   describe('Non-POST requests', () => {
     it('should return method not allowed for GET requests', () => {
-      mockRequest = {
+      mockRequest = mockHapiRequest({
         method: 'get',
         payload: {}
-      }
+      })
 
       sbiSelectorController.handler(mockRequest, mockH)
 
@@ -107,10 +109,10 @@ describe('sbiSelectorController', () => {
     })
 
     it('should return method not allowed for PUT requests', () => {
-      mockRequest = {
+      mockRequest = mockHapiRequest({
         method: 'put',
         payload: { sbi: 'test-value' }
-      }
+      })
 
       sbiSelectorController.handler(mockRequest, mockH)
 
@@ -122,10 +124,10 @@ describe('sbiSelectorController', () => {
     })
 
     it('should return method not allowed for DELETE requests', () => {
-      mockRequest = {
+      mockRequest = mockHapiRequest({
         method: 'delete',
         payload: {}
-      }
+      })
 
       sbiSelectorController.handler(mockRequest, mockH)
 
@@ -137,10 +139,10 @@ describe('sbiSelectorController', () => {
     })
 
     it('should return method not allowed for PATCH requests', () => {
-      mockRequest = {
+      mockRequest = mockHapiRequest({
         method: 'patch',
         payload: { sbi: 'test-value' }
-      }
+      })
 
       sbiSelectorController.handler(mockRequest, mockH)
 
@@ -156,6 +158,7 @@ describe('sbiSelectorController', () => {
     it('should handle missing payload', () => {
       mockRequest = {
         method: 'post'
+        // intentionally no payload property for this edge case test
       }
 
       expect(() => {
@@ -164,10 +167,10 @@ describe('sbiSelectorController', () => {
     })
 
     it('should handle payload without sbi property', () => {
-      mockRequest = {
+      mockRequest = mockHapiRequest({
         method: 'post',
         payload: {}
-      }
+      })
 
       sbiSelectorController.handler(mockRequest, mockH)
 
@@ -181,10 +184,10 @@ describe('sbiSelectorController', () => {
 
   describe('Response chaining', () => {
     it('should return the result of the response chain for POST requests', () => {
-      mockRequest = {
+      mockRequest = mockHapiRequest({
         method: 'post',
         payload: { sbi: 'test-value' }
-      }
+      })
 
       const result = sbiSelectorController.handler(mockRequest, mockH)
 
@@ -205,10 +208,10 @@ describe('sbiSelectorController', () => {
 
   describe('sbiStore integration', () => {
     it('should call sbiStore.set with correct parameters only once per request', () => {
-      mockRequest = {
+      mockRequest = mockHapiRequest({
         method: 'post',
         payload: { sbi: 'unique-sbi-value' }
-      }
+      })
 
       sbiSelectorController.handler(mockRequest, mockH)
 
@@ -217,10 +220,10 @@ describe('sbiSelectorController', () => {
     })
 
     it('should not call sbiStore.set for non-POST requests', () => {
-      mockRequest = {
+      mockRequest = mockHapiRequest({
         method: 'get',
         payload: { sbi: 'should-not-be-stored' }
-      }
+      })
 
       sbiSelectorController.handler(mockRequest, mockH)
 

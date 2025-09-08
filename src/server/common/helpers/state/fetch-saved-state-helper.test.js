@@ -1,4 +1,4 @@
-import { jest } from '@jest/globals'
+import { vi } from 'vitest'
 import { mockRequestWithIdentity } from './mock-request-with-identity.test-helper.js'
 import {
   MOCK_STATE_DATA,
@@ -9,66 +9,63 @@ import {
   createMockConfig,
   createMockConfigWithoutEndpoint
 } from './test-helpers/auth-test-helpers.js'
+import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
 
 const LOG_TAGS = {
   FETCH_SAVED_STATE: 'fetch-saved-state'
 }
 
-global.fetch = jest.fn()
+global.fetch = vi.fn()
 
 let fetchSavedStateFromApi
 
-describe('fetchSavedStateFromApi', () => {
-  const createMockRequest = () => mockRequestWithIdentity({ params: { slug: TEST_USER_IDS.GRANT_ID } })
+const mockRequest = mockRequestWithIdentity({ params: { slug: TEST_USER_IDS.GRANT_ID } })
+const mockRequestWithLogger = {
+  ...mockRequest,
+  logger: mockRequestLogger()
+}
 
-  const createMockRequestWithLogger = () => {
-    const request = createMockRequest()
-    request.logger = { warn: jest.fn(), error: jest.fn() }
-    return request
+const successfulResponse = {
+  ok: true,
+  json: () => MOCK_STATE_DATA.DEFAULT
+}
+
+const createFailedResponse = (status, statusText = 'Error') => ({
+  ok: false,
+  status,
+  statusText,
+  json: () => {
+    throw new Error(ERROR_MESSAGES.NO_CONTENT)
   }
+})
 
-  const createSuccessfulResponse = (data = MOCK_STATE_DATA.DEFAULT) => ({
-    ok: true,
-    json: () => data
-  })
-
-  const createFailedResponse = (status, statusText = 'Error') => ({
-    ok: false,
-    status,
-    statusText,
-    json: () => {
-      throw new Error(ERROR_MESSAGES.NO_CONTENT)
-    }
-  })
-
+describe('fetchSavedStateFromApi', () => {
   describe('With backend configured correctly', () => {
     beforeEach(async () => {
-      jest.resetModules()
-      jest.doMock('~/src/config/config.js', createMockConfig)
-      const helper = await import('~/src/server/common/helpers/state/fetch-saved-state-helper.js')
+      vi.clearAllMocks()
+      vi.resetModules()
+      vi.doMock('~/src/config/config.js', createMockConfig)
+      const helper = await import('~/src/server/common/helpers/state/fetch-saved-state-helper.js?t=' + Date.now())
       fetchSavedStateFromApi = helper.fetchSavedStateFromApi
-      jest.clearAllMocks()
     })
 
     afterEach(() => {
-      jest.dontMock('~/src/config/config.js')
+      vi.doUnmock('~/src/config/config.js')
     })
 
     it('returns state when response is valid', async () => {
-      fetch.mockResolvedValue(createSuccessfulResponse())
+      fetch.mockResolvedValue(successfulResponse)
 
-      const request = createMockRequest()
-      const result = await fetchSavedStateFromApi(request)
+      const result = await fetchSavedStateFromApi(mockRequest)
 
       expect(result).toHaveProperty('state')
       expect(fetch).toHaveBeenCalledTimes(1)
     })
 
     it('includes authorization header in fetch request', async () => {
-      fetch.mockResolvedValue(createSuccessfulResponse())
+      fetch.mockResolvedValue(successfulResponse)
 
-      const request = createMockRequest()
-      await fetchSavedStateFromApi(request)
+      await fetchSavedStateFromApi(mockRequest)
 
       expect(fetch).toHaveBeenCalledTimes(1)
       expect(fetch).toHaveBeenCalledWith(
@@ -90,8 +87,7 @@ describe('fetchSavedStateFromApi', () => {
     it('returns null on 404', async () => {
       fetch.mockResolvedValue(createFailedResponse(HTTP_STATUS.NOT_FOUND, ERROR_MESSAGES.NOT_FOUND))
 
-      const request = createMockRequest()
-      const result = await fetchSavedStateFromApi(request)
+      const result = await fetchSavedStateFromApi(mockRequest)
 
       expect(result).toBeNull()
       expect(fetch).toHaveBeenCalledTimes(1)
@@ -102,22 +98,19 @@ describe('fetchSavedStateFromApi', () => {
         createFailedResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, ERROR_MESSAGES.INTERNAL_SERVER_ERROR)
       )
 
-      const request = createMockRequest()
-      const result = await fetchSavedStateFromApi(request)
+      const result = await fetchSavedStateFromApi(mockRequest)
 
       expect(result).toBeNull()
       expect(fetch).toHaveBeenCalledTimes(1)
     })
 
     it('returns null when response JSON is invalid or missing state', async () => {
-      fetch.mockResolvedValue(createSuccessfulResponse(123))
+      fetch.mockResolvedValue({ ok: true, json: () => 123 })
 
-      const request = createMockRequestWithLogger()
-
-      const result = await fetchSavedStateFromApi(request)
+      const result = await fetchSavedStateFromApi(mockRequestWithLogger)
 
       expect(result).toBeNull()
-      expect(request.logger.warn).toHaveBeenCalledWith(
+      expect(mockRequestWithLogger.logger.warn).toHaveBeenCalledWith(
         [LOG_TAGS.FETCH_SAVED_STATE],
         LOG_MESSAGES.UNEXPECTED_STATE_FORMAT,
         expect.any(Object)
@@ -128,12 +121,10 @@ describe('fetchSavedStateFromApi', () => {
       const networkError = new Error(ERROR_MESSAGES.NETWORK_ERROR)
       fetch.mockRejectedValue(networkError)
 
-      const request = createMockRequestWithLogger()
-
-      const result = await fetchSavedStateFromApi(request)
+      const result = await fetchSavedStateFromApi(mockRequestWithLogger)
 
       expect(result).toBeNull()
-      expect(request.logger.error).toHaveBeenCalledWith(
+      expect(mockRequestWithLogger.logger.error).toHaveBeenCalledWith(
         [LOG_TAGS.FETCH_SAVED_STATE],
         LOG_MESSAGES.FETCH_FAILED,
         networkError
@@ -143,20 +134,19 @@ describe('fetchSavedStateFromApi', () => {
 
   describe('Without backend endpoint configured', () => {
     beforeEach(async () => {
-      jest.resetModules()
-      jest.doMock('~/src/config/config.js', createMockConfigWithoutEndpoint)
-      const helper = await import('~/src/server/common/helpers/state/fetch-saved-state-helper.js')
+      vi.clearAllMocks()
+      vi.resetModules()
+      vi.doMock('~/src/config/config.js', createMockConfigWithoutEndpoint)
+      const helper = await import('~/src/server/common/helpers/state/fetch-saved-state-helper.js?t=' + Date.now())
       fetchSavedStateFromApi = helper.fetchSavedStateFromApi
-      jest.clearAllMocks()
     })
 
     afterEach(() => {
-      jest.dontMock('~/src/config/config.js')
+      vi.doUnmock('~/src/config/config.js')
     })
 
     it('returns null when GRANTS_UI_BACKEND_ENDPOINT is not configured', async () => {
-      const request = createMockRequest()
-      const result = await fetchSavedStateFromApi(request)
+      const result = await fetchSavedStateFromApi(mockRequest)
 
       expect(result).toBeNull()
       expect(fetch).not.toHaveBeenCalled()

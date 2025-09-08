@@ -1,30 +1,30 @@
+import { vi } from 'vitest'
 import * as permissionsModule from './get-permissions.js'
 import { getPermissions } from './get-permissions.js'
 
-const DEFAULT_SCOPE = 'user'
-
 // TODO: This test currently mocks the actual `getPermissions` implementation.
-jest.mock('./get-permissions', () => {
-  const mockGetPersonId = jest.fn()
-  const mockGetRolesAndPrivileges = jest.fn()
+vi.mock('./get-permissions', () => {
+  const mockGetPersonId = vi.fn()
+  const mockGetRolesAndPrivileges = vi.fn()
+  const defaultScope = 'user' // Local copy to avoid hoisting issues
 
   return {
     __esModule: true,
     getPermissions: async (crn, organisationId, token) => {
       const personId = await mockGetPersonId({ crn, token })
       const { role, privileges } = await mockGetRolesAndPrivileges(personId, organisationId, { crn, token })
-      const scope = [DEFAULT_SCOPE, ...privileges]
+      const scope = [defaultScope, ...privileges]
       return { role, scope }
     },
     getPersonId: mockGetPersonId,
     getRolesAndPrivileges: mockGetRolesAndPrivileges,
-    DEFAULT_SCOPE
+    DEFAULT_SCOPE: defaultScope
   }
 })
 
 describe('getPermissions', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   it('should return the correct role and scope when valid data is provided', async () => {
@@ -124,7 +124,11 @@ describe('getPermissions', () => {
 })
 
 describe('Integration tests for permission functions', () => {
-  const originalModule = jest.requireActual('./get-permissions')
+  let originalModule
+
+  beforeAll(async () => {
+    originalModule = await vi.importActual('./get-permissions')
+  })
 
   it('should integrate correctly with mock API responses', async () => {
     const crn = '1234567890'

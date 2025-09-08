@@ -1,20 +1,22 @@
+import { vi } from 'vitest'
+import { mockHapiRequest } from '~/src/__mocks__'
 import { storeSlugInContext, getFormSlug, getConfirmationPath } from './form-slug-helper.js'
 
 describe('form-slug-helper', () => {
   describe('storeSlugInContext', () => {
     const controllerName = 'TestController'
-    const mockDebug = jest.fn()
+    const mockDebug = vi.fn()
 
     afterEach(() => {
-      jest.clearAllMocks()
+      vi.clearAllMocks()
     })
 
     test('should store slug in context when available in request.params', () => {
       const mockSlug = 'test-slug'
-      const mockRequest = {
+      const mockRequest = mockHapiRequest({
         params: { slug: mockSlug },
         logger: { debug: mockDebug }
-      }
+      })
       const mockContext = { state: {} }
 
       const result = storeSlugInContext(mockRequest, mockContext, controllerName)
@@ -27,10 +29,10 @@ describe('form-slug-helper', () => {
     test('should not store slug in context when already present', () => {
       const existingSlug = 'existing-slug'
       const newSlug = 'new-slug'
-      const mockRequest = {
+      const mockRequest = mockHapiRequest({
         params: { slug: newSlug },
         logger: { debug: mockDebug }
-      }
+      })
       const mockContext = { state: { formSlug: existingSlug } }
 
       const result = storeSlugInContext(mockRequest, mockContext, controllerName)
@@ -41,10 +43,10 @@ describe('form-slug-helper', () => {
     })
 
     test('should return null when slug is not available in request.params', () => {
-      const mockRequest = {
+      const mockRequest = mockHapiRequest({
         params: {},
         logger: { debug: mockDebug }
-      }
+      })
       const mockContext = { state: {} }
 
       const result = storeSlugInContext(mockRequest, mockContext, controllerName)
@@ -65,10 +67,10 @@ describe('form-slug-helper', () => {
 
     test('should handle case when context.state is undefined', () => {
       const mockSlug = 'test-slug'
-      const mockRequest = {
+      const mockRequest = mockHapiRequest({
         params: { slug: mockSlug },
         logger: { debug: mockDebug }
-      }
+      })
       const mockContext = {}
 
       const result = storeSlugInContext(mockRequest, mockContext, controllerName)
@@ -80,10 +82,10 @@ describe('form-slug-helper', () => {
 
   describe('getFormSlug', () => {
     const controllerName = 'TestController'
-    const mockDebug = jest.fn()
+    const mockDebug = vi.fn()
 
     afterEach(() => {
-      jest.clearAllMocks()
+      vi.clearAllMocks()
     })
 
     test('should get slug from request.params when available', () => {
@@ -161,7 +163,7 @@ describe('form-slug-helper', () => {
       const mockSlug = 'test-slug'
       const mockRequest = {
         params: { slug: mockSlug },
-        logger: { debug: jest.fn() }
+        logger: { debug: vi.fn() }
       }
       const mockContext = { state: {} }
 
@@ -173,7 +175,7 @@ describe('form-slug-helper', () => {
     test('should return default path when no slug is found', () => {
       const mockRequest = {
         params: {},
-        logger: { debug: jest.fn() }
+        logger: { debug: vi.fn() }
       }
       const mockContext = { state: {} }
 
