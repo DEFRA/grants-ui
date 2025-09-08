@@ -18,8 +18,8 @@ describe('grants-ui -> fg-gas-backend', () => {
 
     await provider
       .addInteraction()
-      .given('an applicant is using grants-ui')
-      .uponReceiving('an example-grant-with-auth application')
+      .given('example-grant-with-auth-v3 is configured in GAS')
+      .uponReceiving('an example-grant-with-auth-v3 application')
       .withRequest('POST', '/grants/example-grant-with-auth-v3/applications', (builder) => {
         builder.headers({ 'Content-Type': 'application/json' })
         builder.jsonBody(body)
