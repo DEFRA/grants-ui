@@ -42,6 +42,11 @@ pages:
     controller: LandActionsCheckPageController
     next: []
     id: 245dc425-8efa-45b7-92df-178d1b0fe4ce
+  - title: Remove action
+    path: /confirm-remove-action
+    controller: RemoveActionPageController
+    next: []
+    id: b5259479-a2b2-46f2-ae60-70a89a2530cc
   - title: Submit your application
     path: /submit-your-application
     controller: SubmissionPageController
