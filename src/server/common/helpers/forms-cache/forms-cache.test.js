@@ -1,11 +1,12 @@
+import { vi } from 'vitest'
 import { getFormsCacheService } from './forms-cache.js'
 
 describe('getFormsCacheService', () => {
   it('should return the cache service from the forms-engine-plugin', () => {
     const mockCacheService = {
-      clearState: jest.fn(),
-      getItem: jest.fn(),
-      setItem: jest.fn()
+      clearState: vi.fn(),
+      getItem: vi.fn(),
+      setItem: vi.fn()
     }
 
     const mockServer = {

@@ -1,17 +1,22 @@
+import { vi } from 'vitest'
 import { config } from '~/src/config/config.js'
 import { fetchBusinessAndCustomerInformation } from '../../common/services/consolidated-view/consolidated-view.service.js'
+import { sbiStore } from '~/src/server/sbi/state.js'
 import ConfirmFarmDetailsController from './confirm-farm-details.controller.js'
-
-jest.mock('~/src/config/config.js')
-
-jest.mock('../../common/services/consolidated-view/consolidated-view.service.js')
-jest.mock('~/src/server/common/helpers/logging/logger.js', () => ({
-  createLogger: jest.fn(() => ({
-    error: jest.fn()
-  }))
-}))
-jest.mock('~/src/server/land-grants/utils/format-phone.js', () => ({
-  formatPhone: jest.fn((phone) => (phone ? `formatted-${phone}` : ''))
+vi.mock('~/src/config/config.js')
+vi.mock('~/src/server/sbi/state.js', async () => {
+  const { mockSbiState } = await import('~/src/__mocks__')
+  return mockSbiState()
+})
+vi.mock('../../common/services/consolidated-view/consolidated-view.service.js')
+vi.mock('~/src/server/common/helpers/logging/logger.js', async () => {
+  const { mockLoggerFactoryWithCustomMethods } = await import('~/src/__mocks__')
+  return mockLoggerFactoryWithCustomMethods({
+    error: vi.fn()
+  })
+})
+vi.mock('~/src/server/land-grants/utils/format-phone.js', () => ({
+  formatPhone: vi.fn((phone) => (phone ? `formatted-${phone}` : ''))
 }))
 
 const mockData = {
@@ -39,9 +44,9 @@ describe('ConfirmFarmDetailsController', () => {
 
   beforeEach(() => {
     controller = new ConfirmFarmDetailsController()
-    controller.proceed = jest.fn().mockResolvedValue('redirected')
-    controller.getNextPath = jest.fn().mockReturnValue('/next-path')
-    controller.setState = jest.fn()
+    controller.proceed = vi.fn().mockResolvedValue('redirected')
+    controller.getNextPath = vi.fn().mockReturnValue('/next-path')
+    controller.setState = vi.fn()
     mockRequest = {
       auth: {
         isAuthenticated: true,
@@ -61,18 +66,20 @@ describe('ConfirmFarmDetailsController', () => {
     }
     mockContext = {}
     mockH = {
-      view: jest.fn().mockReturnValue('mocked-view')
+      view: vi.fn().mockReturnValue('mocked-view')
     }
+    sbiStore.get = vi.fn().mockReturnValue('SBI123456')
     fetchBusinessAndCustomerInformation.mockResolvedValue(mockData)
     config.get.mockReturnValue(true)
   })
 
   afterEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   describe('POST route handler', () => {
     test('should not update state and proceed if no sbi', async () => {
+      sbiStore.get = vi.fn().mockReturnValue(null)
       const handler = controller.makePostRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
 
@@ -117,7 +124,8 @@ describe('ConfirmFarmDetailsController', () => {
       expect(mockH.view).toHaveBeenCalledWith('confirm-farm-details', {
         farmDetails: expect.objectContaining({
           rows: expect.any(Array)
-        })
+        }),
+        pageTitle: 'Default Title'
       })
       expect(result).toBe('mocked-view')
     })
@@ -138,7 +146,8 @@ describe('ConfirmFarmDetailsController', () => {
               href: ''
             }
           ]
-        }
+        },
+        pageTitle: 'Default Title'
       })
       expect(result).toBe('mocked-view')
     })

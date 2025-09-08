@@ -1,17 +1,53 @@
-// Mock the entire plugin
-const plugin = {
-  name: 'forms-engine-plugin',
-  register: jest.fn(),
-  controllers: {}
+class QuestionPageController {
+  constructor(page, model, options = {}) {
+    this.page = page
+    this.model = model
+    this.options = options
+    this.viewName = page?.name || 'default-view'
+  }
+
+  makeGetRouteHandler() {
+    return () => ({ view: this.viewName })
+  }
+
+  makePostRouteHandler() {
+    return () => ({ redirect: '/next' })
+  }
 }
 
-// Mock any specific functions used by tests
-plugin.createServer = jest.fn().mockImplementation(() => {
-  return {
-    initialize: jest.fn().mockResolvedValue(true),
-    stop: jest.fn().mockResolvedValue(true),
-    inject: jest.fn().mockResolvedValue({ result: '', statusCode: 200 })
+class StatusPageController {
+  constructor(page, model, options = {}) {
+    this.page = page
+    this.model = model
+    this.options = options
+    this.viewName = page?.name || 'status-view'
   }
-})
 
-module.exports = plugin
+  makeGetRouteHandler() {
+    return () => ({ view: this.viewName })
+  }
+}
+
+class SummaryPageController {
+  constructor(page, model, options = {}) {
+    this.page = page
+    this.model = model
+    this.options = options
+    this.viewName = page?.name || 'summary-view'
+  }
+
+  makeGetRouteHandler() {
+    return () => ({ view: this.viewName })
+  }
+}
+
+module.exports = {
+  QuestionPageController,
+  StatusPageController,
+  SummaryPageController,
+  plugin: {
+    name: 'forms-engine-plugin',
+    register: () => {},
+    controllers: {}
+  }
+}

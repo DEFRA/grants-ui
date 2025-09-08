@@ -1,18 +1,19 @@
+import { vi } from 'vitest'
 import { requestLogger } from './request-logger.js'
 import { loggerOptions } from './logger-options.js'
 import hapiPino from 'hapi-pino'
 
 // Mock hapi-pino
-jest.mock('hapi-pino', () => ({
+vi.mock('hapi-pino', () => ({
   __esModule: true,
   default: {
     name: 'hapi-pino',
-    register: jest.fn()
+    register: vi.fn()
   }
 }))
 
 // Mock logger options
-jest.mock('./logger-options.js', () => ({
+vi.mock('./logger-options.js', () => ({
   loggerOptions: {
     prettyPrint: false,
     level: 'info'
@@ -21,7 +22,7 @@ jest.mock('./logger-options.js', () => ({
 
 describe('Request Logger', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   it('should export request logger plugin configuration', () => {
