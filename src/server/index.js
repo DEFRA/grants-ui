@@ -28,7 +28,6 @@ import { getCacheEngine } from '~/src/server/common/helpers/session-cache/cache-
 import { sessionCache } from '~/src/server/common/helpers/session-cache/session-cache.js'
 import ConfirmationPageController from '~/src/server/confirmation/confirmation.controller.js'
 import DeclarationPageController from '~/src/server/declaration/declaration.controller.js'
-import CheckAnswersPageController from '~/src/server/land-grants/controllers/check-answers-page.controller.js'
 import ConfirmFarmDetailsController from '~/src/server/land-grants/controllers/confirm-farm-details.controller.js'
 import LandActionsCheckPageController from '~/src/server/land-grants/controllers/land-actions-check-page.controller.js'
 import LandGrantsConfirmationController from '~/src/server/land-grants/controllers/land-grants-confirmation-controller.js'
@@ -149,7 +148,6 @@ const registerFormsPlugin = async (server, prefix = '') => {
       controllers: {
         ConfirmationPageController,
         DeclarationPageController,
-        CheckAnswersPageController,
         SubmissionPageController,
         ConfirmFarmDetailsController,
         LandParcelPageController,

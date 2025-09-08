@@ -42,11 +42,6 @@ pages:
     controller: LandActionsCheckPageController
     next: []
     id: 245dc425-8efa-45b7-92df-178d1b0fe4ce
-  - title: Check your answers before sending your application
-    path: /summary
-    controller: CheckAnswersPageController
-    next: []
-    id: 57a55a9c-9504-440b-9b73-8a67e0ff0f77
   - title: Submit your application
     path: /submit-your-application
     controller: SubmissionPageController
