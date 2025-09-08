@@ -19,18 +19,27 @@ jobs:
     if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name != 'pull_request'
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Pact Broker publish
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run contract tests
+        run: npm run test:contracts
+
+      - name: Publish pacts
         env:
           PACT_BROKER_BASE_URL: https://ffc-pact-broker.azure.defra.cloud
           PACT_BROKER_USERNAME: ${{ secrets.PACT_USER }}
           PACT_BROKER_PASSWORD: ${{ secrets.PACT_PASS }}
         run: |
-          docker run --rm \
-            -e PACT_BROKER_BASE_URL \
-            -e PACT_BROKER_USERNAME \
-            -e PACT_BROKER_PASSWORD \
-            -v "$PWD/contracts/pacts:/pacts" \
-            pactfoundation/pact-cli:latest \
-            pact-broker publish /pacts --consumer-app-version "test"
+          ./node_modules/.bin/pact-broker \
+            publish contracts/pacts
+            --auto-detect-version-properties
