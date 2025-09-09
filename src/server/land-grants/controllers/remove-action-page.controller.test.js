@@ -1,34 +1,34 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
-import { sbiStore } from '~/src/server/sbi/state.js'
-import { calculateGrantPayment } from '../services/land-grants.service.js'
-import LandActionsCheckPageController from './land-actions-check-page.controller.js'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import RemoveActionPageController from './remove-action-page.controller.js'
 
-vi.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js')
-vi.mock('~/src/server/land-grants/services/land-grants.service.js')
-vi.mock('~/src/server/sbi/state.js')
-
-describe('LandActionsCheckPageController', () => {
+describe('RemoveActionPageController', () => {
   let controller
   let mockRequest
   let mockContext
   let mockH
 
-  const mockPaymentResponse = {
-    payment: {
-      annualTotalPence: 32006,
-      parcelItems: {
-        1: {
+  const mockLandParcels = {
+    'SD6743-8083': {
+      actionsObj: {
+        CMOR1: {
           description: 'CMOR1: Assess moorland and produce a written record',
-          quantity: 4.53,
-          annualPaymentPence: 4806,
-          sheetId: 'SD6743',
-          parcelId: '8083'
+          value: '4.53',
+          unit: 'ha'
+        },
+        UPL1: {
+          description: 'UPL1: Moderate livestock grazing on moorland',
+          value: '2.5',
+          unit: 'ha'
         }
-      },
-      agreementLevelItems: {
-        1: {
-          description: 'Management payment',
-          annualPaymentPence: 27200
+      }
+    },
+    'SD6944-0085': {
+      actionsObj: {
+        CMOR1: {
+          description: 'CMOR1: Assess moorland and produce a written record',
+          value: '1.0',
+          unit: 'ha'
         }
       }
     }
@@ -36,31 +36,29 @@ describe('LandActionsCheckPageController', () => {
 
   beforeEach(() => {
     QuestionPageController.prototype.getViewModel = vi.fn().mockReturnValue({
-      pageTitle: 'Check selected land actions'
+      pageTitle: 'Remove action'
     })
 
-    controller = new LandActionsCheckPageController()
-    controller.setState = vi.fn()
+    controller = new RemoveActionPageController()
+    controller.setState = vi.fn().mockResolvedValue(true)
     controller.proceed = vi.fn().mockReturnValue('redirected')
-    controller.getNextPath = vi.fn().mockReturnValue('/next-path')
-    controller.collection = { getErrors: vi.fn().mockReturnValue([]) }
 
-    calculateGrantPayment.mockResolvedValue(mockPaymentResponse)
-    sbiStore.get = vi.fn().mockReturnValue('123456789')
+    mockRequest = {
+      query: {
+        parcel: 'SD6743-8083',
+        code: 'CMOR1'
+      },
+      payload: {}
+    }
 
-    mockRequest = { payload: {} }
     mockContext = {
       state: {
-        landParcels: {
-          'sheet1-parcel1': {
-            actionsObj: { ACTION1: { value: '10.5' } }
-          }
-        }
+        landParcels: mockLandParcels
       }
     }
+
     mockH = {
-      view: vi.fn().mockReturnValue('view-result'),
-      redirect: vi.fn().mockReturnValue('redirect-result')
+      view: vi.fn().mockReturnValue('rendered view')
     }
   })
 
@@ -68,209 +66,425 @@ describe('LandActionsCheckPageController', () => {
     vi.clearAllMocks()
   })
 
-  describe('Payment Calculation', () => {
-    test('should transform state data correctly for payment calculation', async () => {
-      const testState = {
+  test('should have the correct viewName', () => {
+    expect(controller.viewName).toBe('remove-action')
+  })
+
+  describe('extractParcelInfo', () => {
+    test('should extract parcel information correctly', () => {
+      const query = { parcel: 'SD6743-8083', code: 'CMOR1' }
+      const result = controller.extractParcelInfo(query)
+
+      expect(result).toEqual({
+        sheetId: 'SD6743',
+        parcelId: '8083',
+        code: 'CMOR1',
+        parcelKey: 'SD6743-8083',
+        parcel: 'SD6743-8083'
+      })
+    })
+
+    test('should handle empty query gracefully', () => {
+      const query = {}
+      const result = controller.extractParcelInfo(query)
+
+      expect(result).toEqual({
+        sheetId: '',
+        parcelId: '',
+        code: undefined,
+        parcelKey: '-',
+        parcel: undefined
+      })
+    })
+
+    test('should handle missing code in query', () => {
+      const query = { parcel: 'SD6743-8083' }
+      const result = controller.extractParcelInfo(query)
+
+      expect(result).toEqual({
+        sheetId: 'SD6743',
+        parcelId: '8083',
+        code: undefined,
+        parcelKey: 'SD6743-8083',
+        parcel: 'SD6743-8083'
+      })
+    })
+  })
+
+  describe('findActionInfo', () => {
+    test('should find action info when it exists', () => {
+      const result = controller.findActionInfo(mockLandParcels, 'SD6743-8083', 'CMOR1')
+
+      expect(result).toEqual({
+        description: 'CMOR1: Assess moorland and produce a written record',
+        value: '4.53',
+        unit: 'ha'
+      })
+    })
+
+    test('should return null when parcel does not exist', () => {
+      const result = controller.findActionInfo(mockLandParcels, 'nonexistent-parcel', 'CMOR1')
+
+      expect(result).toBeNull()
+    })
+
+    test('should return null when action does not exist', () => {
+      const result = controller.findActionInfo(mockLandParcels, 'SD6743-8083', 'NONEXISTENT')
+
+      expect(result).toBeNull()
+    })
+
+    test('should return null when actionsObj is missing', () => {
+      const landParcelsWithoutActions = {
+        'SD6743-8083': {}
+      }
+
+      const result = controller.findActionInfo(landParcelsWithoutActions, 'SD6743-8083', 'CMOR1')
+
+      expect(result).toBeNull()
+    })
+  })
+
+  describe('getNextPathAfterRemoval', () => {
+    test('should return check page when parcel has remaining actions', () => {
+      const newState = {
         landParcels: {
           'SD6743-8083': {
             actionsObj: {
-              CMOR1: { value: '4.53' },
-              ACTION2: { value: '2.1' }
-            }
-          },
-          'SD6944-0085': {
-            actionsObj: {
-              CMOR1: { value: '1.0' }
+              UPL1: { description: 'UPL1: Moderate livestock grazing on moorland' }
             }
           }
         }
       }
 
-      await controller.calculatePaymentInformationFromState(testState)
+      const result = controller.getNextPathAfterRemoval(newState, 'SD6743-8083', 'SD6743-8083')
 
-      expect(calculateGrantPayment).toHaveBeenCalledWith({
-        landActions: [
-          {
-            sbi: '123456789',
-            sheetId: 'SD6743',
-            parcelId: '8083',
-            actions: [
-              { code: 'CMOR1', quantity: 4.53 },
-              { code: 'ACTION2', quantity: 2.1 }
-            ]
-          },
-          {
-            sbi: '123456789',
-            sheetId: 'SD6944',
-            parcelId: '0085',
-            actions: [{ code: 'CMOR1', quantity: 1.0 }]
-          }
-        ]
-      })
+      expect(result).toBe('/check-selected-land-actions')
     })
 
-    test('should handle empty state gracefully', async () => {
-      const result = await controller.calculatePaymentInformationFromState({})
+    test('should return select actions page when parcel has no remaining actions', () => {
+      const newState = { landParcels: {} }
 
-      expect(calculateGrantPayment).toHaveBeenCalledWith({ landActions: [] })
-      expect(result).toEqual(mockPaymentResponse)
+      const result = controller.getNextPathAfterRemoval(newState, 'SD6743-8083', 'SD6743-8083')
+
+      expect(result).toBe('/select-actions-for-land-parcel?parcel=SD6743-8083')
     })
 
-    test('should skip parcels without actions', async () => {
-      const testState = {
+    test('should return select actions page when parcel is missing from state', () => {
+      const newState = {
         landParcels: {
-          'sheet1-parcel1': { actionsObj: { ACTION1: { value: '10' } } },
-          'sheet2-parcel2': {}, // No actions
-          'sheet3-parcel3': { actionsObj: {} } // Empty actions
+          'other-parcel': { actionsObj: {} }
         }
       }
 
-      await controller.calculatePaymentInformationFromState(testState)
+      const result = controller.getNextPathAfterRemoval(newState, 'SD6743-8083', 'SD6743-8083')
 
-      expect(calculateGrantPayment).toHaveBeenCalledWith({
-        landActions: [
-          {
-            sbi: '123456789',
-            sheetId: 'sheet1',
-            parcelId: 'parcel1',
-            actions: [{ code: 'ACTION1', quantity: 10 }]
-          }
-        ]
-      })
+      expect(result).toBe('/select-actions-for-land-parcel?parcel=SD6743-8083')
     })
   })
 
-  describe('GET Handler - Payment Display', () => {
-    test('should fetch payment data and display summary', async () => {
-      const handler = controller.makeGetRouteHandler()
+  describe('validatePostPayload', () => {
+    test('should return error when removeAction is undefined', () => {
+      const payload = {}
 
-      await handler(mockRequest, mockContext, mockH)
+      const result = controller.validatePostPayload(payload)
 
-      expect(calculateGrantPayment).toHaveBeenCalled()
+      expect(result).toEqual({
+        errorMessage: 'Please select if you want to remove the action'
+      })
+    })
+
+    test('should return error when removeAction is explicitly undefined', () => {
+      const payload = { removeAction: undefined }
+
+      const result = controller.validatePostPayload(payload)
+
+      expect(result).toEqual({
+        errorMessage: 'Please select if you want to remove the action'
+      })
+    })
+
+    test('should return null when removeAction is true', () => {
+      const payload = { removeAction: 'true' }
+
+      const result = controller.validatePostPayload(payload)
+
+      expect(result).toBeNull()
+    })
+
+    test('should return null when removeAction is false', () => {
+      const payload = { removeAction: 'false' }
+
+      const result = controller.validatePostPayload(payload)
+
+      expect(result).toBeNull()
+    })
+  })
+
+  describe('renderPostErrorView', () => {
+    test('should render error view with all properties', () => {
+      controller.parcel = 'SD6743-8083'
+      controller.actionDescription = 'Test Action Description'
+
+      const result = controller.renderPostErrorView(mockH, mockRequest, mockContext, 'Test error message')
+
+      expect(controller.getViewModel).toHaveBeenCalledWith(mockRequest, mockContext)
+      expect(mockH.view).toHaveBeenCalledWith('remove-action', {
+        pageTitle: 'Remove action',
+        parcel: 'SD6743-8083',
+        actionDescription: 'Test Action Description',
+        errorMessage: 'Test error message'
+      })
+      expect(result).toBe('rendered view')
+    })
+  })
+
+  describe('processActionRemoval', () => {
+    test('should update state and redirect to check page when actions remain', async () => {
+      controller.code = 'CMOR1'
+      controller.parcel = 'SD6743-8083'
+
+      const state = {
+        landParcels: JSON.parse(JSON.stringify(mockLandParcels)) // Deep clone
+      }
+
+      const result = await controller.processActionRemoval(mockRequest, state, mockH)
+
       expect(controller.setState).toHaveBeenCalledWith(
         mockRequest,
         expect.objectContaining({
-          payment: mockPaymentResponse.payment,
-          draftApplicationAnnualTotalPence: 32006
+          landParcels: expect.objectContaining({
+            'SD6743-8083': expect.objectContaining({
+              actionsObj: expect.objectContaining({
+                UPL1: expect.anything()
+              })
+            })
+          })
         })
       )
-      expect(mockH.view).toHaveBeenCalledWith(
-        'land-actions-check',
-        expect.objectContaining({
-          totalYearlyPayment: '£320.06'
-        })
-      )
+      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/check-selected-land-actions')
+      expect(result).toBe('redirected')
     })
 
-    test('should handle zero payment correctly', async () => {
-      calculateGrantPayment.mockResolvedValue({
-        payment: { annualTotalPence: 0, parcelItems: {}, agreementLevelItems: {} }
+    test('should update state and redirect to select page when no actions remain', async () => {
+      controller.code = 'CMOR1'
+      controller.parcel = 'SD6944-0085'
+
+      const state = {
+        landParcels: {
+          'SD6944-0085': {
+            actionsObj: {
+              CMOR1: { description: 'CMOR1: Test action' }
+            }
+          }
+        }
+      }
+
+      const result = await controller.processActionRemoval(mockRequest, state, mockH)
+
+      expect(controller.setState).toHaveBeenCalledWith(
+        mockRequest,
+        expect.objectContaining({
+          landParcels: expect.not.objectContaining({
+            'SD6944-0085': expect.anything()
+          })
+        })
+      )
+      expect(controller.proceed).toHaveBeenCalledWith(
+        mockRequest,
+        mockH,
+        '/select-actions-for-land-parcel?parcel=SD6944-0085'
+      )
+      expect(result).toBe('redirected')
+    })
+  })
+
+  describe('buildGetViewModel', () => {
+    test('should combine parent view model with controller properties', () => {
+      controller.parcel = 'SD6743-8083'
+      controller.actionDescription = 'Test Action'
+
+      const result = controller.buildGetViewModel(mockRequest, mockContext)
+
+      expect(controller.getViewModel).toHaveBeenCalledWith(mockRequest, mockContext)
+      expect(result).toEqual({
+        pageTitle: 'Remove action',
+        parcel: 'SD6743-8083',
+        actionDescription: 'Test Action'
       })
+    })
+  })
+
+  describe('makeGetRouteHandler', () => {
+    test('should extract parcel info and render view with action details', async () => {
+      const handler = controller.makeGetRouteHandler()
+
+      const result = await handler(mockRequest, mockContext, mockH)
+
+      expect(controller.code).toBe('CMOR1')
+      expect(controller.parcel).toBe('SD6743-8083')
+      expect(controller.actionDescription).toBe('CMOR1: Assess moorland and produce a written record')
+      expect(mockH.view).toHaveBeenCalledWith('remove-action', {
+        pageTitle: 'Remove action',
+        parcel: 'SD6743-8083',
+        actionDescription: 'CMOR1: Assess moorland and produce a written record'
+      })
+      expect(result).toBe('rendered view')
+    })
+
+    test('should redirect to check page when parcel not found', async () => {
+      mockRequest.query = { parcel: 'nonexistent-parcel', code: 'CMOR1' }
 
       const handler = controller.makeGetRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      const result = await handler(mockRequest, mockContext, mockH)
 
-      expect(mockH.view).toHaveBeenCalledWith(
-        'land-actions-check',
-        expect.objectContaining({
-          totalYearlyPayment: '£0.00'
-        })
-      )
-    })
-  })
-
-  describe('POST Handler - Form Validation', () => {
-    test('should show validation error when user must choose but does not', async () => {
-      mockRequest.payload = { action: 'validate' } // No addMoreActions provided
-
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
-
-      expect(mockH.view).toHaveBeenCalledWith(
-        'land-actions-check',
-        expect.objectContaining({
-          errorMessage: 'Please select if you want to add more actions'
-        })
-      )
-      expect(controller.proceed).not.toHaveBeenCalled()
-    })
-
-    test('should handle missing payment data gracefully in validation error', async () => {
-      mockContext.state = { landParcels: {} } // No payment data
-      mockRequest.payload = { action: 'validate' }
-
-      const handler = controller.makePostRouteHandler()
-
-      expect(async () => {
-        await handler(mockRequest, mockContext, mockH)
-      }).not.toThrow()
-    })
-
-    test('should redirect to add more actions when user chooses yes', async () => {
-      mockRequest.payload = { addMoreActions: 'true' }
-
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
-
-      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/select-land-parcel')
-    })
-
-    test('should continue to next step when user chooses no', async () => {
-      mockRequest.payload = { addMoreActions: 'false' }
-
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
-
-      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-path')
-    })
-
-    test('should proceed normally when no validation required', async () => {
-      mockRequest.payload = {} // No action: 'validate'
-
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
-
-      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-path')
+      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/check-selected-land-actions')
       expect(mockH.view).not.toHaveBeenCalled()
+      expect(result).toBe('redirected')
+    })
+
+    test('should redirect to check page when action not found', async () => {
+      mockRequest.query = { parcel: 'SD6743-8083', code: 'NONEXISTENT' }
+
+      const handler = controller.makeGetRouteHandler()
+      const result = await handler(mockRequest, mockContext, mockH)
+
+      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/check-selected-land-actions')
+      expect(mockH.view).not.toHaveBeenCalled()
+      expect(result).toBe('redirected')
+    })
+
+    test('should handle empty land parcels state', async () => {
+      mockContext.state.landParcels = {}
+
+      const handler = controller.makeGetRouteHandler()
+      const result = await handler(mockRequest, mockContext, mockH)
+
+      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/check-selected-land-actions')
+      expect(result).toBe('redirected')
+    })
+
+    test('should handle missing query parameters', async () => {
+      mockRequest.query = {}
+
+      const handler = controller.makeGetRouteHandler()
+      const result = await handler(mockRequest, mockContext, mockH)
+
+      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/check-selected-land-actions')
+      expect(result).toBe('redirected')
     })
   })
 
-  describe('Data Formatting', () => {
-    test('should format currency correctly', () => {
-      expect(controller.getPrice(32006)).toBe('£320.06')
-      expect(controller.getPrice(0)).toBe('£0.00')
-      expect(controller.getPrice(100)).toBe('£1.00')
+  describe('makePostRouteHandler', () => {
+    beforeEach(() => {
+      // Set up controller state as if GET request was processed
+      controller.code = 'CMOR1'
+      controller.parcel = 'SD6743-8083'
+      controller.actionDescription = 'CMOR1: Assess moorland and produce a written record'
     })
 
-    test('should group parcel items by parcel ID', () => {
-      const paymentData = {
-        parcelItems: {
-          1: { description: 'CMOR1', quantity: 5, annualPaymentPence: 1000, sheetId: 'SD01', parcelId: '001' },
-          2: { description: 'UPL1', quantity: 3, annualPaymentPence: 500, sheetId: 'SD01', parcelId: '001' },
-          3: { description: 'UPL2', quantity: 2, annualPaymentPence: 200, sheetId: 'SD02', parcelId: '002' }
-        }
-      }
+    test('should show validation error when removeAction not provided', async () => {
+      mockRequest.payload = {}
 
-      const result = controller.getParcelItems(paymentData)
+      const handler = controller.makePostRouteHandler()
+      const result = await handler(mockRequest, mockContext, mockH)
 
-      expect(result).toHaveLength(2) // Two different parcels
-      expect(result[0].parcelId).toBe('SD01 001')
-      expect(result[0].items).toHaveLength(2) // Two actions for first parcel
-      expect(result[1].parcelId).toBe('SD02 002')
-      expect(result[1].items).toHaveLength(1) // One action for second parcel
+      expect(mockH.view).toHaveBeenCalledWith('remove-action', {
+        pageTitle: 'Remove action',
+        parcel: 'SD6743-8083',
+        actionDescription: 'CMOR1: Assess moorland and produce a written record',
+        errorMessage: 'Please select if you want to remove the action'
+      })
+      expect(controller.setState).not.toHaveBeenCalled()
+      expect(result).toBe('rendered view')
     })
 
-    test('should format additional yearly payments', () => {
-      const paymentData = {
-        agreementLevelItems: {
-          1: { description: 'Management fee', annualPaymentPence: 5000 }
-        }
-      }
+    test('should remove action and redirect to check page when other actions remain', async () => {
+      mockRequest.payload = { removeAction: 'true' }
 
-      const result = controller.getAdditionalYearlyPayments(paymentData)
+      const handler = controller.makePostRouteHandler()
+      const result = await handler(mockRequest, mockContext, mockH)
 
-      expect(result[0].items[0][0].text).toBe('One-off payment per agreement per year for Management fee')
-      expect(result[0].items[0][1].text).toBe('£50.00')
+      expect(controller.setState).toHaveBeenCalledWith(
+        mockRequest,
+        expect.objectContaining({
+          landParcels: expect.objectContaining({
+            'SD6743-8083': expect.objectContaining({
+              actionsObj: expect.objectContaining({
+                UPL1: expect.anything()
+              })
+            })
+          })
+        })
+      )
+      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/check-selected-land-actions')
+      expect(result).toBe('redirected')
+    })
+
+    test('should remove action and redirect to select actions when no actions remain', async () => {
+      // Set up scenario where removing the last action
+      controller.parcel = 'SD6944-0085'
+      controller.code = 'CMOR1'
+      mockRequest.payload = { removeAction: 'true' }
+
+      const handler = controller.makePostRouteHandler()
+      const result = await handler(mockRequest, mockContext, mockH)
+
+      expect(controller.setState).toHaveBeenCalledWith(
+        mockRequest,
+        expect.objectContaining({
+          landParcels: expect.not.objectContaining({
+            'SD6944-0085': expect.anything()
+          })
+        })
+      )
+      expect(controller.proceed).toHaveBeenCalledWith(
+        mockRequest,
+        mockH,
+        '/select-actions-for-land-parcel?parcel=SD6944-0085'
+      )
+      expect(result).toBe('redirected')
+    })
+
+    test('should redirect to check page when user declines removal', async () => {
+      mockRequest.payload = { removeAction: 'false' }
+
+      const handler = controller.makePostRouteHandler()
+      const result = await handler(mockRequest, mockContext, mockH)
+
+      expect(controller.setState).not.toHaveBeenCalled()
+      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/check-selected-land-actions')
+      expect(result).toBe('redirected')
+    })
+
+    test('should handle null payload gracefully', async () => {
+      mockRequest.payload = null
+
+      const handler = controller.makePostRouteHandler()
+      const result = await handler(mockRequest, mockContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'remove-action',
+        expect.objectContaining({
+          errorMessage: 'Please select if you want to remove the action'
+        })
+      )
+      expect(result).toBe('rendered view')
+    })
+
+    test('should handle undefined payload gracefully', async () => {
+      mockRequest.payload = undefined
+
+      const handler = controller.makePostRouteHandler()
+      const result = await handler(mockRequest, mockContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'remove-action',
+        expect.objectContaining({
+          errorMessage: 'Please select if you want to remove the action'
+        })
+      )
+      expect(result).toBe('rendered view')
     })
   })
 })

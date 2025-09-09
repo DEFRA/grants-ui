@@ -12,9 +12,13 @@ const createLinks = (data, foundGroup) => {
   const links = []
 
   if (foundGroup?.actions.length > 1) {
-    links.push(`<li class='govuk-summary-list__actions-list-item'><a class='govuk-link' href='select-actions-for-land-parcel?parcel=${parcelParam}&code=${data.code}'>Change</a></li>`)
+    links.push(
+      `<li class='govuk-summary-list__actions-list-item'><a class='govuk-link' href='select-actions-for-land-parcel?parcel=${parcelParam}&code=${data.code}'>Change</a></li>`
+    )
   }
-  links.push(`<li class='govuk-summary-list__actions-list-item'><a class='govuk-link' href='confirm-remove-action?parcel=${parcelParam}&code=${data.code}'>Remove</a></li>`)
+  links.push(
+    `<li class='govuk-summary-list__actions-list-item'><a class='govuk-link' href='confirm-remove-action?parcel=${parcelParam}&code=${data.code}'>Remove</a></li>`
+  )
 
   return {
     html: `<ul class='govuk-summary-list__actions-list'>${links.join('')}</ul>`
@@ -170,9 +174,7 @@ export default class LandActionsCheckPageController extends QuestionPageControll
    * @returns {string} - Next path
    */
   getNextPathFromSelection(addMoreActions, context) {
-    return addMoreActions === 'true'
-      ? '/select-land-parcel'
-      : this.getNextPath(context)
+    return addMoreActions === 'true' ? '/select-land-parcel' : this.getNextPath(context)
   }
 
   /**
