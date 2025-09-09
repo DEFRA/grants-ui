@@ -13,11 +13,11 @@ const createLinks = (data, foundGroup) => {
 
   if (foundGroup?.actions.length > 1) {
     links.push(
-      `<li class='govuk-summary-list__actions-list-item'><a class='govuk-link' href='select-actions-for-land-parcel?parcel=${parcelParam}&code=${data.code}'>Change</a></li>`
+      `<li class='govuk-summary-list__actions-list-item'><a class='govuk-link' href='select-actions-for-land-parcel?parcelId=${parcelParam}&action=${data.code}'>Change</a></li>`
     )
   }
   links.push(
-    `<li class='govuk-summary-list__actions-list-item'><a class='govuk-link' href='confirm-remove-action?parcel=${parcelParam}&code=${data.code}'>Remove</a></li>`
+    `<li class='govuk-summary-list__actions-list-item'><a class='govuk-link' href='confirm-remove-action?parcel=${parcelParam}&action=${data.code}'>Remove</a></li>`
   )
 
   return {
@@ -127,17 +127,36 @@ export default class LandActionsCheckPageController extends QuestionPageControll
     ]
   }
 
-  /**
-   * Group payment items by parcel
-   * @param {object} paymentInfo - Payment information from API
-   * @returns {Array} - Array of grouped parcel items
-   */
-  getParcelItems(paymentInfo) {
+  buildLandParcelFooterActions = (selectedActions, sheetId, parcelId) => {
+    const uniqueCodes = [
+      ...new Set(
+        Object.values(selectedActions)
+          .filter((item) => `${item.sheetId} ${item.parcelId}` === `${sheetId} ${parcelId}`)
+          .map((item) => item.code)
+      )
+    ]
+
+    const hasActionFromGroup = actionGroups.map((group) => uniqueCodes.some((code) => group.actions.includes(code)))
+
+    if (hasActionFromGroup.every(Boolean)) {
+      return {}
+    }
+
+    return {
+      text: 'Add another action',
+      href: `select-actions-for-land-parcel?parcelId=${sheetId}-${parcelId}`,
+      hiddenTextValue: `${sheetId} ${parcelId}`
+    }
+  }
+
+  getParcelItems = (paymentInfo) => {
     const groupedByParcel = Object.values(paymentInfo?.parcelItems || {}).reduce((acc, data) => {
       const parcelKey = `${data.sheetId} ${data.parcelId}`
 
       if (!acc[parcelKey]) {
         acc[parcelKey] = {
+          cardTitle: `Land parcel ${parcelKey}`,
+          footerActions: this.buildLandParcelFooterActions(paymentInfo?.parcelItems, data.sheetId, data.parcelId),
           parcelId: parcelKey,
           items: []
         }

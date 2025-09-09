@@ -1,11 +1,16 @@
-import { vi } from 'vitest'
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
+import { vi } from 'vitest'
+import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
 import { sbiStore } from '~/src/server/sbi/state.js'
 import { calculateGrantPayment } from '../services/land-grants.service.js'
 import LandActionsCheckPageController from './land-actions-check-page.controller.js'
-import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
 
-vi.mock('~/src/server/land-grants/services/land-grants.service.js')
+vi.mock('~/src/server/land-grants/services/land-grants.service.js', () => ({
+  actionGroups: [{ actions: ['CMOR1'] }, { actions: ['UPL1', 'UPL2', 'UPL3'] }],
+  calculateGrantPayment: vi.fn(),
+  stringifyParcel: ({ parcelId, sheetId }) => `${sheetId}-${parcelId}`
+}))
+
 vi.mock('~/src/server/sbi/state.js', () => ({
   sbiStore: {
     get: vi.fn()
@@ -55,6 +60,7 @@ describe('LandActionsCheckPageController', () => {
       .fn()
       .mockReturnValue([[{ text: 'sheet1-parcel1' }, { text: 'Test Action' }, { text: '10 hectares' }]])
 
+    // actionGroups.mockReturnValue([{ actions: ['CMOR1'] }, { actions: ['UPL1', 'UPL2', 'UPL3'] }])
     calculateGrantPayment.mockResolvedValue(mockPaymentResponse)
     sbiStore.get = vi.fn().mockReturnValue('123456789')
 
@@ -266,11 +272,88 @@ describe('LandActionsCheckPageController', () => {
 
       const result = controller.getParcelItems(paymentData)
 
+      expect(result[0].cardTitle).toBe('Land parcel SD01 001')
       expect(result).toHaveLength(2) // Two different parcels
       expect(result[0].parcelId).toBe('SD01 001')
       expect(result[0].items).toHaveLength(2) // Two actions for first parcel
+      expect(result[1].cardTitle).toBe('Land parcel SD02 002')
       expect(result[1].parcelId).toBe('SD02 002')
       expect(result[1].items).toHaveLength(1) // One action for second parcel
+    })
+
+    describe('"Add another action" links', () => {
+      test('should display Add another action for land parcels with only one action', () => {
+        const paymentData = {
+          parcelItems: {
+            1: {
+              code: 'CMOR1',
+              description: 'CMOR1',
+              quantity: 5,
+              annualPaymentPence: 1000,
+              sheetId: 'SD01',
+              parcelId: '001'
+            }
+          }
+        }
+
+        const result = controller.getParcelItems(paymentData)
+
+        expect(result[0].footerActions).toEqual({
+          text: 'Add another action',
+          href: 'select-actions-for-land-parcel?parcelId=SD01-001',
+          hiddenTextValue: 'SD01 001'
+        })
+      })
+
+      test('should display Add another action for land parcels with one UPl action', () => {
+        const paymentData = {
+          parcelItems: {
+            1: {
+              code: 'UPL1',
+              description: 'UPL1',
+              quantity: 5,
+              annualPaymentPence: 1000,
+              sheetId: 'SD01',
+              parcelId: '001'
+            }
+          }
+        }
+
+        const result = controller.getParcelItems(paymentData)
+
+        expect(result[0].footerActions).toEqual({
+          text: 'Add another action',
+          href: 'select-actions-for-land-parcel?parcelId=SD01-001',
+          hiddenTextValue: 'SD01 001'
+        })
+      })
+
+      test('should hide Add another action for land parcels when CMOR1 and any UPL actions are present', () => {
+        const paymentData = {
+          parcelItems: {
+            1: {
+              code: 'CMOR1',
+              description: 'CMOR1',
+              quantity: 5,
+              annualPaymentPence: 1000,
+              sheetId: 'SD01',
+              parcelId: '001'
+            },
+            2: {
+              code: 'UPL1',
+              description: 'UPL1',
+              quantity: 3,
+              annualPaymentPence: 500,
+              sheetId: 'SD01',
+              parcelId: '001'
+            }
+          }
+        }
+
+        const result = controller.getParcelItems(paymentData)
+
+        expect(result[0].footerActions).toEqual({})
+      })
     })
 
     test('should format additional yearly payments', () => {

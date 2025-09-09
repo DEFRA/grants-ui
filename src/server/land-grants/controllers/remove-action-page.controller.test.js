@@ -46,7 +46,7 @@ describe('RemoveActionPageController', () => {
     mockRequest = {
       query: {
         parcel: 'SD6743-8083',
-        code: 'CMOR1'
+        action: 'CMOR1'
       },
       payload: {}
     }
@@ -72,13 +72,13 @@ describe('RemoveActionPageController', () => {
 
   describe('extractParcelInfo', () => {
     test('should extract parcel information correctly', () => {
-      const query = { parcel: 'SD6743-8083', code: 'CMOR1' }
+      const query = { parcel: 'SD6743-8083', action: 'CMOR1' }
       const result = controller.extractParcelInfo(query)
 
       expect(result).toEqual({
         sheetId: 'SD6743',
         parcelId: '8083',
-        code: 'CMOR1',
+        action: 'CMOR1',
         parcelKey: 'SD6743-8083',
         parcel: 'SD6743-8083'
       })
@@ -91,7 +91,7 @@ describe('RemoveActionPageController', () => {
       expect(result).toEqual({
         sheetId: '',
         parcelId: '',
-        code: undefined,
+        action: undefined,
         parcelKey: '-',
         parcel: undefined
       })
@@ -104,7 +104,7 @@ describe('RemoveActionPageController', () => {
       expect(result).toEqual({
         sheetId: 'SD6743',
         parcelId: '8083',
-        code: undefined,
+        action: undefined,
         parcelKey: 'SD6743-8083',
         parcel: 'SD6743-8083'
       })
@@ -241,7 +241,7 @@ describe('RemoveActionPageController', () => {
 
   describe('processActionRemoval', () => {
     test('should update state and redirect to check page when actions remain', async () => {
-      controller.code = 'CMOR1'
+      controller.action = 'CMOR1'
       controller.parcel = 'SD6743-8083'
 
       const state = {
@@ -267,7 +267,7 @@ describe('RemoveActionPageController', () => {
     })
 
     test('should update state and redirect to select page when no actions remain', async () => {
-      controller.code = 'CMOR1'
+      controller.action = 'CMOR1'
       controller.parcel = 'SD6944-0085'
 
       const state = {
@@ -321,7 +321,7 @@ describe('RemoveActionPageController', () => {
 
       const result = await handler(mockRequest, mockContext, mockH)
 
-      expect(controller.code).toBe('CMOR1')
+      expect(controller.action).toBe('CMOR1')
       expect(controller.parcel).toBe('SD6743-8083')
       expect(controller.actionDescription).toBe('CMOR1: Assess moorland and produce a written record')
       expect(mockH.view).toHaveBeenCalledWith('remove-action', {
@@ -333,7 +333,7 @@ describe('RemoveActionPageController', () => {
     })
 
     test('should redirect to check page when parcel not found', async () => {
-      mockRequest.query = { parcel: 'nonexistent-parcel', code: 'CMOR1' }
+      mockRequest.query = { parcel: 'nonexistent-parcel', action: 'CMOR1' }
 
       const handler = controller.makeGetRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
@@ -344,7 +344,7 @@ describe('RemoveActionPageController', () => {
     })
 
     test('should redirect to check page when action not found', async () => {
-      mockRequest.query = { parcel: 'SD6743-8083', code: 'NONEXISTENT' }
+      mockRequest.query = { parcel: 'SD6743-8083', action: 'NONEXISTENT' }
 
       const handler = controller.makeGetRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
@@ -378,7 +378,7 @@ describe('RemoveActionPageController', () => {
   describe('makePostRouteHandler', () => {
     beforeEach(() => {
       // Set up controller state as if GET request was processed
-      controller.code = 'CMOR1'
+      controller.action = 'CMOR1'
       controller.parcel = 'SD6743-8083'
       controller.actionDescription = 'CMOR1: Assess moorland and produce a written record'
     })
@@ -424,7 +424,7 @@ describe('RemoveActionPageController', () => {
     test('should remove action and redirect to select actions when no actions remain', async () => {
       // Set up scenario where removing the last action
       controller.parcel = 'SD6944-0085'
-      controller.code = 'CMOR1'
+      controller.action = 'CMOR1'
       mockRequest.payload = { removeAction: 'true' }
 
       const handler = controller.makePostRouteHandler()

@@ -105,7 +105,7 @@ const createHapiServer = () => {
     cache: [
       {
         name: config.get(SESSION_CACHE_NAME),
-        engine: getCacheEngine(/** @type {Engine} */(config.get('session.cache.engine')))
+        engine: getCacheEngine(/** @type {Engine} */ (config.get('session.cache.engine')))
       }
     ],
     state: {

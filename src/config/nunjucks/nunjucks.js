@@ -60,6 +60,8 @@ Object.entries(filters).forEach(([name, filter]) => {
   nunjucksEnvironment.addFilter(name, filter)
 })
 
+nunjucksEnvironment.addGlobal('gaTrackingId', config.get('googleAnalytics.trackingId'))
+
 /**
  * @import { ServerRegisterPluginObject } from '@hapi/hapi'
  * @import { ServerViewsConfiguration } from '@hapi/vision'

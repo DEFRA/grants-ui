@@ -5,7 +5,7 @@ export default class RemoveActionPageController extends QuestionPageController {
   viewName = 'remove-action'
   parcel = ''
   actionDescription = ''
-  code = ''
+  action = ''
 
   /**
    * Extract parcel information from query parameters
@@ -14,13 +14,13 @@ export default class RemoveActionPageController extends QuestionPageController {
    */
   extractParcelInfo(query) {
     const [sheetId = '', parcelId = ''] = parseLandParcel(query.parcel)
-    const code = query.code
+    const action = query.action
     const parcelKey = `${sheetId}-${parcelId}`
 
     return {
       sheetId,
       parcelId,
-      code,
+      action,
       parcelKey,
       parcel: query.parcel
     }
@@ -30,29 +30,29 @@ export default class RemoveActionPageController extends QuestionPageController {
    * Find action information from land parcels state
    * @param {object} landParcels - Land parcels from state
    * @param {string} parcelKey - Parcel key
-   * @param {string} code - Action code
+   * @param {string} action - Action code
    * @returns {object|null} - Action information or null if not found
    */
-  findActionInfo(landParcels, parcelKey, code) {
+  findActionInfo(landParcels, parcelKey, action) {
     const landParcel = landParcels[parcelKey]
-    return landParcel?.actionsObj?.[code] || null
+    return landParcel?.actionsObj?.[action] || null
   }
 
   /**
    * Delete action from state and clean up empty parcels
    * @param {object} state - Current state
-   * @param {string} code - Action code to remove
+   * @param {string} action - Action code to remove
    * @param {string} parcelKey - Parcel key
    * @returns {object} - Updated state
    */
-  deleteActionFromState(state, code, parcelKey) {
+  deleteActionFromState(state, action, parcelKey) {
     const newState = { ...state }
 
     if (!newState.landParcels[parcelKey]?.actionsObj) {
       return newState
     }
 
-    delete newState.landParcels[parcelKey].actionsObj[code]
+    delete newState.landParcels[parcelKey].actionsObj[action]
 
     if (Object.keys(newState.landParcels[parcelKey].actionsObj).length === 0) {
       delete newState.landParcels[parcelKey]
@@ -118,7 +118,7 @@ export default class RemoveActionPageController extends QuestionPageController {
   async processActionRemoval(request, state, h) {
     const [sheetId, parcelId] = parseLandParcel(this.parcel)
     const parcelKey = `${sheetId}-${parcelId}`
-    const newState = this.deleteActionFromState(state, this.code, parcelKey)
+    const newState = this.deleteActionFromState(state, this.action, parcelKey)
     const nextPath = this.getNextPathAfterRemoval(newState, parcelKey, this.parcel)
 
     await this.setState(request, newState)
@@ -148,15 +148,15 @@ export default class RemoveActionPageController extends QuestionPageController {
       const {
         state: { landParcels }
       } = context
-      const { code, parcelKey, parcel } = this.extractParcelInfo(request.query)
-      const actionInfo = this.findActionInfo(landParcels, parcelKey, code)
+      const { action, parcelKey, parcel } = this.extractParcelInfo(request.query)
+      const actionInfo = this.findActionInfo(landParcels, parcelKey, action)
 
       // Redirect if parcel or action not found
       if (!actionInfo) {
         return this.proceed(request, h, '/check-selected-land-actions')
       }
 
-      this.code = code
+      this.action = action
       this.parcel = parcel
       this.actionDescription = actionInfo.description
 

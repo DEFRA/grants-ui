@@ -12,3 +12,4 @@ coverage
 .envrc
 tsconfig.tsbuildinfo
 .eslintcache
+src/contracts/pacts
