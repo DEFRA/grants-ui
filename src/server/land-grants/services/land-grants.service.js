@@ -92,8 +92,44 @@ export async function fetchAvailableActionsForParcel({ parcelId = '', sheetId = 
   const parcelIds = [stringifyParcel({ sheetId, parcelId })]
   const fields = ['actions', 'size']
   const data = await postToLandGrantsApi('/parcels', { parcelIds, fields })
+  const actions = data.parcels?.find((p) => p.parcelId === parcelId && p.sheetId === sheetId)?.actions || []
+  const result = []
+  const usedCodes = new Set()
 
-  return data.parcels?.find((p) => p.parcelId === parcelId && p.sheetId === sheetId)
+  const createGroup = (name, groupActions) => ({
+    name,
+    totalAvailableArea: {
+      unit: groupActions[0]?.availableArea.unit,
+      value: groupActions.reduce((acc, item) => acc + item.availableArea.value, 0)
+    },
+    actions: groupActions
+  })
+
+  // TODO: This needs to come from the backend
+  const actionGroups = [
+    {
+      name: 'Assess moorland',
+      actions: ['CMOR1']
+    },
+    {
+      name: 'Livestock grazing on moorland',
+      actions: ['UPL1', 'UPL2', 'UPL3']
+    }
+  ]
+
+  actionGroups.forEach((group) => {
+    const groupActions = actions.filter((a) => group.actions.includes(a.code))
+    if (groupActions.length > 0) {
+      groupActions.forEach((a) => usedCodes.add(a.code))
+      result.push(createGroup(group.name, groupActions))
+    }
+  })
+
+  const ungroupedActions = actions.filter((a) => !usedCodes.has(a.code))
+  if (ungroupedActions.length > 0) {
+    result.push(createGroup('', ungroupedActions))
+  }
+  return result
 }
 
 /**
