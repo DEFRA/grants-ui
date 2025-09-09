@@ -342,6 +342,14 @@ export const config = convict({
       env: 'TRACING_HEADER'
     }
   },
+  googleAnalytics: {
+    trackingId: {
+      doc: 'Google Analytics tracking ID',
+      format: String,
+      default: undefined,
+      env: 'GA_TRACKING_ID'
+    }
+  },
   defraId: defraId.getProperties(),
   landGrants: /** @type {Schema<LandGrantsConfig>} */ (landGrants.getProperties()),
   agreements: /** @type {Schema<AgreementsConfig>} */ (agreements.getProperties())
