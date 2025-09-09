@@ -194,11 +194,7 @@ To run the application in `development` mode run:
 npm run dev
 ```
 
-To successfully run `grants-ui` locally there is a requirement to have the cdp-defra-id-stub (https://github.com/DEFRA/cdp-defra-id-stub) checked out, installed and running locally with this command:
-
-```bash
-npm run dev
-```
+Or see the [docker compose setup](#docker-compose) below.
 
 ### Environment variables
 
@@ -206,7 +202,7 @@ Below is a list of required environment variables to configure and run the Grant
 
 #### DEFRA ID Integration
 
-These are required only if DEFRA ID authentication is enabled:
+These are required only if DEFRA ID authentication is enabled, and you are using either the FCP Defra ID Stub or connecting to Defra ID in the `development` environment:
 
 | Variable                         | Description                                                                              |
 | -------------------------------- | ---------------------------------------------------------------------------------------- |
@@ -216,18 +212,6 @@ These are required only if DEFRA ID authentication is enabled:
 | `DEFRA_ID_SERVICE_ID`            | Used by DEFRA ID to display your service name on the login screen.                       |
 | `DEFRA_ID_REDIRECT_URL`          | URL DEFRA ID redirects to after login. **Must match exactly what DEFRA ID has on file.** |
 | `DEFRA_ID_SIGN_OUT_REDIRECT_URL` | Redirect after logout. Same note as above.                                               |
-
-Note: for local development it is neccessary to remove config.get('defraId.clientId') from provider.scope in getBellOptions(oidcConfig) in auth.js so change from:
-
-```
-scope: ['openid', 'offline_access', config.get('defraId.clientId')],
-```
-
-to:
-
-```
-scope: ['openid', 'offline_access'],
-```
 
 #### Session and Cookie security
 
@@ -512,11 +496,11 @@ docker run -p 3000:3000 grants-ui
 
 A local environment with:
 
-- Localstack for AWS services (S3, SQS)
 - Redis
 - MongoDB
-- This service.
-- A commented out backend example.
+- FCP Defra ID Stub
+- This service
+- Grants UI Backend
 
 ```bash
 docker compose up --build -d
