@@ -8,20 +8,20 @@ const createLinks = (data, foundGroup) => {
     parcelId: data.parcelId,
     sheetId: data.sheetId
   })
-
+  const parcel = `${data.sheetId} ${data.parcelId}`
   const links = []
 
   if (foundGroup?.actions.length > 1) {
     links.push(
-      `<li class='govuk-summary-list__actions-list-item'><a class='govuk-link' href='select-actions-for-land-parcel?parcelId=${parcelParam}&action=${data.code}'>Change</a></li>`
+      `<li class='govuk-summary-list__actions-list-item'><a class='govuk-link' href='select-actions-for-land-parcel?parcelId=${parcelParam}&action=${data.code}'>Change</a><span class="govuk-visually-hidden"> land action for parcel ${parcel}</span></li>`
     )
   }
   links.push(
-    `<li class='govuk-summary-list__actions-list-item'><a class='govuk-link' href='confirm-remove-action?parcel=${parcelParam}&action=${data.code}'>Remove</a></li>`
+    `<li class='govuk-summary-list__actions-list-item'><a class='govuk-link' href='confirm-remove-action?parcel=${parcelParam}&action=${data.code}'>Remove</a><span class="govuk-visually-hidden"> land action for parcel ${parcel}</span></li>`
   )
 
   return {
-    html: `<ul class='govuk-summary-list__actions-list'>${links.join('')}</ul>`
+    html: `<ul class='govuk-summary-list__actions-list govuk-!-text-align-right'>${links.join('')}</ul>`
   }
 }
 
