@@ -294,7 +294,7 @@ describe('LandActionsCheckPageController', () => {
 
         expect(result[0].footerActions).toEqual({
           text: 'Add another action',
-          href: 'select-actions-for-land-parcel?parcelId=SD01 001',
+          href: 'select-actions-for-land-parcel?parcelId=SD01-001',
           hiddenTextValue: 'SD01 001'
         })
       })
@@ -317,7 +317,7 @@ describe('LandActionsCheckPageController', () => {
 
         expect(result[0].footerActions).toEqual({
           text: 'Add another action',
-          href: 'select-actions-for-land-parcel?parcelId=SD01 001',
+          href: 'select-actions-for-land-parcel?parcelId=SD01-001',
           hiddenTextValue: 'SD01 001'
         })
       })

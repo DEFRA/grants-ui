@@ -128,13 +128,13 @@ export default class LandActionsCheckPageController extends QuestionPageControll
     })
   }
 
-  buildLandParcelFooterActions = (selectedActions, parcelKey) => {
+  buildLandParcelFooterActions = (selectedActions, sheetId, parcelId) => {
     const uplCodes = ['UPL1', 'UPL2', 'UPL3']
 
     const uniqueCodes = [
       ...new Set(
         Object.values(selectedActions)
-          .filter((item) => `${item.sheetId} ${item.parcelId}` === parcelKey)
+          .filter((item) => `${item.sheetId} ${item.parcelId}` === `${sheetId} ${parcelId}`)
           .map((item) => item.code)
       )
     ]
@@ -147,8 +147,8 @@ export default class LandActionsCheckPageController extends QuestionPageControll
     }
     return {
       text: 'Add another action',
-      href: `select-actions-for-land-parcel?parcelId=${parcelKey}`,
-      hiddenTextValue: parcelKey
+      href: `select-actions-for-land-parcel?parcelId=${sheetId}-${parcelId}`,
+      hiddenTextValue: `${sheetId} ${parcelId}`
     }
   }
 
@@ -159,7 +159,7 @@ export default class LandActionsCheckPageController extends QuestionPageControll
       if (!acc[parcelKey]) {
         acc[parcelKey] = {
           cardTitle: `Land parcel ${parcelKey}`,
-          footerActions: this.buildLandParcelFooterActions(paymentInfo?.parcelItems, parcelKey),
+          footerActions: this.buildLandParcelFooterActions(paymentInfo?.parcelItems, data.sheetId, data.parcelId),
           parcelId: parcelKey,
           items: []
         }
