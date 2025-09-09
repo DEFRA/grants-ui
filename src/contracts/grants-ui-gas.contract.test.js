@@ -35,7 +35,7 @@ describe('Pact between grants-ui (consumer) and fg-gas-backend (provider)', () =
             }
           )
 
-        expect(response.status).toBe(204)
+          expect(response.status).toBe(204)
         })
     })
   })
