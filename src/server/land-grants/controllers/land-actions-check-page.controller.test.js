@@ -5,7 +5,10 @@ import { calculateGrantPayment } from '../services/land-grants.service.js'
 import LandActionsCheckPageController from './land-actions-check-page.controller.js'
 import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
 
-vi.mock('~/src/server/land-grants/services/land-grants.service.js')
+vi.mock('~/src/server/land-grants/services/land-grants.service.js', () => ({
+  actionGroups: [{ actions: ['CMOR1'] }, { actions: ['UPL1', 'UPL2', 'UPL3'] }],
+  calculateGrantPayment: vi.fn()
+}))
 vi.mock('~/src/server/sbi/state.js', () => ({
   sbiStore: {
     get: vi.fn()
@@ -55,6 +58,7 @@ describe('LandActionsCheckPageController', () => {
       .fn()
       .mockReturnValue([[{ text: 'sheet1-parcel1' }, { text: 'Test Action' }, { text: '10 hectares' }]])
 
+    // actionGroups.mockReturnValue([{ actions: ['CMOR1'] }, { actions: ['UPL1', 'UPL2', 'UPL3'] }])
     calculateGrantPayment.mockResolvedValue(mockPaymentResponse)
     sbiStore.get = vi.fn().mockReturnValue('123456789')
 

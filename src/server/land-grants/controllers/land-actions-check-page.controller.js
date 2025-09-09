@@ -1,7 +1,7 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { formatCurrency } from '~/src/config/nunjucks/filters/filters.js'
 import { sbiStore } from '~/src/server/sbi/state.js'
-import { calculateGrantPayment } from '../services/land-grants.service.js'
+import { actionGroups, calculateGrantPayment } from '../services/land-grants.service.js'
 
 export default class LandActionsCheckPageController extends QuestionPageController {
   viewName = 'land-actions-check'
@@ -129,8 +129,6 @@ export default class LandActionsCheckPageController extends QuestionPageControll
   }
 
   buildLandParcelFooterActions = (selectedActions, sheetId, parcelId) => {
-    const uplCodes = ['UPL1', 'UPL2', 'UPL3']
-
     const uniqueCodes = [
       ...new Set(
         Object.values(selectedActions)
@@ -139,12 +137,12 @@ export default class LandActionsCheckPageController extends QuestionPageControll
       )
     ]
 
-    const hasCMOR1 = uniqueCodes.includes('CMOR1')
-    const hasAnyUPL = uniqueCodes.some((code) => uplCodes.includes(code))
+    const hasActionFromGroup = actionGroups.map((group) => uniqueCodes.some((code) => group.actions.includes(code)))
 
-    if (hasCMOR1 && hasAnyUPL) {
+    if (hasActionFromGroup.every(Boolean)) {
       return {}
     }
+
     return {
       text: 'Add another action',
       href: `select-actions-for-land-parcel?parcelId=${sheetId}-${parcelId}`,
