@@ -281,6 +281,7 @@ describe('WhitelistService', () => {
       service.logWhitelistValidation(params)
 
       expect(log).not.toHaveBeenCalled()
+      expect(log).toHaveBeenCalledTimes(0)
     })
 
     it('should calculate correct scenario keys', () => {

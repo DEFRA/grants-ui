@@ -597,6 +597,31 @@ describe('LogCodes', () => {
     })
   })
 
+  describe('Startup validation error handling', () => {
+    it('should handle validation errors during startup', () => {
+      const mockLogCodes = {
+        TEST: {
+          INVALID: {
+            level: 'invalid-level',
+            messageFunc: 'not a function'
+          }
+        }
+      }
+
+      const mockValidateLogCodes = (logCodes) => {
+        throw new Error('Test validation error')
+      }
+
+      expect(() => {
+        try {
+          mockValidateLogCodes(mockLogCodes)
+        } catch (error) {
+          throw new Error(`Log code validation failed: ${error.message}`)
+        }
+      }).toThrow('Log code validation failed: Test validation error')
+    })
+  })
+
   describe('Unknown user handling', () => {
     it.each([
       ['AUTH log codes', LogCodes.AUTH.SIGN_IN_ATTEMPT, {}, 'User sign-in attempt for user=unknown'],

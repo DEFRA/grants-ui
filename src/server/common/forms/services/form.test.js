@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 import { config } from '~/src/config/config.js'
-import { configureFormDefinition, formsService, addAllForms } from './form.js'
+import { configureFormDefinition, formsService, addAllForms, validateWhitelistConfiguration } from './form.js'
 import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
 
 const mockUrl = { pathname: '/mock/path' }
@@ -296,6 +296,86 @@ describe('form', () => {
       expect(result).toBe(2)
       expect(mockLoader.addForm).toHaveBeenCalledTimes(2)
       expect(mockWarn).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('validateWhitelistConfiguration', () => {
+    test('throws error when only CRN environment variable is provided', () => {
+      const form = { title: 'Test Form' }
+      const definition = {
+        metadata: {
+          whitelistCrnEnvVar: 'EXAMPLE_GRANT_WITH_AUTH_WHITELIST_CRNS'
+        }
+      }
+
+      expect(() => validateWhitelistConfiguration(form, definition)).toThrow(
+        'Incomplete whitelist configuration in form Test Form: whitelistCrnEnvVar is defined but whitelistSbiEnvVar is missing. Both CRN and SBI whitelist variables must be configured together.'
+      )
+    })
+
+    test('throws error when only SBI environment variable is provided', () => {
+      const form = { title: 'Test Form' }
+      const definition = {
+        metadata: {
+          whitelistSbiEnvVar: 'EXAMPLE_GRANT_WITH_AUTH_WHITELIST_SBIS'
+        }
+      }
+
+      expect(() => validateWhitelistConfiguration(form, definition)).toThrow(
+        'Incomplete whitelist configuration in form Test Form: whitelistSbiEnvVar is defined but whitelistCrnEnvVar is missing. Both CRN and SBI whitelist variables must be configured together.'
+      )
+    })
+
+    test('throws error when CRN environment variable is missing', () => {
+      delete process.env.MISSING_CRN_VAR
+
+      const form = { title: 'Test Form' }
+      const definition = {
+        metadata: {
+          whitelistCrnEnvVar: 'MISSING_CRN_VAR',
+          whitelistSbiEnvVar: 'EXAMPLE_GRANT_WITH_AUTH_WHITELIST_SBIS'
+        }
+      }
+
+      expect(() => validateWhitelistConfiguration(form, definition)).toThrow(
+        'CRN whitelist environment variable MISSING_CRN_VAR is defined in form Test Form but not configured in environment'
+      )
+    })
+
+    test('throws error when SBI environment variable is missing', () => {
+      delete process.env.MISSING_SBI_VAR
+
+      const form = { title: 'Test Form' }
+      const definition = {
+        metadata: {
+          whitelistCrnEnvVar: 'EXAMPLE_GRANT_WITH_AUTH_WHITELIST_CRNS',
+          whitelistSbiEnvVar: 'MISSING_SBI_VAR'
+        }
+      }
+
+      expect(() => validateWhitelistConfiguration(form, definition)).toThrow(
+        'SBI whitelist environment variable MISSING_SBI_VAR is defined in form Test Form but not configured in environment'
+      )
+    })
+  })
+
+  describe('formsService error handling', () => {
+    let originalEnv
+
+    beforeEach(() => {
+      originalEnv = { ...process.env }
+    })
+
+    afterEach(() => {
+      process.env = originalEnv
+    })
+
+    test('throws error during startup when whitelist validation fails', async () => {
+      delete process.env.EXAMPLE_GRANT_WITH_AUTH_WHITELIST_CRNS
+
+      await expect(formsService()).rejects.toThrow(
+        'CRN whitelist environment variable EXAMPLE_GRANT_WITH_AUTH_WHITELIST_CRNS is defined in form Example grant with auth but not configured in environment'
+      )
     })
   })
 })

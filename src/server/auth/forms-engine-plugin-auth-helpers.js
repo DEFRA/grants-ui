@@ -8,12 +8,6 @@ export const formsAuthCallback = (request, _params, _definition) => {
     return
   }
 
-  if (
-    !request.path.endsWith('/start') &&
-    (_definition?.metadata?.whitelistCrnEnvVar || _definition?.metadata?.whitelistSbiEnvVar)
-  ) {
-    return
-  }
   if (!request.auth.isAuthenticated) {
     log(LogCodes.AUTH.AUTH_DEBUG, {
       path: 'formsAuthCallback',
