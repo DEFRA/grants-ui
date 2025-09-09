@@ -8,7 +8,7 @@ const mockUrl = { pathname: '/mock/path' }
 global.URL = vi.fn(() => mockUrl)
 global.import = { meta: { url: 'file:///mock/path' } }
 
-const defaultConfigMock = {
+const DEFAULT_CONFIG_MOCK = {
   cdpEnvironment: 'local',
   log: {
     enabled: true,
@@ -19,6 +19,48 @@ const defaultConfigMock = {
   serviceName: 'test-service',
   serviceVersion: '1.0.0'
 }
+
+const TEST_FORMS_ARRAY = [
+  {
+    path: 'path/to/form1.yaml',
+    id: 'form-id-1',
+    slug: 'form-slug-1',
+    title: 'Form 1'
+  },
+  {
+    path: 'path/to/form2.yaml',
+    id: 'form-id-2',
+    slug: 'form-slug-2',
+    title: 'Form 2'
+  },
+  {
+    path: 'path/to/form1-duplicate.yaml',
+    id: 'form-id-1',
+    slug: 'form-slug-1',
+    title: 'Form 1 Duplicate'
+  },
+  {
+    path: 'path/to/form3.yaml',
+    id: 'form-id-3',
+    slug: 'form-slug-3',
+    title: 'Form 3'
+  }
+]
+
+const UNIQUE_FORMS_ARRAY = [
+  {
+    path: 'path/to/form1.yaml',
+    id: 'form-id-1',
+    slug: 'form-slug-1',
+    title: 'Form 1'
+  },
+  {
+    path: 'path/to/form2.yaml',
+    id: 'form-id-2',
+    slug: 'form-slug-2',
+    title: 'Form 2'
+  }
+]
 
 vi.mock('~/src/config/config.js', async () => {
   const { mockConfig } = await import('~/src/__mocks__')
@@ -59,11 +101,19 @@ describe('form', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    config.get.mockImplementation((key) => defaultConfigMock[key])
-    // Get the mocked logger functions
+    config.get.mockImplementation((key) => DEFAULT_CONFIG_MOCK[key])
+    // Get the warn function from the mocked logger
     const logger = vi.mocked(createLogger)()
     mockWarn = logger.warn
     mockError = logger.error
+
+    process.env.EXAMPLE_GRANT_WITH_AUTH_WHITELIST_CRNS = '1101009926 1101010029'
+    process.env.EXAMPLE_GRANT_WITH_AUTH_WHITELIST_SBIS = '123456789 987654321'
+  })
+
+  afterEach(() => {
+    delete process.env.EXAMPLE_GRANT_WITH_AUTH_WHITELIST_CRNS
+    delete process.env.EXAMPLE_GRANT_WITH_AUTH_WHITELIST_SBIS
   })
 
   describe('formsService', () => {
@@ -86,30 +136,15 @@ describe('form', () => {
   })
 
   describe('configureFormDefinition', () => {
-    test('configures URLs correctly for local environment', () => {
-      const definition = {
-        pages: [
-          {
-            events: {
-              onLoad: {
-                options: {
-                  url: 'http://cdpEnvironment.example.com'
-                }
-              }
-            }
-          }
-        ]
-      }
-
-      const result = configureFormDefinition(definition)
-      expect(result.pages[0].events.onLoad.options.url).toBe(
+    it.each([
+      [
+        'local environment',
+        'local',
         'http://localhost:3001/scoring/api/v1/adding-value/score?allowPartialScoring=true'
-      )
-    })
-
-    test('configures URLs correctly for non-local environment', () => {
-      // Override the config mock for this test only
-      config.get.mockImplementation((key) => (key === 'cdpEnvironment' ? 'dev' : defaultConfigMock[key]))
+      ],
+      ['non-local environment', 'dev', 'http://dev.example.com']
+    ])('configures URLs correctly for %s', (description, environment, expectedUrl) => {
+      config.get.mockImplementation((key) => (key === 'cdpEnvironment' ? environment : DEFAULT_CONFIG_MOCK[key]))
 
       const definition = {
         pages: [
@@ -126,7 +161,7 @@ describe('form', () => {
       }
 
       const result = configureFormDefinition(definition)
-      expect(result.pages[0].events.onLoad.options.url).toBe('http://dev.example.com')
+      expect(result.pages[0].events.onLoad.options.url).toBe(expectedUrl)
     })
 
     test('handles form definition without events', () => {
@@ -197,13 +232,52 @@ describe('form', () => {
 
       const result = configureFormDefinition(definition)
 
-      expect(mockWarn).toHaveBeenCalledWith(`Unexpected environment value: ${defaultConfigMock.cdpEnvironment}`)
+      expect(mockWarn).toHaveBeenCalledWith(`Unexpected environment value: ${DEFAULT_CONFIG_MOCK.cdpEnvironment}`)
 
       expect(result).toEqual(definition)
     })
   })
 
   describe('addAllForms', () => {
+    test('handles duplicate forms and logs warning', async () => {
+      const mockLoader = {
+        addForm: vi.fn().mockResolvedValue(undefined)
+      }
+
+      const result = await addAllForms(mockLoader, TEST_FORMS_ARRAY)
+
+      expect(mockWarn).toHaveBeenCalledWith('Skipping duplicate form: form-slug-1 with id form-id-1')
+
+      expect(result).toBe(3)
+      expect(mockLoader.addForm).toHaveBeenCalledTimes(3)
+
+      expect(mockLoader.addForm).not.toHaveBeenCalledWith('path/to/form1-duplicate.yaml', expect.any(Object))
+
+      expect(mockLoader.addForm).toHaveBeenCalledWith(
+        'path/to/form1.yaml',
+        expect.objectContaining({
+          id: 'form-id-1',
+          slug: 'form-slug-1',
+          title: 'Form 1'
+        })
+      )
+      expect(mockLoader.addForm).toHaveBeenCalledWith(
+        'path/to/form2.yaml',
+        expect.objectContaining({
+          id: 'form-id-2',
+          slug: 'form-slug-2',
+          title: 'Form 2'
+        })
+      )
+      expect(mockLoader.addForm).toHaveBeenCalledWith(
+        'path/to/form3.yaml',
+        expect.objectContaining({
+          id: 'form-id-3',
+          slug: 'form-slug-3',
+          title: 'Form 3'
+        })
+      )
+    })
     test('handles empty forms array', async () => {
       const mockLoader = {
         addForm: vi.fn()
@@ -221,20 +295,7 @@ describe('form', () => {
         addForm: vi.fn().mockResolvedValue(undefined)
       }
 
-      const testForms = [
-        {
-          path: 'path/to/form1.yaml',
-          id: 'form-id-1',
-          title: 'Form 1'
-        },
-        {
-          path: 'path/to/form2.yaml',
-          id: 'form-id-2',
-          title: 'Form 2'
-        }
-      ]
-
-      const result = await addAllForms(mockLoader, testForms)
+      const result = await addAllForms(mockLoader, UNIQUE_FORMS_ARRAY)
 
       expect(result).toBe(2)
       expect(mockLoader.addForm).toHaveBeenCalledTimes(2)

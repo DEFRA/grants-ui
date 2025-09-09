@@ -45,6 +45,26 @@ export const LogCodes = {
       level: 'debug',
       messageFunc: (messageOptions) =>
         `Auth debug for path=${messageOptions.path}: isAuthenticated=${messageOptions.isAuthenticated}, strategy=${messageOptions.strategy}, mode=${messageOptions.mode}, hasCredentials=${messageOptions.hasCredentials}, hasToken=${messageOptions.hasToken}, hasProfile=${messageOptions.hasProfile}, userAgent=${messageOptions.userAgent}, referer=${messageOptions.referer}, queryParams=${JSON.stringify(messageOptions.queryParams)}, authError=${messageOptions.authError}`
+    },
+    WHITELIST_ACCESS_GRANTED: {
+      level: 'info',
+      messageFunc: (messageOptions) =>
+        `Whitelist access granted to path=${messageOptions.path} for user=${messageOptions.userId || 'unknown'}, sbi=${messageOptions.sbi || 'N/A'}: ${messageOptions.validationType || 'validation passed'}`
+    },
+    WHITELIST_ACCESS_DENIED_BOTH: {
+      level: 'info',
+      messageFunc: (messageOptions) =>
+        `Whitelist access denied to path=${messageOptions.path}: Both CRN ${messageOptions.userId || 'unknown'} and SBI ${messageOptions.sbi || 'unknown'} failed validation`
+    },
+    WHITELIST_ACCESS_DENIED_CRN_PASSED: {
+      level: 'info',
+      messageFunc: (messageOptions) =>
+        `Whitelist access denied to path=${messageOptions.path}: CRN ${messageOptions.userId || 'unknown'} passed but SBI ${messageOptions.sbi || 'unknown'} failed validation`
+    },
+    WHITELIST_ACCESS_DENIED_SBI_PASSED: {
+      level: 'info',
+      messageFunc: (messageOptions) =>
+        `Whitelist access denied to path=${messageOptions.path}: SBI ${messageOptions.sbi || 'unknown'} passed but CRN ${messageOptions.userId || 'unknown'} failed validation`
     }
   },
   FORMS: {

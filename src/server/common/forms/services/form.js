@@ -72,6 +72,45 @@ export async function addAllForms(loader, forms) {
   return addedForms.size
 }
 
+function validateWhitelistVariableCompleteness(whitelistCrnEnvVar, whitelistSbiEnvVar, form, definition, logger) {
+  if ((whitelistCrnEnvVar && !whitelistSbiEnvVar) || (!whitelistCrnEnvVar && whitelistSbiEnvVar)) {
+    const missingVar = whitelistCrnEnvVar ? 'whitelistSbiEnvVar' : 'whitelistCrnEnvVar'
+    const presentVar = whitelistCrnEnvVar ? 'whitelistCrnEnvVar' : 'whitelistSbiEnvVar'
+    const error = `Incomplete whitelist configuration in form ${definition.name || form.title || 'unnamed'}: ${presentVar} is defined but ${missingVar} is missing. Both CRN and SBI whitelist variables must be configured together.`
+    logger.error(error)
+    throw new Error(error)
+  }
+}
+
+function validateCrnEnvironmentVariable(whitelistCrnEnvVar, form, definition, logger) {
+  if (whitelistCrnEnvVar && !process.env[whitelistCrnEnvVar]) {
+    const error = `CRN whitelist environment variable ${whitelistCrnEnvVar} is defined in form ${definition.name || form.title || 'unnamed'} but not configured in environment`
+    logger.error(error)
+    throw new Error(error)
+  }
+}
+
+function validateSbiEnvironmentVariable(whitelistSbiEnvVar, form, definition, logger) {
+  if (whitelistSbiEnvVar && !process.env[whitelistSbiEnvVar]) {
+    const error = `SBI whitelist environment variable ${whitelistSbiEnvVar} is defined in form ${definition.name || form.title || 'unnamed'} but not configured in environment`
+    logger.error(error)
+    throw new Error(error)
+  }
+}
+
+export function validateWhitelistConfiguration(form, definition) {
+  const logger = createLogger()
+
+  if (definition.metadata) {
+    const whitelistCrnEnvVar = definition.metadata.whitelistCrnEnvVar
+    const whitelistSbiEnvVar = definition.metadata.whitelistSbiEnvVar
+
+    validateWhitelistVariableCompleteness(whitelistCrnEnvVar, whitelistSbiEnvVar, form, definition, logger)
+    validateCrnEnvironmentVariable(whitelistCrnEnvVar, form, definition, logger)
+    validateSbiEnvironmentVariable(whitelistSbiEnvVar, form, definition, logger)
+  }
+}
+
 async function listYamlFilesRecursively(baseDir) {
   const out = []
   const entries = await fs.readdir(baseDir, { withFileTypes: true })
@@ -139,6 +178,21 @@ export const formsService = async () => {
   // Cache the discovered forms for reuse in tasklists
   formsCache = forms
   await addAllForms(loader, forms)
+
+  const logger = createLogger()
+  for (const form of forms) {
+    try {
+      const definition = loader.getFormDefinition(form.id)
+      validateWhitelistConfiguration(form, definition)
+
+      if (definition.metadata?.whitelistCrnEnvVar || definition.metadata?.whitelistSbiEnvVar) {
+        logger.info(`Whitelist configuration validated for form: ${form.title}`)
+      }
+    } catch (error) {
+      logger.error(`Whitelist validation failed during startup: ${error.message}`)
+      throw error
+    }
+  }
 
   return loader.toFormsService()
 }

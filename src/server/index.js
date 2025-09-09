@@ -28,6 +28,9 @@ import { requestTracing } from '~/src/server/common/helpers/request-tracing.js'
 import { secureContext } from '~/src/server/common/helpers/secure-context/index.js'
 import { getCacheEngine } from '~/src/server/common/helpers/session-cache/cache-engine.js'
 import { sessionCache } from '~/src/server/common/helpers/session-cache/session-cache.js'
+import { getCacheKey } from '~/src/server/common/helpers/state/get-cache-key-helper.js'
+import { fetchSavedStateFromApi } from '~/src/server/common/helpers/state/fetch-saved-state-helper.js'
+import { persistStateToApi } from '~/src/server/common/helpers/state/persist-state-to-api-helper.js'
 import ConfirmationPageController from '~/src/server/confirmation/confirmation.controller.js'
 import DeclarationPageController from '~/src/server/declaration/declaration.controller.js'
 import ConfirmFarmDetailsController from '~/src/server/land-grants/controllers/confirm-farm-details.controller.js'
@@ -53,6 +56,7 @@ const getViewPaths = () => {
   const serverDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)))
   return [
     path.join(serverDir, 'views'),
+    path.join(serverDir, 'auth/views'),
     path.join(serverDir, 'land-grants/views'),
     path.join(serverDir, 'non-land-grants/pigs-might-fly/views'),
     path.join(serverDir, 'about'),
@@ -119,6 +123,18 @@ const registerFormsPlugin = async (server, prefix = '') => {
       ...(prefix && { routes: { prefix } }),
       cache: new StatePersistenceService({ server }),
       baseUrl: config.get('baseUrl'),
+      saveAndReturn: {
+        keyGenerator: (request) => {
+          const { userId, businessId, grantId } = getCacheKey(request)
+          return `${userId}:${businessId}:${grantId}`
+        },
+        sessionHydrator: async (request) => {
+          return fetchSavedStateFromApi(request)
+        },
+        sessionPersister: async (state, request) => {
+          return persistStateToApi(state, request)
+        }
+      },
       onRequest: formsAuthCallback,
       services: {
         formsService: await formsService(),
@@ -189,9 +205,12 @@ const mockSessionData = async (request, log, LogCodes) => {
       scope: ['user'],
       sbi: `${sbiStore.get('sbi')}`,
       organisationId: `${sbiStore.get('sbi')}`,
-      currentRelationshipId: `${sbiStore.get('sbi')}1234`,
       crn: String(config.get('landGrants.customerReferenceNumber')),
-      relationships: [`${sbiStore.get('sbi')}1234:${sbiStore.get('sbi')}:Farm ${sbiStore.get('sbi')}:1:External:0`]
+      currentRelationshipId: config.get('landGrants.mockSessionCurrentRelationshipId') || `${sbiStore.get('sbi')}1234`,
+      relationships: [
+        config.get('landGrants.mockSessionRelationships') ||
+          `${sbiStore.get('sbi')}1234:${sbiStore.get('sbi')}:Farm ${sbiStore.get('sbi')}:1:External:0`
+      ]
     }
 
     await request.server.app.cache.set(sessionId, sessionData)
