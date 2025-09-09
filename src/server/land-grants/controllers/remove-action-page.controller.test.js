@@ -3,9 +3,9 @@ import { sbiStore } from '~/src/server/sbi/state.js'
 import { calculateGrantPayment } from '../services/land-grants.service.js'
 import LandActionsCheckPageController from './land-actions-check-page.controller.js'
 
-jest.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js')
-jest.mock('~/src/server/land-grants/services/land-grants.service.js')
-jest.mock('~/src/server/sbi/state.js')
+vi.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js')
+vi.mock('~/src/server/land-grants/services/land-grants.service.js')
+vi.mock('~/src/server/sbi/state.js')
 
 describe('LandActionsCheckPageController', () => {
   let controller
@@ -35,18 +35,18 @@ describe('LandActionsCheckPageController', () => {
   }
 
   beforeEach(() => {
-    QuestionPageController.prototype.getViewModel = jest.fn().mockReturnValue({
+    QuestionPageController.prototype.getViewModel = vi.fn().mockReturnValue({
       pageTitle: 'Check selected land actions'
     })
 
     controller = new LandActionsCheckPageController()
-    controller.setState = jest.fn()
-    controller.proceed = jest.fn().mockReturnValue('redirected')
-    controller.getNextPath = jest.fn().mockReturnValue('/next-path')
-    controller.collection = { getErrors: jest.fn().mockReturnValue([]) }
+    controller.setState = vi.fn()
+    controller.proceed = vi.fn().mockReturnValue('redirected')
+    controller.getNextPath = vi.fn().mockReturnValue('/next-path')
+    controller.collection = { getErrors: vi.fn().mockReturnValue([]) }
 
     calculateGrantPayment.mockResolvedValue(mockPaymentResponse)
-    sbiStore.get = jest.fn().mockReturnValue('123456789')
+    sbiStore.get = vi.fn().mockReturnValue('123456789')
 
     mockRequest = { payload: {} }
     mockContext = {
@@ -59,13 +59,13 @@ describe('LandActionsCheckPageController', () => {
       }
     }
     mockH = {
-      view: jest.fn().mockReturnValue('view-result'),
-      redirect: jest.fn().mockReturnValue('redirect-result')
+      view: vi.fn().mockReturnValue('view-result'),
+      redirect: vi.fn().mockReturnValue('redirect-result')
     }
   })
 
   afterEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   describe('Payment Calculation', () => {

@@ -9,6 +9,7 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
   viewName = 'select-actions-for-land-parcel'
   availableActions = []
   groupedActions = []
+  addedActions = []
 
   /**
    * Extract action data from the form payload
@@ -53,10 +54,17 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
       }
     })
 
+    const groupHasAllActionsAdded = (group) => {
+      const groupActions = group.actions?.map(a => a.code) || []
+      const addedActions = this.addedActions.map(a => a.code) || []
+      return groupActions.every(value => addedActions.includes(value))
+    }
+
     return {
       ...super.getViewModel(request, context),
       groupedActions: this.groupedActions.map((group) => ({
         ...group,
+        visible: !groupHasAllActionsAdded(group),
         actions: group.actions.map(mapActionToViewModel)
       }))
     }
@@ -87,6 +95,7 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
         return h.view(viewName, {
           ...this.getViewModel(request, context),
           parcelName: `${sheetId} ${parcelId}`,
+          addedActions: this.addedActions,
           errorSummary: validateUserInput.errorSummary,
           errors: validateUserInput.errors
         })
@@ -169,18 +178,59 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
     return { errors, errorSummary }
   }
 
+  /**
+   * Adds or replaces actions into the state, taking into account that we can only add 1 action per group
+   * @param {object} state - The state object
+   * @param {object} actionsObj - The actions object to be added to the state
+   * @returns {object} - An object containing the merged actions
+   */
   buildNewState = (state, actionsObj) => {
     const { selectedLandParcel, landParcels = {} } = state
+    const currentParcel = landParcels[selectedLandParcel]
+    if (!currentParcel) {
+      return {
+        ...state,
+        landParcels: {
+          ...landParcels,
+          [selectedLandParcel]: { actionsObj }
+        }
+      }
+    }
+
+    const existingActions = currentParcel.actionsObj || {}
+    const newActionsToAdd = Object.keys(actionsObj)
+
+    const actionToGroupMap = new Map()
+    this.groupedActions.forEach(group => {
+      group.actions.forEach(action => {
+        actionToGroupMap.set(action.code, group)
+      })
+    })
+
+    const finalActionsObj = { ...actionsObj }
+
+    // Add existing actions that are not in the same group that the new actions we are going to add
+    Object.entries(existingActions).forEach(([existingAction, actionData]) => {
+      const existingGroup = actionToGroupMap.get(existingAction)
+
+      const hasConflict = newActionsToAdd.some(newAction => {
+        const newGroup = actionToGroupMap.get(newAction)
+        return existingGroup && newGroup && existingGroup === newGroup
+      })
+
+      // existing action to add is not in the same group as newAction, we don't need to replace it
+      if (!hasConflict) {
+        finalActionsObj[existingAction] = actionData
+      }
+    })
+
     return {
       ...state,
       landParcels: {
         ...landParcels,
         [selectedLandParcel]: {
-          ...landParcels[selectedLandParcel],
-          actionsObj: {
-            ...landParcels[selectedLandParcel]?.actionsObj, // Merge existing actions
-            ...actionsObj // Add new actions on top
-          }
+          ...currentParcel,
+          actionsObj: finalActionsObj
         }
       }
     }
@@ -201,6 +251,20 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
       const { collection, viewName } = this
       const { state } = context
       const [sheetId = '', parcelId = ''] = parseLandParcel(state.selectedLandParcel)
+
+      const getAddedActionsForStateParcel = (state, parcel) => {
+        const addedActions = []
+        if (state.landParcels && state.landParcels[state.selectedLandParcel]?.actionsObj) {
+          for (const code in state.landParcels[state.selectedLandParcel].actionsObj) {
+            addedActions.push({ code, description: state.landParcels[state.selectedLandParcel].actionsObj[code].description })
+          }
+        }
+        return addedActions
+      }
+
+      this.addedActions = getAddedActionsForStateParcel(state)
+
+      console.log({ addedActions: this.addedActions })
       // Load available actions for the land parcel
       try {
         this.groupedActions = await fetchAvailableActionsForParcel({ parcelId, sheetId })
@@ -219,6 +283,7 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
       const viewModel = {
         ...this.getViewModel(request, context),
         ...state,
+        addedActions: this.addedActions,
         parcelName: `${sheetId} ${parcelId}`,
         errors: collection.getErrors(collection.getErrors())
       }
