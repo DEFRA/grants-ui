@@ -72,42 +72,37 @@ export async function addAllForms(loader, forms) {
   return addedForms.size
 }
 
-function validateWhitelistVariableCompleteness(whitelistCrnEnvVar, whitelistSbiEnvVar, form, definition, logger) {
+function validateWhitelistVariableCompleteness(whitelistCrnEnvVar, whitelistSbiEnvVar, form, definition) {
   if ((whitelistCrnEnvVar && !whitelistSbiEnvVar) || (!whitelistCrnEnvVar && whitelistSbiEnvVar)) {
     const missingVar = whitelistCrnEnvVar ? 'whitelistSbiEnvVar' : 'whitelistCrnEnvVar'
     const presentVar = whitelistCrnEnvVar ? 'whitelistCrnEnvVar' : 'whitelistSbiEnvVar'
     const error = `Incomplete whitelist configuration in form ${definition.name || form.title || 'unnamed'}: ${presentVar} is defined but ${missingVar} is missing. Both CRN and SBI whitelist variables must be configured together.`
-    logger.error(error)
     throw new Error(error)
   }
 }
 
-function validateCrnEnvironmentVariable(whitelistCrnEnvVar, form, definition, logger) {
+function validateCrnEnvironmentVariable(whitelistCrnEnvVar, form, definition) {
   if (whitelistCrnEnvVar && !process.env[whitelistCrnEnvVar]) {
     const error = `CRN whitelist environment variable ${whitelistCrnEnvVar} is defined in form ${definition.name || form.title || 'unnamed'} but not configured in environment`
-    logger.error(error)
     throw new Error(error)
   }
 }
 
-function validateSbiEnvironmentVariable(whitelistSbiEnvVar, form, definition, logger) {
+function validateSbiEnvironmentVariable(whitelistSbiEnvVar, form, definition) {
   if (whitelistSbiEnvVar && !process.env[whitelistSbiEnvVar]) {
     const error = `SBI whitelist environment variable ${whitelistSbiEnvVar} is defined in form ${definition.name || form.title || 'unnamed'} but not configured in environment`
-    logger.error(error)
     throw new Error(error)
   }
 }
 
 export function validateWhitelistConfiguration(form, definition) {
-  const logger = createLogger()
-
   if (definition.metadata) {
     const whitelistCrnEnvVar = definition.metadata.whitelistCrnEnvVar
     const whitelistSbiEnvVar = definition.metadata.whitelistSbiEnvVar
 
-    validateWhitelistVariableCompleteness(whitelistCrnEnvVar, whitelistSbiEnvVar, form, definition, logger)
-    validateCrnEnvironmentVariable(whitelistCrnEnvVar, form, definition, logger)
-    validateSbiEnvironmentVariable(whitelistSbiEnvVar, form, definition, logger)
+    validateWhitelistVariableCompleteness(whitelistCrnEnvVar, whitelistSbiEnvVar, form, definition)
+    validateCrnEnvironmentVariable(whitelistCrnEnvVar, form, definition)
+    validateSbiEnvironmentVariable(whitelistSbiEnvVar, form, definition)
   }
 }
 

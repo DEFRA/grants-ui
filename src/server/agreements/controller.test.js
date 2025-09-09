@@ -69,7 +69,7 @@ describe('Agreements Controller', () => {
       auth: {
         isAuthenticated: true,
         credentials: {
-          sbi: '123456789'
+          sbi: '106284736'
         }
       }
     })
@@ -244,7 +244,7 @@ describe('Agreements Controller', () => {
         'x-base-url': '/agreement',
         'x-encrypted-auth': 'mocked-jwt-token'
       })
-      expect(Jwt.token.generate).toHaveBeenCalledWith({ sbi: '123456789', source: 'defra' }, 'test-jwt-secret')
+      expect(Jwt.token.generate).toHaveBeenCalledWith({ sbi: '106284736', source: 'defra' }, 'test-jwt-secret')
     })
 
     test('should build proxy headers for POST request with default content-type', async () => {

@@ -254,8 +254,7 @@ export const LogCodes = {
     },
     EXTERNAL_API_ERROR: {
       level: 'error',
-      messageFunc: (messageOptions) =>
-        `External API error for ${messageOptions.endpoint} for identity: ${messageOptions.identity || 'unknown'} - error: ${messageOptions.error}`
+      messageFunc: (messageOptions) => `External API error for ${messageOptions.endpoint}: ${messageOptions.error}`
     }
   }
 }

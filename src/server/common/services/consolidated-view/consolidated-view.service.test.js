@@ -31,7 +31,7 @@ const getMockFilePath = (sbi) => {
 const mockFetchInstance = mockFetch()
 
 describe('Consolidated View Service', () => {
-  const mockSbi = 123456789
+  const mockSbi = 106284736
   const mockCrn = 'CRN123456'
   const mockToken = 'mock-token-123'
 

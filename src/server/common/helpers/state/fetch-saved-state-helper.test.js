@@ -31,43 +31,6 @@ let fetchSavedStateFromApi
 let log
 let LogCodes
 
-const mockRequestWithIdentity = (params) => ({
-  auth: {
-    credentials: {
-      contactId: TEST_USER_IDS.CONTACT_ID,
-      organisationId: TEST_USER_IDS.ORGANISATION_ID
-    }
-  },
-  ...params
-})
-
-const mockRequestLogger = () => ({
-  debug: vi.fn(),
-  info: vi.fn(),
-  warn: vi.fn(),
-  error: vi.fn()
-})
-
-const mockRequest = mockRequestWithIdentity({ params: { slug: TEST_USER_IDS.GRANT_ID } })
-const mockRequestWithLogger = {
-  ...mockRequest,
-  logger: mockRequestLogger()
-}
-
-const createSuccessfulResponse = (data = MOCK_STATE_DATA.DEFAULT) => ({
-  ok: true,
-  json: () => data
-})
-
-const createFailedResponse = (status, statusText = 'Error') => ({
-  ok: false,
-  status,
-  statusText,
-  json: () => {
-    throw new Error(ERROR_MESSAGES.NO_CONTENT)
-  }
-})
-
 describe('fetchSavedStateFromApi', () => {
   const key = `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.ORGANISATION_ID}:${TEST_USER_IDS.GRANT_ID}`
 

@@ -8,7 +8,49 @@ const SCENARIO_FLAGS = {
   SBI_PASSES: 1
 }
 
+class WhitelistServiceFactory {
+  static #serviceCache = new Map()
+  static getService(grantDefinition) {
+    const whitelistCrnEnvVar = grantDefinition?.metadata?.whitelistCrnEnvVar
+    const whitelistSbiEnvVar = grantDefinition?.metadata?.whitelistSbiEnvVar
+
+    const cacheKey = `${whitelistCrnEnvVar || 'none'}:${whitelistSbiEnvVar || 'none'}`
+
+    if (this.#serviceCache.has(cacheKey)) {
+      return this.#serviceCache.get(cacheKey)
+    }
+
+    const crnWhitelist = whitelistCrnEnvVar ? this._parseWhitelist(process.env[whitelistCrnEnvVar]) : []
+    const sbiWhitelist = whitelistSbiEnvVar ? this._parseWhitelist(process.env[whitelistSbiEnvVar]) : []
+
+    const service = new WhitelistService(crnWhitelist, sbiWhitelist)
+    this.#serviceCache.set(cacheKey, service)
+
+    return service
+  }
+
+  static _parseWhitelist(whitelistValue) {
+    if (!whitelistValue || whitelistValue.trim() === '') {
+      return []
+    }
+
+    return whitelistValue
+      .split(',')
+      .map((item) => item.trim())
+      .filter((item) => item.length > 0)
+  }
+
+  static clearCache() {
+    this.#serviceCache.clear()
+  }
+}
+
 class WhitelistService {
+  constructor(crnWhitelist = [], sbiWhitelist = []) {
+    this.crnWhitelist = crnWhitelist
+    this.sbiWhitelist = sbiWhitelist
+  }
+
   /**
    * Check if a value is whitelisted based on environment variable
    * @param {string|number} value - The value to check
@@ -27,7 +69,7 @@ class WhitelistService {
     }
 
     const whitelist = whitelistValue
-      .split(' ')
+      .split(',')
       .map((item) => item.trim())
       .filter((item) => item.length > 0)
 
@@ -37,44 +79,44 @@ class WhitelistService {
   }
 
   /**
-   * Check if a user is whitelisted based on environment variable
+   * Check if a user is whitelisted based on injected CRN whitelist
    * @param {string} crn - The user's CRN from DefraID
-   * @param {string} envVarName - The environment variable name containing the whitelist
    * @returns {boolean}
    */
-  isCrnWhitelisted(crn, envVarName) {
-    return this.isWhitelisted(crn, envVarName)
+  isCrnWhitelisted(crn) {
+    if (this.crnWhitelist.length === 0) {
+      return true
+    }
+    return this.crnWhitelist.includes(String(crn))
   }
 
   /**
-   * Check if an SBI is whitelisted based on environment variable
+   * Check if an SBI is whitelisted based on injected SBI whitelist
    * @param {string} sbi - The SBI number
-   * @param {string} envVarName - The environment variable name containing the SBI whitelist
    * @returns {boolean}
    */
-  isSbiWhitelisted(sbi, envVarName) {
-    return this.isWhitelisted(sbi, envVarName)
+  isSbiWhitelisted(sbi) {
+    if (this.sbiWhitelist.length === 0) {
+      return true
+    }
+    return this.sbiWhitelist.includes(String(sbi))
   }
 
   /**
-   * Validate grant access for CRN and SBI based on grant definition
+   * Validate grant access for CRN and SBI based on injected whitelists
    * @param {string} crn - The user's CRN from DefraID
    * @param {string} sbi - The SBI number
-   * @param {object} grantDefinition - The grant definition containing metadata
    * @returns {object} Validation result object
    */
-  validateGrantAccess(crn, sbi, grantDefinition) {
-    const whitelistCrnEnvVar = grantDefinition?.metadata?.whitelistCrnEnvVar
-    const whitelistSbiEnvVar = grantDefinition?.metadata?.whitelistSbiEnvVar
-
-    const crnPassesValidation = this.isCrnWhitelisted(crn, whitelistCrnEnvVar)
-    const sbiPassesValidation = this.isSbiWhitelisted(sbi, whitelistSbiEnvVar)
+  validateGrantAccess(crn, sbi) {
+    const crnPassesValidation = this.isCrnWhitelisted(crn)
+    const sbiPassesValidation = this.isSbiWhitelisted(sbi)
 
     return {
       crnPassesValidation,
       sbiPassesValidation,
-      hasCrnValidation: !!whitelistCrnEnvVar,
-      hasSbiValidation: !!whitelistSbiEnvVar,
+      hasCrnValidation: this.crnWhitelist.length > 0,
+      hasSbiValidation: this.sbiWhitelist.length > 0,
       overallAccess: crnPassesValidation && sbiPassesValidation
     }
   }
@@ -194,4 +236,4 @@ class WhitelistService {
 
 const whitelistService = new WhitelistService()
 
-export { WhitelistService, whitelistService }
+export { WhitelistService, WhitelistServiceFactory, whitelistService }

@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import { WhitelistService, whitelistService } from './whitelist.service.js'
+import { WhitelistService, WhitelistServiceFactory, whitelistService } from './whitelist.service.js'
 import { log } from '~/src/server/common/helpers/logging/log.js'
 import { LogCodes } from '~/src/server/common/helpers/logging/log-codes.js'
 
@@ -26,13 +26,20 @@ const TEST_ENV_VARS = {
 }
 
 const TEST_WHITELIST_VALUES = {
-  BASIC: '12345 67890 11111',
-  WITH_SPACES: '  12345   67890  11111  ',
-  MULTIPLE_SPACES: '12345  67890   11111',
+  BASIC: '12345,67890,11111',
+  WITH_SPACES: '  12345,   67890,  11111  ',
+  MULTIPLE_SPACES: '12345,  67890,   11111',
   SINGLE: '12345',
-  NUMERIC: '12345 67890',
-  CRN_VALUES: '1101009926 1101010029',
-  SBI_VALUES: '105123456 105654321'
+  NUMERIC: '12345,67890',
+  CRN_VALUES: '1101009926,1101010029',
+  SBI_VALUES: '105123456,105654321'
+}
+
+const TEST_WHITELIST_ARRAYS = {
+  BASIC: ['12345', '67890', '11111'],
+  CRN_VALUES: ['1101009926', '1101010029'],
+  SBI_VALUES: ['105123456', '105654321'],
+  EMPTY: []
 }
 
 const BASE_VALIDATION_PARAMS = {
@@ -46,30 +53,120 @@ const createValidationParams = (overrides = {}) => ({
   ...overrides
 })
 
+describe('WhitelistServiceFactory', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    WhitelistServiceFactory.clearCache()
+    delete process.env[TEST_ENV_VARS.CRN_WHITELIST]
+    delete process.env[TEST_ENV_VARS.SBI_WHITELIST]
+  })
+
+  afterEach(() => {
+    delete process.env[TEST_ENV_VARS.CRN_WHITELIST]
+    delete process.env[TEST_ENV_VARS.SBI_WHITELIST]
+  })
+
+  describe('getService', () => {
+    it('should create service with empty whitelists when no env vars configured', () => {
+      const grantDefinition = { metadata: {} }
+      const service = WhitelistServiceFactory.getService(grantDefinition)
+
+      expect(service.crnWhitelist).toEqual([])
+      expect(service.sbiWhitelist).toEqual([])
+    })
+
+    it('should create service with parsed whitelists from env vars', () => {
+      process.env[TEST_ENV_VARS.CRN_WHITELIST] = TEST_WHITELIST_VALUES.CRN_VALUES
+      process.env[TEST_ENV_VARS.SBI_WHITELIST] = TEST_WHITELIST_VALUES.SBI_VALUES
+
+      const grantDefinition = {
+        metadata: {
+          whitelistCrnEnvVar: TEST_ENV_VARS.CRN_WHITELIST,
+          whitelistSbiEnvVar: TEST_ENV_VARS.SBI_WHITELIST
+        }
+      }
+
+      const service = WhitelistServiceFactory.getService(grantDefinition)
+
+      expect(service.crnWhitelist).toEqual(TEST_WHITELIST_ARRAYS.CRN_VALUES)
+      expect(service.sbiWhitelist).toEqual(TEST_WHITELIST_ARRAYS.SBI_VALUES)
+    })
+
+    it('should cache and reuse service instances', () => {
+      const grantDefinition = { metadata: {} }
+      const service1 = WhitelistServiceFactory.getService(grantDefinition)
+      const service2 = WhitelistServiceFactory.getService(grantDefinition)
+
+      expect(service1).toBe(service2)
+    })
+
+    it('should handle whitespace and empty values in env vars', () => {
+      process.env[TEST_ENV_VARS.CRN_WHITELIST] = TEST_WHITELIST_VALUES.WITH_SPACES
+
+      const grantDefinition = {
+        metadata: {
+          whitelistCrnEnvVar: TEST_ENV_VARS.CRN_WHITELIST
+        }
+      }
+
+      const service = WhitelistServiceFactory.getService(grantDefinition)
+
+      expect(service.crnWhitelist).toEqual(TEST_WHITELIST_ARRAYS.BASIC)
+    })
+  })
+
+  describe('_parseWhitelist', () => {
+    it.each([
+      [undefined, [], 'undefined input'],
+      ['', [], 'empty string'],
+      ['   ', [], 'whitespace only']
+    ])('should return empty array for %s', (input, expected, description) => {
+      expect(WhitelistServiceFactory._parseWhitelist(input)).toEqual(expected)
+    })
+
+    it('should parse comma-separated values', () => {
+      expect(WhitelistServiceFactory._parseWhitelist('a,b,c')).toEqual(['a', 'b', 'c'])
+    })
+
+    it('should handle spaces around commas and trim values', () => {
+      expect(WhitelistServiceFactory._parseWhitelist('  a,   b,  c  ')).toEqual(['a', 'b', 'c'])
+    })
+  })
+})
+
 describe('WhitelistService', () => {
   let service
 
   beforeEach(() => {
     service = new WhitelistService()
     vi.clearAllMocks()
-    delete process.env[TEST_ENV_VARS.WHITELIST]
   })
 
-  afterEach(() => {
-    delete process.env[TEST_ENV_VARS.WHITELIST]
+  describe('constructor', () => {
+    it('should initialize with empty arrays by default', () => {
+      const defaultService = new WhitelistService()
+      expect(defaultService.crnWhitelist).toEqual([])
+      expect(defaultService.sbiWhitelist).toEqual([])
+    })
+
+    it('should initialize with provided whitelist arrays', () => {
+      const serviceWithWhitelists = new WhitelistService(
+        TEST_WHITELIST_ARRAYS.CRN_VALUES,
+        TEST_WHITELIST_ARRAYS.SBI_VALUES
+      )
+      expect(serviceWithWhitelists.crnWhitelist).toEqual(TEST_WHITELIST_ARRAYS.CRN_VALUES)
+      expect(serviceWithWhitelists.sbiWhitelist).toEqual(TEST_WHITELIST_ARRAYS.SBI_VALUES)
+    })
   })
 
   describe('isWhitelisted', () => {
     it.each([
       [undefined, 'undefined'],
       [null, 'null'],
-      ['', 'empty string']
+      ['', 'empty string'],
+      [undefined, 'no envVarName provided']
     ])('should return true when envVarName is %s (%s)', (envVar) => {
       expect(service.isWhitelisted(TEST_VALUES.CONTACT_ID, envVar)).toBe(true)
-    })
-
-    it('should return true when no envVarName is provided', () => {
-      expect(service.isWhitelisted(TEST_VALUES.CONTACT_ID)).toBe(true)
     })
 
     it.each([
@@ -88,24 +185,24 @@ describe('WhitelistService', () => {
       }
     })
 
-    it('should return true when value is in whitelist', () => {
+    it.each([
+      ['12345', true, 'value is in whitelist'],
+      ['67890', true, 'value is in whitelist'],
+      ['11111', true, 'value is in whitelist'],
+      ['99999', false, 'value is not in whitelist'],
+      ['1234', false, 'value is not in whitelist']
+    ])('should return %s when %s (%s)', (value, expected, description) => {
       process.env[TEST_ENV_VARS.WHITELIST] = TEST_WHITELIST_VALUES.BASIC
-      expect(service.isWhitelisted('12345', TEST_ENV_VARS.WHITELIST)).toBe(true)
-      expect(service.isWhitelisted('67890', TEST_ENV_VARS.WHITELIST)).toBe(true)
-      expect(service.isWhitelisted('11111', TEST_ENV_VARS.WHITELIST)).toBe(true)
+      expect(service.isWhitelisted(value, TEST_ENV_VARS.WHITELIST)).toBe(expected)
     })
 
-    it('should return false when value is not in whitelist', () => {
-      process.env[TEST_ENV_VARS.WHITELIST] = TEST_WHITELIST_VALUES.BASIC
-      expect(service.isWhitelisted('99999', TEST_ENV_VARS.WHITELIST)).toBe(false)
-      expect(service.isWhitelisted('1234', TEST_ENV_VARS.WHITELIST)).toBe(false)
-    })
-
-    it('should handle numeric values by converting to string', () => {
+    it.each([
+      [TEST_VALUES.NUMERIC_CRN, true, 'numeric CRN in whitelist'],
+      [TEST_VALUES.NUMERIC_SBI, true, 'numeric SBI in whitelist'],
+      [99999, false, 'numeric value not in whitelist']
+    ])('should return %s when %s', (value, expected, description) => {
       process.env[TEST_ENV_VARS.WHITELIST] = TEST_WHITELIST_VALUES.NUMERIC
-      expect(service.isWhitelisted(TEST_VALUES.NUMERIC_CRN, TEST_ENV_VARS.WHITELIST)).toBe(true)
-      expect(service.isWhitelisted(TEST_VALUES.NUMERIC_SBI, TEST_ENV_VARS.WHITELIST)).toBe(true)
-      expect(service.isWhitelisted(99999, TEST_ENV_VARS.WHITELIST)).toBe(false)
+      expect(service.isWhitelisted(value, TEST_ENV_VARS.WHITELIST)).toBe(expected)
     })
 
     it('should handle single value in whitelist', () => {
@@ -116,20 +213,153 @@ describe('WhitelistService', () => {
   })
 
   describe('isCrnWhitelisted', () => {
-    it('should return correct result for CRN validation', () => {
-      process.env[TEST_ENV_VARS.CRN_WHITELIST] = TEST_WHITELIST_VALUES.CRN_VALUES
+    it.each([
+      [[], TEST_VALUES.CRN_1, true, 'CRN whitelist is empty'],
+      [TEST_WHITELIST_ARRAYS.CRN_VALUES, TEST_VALUES.CRN_1, true, 'CRN is in whitelist'],
+      [TEST_WHITELIST_ARRAYS.CRN_VALUES, TEST_VALUES.CRN_2, true, 'CRN is in whitelist'],
+      [TEST_WHITELIST_ARRAYS.CRN_VALUES, TEST_VALUES.CRN_INVALID, false, 'CRN is not in whitelist']
+    ])('should return %s when %s', (crnWhitelist, crn, expected, description) => {
+      const serviceWithWhitelist = new WhitelistService(crnWhitelist, [])
+      expect(serviceWithWhitelist.isCrnWhitelisted(crn)).toBe(expected)
+    })
 
-      expect(service.isCrnWhitelisted(TEST_VALUES.CRN_1, TEST_ENV_VARS.CRN_WHITELIST)).toBe(true)
-      expect(service.isCrnWhitelisted(TEST_VALUES.CRN_INVALID, TEST_ENV_VARS.CRN_WHITELIST)).toBe(false)
+    it('should handle numeric CRN values by converting to string', () => {
+      const serviceWithCrnWhitelist = new WhitelistService(['12345'], [])
+      expect(serviceWithCrnWhitelist.isCrnWhitelisted(12345)).toBe(true)
     })
   })
 
   describe('isSbiWhitelisted', () => {
-    it('should return correct result for SBI validation', () => {
-      process.env[TEST_ENV_VARS.SBI_WHITELIST] = TEST_WHITELIST_VALUES.SBI_VALUES
+    it.each([
+      [[], TEST_VALUES.SBI_1, true, 'SBI whitelist is empty'],
+      [TEST_WHITELIST_ARRAYS.SBI_VALUES, TEST_VALUES.SBI_1, true, 'SBI is in whitelist'],
+      [TEST_WHITELIST_ARRAYS.SBI_VALUES, TEST_VALUES.SBI_2, true, 'SBI is in whitelist'],
+      [TEST_WHITELIST_ARRAYS.SBI_VALUES, TEST_VALUES.SBI_INVALID, false, 'SBI is not in whitelist']
+    ])('should return %s when %s', (sbiWhitelist, sbi, expected, description) => {
+      const serviceWithWhitelist = new WhitelistService([], sbiWhitelist)
+      expect(serviceWithWhitelist.isSbiWhitelisted(sbi)).toBe(expected)
+    })
 
-      expect(service.isSbiWhitelisted(TEST_VALUES.SBI_1, TEST_ENV_VARS.SBI_WHITELIST)).toBe(true)
-      expect(service.isSbiWhitelisted(TEST_VALUES.SBI_INVALID, TEST_ENV_VARS.SBI_WHITELIST)).toBe(false)
+    it('should handle numeric SBI values by converting to string', () => {
+      const serviceWithSbiWhitelist = new WhitelistService([], ['67890'])
+      expect(serviceWithSbiWhitelist.isSbiWhitelisted(67890)).toBe(true)
+    })
+  })
+
+  describe('validateGrantAccess', () => {
+    it('should return all true when no validation configured (empty whitelists)', () => {
+      const serviceWithNoValidation = new WhitelistService([], [])
+      const result = serviceWithNoValidation.validateGrantAccess(TEST_VALUES.CRN_1, TEST_VALUES.SBI_1)
+
+      expect(result).toEqual({
+        crnPassesValidation: true,
+        sbiPassesValidation: true,
+        hasCrnValidation: false,
+        hasSbiValidation: false,
+        overallAccess: true
+      })
+    })
+
+    it('should validate CRN when CRN whitelist is configured', () => {
+      const serviceWithCrnValidation = new WhitelistService(TEST_WHITELIST_ARRAYS.CRN_VALUES, [])
+
+      const validResult = serviceWithCrnValidation.validateGrantAccess(TEST_VALUES.CRN_1, TEST_VALUES.SBI_1)
+      expect(validResult).toEqual({
+        crnPassesValidation: true,
+        sbiPassesValidation: true,
+        hasCrnValidation: true,
+        hasSbiValidation: false,
+        overallAccess: true
+      })
+
+      const invalidResult = serviceWithCrnValidation.validateGrantAccess(TEST_VALUES.CRN_INVALID, TEST_VALUES.SBI_1)
+      expect(invalidResult).toEqual({
+        crnPassesValidation: false,
+        sbiPassesValidation: true,
+        hasCrnValidation: true,
+        hasSbiValidation: false,
+        overallAccess: false
+      })
+    })
+
+    it('should validate SBI when SBI whitelist is configured', () => {
+      const serviceWithSbiValidation = new WhitelistService([], TEST_WHITELIST_ARRAYS.SBI_VALUES)
+
+      const validResult = serviceWithSbiValidation.validateGrantAccess(TEST_VALUES.CRN_1, TEST_VALUES.SBI_1)
+      expect(validResult).toEqual({
+        crnPassesValidation: true,
+        sbiPassesValidation: true,
+        hasCrnValidation: false,
+        hasSbiValidation: true,
+        overallAccess: true
+      })
+
+      const invalidResult = serviceWithSbiValidation.validateGrantAccess(TEST_VALUES.CRN_1, TEST_VALUES.SBI_INVALID)
+      expect(invalidResult).toEqual({
+        crnPassesValidation: true,
+        sbiPassesValidation: false,
+        hasCrnValidation: false,
+        hasSbiValidation: true,
+        overallAccess: false
+      })
+    })
+
+    it.each([
+      [
+        'both valid',
+        TEST_VALUES.CRN_1,
+        TEST_VALUES.SBI_1,
+        { crnPassesValidation: true, sbiPassesValidation: true, overallAccess: true }
+      ],
+      [
+        'CRN valid, SBI invalid',
+        TEST_VALUES.CRN_1,
+        TEST_VALUES.SBI_INVALID,
+        { crnPassesValidation: true, sbiPassesValidation: false, overallAccess: false }
+      ],
+      [
+        'CRN invalid, SBI valid',
+        TEST_VALUES.CRN_INVALID,
+        TEST_VALUES.SBI_1,
+        { crnPassesValidation: false, sbiPassesValidation: true, overallAccess: false }
+      ],
+      [
+        'both invalid',
+        TEST_VALUES.CRN_INVALID,
+        TEST_VALUES.SBI_INVALID,
+        { crnPassesValidation: false, sbiPassesValidation: false, overallAccess: false }
+      ]
+    ])('should validate both CRN and SBI when %s', (description, crn, sbi, expectedPartial) => {
+      const serviceWithBothValidation = new WhitelistService(
+        TEST_WHITELIST_ARRAYS.CRN_VALUES,
+        TEST_WHITELIST_ARRAYS.SBI_VALUES
+      )
+      const result = serviceWithBothValidation.validateGrantAccess(crn, sbi)
+
+      expect(result).toEqual({
+        ...expectedPartial,
+        hasCrnValidation: true,
+        hasSbiValidation: true
+      })
+    })
+
+    it.each([
+      ['null', null, null],
+      ['undefined', undefined, undefined]
+    ])('should handle %s CRN and SBI values', (description, crn, sbi) => {
+      const serviceWithBothValidation = new WhitelistService(
+        TEST_WHITELIST_ARRAYS.CRN_VALUES,
+        TEST_WHITELIST_ARRAYS.SBI_VALUES
+      )
+      const result = serviceWithBothValidation.validateGrantAccess(crn, sbi)
+
+      expect(result).toEqual({
+        crnPassesValidation: false,
+        sbiPassesValidation: false,
+        hasCrnValidation: true,
+        hasSbiValidation: true,
+        overallAccess: false
+      })
     })
   })
 
@@ -148,7 +378,7 @@ describe('WhitelistService', () => {
 
     it('should log with correct parameters including validationType', () => {
       const logCode = LogCodes.AUTH.WHITELIST_ACCESS_GRANTED
-      const validationType = 'CRN validation passed'
+      const validationType = 'Both CRN and SBI whitelist validation passed'
 
       service._logWhitelistEvent(logCode, TEST_VALUES.CRN_1, TEST_VALUES.SBI_1, TEST_VALUES.TEST_PATH, validationType)
 
@@ -281,6 +511,7 @@ describe('WhitelistService', () => {
       service.logWhitelistValidation(params)
 
       expect(log).not.toHaveBeenCalled()
+      expect(log).toHaveBeenCalledTimes(0)
     })
 
     it('should calculate correct scenario keys', () => {
@@ -297,167 +528,6 @@ describe('WhitelistService', () => {
     })
   })
 
-  describe('validateGrantAccess', () => {
-    const createGrantDefinition = (crnEnvVar = null, sbiEnvVar = null) => ({
-      metadata: {
-        ...(crnEnvVar && { whitelistCrnEnvVar: crnEnvVar }),
-        ...(sbiEnvVar && { whitelistSbiEnvVar: sbiEnvVar })
-      }
-    })
-
-    beforeEach(() => {
-      process.env[TEST_ENV_VARS.CRN_WHITELIST] = TEST_WHITELIST_VALUES.CRN_VALUES
-      process.env[TEST_ENV_VARS.SBI_WHITELIST] = TEST_WHITELIST_VALUES.SBI_VALUES
-    })
-
-    afterEach(() => {
-      delete process.env[TEST_ENV_VARS.CRN_WHITELIST]
-      delete process.env[TEST_ENV_VARS.SBI_WHITELIST]
-    })
-
-    it.each([
-      [
-        'no validation configured (null definition)',
-        null,
-        TEST_VALUES.CRN_1,
-        TEST_VALUES.SBI_1,
-        {
-          crnPassesValidation: true,
-          sbiPassesValidation: true,
-          hasCrnValidation: false,
-          hasSbiValidation: false,
-          overallAccess: true
-        }
-      ],
-      [
-        'no validation configured (empty metadata)',
-        {},
-        TEST_VALUES.CRN_1,
-        TEST_VALUES.SBI_1,
-        {
-          crnPassesValidation: true,
-          sbiPassesValidation: true,
-          hasCrnValidation: false,
-          hasSbiValidation: false,
-          overallAccess: true
-        }
-      ]
-    ])('should return all true when %s', (description, definition, crn, sbi, expected) => {
-      const result = service.validateGrantAccess(crn, sbi, definition)
-      expect(result).toEqual(expected)
-    })
-
-    it.each([
-      [
-        'CRN validation with valid CRN',
-        createGrantDefinition(TEST_ENV_VARS.CRN_WHITELIST),
-        TEST_VALUES.CRN_1,
-        TEST_VALUES.SBI_1,
-        {
-          crnPassesValidation: true,
-          sbiPassesValidation: true,
-          hasCrnValidation: true,
-          hasSbiValidation: false,
-          overallAccess: true
-        }
-      ],
-      [
-        'CRN validation with invalid CRN',
-        createGrantDefinition(TEST_ENV_VARS.CRN_WHITELIST),
-        TEST_VALUES.CRN_INVALID,
-        TEST_VALUES.SBI_1,
-        {
-          crnPassesValidation: false,
-          sbiPassesValidation: true,
-          hasCrnValidation: true,
-          hasSbiValidation: false,
-          overallAccess: false
-        }
-      ],
-      [
-        'SBI validation with valid SBI',
-        createGrantDefinition(null, TEST_ENV_VARS.SBI_WHITELIST),
-        TEST_VALUES.CRN_1,
-        TEST_VALUES.SBI_1,
-        {
-          crnPassesValidation: true,
-          sbiPassesValidation: true,
-          hasCrnValidation: false,
-          hasSbiValidation: true,
-          overallAccess: true
-        }
-      ],
-      [
-        'SBI validation with invalid SBI',
-        createGrantDefinition(null, TEST_ENV_VARS.SBI_WHITELIST),
-        TEST_VALUES.CRN_1,
-        TEST_VALUES.SBI_INVALID,
-        {
-          crnPassesValidation: true,
-          sbiPassesValidation: false,
-          hasCrnValidation: false,
-          hasSbiValidation: true,
-          overallAccess: false
-        }
-      ]
-    ])('should handle %s', (description, definition, crn, sbi, expected) => {
-      const result = service.validateGrantAccess(crn, sbi, definition)
-      expect(result).toEqual(expected)
-    })
-
-    it.each([
-      [
-        'both valid',
-        TEST_VALUES.CRN_1,
-        TEST_VALUES.SBI_1,
-        { crnPassesValidation: true, sbiPassesValidation: true, overallAccess: true }
-      ],
-      [
-        'invalid CRN, valid SBI',
-        TEST_VALUES.CRN_INVALID,
-        TEST_VALUES.SBI_1,
-        { crnPassesValidation: false, sbiPassesValidation: true, overallAccess: false }
-      ],
-      [
-        'valid CRN, invalid SBI',
-        TEST_VALUES.CRN_1,
-        TEST_VALUES.SBI_INVALID,
-        { crnPassesValidation: true, sbiPassesValidation: false, overallAccess: false }
-      ],
-      [
-        'both invalid',
-        TEST_VALUES.CRN_INVALID,
-        TEST_VALUES.SBI_INVALID,
-        { crnPassesValidation: false, sbiPassesValidation: false, overallAccess: false }
-      ]
-    ])('should validate both CRN and SBI when %s', (description, crn, sbi, expectedPartial) => {
-      const definition = createGrantDefinition(TEST_ENV_VARS.CRN_WHITELIST, TEST_ENV_VARS.SBI_WHITELIST)
-      const result = service.validateGrantAccess(crn, sbi, definition)
-
-      expect(result).toEqual({
-        ...expectedPartial,
-        hasCrnValidation: true,
-        hasSbiValidation: true
-      })
-    })
-
-    it.each([
-      ['null', null, null],
-      ['undefined', undefined, undefined]
-    ])('should handle %s CRN and SBI values', (description, crn, sbi) => {
-      const definition = createGrantDefinition(TEST_ENV_VARS.CRN_WHITELIST, TEST_ENV_VARS.SBI_WHITELIST)
-      const result = service.validateGrantAccess(crn, sbi, definition)
-
-      expect(result).toEqual({
-        crnPassesValidation: false,
-        sbiPassesValidation: false,
-        hasCrnValidation: true,
-        hasSbiValidation: true,
-        overallAccess: false
-      })
-    })
-  })
-
   describe('singleton instance', () => {
     it('should export a singleton instance', () => {
       expect(whitelistService).toBeInstanceOf(WhitelistService)
@@ -466,6 +536,11 @@ describe('WhitelistService', () => {
     it('should export the WhitelistService class', () => {
       expect(WhitelistService).toBeDefined()
       expect(typeof WhitelistService).toBe('function')
+    })
+
+    it('should export the WhitelistServiceFactory class', () => {
+      expect(WhitelistServiceFactory).toBeDefined()
+      expect(typeof WhitelistServiceFactory).toBe('function')
     })
   })
 })

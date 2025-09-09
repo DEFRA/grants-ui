@@ -3,7 +3,7 @@ import { formsAuthCallback } from './forms-engine-plugin-auth-helpers.js'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { log } from '~/src/server/common/helpers/logging/log.js'
 import { LogCodes } from '~/src/server/common/helpers/logging/log-codes.js'
-import { whitelistService } from './services/whitelist.service.js'
+import { WhitelistServiceFactory } from './services/whitelist.service.js'
 
 vi.mock('~/src/server/common/helpers/logging/log.js')
 vi.mock('./services/whitelist.service.js')
@@ -76,16 +76,23 @@ const createDefinition = (crnEnvVar = null, sbiEnvVar = null) => ({
 })
 
 describe('formsAuthCallback', () => {
+  let mockWhitelistService
+
   beforeEach(() => {
     vi.clearAllMocks()
-    whitelistService.validateGrantAccess = vi.fn().mockReturnValue({
-      crnPassesValidation: true,
-      sbiPassesValidation: true,
-      hasCrnValidation: false,
-      hasSbiValidation: false,
-      overallAccess: true
-    })
-    whitelistService.logWhitelistValidation = vi.fn()
+
+    mockWhitelistService = {
+      validateGrantAccess: vi.fn().mockReturnValue({
+        crnPassesValidation: true,
+        sbiPassesValidation: true,
+        hasCrnValidation: false,
+        hasSbiValidation: false,
+        overallAccess: true
+      }),
+      logWhitelistValidation: vi.fn()
+    }
+
+    WhitelistServiceFactory.getService = vi.fn().mockReturnValue(mockWhitelistService)
   })
 
   it('should return early for auth paths', () => {
@@ -99,16 +106,31 @@ describe('formsAuthCallback', () => {
     expect(log).not.toHaveBeenCalled()
   })
 
-  it('should return early for non-start paths with whitelist config', () => {
+  it('should require authentication for non-start paths with whitelist config', () => {
     const request = {
-      path: TEST_PATHS.FORM_PAGE_1
+      path: TEST_PATHS.FORM_PAGE_1,
+      auth: {
+        isAuthenticated: false
+      },
+      url: {
+        pathname: TEST_PATHS.FORM_PAGE_1,
+        search: ''
+      },
+      query: {}
     }
     const definition = createDefinition(TEST_ENV_VARS.CRN_WHITELIST)
 
-    const result = formsAuthCallback(request, null, definition)
+    expect(() => {
+      formsAuthCallback(request, null, definition)
+    }).toThrow('Redirect')
 
-    expect(result).toBeUndefined()
-    expect(log).not.toHaveBeenCalled()
+    expect(log).toHaveBeenCalledWith(
+      LogCodes.AUTH.AUTH_DEBUG,
+      expect.objectContaining({
+        path: 'formsAuthCallback',
+        isAuthenticated: false
+      })
+    )
   })
 
   it('should redirect unauthenticated users to sign-in', () => {
@@ -153,8 +175,9 @@ describe('formsAuthCallback', () => {
     const result = formsAuthCallback(request, null, null)
 
     expect(result).toBeUndefined()
-    expect(whitelistService.validateGrantAccess).toHaveBeenCalledWith(TEST_IDS.CRN, TEST_IDS.SBI, null)
-    expect(whitelistService.logWhitelistValidation).toHaveBeenCalledWith({
+    expect(WhitelistServiceFactory.getService).toHaveBeenCalledWith(null)
+    expect(mockWhitelistService.validateGrantAccess).toHaveBeenCalledWith(TEST_IDS.CRN, TEST_IDS.SBI)
+    expect(mockWhitelistService.logWhitelistValidation).toHaveBeenCalledWith({
       crn: TEST_IDS.CRN,
       sbi: TEST_IDS.SBI,
       path: TEST_PATHS.FORM_START,
@@ -169,7 +192,7 @@ describe('formsAuthCallback', () => {
     const request = createAuthRequest()
     const definition = createDefinition(TEST_ENV_VARS.CRN_WHITELIST)
 
-    whitelistService.validateGrantAccess.mockReturnValue({
+    mockWhitelistService.validateGrantAccess.mockReturnValue({
       crnPassesValidation: true,
       sbiPassesValidation: true,
       hasCrnValidation: true,
@@ -180,14 +203,15 @@ describe('formsAuthCallback', () => {
     const result = formsAuthCallback(request, null, definition)
 
     expect(result).toBeUndefined()
-    expect(whitelistService.validateGrantAccess).toHaveBeenCalledWith(TEST_IDS.CRN, TEST_IDS.SBI, definition)
+    expect(WhitelistServiceFactory.getService).toHaveBeenCalledWith(definition)
+    expect(mockWhitelistService.validateGrantAccess).toHaveBeenCalledWith(TEST_IDS.CRN, TEST_IDS.SBI)
   })
 
   it('should allow authenticated users passing SBI whitelist validation', () => {
     const request = createAuthRequest()
     const definition = createDefinition(null, TEST_ENV_VARS.SBI_WHITELIST)
 
-    whitelistService.validateGrantAccess.mockReturnValue({
+    mockWhitelistService.validateGrantAccess.mockReturnValue({
       crnPassesValidation: true,
       sbiPassesValidation: true,
       hasCrnValidation: false,
@@ -198,7 +222,7 @@ describe('formsAuthCallback', () => {
     const result = formsAuthCallback(request, null, definition)
 
     expect(result).toBeUndefined()
-    expect(whitelistService.validateGrantAccess).toHaveBeenCalledWith(TEST_IDS.CRN, TEST_IDS.SBI, definition)
+    expect(mockWhitelistService.validateGrantAccess).toHaveBeenCalledWith(TEST_IDS.CRN, TEST_IDS.SBI)
   })
 
   it.each([
@@ -230,7 +254,7 @@ describe('formsAuthCallback', () => {
     const request = createAuthRequest()
     const definition = createDefinition(crnEnv, sbiEnv)
 
-    whitelistService.validateGrantAccess.mockReturnValue(mockValidationResult)
+    mockWhitelistService.validateGrantAccess.mockReturnValue(mockValidationResult)
 
     const thrownError = getThrownError(() => formsAuthCallback(request, null, definition))
 
@@ -244,7 +268,7 @@ describe('formsAuthCallback', () => {
     const request = createAuthRequest()
     const definition = createDefinition(TEST_ENV_VARS.CRN_WHITELIST, TEST_ENV_VARS.SBI_WHITELIST)
 
-    whitelistService.validateGrantAccess.mockReturnValue({
+    mockWhitelistService.validateGrantAccess.mockReturnValue({
       crnPassesValidation: true,
       sbiPassesValidation: true,
       hasCrnValidation: true,
@@ -255,14 +279,39 @@ describe('formsAuthCallback', () => {
     const result = formsAuthCallback(request, null, definition)
 
     expect(result).toBeUndefined()
-    expect(whitelistService.validateGrantAccess).toHaveBeenCalledWith(TEST_IDS.CRN, TEST_IDS.SBI, definition)
+    expect(mockWhitelistService.validateGrantAccess).toHaveBeenCalledWith(TEST_IDS.CRN, TEST_IDS.SBI)
+  })
+
+  it('should validate whitelist access for authenticated users on non-start paths', () => {
+    const request = createAuthRequest({ path: TEST_PATHS.FORM_PAGE_1 })
+    const definition = createDefinition(TEST_ENV_VARS.CRN_WHITELIST, TEST_ENV_VARS.SBI_WHITELIST)
+
+    const result = formsAuthCallback(request, null, definition)
+
+    expect(result).toBeUndefined()
+    expect(mockWhitelistService.validateGrantAccess).toHaveBeenCalledWith(TEST_IDS.CRN, TEST_IDS.SBI)
+  })
+
+  it('should handle request without query params in auth debug log', () => {
+    const request = createUnauthRequest(TEST_PATHS.FORM_START, null)
+
+    expect(() => {
+      formsAuthCallback(request, null, null)
+    }).toThrow('Redirect')
+
+    expect(log).toHaveBeenCalledWith(
+      LogCodes.AUTH.AUTH_DEBUG,
+      expect.objectContaining({
+        queryParams: {}
+      })
+    )
   })
 
   it('should redirect when one of multiple validations fails', () => {
     const request = createAuthRequest()
     const definition = createDefinition(TEST_ENV_VARS.CRN_WHITELIST, TEST_ENV_VARS.SBI_WHITELIST)
 
-    whitelistService.validateGrantAccess.mockReturnValue({
+    mockWhitelistService.validateGrantAccess.mockReturnValue({
       crnPassesValidation: true,
       sbiPassesValidation: false,
       hasCrnValidation: true,

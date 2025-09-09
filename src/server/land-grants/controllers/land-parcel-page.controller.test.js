@@ -50,7 +50,7 @@ describe('LandParcelPageController', () => {
     auth: {
       isAuthenticated: true,
       credentials: {
-        sbi: '123456789',
+        sbi: '106284736',
         name: 'John Doe',
         organisationId: 'org123',
         organisationName: ' Farm 1',
@@ -97,7 +97,7 @@ describe('LandParcelPageController', () => {
     it('gets parcels info and renders view', async () => {
       const result = await controller.makeGetRouteHandler()(mockRequest, mockContext, mockH)
 
-      expect(fetchParcels).toHaveBeenCalledWith('123456789')
+      expect(fetchParcels).toHaveBeenCalledWith('106284736')
       expect(mockH.view).toHaveBeenCalledWith(
         'select-land-parcel',
         expect.objectContaining({

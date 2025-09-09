@@ -28,9 +28,6 @@ import { requestTracing } from '~/src/server/common/helpers/request-tracing.js'
 import { secureContext } from '~/src/server/common/helpers/secure-context/index.js'
 import { getCacheEngine } from '~/src/server/common/helpers/session-cache/cache-engine.js'
 import { sessionCache } from '~/src/server/common/helpers/session-cache/session-cache.js'
-import { getCacheKey } from '~/src/server/common/helpers/state/get-cache-key-helper.js'
-import { fetchSavedStateFromApi } from '~/src/server/common/helpers/state/fetch-saved-state-helper.js'
-import { persistStateToApi } from '~/src/server/common/helpers/state/persist-state-to-api-helper.js'
 import ConfirmationPageController from '~/src/server/confirmation/confirmation.controller.js'
 import DeclarationPageController from '~/src/server/declaration/declaration.controller.js'
 import ConfirmFarmDetailsController from '~/src/server/land-grants/controllers/confirm-farm-details.controller.js'
@@ -123,18 +120,6 @@ const registerFormsPlugin = async (server, prefix = '') => {
       ...(prefix && { routes: { prefix } }),
       cache: new StatePersistenceService({ server }),
       baseUrl: config.get('baseUrl'),
-      saveAndReturn: {
-        keyGenerator: (request) => {
-          const { userId, businessId, grantId } = getCacheKey(request)
-          return `${userId}:${businessId}:${grantId}`
-        },
-        sessionHydrator: async (request) => {
-          return fetchSavedStateFromApi(request)
-        },
-        sessionPersister: async (state, request) => {
-          return persistStateToApi(state, request)
-        }
-      },
       onRequest: formsAuthCallback,
       services: {
         formsService: await formsService(),
