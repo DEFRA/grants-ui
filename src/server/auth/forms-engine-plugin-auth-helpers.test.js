@@ -1,5 +1,12 @@
-import { formsAuthCallback } from '~/src/server/auth/forms-engine-plugin-auth-helpers.js'
-import { mockAuthRequest } from '~/src/__mocks__/hapi-mocks.js'
+import { vi } from 'vitest'
+import { formsAuthCallback } from './forms-engine-plugin-auth-helpers.js'
+import { statusCodes } from '~/src/server/common/constants/status-codes.js'
+import { log } from '~/src/server/common/helpers/logging/log.js'
+import { LogCodes } from '~/src/server/common/helpers/logging/log-codes.js'
+import { whitelistService } from './services/whitelist.service.js'
+
+vi.mock('~/src/server/common/helpers/logging/log.js')
+vi.mock('./services/whitelist.service.js')
 
 const getThrownError = (fn) => {
   try {
@@ -10,12 +17,123 @@ const getThrownError = (fn) => {
   throw new Error('No error thrown')
 }
 
+const TEST_PATHS = {
+  AUTH_SIGN_IN: '/auth/sign-in',
+  FORM_START: '/form/start',
+  FORM_PAGE_1: '/form/page-1',
+  TEST_PATH: '/test_path',
+  ANOTHER_PATH: '/another_path'
+}
+
+const TEST_IDS = {
+  CRN: '1104734543',
+  CONTACT_ID: '987654321',
+  SBI: '105123456'
+}
+
+const TEST_ENV_VARS = {
+  CRN_WHITELIST: 'TEST_CRN_WHITELIST',
+  SBI_WHITELIST: 'TEST_SBI_WHITELIST'
+}
+
+const TEST_QUERY_PARAMS = {
+  PARAM_VALUE: { param: 'value' },
+  FOO_BAR: { foo: 'bar' }
+}
+
+const createAuthRequest = (overrides = {}) => ({
+  path: TEST_PATHS.FORM_START,
+  auth: {
+    isAuthenticated: true,
+    credentials: {
+      crn: TEST_IDS.CRN,
+      sbi: TEST_IDS.SBI
+    }
+  },
+  ...overrides
+})
+
+const createUnauthRequest = (path = TEST_PATHS.FORM_START, queryParams = TEST_QUERY_PARAMS.PARAM_VALUE) => ({
+  path,
+  url: {
+    pathname: path,
+    search: queryParams ? `?${new URLSearchParams(queryParams).toString()}` : ''
+  },
+  auth: {
+    isAuthenticated: false,
+    strategy: 'oauth',
+    mode: 'required',
+    credentials: null
+  },
+  query: queryParams
+})
+
+const createDefinition = (crnEnvVar = null, sbiEnvVar = null) => ({
+  metadata: {
+    ...(crnEnvVar && { whitelistCrnEnvVar: crnEnvVar }),
+    ...(sbiEnvVar && { whitelistSbiEnvVar: sbiEnvVar })
+  }
+})
+
 describe('formsAuthCallback', () => {
-  it('should throw a redirect error with 302 when not authenticated', () => {
-    const request = mockAuthRequest({
-      auth: { isAuthenticated: false },
-      url: { pathname: '/test_path', search: '?foo=bar' }
+  beforeEach(() => {
+    vi.clearAllMocks()
+    whitelistService.validateGrantAccess = vi.fn().mockReturnValue({
+      crnPassesValidation: true,
+      sbiPassesValidation: true,
+      hasCrnValidation: false,
+      hasSbiValidation: false,
+      overallAccess: true
     })
+    whitelistService.logWhitelistValidation = vi.fn()
+  })
+
+  it('should return early for auth paths', () => {
+    const request = {
+      path: TEST_PATHS.AUTH_SIGN_IN
+    }
+
+    const result = formsAuthCallback(request, null, null)
+
+    expect(result).toBeUndefined()
+    expect(log).not.toHaveBeenCalled()
+  })
+
+  it('should return early for non-start paths with whitelist config', () => {
+    const request = {
+      path: TEST_PATHS.FORM_PAGE_1
+    }
+    const definition = createDefinition(TEST_ENV_VARS.CRN_WHITELIST)
+
+    const result = formsAuthCallback(request, null, definition)
+
+    expect(result).toBeUndefined()
+    expect(log).not.toHaveBeenCalled()
+  })
+
+  it('should redirect unauthenticated users to sign-in', () => {
+    const request = createUnauthRequest()
+
+    expect(() => {
+      formsAuthCallback(request, null, null)
+    }).toThrow('Redirect')
+
+    expect(log).toHaveBeenCalledWith(LogCodes.AUTH.AUTH_DEBUG, {
+      path: 'formsAuthCallback',
+      isAuthenticated: false,
+      strategy: 'oauth',
+      mode: 'required',
+      hasCredentials: false,
+      hasToken: false,
+      hasProfile: false,
+      userAgent: 'server',
+      referer: 'none',
+      queryParams: TEST_QUERY_PARAMS.PARAM_VALUE
+    })
+  })
+
+  it('should throw a redirect error with 302 when not authenticated', () => {
+    const request = createUnauthRequest(TEST_PATHS.TEST_PATH, TEST_QUERY_PARAMS.FOO_BAR)
 
     const thrownError = getThrownError(() => formsAuthCallback(request))
 
@@ -29,12 +147,131 @@ describe('formsAuthCallback', () => {
     )
   })
 
-  it('should do nothing when authenticated', () => {
-    const request = mockAuthRequest({
-      auth: { isAuthenticated: true },
-      url: { pathname: '/another_path', search: '' }
+  it('should allow authenticated users with no whitelist validation', () => {
+    const request = createAuthRequest()
+
+    const result = formsAuthCallback(request, null, null)
+
+    expect(result).toBeUndefined()
+    expect(whitelistService.validateGrantAccess).toHaveBeenCalledWith(TEST_IDS.CRN, TEST_IDS.SBI, null)
+    expect(whitelistService.logWhitelistValidation).toHaveBeenCalledWith({
+      crn: TEST_IDS.CRN,
+      sbi: TEST_IDS.SBI,
+      path: TEST_PATHS.FORM_START,
+      crnPassesValidation: true,
+      sbiPassesValidation: true,
+      hasCrnValidation: false,
+      hasSbiValidation: false
+    })
+  })
+
+  it('should allow authenticated users passing CRN whitelist validation', () => {
+    const request = createAuthRequest()
+    const definition = createDefinition(TEST_ENV_VARS.CRN_WHITELIST)
+
+    whitelistService.validateGrantAccess.mockReturnValue({
+      crnPassesValidation: true,
+      sbiPassesValidation: true,
+      hasCrnValidation: true,
+      hasSbiValidation: false,
+      overallAccess: true
     })
 
-    expect(() => formsAuthCallback(request)).not.toThrow()
+    const result = formsAuthCallback(request, null, definition)
+
+    expect(result).toBeUndefined()
+    expect(whitelistService.validateGrantAccess).toHaveBeenCalledWith(TEST_IDS.CRN, TEST_IDS.SBI, definition)
+  })
+
+  it('should allow authenticated users passing SBI whitelist validation', () => {
+    const request = createAuthRequest()
+    const definition = createDefinition(null, TEST_ENV_VARS.SBI_WHITELIST)
+
+    whitelistService.validateGrantAccess.mockReturnValue({
+      crnPassesValidation: true,
+      sbiPassesValidation: true,
+      hasCrnValidation: false,
+      hasSbiValidation: true,
+      overallAccess: true
+    })
+
+    const result = formsAuthCallback(request, null, definition)
+
+    expect(result).toBeUndefined()
+    expect(whitelistService.validateGrantAccess).toHaveBeenCalledWith(TEST_IDS.CRN, TEST_IDS.SBI, definition)
+  })
+
+  it.each([
+    [
+      'CRN',
+      TEST_ENV_VARS.CRN_WHITELIST,
+      null,
+      {
+        crnPassesValidation: false,
+        sbiPassesValidation: true,
+        hasCrnValidation: true,
+        hasSbiValidation: false,
+        overallAccess: false
+      }
+    ],
+    [
+      'SBI',
+      null,
+      TEST_ENV_VARS.SBI_WHITELIST,
+      {
+        crnPassesValidation: true,
+        sbiPassesValidation: false,
+        hasCrnValidation: false,
+        hasSbiValidation: true,
+        overallAccess: false
+      }
+    ]
+  ])('should redirect when %s fails whitelist validation', (type, crnEnv, sbiEnv, mockValidationResult) => {
+    const request = createAuthRequest()
+    const definition = createDefinition(crnEnv, sbiEnv)
+
+    whitelistService.validateGrantAccess.mockReturnValue(mockValidationResult)
+
+    const thrownError = getThrownError(() => formsAuthCallback(request, null, definition))
+
+    expect(thrownError.message).toBe('Unauthorised')
+    expect(thrownError.output.statusCode).toBe(statusCodes.redirect)
+    expect(thrownError.output.headers.location).toBe('/auth/journey-unauthorised')
+    expect(thrownError.isBoom).toBe(true)
+  })
+
+  it('should handle both CRN and SBI whitelist validation together', () => {
+    const request = createAuthRequest()
+    const definition = createDefinition(TEST_ENV_VARS.CRN_WHITELIST, TEST_ENV_VARS.SBI_WHITELIST)
+
+    whitelistService.validateGrantAccess.mockReturnValue({
+      crnPassesValidation: true,
+      sbiPassesValidation: true,
+      hasCrnValidation: true,
+      hasSbiValidation: true,
+      overallAccess: true
+    })
+
+    const result = formsAuthCallback(request, null, definition)
+
+    expect(result).toBeUndefined()
+    expect(whitelistService.validateGrantAccess).toHaveBeenCalledWith(TEST_IDS.CRN, TEST_IDS.SBI, definition)
+  })
+
+  it('should redirect when one of multiple validations fails', () => {
+    const request = createAuthRequest()
+    const definition = createDefinition(TEST_ENV_VARS.CRN_WHITELIST, TEST_ENV_VARS.SBI_WHITELIST)
+
+    whitelistService.validateGrantAccess.mockReturnValue({
+      crnPassesValidation: true,
+      sbiPassesValidation: false,
+      hasCrnValidation: true,
+      hasSbiValidation: true,
+      overallAccess: false
+    })
+
+    expect(() => {
+      formsAuthCallback(request, null, definition)
+    }).toThrow('Unauthorised')
   })
 })

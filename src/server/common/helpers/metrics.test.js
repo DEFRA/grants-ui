@@ -29,6 +29,10 @@ const defaultMetricsValue = 1
 const mockValue = 200
 
 describe('#metrics', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
   describe('When metrics is not enabled', () => {
     beforeEach(async () => {
       config.set('isMetricsEnabled', false)
