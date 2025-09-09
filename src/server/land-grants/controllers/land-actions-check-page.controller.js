@@ -128,6 +128,30 @@ export default class LandActionsCheckPageController extends QuestionPageControll
     })
   }
 
+  buildLandParcelFooterActions = (selectedActions, parcelKey) => {
+    const uplCodes = ['UPL1', 'UPL2', 'UPL3']
+
+    const uniqueCodes = [
+      ...new Set(
+        Object.values(selectedActions)
+          .filter((item) => `${item.sheetId} ${item.parcelId}` === parcelKey)
+          .map((item) => item.code)
+      )
+    ]
+
+    const hasCMOR1 = uniqueCodes.includes('CMOR1')
+    const hasAnyUPL = uniqueCodes.some((code) => uplCodes.includes(code))
+
+    if (hasCMOR1 && hasAnyUPL) {
+      return {}
+    }
+    return {
+      text: 'Add another action',
+      href: `select-actions-for-land-parcel?parcelId=${parcelKey}`,
+      hiddenTextValue: parcelKey
+    }
+  }
+
   getParcelItems = (paymentInfo) => {
     const groupedByParcel = Object.values(paymentInfo?.parcelItems || {}).reduce((acc, data) => {
       const parcelKey = `${data.sheetId} ${data.parcelId}`
@@ -135,11 +159,7 @@ export default class LandActionsCheckPageController extends QuestionPageControll
       if (!acc[parcelKey]) {
         acc[parcelKey] = {
           cardTitle: `Land parcel ${parcelKey}`,
-          footerActions: {
-            text: 'Add another action',
-            href: `select-actions-for-land-parcel?parcelId=${parcelKey}`,
-            hiddenTextValue: parcelKey
-          },
+          footerActions: this.buildLandParcelFooterActions(paymentInfo?.parcelItems, parcelKey),
           parcelId: parcelKey,
           items: []
         }

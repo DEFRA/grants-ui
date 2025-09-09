@@ -279,7 +279,14 @@ describe('LandActionsCheckPageController', () => {
       test('should display Add another action for land parcels with only one action', () => {
         const paymentData = {
           parcelItems: {
-            1: { description: 'CMOR1', quantity: 5, annualPaymentPence: 1000, sheetId: 'SD01', parcelId: '001' }
+            1: {
+              code: 'CMOR1',
+              description: 'CMOR1',
+              quantity: 5,
+              annualPaymentPence: 1000,
+              sheetId: 'SD01',
+              parcelId: '001'
+            }
           }
         }
 
@@ -290,6 +297,56 @@ describe('LandActionsCheckPageController', () => {
           href: 'select-actions-for-land-parcel?parcelId=SD01 001',
           hiddenTextValue: 'SD01 001'
         })
+      })
+
+      test('should display Add another action for land parcels with one UPl action', () => {
+        const paymentData = {
+          parcelItems: {
+            1: {
+              code: 'UPL1',
+              description: 'UPL1',
+              quantity: 5,
+              annualPaymentPence: 1000,
+              sheetId: 'SD01',
+              parcelId: '001'
+            }
+          }
+        }
+
+        const result = controller.getParcelItems(paymentData)
+
+        expect(result[0].footerActions).toEqual({
+          text: 'Add another action',
+          href: 'select-actions-for-land-parcel?parcelId=SD01 001',
+          hiddenTextValue: 'SD01 001'
+        })
+      })
+
+      test('should hide Add another action for land parcels when CMOR1 and any UPL actions are present', () => {
+        const paymentData = {
+          parcelItems: {
+            1: {
+              code: 'CMOR1',
+              description: 'CMOR1',
+              quantity: 5,
+              annualPaymentPence: 1000,
+              sheetId: 'SD01',
+              parcelId: '001'
+            },
+            2: {
+              code: 'UPL1',
+              description: 'UPL1',
+              quantity: 3,
+              annualPaymentPence: 500,
+              sheetId: 'SD01',
+              parcelId: '001'
+            }
+          }
+        }
+
+        const result = controller.getParcelItems(paymentData)
+
+        expect(result[0].footerActions).toEqual({})
       })
     })
 

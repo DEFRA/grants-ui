@@ -21,7 +21,7 @@
     {{ caller() | trim }}
   </div>
 
- {% if params.footerActions %}
+ {% if (params.footerActions) and params.footerActions.text | length > 0 %}
     <div class="govuk-!-text-align-right{{ params.footerActions.classes }} govuk-!-padding-right-4 govuk-!-padding-bottom-2">
       {{ ('<a class="govuk-link ' + (params.footerActions.classes or '') + '" href="' + params.footerActions.href + '">' + params.footerActions.text + '<span class="govuk-visually-hidden"> to Land Parcel ' + params.footerActions.hiddenTextValue +'</span></a>') | safe }}
     </div>
