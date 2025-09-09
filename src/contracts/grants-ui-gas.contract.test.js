@@ -26,7 +26,7 @@ describe('Pact between grants-ui (consumer) and fg-gas-backend (provider)', () =
         })
         .willRespondWith(204)
         .executeTest(async (mockServer) => {
-          await makeGasApiRequest(
+          const response = await makeGasApiRequest(
             `${mockServer.url}/grants/example-grant-with-auth-v3/applications`,
             'example-grant-with-auth-v3',
             {
@@ -34,6 +34,8 @@ describe('Pact between grants-ui (consumer) and fg-gas-backend (provider)', () =
               payload
             }
           )
+
+        expect(response.status).toBe(204)
         })
     })
   })
