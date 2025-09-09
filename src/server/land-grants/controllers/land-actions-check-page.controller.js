@@ -1,7 +1,7 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { formatCurrency } from '~/src/config/nunjucks/filters/filters.js'
 import { sbiStore } from '~/src/server/sbi/state.js'
-import { calculateGrantPayment } from '../services/land-grants.service.js'
+import { actionGroups, calculateGrantPayment } from '../services/land-grants.service.js'
 
 export default class LandActionsCheckPageController extends QuestionPageController {
   viewName = 'land-actions-check'
@@ -128,12 +128,36 @@ export default class LandActionsCheckPageController extends QuestionPageControll
     })
   }
 
+  buildLandParcelFooterActions = (selectedActions, sheetId, parcelId) => {
+    const uniqueCodes = [
+      ...new Set(
+        Object.values(selectedActions)
+          .filter((item) => `${item.sheetId} ${item.parcelId}` === `${sheetId} ${parcelId}`)
+          .map((item) => item.code)
+      )
+    ]
+
+    const hasActionFromGroup = actionGroups.map((group) => uniqueCodes.some((code) => group.actions.includes(code)))
+
+    if (hasActionFromGroup.every(Boolean)) {
+      return {}
+    }
+
+    return {
+      text: 'Add another action',
+      href: `select-actions-for-land-parcel?parcelId=${sheetId}-${parcelId}`,
+      hiddenTextValue: `${sheetId} ${parcelId}`
+    }
+  }
+
   getParcelItems = (paymentInfo) => {
     const groupedByParcel = Object.values(paymentInfo?.parcelItems || {}).reduce((acc, data) => {
       const parcelKey = `${data.sheetId} ${data.parcelId}`
 
       if (!acc[parcelKey]) {
         acc[parcelKey] = {
+          cardTitle: `Land parcel ${parcelKey}`,
+          footerActions: this.buildLandParcelFooterActions(paymentInfo?.parcelItems, data.sheetId, data.parcelId),
           parcelId: parcelKey,
           items: []
         }

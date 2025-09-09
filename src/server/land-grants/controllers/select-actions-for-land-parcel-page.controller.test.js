@@ -356,6 +356,7 @@ describe('SelectActionsForLandParcelPageController', () => {
 
   describe('POST route handler', () => {
     test('should update state with form values and proceed', async () => {
+      controller.selectedLandParcel = 'sheet1-parcel1'
       const handler = controller.makePostRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
 
@@ -397,7 +398,7 @@ describe('SelectActionsForLandParcelPageController', () => {
           }
         }
       }
-
+      controller.selectedLandParcel = 'sheet1-parcel1'
       const handler = controller.makePostRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 

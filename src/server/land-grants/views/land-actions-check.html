@@ -43,16 +43,13 @@
       {% for item in parcelItems %}
         {% call summaryCard({
           title: {
-            text: "Land parcel " + item.parcelId
+            text: item.cardTitle
           },
           headerActions: {
             html: "<a class='govuk-link' href='confirm-delete-parcel' style='display: none'>Remove</a>"
           },
-          footerActions: {
-            html: "<a class='govuk-link' href='select-base-action2' style='display: none'>Add another action</a>"
-          }
+          footerActions: item.footerActions
         }) %}
-
           {{ govukTable({
             caption: "List of parcel actions selected for this application",
             captionClasses: "govuk-visually-hidden",
@@ -72,7 +69,7 @@
               }
             ],
             rows: item.items,
-            classes: "govuk-table--no-bottom-border"
+            classes: "govuk-table--no-bottom-border govuk-!-margin-bottom-0"
           }) }}
         {% endcall %}
       {% endfor %}

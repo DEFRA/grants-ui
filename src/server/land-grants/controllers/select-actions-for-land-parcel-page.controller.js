@@ -7,8 +7,8 @@ import {
 
 export default class SelectActionsForLandParcelPageController extends QuestionPageController {
   viewName = 'select-actions-for-land-parcel'
-  availableActions = []
   groupedActions = []
+  selectedLandParcel = ''
 
   /**
    * Extract action data from the form payload
@@ -79,7 +79,7 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
       const { viewName } = this
       const payload = request.payload ?? {}
       const landAction = payload.landAction ?? ''
-      const [sheetId, parcelId] = parseLandParcel(state.selectedLandParcel)
+      const [sheetId, parcelId] = parseLandParcel(this.selectedLandParcel)
       const validateUserInput = this.validateUserInput(landAction)
 
       // Validate user input
@@ -170,15 +170,15 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
   }
 
   buildNewState = (state, actionsObj) => {
-    const { selectedLandParcel, landParcels = {} } = state
+    const { landParcels = {} } = state
     return {
       ...state,
       landParcels: {
         ...landParcels,
-        [selectedLandParcel]: {
-          ...landParcels[selectedLandParcel],
+        [this.selectedLandParcel]: {
+          ...landParcels[this.selectedLandParcel],
           actionsObj: {
-            ...landParcels[selectedLandParcel]?.actionsObj, // Merge existing actions
+            ...landParcels[this.selectedLandParcel]?.actionsObj, // Merge existing actions
             ...actionsObj // Add new actions on top
           }
         }
@@ -200,14 +200,15 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
     const fn = async (request, context, h) => {
       const { collection, viewName } = this
       const { state } = context
-      const [sheetId = '', parcelId = ''] = parseLandParcel(state.selectedLandParcel)
+      this.selectedLandParcel = request?.query?.parcelId || state.selectedLandParcel
+      const [sheetId = '', parcelId = ''] = parseLandParcel(this.selectedLandParcel)
       // Load available actions for the land parcel
       try {
         this.groupedActions = await fetchAvailableActionsForParcel({ parcelId, sheetId })
         if (!this.groupedActions.length) {
           request.logger.error({
             message: `No actions found for parcel ${sheetId}-${parcelId}`,
-            selectedLandParcel: state.selectedLandParcel
+            selectedLandParcel: this.selectedLandParcel
           })
         }
       } catch (error) {
