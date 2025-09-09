@@ -54,17 +54,17 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
       }
     })
 
-    const groupHasAllActionsAdded = (group) => {
-      const groupActions = group.actions?.map(a => a.code) || []
-      const addedActions = this.addedActions.map(a => a.code) || []
-      return groupActions.every(value => addedActions.includes(value))
+    const allGroupActionsHaveBeenAdded = (group) => {
+      const groupActions = group.actions?.map((a) => a.code) || []
+      const addedActions = this.addedActions.map((a) => a.code) || []
+      return groupActions.every((value) => addedActions.includes(value))
     }
 
     return {
       ...super.getViewModel(request, context),
       groupedActions: this.groupedActions.map((group) => ({
         ...group,
-        visible: !groupHasAllActionsAdded(group),
+        visible: !allGroupActionsHaveBeenAdded(group),
         actions: group.actions.map(mapActionToViewModel)
       }))
     }
@@ -201,28 +201,29 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
     const newActionsToAdd = Object.keys(actionsObj)
 
     const actionToGroupMap = new Map()
-    this.groupedActions.forEach(group => {
-      group.actions.forEach(action => {
+    this.groupedActions.forEach((group) => {
+      group.actions.forEach((action) => {
         actionToGroupMap.set(action.code, group)
       })
     })
 
-    const finalActionsObj = { ...actionsObj }
-
+    const existingActionsObj = {}
     // Add existing actions that are not in the same group that the new actions we are going to add
     Object.entries(existingActions).forEach(([existingAction, actionData]) => {
       const existingGroup = actionToGroupMap.get(existingAction)
 
-      const hasConflict = newActionsToAdd.some(newAction => {
+      const hasConflict = newActionsToAdd.some((newAction) => {
         const newGroup = actionToGroupMap.get(newAction)
         return existingGroup && newGroup && existingGroup === newGroup
       })
 
       // existing action to add is not in the same group as newAction, we don't need to replace it
       if (!hasConflict) {
-        finalActionsObj[existingAction] = actionData
+        existingActionsObj[existingAction] = actionData
       }
     })
+
+    const finalActionsObj = { ...existingActionsObj, ...actionsObj }
 
     return {
       ...state,
@@ -256,7 +257,10 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
         const addedActions = []
         if (state.landParcels && state.landParcels[state.selectedLandParcel]?.actionsObj) {
           for (const code in state.landParcels[state.selectedLandParcel].actionsObj) {
-            addedActions.push({ code, description: state.landParcels[state.selectedLandParcel].actionsObj[code].description })
+            addedActions.push({
+              code,
+              description: state.landParcels[state.selectedLandParcel].actionsObj[code].description
+            })
           }
         }
         return addedActions
@@ -264,7 +268,6 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
 
       this.addedActions = getAddedActionsForStateParcel(state)
 
-      console.log({ addedActions: this.addedActions })
       // Load available actions for the land parcel
       try {
         this.groupedActions = await fetchAvailableActionsForParcel({ parcelId, sheetId })

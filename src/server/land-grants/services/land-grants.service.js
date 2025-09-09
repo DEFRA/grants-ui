@@ -5,6 +5,18 @@ import { sbiStore } from '../../sbi/state.js'
 
 const LAND_GRANTS_API_URL = config.get('landGrants.grantsServiceApiEndpoint')
 
+// TODO: This needs to come from the backend
+export const actionGroups = [
+  {
+    name: 'Assess moorland',
+    actions: ['CMOR1']
+  },
+  {
+    name: 'Livestock grazing on moorland',
+    actions: ['UPL1', 'UPL2', 'UPL3']
+  }
+]
+
 /**
  * Parse land parcel identifier
  * @param {string} landParcel - The land parcel identifier
@@ -57,9 +69,9 @@ export const landActionsToApiPayload = ({ sheetId, parcelId, actionsObj }) => {
     sbi,
     actions: actionsObj
       ? Object.entries(actionsObj).map(([code, area]) => ({
-        code,
-        quantity: Number(area.value)
-      }))
+          code,
+          quantity: Number(area.value)
+        }))
       : []
   }
 }
@@ -104,18 +116,6 @@ export async function fetchAvailableActionsForParcel({ parcelId = '', sheetId = 
     },
     actions: groupActions
   })
-
-  // TODO: This needs to come from the backend
-  const actionGroups = [
-    {
-      name: 'Assess moorland',
-      actions: ['CMOR1']
-    },
-    {
-      name: 'Livestock grazing on moorland',
-      actions: ['UPL1', 'UPL2', 'UPL3']
-    }
-  ]
 
   actionGroups.forEach((group) => {
     const groupActions = actions.filter((a) => group.actions.includes(a.code))

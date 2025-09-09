@@ -47,10 +47,11 @@ export default class RemoveActionPageController extends QuestionPageController {
           delete newState.landParcels[this.parcel]
           this.setState(request, newState)
           return this.proceed(request, h, `/select-actions-for-land-parcel?parcel=${this.parcel}`)
+        } else {
+          this.setState(request, newState)
+          return this.proceed(request, h, '/check-selected-land-actions')
         }
       }
-
-      return this.proceed(request, h, '/check-selected-land-actions')
     }
 
     return fn
@@ -69,14 +70,15 @@ export default class RemoveActionPageController extends QuestionPageController {
      */
     const fn = async (request, context, h) => {
       const { viewName } = this
-      const { state: { landParcels } } = context
+      const {
+        state: { landParcels }
+      } = context
       const [sheetId = '', parcelId = ''] = parseLandParcel(request.query.parcel)
       const code = request.query.code
       const landParcel = landParcels[sheetId + '-' + parcelId]
       const actionInfo = landParcel ? landParcel.actionsObj[code] : null
 
-      if (!landParcel || !actionInfo)
-        return this.proceed(request, h, '/check-selected-land-actions')
+      if (!landParcel || !actionInfo) return this.proceed(request, h, '/check-selected-land-actions')
 
       this.code = code
       this.parcel = request.query.parcel
@@ -85,7 +87,7 @@ export default class RemoveActionPageController extends QuestionPageController {
       return h.view(viewName, {
         ...this.getViewModel(request, context),
         parcel: this.parcel,
-        actionDescription: this.actionDescription,
+        actionDescription: this.actionDescription
       })
     }
 

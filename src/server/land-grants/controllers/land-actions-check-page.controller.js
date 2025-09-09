@@ -1,7 +1,7 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { formatCurrency } from '~/src/config/nunjucks/filters/filters.js'
 import { sbiStore } from '~/src/server/sbi/state.js'
-import { calculateGrantPayment, stringifyParcel } from '../services/land-grants.service.js'
+import { actionGroups, calculateGrantPayment, stringifyParcel } from '../services/land-grants.service.js'
 
 export default class LandActionsCheckPageController extends QuestionPageController {
   viewName = 'land-actions-check'
@@ -138,6 +138,13 @@ export default class LandActionsCheckPageController extends QuestionPageControll
           items: []
         }
       }
+      const foundGroup = actionGroups.find((g) => g.actions.includes(data.code))
+      const changeLink =
+        foundGroup?.actions.length > 1
+          ? {
+              html: `<a class='govuk-link' href='select-actions-for-land-parcel?parcel=${stringifyParcel({ parcelId: data.parcelId, sheetId: data.sheetId })}&code=${data.code}'>Change</a>`
+            }
+          : {}
 
       acc[parcelKey].items.push([
         {
@@ -149,6 +156,7 @@ export default class LandActionsCheckPageController extends QuestionPageControll
         {
           text: this.getPrice(data.annualPaymentPence)
         },
+        changeLink,
         {
           html: `<a class='govuk-link' href='confirm-remove-action?parcel=${stringifyParcel({ parcelId: data.parcelId, sheetId: data.sheetId })}&code=${data.code}'>Remove</a>`
         }

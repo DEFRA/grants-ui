@@ -465,9 +465,7 @@ describe('SelectActionsForLandParcelPageController', () => {
     })
 
     test('should hide groups where all actions are already added', () => {
-      controller.addedActions = [
-        { code: 'CMOR1', description: 'CMOR1: Assess moorland and produce a written record' }
-      ]
+      controller.addedActions = [{ code: 'CMOR1', description: 'CMOR1: Assess moorland and produce a written record' }]
 
       const result = controller.getViewModel(mockRequest, mockContext)
 

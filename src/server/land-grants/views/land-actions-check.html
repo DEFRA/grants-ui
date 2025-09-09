@@ -10,22 +10,22 @@
 {% from "support-details/macro.njk" import defraSupportDetails %}
 
 {% block content %}
-<div class="govuk-body">
-  <div class="govuk-grid-row">
-    <div class="govuk-grid-column-full">
-      {% if warning %}
-        {{ govukWarningText({
+  <div class="govuk-body">
+    <div class="govuk-grid-row">
+      <div class="govuk-grid-column-full">
+        {% if warning %}
+          {{ govukWarningText({
           text: warning
         }) }}
-      {% endif %}
+        {% endif %}
 
-      {% if info %}
-        {{ govukInsetText({
+        {% if info %}
+          {{ govukInsetText({
           text: info
         }) }}
-      {% endif %}
-      {% if errorMessage %}
-        {{ govukErrorSummary({
+        {% endif %}
+        {% if errorMessage %}
+          {{ govukErrorSummary({
           titleText: "There is a problem",
           errorList: [
             {
@@ -34,14 +34,15 @@
             }
           ]
         }) }}
-      {% endif %}
+        {% endif %}
 
-      <h1 class="govuk-heading-l">{{ pageTitle }}</h1>
+        <h1 class="govuk-heading-l">{{ pageTitle }}</h1>
 
-      <p class="govuk-body-l">The total yearly payment is <strong>{{ totalYearlyPayment }}</strong>.</p>
+        <p class="govuk-body-l">The total yearly payment is
+          <strong>{{ totalYearlyPayment }}</strong>.</p>
 
-      {% for item in parcelItems %}
-        {% call summaryCard({
+        {% for item in parcelItems %}
+          {% call summaryCard({
           title: {
             text: "Land parcel " + item.parcelId
           },
@@ -69,20 +70,23 @@
               },
               {
                 text: ""
+              },
+              {
+                text: ""
               }
             ],
             rows: item.items,
             classes: "govuk-table--no-bottom-border"
           }) }}
-        {% endcall %}
-      {% endfor %}
+          {% endcall %}
+        {% endfor %}
 
-      {% for item in additionalYearlyPayments %}
-        {% call summaryCard({
-          title: {
-            text: "Additional yearly payments"
-          }
-        }) %}
+        {% for item in additionalYearlyPayments %}
+          {% call summaryCard({
+            title: {
+              text: "Additional yearly payments"
+            }
+          }) %}
           {{ govukTable({
             caption: "List of additional yearly payments",
             captionClasses: "govuk-visually-hidden",
@@ -98,12 +102,12 @@
             rows: item.items,
             classes: "govuk-table--no-bottom-border"
           }) }}
-        {% endcall %}
-      {% endfor %}
-    </div>
-    <div class="govuk-grid-column-two-thirds">
-      <form method="post" novalidate>
-         {{ govukRadios({
+          {% endcall %}
+        {% endfor %}
+      </div>
+      <div class="govuk-grid-column-two-thirds">
+        <form method="post" novalidate="novalidate">
+          {{ govukRadios({
               classes: "govuk-radios--inline",
               name: "addMoreActions",
               fieldset: {
@@ -125,22 +129,22 @@
               errorMessage: errorMessage and { text: errorMessage }
             })
           }}
-        <div class="govuk-button-group">
-          <input type="hidden" name="crumb" value="{{ crumb }}">
-          {% block form %}
-            {{ govukButton({
+          <div class="govuk-button-group">
+            <input type="hidden" name="crumb" value="{{ crumb }}">
+            {% block form %}
+              {{ govukButton({
               text: "Continue",
               preventDoubleClick: true
             }) }}
-          {% endblock %}
-        </div>
+            {% endblock %}
+          </div>
 
-        {{ defraSupportDetails() }}
-      </form>
+          {{ defraSupportDetails() }}
+        </form>
+      </div>
     </div>
   </div>
-</div>
-{% if config.cdpEnvironment == 'local' and context | length and not context.isForceAccess %}
-{% include "partials/debug.html" %}
-{% endif %}
+  {% if config.cdpEnvironment == 'local' and context | length and not context.isForceAccess %}
+    {% include "partials/debug.html" %}
+  {% endif %}
 {% endblock %}
