@@ -72,6 +72,7 @@ describe('SelectActionsForLandParcelPageController', () => {
 
     controller = new SelectActionsForLandParcelPageController()
     controller.groupedActions = mockGroupedActions
+    controller.selectedLandParcel = 'sheet1-parcel1'
     controller.collection = {
       getErrors: vi.fn().mockReturnValue([])
     }
@@ -218,6 +219,7 @@ describe('SelectActionsForLandParcelPageController', () => {
 
   describe('buildNewState', () => {
     test('should create new land parcel when none exists', () => {
+      controller.selectedLandParcel = 'sheet1-parcel1'
       const state = {
         landParcels: {}
       }
@@ -247,6 +249,7 @@ describe('SelectActionsForLandParcelPageController', () => {
     })
 
     test('should add new action to existing parcel when no conflicts', () => {
+      controller.selectedLandParcel = 'sheet1-parcel1'
       const state = {
         landParcels: {
           'sheet1-parcel1': {
@@ -285,6 +288,7 @@ describe('SelectActionsForLandParcelPageController', () => {
     })
 
     test('should replace existing action when from same group', () => {
+      controller.selectedLandParcel = 'sheet1-parcel1'
       const state = {
         landParcels: {
           'sheet1-parcel1': {
@@ -328,6 +332,7 @@ describe('SelectActionsForLandParcelPageController', () => {
     })
 
     test('should handle empty groupedActions', () => {
+      controller.selectedLandParcel = 'sheet1-parcel1'
       controller.groupedActions = []
 
       const state = {
@@ -352,6 +357,7 @@ describe('SelectActionsForLandParcelPageController', () => {
     })
 
     test('should preserve other parcel properties', () => {
+      controller.selectedLandParcel = 'sheet1-parcel1'
       const state = {
         landParcels: {
           'sheet1-parcel1': {
@@ -512,7 +518,7 @@ describe('SelectActionsForLandParcelPageController', () => {
       expect(result).toBe('rendered view')
     })
 
-    test.only('should extract added actions from state correctly', async () => {
+    test('should extract added actions from state correctly', async () => {
       mockContext.state.selectedLandParcel = 'sheet1-parcel1'
       mockContext.state.landParcels = {
         'sheet1-parcel1': {
@@ -577,7 +583,7 @@ describe('SelectActionsForLandParcelPageController', () => {
 
   describe('POST route handler', () => {
     test('should update state with form values and proceed', async () => {
-      mockContext.state.selectedLandParcel = 'sheet1-parcel1'
+      controller.selectedLandParcel = 'sheet1-parcel1'
       const handler = controller.makePostRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
 
@@ -603,6 +609,7 @@ describe('SelectActionsForLandParcelPageController', () => {
     })
 
     test('should add more land actions to existing land parcel', async () => {
+      controller.selectedLandParcel = 'sheet1-parcel1'
       mockRequest.payload = {
         landAction: 'UPL1'
       }
@@ -618,7 +625,6 @@ describe('SelectActionsForLandParcelPageController', () => {
           }
         }
       }
-      mockContext.state.selectedLandParcel = 'sheet1-parcel1'
       const handler = controller.makePostRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
@@ -646,6 +652,7 @@ describe('SelectActionsForLandParcelPageController', () => {
     })
 
     test('should replace action when selecting different action from same group', async () => {
+      controller.selectedLandParcel = 'sheet1-parcel1'
       mockRequest.payload = {
         landAction: 'UPL2'
       }
@@ -694,6 +701,10 @@ describe('SelectActionsForLandParcelPageController', () => {
     })
 
     describe('validations', () => {
+      beforeEach(() => {
+        controller.selectedLandParcel = 'sheet1-parcel1'
+      })
+
       test('should handle empty payload gracefully', async () => {
         mockRequest.payload = null
 
