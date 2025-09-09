@@ -86,7 +86,7 @@ export const getAgreementController = {
         h.proxy({
           mapUri: () => ({ uri, headers }),
           passThrough: true,
-          rejectUnauthorized: false
+          rejectUnauthorized: true
         })
       )
 
