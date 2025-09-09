@@ -38,3 +38,64 @@ jobs:
         env:
           # GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  pact:
+    runs-on: self-hosted
+    if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name != 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run contract tests
+        run: npm run test:contracts
+
+      - name: Publish pacts
+        env:
+          PACT_BROKER_BASE_URL: https://ffc-pact-broker.azure.defra.cloud
+          PACT_BROKER_USERNAME: ${{ secrets.PACT_USER }}
+          PACT_BROKER_PASSWORD: ${{ secrets.PACT_PASS }}
+        shell: bash
+        run: |
+          # Use bash to upload pacts manually since Azure Application Gateway blocks /contracts/publish
+          
+          # Create base64 encoded auth header
+          auth_header=$(echo -n "${PACT_BROKER_USERNAME}:${PACT_BROKER_PASSWORD}" | base64 -w 0)
+          
+          # Loop through all pact files
+          for pact_file in src/contracts/pacts/*.json; do
+              if [[ -f "$pact_file" ]]; then
+                  echo "Processing pact file: $pact_file"
+                  
+                  # Extract consumer and provider names using jq
+                  consumer=$(jq -r '.consumer.name' "$pact_file")
+                  provider=$(jq -r '.provider.name' "$pact_file")
+                  version="${{ github.sha }}"
+                  
+                  # Construct the URI
+                  uri="${PACT_BROKER_BASE_URL}/pacts/provider/${provider}/consumer/${consumer}/version/${version}"
+                  
+                  echo "Publishing pact: $consumer -> $provider (version: $version)"
+                  
+                  # Upload the pact using curl
+                  if curl -s -X PUT \
+                      -H "Content-Type: application/json" \
+                      -H "Authorization: Basic ${auth_header}" \
+                      -d "@${pact_file}" \
+                      "$uri" > /dev/null; then
+                      echo "✓ Successfully published pact for $consumer -> $provider"
+                  else
+                      echo "❌ Failed to publish pact for $consumer -> $provider"
+                      exit 1
+                  fi
+              fi
+          done
