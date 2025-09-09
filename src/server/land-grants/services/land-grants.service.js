@@ -100,7 +100,7 @@ export async function fetchAvailableActionsForParcel({ parcelId = '', sheetId = 
     name,
     totalAvailableArea: {
       unit: groupActions[0]?.availableArea.unit,
-      value: groupActions.reduce((acc, item) => acc + item.availableArea.value, 0)
+      value: Math.max(...groupActions.map((item) => item.availableArea.value))
     },
     actions: groupActions
   })

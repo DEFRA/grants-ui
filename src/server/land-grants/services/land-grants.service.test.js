@@ -388,7 +388,7 @@ describe('land-grants service', () => {
           name: 'Livestock grazing on moorland',
           totalAvailableArea: {
             unit: 'ha',
-            value: 36 // 20.75 + 15.25
+            value: 20.75
           },
           actions: [
             { code: 'UPL1', availableArea: { value: 20.75, unit: 'ha' } },
@@ -444,7 +444,7 @@ describe('land-grants service', () => {
           name: '',
           totalAvailableArea: {
             unit: 'ha',
-            value: 8.5 // 5.0 + 3.5
+            value: 5.0
           },
           actions: [
             { code: 'UNKNOWN1', availableArea: { value: 5.0, unit: 'ha' } },
@@ -488,7 +488,7 @@ describe('land-grants service', () => {
           name: '',
           totalAvailableArea: {
             unit: 'ha',
-            value: 8.5
+            value: 5.0
           },
           actions: [
             { code: 'UNKNOWN1', availableArea: { value: 5.0, unit: 'ha' } },
@@ -599,6 +599,55 @@ describe('land-grants service', () => {
             value: 20.75
           },
           actions: [{ code: 'UPL1', availableArea: { value: 20.75, unit: 'ha' } }]
+        }
+      ])
+    })
+
+    it('should use maximum value when multiple actions have different areas', async () => {
+      const mockApiResponse = {
+        parcels: [
+          {
+            parcelId: 'PARCEL456',
+            sheetId: 'SHEET123',
+            actions: [
+              {
+                code: 'UPL1',
+                availableArea: { value: 15.0, unit: 'ha' }
+              },
+              {
+                code: 'UPL2',
+                availableArea: { value: 25.5, unit: 'ha' }
+              },
+              {
+                code: 'UPL3',
+                availableArea: { value: 10.0, unit: 'ha' }
+              }
+            ]
+          }
+        ]
+      }
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => mockApiResponse
+      })
+
+      const result = await fetchAvailableActionsForParcel({
+        parcelId: 'PARCEL456',
+        sheetId: 'SHEET123'
+      })
+
+      expect(result).toEqual([
+        {
+          name: 'Livestock grazing on moorland',
+          totalAvailableArea: {
+            unit: 'ha',
+            value: 25.5
+          },
+          actions: [
+            { code: 'UPL1', availableArea: { value: 15.0, unit: 'ha' } },
+            { code: 'UPL2', availableArea: { value: 25.5, unit: 'ha' } },
+            { code: 'UPL3', availableArea: { value: 10.0, unit: 'ha' } }
+          ]
         }
       ])
     })
