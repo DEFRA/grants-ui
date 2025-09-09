@@ -57,9 +57,9 @@ export const landActionsToApiPayload = ({ sheetId, parcelId, actionsObj }) => {
     sbi,
     actions: actionsObj
       ? Object.entries(actionsObj).map(([code, area]) => ({
-        code,
-        quantity: Number(area.value)
-      }))
+          code,
+          quantity: Number(area.value)
+        }))
       : []
   }
 }
@@ -100,7 +100,7 @@ export async function fetchAvailableActionsForParcel({ parcelId = '', sheetId = 
     name,
     totalAvailableArea: {
       unit: groupActions[0]?.availableArea.unit,
-      value: Math.max(...groupActions.map(item => item.availableArea.value))
+      value: Math.max(...groupActions.map((item) => item.availableArea.value))
     },
     actions: groupActions
   })
