@@ -16,7 +16,7 @@
     "dev:debug": "run-p frontend:watch server:debug",
     "docker:dev": "docker-compose -f compose.yml up",
     "docker:dev:rebuild": "docker-compose -f compose.yml down && docker-compose -f compose.yml build --no-cache && docker-compose -f compose.yml up",
-    "format": "prettier --write \"src/**/*.js\" \"**/*.{js,cjs,md,json,config.js,test.js}\"",
+    "format": "prettier --write \"src/**/*.js\" \"**/*.{js,cjs,md,json,config.js,test.js,contract.test.js}\"",
     "json:format:single": "npx prettier --write",
     "format:check": "prettier --check \"src/**/*.js\" \"**/*.{js,cjs,md,json,config.js,test.js}\"",
     "frontend:watch": "NODE_ENV=development webpack --watch",

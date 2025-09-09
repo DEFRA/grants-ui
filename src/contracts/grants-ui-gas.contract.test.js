@@ -14,9 +14,7 @@ const provider = new PactV4({
 describe('Pact between grants-ui (consumer) and fg-gas-backend (provider)', () => {
   describe('POST /applications', () => {
     it('successfully submits example-grant-with-auth application', async () => {
-      const payload = JSON.parse(
-        fs.readFileSync(path.join(__dirname, 'example-grant-with-auth.json'), 'utf-8')
-      )
+      const payload = JSON.parse(fs.readFileSync(path.join(__dirname, 'example-grant-with-auth.json'), 'utf-8'))
 
       await provider
         .addInteraction()
@@ -32,8 +30,10 @@ describe('Pact between grants-ui (consumer) and fg-gas-backend (provider)', () =
             `${mockServer.url}/grants/example-grant-with-auth-v3/applications`,
             'example-grant-with-auth-v3',
             {
-              method: 'POST', payload
-            })
+              method: 'POST',
+              payload
+            }
+          )
         })
     })
   })
