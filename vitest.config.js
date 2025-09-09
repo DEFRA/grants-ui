@@ -13,6 +13,7 @@ export default {
       enabled: true,
       provider: 'v8',
       include: ['src/**/*.js'],
+      reporter: ['json', 'lcov', 'text', 'html'],
       exclude: [
         '**/node_modules/**',
         '**/.server/**',

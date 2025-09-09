@@ -7,34 +7,33 @@
 {% from "govuk/components/details/macro.njk" import govukDetails %}
 
 {% block content %}
-<div class="govuk-body">
-  <div class="govuk-grid-row">
-    <div class="govuk-grid-column-two-thirds-from-desktop">
+  <div class="govuk-body">
+    <div class="govuk-grid-row">
+      <div class="govuk-grid-column-two-thirds-from-desktop">
 
-      {% if errorSummary.length > 0 %}
-        {{ govukErrorSummary({
+        {% if errorSummary.length > 0 %}
+          {{ govukErrorSummary({
           titleText: "There is a problem",
           errorList: errorSummary
         }) }}
-      {% endif %}
+        {% endif %}
 
-      <h1 class="govuk-heading-l">
-        Select actions for land parcel <span style="white-space: nowrap">{{ parcelName }}</span>
-      </h1>
+        <h1 class="govuk-heading-l">
+          Select actions for land parcel
+          <span style="white-space: nowrap">{{ parcelName }}</span>
+        </h1>
 
-      <p>The list shows actions you can do on this parcel that are compatible with:</p>
-      <ul class="govuk-list govuk-list--bullet">
-        <li>the land details registered with the Rural Payments service</li>
-        <li>actions you are already doing on this parcel</li>
-      </ul>
+        <p>The list shows actions you can do on this parcel that are compatible with:</p>
+        <ul class="govuk-list govuk-list--bullet">
+          <li>the land details registered with the Rural Payments service</li>
+          <li>actions you are already doing on this parcel</li>
+        </ul>
 
-      <p>
-        The service has automatically calculated the total available area in each land parcel that
-        is eligible for the action.
-      </p>
+        <p>
+          The service has automatically calculated the total available area in each land parcel that is eligible for the action.
+        </p>
 
-
-      {{ govukDetails({
+        {{ govukDetails({
         summaryText: "If you need to make an update",
         html: '
           <p>Contact the Rural Payments Agency if you think:</p>
@@ -49,55 +48,43 @@
           </p>'
       }) }}
 
-      {% if availableActions %}
-        <form method="post" novalidate data-actions="{{ actions }}" >
-          <input type="hidden" name="crumb" value="{{ crumb }}">
+        {% if groupedActions.length %}
+          <form method="post" novalidate="novalidate" data-actions="{{ actions }}">
+            <input type="hidden" name="crumb" value="{{ crumb }}">
 
-          {{ govukRadios({
-            name: "landAction",
-            fieldset: {
-              legend: {
-                text: "Assess moorland",
-                classes: "govuk-fieldset__legend--m"
-              }
-            },
-            hint: {
-              text: "Total available area: " + assessMoorlandArea.toFixed(4) + "ha"
-            },
-            items: assessMoorlandAction
-          }) }}
+            {% for group in groupedActions %}
+              {{ govukRadios({
+                name: "landAction",
+                fieldset: {
+                  legend: {
+                    text: group.name,
+                    classes: "govuk-fieldset__legend--m"
+                  }
+                },
+                hint: {
+                  classes: "govuk-label govuk-!-margin-bottom-5",
+                  text: "Total available area: " + group.totalAvailableArea.value.toFixed(4) + " " + group.totalAvailableArea.unit
+                },
+                items: group.actions
+              }) }}
+            {% endfor %}
 
-          {{ govukRadios({
-            idPrefix: "livestockGrazingOnMoorland",
-            name: "landAction",
-            fieldset: {
-              legend: {
-                text: "Livestock grazing on moorland",
-                classes: "govuk-fieldset__legend--m"
-              }
-            },
-            hint: {
-              text: "Total available area: " + livestockGrazingArea.toFixed(4) + "ha"
-            },
-            items: displayActions
-          }) }}
-
-          <div class="govuk-button-group">
-            {% block form %}
-              {{ govukButton({
+            <div class="govuk-button-group">
+              {% block form %}
+                {{ govukButton({
                 text: "Continue",
                 preventDoubleClick: true
               }) }}
-            {% endblock %}
-          </div>
-        </form>
-      {% else %}
-        {{ govukWarningText({
+              {% endblock %}
+            </div>
+          </form>
+        {% else %}
+          {{ govukWarningText({
           text: "No actions available to select.",
           iconFallbackText: "Warning"
         }) }}
-      {% endif %}
+        {% endif %}
+      </div>
     </div>
   </div>
-</div>
 {% endblock %}
