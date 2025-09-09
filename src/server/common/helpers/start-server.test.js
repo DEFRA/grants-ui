@@ -2,7 +2,7 @@ import { vi } from 'vitest'
 import Wreck from '@hapi/wreck'
 const mockLoggerInfo = vi.fn()
 const mockLoggerError = vi.fn()
-const mockLoggerDebug = jest.fn()
+const mockLoggerDebug = vi.fn()
 
 const mockHapiLoggerInfo = vi.fn()
 const mockHapiLoggerError = vi.fn()

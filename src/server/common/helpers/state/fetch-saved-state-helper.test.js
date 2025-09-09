@@ -1,5 +1,4 @@
 import { vi } from 'vitest'
-import { mockRequestWithIdentity } from './mock-request-with-identity.test-helper.js'
 import {
   MOCK_STATE_DATA,
   HTTP_STATUS,
@@ -8,7 +7,6 @@ import {
   createMockConfig,
   createMockConfigWithoutEndpoint
 } from './test-helpers/auth-test-helpers.js'
-import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
 
 global.fetch = vi.fn()
 
@@ -23,8 +21,8 @@ vi.mock('../logging/logger.js', () => ({
 }))
 
 // Mock parseSessionKey
-const mockParseSessionKey = jest.fn()
-jest.mock('./get-cache-key-helper.js', () => ({
+const mockParseSessionKey = vi.fn()
+vi.mock('./get-cache-key-helper.js', () => ({
   parseSessionKey: mockParseSessionKey
 }))
 
@@ -62,11 +60,11 @@ describe('fetchSavedStateFromApi', () => {
       vi.resetModules()
       vi.doMock('~/src/config/config.js', createMockConfig)
       vi.doMock('../logging/log.js', () => ({
-        log: jest.fn(),
+        log: vi.fn(),
         LogCodes: {
           SYSTEM: {
-            EXTERNAL_API_CALL_DEBUG: { level: 'debug', messageFunc: jest.fn() },
-            EXTERNAL_API_ERROR: { level: 'error', messageFunc: jest.fn() }
+            EXTERNAL_API_CALL_DEBUG: { level: 'debug', messageFunc: vi.fn() },
+            EXTERNAL_API_ERROR: { level: 'error', messageFunc: vi.fn() }
           }
         }
       }))

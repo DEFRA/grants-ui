@@ -2,20 +2,20 @@ import { BackendCatboxClient } from '~/src/server/common/helpers/session-cache/b
 import * as fetchModule from '../state/fetch-saved-state-helper.js'
 import * as persistModule from '../state/persist-state-helper.js'
 
-jest.mock('../state/fetch-saved-state-helper.js')
-jest.mock('../state/persist-state-helper.js')
+vi.mock('../state/fetch-saved-state-helper.js')
+vi.mock('../state/persist-state-helper.js')
 
 describe('BackendCatboxClient', () => {
   let client
 
   beforeEach(() => {
     client = new BackendCatboxClient()
-    jest.clearAllMocks()
-    jest.spyOn(console, 'log').mockImplementation(() => {})
+    vi.clearAllMocks()
+    vi.spyOn(console, 'log').mockImplementation(() => {})
   })
 
   afterAll(() => {
-    jest.restoreAllMocks()
+    vi.restoreAllMocks()
   })
 
   describe('validateSegmentName', () => {

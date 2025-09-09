@@ -4,7 +4,6 @@ import {
   HTTP_STATUS,
   TEST_USER_IDS,
   ERROR_MESSAGES,
-  LOG_MESSAGES,
   createMockConfig,
   createMockConfigWithoutEndpoint
 } from './test-helpers/auth-test-helpers.js'
