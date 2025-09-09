@@ -14,7 +14,10 @@ export const agreements = {
           method: 'GET',
           path: `${String(config.get('agreements.baseUrl'))}/{path*}`,
           options: {
-            auth: false
+            auth: {
+              mode: 'required',
+              strategy: 'session'
+            }
           },
           ...getAgreementController
         },
@@ -22,7 +25,10 @@ export const agreements = {
           method: 'POST',
           path: `${String(config.get('agreements.baseUrl'))}/{path*}`,
           options: {
-            auth: false,
+            auth: {
+              mode: 'required',
+              strategy: 'session'
+            },
             plugins: {
               crumb: false // Disable CSRF protection for this route
             },
