@@ -165,7 +165,7 @@ export default class LandActionsCheckPageController extends QuestionPageControll
 
       acc[parcelKey].items.push([
         {
-          text: `${data.description}: ${data.code}`
+          text: data.description
         },
         {
           text: data.quantity

@@ -341,15 +341,18 @@ describe('land-grants service', () => {
             actions: [
               {
                 code: 'CMOR1',
-                availableArea: { value: 10.5, unit: 'ha' }
+                availableArea: { value: 10.5, unit: 'ha' },
+                description: 'Assess moorland and produce a written record'
               },
               {
                 code: 'UPL1',
-                availableArea: { value: 20.75, unit: 'ha' }
+                availableArea: { value: 20.75, unit: 'ha' },
+                description: 'Moderate livestock grazing on moorland'
               },
               {
                 code: 'UPL2',
-                availableArea: { value: 15.25, unit: 'ha' }
+                availableArea: { value: 15.25, unit: 'ha' },
+                description: 'Moderate livestock grazing on moorland'
               }
             ]
           }
@@ -382,7 +385,7 @@ describe('land-grants service', () => {
             unit: 'ha',
             value: 10.5
           },
-          actions: [{ code: 'CMOR1', availableArea: { value: 10.5, unit: 'ha' } }]
+          actions: [{ code: 'CMOR1', availableArea: { value: 10.5, unit: 'ha' }, description: 'Assess moorland and produce a written record: CMOR1' }]
         },
         {
           name: 'Livestock grazing on moorland',
@@ -391,8 +394,8 @@ describe('land-grants service', () => {
             value: 20.75
           },
           actions: [
-            { code: 'UPL1', availableArea: { value: 20.75, unit: 'ha' } },
-            { code: 'UPL2', availableArea: { value: 15.25, unit: 'ha' } }
+            { code: 'UPL1', availableArea: { value: 20.75, unit: 'ha' }, description: 'Moderate livestock grazing on moorland: UPL1' },
+            { code: 'UPL2', availableArea: { value: 15.25, unit: 'ha' }, description: 'Moderate livestock grazing on moorland: UPL2' }
           ]
         }
       ])
@@ -407,15 +410,18 @@ describe('land-grants service', () => {
             actions: [
               {
                 code: 'CMOR1',
-                availableArea: { value: 10.5, unit: 'ha' }
+                availableArea: { value: 10.5, unit: 'ha' },
+                description: 'Assess moorland and produce a written record'
               },
               {
                 code: 'UNKNOWN1',
-                availableArea: { value: 5.0, unit: 'ha' }
+                availableArea: { value: 5.0, unit: 'ha' },
+                description: 'description'
               },
               {
                 code: 'UNKNOWN2',
-                availableArea: { value: 3.5, unit: 'ha' }
+                availableArea: { value: 3.5, unit: 'ha' },
+                description: 'description'
               }
             ]
           }
@@ -438,7 +444,7 @@ describe('land-grants service', () => {
             unit: 'ha',
             value: 10.5
           },
-          actions: [{ code: 'CMOR1', availableArea: { value: 10.5, unit: 'ha' } }]
+          actions: [{ code: 'CMOR1', availableArea: { value: 10.5, unit: 'ha' }, description: 'Assess moorland and produce a written record: CMOR1' }]
         },
         {
           name: '',
@@ -447,8 +453,8 @@ describe('land-grants service', () => {
             value: 5.0
           },
           actions: [
-            { code: 'UNKNOWN1', availableArea: { value: 5.0, unit: 'ha' } },
-            { code: 'UNKNOWN2', availableArea: { value: 3.5, unit: 'ha' } }
+            { code: 'UNKNOWN1', availableArea: { value: 5.0, unit: 'ha' }, description: 'description: UNKNOWN1' },
+            { code: 'UNKNOWN2', availableArea: { value: 3.5, unit: 'ha' }, description: 'description: UNKNOWN2' }
           ]
         }
       ])
@@ -463,11 +469,13 @@ describe('land-grants service', () => {
             actions: [
               {
                 code: 'UNKNOWN1',
-                availableArea: { value: 5.0, unit: 'ha' }
+                availableArea: { value: 5.0, unit: 'ha' },
+                description: 'description'
               },
               {
                 code: 'UNKNOWN2',
-                availableArea: { value: 3.5, unit: 'ha' }
+                availableArea: { value: 3.5, unit: 'ha' },
+                description: 'description'
               }
             ]
           }
@@ -491,8 +499,8 @@ describe('land-grants service', () => {
             value: 5.0
           },
           actions: [
-            { code: 'UNKNOWN1', availableArea: { value: 5.0, unit: 'ha' } },
-            { code: 'UNKNOWN2', availableArea: { value: 3.5, unit: 'ha' } }
+            { code: 'UNKNOWN1', availableArea: { value: 5.0, unit: 'ha' }, description: 'description: UNKNOWN1' },
+            { code: 'UNKNOWN2', availableArea: { value: 3.5, unit: 'ha' }, description: 'description: UNKNOWN2' }
           ]
         }
       ])
@@ -574,7 +582,8 @@ describe('land-grants service', () => {
             actions: [
               {
                 code: 'UPL1',
-                availableArea: { value: 20.75, unit: 'ha' }
+                availableArea: { value: 20.75, unit: 'ha' },
+                description: 'Moderate livestock grazing on moorland'
               }
               // Only one action from the "Livestock grazing on moorland" group
             ]
@@ -598,7 +607,7 @@ describe('land-grants service', () => {
             unit: 'ha',
             value: 20.75
           },
-          actions: [{ code: 'UPL1', availableArea: { value: 20.75, unit: 'ha' } }]
+          actions: [{ code: 'UPL1', availableArea: { value: 20.75, unit: 'ha' }, description: 'Moderate livestock grazing on moorland: UPL1' }]
         }
       ])
     })
@@ -612,15 +621,18 @@ describe('land-grants service', () => {
             actions: [
               {
                 code: 'UPL1',
-                availableArea: { value: 15.0, unit: 'ha' }
+                availableArea: { value: 15.0, unit: 'ha' },
+                description: 'Moderate livestock grazing on moorland'
               },
               {
                 code: 'UPL2',
-                availableArea: { value: 25.5, unit: 'ha' }
+                availableArea: { value: 25.5, unit: 'ha' },
+                description: 'Moderate livestock grazing on moorland'
               },
               {
                 code: 'UPL3',
-                availableArea: { value: 10.0, unit: 'ha' }
+                availableArea: { value: 10.0, unit: 'ha' },
+                description: 'Moderate livestock grazing on moorland'
               }
             ]
           }
@@ -644,9 +656,9 @@ describe('land-grants service', () => {
             value: 25.5
           },
           actions: [
-            { code: 'UPL1', availableArea: { value: 15.0, unit: 'ha' } },
-            { code: 'UPL2', availableArea: { value: 25.5, unit: 'ha' } },
-            { code: 'UPL3', availableArea: { value: 10.0, unit: 'ha' } }
+            { code: 'UPL1', availableArea: { value: 15.0, unit: 'ha' }, description: 'Moderate livestock grazing on moorland: UPL1' },
+            { code: 'UPL2', availableArea: { value: 25.5, unit: 'ha' }, description: 'Moderate livestock grazing on moorland: UPL2' },
+            { code: 'UPL3', availableArea: { value: 10.0, unit: 'ha' }, description: 'Moderate livestock grazing on moorland: UPL3' }
           ]
         }
       ])

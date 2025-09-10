@@ -104,7 +104,7 @@ export async function fetchAvailableActionsForParcel({ parcelId = '', sheetId = 
   const parcelIds = [stringifyParcel({ sheetId, parcelId })]
   const fields = ['actions', 'size']
   const data = await postToLandGrantsApi('/parcels', { parcelIds, fields })
-  const actions = data.parcels?.find((p) => p.parcelId === parcelId && p.sheetId === sheetId)?.actions || []
+  const actions = data.parcels?.find((p) => p.parcelId === parcelId && p.sheetId === sheetId)?.actions.map(mapAction) || []
   const result = []
   const usedCodes = new Set()
 
@@ -130,6 +130,18 @@ export async function fetchAvailableActionsForParcel({ parcelId = '', sheetId = 
     result.push(createGroup('', ungroupedActions))
   }
   return result
+}
+
+/**
+ * 
+ * @param {{description: string, code: string}} action 
+ * @returns {any}
+ */
+function mapAction(action) {
+  return {
+    ...action,
+    description: `${action.description}: ${action.code}`
+  }
 }
 
 /**
