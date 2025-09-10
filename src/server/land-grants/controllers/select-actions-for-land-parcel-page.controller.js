@@ -43,7 +43,7 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
   getViewModel(request, context) {
     const mapActionToViewModel = (action) => ({
       value: action.code,
-      text: action.description,
+      text: `${action.description}: ${action.code}`,
       hint: {
         html:
           `Payment rate per year: <strong>£${action.ratePerUnitGbp.toFixed(2)} per ha</strong>` +
