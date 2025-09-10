@@ -48,6 +48,7 @@ import { persistStateToApi } from './common/helpers/state/persist-state-helper.j
 import RemoveActionPageController from './land-grants/controllers/remove-action-page.controller.js'
 import { router } from './router.js'
 import SectionEndController from './section-end/section-end.controller.js'
+import { randomBytes } from 'node:crypto'
 
 const SESSION_CACHE_NAME = 'session.cache.name'
 
@@ -249,6 +250,50 @@ const handleMockDefraAuth = async (request, h, log, LogCodes) => {
   return h.continue
 }
 
+const buildCsp = (nonce) => {
+  const scriptSrc = [
+    "'self'",
+    "'strict-dynamic'",
+    `'nonce-${nonce}'`,
+    'https://www.googletagmanager.com',
+    'https://www.google-analytics.com'
+  ].join(' ')
+
+  const connectSrc = [
+    "'self'",
+    'https://www.google-analytics.com',
+    'https://region1.google-analytics.com',
+    'https://stats.g.doubleclick.net',
+    'https://*.analytics.google.com',
+    'https://*.googletagmanager.com'
+  ].join(' ')
+
+  const fontSrc = ["'self'", 'data:', 'https://fonts.gstatic.com'].join(' ')
+
+  const imgSrc = [
+    "'self'",
+    'data:',
+    'blob:',
+    'https://www.google-analytics.com',
+    'https://stats.g.doubleclick.net',
+    'https://*.analytics.google.com'
+  ].join(' ')
+
+  return [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "object-src 'none'",
+    "frame-ancestors 'self'",
+    `script-src ${scriptSrc}`,
+    `connect-src ${connectSrc}`,
+    `img-src ${imgSrc}`,
+    "style-src 'self' 'unsafe-inline'",
+    `font-src ${fontSrc}`,
+    'frame-src https://www.googletagmanager.com',
+    'upgrade-insecure-requests'
+  ].join('; ')
+}
+
 export async function createServer() {
   const { log, LogCodes } = await import('~/src/server/common/helpers/logging/log.js')
 
@@ -306,6 +351,27 @@ export async function createServer() {
     }
 
     request.yar.set('visitedSubSections', prev)
+
+    return h.continue
+  })
+
+  server.ext('onPreResponse', (request, h) => {
+    const response = request.response
+    if (response?.isBoom) {
+      return h.continue
+    }
+
+    const nonce = randomBytes(16).toString('base64')
+
+    response.header('Content-Security-Policy', buildCsp(nonce))
+    response.header('Referrer-Policy', 'no-referrer')
+    response.header('X-CSP-Nonce', nonce)
+
+    response.app.cspNonce = nonce
+
+    if (response.variety === 'view') {
+      response.source.context = { ...(response.source.context ?? {}), cspNonce: nonce }
+    }
 
     return h.continue
   })
