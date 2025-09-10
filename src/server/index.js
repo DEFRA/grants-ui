@@ -251,33 +251,17 @@ const handleMockDefraAuth = async (request, h, log, LogCodes) => {
 }
 
 const buildCsp = (nonce) => {
-  const scriptSrc = [
-    "'self'",
-    "'strict-dynamic'",
-    `'nonce-${nonce}'`,
-    'https://www.googletagmanager.com',
-    'https://www.google-analytics.com'
-  ].join(' ')
+  const gtm = 'https://www.googletagmanager.com'
+  const ga4 = 'https://www.google-analytics.com'
+  const ga4WildCard = 'https://*.google-analytics.com'
+  const gtmWildCard = 'https://*.googletagmanager.com'
+  const self = "'self'"
+  const statsDblClick = 'https://stats.g.doubleclick.net'
 
-  const connectSrc = [
-    "'self'",
-    'https://www.google-analytics.com',
-    'https://region1.google-analytics.com',
-    'https://stats.g.doubleclick.net',
-    'https://*.analytics.google.com',
-    'https://*.googletagmanager.com'
-  ].join(' ')
-
-  const fontSrc = ["'self'", 'data:', 'https://fonts.gstatic.com'].join(' ')
-
-  const imgSrc = [
-    "'self'",
-    'data:',
-    'blob:',
-    'https://www.google-analytics.com',
-    'https://stats.g.doubleclick.net',
-    'https://*.analytics.google.com'
-  ].join(' ')
+  const scriptSrc = [self, "'strict-dynamic'", `'nonce-${nonce}'`, gtm, ga4].join(' ')
+  const connectSrc = [self, ga4, statsDblClick, ga4WildCard, gtmWildCard].join(' ')
+  const fontSrc = [self, 'data:', 'https://fonts.gstatic.com'].join(' ')
+  const imgSrc = [self, 'data:', 'blob:', ga4, statsDblClick, ga4WildCard].join(' ')
 
   return [
     "default-src 'self'",
@@ -289,7 +273,7 @@ const buildCsp = (nonce) => {
     `img-src ${imgSrc}`,
     "style-src 'self' 'unsafe-inline'",
     `font-src ${fontSrc}`,
-    'frame-src https://www.googletagmanager.com',
+    `frame-src ${gtm}`,
     'upgrade-insecure-requests'
   ].join('; ')
 }
