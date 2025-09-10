@@ -81,6 +81,8 @@ async function listYamlFilesRecursively(baseDir) {
       out.push(...(await listYamlFilesRecursively(full)))
     } else if (e.isFile() && /\.(ya?ml)$/i.test(e.name)) {
       out.push(full)
+    } else {
+      // Ignore other files
     }
   }
   return out
@@ -101,12 +103,14 @@ async function discoverFormsFromYaml(baseDir = path.resolve(process.cwd(), 'src/
   for (const filePath of files) {
     try {
       const raw = await fs.readFile(filePath, 'utf8')
-      const { name: title, metadata, tasklist } = parseYaml(raw)
+      const { name: title, metadata: formMetadata, tasklist } = parseYaml(raw)
 
       // Skip parsing if tasklist
-      if (tasklist) continue
+      if (tasklist) {
+        continue
+      }
 
-      const { slug, id, enabledInProd } = metadata
+      const { slug, id, enabledInProd } = formMetadata
 
       // Only include forms in production if they have enabledInProd set to true
       if (!isProduction || enabledInProd === true) {
