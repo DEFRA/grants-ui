@@ -26,7 +26,7 @@ describe('SelectActionsForLandParcelPageController', () => {
       actions: [
         {
           code: 'CMOR1',
-          description: 'CMOR1: Assess moorland and produce a written record',
+          description: 'Assess moorland and produce a written record: CMOR1',
           availableArea: {
             unit: 'ha',
             value: 10
@@ -45,7 +45,7 @@ describe('SelectActionsForLandParcelPageController', () => {
       actions: [
         {
           code: 'UPL1',
-          description: 'UPL1: Moderate livestock grazing on moorland',
+          description: 'Moderate livestock grazing on moorland: UPL1',
           availableArea: {
             unit: 'ha',
             value: 5
@@ -54,7 +54,7 @@ describe('SelectActionsForLandParcelPageController', () => {
         },
         {
           code: 'UPL2',
-          description: 'UPL2: Heavy livestock grazing on moorland',
+          description: 'Heavy livestock grazing on moorland: UPL2',
           availableArea: {
             unit: 'ha',
             value: 3
@@ -159,7 +159,7 @@ describe('SelectActionsForLandParcelPageController', () => {
       expect(result).toEqual({
         actionsObj: {
           CMOR1: {
-            description: 'CMOR1: Assess moorland and produce a written record',
+            description: 'Assess moorland and produce a written record: CMOR1',
             value: 10,
             unit: 'ha'
           }
@@ -192,7 +192,7 @@ describe('SelectActionsForLandParcelPageController', () => {
           actions: [
             {
               code: 'CMOR1',
-              description: 'CMOR1: Assess moorland and produce a written record',
+              description: 'Assess moorland and produce a written record: CMOR1',
               availableArea: {}
             }
           ]
@@ -208,7 +208,7 @@ describe('SelectActionsForLandParcelPageController', () => {
       expect(result).toEqual({
         actionsObj: {
           CMOR1: {
-            description: 'CMOR1: Assess moorland and produce a written record',
+            description: 'Assess moorland and produce a written record: CMOR1',
             value: '',
             unit: ''
           }
@@ -225,7 +225,7 @@ describe('SelectActionsForLandParcelPageController', () => {
       }
       const actionsObj = {
         CMOR1: {
-          description: 'CMOR1: Assess moorland and produce a written record',
+          description: 'Assess moorland and produce a written record: CMOR1',
           value: 10,
           unit: 'ha'
         }
@@ -238,7 +238,7 @@ describe('SelectActionsForLandParcelPageController', () => {
           'sheet1-parcel1': {
             actionsObj: {
               CMOR1: {
-                description: 'CMOR1: Assess moorland and produce a written record',
+                description: 'Assess moorland and produce a written record: CMOR1',
                 value: 10,
                 unit: 'ha'
               }
@@ -255,7 +255,7 @@ describe('SelectActionsForLandParcelPageController', () => {
           'sheet1-parcel1': {
             actionsObj: {
               CMOR1: {
-                description: 'CMOR1: Assess moorland and produce a written record',
+                description: 'Assess moorland and produce a written record: CMOR1',
                 value: 10,
                 unit: 'ha'
               }
@@ -265,7 +265,7 @@ describe('SelectActionsForLandParcelPageController', () => {
       }
       const actionsObj = {
         UPL1: {
-          description: 'UPL1: Moderate livestock grazing on moorland',
+          description: 'Moderate livestock grazing on moorland: UPL1',
           value: 5,
           unit: 'ha'
         }
@@ -275,12 +275,12 @@ describe('SelectActionsForLandParcelPageController', () => {
 
       expect(result.landParcels['sheet1-parcel1'].actionsObj).toEqual({
         UPL1: {
-          description: 'UPL1: Moderate livestock grazing on moorland',
+          description: 'Moderate livestock grazing on moorland: UPL1',
           value: 5,
           unit: 'ha'
         },
         CMOR1: {
-          description: 'CMOR1: Assess moorland and produce a written record',
+          description: 'Assess moorland and produce a written record: CMOR1',
           value: 10,
           unit: 'ha'
         }
@@ -294,12 +294,12 @@ describe('SelectActionsForLandParcelPageController', () => {
           'sheet1-parcel1': {
             actionsObj: {
               UPL1: {
-                description: 'UPL1: Moderate livestock grazing on moorland',
+                description: 'Moderate livestock grazing on moorland: UPL1',
                 value: 5,
                 unit: 'ha'
               },
               CMOR1: {
-                description: 'CMOR1: Assess moorland and produce a written record',
+                description: 'Assess moorland and produce a written record: CMOR1',
                 value: 10,
                 unit: 'ha'
               }
@@ -309,7 +309,7 @@ describe('SelectActionsForLandParcelPageController', () => {
       }
       const actionsObj = {
         UPL2: {
-          description: 'UPL2: Heavy livestock grazing on moorland',
+          description: 'Heavy livestock grazing on moorland: UPL2',
           value: 3,
           unit: 'ha'
         }
@@ -319,12 +319,12 @@ describe('SelectActionsForLandParcelPageController', () => {
 
       expect(result.landParcels['sheet1-parcel1'].actionsObj).toEqual({
         UPL2: {
-          description: 'UPL2: Heavy livestock grazing on moorland',
+          description: 'Heavy livestock grazing on moorland: UPL2',
           value: 3,
           unit: 'ha'
         },
         CMOR1: {
-          description: 'CMOR1: Assess moorland and produce a written record',
+          description: 'Assess moorland and produce a written record: CMOR1',
           value: 10,
           unit: 'ha'
         }
@@ -365,7 +365,7 @@ describe('SelectActionsForLandParcelPageController', () => {
             anotherProp: 123,
             actionsObj: {
               CMOR1: {
-                description: 'CMOR1: Assess moorland and produce a written record',
+                description: 'Assess moorland and produce a written record: CMOR1',
                 value: 10,
                 unit: 'ha'
               }
@@ -375,7 +375,7 @@ describe('SelectActionsForLandParcelPageController', () => {
       }
       const actionsObj = {
         UPL1: {
-          description: 'UPL1: Moderate livestock grazing on moorland',
+          description: 'Moderate livestock grazing on moorland: UPL1',
           value: 5,
           unit: 'ha'
         }
@@ -388,12 +388,12 @@ describe('SelectActionsForLandParcelPageController', () => {
         anotherProp: 123,
         actionsObj: {
           UPL1: {
-            description: 'UPL1: Moderate livestock grazing on moorland',
+            description: 'Moderate livestock grazing on moorland: UPL1',
             value: 5,
             unit: 'ha'
           },
           CMOR1: {
-            description: 'CMOR1: Assess moorland and produce a written record',
+            description: 'Assess moorland and produce a written record: CMOR1',
             value: 10,
             unit: 'ha'
           }
@@ -427,7 +427,7 @@ describe('SelectActionsForLandParcelPageController', () => {
             actions: [
               {
                 value: 'CMOR1',
-                text: 'CMOR1: Assess moorland and produce a written record',
+                text: 'Assess moorland and produce a written record: CMOR1',
                 checked: false,
                 hint: {
                   html: 'Payment rate per year: <strong>£16.00 per ha</strong> and <strong>£272</strong> per agreement'
@@ -445,7 +445,7 @@ describe('SelectActionsForLandParcelPageController', () => {
             actions: [
               {
                 value: 'UPL1',
-                text: 'UPL1: Moderate livestock grazing on moorland',
+                text: 'Moderate livestock grazing on moorland: UPL1',
                 checked: false,
                 hint: {
                   html: 'Payment rate per year: <strong>£33.00 per ha</strong>'
@@ -453,8 +453,8 @@ describe('SelectActionsForLandParcelPageController', () => {
               },
               {
                 value: 'UPL2',
-                text: 'UPL2: Heavy livestock grazing on moorland',
                 checked: false,
+                text: 'Heavy livestock grazing on moorland: UPL2',
                 hint: {
                   html: 'Payment rate per year: <strong>£45.00 per ha</strong>'
                 }
@@ -466,7 +466,7 @@ describe('SelectActionsForLandParcelPageController', () => {
     })
 
     test('should hide groups where all actions are already added', () => {
-      controller.addedActions = [{ code: 'CMOR1', description: 'CMOR1: Assess moorland and produce a written record' }]
+      controller.addedActions = [{ code: 'CMOR1', description: 'Assess moorland and produce a written record: CMOR1' }]
 
       const result = controller.getViewModel(mockRequest, mockContext)
 
@@ -512,7 +512,17 @@ describe('SelectActionsForLandParcelPageController', () => {
         'select-actions-for-land-parcel',
         expect.objectContaining({
           parcelName: 'sheet1 parcel1',
-          groupedActions: expect.any(Array)
+          groupedActions: expect.arrayContaining([
+            expect.objectContaining({
+              name: 'Assess moorland',
+              actions: expect.arrayContaining([
+                expect.objectContaining({
+                  value: 'CMOR1',
+                  text: 'Assess moorland and produce a written record: CMOR1'
+                })
+              ])
+            })
+          ])
         })
       )
       expect(result).toBe('rendered view')
@@ -524,10 +534,10 @@ describe('SelectActionsForLandParcelPageController', () => {
         'sheet1-parcel1': {
           actionsObj: {
             CMOR1: {
-              description: 'CMOR1: Assess moorland and produce a written record'
+              description: 'Assess moorland and produce a written record: CMOR1'
             },
             UPL1: {
-              description: 'UPL1: Moderate livestock grazing on moorland'
+              description: 'Moderate livestock grazing on moorland: UPL1'
             }
           }
         }
@@ -537,8 +547,8 @@ describe('SelectActionsForLandParcelPageController', () => {
       await handler(mockRequest, mockContext, mockH)
 
       expect(controller.addedActions).toEqual([
-        { code: 'CMOR1', description: 'CMOR1: Assess moorland and produce a written record' },
-        { code: 'UPL1', description: 'UPL1: Moderate livestock grazing on moorland' }
+        { code: 'CMOR1', description: 'Assess moorland and produce a written record: CMOR1' },
+        { code: 'UPL1', description: 'Moderate livestock grazing on moorland: UPL1' }
       ])
     })
 
@@ -594,7 +604,7 @@ describe('SelectActionsForLandParcelPageController', () => {
             'sheet1-parcel1': {
               actionsObj: {
                 CMOR1: {
-                  description: 'CMOR1: Assess moorland and produce a written record',
+                  description: 'Assess moorland and produce a written record: CMOR1',
                   unit: 'ha',
                   value: 10
                 }
@@ -618,7 +628,7 @@ describe('SelectActionsForLandParcelPageController', () => {
         'sheet1-parcel1': {
           actionsObj: {
             CMOR1: {
-              description: 'CMOR1: Assess moorland and produce a written record',
+              description: 'Assess moorland and produce a written record: CMOR1',
               unit: 'ha',
               value: 10
             }
@@ -635,12 +645,12 @@ describe('SelectActionsForLandParcelPageController', () => {
             'sheet1-parcel1': {
               actionsObj: {
                 CMOR1: {
-                  description: 'CMOR1: Assess moorland and produce a written record',
+                  description: 'Assess moorland and produce a written record: CMOR1',
                   unit: 'ha',
                   value: 10
                 },
                 UPL1: {
-                  description: 'UPL1: Moderate livestock grazing on moorland',
+                  description: 'Moderate livestock grazing on moorland: UPL1',
                   value: 5,
                   unit: 'ha'
                 }
@@ -661,12 +671,12 @@ describe('SelectActionsForLandParcelPageController', () => {
         'sheet1-parcel1': {
           actionsObj: {
             UPL1: {
-              description: 'UPL1: Moderate livestock grazing on moorland',
+              description: 'Moderate livestock grazing on moorland: UPL1',
               unit: 'ha',
               value: 5
             },
             CMOR1: {
-              description: 'CMOR1: Assess moorland and produce a written record',
+              description: 'Assess moorland and produce a written record: CMOR1',
               unit: 'ha',
               value: 10
             }
@@ -684,12 +694,12 @@ describe('SelectActionsForLandParcelPageController', () => {
             'sheet1-parcel1': {
               actionsObj: {
                 UPL2: {
-                  description: 'UPL2: Heavy livestock grazing on moorland',
+                  description: 'Heavy livestock grazing on moorland: UPL2',
                   value: 3,
                   unit: 'ha'
                 },
                 CMOR1: {
-                  description: 'CMOR1: Assess moorland and produce a written record',
+                  description: 'Assess moorland and produce a written record: CMOR1',
                   unit: 'ha',
                   value: 10
                 }
@@ -802,7 +812,7 @@ describe('SelectActionsForLandParcelPageController', () => {
           parcelId: 'parcel1',
           actionsObj: {
             CMOR1: {
-              description: 'CMOR1: Assess moorland and produce a written record',
+              description: 'Assess moorland and produce a written record: CMOR1',
               value: 10,
               unit: 'ha'
             }
