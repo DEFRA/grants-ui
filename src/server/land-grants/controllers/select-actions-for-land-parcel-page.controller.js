@@ -252,12 +252,12 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
     const parcelData = state.landParcels?.[this.selectedLandParcel]?.actionsObj
 
     if (parcelData) {
-      for (const code in parcelData) {
+      Object.keys(parcelData).forEach((code) => {
         addedActions.push({
           code,
           description: parcelData[code].description
         })
-      }
+      })
     }
 
     return addedActions

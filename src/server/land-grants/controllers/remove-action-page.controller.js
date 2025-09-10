@@ -1,6 +1,9 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { parseLandParcel } from '../services/land-grants.service.js'
 
+const checkSelectedLandActionsPath = '/check-selected-land-actions'
+const selectActionsForParcelPath = '/select-actions-for-land-parcel'
+
 export default class RemoveActionPageController extends QuestionPageController {
   viewName = 'remove-action'
   parcel = ''
@@ -48,14 +51,12 @@ export default class RemoveActionPageController extends QuestionPageController {
   deleteActionFromState(state, action, parcelKey) {
     const newState = { ...state }
 
-    if (!newState.landParcels[parcelKey]?.actionsObj) {
-      return newState
-    }
+    if (newState.landParcels[parcelKey]?.actionsObj) {
+      delete newState.landParcels[parcelKey].actionsObj[action]
 
-    delete newState.landParcels[parcelKey].actionsObj[action]
-
-    if (Object.keys(newState.landParcels[parcelKey].actionsObj).length === 0) {
-      delete newState.landParcels[parcelKey]
+      if (Object.keys(newState.landParcels[parcelKey].actionsObj).length === 0) {
+        delete newState.landParcels[parcelKey]
+      }
     }
 
     return newState
@@ -71,7 +72,7 @@ export default class RemoveActionPageController extends QuestionPageController {
   getNextPathAfterRemoval(newState, parcelKey, parcel) {
     const hasRemainingActions = newState.landParcels[parcelKey]?.actionsObj
 
-    return hasRemainingActions ? '/check-selected-land-actions' : `/select-actions-for-land-parcel?parcel=${parcel}`
+    return hasRemainingActions ? checkSelectedLandActionsPath : `${selectActionsForParcelPath}?parcel=${parcel}`
   }
 
   /**
@@ -153,7 +154,7 @@ export default class RemoveActionPageController extends QuestionPageController {
 
       // Redirect if parcel or action not found
       if (!actionInfo) {
-        return this.proceed(request, h, '/check-selected-land-actions')
+        return this.proceed(request, h, checkSelectedLandActionsPath)
       }
 
       this.action = action
@@ -184,7 +185,7 @@ export default class RemoveActionPageController extends QuestionPageController {
         return this.processActionRemoval(request, state, h)
       }
 
-      return this.proceed(request, h, '/check-selected-land-actions')
+      return this.proceed(request, h, checkSelectedLandActionsPath)
     }
   }
 }
