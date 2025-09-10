@@ -481,4 +481,125 @@ describe('LandActionsCheckPageController', () => {
       )
     })
   })
+  describe('Link Visibility Logic', () => {
+    test('should show Change link for UPL actions (multiple action group)', () => {
+      const paymentData = {
+        parcelItems: {
+          1: {
+            code: 'UPL1',
+            description: 'UPL1: Action description',
+            quantity: 5,
+            annualPaymentPence: 1000,
+            sheetId: 'SD01',
+            parcelId: '001'
+          }
+        }
+      }
+
+      const result = controller.getParcelItems(paymentData)
+      const linksHtml = result[0].items[0][3].html
+
+      expect(linksHtml).toContain("href='select-actions-for-land-parcel?parcelId=SD01-001&action=UPL1'>Change</a>")
+      expect(linksHtml).toContain("href='confirm-remove-action?parcel=SD01-001&action=UPL1'>Remove</a>")
+      expect(linksHtml).toContain('land action UPL1 for parcel SD01 001')
+      expect(linksHtml).toContain('land action UPL1 for parcel SD01 001')
+    })
+
+    test('should hide Change link for CMOR1 actions (single action group)', () => {
+      const paymentData = {
+        parcelItems: {
+          1: {
+            code: 'CMOR1',
+            description: 'CMOR1: Assess moorland',
+            quantity: 3,
+            annualPaymentPence: 800,
+            sheetId: 'SD02',
+            parcelId: '002'
+          }
+        }
+      }
+
+      const result = controller.getParcelItems(paymentData)
+      const linksHtml = result[0].items[0][3].html
+
+      expect(linksHtml).not.toContain('Change</a>')
+      expect(linksHtml).toContain("href='confirm-remove-action?parcel=SD02-002&action=CMOR1'>Remove</a>")
+      expect(linksHtml).toContain('land action CMOR1 for parcel SD02 002')
+    })
+
+    test('should show different links for mixed actions on same parcel', () => {
+      const paymentData = {
+        parcelItems: {
+          1: {
+            code: 'CMOR1',
+            description: 'CMOR1: Assess moorland',
+            quantity: 2,
+            annualPaymentPence: 600,
+            sheetId: 'SD03',
+            parcelId: '003'
+          },
+          2: {
+            code: 'UPL2',
+            description: 'UPL2: Upland action',
+            quantity: 4,
+            annualPaymentPence: 1200,
+            sheetId: 'SD03',
+            parcelId: '003'
+          }
+        }
+      }
+
+      const result = controller.getParcelItems(paymentData)
+
+      expect(result).toHaveLength(1)
+      expect(result[0].items).toHaveLength(2)
+
+      const cmor1LinksHtml = result[0].items[0][3].html
+      const upl2LinksHtml = result[0].items[1][3].html
+
+      expect(cmor1LinksHtml).not.toContain('Change</a>')
+      expect(cmor1LinksHtml).toContain('Remove</a>')
+
+      expect(upl2LinksHtml).toContain('Change</a>')
+      expect(upl2LinksHtml).toContain('Remove</a>')
+    })
+  })
+
+  describe('Form Validation Edge Cases', () => {
+    test('should handle unexpected payload values gracefully', async () => {
+      mockRequest.payload = {
+        action: 'validate',
+        addMoreActions: null,
+        unexpectedField: 'value'
+      }
+
+      const handler = controller.makePostRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'land-actions-check',
+        expect.objectContaining({
+          errorMessage: 'Please select if you want to add more actions'
+        })
+      )
+    })
+
+    test('should handle addMoreActions with unexpected values', async () => {
+      mockRequest.payload = { addMoreActions: 'maybe' }
+
+      const handler = controller.makePostRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-path')
+    })
+
+    test('should handle completely empty payload', async () => {
+      mockRequest.payload = undefined
+
+      const handler = controller.makePostRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-path')
+    })
+  })
 })
