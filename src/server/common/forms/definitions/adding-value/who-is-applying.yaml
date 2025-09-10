@@ -1,5 +1,8 @@
 engine: V2
 name: Who is applying
+metadata:
+  id: dac378f9-136b-49d1-8c58-2d4c90d7b1d1
+  slug: who-is-applying
 pages:
   - title: Who is applying for this grant?
     path: /applying

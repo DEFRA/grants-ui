@@ -1,6 +1,9 @@
 engine: V2
 name: Example grant with auth
 metadata:
+  id: 9f9c5ec4-e237-4e6e-b67c-f232a6377d76
+  slug: example-grant-with-auth
+  enabledInProd: false
   referenceNumberPrefix: EGWA
   submission:
     grantCode: example-grant-with-auth-v3

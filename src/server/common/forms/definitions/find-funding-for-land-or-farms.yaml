@@ -1,6 +1,8 @@
 engine: V2
 name: Find Funding for Land or Farms
 metadata:
+  id: 5c67688f-3c61-4839-a6e1-d48b598257f1
+  slug: find-funding-for-land-or-farms
   submission:
     grantCode: frps-private-beta
     submissionSchemaPath: ./schemas/find-funding-for-land-or-farms.schema.json

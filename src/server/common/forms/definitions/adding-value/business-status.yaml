@@ -1,5 +1,8 @@
 engine: V2
 name: Business status
+metadata:
+  id: 93f1e83f-cb08-4615-84fd-4daabab9a552
+  slug: business-status
 pages:
   - title: What is your business?
     path: /nature-of-business

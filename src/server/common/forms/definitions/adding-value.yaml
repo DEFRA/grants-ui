@@ -1,6 +1,9 @@
 engine: V2
 name: Adding value
 metadata:
+  id: 95e92559-968d-44ae-8666-2b1ad3dffd31
+  slug: adding-value
+  enabledInProd: false
   referenceNumberPrefix: AV
   submission:
     grantCode: adding-value

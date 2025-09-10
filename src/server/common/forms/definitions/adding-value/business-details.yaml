@@ -1,5 +1,8 @@
 engine: V2
 name: Business Details
+metadata:
+  id: a6d41baf-17a5-48fc-9aa2-fe5e9246fa48
+  slug: business-details
 pages:
   - title: Business Details
     path: /business-details

@@ -1,5 +1,8 @@
 engine: V2
 name: Collaboration
+metadata:
+  id: d2feb2b3-bf1c-4639-8108-129a2eb0ea0a
+  slug: collaboration
 pages:
   - title: Will you work in partnership or collaborate with other farmers or
       producers?
