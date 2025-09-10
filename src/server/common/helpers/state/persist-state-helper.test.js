@@ -34,7 +34,7 @@ let log
 let LogCodes
 
 describe('persistStateToApi', () => {
-  const key = { id: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.BUSINESS_ID}:${TEST_USER_IDS.GRANT_ID}` }
+  const key = `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.BUSINESS_ID}:${TEST_USER_IDS.GRANT_ID}`
   const testState = MOCK_STATE_DATA.WITH_STEP
 
   beforeEach(() => {

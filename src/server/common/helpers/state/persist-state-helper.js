@@ -13,11 +13,11 @@ export async function persistStateToApi(state, key) {
 
   const url = new URL('/state/', GRANTS_UI_BACKEND_ENDPOINT)
 
-  const { userId, organisationId, grantId } = parseSessionKey(key.id)
+  const { userId, organisationId, grantId } = parseSessionKey(key)
 
   log(LogCodes.SYSTEM.EXTERNAL_API_CALL_DEBUG, {
     endpoint: url.href,
-    identity: key.id,
+    identity: key,
     stateSummary: {
       hasReference: Boolean(state?.$$__referenceNumber),
       keyCount: Object.keys(state || {}).length
@@ -40,14 +40,14 @@ export async function persistStateToApi(state, key) {
     if (!response.ok) {
       log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
         endpoint: url.href,
-        identity: key.id,
+        identity: key,
         error: `${response.status} - ${response.statusText}`
       })
     }
   } catch (err) {
     log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
       endpoint: url.href,
-      identity: key.id,
+      identity: key,
       error: err.message
     })
     // TODO: See TGC-781

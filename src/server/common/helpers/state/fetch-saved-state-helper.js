@@ -12,14 +12,14 @@ export async function fetchSavedStateFromApi(key) {
     return null
   }
 
-  const { userId, organisationId, grantId } = parseSessionKey(key.id)
+  const { userId, organisationId, grantId } = parseSessionKey(key)
 
   let json = null
   const url = new URL('/state/', GRANTS_UI_BACKEND_ENDPOINT)
   try {
     log(LogCodes.SYSTEM.EXTERNAL_API_CALL_DEBUG, {
       endpoint: url.href,
-      identity: key.id
+      identity: key
     })
 
     url.searchParams.set('userId', userId)
@@ -35,7 +35,7 @@ export async function fetchSavedStateFromApi(key) {
       if (response.status === statusCodes.notFound) {
         log(LogCodes.SYSTEM.EXTERNAL_API_CALL_DEBUG, {
           endpoint: url.href,
-          identity: key.id,
+          identity: key,
           stateSummary: 'No state found in backend'
         })
         return null
@@ -48,7 +48,7 @@ export async function fetchSavedStateFromApi(key) {
     if (!json || typeof json !== 'object') {
       log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
         endpoint: url.href,
-        identity: key.id,
+        identity: key,
         error: `Unexpected or empty state format: ${json}`
       })
       return null
@@ -56,7 +56,7 @@ export async function fetchSavedStateFromApi(key) {
   } catch (err) {
     log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
       endpoint: url.href,
-      identity: key.id,
+      identity: key,
       error: err.message
     })
     return null
