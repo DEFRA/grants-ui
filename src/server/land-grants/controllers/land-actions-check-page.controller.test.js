@@ -301,7 +301,7 @@ describe('LandActionsCheckPageController', () => {
         expect(result[0].footerActions).toEqual({
           text: 'Add another action',
           href: 'select-actions-for-land-parcel?parcelId=SD01-001',
-          hiddenTextValue: 'SD01 001'
+          hiddenTextValue: 'to Land Parcel SD01 001'
         })
       })
 
@@ -324,7 +324,7 @@ describe('LandActionsCheckPageController', () => {
         expect(result[0].footerActions).toEqual({
           text: 'Add another action',
           href: 'select-actions-for-land-parcel?parcelId=SD01-001',
-          hiddenTextValue: 'SD01 001'
+          hiddenTextValue: 'to Land Parcel SD01 001'
         })
       })
 
@@ -353,6 +353,31 @@ describe('LandActionsCheckPageController', () => {
         const result = controller.getParcelItems(paymentData)
 
         expect(result[0].footerActions).toEqual({})
+      })
+    })
+
+    describe('"Remove parcel" links', () => {
+      test('should display Remove for land parcels', () => {
+        const paymentData = {
+          parcelItems: {
+            1: {
+              code: 'CMOR1',
+              description: 'CMOR1',
+              quantity: 5,
+              annualPaymentPence: 1000,
+              sheetId: 'SD01',
+              parcelId: '001'
+            }
+          }
+        }
+
+        const result = controller.getParcelItems(paymentData)
+
+        expect(result[0].headerActions).toEqual({
+          text: 'Remove',
+          href: 'remove-parcel?parcel=SD01-001',
+          hiddenTextValue: 'all actions for Land Parcel SD01 001'
+        })
       })
     })
 
@@ -500,7 +525,7 @@ describe('LandActionsCheckPageController', () => {
       const linksHtml = result[0].items[0][3].html
 
       expect(linksHtml).toContain("href='select-actions-for-land-parcel?parcelId=SD01-001&action=UPL1'>Change</a>")
-      expect(linksHtml).toContain("href='confirm-remove-action?parcel=SD01-001&action=UPL1'>Remove</a>")
+      expect(linksHtml).toContain("href='remove-action?parcel=SD01-001&action=UPL1'>Remove</a>")
       expect(linksHtml).toContain('land action UPL1 for parcel SD01 001')
       expect(linksHtml).toContain('land action UPL1 for parcel SD01 001')
     })
@@ -523,7 +548,7 @@ describe('LandActionsCheckPageController', () => {
       const linksHtml = result[0].items[0][3].html
 
       expect(linksHtml).not.toContain('Change</a>')
-      expect(linksHtml).toContain("href='confirm-remove-action?parcel=SD02-002&action=CMOR1'>Remove</a>")
+      expect(linksHtml).toContain("href='remove-action?parcel=SD02-002&action=CMOR1'>Remove</a>")
       expect(linksHtml).toContain('land action CMOR1 for parcel SD02 002')
     })
 

@@ -17,7 +17,7 @@ const createLinks = (data, foundGroup) => {
     )
   }
   links.push(
-    `<li class='govuk-summary-list__actions-list-item'><a class='govuk-link' href='confirm-remove-action?parcel=${parcelParam}&action=${data.code}'>Remove</a><span class="govuk-visually-hidden"> land action ${data.code} for parcel ${parcel}</span></li>`
+    `<li class='govuk-summary-list__actions-list-item'><a class='govuk-link' href='remove-action?parcel=${parcelParam}&action=${data.code}'>Remove</a><span class="govuk-visually-hidden"> land action ${data.code} for parcel ${parcel}</span></li>`
   )
 
   return {
@@ -127,6 +127,14 @@ export default class LandActionsCheckPageController extends QuestionPageControll
     ]
   }
 
+  buildLandParcelHeaderActions = (sheetId, parcelId) => {
+    return {
+      text: 'Remove',
+      href: `remove-parcel?parcel=${sheetId}-${parcelId}`,
+      hiddenTextValue: `all actions for Land Parcel ${sheetId} ${parcelId}`
+    }
+  }
+
   buildLandParcelFooterActions = (selectedActions, sheetId, parcelId) => {
     const uniqueCodes = [
       ...new Set(
@@ -145,7 +153,7 @@ export default class LandActionsCheckPageController extends QuestionPageControll
     return {
       text: 'Add another action',
       href: `select-actions-for-land-parcel?parcelId=${sheetId}-${parcelId}`,
-      hiddenTextValue: `${sheetId} ${parcelId}`
+      hiddenTextValue: `to Land Parcel ${sheetId} ${parcelId}`
     }
   }
 
@@ -156,6 +164,7 @@ export default class LandActionsCheckPageController extends QuestionPageControll
       if (!acc[parcelKey]) {
         acc[parcelKey] = {
           cardTitle: `Land parcel ${parcelKey}`,
+          headerActions: this.buildLandParcelHeaderActions(data.sheetId, data.parcelId),
           footerActions: this.buildLandParcelFooterActions(paymentInfo?.parcelItems, data.sheetId, data.parcelId),
           parcelId: parcelKey,
           items: []

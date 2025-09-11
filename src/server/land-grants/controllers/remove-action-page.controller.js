@@ -42,15 +42,26 @@ export default class RemoveActionPageController extends QuestionPageController {
   }
 
   /**
-   * Delete action from state and clean up empty parcels
+   * Delete parcel from state object
    * @param {object} state - Current state
-   * @param {string} action - Action code to remove
    * @param {string} parcelKey - Parcel key
    * @returns {object} - Updated state
    */
-  deleteActionFromState(state, action, parcelKey) {
-    const newState = { ...state }
+  deleteParcelFromState(state, parcelKey) {
+    const newState = JSON.parse(JSON.stringify(state))
+    delete newState.landParcels[parcelKey]
+    return newState
+  }
 
+  /**
+   * Delete action from state and clean up empty parcels
+   * @param {object} state - Current state
+   * @param {string} parcelKey - Parcel key
+   * @param {string} action - Action code to remove
+   * @returns {object} - Updated state
+   */
+  deleteActionFromState(state, parcelKey, action) {
+    const newState = JSON.parse(JSON.stringify(state))
     if (newState.landParcels[parcelKey]?.actionsObj) {
       delete newState.landParcels[parcelKey].actionsObj[action]
 
@@ -81,9 +92,9 @@ export default class RemoveActionPageController extends QuestionPageController {
    * @returns {object|null} - Validation error or null if valid
    */
   validatePostPayload(payload) {
-    const { removeAction } = payload
+    const { remove } = payload
 
-    if (removeAction === undefined) {
+    if (remove === undefined) {
       return {
         errorMessage: 'Please select if you want to remove the action'
       }
@@ -110,16 +121,18 @@ export default class RemoveActionPageController extends QuestionPageController {
   }
 
   /**
-   * Process action removal
+   * Process action or parcel removal
    * @param {FormRequest} request - Request object
    * @param {object} state - Current state
    * @param {object} h - Response toolkit
    * @returns {Promise<object>} - Response object
    */
-  async processActionRemoval(request, state, h) {
+  async processRemoval(request, state, h) {
     const [sheetId, parcelId] = parseLandParcel(this.parcel)
     const parcelKey = `${sheetId}-${parcelId}`
-    const newState = this.deleteActionFromState(state, this.action, parcelKey)
+    const newState = this.action
+      ? this.deleteActionFromState(state, parcelKey, this.action)
+      : this.deleteParcelFromState(state, parcelKey)
     const nextPath = this.getNextPathAfterRemoval(newState, parcelKey, this.parcel)
 
     await this.setState(request, newState)
@@ -150,16 +163,14 @@ export default class RemoveActionPageController extends QuestionPageController {
         state: { landParcels }
       } = context
       const { action, parcelKey, parcel } = this.extractParcelInfo(request.query)
-      const actionInfo = this.findActionInfo(landParcels, parcelKey, action)
-
-      // Redirect if parcel or action not found
-      if (!actionInfo) {
+      if (!parcel) {
         return this.proceed(request, h, checkSelectedLandActionsPath)
       }
+      const actionInfo = this.findActionInfo(landParcels, parcelKey, action)
 
       this.action = action
       this.parcel = parcel
-      this.actionDescription = actionInfo.description
+      this.actionDescription = actionInfo?.description
 
       const viewModel = this.buildGetViewModel(request, context)
       return h.view(viewName, viewModel)
@@ -179,10 +190,9 @@ export default class RemoveActionPageController extends QuestionPageController {
         return this.renderPostErrorView(h, request, context, validationError.errorMessage)
       }
 
-      const { removeAction } = payload
-
-      if (removeAction === 'true') {
-        return this.processActionRemoval(request, state, h)
+      const { remove } = payload
+      if (remove === 'true') {
+        return this.processRemoval(request, state, h)
       }
 
       return this.proceed(request, h, checkSelectedLandActionsPath)

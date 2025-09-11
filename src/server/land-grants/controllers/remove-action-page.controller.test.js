@@ -97,7 +97,7 @@ describe('RemoveActionPageController', () => {
       })
     })
 
-    test('should handle missing code in query', () => {
+    test('should handle missing action in query', () => {
       const query = { parcel: 'SD6743-8083' }
       const result = controller.extractParcelInfo(query)
 
@@ -145,6 +145,119 @@ describe('RemoveActionPageController', () => {
     })
   })
 
+  describe('deleteParcelFromState', () => {
+    test('should delete entire parcel from state', () => {
+      const state = {
+        landParcels: JSON.parse(JSON.stringify(mockLandParcels))
+      }
+
+      const result = controller.deleteParcelFromState(state, 'SD6743-8083')
+
+      expect(result.landParcels).toEqual({
+        'SD6944-0085': {
+          actionsObj: {
+            CMOR1: {
+              description: 'CMOR1: Assess moorland and produce a written record',
+              value: '1.0',
+              unit: 'ha'
+            }
+          }
+        }
+      })
+      expect(result.landParcels['SD6743-8083']).toBeUndefined()
+    })
+
+    test('should not modify original state object', () => {
+      const state = {
+        landParcels: JSON.parse(JSON.stringify(mockLandParcels))
+      }
+      const originalState = JSON.parse(JSON.stringify(state))
+
+      controller.deleteParcelFromState(state, 'SD6743-8083')
+
+      expect(state).toEqual(originalState)
+    })
+
+    test('should handle non-existent parcel gracefully', () => {
+      const state = {
+        landParcels: JSON.parse(JSON.stringify(mockLandParcels))
+      }
+
+      const result = controller.deleteParcelFromState(state, 'nonexistent-parcel')
+
+      expect(result.landParcels).toEqual(mockLandParcels)
+    })
+  })
+
+  describe('deleteActionFromState', () => {
+    test('should delete specific action from state', () => {
+      const state = {
+        landParcels: JSON.parse(JSON.stringify(mockLandParcels))
+      }
+
+      const result = controller.deleteActionFromState(state, 'SD6743-8083', 'CMOR1')
+
+      expect(result.landParcels['SD6743-8083'].actionsObj).toEqual({
+        UPL1: {
+          description: 'UPL1: Moderate livestock grazing on moorland',
+          value: '2.5',
+          unit: 'ha'
+        }
+      })
+    })
+
+    test('should delete entire parcel when removing last action', () => {
+      const state = {
+        landParcels: {
+          'SD6944-0085': {
+            actionsObj: {
+              CMOR1: {
+                description: 'CMOR1: Assess moorland and produce a written record',
+                value: '1.0',
+                unit: 'ha'
+              }
+            }
+          }
+        }
+      }
+
+      const result = controller.deleteActionFromState(state, 'SD6944-0085', 'CMOR1')
+
+      expect(result.landParcels['SD6944-0085']).toBeUndefined()
+    })
+
+    test('should not modify original state object', () => {
+      const state = {
+        landParcels: JSON.parse(JSON.stringify(mockLandParcels))
+      }
+      const originalState = JSON.parse(JSON.stringify(state))
+
+      controller.deleteActionFromState(state, 'SD6743-8083', 'CMOR1')
+
+      expect(state).toEqual(originalState)
+    })
+
+    test('should handle non-existent parcel gracefully', () => {
+      const state = {
+        landParcels: JSON.parse(JSON.stringify(mockLandParcels))
+      }
+
+      const result = controller.deleteActionFromState(state, 'nonexistent-parcel', 'CMOR1')
+
+      expect(result.landParcels).toEqual(mockLandParcels)
+    })
+
+    test('should handle non-existent action gracefully', () => {
+      const state = {
+        landParcels: JSON.parse(JSON.stringify(mockLandParcels))
+      }
+
+      const result = controller.deleteActionFromState(state, 'SD6743-8083', 'NONEXISTENT')
+
+      expect(result.landParcels).toEqual(mockLandParcels)
+    })
+  })
+
   describe('getNextPathAfterRemoval', () => {
     test('should return check page when parcel has remaining actions', () => {
       const newState = {
@@ -184,7 +297,7 @@ describe('RemoveActionPageController', () => {
   })
 
   describe('validatePostPayload', () => {
-    test('should return error when removeAction is undefined', () => {
+    test('should return error when remove is undefined', () => {
       const payload = {}
 
       const result = controller.validatePostPayload(payload)
@@ -194,8 +307,8 @@ describe('RemoveActionPageController', () => {
       })
     })
 
-    test('should return error when removeAction is explicitly undefined', () => {
-      const payload = { removeAction: undefined }
+    test('should return error when remove is explicitly undefined', () => {
+      const payload = { remove: undefined }
 
       const result = controller.validatePostPayload(payload)
 
@@ -204,16 +317,16 @@ describe('RemoveActionPageController', () => {
       })
     })
 
-    test('should return null when removeAction is true', () => {
-      const payload = { removeAction: 'true' }
+    test('should return null when remove is true', () => {
+      const payload = { remove: 'true' }
 
       const result = controller.validatePostPayload(payload)
 
       expect(result).toBeNull()
     })
 
-    test('should return null when removeAction is false', () => {
-      const payload = { removeAction: 'false' }
+    test('should return null when remove is false', () => {
+      const payload = { remove: 'false' }
 
       const result = controller.validatePostPayload(payload)
 
@@ -239,16 +352,16 @@ describe('RemoveActionPageController', () => {
     })
   })
 
-  describe('processActionRemoval', () => {
-    test('should update state and redirect to check page when actions remain', async () => {
+  describe('processRemoval', () => {
+    test('should remove specific action and redirect to check page when other actions remain', async () => {
       controller.action = 'CMOR1'
       controller.parcel = 'SD6743-8083'
 
       const state = {
-        landParcels: JSON.parse(JSON.stringify(mockLandParcels)) // Deep clone
+        landParcels: JSON.parse(JSON.stringify(mockLandParcels))
       }
 
-      const result = await controller.processActionRemoval(mockRequest, state, mockH)
+      const result = await controller.processRemoval(mockRequest, state, mockH)
 
       expect(controller.setState).toHaveBeenCalledWith(
         mockRequest,
@@ -266,7 +379,7 @@ describe('RemoveActionPageController', () => {
       expect(result).toBe('redirected')
     })
 
-    test('should update state and redirect to select page when no actions remain', async () => {
+    test('should remove specific action and redirect to select page when no actions remain', async () => {
       controller.action = 'CMOR1'
       controller.parcel = 'SD6944-0085'
 
@@ -280,7 +393,7 @@ describe('RemoveActionPageController', () => {
         }
       }
 
-      const result = await controller.processActionRemoval(mockRequest, state, mockH)
+      const result = await controller.processRemoval(mockRequest, state, mockH)
 
       expect(controller.setState).toHaveBeenCalledWith(
         mockRequest,
@@ -294,6 +407,84 @@ describe('RemoveActionPageController', () => {
         mockRequest,
         mockH,
         '/select-actions-for-land-parcel?parcelId=SD6944-0085'
+      )
+      expect(result).toBe('redirected')
+    })
+
+    test('should remove entire parcel when no action specified', async () => {
+      controller.action = null
+      controller.parcel = 'SD6743-8083'
+
+      const state = {
+        landParcels: JSON.parse(JSON.stringify(mockLandParcels))
+      }
+
+      const result = await controller.processRemoval(mockRequest, state, mockH)
+
+      expect(controller.setState).toHaveBeenCalledWith(
+        mockRequest,
+        expect.objectContaining({
+          landParcels: expect.not.objectContaining({
+            'SD6743-8083': expect.anything()
+          })
+        })
+      )
+      expect(controller.proceed).toHaveBeenCalledWith(
+        mockRequest,
+        mockH,
+        '/select-actions-for-land-parcel?parcelId=SD6743-8083'
+      )
+      expect(result).toBe('redirected')
+    })
+
+    test('should remove entire parcel when action is undefined', async () => {
+      controller.action = undefined
+      controller.parcel = 'SD6743-8083'
+
+      const state = {
+        landParcels: JSON.parse(JSON.stringify(mockLandParcels))
+      }
+
+      const result = await controller.processRemoval(mockRequest, state, mockH)
+
+      expect(controller.setState).toHaveBeenCalledWith(
+        mockRequest,
+        expect.objectContaining({
+          landParcels: expect.not.objectContaining({
+            'SD6743-8083': expect.anything()
+          })
+        })
+      )
+      expect(controller.proceed).toHaveBeenCalledWith(
+        mockRequest,
+        mockH,
+        '/select-actions-for-land-parcel?parcelId=SD6743-8083'
+      )
+      expect(result).toBe('redirected')
+    })
+
+    test('should remove entire parcel when action is empty string', async () => {
+      controller.action = ''
+      controller.parcel = 'SD6743-8083'
+
+      const state = {
+        landParcels: JSON.parse(JSON.stringify(mockLandParcels))
+      }
+
+      const result = await controller.processRemoval(mockRequest, state, mockH)
+
+      expect(controller.setState).toHaveBeenCalledWith(
+        mockRequest,
+        expect.objectContaining({
+          landParcels: expect.not.objectContaining({
+            'SD6743-8083': expect.anything()
+          })
+        })
+      )
+      expect(controller.proceed).toHaveBeenCalledWith(
+        mockRequest,
+        mockH,
+        '/select-actions-for-land-parcel?parcelId=SD6743-8083'
       )
       expect(result).toBe('redirected')
     })
@@ -332,8 +523,25 @@ describe('RemoveActionPageController', () => {
       expect(result).toBe('rendered view')
     })
 
-    test('should redirect to check page when parcel not found', async () => {
-      mockRequest.query = { parcel: 'nonexistent-parcel', action: 'CMOR1' }
+    test('should handle removing entire parcel when no action specified', async () => {
+      mockRequest.query = { parcel: 'SD6743-8083' }
+
+      const handler = controller.makeGetRouteHandler()
+      const result = await handler(mockRequest, mockContext, mockH)
+
+      expect(controller.action).toBeUndefined()
+      expect(controller.parcel).toBe('SD6743-8083')
+      expect(controller.actionDescription).toBeUndefined()
+      expect(mockH.view).toHaveBeenCalledWith('remove-action', {
+        pageTitle: 'Remove action',
+        parcel: 'SD6743-8083',
+        actionDescription: undefined
+      })
+      expect(result).toBe('rendered view')
+    })
+
+    test('should redirect to check page when parcel and action not provided', async () => {
+      mockRequest.query = {}
 
       const handler = controller.makeGetRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
@@ -343,15 +551,22 @@ describe('RemoveActionPageController', () => {
       expect(result).toBe('redirected')
     })
 
-    test('should redirect to check page when action not found', async () => {
-      mockRequest.query = { parcel: 'SD6743-8083', action: 'NONEXISTENT' }
+    test('should redirect to check page when parcel not found', async () => {
+      mockRequest.query = { parcel: 'nonexistent-parcel', action: 'CMOR1' }
 
       const handler = controller.makeGetRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
 
-      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/check-selected-land-actions')
-      expect(mockH.view).not.toHaveBeenCalled()
-      expect(result).toBe('redirected')
+      // The controller should still render the view even if action is not found
+      expect(controller.action).toBe('CMOR1')
+      expect(controller.parcel).toBe('nonexistent-parcel')
+      expect(controller.actionDescription).toBeUndefined()
+      expect(mockH.view).toHaveBeenCalledWith('remove-action', {
+        pageTitle: 'Remove action',
+        parcel: 'nonexistent-parcel',
+        actionDescription: undefined
+      })
+      expect(result).toBe('rendered view')
     })
 
     test('should handle empty land parcels state', async () => {
@@ -360,18 +575,15 @@ describe('RemoveActionPageController', () => {
       const handler = controller.makeGetRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
 
-      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/check-selected-land-actions')
-      expect(result).toBe('redirected')
-    })
-
-    test('should handle missing query parameters', async () => {
-      mockRequest.query = {}
-
-      const handler = controller.makeGetRouteHandler()
-      const result = await handler(mockRequest, mockContext, mockH)
-
-      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/check-selected-land-actions')
-      expect(result).toBe('redirected')
+      expect(controller.action).toBe('CMOR1')
+      expect(controller.parcel).toBe('SD6743-8083')
+      expect(controller.actionDescription).toBeUndefined()
+      expect(mockH.view).toHaveBeenCalledWith('remove-action', {
+        pageTitle: 'Remove action',
+        parcel: 'SD6743-8083',
+        actionDescription: undefined
+      })
+      expect(result).toBe('rendered view')
     })
   })
 
@@ -383,7 +595,7 @@ describe('RemoveActionPageController', () => {
       controller.actionDescription = 'CMOR1: Assess moorland and produce a written record'
     })
 
-    test('should show validation error when removeAction not provided', async () => {
+    test('should show validation error when remove not provided', async () => {
       mockRequest.payload = {}
 
       const handler = controller.makePostRouteHandler()
@@ -400,7 +612,7 @@ describe('RemoveActionPageController', () => {
     })
 
     test('should remove action and redirect to check page when other actions remain', async () => {
-      mockRequest.payload = { removeAction: 'true' }
+      mockRequest.payload = { remove: 'true' }
 
       const handler = controller.makePostRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
@@ -421,11 +633,35 @@ describe('RemoveActionPageController', () => {
       expect(result).toBe('redirected')
     })
 
+    test('should remove entire parcel when no action specified and user confirms', async () => {
+      controller.action = undefined // No specific action
+      controller.parcel = 'SD6743-8083'
+      mockRequest.payload = { remove: 'true' }
+
+      const handler = controller.makePostRouteHandler()
+      const result = await handler(mockRequest, mockContext, mockH)
+
+      expect(controller.setState).toHaveBeenCalledWith(
+        mockRequest,
+        expect.objectContaining({
+          landParcels: expect.not.objectContaining({
+            'SD6743-8083': expect.anything()
+          })
+        })
+      )
+      expect(controller.proceed).toHaveBeenCalledWith(
+        mockRequest,
+        mockH,
+        '/select-actions-for-land-parcel?parcelId=SD6743-8083'
+      )
+      expect(result).toBe('redirected')
+    })
+
     test('should remove action and redirect to select actions when no actions remain', async () => {
       // Set up scenario where removing the last action
       controller.parcel = 'SD6944-0085'
       controller.action = 'CMOR1'
-      mockRequest.payload = { removeAction: 'true' }
+      mockRequest.payload = { remove: 'true' }
 
       const handler = controller.makePostRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
@@ -447,7 +683,7 @@ describe('RemoveActionPageController', () => {
     })
 
     test('should redirect to check page when user declines removal', async () => {
-      mockRequest.payload = { removeAction: 'false' }
+      mockRequest.payload = { remove: 'false' }
 
       const handler = controller.makePostRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)

@@ -37,8 +37,13 @@ pages:
     path: /select-actions-for-land-parcel
     next: []
     id: 7b0a5e2f-4c31-4a45-95ee-abc000da0473
+  - title: Remove
+    path: /remove-parcel
+    controller: RemoveActionPageController
+    next: []
+    id: 7a71a506-9d5e-4420-9c67-5b0950de2020
   - title: Remove action
-    path: /confirm-remove-action
+    path: /remove-action
     controller: RemoveActionPageController
     next: []
     id: b5259479-a2b2-46f2-ae60-70a89a2530cc
