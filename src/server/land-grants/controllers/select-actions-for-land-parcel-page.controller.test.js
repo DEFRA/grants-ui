@@ -51,6 +51,15 @@ describe('SelectActionsForLandParcelPageController', () => {
             value: 5
           },
           ratePerUnitGbp: 33
+        },
+        {
+          code: 'UPL2',
+          description: 'Heavy livestock grazing on moorland: UPL2',
+          availableArea: {
+            unit: 'ha',
+            value: 3
+          },
+          ratePerUnitGbp: 45
         }
       ]
     }
@@ -63,6 +72,7 @@ describe('SelectActionsForLandParcelPageController', () => {
 
     controller = new SelectActionsForLandParcelPageController()
     controller.groupedActions = mockGroupedActions
+    controller.selectedLandParcel = 'sheet1-parcel1'
     controller.collection = {
       getErrors: vi.fn().mockReturnValue([])
     }
@@ -89,9 +99,7 @@ describe('SelectActionsForLandParcelPageController', () => {
     }
 
     mockContext = {
-      state: {
-        selectedLandParcel: 'sheet1-parcel1'
-      }
+      state: {}
     }
 
     mockH = {
@@ -209,6 +217,191 @@ describe('SelectActionsForLandParcelPageController', () => {
     })
   })
 
+  describe('buildNewState', () => {
+    test('should create new land parcel when none exists', () => {
+      controller.selectedLandParcel = 'sheet1-parcel1'
+      const state = {
+        landParcels: {}
+      }
+      const actionsObj = {
+        CMOR1: {
+          description: 'Assess moorland and produce a written record: CMOR1',
+          value: 10,
+          unit: 'ha'
+        }
+      }
+
+      const result = controller.buildNewState(state, actionsObj)
+
+      expect(result).toEqual({
+        landParcels: {
+          'sheet1-parcel1': {
+            actionsObj: {
+              CMOR1: {
+                description: 'Assess moorland and produce a written record: CMOR1',
+                value: 10,
+                unit: 'ha'
+              }
+            }
+          }
+        }
+      })
+    })
+
+    test('should add new action to existing parcel when no conflicts', () => {
+      controller.selectedLandParcel = 'sheet1-parcel1'
+      const state = {
+        landParcels: {
+          'sheet1-parcel1': {
+            actionsObj: {
+              CMOR1: {
+                description: 'Assess moorland and produce a written record: CMOR1',
+                value: 10,
+                unit: 'ha'
+              }
+            }
+          }
+        }
+      }
+      const actionsObj = {
+        UPL1: {
+          description: 'Moderate livestock grazing on moorland: UPL1',
+          value: 5,
+          unit: 'ha'
+        }
+      }
+
+      const result = controller.buildNewState(state, actionsObj)
+
+      expect(result.landParcels['sheet1-parcel1'].actionsObj).toEqual({
+        UPL1: {
+          description: 'Moderate livestock grazing on moorland: UPL1',
+          value: 5,
+          unit: 'ha'
+        },
+        CMOR1: {
+          description: 'Assess moorland and produce a written record: CMOR1',
+          value: 10,
+          unit: 'ha'
+        }
+      })
+    })
+
+    test('should replace existing action when from same group', () => {
+      controller.selectedLandParcel = 'sheet1-parcel1'
+      const state = {
+        landParcels: {
+          'sheet1-parcel1': {
+            actionsObj: {
+              UPL1: {
+                description: 'Moderate livestock grazing on moorland: UPL1',
+                value: 5,
+                unit: 'ha'
+              },
+              CMOR1: {
+                description: 'Assess moorland and produce a written record: CMOR1',
+                value: 10,
+                unit: 'ha'
+              }
+            }
+          }
+        }
+      }
+      const actionsObj = {
+        UPL2: {
+          description: 'Heavy livestock grazing on moorland: UPL2',
+          value: 3,
+          unit: 'ha'
+        }
+      }
+
+      const result = controller.buildNewState(state, actionsObj)
+
+      expect(result.landParcels['sheet1-parcel1'].actionsObj).toEqual({
+        UPL2: {
+          description: 'Heavy livestock grazing on moorland: UPL2',
+          value: 3,
+          unit: 'ha'
+        },
+        CMOR1: {
+          description: 'Assess moorland and produce a written record: CMOR1',
+          value: 10,
+          unit: 'ha'
+        }
+      })
+    })
+
+    test('should handle empty groupedActions', () => {
+      controller.selectedLandParcel = 'sheet1-parcel1'
+      controller.groupedActions = []
+
+      const state = {
+        landParcels: {
+          'sheet1-parcel1': {
+            actionsObj: {
+              UNKNOWN1: { description: 'Unknown action', value: 5, unit: 'ha' }
+            }
+          }
+        }
+      }
+      const actionsObj = {
+        UNKNOWN2: { description: 'Another unknown action', value: 3, unit: 'ha' }
+      }
+
+      const result = controller.buildNewState(state, actionsObj)
+
+      expect(result.landParcels['sheet1-parcel1'].actionsObj).toEqual({
+        UNKNOWN2: { description: 'Another unknown action', value: 3, unit: 'ha' },
+        UNKNOWN1: { description: 'Unknown action', value: 5, unit: 'ha' }
+      })
+    })
+
+    test('should preserve other parcel properties', () => {
+      controller.selectedLandParcel = 'sheet1-parcel1'
+      const state = {
+        landParcels: {
+          'sheet1-parcel1': {
+            someProp: 'value',
+            anotherProp: 123,
+            actionsObj: {
+              CMOR1: {
+                description: 'Assess moorland and produce a written record: CMOR1',
+                value: 10,
+                unit: 'ha'
+              }
+            }
+          }
+        }
+      }
+      const actionsObj = {
+        UPL1: {
+          description: 'Moderate livestock grazing on moorland: UPL1',
+          value: 5,
+          unit: 'ha'
+        }
+      }
+
+      const result = controller.buildNewState(state, actionsObj)
+
+      expect(result.landParcels['sheet1-parcel1']).toEqual({
+        someProp: 'value',
+        anotherProp: 123,
+        actionsObj: {
+          UPL1: {
+            description: 'Moderate livestock grazing on moorland: UPL1',
+            value: 5,
+            unit: 'ha'
+          },
+          CMOR1: {
+            description: 'Assess moorland and produce a written record: CMOR1',
+            value: 10,
+            unit: 'ha'
+          }
+        }
+      })
+    })
+  })
+
   describe('getViewModel', () => {
     test('should extend parent view model with grouped actions', () => {
       const mockParentViewModel = {
@@ -230,10 +423,12 @@ describe('SelectActionsForLandParcelPageController', () => {
               unit: 'ha',
               value: 10
             },
+            visible: true,
             actions: [
               {
                 value: 'CMOR1',
                 text: 'Assess moorland and produce a written record: CMOR1',
+                checked: false,
                 hint: {
                   html: 'Payment rate per year: <strong>£16.00 per ha</strong> and <strong>£272</strong> per agreement'
                 }
@@ -246,18 +441,37 @@ describe('SelectActionsForLandParcelPageController', () => {
               unit: 'ha',
               value: 5
             },
+            visible: true,
             actions: [
               {
                 value: 'UPL1',
                 text: 'Moderate livestock grazing on moorland: UPL1',
+                checked: false,
                 hint: {
                   html: 'Payment rate per year: <strong>£33.00 per ha</strong>'
+                }
+              },
+              {
+                value: 'UPL2',
+                checked: false,
+                text: 'Heavy livestock grazing on moorland: UPL2',
+                hint: {
+                  html: 'Payment rate per year: <strong>£45.00 per ha</strong>'
                 }
               }
             ]
           }
         ]
       })
+    })
+
+    test('should hide groups where all actions are already added', () => {
+      controller.addedActions = [{ code: 'CMOR1', description: 'Assess moorland and produce a written record: CMOR1' }]
+
+      const result = controller.getViewModel(mockRequest, mockContext)
+
+      expect(result.groupedActions[0].visible).toBe(false)
+      expect(result.groupedActions[1].visible).toBe(true)
     })
 
     test('should handle empty grouped actions', () => {
@@ -297,7 +511,6 @@ describe('SelectActionsForLandParcelPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'select-actions-for-land-parcel',
         expect.objectContaining({
-          selectedLandParcel: 'sheet1-parcel1',
           parcelName: 'sheet1 parcel1',
           groupedActions: expect.arrayContaining([
             expect.objectContaining({
@@ -313,6 +526,30 @@ describe('SelectActionsForLandParcelPageController', () => {
         })
       )
       expect(result).toBe('rendered view')
+    })
+
+    test('should extract added actions from state correctly', async () => {
+      mockContext.state.selectedLandParcel = 'sheet1-parcel1'
+      mockContext.state.landParcels = {
+        'sheet1-parcel1': {
+          actionsObj: {
+            CMOR1: {
+              description: 'Assess moorland and produce a written record: CMOR1'
+            },
+            UPL1: {
+              description: 'Moderate livestock grazing on moorland: UPL1'
+            }
+          }
+        }
+      }
+
+      const handler = controller.makeGetRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(controller.addedActions).toEqual([
+        { code: 'CMOR1', description: 'Assess moorland and produce a written record: CMOR1' },
+        { code: 'UPL1', description: 'Moderate livestock grazing on moorland: UPL1' }
+      ])
     })
 
     test('should handle fetch errors gracefully', async () => {
@@ -363,7 +600,6 @@ describe('SelectActionsForLandParcelPageController', () => {
       expect(controller.setState).toHaveBeenCalledWith(
         mockRequest,
         expect.objectContaining({
-          selectedLandParcel: 'sheet1-parcel1',
           landParcels: {
             'sheet1-parcel1': {
               actionsObj: {
@@ -383,6 +619,7 @@ describe('SelectActionsForLandParcelPageController', () => {
     })
 
     test('should add more land actions to existing land parcel', async () => {
+      controller.selectedLandParcel = 'sheet1-parcel1'
       mockRequest.payload = {
         landAction: 'UPL1'
       }
@@ -398,7 +635,6 @@ describe('SelectActionsForLandParcelPageController', () => {
           }
         }
       }
-      controller.selectedLandParcel = 'sheet1-parcel1'
       const handler = controller.makePostRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
@@ -425,7 +661,60 @@ describe('SelectActionsForLandParcelPageController', () => {
       )
     })
 
+    test('should replace action when selecting different action from same group', async () => {
+      controller.selectedLandParcel = 'sheet1-parcel1'
+      mockRequest.payload = {
+        landAction: 'UPL2'
+      }
+
+      mockContext.state.landParcels = {
+        'sheet1-parcel1': {
+          actionsObj: {
+            UPL1: {
+              description: 'Moderate livestock grazing on moorland: UPL1',
+              unit: 'ha',
+              value: 5
+            },
+            CMOR1: {
+              description: 'Assess moorland and produce a written record: CMOR1',
+              unit: 'ha',
+              value: 10
+            }
+          }
+        }
+      }
+
+      const handler = controller.makePostRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(controller.setState).toHaveBeenCalledWith(
+        mockRequest,
+        expect.objectContaining({
+          landParcels: {
+            'sheet1-parcel1': {
+              actionsObj: {
+                UPL2: {
+                  description: 'Heavy livestock grazing on moorland: UPL2',
+                  value: 3,
+                  unit: 'ha'
+                },
+                CMOR1: {
+                  description: 'Assess moorland and produce a written record: CMOR1',
+                  unit: 'ha',
+                  value: 10
+                }
+              }
+            }
+          }
+        })
+      )
+    })
+
     describe('validations', () => {
+      beforeEach(() => {
+        controller.selectedLandParcel = 'sheet1-parcel1'
+      })
+
       test('should handle empty payload gracefully', async () => {
         mockRequest.payload = null
 
