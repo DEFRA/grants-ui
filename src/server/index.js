@@ -2,11 +2,12 @@ import plugin from '@defra/forms-engine-plugin'
 import Bell from '@hapi/bell'
 import Cookie from '@hapi/cookie'
 import crumb from '@hapi/crumb'
+import h2o2 from '@hapi/h2o2'
 import hapi from '@hapi/hapi'
 import inert from '@hapi/inert'
 import Scooter from '@hapi/scooter'
-import h2o2 from '@hapi/h2o2'
 
+import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { config } from '~/src/config/config.js'
@@ -15,6 +16,8 @@ import { grantsUiPaths, nunjucksConfig } from '~/src/config/nunjucks/nunjucks.js
 import auth from '~/src/plugins/auth.js'
 import csp from '~/src/plugins/content-security-policy.js'
 import sso from '~/src/plugins/sso.js'
+import { formsAuthCallback } from '~/src/server/auth/forms-engine-plugin-auth-helpers.js'
+import CheckResponsesPageController from '~/src/server/check-responses/check-responses.controller.js'
 import { formsService } from '~/src/server/common/forms/services/form.js'
 import { outputService } from '~/src/server/common/forms/services/output.js'
 import { loadSubmissionSchemaValidators } from '~/src/server/common/forms/services/submission.js'
@@ -31,22 +34,20 @@ import DeclarationPageController from '~/src/server/declaration/declaration.cont
 import ConfirmFarmDetailsController from '~/src/server/land-grants/controllers/confirm-farm-details.controller.js'
 import LandActionsCheckPageController from '~/src/server/land-grants/controllers/land-actions-check-page.controller.js'
 import LandGrantsConfirmationController from '~/src/server/land-grants/controllers/land-grants-confirmation-controller.js'
-import SelectActionsForLandParcelPageController from '~/src/server/land-grants/controllers/select-actions-for-land-parcel-page.controller.js'
 import LandParcelPageController from '~/src/server/land-grants/controllers/land-parcel-page.controller.js'
+import SelectActionsForLandParcelPageController from '~/src/server/land-grants/controllers/select-actions-for-land-parcel-page.controller.js'
 import SubmissionPageController from '~/src/server/land-grants/controllers/submission-page.controller.js'
-import { tasklistBackButton } from '~/src/server/plugins/tasklist-back-button.js'
-import { formatCurrency } from '../config/nunjucks/filters/format-currency.js'
-import SectionEndController from './section-end/section-end.controller.js'
-import { router } from './router.js'
 import FlyingPigsSubmissionPageController from '~/src/server/non-land-grants/pigs-might-fly/controllers/pig-types-submission.controller.js'
 import { PotentialFundingController } from '~/src/server/non-land-grants/pigs-might-fly/controllers/potential-funding.controller.js'
-import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
-import { getCacheKey } from './common/helpers/state/get-cache-key-helper.js'
-import { fetchSavedStateFromApi } from './common/helpers/state/fetch-saved-state-helper.js'
-import { formsAuthCallback } from '~/src/server/auth/forms-engine-plugin-auth-helpers.js'
-import { persistStateToApi } from './common/helpers/state/persist-state-helper.js'
-import CheckResponsesPageController from '~/src/server/check-responses/check-responses.controller.js'
+import { tasklistBackButton } from '~/src/server/plugins/tasklist-back-button.js'
 import { sbiStore } from '~/src/server/sbi/state.js'
+import { formatCurrency } from '../config/nunjucks/filters/format-currency.js'
+import { fetchSavedStateFromApi } from './common/helpers/state/fetch-saved-state-helper.js'
+import { getCacheKey } from './common/helpers/state/get-cache-key-helper.js'
+import { persistStateToApi } from './common/helpers/state/persist-state-helper.js'
+import RemoveActionPageController from './land-grants/controllers/remove-action-page.controller.js'
+import { router } from './router.js'
+import SectionEndController from './section-end/section-end.controller.js'
 
 const SESSION_CACHE_NAME = 'session.cache.name'
 
@@ -153,6 +154,7 @@ const registerFormsPlugin = async (server, prefix = '') => {
         LandParcelPageController,
         SelectActionsForLandParcelPageController,
         LandActionsCheckPageController,
+        RemoveActionPageController,
         SectionEndController,
         FlyingPigsSubmissionPageController,
         PotentialFundingController,
