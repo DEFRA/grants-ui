@@ -37,7 +37,7 @@ describe('persistStateToApi', () => {
   const setupMockCacheKey = () => {
     mockGetCacheKey.mockReturnValue({
       userId: TEST_USER_IDS.DEFAULT,
-      businessId: TEST_USER_IDS.BUSINESS_ID,
+      organisationId: TEST_USER_IDS.ORGANISATION_ID,
       grantId: TEST_USER_IDS.GRANT_ID
     })
   }
@@ -84,7 +84,7 @@ describe('persistStateToApi', () => {
 
       const expectedBody = JSON.stringify({
         userId: TEST_USER_IDS.DEFAULT,
-        businessId: TEST_USER_IDS.BUSINESS_ID,
+        businessId: TEST_USER_IDS.ORGANISATION_ID,
         grantId: TEST_USER_IDS.GRANT_ID,
         grantVersion: GRANT_VERSION, // TODO: Update when support for same grant versioning is implemented
         state: testState
@@ -104,7 +104,7 @@ describe('persistStateToApi', () => {
       )
 
       expect(request.logger.info).toHaveBeenCalledWith(
-        `Persisting state to backend for identity: ${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.BUSINESS_ID}:${TEST_USER_IDS.GRANT_ID}`
+        `Persisting state to backend for identity: ${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.ORGANISATION_ID}:${TEST_USER_IDS.GRANT_ID}`
       )
     })
 

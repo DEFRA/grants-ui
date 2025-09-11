@@ -71,7 +71,7 @@ describe('fetchSavedStateFromApi', () => {
       expect(fetch).toHaveBeenCalledWith(
         expect.stringMatching(
           new RegExp(
-            `/state/\\?userId=${TEST_USER_IDS.DEFAULT}&businessId=${TEST_USER_IDS.BUSINESS_ID}&grantId=${TEST_USER_IDS.GRANT_ID}`
+            `/state/\\?userId=${TEST_USER_IDS.DEFAULT}&businessId=${TEST_USER_IDS.ORGANISATION_ID}&grantId=${TEST_USER_IDS.GRANT_ID}`
           )
         ),
         expect.objectContaining({

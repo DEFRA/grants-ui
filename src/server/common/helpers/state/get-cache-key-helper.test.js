@@ -1,12 +1,12 @@
 import { getCacheKey } from './get-cache-key-helper.js'
 
 describe('getCacheKey', () => {
-  it('returns userId, businessId, and grantId when all are present', () => {
+  it('returns userId, organisationId, and grantId when all are present', () => {
     const request = {
       auth: {
         credentials: {
           crn: 'user123',
-          relationships: ['relationship123:business456']
+          organisationId: 'business456'
         }
       },
       params: {
@@ -18,7 +18,7 @@ describe('getCacheKey', () => {
 
     expect(result).toEqual({
       userId: 'user123',
-      businessId: 'business456',
+      organisationId: 'business456',
       grantId: 'grant789'
     })
   })
@@ -27,7 +27,7 @@ describe('getCacheKey', () => {
     const request = {
       auth: {
         credentials: {
-          relationships: ['relationship123:business456']
+          organisationId: 'business456'
         }
       },
       params: {
@@ -38,7 +38,7 @@ describe('getCacheKey', () => {
     expect(() => getCacheKey(request)).toThrow('Missing user ID in credentials')
   })
 
-  it('throws error if businessId is missing', () => {
+  it('throws error if organisationId is missing', () => {
     const request = {
       auth: {
         credentials: {
@@ -50,7 +50,7 @@ describe('getCacheKey', () => {
       }
     }
 
-    expect(() => getCacheKey(request)).toThrow('Missing or malformed business relationship in credentials: undefined')
+    expect(() => getCacheKey(request)).toThrow('Missing organisation ID in credentials')
   })
 
   it('throws error if auth.credentials is missing', () => {
@@ -69,7 +69,7 @@ describe('getCacheKey', () => {
       auth: {
         credentials: {
           crn: 'user123',
-          relationships: ['relationship123:business456']
+          organisationId: 'business456'
         }
       },
       params: {}
@@ -83,7 +83,7 @@ describe('getCacheKey', () => {
       auth: {
         credentials: {
           crn: 'user123',
-          relationships: ['relationship123:business456']
+          organisationId: 'business456'
         }
       }
       // no params property

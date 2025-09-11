@@ -12,7 +12,7 @@ import {
   TEST_LOG_CONFIG,
   TEST_FOO_VALUE,
   TEST_USER_ID,
-  TEST_BUSINESS_ID,
+  TEST_ORGANISATION_ID,
   TEST_GRANT_SLUG,
   HTTP_STATUS_TEXT,
   ERROR_TEXT,
@@ -31,7 +31,7 @@ describe('Exported Constants', () => {
 
     it('should export correct user identifiers', () => {
       expect(TEST_USER_ID).toBe('user_test')
-      expect(TEST_BUSINESS_ID).toBe('biz_test')
+      expect(TEST_ORGANISATION_ID).toBe('biz_test')
       expect(TEST_GRANT_SLUG).toBe('test-slug')
     })
   })
@@ -93,7 +93,7 @@ describe('Exported Constants', () => {
   describe('TEST_USER_IDS', () => {
     it('should map to correct user identifier values', () => {
       expect(TEST_USER_IDS.DEFAULT).toBe(TEST_USER_ID)
-      expect(TEST_USER_IDS.BUSINESS_ID).toBe(TEST_BUSINESS_ID)
+      expect(TEST_USER_IDS.ORGANISATION_ID).toBe(TEST_ORGANISATION_ID)
       expect(TEST_USER_IDS.GRANT_ID).toBe(TEST_GRANT_SLUG)
     })
   })

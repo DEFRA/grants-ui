@@ -123,8 +123,8 @@ const registerFormsPlugin = async (server, prefix = '') => {
       baseUrl: config.get('baseUrl'),
       saveAndReturn: {
         keyGenerator: (request) => {
-          const { userId, businessId, grantId } = getCacheKey(request)
-          return `${userId}:${businessId}:${grantId}`
+          const { userId, organisationId, grantId } = getCacheKey(request)
+          return `${userId}:${organisationId}:${grantId}`
         },
         sessionHydrator: async (request) => {
           return fetchSavedStateFromApi(request)
