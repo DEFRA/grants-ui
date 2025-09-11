@@ -35,6 +35,7 @@ export async function fetchSavedStateFromApi(key) {
     if (!response.ok) {
       if (response.status === statusCodes.notFound) {
         log(LogCodes.SYSTEM.EXTERNAL_API_CALL_DEBUG, {
+          method: 'GET',
           endpoint: url.href,
           identity: key,
           stateSummary: 'No state found in backend'
