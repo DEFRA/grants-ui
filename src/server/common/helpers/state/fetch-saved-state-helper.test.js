@@ -15,7 +15,8 @@ const LOG_TAGS = {
   FETCH_SAVED_STATE: 'fetch-saved-state'
 }
 
-global.fetch = vi.fn()
+const mockFetch = vi.hoisted(() => vi.fn())
+global.fetch = mockFetch
 
 let fetchSavedStateFromApi
 
@@ -25,10 +26,10 @@ const mockRequestWithLogger = {
   logger: mockRequestLogger()
 }
 
-const successfulResponse = {
+const createSuccessfulResponse = (data = MOCK_STATE_DATA.DEFAULT) => ({
   ok: true,
-  json: () => MOCK_STATE_DATA.DEFAULT
-}
+  json: () => data
+})
 
 const createFailedResponse = (status, statusText = 'Error') => ({
   ok: false,
@@ -41,34 +42,36 @@ const createFailedResponse = (status, statusText = 'Error') => ({
 
 describe('fetchSavedStateFromApi', () => {
   describe('With backend configured correctly', () => {
-    beforeEach(async () => {
-      vi.clearAllMocks()
-      vi.resetModules()
+    beforeAll(async () => {
       vi.doMock('~/src/config/config.js', createMockConfig)
-      const helper = await import('~/src/server/common/helpers/state/fetch-saved-state-helper.js?t=' + Date.now())
+      const helper = await import('~/src/server/common/helpers/state/fetch-saved-state-helper.js')
       fetchSavedStateFromApi = helper.fetchSavedStateFromApi
     })
 
-    afterEach(() => {
-      vi.doUnmock('~/src/config/config.js')
+    beforeEach(() => {
+      vi.clearAllMocks()
+    })
+
+    afterAll(() => {
+      vi.unmock('~/src/config/config.js')
     })
 
     it('returns state when response is valid', async () => {
-      fetch.mockResolvedValue(successfulResponse)
+      mockFetch.mockResolvedValue(createSuccessfulResponse())
 
       const result = await fetchSavedStateFromApi(mockRequest)
 
       expect(result).toHaveProperty('state')
-      expect(fetch).toHaveBeenCalledTimes(1)
+      expect(mockFetch).toHaveBeenCalledTimes(1)
     })
 
     it('includes authorization header in fetch request', async () => {
-      fetch.mockResolvedValue(successfulResponse)
+      mockFetch.mockResolvedValue(createSuccessfulResponse())
 
       await fetchSavedStateFromApi(mockRequest)
 
-      expect(fetch).toHaveBeenCalledTimes(1)
-      expect(fetch).toHaveBeenCalledWith(
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+      expect(mockFetch).toHaveBeenCalledWith(
         expect.stringMatching(
           new RegExp(
             `/state/\\?userId=${TEST_USER_IDS.DEFAULT}&businessId=${TEST_USER_IDS.ORGANISATION_ID}&grantId=${TEST_USER_IDS.GRANT_ID}`
@@ -84,28 +87,20 @@ describe('fetchSavedStateFromApi', () => {
       )
     })
 
-    it('returns null on 404', async () => {
-      fetch.mockResolvedValue(createFailedResponse(HTTP_STATUS.NOT_FOUND, ERROR_MESSAGES.NOT_FOUND))
+    it.each([
+      ['404', HTTP_STATUS.NOT_FOUND, ERROR_MESSAGES.NOT_FOUND],
+      ['500', HTTP_STATUS.INTERNAL_SERVER_ERROR, ERROR_MESSAGES.INTERNAL_SERVER_ERROR]
+    ])('returns null on %s status', async (description, statusCode, statusText) => {
+      mockFetch.mockResolvedValue(createFailedResponse(statusCode, statusText))
 
       const result = await fetchSavedStateFromApi(mockRequest)
 
       expect(result).toBeNull()
-      expect(fetch).toHaveBeenCalledTimes(1)
-    })
-
-    it('returns null on non-200 (not 404)', async () => {
-      fetch.mockResolvedValue(
-        createFailedResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, ERROR_MESSAGES.INTERNAL_SERVER_ERROR)
-      )
-
-      const result = await fetchSavedStateFromApi(mockRequest)
-
-      expect(result).toBeNull()
-      expect(fetch).toHaveBeenCalledTimes(1)
+      expect(mockFetch).toHaveBeenCalledTimes(1)
     })
 
     it('returns null when response JSON is invalid or missing state', async () => {
-      fetch.mockResolvedValue({ ok: true, json: () => 123 })
+      mockFetch.mockResolvedValue(createSuccessfulResponse(123))
 
       const result = await fetchSavedStateFromApi(mockRequestWithLogger)
 
@@ -119,7 +114,7 @@ describe('fetchSavedStateFromApi', () => {
 
     it('returns null and logs error on fetch failure', async () => {
       const networkError = new Error(ERROR_MESSAGES.NETWORK_ERROR)
-      fetch.mockRejectedValue(networkError)
+      mockFetch.mockRejectedValue(networkError)
 
       const result = await fetchSavedStateFromApi(mockRequestWithLogger)
 
@@ -133,15 +128,18 @@ describe('fetchSavedStateFromApi', () => {
   })
 
   describe('Without backend endpoint configured', () => {
-    beforeEach(async () => {
-      vi.clearAllMocks()
+    beforeAll(async () => {
       vi.resetModules()
       vi.doMock('~/src/config/config.js', createMockConfigWithoutEndpoint)
       const helper = await import('~/src/server/common/helpers/state/fetch-saved-state-helper.js?t=' + Date.now())
       fetchSavedStateFromApi = helper.fetchSavedStateFromApi
     })
 
-    afterEach(() => {
+    beforeEach(() => {
+      vi.clearAllMocks()
+    })
+
+    afterAll(() => {
       vi.doUnmock('~/src/config/config.js')
     })
 
@@ -149,7 +147,7 @@ describe('fetchSavedStateFromApi', () => {
       const result = await fetchSavedStateFromApi(mockRequest)
 
       expect(result).toBeNull()
-      expect(fetch).not.toHaveBeenCalled()
+      expect(mockFetch).not.toHaveBeenCalled()
     })
   })
 })

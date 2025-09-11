@@ -41,8 +41,8 @@ import { PotentialFundingController } from '~/src/server/non-land-grants/pigs-mi
 import { tasklistBackButton } from '~/src/server/plugins/tasklist-back-button.js'
 import { sbiStore } from '~/src/server/sbi/state.js'
 import { formatCurrency } from '../config/nunjucks/filters/format-currency.js'
-import { fetchSavedStateFromApi } from './common/helpers/state/fetch-saved-state-helper.js'
 import { getCacheKey } from './common/helpers/state/get-cache-key-helper.js'
+import { fetchSavedStateFromApi } from './common/helpers/state/fetch-saved-state-helper.js'
 import { persistStateToApi } from './common/helpers/state/persist-state-helper.js'
 import { contentSecurityPolicy } from '~/src/server/common/helpers/csp.js'
 import RemoveActionPageController from './land-grants/controllers/remove-action-page.controller.js'
@@ -55,6 +55,7 @@ const getViewPaths = () => {
   const serverDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)))
   return [
     path.join(serverDir, 'views'),
+    path.join(serverDir, 'auth/views'),
     path.join(serverDir, 'land-grants/views'),
     path.join(serverDir, 'non-land-grants/pigs-might-fly/views'),
     path.join(serverDir, 'about'),
@@ -123,8 +124,8 @@ const registerFormsPlugin = async (server, prefix = '') => {
       baseUrl: config.get('baseUrl'),
       saveAndReturn: {
         keyGenerator: (request) => {
-          const { userId, organisationId, grantId } = getCacheKey(request)
-          return `${userId}:${organisationId}:${grantId}`
+          const { userId, businessId, grantId } = getCacheKey(request)
+          return `${userId}:${businessId}:${grantId}`
         },
         sessionHydrator: async (request) => {
           return fetchSavedStateFromApi(request)
@@ -204,9 +205,12 @@ const mockSessionData = async (request, log, LogCodes) => {
       scope: ['user'],
       sbi: `${sbiStore.get('sbi')}`,
       organisationId: `${sbiStore.get('sbi')}`,
-      currentRelationshipId: `${sbiStore.get('sbi')}1234`,
       crn: String(config.get('landGrants.customerReferenceNumber')),
-      relationships: [`${sbiStore.get('sbi')}1234:${sbiStore.get('sbi')}:Farm ${sbiStore.get('sbi')}:1:External:0`]
+      currentRelationshipId: config.get('landGrants.mockSessionCurrentRelationshipId') || `${sbiStore.get('sbi')}1234`,
+      relationships: [
+        config.get('landGrants.mockSessionRelationships') ||
+          `${sbiStore.get('sbi')}1234:${sbiStore.get('sbi')}:Farm ${sbiStore.get('sbi')}:1:External:0`
+      ]
     }
 
     await request.server.app.cache.set(sessionId, sessionData)
