@@ -49,3 +49,33 @@
     {{ govukBackLink(backLink) }}
   {% endif %}
 {% endblock %}
+
+
+{% block footer %}
+  {{ govukFooter({
+    meta: {
+      items: [
+        {
+          href: "https://www.gov.uk/help/privacy-notice",
+          text: "Privacy"
+        },
+        {
+          href: "https://www.gov.uk/help/cookies",
+          text: "Cookies"
+        },
+        {
+          href: "https://www.gov.uk/help/accessibility-statement",
+          text: "Accessibility statement"
+        }
+      ]
+    },
+    rebrand: true
+  }) }}
+
+  <ul>
+    <li>Application Number: {{ context.referenceNumber }} </li>
+    <li>User OrganisationId: {{ auth.organisationId }} </li>
+    <li>State OrganisationId: {{ context.state.sbi }} </li>
+    <li>Selected LandParcel: {{ context.state.selectedLandParcel }} </li>
+  </ul>
+{% endblock %}
