@@ -87,6 +87,12 @@ export async function calculateGrantPayment(landParcels) {
 
   const paymentTotal = formatCurrency(data.payment?.annualTotalPence / 100)
 
+  if (data.payment?.parcelItems) {
+    Object.keys(data.payment.parcelItems).forEach((key) => {
+      data.payment.parcelItems[key] = mapAction(data.payment.parcelItems[key])
+    })
+  }
+
   return {
     ...data,
     errorMessage: paymentTotal == null ? 'Error calculating payment. Please try again later.' : undefined,
