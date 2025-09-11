@@ -72,7 +72,7 @@ export default class RemoveActionPageController extends QuestionPageController {
   getNextPathAfterRemoval(newState, parcelKey, parcel) {
     const hasRemainingActions = newState.landParcels[parcelKey]?.actionsObj
 
-    return hasRemainingActions ? checkSelectedLandActionsPath : `${selectActionsForParcelPath}?parcel=${parcel}`
+    return hasRemainingActions ? checkSelectedLandActionsPath : `${selectActionsForParcelPath}?parcelId=${parcel}`
   }
 
   /**
