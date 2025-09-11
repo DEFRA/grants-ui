@@ -10,13 +10,13 @@ export async function fetchSavedStateFromApi(request) {
   if (!GRANTS_UI_BACKEND_ENDPOINT?.length) {
     return null
   }
-  const { userId, businessId, grantId } = getCacheKey(request)
+  const { userId, organisationId, grantId } = getCacheKey(request)
 
   let json = null
   try {
     const url = new URL('/state/', GRANTS_UI_BACKEND_ENDPOINT)
     url.searchParams.set('userId', userId)
-    url.searchParams.set('businessId', businessId)
+    url.searchParams.set('businessId', organisationId)
     url.searchParams.set('grantId', grantId)
 
     const response = await fetch(url.href, {
