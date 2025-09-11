@@ -39,5 +39,5 @@ export const getCacheKey = (request) => {
     outputLog(request, 'Missing grantId')
     throw new Error('Missing grantId')
   }
-  return { userId, businessId: organisationId, grantId }
+  return { userId, organisationId, grantId }
 }

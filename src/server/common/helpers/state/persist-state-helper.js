@@ -10,10 +10,10 @@ export async function persistStateToApi(state, request) {
     return
   }
 
-  const { userId, businessId, grantId } = getCacheKey(request)
+  const { userId, organisationId, grantId } = getCacheKey(request)
   const url = new URL('/state/', GRANTS_UI_BACKEND_ENDPOINT)
 
-  request.logger.info(`Persisting state to backend for identity: ${userId}:${businessId}:${grantId}`)
+  request.logger.info(`Persisting state to backend for identity: ${userId}:${organisationId}:${grantId}`)
 
   try {
     const response = await fetch(url.href, {
@@ -21,7 +21,7 @@ export async function persistStateToApi(state, request) {
       headers: createApiHeaders(),
       body: JSON.stringify({
         userId,
-        businessId,
+        businessId: organisationId,
         grantId,
         grantVersion: 1, // TODO: Update when support for same grant versioning is implemented
         state

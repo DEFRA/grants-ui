@@ -17,7 +17,7 @@ export const TEST_LOG_CONFIG = { enabled: false, redact: [], level: 'info', form
 
 export const TEST_FOO_VALUE = 'bar'
 export const TEST_USER_ID = 'user_test'
-export const TEST_BUSINESS_ID = 'biz_test'
+export const TEST_ORGANISATION_ID = 'biz_test'
 export const TEST_GRANT_SLUG = 'test-slug'
 
 export const HTTP_STATUS_TEXT = {
@@ -62,7 +62,7 @@ export const HTTP_STATUS = {
 
 export const TEST_USER_IDS = {
   DEFAULT: TEST_USER_ID,
-  BUSINESS_ID: TEST_BUSINESS_ID,
+  ORGANISATION_ID: TEST_ORGANISATION_ID,
   GRANT_ID: TEST_GRANT_SLUG
 }
 
