@@ -23,7 +23,8 @@ export class StatePersistenceService extends CacheService {
    */
   async getState(request) {
     const key = this.Key(request)
-    return fetchSavedStateFromApi(key) ?? {}
+    const state = await fetchSavedStateFromApi(key)
+    return state ?? {}
   }
 
   /**

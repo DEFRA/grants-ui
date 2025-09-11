@@ -16,6 +16,7 @@ export async function persistStateToApi(state, key) {
   const { userId, organisationId, grantId } = parseSessionKey(key)
 
   log(LogCodes.SYSTEM.EXTERNAL_API_CALL_DEBUG, {
+    method: 'POST',
     endpoint: url.href,
     identity: key,
     stateSummary: {
@@ -39,6 +40,7 @@ export async function persistStateToApi(state, key) {
 
     if (!response.ok) {
       log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
+        method: 'POST',
         endpoint: url.href,
         identity: key,
         error: `${response.status} - ${response.statusText}`
@@ -46,6 +48,7 @@ export async function persistStateToApi(state, key) {
     }
   } catch (err) {
     log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
+      method: 'POST',
       endpoint: url.href,
       identity: key,
       error: err.message

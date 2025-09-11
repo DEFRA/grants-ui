@@ -18,6 +18,7 @@ export async function fetchSavedStateFromApi(key) {
   const url = new URL('/state/', GRANTS_UI_BACKEND_ENDPOINT)
   try {
     log(LogCodes.SYSTEM.EXTERNAL_API_CALL_DEBUG, {
+      method: 'GET',
       endpoint: url.href,
       identity: key
     })
@@ -47,6 +48,7 @@ export async function fetchSavedStateFromApi(key) {
 
     if (!json || typeof json !== 'object') {
       log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
+        method: 'GET',
         endpoint: url.href,
         identity: key,
         error: `Unexpected or empty state format: ${json}`
