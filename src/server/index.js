@@ -14,7 +14,6 @@ import { config } from '~/src/config/config.js'
 import { context } from '~/src/config/nunjucks/context/context.js'
 import { grantsUiPaths, nunjucksConfig } from '~/src/config/nunjucks/nunjucks.js'
 import auth from '~/src/plugins/auth.js'
-import csp from '~/src/plugins/content-security-policy.js'
 import sso from '~/src/plugins/sso.js'
 import { formsAuthCallback } from '~/src/server/auth/forms-engine-plugin-auth-helpers.js'
 import CheckResponsesPageController from '~/src/server/check-responses/check-responses.controller.js'
@@ -45,6 +44,7 @@ import { formatCurrency } from '../config/nunjucks/filters/format-currency.js'
 import { fetchSavedStateFromApi } from './common/helpers/state/fetch-saved-state-helper.js'
 import { getCacheKey } from './common/helpers/state/get-cache-key-helper.js'
 import { persistStateToApi } from './common/helpers/state/persist-state-helper.js'
+import { contentSecurityPolicy } from '~/src/server/common/helpers/csp.js'
 import RemoveActionPageController from './land-grants/controllers/remove-action-page.controller.js'
 import { router } from './router.js'
 import SectionEndController from './section-end/section-end.controller.js'
@@ -173,7 +173,6 @@ const registerPlugins = async (server) => {
     Bell,
     Cookie,
     Scooter,
-    csp,
     h2o2,
     auth,
     requestLogger,
@@ -309,6 +308,8 @@ export async function createServer() {
 
     return h.continue
   })
+
+  server.ext('onPreResponse', contentSecurityPolicy)
 
   // Create a server extension to handle session creation when defra-id is disabled
   server.ext('onPreAuth', async (request, h) => {

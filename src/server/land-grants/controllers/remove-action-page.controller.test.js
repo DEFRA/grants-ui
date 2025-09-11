@@ -167,7 +167,7 @@ describe('RemoveActionPageController', () => {
 
       const result = controller.getNextPathAfterRemoval(newState, 'SD6743-8083', 'SD6743-8083')
 
-      expect(result).toBe('/select-actions-for-land-parcel?parcel=SD6743-8083')
+      expect(result).toBe('/select-actions-for-land-parcel?parcelId=SD6743-8083')
     })
 
     test('should return select actions page when parcel is missing from state', () => {
@@ -179,7 +179,7 @@ describe('RemoveActionPageController', () => {
 
       const result = controller.getNextPathAfterRemoval(newState, 'SD6743-8083', 'SD6743-8083')
 
-      expect(result).toBe('/select-actions-for-land-parcel?parcel=SD6743-8083')
+      expect(result).toBe('/select-actions-for-land-parcel?parcelId=SD6743-8083')
     })
   })
 
@@ -293,7 +293,7 @@ describe('RemoveActionPageController', () => {
       expect(controller.proceed).toHaveBeenCalledWith(
         mockRequest,
         mockH,
-        '/select-actions-for-land-parcel?parcel=SD6944-0085'
+        '/select-actions-for-land-parcel?parcelId=SD6944-0085'
       )
       expect(result).toBe('redirected')
     })
@@ -441,7 +441,7 @@ describe('RemoveActionPageController', () => {
       expect(controller.proceed).toHaveBeenCalledWith(
         mockRequest,
         mockH,
-        '/select-actions-for-land-parcel?parcel=SD6944-0085'
+        '/select-actions-for-land-parcel?parcelId=SD6944-0085'
       )
       expect(result).toBe('redirected')
     })
