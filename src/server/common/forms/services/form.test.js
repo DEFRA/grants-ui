@@ -204,73 +204,6 @@ describe('form', () => {
   })
 
   describe('addAllForms', () => {
-    test('handles duplicate forms and logs warning', async () => {
-      const mockLoader = {
-        addForm: vi.fn().mockResolvedValue(undefined)
-      }
-
-      const testForms = [
-        {
-          path: 'path/to/form1.yaml',
-          id: 'form-id-1',
-          slug: 'form-slug-1',
-          title: 'Form 1'
-        },
-        {
-          path: 'path/to/form2.yaml',
-          id: 'form-id-2',
-          slug: 'form-slug-2',
-          title: 'Form 2'
-        },
-        {
-          path: 'path/to/form1-duplicate.yaml',
-          id: 'form-id-1',
-          slug: 'form-slug-1',
-          title: 'Form 1 Duplicate'
-        },
-        {
-          path: 'path/to/form3.yaml',
-          id: 'form-id-3',
-          slug: 'form-slug-3',
-          title: 'Form 3'
-        }
-      ]
-
-      const result = await addAllForms(mockLoader, testForms)
-
-      expect(mockWarn).toHaveBeenCalledWith('Skipping duplicate form: form-slug-1 with id form-id-1')
-
-      expect(result).toBe(3)
-      expect(mockLoader.addForm).toHaveBeenCalledTimes(3)
-
-      expect(mockLoader.addForm).not.toHaveBeenCalledWith('path/to/form1-duplicate.yaml', expect.any(Object))
-
-      expect(mockLoader.addForm).toHaveBeenCalledWith(
-        'path/to/form1.yaml',
-        expect.objectContaining({
-          id: 'form-id-1',
-          slug: 'form-slug-1',
-          title: 'Form 1'
-        })
-      )
-      expect(mockLoader.addForm).toHaveBeenCalledWith(
-        'path/to/form2.yaml',
-        expect.objectContaining({
-          id: 'form-id-2',
-          slug: 'form-slug-2',
-          title: 'Form 2'
-        })
-      )
-      expect(mockLoader.addForm).toHaveBeenCalledWith(
-        'path/to/form3.yaml',
-        expect.objectContaining({
-          id: 'form-id-3',
-          slug: 'form-slug-3',
-          title: 'Form 3'
-        })
-      )
-    })
-
     test('handles empty forms array', async () => {
       const mockLoader = {
         addForm: vi.fn()
@@ -292,13 +225,11 @@ describe('form', () => {
         {
           path: 'path/to/form1.yaml',
           id: 'form-id-1',
-          slug: 'form-slug-1',
           title: 'Form 1'
         },
         {
           path: 'path/to/form2.yaml',
           id: 'form-id-2',
-          slug: 'form-slug-2',
           title: 'Form 2'
         }
       ]

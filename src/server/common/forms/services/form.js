@@ -110,14 +110,17 @@ async function discoverFormsFromYaml(baseDir = path.resolve(process.cwd(), 'src/
         continue
       }
 
-      const { slug, id, enabledInProd } = formMetadata
+      // Use file name as slug
+      const fileName = path.basename(filePath, path.extname(filePath))
+
+      const { id, enabledInProd } = formMetadata
 
       // Only include forms in production if they have enabledInProd set to true
       if (!isProduction || enabledInProd === true) {
         forms.push({
           path: filePath,
           id,
-          slug,
+          slug: fileName,
           title
         })
       }

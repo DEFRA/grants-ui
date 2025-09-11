@@ -2,7 +2,6 @@ engine: V2
 name: Applicant
 metadata:
   id: f3f08612-a020-44e9-9851-9618820129ff
-  slug: applicant-details
 pages:
   - title: Applicant's details
     path: /applicant-details

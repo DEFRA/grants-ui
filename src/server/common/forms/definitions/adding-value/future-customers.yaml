@@ -2,7 +2,6 @@ engine: V2
 name: Future customers
 metadata:
   id: b36a6415-f46f-4ac5-84ca-db0d209a6559
-  slug: future-customers
 pages:
   - title: Who will your new customers be after the project?
     path: /future-customers

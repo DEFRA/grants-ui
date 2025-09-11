@@ -2,7 +2,6 @@ engine: V2
 name: Environment
 metadata:
   id: d5e8404c-73fb-4721-b329-4ab604840e53
-  slug: environmental-impact
 pages:
   - title: How will this project improve the environment?
     path: /environmental-impact
