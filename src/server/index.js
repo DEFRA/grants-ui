@@ -45,10 +45,10 @@ import { formatCurrency } from '../config/nunjucks/filters/format-currency.js'
 import { fetchSavedStateFromApi } from './common/helpers/state/fetch-saved-state-helper.js'
 import { getCacheKey } from './common/helpers/state/get-cache-key-helper.js'
 import { persistStateToApi } from './common/helpers/state/persist-state-helper.js'
+import { contentSecurityPolicy } from '~/src/server/common/helpers/csp.js'
 import RemoveActionPageController from './land-grants/controllers/remove-action-page.controller.js'
 import { router } from './router.js'
 import SectionEndController from './section-end/section-end.controller.js'
-import { randomBytes } from 'node:crypto'
 
 const SESSION_CACHE_NAME = 'session.cache.name'
 
@@ -250,34 +250,6 @@ const handleMockDefraAuth = async (request, h, log, LogCodes) => {
   return h.continue
 }
 
-const buildCsp = (nonce) => {
-  const gtm = 'https://www.googletagmanager.com'
-  const ga4 = 'https://www.google-analytics.com'
-  const ga4WildCard = 'https://*.google-analytics.com'
-  const gtmWildCard = 'https://*.googletagmanager.com'
-  const self = "'self'"
-  const statsDblClick = 'https://stats.g.doubleclick.net'
-
-  const scriptSrc = [self, "'strict-dynamic'", `'nonce-${nonce}'`, gtm, ga4].join(' ')
-  const connectSrc = [self, ga4, statsDblClick, ga4WildCard, gtmWildCard].join(' ')
-  const fontSrc = [self, 'data:', 'https://fonts.gstatic.com'].join(' ')
-  const imgSrc = [self, 'data:', 'blob:', ga4, statsDblClick, ga4WildCard].join(' ')
-
-  return [
-    "default-src 'self'",
-    "base-uri 'self'",
-    "object-src 'none'",
-    "frame-ancestors 'self'",
-    `script-src ${scriptSrc}`,
-    `connect-src ${connectSrc}`,
-    `img-src ${imgSrc}`,
-    "style-src 'self' 'unsafe-inline'",
-    `font-src ${fontSrc}`,
-    `frame-src ${gtm}`,
-    'upgrade-insecure-requests'
-  ].join('; ')
-}
-
 export async function createServer() {
   const { log, LogCodes } = await import('~/src/server/common/helpers/logging/log.js')
 
@@ -339,26 +311,7 @@ export async function createServer() {
     return h.continue
   })
 
-  server.ext('onPreResponse', (request, h) => {
-    const response = request.response
-    if (response?.isBoom) {
-      return h.continue
-    }
-
-    const nonce = randomBytes(16).toString('base64')
-
-    response.header('Content-Security-Policy', buildCsp(nonce))
-    response.header('Referrer-Policy', 'no-referrer')
-    response.header('X-CSP-Nonce', nonce)
-
-    response.app.cspNonce = nonce
-
-    if (response.variety === 'view') {
-      response.source.context = { ...(response.source.context ?? {}), cspNonce: nonce }
-    }
-
-    return h.continue
-  })
+  server.ext('onPreResponse', contentSecurityPolicy)
 
   // Create a server extension to handle session creation when defra-id is disabled
   server.ext('onPreAuth', async (request, h) => {
