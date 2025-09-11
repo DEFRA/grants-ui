@@ -31,7 +31,7 @@ let log
 let LogCodes
 
 describe('fetchSavedStateFromApi', () => {
-  const key = `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.BUSINESS_ID}:${TEST_USER_IDS.GRANT_ID}`
+  const key = `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.ORGANISATION_ID}:${TEST_USER_IDS.GRANT_ID}`
 
   const createSuccessfulResponse = (data = MOCK_STATE_DATA.DEFAULT) => ({
     ok: true,
@@ -49,7 +49,7 @@ describe('fetchSavedStateFromApi', () => {
   beforeEach(() => {
     mockParseSessionKey.mockReturnValue({
       userId: TEST_USER_IDS.DEFAULT,
-      businessId: TEST_USER_IDS.BUSINESS_ID,
+      organisationId: TEST_USER_IDS.ORGANISATION_ID,
       grantId: TEST_USER_IDS.GRANT_ID
     })
   })
@@ -88,8 +88,9 @@ describe('fetchSavedStateFromApi', () => {
       expect(log).toHaveBeenCalledWith(
         LogCodes.SYSTEM.EXTERNAL_API_CALL_DEBUG,
         expect.objectContaining({
+          method: 'GET',
           endpoint: expect.stringContaining('/state/'),
-          identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.BUSINESS_ID}:${TEST_USER_IDS.GRANT_ID}`
+          identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.ORGANISATION_ID}:${TEST_USER_IDS.GRANT_ID}`
         })
       )
     })
@@ -125,8 +126,9 @@ describe('fetchSavedStateFromApi', () => {
       expect(log).toHaveBeenCalledWith(
         LogCodes.SYSTEM.EXTERNAL_API_CALL_DEBUG,
         expect.objectContaining({
+          method: 'GET',
           endpoint: expect.stringContaining('/state/'),
-          identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.BUSINESS_ID}:${TEST_USER_IDS.GRANT_ID}`,
+          identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.ORGANISATION_ID}:${TEST_USER_IDS.GRANT_ID}`,
           stateSummary: 'No state found in backend'
         })
       )
@@ -141,8 +143,9 @@ describe('fetchSavedStateFromApi', () => {
       expect(log).toHaveBeenCalledWith(
         LogCodes.SYSTEM.EXTERNAL_API_ERROR,
         expect.objectContaining({
+          method: 'GET',
           endpoint: expect.stringContaining('/state/'),
-          identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.BUSINESS_ID}:${TEST_USER_IDS.GRANT_ID}`,
+          identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.ORGANISATION_ID}:${TEST_USER_IDS.GRANT_ID}`,
           error: 'Failed to fetch saved state: 500'
         })
       )
@@ -157,8 +160,9 @@ describe('fetchSavedStateFromApi', () => {
       expect(log).toHaveBeenCalledWith(
         LogCodes.SYSTEM.EXTERNAL_API_ERROR,
         expect.objectContaining({
+          method: 'GET',
           endpoint: expect.stringContaining('/state/'),
-          identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.BUSINESS_ID}:${TEST_USER_IDS.GRANT_ID}`,
+          identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.ORGANISATION_ID}:${TEST_USER_IDS.GRANT_ID}`,
           error: 'Unexpected or empty state format: 123'
         })
       )
@@ -174,8 +178,9 @@ describe('fetchSavedStateFromApi', () => {
       expect(log).toHaveBeenCalledWith(
         LogCodes.SYSTEM.EXTERNAL_API_ERROR,
         expect.objectContaining({
+          method: 'GET',
           endpoint: expect.stringContaining('/state/'),
-          identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.BUSINESS_ID}:${TEST_USER_IDS.GRANT_ID}`,
+          identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.ORGANISATION_ID}:${TEST_USER_IDS.GRANT_ID}`,
           error: 'Network error'
         })
       )

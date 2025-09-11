@@ -58,6 +58,7 @@ export async function fetchSavedStateFromApi(key) {
     }
   } catch (err) {
     log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
+      method: 'GET',
       endpoint: url.href,
       identity: key,
       error: err.message

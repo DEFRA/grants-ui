@@ -100,7 +100,7 @@ describe('parseSessionKey', () => {
 
     expect(result).toEqual({
       userId: 'user123',
-      businessId: 'business456',
+      organisationId: 'business456',
       grantId: 'grant789'
     })
   })
