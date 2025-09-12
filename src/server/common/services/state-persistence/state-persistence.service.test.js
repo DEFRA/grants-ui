@@ -31,13 +31,13 @@ describe('StatePersistenceService', () => {
 
   test('Key generates the correct key', () => {
     getCacheKey.mockReturnValue({ userId: 'user-1', organisationId: 'biz-1', grantId: 'grant-a' })
-    const key = service.Key(fakeRequest)
+    const key = service._Key(fakeRequest)
     expect(key).toBe('user-1:biz-1:grant-a')
   })
 
   test('ConfirmationKey appends the confirmation identifier', () => {
     getCacheKey.mockReturnValue({ userId: 'user-1', organisationId: 'biz-1', grantId: 'grant-a' })
-    const key = service.ConfirmationKey(fakeRequest)
+    const key = service._ConfirmationKey(fakeRequest)
     expect(key).toBe(`user-1:biz-1:grant-a:confirmation`) // assuming ADDITIONAL_IDENTIFIER.Confirmation === 'confirmation'
   })
 

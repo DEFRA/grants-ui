@@ -22,7 +22,7 @@ export class StatePersistenceService extends CacheService {
    * @returns {Promise<object>} resolved state or empty object
    */
   async getState(request) {
-    const key = this.Key(request)
+    const key = this._Key(request)
     const state = await fetchSavedStateFromApi(key)
     return state ?? {}
   }
@@ -34,7 +34,7 @@ export class StatePersistenceService extends CacheService {
    * @returns {Promise<object>} the persisted state
    */
   async setState(request, state) {
-    const key = this.Key(request)
+    const key = this._Key(request)
     await persistStateToApi(state, key)
     return state
   }
@@ -48,7 +48,7 @@ export class StatePersistenceService extends CacheService {
    * @returns {Promise<{ confirmed?: true }>} Confirmation state
    */
   async getConfirmationState(request) {
-    const key = this.ConfirmationKey(request)
+    const key = this._ConfirmationKey(request)
     const state = await fetchSavedStateFromApi(key)
     return state ?? {}
   }
@@ -62,7 +62,7 @@ export class StatePersistenceService extends CacheService {
    * @param {{ confirmed?: true }} confirmationState
    */
   async setConfirmationState(request, confirmationState) {
-    const key = this.ConfirmationKey(request)
+    const key = this._ConfirmationKey(request)
     await persistStateToApi(confirmationState, key)
     return confirmationState
   }
@@ -73,7 +73,7 @@ export class StatePersistenceService extends CacheService {
    */
   async clearState(request) {
     // NO-OP because you want to keep state even after submission
-    const key = this.Key(request)
+    const key = this._Key(request)
     this.logger?.info(`clearState called for ${key || 'unknown session'}, but no action taken.`)
   }
 
@@ -82,7 +82,7 @@ export class StatePersistenceService extends CacheService {
    * @param {import('../plugins/engine/types.js').AnyRequest} request
    * @returns string
    */
-  Key(request) {
+  _Key(request) {
     const { userId, organisationId, grantId } = getCacheKey(request)
     return `${userId}:${organisationId}:${grantId}`
   }
@@ -92,8 +92,8 @@ export class StatePersistenceService extends CacheService {
    * @param {import('../plugins/engine/types.js').AnyRequest} request
    * @returns string
    */
-  ConfirmationKey(request) {
-    const key = this.Key(request)
+  _ConfirmationKey(request) {
+    const key = this._Key(request)
     return `${key}${ADDITIONAL_IDENTIFIER.Confirmation}`
   }
 }
