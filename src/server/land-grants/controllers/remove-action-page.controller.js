@@ -16,16 +16,14 @@ export default class RemoveActionPageController extends QuestionPageController {
    * @returns {object} - Parsed parcel information
    */
   extractParcelInfo(query) {
-    const [sheetId = '', parcelId = ''] = parseLandParcel(query.parcel)
+    const [sheetId = '', parcelId = ''] = parseLandParcel(query.parcelId)
     const action = query.action
     const parcelKey = `${sheetId}-${parcelId}`
 
     return {
-      sheetId,
-      parcelId,
       action,
       parcelKey,
-      parcel: query.parcel
+      parcel: query.parcelId
     }
   }
 

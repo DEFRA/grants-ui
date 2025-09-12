@@ -45,7 +45,7 @@ describe('RemoveActionPageController', () => {
 
     mockRequest = {
       query: {
-        parcel: 'SD6743-8083',
+        parcelId: 'SD6743-8083',
         action: 'CMOR1'
       },
       payload: {}
@@ -72,12 +72,10 @@ describe('RemoveActionPageController', () => {
 
   describe('extractParcelInfo', () => {
     test('should extract parcel information correctly', () => {
-      const query = { parcel: 'SD6743-8083', action: 'CMOR1' }
+      const query = { parcelId: 'SD6743-8083', action: 'CMOR1' }
       const result = controller.extractParcelInfo(query)
 
       expect(result).toEqual({
-        sheetId: 'SD6743',
-        parcelId: '8083',
         action: 'CMOR1',
         parcelKey: 'SD6743-8083',
         parcel: 'SD6743-8083'
@@ -89,8 +87,6 @@ describe('RemoveActionPageController', () => {
       const result = controller.extractParcelInfo(query)
 
       expect(result).toEqual({
-        sheetId: '',
-        parcelId: '',
         action: undefined,
         parcelKey: '-',
         parcel: undefined
@@ -98,12 +94,10 @@ describe('RemoveActionPageController', () => {
     })
 
     test('should handle missing action in query', () => {
-      const query = { parcel: 'SD6743-8083' }
+      const query = { parcelId: 'SD6743-8083' }
       const result = controller.extractParcelInfo(query)
 
       expect(result).toEqual({
-        sheetId: 'SD6743',
-        parcelId: '8083',
         action: undefined,
         parcelKey: 'SD6743-8083',
         parcel: 'SD6743-8083'
@@ -524,7 +518,7 @@ describe('RemoveActionPageController', () => {
     })
 
     test('should handle removing entire parcel when no action specified', async () => {
-      mockRequest.query = { parcel: 'SD6743-8083' }
+      mockRequest.query = { parcelId: 'SD6743-8083' }
 
       const handler = controller.makeGetRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
@@ -552,7 +546,7 @@ describe('RemoveActionPageController', () => {
     })
 
     test('should redirect to check page when parcel not found', async () => {
-      mockRequest.query = { parcel: 'nonexistent-parcel', action: 'CMOR1' }
+      mockRequest.query = { parcelId: 'nonexistent-parcel', action: 'CMOR1' }
 
       const handler = controller.makeGetRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)

@@ -7,9 +7,11 @@
 		</h{{headingLevel}}>
 
 		{% if (params.headerActions) and params.headerActions.text | length > 0 %}
-			<div class="govuk-!-text-align-right{{ params.headerActions.classes }} govuk-!-font-weight-bold govuk-!-padding-bottom-2">
-				{{ ('<a class="govuk-link ' + (params.headerActions.classes or '') + '" href="' + params.headerActions.href + '">' + params.headerActions.text + '<span class="govuk-visually-hidden"> ' + params.headerActions.hiddenTextValue +'</span></a>') | safe }}
-			</div>
+			<ul class="govuk-summary-card__actions">
+				<li class="govuk-summary-card__action{{ params.headerActions.classes }}">
+					{{ ('<a class="govuk-link ' + (params.headerActions.classes or '') + '" href="' + params.headerActions.href + '">' + params.headerActions.text + '<span class="govuk-visually-hidden"> ' + params.headerActions.hiddenTextValue +'</span></a>') | safe }}
+				</li>
+			</ul>
 		{% endif %}
 	</div>
 	<div class="govuk-summary-card__content {{ params.content.classes }}">

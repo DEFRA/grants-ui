@@ -17,7 +17,7 @@ const createLinks = (data, foundGroup) => {
     )
   }
   links.push(
-    `<li class='govuk-summary-list__actions-list-item'><a class='govuk-link' href='remove-action?parcel=${parcelParam}&action=${data.code}'>Remove</a><span class="govuk-visually-hidden"> land action ${data.code} for parcel ${parcel}</span></li>`
+    `<li class='govuk-summary-list__actions-list-item'><a class='govuk-link' href='remove-action?parcelId=${parcelParam}&action=${data.code}'>Remove</a><span class="govuk-visually-hidden"> land action ${data.code} for parcel ${parcel}</span></li>`
   )
 
   return {
@@ -130,7 +130,7 @@ export default class LandActionsCheckPageController extends QuestionPageControll
   buildLandParcelHeaderActions = (sheetId, parcelId) => {
     return {
       text: 'Remove',
-      href: `remove-parcel?parcel=${sheetId}-${parcelId}`,
+      href: `remove-parcel?parcelId=${sheetId}-${parcelId}`,
       hiddenTextValue: `all actions for Land Parcel ${sheetId} ${parcelId}`
     }
   }
