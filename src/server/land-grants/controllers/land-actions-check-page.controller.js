@@ -1,8 +1,8 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { formatCurrency } from '~/src/config/nunjucks/filters/filters.js'
+import { landActionWithCode } from '~/src/server/land-grants/utils/land-action-with-code.js'
 import { sbiStore } from '~/src/server/sbi/state.js'
 import { actionGroups, calculateGrantPayment, stringifyParcel } from '../services/land-grants.service.js'
-import { landActionWithCode } from '~/src/server/land-grants/utils/land-action-with-code.js'
 
 const createLinks = (data, foundGroup) => {
   const parcelParam = stringifyParcel({
@@ -18,7 +18,7 @@ const createLinks = (data, foundGroup) => {
     )
   }
   links.push(
-    `<li class='govuk-summary-list__actions-list-item'><a class='govuk-link' href='confirm-remove-action?parcel=${parcelParam}&action=${data.code}'>Remove</a><span class="govuk-visually-hidden"> land action ${data.code} for parcel ${parcel}</span></li>`
+    `<li class='govuk-summary-list__actions-list-item'><a class='govuk-link' href='remove-action?parcelId=${parcelParam}&action=${data.code}'>Remove</a><span class="govuk-visually-hidden"> land action ${data.code} for parcel ${parcel}</span></li>`
   )
 
   return {
@@ -128,6 +128,14 @@ export default class LandActionsCheckPageController extends QuestionPageControll
     ]
   }
 
+  buildLandParcelHeaderActions = (sheetId, parcelId) => {
+    return {
+      text: 'Remove',
+      href: `remove-parcel?parcelId=${sheetId}-${parcelId}`,
+      hiddenTextValue: `all actions for Land Parcel ${sheetId} ${parcelId}`
+    }
+  }
+
   buildLandParcelFooterActions = (selectedActions, sheetId, parcelId) => {
     const uniqueCodes = [
       ...new Set(
@@ -146,7 +154,7 @@ export default class LandActionsCheckPageController extends QuestionPageControll
     return {
       text: 'Add another action',
       href: `select-actions-for-land-parcel?parcelId=${sheetId}-${parcelId}`,
-      hiddenTextValue: `${sheetId} ${parcelId}`
+      hiddenTextValue: `to Land Parcel ${sheetId} ${parcelId}`
     }
   }
 
@@ -157,6 +165,7 @@ export default class LandActionsCheckPageController extends QuestionPageControll
       if (!acc[parcelKey]) {
         acc[parcelKey] = {
           cardTitle: `Land parcel ${parcelKey}`,
+          headerActions: this.buildLandParcelHeaderActions(data.sheetId, data.parcelId),
           footerActions: this.buildLandParcelFooterActions(paymentInfo?.parcelItems, data.sheetId, data.parcelId),
           parcelId: parcelKey,
           items: []
@@ -190,11 +199,10 @@ export default class LandActionsCheckPageController extends QuestionPageControll
   /**
    * Determine next path based on user selection
    * @param {string} addMoreActions - User selection
-   * @param {FormContext} context - Form context
    * @returns {string} - Next path
    */
-  getNextPathFromSelection(addMoreActions, context) {
-    return addMoreActions === 'true' ? '/select-land-parcel' : this.getNextPath(context)
+  getNextPathFromSelection(addMoreActions) {
+    return addMoreActions === 'true' ? '/select-land-parcel' : '/submit-your-application'
   }
 
   /**
@@ -288,7 +296,7 @@ export default class LandActionsCheckPageController extends QuestionPageControll
       }
 
       const { addMoreActions } = payload
-      const nextPath = this.getNextPathFromSelection(addMoreActions, context)
+      const nextPath = this.getNextPathFromSelection(addMoreActions)
       return this.proceed(request, h, nextPath)
     }
   }

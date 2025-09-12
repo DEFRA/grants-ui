@@ -85,7 +85,6 @@ export const landActionsToApiPayload = ({ sheetId, parcelId, actionsObj }) => {
  */
 export async function calculateGrantPayment(landParcels) {
   const data = await postToLandGrantsApi('/payments/calculate', landParcels)
-
   const paymentTotal = formatCurrency(data.payment?.annualTotalPence / 100)
 
   return {

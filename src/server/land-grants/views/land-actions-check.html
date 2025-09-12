@@ -46,9 +46,7 @@
           title: {
             text: item.cardTitle
           },
-          headerActions: {
-            html: "<a class='govuk-link' href='confirm-delete-parcel' style='display: none'>Remove</a>"
-          },
+          headerActions: item.headerActions,
           footerActions: item.footerActions
         }) %}
           {{ govukTable({
