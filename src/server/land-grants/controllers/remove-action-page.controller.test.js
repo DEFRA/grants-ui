@@ -12,12 +12,12 @@ describe('RemoveActionPageController', () => {
     'SD6743-8083': {
       actionsObj: {
         CMOR1: {
-          description: 'CMOR1: Assess moorland and produce a written record',
+          description: 'Assess moorland and produce a written record',
           value: '4.53',
           unit: 'ha'
         },
         UPL1: {
-          description: 'UPL1: Moderate livestock grazing on moorland',
+          description: 'Moderate livestock grazing on moorland',
           value: '2.5',
           unit: 'ha'
         }
@@ -26,7 +26,7 @@ describe('RemoveActionPageController', () => {
     'SD6944-0085': {
       actionsObj: {
         CMOR1: {
-          description: 'CMOR1: Assess moorland and produce a written record',
+          description: 'Assess moorland and produce a written record',
           value: '1.0',
           unit: 'ha'
         }
@@ -116,7 +116,7 @@ describe('RemoveActionPageController', () => {
       const result = controller.findActionInfo(mockLandParcels, 'SD6743-8083', 'CMOR1')
 
       expect(result).toEqual({
-        description: 'CMOR1: Assess moorland and produce a written record',
+        description: 'Assess moorland and produce a written record',
         value: '4.53',
         unit: 'ha'
       })
@@ -151,7 +151,7 @@ describe('RemoveActionPageController', () => {
         landParcels: {
           'SD6743-8083': {
             actionsObj: {
-              UPL1: { description: 'UPL1: Moderate livestock grazing on moorland' }
+              UPL1: { description: 'Moderate livestock grazing on moorland' }
             }
           }
         }
@@ -274,7 +274,7 @@ describe('RemoveActionPageController', () => {
         landParcels: {
           'SD6944-0085': {
             actionsObj: {
-              CMOR1: { description: 'CMOR1: Test action' }
+              CMOR1: { description: 'Test action' }
             }
           }
         }
@@ -323,11 +323,11 @@ describe('RemoveActionPageController', () => {
 
       expect(controller.action).toBe('CMOR1')
       expect(controller.parcel).toBe('SD6743-8083')
-      expect(controller.actionDescription).toBe('CMOR1: Assess moorland and produce a written record')
+      expect(controller.actionDescription).toBe('Assess moorland and produce a written record')
       expect(mockH.view).toHaveBeenCalledWith('remove-action', {
         pageTitle: 'Remove action',
         parcel: 'SD6743-8083',
-        actionDescription: 'CMOR1: Assess moorland and produce a written record'
+        actionDescription: 'Assess moorland and produce a written record'
       })
       expect(result).toBe('rendered view')
     })
@@ -380,7 +380,7 @@ describe('RemoveActionPageController', () => {
       // Set up controller state as if GET request was processed
       controller.action = 'CMOR1'
       controller.parcel = 'SD6743-8083'
-      controller.actionDescription = 'CMOR1: Assess moorland and produce a written record'
+      controller.actionDescription = 'Assess moorland and produce a written record'
     })
 
     test('should show validation error when removeAction not provided', async () => {
@@ -392,7 +392,7 @@ describe('RemoveActionPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith('remove-action', {
         pageTitle: 'Remove action',
         parcel: 'SD6743-8083',
-        actionDescription: 'CMOR1: Assess moorland and produce a written record',
+        actionDescription: 'Assess moorland and produce a written record',
         errorMessage: 'Please select if you want to remove the action'
       })
       expect(controller.setState).not.toHaveBeenCalled()
