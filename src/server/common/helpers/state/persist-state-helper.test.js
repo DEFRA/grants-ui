@@ -1,58 +1,59 @@
 import { vi } from 'vitest'
-import { mockRequestWithIdentity } from './mock-request-with-identity.test-helper.js'
 import {
   MOCK_STATE_DATA,
   HTTP_STATUS,
   TEST_USER_IDS,
   ERROR_MESSAGES,
-  LOG_MESSAGES,
   createMockConfig,
   createMockConfigWithoutEndpoint
 } from './test-helpers/auth-test-helpers.js'
 import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
+import { mockRequestWithIdentity } from './mock-request-with-identity.test-helper.js'
 
 const GRANT_VERSION = 1
 
-const mockGetCacheKey = vi.fn()
-
-vi.mock('~/src/server/common/helpers/state/get-cache-key-helper.js', () => ({
-  getCacheKey: mockGetCacheKey
+const mockParseSessionKey = vi.fn()
+vi.mock('./get-cache-key-helper.js', () => ({
+  parseSessionKey: mockParseSessionKey
 }))
 
 global.fetch = vi.fn()
 
+vi.doMock('../logging/log.js', () => ({
+  log: vi.fn(),
+  LogCodes: {
+    SYSTEM: {
+      EXTERNAL_API_CALL_DEBUG: { level: 'debug', messageFunc: vi.fn() },
+      EXTERNAL_API_ERROR: { level: 'error', messageFunc: vi.fn() }
+    }
+  }
+}))
+
 let persistStateToApi
+let log
+let LogCodes
 
 describe('persistStateToApi', () => {
-  const createMockRequest = () => mockRequestWithIdentity({ params: { slug: TEST_USER_IDS.GRANT_ID } })
+  const key = `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.BUSINESS_ID}:${TEST_USER_IDS.GRANT_ID}`
+  const testState = MOCK_STATE_DATA.WITH_STEP
 
-  const createMockRequestWithLogger = () => {
-    const request = createMockRequest()
-    request.logger = mockRequestLogger()
-    return request
-  }
-
-  const createTestState = () => MOCK_STATE_DATA.WITH_STEP
-
-  const setupMockCacheKey = () => {
-    mockGetCacheKey.mockReturnValue({
+  beforeEach(() => {
+    mockParseSessionKey.mockReturnValue({
       userId: TEST_USER_IDS.DEFAULT,
       organisationId: TEST_USER_IDS.ORGANISATION_ID,
       grantId: TEST_USER_IDS.GRANT_ID
     })
-  }
-
-  beforeEach(() => {
-    setupMockCacheKey()
   })
 
   describe('With backend configured correctly', () => {
     beforeEach(async () => {
-      vi.resetAllMocks()
+      vi.resetModules()
       vi.doMock('~/src/config/config.js', createMockConfig)
       const helper = await import('~/src/server/common/helpers/state/persist-state-helper.js')
       persistStateToApi = helper.persistStateToApi
-      setupMockCacheKey()
+      const logModule = await import('../logging/log.js')
+      log = logModule.log
+      LogCodes = logModule.LogCodes
       vi.clearAllMocks()
     })
 
@@ -77,16 +78,13 @@ describe('persistStateToApi', () => {
     it('persists state successfully when response is ok', async () => {
       fetch.mockResolvedValue(createSuccessfulFetchResponse())
 
-      const request = createMockRequest()
-      const testState = createTestState()
-
-      await persistStateToApi(testState, request)
+      await persistStateToApi(testState, key)
 
       const expectedBody = JSON.stringify({
         userId: TEST_USER_IDS.DEFAULT,
         businessId: TEST_USER_IDS.ORGANISATION_ID,
         grantId: TEST_USER_IDS.GRANT_ID,
-        grantVersion: GRANT_VERSION, // TODO: Update when support for same grant versioning is implemented
+        grantVersion: GRANT_VERSION,
         state: testState
       })
 
@@ -103,8 +101,16 @@ describe('persistStateToApi', () => {
         })
       )
 
-      expect(request.logger.info).toHaveBeenCalledWith(
-        `Persisting state to backend for identity: ${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.ORGANISATION_ID}:${TEST_USER_IDS.GRANT_ID}`
+      expect(log).toHaveBeenCalledWith(
+        LogCodes.SYSTEM.EXTERNAL_API_CALL_DEBUG,
+        expect.objectContaining({
+          endpoint: expect.stringContaining('/state/'),
+          identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.BUSINESS_ID}:${TEST_USER_IDS.GRANT_ID}`,
+          stateSummary: {
+            hasReference: Boolean(testState?.$$__referenceNumber),
+            keyCount: Object.keys(testState).length
+          }
+        })
       )
     })
 
@@ -112,14 +118,16 @@ describe('persistStateToApi', () => {
       const failedResponse = createFailedFetchResponse()
       fetch.mockResolvedValue(failedResponse)
 
-      const request = createMockRequestWithLogger()
-      const testState = createTestState()
-
-      await persistStateToApi(testState, request)
+      await persistStateToApi(testState, key)
 
       expect(fetch).toHaveBeenCalledTimes(1)
-      expect(request.logger.error).toHaveBeenCalledWith(
-        `${LOG_MESSAGES.PERSIST_FAILED}: ${failedResponse.status} - ${failedResponse.statusText}`
+      expect(log).toHaveBeenCalledWith(
+        LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+        expect.objectContaining({
+          endpoint: expect.stringContaining('/state/'),
+          identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.BUSINESS_ID}:${TEST_USER_IDS.GRANT_ID}`,
+          error: `${failedResponse.status} - ${failedResponse.statusText}`
+        })
       )
     })
 
@@ -127,24 +135,27 @@ describe('persistStateToApi', () => {
       const networkError = new Error(ERROR_MESSAGES.NETWORK_ERROR)
       fetch.mockRejectedValue(networkError)
 
-      const request = createMockRequestWithLogger()
-      const testState = createTestState()
-
-      await persistStateToApi(testState, request)
+      await persistStateToApi(testState, key)
 
       expect(fetch).toHaveBeenCalledTimes(1)
-      expect(request.logger.error).toHaveBeenCalledWith(`${LOG_MESSAGES.PERSIST_FAILED}: ${networkError.message}`)
+      expect(log).toHaveBeenCalledWith(
+        LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+        expect.objectContaining({
+          endpoint: expect.stringContaining('/state/'),
+          identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.BUSINESS_ID}:${TEST_USER_IDS.GRANT_ID}`,
+          error: networkError.message
+        })
+      )
     })
   })
 
   describe('With backend not configured', () => {
     beforeEach(async () => {
-      vi.resetAllMocks()
+      vi.clearAllMocks()
       vi.resetModules()
       vi.doMock('~/src/config/config.js', createMockConfigWithoutEndpoint)
       const helper = await import('~/src/server/common/helpers/state/persist-state-helper.js')
       persistStateToApi = helper.persistStateToApi
-      setupMockCacheKey()
       vi.clearAllMocks()
     })
 
@@ -153,8 +164,9 @@ describe('persistStateToApi', () => {
     })
 
     it('should return early when backend endpoint is not configured', async () => {
-      const request = createMockRequestWithLogger()
-      const testState = createTestState()
+      const request = mockRequestWithIdentity({ params: { slug: TEST_USER_IDS.GRANT_ID } })
+      request.logger = mockRequestLogger()
+      const testState = () => MOCK_STATE_DATA.WITH_STEP
 
       await persistStateToApi(testState, request)
 

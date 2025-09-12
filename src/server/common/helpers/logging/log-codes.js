@@ -227,9 +227,15 @@ export const LogCodes = {
       messageFunc: (messageOptions) =>
         `External API call to ${messageOptions.endpoint} for user=${messageOptions.userId || 'unknown'}`
     },
+    EXTERNAL_API_CALL_DEBUG: {
+      level: 'debug',
+      messageFunc: (messageOptions) =>
+        `External ${messageOptions.method} API call to ${messageOptions.endpoint} for identity=${messageOptions.identity || 'unknown'} - stateSummary=${JSON.stringify(messageOptions.stateSummary || 'N/A')}`
+    },
     EXTERNAL_API_ERROR: {
       level: 'error',
-      messageFunc: (messageOptions) => `External API error for ${messageOptions.endpoint}: ${messageOptions.error}`
+      messageFunc: (messageOptions) =>
+        `External API error for ${messageOptions.endpoint} for identity: ${messageOptions.identity || 'unknown'} - error: ${messageOptions.error}`
     }
   }
 }
