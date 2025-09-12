@@ -1,8 +1,8 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { formatCurrency } from '~/src/config/nunjucks/filters/filters.js'
+import { landActionWithCode } from '~/src/server/land-grants/utils/land-action-with-code.js'
 import { sbiStore } from '~/src/server/sbi/state.js'
 import { actionGroups, calculateGrantPayment, stringifyParcel } from '../services/land-grants.service.js'
-import { landActionWithCode } from '~/src/server/land-grants/utils/land-action-with-code.js'
 
 const createLinks = (data, foundGroup) => {
   const parcelParam = stringifyParcel({
@@ -199,10 +199,9 @@ export default class LandActionsCheckPageController extends QuestionPageControll
   /**
    * Determine next path based on user selection
    * @param {string} addMoreActions - User selection
-   * @param {FormContext} context - Form context
    * @returns {string} - Next path
    */
-  getNextPathFromSelection(addMoreActions, context) {
+  getNextPathFromSelection(addMoreActions) {
     return addMoreActions === 'true' ? '/select-land-parcel' : '/submit-your-application'
   }
 
@@ -297,7 +296,7 @@ export default class LandActionsCheckPageController extends QuestionPageControll
       }
 
       const { addMoreActions } = payload
-      const nextPath = this.getNextPathFromSelection(addMoreActions, context)
+      const nextPath = this.getNextPathFromSelection(addMoreActions)
       return this.proceed(request, h, nextPath)
     }
   }
