@@ -2,6 +2,7 @@ import { config } from '~/src/config/config.js'
 import { formatCurrency } from '~/src/config/nunjucks/filters/format-currency.js'
 import { fetchParcelsForSbi } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
 import { sbiStore } from '../../sbi/state.js'
+import { landActionWithCode } from '~/src/server/land-grants/utils/land-action-with-code.js'
 
 const LAND_GRANTS_API_URL = config.get('landGrants.grantsServiceApiEndpoint')
 
@@ -140,7 +141,7 @@ export async function fetchAvailableActionsForParcel({ parcelId = '', sheetId = 
 function mapAction(action) {
   return {
     ...action,
-    description: `${action.description}: ${action.code}`
+    description: landActionWithCode(action.description, action.code)
   }
 }
 

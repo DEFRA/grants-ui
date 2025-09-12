@@ -2,6 +2,7 @@ import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/Q
 import { formatCurrency } from '~/src/config/nunjucks/filters/filters.js'
 import { sbiStore } from '~/src/server/sbi/state.js'
 import { actionGroups, calculateGrantPayment, stringifyParcel } from '../services/land-grants.service.js'
+import { landActionWithCode } from '~/src/server/land-grants/utils/land-action-with-code.js'
 
 const createLinks = (data, foundGroup) => {
   const parcelParam = stringifyParcel({
@@ -100,7 +101,7 @@ export default class LandActionsCheckPageController extends QuestionPageControll
       items: [
         [
           {
-            text: `One-off payment per agreement per year for ${data.description}`
+            text: `One-off payment per agreement per year for ${landActionWithCode(data.description, data.code)}`
           },
           {
             text: this.getPrice(data.annualPaymentPence)
@@ -120,7 +121,7 @@ export default class LandActionsCheckPageController extends QuestionPageControll
     const linksCell = createLinks(data, foundGroup)
 
     return [
-      { text: `${data.description}: ${data.code}` },
+      { text: landActionWithCode(data.description, data.code) },
       { text: data.quantity },
       { text: this.getPrice(data.annualPaymentPence) },
       linksCell

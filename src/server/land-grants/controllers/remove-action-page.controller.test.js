@@ -12,12 +12,12 @@ describe('RemoveActionPageController', () => {
     'SD6743-8083': {
       actionsObj: {
         CMOR1: {
-          description: 'CMOR1: Assess moorland and produce a written record',
+          description: 'Assess moorland and produce a written record: CMOR1',
           value: '4.53',
           unit: 'ha'
         },
         UPL1: {
-          description: 'UPL1: Moderate livestock grazing on moorland',
+          description: 'Moderate livestock grazing on moorland: UPL1',
           value: '2.5',
           unit: 'ha'
         }
@@ -26,7 +26,7 @@ describe('RemoveActionPageController', () => {
     'SD6944-0085': {
       actionsObj: {
         CMOR1: {
-          description: 'CMOR1: Assess moorland and produce a written record',
+          description: 'Assess moorland and produce a written record: CMOR1',
           value: '1.0',
           unit: 'ha'
         }
@@ -110,7 +110,7 @@ describe('RemoveActionPageController', () => {
       const result = controller.findActionInfo(mockLandParcels, 'SD6743-8083', 'CMOR1')
 
       expect(result).toEqual({
-        description: 'CMOR1: Assess moorland and produce a written record',
+        description: 'Assess moorland and produce a written record: CMOR1',
         value: '4.53',
         unit: 'ha'
       })
@@ -151,7 +151,7 @@ describe('RemoveActionPageController', () => {
         'SD6944-0085': {
           actionsObj: {
             CMOR1: {
-              description: 'CMOR1: Assess moorland and produce a written record',
+              description: 'Assess moorland and produce a written record: CMOR1',
               value: '1.0',
               unit: 'ha'
             }
@@ -193,7 +193,7 @@ describe('RemoveActionPageController', () => {
 
       expect(result.landParcels['SD6743-8083'].actionsObj).toEqual({
         UPL1: {
-          description: 'UPL1: Moderate livestock grazing on moorland',
+          description: 'Moderate livestock grazing on moorland: UPL1',
           value: '2.5',
           unit: 'ha'
         }
@@ -206,7 +206,7 @@ describe('RemoveActionPageController', () => {
           'SD6944-0085': {
             actionsObj: {
               CMOR1: {
-                description: 'CMOR1: Assess moorland and produce a written record',
+                description: 'Assess moorland and produce a written record: CMOR1',
                 value: '1.0',
                 unit: 'ha'
               }
@@ -258,7 +258,7 @@ describe('RemoveActionPageController', () => {
         landParcels: {
           'SD6743-8083': {
             actionsObj: {
-              UPL1: { description: 'UPL1: Moderate livestock grazing on moorland' }
+              UPL1: { description: 'Moderate livestock grazing on moorland' }
             }
           }
         }
@@ -292,7 +292,7 @@ describe('RemoveActionPageController', () => {
 
   describe('validatePostPayload', () => {
     test('should return error with action description when remove is undefined and actionDescription exists', () => {
-      controller.actionDescription = 'CMOR1: Assess moorland and produce a written record'
+      controller.actionDescription = 'Assess moorland and produce a written record: CMOR1'
       controller.parcel = 'SD6743-8083'
       const payload = {}
 
@@ -300,7 +300,7 @@ describe('RemoveActionPageController', () => {
 
       expect(result).toEqual({
         errorMessage:
-          'Select yes to remove [CMOR1: Assess moorland and produce a written record] from land parcel [SD6743-8083]'
+          'Select yes to remove [Assess moorland and produce a written record: CMOR1] from land parcel [SD6743-8083]'
       })
     })
 
@@ -341,7 +341,7 @@ describe('RemoveActionPageController', () => {
     })
 
     test('should return error when remove is explicitly undefined', () => {
-      controller.actionDescription = 'CMOR1: Assess moorland and produce a written record'
+      controller.actionDescription = 'Assess moorland and produce a written record: CMOR1'
       controller.parcel = 'SD6743-8083'
       const payload = { remove: undefined }
 
@@ -349,7 +349,7 @@ describe('RemoveActionPageController', () => {
 
       expect(result).toEqual({
         errorMessage:
-          'Select yes to remove [CMOR1: Assess moorland and produce a written record] from land parcel [SD6743-8083]'
+          'Select yes to remove [Assess moorland and produce a written record: CMOR1] from land parcel [SD6743-8083]'
       })
     })
 
@@ -423,7 +423,7 @@ describe('RemoveActionPageController', () => {
         landParcels: {
           'SD6944-0085': {
             actionsObj: {
-              CMOR1: { description: 'CMOR1: Test action' }
+              CMOR1: { description: 'Test action' }
             }
           }
         }
@@ -550,11 +550,11 @@ describe('RemoveActionPageController', () => {
 
       expect(controller.action).toBe('CMOR1')
       expect(controller.parcel).toBe('SD6743-8083')
-      expect(controller.actionDescription).toBe('CMOR1: Assess moorland and produce a written record')
+      expect(controller.actionDescription).toBe('Assess moorland and produce a written record: CMOR1')
       expect(mockH.view).toHaveBeenCalledWith('remove-action', {
         pageTitle: 'Remove action',
         parcel: 'SD6743-8083',
-        actionDescription: 'CMOR1: Assess moorland and produce a written record'
+        actionDescription: 'Assess moorland and produce a written record: CMOR1'
       })
       expect(result).toBe('rendered view')
     })
@@ -626,7 +626,7 @@ describe('RemoveActionPageController', () => {
     beforeEach(() => {
       controller.action = 'CMOR1'
       controller.parcel = 'SD6743-8083'
-      controller.actionDescription = 'CMOR1: Assess moorland and produce a written record'
+      controller.actionDescription = 'Assess moorland and produce a written record: CMOR1'
     })
 
     test('should show validation error when remove not provided and actionDescription exists', async () => {
@@ -638,9 +638,9 @@ describe('RemoveActionPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith('remove-action', {
         pageTitle: 'Remove action',
         parcel: 'SD6743-8083',
-        actionDescription: 'CMOR1: Assess moorland and produce a written record',
+        actionDescription: 'Assess moorland and produce a written record: CMOR1',
         errorMessage:
-          'Select yes to remove [CMOR1: Assess moorland and produce a written record] from land parcel [SD6743-8083]'
+          'Select yes to remove [Assess moorland and produce a written record: CMOR1] from land parcel [SD6743-8083]'
       })
       expect(controller.setState).not.toHaveBeenCalled()
       expect(result).toBe('rendered view')
@@ -656,7 +656,6 @@ describe('RemoveActionPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith('remove-action', {
         pageTitle: 'Remove action',
         parcel: 'SD6743-8083',
-        actionDescription: undefined,
         errorMessage: 'Select yes to remove land parcel [SD6743-8083] from this application'
       })
       expect(controller.setState).not.toHaveBeenCalled()
@@ -754,7 +753,7 @@ describe('RemoveActionPageController', () => {
         'remove-action',
         expect.objectContaining({
           errorMessage:
-            'Select yes to remove [CMOR1: Assess moorland and produce a written record] from land parcel [SD6743-8083]'
+            'Select yes to remove [Assess moorland and produce a written record: CMOR1] from land parcel [SD6743-8083]'
         })
       )
       expect(result).toBe('rendered view')
@@ -770,7 +769,7 @@ describe('RemoveActionPageController', () => {
         'remove-action',
         expect.objectContaining({
           errorMessage:
-            'Select yes to remove [CMOR1: Assess moorland and produce a written record] from land parcel [SD6743-8083]'
+            'Select yes to remove [Assess moorland and produce a written record: CMOR1] from land parcel [SD6743-8083]'
         })
       )
       expect(result).toBe('rendered view')

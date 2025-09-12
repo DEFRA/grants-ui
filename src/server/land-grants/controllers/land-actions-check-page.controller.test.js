@@ -28,7 +28,8 @@ describe('LandActionsCheckPageController', () => {
       annualTotalPence: 32006,
       parcelItems: {
         1: {
-          description: 'CMOR1: Assess moorland and produce a written record',
+          code: 'CMOR1',
+          description: 'Assess moorland and produce a written record: CMOR1',
           quantity: 4.53,
           annualPaymentPence: 4806,
           sheetId: 'SD6743',
@@ -37,6 +38,7 @@ describe('LandActionsCheckPageController', () => {
       },
       agreementLevelItems: {
         1: {
+          code: 'MAN1',
           description: 'Management payment',
           annualPaymentPence: 27200
         }
@@ -263,9 +265,30 @@ describe('LandActionsCheckPageController', () => {
     test('should group parcel items by parcel ID', () => {
       const paymentData = {
         parcelItems: {
-          1: { description: 'CMOR1', quantity: 5, annualPaymentPence: 1000, sheetId: 'SD01', parcelId: '001' },
-          2: { description: 'UPL1', quantity: 3, annualPaymentPence: 500, sheetId: 'SD01', parcelId: '001' },
-          3: { description: 'UPL2', quantity: 2, annualPaymentPence: 200, sheetId: 'SD02', parcelId: '002' }
+          1: {
+            code: 'CMOR1',
+            description: 'Land Action 1',
+            quantity: 5,
+            annualPaymentPence: 1000,
+            sheetId: 'SD01',
+            parcelId: '001'
+          },
+          2: {
+            code: 'UPL1',
+            description: 'Land Action 2',
+            quantity: 3,
+            annualPaymentPence: 500,
+            sheetId: 'SD01',
+            parcelId: '001'
+          },
+          3: {
+            code: 'UPL2',
+            description: 'Land Action 3',
+            quantity: 2,
+            annualPaymentPence: 200,
+            sheetId: 'SD02',
+            parcelId: '002'
+          }
         }
       }
 
@@ -383,13 +406,13 @@ describe('LandActionsCheckPageController', () => {
     test('should format additional yearly payments', () => {
       const paymentData = {
         agreementLevelItems: {
-          1: { description: 'Management fee', annualPaymentPence: 5000 }
+          1: { description: 'Management fee', annualPaymentPence: 5000, code: 'MAN1' }
         }
       }
 
       const result = controller.getAdditionalYearlyPayments(paymentData)
 
-      expect(result[0].items[0][0].text).toBe('One-off payment per agreement per year for Management fee')
+      expect(result[0].items[0][0].text).toBe('One-off payment per agreement per year for Management fee: MAN1')
       expect(result[0].items[0][1].text).toBe('£50.00')
     })
   })
@@ -511,7 +534,7 @@ describe('LandActionsCheckPageController', () => {
         parcelItems: {
           1: {
             code: 'UPL1',
-            description: 'UPL1: Action description',
+            description: 'Action description',
             quantity: 5,
             annualPaymentPence: 1000,
             sheetId: 'SD01',
@@ -556,7 +579,7 @@ describe('LandActionsCheckPageController', () => {
         parcelItems: {
           1: {
             code: 'CMOR1',
-            description: 'CMOR1: Assess moorland',
+            description: 'Assess moorland',
             quantity: 2,
             annualPaymentPence: 600,
             sheetId: 'SD03',
@@ -564,7 +587,7 @@ describe('LandActionsCheckPageController', () => {
           },
           2: {
             code: 'UPL2',
-            description: 'UPL2: Upland action',
+            description: 'Upland action',
             quantity: 4,
             annualPaymentPence: 1200,
             sheetId: 'SD03',
