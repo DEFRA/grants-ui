@@ -55,7 +55,6 @@ describe('LandActionsCheckPageController', () => {
     }
     controller.setState = vi.fn().mockResolvedValue(true)
     controller.proceed = vi.fn().mockReturnValue('redirected')
-    controller.getNextPath = vi.fn().mockReturnValue('/next-path')
     controller.getSelectedActionRows = vi
       .fn()
       .mockReturnValue([[{ text: 'sheet1-parcel1' }, { text: 'Test Action' }, { text: '10 hectares' }]])
@@ -240,7 +239,7 @@ describe('LandActionsCheckPageController', () => {
       const handler = controller.makePostRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
-      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-path')
+      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/submit-your-application')
     })
 
     test('should proceed normally when no validation required', async () => {
@@ -249,7 +248,7 @@ describe('LandActionsCheckPageController', () => {
       const handler = controller.makePostRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
-      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-path')
+      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/submit-your-application')
       expect(mockH.view).not.toHaveBeenCalled()
     })
   })
@@ -615,7 +614,7 @@ describe('LandActionsCheckPageController', () => {
       const handler = controller.makePostRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
-      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-path')
+      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/submit-your-application')
     })
 
     test('should handle completely empty payload', async () => {
@@ -624,7 +623,7 @@ describe('LandActionsCheckPageController', () => {
       const handler = controller.makePostRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
-      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-path')
+      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/submit-your-application')
     })
   })
 })
