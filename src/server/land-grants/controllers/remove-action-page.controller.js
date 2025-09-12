@@ -94,7 +94,9 @@ export default class RemoveActionPageController extends QuestionPageController {
 
     if (remove === undefined) {
       return {
-        errorMessage: 'Please select if you want to remove the action'
+        errorMessage: this.actionDescription
+          ? `Select yes to remove [${this.actionDescription}] from land parcel [${this.parcel}]`
+          : `Select yes to remove land parcel [${this.parcel}] from this application`
       }
     }
 

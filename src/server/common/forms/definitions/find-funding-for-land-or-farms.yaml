@@ -36,9 +36,13 @@ pages:
   - title: Select actions for land parcel
     controller: SelectActionsForLandParcelPageController
     path: /select-actions-for-land-parcel
-    next: []
     id: 7b0a5e2f-4c31-4a45-95ee-abc000da0473
-  - title: Remove
+  - title: Review the actions you have selected
+    path: /check-selected-land-actions
+    controller: LandActionsCheckPageController
+    next: []
+    id: 245dc425-8efa-45b7-92df-178d1b0fe4ce
+  - title: Remove parcel
     path: /remove-parcel
     controller: RemoveActionPageController
     next: []
@@ -48,11 +52,6 @@ pages:
     controller: RemoveActionPageController
     next: []
     id: b5259479-a2b2-46f2-ae60-70a89a2530cc
-  - title: Review the actions you have selected
-    path: /check-selected-land-actions
-    controller: LandActionsCheckPageController
-    next: []
-    id: 245dc425-8efa-45b7-92df-178d1b0fe4ce
   - title: Submit your application
     path: /submit-your-application
     controller: SubmissionPageController

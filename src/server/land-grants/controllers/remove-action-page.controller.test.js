@@ -291,23 +291,65 @@ describe('RemoveActionPageController', () => {
   })
 
   describe('validatePostPayload', () => {
-    test('should return error when remove is undefined', () => {
+    test('should return error with action description when remove is undefined and actionDescription exists', () => {
+      controller.actionDescription = 'CMOR1: Assess moorland and produce a written record'
+      controller.parcel = 'SD6743-8083'
       const payload = {}
 
       const result = controller.validatePostPayload(payload)
 
       expect(result).toEqual({
-        errorMessage: 'Please select if you want to remove the action'
+        errorMessage:
+          'Select yes to remove [CMOR1: Assess moorland and produce a written record] from land parcel [SD6743-8083]'
+      })
+    })
+
+    test('should return error for parcel removal when remove is undefined and actionDescription is null', () => {
+      controller.actionDescription = null
+      controller.parcel = 'SD6743-8083'
+      const payload = {}
+
+      const result = controller.validatePostPayload(payload)
+
+      expect(result).toEqual({
+        errorMessage: 'Select yes to remove land parcel [SD6743-8083] from this application'
+      })
+    })
+
+    test('should return error for parcel removal when remove is undefined and actionDescription is undefined', () => {
+      controller.actionDescription = undefined
+      controller.parcel = 'SD6743-8083'
+      const payload = {}
+
+      const result = controller.validatePostPayload(payload)
+
+      expect(result).toEqual({
+        errorMessage: 'Select yes to remove land parcel [SD6743-8083] from this application'
+      })
+    })
+
+    test('should return error for parcel removal when remove is undefined and actionDescription is empty string', () => {
+      controller.actionDescription = ''
+      controller.parcel = 'SD6743-8083'
+      const payload = {}
+
+      const result = controller.validatePostPayload(payload)
+
+      expect(result).toEqual({
+        errorMessage: 'Select yes to remove land parcel [SD6743-8083] from this application'
       })
     })
 
     test('should return error when remove is explicitly undefined', () => {
+      controller.actionDescription = 'CMOR1: Assess moorland and produce a written record'
+      controller.parcel = 'SD6743-8083'
       const payload = { remove: undefined }
 
       const result = controller.validatePostPayload(payload)
 
       expect(result).toEqual({
-        errorMessage: 'Please select if you want to remove the action'
+        errorMessage:
+          'Select yes to remove [CMOR1: Assess moorland and produce a written record] from land parcel [SD6743-8083]'
       })
     })
 
@@ -551,7 +593,6 @@ describe('RemoveActionPageController', () => {
       const handler = controller.makeGetRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
 
-      // The controller should still render the view even if action is not found
       expect(controller.action).toBe('CMOR1')
       expect(controller.parcel).toBe('nonexistent-parcel')
       expect(controller.actionDescription).toBeUndefined()
@@ -583,13 +624,12 @@ describe('RemoveActionPageController', () => {
 
   describe('makePostRouteHandler', () => {
     beforeEach(() => {
-      // Set up controller state as if GET request was processed
       controller.action = 'CMOR1'
       controller.parcel = 'SD6743-8083'
       controller.actionDescription = 'CMOR1: Assess moorland and produce a written record'
     })
 
-    test('should show validation error when remove not provided', async () => {
+    test('should show validation error when remove not provided and actionDescription exists', async () => {
       mockRequest.payload = {}
 
       const handler = controller.makePostRouteHandler()
@@ -599,7 +639,25 @@ describe('RemoveActionPageController', () => {
         pageTitle: 'Remove action',
         parcel: 'SD6743-8083',
         actionDescription: 'CMOR1: Assess moorland and produce a written record',
-        errorMessage: 'Please select if you want to remove the action'
+        errorMessage:
+          'Select yes to remove [CMOR1: Assess moorland and produce a written record] from land parcel [SD6743-8083]'
+      })
+      expect(controller.setState).not.toHaveBeenCalled()
+      expect(result).toBe('rendered view')
+    })
+
+    test('should show validation error for parcel removal when remove not provided and no actionDescription', async () => {
+      controller.actionDescription = undefined
+      mockRequest.payload = {}
+
+      const handler = controller.makePostRouteHandler()
+      const result = await handler(mockRequest, mockContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith('remove-action', {
+        pageTitle: 'Remove action',
+        parcel: 'SD6743-8083',
+        actionDescription: undefined,
+        errorMessage: 'Select yes to remove land parcel [SD6743-8083] from this application'
       })
       expect(controller.setState).not.toHaveBeenCalled()
       expect(result).toBe('rendered view')
@@ -652,7 +710,6 @@ describe('RemoveActionPageController', () => {
     })
 
     test('should remove action and redirect to select actions when no actions remain', async () => {
-      // Set up scenario where removing the last action
       controller.parcel = 'SD6944-0085'
       controller.action = 'CMOR1'
       mockRequest.payload = { remove: 'true' }
@@ -696,7 +753,8 @@ describe('RemoveActionPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'remove-action',
         expect.objectContaining({
-          errorMessage: 'Please select if you want to remove the action'
+          errorMessage:
+            'Select yes to remove [CMOR1: Assess moorland and produce a written record] from land parcel [SD6743-8083]'
         })
       )
       expect(result).toBe('rendered view')
@@ -711,7 +769,8 @@ describe('RemoveActionPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'remove-action',
         expect.objectContaining({
-          errorMessage: 'Please select if you want to remove the action'
+          errorMessage:
+            'Select yes to remove [CMOR1: Assess moorland and produce a written record] from land parcel [SD6743-8083]'
         })
       )
       expect(result).toBe('rendered view')

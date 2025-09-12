@@ -202,7 +202,7 @@ export default class LandActionsCheckPageController extends QuestionPageControll
    * @returns {string} - Next path
    */
   getNextPathFromSelection(addMoreActions, context) {
-    return addMoreActions === 'true' ? '/select-land-parcel' : this.getNextPath(context)
+    return addMoreActions === 'true' ? '/select-land-parcel' : '/submit-your-application'
   }
 
   /**

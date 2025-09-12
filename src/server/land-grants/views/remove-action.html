@@ -2,11 +2,24 @@
 
 {% from "govuk/components/radios/macro.njk" import govukRadios %}
 {% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
 {% from "support-details/macro.njk" import defraSupportDetails %}
 
 {% block content %}
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds-from-desktop">
+      {% if errorMessage %}
+          {{ govukErrorSummary({
+          titleText: "There is a problem",
+          errorList: [
+            {
+              text: errorMessage,
+              href: '#remove'
+            }
+          ]
+        }) }}
+      {% endif %}
+     
       {% if actionDescription %}
         <h1 class="govuk-heading-l">
           Remove action from land parcel
