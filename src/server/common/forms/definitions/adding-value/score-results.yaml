@@ -1,5 +1,7 @@
 engine: V2
 name: Score results
+metadata:
+  id: 240dd256-48e5-476a-aec5-492528898405
 pages:
   - title: Score results
     path: /score-results

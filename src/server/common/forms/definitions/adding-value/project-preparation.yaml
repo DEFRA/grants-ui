@@ -1,6 +1,8 @@
 engine: V2
 schema: 2
 name: Project preparation
+metadata:
+  id: 30757a0e-2648-458b-9ade-030680662033
 pages:
   - title: Does the project have planning permission?
     path: /planning-permission

@@ -1,8 +1,8 @@
-import { readdirSync, readFileSync, existsSync } from 'fs'
+import { existsSync, readdirSync, readFileSync } from 'fs'
 import { join } from 'path'
 import { loadTasklistConfig } from '../tasklist/services/config-loader.js'
-import { allForms } from '../common/forms/services/forms-config.js'
 import { parse } from 'yaml'
+import { getFormsCache } from '../common/forms/services/form.js'
 
 const tasklistFirstPages = new Map()
 const tasklistIds = new Set()
@@ -67,7 +67,8 @@ export async function loadAllTasklistConfigs() {
 
 export function extractFirstPageForSubsection(subsection) {
   try {
-    const formConfig = allForms.find((f) => f.slug === subsection.href)
+    const forms = getFormsCache()
+    const formConfig = forms.find((f) => f.slug === subsection.href)
 
     if (!formConfig) {
       return null
