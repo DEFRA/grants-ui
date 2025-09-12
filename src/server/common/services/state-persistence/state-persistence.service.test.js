@@ -30,19 +30,19 @@ describe('StatePersistenceService', () => {
   })
 
   test('Key generates the correct key', () => {
-    getCacheKey.mockReturnValue({ userId: 'user-1', businessId: 'biz-1', grantId: 'grant-a' })
+    getCacheKey.mockReturnValue({ userId: 'user-1', organisationId: 'biz-1', grantId: 'grant-a' })
     const key = service.Key(fakeRequest)
     expect(key).toBe('user-1:biz-1:grant-a')
   })
 
   test('ConfirmationKey appends the confirmation identifier', () => {
-    getCacheKey.mockReturnValue({ userId: 'user-1', businessId: 'biz-1', grantId: 'grant-a' })
+    getCacheKey.mockReturnValue({ userId: 'user-1', organisationId: 'biz-1', grantId: 'grant-a' })
     const key = service.ConfirmationKey(fakeRequest)
     expect(key).toBe(`user-1:biz-1:grant-a:confirmation`) // assuming ADDITIONAL_IDENTIFIER.Confirmation === 'confirmation'
   })
 
   test('getState calls fetchSavedStateFromApi and returns result', async () => {
-    getCacheKey.mockReturnValue({ userId: 'user-1', businessId: 'biz-1', grantId: 'grant-a' })
+    getCacheKey.mockReturnValue({ userId: 'user-1', organisationId: 'biz-1', grantId: 'grant-a' })
     fetchModule.fetchSavedStateFromApi.mockResolvedValue({ foo: 'bar' })
 
     const result = await service.getState(fakeRequest)
@@ -51,14 +51,14 @@ describe('StatePersistenceService', () => {
   })
 
   test('setState calls persistStateToApi and returns state', async () => {
-    getCacheKey.mockReturnValue({ userId: 'user-1', businessId: 'biz-1', grantId: 'grant-a' })
+    getCacheKey.mockReturnValue({ userId: 'user-1', organisationId: 'biz-1', grantId: 'grant-a' })
     const state = { foo: 'bar' }
     await service.setState(fakeRequest, state)
     expect(persistModule.persistStateToApi).toHaveBeenCalledWith(state, 'user-1:biz-1:grant-a')
   })
 
   test('getConfirmationState calls fetchSavedStateFromApi with confirmation key', async () => {
-    getCacheKey.mockReturnValue({ userId: 'user-1', businessId: 'biz-1', grantId: 'grant-a' })
+    getCacheKey.mockReturnValue({ userId: 'user-1', organisationId: 'biz-1', grantId: 'grant-a' })
     fetchModule.fetchSavedStateFromApi.mockResolvedValue({ confirmed: true })
     const result = await service.getConfirmationState(fakeRequest)
     expect(result).toEqual({ confirmed: true })
@@ -66,14 +66,14 @@ describe('StatePersistenceService', () => {
   })
 
   test('setConfirmationState calls persistStateToApi with confirmation key', async () => {
-    getCacheKey.mockReturnValue({ userId: 'user-1', businessId: 'biz-1', grantId: 'grant-a' })
+    getCacheKey.mockReturnValue({ userId: 'user-1', organisationId: 'biz-1', grantId: 'grant-a' })
     const state = { confirmed: true }
     await service.setConfirmationState(fakeRequest, state)
     expect(persistModule.persistStateToApi).toHaveBeenCalledWith(state, 'user-1:biz-1:grant-a:confirmation')
   })
 
   test('clearState logs info and does nothing', async () => {
-    getCacheKey.mockReturnValue({ userId: 'user-1', businessId: 'biz-1', grantId: 'grant-a' })
+    getCacheKey.mockReturnValue({ userId: 'user-1', organisationId: 'biz-1', grantId: 'grant-a' })
     await service.clearState(fakeRequest)
     expect(fakeLogger).toHaveBeenCalledWith(expect.stringContaining('clearState called for user-1:biz-1:grant-a'))
   })

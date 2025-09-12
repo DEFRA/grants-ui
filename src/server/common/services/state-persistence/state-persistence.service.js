@@ -83,8 +83,8 @@ export class StatePersistenceService extends CacheService {
    * @returns string
    */
   Key(request) {
-    const { userId, businessId, grantId } = getCacheKey(request)
-    return `${userId}:${businessId}:${grantId}`
+    const { userId, organisationId, grantId } = getCacheKey(request)
+    return `${userId}:${organisationId}:${grantId}`
   }
 
   /**
