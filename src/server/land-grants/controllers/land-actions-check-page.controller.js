@@ -120,7 +120,7 @@ export default class LandActionsCheckPageController extends QuestionPageControll
     const linksCell = createLinks(data, foundGroup)
 
     return [
-      { text: data.description },
+      { text: `${data.description}: ${data.code}` },
       { text: data.quantity },
       { text: this.getPrice(data.annualPaymentPence) },
       linksCell

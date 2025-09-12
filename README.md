@@ -260,6 +260,14 @@ These are required only if DEFRA ID authentication is enabled, and you are using
 | `DEFRA_ID_ENABLED` | Enables defraId auth, and hides the SBI selector UI. |
 | `FEEDBACK_LINK`    | URL to feedback (e.g., GitHub issue, form).          |
 
+### Grant Form Definitions
+
+Grant form definitions are stored in the `src/server/common/forms/definitions` directory as YAML files and read at startup.
+
+Forms will not be enabled in production unless the YAML file contains the `enabledInProd: true` property.
+
+Any changes to these files will require a restart of the application.
+
 ### GAS Integration
 
 The Grants Application Service (GAS) is used to store grant definitions that the app submits data against.
@@ -344,30 +352,6 @@ Example response:
     "code": "adding-value-v4"
 }
 ```
-
-#### Using the Grant Definition
-
-Once the grant is created, its code (for example, adding-value-v4) must be added to the relevant configuration file to link it with the frontend flow.
-
-The grant code should be added to:
-
-```
-src/server/common/forms/definitions/adding-value.json
-```
-
-under the following section:
-
-```
-{
-  "metadata": {
-    "gas": {
-      "grantCode": "adding-value-v4"
-    }
-  }
-}
-```
-
-This ensures that when the app submits application data, it targets the correct grant definition in GAS.
 
 #### Submission Schema Validators
 

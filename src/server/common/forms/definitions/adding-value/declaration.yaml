@@ -1,5 +1,7 @@
 engine: V2
 name: Confirm and send
+metadata:
+  id: 7ccfcdda-6e8f-4963-be8e-2b16f12d7ebf
 pages:
   - title: Confirm and send
     path: /declaration

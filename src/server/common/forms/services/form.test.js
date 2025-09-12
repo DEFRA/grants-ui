@@ -1,7 +1,8 @@
 import { vi } from 'vitest'
 import { config } from '~/src/config/config.js'
-import { configureFormDefinition, formsService, addAllForms } from './form.js'
+import { addAllForms, configureFormDefinition, formsService, getFormsCache } from './form.js'
 import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
+import fs from 'node:fs/promises'
 
 const mockUrl = { pathname: '/mock/path' }
 global.URL = vi.fn(() => mockUrl)
@@ -39,7 +40,8 @@ vi.mock('~/src/server/common/helpers/logging/logger.js', async () => {
   const { mockLoggerFactoryWithCustomMethods } = await import('~/src/__mocks__')
   const { vi: vitest } = await import('vitest')
   return mockLoggerFactoryWithCustomMethods({
-    warn: vitest.fn()
+    warn: vitest.fn(),
+    error: vitest.fn()
   })
 })
 
@@ -53,12 +55,15 @@ vi.mock('../config.js', () => ({
 
 describe('form', () => {
   let mockWarn
+  let mockError
 
   beforeEach(() => {
     vi.clearAllMocks()
     config.get.mockImplementation((key) => defaultConfigMock[key])
-    // Get the warn function from the mocked logger
-    mockWarn = vi.mocked(createLogger)().warn
+    // Get the mocked logger functions
+    const logger = vi.mocked(createLogger)()
+    mockWarn = logger.warn
+    mockError = logger.error
   })
 
   describe('formsService', () => {
@@ -199,73 +204,6 @@ describe('form', () => {
   })
 
   describe('addAllForms', () => {
-    test('handles duplicate forms and logs warning', async () => {
-      const mockLoader = {
-        addForm: vi.fn().mockResolvedValue(undefined)
-      }
-
-      const testForms = [
-        {
-          path: 'path/to/form1.yaml',
-          id: 'form-id-1',
-          slug: 'form-slug-1',
-          title: 'Form 1'
-        },
-        {
-          path: 'path/to/form2.yaml',
-          id: 'form-id-2',
-          slug: 'form-slug-2',
-          title: 'Form 2'
-        },
-        {
-          path: 'path/to/form1-duplicate.yaml',
-          id: 'form-id-1',
-          slug: 'form-slug-1',
-          title: 'Form 1 Duplicate'
-        },
-        {
-          path: 'path/to/form3.yaml',
-          id: 'form-id-3',
-          slug: 'form-slug-3',
-          title: 'Form 3'
-        }
-      ]
-
-      const result = await addAllForms(mockLoader, testForms)
-
-      expect(mockWarn).toHaveBeenCalledWith('Skipping duplicate form: form-slug-1 with id form-id-1')
-
-      expect(result).toBe(3)
-      expect(mockLoader.addForm).toHaveBeenCalledTimes(3)
-
-      expect(mockLoader.addForm).not.toHaveBeenCalledWith('path/to/form1-duplicate.yaml', expect.any(Object))
-
-      expect(mockLoader.addForm).toHaveBeenCalledWith(
-        'path/to/form1.yaml',
-        expect.objectContaining({
-          id: 'form-id-1',
-          slug: 'form-slug-1',
-          title: 'Form 1'
-        })
-      )
-      expect(mockLoader.addForm).toHaveBeenCalledWith(
-        'path/to/form2.yaml',
-        expect.objectContaining({
-          id: 'form-id-2',
-          slug: 'form-slug-2',
-          title: 'Form 2'
-        })
-      )
-      expect(mockLoader.addForm).toHaveBeenCalledWith(
-        'path/to/form3.yaml',
-        expect.objectContaining({
-          id: 'form-id-3',
-          slug: 'form-slug-3',
-          title: 'Form 3'
-        })
-      )
-    })
-
     test('handles empty forms array', async () => {
       const mockLoader = {
         addForm: vi.fn()
@@ -287,13 +225,11 @@ describe('form', () => {
         {
           path: 'path/to/form1.yaml',
           id: 'form-id-1',
-          slug: 'form-slug-1',
           title: 'Form 1'
         },
         {
           path: 'path/to/form2.yaml',
           id: 'form-id-2',
-          slug: 'form-slug-2',
           title: 'Form 2'
         }
       ]
@@ -303,6 +239,66 @@ describe('form', () => {
       expect(result).toBe(2)
       expect(mockLoader.addForm).toHaveBeenCalledTimes(2)
       expect(mockWarn).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('discoverFormsFromYaml', () => {
+    test('ignores non-YAML files', async () => {
+      const readdirSpy = vi
+        .spyOn(fs, 'readdir')
+        .mockResolvedValueOnce([{ name: 'notes.txt', isDirectory: () => false, isFile: () => true }])
+
+      await expect(formsService()).resolves.toBeDefined()
+
+      // Assert that no errors were logged and formsCache is empty
+      expect(mockError).not.toHaveBeenCalled()
+      expect(getFormsCache()).toEqual([])
+
+      readdirSpy.mockRestore()
+    })
+
+    test('logs error when reading forms directory fails', async () => {
+      const readdirSpy = vi.spyOn(fs, 'readdir').mockRejectedValueOnce(new Error('read error'))
+
+      await expect(formsService()).resolves.toBeDefined()
+
+      expect(mockError).toHaveBeenCalled()
+      expect(mockError.mock.calls[0][0]).toContain('Failed to read forms directory')
+
+      readdirSpy.mockRestore()
+    })
+
+    test('skips files that contain a tasklist', async () => {
+      const readdirSpy = vi
+        .spyOn(fs, 'readdir')
+        .mockResolvedValueOnce([{ name: 'tasklist.yaml', isDirectory: () => false, isFile: () => true }])
+      const readFileSpy = vi.spyOn(fs, 'readFile').mockResolvedValueOnce(`
+tasklist:
+  id: example
+  title: Example title
+`)
+
+      await expect(formsService()).resolves.toBeDefined()
+
+      expect(mockError).not.toHaveBeenCalled()
+
+      readFileSpy.mockRestore()
+      readdirSpy.mockRestore()
+    })
+
+    test('logs error when YAML parsing fails', async () => {
+      const readdirSpy = vi
+        .spyOn(fs, 'readdir')
+        .mockResolvedValueOnce([{ name: 'bad.yaml', isDirectory: () => false, isFile: () => true }])
+      const readFileSpy = vi.spyOn(fs, 'readFile').mockRejectedValueOnce(new Error('YAML read error'))
+
+      await expect(formsService()).resolves.toBeDefined()
+
+      expect(mockError).toHaveBeenCalled()
+      expect(mockError.mock.calls[0][0]).toContain('Failed to parse YAML form')
+
+      readFileSpy.mockRestore()
+      readdirSpy.mockRestore()
     })
   })
 })

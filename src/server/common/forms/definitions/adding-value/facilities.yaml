@@ -1,6 +1,8 @@
 engine: V2
 schema: 2
 name: Facilities
+metadata:
+  id: 525a69d4-1064-4ae9-8ad4-07df0e7bbf64
 pages:
   - title: Do you want to build a new smaller abattoir?
     path: /smaller-abattoir

@@ -1,15 +1,15 @@
 import { vi } from 'vitest'
 import {
+  extractFirstPageForSubsection,
+  extractFirstPages,
+  getTasklistIdFromSession,
+  isFirstPage,
+  loadAllTasklistConfigs,
+  preserveSourceParameterInRedirect,
+  safeYarClear,
   safeYarGet,
   safeYarSet,
-  safeYarClear,
-  extractFirstPages,
-  tasklistBackButton,
-  extractFirstPageForSubsection,
-  loadAllTasklistConfigs,
-  getTasklistIdFromSession,
-  preserveSourceParameterInRedirect,
-  isFirstPage
+  tasklistBackButton
 } from './tasklist-back-button.js'
 
 const throwFileError = () => {
@@ -21,10 +21,6 @@ const mockFsModule = (options = {}) => ({
   existsSync: vi.fn().mockReturnValue(options.existsSync ?? false),
   readdirSync: vi.fn().mockReturnValue(options.files ?? []),
   readFileSync: options.readFileSync ?? vi.fn()
-})
-
-const mockFormsConfig = (forms = []) => ({
-  allForms: forms
 })
 
 const createTasklistYaml = (href = 'nonexistent-form') => `
@@ -88,8 +84,12 @@ const yarTestCases = [
   }
 ]
 
+const mockFormsConfig = (formsArray) => ({
+  getFormsCache: vi.fn().mockReturnValue(formsArray)
+})
+
 const mockFormsAndFs = (formsConfig, fsConfig) => {
-  vi.doMock('../common/forms/services/forms-config.js', () => formsConfig)
+  vi.doMock('../common/forms/services/form.js', () => formsConfig)
   if (fsConfig) {
     vi.doMock('fs', () => fsConfig)
   }
@@ -191,7 +191,7 @@ describe('Tasklist Back Button - Essential Tests', () => {
   describe('Direct unit tests for coverage', () => {
     it('should handle error in extractFirstPageForSubsection when readFileSync throws', () => {
       const formsConfig = mockFormsConfig([{ slug: 'test-form', path: '/invalid/path.yaml' }])
-      vi.doMock('../common/forms/services/forms-config.js', () => formsConfig)
+      vi.doMock('../common/forms/services/form.js', () => formsConfig)
 
       const mockReadFile = vi.fn().mockImplementation(() => {
         throw new Error('File read error')
@@ -209,7 +209,7 @@ describe('Tasklist Back Button - Essential Tests', () => {
 
     it('should return null when form config not found in extractFirstPageForSubsection', () => {
       const formsConfig = mockFormsConfig([])
-      vi.doMock('../common/forms/services/forms-config.js', () => formsConfig)
+      vi.doMock('../common/forms/services/form.js', () => formsConfig)
 
       const result = extractFirstPageForSubsection({ href: 'nonexistent-form' })
 
@@ -239,7 +239,7 @@ describe('Tasklist Back Button - Essential Tests', () => {
   - path: /terminal
     controller: TerminalPageController`
 
-      vi.doMock('../common/forms/services/forms-config.js', () => formsConfig)
+      vi.doMock('../common/forms/services/form.js', () => formsConfig)
       vi.doMock('fs', () =>
         mockFsModule({
           readFileSync: vi.fn().mockReturnValue(validFormYaml)
@@ -294,7 +294,7 @@ describe('Tasklist Back Button - Essential Tests', () => {
       const formsConfig = mockFormsConfig([{ slug: 'line81-form', path: 'line81-form.yaml' }])
 
       vi.doMock('fs', () => fsModule)
-      vi.doMock('../common/forms/services/forms-config.js', () => formsConfig)
+      vi.doMock('../common/forms/services/form.js', () => formsConfig)
 
       await tasklistBackButton.plugin.register(mockServer)
 
@@ -404,7 +404,7 @@ describe('Tasklist Back Button Plugin - Integration Tests', () => {
   afterEach(() => {
     vi.clearAllMocks()
     vi.unmock('fs')
-    vi.unmock('../common/forms/services/forms-config.js')
+    vi.unmock('../common/forms/services/form.js')
   })
 
   describe('Plugin Registration Edge Cases', () => {
@@ -430,7 +430,7 @@ describe('Tasklist Back Button Plugin - Integration Tests', () => {
       const formsConfig = mockFormsConfig([{ slug: 'error-form', path: 'error-form.yaml' }])
 
       vi.doMock('fs', () => fsModule)
-      vi.doMock('../common/forms/services/forms-config.js', () => formsConfig)
+      vi.doMock('../common/forms/services/form.js', () => formsConfig)
 
       await tasklistBackButton.plugin.register(server)
 
@@ -475,7 +475,7 @@ describe('Tasklist Back Button Plugin - Integration Tests', () => {
       ])
 
       vi.doMock('fs', () => fsModule)
-      vi.doMock('../common/forms/services/forms-config.js', () => formsConfig)
+      vi.doMock('../common/forms/services/form.js', () => formsConfig)
 
       await tasklistBackButton.plugin.register(server)
 
@@ -488,7 +488,7 @@ describe('Tasklist Back Button Plugin - Integration Tests', () => {
     let responseHandler
 
     beforeEach(async () => {
-      // Use the actual business-status form path from forms-config.js
+      // Use the actual business-status form path from getFormsCache (form.js)
       const businessFormYaml = `pages:
   - path: /nature-of-business
     components: []`

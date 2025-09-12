@@ -1,6 +1,8 @@
 engine: V2
 schema: 2
 name: Agent
+metadata:
+  id: 21dc9fc7-15da-419a-b7fd-baa2a7500a18
 pages:
   - title: Agent's details
     path: /agent-details
