@@ -35,6 +35,12 @@
 {% endblock %}
 
 {% block header %}
+<ul>
+    <li>Application Number: {{ context.referenceNumber }} </li>
+    <li>User OrganisationId: {{ auth.organisationId }} </li>
+    <li>State OrganisationId: {{ context.state.sbi }} </li>
+    <li>Selected LandParcel: {{ context.state.selectedLandParcel }} </li>
+  </ul>
   {{ govukHeader({
     homepageUrl: "https://www.gov.uk/",
     classes: "govuk-header--full-width-border",
@@ -95,13 +101,6 @@
     },
     rebrand: true
   }) }}
-
-  <ul>
-    <li>Application Number: {{ context.referenceNumber }} </li>
-    <li>User OrganisationId: {{ auth.organisationId }} </li>
-    <li>State OrganisationId: {{ context.state.sbi }} </li>
-    <li>Selected LandParcel: {{ context.state.selectedLandParcel }} </li>
-  </ul>
 {% endblock %}
 
 {% block bodyEnd %}
