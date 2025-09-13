@@ -485,6 +485,7 @@ A local environment with:
 - FCP Defra ID Stub
 - This service
 - Grants UI Backend
+- MockServer, providing a stub for [fg-gas-backend](http://github.com/DEFRA/fg-gas-backend)
 
 ```bash
 docker compose up --build -d
