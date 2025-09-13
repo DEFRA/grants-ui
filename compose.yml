@@ -28,6 +28,19 @@ services:
       timeout: 5s
       retries: 3
 
+  mockserver:
+    image: mockserver/mockserver:latest
+    networks:
+      - cdp-tenant
+    environment:
+      MOCKSERVER_INITIALIZATION_JSON_PATH: /config/expectations.json
+    ports:
+      - '1080:1080'
+    volumes:
+      - ./mockserver/expectations.json:/config/expectations.json
+    command:
+      - -serverPort 1080 -logLevel INFO
+
   fcp-defra-id-stub:
     image: defradigital/fcp-defra-id-stub
     networks:
@@ -84,19 +97,20 @@ services:
       SESSION_CACHE_TTL: 14400000
       FEEDBACK_LINK: "mailto:defraforms@defra.gov.uk"
       CV_API_MOCK_ENABLED: ${CV_API_MOCK_ENABLED:-true}
-      DEFRA_ID_ENABLED: ${DEFRA_ID_ENABLED:-false}
-      DEFRA_ID_WELL_KNOWN_URL: ${DEFRA_ID_WELL_KNOWN_URL}
-      DEFRA_ID_CLIENT_ID: ${DEFRA_ID_CLIENT_ID}
-      DEFRA_ID_CLIENT_SECRET: ${DEFRA_ID_CLIENT_SECRET}
-      DEFRA_ID_SERVICE_ID: ${DEFRA_ID_SERVICE_ID}
-      DEFRA_ID_REDIRECT_URL: ${DEFRA_ID_REDIRECT_URL}
-      DEFRA_ID_SIGN_OUT_REDIRECT_URL: ${DEFRA_ID_SIGN_OUT_REDIRECT_URL}
+      DEFRA_ID_ENABLED: ${DEFRA_ID_ENABLED:-true}
+      DEFRA_ID_WELL_KNOWN_URL: ${DEFRA_ID_WELL_KNOWN_URL:-http://fcp-defra-id-stub:3007/idphub/b2c/b2c_1a_cui_cpdev_signupsigninsfi/.well-known/openid-configuration}
+      DEFRA_ID_CLIENT_ID: ${DEFRA_ID_CLIENT_ID:-client_id}
+      DEFRA_ID_CLIENT_SECRET: ${DEFRA_ID_CLIENT_SECRET:-client_secret}
+      DEFRA_ID_SERVICE_ID: ${DEFRA_ID_SERVICE_ID:-service_id}
+      DEFRA_ID_REDIRECT_URL: ${DEFRA_ID_REDIRECT_URL:-http://localhost:3000/auth/sign-in-oidc}
+      DEFRA_ID_SIGN_OUT_REDIRECT_URL: ${DEFRA_ID_SIGN_OUT_REDIRECT_URL:-http://localhost:3000/auth/sign-out-oidc}
       COOKIE_PASSWORD: ${COOKIE_PASSWORD}
-      GRANTS_UI_BACKEND_URL: ${GRANTS_UI_BACKEND_URL}
-      GRANTS_UI_BACKEND_AUTH_TOKEN: ${GRANTS_UI_BACKEND_AUTH_TOKEN}
-      GRANTS_UI_BACKEND_ENCRYPTION_KEY: ${GRANTS_UI_BACKEND_ENCRYPTION_KEY}
+      GRANTS_UI_BACKEND_URL: ${GRANTS_UI_BACKEND_URL:-http://grants-ui-backend:3001}
+      GRANTS_UI_BACKEND_AUTH_TOKEN: ${GRANTS_UI_BACKEND_AUTH_TOKEN:-auth_token}
+      GRANTS_UI_BACKEND_ENCRYPTION_KEY: ${GRANTS_UI_BACKEND_ENCRYPTION_KEY:-encryption_key}
       APP_BASE_URL: ${APP_BASE_URL:-http://localhost:3000}
       HOST: 0.0.0.0
+      GAS_API_URL: http://mockserver:1080
     volumes:
       - ./src:/home/node/src
       - /home/node/node_modules
@@ -121,8 +135,8 @@ services:
       PORT: 3001
       NODE_ENV: development
       MONGO_URI: mongodb://mongodb:27017/
-      GRANTS_UI_BACKEND_AUTH_TOKEN: test-token-test-token-test-token-test-token-test-t-64-chars-long
-      GRANTS_UI_BACKEND_ENCRYPTION_KEY: test-encryption-key-test-encryption-key-test-encry-64-chars-long
+      GRANTS_UI_BACKEND_AUTH_TOKEN: ${GRANTS_UI_BACKEND_AUTH_TOKEN:-auth_token}
+      GRANTS_UI_BACKEND_ENCRYPTION_KEY: ${GRANTS_UI_BACKEND_ENCRYPTION_KEY:-encryption_key}
     networks:
       - cdp-tenant
     restart: unless-stopped
