@@ -3,6 +3,7 @@ import { parseLandParcel } from '../services/land-grants.service.js'
 
 const checkSelectedLandActionsPath = '/check-selected-land-actions'
 const selectActionsForParcelPath = '/select-actions-for-land-parcel'
+const selectLandParcelPath = '/select-land-parcel'
 
 export default class RemoveActionPageController extends QuestionPageController {
   viewName = 'remove-action'
@@ -42,29 +43,29 @@ export default class RemoveActionPageController extends QuestionPageController {
   /**
    * Delete parcel from state object
    * @param {object} state - Current state
-   * @param {string} parcelKey - Parcel key
+   * @param {string} parcel - Parcel key
    * @returns {object} - Updated state
    */
-  deleteParcelFromState(state, parcelKey) {
+  deleteParcelFromState(state, parcel) {
     const newState = JSON.parse(JSON.stringify(state))
-    delete newState.landParcels[parcelKey]
+    delete newState.landParcels[parcel]
     return newState
   }
 
   /**
    * Delete action from state and clean up empty parcels
    * @param {object} state - Current state
-   * @param {string} parcelKey - Parcel key
+   * @param {string} parcel - Parcel key
    * @param {string} action - Action code to remove
    * @returns {object} - Updated state
    */
-  deleteActionFromState(state, parcelKey, action) {
+  deleteActionFromState(state, parcel, action) {
     const newState = JSON.parse(JSON.stringify(state))
-    if (newState.landParcels[parcelKey]?.actionsObj) {
-      delete newState.landParcels[parcelKey].actionsObj[action]
+    if (newState.landParcels[parcel]?.actionsObj) {
+      delete newState.landParcels[parcel].actionsObj[action]
 
-      if (Object.keys(newState.landParcels[parcelKey].actionsObj).length === 0) {
-        delete newState.landParcels[parcelKey]
+      if (Object.keys(newState.landParcels[parcel].actionsObj).length === 0) {
+        delete newState.landParcels[parcel]
       }
     }
 
@@ -74,14 +75,23 @@ export default class RemoveActionPageController extends QuestionPageController {
   /**
    * Determine next path after action removal
    * @param {object} newState - Updated state after removal
-   * @param {string} parcelKey - Parcel key
-   * @param {string} parcel - Original parcel query parameter
    * @returns {string} - Next path to navigate to
    */
-  getNextPathAfterRemoval(newState, parcelKey, parcel) {
-    const hasRemainingActions = newState.landParcels[parcelKey]?.actionsObj
+  getNextPathAfterRemoval(newState) {
+    const hasRemainingActions = newState.landParcels[this.parcel]?.actionsObj
+    const hasRemainingParcels = Object.keys(newState.landParcels).length > 0
 
-    return hasRemainingActions ? checkSelectedLandActionsPath : `${selectActionsForParcelPath}?parcelId=${parcel}`
+    // remove the only action
+    if (!hasRemainingActions && this.action) {
+      return `${selectActionsForParcelPath}?parcelId=${this.parcel}`
+    }
+
+    // remove the only parcel
+    if (!hasRemainingParcels) {
+      return selectLandParcelPath
+    }
+
+    return checkSelectedLandActionsPath
   }
 
   /**
@@ -95,8 +105,8 @@ export default class RemoveActionPageController extends QuestionPageController {
     if (remove === undefined) {
       return {
         errorMessage: this.actionDescription
-          ? `Select yes to remove [${this.actionDescription}] from land parcel [${this.parcel}]`
-          : `Select yes to remove land parcel [${this.parcel}] from this application`
+          ? `Select yes to remove ${this.actionDescription} from land parcel ${this.parcel}`
+          : `Select yes to remove land parcel ${this.parcel} from this application`
       }
     }
 
@@ -128,12 +138,10 @@ export default class RemoveActionPageController extends QuestionPageController {
    * @returns {Promise<object>} - Response object
    */
   async processRemoval(request, state, h) {
-    const [sheetId, parcelId] = parseLandParcel(this.parcel)
-    const parcelKey = `${sheetId}-${parcelId}`
     const newState = this.action
-      ? this.deleteActionFromState(state, parcelKey, this.action)
-      : this.deleteParcelFromState(state, parcelKey)
-    const nextPath = this.getNextPathAfterRemoval(newState, parcelKey, this.parcel)
+      ? this.deleteActionFromState(state, this.parcel, this.action)
+      : this.deleteParcelFromState(state, this.parcel)
+    const nextPath = this.getNextPathAfterRemoval(newState)
 
     await this.setState(request, newState)
     return this.proceed(request, h, nextPath)

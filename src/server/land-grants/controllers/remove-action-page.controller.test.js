@@ -269,24 +269,40 @@ describe('RemoveActionPageController', () => {
       expect(result).toBe('/check-selected-land-actions')
     })
 
-    test('should return select actions page when parcel has no remaining actions', () => {
+    test('should return check page when there are other parcels on the state', () => {
+      const newState = {
+        landParcels: {
+          'SD6743-8084': {
+            actionsObj: {
+              UPL1: { description: 'Moderate livestock grazing on moorland' }
+            }
+          }
+        }
+      }
+
+      const result = controller.getNextPathAfterRemoval(newState)
+
+      expect(result).toBe('/check-selected-land-actions')
+    })
+
+    test('should return select actions page when removing the last action on the parcel', () => {
+      controller.action = 'CMOR1'
+      controller.parcel = 'SD6743-8083'
       const newState = { landParcels: {} }
 
-      const result = controller.getNextPathAfterRemoval(newState, 'SD6743-8083', 'SD6743-8083')
+      const result = controller.getNextPathAfterRemoval(newState)
 
       expect(result).toBe('/select-actions-for-land-parcel?parcelId=SD6743-8083')
     })
 
-    test('should return select actions page when parcel is missing from state', () => {
+    test('should return select land parcel page when removing the last parcel', () => {
       const newState = {
-        landParcels: {
-          'other-parcel': { actionsObj: {} }
-        }
+        landParcels: {}
       }
 
-      const result = controller.getNextPathAfterRemoval(newState, 'SD6743-8083', 'SD6743-8083')
+      const result = controller.getNextPathAfterRemoval(newState)
 
-      expect(result).toBe('/select-actions-for-land-parcel?parcelId=SD6743-8083')
+      expect(result).toBe('/select-land-parcel')
     })
   })
 
@@ -300,7 +316,7 @@ describe('RemoveActionPageController', () => {
 
       expect(result).toEqual({
         errorMessage:
-          'Select yes to remove [Assess moorland and produce a written record: CMOR1] from land parcel [SD6743-8083]'
+          'Select yes to remove Assess moorland and produce a written record: CMOR1 from land parcel SD6743-8083'
       })
     })
 
@@ -312,7 +328,7 @@ describe('RemoveActionPageController', () => {
       const result = controller.validatePostPayload(payload)
 
       expect(result).toEqual({
-        errorMessage: 'Select yes to remove land parcel [SD6743-8083] from this application'
+        errorMessage: 'Select yes to remove land parcel SD6743-8083 from this application'
       })
     })
 
@@ -324,7 +340,7 @@ describe('RemoveActionPageController', () => {
       const result = controller.validatePostPayload(payload)
 
       expect(result).toEqual({
-        errorMessage: 'Select yes to remove land parcel [SD6743-8083] from this application'
+        errorMessage: 'Select yes to remove land parcel SD6743-8083 from this application'
       })
     })
 
@@ -336,7 +352,7 @@ describe('RemoveActionPageController', () => {
       const result = controller.validatePostPayload(payload)
 
       expect(result).toEqual({
-        errorMessage: 'Select yes to remove land parcel [SD6743-8083] from this application'
+        errorMessage: 'Select yes to remove land parcel SD6743-8083 from this application'
       })
     })
 
@@ -349,7 +365,7 @@ describe('RemoveActionPageController', () => {
 
       expect(result).toEqual({
         errorMessage:
-          'Select yes to remove [Assess moorland and produce a written record: CMOR1] from land parcel [SD6743-8083]'
+          'Select yes to remove Assess moorland and produce a written record: CMOR1 from land parcel SD6743-8083'
       })
     })
 
@@ -465,11 +481,7 @@ describe('RemoveActionPageController', () => {
           })
         })
       )
-      expect(controller.proceed).toHaveBeenCalledWith(
-        mockRequest,
-        mockH,
-        '/select-actions-for-land-parcel?parcelId=SD6743-8083'
-      )
+      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/check-selected-land-actions')
       expect(result).toBe('redirected')
     })
 
@@ -491,11 +503,7 @@ describe('RemoveActionPageController', () => {
           })
         })
       )
-      expect(controller.proceed).toHaveBeenCalledWith(
-        mockRequest,
-        mockH,
-        '/select-actions-for-land-parcel?parcelId=SD6743-8083'
-      )
+      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/check-selected-land-actions')
       expect(result).toBe('redirected')
     })
 
@@ -517,11 +525,7 @@ describe('RemoveActionPageController', () => {
           })
         })
       )
-      expect(controller.proceed).toHaveBeenCalledWith(
-        mockRequest,
-        mockH,
-        '/select-actions-for-land-parcel?parcelId=SD6743-8083'
-      )
+      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/check-selected-land-actions')
       expect(result).toBe('redirected')
     })
   })
@@ -640,7 +644,7 @@ describe('RemoveActionPageController', () => {
         parcel: 'SD6743-8083',
         actionDescription: 'Assess moorland and produce a written record: CMOR1',
         errorMessage:
-          'Select yes to remove [Assess moorland and produce a written record: CMOR1] from land parcel [SD6743-8083]'
+          'Select yes to remove Assess moorland and produce a written record: CMOR1 from land parcel SD6743-8083'
       })
       expect(controller.setState).not.toHaveBeenCalled()
       expect(result).toBe('rendered view')
@@ -656,7 +660,7 @@ describe('RemoveActionPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith('remove-action', {
         pageTitle: 'Remove action',
         parcel: 'SD6743-8083',
-        errorMessage: 'Select yes to remove land parcel [SD6743-8083] from this application'
+        errorMessage: 'Select yes to remove land parcel SD6743-8083 from this application'
       })
       expect(controller.setState).not.toHaveBeenCalled()
       expect(result).toBe('rendered view')
@@ -700,11 +704,7 @@ describe('RemoveActionPageController', () => {
           })
         })
       )
-      expect(controller.proceed).toHaveBeenCalledWith(
-        mockRequest,
-        mockH,
-        '/select-actions-for-land-parcel?parcelId=SD6743-8083'
-      )
+      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/check-selected-land-actions')
       expect(result).toBe('redirected')
     })
 
@@ -753,7 +753,7 @@ describe('RemoveActionPageController', () => {
         'remove-action',
         expect.objectContaining({
           errorMessage:
-            'Select yes to remove [Assess moorland and produce a written record: CMOR1] from land parcel [SD6743-8083]'
+            'Select yes to remove Assess moorland and produce a written record: CMOR1 from land parcel SD6743-8083'
         })
       )
       expect(result).toBe('rendered view')
@@ -769,7 +769,7 @@ describe('RemoveActionPageController', () => {
         'remove-action',
         expect.objectContaining({
           errorMessage:
-            'Select yes to remove [Assess moorland and produce a written record: CMOR1] from land parcel [SD6743-8083]'
+            'Select yes to remove Assess moorland and produce a written record: CMOR1 from land parcel SD6743-8083'
         })
       )
       expect(result).toBe('rendered view')
