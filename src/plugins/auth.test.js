@@ -10,6 +10,7 @@ import { getOidcConfig } from '~/src/server/auth/get-oidc-config.js'
 import { getSafeRedirect } from '~/src/server/auth/get-safe-redirect.js'
 import { refreshTokens } from '~/src/server/auth/refresh-tokens.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+
 vi.mock('@hapi/jwt')
 vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
   const { mockLogHelperWithCustomCodes } = await import('~/src/__mocks__')
@@ -426,6 +427,8 @@ describe('Auth Plugin', () => {
 
       const params = options.providerParams()
       expect(params).toEqual({
+        p: DEFAULT_CONFIG['defraId.policy'],
+        response_mode: 'form_post',
         serviceId: DEFAULT_CONFIG['defraId.serviceId']
       })
     })

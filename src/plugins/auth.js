@@ -343,6 +343,8 @@ function getBellOptions(oidcConfig) {
     },
     providerParams: function () {
       return {
+        p: config.get('defraId.policy'),
+        response_mode: 'form_post',
         serviceId: config.get('defraId.serviceId')
       }
     }
