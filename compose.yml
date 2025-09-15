@@ -42,7 +42,7 @@ services:
       - -serverPort 1080 -logLevel INFO
 
   fcp-defra-id-stub:
-    image: defradigital/fcp-defra-id-stub
+    image: defradigital/fcp-defra-id-stub:0.30.0
     networks:
       - cdp-tenant
     environment:
@@ -102,6 +102,7 @@ services:
       DEFRA_ID_CLIENT_ID: ${DEFRA_ID_CLIENT_ID:-client_id}
       DEFRA_ID_CLIENT_SECRET: ${DEFRA_ID_CLIENT_SECRET:-client_secret}
       DEFRA_ID_SERVICE_ID: ${DEFRA_ID_SERVICE_ID:-service_id}
+      DEFRA_ID_POLICY: ${DEFRA_ID_POLICY:-b2c_1a_cui_cpdev_signupsigninsfi}
       DEFRA_ID_REDIRECT_URL: ${DEFRA_ID_REDIRECT_URL:-http://localhost:3000/auth/sign-in-oidc}
       DEFRA_ID_SIGN_OUT_REDIRECT_URL: ${DEFRA_ID_SIGN_OUT_REDIRECT_URL:-http://localhost:3000/auth/sign-out-oidc}
       COOKIE_PASSWORD: ${COOKIE_PASSWORD}
