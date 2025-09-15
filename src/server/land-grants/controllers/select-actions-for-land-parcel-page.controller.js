@@ -25,7 +25,7 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
       checked: this.selectedAction === action.code,
       hint: {
         html:
-          `Payment rate per year: <strong>£${action.ratePerUnitGbp.toFixed(2)} per ha</strong>` +
+          `Payment rate per year: <strong>£${action.ratePerUnitGbp?.toFixed(2)} per ha</strong>` +
           (action.ratePerAgreementPerYearGbp
             ? ` and <strong>£${action.ratePerAgreementPerYearGbp}</strong> per agreement`
             : '')
