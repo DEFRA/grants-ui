@@ -1,29 +1,26 @@
 {%- set headingLevel = params.title.headingLevel or 2 -%}
 
 <div class="govuk-summary-card {{ params.classes }}">
-  <div class="govuk-summary-card__title-wrapper">
-    <h{{ headingLevel }} class="govuk-summary-card__title {{ params.title.classes }}">
-      {{ params.title.text }}
-    </h{{ headingLevel }}>
+	<div class="govuk-summary-card__title-wrapper">
+		<h{{headingLevel}} class="govuk-summary-card__title {{ params.title.classes }}">
+			{{ params.title.text }}
+		</h{{headingLevel}}>
 
-    {% if params.headerActions %}
-      <ul class="govuk-summary-card__actions">
-        {% for action in params.headerActions.items or [params.headerActions] %}
-          <li class="govuk-summary-card__action">
-            {{ action.html | safe or ('<a class="govuk-link ' + (action.classes or '') + '" href="' + action.href + '">' + action.text + '</a>') | safe }}
-          </li>
-        {% endfor %}
-      </ul>
-    {% endif %}
-  </div>
+		{% if (params.headerActions) and params.headerActions.text | length > 0 %}
+			<ul class="govuk-summary-card__actions">
+				<li class="govuk-summary-card__action{{ params.headerActions.classes }}">
+					{{ ('<a class="govuk-link ' + (params.headerActions.classes or '') + '" href="' + params.headerActions.href + '">' + params.headerActions.text + '<span class="govuk-visually-hidden"> ' + params.headerActions.hiddenTextValue +'</span></a>') | safe }}
+				</li>
+			</ul>
+		{% endif %}
+	</div>
+	<div class="govuk-summary-card__content {{ params.content.classes }}">
+		{{ caller() | trim }}
+	</div>
 
-  <div class="govuk-summary-card__content {{ params.content.classes }}">
-    {{ caller() | trim }}
-  </div>
-
- {% if (params.footerActions) and params.footerActions.text | length > 0 %}
-    <div class="govuk-!-text-align-right{{ params.footerActions.classes }} govuk-!-padding-right-4 govuk-!-padding-bottom-2">
-      {{ ('<a class="govuk-link ' + (params.footerActions.classes or '') + '" href="' + params.footerActions.href + '">' + params.footerActions.text + '<span class="govuk-visually-hidden"> to Land Parcel ' + params.footerActions.hiddenTextValue +'</span></a>') | safe }}
-    </div>
-  {% endif %}
+	{% if (params.footerActions) and params.footerActions.text | length > 0 %}
+		<div class="govuk-!-text-align-right{{ params.footerActions.classes }} govuk-!-padding-right-4 govuk-!-padding-bottom-2">
+			{{ ('<a class="govuk-link ' + (params.footerActions.classes or '') + '" href="' + params.footerActions.href + '">' + params.footerActions.text + '<span class="govuk-visually-hidden"> ' + params.footerActions.hiddenTextValue +'</span></a>') | safe }}
+		</div>
+	{% endif %}
 </div>
