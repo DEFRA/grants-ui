@@ -19,7 +19,7 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
   selectedLandParcel = ''
 
   extractLandActionFieldsFromPayload(payload) {
-    return Object.keys(payload).filter(key => key.startsWith(this.actionFieldPrefix))
+    return Object.keys(payload).filter((key) => key.startsWith(this.actionFieldPrefix))
   }
 
   mapActionToViewModel(action) {
@@ -101,7 +101,7 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
     const errors = {}
     const landActionFields = this.extractLandActionFieldsFromPayload(payload)
 
-    const hasSelection = landActionFields.some(field => {
+    const hasSelection = landActionFields.some((field) => {
       const value = payload[field]
       return value && value !== ''
     })
@@ -142,7 +142,9 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
 
     if (!valid) {
       for (const apiError of errorMessages) {
-        const foundKey = Object.keys(payload).find(key => key.startsWith(this.actionFieldPrefix) && payload[key] === apiError.code)
+        const foundKey = Object.keys(payload).find(
+          (key) => key.startsWith(this.actionFieldPrefix) && payload[key] === apiError.code
+        )
         const index = Number(foundKey.replace(this.actionFieldPrefix, '')) || 1
         errors[this.actionFieldPrefix + index] = {
           text: apiError.description

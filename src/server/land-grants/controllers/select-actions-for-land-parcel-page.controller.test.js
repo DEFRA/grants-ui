@@ -147,15 +147,15 @@ describe('SelectActionsForLandParcelPageController', () => {
       expect(result).toEqual({
         errorSummary: [
           {
-            href: "#landAction_1",
-            text: "Select an action to do on this land parcel",
-          },
+            href: '#landAction_1',
+            text: 'Select an action to do on this land parcel'
+          }
         ],
         errors: {
           landAction_1: {
-            text: "Select an action to do on this land parcel",
-          },
-        },
+            text: 'Select an action to do on this land parcel'
+          }
+        }
       })
     })
   })
@@ -373,7 +373,7 @@ describe('SelectActionsForLandParcelPageController', () => {
       const result = controller.buildNewState(state, actionsObj)
 
       expect(result.landParcels['sheet1-parcel1'].actionsObj).toEqual({
-        UNKNOWN2: { description: 'Another unknown action', value: 3, unit: 'ha' },
+        UNKNOWN2: { description: 'Another unknown action', value: 3, unit: 'ha' }
       })
     })
 
@@ -442,7 +442,7 @@ describe('SelectActionsForLandParcelPageController', () => {
       expect(QuestionPageController.prototype.getViewModel).toHaveBeenCalledWith(mockRequest, mockContext)
       expect(result).toEqual({
         ...mockParentViewModel,
-        actionFieldPrefix: "landAction_",
+        actionFieldPrefix: 'landAction_',
         groupedActions: [
           {
             name: 'Assess moorland',
@@ -499,7 +499,7 @@ describe('SelectActionsForLandParcelPageController', () => {
 
       expect(result).toEqual({
         ...mockParentViewModel,
-        actionFieldPrefix: "landAction_",
+        actionFieldPrefix: 'landAction_',
         groupedActions: []
       })
     })
@@ -775,7 +775,12 @@ describe('SelectActionsForLandParcelPageController', () => {
         const errorMessages = [{ code: 'CMOR1', description: 'Invalid quantity for CMOR1' }]
         triggerApiActionsValidation.mockResolvedValue({ valid: false, errorMessages })
 
-        const result = await controller.validateActionsWithApiData(mockRequest.payload, { CMOR1: { value: 10 } }, 'sheet1', 'parcel1')
+        const result = await controller.validateActionsWithApiData(
+          mockRequest.payload,
+          { CMOR1: { value: 10 } },
+          'sheet1',
+          'parcel1'
+        )
 
         expect(result.errors).toEqual({
           landAction_1: { text: 'Invalid quantity for CMOR1' }
