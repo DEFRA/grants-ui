@@ -146,7 +146,7 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
           (key) => key.startsWith(this.actionFieldPrefix) && payload[key] === apiError.code
         )
         const index = Number(foundKey.replace(this.actionFieldPrefix, '')) || 1
-        errors[this.actionFieldPrefix + index] = {
+        errors[`${this.actionFieldPrefix}${index}`] = {
           text: apiError.description
         }
       }
