@@ -401,9 +401,10 @@ describe('LogCodes', () => {
       expect(
         logCode.messageFunc({
           endpoint: '/api/grants',
+          identity: 'test',
           error: 'Connection failed'
         })
-      ).toBe('External API error for /api/grants: Connection failed')
+      ).toBe('External API error for /api/grants for identity: test - error: Connection failed')
     })
   })
 
