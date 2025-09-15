@@ -41,13 +41,11 @@ import { PotentialFundingController } from '~/src/server/non-land-grants/pigs-mi
 import { tasklistBackButton } from '~/src/server/plugins/tasklist-back-button.js'
 import { sbiStore } from '~/src/server/sbi/state.js'
 import { formatCurrency } from '../config/nunjucks/filters/format-currency.js'
-import { fetchSavedStateFromApi } from './common/helpers/state/fetch-saved-state-helper.js'
-import { getCacheKey } from './common/helpers/state/get-cache-key-helper.js'
-import { persistStateToApi } from './common/helpers/state/persist-state-helper.js'
 import { contentSecurityPolicy } from '~/src/server/common/helpers/csp.js'
 import RemoveActionPageController from './land-grants/controllers/remove-action-page.controller.js'
 import { router } from './router.js'
 import SectionEndController from './section-end/section-end.controller.js'
+import { StatePersistenceService } from './common/services/state-persistence/state-persistence.service.js'
 
 const SESSION_CACHE_NAME = 'session.cache.name'
 
@@ -119,20 +117,8 @@ const registerFormsPlugin = async (server, prefix = '') => {
     plugin,
     options: {
       ...(prefix && { routes: { prefix } }),
-      cacheName: config.get(SESSION_CACHE_NAME),
+      cache: new StatePersistenceService({ server }),
       baseUrl: config.get('baseUrl'),
-      saveAndReturn: {
-        keyGenerator: (request) => {
-          const { userId, organisationId, grantId } = getCacheKey(request)
-          return `${userId}:${organisationId}:${grantId}`
-        },
-        sessionHydrator: async (request) => {
-          return fetchSavedStateFromApi(request)
-        },
-        sessionPersister: async (state, request) => {
-          return persistStateToApi(state, request)
-        }
-      },
       onRequest: formsAuthCallback,
       services: {
         formsService: await formsService(),
