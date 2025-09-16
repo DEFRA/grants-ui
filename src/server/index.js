@@ -167,7 +167,6 @@ const registerPlugins = async (server) => {
     pulse,
     sessionCache,
     nunjucksConfig,
-    tasklistBackButton,
     sso
   ])
 
@@ -270,6 +269,7 @@ export async function createServer() {
   })
 
   await registerFormsPlugin(server)
+  await server.register(tasklistBackButton)
 
   log(LogCodes.SYSTEM.STARTUP_PHASE, {
     phase: 'forms_plugin',

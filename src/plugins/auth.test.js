@@ -427,8 +427,6 @@ describe('Auth Plugin', () => {
 
       const params = options.providerParams()
       expect(params).toEqual({
-        p: DEFAULT_CONFIG['defraId.policy'],
-        response_mode: 'form_post',
         serviceId: DEFAULT_CONFIG['defraId.serviceId']
       })
     })
