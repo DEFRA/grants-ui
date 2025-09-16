@@ -1,13 +1,35 @@
 #!/bin/bash
 set -e
 
-if ! command -v docker &> /dev/null; then
-    echo "Error: docker is not installed or not in PATH"
+# Detect and set up container runtime (Docker or Podman)
+CONTAINER_RUNTIME=""
+if command -v docker &> /dev/null; then
+    CONTAINER_RUNTIME="docker"
+    echo "Using Docker as container runtime"
+    # Test that docker actually works
+    if ! docker --version &> /dev/null; then
+        echo "Warning: docker command found but not working properly"
+    fi
+elif command -v podman &> /dev/null; then
+    CONTAINER_RUNTIME="podman"
+    echo "Using Podman as container runtime"
+    # Test that podman actually works
+    if ! podman --version &> /dev/null; then
+        echo "Error: podman command found but not working properly"
+        exit 1
+    fi
+    # Create docker function that calls podman
+    docker() {
+        podman "$@"
+    }
+else
+    echo "Error: Neither docker nor podman is installed or in PATH"
+    echo "Please install either Docker or Podman to run this script"
     exit 1
 fi
 
 echo "Starting services with docker compose..."
-docker compose up -d --build
+docker compose -f compose.yml -f compose.ci.override.yml up -d --build
 
 echo "Waiting for services to be healthy..."
 ATTEMPTS=0
@@ -18,7 +40,7 @@ until docker compose ps grants-ui | grep -q "Up"; do
     if [ ${ATTEMPTS} -eq ${MAX_ATTEMPTS} ]; then
         echo "Error: Timed out waiting for grants-ui service to start."
         docker compose ps
-        docker compose down
+        docker compose -f compose.yml -f compose.ci.override.yml down
         exit 1
     fi
     printf '.'
@@ -47,11 +69,17 @@ until curl -f http://localhost:3000/health >/dev/null 2>&1; do
     sleep 3
 done
 
-echo ""
 echo "All services are healthy!"
-echo ""
 echo "Service Status:"
 docker compose ps
-docker compose down
+
+if [ -n "${ACCEPTANCE_TESTS_HOOK:-}" ]; then
+  echo "Running Acceptance Tests..."
+  cd acceptance
+  bash -eu -o pipefail -c "${ACCEPTANCE_TESTS_HOOK}"
+  cd ..
+fi
+
+docker compose -f compose.yml -f compose.ci.override.yml down
 echo ""
-echo "Test complete."
+echo "Tests complete."
