@@ -209,7 +209,7 @@ export async function validateApplication(data) {
     requester: 'grants-ui',
     applicantCrn: crn,
     landActions: Object.entries(landParcels)
-      .filter(([parcelKey, parcelData]) => parcelKey)
+      .filter(([parcelKey]) => parcelKey)
       .map(([parcelKey, parcelData]) => {
         const [sheetId, parcelId] = parcelKey.split('-')
         return landActionsToApiPayload({ sheetId, parcelId, actionsObj: parcelData.actionsObj, sbi })
