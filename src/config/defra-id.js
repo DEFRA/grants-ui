@@ -31,12 +31,6 @@ const config = convict({
     default: 'default-service-id',
     env: 'DEFRA_ID_SERVICE_ID'
   },
-  policy: {
-    doc: 'The Defra Identity policy.',
-    format: String,
-    default: 'b2c_1a_cui_cpdev_signupsigninsfi',
-    env: 'DEFRA_ID_POLICY'
-  },
   redirectUrl: {
     doc: 'The Defra Identity redirect URL.',
     format: String,
