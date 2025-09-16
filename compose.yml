@@ -11,12 +11,12 @@ services:
       timeout: 5s
       retries: 3
     networks:
-      - cdp-tenant
+      - grants-ui-net
 
   mongodb:
     image: mongo:6.0.13
     networks:
-      - cdp-tenant
+      - grants-ui-net
     ports:
       - '27017:27017'
     volumes:
@@ -31,7 +31,7 @@ services:
   mockserver:
     image: mockserver/mockserver:latest
     networks:
-      - cdp-tenant
+      - grants-ui-net
     environment:
       MOCKSERVER_INITIALIZATION_JSON_PATH: /config/expectations.json
     ports:
@@ -44,16 +44,18 @@ services:
   fcp-defra-id-stub:
     image: defradigital/fcp-defra-id-stub:0.33.0
     networks:
-      - cdp-tenant
+      - grants-ui-net
     environment:
+      WELL_KNOWN_HOST_OVERRIDE: ${WELL_KNOWN_HOST_OVERRIDE}
+      WELL_KNOWN_API_HOST_OVERRIDE: ${WELL_KNOWN_API_HOST_OVERRIDE}
       PORT: 3007
       AUTH_MODE: ${AUTH_MODE:-basic}
       AUTH_OVERRIDE: ${AUTH_OVERRIDE}
-      AUTH_OVERRIDE_FILE: ${AUTH_OVERRIDE_FILE}
+      AUTH_OVERRIDE_FILE: ${AUTH_OVERRIDE_FILE:-users.json}
     ports:
       - "3007:3007"
     volumes:
-      - ./example.data.json:/data/example.data.json
+      - ./fcp-defra-id-stub/users.json:/data/users.json
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3007/health"]
       interval: 15s
@@ -115,7 +117,7 @@ services:
       - ./src:/home/node/src
       - /home/node/node_modules
     networks:
-      - cdp-tenant
+      - grants-ui-net
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "ps aux | grep 'node .' | grep -v grep || exit 1"]
@@ -138,7 +140,7 @@ services:
       GRANTS_UI_BACKEND_AUTH_TOKEN: ${GRANTS_UI_BACKEND_AUTH_TOKEN:-auth_token}
       GRANTS_UI_BACKEND_ENCRYPTION_KEY: ${GRANTS_UI_BACKEND_ENCRYPTION_KEY:-encryption_key}
     networks:
-      - cdp-tenant
+      - grants-ui-net
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
@@ -153,5 +155,6 @@ volumes:
   mongodb-data:
 
 networks:
-  cdp-tenant:
+  grants-ui-net:
+    name: grants-ui-net
     driver: bridge

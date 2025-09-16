@@ -13,3 +13,5 @@ coverage
 tsconfig.tsbuildinfo
 .eslintcache
 src/contracts/pacts
+/acceptance/allure-report
+/acceptance/allure-results

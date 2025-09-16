@@ -3,6 +3,9 @@ import prettier from 'eslint-config-prettier'
 import vitestPlugin from '@vitest/eslint-plugin'
 
 export default [
+  {
+    ignores: ['acceptance/allure-report/**', '/acceptance/allure-results/**']
+  },
   ...neostandard({
     env: ['node'],
     jsx: false,
@@ -33,6 +36,17 @@ export default [
     },
     rules: {
       ...vitestPlugin.configs.recommended.rules
+    }
+  },
+  {
+    files: ['acceptance/**/*.js'],
+    languageOptions: {
+      globals: {
+        browser: 'readonly',
+        expect: 'readonly',
+        $: 'readonly',
+        $$: 'readonly'
+      }
     }
   }
 ]
