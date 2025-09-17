@@ -68,7 +68,7 @@ describe('SubmissionPageController', () => {
       submitGrantApplication.mockResolvedValue(mockResult)
       validateApplication.mockResolvedValue({ id: applicationValidationRunId })
 
-      const result = await controller.submitLandGrantApplication('123456789', 'crn', mockContext)
+      const result = await controller.submitLandGrantApplication('106284736', 'crn', mockContext)
 
       expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
         {
@@ -117,7 +117,7 @@ describe('SubmissionPageController', () => {
       const handler = controller.makePostRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
-      expect(controller.submitLandGrantApplication).toHaveBeenCalledWith('123456789', 'crn', mockContext)
+      expect(controller.submitLandGrantApplication).toHaveBeenCalledWith('106284736', 'crn', mockContext)
       expect(mockRequest.logger.info).toHaveBeenCalledWith('Form submission completed', mockResult)
     })
 

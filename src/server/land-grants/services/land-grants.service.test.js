@@ -944,7 +944,7 @@ describe('land-grants service', () => {
     })
   })
 
-  describe('validationApplication', () => {
+  describe('validateApplication', () => {
     it('should call the validation application API', async () => {
       const mockApiResponse = { id: '123456' }
       fetch.mockResolvedValueOnce({
