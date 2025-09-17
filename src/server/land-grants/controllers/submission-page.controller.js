@@ -28,7 +28,7 @@ export default class SubmissionPageController extends SummaryPageController {
     const identifiers = {
       sbi,
       frn,
-      crn: crn || context.state.crn || 'crn',
+      crn,
       defraId,
       clientRef: context.referenceNumber?.toLowerCase()
     }
