@@ -1,5 +1,4 @@
 import allure from 'allure-commandline'
-import fs from 'node:fs'
 
 export const config = {
   baseUrl: 'http://localhost:3000',
@@ -59,11 +58,7 @@ export const config = {
     timeout: 180000,
     ignoreUndefinedDefinitions: false
   },
-  onComplete: function (exitCode, config, capabilities, results) {
-    if (results?.failed && results.failed > 0) {
-      fs.writeFileSync('FAILED', JSON.stringify(results))
-    }
-
+  onComplete: async function (exitCode, config, capabilities, results) {
     const generation = allure(['generate', 'allure-results', '--clean'])
 
     return new Promise((resolve, reject) => {
@@ -79,6 +74,7 @@ export const config = {
           return reject(new Error(`Could not generate Allure report, exited with code: ${exitCode}`))
         }
 
+        allure(['open'], 'allure-report')
         resolve()
       })
     })
