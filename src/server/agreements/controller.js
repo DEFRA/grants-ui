@@ -50,7 +50,8 @@ function buildProxyHeaders(token, request) {
       Authorization: `Bearer ${token}`,
       'x-base-url': config.get('agreements.baseUrl'),
       'content-type': request.headers['content-type'] || 'application/x-www-form-urlencoded',
-      'x-encrypted-auth': encryptedAuth
+      'x-encrypted-auth': encryptedAuth,
+      'x-csp-nonce': request.app.cspNonce
     }
   } catch (jwtError) {
     log(LogCodes.AGREEMENTS.AGREEMENT_ERROR, {
