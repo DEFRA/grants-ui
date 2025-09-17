@@ -41,6 +41,7 @@ const controllerParcelsResponse = [
 describe('LandParcelPageController', () => {
   let controller
   let mockRequest
+  let mockResponseWithCode
   let mockContext
   let mockH
 
@@ -54,6 +55,7 @@ describe('LandParcelPageController', () => {
       isAuthenticated: true,
       credentials: {
         sbi: '106284736',
+        crn: '1102838829',
         name: 'John Doe',
         organisationId: 'org123',
         organisationName: ' Farm 1',
@@ -67,7 +69,7 @@ describe('LandParcelPageController', () => {
 
   const setupH = () => ({
     view: vi.fn().mockReturnValue(renderedViewMock),
-    redirect: vi.fn().mockReturnValue('redirected')
+    response: vi.fn().mockReturnValue(mockResponseWithCode)
   })
 
   beforeEach(() => {
@@ -79,6 +81,7 @@ describe('LandParcelPageController', () => {
     controller.proceed = vi.fn().mockResolvedValue('next')
     controller.getNextPath = vi.fn().mockReturnValue('/next-page')
     controller.setState = vi.fn()
+    controller.performAuthCheck = vi.fn().mockResolvedValue(null)
 
     fetchParcels.mockResolvedValue(mockParcelsResponse)
 
@@ -87,6 +90,11 @@ describe('LandParcelPageController', () => {
       sbi: 117235001,
       customerReference: 1100598138
     })
+
+    mockResponseWithCode = {
+      code: vi.fn().mockReturnValue('final-response')
+    }
+
     mockH = setupH()
   })
 
@@ -254,6 +262,18 @@ describe('LandParcelPageController', () => {
       })
       expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-page')
       expect(result).toBe('next')
+    })
+
+    describe('when the user does not own the land parcel', () => {
+      it('should return unauthorized response when user does not own the selected land parcel', async () => {
+        mockRequest.payload = state
+        mockContext = setupContext({ existing: 'value' })
+        controller.performAuthCheck.mockResolvedValue('failed auth check')
+
+        const result = await controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
+
+        expect(result).toEqual('failed auth check')
+      })
     })
 
     it('sets an error if selectedLandParcel is not defined', async () => {

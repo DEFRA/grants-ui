@@ -3,6 +3,7 @@ import { vi } from 'vitest'
 import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
 import {
   fetchAvailableActionsForParcel,
+  fetchParcels,
   triggerApiActionsValidation
 } from '~/src/server/land-grants/services/land-grants.service.js'
 import { parseLandParcel } from '~/src/server/land-grants/utils/format-parcel.js'
@@ -11,11 +12,25 @@ import SelectActionsForLandParcelPageController from './select-actions-for-land-
 vi.mock('~/src/server/land-grants/services/land-grants.service.js')
 vi.mock('~/src/server/land-grants/utils/format-parcel.js')
 
+const mockParcelsResponse = [
+  {
+    parcelId: '0155',
+    sheetId: 'SD7946',
+    area: { unit: 'ha', value: 4.0383 }
+  },
+  {
+    parcelId: '4509',
+    sheetId: 'SD7846',
+    area: { unit: 'sqm', value: 0.0633 }
+  }
+]
+
 describe('SelectActionsForLandParcelPageController', () => {
   let controller
   let mockRequest
   let mockContext
   let mockH
+  let mockResponseWithCode
 
   const mockGroupedActions = [
     {
@@ -80,6 +95,9 @@ describe('SelectActionsForLandParcelPageController', () => {
     controller.setState = vi.fn().mockResolvedValue(true)
     controller.proceed = vi.fn().mockReturnValue('redirected')
     controller.getNextPath = vi.fn().mockReturnValue('/next-path')
+    controller.performAuthCheck = vi.fn().mockResolvedValue(null)
+
+    fetchParcels.mockResolvedValue(mockParcelsResponse)
 
     mockRequest = {
       payload: {
@@ -103,8 +121,13 @@ describe('SelectActionsForLandParcelPageController', () => {
       state: {}
     }
 
+    mockResponseWithCode = {
+      code: vi.fn().mockReturnValue('final-response')
+    }
+
     mockH = {
-      view: vi.fn().mockReturnValue('rendered view')
+      view: vi.fn().mockReturnValue('rendered view'),
+      response: vi.fn().mockReturnValue(mockResponseWithCode)
     }
 
     parseLandParcel.mockReturnValue(['sheet1', 'parcel1'])

@@ -1,4 +1,3 @@
-import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import RemoveActionPageController from './remove-action-page.controller.js'
 
@@ -35,20 +34,32 @@ describe('RemoveActionPageController', () => {
   }
 
   beforeEach(() => {
-    QuestionPageController.prototype.getViewModel = vi.fn().mockReturnValue({
-      pageTitle: 'Remove action'
-    })
-
     controller = new RemoveActionPageController()
     controller.setState = vi.fn().mockResolvedValue(true)
     controller.proceed = vi.fn().mockReturnValue('redirected')
+    controller.performAuthCheck = vi.fn().mockResolvedValue(null)
+    controller.getViewModel = vi.fn().mockReturnValue({
+      pageTitle: 'Remove action'
+    })
 
     mockRequest = {
       query: {
         parcelId: 'SD6743-8083',
         action: 'CMOR1'
       },
-      payload: {}
+      payload: {},
+      auth: {
+        isAuthenticated: true,
+        credentials: {
+          sbi: '106284736',
+          crn: '1102838829',
+          name: 'John Doe',
+          organisationId: 'org123',
+          organisationName: ' Farm 1',
+          role: 'admin',
+          sessionId: 'valid-session-id'
+        }
+      }
     }
 
     mockContext = {
@@ -390,6 +401,7 @@ describe('RemoveActionPageController', () => {
     test('should render error view with all properties', () => {
       controller.parcel = 'SD6743-8083'
       controller.actionDescription = 'Test Action Description'
+      controller.performAuthCheck = vi.fn().mockResolvedValue(null)
 
       const result = controller.renderPostErrorView(mockH, mockRequest, mockContext, 'Test error message')
 
@@ -635,6 +647,7 @@ describe('RemoveActionPageController', () => {
 
     test('should show validation error when remove not provided and actionDescription exists', async () => {
       mockRequest.payload = {}
+      controller.performAuthCheck = vi.fn().mockResolvedValue(false)
 
       const handler = controller.makePostRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
