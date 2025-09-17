@@ -2,6 +2,7 @@
 
 {% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
 {% from "govuk/components/radios/macro.njk" import govukRadios %}
+{% from "govuk/components/checkboxes/macro.njk" import govukCheckboxes %}
 {% from "govuk/components/warning-text/macro.njk" import govukWarningText %}
 {% from "govuk/components/button/macro.njk" import govukButton %}
 {% from "govuk/components/details/macro.njk" import govukDetails %}
@@ -68,20 +69,34 @@
             <input type="hidden" name="crumb" value="{{ crumb }}">
 
             {% for group in groupedActions %}
-              {% if group.visible %}
+              {% if group.actions.length == 1 %}
+                {{ govukCheckboxes({
+                    name: "landAction_" + loop.index,
+                    fieldset: {
+                      legend: {
+                        text: group.name,
+                        classes: "govuk-fieldset__legend--m"
+                      }
+                    },
+                    hint: {
+                      text: "Total available area: " + group.totalAvailableArea.value.toFixed(4) + " " + group.totalAvailableArea.unit
+                    },
+                    items: group.actions
+                  }) }}
+              {% else %}
                 {{ govukRadios({
-                  name: "landAction",
-                  fieldset: {
-                    legend: {
-                      text: group.name,
-                      classes: "govuk-fieldset__legend--m"
-                    }
-                  },
-                  hint: {
-                    text: "Total available area: " + group.totalAvailableArea.value.toFixed(4) + " " + group.totalAvailableArea.unit
-                  },
-                  items: group.actions
-                }) }}
+                    name: actionFieldPrefix + loop.index,
+                    fieldset: {
+                      legend: {
+                        text: group.name,
+                        classes: "govuk-fieldset__legend--m"
+                      }
+                    },
+                    hint: {
+                      text: "Total available area: " + group.totalAvailableArea.value.toFixed(4) + " " + group.totalAvailableArea.unit
+                    },
+                    items: group.actions
+                  }) }}
               {% endif %}
             {% endfor %}
 
