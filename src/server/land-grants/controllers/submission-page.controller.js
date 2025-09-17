@@ -17,14 +17,6 @@ export default class SubmissionPageController extends SummaryPageController {
   }
 
   /**
-   * Gets the path to the status page (in this case /confirmation page) for the POST handler.
-   * @returns {string} path to the status page
-   */
-  getStatusPath() {
-    return '/find-funding-for-land-or-farms/confirmation'
-  }
-
-  /**
    * Submits the land grant application by transforming the state and calling the service.
    * @param {string} sbi - The single business identifier (SBI) of the user
    * @param {object} context - The form context containing state and reference number
@@ -39,6 +31,9 @@ export default class SubmissionPageController extends SummaryPageController {
       defraId,
       clientRef: context.referenceNumber?.toLowerCase()
     }
+
+    console.log('context.state', context.state, context.referenceNumber)
+
     const applicationData = transformStateObjectToGasApplication(
       identifiers,
       context.state,
@@ -59,9 +54,10 @@ export default class SubmissionPageController extends SummaryPageController {
       request.logger.info('Form submission completed', result)
 
       const cacheService = getFormsCacheService(request.server)
-      await cacheService.setConfirmationState(request, { confirmed: true })
+      await cacheService.setConfirmationState(request, { confirmed: true, referenceNumber: context.referenceNumber })
 
-      return h.redirect(this.getStatusPath())
+      console.log('context.referenceNumber', context.referenceNumber)
+      return this.proceed(request, h, this.getNextPath(context))
     }
 
     return fn

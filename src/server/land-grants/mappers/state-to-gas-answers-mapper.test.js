@@ -116,7 +116,6 @@ describe('stateToLandGrantsGasAnswers', () => {
       hasCheckedLandIsUpToDate: true,
       scheme: 'SFI',
       year: 2025,
-      agreementName: 'NO_LONGER_REQUIRED',
       applicant,
       payment,
       landParcels: {
@@ -135,7 +134,6 @@ describe('stateToLandGrantsGasAnswers', () => {
       scheme: 'SFI',
       year: 2025,
       hasCheckedLandIsUpToDate: true,
-      agreementName: 'NO_LONGER_REQUIRED',
       applicant,
       payment,
       actionApplications: [
@@ -180,7 +178,6 @@ describe('stateToLandGrantsGasAnswers', () => {
       hasCheckedLandIsUpToDate: true,
       scheme: 'SFI',
       year: 2025,
-      agreementName: 'NO_LONGER_REQUIRED',
       actionApplications: [
         {
           parcelId: '9238',
@@ -227,7 +224,6 @@ describe('stateToLandGrantsGasAnswers', () => {
       hasCheckedLandIsUpToDate: true,
       scheme: 'SFI',
       year: 2025,
-      agreementName: 'NO_LONGER_REQUIRED',
       actionApplications: []
     }
 
@@ -248,7 +244,6 @@ describe('stateToLandGrantsGasAnswers', () => {
       scheme: 'SFI',
       year: 2025,
       hasCheckedLandIsUpToDate: true,
-      agreementName: 'NO_LONGER_REQUIRED',
       actionApplications: []
     }
 
@@ -273,7 +268,6 @@ describe('stateToLandGrantsGasAnswers', () => {
       hasCheckedLandIsUpToDate: true,
       scheme: 'SFI',
       year: 2025,
-      agreementName: 'NO_LONGER_REQUIRED',
       actionApplications: [
         {
           parcelId: '9238',
@@ -308,7 +302,6 @@ describe('stateToLandGrantsGasAnswers', () => {
       hasCheckedLandIsUpToDate: true,
       scheme: 'SFI',
       year: 2025,
-      agreementName: 'NO_LONGER_REQUIRED',
       actionApplications: [
         {
           parcelId: '9238',
@@ -342,7 +335,6 @@ describe('stateToLandGrantsGasAnswers', () => {
       hasCheckedLandIsUpToDate: true,
       scheme: 'SFI',
       year: 2025,
-      agreementName: 'NO_LONGER_REQUIRED',
       actionApplications: [
         {
           parcelId: '9238',
@@ -376,7 +368,6 @@ describe('stateToLandGrantsGasAnswers', () => {
       hasCheckedLandIsUpToDate: true,
       scheme: 'SFI',
       year: 2025,
-      agreementName: 'NO_LONGER_REQUIRED',
       actionApplications: [
         {
           parcelId: '9238',
@@ -407,7 +398,6 @@ describe('stateToLandGrantsGasAnswers', () => {
       hasCheckedLandIsUpToDate: true,
       scheme: 'SFI',
       year: 2025,
-      agreementName: 'NO_LONGER_REQUIRED',
       actionApplications: [
         {
           parcelId: '9238',
@@ -435,7 +425,6 @@ describe('stateToLandGrantsGasAnswers', () => {
       hasCheckedLandIsUpToDate: true,
       scheme: 'SFI',
       year: 2025,
-      agreementName: 'NO_LONGER_REQUIRED',
       actionApplications: [
         {
           parcelId: '9238',
@@ -458,7 +447,6 @@ describe('stateToLandGrantsGasAnswers', () => {
       hasCheckedLandIsUpToDate: true,
       scheme: 'SFI',
       year: 2025,
-      agreementName: 'NO_LONGER_REQUIRED',
       actionApplications: []
     }
 
@@ -471,7 +459,6 @@ describe('stateToLandGrantsGasAnswers', () => {
       hasCheckedLandIsUpToDate: true,
       scheme: 'SFI',
       year: 2025,
-      agreementName: 'NO_LONGER_REQUIRED',
       actionApplications: []
     }
 
@@ -496,7 +483,6 @@ describe('stateToLandGrantsGasAnswers', () => {
       hasCheckedLandIsUpToDate: true,
       scheme: 'SFI',
       year: 2025,
-      agreementName: 'NO_LONGER_REQUIRED',
       actionApplications: [
         {
           sheetId: 'SX06799238', // The entire value becomes sheetId
@@ -530,7 +516,6 @@ describe('stateToLandGrantsGasAnswers', () => {
       hasCheckedLandIsUpToDate: true,
       scheme: 'SFI',
       year: 2025,
-      agreementName: 'NO_LONGER_REQUIRED',
       actionApplications: [
         {
           parcelId: '9238',
@@ -565,7 +550,6 @@ describe('stateToLandGrantsGasAnswers', () => {
       hasCheckedLandIsUpToDate: true,
       scheme: 'SFI',
       year: 2025,
-      agreementName: 'NO_LONGER_REQUIRED',
       actionApplications: [
         {
           sheetId: 'SX0679',
@@ -597,7 +581,6 @@ describe('stateToLandGrantsGasAnswers', () => {
       hasCheckedLandIsUpToDate: true,
       scheme: 'SFI',
       year: 2025,
-      agreementName: 'NO_LONGER_REQUIRED',
       actionApplications: [
         {
           parcelId: '9238',
@@ -631,7 +614,6 @@ describe('stateToLandGrantsGasAnswers', () => {
       hasCheckedLandIsUpToDate: true,
       scheme: 'SFI',
       year: 2025,
-      agreementName: 'NO_LONGER_REQUIRED',
       actionApplications: [
         {
           parcelId: '9238',
@@ -681,7 +663,6 @@ describe('stateToLandGrantsGasAnswers', () => {
       hasCheckedLandIsUpToDate: true,
       scheme: 'SFI',
       year: 2025,
-      agreementName: 'NO_LONGER_REQUIRED',
       actionApplications: [
         {
           parcelId: '9238',
@@ -716,7 +697,6 @@ describe('stateToLandGrantsGasAnswers', () => {
       hasCheckedLandIsUpToDate: true,
       scheme: 'SFI',
       year: 2025,
-      agreementName: 'NO_LONGER_REQUIRED',
       actionApplications: [
         {
           parcelId: '9238',
@@ -748,7 +728,6 @@ describe('stateToLandGrantsGasAnswers', () => {
       hasCheckedLandIsUpToDate: true,
       scheme: 'SFI',
       year: 2025,
-      agreementName: 'NO_LONGER_REQUIRED',
       actionApplications: [
         {
           parcelId: '9238',
@@ -775,7 +754,6 @@ describe('schema validation', () => {
         frn: 'frn-1234',
         crn: 'crn-1234',
         defraId: 'defra-id-1234',
-        agreementName: 'NO_LONGER_REQUIRED',
         scheme: 'SFI',
         year: 2025,
         hasCheckedLandIsUpToDate: true,
@@ -794,7 +772,6 @@ describe('schema validation', () => {
       },
       // Minimal object with actions
       {
-        agreementName: 'NO_LONGER_REQUIRED',
         hasCheckedLandIsUpToDate: true,
         applicant,
         payment,

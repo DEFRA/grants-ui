@@ -12,6 +12,19 @@ vi.mock('~/src/server/common/helpers/forms-cache/forms-cache.js', async () => {
   const { mockFormsCacheService } = await import('~/src/__mocks__')
   return mockFormsCacheService()
 })
+vi.mock('@defra/forms-engine-plugin/controllers/SummaryPageController.js', () => {
+  return {
+    SummaryPageController: class {
+      constructor(model, pageDef) {
+        this.model = model
+        this.pageDef = pageDef
+      }
+
+      proceed() {}
+      getNextPath() {}
+    }
+  }
+})
 
 const code = config.get('landGrants.grantCode')
 
@@ -36,14 +49,6 @@ describe('SubmissionPageController', () => {
 
     it('should set grantCode', () => {
       expect(controller.grantCode).toBe(code)
-    })
-  })
-
-  describe('getStatusPath', () => {
-    it('should return the correct status path', () => {
-      const result = controller.getStatusPath()
-
-      expect(result).toBe('/find-funding-for-land-or-farms/confirmation')
     })
   })
 
@@ -103,7 +108,6 @@ describe('SubmissionPageController', () => {
       const mockResult = { success: true }
 
       vi.spyOn(controller, 'submitLandGrantApplication').mockResolvedValue(mockResult)
-      vi.spyOn(controller, 'getStatusPath').mockReturnValue('/mock-path')
 
       const handler = controller.makePostRouteHandler()
       await handler(mockRequest, mockContext, mockH)
