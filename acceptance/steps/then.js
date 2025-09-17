@@ -48,6 +48,11 @@ Then('(the user )should see heading {string}', async (text) => {
     text = text.substring(0, text.indexOf("'"))
   }
 
+  /* eslint-disable */
+  console.log('URL: ' + (await browser.getUrl()))
+  console.log('HEADING' + (await $(`//h1`).getText()))
+  /* eslint-enable */
+
   await expect($(`//h1[contains(text(),'${text}')]`)).toBeDisplayed()
 })
 

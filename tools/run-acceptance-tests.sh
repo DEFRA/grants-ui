@@ -9,9 +9,9 @@ fi
 echo "Setting environment variables"
 export WELL_KNOWN_HOST_OVERRIDE=http://fcp-defra-id-stub:3007
 export WELL_KNOWN_API_HOST_OVERRIDE=http://fcp-defra-id-stub:3007
-#export DEFRA_ID_REDIRECT_URL=http://grants-ui:3000/auth/sign-in-oidc
-#export DEFRA_ID_SIGN_OUT_REDIRECT_URL=http://grants-ui:3000/auth/sign-out-oidc
-#export APP_BASE_URL=http://grants-ui:3000
+export DEFRA_ID_REDIRECT_URL=http://grants-ui:3000/auth/sign-in-oidc
+export DEFRA_ID_SIGN_OUT_REDIRECT_URL=http://grants-ui:3000/auth/sign-out-oidc
+export APP_BASE_URL=http://grants-ui:3000
 
 echo "Starting services with docker compose..."
 docker compose up -d --build
