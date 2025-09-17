@@ -1,6 +1,7 @@
 name: Grants
 metadata:
   id: 95e92559-968d-44ae-8666-2b1ad3dffd33
+  enabledInProd: true
   submission:
     grantCode: pigs-might-fly
 pages:

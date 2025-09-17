@@ -4,7 +4,7 @@ import { landActionWithCode } from '~/src/server/land-grants/utils/land-action-w
 import { sbiStore } from '~/src/server/sbi/state.js'
 import { actionGroups, calculateGrantPayment, stringifyParcel } from '../services/land-grants.service.js'
 
-const createLinks = (data, foundGroup) => {
+const createLinks = (data) => {
   const parcelParam = stringifyParcel({
     parcelId: data.parcelId,
     sheetId: data.sheetId
@@ -12,11 +12,9 @@ const createLinks = (data, foundGroup) => {
   const parcel = `${data.sheetId} ${data.parcelId}`
   const links = []
 
-  if (foundGroup?.actions.length > 1) {
-    links.push(
-      `<li class='govuk-summary-list__actions-list-item'><a class='govuk-link' href='select-actions-for-land-parcel?parcelId=${parcelParam}&action=${data.code}'>Change</a><span class="govuk-visually-hidden"> land action ${data.code} for parcel ${parcel}</span></li>`
-    )
-  }
+  links.push(
+    `<li class='govuk-summary-list__actions-list-item'><a class='govuk-link' href='select-actions-for-land-parcel?parcelId=${parcelParam}'>Change</a><span class="govuk-visually-hidden"> land action ${data.code} for parcel ${parcel}</span></li>`
+  )
   links.push(
     `<li class='govuk-summary-list__actions-list-item'><a class='govuk-link' href='remove-action?parcelId=${parcelParam}&action=${data.code}'>Remove</a><span class="govuk-visually-hidden"> land action ${data.code} for parcel ${parcel}</span></li>`
   )
@@ -117,8 +115,7 @@ export default class LandActionsCheckPageController extends QuestionPageControll
    * @returns {Array} - Table row data
    */
   createParcelItemRow(data) {
-    const foundGroup = actionGroups.find((g) => g.actions.includes(data.code))
-    const linksCell = createLinks(data, foundGroup)
+    const linksCell = createLinks(data)
 
     return [
       { text: landActionWithCode(data.description, data.code) },
