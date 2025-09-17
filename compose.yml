@@ -42,10 +42,11 @@ services:
       - -serverPort 1080 -logLevel INFO
 
   fcp-defra-id-stub:
-    image: defradigital/fcp-defra-id-stub:0.33.0
+    image: defradigital/fcp-defra-id-stub:0.34.0
     networks:
       - grants-ui-net
     environment:
+      SECURE_COOKIE: false
       WELL_KNOWN_HOST_OVERRIDE: ${WELL_KNOWN_HOST_OVERRIDE}
       WELL_KNOWN_API_HOST_OVERRIDE: ${WELL_KNOWN_API_HOST_OVERRIDE}
       PORT: 3007
