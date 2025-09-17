@@ -201,7 +201,7 @@ export async function fetchParcels(sbi) {
  * @returns {Promise<{ id: string}>}
  * @throws {Error}
  */
-export async function validationApplication(data) {
+export async function validateApplication(data) {
   const { applicationId, crn, landParcels, sbi } = data
 
   const payload = {

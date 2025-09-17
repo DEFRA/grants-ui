@@ -4,7 +4,7 @@ import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/fo
 import { transformStateObjectToGasApplication } from '~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
 import { submitGrantApplication } from '~/src/server/common/services/grant-application/grant-application.service.js'
 import { stateToLandGrantsGasAnswers } from '../mappers/state-to-gas-answers-mapper.js'
-import { validationApplication } from '../services/land-grants.service.js'
+import { validateApplication } from '../services/land-grants.service.js'
 
 export default class SubmissionPageController extends SummaryPageController {
   /**
@@ -33,7 +33,7 @@ export default class SubmissionPageController extends SummaryPageController {
       clientRef: context.referenceNumber?.toLowerCase()
     }
     // todo: add validation here
-    const { id: applicationValidationRunId } = await validationApplication({
+    const { id: applicationValidationRunId } = await validateApplication({
       applicationId: context.referenceNumber?.toLowerCase(),
       crn,
       sbi,

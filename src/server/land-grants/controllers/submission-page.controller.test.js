@@ -4,7 +4,7 @@ import { submitGrantApplication } from '~/src/server/common/services/grant-appli
 import { transformStateObjectToGasApplication } from '../../common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
 import { stateToLandGrantsGasAnswers } from '../mappers/state-to-gas-answers-mapper.js'
 import SubmissionPageController from './submission-page.controller.js'
-import { validationApplication } from '../services/land-grants.service.js'
+import { validateApplication } from '../services/land-grants.service.js'
 
 vi.mock('~/src/server/common/services/grant-application/grant-application.service.js')
 vi.mock('~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js')
@@ -66,7 +66,7 @@ describe('SubmissionPageController', () => {
 
       transformStateObjectToGasApplication.mockReturnValue(mockApplicationData)
       submitGrantApplication.mockResolvedValue(mockResult)
-      validationApplication.mockResolvedValue({ id: applicationValidationRunId })
+      validateApplication.mockResolvedValue({ id: applicationValidationRunId })
 
       const result = await controller.submitLandGrantApplication('123456789', 'crn', mockContext)
 

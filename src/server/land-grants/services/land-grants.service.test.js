@@ -10,7 +10,7 @@ import {
   postToLandGrantsApi,
   stringifyParcel,
   triggerApiActionsValidation,
-  validationApplication
+  validateApplication
 } from './land-grants.service.js'
 const mockApiEndpoint = 'https://land-grants-api'
 
@@ -949,7 +949,7 @@ describe('land-grants service', () => {
         json: () => mockApiResponse
       })
 
-      const result = await validationApplication({
+      const result = await validateApplication({
         applicationId: '123456',
         crn: '123456',
         landParcels: { 'SHEET1-PARCEL1': { actionsObj: { CMOR1: { value: 10 } } } },
