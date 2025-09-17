@@ -189,18 +189,11 @@ describe('transformStateObjectToGasApplication', () => {
       clientRef: 'CLIENT-REF-456'
     }
     const state = { sbi: '12345678' }
-    const applicationValidationRunId = '12345678'
     const mockAnswersTransformer = vi.fn().mockReturnValue({})
 
-    const result = transformStateObjectToGasApplication(
-      identifiers,
-      state,
-      mockAnswersTransformer,
-      applicationValidationRunId
-    )
+    transformStateObjectToGasApplication(identifiers, state, mockAnswersTransformer)
 
     expect(mockAnswersTransformer).toHaveBeenCalledTimes(1)
     expect(mockAnswersTransformer).toHaveBeenCalledWith(state)
-    expect(result.metadata.applicationValidationRunId).toBe(applicationValidationRunId)
   })
 })
