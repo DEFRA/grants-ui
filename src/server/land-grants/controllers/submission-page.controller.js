@@ -54,7 +54,6 @@ export default class SubmissionPageController extends SummaryPageController {
       const cacheService = getFormsCacheService(request.server)
       await cacheService.setConfirmationState(request, { confirmed: true, referenceNumber: context.referenceNumber })
 
-      console.log('context.referenceNumber', context.referenceNumber)
       return this.proceed(request, h, this.getNextPath(context))
     }
 
