@@ -32,8 +32,6 @@ export default class SubmissionPageController extends SummaryPageController {
       clientRef: context.referenceNumber?.toLowerCase()
     }
 
-    console.log('context.state', context.state, context.referenceNumber)
-
     const applicationData = transformStateObjectToGasApplication(
       identifiers,
       context.state,
