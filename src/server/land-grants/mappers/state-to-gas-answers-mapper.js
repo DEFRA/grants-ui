@@ -89,12 +89,13 @@ function processParcelActions(actionsObj, sheetId, parcelId) {
  * @returns {GASAnswers}
  */
 export function stateToLandGrantsGasAnswers(state) {
-  const { landParcels } = state
+  const { landParcels, applicationValidationRunId } = state
   const result = {
     hasCheckedLandIsUpToDate: true,
     scheme: 'SFI',
     year: 2025,
-    actionApplications: []
+    actionApplications: [],
+    applicationValidationRunId: `${applicationValidationRunId}`
   }
 
   if (state.payment) {

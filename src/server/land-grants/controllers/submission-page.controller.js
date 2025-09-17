@@ -4,6 +4,7 @@ import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/fo
 import { transformStateObjectToGasApplication } from '~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
 import { submitGrantApplication } from '~/src/server/common/services/grant-application/grant-application.service.js'
 import { stateToLandGrantsGasAnswers } from '../mappers/state-to-gas-answers-mapper.js'
+import { validationApplication } from '../services/land-grants.service.js'
 
 export default class SubmissionPageController extends SummaryPageController {
   /**
@@ -22,19 +23,26 @@ export default class SubmissionPageController extends SummaryPageController {
    * @param {object} context - The form context containing state and reference number
    * @returns {Promise<object>} - The result of the grant application submission
    */
-  async submitLandGrantApplication(sbi, context) {
-    const { crn = 'crn', defraId = 'defraId', frn = 'frn' } = context.state
+  async submitLandGrantApplication(sbi, crn, context) {
+    const { defraId = 'defraId', frn = 'frn', landParcels = {} } = context.state
     const identifiers = {
       sbi,
       frn,
-      crn,
+      crn: crn || context.state.crn || 'crn',
       defraId,
       clientRef: context.referenceNumber?.toLowerCase()
     }
+    // todo: add validation here
+    const { id: applicationValidationRunId } = await validationApplication({
+      applicationId: context.referenceNumber?.toLowerCase(),
+      crn,
+      sbi,
+      landParcels
+    })
 
     const applicationData = transformStateObjectToGasApplication(
       identifiers,
-      context.state,
+      { ...context.state, applicationValidationRunId },
       stateToLandGrantsGasAnswers
     )
 
@@ -47,8 +55,8 @@ export default class SubmissionPageController extends SummaryPageController {
    */
   makePostRouteHandler() {
     const fn = async (request, context, h) => {
-      const { sbi } = request.auth.credentials
-      const result = await this.submitLandGrantApplication(sbi, context)
+      const { sbi, crn } = request.auth.credentials
+      const result = await this.submitLandGrantApplication(sbi, crn, context)
       request.logger.info('Form submission completed', result)
 
       const cacheService = getFormsCacheService(request.server)
