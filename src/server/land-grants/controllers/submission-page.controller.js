@@ -32,7 +32,7 @@ export default class SubmissionPageController extends SummaryPageController {
       defraId,
       clientRef: context.referenceNumber?.toLowerCase()
     }
-    // todo: add validation here
+
     const { id: applicationValidationRunId } = await validateApplication({
       applicationId: context.referenceNumber?.toLowerCase(),
       crn,
