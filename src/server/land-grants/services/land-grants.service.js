@@ -36,8 +36,8 @@ export const stringifyParcel = ({ parcelId, sheetId }) => `${sheetId}-${parcelId
  * @returns {Promise<any>}
  * @throws {Error}
  */
-export async function postToLandGrantsApi(endpoint, body) {
-  const response = await fetch(`${LAND_GRANTS_API_URL}${endpoint}`, {
+export async function postToLandGrantsApi(endpoint, body, baseUrlOverride = null) {
+  const response = await fetch(`${baseUrlOverride ?? LAND_GRANTS_API_URL}${endpoint}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -163,11 +163,15 @@ export async function triggerApiActionsValidation({ sheetId, parcelId, actionsOb
  * @returns {Promise<object>} - Map of parcel string IDs to their sizes
  * @throws {Error}
  */
-async function fetchParcelsSize(parcelIds) {
-  const data = await postToLandGrantsApi('/parcels', {
-    parcelIds,
-    fields: ['size']
-  })
+export async function fetchParcelsSize(parcelIds, baseUrlOverride = null) {
+  const data = await postToLandGrantsApi(
+    '/parcels',
+    {
+      parcelIds,
+      fields: ['size']
+    },
+    baseUrlOverride
+  )
   return data.parcels.reduce((acc, p) => {
     acc[stringifyParcel(p)] = p.size
     return acc
