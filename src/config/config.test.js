@@ -1,15 +1,29 @@
 import { vi } from 'vitest'
+import fs from 'fs'
+import path from 'path'
 
 const originalEnv = process.env
+const envPath = path.join(process.cwd(), '.env')
+const envBackupPath = path.join(process.cwd(), '.env.backup')
 
 describe('config', () => {
   beforeEach(() => {
     vi.resetModules()
     process.env = { ...originalEnv }
+
+    // Temporarily rename .env file to prevent dotenv from loading it during tests
+    if (fs.existsSync(envPath)) {
+      fs.renameSync(envPath, envBackupPath)
+    }
   })
 
   afterEach(() => {
     process.env = originalEnv
+
+    // Restore .env file
+    if (fs.existsSync(envBackupPath)) {
+      fs.renameSync(envBackupPath, envPath)
+    }
   })
 
   test.each([
@@ -60,6 +74,8 @@ describe('config', () => {
       process.env.NODE_ENV = nodeEnv
     }
 
+    // Clear module cache to ensure fresh import
+    vi.resetModules()
     const { config } = await import('./config.js')
 
     Object.entries(expected).forEach(([key, value]) => {
@@ -100,6 +116,8 @@ describe('config', () => {
       process.env[key] = value
     })
 
+    // Clear module cache to ensure fresh import
+    vi.resetModules()
     const { config } = await import('./config.js')
 
     Object.entries(expected).forEach(([key, value]) => {
