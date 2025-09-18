@@ -1,4 +1,5 @@
 import { vi } from 'vitest'
+import { mockFetchWithResponse } from '~/src/__mocks__/hapi-mocks.js'
 import { config } from '~/src/config/config.js'
 import {
   invokeGasGetAction,
@@ -6,7 +7,6 @@ import {
   makeGasApiRequest,
   submitGrantApplication
 } from '~/src/server/common/services/grant-application/grant-application.service.js'
-import { mockFetchWithResponse } from '~/src/__mocks__/hapi-mocks.js'
 
 const gasApi = config.get('gas.apiEndpoint')
 const code = config.get('landGrants.grantCode')
@@ -69,7 +69,6 @@ describe('submitGrantApplication', () => {
     fetch.mockResolvedValue({
       ok: false,
       status: 400,
-      text: vi.fn().mockResolvedValueOnce(mockMessage),
       statusText: 'Bad Request',
       json: vi.fn().mockResolvedValueOnce({ message: mockMessage })
     })
@@ -150,7 +149,6 @@ describe('invokeGasPostAction', () => {
     fetch.mockResolvedValue({
       ok: false,
       status: 400,
-      text: vi.fn().mockResolvedValueOnce(mockMessage),
       statusText: 'Bad Request',
       json: vi.fn().mockResolvedValueOnce({ message: mockMessage })
     })
@@ -183,13 +181,12 @@ describe('invokeGasPostAction', () => {
 
   test('should throw a GrantApplicationServiceApiError with correct properties', async () => {
     const errorStatus = 422
-    const errorText = JSON.stringify({ message: 'API error' })
 
     fetch.mockResolvedValue({
       ok: false,
       status: errorStatus,
-      text: vi.fn().mockResolvedValueOnce(errorText),
-      statusText: 'API error'
+      json: () => ({ message: 'Gas error' }),
+      statusText: 'Internal Server Error'
     })
 
     let thrownError
@@ -202,7 +199,7 @@ describe('invokeGasPostAction', () => {
     expect(thrownError).toBeDefined()
     expect(thrownError.name).toBe('GrantApplicationServiceApiError')
     expect(thrownError.status).toBe(errorStatus)
-    expect(thrownError.responseBody).toBe('422 API error')
+    expect(thrownError.responseBody).toBe('422 Internal Server Error - Gas error')
     expect(thrownError.grantCode).toBe(code)
 
     expect(fetch).toHaveBeenCalledWith(`${gasApi}/grants/${code}/actions/${actionName}/invoke`, {
@@ -298,7 +295,7 @@ describe('invokeGasGetAction', () => {
     fetch.mockResolvedValue({
       ok: false,
       status: 403,
-      text: vi.fn().mockResolvedValueOnce(mockMessage),
+      json: () => ({ message: mockMessage }),
       statusText: 'Forbidden'
     })
 
@@ -314,13 +311,12 @@ describe('invokeGasGetAction', () => {
 
   test('should throw a GrantApplicationServiceApiError with correct properties', async () => {
     const errorStatus = 422
-    const errorText = JSON.stringify({ message: 'API error' })
 
     fetch.mockResolvedValue({
       ok: false,
       status: errorStatus,
-      text: vi.fn().mockResolvedValueOnce(errorText),
-      statusText: 'API error'
+      json: () => ({ message: 'Gas error' }),
+      statusText: 'Bad Request'
     })
 
     let thrownError
@@ -334,7 +330,7 @@ describe('invokeGasGetAction', () => {
     expect(thrownError.name).toBe('GrantApplicationServiceApiError')
     expect(thrownError.status).toBe(errorStatus)
     expect(thrownError.grantCode).toBe(code)
-    expect(thrownError.message).toBe('Failed to process GAS API request: 422 API error')
+    expect(thrownError.message).toBe('Failed to process GAS API request: 422 Bad Request - Gas error')
   })
 })
 
@@ -468,7 +464,7 @@ describe('makeGasApiRequest', () => {
       ok: false,
       status: errorStatus,
       statusText,
-      text: vi.fn().mockResolvedValueOnce(errorText)
+      json: () => ({ message: 'Gas error' })
     })
 
     let thrownError
@@ -480,9 +476,9 @@ describe('makeGasApiRequest', () => {
 
     expect(thrownError).toBeDefined()
     expect(thrownError.name).toBe('GrantApplicationServiceApiError')
-    expect(thrownError.message).toBe(`Failed to process GAS API request: ${errorStatus} ${statusText}`)
+    expect(thrownError.message).toBe(`Failed to process GAS API request: ${errorStatus} ${statusText} - Gas error`)
     expect(thrownError.status).toBe(errorStatus)
-    expect(thrownError.responseBody).toBe(errorText)
+    expect(thrownError.responseBody).toBe(`${errorText} - Gas error`)
     expect(thrownError.grantCode).toBe(testGrantCode)
   })
 
@@ -495,13 +491,13 @@ describe('makeGasApiRequest', () => {
       ok: false,
       status: errorStatus,
       statusText,
-      text: vi.fn().mockResolvedValueOnce(errorText)
+      json: () => ({ message: 'Gas error' })
     })
 
     await expect(makeGasApiRequest(testUrl, testGrantCode)).rejects.toMatchObject({
       name: 'GrantApplicationServiceApiError',
       status: errorStatus,
-      responseBody: errorText,
+      responseBody: `${errorText} - Gas error`,
       grantCode: testGrantCode
     })
   })
@@ -535,7 +531,7 @@ describe('makeGasApiRequest edge cases', () => {
     fetch.mockResolvedValue({
       ok: false,
       status: 500,
-      text: vi.fn().mockResolvedValueOnce(mockMessage),
+      json: () => ({ message: mockMessage }),
       statusText: 'Internal Server Error'
     })
 
