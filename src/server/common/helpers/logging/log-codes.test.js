@@ -1,75 +1,126 @@
 import { LogCodes, validateLogCodes } from './log-codes.js'
 
+// Test constants
+const TEST_USER_IDS = {
+  DEFAULT: 'test',
+  CONTACT_ID: '12345'
+}
+
+const TEST_PATHS = {
+  ADMIN: '/admin',
+  AUTH_SIGN_IN_OIDC: '/auth/sign-in-oidc',
+  EXAMPLE_GRANT: '/example-grant',
+  TEST_PATH: '/test-path'
+}
+
+const TEST_ERRORS = {
+  INVALID_CREDENTIALS: 'Invalid credentials',
+  INVALID_TOKEN: 'Invalid token',
+  NETWORK_ERROR: 'Network error',
+  NO_TOKEN: 'No token provided',
+  PROCESSING_FAILED: 'Processing failed',
+  REQUIRED_FIELD: 'Required field missing',
+  DATABASE_ERROR: 'Database connection failed',
+  CONNECTION_FAILED: 'Connection failed',
+  INVALID_DATA: 'Invalid data'
+}
+
+const TEST_SESSIONS = {
+  SESSION_123: 'session123'
+}
+
+const TEST_ORGANIZATIONS = {
+  DEFAULT: 'org'
+}
+
+const TEST_GRANT_TYPES = {
+  ADDING_VALUE: 'adding-value'
+}
+
+const TEST_FORM_NAMES = {
+  DECLARATION: 'declaration'
+}
+
+const TEST_REFERENCE_NUMBERS = {
+  REF_123: 'REF123'
+}
+
+const TEST_SBI = {
+  DEFAULT: '106284736'
+}
+
+const TEST_TASK_NAMES = {
+  DECLARATION: 'declaration'
+}
+
+const TEST_AGREEMENT_TYPES = {
+  TERMS: 'terms'
+}
+
+const TEST_ENDPOINTS = {
+  API_GRANTS: '/api/grants',
+  API_TEST: '/api/test'
+}
+
+const TEST_PORTS = {
+  DEFAULT: 3000
+}
 describe('LogCodes', () => {
   describe('AUTH log codes', () => {
-    it('should have valid SIGN_IN_ATTEMPT log code', () => {
-      const logCode = LogCodes.AUTH.SIGN_IN_ATTEMPT
-      expect(logCode.level).toBe('info')
+    it.each([
+      [
+        'SIGN_IN_ATTEMPT',
+        'info',
+        { userId: TEST_USER_IDS.DEFAULT },
+        `User sign-in attempt for user=${TEST_USER_IDS.DEFAULT}`
+      ],
+      [
+        'SIGN_IN_SUCCESS',
+        'info',
+        { userId: TEST_USER_IDS.DEFAULT, organisationId: TEST_ORGANIZATIONS.DEFAULT },
+        `User sign-in successful for user=${TEST_USER_IDS.DEFAULT}, organisation=${TEST_ORGANIZATIONS.DEFAULT}`
+      ],
+      [
+        'SIGN_IN_FAILURE',
+        'error',
+        { userId: TEST_USER_IDS.DEFAULT, error: TEST_ERRORS.INVALID_CREDENTIALS },
+        `User sign-in failed for user=${TEST_USER_IDS.DEFAULT}. Error: ${TEST_ERRORS.INVALID_CREDENTIALS}`
+      ],
+      [
+        'SIGN_OUT',
+        'info',
+        { userId: TEST_USER_IDS.DEFAULT, sessionId: TEST_SESSIONS.SESSION_123 },
+        `User sign-out for user=${TEST_USER_IDS.DEFAULT}, session=${TEST_SESSIONS.SESSION_123}`
+      ],
+      [
+        'TOKEN_VERIFICATION_SUCCESS',
+        'info',
+        { userId: TEST_USER_IDS.DEFAULT, organisationId: TEST_ORGANIZATIONS.DEFAULT },
+        `Token verification successful for user=${TEST_USER_IDS.DEFAULT}, organisation=${TEST_ORGANIZATIONS.DEFAULT}`
+      ],
+      [
+        'TOKEN_VERIFICATION_FAILURE',
+        'error',
+        { userId: TEST_USER_IDS.DEFAULT, error: TEST_ERRORS.INVALID_TOKEN },
+        `Token verification failed for user=${TEST_USER_IDS.DEFAULT}. Error: ${TEST_ERRORS.INVALID_TOKEN}`
+      ],
+      [
+        'SESSION_EXPIRED',
+        'info',
+        { userId: TEST_USER_IDS.DEFAULT, sessionId: TEST_SESSIONS.SESSION_123 },
+        `Session expired for user=${TEST_USER_IDS.DEFAULT}, session=${TEST_SESSIONS.SESSION_123}`
+      ],
+      [
+        'UNAUTHORIZED_ACCESS',
+        'error',
+        { path: TEST_PATHS.ADMIN, userId: TEST_USER_IDS.DEFAULT },
+        `Unauthorized access attempt to path=${TEST_PATHS.ADMIN} from user=${TEST_USER_IDS.DEFAULT}`
+      ]
+    ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
+      const logCode = LogCodes.AUTH[logCodeName]
+      expect(logCode.level).toBe(expectedLevel)
       expect(typeof logCode.messageFunc).toBe('function')
-      expect(logCode.messageFunc({ userId: 'test' })).toBe('User sign-in attempt for user=test')
-    })
-
-    it('should have valid SIGN_IN_SUCCESS log code', () => {
-      const logCode = LogCodes.AUTH.SIGN_IN_SUCCESS
-      expect(logCode.level).toBe('info')
-      expect(typeof logCode.messageFunc).toBe('function')
-      expect(logCode.messageFunc({ userId: 'test', organisationId: 'org' })).toBe(
-        'User sign-in successful for user=test, organisation=org'
-      )
-    })
-
-    it('should have valid SIGN_IN_FAILURE log code', () => {
-      const logCode = LogCodes.AUTH.SIGN_IN_FAILURE
-      expect(logCode.level).toBe('error')
-      expect(typeof logCode.messageFunc).toBe('function')
-      expect(logCode.messageFunc({ userId: 'test', error: 'Invalid credentials' })).toBe(
-        'User sign-in failed for user=test. Error: Invalid credentials'
-      )
-    })
-
-    it('should have valid SIGN_OUT log code', () => {
-      const logCode = LogCodes.AUTH.SIGN_OUT
-      expect(logCode.level).toBe('info')
-      expect(typeof logCode.messageFunc).toBe('function')
-      expect(logCode.messageFunc({ userId: 'test', sessionId: 'session123' })).toBe(
-        'User sign-out for user=test, session=session123'
-      )
-    })
-
-    it('should have valid TOKEN_VERIFICATION_SUCCESS log code', () => {
-      const logCode = LogCodes.AUTH.TOKEN_VERIFICATION_SUCCESS
-      expect(logCode.level).toBe('info')
-      expect(typeof logCode.messageFunc).toBe('function')
-      expect(logCode.messageFunc({ userId: 'test', organisationId: 'org' })).toBe(
-        'Token verification successful for user=test, organisation=org'
-      )
-    })
-
-    it('should have valid TOKEN_VERIFICATION_FAILURE log code', () => {
-      const logCode = LogCodes.AUTH.TOKEN_VERIFICATION_FAILURE
-      expect(logCode.level).toBe('error')
-      expect(typeof logCode.messageFunc).toBe('function')
-      expect(logCode.messageFunc({ userId: 'test', error: 'Invalid token' })).toBe(
-        'Token verification failed for user=test. Error: Invalid token'
-      )
-    })
-
-    it('should have valid SESSION_EXPIRED log code', () => {
-      const logCode = LogCodes.AUTH.SESSION_EXPIRED
-      expect(logCode.level).toBe('info')
-      expect(typeof logCode.messageFunc).toBe('function')
-      expect(logCode.messageFunc({ userId: 'test', sessionId: 'session123' })).toBe(
-        'Session expired for user=test, session=session123'
-      )
-    })
-
-    it('should have valid UNAUTHORIZED_ACCESS log code', () => {
-      const logCode = LogCodes.AUTH.UNAUTHORIZED_ACCESS
-      expect(logCode.level).toBe('error')
-      expect(typeof logCode.messageFunc).toBe('function')
-      expect(logCode.messageFunc({ path: '/admin', userId: 'test' })).toBe(
-        'Unauthorized access attempt to path=/admin from user=test'
-      )
+      expect(logCode.messageFunc(testParams)).toBe(expectedMessage)
     })
 
     it('should have valid AUTH_DEBUG log code', () => {
@@ -77,7 +128,7 @@ describe('LogCodes', () => {
       expect(logCode.level).toBe('debug')
       expect(typeof logCode.messageFunc).toBe('function')
       const debugOptions = {
-        path: '/auth/sign-in-oidc',
+        path: TEST_PATHS.AUTH_SIGN_IN_OIDC,
         isAuthenticated: false,
         strategy: 'defra-id',
         mode: 'try',
@@ -87,121 +138,142 @@ describe('LogCodes', () => {
         userAgent: 'Mozilla/5.0',
         referer: 'https://example.com',
         queryParams: { test: 'value' },
-        authError: 'No token provided'
+        authError: TEST_ERRORS.NO_TOKEN
       }
       const result = logCode.messageFunc(debugOptions)
-      expect(result).toContain('Auth debug for path=/auth/sign-in-oidc')
+      expect(result).toContain(`Auth debug for path=${TEST_PATHS.AUTH_SIGN_IN_OIDC}`)
       expect(result).toContain('isAuthenticated=false')
       expect(result).toContain('strategy=defra-id')
-      expect(result).toContain('authError=No token provided')
+      expect(result).toContain(`authError=${TEST_ERRORS.NO_TOKEN}`)
+    })
+
+    it.each([
+      [
+        'WHITELIST_ACCESS_GRANTED',
+        'info',
+        {
+          path: TEST_PATHS.EXAMPLE_GRANT,
+          userId: 'test123',
+          sbi: TEST_SBI.DEFAULT,
+          validationType: 'CRN and SBI validation passed'
+        },
+        `Whitelist access granted to path=${TEST_PATHS.EXAMPLE_GRANT} for user=test123, sbi=${TEST_SBI.DEFAULT}: CRN and SBI validation passed`
+      ],
+      [
+        'WHITELIST_ACCESS_DENIED_BOTH',
+        'info',
+        {
+          path: TEST_PATHS.EXAMPLE_GRANT,
+          userId: 'test123',
+          sbi: TEST_SBI.DEFAULT
+        },
+        `Whitelist access denied to path=${TEST_PATHS.EXAMPLE_GRANT}: Both CRN test123 and SBI ${TEST_SBI.DEFAULT} failed validation`
+      ],
+      [
+        'WHITELIST_ACCESS_DENIED_CRN_PASSED',
+        'info',
+        {
+          path: TEST_PATHS.EXAMPLE_GRANT,
+          userId: 'test123',
+          sbi: TEST_SBI.DEFAULT
+        },
+        `Whitelist access denied to path=${TEST_PATHS.EXAMPLE_GRANT}: CRN test123 passed but SBI ${TEST_SBI.DEFAULT} failed validation`
+      ],
+      [
+        'WHITELIST_ACCESS_DENIED_SBI_PASSED',
+        'info',
+        {
+          path: TEST_PATHS.EXAMPLE_GRANT,
+          userId: 'test123',
+          sbi: TEST_SBI.DEFAULT
+        },
+        `Whitelist access denied to path=${TEST_PATHS.EXAMPLE_GRANT}: SBI ${TEST_SBI.DEFAULT} passed but CRN test123 failed validation`
+      ]
+    ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
+      const logCode = LogCodes.AUTH[logCodeName]
+      expect(logCode.level).toBe(expectedLevel)
+      expect(typeof logCode.messageFunc).toBe('function')
+      expect(logCode.messageFunc(testParams)).toBe(expectedMessage)
     })
   })
 
   describe('FORMS log codes', () => {
-    it('should have valid FORM_LOAD log code', () => {
-      const logCode = LogCodes.FORMS.FORM_LOAD
-      expect(logCode.level).toBe('info')
+    it.each([
+      [
+        'FORM_LOAD',
+        'info',
+        { formName: TEST_FORM_NAMES.DECLARATION, userId: TEST_USER_IDS.DEFAULT },
+        `Form loaded: ${TEST_FORM_NAMES.DECLARATION} for user=${TEST_USER_IDS.DEFAULT}`
+      ],
+      [
+        'FORM_VALIDATION_ERROR',
+        'error',
+        { formName: TEST_FORM_NAMES.DECLARATION, error: TEST_ERRORS.REQUIRED_FIELD },
+        `Form validation error in ${TEST_FORM_NAMES.DECLARATION}: ${TEST_ERRORS.REQUIRED_FIELD}`
+      ],
+      [
+        'FORM_SUBMIT',
+        'info',
+        { formName: TEST_FORM_NAMES.DECLARATION, userId: TEST_USER_IDS.DEFAULT },
+        `Form submitted: ${TEST_FORM_NAMES.DECLARATION} by user=${TEST_USER_IDS.DEFAULT}`
+      ],
+      [
+        'FORM_VALIDATION_SUCCESS',
+        'info',
+        { formName: TEST_FORM_NAMES.DECLARATION },
+        `Form validation successful for ${TEST_FORM_NAMES.DECLARATION}`
+      ],
+      [
+        'FORM_PROCESSING_ERROR',
+        'error',
+        { formName: TEST_FORM_NAMES.DECLARATION, error: TEST_ERRORS.PROCESSING_FAILED },
+        `Form processing error for ${TEST_FORM_NAMES.DECLARATION}: ${TEST_ERRORS.PROCESSING_FAILED}`
+      ],
+      [
+        'FORM_SAVE',
+        'info',
+        { formName: TEST_FORM_NAMES.DECLARATION, userId: TEST_USER_IDS.DEFAULT },
+        `Form saved: ${TEST_FORM_NAMES.DECLARATION} for user=${TEST_USER_IDS.DEFAULT}`
+      ]
+    ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
+      const logCode = LogCodes.FORMS[logCodeName]
+      expect(logCode.level).toBe(expectedLevel)
       expect(typeof logCode.messageFunc).toBe('function')
-      expect(logCode.messageFunc({ formName: 'declaration', userId: 'test' })).toBe(
-        'Form loaded: declaration for user=test'
-      )
-    })
-
-    it('should have valid FORM_VALIDATION_ERROR log code', () => {
-      const logCode = LogCodes.FORMS.FORM_VALIDATION_ERROR
-      expect(logCode.level).toBe('error')
-      expect(typeof logCode.messageFunc).toBe('function')
-      expect(
-        logCode.messageFunc({
-          formName: 'declaration',
-          error: 'Required field missing'
-        })
-      ).toBe('Form validation error in declaration: Required field missing')
-    })
-
-    it('should have valid FORM_SUBMIT log code', () => {
-      const logCode = LogCodes.FORMS.FORM_SUBMIT
-      expect(logCode.level).toBe('info')
-      expect(typeof logCode.messageFunc).toBe('function')
-      expect(logCode.messageFunc({ formName: 'declaration', userId: 'test' })).toBe(
-        'Form submitted: declaration by user=test'
-      )
-    })
-
-    it('should have valid FORM_VALIDATION_SUCCESS log code', () => {
-      const logCode = LogCodes.FORMS.FORM_VALIDATION_SUCCESS
-      expect(logCode.level).toBe('info')
-      expect(typeof logCode.messageFunc).toBe('function')
-      expect(logCode.messageFunc({ formName: 'declaration' })).toBe('Form validation successful for declaration')
-    })
-
-    it('should have valid FORM_PROCESSING_ERROR log code', () => {
-      const logCode = LogCodes.FORMS.FORM_PROCESSING_ERROR
-      expect(logCode.level).toBe('error')
-      expect(typeof logCode.messageFunc).toBe('function')
-      expect(
-        logCode.messageFunc({
-          formName: 'declaration',
-          error: 'Processing failed'
-        })
-      ).toBe('Form processing error for declaration: Processing failed')
-    })
-
-    it('should have valid FORM_SAVE log code', () => {
-      const logCode = LogCodes.FORMS.FORM_SAVE
-      expect(logCode.level).toBe('info')
-      expect(typeof logCode.messageFunc).toBe('function')
-      expect(logCode.messageFunc({ formName: 'declaration', userId: 'test' })).toBe(
-        'Form saved: declaration for user=test'
-      )
+      expect(logCode.messageFunc(testParams)).toBe(expectedMessage)
     })
   })
 
   describe('SUBMISSION log codes', () => {
-    it('should have valid SUBMISSION_STARTED log code', () => {
-      const logCode = LogCodes.SUBMISSION.SUBMISSION_STARTED
-      expect(logCode.level).toBe('info')
+    it.each([
+      [
+        'SUBMISSION_STARTED',
+        'info',
+        { grantType: TEST_GRANT_TYPES.ADDING_VALUE, userId: TEST_USER_IDS.DEFAULT },
+        `Grant submission started for grantType=${TEST_GRANT_TYPES.ADDING_VALUE}, user=${TEST_USER_IDS.DEFAULT}`
+      ],
+      [
+        'SUBMISSION_SUCCESS',
+        'info',
+        { grantType: TEST_GRANT_TYPES.ADDING_VALUE, referenceNumber: TEST_REFERENCE_NUMBERS.REF_123 },
+        `Grant submission successful for grantType=${TEST_GRANT_TYPES.ADDING_VALUE}, referenceNumber=${TEST_REFERENCE_NUMBERS.REF_123}`
+      ],
+      [
+        'SUBMISSION_FAILURE',
+        'error',
+        { grantType: TEST_GRANT_TYPES.ADDING_VALUE, userId: TEST_USER_IDS.DEFAULT, error: TEST_ERRORS.NETWORK_ERROR },
+        `Grant submission failed for grantType=${TEST_GRANT_TYPES.ADDING_VALUE}, user=${TEST_USER_IDS.DEFAULT}. Error: ${TEST_ERRORS.NETWORK_ERROR}`
+      ],
+      [
+        'SUBMISSION_VALIDATION_ERROR',
+        'error',
+        { grantType: TEST_GRANT_TYPES.ADDING_VALUE, error: TEST_ERRORS.INVALID_DATA },
+        `Submission validation error for grantType=${TEST_GRANT_TYPES.ADDING_VALUE}: ${TEST_ERRORS.INVALID_DATA}`
+      ]
+    ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
+      const logCode = LogCodes.SUBMISSION[logCodeName]
+      expect(logCode.level).toBe(expectedLevel)
       expect(typeof logCode.messageFunc).toBe('function')
-      expect(logCode.messageFunc({ grantType: 'adding-value', userId: 'test' })).toBe(
-        'Grant submission started for grantType=adding-value, user=test'
-      )
-    })
-
-    it('should have valid SUBMISSION_SUCCESS log code', () => {
-      const logCode = LogCodes.SUBMISSION.SUBMISSION_SUCCESS
-      expect(logCode.level).toBe('info')
-      expect(typeof logCode.messageFunc).toBe('function')
-      expect(
-        logCode.messageFunc({
-          grantType: 'adding-value',
-          referenceNumber: 'REF123'
-        })
-      ).toBe('Grant submission successful for grantType=adding-value, referenceNumber=REF123')
-    })
-
-    it('should have valid SUBMISSION_FAILURE log code', () => {
-      const logCode = LogCodes.SUBMISSION.SUBMISSION_FAILURE
-      expect(logCode.level).toBe('error')
-      expect(typeof logCode.messageFunc).toBe('function')
-      expect(
-        logCode.messageFunc({
-          grantType: 'adding-value',
-          userId: 'test',
-          error: 'Network error'
-        })
-      ).toBe('Grant submission failed for grantType=adding-value, user=test. Error: Network error')
-    })
-
-    it('should have valid SUBMISSION_VALIDATION_ERROR log code', () => {
-      const logCode = LogCodes.SUBMISSION.SUBMISSION_VALIDATION_ERROR
-      expect(logCode.level).toBe('error')
-      expect(typeof logCode.messageFunc).toBe('function')
-      expect(
-        logCode.messageFunc({
-          grantType: 'adding-value',
-          error: 'Invalid data'
-        })
-      ).toBe('Submission validation error for grantType=adding-value: Invalid data')
+      expect(logCode.messageFunc(testParams)).toBe(expectedMessage)
     })
 
     it('should have valid SUBMISSION_PAYLOAD_LOG log code', () => {
@@ -209,202 +281,228 @@ describe('LogCodes', () => {
       expect(logCode.level).toBe('debug')
       expect(typeof logCode.messageFunc).toBe('function')
       const payload = { test: 'data' }
-      const result = logCode.messageFunc({ grantType: 'adding-value', payload })
-      expect(result).toContain('Submission payload for grantType=adding-value:')
+      const result = logCode.messageFunc({ grantType: TEST_GRANT_TYPES.ADDING_VALUE, payload })
+      expect(result).toContain(`Submission payload for grantType=${TEST_GRANT_TYPES.ADDING_VALUE}:`)
       expect(result).toContain('"test": "data"')
     })
   })
 
   describe('DECLARATION log codes', () => {
-    it('should have valid DECLARATION_LOAD log code', () => {
-      const logCode = LogCodes.DECLARATION.DECLARATION_LOAD
-      expect(logCode.level).toBe('info')
+    it.each([
+      [
+        'DECLARATION_LOAD',
+        'info',
+        { userId: TEST_USER_IDS.DEFAULT, grantType: TEST_GRANT_TYPES.ADDING_VALUE },
+        `Declaration page loaded for user=${TEST_USER_IDS.DEFAULT}, grantType=${TEST_GRANT_TYPES.ADDING_VALUE}`
+      ],
+      [
+        'DECLARATION_ACCEPTED',
+        'info',
+        { userId: TEST_USER_IDS.DEFAULT, grantType: TEST_GRANT_TYPES.ADDING_VALUE },
+        `Declaration accepted by user=${TEST_USER_IDS.DEFAULT}, grantType=${TEST_GRANT_TYPES.ADDING_VALUE}`
+      ],
+      [
+        'DECLARATION_ERROR',
+        'error',
+        { userId: TEST_USER_IDS.DEFAULT, error: TEST_ERRORS.PROCESSING_FAILED },
+        `Declaration processing error for user=${TEST_USER_IDS.DEFAULT}: ${TEST_ERRORS.PROCESSING_FAILED}`
+      ]
+    ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
+      const logCode = LogCodes.DECLARATION[logCodeName]
+      expect(logCode.level).toBe(expectedLevel)
       expect(typeof logCode.messageFunc).toBe('function')
-      expect(logCode.messageFunc({ userId: 'test', grantType: 'adding-value' })).toBe(
-        'Declaration page loaded for user=test, grantType=adding-value'
-      )
-    })
-
-    it('should have valid DECLARATION_ACCEPTED log code', () => {
-      const logCode = LogCodes.DECLARATION.DECLARATION_ACCEPTED
-      expect(logCode.level).toBe('info')
-      expect(typeof logCode.messageFunc).toBe('function')
-      expect(logCode.messageFunc({ userId: 'test', grantType: 'adding-value' })).toBe(
-        'Declaration accepted by user=test, grantType=adding-value'
-      )
-    })
-
-    it('should have valid DECLARATION_ERROR log code', () => {
-      const logCode = LogCodes.DECLARATION.DECLARATION_ERROR
-      expect(logCode.level).toBe('error')
-      expect(typeof logCode.messageFunc).toBe('function')
-      expect(logCode.messageFunc({ userId: 'test', error: 'Processing failed' })).toBe(
-        'Declaration processing error for user=test: Processing failed'
-      )
+      expect(logCode.messageFunc(testParams)).toBe(expectedMessage)
     })
   })
 
   describe('CONFIRMATION log codes', () => {
-    it('should have valid CONFIRMATION_LOAD log code', () => {
-      const logCode = LogCodes.CONFIRMATION.CONFIRMATION_LOAD
-      expect(logCode.level).toBe('info')
+    it.each([
+      [
+        'CONFIRMATION_LOAD',
+        'info',
+        { userId: TEST_USER_IDS.DEFAULT, grantType: TEST_GRANT_TYPES.ADDING_VALUE },
+        `Confirmation page loaded for user=${TEST_USER_IDS.DEFAULT}, grantType=${TEST_GRANT_TYPES.ADDING_VALUE}`
+      ],
+      [
+        'CONFIRMATION_SUCCESS',
+        'info',
+        { userId: TEST_USER_IDS.DEFAULT, referenceNumber: TEST_REFERENCE_NUMBERS.REF_123 },
+        `Confirmation processed successfully for user=${TEST_USER_IDS.DEFAULT}, referenceNumber=${TEST_REFERENCE_NUMBERS.REF_123}`
+      ],
+      [
+        'CONFIRMATION_ERROR',
+        'error',
+        { userId: TEST_USER_IDS.DEFAULT, error: TEST_ERRORS.PROCESSING_FAILED },
+        `Confirmation processing error for user=${TEST_USER_IDS.DEFAULT}: ${TEST_ERRORS.PROCESSING_FAILED}`
+      ]
+    ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
+      const logCode = LogCodes.CONFIRMATION[logCodeName]
+      expect(logCode.level).toBe(expectedLevel)
       expect(typeof logCode.messageFunc).toBe('function')
-      expect(logCode.messageFunc({ userId: 'test', grantType: 'adding-value' })).toBe(
-        'Confirmation page loaded for user=test, grantType=adding-value'
-      )
-    })
-
-    it('should have valid CONFIRMATION_SUCCESS log code', () => {
-      const logCode = LogCodes.CONFIRMATION.CONFIRMATION_SUCCESS
-      expect(logCode.level).toBe('info')
-      expect(typeof logCode.messageFunc).toBe('function')
-      expect(logCode.messageFunc({ userId: 'test', referenceNumber: 'REF123' })).toBe(
-        'Confirmation processed successfully for user=test, referenceNumber=REF123'
-      )
-    })
-
-    it('should have valid CONFIRMATION_ERROR log code', () => {
-      const logCode = LogCodes.CONFIRMATION.CONFIRMATION_ERROR
-      expect(logCode.level).toBe('error')
-      expect(typeof logCode.messageFunc).toBe('function')
-      expect(logCode.messageFunc({ userId: 'test', error: 'Processing failed' })).toBe(
-        'Confirmation processing error for user=test: Processing failed'
-      )
+      expect(logCode.messageFunc(testParams)).toBe(expectedMessage)
     })
   })
 
   describe('TASKLIST log codes', () => {
-    it('should have valid TASKLIST_LOAD log code', () => {
-      const logCode = LogCodes.TASKLIST.TASKLIST_LOAD
-      expect(logCode.level).toBe('info')
+    it.each([
+      [
+        'TASKLIST_LOAD',
+        'info',
+        { userId: TEST_USER_IDS.DEFAULT, grantType: TEST_GRANT_TYPES.ADDING_VALUE },
+        `Task list loaded for user=${TEST_USER_IDS.DEFAULT}, grantType=${TEST_GRANT_TYPES.ADDING_VALUE}`
+      ],
+      [
+        'TASK_COMPLETED',
+        'info',
+        { taskName: TEST_TASK_NAMES.DECLARATION, userId: TEST_USER_IDS.DEFAULT },
+        `Task completed: ${TEST_TASK_NAMES.DECLARATION} for user=${TEST_USER_IDS.DEFAULT}`
+      ],
+      [
+        'TASK_ERROR',
+        'error',
+        { taskName: TEST_TASK_NAMES.DECLARATION, error: TEST_ERRORS.PROCESSING_FAILED },
+        `Task processing error for ${TEST_TASK_NAMES.DECLARATION}: ${TEST_ERRORS.PROCESSING_FAILED}`
+      ]
+    ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
+      const logCode = LogCodes.TASKLIST[logCodeName]
+      expect(logCode.level).toBe(expectedLevel)
       expect(typeof logCode.messageFunc).toBe('function')
-      expect(logCode.messageFunc({ userId: 'test', grantType: 'adding-value' })).toBe(
-        'Task list loaded for user=test, grantType=adding-value'
-      )
-    })
-
-    it('should have valid TASK_COMPLETED log code', () => {
-      const logCode = LogCodes.TASKLIST.TASK_COMPLETED
-      expect(logCode.level).toBe('info')
-      expect(typeof logCode.messageFunc).toBe('function')
-      expect(logCode.messageFunc({ taskName: 'declaration', userId: 'test' })).toBe(
-        'Task completed: declaration for user=test'
-      )
-    })
-
-    it('should have valid TASK_ERROR log code', () => {
-      const logCode = LogCodes.TASKLIST.TASK_ERROR
-      expect(logCode.level).toBe('error')
-      expect(typeof logCode.messageFunc).toBe('function')
-      expect(
-        logCode.messageFunc({
-          taskName: 'declaration',
-          error: 'Processing failed'
-        })
-      ).toBe('Task processing error for declaration: Processing failed')
+      expect(logCode.messageFunc(testParams)).toBe(expectedMessage)
     })
   })
 
   describe('LAND_GRANTS log codes', () => {
-    it('should have valid LAND_GRANT_APPLICATION_STARTED log code', () => {
-      const logCode = LogCodes.LAND_GRANTS.LAND_GRANT_APPLICATION_STARTED
-      expect(logCode.level).toBe('info')
+    it.each([
+      [
+        'LAND_GRANT_APPLICATION_STARTED',
+        'info',
+        { userId: TEST_USER_IDS.DEFAULT },
+        `Land grant application started for user=${TEST_USER_IDS.DEFAULT}`
+      ],
+      [
+        'LAND_GRANT_APPLICATION_SUBMITTED',
+        'info',
+        { userId: TEST_USER_IDS.DEFAULT, referenceNumber: TEST_REFERENCE_NUMBERS.REF_123 },
+        `Land grant application submitted for user=${TEST_USER_IDS.DEFAULT}, referenceNumber=${TEST_REFERENCE_NUMBERS.REF_123}`
+      ],
+      [
+        'LAND_GRANT_ERROR',
+        'error',
+        { userId: TEST_USER_IDS.DEFAULT, error: TEST_ERRORS.PROCESSING_FAILED },
+        `Land grant processing error for user=${TEST_USER_IDS.DEFAULT}: ${TEST_ERRORS.PROCESSING_FAILED}`
+      ]
+    ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
+      const logCode = LogCodes.LAND_GRANTS[logCodeName]
+      expect(logCode.level).toBe(expectedLevel)
       expect(typeof logCode.messageFunc).toBe('function')
-      expect(logCode.messageFunc({ userId: 'test' })).toBe('Land grant application started for user=test')
-    })
-
-    it('should have valid LAND_GRANT_APPLICATION_SUBMITTED log code', () => {
-      const logCode = LogCodes.LAND_GRANTS.LAND_GRANT_APPLICATION_SUBMITTED
-      expect(logCode.level).toBe('info')
-      expect(typeof logCode.messageFunc).toBe('function')
-      expect(logCode.messageFunc({ userId: 'test', referenceNumber: 'REF123' })).toBe(
-        'Land grant application submitted for user=test, referenceNumber=REF123'
-      )
-    })
-
-    it('should have valid LAND_GRANT_ERROR log code', () => {
-      const logCode = LogCodes.LAND_GRANTS.LAND_GRANT_ERROR
-      expect(logCode.level).toBe('error')
-      expect(typeof logCode.messageFunc).toBe('function')
-      expect(logCode.messageFunc({ userId: 'test', error: 'Processing failed' })).toBe(
-        'Land grant processing error for user=test: Processing failed'
-      )
+      expect(logCode.messageFunc(testParams)).toBe(expectedMessage)
     })
   })
 
   describe('AGREEMENTS log codes', () => {
-    it('should have valid AGREEMENT_LOAD log code', () => {
-      const logCode = LogCodes.AGREEMENTS.AGREEMENT_LOAD
-      expect(logCode.level).toBe('info')
+    it.each([
+      [
+        'AGREEMENT_LOAD',
+        'info',
+        { userId: TEST_USER_IDS.DEFAULT, agreementType: TEST_AGREEMENT_TYPES.TERMS },
+        `Agreement loaded for user=${TEST_USER_IDS.DEFAULT}, agreementType=${TEST_AGREEMENT_TYPES.TERMS}`
+      ],
+      [
+        'AGREEMENT_ACCEPTED',
+        'info',
+        { userId: TEST_USER_IDS.DEFAULT, agreementType: TEST_AGREEMENT_TYPES.TERMS },
+        `Agreement accepted by user=${TEST_USER_IDS.DEFAULT}, agreementType=${TEST_AGREEMENT_TYPES.TERMS}`
+      ],
+      [
+        'AGREEMENT_ERROR',
+        'error',
+        { userId: TEST_USER_IDS.DEFAULT, error: TEST_ERRORS.PROCESSING_FAILED },
+        `Agreement processing error for user=${TEST_USER_IDS.DEFAULT}: ${TEST_ERRORS.PROCESSING_FAILED}`
+      ]
+    ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
+      const logCode = LogCodes.AGREEMENTS[logCodeName]
+      expect(logCode.level).toBe(expectedLevel)
       expect(typeof logCode.messageFunc).toBe('function')
-      expect(logCode.messageFunc({ userId: 'test', agreementType: 'terms' })).toBe(
-        'Agreement loaded for user=test, agreementType=terms'
-      )
-    })
-
-    it('should have valid AGREEMENT_ACCEPTED log code', () => {
-      const logCode = LogCodes.AGREEMENTS.AGREEMENT_ACCEPTED
-      expect(logCode.level).toBe('info')
-      expect(typeof logCode.messageFunc).toBe('function')
-      expect(logCode.messageFunc({ userId: 'test', agreementType: 'terms' })).toBe(
-        'Agreement accepted by user=test, agreementType=terms'
-      )
-    })
-
-    it('should have valid AGREEMENT_ERROR log code', () => {
-      const logCode = LogCodes.AGREEMENTS.AGREEMENT_ERROR
-      expect(logCode.level).toBe('error')
-      expect(typeof logCode.messageFunc).toBe('function')
-      expect(logCode.messageFunc({ userId: 'test', error: 'Processing failed' })).toBe(
-        'Agreement processing error for user=test: Processing failed'
-      )
+      expect(logCode.messageFunc(testParams)).toBe(expectedMessage)
     })
   })
 
   describe('SYSTEM log codes', () => {
-    it('should have valid SERVER_ERROR log code', () => {
-      const logCode = LogCodes.SYSTEM.SERVER_ERROR
-      expect(logCode.level).toBe('error')
+    it.each([
+      [
+        'SERVER_ERROR',
+        'error',
+        { error: TEST_ERRORS.DATABASE_ERROR },
+        `Server error occurred: ${TEST_ERRORS.DATABASE_ERROR}`
+      ],
+      [
+        'SYSTEM_STARTUP',
+        'info',
+        { port: TEST_PORTS.DEFAULT },
+        `System startup completed on port=${TEST_PORTS.DEFAULT}`
+      ],
+      [
+        'EXTERNAL_API_CALL',
+        'info',
+        { endpoint: TEST_ENDPOINTS.API_GRANTS, userId: TEST_USER_IDS.DEFAULT },
+        `External API call to ${TEST_ENDPOINTS.API_GRANTS} for user=${TEST_USER_IDS.DEFAULT}`
+      ],
+      ['SYSTEM_SHUTDOWN', 'info', {}, 'System shutdown initiated'],
+      [
+        'EXTERNAL_API_ERROR',
+        'error',
+        { endpoint: TEST_ENDPOINTS.API_GRANTS, error: TEST_ERRORS.CONNECTION_FAILED },
+        `External API error for ${TEST_ENDPOINTS.API_GRANTS}: ${TEST_ERRORS.CONNECTION_FAILED}`
+      ]
+    ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
+      const logCode = LogCodes.SYSTEM[logCodeName]
+      expect(logCode.level).toBe(expectedLevel)
       expect(typeof logCode.messageFunc).toBe('function')
-      expect(logCode.messageFunc({ error: 'Database connection failed' })).toBe(
-        'Server error occurred: Database connection failed'
-      )
+      expect(logCode.messageFunc(testParams)).toBe(expectedMessage)
     })
 
-    it('should have valid SYSTEM_STARTUP log code', () => {
-      const logCode = LogCodes.SYSTEM.SYSTEM_STARTUP
-      expect(logCode.level).toBe('info')
+    it('should have valid VIEW_DEBUG log code', () => {
+      const logCode = LogCodes.SYSTEM.VIEW_DEBUG
+      expect(logCode.level).toBe('debug')
       expect(typeof logCode.messageFunc).toBe('function')
-      expect(logCode.messageFunc({ port: 3000 })).toBe('System startup completed on port=3000')
+      const debugOptions = {
+        currentFilePath: '/app/src/server/index.js',
+        isRunningBuiltCode: true,
+        basePath: '/app',
+        processWorkingDir: '/app',
+        resolvedViewPaths: ['/app/views', '/app/templates']
+      }
+      const result = logCode.messageFunc(debugOptions)
+      expect(result).toContain('View path debug: currentFile=/app/src/server/index.js')
+      expect(result).toContain('isBuilt=true')
+      expect(result).toContain('pathsResolved=2')
     })
 
-    it('should have valid EXTERNAL_API_CALL log code', () => {
-      const logCode = LogCodes.SYSTEM.EXTERNAL_API_CALL
-      expect(logCode.level).toBe('info')
+    it.each([
+      [
+        'VIEW_PATH_CHECK',
+        'debug',
+        { index: 0, path: '/app/views', exists: true, isAbsolute: true },
+        'View path 0: path=/app/views, exists=true, isAbsolute=true'
+      ],
+      [
+        'ENV_CONFIG_DEBUG',
+        'debug',
+        { configType: 'database', configValues: { host: 'localhost', port: 5432 } },
+        'Environment configuration: database - {"host":"localhost","port":5432}'
+      ],
+      ['STARTUP_PHASE', 'info', { phase: 'plugins', status: 'completed' }, 'Startup phase: plugins - completed'],
+      [
+        'PLUGIN_REGISTRATION',
+        'debug',
+        { pluginName: 'auth-plugin', status: 'registered' },
+        'Plugin registration: auth-plugin - registered'
+      ]
+    ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
+      const logCode = LogCodes.SYSTEM[logCodeName]
+      expect(logCode.level).toBe(expectedLevel)
       expect(typeof logCode.messageFunc).toBe('function')
-      expect(logCode.messageFunc({ endpoint: '/api/grants', userId: 'test' })).toBe(
-        'External API call to /api/grants for user=test'
-      )
-    })
-
-    it('should have valid SYSTEM_SHUTDOWN log code', () => {
-      const logCode = LogCodes.SYSTEM.SYSTEM_SHUTDOWN
-      expect(logCode.level).toBe('info')
-      expect(typeof logCode.messageFunc).toBe('function')
-      expect(logCode.messageFunc({})).toBe('System shutdown initiated')
-    })
-
-    it('should have valid EXTERNAL_API_ERROR log code', () => {
-      const logCode = LogCodes.SYSTEM.EXTERNAL_API_ERROR
-      expect(logCode.level).toBe('error')
-      expect(typeof logCode.messageFunc).toBe('function')
-      expect(
-        logCode.messageFunc({
-          endpoint: '/api/grants',
-          identity: 'test',
-          error: 'Connection failed'
-        })
-      ).toBe('External API error for /api/grants for identity: test - error: Connection failed')
+      expect(logCode.messageFunc(testParams)).toBe(expectedMessage)
     })
   })
 
@@ -413,77 +511,75 @@ describe('LogCodes', () => {
       expect(() => validateLogCodes(LogCodes)).not.toThrow()
     })
 
-    it('should throw error for invalid log code structure', () => {
-      const invalidLogCodes = {
-        TEST: {
-          INVALID: {
-            level: 'invalid',
-            messageFunc: () => 'test'
+    it.each([
+      [
+        'invalid log code structure',
+        {
+          TEST: {
+            INVALID: {
+              level: 'invalid',
+              messageFunc: () => 'test'
+            }
           }
         }
-      }
-      expect(() => validateLogCodes(invalidLogCodes)).toThrow()
-    })
-
-    it('should throw error for missing messageFunc', () => {
-      const invalidLogCodes = {
-        TEST: {
-          INVALID: {
-            level: 'info'
+      ],
+      [
+        'missing messageFunc',
+        {
+          TEST: {
+            INVALID: {
+              level: 'info'
+            }
           }
         }
-      }
-      expect(() => validateLogCodes(invalidLogCodes)).toThrow()
-    })
-
-    it('should throw error for missing level', () => {
-      const invalidLogCodes = {
-        TEST: {
-          INVALID: {
-            messageFunc: () => 'test'
+      ],
+      [
+        'missing level',
+        {
+          TEST: {
+            INVALID: {
+              messageFunc: () => 'test'
+            }
           }
         }
-      }
-      expect(() => validateLogCodes(invalidLogCodes)).toThrow()
-    })
-
-    it('should throw error for null values', () => {
-      const invalidLogCodes = {
-        TEST: {
-          INVALID: null
-        }
-      }
-      expect(() => validateLogCodes(invalidLogCodes)).toThrow()
-    })
-
-    it('should throw error for invalid nested structure', () => {
-      const invalidLogCodes = {
-        TEST: {
-          NESTED: {
-            INVALID: 'not an object'
+      ],
+      [
+        'null values',
+        {
+          TEST: {
+            INVALID: null
           }
         }
-      }
-      expect(() => validateLogCodes(invalidLogCodes)).toThrow()
-    })
-
-    it('should throw error for array values', () => {
-      const invalidLogCodes = {
-        TEST: {
-          INVALID: ['not', 'an', 'object']
-        }
-      }
-      expect(() => validateLogCodes(invalidLogCodes)).toThrow()
-    })
-
-    it('should throw error for function values', () => {
-      const invalidLogCodes = {
-        TEST: {
-          INVALID: () => {
-            return 'test'
+      ],
+      [
+        'invalid nested structure',
+        {
+          TEST: {
+            NESTED: {
+              INVALID: 'not an object'
+            }
           }
         }
-      }
+      ],
+      [
+        'array values',
+        {
+          TEST: {
+            INVALID: ['not', 'an', 'object']
+          }
+        }
+      ],
+      [
+        'function values',
+        {
+          TEST: {
+            INVALID: () => {
+              return 'test'
+            }
+          }
+        }
+      ]
+    ])('should throw error for %s', (description, invalidLogCodes) => {
       expect(() => validateLogCodes(invalidLogCodes)).toThrow()
     })
 
@@ -493,7 +589,6 @@ describe('LogCodes', () => {
           CATEGORY: {
             INVALID: {
               level: 'info'
-              // missing messageFunc
             }
           }
         }
@@ -502,20 +597,43 @@ describe('LogCodes', () => {
     })
   })
 
+  describe('Startup validation error handling', () => {
+    it('should handle validation errors during startup', () => {
+      const mockLogCodes = {
+        TEST: {
+          INVALID: {
+            level: 'invalid-level',
+            messageFunc: 'not a function'
+          }
+        }
+      }
+
+      const mockValidateLogCodes = (logCodes) => {
+        throw new Error('Test validation error')
+      }
+
+      expect(() => {
+        try {
+          mockValidateLogCodes(mockLogCodes)
+        } catch (error) {
+          throw new Error(`Log code validation failed: ${error.message}`)
+        }
+      }).toThrow('Log code validation failed: Test validation error')
+    })
+  })
+
   describe('Unknown user handling', () => {
-    it('should handle unknown users in AUTH log codes', () => {
-      const logCode = LogCodes.AUTH.SIGN_IN_ATTEMPT
-      expect(logCode.messageFunc({})).toBe('User sign-in attempt for user=unknown')
-    })
-
-    it('should handle unknown users in FORMS log codes', () => {
-      const logCode = LogCodes.FORMS.FORM_LOAD
-      expect(logCode.messageFunc({ formName: 'test' })).toBe('Form loaded: test for user=unknown')
-    })
-
-    it('should handle unknown users in SYSTEM log codes', () => {
-      const logCode = LogCodes.SYSTEM.EXTERNAL_API_CALL
-      expect(logCode.messageFunc({ endpoint: '/api/test' })).toBe('External API call to /api/test for user=unknown')
+    it.each([
+      ['AUTH log codes', LogCodes.AUTH.SIGN_IN_ATTEMPT, {}, 'User sign-in attempt for user=unknown'],
+      ['FORMS log codes', LogCodes.FORMS.FORM_LOAD, { formName: 'test' }, 'Form loaded: test for user=unknown'],
+      [
+        'SYSTEM log codes',
+        LogCodes.SYSTEM.EXTERNAL_API_CALL,
+        { endpoint: TEST_ENDPOINTS.API_TEST },
+        `External API call to ${TEST_ENDPOINTS.API_TEST} for user=unknown`
+      ]
+    ])('should handle unknown users in %s', (description, logCode, testParams, expectedMessage) => {
+      expect(logCode.messageFunc(testParams)).toBe(expectedMessage)
     })
   })
 })

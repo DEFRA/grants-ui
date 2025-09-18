@@ -111,6 +111,8 @@ services:
       APP_BASE_URL: ${APP_BASE_URL:-http://localhost:3000}
       HOST: 0.0.0.0
       GAS_API_URL: http://mockserver:1080
+      EXAMPLE_GRANT_WITH_AUTH_WHITELIST_CRNS: 1100014934,1103521484,1106068880,1103498622,1107012360
+      EXAMPLE_GRANT_WITH_AUTH_WHITELIST_SBIS: 106284736,114246642,178137164,136294445,182448003
     volumes:
       - ./src:/home/node/src
       - /home/node/node_modules

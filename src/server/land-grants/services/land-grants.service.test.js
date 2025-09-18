@@ -30,6 +30,9 @@ vi.mock('~/src/server/common/helpers/logging/logger.js', async () => {
 vi.mock('~/src/server/common/services/consolidated-view/consolidated-view.service.js', () => ({
   fetchParcelsForSbi: vi.fn()
 }))
+vi.mock('../../sbi/state.js', () => ({
+  sbiStore: new Map().set('sbi', 106284736)
+}))
 
 global.fetch = vi.fn()
 

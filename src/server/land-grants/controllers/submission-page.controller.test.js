@@ -72,7 +72,7 @@ describe('SubmissionPageController', () => {
 
       expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
         {
-          sbi: '123456789',
+          sbi: '106284736',
           frn: 'frn',
           crn: 'crn',
           defraId: 'defraId',
@@ -96,7 +96,7 @@ describe('SubmissionPageController', () => {
         auth: {
           isAuthenticated: true,
           credentials: {
-            sbi: '123456789',
+            sbi: '106284736',
             name: 'John Doe',
             organisationId: 'org123',
             organisationName: ' Farm 1',
@@ -131,7 +131,7 @@ describe('SubmissionPageController', () => {
         auth: {
           isAuthenticated: true,
           credentials: {
-            sbi: '123456789',
+            sbi: '106284736',
             name: 'John Doe',
             organisationId: 'org123',
             organisationName: ' Farm 1',
