@@ -88,7 +88,7 @@ describe('SelectActionsForLandParcelPageController', () => {
       auth: {
         isAuthenticated: true,
         credentials: {
-          sbi: '123456789',
+          sbi: '106284736',
           name: 'John Doe',
           organisationId: 'org123',
           organisationName: ' Farm 1',

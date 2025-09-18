@@ -4,6 +4,7 @@ import { submitGrantApplication } from '~/src/server/common/services/grant-appli
 import { transformStateObjectToGasApplication } from '../../common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
 import { stateToLandGrantsGasAnswers } from '../mappers/state-to-gas-answers-mapper.js'
 import SubmissionPageController from './submission-page.controller.js'
+import { validateApplication } from '../services/land-grants.service.js'
 
 vi.mock('~/src/server/common/services/grant-application/grant-application.service.js')
 vi.mock('~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js')
@@ -12,6 +13,7 @@ vi.mock('~/src/server/common/helpers/forms-cache/forms-cache.js', async () => {
   const { mockFormsCacheService } = await import('~/src/__mocks__')
   return mockFormsCacheService()
 })
+vi.mock('../services/land-grants.service.js')
 vi.mock('@defra/forms-engine-plugin/controllers/SummaryPageController.js', () => {
   return {
     SummaryPageController: class {
@@ -60,11 +62,13 @@ describe('SubmissionPageController', () => {
       }
       const mockApplicationData = { transformed: 'data' }
       const mockResult = { success: true, clientRef: '123456' }
+      const applicationValidationRunId = '123456'
 
       transformStateObjectToGasApplication.mockReturnValue(mockApplicationData)
       submitGrantApplication.mockResolvedValue(mockResult)
+      validateApplication.mockResolvedValue({ id: applicationValidationRunId })
 
-      const result = await controller.submitLandGrantApplication('123456789', mockContext)
+      const result = await controller.submitLandGrantApplication('123456789', 'crn', mockContext)
 
       expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
         {
@@ -74,7 +78,7 @@ describe('SubmissionPageController', () => {
           defraId: 'defraId',
           clientRef: '123456'
         },
-        mockContext.state,
+        { ...mockContext.state, applicationValidationRunId },
         stateToLandGrantsGasAnswers
       )
       expect(submitGrantApplication).toHaveBeenCalledWith(code, mockApplicationData)
@@ -97,7 +101,8 @@ describe('SubmissionPageController', () => {
             organisationId: 'org123',
             organisationName: ' Farm 1',
             role: 'admin',
-            sessionId: 'valid-session-id'
+            sessionId: 'valid-session-id',
+            crn: 'crn'
           }
         }
       }
@@ -112,7 +117,7 @@ describe('SubmissionPageController', () => {
       const handler = controller.makePostRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
-      expect(controller.submitLandGrantApplication).toHaveBeenCalledWith('123456789', mockContext)
+      expect(controller.submitLandGrantApplication).toHaveBeenCalledWith('123456789', 'crn', mockContext)
       expect(mockRequest.logger.info).toHaveBeenCalledWith('Form submission completed', mockResult)
     })
 
@@ -126,7 +131,7 @@ describe('SubmissionPageController', () => {
         auth: {
           isAuthenticated: true,
           credentials: {
-            sbi: '123456789',
+            sbi: '106284736',
             name: 'John Doe',
             organisationId: 'org123',
             organisationName: ' Farm 1',
