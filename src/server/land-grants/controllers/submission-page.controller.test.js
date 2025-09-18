@@ -68,11 +68,11 @@ describe('SubmissionPageController', () => {
       submitGrantApplication.mockResolvedValue(mockResult)
       validateApplication.mockResolvedValue({ id: applicationValidationRunId })
 
-      const result = await controller.submitLandGrantApplication('106284736', 'crn', mockContext)
+      const result = await controller.submitLandGrantApplication('123456789', 'crn', mockContext)
 
       expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
         {
-          sbi: '106284736',
+          sbi: '123456789',
           frn: 'frn',
           crn: 'crn',
           defraId: 'defraId',
@@ -96,7 +96,7 @@ describe('SubmissionPageController', () => {
         auth: {
           isAuthenticated: true,
           credentials: {
-            sbi: '106284736',
+            sbi: '123456789',
             name: 'John Doe',
             organisationId: 'org123',
             organisationName: ' Farm 1',
@@ -117,7 +117,7 @@ describe('SubmissionPageController', () => {
       const handler = controller.makePostRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
-      expect(controller.submitLandGrantApplication).toHaveBeenCalledWith('106284736', 'crn', mockContext)
+      expect(controller.submitLandGrantApplication).toHaveBeenCalledWith('123456789', 'crn', mockContext)
       expect(mockRequest.logger.info).toHaveBeenCalledWith('Form submission completed', mockResult)
     })
 
