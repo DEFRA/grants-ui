@@ -179,21 +179,4 @@ describe('transformStateObjectToGasApplication', () => {
     expect(mockAnswersTransformer).toHaveBeenCalledTimes(1)
     expect(mockAnswersTransformer).toHaveBeenCalledWith(state)
   })
-
-  it('should call the answers transformer with application validation run id', () => {
-    const identifiers = {
-      sbi: '12345678',
-      frn: 'FRN123456',
-      crn: 'CRN789012',
-      defraId: 'DEFRA-ID-123',
-      clientRef: 'CLIENT-REF-456'
-    }
-    const state = { sbi: '12345678' }
-    const mockAnswersTransformer = vi.fn().mockReturnValue({})
-
-    transformStateObjectToGasApplication(identifiers, state, mockAnswersTransformer)
-
-    expect(mockAnswersTransformer).toHaveBeenCalledTimes(1)
-    expect(mockAnswersTransformer).toHaveBeenCalledWith(state)
-  })
 })
