@@ -1,5 +1,5 @@
-import crypto from 'crypto'
 import Jwt from '@hapi/jwt'
+import crypto from 'crypto'
 import { config } from '~/src/config/config.js'
 import { getOidcConfig } from '~/src/server/auth/get-oidc-config.js'
 import { getSafeRedirect } from '~/src/server/auth/get-safe-redirect.js'
@@ -221,7 +221,10 @@ function createCredentialsProfile(credentials, payload) {
 }
 
 function extractFarmDetails(relationships) {
-  const parts = relationships.split(':')
+  const parts = relationships?.split(':')
+
+  if (!parts) return []
+
   const LENGTH_OF_NORMAL_RELATIONSHIP_ENTRY = 6
   const LAST_INDEX_BEFORE_ORGANISATION_NAME = 2
   const INDEX_OF_LAST_KNOWN_PARTS_IN_COLLECTION = 3
