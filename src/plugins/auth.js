@@ -223,7 +223,9 @@ function createCredentialsProfile(credentials, payload) {
 function extractFarmDetails(relationships) {
   const parts = relationships?.split(':')
 
-  if (!parts) return []
+  if (!parts) {
+    return []
+  }
 
   const LENGTH_OF_NORMAL_RELATIONSHIP_ENTRY = 6
   const LAST_INDEX_BEFORE_ORGANISATION_NAME = 2
