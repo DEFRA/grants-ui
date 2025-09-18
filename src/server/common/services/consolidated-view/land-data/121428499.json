@@ -536,15 +536,15 @@
           "postalCode": "BB7 4LQ"
         }
       }
-    }
-  },
-  "customer": {
-    "info": {
-      "name": {
-        "title": "Mr.",
-        "first": "David",
-        "middle": "Charles",
-        "last": "Kennewell"
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Mr.",
+          "first": "David",
+          "middle": "Charles",
+          "last": "Kennewell"
+        }
       }
     }
   }
