@@ -58,13 +58,12 @@
                 classes: "govuk-!-width-one-half"
               },
               {
-                text: "Quantity (ha)"
+                text: "Quantity (ha)",
+                format: "numeric"
               },
               {
-                text: "Yearly payment"
-              },
-              {
-                text: ""
+                text: "Yearly payment",
+                format: "numeric"
               },
               {
                 text: ""
@@ -91,7 +90,9 @@
                 classes: "govuk-!-width-two-thirds"
               },
               {
-                text: "Yearly payment"
+                html: "<div class='govuk-!-width-one-half'>Yearly payment</div>",
+                format: "numeric",
+                classes: "govuk-!-padding-right-5"
               }
             ],
             rows: item.items,
