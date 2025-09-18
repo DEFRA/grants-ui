@@ -63,7 +63,7 @@ describe('LandActionsCheckPageController', () => {
 
     // actionGroups.mockReturnValue([{ actions: ['CMOR1'] }, { actions: ['UPL1', 'UPL2', 'UPL3'] }])
     calculateGrantPayment.mockResolvedValue(mockPaymentResponse)
-    sbiStore.get = vi.fn().mockReturnValue('123456789')
+    sbiStore.get = vi.fn().mockReturnValue('106284736')
 
     mockRequest = {
       payload: {},
@@ -111,7 +111,7 @@ describe('LandActionsCheckPageController', () => {
       expect(calculateGrantPayment).toHaveBeenCalledWith({
         landActions: [
           {
-            sbi: '123456789',
+            sbi: '106284736',
             sheetId: 'SD6743',
             parcelId: '8083',
             actions: [
@@ -120,7 +120,7 @@ describe('LandActionsCheckPageController', () => {
             ]
           },
           {
-            sbi: '123456789',
+            sbi: '106284736',
             sheetId: 'SD6944',
             parcelId: '0085',
             actions: [{ code: 'CMOR1', quantity: 1.0 }]
@@ -150,7 +150,7 @@ describe('LandActionsCheckPageController', () => {
       expect(calculateGrantPayment).toHaveBeenCalledWith({
         landActions: [
           {
-            sbi: '123456789',
+            sbi: '106284736',
             sheetId: 'sheet1',
             parcelId: 'parcel1',
             actions: [{ code: 'ACTION1', quantity: 10 }]

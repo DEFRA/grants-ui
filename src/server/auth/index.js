@@ -145,6 +145,12 @@ function setupAuthRoutes(server) {
       handler: handleOrganisationRedirect
     })
   }
+
+  server.route({
+    method: 'GET',
+    path: '/auth/journey-unauthorised',
+    handler: handleJourneyUnauthorised
+  })
 }
 
 /**
@@ -503,6 +509,10 @@ function handleOrganisationRedirect(request, h) {
   // Ensure redirect is a relative path to prevent redirect attacks
   const safeRedirect = getSafeRedirect(redirect)
   return h.redirect(safeRedirect)
+}
+
+function handleJourneyUnauthorised(_request, h) {
+  return h.view('auth/views/journey-unauthorised')
 }
 
 /**

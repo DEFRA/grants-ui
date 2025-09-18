@@ -29,6 +29,9 @@ vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
   return mockLogHelper()
 })
 
+process.env.EXAMPLE_GRANT_WITH_AUTH_WHITELIST_CRNS = '1104734543,1103521484'
+process.env.EXAMPLE_GRANT_WITH_AUTH_WHITELIST_SBIS = '123456789,987654321'
+
 describe('#errors', () => {
   /** @type {Server} */
   let server
