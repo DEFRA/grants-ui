@@ -9,7 +9,8 @@ import {
   parseLandParcel,
   postToLandGrantsApi,
   stringifyParcel,
-  triggerApiActionsValidation
+  triggerApiActionsValidation,
+  validateApplication
 } from './land-grants.service.js'
 const mockApiEndpoint = 'https://land-grants-api'
 
@@ -940,6 +941,38 @@ describe('land-grants service', () => {
       fetch.mockRejectedValueOnce(new Error('Size API error'))
 
       await expect(fetchParcels('106284736')).rejects.toThrow('Size API error')
+    })
+  })
+
+  describe('validateApplication', () => {
+    it('should call the validation application API', async () => {
+      const mockApiResponse = { id: '123456' }
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => mockApiResponse
+      })
+
+      const result = await validateApplication({
+        applicationId: '123456',
+        crn: '123456',
+        landParcels: { 'SHEET1-PARCEL1': { actionsObj: { CMOR1: { value: 10 } } } },
+        sbi: '106284736'
+      })
+
+      expect(fetch).toHaveBeenCalledWith(
+        `${mockApiEndpoint}/application/validate`,
+        expect.objectContaining({
+          body: JSON.stringify({
+            applicationId: '123456',
+            requester: 'grants-ui',
+            applicantCrn: '123456',
+            landActions: [
+              { sheetId: 'SHEET1', parcelId: 'PARCEL1', sbi: '106284736', actions: [{ code: 'CMOR1', quantity: 10 }] }
+            ]
+          })
+        })
+      )
+      expect(result).toEqual(mockApiResponse)
     })
   })
 })

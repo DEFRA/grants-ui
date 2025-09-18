@@ -127,7 +127,8 @@ describe('stateToLandGrantsGasAnswers', () => {
             }
           }
         }
-      }
+      },
+      applicationValidationRunId: '12345678'
     }
 
     const expected = {
@@ -146,7 +147,8 @@ describe('stateToLandGrantsGasAnswers', () => {
             quantity: 44
           }
         }
-      ]
+      ],
+      applicationValidationRunId: '12345678'
     }
 
     expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
@@ -171,7 +173,8 @@ describe('stateToLandGrantsGasAnswers', () => {
             }
           }
         }
-      }
+      },
+      applicationValidationRunId: '12345678'
     }
 
     const expected = {
@@ -206,7 +209,8 @@ describe('stateToLandGrantsGasAnswers', () => {
             quantity: 5
           }
         }
-      ]
+      ],
+      applicationValidationRunId: '12345678'
     }
 
     expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
@@ -217,14 +221,16 @@ describe('stateToLandGrantsGasAnswers', () => {
       hasCheckedLandIsUpToDate: true,
       scheme: 'SFI',
       year: 2025,
-      landParcels: {}
+      landParcels: {},
+      applicationValidationRunId: '12345678'
     }
 
     const expected = {
       hasCheckedLandIsUpToDate: true,
       scheme: 'SFI',
       year: 2025,
-      actionApplications: []
+      actionApplications: [],
+      applicationValidationRunId: '12345678'
     }
 
     expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
@@ -237,14 +243,16 @@ describe('stateToLandGrantsGasAnswers', () => {
       hasCheckedLandIsUpToDate: true,
       landParcels: {
         'SX0679-9238': {}
-      }
+      },
+      applicationValidationRunId: '12345678'
     }
 
     const expected = {
       scheme: 'SFI',
       year: 2025,
       hasCheckedLandIsUpToDate: true,
-      actionApplications: []
+      actionApplications: [],
+      applicationValidationRunId: '12345678'
     }
 
     expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
@@ -261,7 +269,8 @@ describe('stateToLandGrantsGasAnswers', () => {
             }
           }
         }
-      }
+      },
+      applicationValidationRunId: '12345678'
     }
 
     const expected = {
@@ -278,7 +287,8 @@ describe('stateToLandGrantsGasAnswers', () => {
             quantity: 44.75
           }
         }
-      ]
+      ],
+      applicationValidationRunId: '12345678'
     }
 
     expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
@@ -295,7 +305,8 @@ describe('stateToLandGrantsGasAnswers', () => {
             }
           }
         }
-      }
+      },
+      applicationValidationRunId: '12345678'
     }
 
     const expected = {
@@ -311,7 +322,8 @@ describe('stateToLandGrantsGasAnswers', () => {
             quantity: 44
           }
         }
-      ]
+      ],
+      applicationValidationRunId: '12345678'
     }
 
     expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
@@ -328,7 +340,8 @@ describe('stateToLandGrantsGasAnswers', () => {
             }
           }
         }
-      }
+      },
+      applicationValidationRunId: '12345678'
     }
 
     const expected = {
@@ -344,7 +357,8 @@ describe('stateToLandGrantsGasAnswers', () => {
             unit: 'ha'
           }
         }
-      ]
+      ],
+      applicationValidationRunId: '12345678'
     }
 
     expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
@@ -361,7 +375,8 @@ describe('stateToLandGrantsGasAnswers', () => {
             }
           }
         }
-      }
+      },
+      applicationValidationRunId: '12345678'
     }
 
     const expected = {
@@ -377,7 +392,8 @@ describe('stateToLandGrantsGasAnswers', () => {
             unit: 'ha'
           }
         }
-      ]
+      ],
+      applicationValidationRunId: '12345678'
     }
 
     expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
@@ -391,7 +407,8 @@ describe('stateToLandGrantsGasAnswers', () => {
             CSAM1: {}
           }
         }
-      }
+      },
+      applicationValidationRunId: '12345678'
     }
 
     const expected = {
@@ -404,7 +421,8 @@ describe('stateToLandGrantsGasAnswers', () => {
           sheetId: 'SX0679',
           code: 'CSAM1'
         }
-      ]
+      ],
+      applicationValidationRunId: '12345678'
     }
 
     expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
@@ -418,7 +436,8 @@ describe('stateToLandGrantsGasAnswers', () => {
             CSAM1: 'string-value' // Not an object
           }
         }
-      }
+      },
+      applicationValidationRunId: '12345678'
     }
 
     const expected = {
@@ -431,7 +450,8 @@ describe('stateToLandGrantsGasAnswers', () => {
           sheetId: 'SX0679',
           code: 'CSAM1'
         }
-      ]
+      ],
+      applicationValidationRunId: '12345678'
     }
 
     expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
@@ -440,26 +460,31 @@ describe('stateToLandGrantsGasAnswers', () => {
   it('should return only basic properties when no action data is provided', () => {
     const input = {
       scheme: 'SFI',
-      year: 2025
+      year: 2025,
+      applicationValidationRunId: '12345678'
     }
 
     const expected = {
       hasCheckedLandIsUpToDate: true,
       scheme: 'SFI',
       year: 2025,
-      actionApplications: []
+      actionApplications: [],
+      applicationValidationRunId: '12345678'
     }
 
     expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
   })
 
   it('should return minimal object when input is empty', () => {
-    const input = {}
+    const input = {
+      applicationValidationRunId: '12345678'
+    }
     const expected = {
       hasCheckedLandIsUpToDate: true,
       scheme: 'SFI',
       year: 2025,
-      actionApplications: []
+      actionApplications: [],
+      applicationValidationRunId: '12345678'
     }
 
     expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
@@ -476,7 +501,8 @@ describe('stateToLandGrantsGasAnswers', () => {
             }
           }
         }
-      }
+      },
+      applicationValidationRunId: '12345678'
     }
 
     const expected = {
@@ -492,7 +518,8 @@ describe('stateToLandGrantsGasAnswers', () => {
             quantity: 44
           }
         }
-      ]
+      ],
+      applicationValidationRunId: '12345678'
     }
 
     expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
@@ -509,7 +536,8 @@ describe('stateToLandGrantsGasAnswers', () => {
             }
           }
         }
-      }
+      },
+      applicationValidationRunId: '12345678'
     }
 
     const expected = {
@@ -526,7 +554,8 @@ describe('stateToLandGrantsGasAnswers', () => {
             quantity: 0
           }
         }
-      ]
+      ],
+      applicationValidationRunId: '12345678'
     }
 
     expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
@@ -543,7 +572,8 @@ describe('stateToLandGrantsGasAnswers', () => {
             }
           }
         }
-      }
+      },
+      applicationValidationRunId: '12345678'
     }
 
     const expected = {
@@ -560,7 +590,8 @@ describe('stateToLandGrantsGasAnswers', () => {
             quantity: 44
           }
         }
-      ]
+      ],
+      applicationValidationRunId: '12345678'
     }
 
     expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
@@ -574,7 +605,8 @@ describe('stateToLandGrantsGasAnswers', () => {
             CSAM1: null // Null value for action
           }
         }
-      }
+      },
+      applicationValidationRunId: '12345678'
     }
 
     const expected = {
@@ -587,7 +619,8 @@ describe('stateToLandGrantsGasAnswers', () => {
           sheetId: 'SX0679',
           code: 'CSAM1'
         }
-      ]
+      ],
+      applicationValidationRunId: '12345678'
     }
 
     expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
@@ -607,7 +640,8 @@ describe('stateToLandGrantsGasAnswers', () => {
             CSAM4: {} // Empty object action
           }
         }
-      }
+      },
+      applicationValidationRunId: '12345678'
     }
 
     const expected = {
@@ -639,7 +673,8 @@ describe('stateToLandGrantsGasAnswers', () => {
           sheetId: 'SX0679',
           code: 'CSAM4'
         }
-      ]
+      ],
+      applicationValidationRunId: '12345678'
     }
 
     expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
@@ -656,7 +691,8 @@ describe('stateToLandGrantsGasAnswers', () => {
             }
           }
         }
-      }
+      },
+      applicationValidationRunId: '12345678'
     }
 
     const expected = {
@@ -673,7 +709,8 @@ describe('stateToLandGrantsGasAnswers', () => {
             quantity: 44 // Values should be parsed to numbers, which removes spaces
           }
         }
-      ]
+      ],
+      applicationValidationRunId: '12345678'
     }
 
     expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
@@ -690,7 +727,8 @@ describe('stateToLandGrantsGasAnswers', () => {
             }
           }
         }
-      }
+      },
+      applicationValidationRunId: '12345678'
     }
 
     const expected = {
@@ -707,7 +745,8 @@ describe('stateToLandGrantsGasAnswers', () => {
             quantity: 44.5 // Leading zeros should be removed in parsed number
           }
         }
-      ]
+      ],
+      applicationValidationRunId: '12345678'
     }
 
     expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
@@ -721,7 +760,8 @@ describe('stateToLandGrantsGasAnswers', () => {
             CSAM1: undefined // Undefined action
           }
         }
-      }
+      },
+      applicationValidationRunId: '12345678'
     }
 
     const expected = {
@@ -734,7 +774,8 @@ describe('stateToLandGrantsGasAnswers', () => {
           sheetId: 'SX0679',
           code: 'CSAM1'
         }
-      ]
+      ],
+      applicationValidationRunId: '12345678'
     }
 
     expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
