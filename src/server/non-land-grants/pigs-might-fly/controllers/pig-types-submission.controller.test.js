@@ -80,7 +80,10 @@ describe('FlyingPigsSubmissionPageController', () => {
     const postHandler = controller.makePostRouteHandler()
     await postHandler(mockRequest, mockContext, mockResponseToolkit)
 
-    expect(mockCacheService.setConfirmationState).toHaveBeenCalledWith(mockRequest, { confirmed: true })
+    expect(mockCacheService.setConfirmationState).toHaveBeenCalledWith(mockRequest, {
+      $$__referenceNumber: '123456',
+      confirmed: true
+    })
     expect(mockResponseToolkit.redirect).toHaveBeenCalledWith('/confirmation')
   })
 })
