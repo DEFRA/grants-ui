@@ -20,7 +20,7 @@ const createLinks = (data) => {
   )
 
   return {
-    html: `<ul class='govuk-summary-list__actions-list govuk-!-text-align-right'>${links.join('')}</ul>`
+    html: `<ul class='govuk-summary-list__actions-list'>${links.join('')}</ul>`
   }
 }
 
@@ -102,7 +102,9 @@ export default class LandActionsCheckPageController extends QuestionPageControll
             text: `One-off payment per agreement per year for ${landActionWithCode(data.description, data.code)}`
           },
           {
-            text: this.getPrice(data.annualPaymentPence)
+            html: `<div class="govuk-!-width-one-half">${this.getPrice(data.annualPaymentPence)}</div>`,
+            format: 'numeric',
+            classes: 'govuk-!-padding-right-5'
           }
         ]
       ]
@@ -119,8 +121,8 @@ export default class LandActionsCheckPageController extends QuestionPageControll
 
     return [
       { text: landActionWithCode(data.description, data.code) },
-      { text: data.quantity },
-      { text: this.getPrice(data.annualPaymentPence) },
+      { text: data.quantity, format: 'numeric' },
+      { text: this.getPrice(data.annualPaymentPence), format: 'numeric' },
       linksCell
     ]
   }
