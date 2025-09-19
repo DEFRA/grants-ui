@@ -57,7 +57,7 @@ export default class SubmissionPageController extends SummaryPageController {
     const fn = async (request, context, h) => {
       const { sbi, crn } = request.auth.credentials
 
-      request.logger.info('request.creds', request.auth.credentials)
+      request.logger.info('request.creds: ' + JSON.stringify(request.auth.credentials))
 
       let result
 
