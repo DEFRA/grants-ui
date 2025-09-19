@@ -1,8 +1,9 @@
 import { config } from '~/src/config/config.js'
 import { formatCurrency } from '~/src/config/nunjucks/filters/format-currency.js'
+import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
 import { fetchParcelsForSbi } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
-import { sbiStore } from '../../sbi/state.js'
 import { landActionWithCode } from '~/src/server/land-grants/utils/land-action-with-code.js'
+import { sbiStore } from '../../sbi/state.js'
 
 const LAND_GRANTS_API_URL = config.get('landGrants.grantsServiceApiEndpoint')
 
@@ -37,13 +38,21 @@ export const stringifyParcel = ({ parcelId, sheetId }) => `${sheetId}-${parcelId
  * @throws {Error}
  */
 export async function postToLandGrantsApi(endpoint, body) {
-  const response = await fetch(`${LAND_GRANTS_API_URL}${endpoint}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(body)
-  })
+  const logger = createLogger()
+  let response
+
+  try {
+    response = await fetch(`${LAND_GRANTS_API_URL}${endpoint}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    })
+  } catch (error) {
+    logger.error({ err: error }, `Unexpected error in Land Grants API request: ${error.message}`)
+    throw error
+  }
 
   if (!response.ok) {
     /**
@@ -70,9 +79,9 @@ export const landActionsToApiPayload = ({ sheetId, parcelId, actionsObj, sbi }) 
     sbi: sbiValue,
     actions: actionsObj
       ? Object.entries(actionsObj).map(([code, area]) => ({
-          code,
-          quantity: Number(area.value)
-        }))
+        code,
+        quantity: Number(area.value)
+      }))
       : []
   }
 }
