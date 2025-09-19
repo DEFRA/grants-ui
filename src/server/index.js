@@ -20,6 +20,7 @@ import CheckResponsesPageController from '~/src/server/check-responses/check-res
 import { formsService } from '~/src/server/common/forms/services/form.js'
 import { outputService } from '~/src/server/common/forms/services/output.js'
 import { loadSubmissionSchemaValidators } from '~/src/server/common/forms/services/submission.js'
+import { contentSecurityPolicy } from '~/src/server/common/helpers/csp.js'
 import { catchAll } from '~/src/server/common/helpers/errors.js'
 import { requestLogger } from '~/src/server/common/helpers/logging/request-logger.js'
 import { setupProxy } from '~/src/server/common/helpers/proxy/setup-proxy.js'
@@ -41,11 +42,10 @@ import { PotentialFundingController } from '~/src/server/non-land-grants/pigs-mi
 import { tasklistBackButton } from '~/src/server/plugins/tasklist-back-button.js'
 import { sbiStore } from '~/src/server/sbi/state.js'
 import { formatCurrency } from '../config/nunjucks/filters/format-currency.js'
-import { contentSecurityPolicy } from '~/src/server/common/helpers/csp.js'
+import { StatePersistenceService } from './common/services/state-persistence/state-persistence.service.js'
 import RemoveActionPageController from './land-grants/controllers/remove-action-page.controller.js'
 import { router } from './router.js'
 import SectionEndController from './section-end/section-end.controller.js'
-import { StatePersistenceService } from './common/services/state-persistence/state-persistence.service.js'
 
 const SESSION_CACHE_NAME = 'session.cache.name'
 

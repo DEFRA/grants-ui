@@ -27,16 +27,22 @@ const landGrants = convict({
     default: 1100014934,
     env: 'DEFAULT_CRN'
   },
+  defaultSbi: {
+    doc: 'Default SBI for land grants forms',
+    format: Number,
+    default: 106284736,
+    env: 'DEFAULT_SBI'
+  },
   mockSessionCurrentRelationshipId: {
     doc: 'Default currentRelationshipId for mock session data when DEFRA_ID is disabled',
     format: String,
-    default: '1100014934',
+    default: '',
     env: 'DEFAULT_CRN'
   },
   mockSessionRelationships: {
     doc: 'Default relationships array for mock session data when DEFRA_ID is disabled (colon-separated format)',
     format: String,
-    default: '1104734543:123456789:Test Organisation:default-organisation-id:relationship:relationshipLoa',
+    default: '',
     env: 'MOCK_SESSION_RELATIONSHIPS'
   }
 })
