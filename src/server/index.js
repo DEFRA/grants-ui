@@ -15,12 +15,12 @@ import { context } from '~/src/config/nunjucks/context/context.js'
 import { grantsUiPaths, nunjucksConfig } from '~/src/config/nunjucks/nunjucks.js'
 import auth from '~/src/plugins/auth.js'
 import sso from '~/src/plugins/sso.js'
+import { contentSecurityPolicy } from '~/src/plugins/content-security-policy.js'
 import { formsAuthCallback } from '~/src/server/auth/forms-engine-plugin-auth-helpers.js'
 import CheckResponsesPageController from '~/src/server/check-responses/check-responses.controller.js'
 import { formsService } from '~/src/server/common/forms/services/form.js'
 import { outputService } from '~/src/server/common/forms/services/output.js'
 import { loadSubmissionSchemaValidators } from '~/src/server/common/forms/services/submission.js'
-import { contentSecurityPolicy } from '~/src/server/common/helpers/csp.js'
 import { catchAll } from '~/src/server/common/helpers/errors.js'
 import { requestLogger } from '~/src/server/common/helpers/logging/request-logger.js'
 import { setupProxy } from '~/src/server/common/helpers/proxy/setup-proxy.js'
@@ -168,7 +168,8 @@ const registerPlugins = async (server) => {
     pulse,
     sessionCache,
     nunjucksConfig,
-    sso
+    sso,
+    contentSecurityPolicy
   ])
 
   await server.register([router])
@@ -298,8 +299,6 @@ export async function createServer() {
 
     return h.continue
   })
-
-  server.ext('onPreResponse', contentSecurityPolicy)
 
   // Create a server extension to handle session creation when defra-id is disabled
   server.ext('onPreAuth', async (request, h) => {
