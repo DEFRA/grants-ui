@@ -25,7 +25,7 @@ export default class ConfirmationPageController extends StatusPageController {
 
       const cacheService = getFormsCacheService(request.server)
       const confirmationState = await cacheService.getConfirmationState(request)
-      const referenceNumber = confirmationState.referenceNumber || context.referenceNumber
+      const referenceNumber = confirmationState.$$__referenceNumber
 
       // Log the confirmation state for debugging
       request.logger.debug('ConfirmationController: Confirmation state:', confirmationState)
