@@ -5,7 +5,7 @@ import { transformStateObjectToGasApplication } from '~/src/server/common/helper
 import DeclarationPageController from './declaration.controller.js'
 import { transformAnswerKeysToText } from './state-to-gas-answers-mapper.js'
 import { vi } from 'vitest'
-import { mockHapiRequest, mockFormsCacheService } from '~/src/__mocks__'
+import { mockFormsCacheService, mockHapiRequest } from '~/src/__mocks__'
 
 const mockCacheService = mockFormsCacheService().getFormsCacheService()
 vi.mock('~/src/server/common/helpers/form-slug-helper.js')
@@ -202,7 +202,10 @@ describe('DeclarationPageController', () => {
       expect(submitGrantApplication).toHaveBeenCalledWith('adding-value', {
         transformedApp: true
       })
-      expect(mockCacheService.setConfirmationState).toHaveBeenCalledWith(mockRequest, { confirmed: true })
+      expect(mockCacheService.setConfirmationState).toHaveBeenCalledWith(mockRequest, {
+        $$__referenceNumber: 'REF123',
+        confirmed: true
+      })
       expect(mockH.redirect).toHaveBeenCalledWith('/adding-value/confirmation')
     })
 
