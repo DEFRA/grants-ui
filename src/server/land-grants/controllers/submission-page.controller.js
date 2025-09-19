@@ -56,9 +56,15 @@ export default class SubmissionPageController extends SummaryPageController {
   makePostRouteHandler() {
     const fn = async (request, context, h) => {
       const { sbi, crn } = request.auth.credentials
-      const result = await this.submitLandGrantApplication(sbi, crn, context)
-      request.logger.info('Form submission completed', result)
+      let result
 
+      try {
+        result = await this.submitLandGrantApplication(sbi, crn, context)
+        request.logger.info('Form submission completed', result)
+      } catch (error) {
+        request.logger.error({ err: error }, 'Unexpected error submitting land grants application: ' + error.message)
+        throw error
+      }
       const cacheService = getFormsCacheService(request.server)
       await cacheService.setConfirmationState(request, { confirmed: true, referenceNumber: context.referenceNumber })
 
