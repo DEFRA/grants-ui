@@ -56,6 +56,9 @@ export default class SubmissionPageController extends SummaryPageController {
   makePostRouteHandler() {
     const fn = async (request, context, h) => {
       const { sbi, crn } = request.auth.credentials
+
+      request.logger.info('request.creds', request.auth.credentials)
+
       let result
 
       try {
