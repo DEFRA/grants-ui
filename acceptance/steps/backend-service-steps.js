@@ -1,3 +1,4 @@
+import https from 'https'
 import { Given, Then } from '@wdio/cucumber-framework'
 import { getGrantsUiBackendAuthorizationToken } from '../services/backend-auth-helper.js'
 
@@ -10,7 +11,8 @@ Given(
         method: 'DELETE',
         headers: {
           Authorization: `Basic ${getGrantsUiBackendAuthorizationToken()}`
-        }
+        },
+        agent: new https.Agent({ rejectUnauthorized: false })
       }
     )
 

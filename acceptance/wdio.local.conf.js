@@ -2,7 +2,7 @@ import allure from 'allure-commandline'
 
 export const config = {
   baseUrl: 'https://localhost:4000',
-  baseBackendUrl: 'http://localhost:4001',
+  baseBackendUrl: 'https://localhost:4001',
   maxInstances: 10,
   capabilities: [
     {
