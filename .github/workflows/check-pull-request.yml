@@ -41,7 +41,7 @@ jobs:
           path: coverage
 
   docker:
-    name: Test Docker Build
+    name: Test Docker Build and run Acceptance Tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -49,8 +49,8 @@ jobs:
   
       - name: Test Docker Compose Services
         run: |
-          chmod +x ./tools/docker-compose-smoke-test.sh
-          ./tools/docker-compose-smoke-test.sh
+          chmod +x ./tools/run-acceptance-tests.sh
+          ./tools/run-acceptance-tests.sh
 
   security:
     name: Snyk Security Scan

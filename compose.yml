@@ -11,12 +11,12 @@ services:
       timeout: 5s
       retries: 3
     networks:
-      - cdp-tenant
+      - grants-ui-net
 
   mongodb:
     image: mongo:6.0.13
     networks:
-      - cdp-tenant
+      - grants-ui-net
     ports:
       - '27017:27017'
     volumes:
@@ -29,9 +29,9 @@ services:
       retries: 3
 
   mockserver:
-    image: mockserver/mockserver:latest
+    image: mockserver/mockserver:5.15.0
     networks:
-      - cdp-tenant
+      - grants-ui-net
     environment:
       MOCKSERVER_INITIALIZATION_JSON_PATH: /config/expectations.json
     ports:
@@ -41,19 +41,21 @@ services:
     command:
       - -serverPort 1080 -logLevel INFO
 
-  fcp-defra-id-stub:
-    image: defradigital/fcp-defra-id-stub:0.33.0
+  fcp-defra-id-stub-internal:
+    image: defradigital/fcp-defra-id-stub:0.34.0
     networks:
-      - cdp-tenant
+      - grants-ui-net
     environment:
+      WELL_KNOWN_HOST_OVERRIDE: ${WELL_KNOWN_HOST_OVERRIDE}
+      WELL_KNOWN_API_HOST_OVERRIDE: ${WELL_KNOWN_API_HOST_OVERRIDE}
       PORT: 3007
       AUTH_MODE: ${AUTH_MODE:-basic}
       AUTH_OVERRIDE: ${AUTH_OVERRIDE}
-      AUTH_OVERRIDE_FILE: ${AUTH_OVERRIDE_FILE}
+      AUTH_OVERRIDE_FILE: ${AUTH_OVERRIDE_FILE:-users.json}
     ports:
       - "3007:3007"
     volumes:
-      - ./example.data.json:/data/example.data.json
+      - ./fcp-defra-id-stub/users.json:/data/users.json
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3007/health"]
       interval: 15s
@@ -63,7 +65,7 @@ services:
 
 ################################################################################
 
-  grants-ui:
+  grants-ui-internal:
     build:
       context: .
       target: ${BUILD_TARGET:-development}
@@ -73,9 +75,9 @@ services:
     depends_on:
       redis:
         condition: service_healthy
-      grants-ui-backend:
+      grants-ui-backend-internal:
         condition: service_started
-      fcp-defra-id-stub:
+      fcp-defra-id-stub-internal:
         condition: service_healthy
     environment:
       PORT: 3000
@@ -98,26 +100,26 @@ services:
       FEEDBACK_LINK: "mailto:defraforms@defra.gov.uk"
       CV_API_MOCK_ENABLED: ${CV_API_MOCK_ENABLED:-true}
       DEFRA_ID_ENABLED: ${DEFRA_ID_ENABLED:-true}
-      DEFRA_ID_WELL_KNOWN_URL: ${DEFRA_ID_WELL_KNOWN_URL:-http://fcp-defra-id-stub:3007/idphub/b2c/b2c_1a_cui_cpdev_signupsigninsfi/.well-known/openid-configuration}
+      DEFRA_ID_WELL_KNOWN_URL: ${DEFRA_ID_WELL_KNOWN_URL:-http://fcp-defra-id-stub-internal:3007/idphub/b2c/b2c_1a_cui_cpdev_signupsigninsfi/.well-known/openid-configuration}
       DEFRA_ID_CLIENT_ID: ${DEFRA_ID_CLIENT_ID:-client_id}
       DEFRA_ID_CLIENT_SECRET: ${DEFRA_ID_CLIENT_SECRET:-client_secret}
       DEFRA_ID_SERVICE_ID: ${DEFRA_ID_SERVICE_ID:-service_id}
-      DEFRA_ID_REDIRECT_URL: ${DEFRA_ID_REDIRECT_URL:-http://localhost:3000/auth/sign-in-oidc}
-      DEFRA_ID_SIGN_OUT_REDIRECT_URL: ${DEFRA_ID_SIGN_OUT_REDIRECT_URL:-http://localhost:3000/auth/sign-out-oidc}
+      DEFRA_ID_REDIRECT_URL: ${DEFRA_ID_REDIRECT_URL:-https://localhost:4000/auth/sign-in-oidc}
+      DEFRA_ID_SIGN_OUT_REDIRECT_URL: ${DEFRA_ID_SIGN_OUT_REDIRECT_URL:-https://localhost:4000/auth/sign-out-oidc}
       COOKIE_PASSWORD: ${COOKIE_PASSWORD}
-      GRANTS_UI_BACKEND_URL: ${GRANTS_UI_BACKEND_URL:-http://grants-ui-backend:3001}
+      GRANTS_UI_BACKEND_URL: ${GRANTS_UI_BACKEND_URL:-http://grants-ui-backend-internal:3001}
       GRANTS_UI_BACKEND_AUTH_TOKEN: ${GRANTS_UI_BACKEND_AUTH_TOKEN:-auth_token}
       GRANTS_UI_BACKEND_ENCRYPTION_KEY: ${GRANTS_UI_BACKEND_ENCRYPTION_KEY:-encryption_key}
-      APP_BASE_URL: ${APP_BASE_URL:-http://localhost:3000}
+      APP_BASE_URL: ${APP_BASE_URL:-https://localhost:4000}
       HOST: 0.0.0.0
       GAS_API_URL: http://mockserver:1080
-      EXAMPLE_GRANT_WITH_AUTH_WHITELIST_CRNS: 1100014934,1103521484,1106068880,1103498622,1107012360
-      EXAMPLE_GRANT_WITH_AUTH_WHITELIST_SBIS: 106284736,114246642,178137164,136294445,182448003
+      EXAMPLE_GRANT_WITH_AUTH_WHITELIST_CRNS: 1100957269, 1100960953
+      EXAMPLE_GRANT_WITH_AUTH_WHITELIST_SBIS: 107593059, 115460751
     volumes:
       - ./src:/home/node/src
       - /home/node/node_modules
     networks:
-      - cdp-tenant
+      - grants-ui-net
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "ps aux | grep 'node .' | grep -v grep || exit 1"]
@@ -126,8 +128,8 @@ services:
       retries: 6
       start_period: 60s
 
-  grants-ui-backend:
-    image: defradigital/grants-ui-backend
+  grants-ui-backend-internal:
+    image: defradigital/grants-ui-backend:latest
     ports:
       - '3001:3001'
     depends_on:
@@ -140,7 +142,7 @@ services:
       GRANTS_UI_BACKEND_AUTH_TOKEN: ${GRANTS_UI_BACKEND_AUTH_TOKEN:-auth_token}
       GRANTS_UI_BACKEND_ENCRYPTION_KEY: ${GRANTS_UI_BACKEND_ENCRYPTION_KEY:-encryption_key}
     networks:
-      - cdp-tenant
+      - grants-ui-net
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
@@ -149,11 +151,33 @@ services:
       retries: 3
       start_period: 40s
 
+  grants-ui:
+    image: nginx:1.27-alpine
+    depends_on:
+      - grants-ui-internal
+      - grants-ui-backend-internal
+      - fcp-defra-id-stub-internal
+    ports:
+      - "4000:4000"
+      - "4001:4001"
+      - "4007:4007"
+    volumes:
+      - ./nginx/grants-ui.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./certs:/etc/nginx/certs:ro
+    networks:
+      grants-ui-net:
+        aliases:
+          - grants-ui
+          - grants-ui-backend
+          - fcp-defra-id-stub
+
+
 ################################################################################
 
 volumes:
   mongodb-data:
 
 networks:
-  cdp-tenant:
+  grants-ui-net:
+    name: grants-ui-net
     driver: bridge
