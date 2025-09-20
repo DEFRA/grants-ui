@@ -1,14 +1,14 @@
 import allure from 'allure-commandline'
 
 export const config = {
-  baseUrl: 'http://localhost:3000',
-  baseBackendUrl: 'http://localhost:3001',
+  baseUrl: 'https://localhost:4000',
+  baseBackendUrl: 'http://localhost:4001',
   maxInstances: 10,
   capabilities: [
     {
       browserName: 'chrome',
       'goog:chromeOptions': {
-        args: ['--no-sandbox', '--disable-infobars', '--disable-gpu', '--window-size=1920,1080']
+        args: ['--ignore-certificate-errors', '--allow-insecure-localhost']
       }
     }
   ],
