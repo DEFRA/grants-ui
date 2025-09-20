@@ -2,7 +2,7 @@ import { vi } from 'vitest'
 import { StatusPageController } from '@defra/forms-engine-plugin/controllers/StatusPageController.js'
 import ConfirmationPageController from './confirmation.controller.js'
 import * as formSlugHelper from '~/src/server/common/helpers/form-slug-helper.js'
-import { mockHapiRequest, mockHapiResponseToolkit, mockContext as mockHapiContext } from '~/src/__mocks__/hapi-mocks.js'
+import { mockContext as mockHapiContext, mockHapiRequest, mockHapiResponseToolkit } from '~/src/__mocks__/hapi-mocks.js'
 
 const mockFormsCacheServiceMethods = {
   getConfirmationState: vi.fn(),
@@ -40,6 +40,7 @@ describe('ConfirmationPageController', () => {
     })
 
     mockFormsCacheServiceMethods.getConfirmationState.mockResolvedValue({
+      $$__referenceNumber: 'REF123',
       confirmed: true
     })
 
@@ -84,6 +85,7 @@ describe('ConfirmationPageController', () => {
 
     test('should redirect to start page if confirmation state is not confirmed', async () => {
       mockFormsCacheServiceMethods.getConfirmationState.mockResolvedValueOnce({
+        $$__referenceNumber: 'REF123',
         confirmed: false
       })
       const handler = controller.makeGetRouteHandler()
@@ -101,12 +103,15 @@ describe('ConfirmationPageController', () => {
 
     test('should clear state when confirmed', async () => {
       mockFormsCacheServiceMethods.getConfirmationState.mockResolvedValueOnce({
+        $$__referenceNumber: 'REF123',
         confirmed: true
       })
       const handler = controller.makeGetRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
-      expect(mockFormsCacheServiceMethods.setConfirmationState).toHaveBeenCalledWith(mockRequest, { confirmed: false })
+      expect(mockFormsCacheServiceMethods.setConfirmationState).toHaveBeenCalledWith(mockRequest, {
+        confirmed: false
+      })
       expect(mockFormsCacheServiceMethods.clearState).toHaveBeenCalledWith(mockRequest)
     })
 
@@ -170,7 +175,10 @@ describe('ConfirmationPageController', () => {
     test('should handle case when confirmationState is undefined', async () => {
       // Mock the controller's behavior to handle undefined confirmationState
       const originalGetConfirmationState = mockFormsCacheServiceMethods.getConfirmationState
-      mockFormsCacheServiceMethods.getConfirmationState = vi.fn().mockResolvedValueOnce({ confirmed: false })
+      mockFormsCacheServiceMethods.getConfirmationState = vi.fn().mockResolvedValueOnce({
+        $$__referenceNumber: 'REF123',
+        confirmed: false
+      })
 
       const handler = controller.makeGetRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)

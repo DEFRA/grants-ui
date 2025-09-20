@@ -1,1 +1,2 @@
-export const sbiStore = new Map().set('sbi', process.env.DEFAULT_SBI)
+import { config } from '~/src/config/config.js'
+export const sbiStore = new Map().set('sbi', config.get('landGrants.defaultSbi'))
