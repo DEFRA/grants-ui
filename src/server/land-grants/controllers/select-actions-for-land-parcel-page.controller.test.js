@@ -82,13 +82,13 @@ describe('SelectActionsForLandParcelPageController', () => {
 
     mockRequest = {
       payload: {
-        landAction: 'CMOR1'
+        landAction_1: 'CMOR1'
       },
       logger: mockRequestLogger(),
       auth: {
         isAuthenticated: true,
         credentials: {
-          sbi: '123456789',
+          sbi: '106284736',
           name: 'John Doe',
           organisationId: 'org123',
           organisationName: ' Farm 1',
@@ -131,27 +131,39 @@ describe('SelectActionsForLandParcelPageController', () => {
 
       expect(result).toEqual({
         errors: {
-          landAction: {
+          landAction_1: {
             text: 'Select an action to do on this land parcel'
           }
         },
-        errorSummary: [{ text: 'Select an action to do on this land parcel', href: '#landAction' }]
+        errorSummary: [{ text: 'Select an action to do on this land parcel', href: '#landAction_1' }]
       })
     })
 
-    test('should return empty object if payload includes landAction', () => {
-      const landAction = 'CMOR1'
+    test('should return error object if payload is empty', () => {
+      const landAction = ''
 
       const result = controller.validateUserInput(landAction)
 
-      expect(result).toEqual({})
+      expect(result).toEqual({
+        errorSummary: [
+          {
+            href: '#landAction_1',
+            text: 'Select an action to do on this land parcel'
+          }
+        ],
+        errors: {
+          landAction_1: {
+            text: 'Select an action to do on this land parcel'
+          }
+        }
+      })
     })
   })
 
   describe('extractActionsDataFromPayload', () => {
     test('should extract action data correctly from payload', () => {
       const payload = {
-        landAction: 'CMOR1'
+        landAction_1: 'CMOR1'
       }
 
       const result = controller.extractActionsDataFromPayload(payload)
@@ -169,7 +181,7 @@ describe('SelectActionsForLandParcelPageController', () => {
 
     test('should ignore action codes not present in grouped actions', () => {
       const payload = {
-        landAction: 'unknownAction'
+        landAction_1: 'unknownAction'
       }
 
       const result = controller.extractActionsDataFromPayload(payload)
@@ -200,7 +212,7 @@ describe('SelectActionsForLandParcelPageController', () => {
       ]
 
       const payload = {
-        landAction: 'CMOR1'
+        landAction_1: 'CMOR1'
       }
 
       const result = controller.extractActionsDataFromPayload(payload)
@@ -254,9 +266,9 @@ describe('SelectActionsForLandParcelPageController', () => {
         landParcels: {
           'sheet1-parcel1': {
             actionsObj: {
-              CMOR1: {
-                description: 'Assess moorland and produce a written record: CMOR1',
-                value: 10,
+              UPL1: {
+                description: 'Moderate livestock grazing on moorland: UPL1',
+                value: 5,
                 unit: 'ha'
               }
             }
@@ -267,6 +279,11 @@ describe('SelectActionsForLandParcelPageController', () => {
         UPL1: {
           description: 'Moderate livestock grazing on moorland: UPL1',
           value: 5,
+          unit: 'ha'
+        },
+        CMOR1: {
+          description: 'Assess moorland and produce a written record: CMOR1',
+          value: 10,
           unit: 'ha'
         }
       }
@@ -308,6 +325,11 @@ describe('SelectActionsForLandParcelPageController', () => {
         }
       }
       const actionsObj = {
+        CMOR1: {
+          description: 'Assess moorland and produce a written record: CMOR1',
+          value: 10,
+          unit: 'ha'
+        },
         UPL2: {
           description: 'Heavy livestock grazing on moorland: UPL2',
           value: 3,
@@ -351,8 +373,7 @@ describe('SelectActionsForLandParcelPageController', () => {
       const result = controller.buildNewState(state, actionsObj)
 
       expect(result.landParcels['sheet1-parcel1'].actionsObj).toEqual({
-        UNKNOWN2: { description: 'Another unknown action', value: 3, unit: 'ha' },
-        UNKNOWN1: { description: 'Unknown action', value: 5, unit: 'ha' }
+        UNKNOWN2: { description: 'Another unknown action', value: 3, unit: 'ha' }
       })
     })
 
@@ -377,6 +398,11 @@ describe('SelectActionsForLandParcelPageController', () => {
         UPL1: {
           description: 'Moderate livestock grazing on moorland: UPL1',
           value: 5,
+          unit: 'ha'
+        },
+        CMOR1: {
+          description: 'Assess moorland and produce a written record: CMOR1',
+          value: 10,
           unit: 'ha'
         }
       }
@@ -416,6 +442,7 @@ describe('SelectActionsForLandParcelPageController', () => {
       expect(QuestionPageController.prototype.getViewModel).toHaveBeenCalledWith(mockRequest, mockContext)
       expect(result).toEqual({
         ...mockParentViewModel,
+        actionFieldPrefix: 'landAction_',
         groupedActions: [
           {
             name: 'Assess moorland',
@@ -423,7 +450,6 @@ describe('SelectActionsForLandParcelPageController', () => {
               unit: 'ha',
               value: 10
             },
-            visible: true,
             actions: [
               {
                 value: 'CMOR1',
@@ -441,7 +467,6 @@ describe('SelectActionsForLandParcelPageController', () => {
               unit: 'ha',
               value: 5
             },
-            visible: true,
             actions: [
               {
                 value: 'UPL1',
@@ -465,15 +490,6 @@ describe('SelectActionsForLandParcelPageController', () => {
       })
     })
 
-    test('should hide groups where all actions are already added', () => {
-      controller.addedActions = [{ code: 'CMOR1', description: 'Assess moorland and produce a written record: CMOR1' }]
-
-      const result = controller.getViewModel(mockRequest, mockContext)
-
-      expect(result.groupedActions[0].visible).toBe(false)
-      expect(result.groupedActions[1].visible).toBe(true)
-    })
-
     test('should handle empty grouped actions', () => {
       controller.groupedActions = []
       const mockParentViewModel = { pageTitle: 'Land Actions' }
@@ -483,6 +499,7 @@ describe('SelectActionsForLandParcelPageController', () => {
 
       expect(result).toEqual({
         ...mockParentViewModel,
+        actionFieldPrefix: 'landAction_',
         groupedActions: []
       })
     })
@@ -621,7 +638,8 @@ describe('SelectActionsForLandParcelPageController', () => {
     test('should add more land actions to existing land parcel', async () => {
       controller.selectedLandParcel = 'sheet1-parcel1'
       mockRequest.payload = {
-        landAction: 'UPL1'
+        landAction_1: 'CMOR1',
+        landAction_2: 'UPL1'
       }
 
       mockContext.state.landParcels = {
@@ -664,7 +682,8 @@ describe('SelectActionsForLandParcelPageController', () => {
     test('should replace action when selecting different action from same group', async () => {
       controller.selectedLandParcel = 'sheet1-parcel1'
       mockRequest.payload = {
-        landAction: 'UPL2'
+        landAction_1: 'CMOR1',
+        landAction_2: 'UPL2'
       }
 
       mockContext.state.landParcels = {
@@ -732,7 +751,7 @@ describe('SelectActionsForLandParcelPageController', () => {
 
         triggerApiActionsValidation.mockResolvedValue({ valid: true, errorMessages: [] })
 
-        await controller.validateActionsWithApiData(actionsObj, sheetId, parcelId)
+        await controller.validateActionsWithApiData(mockContext.payload, actionsObj, sheetId, parcelId)
 
         expect(triggerApiActionsValidation).toHaveBeenCalledWith({
           sheetId,
@@ -756,17 +775,22 @@ describe('SelectActionsForLandParcelPageController', () => {
         const errorMessages = [{ code: 'CMOR1', description: 'Invalid quantity for CMOR1' }]
         triggerApiActionsValidation.mockResolvedValue({ valid: false, errorMessages })
 
-        const result = await controller.validateActionsWithApiData({ CMOR1: { value: 10 } }, 'sheet1', 'parcel1')
+        const result = await controller.validateActionsWithApiData(
+          mockRequest.payload,
+          { CMOR1: { value: 10 } },
+          'sheet1',
+          'parcel1'
+        )
 
         expect(result.errors).toEqual({
-          CMOR1: { text: 'Invalid quantity for CMOR1' }
+          landAction_1: { text: 'Invalid quantity for CMOR1' }
         })
-        expect(result.errorSummary).toEqual([{ text: 'Invalid quantity for CMOR1', href: '#landAction' }])
+        expect(result.errorSummary).toEqual([{ text: 'Invalid quantity for CMOR1', href: '#landAction_1' }])
       })
 
       test('should handle no actions selected', async () => {
         mockRequest.payload = {
-          landAction: '',
+          landAction_1: '',
           action: 'validate'
         }
 
@@ -781,11 +805,11 @@ describe('SelectActionsForLandParcelPageController', () => {
             errorSummary: [
               {
                 text: 'Select an action to do on this land parcel',
-                href: '#landAction'
+                href: '#landAction_1'
               }
             ],
             errors: {
-              landAction: {
+              landAction_1: {
                 text: 'Select an action to do on this land parcel'
               }
             }
@@ -795,7 +819,7 @@ describe('SelectActionsForLandParcelPageController', () => {
 
       test('should validate actions when validate action is requested', async () => {
         mockRequest.payload = {
-          landAction: 'CMOR1',
+          landAction_1: 'CMOR1',
           action: 'validate'
         }
 
@@ -824,7 +848,7 @@ describe('SelectActionsForLandParcelPageController', () => {
 
       test('should handle API validation errors and return error view', async () => {
         mockRequest.payload = {
-          landAction: 'CMOR1',
+          landAction_1: 'CMOR1',
           action: 'validate'
         }
 
@@ -841,9 +865,9 @@ describe('SelectActionsForLandParcelPageController', () => {
           'select-actions-for-land-parcel',
           expect.objectContaining({
             parcelName: 'sheet1 parcel1',
-            errorSummary: [{ text: 'Invalid area specified for CMOR1', href: '#landAction' }],
+            errorSummary: [{ text: 'Invalid area specified for CMOR1', href: '#landAction_1' }],
             errors: {
-              CMOR1: { text: 'Invalid area specified for CMOR1' }
+              landAction_1: { text: 'Invalid area specified for CMOR1' }
             }
           })
         )

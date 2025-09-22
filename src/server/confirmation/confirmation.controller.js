@@ -1,6 +1,6 @@
 import { StatusPageController } from '@defra/forms-engine-plugin/controllers/StatusPageController.js'
+import { getConfirmationPath, storeSlugInContext } from '~/src/server/common/helpers/form-slug-helper.js'
 import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/forms-cache.js'
-import { storeSlugInContext, getConfirmationPath } from '~/src/server/common/helpers/form-slug-helper.js'
 
 export default class ConfirmationPageController extends StatusPageController {
   viewName = 'confirmation-page.html'
@@ -25,6 +25,7 @@ export default class ConfirmationPageController extends StatusPageController {
 
       const cacheService = getFormsCacheService(request.server)
       const confirmationState = await cacheService.getConfirmationState(request)
+      const referenceNumber = confirmationState.$$__referenceNumber
 
       // Log the confirmation state for debugging
       request.logger.debug('ConfirmationController: Confirmation state:', confirmationState)
@@ -48,7 +49,7 @@ export default class ConfirmationPageController extends StatusPageController {
       const viewModel = {
         ...super.getViewModel(request, context),
         errors: collection.getErrors(collection.getErrors()),
-        referenceNumber: context.referenceNumber
+        referenceNumber
       }
       return h.view(viewName, viewModel)
     }

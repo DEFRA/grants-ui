@@ -1,6 +1,12 @@
 import { vi } from 'vitest'
 import { config } from '~/src/config/config.js'
-import { addAllForms, configureFormDefinition, formsService, getFormsCache } from './form.js'
+import {
+  addAllForms,
+  configureFormDefinition,
+  formsService,
+  getFormsCache,
+  validateWhitelistConfiguration
+} from './form.js'
 import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
 import fs from 'node:fs/promises'
 
@@ -8,7 +14,7 @@ const mockUrl = { pathname: '/mock/path' }
 global.URL = vi.fn(() => mockUrl)
 global.import = { meta: { url: 'file:///mock/path' } }
 
-const defaultConfigMock = {
+const DEFAULT_CONFIG_MOCK = {
   cdpEnvironment: 'local',
   log: {
     enabled: true,
@@ -19,6 +25,48 @@ const defaultConfigMock = {
   serviceName: 'test-service',
   serviceVersion: '1.0.0'
 }
+
+const TEST_FORMS_ARRAY = [
+  {
+    path: 'path/to/form1.yaml',
+    id: 'form-id-1',
+    slug: 'form-slug-1',
+    title: 'Form 1'
+  },
+  {
+    path: 'path/to/form2.yaml',
+    id: 'form-id-2',
+    slug: 'form-slug-2',
+    title: 'Form 2'
+  },
+  {
+    path: 'path/to/form1-duplicate.yaml',
+    id: 'form-id-1',
+    slug: 'form-slug-1',
+    title: 'Form 1 Duplicate'
+  },
+  {
+    path: 'path/to/form3.yaml',
+    id: 'form-id-3',
+    slug: 'form-slug-3',
+    title: 'Form 3'
+  }
+]
+
+const UNIQUE_FORMS_ARRAY = [
+  {
+    path: 'path/to/form1.yaml',
+    id: 'form-id-1',
+    slug: 'form-slug-1',
+    title: 'Form 1'
+  },
+  {
+    path: 'path/to/form2.yaml',
+    id: 'form-id-2',
+    slug: 'form-slug-2',
+    title: 'Form 2'
+  }
+]
 
 vi.mock('~/src/config/config.js', async () => {
   const { mockConfig } = await import('~/src/__mocks__')
@@ -53,18 +101,49 @@ vi.mock('../config.js', () => ({
   }
 }))
 
+const mockEnv = {
+  EXAMPLE_GRANT_WITH_AUTH_WHITELIST_CRNS: '1101009926,1101010029',
+  EXAMPLE_GRANT_WITH_AUTH_WHITELIST_SBIS: '123456789,987654321'
+}
+
+Object.defineProperty(process, 'env', {
+  value: new Proxy(process.env, {
+    get(target, prop) {
+      if (prop in mockEnv) {
+        return mockEnv[prop]
+      }
+      return target[prop]
+    },
+    has(target, prop) {
+      return prop in mockEnv || prop in target
+    },
+    deleteProperty(target, prop) {
+      if (prop in mockEnv) {
+        delete mockEnv[prop]
+        return true
+      }
+      return delete target[prop]
+    }
+  })
+})
+
 describe('form', () => {
   let mockWarn
   let mockError
 
   beforeEach(() => {
     vi.clearAllMocks()
-    config.get.mockImplementation((key) => defaultConfigMock[key])
-    // Get the mocked logger functions
+    config.get.mockImplementation((key) => DEFAULT_CONFIG_MOCK[key])
+    // Get the warn function from the mocked logger
     const logger = vi.mocked(createLogger)()
     mockWarn = logger.warn
     mockError = logger.error
+
+    mockEnv.EXAMPLE_GRANT_WITH_AUTH_WHITELIST_CRNS = '1101009926,1101010029'
+    mockEnv.EXAMPLE_GRANT_WITH_AUTH_WHITELIST_SBIS = '123456789,987654321'
   })
+
+  afterEach(() => {})
 
   describe('formsService', () => {
     test('returns landGrantsDefinition for matching id', async () => {
@@ -86,30 +165,15 @@ describe('form', () => {
   })
 
   describe('configureFormDefinition', () => {
-    test('configures URLs correctly for local environment', () => {
-      const definition = {
-        pages: [
-          {
-            events: {
-              onLoad: {
-                options: {
-                  url: 'http://cdpEnvironment.example.com'
-                }
-              }
-            }
-          }
-        ]
-      }
-
-      const result = configureFormDefinition(definition)
-      expect(result.pages[0].events.onLoad.options.url).toBe(
+    it.each([
+      [
+        'local environment',
+        'local',
         'http://localhost:3001/scoring/api/v1/adding-value/score?allowPartialScoring=true'
-      )
-    })
-
-    test('configures URLs correctly for non-local environment', () => {
-      // Override the config mock for this test only
-      config.get.mockImplementation((key) => (key === 'cdpEnvironment' ? 'dev' : defaultConfigMock[key]))
+      ],
+      ['non-local environment', 'dev', 'http://dev.example.com']
+    ])('configures URLs correctly for %s', (description, environment, expectedUrl) => {
+      config.get.mockImplementation((key) => (key === 'cdpEnvironment' ? environment : DEFAULT_CONFIG_MOCK[key]))
 
       const definition = {
         pages: [
@@ -126,7 +190,7 @@ describe('form', () => {
       }
 
       const result = configureFormDefinition(definition)
-      expect(result.pages[0].events.onLoad.options.url).toBe('http://dev.example.com')
+      expect(result.pages[0].events.onLoad.options.url).toBe(expectedUrl)
     })
 
     test('handles form definition without events', () => {
@@ -197,13 +261,52 @@ describe('form', () => {
 
       const result = configureFormDefinition(definition)
 
-      expect(mockWarn).toHaveBeenCalledWith(`Unexpected environment value: ${defaultConfigMock.cdpEnvironment}`)
+      expect(mockWarn).toHaveBeenCalledWith(`Unexpected environment value: ${DEFAULT_CONFIG_MOCK.cdpEnvironment}`)
 
       expect(result).toEqual(definition)
     })
   })
 
   describe('addAllForms', () => {
+    test('handles duplicate forms and logs warning', async () => {
+      const mockLoader = {
+        addForm: vi.fn().mockResolvedValue(undefined)
+      }
+
+      const result = await addAllForms(mockLoader, TEST_FORMS_ARRAY)
+
+      expect(mockWarn).toHaveBeenCalledWith('Skipping duplicate form: form-slug-1 with id form-id-1')
+
+      expect(result).toBe(3)
+      expect(mockLoader.addForm).toHaveBeenCalledTimes(3)
+
+      expect(mockLoader.addForm).not.toHaveBeenCalledWith('path/to/form1-duplicate.yaml', expect.any(Object))
+
+      expect(mockLoader.addForm).toHaveBeenCalledWith(
+        'path/to/form1.yaml',
+        expect.objectContaining({
+          id: 'form-id-1',
+          slug: 'form-slug-1',
+          title: 'Form 1'
+        })
+      )
+      expect(mockLoader.addForm).toHaveBeenCalledWith(
+        'path/to/form2.yaml',
+        expect.objectContaining({
+          id: 'form-id-2',
+          slug: 'form-slug-2',
+          title: 'Form 2'
+        })
+      )
+      expect(mockLoader.addForm).toHaveBeenCalledWith(
+        'path/to/form3.yaml',
+        expect.objectContaining({
+          id: 'form-id-3',
+          slug: 'form-slug-3',
+          title: 'Form 3'
+        })
+      )
+    })
     test('handles empty forms array', async () => {
       const mockLoader = {
         addForm: vi.fn()
@@ -221,20 +324,7 @@ describe('form', () => {
         addForm: vi.fn().mockResolvedValue(undefined)
       }
 
-      const testForms = [
-        {
-          path: 'path/to/form1.yaml',
-          id: 'form-id-1',
-          title: 'Form 1'
-        },
-        {
-          path: 'path/to/form2.yaml',
-          id: 'form-id-2',
-          title: 'Form 2'
-        }
-      ]
-
-      const result = await addAllForms(mockLoader, testForms)
+      const result = await addAllForms(mockLoader, UNIQUE_FORMS_ARRAY)
 
       expect(result).toBe(2)
       expect(mockLoader.addForm).toHaveBeenCalledTimes(2)
@@ -299,6 +389,74 @@ tasklist:
 
       readFileSpy.mockRestore()
       readdirSpy.mockRestore()
+    })
+  })
+
+  describe('validateWhitelistConfiguration', () => {
+    test('throws error when only CRN environment variable is provided', () => {
+      const form = { title: 'Test Form' }
+      const definition = {
+        metadata: {
+          whitelistCrnEnvVar: 'EXAMPLE_GRANT_WITH_AUTH_WHITELIST_CRNS'
+        }
+      }
+
+      expect(() => validateWhitelistConfiguration(form, definition)).toThrow(
+        'Incomplete whitelist configuration in form Test Form: whitelistCrnEnvVar is defined but whitelistSbiEnvVar is missing. Both CRN and SBI whitelist variables must be configured together.'
+      )
+    })
+
+    test('throws error when only SBI environment variable is provided', () => {
+      const form = { title: 'Test Form' }
+      const definition = {
+        metadata: {
+          whitelistSbiEnvVar: 'EXAMPLE_GRANT_WITH_AUTH_WHITELIST_SBIS'
+        }
+      }
+
+      expect(() => validateWhitelistConfiguration(form, definition)).toThrow(
+        'Incomplete whitelist configuration in form Test Form: whitelistSbiEnvVar is defined but whitelistCrnEnvVar is missing. Both CRN and SBI whitelist variables must be configured together.'
+      )
+    })
+
+    test('throws error when CRN environment variable is missing', () => {
+      const form = { title: 'Test Form' }
+      const definition = {
+        metadata: {
+          whitelistCrnEnvVar: 'MISSING_CRN_VAR',
+          whitelistSbiEnvVar: 'EXAMPLE_GRANT_WITH_AUTH_WHITELIST_SBIS'
+        }
+      }
+
+      expect(() => validateWhitelistConfiguration(form, definition)).toThrow(
+        'CRN whitelist environment variable MISSING_CRN_VAR is defined in form Test Form but not configured in environment'
+      )
+    })
+
+    test('throws error when SBI environment variable is missing', () => {
+      const form = { title: 'Test Form' }
+      const definition = {
+        metadata: {
+          whitelistCrnEnvVar: 'EXAMPLE_GRANT_WITH_AUTH_WHITELIST_CRNS',
+          whitelistSbiEnvVar: 'MISSING_SBI_VAR'
+        }
+      }
+
+      expect(() => validateWhitelistConfiguration(form, definition)).toThrow(
+        'SBI whitelist environment variable MISSING_SBI_VAR is defined in form Test Form but not configured in environment'
+      )
+    })
+  })
+
+  describe('formsService error handling', () => {
+    test('throws error during startup when whitelist validation fails', async () => {
+      delete mockEnv.EXAMPLE_GRANT_WITH_AUTH_WHITELIST_CRNS
+
+      await expect(formsService()).rejects.toThrow(
+        'CRN whitelist environment variable EXAMPLE_GRANT_WITH_AUTH_WHITELIST_CRNS is defined in form Example grant with auth but not configured in environment'
+      )
+
+      mockEnv.EXAMPLE_GRANT_WITH_AUTH_WHITELIST_CRNS = '1101009926 1101010029'
     })
   })
 })

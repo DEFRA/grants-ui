@@ -92,7 +92,10 @@ export default class DeclarationPageController extends SummaryPageController {
         }
 
         // Set confirmation state so the confirmation page knows a submission happened
-        await cacheService.setConfirmationState(request, { confirmed: true })
+        await cacheService.setConfirmationState(request, {
+          $$__referenceNumber: context.referenceNumber,
+          confirmed: true
+        })
         request.logger.debug('DeclarationController: Set confirmation state to true')
 
         // Get the redirect path

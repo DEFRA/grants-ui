@@ -62,12 +62,12 @@ export async function postToLandGrantsApi(endpoint, body) {
  * @param {{ sheetId: string, parcelId: string, actionsObj: object }} param0
  * @returns {object}
  */
-export const landActionsToApiPayload = ({ sheetId, parcelId, actionsObj }) => {
-  const sbi = sbiStore.get('sbi') // TODO: change this once DefraID is in place
+export const landActionsToApiPayload = ({ sheetId, parcelId, actionsObj, sbi }) => {
+  const sbiValue = sbi || sbiStore.get('sbi') // TODO: change this once DefraID is in place
   return {
     sheetId,
     parcelId,
-    sbi,
+    sbi: sbiValue,
     actions: actionsObj
       ? Object.entries(actionsObj).map(([code, area]) => ({
           code,
@@ -189,4 +189,32 @@ export async function fetchParcels(sbi) {
     area: sizes[stringifyParcel(p)] || {}
   }))
   return hydratedParcels
+}
+
+/**
+ * Validates the application
+ * @param {object} data
+ * @param {string} data.applicationId
+ * @param {string} data.crn
+ * @param {object} data.landParcels
+ * @param {string} data.sbi
+ * @returns {Promise<{ id: string}>}
+ * @throws {Error}
+ */
+export async function validateApplication(data) {
+  const { applicationId, crn, landParcels, sbi } = data
+
+  const payload = {
+    applicationId,
+    requester: 'grants-ui',
+    applicantCrn: crn,
+    landActions: Object.entries(landParcels)
+      .filter(([parcelKey]) => parcelKey)
+      .map(([parcelKey, parcelData]) => {
+        const [sheetId, parcelId] = parcelKey.split('-')
+        return landActionsToApiPayload({ sheetId, parcelId, actionsObj: parcelData.actionsObj, sbi })
+      })
+  }
+
+  return postToLandGrantsApi('/application/validate', payload)
 }

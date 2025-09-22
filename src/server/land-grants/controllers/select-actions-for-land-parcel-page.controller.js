@@ -6,23 +6,28 @@ import {
 } from '~/src/server/land-grants/services/land-grants.service.js'
 
 const createErrorSummary = (errors) =>
-  Object.entries(errors).map(([, { text }]) => ({
+  Object.entries(errors).map(([field, { text }]) => ({
     text,
-    href: '#landAction'
+    href: `#${field}`
   }))
 
 export default class SelectActionsForLandParcelPageController extends QuestionPageController {
   viewName = 'select-actions-for-land-parcel'
+  actionFieldPrefix = 'landAction_'
   groupedActions = []
   addedActions = []
   selectedLandParcel = ''
-  selectedAction = ''
+
+  extractLandActionFieldsFromPayload(payload) {
+    return Object.keys(payload).filter((key) => key.startsWith(this.actionFieldPrefix))
+  }
 
   mapActionToViewModel(action) {
+    const existingActions = this.addedActions.map((a) => a.code)
     return {
       value: action.code,
       text: action.description,
-      checked: this.selectedAction === action.code,
+      checked: existingActions.includes(action.code),
       hint: {
         html:
           `Payment rate per year: <strong>£${action.ratePerUnitGbp?.toFixed(2)} per ha</strong>` +
@@ -40,36 +45,34 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
    */
   extractActionsDataFromPayload(payload) {
     const actionsObj = {}
-    const { landAction } = payload
+    const landActionFields = this.extractLandActionFieldsFromPayload(payload)
 
-    if (!landAction) {
+    if (landActionFields.length === 0) {
       return { actionsObj }
     }
 
     const availableActions = this.groupedActions.flatMap((g) => g.actions)
-    const actionInfo = availableActions.find((a) => a.code === landAction)
 
-    if (actionInfo) {
-      const result = {
-        description: actionInfo.description,
-        value: actionInfo?.availableArea?.value ?? '',
-        unit: actionInfo?.availableArea?.unit ?? ''
+    for (const fieldName of landActionFields) {
+      const actionCode = payload[fieldName]
+
+      if (!actionCode || actionCode === '') {
+        continue
       }
-      actionsObj[landAction] = result
+
+      const actionInfo = availableActions.find((a) => a.code === actionCode)
+
+      if (actionInfo) {
+        const result = {
+          description: actionInfo.description,
+          value: actionInfo?.availableArea?.value ?? '',
+          unit: actionInfo?.availableArea?.unit ?? ''
+        }
+        actionsObj[actionCode] = result
+      }
     }
 
     return { actionsObj }
-  }
-
-  /**
-   * Check if all actions in a group have been added
-   * @param {object} group - The action group
-   * @returns {boolean} - Whether all actions are added
-   */
-  allGroupActionsHaveBeenAdded(group) {
-    const groupActions = group.actions?.map((a) => a.code) || []
-    const addedActionCodes = this.addedActions.map((a) => a.code) || []
-    return groupActions.every((value) => addedActionCodes.includes(value))
   }
 
   /**
@@ -81,9 +84,9 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
   getViewModel(request, context) {
     return {
       ...super.getViewModel(request, context),
+      actionFieldPrefix: this.actionFieldPrefix,
       groupedActions: this.groupedActions.map((group) => ({
         ...group,
-        visible: !this.allGroupActionsHaveBeenAdded(group),
         actions: group.actions.map(this.mapActionToViewModel.bind(this))
       }))
     }
@@ -91,16 +94,21 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
 
   /**
    * Validate the user input submitted from the page
-   * @param {string} landAction - The land action selected by the user
+   * @param {object} payload - The form payload
    * @returns {object} - An object containing errors and error summary
    */
-  validateUserInput(landAction) {
-    if (landAction !== '') {
-      return {}
-    }
+  validateUserInput(payload) {
+    const errors = {}
+    const landActionFields = this.extractLandActionFieldsFromPayload(payload)
 
-    const errors = {
-      landAction: {
+    const hasSelection = landActionFields.some((field) => {
+      const value = payload[field]
+      return value && value !== ''
+    })
+
+    if (!hasSelection) {
+      const firstField = landActionFields[0] || this.actionFieldPrefix + '1'
+      errors[firstField] = {
         text: 'Select an action to do on this land parcel'
       }
     }
@@ -113,12 +121,13 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
 
   /**
    * Validate actions with API data
+   * @param {object} payload - The form payload
    * @param {object} actionsObj - Actions object to validate
    * @param {string} sheetId - Sheet ID
    * @param {string} parcelId - Parcel ID
    * @returns {object} - Validation result with errors
    */
-  async validateActionsWithApiData(actionsObj, sheetId, parcelId) {
+  async validateActionsWithApiData(payload, actionsObj, sheetId, parcelId) {
     const errors = {}
 
     if (Object.keys(actionsObj).length === 0) {
@@ -133,7 +142,11 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
 
     if (!valid) {
       for (const apiError of errorMessages) {
-        errors[apiError.code] = {
+        const foundKey = Object.keys(payload).find(
+          (key) => key.startsWith(this.actionFieldPrefix) && payload[key] === apiError.code
+        )
+        const index = Number(foundKey.replace(this.actionFieldPrefix, '')) || 1
+        errors[`${this.actionFieldPrefix}${index}`] = {
           text: apiError.description
         }
       }
@@ -177,7 +190,7 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
         return existingGroup && newGroup && existingGroup === newGroup
       })
 
-      if (!hasConflict) {
+      if (!hasConflict && newActionCodes.includes(actionData.code)) {
         filteredActions[existingActionCode] = actionData
       }
     })
@@ -320,7 +333,6 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
       const { collection, viewName } = this
       const { state } = context
       this.selectedLandParcel = request?.query?.parcelId || state.selectedLandParcel
-      this.selectedAction = request?.query?.action
       const [sheetId = '', parcelId = ''] = parseLandParcel(this.selectedLandParcel)
 
       try {
@@ -367,11 +379,10 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
     const fn = async (request, context, h) => {
       const { state } = context
       const payload = request.payload ?? {}
-      const landAction = payload.landAction ?? ''
       const [sheetId, parcelId] = parseLandParcel(this.selectedLandParcel)
 
-      const inputValidation = this.validateUserInput(landAction)
-      if (inputValidation?.errors?.landAction) {
+      const inputValidation = this.validateUserInput(payload)
+      if (Object.keys(inputValidation.errors).length > 0) {
         return this.renderErrorView(h, request, context, inputValidation, sheetId, parcelId)
       }
 
@@ -379,7 +390,7 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
       const newState = this.buildNewState(state, actionsObj)
 
       if (payload.action === 'validate') {
-        const apiValidation = await this.validateActionsWithApiData(actionsObj, sheetId, parcelId)
+        const apiValidation = await this.validateActionsWithApiData(payload, actionsObj, sheetId, parcelId)
         if (Object.keys(apiValidation.errors).length > 0) {
           return this.renderErrorView(h, request, context, apiValidation, sheetId, parcelId, newState)
         }

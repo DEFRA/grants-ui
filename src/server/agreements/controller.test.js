@@ -69,8 +69,11 @@ describe('Agreements Controller', () => {
       auth: {
         isAuthenticated: true,
         credentials: {
-          sbi: '123456789'
+          sbi: '106284736'
         }
+      },
+      app: {
+        cspNonce: 'test-nonce'
       }
     })
 
@@ -242,9 +245,10 @@ describe('Agreements Controller', () => {
         Authorization: 'Bearer test-token',
         'content-type': 'application/x-www-form-urlencoded',
         'x-base-url': '/agreement',
-        'x-encrypted-auth': 'mocked-jwt-token'
+        'x-encrypted-auth': 'mocked-jwt-token',
+        'x-csp-nonce': 'test-nonce'
       })
-      expect(Jwt.token.generate).toHaveBeenCalledWith({ sbi: '123456789', source: 'defra' }, 'test-jwt-secret')
+      expect(Jwt.token.generate).toHaveBeenCalledWith({ sbi: '106284736', source: 'defra' }, 'test-jwt-secret')
     })
 
     test('should build proxy headers for POST request with default content-type', async () => {
@@ -259,7 +263,8 @@ describe('Agreements Controller', () => {
         Authorization: 'Bearer test-token',
         'x-base-url': '/agreement',
         'content-type': 'application/x-www-form-urlencoded',
-        'x-encrypted-auth': 'mocked-jwt-token'
+        'x-encrypted-auth': 'mocked-jwt-token',
+        'x-csp-nonce': 'test-nonce'
       })
     })
 
@@ -279,7 +284,8 @@ describe('Agreements Controller', () => {
         Authorization: 'Bearer test-token',
         'x-base-url': '/agreement',
         'content-type': 'application/json',
-        'x-encrypted-auth': 'mocked-jwt-token'
+        'x-encrypted-auth': 'mocked-jwt-token',
+        'x-csp-nonce': 'test-nonce'
       })
     })
 
@@ -295,7 +301,8 @@ describe('Agreements Controller', () => {
         Authorization: 'Bearer test-token',
         'x-base-url': '/agreement',
         'content-type': 'application/x-www-form-urlencoded',
-        'x-encrypted-auth': 'mocked-jwt-token'
+        'x-encrypted-auth': 'mocked-jwt-token',
+        'x-csp-nonce': 'test-nonce'
       })
     })
 
@@ -311,7 +318,8 @@ describe('Agreements Controller', () => {
         Authorization: 'Bearer test-token',
         'x-base-url': '/agreement',
         'content-type': 'application/x-www-form-urlencoded',
-        'x-encrypted-auth': 'mocked-jwt-token'
+        'x-encrypted-auth': 'mocked-jwt-token',
+        'x-csp-nonce': 'test-nonce'
       })
     })
 
@@ -329,6 +337,7 @@ describe('Agreements Controller', () => {
       expect(mapUriResult.headers).toEqual({
         Authorization: 'Bearer test-token',
         'x-base-url': '/agreement',
+        'x-csp-nonce': 'test-nonce',
         'content-type': 'application/json',
         'x-encrypted-auth': 'mocked-jwt-token'
       })
@@ -402,7 +411,8 @@ describe('Agreements Controller', () => {
         Authorization: 'Bearer test-token',
         'x-base-url': '/agreement',
         'content-type': 'application/x-www-form-urlencoded',
-        'x-encrypted-auth': 'mocked-jwt-token'
+        'x-encrypted-auth': 'mocked-jwt-token',
+        'x-csp-nonce': 'test-nonce'
       })
     })
 

@@ -63,7 +63,7 @@ describe('LandActionsCheckPageController', () => {
 
     // actionGroups.mockReturnValue([{ actions: ['CMOR1'] }, { actions: ['UPL1', 'UPL2', 'UPL3'] }])
     calculateGrantPayment.mockResolvedValue(mockPaymentResponse)
-    sbiStore.get = vi.fn().mockReturnValue('123456789')
+    sbiStore.get = vi.fn().mockReturnValue('106284736')
 
     mockRequest = {
       payload: {},
@@ -111,7 +111,7 @@ describe('LandActionsCheckPageController', () => {
       expect(calculateGrantPayment).toHaveBeenCalledWith({
         landActions: [
           {
-            sbi: '123456789',
+            sbi: '106284736',
             sheetId: 'SD6743',
             parcelId: '8083',
             actions: [
@@ -120,7 +120,7 @@ describe('LandActionsCheckPageController', () => {
             ]
           },
           {
-            sbi: '123456789',
+            sbi: '106284736',
             sheetId: 'SD6944',
             parcelId: '0085',
             actions: [{ code: 'CMOR1', quantity: 1.0 }]
@@ -150,7 +150,7 @@ describe('LandActionsCheckPageController', () => {
       expect(calculateGrantPayment).toHaveBeenCalledWith({
         landActions: [
           {
-            sbi: '123456789',
+            sbi: '106284736',
             sheetId: 'sheet1',
             parcelId: 'parcel1',
             actions: [{ code: 'ACTION1', quantity: 10 }]
@@ -413,7 +413,7 @@ describe('LandActionsCheckPageController', () => {
       const result = controller.getAdditionalYearlyPayments(paymentData)
 
       expect(result[0].items[0][0].text).toBe('One-off payment per agreement per year for Management fee: MAN1')
-      expect(result[0].items[0][1].text).toBe('£50.00')
+      expect(result[0].items[0][1].html).toContain('£50.00')
     })
   })
 
@@ -546,13 +546,13 @@ describe('LandActionsCheckPageController', () => {
       const result = controller.getParcelItems(paymentData)
       const linksHtml = result[0].items[0][3].html
 
-      expect(linksHtml).toContain("href='select-actions-for-land-parcel?parcelId=SD01-001&action=UPL1'>Change</a>")
+      expect(linksHtml).toContain("href='select-actions-for-land-parcel?parcelId=SD01-001'>Change</a>")
       expect(linksHtml).toContain("href='remove-action?parcelId=SD01-001&action=UPL1'>Remove</a>")
       expect(linksHtml).toContain('land action UPL1 for parcel SD01 001')
       expect(linksHtml).toContain('land action UPL1 for parcel SD01 001')
     })
 
-    test('should hide Change link for CMOR1 actions (single action group)', () => {
+    test('should show Change link for CMOR1 actions (single action group)', () => {
       const paymentData = {
         parcelItems: {
           1: {
@@ -569,7 +569,7 @@ describe('LandActionsCheckPageController', () => {
       const result = controller.getParcelItems(paymentData)
       const linksHtml = result[0].items[0][3].html
 
-      expect(linksHtml).not.toContain('Change</a>')
+      expect(linksHtml).toContain('Change</a>')
       expect(linksHtml).toContain("href='remove-action?parcelId=SD02-002&action=CMOR1'>Remove</a>")
       expect(linksHtml).toContain('land action CMOR1 for parcel SD02 002')
     })
@@ -604,7 +604,7 @@ describe('LandActionsCheckPageController', () => {
       const cmor1LinksHtml = result[0].items[0][3].html
       const upl2LinksHtml = result[0].items[1][3].html
 
-      expect(cmor1LinksHtml).not.toContain('Change</a>')
+      expect(cmor1LinksHtml).toContain('Change</a>')
       expect(cmor1LinksHtml).toContain('Remove</a>')
 
       expect(upl2LinksHtml).toContain('Change</a>')

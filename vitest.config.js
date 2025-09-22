@@ -22,7 +22,8 @@ export default {
         '**/src/client/javascripts/application.js',
         '**/src/index.js',
         '**/index.js',
-        '**/__mocks__/**'
+        '**/__mocks__/**',
+        '**/test-constants.js'
       ],
       reportsDirectory: './coverage'
     }

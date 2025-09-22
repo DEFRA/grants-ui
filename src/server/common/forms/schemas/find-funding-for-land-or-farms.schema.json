@@ -2,15 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "additionalProperties": false,
-  "required": [
-    "scheme",
-    "year",
-    "hasCheckedLandIsUpToDate",
-    "actionApplications",
-    "agreementName",
-    "payment",
-    "applicant"
-  ],
+  "required": ["scheme", "year", "hasCheckedLandIsUpToDate", "actionApplications", "payment", "applicant"],
   "properties": {
     "scheme": {
       "type": "string",
@@ -19,11 +11,6 @@
     "year": {
       "type": "integer",
       "title": "Scheme year"
-    },
-    "agreementName": {
-      "type": "string",
-      "title": "Applicant provided name of the agreement",
-      "minLength": 1
     },
     "hasCheckedLandIsUpToDate": {
       "type": "boolean",

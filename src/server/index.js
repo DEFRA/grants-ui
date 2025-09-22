@@ -15,6 +15,7 @@ import { context } from '~/src/config/nunjucks/context/context.js'
 import { grantsUiPaths, nunjucksConfig } from '~/src/config/nunjucks/nunjucks.js'
 import auth from '~/src/plugins/auth.js'
 import sso from '~/src/plugins/sso.js'
+import { contentSecurityPolicy } from '~/src/plugins/content-security-policy.js'
 import { formsAuthCallback } from '~/src/server/auth/forms-engine-plugin-auth-helpers.js'
 import CheckResponsesPageController from '~/src/server/check-responses/check-responses.controller.js'
 import { formsService } from '~/src/server/common/forms/services/form.js'
@@ -41,11 +42,10 @@ import { PotentialFundingController } from '~/src/server/non-land-grants/pigs-mi
 import { tasklistBackButton } from '~/src/server/plugins/tasklist-back-button.js'
 import { sbiStore } from '~/src/server/sbi/state.js'
 import { formatCurrency } from '../config/nunjucks/filters/format-currency.js'
-import { contentSecurityPolicy } from '~/src/server/common/helpers/csp.js'
+import { StatePersistenceService } from './common/services/state-persistence/state-persistence.service.js'
 import RemoveActionPageController from './land-grants/controllers/remove-action-page.controller.js'
 import { router } from './router.js'
 import SectionEndController from './section-end/section-end.controller.js'
-import { StatePersistenceService } from './common/services/state-persistence/state-persistence.service.js'
 
 const SESSION_CACHE_NAME = 'session.cache.name'
 
@@ -53,6 +53,7 @@ const getViewPaths = () => {
   const serverDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)))
   return [
     path.join(serverDir, 'views'),
+    path.join(serverDir, 'auth/views'),
     path.join(serverDir, 'land-grants/views'),
     path.join(serverDir, 'non-land-grants/pigs-might-fly/views'),
     path.join(serverDir, 'about'),
@@ -167,8 +168,8 @@ const registerPlugins = async (server) => {
     pulse,
     sessionCache,
     nunjucksConfig,
-    tasklistBackButton,
-    sso
+    sso,
+    contentSecurityPolicy
   ])
 
   await server.register([router])
@@ -190,9 +191,12 @@ const mockSessionData = async (request, log, LogCodes) => {
       scope: ['user'],
       sbi: `${sbiStore.get('sbi')}`,
       organisationId: `${sbiStore.get('sbi')}`,
-      currentRelationshipId: `${sbiStore.get('sbi')}1234`,
       crn: String(config.get('landGrants.customerReferenceNumber')),
-      relationships: [`${sbiStore.get('sbi')}1234:${sbiStore.get('sbi')}:Farm ${sbiStore.get('sbi')}:1:External:0`]
+      currentRelationshipId: config.get('landGrants.mockSessionCurrentRelationshipId') || `${sbiStore.get('sbi')}1234`,
+      relationships: [
+        config.get('landGrants.mockSessionRelationships') ||
+          `${sbiStore.get('sbi')}1234:${sbiStore.get('sbi')}:Farm ${sbiStore.get('sbi')}:1:External:0`
+      ]
     }
 
     await request.server.app.cache.set(sessionId, sessionData)
@@ -270,6 +274,7 @@ export async function createServer() {
   })
 
   await registerFormsPlugin(server)
+  await server.register(tasklistBackButton)
 
   log(LogCodes.SYSTEM.STARTUP_PHASE, {
     phase: 'forms_plugin',
@@ -294,8 +299,6 @@ export async function createServer() {
 
     return h.continue
   })
-
-  server.ext('onPreResponse', contentSecurityPolicy)
 
   // Create a server extension to handle session creation when defra-id is disabled
   server.ext('onPreAuth', async (request, h) => {
