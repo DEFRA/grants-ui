@@ -42,7 +42,7 @@ async function calculate(landParcel, baseUrl) {
  *
  * @param {string[]} parcelIds
  * @param {string} baseUrl
- * @returns {Promise<Parcel[]>}
+ * @returns {Promise<{parcels: Parcel[]}>}
  */
 async function parcelsWithSize(parcelIds, baseUrl) {
   return await postToLandGrantsApi(

@@ -140,7 +140,7 @@ export async function triggerApiActionsValidation({ sbi, sheetId, parcelId, acti
  * @throws {Error}
  */
 async function fetchParcelsSize(parcelIds) {
-  const parcels = await landGrantsApiClient.parcelsWithSize(parcelIds)
+  const { parcels } = await landGrantsApiClient.parcelsWithSize(parcelIds)
 
   return parcels.reduce((acc, p) => {
     acc[stringifyParcel(p)] = p.size
