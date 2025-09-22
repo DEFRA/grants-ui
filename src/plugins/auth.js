@@ -354,8 +354,10 @@ function getBellOptions(oidcConfig) {
 function getCookieOptions() {
   return {
     cookie: {
+      name: config.get('session.cookie.name'),
       password: config.get('session.cookie.password'),
       path: '/',
+      ttl: config.get('session.cookie.ttl'),
       isSecure: config.get('session.cookie.secure'),
       isSameSite: 'Lax'
     },
