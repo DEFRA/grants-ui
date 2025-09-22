@@ -41,7 +41,7 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
   /**
    * Extract action data from the form payload
    * @param {object} payload - The form payload
-   * @returns {object} - Extracted action data
+   * @returns {{actionsObj: {[code: string]: {description: string, value: string, unit: string}} | {}}}} - Extracted action data
    */
   extractActionsDataFromPayload(payload) {
     const actionsObj = {}
@@ -122,7 +122,7 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
   /**
    * Validate actions with API data
    * @param {object} payload - The form payload
-   * @param {object} actionsObj - Actions object to validate
+   * @param {{[code: string]: {description: string, value: string, unit: string}} | {}} actionsObj - Actions object to validate
    * @param {string} sheetId - Sheet ID
    * @param {string} parcelId - Parcel ID
    * @returns {object} - Validation result with errors
