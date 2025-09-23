@@ -1,6 +1,7 @@
 import { StatusPageController } from '@defra/forms-engine-plugin/controllers/StatusPageController.js'
 import { getConfirmationPath, storeSlugInContext } from '~/src/server/common/helpers/form-slug-helper.js'
 import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/forms-cache.js'
+import { ConfirmationService } from './services/confirmation.service.js'
 
 export default class ConfirmationPageController extends StatusPageController {
   viewName = 'confirmation-page.html'
@@ -18,14 +19,14 @@ export default class ConfirmationPageController extends StatusPageController {
      * @param {Pick<ResponseToolkit, 'redirect' | 'view'>} h
      */
     return async (request, context, h) => {
-      const { collection, viewName } = this
+      const { collection } = this
 
       // Store the slug in context if it's available in request.params
       storeSlugInContext(request, context, 'ConfirmationController')
 
       const cacheService = getFormsCacheService(request.server)
       const confirmationState = await cacheService.getConfirmationState(request)
-      const referenceNumber = confirmationState.$$__referenceNumber
+      const referenceNumber = confirmationState.$$__referenceNumber || context.referenceNumber
 
       // Log the confirmation state for debugging
       request.logger.debug('ConfirmationController: Confirmation state:', confirmationState)
@@ -46,12 +47,35 @@ export default class ConfirmationPageController extends StatusPageController {
         await cacheService.clearState(request)
       }
 
-      const viewModel = {
-        ...super.getViewModel(request, context),
-        errors: collection.getErrors(collection.getErrors()),
-        referenceNumber
+      // Check if there's configuration-driven confirmation content
+      const confirmationContent = this.model?.def?.metadata?.confirmationContent
+
+      if (confirmationContent) {
+        const viewModel = ConfirmationService.buildViewModel({
+          referenceNumber,
+          businessName: request.yar?.get('businessName'),
+          sbi: request.yar?.get('sbi'),
+          contactName: request.yar?.get('contactName'),
+          confirmationContent
+        })
+
+        return h.view('confirmation/views/config-confirmation-page', {
+          ...super.getViewModel(request, context),
+          errors: collection.getErrors(collection.getErrors()),
+          ...viewModel
+        })
+      } else {
+        const viewModel = {
+          ...super.getViewModel(request, context),
+          errors: collection.getErrors(collection.getErrors()),
+          referenceNumber,
+          businessName: request.yar?.get('businessName'),
+          sbi: request.yar?.get('sbi'),
+          contactName: request.yar?.get('contactName')
+        }
+
+        return h.view(this.viewName, viewModel)
       }
-      return h.view(viewName, viewModel)
     }
   }
 

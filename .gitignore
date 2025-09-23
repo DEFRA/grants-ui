@@ -10,6 +10,7 @@ coverage
 .cache
 .env
 .envrc
+.env.local
 tsconfig.tsbuildinfo
 .eslintcache
 src/contracts/pacts
