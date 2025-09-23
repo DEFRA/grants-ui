@@ -12,7 +12,7 @@ export async function fetchSavedStateFromApi(key) {
     return null
   }
 
-  const { userId, organisationId, grantId } = parseSessionKey(key)
+  const { sbi, grantCode } = parseSessionKey(key)
 
   let json = null
   const url = new URL('/state/', GRANTS_UI_BACKEND_ENDPOINT)
@@ -23,9 +23,8 @@ export async function fetchSavedStateFromApi(key) {
       identity: key
     })
 
-    url.searchParams.set('userId', userId)
-    url.searchParams.set('businessId', organisationId)
-    url.searchParams.set('grantId', grantId)
+    url.searchParams.set('sbi', sbi)
+    url.searchParams.set('grantCode', grantCode)
 
     const response = await fetch(url.href, {
       method: 'GET',
