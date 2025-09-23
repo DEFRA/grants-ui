@@ -709,12 +709,17 @@ It is designed to encourage use and re-use of information freely and flexibly, w
 ### DEFRA-ID
 
 If you have trouble building defra-id with an error regarding 'example.data.json', it may be worth:
-  1) removing AUTH_MODE, AUTH_OVERRIDE, AUTH_OVERRIDE_FILE env-vars
-  2) Commenting out '''
-    # volumes:
-    #   - ./example.data.json:/data/example.data.json''' 
-    from docker compose
-  3) renaming .env to env.local
+
+1. removing AUTH_MODE, AUTH_OVERRIDE, AUTH_OVERRIDE_FILE env-vars
+2. Commenting out '''
+
+   # volumes:
+
+   # - ./example.data.json:/data/example.data.json'''
+
+   from docker compose
+
+3. renaming .env to env.local
 
 ## TODO
 

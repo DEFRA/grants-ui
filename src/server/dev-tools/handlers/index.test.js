@@ -23,12 +23,9 @@ describe('dev-tools handlers index', () => {
   test('should export all expected handlers', async () => {
     const exports = await import('./index.js')
 
-    const expectedExports = [
-      'devHomeHandler',
-      'demoConfirmationHandler'
-    ]
+    const expectedExports = ['devHomeHandler', 'demoConfirmationHandler']
 
-    expectedExports.forEach(expectedExport => {
+    expectedExports.forEach((expectedExport) => {
       expect(exports).toHaveProperty(expectedExport)
       expect(typeof exports[expectedExport]).toBe('function')
     })
@@ -38,10 +35,7 @@ describe('dev-tools handlers index', () => {
     const exports = await import('./index.js')
     const exportedKeys = Object.keys(exports)
 
-    const expectedExports = [
-      'devHomeHandler',
-      'demoConfirmationHandler'
-    ]
+    const expectedExports = ['devHomeHandler', 'demoConfirmationHandler']
 
     expect(exportedKeys.sort()).toEqual(expectedExports.sort())
   })
@@ -57,13 +51,10 @@ describe('dev-tools handlers index', () => {
     }
   ]
 
-  test.each(expectedExports)(
-    'should correctly re-export $name from $module',
-    async ({ name }) => {
-      const exports = await import('./index.js')
+  test.each(expectedExports)('should correctly re-export $name from $module', async ({ name }) => {
+    const exports = await import('./index.js')
 
-      expect(exports[name]).toBeDefined()
-      expect(typeof exports[name]).toBe('function')
-    }
-  )
+    expect(exports[name]).toBeDefined()
+    expect(typeof exports[name]).toBe('function')
+  })
 })

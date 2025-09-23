@@ -36,7 +36,11 @@ export const router = {
       await server.register([home, agreements, configConfirmation])
 
       // Development tools (only available in development mode)
-      if (config.get('devTools.enabled') && process.env.NODE_ENV !== 'production' && process.env.ENVIRONMENT === 'local') {
+      if (
+        config.get('devTools.enabled') &&
+        process.env.NODE_ENV !== 'production' &&
+        process.env.ENVIRONMENT === 'local'
+      ) {
         await server.register([devTools])
       }
 

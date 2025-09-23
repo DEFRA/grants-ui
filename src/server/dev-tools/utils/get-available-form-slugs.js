@@ -5,5 +5,5 @@ import { getFormsCache } from '../../common/forms/services/form.js'
  * @returns {Array<string>} Array of form slugs
  */
 export function getAvailableFormSlugs() {
-  return getFormsCache().map(f => f.slug)
+  return getFormsCache().map((f) => f.slug)
 }

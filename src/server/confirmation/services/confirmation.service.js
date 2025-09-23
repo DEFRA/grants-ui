@@ -1,8 +1,5 @@
 import { formsService, getFormsCache } from '~/src/server/common/forms/services/form.js'
 
-/**
- * Shared confirmation service for handling configuration-driven confirmation pages
- */
 export class ConfirmationService {
   /**
    * Find form by slug from cache
@@ -11,7 +8,7 @@ export class ConfirmationService {
    */
   static findFormBySlug(slug) {
     const allForms = getFormsCache()
-    return allForms.find(f => f.slug === slug) || null
+    return allForms.find((f) => f.slug === slug) || null
   }
 
   /**

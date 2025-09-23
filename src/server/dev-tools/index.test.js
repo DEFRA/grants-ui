@@ -64,7 +64,7 @@ describe('dev-tools index', () => {
       devTools.plugin.register(server)
 
       const routeCalls = server.route.mock.calls
-      routeCalls.forEach(call => {
+      routeCalls.forEach((call) => {
         const routeConfig = call[0]
         expect(routeConfig.options.auth).toBe(false)
       })
@@ -73,32 +73,25 @@ describe('dev-tools index', () => {
     const routeConfigurations = [
       {
         name: 'dev home route',
-        expectedConfig: {
-          method: 'GET',
-          path: '/dev',
-          options: { auth: false },
-          handler: mockDevHomeHandler
-        }
+        path: '/dev'
       },
       {
         name: 'demo confirmation route',
-        expectedConfig: {
-          method: 'GET',
-          path: '/dev/demo-confirmation/{slug}',
-          options: { auth: false },
-          handler: mockDemoConfirmationHandler
-        }
+        path: '/dev/demo-confirmation/{slug}'
       }
     ]
 
-    test.each(routeConfigurations)(
-      'should register $name with correct configuration',
-      ({ expectedConfig }) => {
-        devTools.plugin.register(server)
+    test.each(routeConfigurations)('should register $name with correct configuration', ({ path }) => {
+      devTools.plugin.register(server)
 
-        expect(server.route).toHaveBeenCalledWith(expectedConfig)
-      }
-    )
+      expect(server.route).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: 'GET',
+          path,
+          options: { auth: false }
+        })
+      )
+    })
 
     test('should handle server registration errors gracefully', () => {
       server.route.mockImplementationOnce(() => {
@@ -121,8 +114,8 @@ describe('dev-tools index', () => {
       devTools.plugin.register(server)
 
       const routeCalls = server.route.mock.calls
-      const devHomeRoute = routeCalls.find(call => call[0].path === '/dev')
-      const demoConfirmationRoute = routeCalls.find(call => call[0].path === '/dev/demo-confirmation/{slug}')
+      const devHomeRoute = routeCalls.find((call) => call[0].path === '/dev')
+      const demoConfirmationRoute = routeCalls.find((call) => call[0].path === '/dev/demo-confirmation/{slug}')
 
       expect(devHomeRoute[0].handler).toBe(mockDevHomeHandler)
       expect(demoConfirmationRoute[0].handler).toBe(mockDemoConfirmationHandler)
@@ -150,15 +143,12 @@ describe('dev-tools index', () => {
       { path: '/dev/demo-confirmation/{slug}', expectedMethod: 'GET' }
     ]
 
-    test.each(methodVariations)(
-      'should use GET method for $path',
-      ({ path, expectedMethod }) => {
-        devTools.plugin.register(server)
+    test.each(methodVariations)('should use GET method for $path', ({ path, expectedMethod }) => {
+      devTools.plugin.register(server)
 
-        const routeCall = server.route.mock.calls.find(call => call[0].path === path)
-        expect(routeCall[0].method).toBe(expectedMethod)
-      }
-    )
+      const routeCall = server.route.mock.calls.find((call) => call[0].path === path)
+      expect(routeCall[0].method).toBe(expectedMethod)
+    })
 
     test('should handle missing server object', () => {
       expect(() => devTools.plugin.register(null)).toThrow()

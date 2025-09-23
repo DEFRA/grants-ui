@@ -8,7 +8,7 @@ import { getAllForms } from '../utils/index.js'
  */
 export function getExampleForms(slugs = ['example-grant-with-auth', 'adding-value', 'flying-pigs'], limit = 3) {
   const allForms = getAllForms()
-  return allForms.filter(f => slugs.includes(f.slug)).slice(0, limit)
+  return allForms.filter((f) => slugs.includes(f.slug)).slice(0, limit)
 }
 
 /**
@@ -21,7 +21,7 @@ export function buildToolsConfig(exampleForms) {
     {
       name: 'Demo Confirmation Pages',
       description: 'Test the config-driven confirmation page with different form configurations',
-      examples: exampleForms.map(form => ({
+      examples: exampleForms.map((form) => ({
         name: form.title,
         path: `/dev/demo-confirmation/${form.slug}`,
         slug: form.slug
@@ -66,30 +66,40 @@ export function generateEnvironmentInfo() {
  * @returns {string} Tools section HTML
  */
 export function generateToolsSection(tools) {
-  return tools.map(tool => `
+  return tools
+    .map(
+      (tool) => `
     <div class="tool">
       <h3>${tool.name}</h3>
       <p>${tool.description}</p>
-      ${tool.examples
-? `
+      ${
+        tool.examples
+          ? `
         <div style="margin-top: 15px;">
           <strong>Example forms:</strong>
           <ul style="margin-top: 8px;">
-            ${tool.examples.map(example => `
+            ${tool.examples
+              .map(
+                (example) => `
               <li style="margin-bottom: 5px;">
                 <a href="${example.path}">${example.name}</a>
                 <code style="background: #f0f0f0; padding: 2px 4px; font-size: 0.9em; margin-left: 8px;">${example.slug}</code>
               </li>
-            `).join('')}
+            `
+              )
+              .join('')}
           </ul>
           <p style="margin-top: 10px; font-size: 0.9em; color: #666;">
             Pattern: <code>/dev/demo-confirmation/{slug}</code>
           </p>
         </div>
       `
-: ''}
+          : ''
+      }
     </div>
-  `).join('')
+  `
+    )
+    .join('')
 }
 
 /**
@@ -98,31 +108,30 @@ export function generateToolsSection(tools) {
  * @returns {string} Complete HTML page
  */
 export function generateDevHomePage(tools) {
-  return `
-    <html>
-      <head>
-        <title>Development Tools</title>
-        <style>${generatePageStyles()}</style>
-      </head>
-      <body>
-        <div class="warning">
-          <strong>⚠️ Development Mode Only</strong><br>
-          These tools are only available when NODE_ENV=development, and ENVIRONMENT=local.<br>
-          They will not be accessible in production environments.
-        </div>
+  return `<!DOCTYPE html>
+<html>
+  <head>
+    <title>Development Tools</title>
+    <style>${generatePageStyles()}</style>
+  </head>
+  <body>
+    <div class="warning">
+      <strong>⚠️ Development Mode Only</strong><br>
+      These tools are only available when NODE_ENV=development, and ENVIRONMENT=local.<br>
+      They will not be accessible in production environments.
+    </div>
 
-        <h1>Development Tools</h1>
+    <h1>Development Tools</h1>
 
-        ${generateEnvironmentInfo()}
+    ${generateEnvironmentInfo()}
 
-        <h2>Available Tools</h2>
-        ${generateToolsSection(tools)}
+    <h2>Available Tools</h2>
+    ${generateToolsSection(tools)}
 
-        <hr style="margin: 40px 0;">
-        <p><em>To add more development tools, edit src/server/dev-tools/</em></p>
-      </body>
-    </html>
-  `
+    <hr style="margin: 40px 0;">
+    <p><em>To add more development tools, edit src/server/dev-tools/</em></p>
+  </body>
+</html>`
 }
 
 /**
@@ -131,7 +140,7 @@ export function generateDevHomePage(tools) {
  * @param {object} h - Hapi response toolkit
  * @returns {object} Hapi response
  */
-export function devHomeHandler(request, h) {
+export function devHomeHandler(_request, h) {
   const exampleForms = getExampleForms()
   const tools = buildToolsConfig(exampleForms)
   const htmlContent = generateDevHomePage(tools)

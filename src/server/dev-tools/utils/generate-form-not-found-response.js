@@ -1,5 +1,9 @@
 import { getFormsCache } from '../../common/forms/services/form.js'
 
+const HTTP_STATUS = {
+  NOT_FOUND: 404
+}
+
 /**
  * Generate error response for invalid form slug
  * @param {string} slug - Invalid slug
@@ -11,16 +15,14 @@ import { getFormsCache } from '../../common/forms/services/form.js'
  * @returns {object} Hapi response
  */
 export function generateFormNotFoundResponse(slug, h, options = {}) {
-  const {
-    backLink = '/dev',
-    title = 'Invalid Form Slug',
-    errorMessage = 'Local Mode Error'
-  } = options
+  const { backLink = '/dev', title = 'Invalid Form Slug', errorMessage = 'Local Mode Error' } = options
 
   const allForms = getFormsCache()
-  const availableSlugs = allForms.map(f => `• ${f.slug} (${f.title})`).join('\n')
+  const availableSlugs = allForms.map((f) => `• ${f.slug} (${f.title})`).join('\n')
 
-  return h.response(`
+  return h
+    .response(
+      `
     <html>
       <head><title>${title}</title></head>
       <body style="font-family: system-ui, sans-serif; margin: 40px;">
@@ -33,5 +35,8 @@ export function generateFormNotFoundResponse(slug, h, options = {}) {
         <p><a href="${backLink}">← Back to Dev Tools</a></p>
       </body>
     </html>
-  `).type('text/html').code(404)
+  `
+    )
+    .type('text/html')
+    .code(HTTP_STATUS.NOT_FOUND)
 }

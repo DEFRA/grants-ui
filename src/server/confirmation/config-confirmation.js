@@ -1,6 +1,13 @@
 import { ConfirmationService } from './services/confirmation.service.js'
 import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/forms-cache.js'
 
+const HTTP_STATUS = {
+  BAD_REQUEST: 400,
+  NOT_FOUND: 404,
+  NOT_IMPLEMENTED: 501,
+  INTERNAL_SERVER_ERROR: 500
+}
+
 /**
  * Validates request parameters and finds form by slug
  * @param {object} request - Hapi request object
@@ -12,13 +19,13 @@ function validateRequestAndFindForm(request, h) {
 
   if (!slug) {
     request.logger.warn('No slug provided in confirmation route')
-    return { error: h.response('Bad request - missing slug').code(400) }
+    return { error: h.response('Bad request - missing slug').code(HTTP_STATUS.BAD_REQUEST) }
   }
 
   const form = ConfirmationService.findFormBySlug(slug)
   if (!form) {
     request.logger.warn('Form not found for slug', { slug })
-    return { error: h.response('Form not found').code(404) }
+    return { error: h.response('Form not found').code(HTTP_STATUS.NOT_FOUND) }
   }
 
   return { form, slug }
@@ -37,7 +44,7 @@ async function loadConfirmationContent(form, logger, slug, h) {
 
   if (!confirmationContent) {
     logger.info('Form does not have config-driven confirmation content', { slug, formId: form.id })
-    return { error: h.response('Not config-driven - fallback to forms engine').code(501) }
+    return { error: h.response('Not config-driven - fallback to forms engine').code(HTTP_STATUS.NOT_IMPLEMENTED) }
   }
 
   return { confirmationContent }
@@ -52,9 +59,10 @@ async function loadConfirmationContent(form, logger, slug, h) {
 async function getReferenceNumber(request, slug) {
   const cacheService = getFormsCacheService(request.server)
   const confirmationState = await cacheService.getConfirmationState(request)
-  const referenceNumber = confirmationState.$$__referenceNumber ||
-                        request.yar?.get('referenceNumber') ||
-                        request.yar?.get('$$__referenceNumber')
+  const referenceNumber =
+    confirmationState.$$__referenceNumber ||
+    request.yar?.get('referenceNumber') ||
+    request.yar?.get('$$__referenceNumber')
 
   if (!referenceNumber) {
     request.logger.warn('No reference number found in confirmation state or session', {
@@ -104,7 +112,7 @@ function handleError(error, request, h) {
     stack: error.stack,
     slug: request.params?.slug
   })
-  return h.response('Server error').code(500)
+  return h.response('Server error').code(HTTP_STATUS.INTERNAL_SERVER_ERROR)
 }
 
 /**
