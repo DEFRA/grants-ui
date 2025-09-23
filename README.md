@@ -222,7 +222,6 @@ These are required only if DEFRA ID authentication is enabled, and you are using
 | `SESSION_TIMEOUT`         | Inactivity timeout before logout.                              |
 | `SESSION_CACHE_TTL`       | TTL for session data in the cache.                             |
 | `SESSION_CACHE_ENGINE`    | Session store engine — `memory` or `redis`.                    |
-| `SESSION_CACHE_NAME`      | Cache segment name used in Hapi for session caching.           |
 
 #### Application URLs
 
