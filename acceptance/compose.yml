@@ -6,9 +6,11 @@ services:
     depends_on:
       - selenium-chrome
     environment:
+      NODE_EXTRA_CA_CERTS: /etc/ssl/certs/nginx.crt
       GRANTS_UI_BACKEND_AUTH_TOKEN: auth_token
       GRANTS_UI_BACKEND_ENCRYPTION_KEY: encryption_key
     volumes:
+      - ../certs:/etc/ssl/certs:ro
       - ./allure-report:/allure-report
       - ./allure-results:/allure-results
     networks:
