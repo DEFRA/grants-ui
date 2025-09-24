@@ -38,20 +38,26 @@ describe('demo-confirmation.handler', () => {
     mockH = mockHapiResponseToolkit()
 
     buildDemoData.mockReturnValue(mockDemoData)
+    ConfirmationService.processConfirmationContent = vi.fn()
   })
 
   describe('demo confirmation handler', () => {
     test('should render demo confirmation page for valid form', async () => {
+      const processedConfirmationContent = { html: '<h2>Processed demo content</h2>' }
+
       ConfirmationService.findFormBySlug.mockReturnValue(mockForm)
       ConfirmationService.loadConfirmationContent.mockResolvedValue(mockConfirmationContent)
+      ConfirmationService.processConfirmationContent.mockReturnValue(processedConfirmationContent)
       ConfirmationService.buildViewModel.mockReturnValue({ test: 'viewModel' })
 
       await demoConfirmationHandler(mockRequest, mockH)
 
       expect(ConfirmationService.findFormBySlug).toHaveBeenCalledWith('test-form')
+      expect(ConfirmationService.loadConfirmationContent).toHaveBeenCalledWith(mockForm, mockLogger)
+      expect(ConfirmationService.processConfirmationContent).toHaveBeenCalledWith(mockConfirmationContent)
       expect(ConfirmationService.buildViewModel).toHaveBeenCalledWith({
         ...mockDemoData,
-        confirmationContent: mockConfirmationContent,
+        confirmationContent: processedConfirmationContent,
         isDevelopmentMode: true,
         form: mockForm,
         slug: 'test-form'
@@ -69,10 +75,39 @@ describe('demo-confirmation.handler', () => {
       expect(result).toBe('not-found-response')
     })
 
+    test('should handle null confirmation content with fallback', async () => {
+      const fallbackConfirmationContent = {
+        html: '<h2>What happens next (Development Mode)</h2><p><strong>⚠️ This is demo content - no configuration found.</strong></p>'
+      }
+
+      ConfirmationService.findFormBySlug.mockReturnValue(mockForm)
+      ConfirmationService.loadConfirmationContent.mockResolvedValue(null)
+      ConfirmationService.processConfirmationContent.mockReturnValue(fallbackConfirmationContent)
+      ConfirmationService.buildViewModel.mockReturnValue({ test: 'viewModel' })
+
+      await demoConfirmationHandler(mockRequest, mockH)
+
+      expect(ConfirmationService.processConfirmationContent).not.toHaveBeenCalled()
+      expect(ConfirmationService.buildViewModel).toHaveBeenCalledWith({
+        ...mockDemoData,
+        confirmationContent: expect.objectContaining({
+          html: expect.stringContaining('demo content - no configuration found')
+        }),
+        isDevelopmentMode: true,
+        form: mockForm,
+        slug: 'test-form'
+      })
+    })
+
     test('should handle errors gracefully with fallback content', async () => {
+      const fallbackConfirmationContent = {
+        html: '<h2>Development Error</h2><p>Failed to load confirmation content for test-form</p>'
+      }
+
       ConfirmationService.findFormBySlug.mockImplementation(() => {
         throw new Error('Handler error')
       })
+      ConfirmationService.processConfirmationContent.mockReturnValue(fallbackConfirmationContent)
       ConfirmationService.buildViewModel.mockReturnValue({ fallback: 'viewModel' })
 
       await demoConfirmationHandler(mockRequest, mockH)
@@ -80,6 +115,7 @@ describe('demo-confirmation.handler', () => {
       expect(mockLogger.error).toHaveBeenCalledWith('Demo confirmation route error', {
         error: 'Handler error'
       })
+      expect(ConfirmationService.processConfirmationContent).not.toHaveBeenCalled()
       expect(ConfirmationService.buildViewModel).toHaveBeenCalledWith({
         ...mockDemoData,
         isDevelopmentMode: true,

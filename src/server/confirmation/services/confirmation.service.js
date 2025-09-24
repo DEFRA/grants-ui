@@ -1,4 +1,5 @@
 import { formsService, getFormsCache } from '~/src/server/common/forms/services/form.js'
+import { ComponentsRegistry } from './components.registry.js'
 
 export class ConfirmationService {
   /**
@@ -35,6 +36,27 @@ export class ConfirmationService {
       })
       return null
     }
+  }
+
+  /**
+   * Process confirmation content - replace component placeholders
+   * @param {object} confirmationContent - Raw confirmation content from YAML
+   * @returns {object} Processed confirmation content
+   */
+  static processConfirmationContent(confirmationContent) {
+    if (!confirmationContent) {
+      return null
+    }
+
+    if (confirmationContent.html) {
+      const processedHtml = ComponentsRegistry.replaceComponents(confirmationContent.html)
+      return {
+        ...confirmationContent,
+        html: processedHtml
+      }
+    }
+
+    return confirmationContent
   }
 
   /**

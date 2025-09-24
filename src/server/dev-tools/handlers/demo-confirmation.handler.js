@@ -8,9 +8,9 @@ import { ConfirmationService } from '../../confirmation/services/confirmation.se
  * @returns {Promise<object>} Confirmation content object
  */
 export async function loadConfirmationContent(form, request) {
-  const confirmationContent = await ConfirmationService.loadConfirmationContent(form, request.logger)
+  const rawConfirmationContent = await ConfirmationService.loadConfirmationContent(form, request.logger)
 
-  if (!confirmationContent) {
+  if (!rawConfirmationContent) {
     return {
       html: `<h2 class="govuk-heading-m">What happens next (Development Mode)</h2>
              <p class="govuk-body"><strong>⚠️ This is demo content - no configuration found.</strong></p>
@@ -18,6 +18,8 @@ export async function loadConfirmationContent(form, request) {
              <p class="govuk-body">Showing fallback demonstration content...</p>`
     }
   }
+
+  const confirmationContent = ConfirmationService.processConfirmationContent(rawConfirmationContent)
 
   return confirmationContent
 }

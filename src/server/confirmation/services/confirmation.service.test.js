@@ -1,5 +1,6 @@
 import { vi } from 'vitest'
 import { ConfirmationService } from './confirmation.service.js'
+import { ComponentsRegistry } from './components.registry.js'
 import { MOCK_FORM_CACHE, createMockLogger } from '../__test-fixtures__/confirmation-test-fixtures.js'
 
 const mockFormsService = {
@@ -11,12 +12,19 @@ vi.mock('~/src/server/common/forms/services/form.js', () => ({
   getFormsCache: vi.fn(() => MOCK_FORM_CACHE)
 }))
 
+vi.mock('./components.registry.js', () => ({
+  ComponentsRegistry: {
+    replaceComponents: vi.fn()
+  }
+}))
+
 describe('ConfirmationService', () => {
   let mockLogger
 
   beforeEach(() => {
     vi.clearAllMocks()
     mockLogger = createMockLogger()
+    ComponentsRegistry.replaceComponents.mockImplementation((content) => content)
   })
 
   describe('findFormBySlug', () => {
@@ -155,6 +163,75 @@ describe('ConfirmationService', () => {
       const result = await ConfirmationService.hasConfigDrivenConfirmation(testForm, mockLogger)
 
       expect(result).toBe(false)
+    })
+  })
+
+  describe('processConfirmationContent', () => {
+    test('should process confirmation content with HTML and replace components', () => {
+      const rawContent = {
+        html: '<h2>Test content</h2> {{TESTCOMPONENT}}'
+      }
+      const processedHtml = '<h2>Test content</h2> <div>Test Component</div>'
+
+      ComponentsRegistry.replaceComponents.mockReturnValue(processedHtml)
+
+      const result = ConfirmationService.processConfirmationContent(rawContent)
+
+      expect(ComponentsRegistry.replaceComponents).toHaveBeenCalledWith('<h2>Test content</h2> {{TESTCOMPONENT}}')
+      expect(result).toEqual({
+        html: processedHtml
+      })
+    })
+
+    test('should preserve other properties while processing HTML', () => {
+      const rawContent = {
+        html: '<h2>Test content</h2> {{TESTCOMPONENT}}',
+        title: 'Test Title',
+        metadata: { key: 'value' }
+      }
+      const processedHtml = '<h2>Test content</h2> <div>Test Component</div>'
+
+      ComponentsRegistry.replaceComponents.mockReturnValue(processedHtml)
+
+      const result = ConfirmationService.processConfirmationContent(rawContent)
+
+      expect(result).toEqual({
+        html: processedHtml,
+        title: 'Test Title',
+        metadata: { key: 'value' }
+      })
+    })
+
+    test('should return content unchanged if no HTML property', () => {
+      const rawContent = {
+        title: 'Test Title',
+        metadata: { key: 'value' }
+      }
+
+      const result = ConfirmationService.processConfirmationContent(rawContent)
+
+      expect(ComponentsRegistry.replaceComponents).not.toHaveBeenCalled()
+      expect(result).toEqual(rawContent)
+    })
+
+    test('should return null for null input', () => {
+      const result = ConfirmationService.processConfirmationContent(null)
+
+      expect(ComponentsRegistry.replaceComponents).not.toHaveBeenCalled()
+      expect(result).toBeNull()
+    })
+
+    test('should handle empty HTML content', () => {
+      const rawContent = {
+        html: ''
+      }
+
+      const result = ConfirmationService.processConfirmationContent(rawContent)
+
+      expect(ComponentsRegistry.replaceComponents).not.toHaveBeenCalled()
+      expect(result).toEqual({
+        html: ''
+      })
     })
   })
 })

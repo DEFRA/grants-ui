@@ -3,6 +3,7 @@ import { StatusPageController } from '@defra/forms-engine-plugin/controllers/Sta
 import ConfirmationPageController from './confirmation.controller.js'
 import * as formSlugHelper from '~/src/server/common/helpers/form-slug-helper.js'
 import { mockContext as mockHapiContext, mockHapiRequest, mockHapiResponseToolkit } from '~/src/__mocks__/hapi-mocks.js'
+import { ConfirmationService } from './services/confirmation.service.js'
 
 const mockFormsCacheServiceMethods = {
   getConfirmationState: vi.fn(),
@@ -15,6 +16,11 @@ vi.mock('~/src/server/common/helpers/forms-cache/forms-cache.js', () => ({
   getFormsCacheService: () => mockFormsCacheServiceMethods
 }))
 vi.mock('~/src/server/common/helpers/form-slug-helper.js')
+vi.mock('./services/confirmation.service.js', () => ({
+  ConfirmationService: {
+    buildViewModel: vi.fn()
+  }
+}))
 
 describe('ConfirmationPageController', () => {
   let controller
@@ -188,6 +194,102 @@ describe('ConfirmationPageController', () => {
 
       // Restore the original mock
       mockFormsCacheServiceMethods.getConfirmationState = originalGetConfirmationState
+    })
+
+    test('should use configuration-driven confirmation content when available', async () => {
+      const mockConfirmationContent = {
+        title: 'Custom Confirmation',
+        html: '<p>Custom confirmation content</p>'
+      }
+
+      const mockViewModel = {
+        referenceNumber: 'REF123',
+        businessName: 'Test Business',
+        sbi: '123456789',
+        contactName: 'John Doe',
+        confirmationContent: mockConfirmationContent
+      }
+
+      controller.model = {
+        def: {
+          metadata: {
+            confirmationContent: mockConfirmationContent
+          }
+        }
+      }
+
+      ConfirmationService.buildViewModel.mockReturnValue(mockViewModel)
+
+      mockRequest.yar = {
+        get: vi.fn((key) => {
+          const data = {
+            businessName: 'Test Business',
+            sbi: '123456789',
+            contactName: 'John Doe'
+          }
+          return data[key]
+        })
+      }
+
+      const handler = controller.makeGetRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(ConfirmationService.buildViewModel).toHaveBeenCalledWith({
+        referenceNumber: 'REF123',
+        businessName: 'Test Business',
+        sbi: '123456789',
+        contactName: 'John Doe',
+        confirmationContent: mockConfirmationContent
+      })
+
+      expect(mockH.view).toHaveBeenCalledWith('confirmation/views/config-confirmation-page', {
+        pageTitle: 'Confirmation',
+        errors: [],
+        ...mockViewModel
+      })
+    })
+
+    test('should include session data in view model for both confirmation types', async () => {
+      mockRequest.yar = {
+        get: vi.fn((key) => {
+          const data = {
+            businessName: 'Test Business',
+            sbi: '123456789',
+            contactName: 'John Doe'
+          }
+          return data[key]
+        })
+      }
+
+      const handler = controller.makeGetRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith('confirmation-page.html', {
+        pageTitle: 'Confirmation',
+        errors: [],
+        referenceNumber: 'REF123',
+        businessName: 'Test Business',
+        sbi: '123456789',
+        contactName: 'John Doe'
+      })
+    })
+
+    test('should handle missing session data gracefully', async () => {
+      mockRequest.yar = {
+        get: vi.fn().mockReturnValue(undefined)
+      }
+
+      const handler = controller.makeGetRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith('confirmation-page.html', {
+        pageTitle: 'Confirmation',
+        errors: [],
+        referenceNumber: 'REF123',
+        businessName: undefined,
+        sbi: undefined,
+        contactName: undefined
+      })
     })
   })
 

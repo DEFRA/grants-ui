@@ -40,12 +40,14 @@ function validateRequestAndFindForm(request, h) {
  * @returns {object} Content result or error response
  */
 async function loadConfirmationContent(form, logger, slug, h) {
-  const confirmationContent = await ConfirmationService.loadConfirmationContent(form, logger)
+  const rawConfirmationContent = await ConfirmationService.loadConfirmationContent(form, logger)
 
-  if (!confirmationContent) {
+  if (!rawConfirmationContent) {
     logger.info('Form does not have config-driven confirmation content', { slug, formId: form.id })
     return { error: h.response('Not config-driven - fallback to forms engine').code(HTTP_STATUS.NOT_IMPLEMENTED) }
   }
+
+  const confirmationContent = ConfirmationService.processConfirmationContent(rawConfirmationContent)
 
   return { confirmationContent }
 }
