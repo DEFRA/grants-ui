@@ -1,9 +1,9 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import {
   fetchAvailableActionsForParcel,
-  parseLandParcel,
   triggerApiActionsValidation
 } from '~/src/server/land-grants/services/land-grants.service.js'
+import { parseLandParcel } from '~/src/server/land-grants/utils/format-parcel.js'
 
 const createErrorSummary = (errors) =>
   Object.entries(errors).map(([field, { text }]) => ({

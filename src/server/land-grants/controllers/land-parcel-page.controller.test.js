@@ -5,7 +5,10 @@ import { fetchParcels } from '~/src/server/land-grants/services/land-grants.serv
 import LandParcelPageController from './land-parcel-page.controller.js'
 
 vi.mock('~/src/server/land-grants/services/land-grants.service.js', () => ({
-  fetchParcels: vi.fn(),
+  fetchParcels: vi.fn()
+}))
+
+vi.mock('~/src/server/land-grants/utils/format-parcel.js', () => ({
   stringifyParcel: ({ parcelId, sheetId }) => `${sheetId}-${parcelId}`
 }))
 
@@ -32,6 +35,19 @@ const controllerParcelsResponse = [
     value: 'SD7846-4509',
     text: 'SD7846 4509',
     hint: 'Total size: 0.0633 sqm'
+  }
+]
+
+const controllerParcelsWithActionsResponse = [
+  {
+    value: 'SD7946-0155',
+    text: 'SD7946 0155',
+    hint: 'Total size 4.0383 ha, 2 actions added'
+  },
+  {
+    value: 'SD7846-4509',
+    text: 'SD7846 4509',
+    hint: 'Total size 0.0633 sqm, 1 action added'
   }
 ]
 
@@ -91,6 +107,88 @@ describe('LandParcelPageController', () => {
 
   it('should have the correct viewName', () => {
     expect(controller.viewName).toBe('select-land-parcel')
+  })
+
+  describe('formatParcelForView', () => {
+    it('formats parcel with area only', () => {
+      const parcel = {
+        parcelId: '0155',
+        sheetId: 'SD7946',
+        area: { unit: 'ha', value: 4.0383 }
+      }
+
+      const result = controller.formatParcelForView(parcel, 0)
+
+      expect(result).toEqual({
+        text: 'SD7946 0155',
+        value: 'SD7946-0155',
+        hint: 'Total size: 4.0383 ha'
+      })
+    })
+
+    it('formats parcel with area and actions', () => {
+      const parcel = {
+        parcelId: '0155',
+        sheetId: 'SD7946',
+        area: { unit: 'ha', value: 4.0383 }
+      }
+
+      const result = controller.formatParcelForView(parcel, 2)
+
+      expect(result).toEqual({
+        text: 'SD7946 0155',
+        value: 'SD7946-0155',
+        hint: 'Total size 4.0383 ha, 2 actions added'
+      })
+    })
+
+    it('formats parcel with single action', () => {
+      const parcel = {
+        parcelId: '0155',
+        sheetId: 'SD7946',
+        area: { unit: 'ha', value: 4.0383 }
+      }
+
+      const result = controller.formatParcelForView(parcel, 1)
+
+      expect(result).toEqual({
+        text: 'SD7946 0155',
+        value: 'SD7946-0155',
+        hint: 'Total size 4.0383 ha, 1 action added'
+      })
+    })
+
+    it('formats parcel with actions only (no area)', () => {
+      const parcel = {
+        parcelId: '0155',
+        sheetId: 'SD7946',
+        area: { unit: null, value: null }
+      }
+
+      const result = controller.formatParcelForView(parcel, 3)
+
+      expect(result).toEqual({
+        text: 'SD7946 0155',
+        value: 'SD7946-0155',
+        hint: '3 actions added'
+      })
+    })
+
+    it('formats parcel with no area and no actions', () => {
+      const parcel = {
+        parcelId: '0155',
+        sheetId: 'SD7946',
+        area: { unit: null, value: null }
+      }
+
+      const result = controller.formatParcelForView(parcel, 0)
+
+      expect(result).toEqual({
+        text: 'SD7946 0155',
+        value: 'SD7946-0155',
+        hint: ''
+      })
+    })
   })
 
   describe('GET route handler', () => {

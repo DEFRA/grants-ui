@@ -3,12 +3,13 @@ import { vi } from 'vitest'
 import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
 import {
   fetchAvailableActionsForParcel,
-  parseLandParcel,
   triggerApiActionsValidation
 } from '~/src/server/land-grants/services/land-grants.service.js'
+import { parseLandParcel } from '~/src/server/land-grants/utils/format-parcel.js'
 import SelectActionsForLandParcelPageController from './select-actions-for-land-parcel-page.controller.js'
 
 vi.mock('~/src/server/land-grants/services/land-grants.service.js')
+vi.mock('~/src/server/land-grants/utils/format-parcel.js')
 
 describe('SelectActionsForLandParcelPageController', () => {
   let controller
