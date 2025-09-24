@@ -65,6 +65,6 @@ docker compose run --build --rm acceptance-tests
 docker compose down
 
 cd ..
-#docker compose down
+docker compose down
 echo ""
 echo "Tests complete."
