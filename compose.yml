@@ -31,7 +31,7 @@ services:
       fcp-defra-id-stub:
         condition: service_healthy
     environment:
-      NODE_EXTRA_CA_CERTS: /etc/ssl/certs/fcp-defra-id-stub.crt
+      NODE_EXTRA_CA_CERTS: /etc/ssl/certs/nginx.crt
       PORT: 3000
       NODE_ENV: ${NODE_ENV:-development}
       ENVIRONMENT: local
@@ -51,7 +51,7 @@ services:
       FEEDBACK_LINK: "mailto:defraforms@defra.gov.uk"
       CV_API_MOCK_ENABLED: ${CV_API_MOCK_ENABLED:-true}
       DEFRA_ID_ENABLED: ${DEFRA_ID_ENABLED:-true}
-      DEFRA_ID_WELL_KNOWN_URL: ${DEFRA_ID_WELL_KNOWN_URL:-http://fcp-defra-id-stub:3007/idphub/b2c/b2c_1a_cui_cpdev_signupsigninsfi/.well-known/openid-configuration}
+      DEFRA_ID_WELL_KNOWN_URL: ${DEFRA_ID_WELL_KNOWN_URL:-https://localhost:4007/idphub/b2c/b2c_1a_cui_cpdev_signupsigninsfi/.well-known/openid-configuration}
       DEFRA_ID_CLIENT_ID: ${DEFRA_ID_CLIENT_ID:-client_id}
       DEFRA_ID_CLIENT_SECRET: ${DEFRA_ID_CLIENT_SECRET:-client_secret}
       DEFRA_ID_SERVICE_ID: ${DEFRA_ID_SERVICE_ID:-service_id}
