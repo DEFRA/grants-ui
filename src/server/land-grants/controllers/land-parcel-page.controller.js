@@ -1,7 +1,6 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
 import { fetchParcels } from '../services/land-grants.service.js'
-import { stringifyParcel } from '../utils/format-parcel.js'
 
 const logger = createLogger()
 
@@ -13,7 +12,11 @@ export default class LandParcelPageController extends QuestionPageController {
     const hasArea = parcel.area.value && parcel.area.unit
     const hasActions = actionsForParcel > 0
 
-    let hint = hasArea ? `Total size${hasActions ? '' : ':'} ${parcel.area.value} ${parcel.area.unit}` : ''
+    let hint = ''
+    if (hasArea) {
+      hint = `Total size${hasActions ? '' : ':'} ${parcel.area.value} ${parcel.area.unit}`
+    }
+
     if (hasActions) {
       const actionsAddedStr = `${actionsForParcel} action${actionsForParcel > 1 ? 's' : ''} added`
       hint += hasArea ? `, ${actionsAddedStr}` : `${actionsAddedStr}`
@@ -80,7 +83,8 @@ export default class LandParcelPageController extends QuestionPageController {
       try {
         const parcels = await fetchParcels(sbi)
         this.parcels = parcels.map((parcel) => {
-          const parcelData = landParcels?.[stringifyParcel(parcel)]
+          const parcelKey = `${parcel.sheetId}-${parcel.parcelId}`
+          const parcelData = landParcels?.[parcelKey]
           const actionsForParcel = parcelData?.actionsObj ? Object.keys(parcelData.actionsObj).length : 0
           return this.formatParcelForView(parcel, actionsForParcel)
         })
