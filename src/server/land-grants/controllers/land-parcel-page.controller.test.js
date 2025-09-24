@@ -38,19 +38,6 @@ const controllerParcelsResponse = [
   }
 ]
 
-const controllerParcelsWithActionsResponse = [
-  {
-    value: 'SD7946-0155',
-    text: 'SD7946 0155',
-    hint: 'Total size 4.0383 ha, 2 actions added'
-  },
-  {
-    value: 'SD7846-4509',
-    text: 'SD7846 4509',
-    hint: 'Total size 0.0633 sqm, 1 action added'
-  }
-]
-
 describe('LandParcelPageController', () => {
   let controller
   let mockRequest
