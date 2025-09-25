@@ -1,0 +1,18 @@
+{% extends baseLayoutPath %}
+
+{% set mainClasses = "govuk-main-wrapper--l" %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      <h1 class="govuk-heading-l">{{heading}}</h1>
+      <p class="govuk-body">Contact the Rural Payments Agency and mention the reference number below if you have a query.</p>
+      <p class="govuk-body"><b>Reference number: {{refNumber}}</b></p>
+      <p class="govuk-body">
+        Telephone: 03000 200 301<br>
+        Monday to Friday, 8:30am to 5pm (except bank holidays)</p>
+      <p class="govuk-body"><a class="govuk-link" href="https://www.gov.uk/call-charges" target="_blank">Find out about call charges (opens in new tab)</a></p>
+      <p class="govuk-body">Email: <a class="govuk-link" href="mailto:ruralpayments@defra.gov.uk">ruralpayments@defra.gov.uk</a></p>
+    </div>
+  </div>
+{% endblock %}
