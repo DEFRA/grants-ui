@@ -1,7 +1,7 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { fetchParcels } from '~/src/server/land-grants/services/land-grants.service.js'
-import { stringifyParcel } from '~/src/server/land-grants/utils/format-parcel'
+import { stringifyParcel } from '~/src/server/land-grants/utils/format-parcel.js'
 
 export default class LandGrantsQuestionWithAuthCheckController extends QuestionPageController {
   landParcelsForSbi = []
