@@ -25,7 +25,7 @@ export function configureFormDefinition(definition) {
           events.onLoad.options.url = events.onLoad.options.url.replace('cdpEnvironment', environment)
         } else if (events.onLoad?.options.url && environment === 'local') {
           events.onLoad.options.url =
-            'http://ffc-grants-scoring:3002/scoring/api/v1/adding-value/score?allowPartialScoring=true'
+            'http://ffc-grants-scoring:3002/scoring/api/v1/adding-value/score?allowPartialScoring=true' // NOSONAR - used in local testing and CI
         } else {
           // If we have a URL but environment is neither 'local' nor a non-local environment,
           // we should log this unexpected case but not modify the URL
