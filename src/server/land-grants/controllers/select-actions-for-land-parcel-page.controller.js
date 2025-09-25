@@ -335,7 +335,9 @@ export default class SelectActionsForLandParcelPageController extends LandGrants
       const [sheetId = '', parcelId = ''] = parseLandParcel(this.selectedLandParcel)
 
       const authResult = await this.performAuthCheck(request, context, h)
-      if (authResult) return authResult
+      if (authResult) {
+        return authResult
+      }
 
       try {
         this.groupedActions = await fetchAvailableActionsForParcel({ parcelId, sheetId })
@@ -384,7 +386,9 @@ export default class SelectActionsForLandParcelPageController extends LandGrants
       const [sheetId, parcelId] = parseLandParcel(this.selectedLandParcel)
 
       const authResult = await this.performAuthCheck(request, context, h)
-      if (authResult) return authResult
+      if (authResult) {
+        return authResult
+      }
 
       const inputValidation = this.validateUserInput(payload)
       if (Object.keys(inputValidation.errors).length > 0) {

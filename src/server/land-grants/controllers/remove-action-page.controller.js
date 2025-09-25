@@ -177,7 +177,9 @@ export default class RemoveActionPageController extends LandGrantsQuestionWithAu
       this.selectedLandParcel = parcelKey
 
       const authResult = await this.performAuthCheck(request, context, h)
-      if (authResult) return authResult
+      if (authResult) {
+        return authResult
+      }
 
       const actionInfo = this.findActionInfo(landParcels, parcelKey, action)
 
@@ -201,7 +203,9 @@ export default class RemoveActionPageController extends LandGrantsQuestionWithAu
       this.selectedLandParcel = this.parcel
 
       const authResult = await this.performAuthCheck(request, context, h)
-      if (authResult) return authResult
+      if (authResult) {
+        return authResult
+      }
 
       const validationError = this.validatePostPayload(payload)
       if (validationError) {

@@ -66,7 +66,7 @@ describe('LandGrantsQuestionWithAuthCheckController', () => {
       await controller.performAuthCheck(mockRequest, mockH)
 
       expect(fetchParcels).toHaveBeenCalledWith(mockRequest.auth.credentials.sbi)
-      expect(controller.renderUnauthorisedView).toHaveBeenCalledWith(mockRequest, mockH)
+      expect(controller.renderUnauthorisedView).toHaveBeenCalledWith(mockH)
     })
 
     test('returns null if parcel belongs to SBI', async () => {
@@ -82,7 +82,7 @@ describe('LandGrantsQuestionWithAuthCheckController', () => {
 
   describe('renderUnauthorisedView', () => {
     test('returns a forbidden response', () => {
-      controller.renderUnauthorisedView(mockRequest, mockH)
+      controller.renderUnauthorisedView(mockH)
 
       expect(mockH.response).toHaveBeenCalledWith(mockH.view('unauthorised'))
       expect(mockH.response().code).toHaveBeenCalledWith(403)

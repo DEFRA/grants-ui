@@ -636,6 +636,18 @@ describe('RemoveActionPageController', () => {
       })
       expect(result).toBe('rendered view')
     })
+
+    describe('when the user does not own the land parcel', () => {
+      it('should return unauthorized response when user does not own the selected land parcel', async () => {
+        controller.performAuthCheck.mockResolvedValue('failed auth check')
+
+        const handler = controller.makeGetRouteHandler()
+
+        const result = await handler(mockRequest, mockContext, mockH)
+
+        expect(result).toEqual('failed auth check')
+      })
+    })
   })
 
   describe('makePostRouteHandler', () => {
@@ -786,6 +798,18 @@ describe('RemoveActionPageController', () => {
         })
       )
       expect(result).toBe('rendered view')
+    })
+
+    describe('when the user does not own the land parcel', () => {
+      it('should return unauthorized response when user does not own the selected land parcel', async () => {
+        controller.performAuthCheck.mockResolvedValue('failed auth check')
+
+        const handler = controller.makePostRouteHandler()
+
+        const result = await handler(mockRequest, mockContext, mockH)
+
+        expect(result).toEqual('failed auth check')
+      })
     })
   })
 })

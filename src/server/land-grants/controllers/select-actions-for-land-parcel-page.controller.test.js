@@ -630,6 +630,16 @@ describe('SelectActionsForLandParcelPageController', () => {
         sheetId: ''
       })
     })
+
+    describe('when the user does not own the land parcel', () => {
+      it('should return unauthorized response when user does not own the selected land parcel', async () => {
+        controller.performAuthCheck.mockResolvedValue('failed auth check')
+
+        const result = await controller.makeGetRouteHandler()(mockRequest, mockContext, mockH)
+
+        expect(result).toEqual('failed auth check')
+      })
+    })
   })
 
   describe('POST route handler', () => {
@@ -751,6 +761,16 @@ describe('SelectActionsForLandParcelPageController', () => {
           }
         })
       )
+    })
+
+    describe('when the user does not own the land parcel', () => {
+      it('should return unauthorized response when user does not own the selected land parcel', async () => {
+        controller.performAuthCheck.mockResolvedValue('failed auth check')
+
+        const result = await controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
+
+        expect(result).toEqual('failed auth check')
+      })
     })
 
     describe('validations', () => {
