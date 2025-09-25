@@ -15,6 +15,12 @@ The latter script is also run as part of the CI pipeline when submitting a PR.
 - `npm install`
 - `npm run test:local`
 
+#### Report
+
+The test report is written to [/acceptance/allure-report](./allure-report/).
+
+#### Running specific tests
+
 To run only specific tests, add a Cucumber tag to those tests, e.g. `@runme`, and use the following command:
 
 - `npx wdio run ./wdio.local.conf.js --cucumberOpts.tags=@runme`
@@ -25,15 +31,11 @@ Tests are run in parallel at feature file level by default. This is controlled b
 
 ## Running acceptance tests using the CI script
 
-This script uses the repository's main [compose.yml](../compose.yml) file to bring up `grants-ui`, `grants-ui-backend`, `fcp-defra-id-stub`, MongoDB, Redis, and a stub of `fg-gas-backend (GAS)` in containers. The script then runs the acceptance tests in another container with an instance of Selenium Chrome. The script will set up any necessary environment variables.
+This script uses the repository's main [compose.yml](../compose.yml) file to bring up `grants-ui`, `grants-ui-backend`, `fcp-defra-id-stub`, `ffc-grants-scoring`, MongoDB, Redis, and a stub of `fg-gas-backend (GAS)` in a Docker network. The script then runs the acceptance tests in another container with an instance of Selenium Chrome. The script will set up any necessary environment variables.
 
-- Open a terminal in the repository root directory
-- `./tools/run-acceptance-tests.sh`
+- Open a terminal in the repository root
+- Run command `./tools/run-acceptance-tests.sh`
 
 #### ARM note
 
-For ARM architectures, change the Selenium image used in [/acceptance/compose.yml](./compose.yml) to `seleniarm/standalone-chromium`.
-
-## Report
-
-The test report is written to [/acceptance/allure-report](./allure-report/).
+For ARM architectures, change the `selenium-` images used in [/acceptance/compose.yml](./compose.yml) to `seleniarm-` images.
