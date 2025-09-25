@@ -44,7 +44,7 @@ export default class LandParcelPageController extends LandGrantsQuestionWithAuth
 
       this.selectedLandParcel = selectedLandParcel
 
-      const authResult = await this.performAuthCheck(request, context, h)
+      const authResult = await this.performAuthCheck(request, h)
       if (authResult) {
         return authResult
       }

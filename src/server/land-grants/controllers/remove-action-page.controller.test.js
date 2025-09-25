@@ -564,6 +564,7 @@ describe('RemoveActionPageController', () => {
 
       const result = await handler(mockRequest, mockContext, mockH)
 
+      expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH)
       expect(controller.action).toBe('CMOR1')
       expect(controller.parcel).toBe('SD6743-8083')
       expect(controller.actionDescription).toBe('Assess moorland and produce a written record: CMOR1')
@@ -645,6 +646,8 @@ describe('RemoveActionPageController', () => {
 
         const result = await handler(mockRequest, mockContext, mockH)
 
+        expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH)
+
         expect(result).toEqual('failed auth check')
       })
     })
@@ -696,6 +699,8 @@ describe('RemoveActionPageController', () => {
 
       const handler = controller.makePostRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
+
+      expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH)
 
       expect(controller.setState).toHaveBeenCalledWith(
         mockRequest,
@@ -807,6 +812,8 @@ describe('RemoveActionPageController', () => {
         const handler = controller.makePostRouteHandler()
 
         const result = await handler(mockRequest, mockContext, mockH)
+
+        expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH)
 
         expect(result).toEqual('failed auth check')
       })
