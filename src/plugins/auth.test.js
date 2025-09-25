@@ -179,15 +179,21 @@ const createMockConfigWithOverrides = (overrides = {}) => {
 
 const createMockError = (message, name = 'Error', stack = null) => {
   const error = new Error(message)
-  if (name) error.name = name
-  if (stack) error.stack = stack
+  if (name) {
+    error.name = name
+  }
+  if (stack) {
+    error.stack = stack
+  }
   return error
 }
 
 vi.mock('~/src/config/config', () => ({
   config: {
     get: vi.fn((key) => {
-      if (key === 'defraId.enabled') return true
+      if (key === 'defraId.enabled') {
+        return true
+      }
       return undefined
     })
   }
@@ -777,7 +783,9 @@ describe('Auth Plugin', () => {
       const options = getCookieOptions()
 
       config.get.mockImplementation((key) => {
-        if (key === 'defraId.refreshTokens') return false
+        if (key === 'defraId.refreshTokens') {
+          return false
+        }
 
         const mockConfig = {
           'defraId.enabled': true,

@@ -1,8 +1,8 @@
-import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import {
   fetchAvailableActionsForParcel,
   triggerApiActionsValidation
 } from '~/src/server/land-grants/services/land-grants.service.js'
+import LandGrantsQuestionWithAuthCheckController from '~/src/server/land-grants/controllers/auth/land-grants-question-with-auth-check.controller.js'
 import { parseLandParcel } from '~/src/server/land-grants/utils/format-parcel.js'
 
 const createErrorSummary = (errors) =>
@@ -11,12 +11,11 @@ const createErrorSummary = (errors) =>
     href: `#${field}`
   }))
 
-export default class SelectActionsForLandParcelPageController extends QuestionPageController {
+export default class SelectActionsForLandParcelPageController extends LandGrantsQuestionWithAuthCheckController {
   viewName = 'select-actions-for-land-parcel'
   actionFieldPrefix = 'landAction_'
   groupedActions = []
   addedActions = []
-  selectedLandParcel = ''
 
   extractLandActionFieldsFromPayload(payload) {
     return Object.keys(payload).filter((key) => key.startsWith(this.actionFieldPrefix))
@@ -335,6 +334,11 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
       this.selectedLandParcel = request?.query?.parcelId || state.selectedLandParcel
       const [sheetId = '', parcelId = ''] = parseLandParcel(this.selectedLandParcel)
 
+      const authResult = await this.performAuthCheck(request, context, h)
+      if (authResult) {
+        return authResult
+      }
+
       try {
         this.groupedActions = await fetchAvailableActionsForParcel({ parcelId, sheetId })
         if (!this.groupedActions.length) {
@@ -380,6 +384,11 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
       const { state } = context
       const payload = request.payload ?? {}
       const [sheetId, parcelId] = parseLandParcel(this.selectedLandParcel)
+
+      const authResult = await this.performAuthCheck(request, context, h)
+      if (authResult) {
+        return authResult
+      }
 
       const inputValidation = this.validateUserInput(payload)
       if (Object.keys(inputValidation.errors).length > 0) {

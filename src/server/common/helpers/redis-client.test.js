@@ -30,8 +30,12 @@ describe('#buildRedisClient', () => {
 
     test('Should log Redis connect and error events', () => {
       const mockOn = vi.fn((event, cb) => {
-        if (event === 'connect') cb()
-        if (event === 'error') cb(new Error('fail'))
+        if (event === 'connect') {
+          cb()
+        }
+        if (event === 'error') {
+          cb(new Error('fail'))
+        }
       })
 
       vi.mocked(Redis).mockReturnValue({ on: mockOn })
