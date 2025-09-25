@@ -537,6 +537,8 @@ describe('SelectActionsForLandParcelPageController', () => {
       const handler = controller.makeGetRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
+      expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH)
+
       expect(parseLandParcel).toHaveBeenCalledWith('sheet1-parcel1')
       expect(fetchAvailableActionsForParcel).toHaveBeenCalledWith({
         parcelId: 'parcel1',
@@ -637,6 +639,8 @@ describe('SelectActionsForLandParcelPageController', () => {
 
         const result = await controller.makeGetRouteHandler()(mockRequest, mockContext, mockH)
 
+        expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH)
+
         expect(result).toEqual('failed auth check')
       })
     })
@@ -664,6 +668,8 @@ describe('SelectActionsForLandParcelPageController', () => {
           }
         })
       )
+
+      expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH)
 
       expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-path')
       expect(result).toBe('redirected')
@@ -768,6 +774,8 @@ describe('SelectActionsForLandParcelPageController', () => {
         controller.performAuthCheck.mockResolvedValue('failed auth check')
 
         const result = await controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
+
+        expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH)
 
         expect(result).toEqual('failed auth check')
       })

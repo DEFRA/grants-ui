@@ -334,7 +334,7 @@ export default class SelectActionsForLandParcelPageController extends LandGrants
       this.selectedLandParcel = request?.query?.parcelId || state.selectedLandParcel
       const [sheetId = '', parcelId = ''] = parseLandParcel(this.selectedLandParcel)
 
-      const authResult = await this.performAuthCheck(request, context, h)
+      const authResult = await this.performAuthCheck(request, h)
       if (authResult) {
         return authResult
       }
@@ -385,7 +385,7 @@ export default class SelectActionsForLandParcelPageController extends LandGrants
       const payload = request.payload ?? {}
       const [sheetId, parcelId] = parseLandParcel(this.selectedLandParcel)
 
-      const authResult = await this.performAuthCheck(request, context, h)
+      const authResult = await this.performAuthCheck(request, h)
       if (authResult) {
         return authResult
       }

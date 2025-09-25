@@ -256,6 +256,7 @@ describe('LandParcelPageController', () => {
 
       const result = await controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
 
+      expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH)
       expect(controller.setState).toHaveBeenCalledWith(mockRequest, {
         existing: 'value',
         selectedLandParcel: state.selectedLandParcel
