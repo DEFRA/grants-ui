@@ -8,11 +8,26 @@ export default class LandParcelPageController extends QuestionPageController {
   viewName = 'select-land-parcel'
   parcels = []
 
-  formatParcelForView = (parcel) => ({
-    text: `${parcel.sheetId} ${parcel.parcelId}`,
-    value: `${parcel.sheetId}-${parcel.parcelId}`,
-    hint: parcel.area.value && parcel.area.unit ? `Total size: ${parcel.area.value} ${parcel.area.unit}` : undefined
-  })
+  formatParcelForView = (parcel, actionsForParcel) => {
+    const hasArea = parcel.area.value && parcel.area.unit
+    const hasActions = actionsForParcel > 0
+
+    let hint = ''
+    if (hasArea) {
+      hint = `Total size${hasActions ? '' : ':'} ${parcel.area.value} ${parcel.area.unit}`
+    }
+
+    if (hasActions) {
+      const actionsAddedStr = `${actionsForParcel} action${actionsForParcel > 1 ? 's' : ''} added`
+      hint += hasArea ? `, ${actionsAddedStr}` : `${actionsAddedStr}`
+    }
+
+    return {
+      text: `${parcel.sheetId} ${parcel.parcelId}`,
+      value: `${parcel.sheetId}-${parcel.parcelId}`,
+      hint
+    }
+  }
 
   makePostRouteHandler() {
     /**
@@ -59,7 +74,7 @@ export default class LandParcelPageController extends QuestionPageController {
      * @param {Pick} h
      */
     const fn = async (request, context, h) => {
-      const { selectedLandParcel = '' } = context.state || {}
+      const { selectedLandParcel = '', landParcels } = context.state || {}
       const { sbi } = request.auth.credentials
 
       const { viewName } = this
@@ -67,7 +82,12 @@ export default class LandParcelPageController extends QuestionPageController {
 
       try {
         const parcels = await fetchParcels(sbi)
-        this.parcels = parcels.map(this.formatParcelForView)
+        this.parcels = parcels.map((parcel) => {
+          const parcelKey = `${parcel.sheetId}-${parcel.parcelId}`
+          const parcelData = landParcels?.[parcelKey]
+          const actionsForParcel = parcelData?.actionsObj ? Object.keys(parcelData.actionsObj).length : 0
+          return this.formatParcelForView(parcel, actionsForParcel)
+        })
 
         const viewModel = {
           ...baseViewModel,

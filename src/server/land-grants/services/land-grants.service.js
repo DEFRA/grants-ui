@@ -1,8 +1,9 @@
 import { config } from '~/src/config/config.js'
 import { formatCurrency } from '~/src/config/nunjucks/filters/format-currency.js'
 import { fetchParcelsForSbi } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
-import { sbiStore } from '../../sbi/state.js'
 import { landActionWithCode } from '~/src/server/land-grants/utils/land-action-with-code.js'
+import { sbiStore } from '../../sbi/state.js'
+import { stringifyParcel } from '../utils/format-parcel.js'
 
 const LAND_GRANTS_API_URL = config.get('landGrants.grantsServiceApiEndpoint')
 
@@ -17,17 +18,6 @@ export const actionGroups = [
     actions: ['UPL1', 'UPL2', 'UPL3']
   }
 ]
-
-/**
- * Parse land parcel identifier
- * @param {string} landParcel - The land parcel identifier
- * @returns {string[]} - Array containing [sheetId, parcelId]
- */
-export const parseLandParcel = (landParcel) => {
-  return (landParcel || '').split('-')
-}
-
-export const stringifyParcel = ({ parcelId, sheetId }) => `${sheetId}-${parcelId}`
 
 /**
  * Performs a POST request to the Land Grants API.

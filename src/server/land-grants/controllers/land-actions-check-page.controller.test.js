@@ -7,7 +7,10 @@ import LandActionsCheckPageController from './land-actions-check-page.controller
 
 vi.mock('~/src/server/land-grants/services/land-grants.service.js', () => ({
   actionGroups: [{ actions: ['CMOR1'] }, { actions: ['UPL1', 'UPL2', 'UPL3'] }],
-  calculateGrantPayment: vi.fn(),
+  calculateGrantPayment: vi.fn()
+}))
+
+vi.mock('~/src/server/land-grants/utils/format-parcel.js', () => ({
   stringifyParcel: ({ parcelId, sheetId }) => `${sheetId}-${parcelId}`
 }))
 
