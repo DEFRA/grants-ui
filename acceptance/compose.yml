@@ -4,10 +4,12 @@ services:
     build: .
     image: acceptance-tests
     depends_on:
-      - selenium-chrome
+      selenium-chrome:
+        condition: service_healthy
     environment:
       GRANTS_UI_BACKEND_AUTH_TOKEN: auth_token
       GRANTS_UI_BACKEND_ENCRYPTION_KEY: encryption_key
+      NODE_TLS_REJECT_UNAUTHORIZED: 0
     volumes:
       - ./allure-report:/allure-report
       - ./allure-results:/allure-results
@@ -16,10 +18,19 @@ services:
 
   selenium-chrome:
     image: selenium/standalone-chrome
-    #image: seleniarm/standalone-chrome
+    # To set SELENIUM_ARCHITECTURE, create a .env file in this directory with:
+    # SELENIUM_ARCHITECTURE=linux/arm64  # for Apple Silicon (M1/M2/M3) 
+    # Intel/AMD is default
+    platform: ${SELENIUM_ARCHITECTURE:-linux/amd64}
     shm_size: 2g
     ports:
       - "4444:4444"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4444/wd/hub/status"]
+      interval: 5s
+      timeout: 10s
+      retries: 12
+      start_period: 10s
     networks:
       - grants-ui-net
 

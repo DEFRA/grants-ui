@@ -1,8 +1,30 @@
 #!/bin/bash
 set -e
 
-if ! command -v docker &> /dev/null; then
-    echo "Error: docker is not installed or not in PATH"
+# Detect and set up container runtime (Docker or Podman)
+CONTAINER_RUNTIME=""
+if command -v docker &> /dev/null; then
+    CONTAINER_RUNTIME="docker"
+    echo "Using Docker as container runtime"
+    # Test that docker actually works
+    if ! docker --version &> /dev/null; then
+        echo "Warning: docker command found but not working properly"
+    fi
+elif command -v podman &> /dev/null; then
+    CONTAINER_RUNTIME="podman"
+    echo "Using Podman as container runtime"
+    # Test that podman actually works
+    if ! podman --version &> /dev/null; then
+        echo "Error: podman command found but not working properly"
+        exit 1
+    fi
+    # Create docker function that calls podman
+    docker() {
+        podman "$@"
+    }
+else
+    echo "Error: Neither docker nor podman is installed or in PATH"
+    echo "Please install either Docker or Podman to run this script"
     exit 1
 fi
 
@@ -12,6 +34,8 @@ export WELL_KNOWN_API_HOST_OVERRIDE=https://nginx:4007
 export DEFRA_ID_REDIRECT_URL=https://nginx:4000/auth/sign-in-oidc
 export DEFRA_ID_SIGN_OUT_REDIRECT_URL=https://nginx:4000/auth/sign-out-oidc
 export APP_BASE_URL=https://nginx:4000
+export AUTH_OVERRIDE=""
+export DEFRA_ID_WELL_KNOWN_URL=https://nginx:4007/idphub/b2c/b2c_1a_cui_cpdev_signupsigninsfi/.well-known/openid-configuration
 
 echo "Starting services with docker compose..."
 docker compose up -d --build
