@@ -307,13 +307,13 @@ export async function createServer() {
 
   server.app.cache = server.cache({
     cache: config.get(SESSION_CACHE_NAME),
-    segment: 'test-segment', // config.get('session.cache.segment')
-    expiresIn: config.get('session.cache.ttl')
+    segment: config.get('session.cookie.cache.segment'),
+    expiresIn: config.get('session.cookie.cache.ttl')
   })
 
   server.app.cacheTemp = server.cache({
     cache: config.get(SESSION_CACHE_NAME),
-    segment: 'section-data',
+    segment: 'tasklist-section-data',
     expiresIn: config.get('session.cache.ttl')
   })
 

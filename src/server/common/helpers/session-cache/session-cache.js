@@ -13,6 +13,7 @@ export const sessionCache = {
   options: {
     name: sessionConfig.cache.name,
     cache: {
+      segment: 'yar-session-id',
       cache: sessionConfig.cache.name,
       expiresIn: sessionConfig.cache.ttl
     },
