@@ -169,7 +169,7 @@ describe('form', () => {
       [
         'local environment',
         'local',
-        'http://localhost:3001/scoring/api/v1/adding-value/score?allowPartialScoring=true'
+        'http://ffc-grants-scoring:3002/scoring/api/v1/adding-value/score?allowPartialScoring=true'
       ],
       ['non-local environment', 'dev', 'http://dev.example.com']
     ])('configures URLs correctly for %s', (description, environment, expectedUrl) => {
@@ -239,7 +239,7 @@ describe('form', () => {
       expect(result.pages).toHaveLength(2)
       result.pages.forEach((page) => {
         expect(page.events.onLoad.options.url).toBe(
-          'http://localhost:3001/scoring/api/v1/adding-value/score?allowPartialScoring=true'
+          'http://ffc-grants-scoring:3002/scoring/api/v1/adding-value/score?allowPartialScoring=true'
         )
       })
     })
