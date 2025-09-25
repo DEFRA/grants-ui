@@ -26,8 +26,12 @@ const TEST_HEADERS = {
 }
 
 const mockConfigGet = vi.fn((key) => {
-  if (key === 'session.cache.authToken') return 'default-token'
-  if (key === 'session.cache.encryptionKey') return TEST_ENCRYPTION_KEY
+  if (key === 'session.cache.authToken') {
+    return 'default-token'
+  }
+  if (key === 'session.cache.encryptionKey') {
+    return TEST_ENCRYPTION_KEY
+  }
   return null
 })
 
