@@ -18,7 +18,7 @@ const outputLog = (request, message) => {
  * Generates a cache key from a Hapi request by extracting user, business, and grant identifiers.
  *
  * @param {import('@hapi/hapi').Request} request - The Hapi request object containing authentication credentials and route parameters.
- * @returns {{ userId: string, businessId: string, grantId: string }} An object containing identifiers to be used as a cache key.
+ * @returns {{ sbi: string, grantCode: string }} An object containing identifiers to be used as a cache key.
  * @throws {Error} If authentication credentials, user ID, business relationship, or grant ID are missing or malformed.
  */
 export const getCacheKey = (request) => {
@@ -28,32 +28,31 @@ export const getCacheKey = (request) => {
     outputLog(request, 'Missing auth credentials')
     throw new Error('Missing auth credentials')
   }
-  const { crn: userId } = credentials
+  const { crn, organisationId: sbi } = credentials
 
-  if (!userId) {
-    outputLog(request, 'Missing user ID in credentials')
-    throw new Error('Missing user ID in credentials')
+  if (!crn) {
+    outputLog(request, 'Missing CRN in credentials')
+    throw new Error('Missing CRN in credentials')
   }
 
-  const organisationId = credentials.organisationId
-  if (!organisationId) {
-    outputLog(request, 'Missing organisation ID in credentials')
-    throw new Error(`'Missing organisation ID in credentials`)
+  if (!sbi) {
+    outputLog(request, 'Missing SBI (organisationId) in credentials')
+    throw new Error(`'Missing SBI (organisationId) in credentials`)
   }
 
-  const grantId = request.params?.slug
-  if (!grantId) {
-    outputLog(request, 'Missing grantId')
-    throw new Error('Missing grantId')
+  const grantCode = request.params?.slug
+  if (!grantCode) {
+    outputLog(request, 'Missing grantCode')
+    throw new Error('Missing grantCode')
   }
-  return { userId, organisationId, grantId }
+  return { sbi, grantCode }
 }
 
 /**
  * Parses a session key into its components.
  *
- * @param {string} sessionKey - Colon-separated key (userId:businessId:grantId)
- * @returns {{ userId: string, organisationId: string, grantId: string }} Parsed values
+ * @param {string} sessionKey - Colon-separated key (sbi:grantCode)
+ * @returns {{ sbi: string, grantCode: string }} Parsed values
  * @throws {Error} If sessionKey is invalid or missing parts
  */
 export function parseSessionKey(sessionKey) {
@@ -61,11 +60,11 @@ export function parseSessionKey(sessionKey) {
     throw new Error('Invalid session key: must be a non-empty string')
   }
 
-  const [userId, organisationId, grantId] = sessionKey.split(':')
+  const [sbi, grantCode] = sessionKey.split(':')
 
-  if (!userId || !organisationId || !grantId) {
+  if (!sbi || !grantCode) {
     throw new Error(`Invalid session key format: ${sessionKey}`)
   }
 
-  return { userId, organisationId, grantId }
+  return { sbi, grantCode }
 }

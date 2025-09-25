@@ -1,7 +1,7 @@
 import { getCacheKey, parseSessionKey } from './get-cache-key-helper.js'
 
 describe('getCacheKey', () => {
-  it('returns userId, organisationId, and grantId when all are present', () => {
+  it('returns sbi and grantCode when all are present', () => {
     const request = {
       auth: {
         credentials: {
@@ -17,9 +17,8 @@ describe('getCacheKey', () => {
     const result = getCacheKey(request)
 
     expect(result).toEqual({
-      userId: 'user123',
-      organisationId: 'business456',
-      grantId: 'grant789'
+      sbi: 'business456',
+      grantCode: 'grant789'
     })
   })
 
@@ -35,7 +34,7 @@ describe('getCacheKey', () => {
       }
     }
 
-    expect(() => getCacheKey(request)).toThrow('Missing user ID in credentials')
+    expect(() => getCacheKey(request)).toThrow('Missing CRN in credentials')
   })
 
   it('throws error if organisationId is missing', () => {
@@ -50,7 +49,7 @@ describe('getCacheKey', () => {
       }
     }
 
-    expect(() => getCacheKey(request)).toThrow('Missing organisation ID in credentials')
+    expect(() => getCacheKey(request)).toThrow('Missing SBI (organisationId) in credentials')
   })
 
   it('throws error if auth.credentials is missing', () => {
@@ -64,7 +63,7 @@ describe('getCacheKey', () => {
     expect(() => getCacheKey(request)).toThrow('Missing auth credentials')
   })
 
-  it('throws error if grantId (params.slug) is missing', () => {
+  it('throws error if grantCode (params.slug) is missing', () => {
     const request = {
       auth: {
         credentials: {
@@ -75,7 +74,7 @@ describe('getCacheKey', () => {
       params: {}
     }
 
-    expect(() => getCacheKey(request)).toThrow('Missing grantId')
+    expect(() => getCacheKey(request)).toThrow('Missing grantCode')
   })
 
   it('throws error if params is missing', () => {
@@ -89,19 +88,18 @@ describe('getCacheKey', () => {
       // no params property
     }
 
-    expect(() => getCacheKey(request)).toThrow('Missing grantId')
+    expect(() => getCacheKey(request)).toThrow('Missing grantCode')
   })
 })
 
 describe('parseSessionKey', () => {
   it('parses a valid session key into its components', () => {
-    const key = 'user123:business456:grant789'
+    const key = 'business456:grant789'
     const result = parseSessionKey(key)
 
     expect(result).toEqual({
-      userId: 'user123',
-      organisationId: 'business456',
-      grantId: 'grant789'
+      sbi: 'business456',
+      grantCode: 'grant789'
     })
   })
 
@@ -115,7 +113,6 @@ describe('parseSessionKey', () => {
   })
 
   it('throws error for missing parts', () => {
-    expect(() => parseSessionKey('user123:business456')).toThrow('Invalid session key format')
-    expect(() => parseSessionKey('user123')).toThrow('Invalid session key format')
+    expect(() => parseSessionKey('sbi')).toThrow('Invalid session key format')
   })
 })
