@@ -11,10 +11,13 @@ The latter script is run as part of the CI pipeline when creating or updating a 
 ## Running acceptance tests locally using visible instances of Chrome
 
 Stand up your local system using the repository's main [compose.yml](../compose.yml) file:
+
 ```
 docker compose up --build
 ```
+
 Open a terminal in the [acceptance](../acceptance/) directory. Rename [.env.example](./.env.example) to `.env`. Then:
+
 ```
 cd acceptance
 npm run test:local
@@ -27,6 +30,7 @@ The test report is written to [/acceptance/allure-report](./allure-report/).
 #### Running specific tests
 
 To run specific tests, add a Cucumber tag to those tests, e.g. `@runme`, and use the following command:
+
 ```
 npx wdio run ./wdio.local.conf.js --cucumberOpts.tags=@runme
 ```
