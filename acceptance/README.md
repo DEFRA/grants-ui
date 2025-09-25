@@ -1,19 +1,24 @@
 # Acceptance Tests
 
-This directory contains acceptance tests for `grants-ui`. The framework used is WebdriverIO with Cucumber and the tests can run:
+This directory contains the GAE acceptance tests for `grants-ui`. The framework used is WebdriverIO with Cucumber and the tests can run:
 
-- Locally using a visible instance of Chrome against your local instance of `grants-ui`.
-- As part of a CI script running the tests in a container, standing up the system in containers beforehand.
+- Locally using visible instances of Chrome against your local instance of `grants-ui`.
 
-The latter script is also run as part of the CI pipeline when submitting a PR.
+- As part of a CI script running the tests in a container, standing up the `grants-ui` ecosystem in containers beforehand.
 
-## Running acceptance tests locally using a visible instance of Chrome
+The latter script is run as part of the CI pipeline when creating or updating a pull request.
 
-- Stand up your local system. This can be done using the repository's main [compose.yml](../compose.yml) file or by running in your IDE. The tests require an instance of `grants-ui-backend` to be running.
-- Open a terminal in the [acceptance](../acceptance/) directory.
-- Rename [.env.example](./.env.example) to `.env`
-- `npm install`
-- `npm run test:local`
+## Running acceptance tests locally using visible instances of Chrome
+
+Stand up your local system using the repository's main [compose.yml](../compose.yml) file:
+```
+docker compose up --build
+```
+Open a terminal in the [acceptance](../acceptance/) directory. Rename [.env.example](./.env.example) to `.env`. Then:
+```
+cd acceptance
+npm run test:local
+```
 
 #### Report
 
@@ -21,9 +26,10 @@ The test report is written to [/acceptance/allure-report](./allure-report/).
 
 #### Running specific tests
 
-To run only specific tests, add a Cucumber tag to those tests, e.g. `@runme`, and use the following command:
-
-- `npx wdio run ./wdio.local.conf.js --cucumberOpts.tags=@runme`
+To run specific tests, add a Cucumber tag to those tests, e.g. `@runme`, and use the following command:
+```
+npx wdio run ./wdio.local.conf.js --cucumberOpts.tags=@runme
+```
 
 #### Parallelization
 
@@ -31,7 +37,7 @@ Tests are run in parallel at feature file level by default. This is controlled b
 
 ## Running acceptance tests using the CI script
 
-This script uses the repository's main [compose.yml](../compose.yml) file to bring up `grants-ui`, `grants-ui-backend`, `fcp-defra-id-stub`, `ffc-grants-scoring`, MongoDB, Redis, and a stub of `fg-gas-backend (GAS)` in a Docker network. The script then runs the acceptance tests in another container with an instance of Selenium Chrome. The script will set up any necessary environment variables.
+This script uses the repository's main [compose.yml](../compose.yml) file to bring up the full `grants-ui` ecosystem with a stub of `fg-gas-backend (GAS)` in a Docker network. The script then runs the acceptance tests in another container with an instance of Selenium Chrome. The script will set up any necessary environment variables.
 
 - Open a terminal in the repository root
 - Run command `./tools/run-acceptance-tests.sh`

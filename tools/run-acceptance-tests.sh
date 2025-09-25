@@ -6,16 +6,8 @@ if ! command -v docker &> /dev/null; then
     exit 1
 fi
 
-echo "Setting environment variables"
-export WELL_KNOWN_HOST_OVERRIDE=https://nginx:4007
-export WELL_KNOWN_API_HOST_OVERRIDE=https://nginx:4007
-export DEFRA_ID_WELL_KNOWN_URL=https://nginx:4007/idphub/b2c/b2c_1a_cui_cpdev_signupsigninsfi/.well-known/openid-configuration
-export DEFRA_ID_REDIRECT_URL=https://nginx:4000/auth/sign-in-oidc
-export DEFRA_ID_SIGN_OUT_REDIRECT_URL=https://nginx:4000/auth/sign-out-oidc
-export APP_BASE_URL=https://nginx:4000
-
 echo "Starting services with docker compose..."
-docker compose up -d --build
+docker compose -f compose.yml -f compose.ci.override.yml up -d --build
 
 echo "Waiting for services to be healthy..."
 ATTEMPTS=0
