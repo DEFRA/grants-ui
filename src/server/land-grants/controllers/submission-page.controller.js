@@ -24,25 +24,20 @@ export default class SubmissionPageController extends SummaryPageController {
    * @returns {Promise<object>} - The result of the grant application submission
    */
   async submitLandGrantApplication(sbi, crn, context) {
-    const { defraId = 'defraId', frn = 'frn', landParcels = {} } = context.state
+    const { state, referenceNumber: applicationId } = context
+    const { defraId = 'defraId', frn = 'frn' } = state
     const identifiers = {
       sbi,
       frn,
-      crn: crn || context.state.crn || 'crn',
+      crn,
       defraId,
       clientRef: context.referenceNumber?.toLowerCase()
     }
 
-    const { id: applicationValidationRunId } = await validateApplication({
-      applicationId: context.referenceNumber?.toLowerCase(),
-      crn,
-      sbi,
-      landParcels
-    })
-
+    const validationResult = await validateApplication({ applicationId, crn, sbi, state })
     const applicationData = transformStateObjectToGasApplication(
       identifiers,
-      { ...context.state, applicationValidationRunId },
+      { ...context.state, applicationValidationRunId: validationResult.id },
       stateToLandGrantsGasAnswers
     )
 

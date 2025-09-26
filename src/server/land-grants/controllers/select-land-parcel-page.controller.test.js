@@ -2,7 +2,7 @@ import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/Q
 import { vi } from 'vitest'
 import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
 import { fetchParcels } from '~/src/server/land-grants/services/land-grants.service.js'
-import LandParcelPageController from './land-parcel-page.controller.js'
+import LandParcelPageController from './select-land-parcel-page.controller.js'
 
 vi.mock('~/src/server/land-grants/services/land-grants.service.js', () => ({
   fetchParcels: vi.fn()

@@ -1,15 +1,9 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import {
   fetchAvailableActionsForParcel,
-  triggerApiActionsValidation
+  validateApplication
 } from '~/src/server/land-grants/services/land-grants.service.js'
 import { parseLandParcel } from '~/src/server/land-grants/utils/format-parcel.js'
-
-const createErrorSummary = (errors) =>
-  Object.entries(errors).map(([field, { text }]) => ({
-    text,
-    href: `#${field}`
-  }))
 
 export default class SelectActionsForLandParcelPageController extends QuestionPageController {
   viewName = 'select-actions-for-land-parcel'
@@ -39,43 +33,6 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
   }
 
   /**
-   * Extract action data from the form payload
-   * @param {object} payload - The form payload
-   * @returns {object} - Extracted action data
-   */
-  extractActionsDataFromPayload(payload) {
-    const actionsObj = {}
-    const landActionFields = this.extractLandActionFieldsFromPayload(payload)
-
-    if (landActionFields.length === 0) {
-      return { actionsObj }
-    }
-
-    const availableActions = this.groupedActions.flatMap((g) => g.actions)
-
-    for (const fieldName of landActionFields) {
-      const actionCode = payload[fieldName]
-
-      if (!actionCode || actionCode === '') {
-        continue
-      }
-
-      const actionInfo = availableActions.find((a) => a.code === actionCode)
-
-      if (actionInfo) {
-        const result = {
-          description: actionInfo.description,
-          value: actionInfo?.availableArea?.value ?? '',
-          unit: actionInfo?.availableArea?.unit ?? ''
-        }
-        actionsObj[actionCode] = result
-      }
-    }
-
-    return { actionsObj }
-  }
-
-  /**
    * Get view model for the page
    * @param {FormRequest} request - The request object
    * @param {FormContext} context - The form context
@@ -98,113 +55,24 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
    * @returns {object} - An object containing errors and error summary
    */
   validateUserInput(payload) {
-    const errors = {}
+    const errors = []
     const landActionFields = this.extractLandActionFieldsFromPayload(payload)
 
-    const hasSelection = landActionFields.some((field) => {
-      const value = payload[field]
-      return value && value !== ''
-    })
-
-    if (!hasSelection) {
-      const firstField = landActionFields[0] || this.actionFieldPrefix + '1'
-      errors[firstField] = {
-        text: 'Select an action to do on this land parcel'
-      }
+    if (landActionFields.length === 0) {
+      const firstActionInput = this.actionFieldPrefix + '1'
+      errors.push({ text: 'Select an action to do on this land parcel', href: `#${firstActionInput}` })
     }
 
-    return {
-      errors,
-      errorSummary: createErrorSummary(errors)
-    }
+    return errors
   }
 
   /**
-   * Validate actions with API data
-   * @param {object} payload - The form payload
-   * @param {object} actionsObj - Actions object to validate
-   * @param {string} sheetId - Sheet ID
-   * @param {string} parcelId - Parcel ID
-   * @returns {object} - Validation result with errors
+   * Build new state by adding actions
+   * @param {object} state - The state object
+   * @param {object} actionsObj - The actions object to be added to the state
+   * @returns {object} - Updated state
    */
-  async validateActionsWithApiData(payload, actionsObj, sheetId, parcelId) {
-    const errors = {}
-
-    if (Object.keys(actionsObj).length === 0) {
-      return { errors, errorSummary: [] }
-    }
-
-    const { valid, errorMessages = [] } = await triggerApiActionsValidation({
-      sheetId,
-      parcelId,
-      actionsObj
-    })
-
-    if (!valid) {
-      for (const apiError of errorMessages) {
-        const foundKey = Object.keys(payload).find(
-          (key) => key.startsWith(this.actionFieldPrefix) && payload[key] === apiError.code
-        )
-        const index = Number(foundKey.replace(this.actionFieldPrefix, '')) || 1
-        errors[`${this.actionFieldPrefix}${index}`] = {
-          text: apiError.description
-        }
-      }
-    }
-
-    return {
-      errors,
-      errorSummary: createErrorSummary(errors)
-    }
-  }
-
-  /**
-   * Create action to group mapping for conflict resolution
-   * @returns {Map} - Map of action codes to their groups
-   */
-  createActionToGroupMap() {
-    const actionToGroupMap = new Map()
-    this.groupedActions.forEach((group) => {
-      group.actions.forEach((action) => {
-        actionToGroupMap.set(action.code, group)
-      })
-    })
-    return actionToGroupMap
-  }
-
-  /**
-   * Filter existing actions to remove conflicts (actions in same group) with new actions
-   * @param {object} existingActions - Current actions
-   * @param {string[]} newActionCodes - New action codes being added
-   * @returns {object} - Filtered existing actions
-   */
-  removeConflictingActions(existingActions, newActionCodes) {
-    const actionToGroupMap = this.createActionToGroupMap()
-    const filteredActions = {}
-
-    Object.entries(existingActions).forEach(([existingActionCode, actionData]) => {
-      const existingGroup = actionToGroupMap.get(existingActionCode)
-
-      const hasConflict = newActionCodes.some((newActionCode) => {
-        const newGroup = actionToGroupMap.get(newActionCode)
-        return existingGroup && newGroup && existingGroup === newGroup
-      })
-
-      if (!hasConflict && newActionCodes.includes(actionData.code)) {
-        filteredActions[existingActionCode] = actionData
-      }
-    })
-
-    return filteredActions
-  }
-
-  /**
-   * Create new parcel state when parcel doesn't exist
-   * @param {object} state - Current state
-   * @param {object} actionsObj - Actions to add
-   * @returns {object} - New state
-   */
-  createNewParcelState(state, actionsObj) {
+  buildNewState(state, actionsObj) {
     return {
       ...state,
       landParcels: {
@@ -214,45 +82,27 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
     }
   }
 
-  /**
-   * Update existing parcel state with new actions
-   * @param {object} state - Current state
-   * @param {object} currentParcel - Current parcel data
-   * @param {object} actionsObj - Actions to add
-   * @returns {object} - Updated state
-   */
-  updateExistingParcelState(state, currentParcel, actionsObj) {
-    const existingActions = currentParcel.actionsObj || {}
-    const newActionCodes = Object.keys(actionsObj)
-    const conflictFreeActions = this.removeConflictingActions(existingActions, newActionCodes)
+  createNewStateFromPayload(state, payload) {
+    const landActionFields = this.extractLandActionFieldsFromPayload(payload)
+    if (landActionFields.length === 0) {
+      return {}
+    }
 
-    return {
-      ...state,
-      landParcels: {
-        ...state.landParcels,
-        [this.selectedLandParcel]: {
-          ...currentParcel,
-          actionsObj: { ...conflictFreeActions, ...actionsObj }
+    const actionsObj = {}
+    const allActions = this.groupedActions.flatMap((g) => g.actions)
+    for (const fieldName of landActionFields) {
+      const actionCode = payload[fieldName]
+      const actionInfo = allActions.find((a) => a.code === actionCode)
+      if (actionCode && actionInfo) {
+        actionsObj[actionCode] = {
+          description: actionInfo.description,
+          value: actionInfo?.availableArea?.value ?? '',
+          unit: actionInfo?.availableArea?.unit ?? ''
         }
       }
     }
-  }
 
-  /**
-   * Build new state by adding or replacing actions
-   * @param {object} state - The state object
-   * @param {object} actionsObj - The actions object to be added to the state
-   * @returns {object} - Updated state
-   */
-  buildNewState(state, actionsObj) {
-    const { landParcels = {} } = state
-    const currentParcel = landParcels[this.selectedLandParcel]
-
-    if (!currentParcel) {
-      return this.createNewParcelState(state, actionsObj)
-    }
-
-    return this.updateExistingParcelState(state, currentParcel, actionsObj)
+    return this.buildNewState(state, actionsObj)
   }
 
   /**
@@ -314,14 +164,14 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
    * @param {object} additionalState - Additional state to merge
    * @returns {object} - Error view response
    */
-  renderErrorView(h, request, context, validation, sheetId, parcelId, additionalState = {}) {
+  renderErrorView(h, request, context, errorSummary, additionalState = {}) {
+    const [sheetId, parcelId] = parseLandParcel(this.selectedLandParcel)
     return h.view(this.viewName, {
       ...this.getViewModel(request, context),
       ...additionalState,
       parcelName: `${sheetId} ${parcelId}`,
       addedActions: this.addedActions,
-      errorSummary: validation.errorSummary,
-      errors: validation.errors
+      errorSummary
     })
   }
 
@@ -377,26 +227,35 @@ export default class SelectActionsForLandParcelPageController extends QuestionPa
      * @returns {Promise<import('@hapi/boom').Boom<any> | import('@hapi/hapi').ResponseObject>}
      */
     const fn = async (request, context, h) => {
-      const { state } = context
+      const { state: prevState, referenceNumber } = context
       const payload = request.payload ?? {}
-      const [sheetId, parcelId] = parseLandParcel(this.selectedLandParcel)
+      const { sbi, crn } = request.auth.credentials
 
-      const inputValidation = this.validateUserInput(payload)
-      if (Object.keys(inputValidation.errors).length > 0) {
-        return this.renderErrorView(h, request, context, inputValidation, sheetId, parcelId)
+      const errors = this.validateUserInput(payload)
+      if (errors.length > 0) {
+        return this.renderErrorView(h, request, context, errors, prevState)
       }
 
-      const { actionsObj } = this.extractActionsDataFromPayload(payload)
-      const newState = this.buildNewState(state, actionsObj)
+      const state = this.createNewStateFromPayload(prevState, payload)
 
       if (payload.action === 'validate') {
-        const apiValidation = await this.validateActionsWithApiData(payload, actionsObj, sheetId, parcelId)
-        if (Object.keys(apiValidation.errors).length > 0) {
-          return this.renderErrorView(h, request, context, apiValidation, sheetId, parcelId, newState)
+        const validationResult = await validateApplication({ applicationId: referenceNumber, sbi, crn, state })
+        const { valid, errorMessages = [] } = validationResult
+
+        if (!valid) {
+          const landActionFields = this.extractLandActionFieldsFromPayload(payload)
+          const errors = errorMessages
+            .filter((e) => !e.passed)
+            .map((e) => ({
+              text: `${e.description}: ${e.code}`,
+              href: `#${landActionFields.find((field) => payload[field] === e.code)}`
+            }))
+
+          return this.renderErrorView(h, request, context, errors, state)
         }
       }
 
-      await this.setState(request, newState)
+      await this.setState(request, state)
       return this.proceed(request, h, this.getNextPath(context))
     }
 
