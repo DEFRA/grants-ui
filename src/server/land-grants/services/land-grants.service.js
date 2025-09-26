@@ -27,15 +27,6 @@ export const actionGroups = [
 ]
 
 /**
- * Parse land parcel identifier
- * @param {string | null | undefined} landParcel - The land parcel identifier
- * @returns {string[]} - Array containing [sheetId, parcelId]
- */
-export const parseLandParcel = (landParcel) => {
-  return (landParcel || '').split('-')
-}
-
-/**
  * Calculates grant payment for land actions.
  * @param {LandActions[]} landParcels
  * @returns {Promise<object>} - Payment calculation result

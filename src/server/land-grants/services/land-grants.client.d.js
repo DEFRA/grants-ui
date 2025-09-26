@@ -6,7 +6,6 @@
 
 /**
  * @typedef LandActions
- * @property {string} sbi
  * @property {string} sheetId
  * @property {string} parcelId
  * @property {Action[]} actions
@@ -77,6 +76,7 @@
  * @property {string} applicationId
  * @property {string} requester
  * @property {string} applicantCrn
+ * @property {string} sbi - The SBI (Single Business Identifier) for the application
  * @property {LandActions[]} landActions
  */
 
