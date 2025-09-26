@@ -59,6 +59,7 @@ export async function context(request) {
       serviceName: config.get('serviceName'),
       serviceUrl: '/',
       defraIdEnabled: config.get('defraId.enabled'),
+      gaTrackingId: config.get('googleAnalytics.trackingId'),
       auth,
       breadcrumbs: [],
       navigation: buildNavigation(request),
@@ -81,6 +82,7 @@ export async function context(request) {
       serviceName: config.get('serviceName'),
       serviceUrl: '/',
       defraIdEnabled: config.get('defraId.enabled'),
+      gaTrackingId: config.get('googleAnalytics.trackingId'),
       auth: {
         isAuthenticated: false,
         sbi: null,
