@@ -56,7 +56,7 @@ export async function calculateGrantPayment(state) {
 /**
  * Fetches available actions for a given parcel.
  * @param {{ parcelId: string, sheetId: string }} parcel
- * @returns {Promise<object>} - Parcel data with actions
+ * @returns - Parcel data with actions
  * @throws {Error}
  */
 export async function fetchAvailableActionsForParcel({ parcelId = '', sheetId = '' }) {
@@ -95,7 +95,6 @@ export async function fetchAvailableActionsForParcel({ parcelId = '', sheetId = 
 /**
  *
  * @param {{description: string, code: string}} action
- * @returns {any}
  */
 function mapAction(action) {
   return {
@@ -107,7 +106,7 @@ function mapAction(action) {
 /**
  * Fetches parcel size for a list of parcel IDs.
  * @param {string[]} parcelIds
- * @returns {Promise<object>} - Map of parcel string IDs to their sizes
+ * @returns Map of parcel string IDs to their sizes
  * @throws {Error}
  */
 async function fetchParcelsSize(parcelIds) {
@@ -143,7 +142,6 @@ export async function fetchParcels(sbi) {
  * @param {string} data.crn
  * @param {string} data.sbi
  * @param {object} data.state
- * @returns {Promise<{ id: string}>}
  * @throws {Error}
  */
 export async function validateApplication(data) {
