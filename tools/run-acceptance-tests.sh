@@ -52,7 +52,7 @@ echo "Service started, now waiting for health check to pass..."
 
 ATTEMPTS=0
 
-until docker compose ps grants-ui | grep -q "Up"; do
+until curl -f http://localhost:3000/health >/dev/null 2>&1; do
     if [ ${ATTEMPTS} -eq ${MAX_ATTEMPTS} ]; then
         echo "Error: Timed out waiting for grants-ui service to be accessible."
         echo "--- Current Service Status ---"
