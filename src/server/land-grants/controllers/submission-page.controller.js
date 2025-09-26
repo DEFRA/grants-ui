@@ -18,30 +18,20 @@ export default class SubmissionPageController extends SummaryPageController {
   }
 
   /**
-   * Prepares application data for submission
-   * @private
-   * @param {object} identifiers - User identifiers
-   * @param {object} state - Application state
-   * @param {string} validationId - Validation ID
-   * @returns {object} - Prepared application data
-   */
-  prepareApplicationData(identifiers, state, validationId) {
-    return transformStateObjectToGasApplication(
-      identifiers,
-      { ...state, applicationValidationRunId: validationId },
-      stateToLandGrantsGasAnswers
-    )
-  }
-
-  /**
    * Submits the land grant application
    * @param {object} identifiers - User identifiers
    * @param {object} state - Application state
    * @param {string} validationId - Land Grants API validation ID
    * @returns {Promise<object>} - The result of the grant application submission
    */
-  async submitLandGrantApplication(identifiers, state, validationId) {
-    const applicationData = this.prepareApplicationData(identifiers, state, validationId)
+  async submitGasApplication(data) {
+    const { identifiers, state, validationId } = data
+    const applicationData = transformStateObjectToGasApplication(
+      identifiers,
+      { ...state, applicationValidationRunId: validationId },
+      stateToLandGrantsGasAnswers
+    )
+
     return submitGrantApplication(this.grantCode, applicationData)
   }
 
@@ -99,11 +89,15 @@ export default class SubmissionPageController extends SummaryPageController {
         }
 
         // Submit application to GAS
-        const result = await this.submitLandGrantApplication(
-          { sbi, crn, clientRef: referenceNumber },
+        const result = await this.submitGasApplication({
+          identifiers: {
+            sbi,
+            crn,
+            clientRef: referenceNumber?.toLowerCase()
+          },
           state,
           validationId
-        )
+        })
 
         request.logger.info('Form submission completed', result)
         return await this.handleSuccessfulSubmission(request, context, h)

@@ -53,37 +53,19 @@ describe('SubmissionPageController', () => {
     })
   })
 
-  describe('prepareApplicationData', () => {
-    it('should transform state to application data', () => {
-      const mockIdentifiers = {
-        sbi: '123456789',
-        crn: 'crn123',
-        clientRef: 'ref123'
-      }
-      const mockState = { key: 'value' }
-      const validationId = 'validation-123'
-      const mockApplicationData = { transformed: 'data' }
-
-      transformStateObjectToGasApplication.mockReturnValue(mockApplicationData)
-
-      const result = controller.prepareApplicationData(mockIdentifiers, mockState, validationId)
-
-      expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
-        mockIdentifiers,
-        { ...mockState, applicationValidationRunId: validationId },
-        stateToLandGrantsGasAnswers
-      )
-      expect(result).toEqual(mockApplicationData)
-    })
-  })
-
-  describe('submitLandGrantApplication', () => {
+  describe('submitGasApplication', () => {
     it('should prepare and submit grant application', async () => {
       const mockIdentifiers = {
         sbi: '123456789',
         crn: 'crn123',
         clientRef: 'ref123'
       }
+      const mockGasApplicationData = {
+        identifiers: mockIdentifiers,
+        state: { key: 'value' },
+        validationId: 'validation-123'
+      }
+
       const mockState = { key: 'value' }
       const validationId = 'validation-123'
       const mockApplicationData = { transformed: 'data' }
@@ -92,7 +74,7 @@ describe('SubmissionPageController', () => {
       transformStateObjectToGasApplication.mockReturnValue(mockApplicationData)
       submitGrantApplication.mockResolvedValue(mockResult)
 
-      const result = await controller.submitLandGrantApplication(mockIdentifiers, mockState, validationId)
+      const result = await controller.submitGasApplication(mockGasApplicationData)
 
       expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
         mockIdentifiers,
@@ -169,7 +151,7 @@ describe('SubmissionPageController', () => {
       const mockSubmitResult = { success: true }
       validateApplication.mockResolvedValue(mockValidationResult)
 
-      vi.spyOn(controller, 'submitLandGrantApplication').mockResolvedValue(mockSubmitResult)
+      vi.spyOn(controller, 'submitGasApplication').mockResolvedValue(mockSubmitResult)
       vi.spyOn(controller, 'handleSuccessfulSubmission').mockResolvedValue('proceeded')
 
       const handler = controller.makePostRouteHandler()
@@ -181,15 +163,15 @@ describe('SubmissionPageController', () => {
         sbi: '123456789',
         state: { landParcels: { parcel1: 'data' } }
       })
-      expect(controller.submitLandGrantApplication).toHaveBeenCalledWith(
-        {
-          clientRef: 'REF123',
+      expect(controller.submitGasApplication).toHaveBeenCalledWith({
+        identifiers: {
+          clientRef: 'ref123',
           crn: 'crn123',
           sbi: '123456789'
         },
-        mockContext.state,
-        'validation-123'
-      )
+        state: mockContext.state,
+        validationId: 'validation-123'
+      })
       expect(controller.handleSuccessfulSubmission).toHaveBeenCalledWith(mockRequest, mockContext, mockH)
       expect(mockRequest.logger.info).toHaveBeenCalledWith('Form submission completed', mockSubmitResult)
       expect(result).toBe('proceeded')
@@ -222,13 +204,13 @@ describe('SubmissionPageController', () => {
 
       validateApplication.mockResolvedValue(mockValidationResult)
       vi.spyOn(controller, 'handleValidationError').mockReturnValue('error-view')
-      vi.spyOn(controller, 'submitLandGrantApplication').mockResolvedValue({ success: true })
+      vi.spyOn(controller, 'submitGasApplication').mockResolvedValue({ success: true })
 
       const handler = controller.makePostRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
 
       expect(controller.handleValidationError).toHaveBeenCalledWith(mockH, mockRequest, mockContext, 'validation-123')
-      expect(controller.submitLandGrantApplication).not.toHaveBeenCalled()
+      expect(controller.submitGasApplication).not.toHaveBeenCalled()
       expect(result).toBe('error-view')
     })
 
@@ -292,7 +274,7 @@ describe('SubmissionPageController', () => {
       const mockValidationResult = { id: 'validation-123', valid: true }
 
       validateApplication.mockResolvedValue(mockValidationResult)
-      vi.spyOn(controller, 'submitLandGrantApplication').mockRejectedValue(mockError)
+      vi.spyOn(controller, 'submitGasApplication').mockRejectedValue(mockError)
 
       const handler = controller.makePostRouteHandler()
       await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow(mockError)
@@ -329,7 +311,7 @@ describe('SubmissionPageController', () => {
       const mockSubmitResult = { success: true }
 
       validateApplication.mockResolvedValue(mockValidationResult)
-      vi.spyOn(controller, 'submitLandGrantApplication').mockResolvedValue(mockSubmitResult)
+      vi.spyOn(controller, 'submitGasApplication').mockResolvedValue(mockSubmitResult)
       vi.spyOn(controller, 'handleSuccessfulSubmission').mockResolvedValue('proceeded')
 
       const handler = controller.makePostRouteHandler()
@@ -367,7 +349,7 @@ describe('SubmissionPageController', () => {
       const mockSubmitResult = { success: true }
 
       validateApplication.mockResolvedValue(mockValidationResult)
-      vi.spyOn(controller, 'submitLandGrantApplication').mockResolvedValue(mockSubmitResult)
+      vi.spyOn(controller, 'submitGasApplication').mockResolvedValue(mockSubmitResult)
       vi.spyOn(controller, 'handleSuccessfulSubmission').mockRejectedValue(mockError)
 
       const handler = controller.makePostRouteHandler()
