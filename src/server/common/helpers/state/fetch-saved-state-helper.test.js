@@ -1,11 +1,11 @@
 import { vi } from 'vitest'
 import {
-  MOCK_STATE_DATA,
-  HTTP_STATUS,
-  TEST_USER_IDS,
-  ERROR_MESSAGES,
   createMockConfig,
-  createMockConfigWithoutEndpoint
+  createMockConfigWithoutEndpoint,
+  ERROR_MESSAGES,
+  HTTP_STATUS,
+  MOCK_STATE_DATA,
+  TEST_USER_IDS
 } from './test-helpers/auth-test-helpers.js'
 
 const mockFetch = vi.hoisted(() => vi.fn())
@@ -49,9 +49,8 @@ describe('fetchSavedStateFromApi', () => {
 
   beforeEach(() => {
     mockParseSessionKey.mockReturnValue({
-      userId: TEST_USER_IDS.DEFAULT,
-      organisationId: TEST_USER_IDS.ORGANISATION_ID,
-      grantId: TEST_USER_IDS.GRANT_ID
+      sbi: TEST_USER_IDS.ORGANISATION_ID,
+      grantCode: TEST_USER_IDS.GRANT_ID
     })
   })
 
@@ -106,9 +105,7 @@ describe('fetchSavedStateFromApi', () => {
       expect(mockFetch).toHaveBeenCalledTimes(1)
       expect(mockFetch).toHaveBeenCalledWith(
         expect.stringMatching(
-          new RegExp(
-            `/state/\\?userId=${TEST_USER_IDS.DEFAULT}&businessId=${TEST_USER_IDS.ORGANISATION_ID}&grantId=${TEST_USER_IDS.GRANT_ID}`
-          )
+          new RegExp(`/state/\\?sbi=${TEST_USER_IDS.ORGANISATION_ID}&grantCode=${TEST_USER_IDS.GRANT_ID}`)
         ),
         expect.objectContaining({
           method: 'GET',

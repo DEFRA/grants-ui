@@ -213,8 +213,7 @@ export const config = convict({
       name: {
         doc: 'server side session cache name',
         format: String,
-        default: 'session',
-        env: 'SESSION_CACHE_NAME'
+        default: 'grants-ui-session-cache'
       },
       ttl: {
         doc: 'server side session cache ttl',
@@ -244,6 +243,23 @@ export const config = convict({
       }
     },
     cookie: {
+      name: {
+        doc: 'Session cookie name',
+        format: String,
+        default: 'grants-ui-session-auth'
+      },
+      cache: {
+        segment: {
+          doc: 'Session cookie cache segment name',
+          format: String,
+          default: 'auth'
+        },
+        ttl: {
+          doc: 'Session cookie cache ttl',
+          format: Number,
+          default: fourHoursMs
+        }
+      },
       ttl: {
         doc: 'Session cookie ttl',
         format: Number,

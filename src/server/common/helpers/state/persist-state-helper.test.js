@@ -1,11 +1,11 @@
 import { vi } from 'vitest'
 import {
-  MOCK_STATE_DATA,
-  HTTP_STATUS,
-  TEST_USER_IDS,
-  ERROR_MESSAGES,
   createMockConfig,
-  createMockConfigWithoutEndpoint
+  createMockConfigWithoutEndpoint,
+  ERROR_MESSAGES,
+  HTTP_STATUS,
+  MOCK_STATE_DATA,
+  TEST_USER_IDS
 } from './test-helpers/auth-test-helpers.js'
 import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
 import { mockRequestWithIdentity } from './mock-request-with-identity.test-helper.js'
@@ -34,14 +34,13 @@ let log
 let LogCodes
 
 describe('persistStateToApi', () => {
-  const key = `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.BUSINESS_ID}:${TEST_USER_IDS.GRANT_ID}`
+  const key = `${TEST_USER_IDS.BUSINESS_ID}:${TEST_USER_IDS.GRANT_ID}`
   const testState = MOCK_STATE_DATA.WITH_STEP
 
   beforeEach(() => {
     mockParseSessionKey.mockReturnValue({
-      userId: TEST_USER_IDS.DEFAULT,
-      organisationId: TEST_USER_IDS.ORGANISATION_ID,
-      grantId: TEST_USER_IDS.GRANT_ID
+      sbi: TEST_USER_IDS.ORGANISATION_ID,
+      grantCode: TEST_USER_IDS.GRANT_ID
     })
   })
 
@@ -81,9 +80,8 @@ describe('persistStateToApi', () => {
       await persistStateToApi(testState, key)
 
       const expectedBody = JSON.stringify({
-        userId: TEST_USER_IDS.DEFAULT,
-        businessId: TEST_USER_IDS.ORGANISATION_ID,
-        grantId: TEST_USER_IDS.GRANT_ID,
+        sbi: TEST_USER_IDS.ORGANISATION_ID,
+        grantCode: TEST_USER_IDS.GRANT_ID,
         grantVersion: GRANT_VERSION,
         state: testState
       })
@@ -105,7 +103,7 @@ describe('persistStateToApi', () => {
         LogCodes.SYSTEM.EXTERNAL_API_CALL_DEBUG,
         expect.objectContaining({
           endpoint: expect.stringContaining('/state/'),
-          identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.BUSINESS_ID}:${TEST_USER_IDS.GRANT_ID}`,
+          identity: `${TEST_USER_IDS.BUSINESS_ID}:${TEST_USER_IDS.GRANT_ID}`,
           stateSummary: {
             hasReference: Boolean(testState?.$$__referenceNumber),
             keyCount: Object.keys(testState).length
@@ -125,7 +123,7 @@ describe('persistStateToApi', () => {
         LogCodes.SYSTEM.EXTERNAL_API_ERROR,
         expect.objectContaining({
           endpoint: expect.stringContaining('/state/'),
-          identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.BUSINESS_ID}:${TEST_USER_IDS.GRANT_ID}`,
+          identity: `${TEST_USER_IDS.BUSINESS_ID}:${TEST_USER_IDS.GRANT_ID}`,
           error: `${failedResponse.status} - ${failedResponse.statusText}`
         })
       )
@@ -142,7 +140,7 @@ describe('persistStateToApi', () => {
         LogCodes.SYSTEM.EXTERNAL_API_ERROR,
         expect.objectContaining({
           endpoint: expect.stringContaining('/state/'),
-          identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.BUSINESS_ID}:${TEST_USER_IDS.GRANT_ID}`,
+          identity: `${TEST_USER_IDS.BUSINESS_ID}:${TEST_USER_IDS.GRANT_ID}`,
           error: networkError.message
         })
       )

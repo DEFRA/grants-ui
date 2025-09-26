@@ -13,7 +13,7 @@ export async function persistStateToApi(state, key) {
 
   const url = new URL('/state/', GRANTS_UI_BACKEND_ENDPOINT)
 
-  const { userId, organisationId, grantId } = parseSessionKey(key)
+  const { sbi, grantCode } = parseSessionKey(key)
 
   log(LogCodes.SYSTEM.EXTERNAL_API_CALL_DEBUG, {
     method: 'POST',
@@ -30,9 +30,8 @@ export async function persistStateToApi(state, key) {
       method: 'POST',
       headers: createApiHeaders(),
       body: JSON.stringify({
-        userId,
-        businessId: organisationId,
-        grantId,
+        sbi,
+        grantCode,
         grantVersion: 1, // TODO: Update when support for same grant versioning is implemented
         state
       })

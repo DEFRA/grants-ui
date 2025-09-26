@@ -34,8 +34,8 @@ import DeclarationPageController from '~/src/server/declaration/declaration.cont
 import ConfirmFarmDetailsController from '~/src/server/land-grants/controllers/confirm-farm-details.controller.js'
 import LandActionsCheckPageController from '~/src/server/land-grants/controllers/land-actions-check-page.controller.js'
 import LandGrantsConfirmationController from '~/src/server/land-grants/controllers/land-grants-confirmation-controller.js'
-import LandParcelPageController from '~/src/server/land-grants/controllers/land-parcel-page.controller.js'
-import SelectActionsForLandParcelPageController from '~/src/server/land-grants/controllers/select-actions-for-land-parcel-page.controller.js'
+import SelectLandParcelPageController from '~/src/server/land-grants/controllers/select-land-parcel-page.controller.js'
+import SelectLandActionsPageController from '~/src/server/land-grants/controllers/select-land-actions-page.controller.js'
 import SubmissionPageController from '~/src/server/land-grants/controllers/submission-page.controller.js'
 import FlyingPigsSubmissionPageController from '~/src/server/non-land-grants/pigs-might-fly/controllers/pig-types-submission.controller.js'
 import { PotentialFundingController } from '~/src/server/non-land-grants/pigs-might-fly/controllers/potential-funding.controller.js'
@@ -138,8 +138,8 @@ const registerFormsPlugin = async (server, prefix = '') => {
         DeclarationPageController,
         SubmissionPageController,
         ConfirmFarmDetailsController,
-        LandParcelPageController,
-        SelectActionsForLandParcelPageController,
+        SelectLandParcelPageController,
+        SelectLandActionsPageController,
         LandActionsCheckPageController,
         RemoveActionPageController,
         SectionEndController,
@@ -307,13 +307,13 @@ export async function createServer() {
 
   server.app.cache = server.cache({
     cache: config.get(SESSION_CACHE_NAME),
-    segment: 'test-segment', // config.get('session.cache.segment')
-    expiresIn: config.get('session.cache.ttl')
+    segment: config.get('session.cookie.cache.segment'),
+    expiresIn: config.get('session.cookie.cache.ttl')
   })
 
   server.app.cacheTemp = server.cache({
     cache: config.get(SESSION_CACHE_NAME),
-    segment: 'section-data',
+    segment: 'tasklist-section-data',
     expiresIn: config.get('session.cache.ttl')
   })
 
