@@ -1,8 +1,7 @@
 services:
  
   acceptance-tests:
-    build: .
-    image: acceptance-tests
+    image: defradigital/grants-ui-acceptance-tests
     depends_on:
       selenium-chrome:
         condition: service_healthy
@@ -10,10 +9,12 @@ services:
       NODE_EXTRA_CA_CERTS: /etc/ssl/certs/nginx.crt
       GRANTS_UI_BACKEND_AUTH_TOKEN: auth_token
       GRANTS_UI_BACKEND_ENCRYPTION_KEY: encryption_key
+      DEFRA_ID_USER_PASSWORD: x
     volumes:
       - ../certs:/etc/ssl/certs:ro
       - ./allure-report:/allure-report
       - ./allure-results:/allure-results
+    command: ["npm", "run", "test:ci"]
     networks:
       - grants-ui-net
 
