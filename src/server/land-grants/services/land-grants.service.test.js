@@ -70,9 +70,13 @@ describe('land-grants service', () => {
 
       expect(calculate).toHaveBeenCalledWith(
         expect.objectContaining({
-          sheetId: 'SD1234',
-          parcelId: '5678',
-          actions: [{ code: 'CMOR1', quantity: 10 }]
+          landActions: [
+            {
+              sheetId: 'SD1234',
+              parcelId: '5678',
+              actions: [{ code: 'CMOR1', quantity: 10 }]
+            }
+          ]
         }),
         mockApiEndpoint
       )
