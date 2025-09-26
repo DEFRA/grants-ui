@@ -1,10 +1,10 @@
-import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
 import { fetchParcels } from '../services/land-grants.service.js'
+import LandGrantsQuestionWithAuthCheckController from '~/src/server/land-grants/controllers/auth/land-grants-question-with-auth-check.controller.js'
 
 const logger = createLogger()
 
-export default class LandParcelPageController extends QuestionPageController {
+export default class LandParcelPageController extends LandGrantsQuestionWithAuthCheckController {
   viewName = 'select-land-parcel'
   parcels = []
 
@@ -41,6 +41,13 @@ export default class LandParcelPageController extends QuestionPageController {
       const { state } = context
       const payload = request.payload ?? {}
       const { selectedLandParcel, action } = payload
+
+      this.selectedLandParcel = selectedLandParcel
+
+      const authResult = await this.performAuthCheck(request, h)
+      if (authResult) {
+        return authResult
+      }
 
       if (action === 'validate' && !selectedLandParcel) {
         return h.view(this.viewName, {

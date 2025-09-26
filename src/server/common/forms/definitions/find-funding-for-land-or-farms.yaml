@@ -7,13 +7,6 @@ metadata:
     grantCode: frps-private-beta
     submissionSchemaPath: ./schemas/find-funding-for-land-or-farms.schema.json
 pages:
-  - title: Start page
-    path: /start
-    controller: StartPageController
-    next:
-      - path: /land-details
-    components: []
-    id: e77f0054-0d78-4456-a779-05860dff1d9c
   - title: Confirm your details
     path: /confirm-farm-details
     controller: ConfirmFarmDetailsController
