@@ -11,7 +11,7 @@ services:
       GRANTS_UI_BACKEND_ENCRYPTION_KEY: encryption_key
       DEFRA_ID_USER_PASSWORD: x
     volumes:
-      - ../certs:/etc/ssl/certs:ro
+      - ../nginx/certs:/etc/ssl/certs:ro
     command: ["npm", "run", "test:ci"]
     networks:
       - grants-ui-net

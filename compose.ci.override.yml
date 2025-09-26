@@ -12,7 +12,7 @@ services:
       - "4007:4007"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
-      - ./certs:/etc/nginx/certs:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
     networks:
       - grants-ui-net
 
@@ -25,7 +25,7 @@ services:
       DEFRA_ID_SIGN_OUT_REDIRECT_URL: https://nginx:4000/auth/sign-out-oidc
       APP_BASE_URL: https://nginx:4000
     volumes:
-      - ./certs:/etc/ssl/certs:ro
+      - ./nginx/certs:/etc/ssl/certs:ro
 
   fcp-defra-id-stub:
     environment:

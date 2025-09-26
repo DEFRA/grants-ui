@@ -77,7 +77,7 @@ cd acceptance
 
 echo "Running GAE Acceptance Tests"
 docker compose -f gae-compose.yml run --build --rm gae-acceptance-tests
-docker compose down -f gae-compose.yml
+docker compose -f gae-compose.yml down
 
 cd ../..
 docker compose -f compose.yml -f compose.ci.override.yml down
