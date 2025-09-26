@@ -7,6 +7,7 @@ import {
   MOCK_CONFIRMATION_CONTENT,
   createMockLogger
 } from './__test-fixtures__/confirmation-test-fixtures.js'
+import { log } from '~/src/server/common/helpers/logging/log.js'
 
 const mockFormsCacheService = {
   getConfirmationState: vi.fn()
@@ -19,6 +20,16 @@ const mockYarSession = {
 vi.mock('./services/confirmation.service.js')
 vi.mock('~/src/server/common/helpers/forms-cache/forms-cache.js', () => ({
   getFormsCacheService: () => mockFormsCacheService
+}))
+vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
+  log: vi.fn(),
+  LogCodes: {
+    CONFIRMATION: {
+      CONFIRMATION_ERROR: { level: 'error', messageFunc: vi.fn() },
+      CONFIRMATION_SUCCESS: { level: 'info', messageFunc: vi.fn() },
+      CONFIRMATION_LOAD: { level: 'info', messageFunc: vi.fn() }
+    }
+  }
 }))
 
 describe('config-confirmation', () => {
@@ -53,6 +64,8 @@ describe('config-confirmation', () => {
     mockFormsCacheService.getConfirmationState.mockResolvedValue({
       $$__referenceNumber: 'REF123'
     })
+
+    vi.mocked(log).mockClear()
   })
 
   test('should register plugin correctly', () => {
@@ -156,7 +169,7 @@ describe('config-confirmation', () => {
 
       const result = await handler(mockRequest, mockH)
 
-      expect(mockLogger.error).toHaveBeenCalled()
+      expect(vi.mocked(log)).toHaveBeenCalled()
       expect(mockResponse.code).toHaveBeenCalledWith(500)
       expect(result).toBe('error')
     })

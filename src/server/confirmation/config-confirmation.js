@@ -1,5 +1,6 @@
 import { ConfirmationService } from './services/confirmation.service.js'
 import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/forms-cache.js'
+import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
 const HTTP_STATUS = {
   BAD_REQUEST: 400,
@@ -18,13 +19,19 @@ function validateRequestAndFindForm(request, h) {
   const { slug } = request.params
 
   if (!slug) {
-    request.logger.warn('No slug provided in confirmation route')
+    log(LogCodes.CONFIRMATION.CONFIRMATION_ERROR, {
+      userId: request.auth?.credentials?.userId || 'unknown',
+      error: 'No slug provided in confirmation route'
+    })
     return { error: h.response('Bad request - missing slug').code(HTTP_STATUS.BAD_REQUEST) }
   }
 
   const form = ConfirmationService.findFormBySlug(slug)
   if (!form) {
-    request.logger.warn('Form not found for slug', { slug })
+    log(LogCodes.CONFIRMATION.CONFIRMATION_ERROR, {
+      userId: request.auth?.credentials?.userId || 'unknown',
+      error: `Form not found for slug: ${slug}`
+    })
     return { error: h.response('Form not found').code(HTTP_STATUS.NOT_FOUND) }
   }
 
@@ -43,7 +50,10 @@ async function loadConfirmationContent(form, logger, slug, h) {
   const rawConfirmationContent = await ConfirmationService.loadConfirmationContent(form, logger)
 
   if (!rawConfirmationContent) {
-    logger.info('Form does not have config-driven confirmation content', { slug, formId: form.id })
+    log(LogCodes.CONFIRMATION.CONFIRMATION_LOAD, {
+      userId: 'system',
+      grantType: `${slug} (non-config-driven)`
+    })
     return { error: h.response('Not config-driven - fallback to forms engine').code(HTTP_STATUS.NOT_IMPLEMENTED) }
   }
 
@@ -67,10 +77,9 @@ async function getReferenceNumber(request, slug) {
     request.yar?.get('$$__referenceNumber')
 
   if (!referenceNumber) {
-    request.logger.warn('No reference number found in confirmation state or session', {
-      slug,
-      confirmationState: Boolean(confirmationState),
-      hasConfirmationReferenceNumber: Boolean(confirmationState?.$$__referenceNumber)
+    log(LogCodes.CONFIRMATION.CONFIRMATION_ERROR, {
+      userId: request.auth?.credentials?.userId || 'unknown',
+      error: `No reference number found for slug: ${slug}. confirmationState: ${Boolean(confirmationState)}, hasConfirmationReferenceNumber: ${Boolean(confirmationState?.$$__referenceNumber)}`
     })
   }
 
@@ -109,10 +118,9 @@ function buildConfirmationResponse(confirmationContent, sessionData, h) {
  * @returns {object} Error response
  */
 function handleError(error, request, h) {
-  request.logger.error('Config-driven confirmation route error', {
-    error: error.message,
-    stack: error.stack,
-    slug: request.params?.slug
+  log(LogCodes.CONFIRMATION.CONFIRMATION_ERROR, {
+    userId: request.auth?.credentials?.userId || 'unknown',
+    error: `Config-driven confirmation route error for slug: ${request.params?.slug || 'unknown'}. ${error.message}`
   })
   return h.response('Server error').code(HTTP_STATUS.INTERNAL_SERVER_ERROR)
 }
@@ -143,6 +151,11 @@ export const configConfirmation = {
 
             const { confirmationContent } = contentResult
             const sessionData = await getReferenceNumber(request, slug)
+
+            log(LogCodes.CONFIRMATION.CONFIRMATION_SUCCESS, {
+              userId: request.auth?.credentials?.userId || 'unknown',
+              referenceNumber: sessionData.referenceNumber
+            })
 
             return buildConfirmationResponse(confirmationContent, sessionData, h)
           } catch (error) {
