@@ -41,7 +41,7 @@ jobs:
           path: coverage
 
   docker:
-    name: Test Docker Build and run Acceptance Tests
+    name: Docker Build and Acceptance Tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
