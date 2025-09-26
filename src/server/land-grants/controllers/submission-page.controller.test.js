@@ -98,6 +98,7 @@ describe('SubmissionPageController', () => {
       controller.handleValidationError(mockH, mockRequest, mockContext, validationId)
 
       expect(mockH.view).toHaveBeenCalledWith('submission-error', {
+        backLink: null,
         heading: 'Sorry, there was a problem validating the application',
         refNumber: 'validation-123'
       })
