@@ -29,4 +29,3 @@ services:
   fcp-defra-id-stub:
     environment:
       WELL_KNOWN_HOST_OVERRIDE: https://grants-ui-proxy:4007
-      WELL_KNOWN_API_HOST_OVERRIDE: https://grants-ui-proxy:4007
