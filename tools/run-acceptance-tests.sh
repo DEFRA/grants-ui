@@ -1,0 +1,85 @@
+#!/bin/bash
+set -e
+
+# Detect and set up container runtime (Docker or Podman)
+CONTAINER_RUNTIME=""
+if command -v docker &> /dev/null; then
+    CONTAINER_RUNTIME="docker"
+    echo "Using Docker as container runtime"
+    # Test that docker actually works
+    if ! docker --version &> /dev/null; then
+        echo "Warning: docker command found but not working properly"
+    fi
+elif command -v podman &> /dev/null; then
+    CONTAINER_RUNTIME="podman"
+    echo "Using Podman as container runtime"
+    # Test that podman actually works
+    if ! podman --version &> /dev/null; then
+        echo "Error: podman command found but not working properly"
+        exit 1
+    fi
+    # Create docker function that calls podman
+    docker() {
+        podman "$@"
+    }
+else
+    echo "Error: Neither docker nor podman is installed or in PATH"
+    echo "Please install either Docker or Podman to run this script"
+    exit 1
+fi
+
+echo "Starting services with docker compose..."
+docker compose -f compose.yml -f compose.ci.override.yml up -d --build
+
+echo "Waiting for services to be healthy..."
+ATTEMPTS=0
+MAX_ATTEMPTS=60
+
+echo "Waiting for grants-ui service to start..."
+until docker compose ps grants-ui | grep -q "Up"; do
+    if [ ${ATTEMPTS} -eq ${MAX_ATTEMPTS} ]; then
+        echo "Error: Timed out waiting for grants-ui service to start."
+        docker compose ps
+        docker compose -f compose.yml -f compose.ci.override.yml down
+        exit 1
+    fi
+    printf '.'
+    ATTEMPTS=$(($ATTEMPTS+1))
+    sleep 2
+done
+
+echo "Service started, now waiting for health check to pass..."
+
+ATTEMPTS=0
+
+until curl -f http://localhost:3000/health >/dev/null 2>&1; do
+    if [ ${ATTEMPTS} -eq ${MAX_ATTEMPTS} ]; then
+        echo "Error: Timed out waiting for grants-ui service to be accessible."
+        echo "--- Current Service Status ---"
+        docker compose ps
+        echo "--- grants-ui Service Logs ---"
+        docker compose logs grants-ui
+        echo "--- Redis Service Logs ---"
+        docker compose logs redis
+        docker compose down
+        exit 1
+    fi
+    printf 'h'
+    ATTEMPTS=$(($ATTEMPTS+1))
+    sleep 3
+done
+
+echo "All services are healthy!"
+echo "Service Status:"
+docker compose ps
+
+cd acceptance
+
+echo "Running GAE Acceptance Tests"
+docker compose -f gae-compose.yml run --build --rm gae-acceptance-tests
+docker compose -f gae-compose.yml down
+
+cd ..
+docker compose -f compose.yml -f compose.ci.override.yml down
+echo ""
+echo "Tests complete."

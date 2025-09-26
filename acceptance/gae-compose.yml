@@ -1,0 +1,43 @@
+services:
+ 
+  gae-acceptance-tests:
+    image: defradigital/grants-ui-acceptance-tests
+    depends_on:
+      selenium-chrome:
+        condition: service_healthy
+    environment:
+      NODE_EXTRA_CA_CERTS: /etc/ssl/certs/nginx.crt
+      BASE_URL: https://grants-ui-proxy:4000
+      BASE_BACKEND_URL: https://grants-ui-proxy:4001
+      GRANTS_UI_BACKEND_AUTH_TOKEN: auth_token
+      GRANTS_UI_BACKEND_ENCRYPTION_KEY: encryption_key
+      DEFRA_ID_USER_PASSWORD: x
+    volumes:
+      - ../nginx/certs:/etc/ssl/certs:ro
+    command: ["npm", "run", "test:ci"]
+    networks:
+      - grants-ui-net
+
+  selenium-chrome:
+    image: selenium/standalone-chrome
+    #image: seleniarm/standalone-chrome
+    # To set SELENIUM_ARCHITECTURE, create a .env file in this directory with:
+    # SELENIUM_ARCHITECTURE=linux/arm64  # for Apple Silicon (M1/M2/M3) 
+    # Intel/AMD is default
+    platform: ${SELENIUM_ARCHITECTURE:-linux/amd64}
+    shm_size: 2g
+    ports:
+      - "4444:4444"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4444/wd/hub/status"]
+      interval: 5s
+      timeout: 10s
+      retries: 12
+      start_period: 10s
+    networks:
+      - grants-ui-net
+
+networks:
+  grants-ui-net:
+    name: grants-ui-net
+    external: true
