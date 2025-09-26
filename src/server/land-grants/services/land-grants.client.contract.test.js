@@ -15,17 +15,17 @@ const EXPECTED_BODY = MatchersV3.like({ parcels: MatchersV3.eachLike(parcelExamp
 describe('fetchParcelsSize', () => {
   it('returns HTTP 200 and a list of parcels', async () => {
     await provider
-      .given('I have a list of parcels')
+      .given('has a parcel with ID', { sheetId: 'S382', parcelId: '1234' })
       .uponReceiving('a request for specific parcels & the "size" field requested')
       .withRequest({
         method: 'POST',
         path: '/parcels',
         headers: { 'Content-Type': 'application/json' },
-        body: { parcelIds: ['S382-1234'], fields: ['size'] }
+        body: { parcelIds: ['S38232-1234'], fields: ['size'] }
       })
       .willRespondWith({ status: 200, headers: { 'Content-Type': 'application/json' }, body: EXPECTED_BODY })
       .executeTest(async (mockserver) => {
-        const response = await parcelsWithSize(['S382-1234'], mockserver.url)
+        const response = await parcelsWithSize(['S38232-1234'], mockserver.url)
 
         expect(response.parcels[0]).toEqual(parcelExample)
       })
