@@ -73,12 +73,13 @@ echo "All services are healthy!"
 echo "Service Status:"
 docker compose ps
 
-echo "Running Acceptance Tests"
 cd acceptance
-docker compose run --build --rm acceptance-tests
-docker compose down
 
-cd ..
+echo "Running GAE Acceptance Tests"
+docker compose -f gae-compose.yml run --build --rm gae-acceptance-tests
+docker compose down -f gae-compose.yml
+
+cd ../..
 docker compose -f compose.yml -f compose.ci.override.yml down
 echo ""
 echo "Tests complete."

@@ -1,6 +1,6 @@
 services:
  
-  acceptance-tests:
+  gae-acceptance-tests:
     image: defradigital/grants-ui-acceptance-tests
     depends_on:
       selenium-chrome:
@@ -12,8 +12,6 @@ services:
       DEFRA_ID_USER_PASSWORD: x
     volumes:
       - ../certs:/etc/ssl/certs:ro
-      - ./allure-report:/allure-report
-      - ./allure-results:/allure-results
     command: ["npm", "run", "test:ci"]
     networks:
       - grants-ui-net
