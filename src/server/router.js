@@ -7,6 +7,8 @@ import { home } from '~/src/server/home/index.js'
 import { sbi } from '~/src/server/sbi/index.js'
 import { createTasklistRoute } from '~/src/server/tasklist/tasklist.controller.js'
 import { agreements } from '~/src/server/agreements/index.js'
+import { devTools } from '~/src/server/dev-tools/index.js'
+import { configConfirmation } from '~/src/server/confirmation/config-confirmation.js'
 
 const defraIdEnabled = config.get('defraId.enabled')
 
@@ -31,7 +33,16 @@ export const router = {
       await server.register([auth])
 
       // Application specific routes, add your own routes here
-      await server.register([home, agreements])
+      await server.register([home, agreements, configConfirmation])
+
+      // Development tools (only available in development mode)
+      if (
+        config.get('devTools.enabled') &&
+        process.env.NODE_ENV !== 'production' &&
+        process.env.ENVIRONMENT === 'local'
+      ) {
+        await server.register([devTools])
+      }
 
       // Generic tasklist routes
       await server.register([createTasklistRoute('example')])
