@@ -7,8 +7,8 @@ services:
         condition: service_healthy
     environment:
       NODE_EXTRA_CA_CERTS: /etc/ssl/certs/nginx.crt
-      BASE_URL: https://nginx:4000
-      BASE_BACKEND_URL: https://nginx:4001
+      BASE_URL: https://grants-ui-proxy:4000
+      BASE_BACKEND_URL: https://grants-ui-proxy:4001
       GRANTS_UI_BACKEND_AUTH_TOKEN: auth_token
       GRANTS_UI_BACKEND_ENCRYPTION_KEY: encryption_key
       DEFRA_ID_USER_PASSWORD: x
