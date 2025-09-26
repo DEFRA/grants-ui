@@ -11,7 +11,7 @@
     "skipLibCheck": true,
     "strictFunctionTypes": true,
     "strictNullChecks": true,
-    "types": ["vitest"]
+    "types": ["vitest", "vitest/globals"]
   },
   "exclude": [".cache", ".public", ".server", "coverage", "node_modules"],
   "include": ["**/*.cjs", "**/*.js", ".eslintrc.*", ".prettierrc.*"]
