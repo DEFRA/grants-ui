@@ -23,12 +23,12 @@ pages:
     next: []
     id: 4884e676-569a-4669-b8c8-dda3e3a522e9
   - title: Select land parcel for actions
-    controller: LandParcelPageController
+    controller: SelectLandParcelPageController
     path: /select-land-parcel
     next: []
     id: f9f1a33b-2fb5-4418-951b-680067efc179
   - title: Select actions for land parcel
-    controller: SelectActionsForLandParcelPageController
+    controller: SelectLandActionsPageController
     path: /select-actions-for-land-parcel
     id: 7b0a5e2f-4c31-4a45-95ee-abc000da0473
   - title: Review the actions you have selected
