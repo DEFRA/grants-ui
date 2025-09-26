@@ -4,7 +4,7 @@ import LandGrantsQuestionWithAuthCheckController from '~/src/server/land-grants/
 
 const logger = createLogger()
 
-export default class LandParcelPageController extends LandGrantsQuestionWithAuthCheckController {
+export default class SelectLandParcelPageController extends LandGrantsQuestionWithAuthCheckController {
   viewName = 'select-land-parcel'
   parcels = []
 

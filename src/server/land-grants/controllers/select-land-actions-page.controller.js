@@ -5,7 +5,7 @@ import {
 import LandGrantsQuestionWithAuthCheckController from '~/src/server/land-grants/controllers/auth/land-grants-question-with-auth-check.controller.js'
 import { parseLandParcel } from '~/src/server/land-grants/utils/format-parcel.js'
 
-export default class SelectActionsForLandParcelPageController extends LandGrantsQuestionWithAuthCheckController {
+export default class SelectLandActionsPageController extends LandGrantsQuestionWithAuthCheckController {
   viewName = 'select-actions-for-land-parcel'
   actionFieldPrefix = 'landAction_'
   groupedActions = []
@@ -253,14 +253,14 @@ export default class SelectActionsForLandParcelPageController extends LandGrants
 
         if (!valid) {
           const landActionFields = this.extractLandActionFieldsFromPayload(payload)
-          const errors = errorMessages
+          const validationErrors = errorMessages
             .filter((e) => !e.passed)
             .map((e) => ({
               text: `${e.description}: ${e.code}`,
               href: `#${landActionFields.find((field) => payload[field] === e.code)}`
             }))
 
-          return this.renderErrorView(h, request, context, errors, state)
+          return this.renderErrorView(h, request, context, validationErrors, state)
         }
       }
 

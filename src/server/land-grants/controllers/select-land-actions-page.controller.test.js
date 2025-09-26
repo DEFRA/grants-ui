@@ -7,7 +7,7 @@ import {
   validateApplication
 } from '~/src/server/land-grants/services/land-grants.service.js'
 import { parseLandParcel } from '~/src/server/land-grants/utils/format-parcel.js'
-import SelectActionsForLandParcelPageController from './select-land-actions-page.controller.js'
+import SelectLandActionsPageController from './select-land-actions-page.controller.js'
 
 vi.mock('~/src/server/land-grants/services/land-grants.service.js')
 vi.mock('~/src/server/land-grants/utils/format-parcel.js')
@@ -25,7 +25,7 @@ const mockParcelsResponse = [
   }
 ]
 
-describe('SelectActionsForLandParcelPageController', () => {
+describe('SelectLandActionsPageController', () => {
   let controller
   let mockRequest
   let mockContext
@@ -71,7 +71,7 @@ describe('SelectActionsForLandParcelPageController', () => {
       pageTitle: 'Land Actions'
     })
 
-    controller = new SelectActionsForLandParcelPageController()
+    controller = new SelectLandActionsPageController()
     controller.groupedActions = mockGroupedActions
     controller.selectedLandParcel = 'sheet1-parcel1'
     controller.collection = {

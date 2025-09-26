@@ -7,21 +7,20 @@ import { parseLandParcel } from '../utils/format-parcel.js'
  */
 export const stateToLandActionsMapper = (state = {}) => {
   const { landParcels = {} } = state
-  const landActions = []
 
-  for (const parcelKey in landParcels) {
+  const stateActionsObjectToApiFormat = (actionsObj = {}) =>
+    Object.entries(actionsObj).map(([code, area]) => ({
+      code,
+      quantity: Number(area.value)
+    }))
+
+  const landActions = Object.keys(landParcels).map((parcelKey) => {
     const parcel = landParcels[parcelKey]
     const [sheetId, parcelId] = parseLandParcel(parcelKey)
     const actionsObj = parcel.actionsObj || {}
 
-    const stateActionsObjectToApiFormat = (actionsObj = []) =>
-      Object.entries(actionsObj).map(([code, area]) => ({
-        code,
-        quantity: Number(area.value)
-      }))
-
-    landActions.push({ sheetId, parcelId, actions: stateActionsObjectToApiFormat(actionsObj) })
-  }
+    return { sheetId, parcelId, actions: stateActionsObjectToApiFormat(actionsObj) }
+  })
 
   return landActions
 }
