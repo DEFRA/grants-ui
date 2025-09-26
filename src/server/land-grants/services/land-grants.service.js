@@ -2,7 +2,8 @@ import { config } from '~/src/config/config.js'
 import { formatCurrency } from '~/src/config/nunjucks/filters/format-currency.js'
 import { fetchParcelsForSbi } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
 import { landActionWithCode } from '~/src/server/land-grants/utils/land-action-with-code.js'
-import { sbiStore } from '../../sbi/state.js'
+import { stringifyParcel } from '../utils/format-parcel.js'
+import { stateToLandActionsMapper } from '../mappers/state-to-land-grants-mapper.js'
 
 const LAND_GRANTS_API_URL = config.get('landGrants.grantsServiceApiEndpoint')
 
@@ -17,17 +18,6 @@ export const actionGroups = [
     actions: ['UPL1', 'UPL2', 'UPL3']
   }
 ]
-
-/**
- * Parse land parcel identifier
- * @param {string} landParcel - The land parcel identifier
- * @returns {string[]} - Array containing [sheetId, parcelId]
- */
-export const parseLandParcel = (landParcel) => {
-  return (landParcel || '').split('-')
-}
-
-export const stringifyParcel = ({ parcelId, sheetId }) => `${sheetId}-${parcelId}`
 
 /**
  * Performs a POST request to the Land Grants API.
@@ -58,33 +48,14 @@ export async function postToLandGrantsApi(endpoint, body) {
 }
 
 /**
- * Maps land actions into the expected payload structure for the API.
- * @param {{ sheetId: string, parcelId: string, actionsObj: object }} param0
- * @returns {object}
- */
-export const landActionsToApiPayload = ({ sheetId, parcelId, actionsObj, sbi }) => {
-  const sbiValue = sbi || sbiStore.get('sbi') // TODO: change this once DefraID is in place
-  return {
-    sheetId,
-    parcelId,
-    sbi: sbiValue,
-    actions: actionsObj
-      ? Object.entries(actionsObj).map(([code, area]) => ({
-          code,
-          quantity: Number(area.value)
-        }))
-      : []
-  }
-}
-
-/**
  * Calculates grant payment for land actions.
  * @param {{ sheetId: string, parcelId: string, actionsObj: object }} landParcels
  * @returns {Promise<object>} - Payment calculation result
  * @throws {Error}
  */
-export async function calculateGrantPayment(landParcels) {
-  const data = await postToLandGrantsApi('/payments/calculate', landParcels)
+export async function calculateGrantPayment(state) {
+  const payload = { landActions: stateToLandActionsMapper(state) }
+  const data = await postToLandGrantsApi('/payments/calculate', payload)
   const paymentTotal = formatCurrency(data.payment?.annualTotalPence / 100)
 
   return {
@@ -146,18 +117,6 @@ function mapAction(action) {
 }
 
 /**
- * Validates land actions through the Land Grants API.
- * @param {{ sheetId: string, parcelId: string, actionsObj: object }} payload
- * @returns {Promise<object>} - Validation result
- * @throws {Error}
- */
-export async function triggerApiActionsValidation({ sheetId, parcelId, actionsObj = {} }) {
-  return postToLandGrantsApi('/actions/validate', {
-    landActions: [landActionsToApiPayload({ sheetId, parcelId, actionsObj })]
-  })
-}
-
-/**
  * Fetches parcel size for a list of parcel IDs.
  * @param {string[]} parcelIds
  * @returns {Promise<object>} - Map of parcel string IDs to their sizes
@@ -196,24 +155,20 @@ export async function fetchParcels(sbi) {
  * @param {object} data
  * @param {string} data.applicationId
  * @param {string} data.crn
- * @param {object} data.landParcels
  * @param {string} data.sbi
+ * @param {object} data.state
  * @returns {Promise<{ id: string}>}
  * @throws {Error}
  */
 export async function validateApplication(data) {
-  const { applicationId, crn, landParcels, sbi } = data
+  const { applicationId, crn, state, sbi } = data
 
   const payload = {
-    applicationId,
+    applicationId: applicationId?.toLowerCase(),
     requester: 'grants-ui',
+    sbi,
     applicantCrn: crn,
-    landActions: Object.entries(landParcels)
-      .filter(([parcelKey]) => parcelKey)
-      .map(([parcelKey, parcelData]) => {
-        const [sheetId, parcelId] = parcelKey.split('-')
-        return landActionsToApiPayload({ sheetId, parcelId, actionsObj: parcelData.actionsObj, sbi })
-      })
+    landActions: stateToLandActionsMapper(state)
   }
 
   return postToLandGrantsApi('/application/validate', payload)

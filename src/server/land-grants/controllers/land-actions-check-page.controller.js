@@ -2,7 +2,8 @@ import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/Q
 import { formatCurrency } from '~/src/config/nunjucks/filters/filters.js'
 import { landActionWithCode } from '~/src/server/land-grants/utils/land-action-with-code.js'
 import { sbiStore } from '~/src/server/sbi/state.js'
-import { actionGroups, calculateGrantPayment, stringifyParcel } from '../services/land-grants.service.js'
+import { actionGroups, calculateGrantPayment } from '../services/land-grants.service.js'
+import { stringifyParcel } from '../utils/format-parcel.js'
 
 const createLinks = (data) => {
   const parcelParam = stringifyParcel({
@@ -28,17 +29,6 @@ export default class LandActionsCheckPageController extends QuestionPageControll
   viewName = 'land-actions-check'
   parcelItems = []
   additionalYearlyPayments = []
-
-  /**
-   * Extract land actions from state for payment calculation
-   * @param {object} state - Application state
-   * @returns {Array} - Array of land actions for payment calculation
-   */
-  extractLandActionsFromState(state) {
-    return Object.entries(state.landParcels || {})
-      .filter(([, parcelData]) => this.hasValidActions(parcelData))
-      .map(([parcelKey, parcelData]) => this.mapParcelToLandAction(parcelKey, parcelData))
-  }
 
   /**
    * Check if parcel data has valid actions
@@ -68,16 +58,6 @@ export default class LandActionsCheckPageController extends QuestionPageControll
       parcelId,
       actions
     }
-  }
-
-  /**
-   * Calculate payment information from current state
-   * @param {object} state - Object containing land parcels data and actions
-   * @returns {Promise<object>} - Promise with payment information object
-   */
-  async calculatePaymentInformationFromState(state) {
-    const landActions = this.extractLandActionsFromState(state)
-    return calculateGrantPayment({ landActions })
   }
 
   /**
@@ -231,7 +211,7 @@ export default class LandActionsCheckPageController extends QuestionPageControll
    * @returns {Promise<object>} - Payment information
    */
   async processPaymentCalculation(state) {
-    const paymentResult = await this.calculatePaymentInformationFromState(state)
+    const paymentResult = await calculateGrantPayment(state)
     const { payment } = paymentResult
 
     this.parcelItems = this.getParcelItems(payment)

@@ -76,6 +76,8 @@ describe('transformStateObjectToGasApplication', () => {
     expect(result).toEqual({
       metadata: {
         sbi: '12345678',
+        defraId: 'defraId',
+        frn: 'frn',
         submittedAt: mockDate.toISOString()
       },
       answers: {

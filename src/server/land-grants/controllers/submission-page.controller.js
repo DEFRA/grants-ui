@@ -18,42 +18,6 @@ export default class SubmissionPageController extends SummaryPageController {
   }
 
   /**
-   * Extracts user identifiers from request and context
-   * @private
-   * @param {object} request - The request object
-   * @param {object} context - The form context
-   * @returns {object} - User identifiers
-   */
-  getUserIdentifiers(request, context) {
-    const { sbi, crn } = request.auth.credentials
-    const { defraId = 'defraId', frn = 'frn' } = context.state
-
-    return {
-      sbi,
-      frn,
-      crn: crn || context.state.crn || 'crn',
-      defraId,
-      clientRef: context.referenceNumber?.toLowerCase()
-    }
-  }
-
-  /**
-   * Validates the application
-   * @private
-   * @param {object} identifiers - User identifiers
-   * @param {object} landParcels - Land parcels data
-   * @returns {Promise<object>} - Validation result
-   */
-  async validateApplicationData(identifiers, landParcels = {}) {
-    return validateApplication({
-      applicationId: identifiers.clientRef,
-      crn: identifiers.crn,
-      sbi: identifiers.sbi,
-      landParcels
-    })
-  }
-
-  /**
    * Prepares application data for submission
    * @private
    * @param {object} identifiers - User identifiers
@@ -124,18 +88,22 @@ export default class SubmissionPageController extends SummaryPageController {
   makePostRouteHandler() {
     return async (request, context, h) => {
       try {
-        const identifiers = this.getUserIdentifiers(request, context)
-        const { landParcels = {} } = context.state
+        const { state, referenceNumber } = context
+        const { sbi, crn } = request.auth.credentials
 
         // Validate application with Land Grants API
-        const { id: validationId, valid } = await this.validateApplicationData(identifiers, landParcels)
-
+        const validationResult = await validateApplication({ applicationId: referenceNumber, crn, sbi, state })
+        const { id: validationId, valid } = validationResult
         if (!valid) {
           return this.handleValidationError(h, request, context, validationId)
         }
 
         // Submit application to GAS
-        const result = await this.submitLandGrantApplication(identifiers, context.state, validationId)
+        const result = await this.submitLandGrantApplication(
+          { sbi, crn, clientRef: referenceNumber },
+          state,
+          validationId
+        )
 
         request.logger.info('Form submission completed', result)
         return await this.handleSuccessfulSubmission(request, context, h)

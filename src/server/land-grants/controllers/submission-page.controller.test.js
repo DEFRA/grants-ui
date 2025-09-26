@@ -37,6 +37,7 @@ describe('SubmissionPageController', () => {
       setConfirmationState: vi.fn().mockResolvedValue()
     }
 
+    validateApplication.mockReturnValue(() => ({ valid: true }))
     getFormsCacheService.mockReturnValue(mockCacheService)
 
     controller = new SubmissionPageController(mockModel, mockPageDef)
@@ -49,117 +50,6 @@ describe('SubmissionPageController', () => {
 
     it('should set grantCode', () => {
       expect(controller.grantCode).toBe(code)
-    })
-  })
-
-  describe('getUserIdentifiers', () => {
-    it('should extract identifiers from request and context', () => {
-      const mockRequest = {
-        auth: {
-          credentials: { sbi: '123456789', crn: 'crn123' }
-        }
-      }
-      const mockContext = {
-        referenceNumber: 'ABC123',
-        state: { defraId: 'defra123', frn: 'frn123' }
-      }
-
-      const result = controller.getUserIdentifiers(mockRequest, mockContext)
-
-      expect(result).toEqual({
-        sbi: '123456789',
-        crn: 'crn123',
-        defraId: 'defra123',
-        frn: 'frn123',
-        clientRef: 'abc123'
-      })
-    })
-
-    it('should use default values and fallback for crn', () => {
-      const mockRequest = {
-        auth: {
-          credentials: { sbi: '123456789' }
-        }
-      }
-      const mockContext = {
-        referenceNumber: 'ABC123',
-        state: { crn: 'state-crn' }
-      }
-
-      const result = controller.getUserIdentifiers(mockRequest, mockContext)
-
-      expect(result).toEqual({
-        sbi: '123456789',
-        crn: 'state-crn',
-        defraId: 'defraId',
-        frn: 'frn',
-        clientRef: 'abc123'
-      })
-    })
-
-    it('should handle missing reference number', () => {
-      const mockRequest = {
-        auth: {
-          credentials: { sbi: '123456789', crn: 'crn123' }
-        }
-      }
-      const mockContext = {
-        state: {}
-      }
-
-      const result = controller.getUserIdentifiers(mockRequest, mockContext)
-
-      expect(result).toEqual({
-        sbi: '123456789',
-        crn: 'crn123',
-        defraId: 'defraId',
-        frn: 'frn',
-        clientRef: undefined
-      })
-    })
-  })
-
-  describe('validateApplicationData', () => {
-    it('should call validateApplication with correct parameters', async () => {
-      const mockIdentifiers = {
-        sbi: '123456789',
-        crn: 'crn123',
-        clientRef: 'ref123'
-      }
-      const mockLandParcels = { parcel1: 'data' }
-      const mockResult = { id: 'validation-123', valid: true }
-
-      validateApplication.mockResolvedValue(mockResult)
-
-      const result = await controller.validateApplicationData(mockIdentifiers, mockLandParcels)
-
-      expect(validateApplication).toHaveBeenCalledWith({
-        applicationId: 'ref123',
-        crn: 'crn123',
-        sbi: '123456789',
-        landParcels: mockLandParcels
-      })
-      expect(result).toEqual(mockResult)
-    })
-
-    it('should use empty object for landParcels if not provided', async () => {
-      const mockIdentifiers = {
-        sbi: '123456789',
-        crn: 'crn123',
-        clientRef: 'ref123'
-      }
-      const mockResult = { id: 'validation-123', valid: true }
-
-      validateApplication.mockResolvedValue(mockResult)
-
-      await controller.validateApplicationData(mockIdentifiers)
-
-      expect(validateApplication).toHaveBeenCalledWith({
-        applicationId: 'ref123',
-        crn: 'crn123',
-        sbi: '123456789',
-        landParcels: {}
-      })
     })
   })
 
@@ -275,28 +165,28 @@ describe('SubmissionPageController', () => {
         redirect: vi.fn().mockReturnValue('redirected'),
         view: vi.fn()
       }
-      const mockIdentifiers = {
-        sbi: '123456789',
-        crn: 'crn123',
-        defraId: 'defraId',
-        frn: 'frn',
-        clientRef: 'ref123'
-      }
       const mockValidationResult = { id: 'validation-123', valid: true }
       const mockSubmitResult = { success: true }
+      validateApplication.mockResolvedValue(mockValidationResult)
 
-      vi.spyOn(controller, 'getUserIdentifiers').mockReturnValue(mockIdentifiers)
-      vi.spyOn(controller, 'validateApplicationData').mockResolvedValue(mockValidationResult)
       vi.spyOn(controller, 'submitLandGrantApplication').mockResolvedValue(mockSubmitResult)
       vi.spyOn(controller, 'handleSuccessfulSubmission').mockResolvedValue('proceeded')
 
       const handler = controller.makePostRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
 
-      expect(controller.getUserIdentifiers).toHaveBeenCalledWith(mockRequest, mockContext)
-      expect(controller.validateApplicationData).toHaveBeenCalledWith(mockIdentifiers, { parcel1: 'data' })
+      expect(validateApplication).toHaveBeenCalledWith({
+        applicationId: 'REF123',
+        crn: 'crn123',
+        sbi: '123456789',
+        state: { landParcels: { parcel1: 'data' } }
+      })
       expect(controller.submitLandGrantApplication).toHaveBeenCalledWith(
-        mockIdentifiers,
+        {
+          clientRef: 'REF123',
+          crn: 'crn123',
+          sbi: '123456789'
+        },
         mockContext.state,
         'validation-123'
       )
@@ -327,24 +217,16 @@ describe('SubmissionPageController', () => {
         view: vi.fn().mockReturnValue('error-view'),
         redirect: vi.fn()
       }
-      const mockIdentifiers = {
-        sbi: '123456789',
-        crn: 'crn123',
-        defraId: 'defraId',
-        frn: 'frn',
-        clientRef: 'ref123'
-      }
+
       const mockValidationResult = { id: 'validation-123', valid: false }
 
-      vi.spyOn(controller, 'getUserIdentifiers').mockReturnValue(mockIdentifiers)
-      vi.spyOn(controller, 'validateApplicationData').mockResolvedValue(mockValidationResult)
+      validateApplication.mockResolvedValue(mockValidationResult)
       vi.spyOn(controller, 'handleValidationError').mockReturnValue('error-view')
       vi.spyOn(controller, 'submitLandGrantApplication').mockResolvedValue({ success: true })
 
       const handler = controller.makePostRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
 
-      expect(controller.validateApplicationData).toHaveBeenCalledWith(mockIdentifiers, {})
       expect(controller.handleValidationError).toHaveBeenCalledWith(mockH, mockRequest, mockContext, 'validation-123')
       expect(controller.submitLandGrantApplication).not.toHaveBeenCalled()
       expect(result).toBe('error-view')
@@ -373,16 +255,8 @@ describe('SubmissionPageController', () => {
         redirect: vi.fn(),
         view: vi.fn()
       }
-      const mockIdentifiers = {
-        sbi: '123456789',
-        crn: 'crn123',
-        defraId: 'defraId',
-        frn: 'frn',
-        clientRef: 'ref123'
-      }
 
-      vi.spyOn(controller, 'getUserIdentifiers').mockReturnValue(mockIdentifiers)
-      vi.spyOn(controller, 'validateApplicationData').mockRejectedValue(mockError)
+      validateApplication.mockRejectedValue(mockError)
 
       const handler = controller.makePostRouteHandler()
       await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow(mockError)
@@ -415,17 +289,9 @@ describe('SubmissionPageController', () => {
         redirect: vi.fn(),
         view: vi.fn()
       }
-      const mockIdentifiers = {
-        sbi: '123456789',
-        crn: 'crn123',
-        defraId: 'defraId',
-        frn: 'frn',
-        clientRef: 'ref123'
-      }
       const mockValidationResult = { id: 'validation-123', valid: true }
 
-      vi.spyOn(controller, 'getUserIdentifiers').mockReturnValue(mockIdentifiers)
-      vi.spyOn(controller, 'validateApplicationData').mockResolvedValue(mockValidationResult)
+      validateApplication.mockResolvedValue(mockValidationResult)
       vi.spyOn(controller, 'submitLandGrantApplication').mockRejectedValue(mockError)
 
       const handler = controller.makePostRouteHandler()
@@ -458,25 +324,23 @@ describe('SubmissionPageController', () => {
         redirect: vi.fn().mockReturnValue('redirected'),
         view: vi.fn()
       }
-      const mockIdentifiers = {
-        sbi: '123456789',
-        crn: 'crn123',
-        defraId: 'defraId',
-        frn: 'frn',
-        clientRef: 'ref123'
-      }
+
       const mockValidationResult = { id: 'validation-123', valid: true }
       const mockSubmitResult = { success: true }
 
-      vi.spyOn(controller, 'getUserIdentifiers').mockReturnValue(mockIdentifiers)
-      vi.spyOn(controller, 'validateApplicationData').mockResolvedValue(mockValidationResult)
+      validateApplication.mockResolvedValue(mockValidationResult)
       vi.spyOn(controller, 'submitLandGrantApplication').mockResolvedValue(mockSubmitResult)
       vi.spyOn(controller, 'handleSuccessfulSubmission').mockResolvedValue('proceeded')
 
       const handler = controller.makePostRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
-      expect(controller.validateApplicationData).toHaveBeenCalledWith(mockIdentifiers, {})
+      expect(validateApplication).toHaveBeenCalledWith({
+        applicationId: 'REF123',
+        crn: 'crn123',
+        sbi: '123456789',
+        state: {}
+      })
     })
 
     it('should handle errors from handleSuccessfulSubmission', async () => {
@@ -499,18 +363,10 @@ describe('SubmissionPageController', () => {
         referenceNumber: 'REF123'
       }
       const mockH = {}
-      const mockIdentifiers = {
-        sbi: '123456789',
-        crn: 'crn123',
-        defraId: 'defraId',
-        frn: 'frn',
-        clientRef: 'ref123'
-      }
       const mockValidationResult = { id: 'validation-123', valid: true }
       const mockSubmitResult = { success: true }
 
-      vi.spyOn(controller, 'getUserIdentifiers').mockReturnValue(mockIdentifiers)
-      vi.spyOn(controller, 'validateApplicationData').mockResolvedValue(mockValidationResult)
+      validateApplication.mockResolvedValue(mockValidationResult)
       vi.spyOn(controller, 'submitLandGrantApplication').mockResolvedValue(mockSubmitResult)
       vi.spyOn(controller, 'handleSuccessfulSubmission').mockRejectedValue(mockError)
 

@@ -1,11 +1,11 @@
-import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
-import { parseLandParcel } from '../services/land-grants.service.js'
+import LandGrantsQuestionWithAuthCheckController from '~/src/server/land-grants/controllers/auth/land-grants-question-with-auth-check.controller.js'
+import { parseLandParcel } from '../utils/format-parcel.js'
 
 const checkSelectedLandActionsPath = '/check-selected-land-actions'
 const selectActionsForParcelPath = '/select-actions-for-land-parcel'
 const selectLandParcelPath = '/select-land-parcel'
 
-export default class RemoveActionPageController extends QuestionPageController {
+export default class RemoveActionPageController extends LandGrantsQuestionWithAuthCheckController {
   viewName = 'remove-action'
   parcel = ''
   actionDescription = ''
@@ -174,6 +174,13 @@ export default class RemoveActionPageController extends QuestionPageController {
       if (!parcel) {
         return this.proceed(request, h, checkSelectedLandActionsPath)
       }
+      this.selectedLandParcel = parcelKey
+
+      const authResult = await this.performAuthCheck(request, h)
+      if (authResult) {
+        return authResult
+      }
+
       const actionInfo = this.findActionInfo(landParcels, parcelKey, action)
 
       this.action = action
@@ -192,6 +199,13 @@ export default class RemoveActionPageController extends QuestionPageController {
     return async (request, context, h) => {
       const { state } = context
       const payload = request.payload ?? {}
+
+      this.selectedLandParcel = this.parcel
+
+      const authResult = await this.performAuthCheck(request, h)
+      if (authResult) {
+        return authResult
+      }
 
       const validationError = this.validatePostPayload(payload)
       if (validationError) {

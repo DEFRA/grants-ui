@@ -2,10 +2,13 @@ import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/Q
 import { vi } from 'vitest'
 import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
 import { fetchParcels } from '~/src/server/land-grants/services/land-grants.service.js'
-import LandParcelPageController from './land-parcel-page.controller.js'
+import SelectLandParcelPageController from './select-land-parcel-page.controller.js'
 
 vi.mock('~/src/server/land-grants/services/land-grants.service.js', () => ({
-  fetchParcels: vi.fn(),
+  fetchParcels: vi.fn()
+}))
+
+vi.mock('~/src/server/land-grants/utils/format-parcel.js', () => ({
   stringifyParcel: ({ parcelId, sheetId }) => `${sheetId}-${parcelId}`
 }))
 
@@ -35,9 +38,10 @@ const controllerParcelsResponse = [
   }
 ]
 
-describe('LandParcelPageController', () => {
+describe('SelectLandParcelPageController', () => {
   let controller
   let mockRequest
+  let mockResponseWithCode
   let mockContext
   let mockH
 
@@ -51,6 +55,7 @@ describe('LandParcelPageController', () => {
       isAuthenticated: true,
       credentials: {
         sbi: '106284736',
+        crn: '1102838829',
         name: 'John Doe',
         organisationId: 'org123',
         organisationName: ' Farm 1',
@@ -64,7 +69,7 @@ describe('LandParcelPageController', () => {
 
   const setupH = () => ({
     view: vi.fn().mockReturnValue(renderedViewMock),
-    redirect: vi.fn().mockReturnValue('redirected')
+    response: vi.fn().mockReturnValue(mockResponseWithCode)
   })
 
   beforeEach(() => {
@@ -72,10 +77,11 @@ describe('LandParcelPageController', () => {
       pageTitle: 'Select Land Parcel'
     })
 
-    controller = new LandParcelPageController()
+    controller = new SelectLandParcelPageController()
     controller.proceed = vi.fn().mockResolvedValue('next')
     controller.getNextPath = vi.fn().mockReturnValue('/next-page')
     controller.setState = vi.fn()
+    controller.performAuthCheck = vi.fn().mockResolvedValue(null)
 
     fetchParcels.mockResolvedValue(mockParcelsResponse)
 
@@ -84,6 +90,11 @@ describe('LandParcelPageController', () => {
       sbi: 117235001,
       customerReference: 1100598138
     })
+
+    mockResponseWithCode = {
+      code: vi.fn().mockReturnValue('final-response')
+    }
+
     mockH = setupH()
   })
 
@@ -91,6 +102,88 @@ describe('LandParcelPageController', () => {
 
   it('should have the correct viewName', () => {
     expect(controller.viewName).toBe('select-land-parcel')
+  })
+
+  describe('formatParcelForView', () => {
+    it('formats parcel with area only', () => {
+      const parcel = {
+        parcelId: '0155',
+        sheetId: 'SD7946',
+        area: { unit: 'ha', value: 4.0383 }
+      }
+
+      const result = controller.formatParcelForView(parcel, 0)
+
+      expect(result).toEqual({
+        text: 'SD7946 0155',
+        value: 'SD7946-0155',
+        hint: 'Total size: 4.0383 ha'
+      })
+    })
+
+    it('formats parcel with area and actions', () => {
+      const parcel = {
+        parcelId: '0155',
+        sheetId: 'SD7946',
+        area: { unit: 'ha', value: 4.0383 }
+      }
+
+      const result = controller.formatParcelForView(parcel, 2)
+
+      expect(result).toEqual({
+        text: 'SD7946 0155',
+        value: 'SD7946-0155',
+        hint: 'Total size 4.0383 ha, 2 actions added'
+      })
+    })
+
+    it('formats parcel with single action', () => {
+      const parcel = {
+        parcelId: '0155',
+        sheetId: 'SD7946',
+        area: { unit: 'ha', value: 4.0383 }
+      }
+
+      const result = controller.formatParcelForView(parcel, 1)
+
+      expect(result).toEqual({
+        text: 'SD7946 0155',
+        value: 'SD7946-0155',
+        hint: 'Total size 4.0383 ha, 1 action added'
+      })
+    })
+
+    it('formats parcel with actions only (no area)', () => {
+      const parcel = {
+        parcelId: '0155',
+        sheetId: 'SD7946',
+        area: { unit: null, value: null }
+      }
+
+      const result = controller.formatParcelForView(parcel, 3)
+
+      expect(result).toEqual({
+        text: 'SD7946 0155',
+        value: 'SD7946-0155',
+        hint: '3 actions added'
+      })
+    })
+
+    it('formats parcel with no area and no actions', () => {
+      const parcel = {
+        parcelId: '0155',
+        sheetId: 'SD7946',
+        area: { unit: null, value: null }
+      }
+
+      const result = controller.formatParcelForView(parcel, 0)
+
+      expect(result).toEqual({
+        text: 'SD7946 0155',
+        value: 'SD7946-0155',
+        hint: ''
+      })
+    })
   })
 
   describe('GET route handler', () => {
@@ -163,12 +256,25 @@ describe('LandParcelPageController', () => {
 
       const result = await controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
 
+      expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH)
       expect(controller.setState).toHaveBeenCalledWith(mockRequest, {
         existing: 'value',
         selectedLandParcel: state.selectedLandParcel
       })
       expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-page')
       expect(result).toBe('next')
+    })
+
+    describe('when the user does not own the land parcel', () => {
+      it('should return unauthorized response when user does not own the selected land parcel', async () => {
+        mockRequest.payload = state
+        mockContext = setupContext({ existing: 'value' })
+        controller.performAuthCheck.mockResolvedValue('failed auth check')
+
+        const result = await controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
+
+        expect(result).toEqual('failed auth check')
+      })
     })
 
     it('sets an error if selectedLandParcel is not defined', async () => {
