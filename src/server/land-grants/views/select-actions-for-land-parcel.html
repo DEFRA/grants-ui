@@ -71,7 +71,7 @@
             {% for group in groupedActions %}
               {% if group.actions.length == 1 %}
                 {{ govukCheckboxes({
-                    name: "landAction_" + loop.index,
+                    name: actionFieldPrefix + loop.index,
                     fieldset: {
                       legend: {
                         text: group.name,
