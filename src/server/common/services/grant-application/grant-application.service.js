@@ -133,14 +133,5 @@ export async function submitGrantApplication(code, payload) {
  */
 export async function getApplicationStatus(code, clientRef) {
   const url = `http://localhost:3000/grants/${code}/applications/${clientRef}/status`
-
-  try {
-    const response = await makeGasApiRequest(url, code, { method: 'GET' })
-    return response.json()
-  } catch (error) {
-    if (error.status === 404) {
-      return null
-    }
-    throw error
-  }
+  return makeGasApiRequest(url, code, { method: 'GET' })
 }
