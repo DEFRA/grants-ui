@@ -7,7 +7,8 @@ import { home } from '~/src/server/home/index.js'
 import { sbi } from '~/src/server/sbi/index.js'
 import { createTasklistRoute } from '~/src/server/tasklist/tasklist.controller.js'
 import { agreements } from '~/src/server/agreements/index.js'
-import { mockStatus } from './gas/index.js'
+import { mockStatus } from './gas/status/index.js'
+import { mockApplication } from './gas/application/index.js'
 
 const defraIdEnabled = config.get('defraId.enabled')
 
@@ -24,7 +25,7 @@ export const router = {
       await server.register([health])
 
       // Mock Status route
-      await server.register([mockStatus])
+      await server.register([mockStatus, mockApplication])
 
       // Dev specific routes
       if (!defraIdEnabled) {

@@ -4,6 +4,7 @@ import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/fo
 import { submitGrantApplication } from '~/src/server/common/services/grant-application/grant-application.service.js'
 import { transformStateObjectToGasApplication } from '~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
 import { transformAnswerKeysToText } from './state-to-gas-answers-mapper.js'
+import { applicationStatuses } from '../gas/status/mock-status.controller.js'
 
 export default class DeclarationPageController extends SummaryPageController {
   /**
@@ -79,20 +80,24 @@ export default class DeclarationPageController extends SummaryPageController {
 
         const result = await submitGrantApplication(this.grantCode, applicationData)
 
+        const code = request.params?.slug
+        const clientRef = request.auth.credentials?.sbi
+        const key = `${code}_${clientRef}`
+        applicationStatuses.set(key, 'SUBMITTED')
+
         request.logger.debug('DeclarationController: Got reference number:', result.clientRef)
 
         // Log submission details if available
-        if (result.clientRef) {
-          request.logger.info({
-            message: 'Form submission completed',
-            referenceNumber: result.clientRef,
-            numberOfSubmittedFields: context.relevantState ? Object.keys(context.relevantState).length : 0,
-            timestamp: new Date().toISOString()
-          })
-        }
+        request.logger.info({
+          message: 'Form submission completed',
+          referenceNumber: result.clientRef,
+          numberOfSubmittedFields: context.relevantState ? Object.keys(context.relevantState).length : 0,
+          timestamp: new Date().toISOString()
+        })
 
         // Set confirmation state so the confirmation page knows a submission happened
         await cacheService.setConfirmationState(request, {
+          ...context.state,
           $$__referenceNumber: context.referenceNumber,
           confirmed: true
         })
