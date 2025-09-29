@@ -69,7 +69,8 @@ describe('postToLandGrantsApi', () => {
     expect(message).toBe('Internal Server Error')
   })
 
-  it('should handle network error', async () => {
+  // Ignoring SonarQube issue here, for some reason it doesn't recognise there is an assertion here
+  it('should handle network error', async () => { // NOSONAR
     mockFetch.mockRejectedValueOnce(new Error('Network error'))
 
     await expect(postToLandGrantsApi('/test', {}, mockApiEndpoint)).rejects.toThrow('Network error')
