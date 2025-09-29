@@ -72,10 +72,12 @@ describe('postToLandGrantsApi', () => {
   it('should handle network error', async () => {
     mockFetch.mockRejectedValueOnce(new Error('Network error'))
 
-    await expect(postToLandGrantsApi('/test', {}, mockApiEndpoint)).rejects.toThrow('Network error')
-    expect(
-      "SonarQube can't recognise expectations very well and I can't ignore javascript:S2699 because of linting rules"
-    ).not.toBeNull()
+    try {
+      await postToLandGrantsApi('/test', {}, mockApiEndpoint)
+      expect(true).toBe(false) // Should not reach here
+    } catch (error) {
+      expect(error.message).toBe('Network error')
+    }
   })
 
   it('should handle empty endpoint', async () => {
