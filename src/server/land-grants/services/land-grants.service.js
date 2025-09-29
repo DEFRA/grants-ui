@@ -28,7 +28,7 @@ export const actionGroups = [
 
 /**
  * Calculates grant payment for land actions.
- * @param {LandActions[]} landParcels
+ * @param {LandActions[]} state
  * @returns {Promise<object>} - Payment calculation result
  * @throws {Error}
  */
