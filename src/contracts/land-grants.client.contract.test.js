@@ -9,13 +9,13 @@ const provider = new PactV3({
   spec: SpecificationVersion.SPECIFICATION_VERSION_V4
 })
 
-const parcelExample = { sheetId: 'S382', parcelId: '1234', size: { value: 23.3424, unit: 'ha' } }
+const parcelExample = { sheetId: 'S38232', parcelId: '1234', size: { value: 23.3424, unit: 'ha' } }
 const EXPECTED_BODY = MatchersV3.like({ parcels: MatchersV3.eachLike(parcelExample) })
 
 describe('fetchParcelsSize', () => {
   it('returns HTTP 200 and a list of parcels', async () => {
     await provider
-      .given('has a parcel with ID', { sheetId: 'S382', parcelId: '1234' })
+      .given('has a parcel with ID', { sheetId: 'S38232', parcelId: '1234' })
       .uponReceiving('a request for specific parcels & the "size" field requested')
       .withRequest({
         method: 'POST',
