@@ -7,6 +7,7 @@ import { transformAnswerKeysToText } from './state-to-gas-answers-mapper.js'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { persistSubmissionToApi } from '~/src/server/common/helpers/state/persist-submission-helper.js'
 import { ApplicationStatus } from '~/src/server/common/constants/application-status.js'
+import { applicationStatuses } from '../gas/status/mock-status.controller.js'
 
 export default class DeclarationPageController extends SummaryPageController {
   /**
@@ -115,6 +116,11 @@ export default class DeclarationPageController extends SummaryPageController {
             referenceNumber: context.referenceNumber,
             submittedAt: applicationData.metadata?.submittedAt
           })
+
+          const code = request.params?.slug
+          const clientRef = request.auth.credentials?.sbi
+          const key = `${code}_${clientRef}`
+          applicationStatuses.set(key, 'SUBMITTED')
         }
 
         // Get the redirect path

@@ -81,6 +81,7 @@ describe('FlyingPigsSubmissionPageController', () => {
     await postHandler(mockRequest, mockContext, mockResponseToolkit)
 
     expect(mockCacheService.setConfirmationState).toHaveBeenCalledWith(mockRequest, {
+      ...mockContext.state,
       $$__referenceNumber: '123456',
       confirmed: true
     })
