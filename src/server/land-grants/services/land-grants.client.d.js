@@ -61,8 +61,8 @@
  * @typedef {object} Parcel
  * @property {string} parcelId - The parcel identifier
  * @property {string} sheetId - The sheet identifier
- * @property {Size?} size - The size of the parcel
- * @property {ActionOption[]?} actions - Array of actions available for the parcel
+ * @property {Size | null} size - The size of the parcel
+ * @property {ActionOption[] | null} actions - Array of actions available for the parcel
  */
 
 /**
