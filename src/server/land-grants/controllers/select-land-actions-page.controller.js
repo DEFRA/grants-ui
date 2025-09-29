@@ -234,15 +234,14 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
       const { state: prevState, referenceNumber } = context
       const payload = request.payload ?? {}
       const { sbi, crn } = request.auth.credentials
+      const errors = this.validateUserInput(payload)
+      if (errors.length > 0) {
+        return this.renderErrorView(h, request, context, errors, prevState)
+      }
 
       const authResult = await this.performAuthCheck(request, h)
       if (authResult) {
         return authResult
-      }
-
-      const errors = this.validateUserInput(payload)
-      if (errors.length > 0) {
-        return this.renderErrorView(h, request, context, errors, prevState)
       }
 
       const state = this.createNewStateFromPayload(prevState, payload)
