@@ -1,8 +1,16 @@
-import { config } from '~/src/config/config.js'
 import { formatCurrency } from '~/src/config/nunjucks/filters/format-currency.js'
 import { fetchParcelsForSbi } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
-import { sbiStore } from '../../sbi/state.js'
 import { landActionWithCode } from '~/src/server/land-grants/utils/land-action-with-code.js'
+import { stringifyParcel } from '../utils/format-parcel.js'
+import { stateToLandActionsMapper } from '../mappers/state-to-land-grants-mapper.js'
+
+import { config } from '~/src/config/config.js'
+import {
+  calculate,
+  parcelsWithActionsAndSize,
+  parcelsWithSize,
+  validate
+} from '~/src/server/land-grants/services/land-grants.client.js'
 
 const LAND_GRANTS_API_URL = config.get('landGrants.grantsServiceApiEndpoint')
 
@@ -19,76 +27,18 @@ export const actionGroups = [
 ]
 
 /**
- * Parse land parcel identifier
- * @param {string} landParcel - The land parcel identifier
- * @returns {string[]} - Array containing [sheetId, parcelId]
- */
-export const parseLandParcel = (landParcel) => {
-  return (landParcel || '').split('-')
-}
-
-export const stringifyParcel = ({ parcelId, sheetId }) => `${sheetId}-${parcelId}`
-
-/**
- * Performs a POST request to the Land Grants API.
- * @param {string} endpoint
- * @param {object} body
- * @returns {Promise<any>}
- * @throws {Error}
- */
-export async function postToLandGrantsApi(endpoint, body) {
-  const response = await fetch(`${LAND_GRANTS_API_URL}${endpoint}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(body)
-  })
-
-  if (!response.ok) {
-    /**
-     * @type {Error & {code?: number}}
-     */
-    const error = new Error(response.statusText)
-    error.code = response.status
-    throw error
-  }
-
-  return response.json()
-}
-
-/**
- * Maps land actions into the expected payload structure for the API.
- * @param {{ sheetId: string, parcelId: string, actionsObj: object }} param0
- * @returns {object}
- */
-export const landActionsToApiPayload = ({ sheetId, parcelId, actionsObj, sbi }) => {
-  const sbiValue = sbi || sbiStore.get('sbi') // TODO: change this once DefraID is in place
-  return {
-    sheetId,
-    parcelId,
-    sbi: sbiValue,
-    actions: actionsObj
-      ? Object.entries(actionsObj).map(([code, area]) => ({
-          code,
-          quantity: Number(area.value)
-        }))
-      : []
-  }
-}
-
-/**
  * Calculates grant payment for land actions.
- * @param {{ sheetId: string, parcelId: string, actionsObj: object }} landParcels
+ * @param {LandActions[]} state
  * @returns {Promise<object>} - Payment calculation result
  * @throws {Error}
  */
-export async function calculateGrantPayment(landParcels) {
-  const data = await postToLandGrantsApi('/payments/calculate', landParcels)
-  const paymentTotal = formatCurrency(data.payment?.annualTotalPence / 100)
+export async function calculateGrantPayment(state) {
+  const payload = { landActions: stateToLandActionsMapper(state) }
+  const { payment } = await calculate(payload, LAND_GRANTS_API_URL)
+  const paymentTotal = formatCurrency(payment?.annualTotalPence / 100)
 
   return {
-    ...data,
+    payment,
     errorMessage: paymentTotal == null ? 'Error calculating payment. Please try again later.' : undefined,
     paymentTotal
   }
@@ -97,15 +47,15 @@ export async function calculateGrantPayment(landParcels) {
 /**
  * Fetches available actions for a given parcel.
  * @param {{ parcelId: string, sheetId: string }} parcel
- * @returns {Promise<object>} - Parcel data with actions
+ * @returns - Parcel data with actions
  * @throws {Error}
  */
 export async function fetchAvailableActionsForParcel({ parcelId = '', sheetId = '' }) {
   const parcelIds = [stringifyParcel({ sheetId, parcelId })]
-  const fields = ['actions', 'size']
-  const data = await postToLandGrantsApi('/parcels', { parcelIds, fields })
-  const actions =
-    data.parcels?.find((p) => p.parcelId === parcelId && p.sheetId === sheetId)?.actions.map(mapAction) || []
+
+  const { parcels } = await parcelsWithActionsAndSize(parcelIds, LAND_GRANTS_API_URL)
+
+  const actions = parcels?.find((p) => p.parcelId === parcelId && p.sheetId === sheetId)?.actions?.map(mapAction) || []
   const result = []
   const usedCodes = new Set()
 
@@ -136,7 +86,6 @@ export async function fetchAvailableActionsForParcel({ parcelId = '', sheetId = 
 /**
  *
  * @param {{description: string, code: string}} action
- * @returns {any}
  */
 function mapAction(action) {
   return {
@@ -146,29 +95,15 @@ function mapAction(action) {
 }
 
 /**
- * Validates land actions through the Land Grants API.
- * @param {{ sheetId: string, parcelId: string, actionsObj: object }} payload
- * @returns {Promise<object>} - Validation result
- * @throws {Error}
- */
-export async function triggerApiActionsValidation({ sheetId, parcelId, actionsObj = {} }) {
-  return postToLandGrantsApi('/actions/validate', {
-    landActions: [landActionsToApiPayload({ sheetId, parcelId, actionsObj })]
-  })
-}
-
-/**
  * Fetches parcel size for a list of parcel IDs.
  * @param {string[]} parcelIds
- * @returns {Promise<object>} - Map of parcel string IDs to their sizes
+ * @returns Map of parcel string IDs to their sizes
  * @throws {Error}
  */
 async function fetchParcelsSize(parcelIds) {
-  const data = await postToLandGrantsApi('/parcels', {
-    parcelIds,
-    fields: ['size']
-  })
-  return data.parcels.reduce((acc, p) => {
+  const { parcels } = await parcelsWithSize(parcelIds, LAND_GRANTS_API_URL)
+
+  return parcels.reduce((acc, p) => {
     acc[stringifyParcel(p)] = p.size
     return acc
   }, {})
@@ -196,25 +131,24 @@ export async function fetchParcels(sbi) {
  * @param {object} data
  * @param {string} data.applicationId
  * @param {string} data.crn
- * @param {object} data.landParcels
  * @param {string} data.sbi
- * @returns {Promise<{ id: string}>}
+ * @param {object} data.state
  * @throws {Error}
  */
 export async function validateApplication(data) {
-  const { applicationId, crn, landParcels, sbi } = data
+  const { applicationId, crn, state, sbi } = data
 
   const payload = {
-    applicationId,
+    applicationId: applicationId?.toLowerCase(),
     requester: 'grants-ui',
+    sbi,
     applicantCrn: crn,
-    landActions: Object.entries(landParcels)
-      .filter(([parcelKey]) => parcelKey)
-      .map(([parcelKey, parcelData]) => {
-        const [sheetId, parcelId] = parcelKey.split('-')
-        return landActionsToApiPayload({ sheetId, parcelId, actionsObj: parcelData.actionsObj, sbi })
-      })
+    landActions: stateToLandActionsMapper(state)
   }
 
-  return postToLandGrantsApi('/application/validate', payload)
+  return validate(payload, LAND_GRANTS_API_URL)
 }
+
+/**
+ * @import { LandActions } from './land-grants.client.d.js'
+ */
