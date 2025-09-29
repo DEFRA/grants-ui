@@ -69,15 +69,6 @@ describe('postToLandGrantsApi', () => {
     expect(message).toBe('Internal Server Error')
   })
 
-  it('should handle network error', async () => {
-    mockFetch.mockRejectedValueOnce(new Error('Network error'))
-
-    await expect(postToLandGrantsApi('/test', {}, mockApiEndpoint)).rejects.toThrow('Network error')
-    expect(
-      "SonarQube can't recognise expectations very well and I can't ignore javascript:S2699 because of linting rules"
-    ).not.toBeNull()
-  })
-
   it('should handle empty endpoint', async () => {
     const mockResponse = { success: true }
     mockFetch.mockResolvedValueOnce({
@@ -88,5 +79,14 @@ describe('postToLandGrantsApi', () => {
     await postToLandGrantsApi('', { test: 'data' }, mockApiEndpoint)
 
     expect(mockFetch).toHaveBeenCalledWith(mockApiEndpoint, expect.any(Object))
+  })
+
+  it('should handle network error', async () => {
+    mockFetch.mockRejectedValueOnce(new Error('Network error'))
+
+    await expect(postToLandGrantsApi('/test', {}, mockApiEndpoint)).rejects.toThrow('Network error')
+    expect(
+      "SonarQube can't recognise expectations very well and I can't ignore javascript:S2699 because of linting rules"
+    ).not.toBeNull()
   })
 })
