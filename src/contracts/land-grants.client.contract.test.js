@@ -1,5 +1,5 @@
 import { PactV3, MatchersV3, SpecificationVersion } from '@pact-foundation/pact'
-import { parcelsWithSize } from '../server/land-grants/services/land-grants.client.js'
+import { parcelsWithSize } from '~/src/server/land-grants/services/land-grants.client.js'
 import path from 'path'
 
 const provider = new PactV3({
