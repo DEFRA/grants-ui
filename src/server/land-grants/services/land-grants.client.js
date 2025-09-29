@@ -35,7 +35,7 @@ export async function postToLandGrantsApi(endpoint, body, baseUrl) {
  * @throws {Error}
  */
 export async function calculate(landParcels, baseUrl) {
-  return await postToLandGrantsApi('/payments/calculate', landParcels, baseUrl)
+  return postToLandGrantsApi('/payments/calculate', landParcels, baseUrl)
 }
 
 /**
@@ -45,7 +45,7 @@ export async function calculate(landParcels, baseUrl) {
  * @returns {Promise<{parcels: Parcel[]}>}
  */
 export async function parcelsWithSize(parcelIds, baseUrl) {
-  return await postToLandGrantsApi(
+  return postToLandGrantsApi(
     '/parcels',
     {
       parcelIds,
@@ -62,7 +62,7 @@ export async function parcelsWithSize(parcelIds, baseUrl) {
  * @returns {Promise<ParcelResponse>}
  */
 export async function parcelsWithActionsAndSize(parcelIds, baseUrl) {
-  return await postToLandGrantsApi(
+  return postToLandGrantsApi(
     '/parcels',
     {
       parcelIds,
@@ -80,7 +80,7 @@ export async function parcelsWithActionsAndSize(parcelIds, baseUrl) {
  * @throws {Error}
  */
 export async function validate(request, baseUrl) {
-  return await postToLandGrantsApi('/application/validate', request, baseUrl)
+  return postToLandGrantsApi('/application/validate', request, baseUrl)
 }
 
 /**
