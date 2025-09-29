@@ -46,6 +46,7 @@ export default class FlyingPigsSubmissionPageController extends SummaryPageContr
       request.logger.info('Form submission completed', result)
       const cacheService = getFormsCacheService(request.server)
       await cacheService.setConfirmationState(request, {
+        ...context.state,
         $$__referenceNumber: context.referenceNumber,
         confirmed: true
       })
