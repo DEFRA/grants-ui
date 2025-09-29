@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { vi } from 'vitest'
 import { formatCurrency } from '~/src/config/nunjucks/filters/format-currency.js'
 import { fetchParcelsForSbi } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
@@ -5,10 +6,22 @@ import {
   calculateGrantPayment,
   fetchAvailableActionsForParcel,
   fetchParcels,
-  postToLandGrantsApi,
   validateApplication
-} from './land-grants.service.js'
+} from '~/src/server/land-grants/services/land-grants.service.js'
+import {
+  calculate,
+  parcelsWithSize,
+  parcelsWithActionsAndSize,
+  validate
+} from '~/src/server/land-grants/services/land-grants.client.js'
 const mockApiEndpoint = 'https://land-grants-api'
+
+vi.mock('~/src/server/land-grants/services/land-grants.client.js', () => ({
+  calculate: vi.fn(),
+  parcelsWithSize: vi.fn(),
+  parcelsWithActionsAndSize: vi.fn(),
+  validate: vi.fn()
+}))
 
 vi.mock('~/src/config/nunjucks/filters/format-currency.js')
 vi.mock('~/src/config/config', async () => {
@@ -27,103 +40,17 @@ vi.mock('~/src/server/common/services/consolidated-view/consolidated-view.servic
   fetchParcelsForSbi: vi.fn()
 }))
 
-global.fetch = vi.fn()
-
 describe('land-grants service', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
-  describe('postToLandGrantsApi', () => {
-    it('should make successful POST request', async () => {
-      const mockResponse = { id: 1, status: 'success' }
-      fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => mockResponse
-      })
-
-      const result = await postToLandGrantsApi('/submit', { data: 'test' })
-
-      expect(fetch).toHaveBeenCalledWith(`${mockApiEndpoint}/submit`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ data: 'test' })
-      })
-      expect(result).toEqual(mockResponse)
-    })
-
-    it('should handle 404 error', async () => {
-      fetch.mockResolvedValue({
-        ok: false,
-        status: 404,
-        statusText: 'Not Found'
-      })
-
-      await expect(postToLandGrantsApi('/invalid', {})).rejects.toThrow('Not Found')
-
-      let code, message
-      try {
-        await postToLandGrantsApi('/invalid', {})
-      } catch (error) {
-        code = error.code
-        message = error.message
-      }
-      expect(code).toBe(404)
-      expect(message).toBe('Not Found')
-    })
-
-    it('should handle 500 error', async () => {
-      fetch.mockResolvedValue({
-        ok: false,
-        status: 500,
-        statusText: 'Internal Server Error'
-      })
-
-      await expect(postToLandGrantsApi('/error', {})).rejects.toThrow('Internal Server Error')
-
-      let code, message
-      try {
-        await postToLandGrantsApi('/error', {})
-      } catch (error) {
-        code = error.code
-        message = error.message
-      }
-
-      expect(code).toBe(500)
-      expect(message).toBe('Internal Server Error')
-    })
-
-    it('should handle network error', async () => {
-      fetch.mockRejectedValueOnce(new Error('Network error'))
-
-      await expect(postToLandGrantsApi('/test', {})).rejects.toThrow('Network error')
-    })
-
-    it('should handle empty endpoint', async () => {
-      const mockResponse = { success: true }
-      fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => mockResponse
-      })
-
-      await postToLandGrantsApi('', { test: 'data' })
-
-      expect(fetch).toHaveBeenCalledWith(mockApiEndpoint, expect.any(Object))
-    })
-  })
-
   describe('calculateGrantPayment', () => {
     it('should calculate payment and format amount', async () => {
-      const mockApiResponse = {
-        payment: { annualTotalPence: 123456 },
-        breakdown: { CMOR1: 1000, action2: 23456 }
+      const mockCalculateResponse = {
+        payment: { annualTotalPence: 123456 }
       }
-      fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => mockApiResponse
-      })
+      calculate.mockResolvedValueOnce(mockCalculateResponse)
       formatCurrency.mockReturnValue('£1,234.56')
 
       const result = await calculateGrantPayment({
@@ -138,35 +65,29 @@ describe('land-grants service', () => {
         }
       })
 
-      expect(fetch).toHaveBeenCalledWith(
-        `${mockApiEndpoint}/payments/calculate`,
+      expect(calculate).toHaveBeenCalledWith(
         expect.objectContaining({
-          body: JSON.stringify({
-            landActions: [
-              {
-                sheetId: 'SD1234',
-                parcelId: '5678',
-                actions: [{ code: 'CMOR1', quantity: 10 }]
-              }
-            ]
-          })
-        })
+          landActions: [
+            {
+              sheetId: 'SD1234',
+              parcelId: '5678',
+              actions: [{ code: 'CMOR1', quantity: 10 }]
+            }
+          ]
+        }),
+        mockApiEndpoint
       )
       expect(formatCurrency).toHaveBeenCalledWith(1234.56)
       expect(result).toEqual({
         payment: { annualTotalPence: 123456 },
-        breakdown: { CMOR1: 1000, action2: 23456 },
         paymentTotal: '£1,234.56',
         errorMessage: undefined
       })
     })
 
     it('should handle zero payment amount', async () => {
-      const mockApiResponse = { payment: { total: 0 } }
-      fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => mockApiResponse
-      })
+      const mockCalculateResponse = { payment: { total: 0 } }
+      calculate.mockResolvedValueOnce(mockCalculateResponse)
       formatCurrency.mockReturnValue('£0.00')
 
       const result = await calculateGrantPayment({
@@ -182,13 +103,11 @@ describe('land-grants service', () => {
     })
 
     it('should handle missing payment data with error message', async () => {
-      const mockApiResponse = {
+      const mockCalculateResponse = {
         /* no payment property */
       }
-      fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => mockApiResponse
-      })
+      calculate.mockResolvedValueOnce(mockCalculateResponse)
+
       formatCurrency.mockReturnValue(null)
 
       const result = await calculateGrantPayment({
@@ -202,11 +121,8 @@ describe('land-grants service', () => {
     })
 
     it('should handle null payment total with error message', async () => {
-      const mockApiResponse = { payment: { total: null } }
-      fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => mockApiResponse
-      })
+      const mockCalculateResponse = { payment: { total: null } }
+      calculate.mockResolvedValueOnce(mockCalculateResponse)
       formatCurrency.mockReturnValue(null)
 
       const result = await calculateGrantPayment({
@@ -220,7 +136,7 @@ describe('land-grants service', () => {
     })
 
     it('should propagate API errors', async () => {
-      fetch.mockRejectedValueOnce(new Error('API error'))
+      calculate.mockRejectedValueOnce(new Error('API error'))
 
       await expect(
         calculateGrantPayment({
@@ -259,25 +175,14 @@ describe('land-grants service', () => {
           }
         ]
       }
-      fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => mockApiResponse
-      })
+      parcelsWithActionsAndSize.mockResolvedValueOnce(mockApiResponse)
 
       const result = await fetchAvailableActionsForParcel({
         parcelId: 'PARCEL456',
         sheetId: 'SHEET123'
       })
 
-      expect(fetch).toHaveBeenCalledWith(
-        `${mockApiEndpoint}/parcels`,
-        expect.objectContaining({
-          body: JSON.stringify({
-            parcelIds: ['SHEET123-PARCEL456'],
-            fields: ['actions', 'size']
-          })
-        })
-      )
+      expect(parcelsWithActionsAndSize).toHaveBeenCalledWith(['SHEET123-PARCEL456'], mockApiEndpoint)
 
       expect(result).toEqual([
         {
@@ -342,10 +247,8 @@ describe('land-grants service', () => {
           }
         ]
       }
-      fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => mockApiResponse
-      })
+
+      parcelsWithActionsAndSize.mockResolvedValueOnce(mockApiResponse)
 
       const result = await fetchAvailableActionsForParcel({
         parcelId: 'PARCEL456',
@@ -402,10 +305,8 @@ describe('land-grants service', () => {
           }
         ]
       }
-      fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => mockApiResponse
-      })
+
+      parcelsWithActionsAndSize.mockResolvedValueOnce(mockApiResponse)
 
       const result = await fetchAvailableActionsForParcel({
         parcelId: 'PARCEL456',
@@ -429,22 +330,12 @@ describe('land-grants service', () => {
 
     it('should handle empty parcel parameters', async () => {
       const mockApiResponse = { parcels: [] }
-      fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => mockApiResponse
-      })
+
+      parcelsWithActionsAndSize.mockResolvedValueOnce(mockApiResponse)
 
       const result = await fetchAvailableActionsForParcel({})
 
-      expect(fetch).toHaveBeenCalledWith(
-        `${mockApiEndpoint}/parcels`,
-        expect.objectContaining({
-          body: JSON.stringify({
-            parcelIds: ['-'],
-            fields: ['actions', 'size']
-          })
-        })
-      )
+      expect(parcelsWithActionsAndSize).toHaveBeenCalledWith(['-'], mockApiEndpoint)
       expect(result).toEqual([])
     })
 
@@ -458,10 +349,8 @@ describe('land-grants service', () => {
           }
         ]
       }
-      fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => mockApiResponse
-      })
+
+      parcelsWithActionsAndSize.mockResolvedValueOnce(mockApiResponse)
 
       const result = await fetchAvailableActionsForParcel({
         parcelId: 'PARCEL456',
@@ -481,10 +370,8 @@ describe('land-grants service', () => {
           }
         ]
       }
-      fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => mockApiResponse
-      })
+
+      parcelsWithActionsAndSize.mockResolvedValueOnce(mockApiResponse)
 
       const result = await fetchAvailableActionsForParcel({
         parcelId: 'PARCEL456',
@@ -511,10 +398,8 @@ describe('land-grants service', () => {
           }
         ]
       }
-      fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => mockApiResponse
-      })
+
+      parcelsWithActionsAndSize.mockResolvedValueOnce(mockApiResponse)
 
       const result = await fetchAvailableActionsForParcel({
         parcelId: 'PARCEL456',
@@ -565,10 +450,8 @@ describe('land-grants service', () => {
           }
         ]
       }
-      fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => mockApiResponse
-      })
+
+      parcelsWithActionsAndSize.mockResolvedValueOnce(mockApiResponse)
 
       const result = await fetchAvailableActionsForParcel({
         parcelId: 'PARCEL456',
@@ -604,7 +487,7 @@ describe('land-grants service', () => {
     })
 
     it('should handle API errors', async () => {
-      fetch.mockRejectedValueOnce(new Error('API error'))
+      parcelsWithActionsAndSize.mockRejectedValueOnce(new Error('API error'))
 
       await expect(
         fetchAvailableActionsForParcel({
@@ -637,23 +520,12 @@ describe('land-grants service', () => {
       }
 
       fetchParcelsForSbi.mockResolvedValueOnce(mockParcels)
-      fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => mockSizeResponse
-      })
+      parcelsWithSize.mockResolvedValueOnce(mockSizeResponse)
 
       const result = await fetchParcels('106284736')
 
       expect(fetchParcelsForSbi).toHaveBeenCalledWith('106284736')
-      expect(fetch).toHaveBeenCalledWith(
-        `${mockApiEndpoint}/parcels`,
-        expect.objectContaining({
-          body: JSON.stringify({
-            parcelIds: ['SHEET1-PARCEL1', 'SHEET2-PARCEL2'],
-            fields: ['size']
-          })
-        })
-      )
+      expect(parcelsWithSize).toHaveBeenCalledWith(['SHEET1-PARCEL1', 'SHEET2-PARCEL2'], mockApiEndpoint)
       expect(result).toEqual([
         {
           parcelId: 'PARCEL1',
@@ -685,10 +557,7 @@ describe('land-grants service', () => {
       }
 
       fetchParcelsForSbi.mockResolvedValueOnce(mockParcels)
-      fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => mockSizeResponse
-      })
+      parcelsWithSize.mockResolvedValueOnce(mockSizeResponse)
 
       const result = await fetchParcels('106284736')
 
@@ -711,10 +580,7 @@ describe('land-grants service', () => {
       const mockSizeResponse = { parcels: [] }
 
       fetchParcelsForSbi.mockResolvedValueOnce(mockParcels)
-      fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => mockSizeResponse
-      })
+      parcelsWithSize.mockResolvedValueOnce(mockSizeResponse)
 
       const result = await fetchParcels('106284736')
 
@@ -730,7 +596,7 @@ describe('land-grants service', () => {
     it('should handle size API error', async () => {
       const mockParcels = [{ parcelId: 'PARCEL1', sheetId: 'SHEET1' }]
       fetchParcelsForSbi.mockResolvedValueOnce(mockParcels)
-      fetch.mockRejectedValueOnce(new Error('Size API error'))
+      parcelsWithSize.mockRejectedValueOnce(new Error('Size API error'))
 
       await expect(fetchParcels('106284736')).rejects.toThrow('Size API error')
     })
@@ -739,10 +605,7 @@ describe('land-grants service', () => {
   describe('validateApplication', () => {
     it('should call the validation application API', async () => {
       const mockApiResponse = { id: '123456' }
-      fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => mockApiResponse
-      })
+      validate.mockResolvedValueOnce(mockApiResponse)
 
       const result = await validateApplication({
         applicationId: '123456',
@@ -753,17 +616,15 @@ describe('land-grants service', () => {
         sbi: '106284736'
       })
 
-      expect(fetch).toHaveBeenCalledWith(
-        `${mockApiEndpoint}/application/validate`,
-        expect.objectContaining({
-          body: JSON.stringify({
-            applicationId: '123456',
-            requester: 'grants-ui',
-            sbi: '106284736',
-            applicantCrn: '123456',
-            landActions: [{ sheetId: 'SHEET1', parcelId: 'PARCEL1', actions: [{ code: 'CMOR1', quantity: 10 }] }]
-          })
-        })
+      expect(validate).toHaveBeenCalledWith(
+        {
+          applicationId: '123456',
+          requester: 'grants-ui',
+          applicantCrn: '123456',
+          sbi: '106284736',
+          landActions: [{ sheetId: 'SHEET1', parcelId: 'PARCEL1', actions: [{ code: 'CMOR1', quantity: 10 }] }]
+        },
+        mockApiEndpoint
       )
       expect(result).toEqual(mockApiResponse)
     })
