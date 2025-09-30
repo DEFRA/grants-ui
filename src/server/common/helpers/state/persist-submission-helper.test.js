@@ -184,8 +184,9 @@ describe('persistSubmissionToApi', () => {
     })
 
     it('should return early when backend endpoint is not configured', async () => {
-      await persistSubmissionToApi(TEST_SUBMISSION)
+      const result = await persistSubmissionToApi(TEST_SUBMISSION)
 
+      expect(result).toBeUndefined()
       expect(fetch).not.toHaveBeenCalled()
       expect(log).not.toHaveBeenCalled()
       expect(mockCreateApiHeaders).not.toHaveBeenCalled()

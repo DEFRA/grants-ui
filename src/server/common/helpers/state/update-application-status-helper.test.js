@@ -198,8 +198,9 @@ describe('updateApplicationStatus', () => {
     })
 
     it('should return early when backend endpoint is not configured', async () => {
-      await updateApplicationStatus(APPLICATION_STATUS, KEY)
+      const result = await updateApplicationStatus(APPLICATION_STATUS, KEY)
 
+      expect(result).toBeUndefined()
       expect(fetch).not.toHaveBeenCalled()
       expect(log).not.toHaveBeenCalled()
       expect(mockCreateApiHeaders).not.toHaveBeenCalled()
