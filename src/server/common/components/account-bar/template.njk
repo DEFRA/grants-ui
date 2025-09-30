@@ -9,11 +9,11 @@
         </div>
 
         <div class="govuk-grid-column-one-third-from-desktop govuk-!-margin-bottom-2 defra-account-bar__headings defra-account-bar__headings--right-aligned">
-          <span class="govuk-!-display-block">
-            <span class="govuk-visually-hidden">Signed in as </span>
-            {{ params.name }}
-          </span>
-          <a class="govuk-!-font-size-16 govuk-link--no-underline" href="/auth/sign-out">Sign out</a>
+          <span class="govuk-visually-hidden">Signed in as </span>
+          {{ params.name }}
+          <div class="govuk-!-font-size-16 govuk-!-font-weight-regular govuk-!-margin-top-1"">
+            <a class="govuk-link govuk-link--no-visited-state" href="/auth/sign-out">Sign out</a>
+          </div>
         </div>
       </div>
     </div>
