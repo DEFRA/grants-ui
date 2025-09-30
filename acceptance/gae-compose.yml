@@ -20,7 +20,6 @@ services:
 
   selenium-chrome:
     image: selenium/standalone-chrome
-    #image: seleniarm/standalone-chrome
     # To set SELENIUM_ARCHITECTURE, create a .env file in this directory with:
     # SELENIUM_ARCHITECTURE=linux/arm64  # for Apple Silicon (M1/M2/M3) 
     # Intel/AMD is default
