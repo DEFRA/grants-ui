@@ -27,7 +27,7 @@
  * @returns {GASPayload}
  */
 export const transformStateObjectToGasApplication = (
-  { sbi, frn, crn, defraId, clientRef },
+  { sbi, frn = 'frn', crn, defraId = 'defraId', clientRef },
   state,
   transformAnswers
 ) => ({

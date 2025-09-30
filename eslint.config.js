@@ -13,7 +13,7 @@ export default [
   {
     rules: {
       'no-console': 'error',
-
+      curly: ['error', 'all'],
       '@stylistic/space-before-function-paren': 'off',
       '@stylistic/quotes': 'off',
       '@stylistic/eol-last': 'off',
