@@ -34,8 +34,8 @@ describe('fetchParcelsSize', () => {
 
 describe('parcelsWithActionsAndSize', () => {
   const parcelWithActionsAndSizeExample = {
-    parcelId: 'PARCEL456',
-    sheetId: 'SHEET123',
+    parcelId: 'S38234',
+    sheetId: '1235',
     size: { value: 23.3424, unit: 'ha' },
     actions: [
       {
@@ -59,17 +59,17 @@ describe('parcelsWithActionsAndSize', () => {
 
   it('returns HTTP 200 and a list of parcels with actions and size', async () => {
     await provider
-      .given('has a parcel with ID', { sheetId: 'S38232', parcelId: '1234' })
+      .given('has a parcel with ID', { sheetId: 'S38234', parcelId: '1235' })
       .uponReceiving('a request for specific parcels & the "actions" and "size" fields requested')
       .withRequest({
         method: 'POST',
         path: '/parcels',
         headers: { 'Content-Type': 'application/json' },
-        body: { parcelIds: ['S38232-1234'], fields: ['actions', 'size'] }
+        body: { parcelIds: ['S38234-1235'], fields: ['actions', 'size'] }
       })
       .willRespondWith({ status: 200, headers: { 'Content-Type': 'application/json' }, body: EXPECTED_BODY })
       .executeTest(async (mockserver) => {
-        const response = await parcelsWithActionsAndSize(['S38232-1234'], mockserver.url)
+        const response = await parcelsWithActionsAndSize(['S38234-1235'], mockserver.url)
 
         expect(response.parcels[0]).toEqual(parcelWithActionsAndSizeExample)
       })

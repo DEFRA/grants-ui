@@ -184,6 +184,8 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
       this.selectedLandParcel = request?.query?.parcelId || state.selectedLandParcel
       const [sheetId = '', parcelId = ''] = parseLandParcel(this.selectedLandParcel)
 
+      const existingLandParcels = Object.keys(state.landParcels || {}).length > 0
+
       const authResult = await this.performAuthCheck(request, h)
       if (authResult) {
         return authResult
@@ -211,6 +213,7 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
         ...state,
         addedActions: this.addedActions,
         parcelName: `${sheetId} ${parcelId}`,
+        existingLandParcels,
         errors: collection.getErrors(collection.getErrors())
       }
 
