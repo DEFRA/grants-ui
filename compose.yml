@@ -113,7 +113,7 @@ services:
       WELL_KNOWN_API_HOST_OVERRIDE: ${WELL_KNOWN_API_HOST_OVERRIDE:-http://fcp-defra-id-stub:3007}
       PORT: 3007
       AUTH_MODE: ${AUTH_MODE:-basic}
-      AUTH_OVERRIDE: ${AUTH_OVERRIDE}
+      AUTH_OVERRIDE: ${AUTH_OVERRIDE:-}
       AUTH_OVERRIDE_FILE: ${AUTH_OVERRIDE_FILE:-users.json}
     volumes:
       - ./fcp-defra-id-stub/users.json:/data/users.json

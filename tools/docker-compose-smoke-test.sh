@@ -28,8 +28,11 @@ else
     exit 1
 fi
 
+COMPOSE_COMMAND='docker compose -f compose.yml -f compose.ci.override.yml'
+echo "Building docker compose containers..."
+eval "${COMPOSE_COMMAND} build --quiet > /dev/null 2>&1"
 echo "Starting services with docker compose..."
-docker compose -f compose.yml -f compose.ci.override.yml up -d --build
+eval "${COMPOSE_COMMAND} up -d --quiet-pull"
 
 echo "Waiting for services to be healthy..."
 ATTEMPTS=0
@@ -40,7 +43,7 @@ until docker compose ps grants-ui | grep -q "Up"; do
     if [ ${ATTEMPTS} -eq ${MAX_ATTEMPTS} ]; then
         echo "Error: Timed out waiting for grants-ui service to start."
         docker compose ps
-        docker compose -f compose.yml -f compose.ci.override.yml down
+        eval "${COMPOSE_COMMAND} down"
         exit 1
     fi
     printf '.'
@@ -76,10 +79,10 @@ docker compose ps
 if [ -n "${ACCEPTANCE_TESTS_HOOK:-}" ]; then
   echo "Running Acceptance Tests..."
   cd acceptance
-  bash -eu -o pipefail -c "${ACCEPTANCE_TESTS_HOOK}"
+  eval "${ACCEPTANCE_TESTS_HOOK}"
   cd ..
 fi
 
-docker compose -f compose.yml -f compose.ci.override.yml down
+eval "${COMPOSE_COMMAND} down"
 echo ""
 echo "Tests complete."
