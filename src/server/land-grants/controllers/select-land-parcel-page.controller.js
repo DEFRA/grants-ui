@@ -86,6 +86,7 @@ export default class SelectLandParcelPageController extends LandGrantsQuestionWi
 
       const { viewName } = this
       const baseViewModel = super.getViewModel(request, context)
+      const existingLandParcels = Object.keys(landParcels || {}).length > 0
 
       try {
         const parcels = await fetchParcels(sbi)
@@ -99,7 +100,8 @@ export default class SelectLandParcelPageController extends LandGrantsQuestionWi
         const viewModel = {
           ...baseViewModel,
           parcels: this.parcels,
-          selectedLandParcel
+          selectedLandParcel,
+          existingLandParcels
         }
 
         return h.view(viewName, viewModel)
@@ -109,6 +111,7 @@ export default class SelectLandParcelPageController extends LandGrantsQuestionWi
 
         return h.view(viewName, {
           ...baseViewModel,
+          existingLandParcels,
           errors: [errorMessage]
         })
       }
