@@ -1,6 +1,7 @@
 import { StatusPageController } from '@defra/forms-engine-plugin/controllers/StatusPageController.js'
 import { getConfirmationPath, storeSlugInContext } from '~/src/server/common/helpers/form-slug-helper.js'
 import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/forms-cache.js'
+import { ApplicationStatus } from '~/src/server/common/constants/application-status.js'
 
 export default class ConfirmationPageController extends StatusPageController {
   viewName = 'confirmation-page.html'
