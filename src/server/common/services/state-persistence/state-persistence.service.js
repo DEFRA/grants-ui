@@ -16,6 +16,8 @@ export class StatePersistenceService extends CacheService {
     this.logger = server.logger
   }
 
+  UNKNOWN_SESSION = 'unknown session'
+
   /**
    * Get form state from backend persistence.
    * @param {import('../plugins/engine/types.js').AnyRequest} request
@@ -50,7 +52,7 @@ export class StatePersistenceService extends CacheService {
   async getConfirmationState(request) {
     // NO-OP because you want to keep state even after submission
     const key = this._ConfirmationKey(request)
-    this.logger?.info(`getConfirmationState called for ${key || 'unknown session'}, but no action taken.`)
+    this.logger?.info(`getConfirmationState called for ${key || this.UNKNOWN_SESSION}, but no action taken.`)
   }
 
   /**
@@ -59,12 +61,12 @@ export class StatePersistenceService extends CacheService {
    * The state is saved to the backend API rather than in-memory cache.
    *
    * @param {import('@hapi/hapi').Request} request
-   * @param {{ confirmed?: true }} confirmationState
+   * @param {{ confirmed?: true }} _confirmationState
    */
-  async setConfirmationState(request, confirmationState) {
+  async setConfirmationState(request, _confirmationState) {
     // NO-OP because you want to keep state even after submission
     const key = this._ConfirmationKey(request)
-    this.logger?.info(`setConfirmationState called for ${key || 'unknown session'}, but no action taken.`)
+    this.logger?.info(`setConfirmationState called for ${key || this.UNKNOWN_SESSION}, but no action taken.`)
   }
 
   /**
@@ -74,7 +76,7 @@ export class StatePersistenceService extends CacheService {
   async clearState(request) {
     // NO-OP because you want to keep state even after submission
     const key = this._Key(request)
-    this.logger?.info(`clearState called for ${key || 'unknown session'}, but no action taken.`)
+    this.logger?.info(`clearState called for ${key || this.UNKNOWN_SESSION}, but no action taken.`)
   }
 
   /**

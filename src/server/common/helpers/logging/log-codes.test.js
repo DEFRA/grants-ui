@@ -65,6 +65,12 @@ const TEST_ENDPOINTS = {
 const TEST_PORTS = {
   DEFAULT: 3000
 }
+
+const TEST_METHODS = {
+  GET: 'GET',
+  POST: 'POST'
+}
+
 describe('LogCodes', () => {
   describe('AUTH log codes', () => {
     it.each([
@@ -446,6 +452,17 @@ describe('LogCodes', () => {
         'info',
         { endpoint: TEST_ENDPOINTS.API_GRANTS, userId: TEST_USER_IDS.DEFAULT },
         `External API call to ${TEST_ENDPOINTS.API_GRANTS} for user=${TEST_USER_IDS.DEFAULT}`
+      ],
+      [
+        'EXTERNAL_API_CALL_DEBUG',
+        'debug',
+        {
+          endpoint: TEST_ENDPOINTS.API_GRANTS,
+          error: TEST_ERRORS.CONNECTION_FAILED,
+          method: TEST_METHODS.GET,
+          identity: TEST_USER_IDS.DEFAULT
+        },
+        `External ${TEST_METHODS.GET} API call to ${TEST_ENDPOINTS.API_GRANTS} for identity=${TEST_USER_IDS.DEFAULT} - summary="N/A"`
       ],
       ['SYSTEM_SHUTDOWN', 'info', {}, 'System shutdown initiated'],
       [
