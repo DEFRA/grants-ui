@@ -129,7 +129,7 @@ describe('fetchSavedStateFromApi', () => {
           method: 'GET',
           endpoint: expect.stringContaining('/state/'),
           identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.ORGANISATION_ID}:${TEST_USER_IDS.GRANT_ID}`,
-          stateSummary: 'No state found in backend'
+          summary: 'No state found in backend'
         })
       )
     })

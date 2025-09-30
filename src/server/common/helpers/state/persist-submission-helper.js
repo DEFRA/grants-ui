@@ -1,27 +1,23 @@
 import 'dotenv/config'
 import { config } from '~/src/config/config.js'
-import { parseSessionKey } from './get-cache-key-helper.js'
 import { createApiHeaders } from './backend-auth-helper.js'
 import { log, LogCodes } from '../logging/log.js'
 
 const GRANTS_UI_BACKEND_ENDPOINT = config.get('session.cache.apiEndpoint')
 
-export async function persistStateToApi(state, key) {
+export async function persistSubmissionToApi(submission) {
   if (!GRANTS_UI_BACKEND_ENDPOINT?.length) {
     return
   }
 
-  const url = new URL('/state/', GRANTS_UI_BACKEND_ENDPOINT)
-
-  const { sbi, grantCode } = parseSessionKey(key)
+  const url = new URL('/submissions', GRANTS_UI_BACKEND_ENDPOINT)
 
   log(LogCodes.SYSTEM.EXTERNAL_API_CALL_DEBUG, {
     method: 'POST',
     endpoint: url.href,
-    identity: key,
     summary: {
-      hasReference: Boolean(state?.$$__referenceNumber),
-      keyCount: Object.keys(state || {}).length
+      hasReference: Boolean(submission?.referenceNumber),
+      keyCount: Object.keys(submission || {}).length
     }
   })
 
@@ -30,10 +26,8 @@ export async function persistStateToApi(state, key) {
       method: 'POST',
       headers: createApiHeaders(),
       body: JSON.stringify({
-        sbi,
-        grantCode,
-        grantVersion: 1, // TODO: Update when support for same grant versioning is implemented
-        state
+        ...submission,
+        grantVersion: 1 // TODO: Update when support for same grant versioning is implemented
       })
     })
 
@@ -41,7 +35,7 @@ export async function persistStateToApi(state, key) {
       log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
         method: 'POST',
         endpoint: url.href,
-        identity: key,
+        referenceNumber: submission.referenceNumber,
         error: `${response.status} - ${response.statusText}`
       })
     }
@@ -49,7 +43,7 @@ export async function persistStateToApi(state, key) {
     log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
       method: 'POST',
       endpoint: url.href,
-      identity: key,
+      referenceNumber: submission.referenceNumber,
       error: err.message
     })
     // TODO: See TGC-781

@@ -48,9 +48,9 @@ export class StatePersistenceService extends CacheService {
    * @returns {Promise<{ confirmed?: true }>} Confirmation state
    */
   async getConfirmationState(request) {
+    // NO-OP because you want to keep state even after submission
     const key = this._ConfirmationKey(request)
-    const state = await fetchSavedStateFromApi(key)
-    return state ?? {}
+    this.logger?.info(`getConfirmationState called for ${key || 'unknown session'}, but no action taken.`)
   }
 
   /**
@@ -62,9 +62,9 @@ export class StatePersistenceService extends CacheService {
    * @param {{ confirmed?: true }} confirmationState
    */
   async setConfirmationState(request, confirmationState) {
+    // NO-OP because you want to keep state even after submission
     const key = this._ConfirmationKey(request)
-    await persistStateToApi(confirmationState, key)
-    return confirmationState
+    this.logger?.info(`setConfirmationState called for ${key || 'unknown session'}, but no action taken.`)
   }
 
   /**

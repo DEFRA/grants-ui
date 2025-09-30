@@ -84,11 +84,11 @@ describe('Backend Auth Helper', () => {
         expect(mockConfigGet).toHaveBeenCalledWith(CONFIG_SESSION_CACHE_AUTH_TOKEN)
         expect(headers).toHaveProperty('Content-Type', 'application/json')
         expect(headers).toHaveProperty('Authorization')
-        expect(headers.Authorization).toMatch(/^Basic [A-Za-z0-9+/]+=*$/)
+        expect(headers.Authorization).toMatch(/^Bearer [A-Za-z0-9+/]+=*$/)
 
-        const base64Part = headers.Authorization.replace('Basic ', '')
+        const base64Part = headers.Authorization.replace('Bearer ', '')
         const decoded = Buffer.from(base64Part, 'base64').toString('utf-8')
-        expect(decoded).toMatch(/^:([A-Za-z0-9+/]+=*):([A-Za-z0-9+/]+=*):([A-Za-z0-9+/]+=*)$/)
+        expect(decoded).toMatch(/^([A-Za-z0-9+/]+=*):([A-Za-z0-9+/]+=*):([A-Za-z0-9+/]+=*)$/)
       })
 
       it('should work with empty base headers', async () => {
@@ -99,11 +99,11 @@ describe('Backend Auth Helper', () => {
 
         expect(mockConfigGet).toHaveBeenCalledWith(CONFIG_SESSION_CACHE_AUTH_TOKEN)
         expect(headers).toHaveProperty('Authorization')
-        expect(headers.Authorization).toMatch(/^Basic [A-Za-z0-9+/]+=*$/)
+        expect(headers.Authorization).toMatch(/^Bearer [A-Za-z0-9+/]+=*$/)
 
-        const base64Part = headers.Authorization.replace('Basic ', '')
+        const base64Part = headers.Authorization.replace('Bearer ', '')
         const decoded = Buffer.from(base64Part, 'base64').toString('utf-8')
-        expect(decoded).toMatch(/^:([A-Za-z0-9+/]+=*):([A-Za-z0-9+/]+=*):([A-Za-z0-9+/]+=*)$/)
+        expect(decoded).toMatch(/^([A-Za-z0-9+/]+=*):([A-Za-z0-9+/]+=*):([A-Za-z0-9+/]+=*)$/)
       })
 
       it('should preserve all base headers when adding auth', async () => {
@@ -123,11 +123,11 @@ describe('Backend Auth Helper', () => {
         expect(headers).toHaveProperty('User-Agent', TEST_HEADERS.USER_AGENT)
         expect(headers).toHaveProperty('X-Custom-Header', TEST_HEADERS.CUSTOM_VALUE)
         expect(headers).toHaveProperty('Authorization')
-        expect(headers.Authorization).toMatch(/^Basic [A-Za-z0-9+/]+=*$/)
+        expect(headers.Authorization).toMatch(/^Bearer [A-Za-z0-9+/]+=*$/)
 
-        const base64Part = headers.Authorization.replace('Basic ', '')
+        const base64Part = headers.Authorization.replace('Bearer ', '')
         const decoded = Buffer.from(base64Part, 'base64').toString('utf-8')
-        expect(decoded).toMatch(/^:([A-Za-z0-9+/]+=*):([A-Za-z0-9+/]+=*):([A-Za-z0-9+/]+=*)$/)
+        expect(decoded).toMatch(/^([A-Za-z0-9+/]+=*):([A-Za-z0-9+/]+=*):([A-Za-z0-9+/]+=*)$/)
       })
     })
 
@@ -173,11 +173,11 @@ describe('Backend Auth Helper', () => {
 
       expect(headers).toHaveProperty('Content-Type', 'application/json')
       expect(headers).toHaveProperty('Authorization')
-      expect(headers.Authorization).toMatch(/^Basic [A-Za-z0-9+/]+=*$/)
+      expect(headers.Authorization).toMatch(/^Bearer [A-Za-z0-9+/]+=*$/)
 
-      const base64Part = headers.Authorization.replace('Basic ', '')
+      const base64Part = headers.Authorization.replace('Bearer ', '')
       const decoded = Buffer.from(base64Part, 'base64').toString('utf-8')
-      expect(decoded).toMatch(/^:([A-Za-z0-9+/]+=*):([A-Za-z0-9+/]+=*):([A-Za-z0-9+/]+=*)$/)
+      expect(decoded).toMatch(/^([A-Za-z0-9+/]+=*):([A-Za-z0-9+/]+=*):([A-Za-z0-9+/]+=*)$/)
     })
   })
 
@@ -189,10 +189,10 @@ describe('Backend Auth Helper', () => {
       const headers = createAuthenticatedHeaders()
       const authHeader = headers.Authorization
 
-      const base64Part = authHeader.replace('Basic ', '')
+      const base64Part = authHeader.replace('Bearer ', '')
       const decoded = Buffer.from(base64Part, 'base64').toString('utf-8')
 
-      expect(decoded).toMatch(/^:([A-Za-z0-9+/]+=*):([A-Za-z0-9+/]+=*):([A-Za-z0-9+/]+=*)$/)
+      expect(decoded).toMatch(/^([A-Za-z0-9+/]+=*):([A-Za-z0-9+/]+=*):([A-Za-z0-9+/]+=*)$/)
     })
   })
 
@@ -216,9 +216,9 @@ describe('Backend Auth Helper', () => {
       expect(mockConfigGet).toHaveBeenCalledWith(CONFIG_SESSION_CACHE_AUTH_TOKEN)
       expect(mockConfigGet).toHaveBeenCalledWith(CONFIG_SESSION_CACHE_ENCRYPTION_KEY)
       expect(headers.Authorization).toBeDefined()
-      expect(headers.Authorization).toMatch(/^Basic /)
+      expect(headers.Authorization).toMatch(/^Bearer /)
 
-      const base64Part = headers.Authorization.replace('Basic ', '')
+      const base64Part = headers.Authorization.replace('Bearer ', '')
       const decoded = Buffer.from(base64Part, 'base64').toString('utf-8')
       const tokenPart = decoded.substring(1)
 
