@@ -161,6 +161,8 @@ services:
     volumes:
     - mongodb-data:/data
     restart: always
+    # Suppress client metadata logs - sadly this couldnt be done in the mongod.conf file or by command
+    command: sh -c "mongod --quiet 2>&1 | grep -v 'client metadata'"
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 10s
