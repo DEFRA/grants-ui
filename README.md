@@ -635,6 +635,32 @@ All logging components include comprehensive test coverage:
 - **Integration Tests**: Test logging in request/response cycles
 - **Mock Testing**: Mock logger for testing without actual log output
 
+### Acceptance Testing
+
+Acceptance Tests for the grants-ui platform will be developed by multiple teams for their own grant journeys, each creating their own journey test suite in CDP. These test suites are run as images in the grants-ui CI against a containerised system which includes the frontend, backend, scoring service, Redis and Mongo, with stubs for Defra ID and GAS.
+
+#### Compose files
+
+The main repository `compose.yml` file will stand up the system at `http://localhost:3000`. There is also a `compose.ci.override.yml` override file which is used to run acceptance tests. This adds an nginx proxy and stands the system up at `https://grants-ui-proxy:4000` inside the Docker network with a self-signed certificate. This override approach has been taken to allow local development to continue using HTTP, whilst to work correctly with the Defra ID stub inside the Docker network, the acceptance tests need to run over HTTPS.
+
+#### Changes to Journey Test Repositories
+
+To support this concept journey test repositories must:
+
+- Publish an image to Docker Hub as per the services
+- Allow a command to be passed to the entrypoint script
+- Support an npm `run test:ci` option
+
+See `grants-ui-acceptance-tests` for an example.
+
+#### Running Acceptance Tests locally
+
+To run the full set of acceptance tests locally the developer can run script `./tools/run-acceptance-tests.sh`. Each acceptance test suite will have a compose file in `/acceptance` and a call in `./tools/run-acceptance-tests.sh`, and will be run sequentially against the containerised system.
+
+#### CI
+
+The same script is run as part of the GitHub PR workflow for grants-ui.
+
 ### Monitoring and Observability
 
 The structured logging system supports:

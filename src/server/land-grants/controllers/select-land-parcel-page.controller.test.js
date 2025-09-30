@@ -285,6 +285,7 @@ describe('SelectLandParcelPageController', () => {
 
       expect(controller.setState).not.toHaveBeenCalled()
       expect(controller.proceed).not.toHaveBeenCalled()
+      expect(controller.performAuthCheck).not.toHaveBeenCalled()
       expect(mockH.view).toHaveBeenCalledWith(
         'select-land-parcel',
         expect.objectContaining({

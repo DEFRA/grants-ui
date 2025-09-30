@@ -44,11 +44,6 @@ export default class SelectLandParcelPageController extends LandGrantsQuestionWi
 
       this.selectedLandParcel = selectedLandParcel
 
-      const authResult = await this.performAuthCheck(request, h)
-      if (authResult) {
-        return authResult
-      }
-
       if (action === 'validate' && !selectedLandParcel) {
         return h.view(this.viewName, {
           ...super.getViewModel(request, context),
@@ -56,6 +51,11 @@ export default class SelectLandParcelPageController extends LandGrantsQuestionWi
           parcels: this.parcels,
           errorMessage: 'Please select a land parcel from the list'
         })
+      }
+
+      const authResult = await this.performAuthCheck(request, h)
+      if (authResult) {
+        return authResult
       }
 
       await this.setState(request, {
