@@ -1,9 +1,20 @@
+import { updateApplicationStatus } from '../common/helpers/status/update-application-status-helper.js'
 import { getApplicationStatus } from '../common/services/grant-application/grant-application.service.js'
 
 const statusToUrlConfig = {
   SUBMITTED: (slug) => `/${slug}/confirmation`,
   AWAITING_AMENDMENTS: (slug) => `/${slug}/summary`,
+  CLEARED: (slug) => `/startpage`,
   DEFAULT: (slug) => `/${slug}/confirmation`
+}
+
+const gasToGrantsUiStatus = {
+  RECEIVED: 'SUBMITTED',
+  AWAITING_AMENDMENTS: 'REOPENED', // first visit post-submission → re-opened
+  APPLICATION_WITHDRAWN: 'CLEARED',
+  OFFER_SENT: 'SUBMITTED',
+  OFFER_WITHDRAWN: 'SUBMITTED',
+  OFFER_ACCEPTED: 'SUBMITTED'
 }
 
 function mapStatusToUrl(status, slug) {
@@ -25,8 +36,13 @@ export const formsStatusCallback = async (request, h) => {
     try {
       const response = await getApplicationStatus(grantCode, clientRef)
       const result = await response.json()
-      applicationStatus = result?.status
+      const gasStatus = result?.status
+
+      applicationStatus = gasToGrantsUiStatus[gasStatus] ?? 'SUBMITTED'
+
       request.yar.set(`applicationStatus_${clientRef}_${grantCode}`, applicationStatus)
+
+      await updateApplicationStatus(applicationStatus, `${clientRef}:${grantCode}`)
     } catch (err) {
       if (err.status === 404) {
         // no submission yet — allow flow-through
