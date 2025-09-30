@@ -14,4 +14,8 @@
   @include govuk-media-query($from: desktop) {
     text-align: right;
   }
+
+  > * {
+    float: right;
+  }
 }
