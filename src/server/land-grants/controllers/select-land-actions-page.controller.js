@@ -7,6 +7,7 @@ import { parseLandParcel } from '~/src/server/land-grants/utils/format-parcel.js
 
 export default class SelectLandActionsPageController extends LandGrantsQuestionWithAuthCheckController {
   viewName = 'select-actions-for-land-parcel'
+  selectedLandParcel = null
   actionFieldPrefix = 'landAction_'
   groupedActions = []
   addedActions = []
@@ -250,19 +251,27 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
       const state = this.createNewStateFromPayload(prevState, payload)
 
       if (payload.action === 'validate') {
-        const validationResult = await validateApplication({ applicationId: referenceNumber, sbi, crn, state })
-        const { valid, errorMessages = [] } = validationResult
+        try {
+          const validationResult = await validateApplication({ applicationId: referenceNumber, sbi, crn, state })
+          const { valid, errorMessages = [] } = validationResult
 
-        if (!valid) {
-          const landActionFields = this.extractLandActionFieldsFromPayload(payload)
-          const validationErrors = errorMessages
-            .filter((e) => !e.passed)
-            .map((e) => ({
-              text: `${e.description}: ${e.code}`,
-              href: `#${landActionFields.find((field) => payload[field] === e.code)}`
-            }))
+          if (!valid) {
+            const landActionFields = this.extractLandActionFieldsFromPayload(payload)
+            const validationErrors = errorMessages
+              .filter((e) => !e.passed)
+              .map((e) => ({
+                text: `${e.description}${e.code ? ': ' + e.code : ''}`,
+                href: e.code ? `#${landActionFields.find((field) => payload[field] === e.code)}` : undefined
+              }))
 
-          return this.renderErrorView(h, request, context, validationErrors, state)
+            return this.renderErrorView(h, request, context, validationErrors, state)
+          }
+        } catch (e) {
+          request.logger.error({
+            message: e.message,
+            selectedLandParcel: this.selectedLandParcel
+          })
+          return this.renderErrorView(h, request, context, [{ text: e.message }], state)
         }
       }
 

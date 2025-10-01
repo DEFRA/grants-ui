@@ -817,8 +817,8 @@ describe('SelectLandActionsPageController', () => {
         'select-actions-for-land-parcel',
         expect.objectContaining({
           errorSummary: expect.arrayContaining([
-            expect.objectContaining({ text: 'Error 1: CMOR1' }),
-            expect.objectContaining({ text: 'Error 2: UPL1' })
+            expect.objectContaining({ text: 'Error 1: CMOR1', href: '#landAction_1' }),
+            expect.objectContaining({ text: 'Error 2: UPL1', href: '#landAction_2' })
           ])
         })
       )
