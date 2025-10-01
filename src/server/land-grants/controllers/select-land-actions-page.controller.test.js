@@ -531,22 +531,6 @@ describe('SelectLandActionsPageController', () => {
         expect(result).toEqual('failed auth check')
       })
     })
-
-    test('should handle API validation error gracefully', async () => {
-      const apiError = new Error('API validation failed')
-      apiError.code = 400
-
-      fetchAvailableActionsForParcel.mockRejectedValue(apiError)
-      mockContext.state.selectedLandParcel = 'sheet1-parcel1'
-
-      const handler = controller.makeGetRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
-
-      expect(mockRequest.logger.error).toHaveBeenCalledWith(
-        apiError,
-        'Failed to fetch land parcel data for id sheet1-parcel1'
-      )
-    })
   })
 
   describe('POST route handler', () => {
@@ -838,6 +822,27 @@ describe('SelectLandActionsPageController', () => {
           ])
         })
       )
+    })
+
+    test('should throw createBoomError when validateApplication throws error with status code', async () => {
+      const apiError = new Error('Validation API failed')
+      apiError.code = 400
+
+      mockRequest.payload = {
+        landAction_1: 'CMOR1',
+        action: 'validate'
+      }
+
+      validateApplication.mockRejectedValue(apiError)
+
+      const handler = controller.makePostRouteHandler()
+
+      await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow('Validation API failed')
+
+      expect(mockRequest.logger.error).toHaveBeenCalledWith({
+        message: 'Validation API failed',
+        selectedLandParcel: 'sheet1-parcel1'
+      })
     })
 
     describe('when the user does not own the land parcel', () => {
