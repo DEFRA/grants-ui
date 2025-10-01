@@ -58,6 +58,7 @@ describe('SubmissionPageController', () => {
       const mockIdentifiers = {
         sbi: '123456789',
         crn: 'crn123',
+        frn: 'frn123',
         clientRef: 'ref123'
       }
       const mockGasApplicationData = {

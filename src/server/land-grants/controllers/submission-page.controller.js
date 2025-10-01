@@ -88,11 +88,11 @@ export default class SubmissionPageController extends SummaryPageController {
           return this.handleValidationError(h, request, context, validationId)
         }
 
-        // Submit application to GAS
         const result = await this.submitGasApplication({
           identifiers: {
             sbi,
             crn,
+            frn: state.applicant?.business?.reference,
             clientRef: referenceNumber?.toLowerCase()
           },
           state,
