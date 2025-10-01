@@ -16,7 +16,8 @@ import { grantsUiPaths, nunjucksConfig } from '~/src/config/nunjucks/nunjucks.js
 import auth from '~/src/plugins/auth.js'
 import sso from '~/src/plugins/sso.js'
 import { contentSecurityPolicy } from '~/src/plugins/content-security-policy.js'
-import { formsAuthCallback } from '~/src/server/auth/forms-engine-plugin-auth-helpers.js'
+import { formsAuthCallback } from './auth/forms-engine-plugin-auth-helpers.js'
+import { formsStatusCallback } from '~/src/server/status/status-helper.js'
 import CheckResponsesPageController from '~/src/server/check-responses/check-responses.controller.js'
 import { formsService } from '~/src/server/common/forms/services/form.js'
 import { outputService } from '~/src/server/common/forms/services/output.js'
@@ -299,6 +300,7 @@ export async function createServer() {
 
     return h.continue
   })
+  server.ext('onPreHandler', async (request, h) => formsStatusCallback(request, h))
 
   // Create a server extension to handle session creation when defra-id is disabled
   server.ext('onPreAuth', async (request, h) => {

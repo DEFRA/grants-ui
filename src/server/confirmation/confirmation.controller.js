@@ -42,7 +42,7 @@ export default class ConfirmationPageController extends StatusPageController {
         return this.proceed(request, h, startPath)
       } else {
         request.logger.info('ConfirmationController: Confirmed, showing confirmation page')
-        await cacheService.setConfirmationState(request, { confirmed: false })
+        // await cacheService.setConfirmationState(request, { confirmed: false })
         await cacheService.clearState(request)
       }
 
