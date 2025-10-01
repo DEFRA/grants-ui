@@ -266,7 +266,13 @@ describe('SubmissionPageController', () => {
         server: {}
       }
       const mockContext = {
-        state: {},
+        state: {
+          applicant: {
+            business: {
+              reference: 'FRN123'
+            }
+          }
+        },
         referenceNumber: 'REF123'
       }
       const mockH = {
