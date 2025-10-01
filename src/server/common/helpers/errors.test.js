@@ -1,9 +1,10 @@
 import { vi } from 'vitest'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
-import { catchAll } from '~/src/server/common/helpers/errors.js'
+import { catchAll, createBoomError } from '~/src/server/common/helpers/errors.js'
 import Wreck from '@hapi/wreck'
 import { log } from '~/src/server/common/helpers/logging/log.js'
 import { createServer } from '~/src/server/index.js'
+
 vi.unmock('~/src/server/index.js')
 
 vi.mock('hapi-pino', async () => {
@@ -373,6 +374,124 @@ describe('#catchAll Redirect Handling', () => {
     }
     catchAll(mockRequest, mockToolkit)
     expect(mockToolkitRedirect).not.toHaveBeenCalled()
+  })
+})
+
+describe('#createBoomError', () => {
+  test('Should return badRequest (400) for status code 400', () => {
+    const error = createBoomError(400, 'Bad request message')
+
+    expect(error.isBoom).toBe(true)
+    expect(error.output.statusCode).toBe(400)
+    expect(error.message).toBe('Bad request message')
+    expect(error.output.payload.error).toBe('Bad Request')
+  })
+
+  test('Should return unauthorized (401) for status code 401', () => {
+    const error = createBoomError(401, 'Unauthorized message')
+
+    expect(error.isBoom).toBe(true)
+    expect(error.output.statusCode).toBe(401)
+    expect(error.message).toBe('Unauthorized message')
+    expect(error.output.payload.error).toBe('Unauthorized')
+  })
+
+  test('Should return forbidden (403) for status code 403', () => {
+    const error = createBoomError(403, 'Forbidden message')
+
+    expect(error.isBoom).toBe(true)
+    expect(error.output.statusCode).toBe(403)
+    expect(error.message).toBe('Forbidden message')
+    expect(error.output.payload.error).toBe('Forbidden')
+  })
+
+  test('Should return notFound (404) for status code 404', () => {
+    const error = createBoomError(404, 'Not found message')
+
+    expect(error.isBoom).toBe(true)
+    expect(error.output.statusCode).toBe(404)
+    expect(error.message).toBe('Not found message')
+    expect(error.output.payload.error).toBe('Not Found')
+  })
+
+  test('Should return conflict (409) for status code 409', () => {
+    const error = createBoomError(409, 'Conflict message')
+
+    expect(error.isBoom).toBe(true)
+    expect(error.output.statusCode).toBe(409)
+    expect(error.message).toBe('Conflict message')
+    expect(error.output.payload.error).toBe('Conflict')
+  })
+
+  test('Should return badData (422) for status code 422', () => {
+    const error = createBoomError(422, 'Bad data message')
+
+    expect(error.isBoom).toBe(true)
+    expect(error.output.statusCode).toBe(422)
+    expect(error.message).toBe('Bad data message')
+    expect(error.output.payload.error).toBe('Unprocessable Entity')
+  })
+
+  test('Should return tooManyRequests (429) for status code 429', () => {
+    const error = createBoomError(429, 'Too many requests message')
+
+    expect(error.isBoom).toBe(true)
+    expect(error.output.statusCode).toBe(429)
+    expect(error.message).toBe('Too many requests message')
+    expect(error.output.payload.error).toBe('Too Many Requests')
+  })
+
+  test('Should return internal (500) for unmatched status codes', () => {
+    const error = createBoomError(502, 'Bad gateway message')
+
+    expect(error.isBoom).toBe(true)
+    expect(error.output.statusCode).toBe(500)
+    expect(error.message).toBe('Bad gateway message')
+    expect(error.output.payload.error).toBe('Internal Server Error')
+  })
+
+  test('Should return internal (500) for status code 500', () => {
+    const error = createBoomError(500, 'Internal server error message')
+
+    expect(error.isBoom).toBe(true)
+    expect(error.output.statusCode).toBe(500)
+    expect(error.message).toBe('Internal server error message')
+    expect(error.output.payload.error).toBe('Internal Server Error')
+  })
+
+  test('Should return internal (500) for unknown status codes', () => {
+    const error = createBoomError(999, 'Unknown error message')
+
+    expect(error.isBoom).toBe(true)
+    expect(error.output.statusCode).toBe(500)
+    expect(error.message).toBe('Unknown error message')
+  })
+
+  test('Should handle empty message string', () => {
+    const error = createBoomError(400, '')
+
+    expect(error.isBoom).toBe(true)
+    expect(error.output.statusCode).toBe(400)
+    expect(error.message).toBe('Bad Request')
+  })
+
+  test('Should handle undefined message', () => {
+    const error = createBoomError(404, undefined)
+
+    expect(error.isBoom).toBe(true)
+    expect(error.output.statusCode).toBe(404)
+  })
+
+  test('Should not have isServer property set to true for client errors', () => {
+    const error = createBoomError(400, 'Client error')
+
+    expect(error.isServer).toBe(false)
+  })
+
+  test('Should have isServer property set to true for server errors', () => {
+    const error = createBoomError(500, 'Server error')
+
+    expect(error.isServer).toBe(true)
   })
 })
 
