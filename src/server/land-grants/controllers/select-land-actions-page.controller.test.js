@@ -532,7 +532,7 @@ describe('SelectLandActionsPageController', () => {
       })
     })
 
-    test('should handle errors gracefully', async () => {
+    test('should handle API validation error gracefully', async () => {
       const apiError = new Error('API validation failed')
       apiError.code = 400
 
