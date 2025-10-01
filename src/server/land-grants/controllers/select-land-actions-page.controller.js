@@ -4,6 +4,7 @@ import {
 } from '~/src/server/land-grants/services/land-grants.service.js'
 import LandGrantsQuestionWithAuthCheckController from '~/src/server/land-grants/controllers/auth/land-grants-question-with-auth-check.controller.js'
 import { parseLandParcel } from '~/src/server/land-grants/utils/format-parcel.js'
+import { createBoomError } from '~/src/server/common/helpers/errors.js'
 
 export default class SelectLandActionsPageController extends LandGrantsQuestionWithAuthCheckController {
   viewName = 'select-actions-for-land-parcel'
@@ -154,7 +155,7 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
   }
 
   /**
-   * Render error view with validation errors
+   * Render error message with validation errors
    * @param {object} h - Response toolkit
    * @param {FormRequest} request - Request object
    * @param {FormContext} context - Form context
@@ -164,7 +165,7 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
    * @param {object} additionalState - Additional state to merge
    * @returns {object} - Error view response
    */
-  renderErrorView(h, request, context, errorSummary, additionalState = {}) {
+  renderErrorMessage(h, request, context, errorSummary, additionalState = {}) {
     const [sheetId, parcelId] = parseLandParcel(this.selectedLandParcel)
     return h.view(this.viewName, {
       ...this.getViewModel(request, context),
@@ -240,7 +241,7 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
       const { sbi, crn } = request.auth.credentials
       const errors = this.validateUserInput(payload)
       if (errors.length > 0) {
-        return this.renderErrorView(h, request, context, errors, prevState)
+        return this.renderErrorMessage(h, request, context, errors, prevState)
       }
 
       const authResult = await this.performAuthCheck(request, h)
@@ -264,14 +265,14 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
                 href: e.code ? `#${landActionFields.find((field) => payload[field] === e.code)}` : undefined
               }))
 
-            return this.renderErrorView(h, request, context, validationErrors, state)
+            return this.renderErrorMessage(h, request, context, validationErrors, state)
           }
         } catch (e) {
           request.logger.error({
             message: e.message,
             selectedLandParcel: this.selectedLandParcel
           })
-          return this.renderErrorView(h, request, context, [{ text: e.message }], state)
+          throw createBoomError(e.code, e.message)
         }
       }
 

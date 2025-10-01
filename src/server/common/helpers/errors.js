@@ -1,7 +1,34 @@
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { badRequest, unauthorized, forbidden, notFound, conflict, badData, tooManyRequests, internal } from '@hapi/boom'
 
 const UNKNOWN_USER = 'unknown'
+
+/**
+ * Creates a standard boom error from status code and message
+ * @param {number} statusCode
+ * @param {string} message
+ */
+export function createBoomError(statusCode, message) {
+  switch (statusCode) {
+    case 400:
+      return badRequest(message)
+    case 401:
+      return unauthorized(message)
+    case 403:
+      return forbidden(message)
+    case 404:
+      return notFound(message)
+    case 409:
+      return conflict(message)
+    case 422:
+      return badData(message)
+    case 429:
+      return tooManyRequests(message)
+    default:
+      return internal(message)
+  }
+}
 
 /**
  * @param {number} statusCode

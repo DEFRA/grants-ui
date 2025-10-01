@@ -404,11 +404,11 @@ describe('SelectLandActionsPageController', () => {
     })
   })
 
-  describe('renderErrorView', () => {
+  describe('renderErrorMessage', () => {
     test('should render error view with validation errors', () => {
       const errorSummary = [{ text: 'Error message', href: '#field' }]
 
-      controller.renderErrorView(mockH, mockRequest, mockContext, errorSummary)
+      controller.renderErrorMessage(mockH, mockRequest, mockContext, errorSummary)
 
       expect(mockH.view).toHaveBeenCalledWith(
         'select-actions-for-land-parcel',
@@ -423,7 +423,7 @@ describe('SelectLandActionsPageController', () => {
       const errorSummary = [{ text: 'Error', href: '#field' }]
       const additionalState = { customProp: 'value' }
 
-      controller.renderErrorView(mockH, mockRequest, mockContext, errorSummary, additionalState)
+      controller.renderErrorMessage(mockH, mockRequest, mockContext, errorSummary, additionalState)
 
       expect(mockH.view).toHaveBeenCalledWith(
         'select-actions-for-land-parcel',
