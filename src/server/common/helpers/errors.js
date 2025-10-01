@@ -4,6 +4,16 @@ import { badRequest, unauthorized, forbidden, notFound, conflict, badData, tooMa
 
 const UNKNOWN_USER = 'unknown'
 
+const HTTP_STATUS = {
+  BAD_REQUEST: 400,
+  UNAUTHORIZED: 401,
+  FORBIDDEN: 403,
+  NOT_FOUND: 404,
+  CONFLICT: 409,
+  BAD_DATA: 422,
+  TOO_MANY_REQUESTS: 429
+}
+
 /**
  * Creates a standard boom error from status code and message
  * @param {number} statusCode
@@ -11,19 +21,19 @@ const UNKNOWN_USER = 'unknown'
  */
 export function createBoomError(statusCode, message) {
   switch (statusCode) {
-    case 400:
+    case HTTP_STATUS.BAD_REQUEST:
       return badRequest(message)
-    case 401:
+    case HTTP_STATUS.UNAUTHORIZED:
       return unauthorized(message)
-    case 403:
+    case HTTP_STATUS.FORBIDDEN:
       return forbidden(message)
-    case 404:
+    case HTTP_STATUS.NOT_FOUND:
       return notFound(message)
-    case 409:
+    case HTTP_STATUS.CONFLICT:
       return conflict(message)
-    case 422:
+    case HTTP_STATUS.BAD_DATA:
       return badData(message)
-    case 429:
+    case HTTP_STATUS.TOO_MANY_REQUESTS:
       return tooManyRequests(message)
     default:
       return internal(message)
