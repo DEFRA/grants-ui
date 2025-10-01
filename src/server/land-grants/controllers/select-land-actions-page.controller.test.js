@@ -404,11 +404,11 @@ describe('SelectLandActionsPageController', () => {
     })
   })
 
-  describe('renderErrorView', () => {
+  describe('renderErrorMessage', () => {
     test('should render error view with validation errors', () => {
       const errorSummary = [{ text: 'Error message', href: '#field' }]
 
-      controller.renderErrorView(mockH, mockRequest, mockContext, errorSummary)
+      controller.renderErrorMessage(mockH, mockRequest, mockContext, errorSummary)
 
       expect(mockH.view).toHaveBeenCalledWith(
         'select-actions-for-land-parcel',
@@ -423,7 +423,7 @@ describe('SelectLandActionsPageController', () => {
       const errorSummary = [{ text: 'Error', href: '#field' }]
       const additionalState = { customProp: 'value' }
 
-      controller.renderErrorView(mockH, mockRequest, mockContext, errorSummary, additionalState)
+      controller.renderErrorMessage(mockH, mockRequest, mockContext, errorSummary, additionalState)
 
       expect(mockH.view).toHaveBeenCalledWith(
         'select-actions-for-land-parcel',
@@ -817,11 +817,32 @@ describe('SelectLandActionsPageController', () => {
         'select-actions-for-land-parcel',
         expect.objectContaining({
           errorSummary: expect.arrayContaining([
-            expect.objectContaining({ text: 'Error 1: CMOR1' }),
-            expect.objectContaining({ text: 'Error 2: UPL1' })
+            expect.objectContaining({ text: 'Error 1: CMOR1', href: '#landAction_1' }),
+            expect.objectContaining({ text: 'Error 2: UPL1', href: '#landAction_2' })
           ])
         })
       )
+    })
+
+    test('should throw createBoomError when validateApplication throws error with status code', async () => {
+      const apiError = new Error('Validation API failed')
+      apiError.code = 400
+
+      mockRequest.payload = {
+        landAction_1: 'CMOR1',
+        action: 'validate'
+      }
+
+      validateApplication.mockRejectedValue(apiError)
+
+      const handler = controller.makePostRouteHandler()
+
+      await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow('Validation API failed')
+
+      expect(mockRequest.logger.error).toHaveBeenCalledWith({
+        message: 'Validation API failed',
+        selectedLandParcel: 'sheet1-parcel1'
+      })
     })
 
     describe('when the user does not own the land parcel', () => {
