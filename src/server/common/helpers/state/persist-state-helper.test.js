@@ -93,7 +93,7 @@ describe('persistStateToApi', () => {
           method: 'POST',
           headers: expect.objectContaining({
             'Content-Type': 'application/json',
-            Authorization: expect.stringMatching(/^Basic [A-Za-z0-9+/]+=*$/)
+            Authorization: expect.stringMatching(/^Bearer [A-Za-z0-9+/]+=*$/)
           }),
           body: expectedBody
         })
@@ -104,7 +104,7 @@ describe('persistStateToApi', () => {
         expect.objectContaining({
           endpoint: expect.stringContaining('/state/'),
           identity: `${TEST_USER_IDS.BUSINESS_ID}:${TEST_USER_IDS.GRANT_ID}`,
-          stateSummary: {
+          summary: {
             hasReference: Boolean(testState?.$$__referenceNumber),
             keyCount: Object.keys(testState).length
           }

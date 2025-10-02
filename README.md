@@ -57,6 +57,17 @@ cd grants-ui
 nvm use
 ```
 
+## DXT Forms Engine Plugin
+
+Grants UI uses the [DXT Forms Engine](https://github.com/DEFRA/dxt-forms-engine) to render forms.
+
+We override the default DXT SummaryPageController which is used as a combined "check answers" and "submit" page, to provide these as separate pages.
+
+CheckResponsesPageController renders a page showing the questions and answers the user has completed, and allows the user to change their answers.
+
+DeclarationPageController renders a declaration page and submits the form to GAS. It does not use the `confirmationState` used by DXT and does not clear the state.
+Instead it sets `applicationStatus` to `SUBMITTED` along with `submittedAt` and `submittedBy` fields.
+
 ## Server-side Caching
 
 We use Catbox for server-side caching. By default the service will use CatboxRedis when deployed and CatboxMemory for

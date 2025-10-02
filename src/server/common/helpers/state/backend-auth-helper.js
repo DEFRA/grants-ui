@@ -11,7 +11,7 @@ const ENCODING = {
 }
 
 const CONTENT_TYPE_JSON = 'application/json'
-const AUTH_SCHEME = 'Basic'
+const AUTH_SCHEME = 'Bearer'
 
 const GRANTS_UI_BACKEND_AUTH_TOKEN = config.get('session.cache.authToken')
 const ENCRYPTION_KEY = config.get('session.cache.encryptionKey')
@@ -44,7 +44,7 @@ export function createAuthenticatedHeaders(baseHeaders = {}) {
 
   if (GRANTS_UI_BACKEND_AUTH_TOKEN) {
     const encryptedToken = encryptToken(GRANTS_UI_BACKEND_AUTH_TOKEN)
-    const authCredentials = Buffer.from(`:${encryptedToken}`).toString(ENCODING.BASE64)
+    const authCredentials = Buffer.from(encryptedToken).toString(ENCODING.BASE64)
     headers.Authorization = `${AUTH_SCHEME} ${authCredentials}`
   }
 

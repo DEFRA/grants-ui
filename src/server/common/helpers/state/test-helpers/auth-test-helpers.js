@@ -5,7 +5,7 @@ const CRYPTO_ENCODING = {
   BASE64: 'base64'
 }
 
-const AUTH_SCHEME = 'Basic'
+const AUTH_SCHEME = 'Bearer'
 
 export const TEST_BACKEND_URL = 'https://test-backend'
 export const TEST_AUTH_TOKEN = 'test-auth-token'
@@ -128,8 +128,7 @@ export function createExpectedAuthHeader(token, encryptionKey = null) {
     actualToken = encryptTokenForTest(token, encryptionKey)
   }
 
-  const credentials = ':' + actualToken
-  return `${AUTH_SCHEME} ${Buffer.from(credentials).toString(CRYPTO_ENCODING.BASE64)}`
+  return `${AUTH_SCHEME} ${Buffer.from(actualToken).toString(CRYPTO_ENCODING.BASE64)}`
 }
 
 /**

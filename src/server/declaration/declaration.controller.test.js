@@ -6,8 +6,14 @@ import DeclarationPageController from './declaration.controller.js'
 import { transformAnswerKeysToText } from './state-to-gas-answers-mapper.js'
 import { vi } from 'vitest'
 import { mockFormsCacheService, mockHapiRequest } from '~/src/__mocks__'
+import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 
-const mockCacheService = mockFormsCacheService().getFormsCacheService()
+const mockCacheService = mockFormsCacheService({
+  getState: vi.fn().mockReturnValue({
+    $$__referenceNumber: 'REF123'
+  }),
+  setState: vi.fn()
+}).getFormsCacheService()
 vi.mock('~/src/server/common/helpers/form-slug-helper.js')
 vi.mock('~/src/server/common/helpers/forms-cache/forms-cache.js', () => ({
   getFormsCacheService: () => mockCacheService
@@ -65,7 +71,13 @@ describe('DeclarationPageController', () => {
         slug: 'adding-value'
       },
       path: '/adding-value/declaration',
-      server: {}
+      server: {},
+      auth: {
+        credentials: {
+          sbi: 'sbi123',
+          crn: '1234567890'
+        }
+      }
     })
 
     mockContext = {
@@ -83,10 +95,13 @@ describe('DeclarationPageController', () => {
 
     transformAnswerKeysToText.mockReturnValue({ transformedState: true })
     transformStateObjectToGasApplication.mockReturnValue({
-      transformedApp: true
+      transformedApp: true,
+      metadata: {
+        submittedAt: '2025-01-01T00:00:00.000Z'
+      }
     })
     submitGrantApplication.mockResolvedValue({
-      clientRef: 'ref123'
+      status: statusCodes.noContent
     })
 
     // Mock the form-slug-helper functions
@@ -189,10 +204,10 @@ describe('DeclarationPageController', () => {
 
       expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
         {
-          clientRef: 'ref123', // <- note: in controller, it's `context.referenceNumber?.toLowerCase()`
-          sbi: 'sbi',
+          clientRef: 'sbi123-adding-value',
+          sbi: 'sbi123',
           frn: 'frn',
-          crn: 'crn',
+          crn: '1234567890',
           defraId: 'defraId'
         },
         { transformedState: true, referenceNumber: 'REF123' },
@@ -200,11 +215,10 @@ describe('DeclarationPageController', () => {
       )
 
       expect(submitGrantApplication).toHaveBeenCalledWith('adding-value', {
-        transformedApp: true
-      })
-      expect(mockCacheService.setConfirmationState).toHaveBeenCalledWith(mockRequest, {
-        $$__referenceNumber: 'REF123',
-        confirmed: true
+        transformedApp: true,
+        metadata: {
+          submittedAt: '2025-01-01T00:00:00.000Z'
+        }
       })
       expect(mockH.redirect).toHaveBeenCalledWith('/adding-value/confirmation')
     })
@@ -215,8 +229,9 @@ describe('DeclarationPageController', () => {
 
       expect(mockRequest.logger.debug).toHaveBeenCalledWith('DeclarationController: Processing form submission')
       expect(mockRequest.logger.debug).toHaveBeenCalledWith('DeclarationController: Current URL:', mockRequest.path)
-      expect(mockRequest.logger.debug).toHaveBeenCalledWith('DeclarationController: Got reference number:', 'ref123')
-      expect(mockRequest.logger.debug).toHaveBeenCalledWith('DeclarationController: Set confirmation state to true')
+      expect(mockRequest.logger.debug).toHaveBeenCalledWith(
+        'DeclarationController: Set application status to SUBMITTED'
+      )
       expect(mockRequest.logger.debug).toHaveBeenCalledWith(
         'DeclarationController: Redirecting to:',
         '/adding-value/confirmation'
@@ -229,7 +244,7 @@ describe('DeclarationPageController', () => {
 
       expect(mockRequest.logger.info).toHaveBeenCalledWith({
         message: 'Form submission completed',
-        referenceNumber: 'ref123',
+        referenceNumber: 'REF123',
         numberOfSubmittedFields: Object.keys(mockContext.relevantState).length,
         timestamp: expect.any(String)
       })
@@ -246,19 +261,6 @@ describe('DeclarationPageController', () => {
       expect(mockRequest.logger.error).toHaveBeenCalledWith(error, 'Failed to submit form')
     })
 
-    test('should handle error when setConfirmationState fails', async () => {
-      const error = new Error('Cache error')
-      mockCacheService.setConfirmationState.mockRejectedValueOnce(error)
-
-      const handler = controller.makePostRouteHandler()
-      await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow(error)
-
-      expect(submitGrantApplication).toHaveBeenCalledWith('adding-value', {
-        transformedApp: true
-      })
-      expect(mockContext.referenceNumber).toBe('REF123')
-    })
-
     test('should handle case when submission result has no referenceNumber', async () => {
       mockContext.referenceNumber = undefined
       submitGrantApplication.mockResolvedValueOnce({
@@ -269,7 +271,6 @@ describe('DeclarationPageController', () => {
       await handler(mockRequest, mockContext, mockH)
 
       expect(mockContext.referenceNumber).toBeUndefined()
-      expect(mockCacheService.setConfirmationState).toHaveBeenCalled()
       expect(mockH.redirect).toHaveBeenCalled()
     })
   })
