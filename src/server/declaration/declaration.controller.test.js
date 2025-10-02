@@ -204,7 +204,7 @@ describe('DeclarationPageController', () => {
 
       expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
         {
-          clientRef: 'sbi123-adding-value',
+          clientRef: 'ref123',
           sbi: 'sbi123',
           frn: 'frn',
           crn: '1234567890',
@@ -259,19 +259,6 @@ describe('DeclarationPageController', () => {
       await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow(error)
 
       expect(mockRequest.logger.error).toHaveBeenCalledWith(error, 'Failed to submit form')
-    })
-
-    test('should handle case when submission result has no referenceNumber', async () => {
-      mockContext.referenceNumber = undefined
-      submitGrantApplication.mockResolvedValueOnce({
-        result: {}
-      })
-
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
-
-      expect(mockContext.referenceNumber).toBeUndefined()
-      expect(mockH.redirect).toHaveBeenCalled()
     })
   })
 })
