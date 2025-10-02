@@ -58,6 +58,7 @@ describe('SubmissionPageController', () => {
       const mockIdentifiers = {
         sbi: '123456789',
         crn: 'crn123',
+        frn: 'frn123',
         clientRef: 'ref123'
       }
       const mockGasApplicationData = {
@@ -265,7 +266,13 @@ describe('SubmissionPageController', () => {
         server: {}
       }
       const mockContext = {
-        state: {},
+        state: {
+          applicant: {
+            business: {
+              reference: 'FRN123'
+            }
+          }
+        },
         referenceNumber: 'REF123'
       }
       const mockH = {

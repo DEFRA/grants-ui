@@ -178,7 +178,6 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
         const applicant = await fetchBusinessAndCustomerInformation(sbi, crn)
         await this.setState(request, {
           ...state,
-          sbi,
           applicant
         })
       }
