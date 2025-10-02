@@ -9,11 +9,6 @@ pages:
     controller: DeclarationPageController
     view: grants/declaration.html
     id: c194a0ee-1c16-4418-a02f-6f939e3d5c6d
-  - title: Confirmation
-    path: /confirmation
-    section: confirmAndSendSection
-    controller: ConfirmationPageController
-    id: f4b3ab83-bfaf-407d-be8f-37bdceac66ff
 lists: []
 conditions: []
 sections:

@@ -5,13 +5,7 @@ import * as formSlugHelper from '~/src/server/common/helpers/form-slug-helper.js
 import { mockContext as mockHapiContext, mockHapiRequest, mockHapiResponseToolkit } from '~/src/__mocks__/hapi-mocks.js'
 
 const mockFormsCacheServiceMethods = {
-  getConfirmationState: vi.fn(),
-  setConfirmationState: vi.fn(),
-  clearState: vi.fn(),
-  getState: vi.fn().mockReturnValue({
-    $$__referenceNumber: 'REF123',
-    applicationStatus: 'SUBMITTED'
-  })
+  getState: vi.fn()
 }
 
 vi.mock('@defra/forms-engine-plugin/controllers/StatusPageController.js')
@@ -43,9 +37,8 @@ describe('ConfirmationPageController', () => {
       server: {}
     })
 
-    mockFormsCacheServiceMethods.getConfirmationState.mockResolvedValue({
-      $$__referenceNumber: 'REF123',
-      confirmed: true
+    mockFormsCacheServiceMethods.getState.mockResolvedValue({
+      $$__referenceNumber: 'REF123'
     })
 
     mockContext = mockHapiContext({
@@ -94,15 +87,6 @@ describe('ConfirmationPageController', () => {
       expect(formSlugHelper.storeSlugInContext).toHaveBeenCalledWith(mockRequest, mockContext, 'ConfirmationController')
     })
 
-    test('should log debug information', async () => {
-      const handler = controller.makeGetRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
-
-      expect(mockRequest.logger.debug).toHaveBeenCalledWith('ConfirmationController: State:', expect.any(Object))
-      expect(mockRequest.logger.debug).toHaveBeenCalledWith('ConfirmationController: Current path:', mockRequest.path)
-      expect(mockRequest.logger.debug).toHaveBeenCalledWith('ConfirmationController: Start path:', expect.any(String))
-    })
-
     test('should handle errors from collection', async () => {
       const mockErrors = [{ field: 'test', message: 'error' }]
       controller.collection.getErrors.mockReturnValue(mockErrors)
@@ -114,6 +98,82 @@ describe('ConfirmationPageController', () => {
         pageTitle: 'Confirmation',
         errors: mockErrors,
         referenceNumber: 'REF123'
+      })
+    })
+
+    test('should handle error when getState fails', async () => {
+      const error = new Error('Cache error')
+      mockFormsCacheServiceMethods.getState.mockRejectedValueOnce(error)
+
+      const handler = controller.makeGetRouteHandler()
+      await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow(error)
+    })
+
+    test('should render confirmation page with session data', async () => {
+      mockRequest.yar = {
+        get: vi.fn((key) => {
+          const data = {
+            businessName: 'Test Business',
+            sbi: '123456789',
+            contactName: 'John Doe'
+          }
+          return data[key]
+        })
+      }
+
+      const handler = controller.makeGetRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith('confirmation-page.html', {
+        pageTitle: 'Confirmation',
+        errors: [],
+        referenceNumber: 'REF123',
+        businessName: 'Test Business',
+        sbi: '123456789',
+        contactName: 'John Doe'
+      })
+    })
+
+    test('should include session data in view model for both confirmation types', async () => {
+      mockRequest.yar = {
+        get: vi.fn((key) => {
+          const data = {
+            businessName: 'Test Business',
+            sbi: '123456789',
+            contactName: 'John Doe'
+          }
+          return data[key]
+        })
+      }
+
+      const handler = controller.makeGetRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith('confirmation-page.html', {
+        pageTitle: 'Confirmation',
+        errors: [],
+        referenceNumber: 'REF123',
+        businessName: 'Test Business',
+        sbi: '123456789',
+        contactName: 'John Doe'
+      })
+    })
+
+    test('should handle missing session data gracefully', async () => {
+      mockRequest.yar = {
+        get: vi.fn().mockReturnValue(undefined)
+      }
+
+      const handler = controller.makeGetRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith('confirmation-page.html', {
+        pageTitle: 'Confirmation',
+        errors: [],
+        referenceNumber: 'REF123',
+        businessName: undefined,
+        sbi: undefined,
+        contactName: undefined
       })
     })
   })

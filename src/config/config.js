@@ -366,6 +366,40 @@ export const config = convict({
       env: 'GA_TRACKING_ID'
     }
   },
+  devTools: {
+    enabled: {
+      doc: 'Enable development tools and routes',
+      format: Boolean,
+      default: isDevelopment,
+      env: 'DEV_TOOLS_ENABLED'
+    },
+    demoData: {
+      referenceNumber: {
+        doc: 'Demo reference number for dev tools',
+        format: String,
+        default: 'DEV2024001',
+        env: 'DEV_DEMO_REF_NUMBER'
+      },
+      businessName: {
+        doc: 'Demo business name for dev tools',
+        format: String,
+        default: 'Demo Test Farm Ltd',
+        env: 'DEV_DEMO_BUSINESS_NAME'
+      },
+      sbi: {
+        doc: 'Demo SBI number for dev tools',
+        format: String,
+        default: '999888777',
+        env: 'DEV_DEMO_SBI'
+      },
+      contactName: {
+        doc: 'Demo contact name for dev tools',
+        format: String,
+        default: 'Demo Test User',
+        env: 'DEV_DEMO_CONTACT_NAME'
+      }
+    }
+  },
   defraId: defraId.getProperties(),
   landGrants: /** @type {Schema<LandGrantsConfig>} */ (landGrants.getProperties()),
   agreements: /** @type {Schema<AgreementsConfig>} */ (agreements.getProperties())
