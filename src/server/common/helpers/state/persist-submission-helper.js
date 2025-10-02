@@ -46,7 +46,7 @@ export async function persistSubmissionToApi(submission) {
       referenceNumber: submission.referenceNumber,
       error: err.message
     })
-    // TODO: See TGC-781
+    // TODO: See TGC-873
     // throw err
   }
 }

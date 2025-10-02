@@ -5,7 +5,7 @@ import {
   HTTP_STATUS,
   TEST_BACKEND_URL,
   TEST_USER_IDS
-} from './test-helpers/auth-test-helpers.js'
+} from '../state/test-helpers/auth-test-helpers.js'
 
 global.fetch = vi.fn()
 
@@ -23,12 +23,12 @@ const mockCreateApiHeaders = vi.fn().mockReturnValue({
   'Content-Type': 'application/json',
   Authorization: 'Bearer test-token'
 })
-vi.doMock('./backend-auth-helper.js', () => ({
+vi.doMock('../state/backend-auth-helper.js', () => ({
   createApiHeaders: mockCreateApiHeaders
 }))
 
 const mockParseSessionKey = vi.fn()
-vi.doMock('./get-cache-key-helper.js', () => ({
+vi.doMock('../state/get-cache-key-helper.js', () => ({
   parseSessionKey: mockParseSessionKey
 }))
 
@@ -40,7 +40,7 @@ const APPLICATION_STATUS = 'SUBMITTED'
 const KEY = `${TEST_USER_IDS.ORGANISATION_ID}:${TEST_USER_IDS.GRANT_ID}`
 
 const importHelperAndDeps = async () => {
-  const helper = await import('~/src/server/common/helpers/state/update-application-status-helper.js')
+  const helper = await import('~/src/server/common/helpers/status/update-application-status-helper.js')
   updateApplicationStatus = helper.updateApplicationStatus
   const logModule = await import('../logging/log.js')
   log = logModule.log
@@ -65,10 +65,10 @@ describe('updateApplicationStatus', () => {
           }
         }
       }))
-      vi.doMock('./backend-auth-helper.js', () => ({
+      vi.doMock('../state/backend-auth-helper.js', () => ({
         createApiHeaders: mockCreateApiHeaders
       }))
-      vi.doMock('./get-cache-key-helper.js', () => ({
+      vi.doMock('../state/get-cache-key-helper.js', () => ({
         parseSessionKey: mockParseSessionKey
       }))
       vi.doMock('~/src/config/config.js', createMockConfig)
@@ -182,10 +182,10 @@ describe('updateApplicationStatus', () => {
           }
         }
       }))
-      vi.doMock('./backend-auth-helper.js', () => ({
+      vi.doMock('../state/backend-auth-helper.js', () => ({
         createApiHeaders: mockCreateApiHeaders
       }))
-      vi.doMock('./get-cache-key-helper.js', () => ({
+      vi.doMock('../state/get-cache-key-helper.js', () => ({
         parseSessionKey: mockParseSessionKey
       }))
       vi.doMock('~/src/config/config.js', createMockConfigWithoutEndpoint)
