@@ -347,6 +347,35 @@
           "name": "Scott Meadow Farms"
         }
       ]
+    },
+    {
+      "crn": 1109990001,
+      "firstName": "John",
+      "lastName": "Test-Agent",
+      "organisations": [
+        {
+          "organisationId": "30",
+          "sbi": 119000001,
+          "name": "Test Agency Ltd"
+        },
+        {
+          "organisationId": "31",
+          "sbi": 119000002,
+          "name": "Test Farm"
+        }
+      ]
+    },
+    {
+      "crn": 1109990002,
+      "firstName": "James",
+      "lastName": "Test-Farmer",
+      "organisations": [
+        {
+          "organisationId": "31",
+          "sbi": 119000002,
+          "name": "Test Farm"
+        }
+      ]
     }
   ]
 }
