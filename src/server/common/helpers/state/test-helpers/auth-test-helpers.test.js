@@ -1,26 +1,26 @@
 import { vi } from 'vitest'
 import {
+  CONFIG_KEYS,
+  createCustomMockConfig,
   createExpectedAuthHeader,
-  encryptTokenForTest,
   createMockConfig,
   createMockConfigWithoutEndpoint,
-  createCustomMockConfig,
-  MOCK_CONFIG_VALUES,
-  CONFIG_KEYS,
-  TEST_CONSTANTS,
-  TEST_BACKEND_URL,
-  TEST_LOG_CONFIG,
-  TEST_FOO_VALUE,
-  TEST_USER_ID,
-  TEST_ORGANISATION_ID,
-  TEST_GRANT_SLUG,
-  HTTP_STATUS_TEXT,
-  ERROR_TEXT,
-  MOCK_STATE_DATA,
-  HTTP_STATUS,
-  TEST_USER_IDS,
+  encryptTokenForTest,
   ERROR_MESSAGES,
-  LOG_MESSAGES
+  ERROR_TEXT,
+  HTTP_STATUS,
+  HTTP_STATUS_TEXT,
+  LOG_MESSAGES,
+  MOCK_CONFIG_VALUES,
+  MOCK_STATE_DATA,
+  TEST_BACKEND_URL,
+  TEST_CONSTANTS,
+  TEST_FOO_VALUE,
+  TEST_GRANT_SLUG,
+  TEST_LOG_CONFIG,
+  TEST_ORGANISATION_ID,
+  TEST_USER_ID,
+  TEST_USER_IDS
 } from './auth-test-helpers.js'
 
 describe('Exported Constants', () => {
@@ -122,25 +122,25 @@ describe('Auth Test Helpers', () => {
     const TEST_TOKEN = 'test-token-123'
     const TEST_ENCRYPTION_KEY = 'test-encryption-key-32-chars-long'
 
-    it('should create unencrypted Basic auth header when no encryption key provided', () => {
+    it('should create unencrypted Bearer auth header when no encryption key provided', () => {
       const header = createExpectedAuthHeader(TEST_TOKEN)
 
-      expect(header).toMatch(/^Basic [A-Za-z0-9+/]+=*$/)
+      expect(header).toMatch(/^Bearer [A-Za-z0-9+/]+=*$/)
 
-      const base64Part = header.replace('Basic ', '')
+      const base64Part = header.replace('Bearer ', '')
       const decoded = Buffer.from(base64Part, 'base64').toString('utf-8')
-      expect(decoded).toBe(`:${TEST_TOKEN}`)
+      expect(decoded).toBe(TEST_TOKEN)
     })
 
-    it('should create encrypted Basic auth header when encryption key provided', () => {
+    it('should create encrypted Bearer auth header when encryption key provided', () => {
       const header = createExpectedAuthHeader(TEST_TOKEN, TEST_ENCRYPTION_KEY)
 
-      expect(header).toMatch(/^Basic [A-Za-z0-9+/]+=*$/)
+      expect(header).toMatch(/^Bearer [A-Za-z0-9+/]+=*$/)
 
-      const base64Part = header.replace('Basic ', '')
+      const base64Part = header.replace('Bearer ', '')
       const decoded = Buffer.from(base64Part, 'base64').toString('utf-8')
 
-      expect(decoded).toMatch(/^:([A-Za-z0-9+/]+=*):([A-Za-z0-9+/]+=*):([A-Za-z0-9+/]+=*)$/)
+      expect(decoded).toMatch(/^([A-Za-z0-9+/]+=*):([A-Za-z0-9+/]+=*):([A-Za-z0-9+/]+=*)$/)
     })
   })
 

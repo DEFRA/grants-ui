@@ -4,6 +4,9 @@ import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/fo
 import { submitGrantApplication } from '~/src/server/common/services/grant-application/grant-application.service.js'
 import { transformStateObjectToGasApplication } from '~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
 import { transformAnswerKeysToText } from './state-to-gas-answers-mapper.js'
+import { statusCodes } from '~/src/server/common/constants/status-codes.js'
+import { persistSubmissionToApi } from '~/src/server/common/helpers/state/persist-submission-helper.js'
+import { ApplicationStatus } from '~/src/server/common/constants/application-status.js'
 
 export default class DeclarationPageController extends SummaryPageController {
   /**
@@ -56,11 +59,14 @@ export default class DeclarationPageController extends SummaryPageController {
         request.logger.debug('DeclarationController: Processing form submission')
         request.logger.debug('DeclarationController: Current URL:', request.path)
 
+        const { sbi, crn } = request.auth.credentials
+        const grantCode = request.params?.slug
+
         const identifiers = {
-          clientRef: context.referenceNumber?.toLowerCase(),
-          sbi: 'sbi',
+          clientRef: `${sbi}-${grantCode}`,
+          sbi,
           frn: 'frn',
-          crn: 'crn',
+          crn,
           defraId: 'defraId'
         }
 
@@ -79,24 +85,36 @@ export default class DeclarationPageController extends SummaryPageController {
 
         const result = await submitGrantApplication(this.grantCode, applicationData)
 
-        request.logger.debug('DeclarationController: Got reference number:', result.clientRef)
-
         // Log submission details if available
-        if (result.clientRef) {
+        if (result.status === statusCodes.noContent) {
           request.logger.info({
             message: 'Form submission completed',
-            referenceNumber: result.clientRef,
+            referenceNumber: context.referenceNumber,
             numberOfSubmittedFields: context.relevantState ? Object.keys(context.relevantState).length : 0,
             timestamp: new Date().toISOString()
           })
-        }
 
-        // Set confirmation state so the confirmation page knows a submission happened
-        await cacheService.setConfirmationState(request, {
-          $$__referenceNumber: context.referenceNumber,
-          confirmed: true
-        })
-        request.logger.debug('DeclarationController: Set confirmation state to true')
+          const currentState = await cacheService.getState(request)
+
+          // Update application status so the confirmation page knows a submission happened
+          await cacheService.setState(request, {
+            ...currentState,
+            applicationStatus: ApplicationStatus.SUBMITTED,
+            submittedAt: applicationData.metadata.submittedAt,
+            submittedBy: crn
+          })
+          request.logger.debug('DeclarationController: Set application status to SUBMITTED')
+
+          // Add to submissions collection
+          await persistSubmissionToApi({
+            crn,
+            sbi,
+            grantCode,
+            grantVersion: context.grantVersion,
+            referenceNumber: context.referenceNumber,
+            submittedAt: applicationData.metadata.submittedAt
+          })
+        }
 
         // Get the redirect path
         const redirectPath = this.getStatusPath(request, context)

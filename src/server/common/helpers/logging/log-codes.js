@@ -250,7 +250,7 @@ export const LogCodes = {
     EXTERNAL_API_CALL_DEBUG: {
       level: 'debug',
       messageFunc: (messageOptions) =>
-        `External ${messageOptions.method} API call to ${messageOptions.endpoint} for identity=${messageOptions.identity || 'unknown'} - stateSummary=${JSON.stringify(messageOptions.stateSummary || 'N/A')}`
+        `External ${messageOptions.method} API call to ${messageOptions.endpoint} for identity=${messageOptions.identity || 'unknown'} - summary=${JSON.stringify(messageOptions.summary || 'N/A')}`
     },
     EXTERNAL_API_ERROR: {
       level: 'error',

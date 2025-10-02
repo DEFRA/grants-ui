@@ -37,7 +37,7 @@ export async function fetchSavedStateFromApi(key) {
           method: 'GET',
           endpoint: url.href,
           identity: key,
-          stateSummary: 'No state found in backend'
+          summary: 'No state found in backend'
         })
         return null
       }
