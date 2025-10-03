@@ -1,0 +1,82 @@
+{% extends "layouts/page.njk" %}
+{% set backLink = false %}
+{% from "govuk/components/panel/macro.njk" import govukPanel %}
+
+{% set mainClasses = "govuk-main-wrapper--l" %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      {# Development mode warning banner #}
+      {% if isDevelopmentMode %}
+        <div class="govuk-notification-banner govuk-notification-banner--important" role="region" aria-labelledby="govuk-notification-banner-title" data-module="govuk-notification-banner" style="border-color: #f47738; background-color: #ffe6cc;">
+          <div class="govuk-notification-banner__header" style="background-color: #f47738; color: white;">
+            <h2 class="govuk-notification-banner__title" id="govuk-notification-banner-title">
+              ⚠️ Development Mode
+            </h2>
+          </div>
+          <div class="govuk-notification-banner__content">
+            <p class="govuk-notification-banner__heading">
+              This page is for development testing only and is not accessible in production.
+            </p>
+            <p class="govuk-body-s">
+              <strong>Environment:</strong> local<br>
+              {% if formSlug %}
+                <strong>Demo route:</strong> /dev/demo-confirmation/{{ formSlug }}<br>
+                <strong>Form:</strong> {{ formTitle or formSlug }}<br>
+                <strong>Data source:</strong> {{ 'Session data' if usingSessionData else 'Demo data' }}
+              {% else %}
+                <strong>Demo route pattern:</strong> /dev/demo-confirmation/{slug}
+              {% endif %}
+            </p>
+          </div>
+        </div>
+      {% endif %}
+      {# Business details section - optional #}
+      {% if businessName %}
+        <div style="display: flex; justify-content: space-between; align-items: baseline;">
+          <div>
+            <h1 class="govuk-heading-m govuk-!-margin-bottom-2">{{ businessName }}</h1>
+            {% if sbi %}
+              <p class="govuk-body govuk-!-margin-bottom-0">Single business identifier (SBI): {{ sbi }}</p>
+            {% endif %}
+          </div>
+          {% if contactName %}
+            <div>
+              <p class="govuk-body govuk-!-margin-bottom-0" style="font-size: 24px; font-weight: bold;">{{ contactName }}</p>
+            </div>
+          {% endif %}
+        </div>
+        {% if sbi %}
+          <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible" style="margin-top: 10px; margin-bottom: 30px;">
+        {% endif %}
+      {% endif %}
+      
+      {# FIXED SECTION: Always displayed - Application complete message and reference number #}
+      {{ govukPanel({
+        titleText: confirmationContent.panelTitle or "Application complete",
+        html: ((confirmationContent.panelText or "Your application number") + "<br><strong>" + referenceNumber + "</strong>") | safe
+      }) }}
+
+      {# CONFIGURABLE SECTION: HTML content from YAML or default content #}
+      {% if confirmationContent and confirmationContent.html %}
+        {# Direct HTML injection from YAML #}
+        {{ confirmationContent.html | safe }}
+      {% else %}
+        {# Default content from image if no configuration provided #}
+        <h2 class="govuk-heading-m">What happens next</h2>
+        <p class="govuk-body">Defra will email you when your funding offer is available to review. This will be within 5 working days.</p>
+        <p class="govuk-body">You will need to sign in to the service to accept your funding offer.</p>
+        <p class="govuk-body">You should not start work on the actions you have applied for until:</p>
+        <ul class="govuk-list govuk-list--bullet govuk-!-margin-bottom-6">
+          <li>you have accepted your offer</li>
+          <li>the Rural Payments Agency confirms your start date</li>
+        </ul>
+        
+        <p class="govuk-body">
+          <a class="govuk-link" href="#">If you have a question</a>
+        </p>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}
