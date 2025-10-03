@@ -2,7 +2,6 @@ import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/Q
 import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
 import { formatPhone } from '~/src/server/land-grants/utils/format-phone.js'
 import { fetchBusinessAndCustomerInformation } from '../../common/services/consolidated-view/consolidated-view.service.js'
-import { getFormsCacheService } from '../../common/helpers/forms-cache/forms-cache.js'
 
 const logger = createLogger()
 
