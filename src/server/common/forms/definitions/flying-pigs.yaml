@@ -4,6 +4,32 @@ metadata:
   enabledInProd: true
   submission:
     grantCode: pigs-might-fly
+  confirmationContent:
+    html: >
+      <h2 class="govuk-heading-m">What happens next</h2>
+      <p class="govuk-body">We will review your application for wings for your pigs and email you with a decision within 10 working days.</p>
+      <p class="govuk-body">If your application is successful, you will receive:</p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>a funding offer detailing the grant amount</li>
+        <li>instructions on how to claim your grant</li>
+        <li>the wing fitting schedule for your pigs</li>
+      </ul>
+      <p class="govuk-body">You should not start fitting wings to your pigs until:</p>
+      <ul class="govuk-list govuk-list--bullet govuk-!-margin-bottom-6">
+        <li>you have accepted your funding offer</li>
+        <li>the Rural Payments Agency confirms your start date</li>
+        <li>you have received proper wing fitting training</li>
+      </ul>
+
+      <h2 class="govuk-heading-m">Get help</h2>
+      <p class="govuk-body">If you have questions about your application or the pig wing fitting process:</p>
+      <p class="govuk-body">
+        <strong>Telephone:</strong> 03000 200 301<br>
+        Monday to Friday, 9am to 5pm (except public holidays)
+      </p>
+      <p class="govuk-body">
+        <a class="govuk-link" href="mailto:pigwings@rpa.gov.uk">Email: pigwings@rpa.gov.uk</a>
+      </p>
 pages:
   - title: Check if you can apply for a Pigs Might Fly Grant
     path: /start
@@ -287,10 +313,6 @@ pages:
     controller: FlyingPigsSubmissionPageController
     title: Check your answers
     id: e18e2a8f-4dcf-4f70-ae75-235752260c51
-  - title: Confirmation
-    path: /confirmation
-    controller: ConfirmationPageController
-    id: bbbd6009-c4b7-4d34-8cf4-9d2ee3dd094c
 lists:
   - title: What type of pigs do you have?
     name: pigBreedsList
