@@ -15,6 +15,7 @@ vi.mock('../services/land-grants.service.js')
 vi.mock('@defra/forms-engine-plugin/controllers/SummaryPageController.js', () => ({
   SummaryPageController: class {
     proceed() {}
+    redirect() {}
     getNextPath() {}
     getViewModel() {}
   }
@@ -108,22 +109,18 @@ describe('SubmissionPageController', () => {
   })
 
   describe('handleSuccessfulSubmission', () => {
-    it('should set cache state and proceed', async () => {
+    it('should proceed to next view', async () => {
       const mockRequest = { server: {} }
       const mockContext = { referenceNumber: 'REF123' }
-      const mockH = {}
+      const mockH = {
+        redirect: vi.fn().mockReturnValue('redirect-view')
+      }
 
-      vi.spyOn(controller, 'proceed').mockReturnValue('proceeded')
-      vi.spyOn(controller, 'getNextPath').mockReturnValue('/next-path')
+      vi.spyOn(controller, 'redirect').mockReturnValue('proceeded')
 
       const result = await controller.handleSuccessfulSubmission(mockRequest, mockContext, mockH)
-
-      expect(mockCacheService.setConfirmationState).toHaveBeenCalledWith(mockRequest, {
-        confirmed: true,
-        $$__referenceNumber: 'REF123'
-      })
-      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-path')
-      expect(result).toBe('proceeded')
+      expect(mockH.redirect).toHaveBeenCalledWith('/confirmation')
+      expect(result).toBe('redirect-view')
     })
   })
 

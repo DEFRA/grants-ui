@@ -5,6 +5,7 @@ import { transformStateObjectToGasApplication } from '~/src/server/common/helper
 import { submitGrantApplication } from '~/src/server/common/services/grant-application/grant-application.service.js'
 import { stateToLandGrantsGasAnswers } from '~/src/server/land-grants/mappers/state-to-gas-answers-mapper.js'
 import { validateApplication } from '~/src/server/land-grants/services/land-grants.service.js'
+import { getConfirmationPath } from '../../common/helpers/form-slug-helper.js'
 
 export default class SubmissionPageController extends SummaryPageController {
   /**
@@ -36,6 +37,17 @@ export default class SubmissionPageController extends SummaryPageController {
   }
 
   /**
+   * Handles successful submission
+   * @private
+   * @param {object} request - Request object
+   * @param {object} context - Form context
+   * @returns {Promise<string>} - Redirect response
+   */
+  getStatusPath(request, context) {
+    return getConfirmationPath(request, context, 'SubmissionPageController')
+  }
+
+  /**
    * Handles validation error response
    * @private
    * @param {object} h - Response toolkit
@@ -62,18 +74,7 @@ export default class SubmissionPageController extends SummaryPageController {
    * @returns {Promise<object>} - Redirect response
    */
   async handleSuccessfulSubmission(request, context, h) {
-    const isProduction = config.get('isProduction')
-    const cacheService = getFormsCacheService(request.server)
-    await cacheService.setConfirmationState(request, {
-      confirmed: true,
-      $$__referenceNumber: context.referenceNumber
-    })
-
-    // Remove this once GAS/GAE are ready to handle different application statuses
-    if (!isProduction) {
-      await cacheService.clearState(request, true)
-    }
-    return this.proceed(request, h, this.getNextPath(context))
+    return h.redirect(this.getStatusPath(request, context))
   }
 
   /**

@@ -76,26 +76,31 @@
 </main>
 
 {% block footer %}
+  {% set footerItems = [
+    {
+      href: "https://www.gov.uk/help/privacy-notice",
+      text: "Privacy"
+    },
+    {
+      href: "https://www.gov.uk/help/cookies",
+      text: "Cookies"
+    },
+    {
+      href: "https://www.gov.uk/help/accessibility-statement",
+      text: "Accessibility statement"
+    }
+  ] %}
+  
+  {% if cdpEnvironment !== 'prod' %}
+    {% set footerItems = footerItems.concat([{
+      href: "./clear-application-state",
+      text: "Clear application state"
+    }]) %}
+  {% endif %}
+
   {{ govukFooter({
     meta: {
-      items: [
-        {
-          href: "https://www.gov.uk/help/privacy-notice",
-          text: "Privacy"
-        },
-        {
-          href: "https://www.gov.uk/help/cookies",
-          text: "Cookies"
-        },
-        {
-          href: "https://www.gov.uk/help/accessibility-statement",
-          text: "Accessibility statement"
-        },
-        {
-          href: "/clear-application-state",
-          text: "Clear application state"
-        }
-      ]
+      items: footerItems
     },
     rebrand: true
   }) }}

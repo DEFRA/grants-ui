@@ -9,9 +9,10 @@ import { createTasklistRoute } from '~/src/server/tasklist/tasklist.controller.j
 import { agreements } from '~/src/server/agreements/index.js'
 import { devTools } from '~/src/server/dev-tools/index.js'
 import { configConfirmation } from '~/src/server/confirmation/config-confirmation.js'
-import { clearState } from './dev-tools/clear-state.js'
+import { clearApplicationState } from './dev-tools/clear-application-state.js'
 
 const defraIdEnabled = config.get('defraId.enabled')
+const cdpEnvironment = config.get('cdpEnvironment')
 
 /**
  * @satisfies {ServerRegisterPluginObject<void>}
@@ -45,8 +46,8 @@ export const router = {
         await server.register([devTools])
       }
 
-      if (process.env.NODE_ENV !== 'production') {
-        await server.register([clearState])
+      if (cdpEnvironment !== 'prod') {
+        await server.register([clearApplicationState])
       }
 
       // Generic tasklist routes
