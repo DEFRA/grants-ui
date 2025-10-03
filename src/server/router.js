@@ -9,6 +9,7 @@ import { createTasklistRoute } from '~/src/server/tasklist/tasklist.controller.j
 import { agreements } from '~/src/server/agreements/index.js'
 import { devTools } from '~/src/server/dev-tools/index.js'
 import { configConfirmation } from '~/src/server/confirmation/config-confirmation.js'
+import { clearState } from './dev-tools/clear-state.js'
 
 const defraIdEnabled = config.get('defraId.enabled')
 
@@ -42,6 +43,10 @@ export const router = {
         process.env.ENVIRONMENT === 'local'
       ) {
         await server.register([devTools])
+      }
+
+      if (process.env.NODE_ENV !== 'production') {
+        await server.register([clearState])
       }
 
       // Generic tasklist routes
