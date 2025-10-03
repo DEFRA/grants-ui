@@ -2,6 +2,7 @@ services:
  
   gae-acceptance-tests:
     image: defradigital/grants-ui-acceptance-tests
+    pull_policy: always
     depends_on:
       selenium-chrome:
         condition: service_healthy
