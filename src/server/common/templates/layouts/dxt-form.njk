@@ -31,7 +31,7 @@
       name: auth.name
     }) }}
 
-    {% if not defraIdEnabled and serviceUrl == '/find-funding-for-land-or-farms' %}
+    {% if not defraIdEnabled and serviceUrl == '/farm-payments' %}
 
       {{ sbiSelector({
         sbi: auth.sbi | default("")
