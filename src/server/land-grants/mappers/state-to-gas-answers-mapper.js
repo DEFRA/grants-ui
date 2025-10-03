@@ -1,29 +1,7 @@
 /**
- * @typedef {object} ActionArea
- * @property {string} unit - Area units (ha, m2, etc)
- * @property {number} quantity - Area value
- */
-
-/**
- * @typedef {object} ActionApplication
- * @property {string} parcelId - The parcel identifier
- * @property {string} sheetId - The sheet identifier
- * @property {string} code - Action code
- * @property {ActionArea} appliedFor - Area applied for
- */
-
-/**
- * @typedef {object} GASAnswers
- * @property {string} [scheme] - Scheme
- * @property {number} [year] - Scheme year
- * @property {boolean} [hasCheckedLandIsUpToDate] - Land details are up to date
- * @property {ActionApplication[]} [actionApplications] - Action applications information
- */
-
-/**
  * Creates an appliedFor object from action data
  * @param {object} actionData - The action data object
- * @returns {object} The appliedFor object
+ * @returns {AppliedFor} The appliedFor object
  */
 function createAppliedForObject(actionData) {
   const appliedFor = {}
@@ -46,7 +24,7 @@ function createAppliedForObject(actionData) {
  * @param {object} actionData - The action data
  * @param {string} sheetId - The sheet ID
  * @param {string} parcelId - The parcel ID
- * @returns {object} The action application object
+ * @returns {ActionApplication} The action application object
  */
 function createActionApplication(actionCode, actionData, sheetId, parcelId) {
   const actionApplication = {
@@ -71,7 +49,7 @@ function createActionApplication(actionCode, actionData, sheetId, parcelId) {
  * @param {object} actionsObj - The actions object
  * @param {string} sheetId - The sheet ID
  * @param {string} parcelId - The parcel ID
- * @returns {object[]} Array of action applications
+ * @returns {ActionApplication[]} Array of action applications
  */
 function processParcelActions(actionsObj, sheetId, parcelId) {
   if (!actionsObj || Object.keys(actionsObj).length === 0) {
@@ -86,15 +64,17 @@ function processParcelActions(actionsObj, sheetId, parcelId) {
 /**
  * Transforms FormContext object into a GAS Application answers object for Land Grants.
  * @param {object} state
- * @returns {GASAnswers}
+ * @returns {Answers}
  */
 export function stateToLandGrantsGasAnswers(state) {
   const { landParcels, applicationValidationRunId } = state
+  /** @type {ActionApplication[]} */
+  const actionApplications = []
   const result = {
     hasCheckedLandIsUpToDate: true,
     scheme: 'SFI',
     year: 2025,
-    actionApplications: [],
+    actionApplications,
     applicationValidationRunId: `${applicationValidationRunId}`
   }
 
@@ -119,3 +99,7 @@ export function stateToLandGrantsGasAnswers(state) {
 
   return result
 }
+
+/**
+ * @import { Answers, AppliedFor , ActionApplication} from './land-grants-gas.d.js'
+ */

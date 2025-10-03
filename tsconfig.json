@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "allowJs": true,
-    "checkJs": false,
+    "checkJs": true,
     "module": "NodeNext",
     "noEmit": true,
     "paths": {
@@ -13,6 +13,6 @@
     "strictNullChecks": true,
     "types": ["vitest", "vitest/globals"]
   },
-  "exclude": [".cache", ".public", ".server", "coverage", "node_modules"],
+  "exclude": [".cache", ".public", ".server", "coverage", "node_modules", "src/**/*.test.js"],
   "include": ["**/*.cjs", "**/*.js", ".eslintrc.*", ".prettierrc.*"]
 }

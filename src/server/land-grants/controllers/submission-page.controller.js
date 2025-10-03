@@ -19,9 +19,10 @@ export default class SubmissionPageController extends SummaryPageController {
 
   /**
    * Submits the land grant application
-   * @param {object} identifiers - User identifiers
-   * @param {object} state - Application state
-   * @param {string} validationId - Land Grants API validation ID
+   * @param {object} data
+   * @param {object} data.identifiers - User identifiers
+   * @param {object} data.state - Form application state
+   * @param {string} data.validationId - Land grants validation ID
    * @returns {Promise<object>} - The result of the grant application submission
    */
   async submitGasApplication(data) {
@@ -73,10 +74,15 @@ export default class SubmissionPageController extends SummaryPageController {
 
   /**
    * Creates the POST route handler for form submission
-   * @returns {Function} - The route handler function
    */
   makePostRouteHandler() {
-    return async (request, context, h) => {
+    /**
+     * @param {AnyFormRequest} request
+     * @param {FormContext} context
+     * @param {Pick<ResponseToolkit, 'redirect' | 'view'>} h
+     * @returns {Promise<ResponseObject>}
+     */
+    const fn = async (request, context, h) => {
       try {
         const { state, referenceNumber } = context
         const { sbi, crn } = request.auth.credentials
@@ -106,10 +112,14 @@ export default class SubmissionPageController extends SummaryPageController {
         throw error
       }
     }
+
+    return fn
   }
 }
 
 /**
- * @import { type FormModel } from '~/src/server/plugins/engine/models/index.js'
+ * @import { type FormContext, type AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
+ * @import { ResponseObject, type ResponseToolkit } from '@hapi/hapi'
+ * @import { FormModel } from '@defra/forms-engine-plugin/engine/models/FormModel.js'
  * @import { type PageSummary } from '@defra/forms-model'
  */

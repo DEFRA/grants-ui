@@ -118,7 +118,7 @@ const registerFormsPlugin = async (server, prefix = '') => {
     plugin,
     options: {
       ...(prefix && { routes: { prefix } }),
-      cache: new StatePersistenceService({ server }),
+      cache: config.get(SESSION_CACHE_NAME),
       baseUrl: config.get('baseUrl'),
       onRequest: formsAuthCallback,
       services: {

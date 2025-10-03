@@ -116,7 +116,7 @@ export default class RemoveActionPageController extends LandGrantsQuestionWithAu
   /**
    * Render error view for POST validation
    * @param {object} h - Response toolkit
-   * @param {FormRequest} request - Request object
+   * @param {AnyFormRequest} request - Request object
    * @param {FormContext} context - Form context
    * @param {string} errorMessage - Error message to display
    * @returns {object} - Error view response
@@ -132,7 +132,7 @@ export default class RemoveActionPageController extends LandGrantsQuestionWithAu
 
   /**
    * Process action or parcel removal
-   * @param {FormRequest} request - Request object
+   * @param {AnyFormRequest} request - Request object
    * @param {object} state - Current state
    * @param {object} h - Response toolkit
    * @returns {Promise<object>} - Response object
@@ -149,7 +149,7 @@ export default class RemoveActionPageController extends LandGrantsQuestionWithAu
 
   /**
    * Build view model for GET request
-   * @param {FormRequest} request - Request object
+   * @param {AnyFormRequest} request - Request object
    * @param {FormContext} context - Form context
    * @returns {object} - Complete view model
    */
@@ -196,7 +196,14 @@ export default class RemoveActionPageController extends LandGrantsQuestionWithAu
    * Handle POST requests to the page
    */
   makePostRouteHandler() {
-    return async (request, context, h) => {
+    /**
+     * Handle POST requests to the confirm farm details page.
+     * @param {AnyFormRequest} request
+     * @param {FormContext} context
+     * @param {Pick<ResponseToolkit, 'redirect' | 'view'>} h
+     * @returns {Promise<ResponseObject>}
+     */
+    const fn = async (request, context, h) => {
       const { state } = context
       const payload = request.payload ?? {}
 
@@ -219,11 +226,12 @@ export default class RemoveActionPageController extends LandGrantsQuestionWithAu
 
       return this.proceed(request, h, checkSelectedLandActionsPath)
     }
+
+    return fn
   }
 }
 
 /**
- * @import { type FormRequest } from '~/src/server/routes/types.js'
- * @import { type FormContext } from '~/src/server/plugins/engine/types.js'
- * @import { type ResponseToolkit } from '@hapi/hapi'
+ * @import { type FormContext, type AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
+ * @import { ResponseObject, type ResponseToolkit } from '@hapi/hapi'
  */

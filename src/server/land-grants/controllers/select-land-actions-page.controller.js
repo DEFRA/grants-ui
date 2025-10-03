@@ -8,7 +8,7 @@ import { createBoomError } from '~/src/server/common/helpers/errors.js'
 
 export default class SelectLandActionsPageController extends LandGrantsQuestionWithAuthCheckController {
   viewName = 'select-actions-for-land-parcel'
-  selectedLandParcel = null
+  selectedLandParcel = ''
   actionFieldPrefix = 'landAction_'
   groupedActions = []
   addedActions = []
@@ -35,7 +35,7 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
 
   /**
    * Get view model for the page
-   * @param {FormRequest} request - The request object
+   * @param {AnyFormRequest} request - The request object
    * @param {FormContext} context - The form context
    * @returns {object} - The view model for the page
    */
@@ -132,7 +132,7 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
    * @param {string} sheetId - Sheet ID
    * @param {string} parcelId - Parcel ID
    * @param {object} logger - Request logger
-   * @returns {object} - Load result
+   * @returns {Promise<{success: boolean, hasActions?: boolean, error?: Error}>} - Load result
    */
   async loadAvailableActions(sheetId, parcelId, logger) {
     try {
@@ -157,11 +157,9 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
   /**
    * Render error message with validation errors
    * @param {object} h - Response toolkit
-   * @param {FormRequest} request - Request object
+   * @param {AnyFormRequest} request - Request object
    * @param {FormContext} context - Form context
-   * @param {object} validation - Validation result
-   * @param {string} sheetId - Sheet ID
-   * @param {string} parcelId - Parcel ID
+   * @param {{text: string; href: string | undefined}[]} errorSummary - Error Summary
    * @param {object} additionalState - Additional state to merge
    * @returns {object} - Error view response
    */
@@ -229,11 +227,10 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
    */
   makePostRouteHandler() {
     /**
-     * Handle POST requests to the page.
-     * @param {FormRequest} request
+     * @param {AnyFormRequest} request
      * @param {FormContext} context
      * @param {Pick<ResponseToolkit, 'redirect' | 'view'>} h
-     * @returns {Promise<import('@hapi/boom').Boom<any> | import('@hapi/hapi').ResponseObject>}
+     * @returns {Promise<ResponseObject>}
      */
     const fn = async (request, context, h) => {
       const { state: prevState, referenceNumber } = context
@@ -285,7 +282,6 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
 }
 
 /**
- * @import { type FormRequest } from '~/src/server/routes/types.js'
- * @import { type FormContext } from '~/src/server/plugins/engine/types.js'
- * @import { type ResponseToolkit } from '@hapi/hapi'
+ * @import { type FormContext, type AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
+ * @import { ResponseObject, type ResponseToolkit } from '@hapi/hapi'
  */

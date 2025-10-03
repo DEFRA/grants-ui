@@ -29,13 +29,13 @@ export const actionGroups = [
 /**
  * Calculates grant payment for land actions.
  * @param {LandActions[]} state
- * @returns {Promise<object>} - Payment calculation result
+ * @returns {Promise<{payment: PaymentCalculation, errorMessage?: string, paymentTotal: number}>} - Payment calculation result
  * @throws {Error}
  */
 export async function calculateGrantPayment(state) {
   const payload = { landActions: stateToLandActionsMapper(state) }
   const { payment } = await calculate(payload, LAND_GRANTS_API_URL)
-  const paymentTotal = formatCurrency(payment?.annualTotalPence / 100)
+  const paymentTotal = Number(formatCurrency(payment?.annualTotalPence / 100))
 
   return {
     payment,
@@ -97,7 +97,7 @@ function mapAction(action) {
 /**
  * Fetches parcel size for a list of parcel IDs.
  * @param {string[]} parcelIds
- * @returns Map of parcel string IDs to their sizes
+ * @returns {Promise<{}>}
  * @throws {Error}
  */
 async function fetchParcelsSize(parcelIds) {
@@ -112,7 +112,7 @@ async function fetchParcelsSize(parcelIds) {
 /**
  * Fetches parcels with area data for a given SBI.
  * @param {string} sbi - Single Business Identifier
- * @returns {Promise<object[]>}
+ * @returns {Promise<Parcel[]>}
  * @throws {Error}
  */
 export async function fetchParcels(sbi) {
@@ -133,6 +133,7 @@ export async function fetchParcels(sbi) {
  * @param {string} data.crn
  * @param {string} data.sbi
  * @param {object} data.state
+ * @returns {Promise<ValidateApplicationResponse>}
  * @throws {Error}
  */
 export async function validateApplication(data) {
@@ -150,5 +151,5 @@ export async function validateApplication(data) {
 }
 
 /**
- * @import { LandActions } from './land-grants.client.d.js'
+ * @import { LandActions, Parcel, PaymentCalculation, ValidateApplicationResponse } from './land-grants.client.d.js'
  */
