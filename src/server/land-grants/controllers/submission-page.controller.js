@@ -37,6 +37,16 @@ export default class SubmissionPageController extends SummaryPageController {
   }
 
   /**
+   * Inherited from SummaryPageController
+   * @param {AnyFormRequest} request
+   * @param {FormContext} context
+   * @returns {object}
+   */
+  getViewModel(request, context) {
+    return super.getViewModel(request, context)
+  }
+
+  /**
    * Handles validation error response
    * @private
    * @param {object} h - Response toolkit

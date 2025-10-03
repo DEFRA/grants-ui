@@ -12,14 +12,15 @@
  */
 
 /**
- * @typedef {object} LineItem
- * @property {number} parcelItemId - ID of the linked PaymentParcelItem
+ * @typedef {object} PaymentLineItem
+ * @property {number} [parcelItemId] - ID of the linked PaymentParcelItem
+ * @property {number} [agreementLevelItemId] - ID of the linked AgreementLevelItem
  * @property {number} paymentPence - The payment for the parcel item
  */
 
 /**
  * @typedef {object} ScheduledPayment
- * @property {Array<LineItem>} lineItems - Array of line items for the payment
+ * @property {Array<PaymentLineItem>} lineItems - Array of line items for the payment
  * @property {string} paymentDate - The payment date
  * @property {number} totalPaymentPence - The annual payment paid for the action
  */

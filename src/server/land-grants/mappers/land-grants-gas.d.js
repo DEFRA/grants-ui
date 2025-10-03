@@ -36,40 +36,6 @@
  */
 
 /**
- * @typedef {Object} AgreementLevelItem
- * @property {string} code - Action code
- * @property {string} description - Action description
- * @property {number} version - Version number
- * @property {number} annualPaymentPence - Annual payment in pence
- */
-
-/**
- * @typedef {Object} PaymentLineItem
- * @property {number} [parcelItemId] - Reference to parcel item (optional)
- * @property {number} [agreementLevelItemId] - Reference to agreement level item (optional)
- * @property {number} paymentPence - Payment amount in pence
- */
-
-/**
- * @typedef {Object} Payment
- * @property {number} totalPaymentPence - Total payment in pence
- * @property {string} paymentDate - Payment date (YYYY-MM-DD)
- * @property {PaymentLineItem[]} lineItems - Line items for this payment
- */
-
-/**
- * @typedef {Object} PaymentDetails
- * @property {string} agreementStartDate - Agreement start date (YYYY-MM-DD)
- * @property {string} agreementEndDate - Agreement end date (YYYY-MM-DD)
- * @property {string} frequency - Payment frequency (e.g., "Quarterly")
- * @property {number} agreementTotalPence - Total agreement amount in pence
- * @property {number} annualTotalPence - Annual total in pence
- * @property {Object.<string, ParcelItem>} parcelItems - Parcel items indexed by ID
- * @property {Object.<string, AgreementLevelItem>} agreementLevelItems - Agreement level items indexed by ID
- * @property {Payment[]} payments - Array of payment schedules
- */
-
-/**
  * @typedef {Object} EmailAddress
  * @property {string} address - Email address
  */
@@ -82,10 +48,10 @@
 /**
  * @typedef {Object} Address
  * @property {string} line1 - Address line 1
- * @property {string} line2 - Address line 2
- * @property {string|null} line3 - Address line 3
- * @property {string|null} line4 - Address line 4
- * @property {string|null} line5 - Address line 5
+ * @property {string} [line2] - Address line 2
+ * @property {string} [line3] - Address line 3
+ * @property {string} [line4] - Address line 4
+ * @property {string} [line5] - Address line 5
  * @property {string} street - Street name
  * @property {string} city - City
  * @property {string} postalCode - Postal code
@@ -126,7 +92,7 @@
  * @property {number} year - Application year
  * @property {ActionApplication[]} actionApplications - Array of action applications
  * @property {string} [applicationValidationRunId] - Application validation run ID (optional)
- * @property {PaymentDetails} [payment] - Payment details (optional)
+ * @property {PaymentCalculation} [payment] - Payment details (optional)
  * @property {Applicant} [applicant] - Applicant details (optional)
  */
 
@@ -134,4 +100,8 @@
  * @typedef {Object} SFIApplication
  * @property {Metadata} metadata - Application metadata
  * @property {Answers} answers - Application answers and details
+ */
+
+/**
+ * @import { PaymentCalculation } from '../services/land-grants.client.d.js'
  */
