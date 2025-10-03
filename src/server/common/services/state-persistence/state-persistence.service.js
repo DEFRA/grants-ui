@@ -1,5 +1,5 @@
 import { getCacheKey } from '~/src/server/common/helpers/state/get-cache-key-helper.js'
-import { fetchSavedStateFromApi } from '../../helpers/state/fetch-saved-state-helper.js'
+import { clearSavedStateFromApi, fetchSavedStateFromApi } from '../../helpers/state/fetch-saved-state-helper.js'
 import { persistStateToApi } from '../../helpers/state/persist-state-helper.js'
 import { ADDITIONAL_IDENTIFIER, CacheService } from '@defra/forms-engine-plugin/cache-service.js'
 
@@ -73,10 +73,14 @@ export class StatePersistenceService extends CacheService {
    * Clear state in backend (no-op if you don’t want to clear on submission).
    * @param {import('../plugins/engine/types.js').AnyFormRequest} request
    */
-  async clearState(request) {
+  async clearState(request, force = false) {
     // NO-OP because you want to keep state even after submission
     const key = this._Key(request)
     this.logger?.info(`clearState called for ${key || this.UNKNOWN_SESSION}, but no action taken.`)
+
+    if (force) {
+      await clearSavedStateFromApi(key)
+    }
   }
 
   /**

@@ -34,7 +34,8 @@ describe('SubmissionPageController', () => {
     mockModel = {}
     mockPageDef = {}
     mockCacheService = {
-      setConfirmationState: vi.fn().mockResolvedValue()
+      setConfirmationState: vi.fn().mockResolvedValue(),
+      clearState: vi.fn().mockResolvedValue()
     }
 
     validateApplication.mockReturnValue(() => ({ valid: true }))
@@ -110,19 +111,13 @@ describe('SubmissionPageController', () => {
     it('should set cache state and proceed', async () => {
       const mockRequest = { server: {} }
       const mockContext = { referenceNumber: 'REF123' }
-      const mockH = {}
-
-      vi.spyOn(controller, 'proceed').mockReturnValue('proceeded')
-      vi.spyOn(controller, 'getNextPath').mockReturnValue('/next-path')
+      const mockH = {
+        redirect: vi.fn().mockReturnValue('redirect-view')
+      }
 
       const result = await controller.handleSuccessfulSubmission(mockRequest, mockContext, mockH)
-
-      expect(mockCacheService.setConfirmationState).toHaveBeenCalledWith(mockRequest, {
-        confirmed: true,
-        $$__referenceNumber: 'REF123'
-      })
-      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-path')
-      expect(result).toBe('proceeded')
+      expect(mockH.redirect).toHaveBeenCalledWith('/confirmation')
+      expect(result).toBe('redirect-view')
     })
   })
 

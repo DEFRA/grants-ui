@@ -7,63 +7,75 @@ import { log, LogCodes } from '../logging/log.js'
 
 const GRANTS_UI_BACKEND_ENDPOINT = config.get('session.cache.apiEndpoint')
 
-export async function fetchSavedStateFromApi(key) {
+/**
+ * Makes an API call to the state endpoint with the specified HTTP method
+ * @param {string} key - The session key
+ * @param {string} method - HTTP method (GET or DELETE)
+ * @returns {Promise<Object|null>} The response JSON or null
+ */
+async function callStateApi(key, method) {
   if (!GRANTS_UI_BACKEND_ENDPOINT?.length) {
     return null
   }
 
   const { sbi, grantCode } = parseSessionKey(key)
-
-  let json = null
   const url = new URL('/state/', GRANTS_UI_BACKEND_ENDPOINT)
+  url.searchParams.set('sbi', sbi)
+  url.searchParams.set('grantCode', grantCode)
+
   try {
     log(LogCodes.SYSTEM.EXTERNAL_API_CALL_DEBUG, {
-      method: 'GET',
+      method,
       endpoint: url.href,
       identity: key
     })
 
-    url.searchParams.set('sbi', sbi)
-    url.searchParams.set('grantCode', grantCode)
-
     const response = await fetch(url.href, {
-      method: 'GET',
+      method,
       headers: createApiHeaders()
     })
 
     if (!response.ok) {
       if (response.status === statusCodes.notFound) {
         log(LogCodes.SYSTEM.EXTERNAL_API_CALL_DEBUG, {
-          method: 'GET',
+          method,
           endpoint: url.href,
           identity: key,
           summary: 'No state found in backend'
         })
         return null
       }
-      throw new Error(`Failed to fetch saved state: ${response.status}`)
+      throw new Error(`Failed to ${method === 'DELETE' ? 'clear' : 'fetch'} saved state: ${response.status}`)
     }
 
-    json = await response.json()
+    const json = await response.json()
 
     if (!json || typeof json !== 'object') {
       log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
-        method: 'GET',
+        method,
         endpoint: url.href,
         identity: key,
         error: `Unexpected or empty state format: ${json}`
       })
       return null
     }
+
+    return json
   } catch (err) {
     log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
-      method: 'GET',
+      method,
       endpoint: url.href,
       identity: key,
       error: err.message
     })
     return null
   }
+}
 
-  return json
+export async function fetchSavedStateFromApi(key) {
+  return callStateApi(key, 'GET')
+}
+
+export async function clearSavedStateFromApi(key) {
+  return callStateApi(key, 'DELETE')
 }
