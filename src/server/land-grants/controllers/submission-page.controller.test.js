@@ -34,7 +34,8 @@ describe('SubmissionPageController', () => {
     mockModel = {}
     mockPageDef = {}
     mockCacheService = {
-      setConfirmationState: vi.fn().mockResolvedValue()
+      setConfirmationState: vi.fn().mockResolvedValue(),
+      clearState: vi.fn().mockResolvedValue()
     }
 
     validateApplication.mockReturnValue(() => ({ valid: true }))

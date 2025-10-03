@@ -62,12 +62,17 @@ export default class SubmissionPageController extends SummaryPageController {
    * @returns {Promise<object>} - Redirect response
    */
   async handleSuccessfulSubmission(request, context, h) {
+    const isProduction = config.get('isProduction')
     const cacheService = getFormsCacheService(request.server)
     await cacheService.setConfirmationState(request, {
       confirmed: true,
       $$__referenceNumber: context.referenceNumber
     })
 
+    // Remove this once GAS/GAE are ready to handle different application statuses
+    if (!isProduction) {
+      await cacheService.clearState(request, true)
+    }
     return this.proceed(request, h, this.getNextPath(context))
   }
 
