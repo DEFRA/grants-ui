@@ -74,6 +74,12 @@ export default class SubmissionPageController extends SummaryPageController {
    * @returns {Promise<object>} - Redirect response
    */
   async handleSuccessfulSubmission(request, context, h) {
+    const cacheService = getFormsCacheService(request.server)
+    await cacheService.setConfirmationState(request, {
+      confirmed: true,
+      $$__referenceNumber: context.referenceNumber
+    })
+
     return h.redirect(this.getStatusPath(request, context))
   }
 
