@@ -5,6 +5,7 @@ import { transformStateObjectToGasApplication } from '~/src/server/common/helper
 import { submitGrantApplication } from '~/src/server/common/services/grant-application/grant-application.service.js'
 import { stateToLandGrantsGasAnswers } from '~/src/server/land-grants/mappers/state-to-gas-answers-mapper.js'
 import { validateApplication } from '~/src/server/land-grants/services/land-grants.service.js'
+import { getConfirmationPath } from '../../common/helpers/form-slug-helper.js'
 
 export default class SubmissionPageController extends SummaryPageController {
   /**
@@ -33,6 +34,17 @@ export default class SubmissionPageController extends SummaryPageController {
     )
 
     return submitGrantApplication(this.grantCode, applicationData)
+  }
+
+  /**
+   * Handles successful submission
+   * @private
+   * @param {object} request - Request object
+   * @param {object} context - Form context
+   * @returns {Promise<string>} - Redirect response
+   */
+  getStatusPath(request, context) {
+    return getConfirmationPath(request, context, 'SubmissionPageController')
   }
 
   /**
@@ -68,7 +80,7 @@ export default class SubmissionPageController extends SummaryPageController {
       $$__referenceNumber: context.referenceNumber
     })
 
-    return this.proceed(request, h, this.getNextPath(context))
+    return h.redirect(this.getStatusPath(request, context))
   }
 
   /**
