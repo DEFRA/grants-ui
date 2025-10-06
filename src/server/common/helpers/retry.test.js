@@ -2,11 +2,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { retry } from './retry.js'
 
-describe('retry', () => {
-  beforeEach(() => {
-    vi.useFakeTimers()
-  })
-
+describe('retry with exponential backoff', () => {
   afterEach(() => {
     vi.restoreAllMocks()
   })
@@ -64,16 +60,6 @@ describe('retry', () => {
     expect(mockOperation).toHaveBeenCalledTimes(3)
   })
 
-  it('should time out if the operation exceeds the timeout', async () => {
-    const mockOperation = vi.fn(() => new Promise((resolve) => setTimeout(resolve, 2000)))
-    const retryPromise = retry(mockOperation, { timeout: 1000 })
-
-    vi.runAllTimers()
-
-    await expect(retryPromise).rejects.toThrow('Operation timed out')
-    expect(mockOperation).toHaveBeenCalledTimes(1)
-  })
-
   it('should call onRetry callback on each retry attempt', async () => {
     const mockOperation = vi.fn().mockRejectedValue(new Error('Retry error'))
     const onRetry = vi.fn()
@@ -82,5 +68,25 @@ describe('retry', () => {
     expect(onRetry).toHaveBeenCalledTimes(2)
     expect(onRetry).toHaveBeenCalledWith(expect.any(Error), 1, expect.any(Number))
     expect(onRetry).toHaveBeenCalledWith(expect.any(Error), 2, expect.any(Number))
+  })
+
+  describe('retry timeouts', () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
+    })
+
+    afterAll(() => {
+      vi.useRealTimers()
+    })
+
+    it('should time out if the operation exceeds the timeout', async () => {
+      const mockOperation = vi.fn(() => new Promise((resolve) => setTimeout(resolve, 2000)))
+      const retryPromise = retry(mockOperation, { timeout: 1000, maxAttempts: 1 })
+
+      vi.runAllTimers()
+
+      await expect(retryPromise).rejects.toThrow('Operation timed out')
+      expect(mockOperation).toHaveBeenCalledTimes(1)
+    })
   })
 })
