@@ -6,6 +6,7 @@ import { transformStateObjectToGasApplication } from '../../common/helpers/grant
 import { stateToLandGrantsGasAnswers } from '../mappers/state-to-gas-answers-mapper.js'
 import { validateApplication } from '../services/land-grants.service.js'
 import SubmissionPageController from './submission-page.controller.js'
+import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
 
 vi.mock('~/src/server/common/services/grant-application/grant-application.service.js')
 vi.mock('~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js')
@@ -34,8 +35,8 @@ describe('SubmissionPageController', () => {
     mockModel = {}
     mockPageDef = {}
     mockCacheService = {
-      setConfirmationState: vi.fn().mockResolvedValue(),
-      clearState: vi.fn().mockResolvedValue()
+      setState: vi.fn().mockResolvedValue(),
+      getState: vi.fn().mockResolvedValue()
     }
 
     validateApplication.mockReturnValue(() => ({ valid: true }))
@@ -111,13 +112,20 @@ describe('SubmissionPageController', () => {
     it('should set cache state and proceed', async () => {
       const mockRequest = { server: {} }
       const mockContext = { referenceNumber: 'REF123' }
-      const mockH = {
-        redirect: vi.fn().mockReturnValue('redirect-view')
-      }
+      const mockH = { redirect: vi.fn().mockResolvedValue() }
+      const statusCode = 204
+      vi.spyOn(controller, 'getNextPath').mockReturnValue('/next-path')
+      mockRequest.logger = mockRequestLogger()
 
-      const result = await controller.handleSuccessfulSubmission(mockRequest, mockContext, mockH)
+      await controller.handleSuccessfulSubmission(mockRequest, mockContext, mockH, statusCode)
+
+      expect(mockCacheService.setState).toHaveBeenCalledWith(
+        mockRequest,
+        expect.objectContaining({
+          applicationStatus: 'SUBMITTED'
+        })
+      )
       expect(mockH.redirect).toHaveBeenCalledWith('/confirmation')
-      expect(result).toBe('redirect-view')
     })
   })
 
@@ -145,7 +153,8 @@ describe('SubmissionPageController', () => {
         view: vi.fn()
       }
       const mockValidationResult = { id: 'validation-123', valid: true }
-      const mockSubmitResult = { success: true }
+      const statusCode = 204
+      const mockSubmitResult = { success: true, status: statusCode }
       validateApplication.mockResolvedValue(mockValidationResult)
 
       vi.spyOn(controller, 'submitGasApplication').mockResolvedValue(mockSubmitResult)
@@ -169,7 +178,7 @@ describe('SubmissionPageController', () => {
         state: mockContext.state,
         validationId: 'validation-123'
       })
-      expect(controller.handleSuccessfulSubmission).toHaveBeenCalledWith(mockRequest, mockContext, mockH)
+      expect(controller.handleSuccessfulSubmission).toHaveBeenCalledWith(mockRequest, mockContext, mockH, statusCode)
       expect(mockRequest.logger.info).toHaveBeenCalledWith('Form submission completed', mockSubmitResult)
       expect(result).toBe('proceeded')
     })
@@ -242,7 +251,7 @@ describe('SubmissionPageController', () => {
 
       expect(mockRequest.logger.error).toHaveBeenCalledWith('Error submitting application:', mockError)
       expect(mockH.redirect).not.toHaveBeenCalled()
-      expect(mockCacheService.setConfirmationState).not.toHaveBeenCalled()
+      expect(mockCacheService.setState).not.toHaveBeenCalled()
     })
 
     it('should handle submission errors and rethrow them', async () => {
@@ -284,7 +293,7 @@ describe('SubmissionPageController', () => {
 
       expect(mockRequest.logger.error).toHaveBeenCalledWith('Error submitting application:', mockError)
       expect(mockH.redirect).not.toHaveBeenCalled()
-      expect(mockCacheService.setConfirmationState).not.toHaveBeenCalled()
+      expect(mockCacheService.setState).not.toHaveBeenCalled()
     })
 
     it('should use empty object for landParcels if not present in state', async () => {
