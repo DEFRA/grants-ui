@@ -128,7 +128,7 @@ export function createExpectedAuthHeader(token, encryptionKey = null) {
     actualToken = encryptTokenForTest(token, encryptionKey)
   }
 
-  return `${AUTH_SCHEME} ${Buffer.from(actualToken).toString(CRYPTO_ENCODING.BASE64)}`
+  return `${AUTH_SCHEME} ${Buffer.from(actualToken).toString(CRYPTO_ENCODING.BASE64 || '')}`
 }
 
 /**

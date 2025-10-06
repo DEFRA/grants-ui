@@ -128,3 +128,7 @@ export const getAgreementController = {
     }
   }
 }
+
+/**
+ * @import { ServerRoute } from '@hapi/hapi'
+ */

@@ -282,6 +282,6 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
 }
 
 /**
- * @import { type FormContext, type AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
- * @import { ResponseObject, type ResponseToolkit } from '@hapi/hapi'
+ * @import { FormContext, AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
+ * @import { ResponseObject, ResponseToolkit } from '@hapi/hapi'
  */

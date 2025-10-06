@@ -136,7 +136,7 @@ export function generateDevHomePage(tools) {
 
 /**
  * Main dev home page handler
- * @param {object} request - Hapi request object
+ * @param {object} _request - Hapi request object
  * @param {object} h - Hapi response toolkit
  * @returns {object} Hapi response
  */

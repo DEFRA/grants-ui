@@ -413,4 +413,5 @@ validateBackendAuthConfig(config)
  * @import { Schema, SchemaObj } from 'convict'
  * @import { RedisConfig } from '~/src/server/common/helpers/redis-client.js'
  * @import { LandGrantsConfig } from '~/src/config/land-grants.js'
+ * @import { AgreementsConfig } from '~/src/config/agreements.js'
  */

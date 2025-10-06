@@ -19,7 +19,7 @@ class GrantApplicationServiceApiError extends Error {
  * @param {string} url - API endpoint URL
  * @param {string} grantCode - Grant code for error context
  * @param {object} options - Request options
- * @param {string} options.method - HTTP method (GET, POST, etc.)
+ * @param {string} [options.method] - HTTP method (GET, POST, etc.)
  * @param {object} [options.payload] - Request payload for POST requests
  * @param {object} [options.queryParams] - Query parameters for GET requests
  * @returns {Promise} - Promise that resolves to the response

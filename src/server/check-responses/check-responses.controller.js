@@ -20,3 +20,7 @@ export default class CheckResponsesPageController extends SummaryPageController 
     }
   }
 }
+/**
+ * @import { FormModel } from '@defra/forms-engine-plugin/engine/models/FormModel.js'
+ * @import { PageSummary } from '@defra/forms-model'
+ */

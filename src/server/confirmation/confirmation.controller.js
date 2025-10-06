@@ -13,7 +13,7 @@ export default class ConfirmationPageController extends StatusPageController {
   makeGetRouteHandler() {
     /**
      * Handle GET requests to the score page.
-     * @param {FormRequest} request
+     * @param {AnyFormRequest} request
      * @param {FormContext} context
      * @param {Pick<ResponseToolkit, 'redirect' | 'view'>} h
      */
@@ -30,7 +30,7 @@ export default class ConfirmationPageController extends StatusPageController {
 
   /**
    * Render the confirmation page
-   * @param {FormRequest} request - The request object
+   * @param {AnyFormRequest} request - The request object
    * @param {FormContext} context - The context object
    * @param {Pick<ResponseToolkit, 'redirect' | 'view'>} h - Response toolkit
    * @param {string} referenceNumber - The reference number
@@ -79,7 +79,6 @@ export default class ConfirmationPageController extends StatusPageController {
 }
 
 /**
- * @import { type FormRequest } from '~/src/server/routes/types.js'
- * @import { type FormContext } from '~/src/server/plugins/engine/types.js'
+ * @import { type FormContext, AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
  * @import { type ResponseToolkit } from '@hapi/hapi'
  */

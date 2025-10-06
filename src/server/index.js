@@ -112,12 +112,17 @@ const createHapiServer = () => {
   })
 }
 
+/**
+ *
+ * @param {Server} server
+ * @param {string} prefix
+ */
 const registerFormsPlugin = async (server, prefix = '') => {
   await server.register({
     plugin,
     options: {
       ...(prefix && { routes: { prefix } }),
-      cache: config.get(SESSION_CACHE_NAME),
+      cache: new StatePersistenceService({ server }),
       baseUrl: config.get('baseUrl'),
       onRequest: formsAuthCallback,
       services: {
@@ -319,3 +324,8 @@ export async function createServer() {
 
   return server
 }
+
+/**
+ * @import { Engine } from '~/src/server/common/helpers/session-cache/cache-engine.js'
+ * @import { Server } from '@hapi/hapi'
+ */

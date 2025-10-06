@@ -38,7 +38,7 @@ export default class SubmissionPageController extends SummaryPageController {
    * @private
    * @param {object} request - Request object
    * @param {object} context - Form context
-   * @returns {Promise<string>} - Redirect response
+   * @returns {string} - Status url path
    */
   getStatusPath(request, context) {
     return getConfirmationPath(request, context, 'SubmissionPageController')
@@ -65,7 +65,6 @@ export default class SubmissionPageController extends SummaryPageController {
   /**
    * Handles successful submission
    * @private
-   * @param {object} result - Submission result
    * @param {object} request - Request object
    * @param {object} context - Form context
    * @param {number} submissionStatus - Submission status code
@@ -126,6 +125,7 @@ export default class SubmissionPageController extends SummaryPageController {
       try {
         const { state, referenceNumber } = context
         const { sbi, crn } = request.auth.credentials
+        const frn = state.applicant ? state.applicant['business']?.reference : undefined
 
         // Validate application with Land Grants API
         const validationResult = await validateApplication({ applicationId: referenceNumber, crn, sbi, state })
@@ -135,12 +135,7 @@ export default class SubmissionPageController extends SummaryPageController {
         }
 
         const result = await this.submitGasApplication({
-          identifiers: {
-            sbi,
-            crn,
-            frn: state.applicant?.business?.reference,
-            clientRef: referenceNumber?.toLowerCase()
-          },
+          identifiers: { sbi, crn, frn, clientRef: referenceNumber?.toLowerCase() },
           state,
           validationId
         })
@@ -158,8 +153,6 @@ export default class SubmissionPageController extends SummaryPageController {
 }
 
 /**
- * @import { type FormContext, type AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
+ * @import { FormContext, AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
  * @import { ResponseObject, type ResponseToolkit } from '@hapi/hapi'
- * @import { FormModel } from '@defra/forms-engine-plugin/engine/models/FormModel.js'
- * @import { type PageSummary } from '@defra/forms-model'
  */

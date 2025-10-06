@@ -116,7 +116,7 @@ async function fetchParcelsSize(parcelIds) {
 
 /**
  * Fetches parcels with area data for a given SBI.
- * @param {string} sbi - Single Business Identifier
+ * @param {number} sbi - Single Business Identifier
  * @returns {Promise<Parcel[]>}
  * @throws {Error}
  */
