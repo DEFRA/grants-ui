@@ -7,15 +7,8 @@ import { stateToLandGrantsGasAnswers } from '~/src/server/land-grants/mappers/st
 import { validateApplication } from '~/src/server/land-grants/services/land-grants.service.js'
 
 export default class SubmissionPageController extends SummaryPageController {
-  /**
-   * @param {FormModel} model
-   * @param {PageSummary} pageDef
-   */
-  constructor(model, pageDef) {
-    super(model, pageDef)
-    this.viewName = 'submit-your-application'
-    this.grantCode = config.get('landGrants.grantCode')
-  }
+  viewName = 'submit-your-application'
+  grantCode = config.get('landGrants.grantCode')
 
   /**
    * Submits the land grant application
@@ -34,16 +27,6 @@ export default class SubmissionPageController extends SummaryPageController {
     )
 
     return submitGrantApplication(this.grantCode, applicationData)
-  }
-
-  /**
-   * Inherited from SummaryPageController
-   * @param {AnyFormRequest} request
-   * @param {FormContext} context
-   * @returns {object}
-   */
-  getViewModel(request, context) {
-    return super.getViewModel(request, context)
   }
 
   /**

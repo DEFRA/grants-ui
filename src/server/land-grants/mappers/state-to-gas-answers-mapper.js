@@ -101,5 +101,5 @@ export function stateToLandGrantsGasAnswers(state) {
 }
 
 /**
- * @import { Answers, AppliedFor , ActionApplication} from './land-grants-gas.d.js'
+ * @import { Answers, AppliedFor, ActionApplication} from '~/src/server/land-grants/types/gas-payload.d.js'
  */

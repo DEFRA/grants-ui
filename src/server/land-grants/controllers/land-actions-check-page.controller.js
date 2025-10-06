@@ -194,13 +194,14 @@ export default class LandActionsCheckPageController extends QuestionPageControll
    */
   renderPostErrorView(h, request, context, errorMessage) {
     const { state } = context
+    const annualTotalPence = state.payment ? state.payment['annualTotalPence'] : undefined
 
     return h.view(this.viewName, {
       ...this.getViewModel(request, context),
       ...state,
       parcelItems: this.parcelItems,
       additionalYearlyPayments: this.additionalYearlyPayments,
-      totalYearlyPayment: this.getPrice(state.payment?.annualTotalPence || 0),
+      totalYearlyPayment: this.getPrice(annualTotalPence || 0),
       errorMessage
     })
   }

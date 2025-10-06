@@ -45,28 +45,32 @@ export async function calculateGrantPayment(state) {
 }
 
 /**
+ * Creates a group with passed name and actions
+ * @param {string} name
+ * @param {ActionOption[]} groupActions
+ * @returns {ActionGroup}- Parcel data with actions
+ */
+const createGroup = (name, groupActions) => ({
+  name,
+  totalAvailableArea: {
+    unit: groupActions[0]?.availableArea.unit,
+    value: Math.max(...groupActions.map((item) => item.availableArea.value))
+  },
+  actions: groupActions
+})
+
+/**
  * Fetches available actions for a given parcel.
  * @param {{ parcelId: string, sheetId: string }} parcel
- * @returns - Parcel data with actions
+ * @returns {Promise<ActionGroup[]>}- Parcel data with actions
  * @throws {Error}
  */
 export async function fetchAvailableActionsForParcel({ parcelId = '', sheetId = '' }) {
-  const parcelIds = [stringifyParcel({ sheetId, parcelId })]
-
-  const { parcels } = await parcelsWithActionsAndSize(parcelIds, LAND_GRANTS_API_URL)
-
-  const actions = parcels?.find((p) => p.parcelId === parcelId && p.sheetId === sheetId)?.actions?.map(mapAction) || []
   const result = []
+  const parcelIds = [stringifyParcel({ sheetId, parcelId })]
+  const { parcels } = await parcelsWithActionsAndSize(parcelIds, LAND_GRANTS_API_URL)
+  const actions = parcels?.find((p) => p.parcelId === parcelId && p.sheetId === sheetId)?.actions?.map(mapAction) || []
   const usedCodes = new Set()
-
-  const createGroup = (name, groupActions) => ({
-    name,
-    totalAvailableArea: {
-      unit: groupActions[0]?.availableArea.unit,
-      value: Math.max(...groupActions.map((item) => item.availableArea.value))
-    },
-    actions: groupActions
-  })
 
   actionGroups.forEach((group) => {
     const groupActions = actions.filter((a) => group.actions.includes(a.code))
@@ -80,12 +84,13 @@ export async function fetchAvailableActionsForParcel({ parcelId = '', sheetId = 
   if (ungroupedActions.length > 0) {
     result.push(createGroup('', ungroupedActions))
   }
+
   return result
 }
 
 /**
  *
- * @param {{description: string, code: string}} action
+ * @param {ActionOption} action
  */
 function mapAction(action) {
   return {
@@ -97,7 +102,7 @@ function mapAction(action) {
 /**
  * Fetches parcel size for a list of parcel IDs.
  * @param {string[]} parcelIds
- * @returns {Promise<{}>}
+ * @returns {Promise<Object.<string, number>>}
  * @throws {Error}
  */
 async function fetchParcelsSize(parcelIds) {
@@ -151,5 +156,6 @@ export async function validateApplication(data) {
 }
 
 /**
- * @import { LandActions, Parcel, PaymentCalculation, ValidateApplicationResponse } from './land-grants.client.d.js'
+ * @import { ActionOption, LandActions, ActionGroup, Parcel, ValidateApplicationResponse, Action } from '~/src/server/land-grants/types/land-grants.client.d.js'
+ * @import { PaymentCalculation } from '~/src/server/land-grants/types/payment.d.js'
  */

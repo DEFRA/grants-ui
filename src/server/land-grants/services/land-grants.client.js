@@ -3,7 +3,7 @@
  * @param {string} endpoint
  * @param {object} body
  * @param {string} baseUrl
- * @returns {Promise<any>}
+ * @returns {Promise<Object>}
  * @throws {Error}
  */
 export async function postToLandGrantsApi(endpoint, body, baseUrl) {
@@ -84,5 +84,6 @@ export async function validate(request, baseUrl) {
 }
 
 /**
- * @import { Parcel, LandActions, PaymentCalculationResponse, Action, ValidateApplicationRequest, ParcelResponse, ValidateApplicationResponse } from './land-grants.client.d.js'
+ * @import { Parcel, LandActions, ValidateApplicationRequest, ParcelResponse, ValidateApplicationResponse } from '~/src/server/land-grants/types/land-grants.client.d.js'
+ * @import {  PaymentCalculationResponse } from '~/src/server/land-grants/types/payment.d.js'
  */
