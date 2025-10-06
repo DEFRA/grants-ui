@@ -5,6 +5,10 @@ import { transformStateObjectToGasApplication } from '~/src/server/common/helper
 import { submitGrantApplication } from '~/src/server/common/services/grant-application/grant-application.service.js'
 import { stateToLandGrantsGasAnswers } from '~/src/server/land-grants/mappers/state-to-gas-answers-mapper.js'
 import { validateApplication } from '~/src/server/land-grants/services/land-grants.service.js'
+import { statusCodes } from '~/src/server/common/constants/status-codes.js'
+import { ApplicationStatus } from '~/src/server/common/constants/application-status.js'
+import { persistSubmissionToApi } from '~/src/server/common/helpers/state/persist-submission-helper.js'
+import { getConfirmationPath } from '~/src/server/common/helpers/form-slug-helper.js'
 
 export default class SubmissionPageController extends SummaryPageController {
   viewName = 'submit-your-application'
@@ -30,6 +34,17 @@ export default class SubmissionPageController extends SummaryPageController {
   }
 
   /**
+   * Handles successful submission
+   * @private
+   * @param {object} request - Request object
+   * @param {object} context - Form context
+   * @returns {Promise<string>} - Redirect response
+   */
+  getStatusPath(request, context) {
+    return getConfirmationPath(request, context, 'SubmissionPageController')
+  }
+
+  /**
    * Handles validation error response
    * @private
    * @param {object} h - Response toolkit
@@ -50,19 +65,51 @@ export default class SubmissionPageController extends SummaryPageController {
   /**
    * Handles successful submission
    * @private
+   * @param {object} result - Submission result
    * @param {object} request - Request object
    * @param {object} context - Form context
+   * @param {number} submissionStatus - Submission status code
    * @param {object} h - Response toolkit
    * @returns {Promise<object>} - Redirect response
    */
-  async handleSuccessfulSubmission(request, context, h) {
+  async handleSuccessfulSubmission(request, context, h, submissionStatus) {
+    const { sbi, crn } = request.auth?.credentials || {}
+    const submittedAt = new Date().toISOString()
     const cacheService = getFormsCacheService(request.server)
-    await cacheService.setConfirmationState(request, {
-      confirmed: true,
-      $$__referenceNumber: context.referenceNumber
-    })
 
-    return this.proceed(request, h, this.getNextPath(context))
+    // Log submission details if available
+    if (submissionStatus === statusCodes.noContent) {
+      request.logger.info({
+        message: 'Form submission completed',
+        referenceNumber: context.referenceNumber,
+        numberOfSubmittedFields: context.relevantState ? Object.keys(context.relevantState).length : 0,
+        timestamp: new Date().toISOString()
+      })
+
+      const currentState = await cacheService.getState(request)
+
+      // Update application status so the confirmation page knows a submission happened
+      await cacheService.setState(request, {
+        ...currentState,
+        applicationStatus: ApplicationStatus.SUBMITTED,
+        submittedAt,
+        submittedBy: crn
+      })
+
+      // Add to submissions collection
+      await persistSubmissionToApi({
+        crn,
+        sbi,
+        grantCode: this.grantCode,
+        grantVersion: context.grantVersion,
+        referenceNumber: context.referenceNumber,
+        submittedAt
+      })
+    }
+
+    // Get the redirect path
+    const redirectPath = this.getStatusPath(request, context)
+    return h.redirect(redirectPath)
   }
 
   /**
@@ -99,7 +146,7 @@ export default class SubmissionPageController extends SummaryPageController {
         })
 
         request.logger.info('Form submission completed', result)
-        return await this.handleSuccessfulSubmission(request, context, h)
+        return await this.handleSuccessfulSubmission(request, context, h, result.status)
       } catch (error) {
         request.logger.error('Error submitting application:', error)
         throw error
