@@ -68,6 +68,44 @@ CheckResponsesPageController renders a page showing the questions and answers th
 DeclarationPageController renders a declaration page and submits the form to GAS. It does not use the `confirmationState` used by DXT and does not clear the state.
 Instead it sets `applicationStatus` to `SUBMITTED` along with `submittedAt` and `submittedBy` fields.
 
+## Cookies
+
+We use the `@hapi/cookie` plugin to manage user sessions and `@hapi/yar` to manage cache. The session cookie is encrypted and signed using a high-entropy password set via the `SESSION_COOKIE_PASSWORD` environment variable.
+
+The table below outlines the data the cookies control.
+
+<table>
+  <thead>
+    <tr>
+      <th>Cookie Name</th>
+      <th>YAR managed</th>
+      <th>Cache name</th>
+      <th>Segment</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>grants-ui-session-auth</td>
+      <td>No</td>
+      <td>session-auth</td>
+      <td>auth</td>
+    </tr>
+    <tr>
+      <td rowspan="3">grants-ui-session-cache</td>
+      <td>No</td>
+      <td rowspan="3">session-cache</td>
+      <td>tasklist-section-data</td>
+    </tr>
+    <tr>
+      <td rowspan="2">Yes</td>
+      <td>state</td>
+    </tr>
+    <tr>
+      <td>formSubmission</td>
+    </tr>
+  </tbody>
+</table>
+
 ## Server-side Caching
 
 We use Catbox for server-side caching. By default the service will use CatboxRedis when deployed and CatboxMemory for
