@@ -32,6 +32,8 @@ vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
 
 process.env.EXAMPLE_GRANT_WITH_AUTH_WHITELIST_CRNS = '1104734543,1103521484'
 process.env.EXAMPLE_GRANT_WITH_AUTH_WHITELIST_SBIS = '123456789,987654321'
+process.env.FARMING_PAYMENTS_WHITELIST_CRNS = '1102838829, 1102760349, 1100495932'
+process.env.FARMING_PAYMENTS_WHITELIST_SBIS = '106284736, 121428499, 106238988'
 
 describe('#errors', () => {
   /** @type {Server} */

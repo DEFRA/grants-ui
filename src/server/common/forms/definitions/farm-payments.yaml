@@ -1,11 +1,13 @@
 engine: V2
-name: Find Funding for Land or Farms
+name: Farm payments
 metadata:
   id: 5c67688f-3c61-4839-a6e1-d48b598257f1
   enabledInProd: true
+  whitelistCrnEnvVar: FARMING_PAYMENTS_WHITELIST_CRNS
+  whitelistSbiEnvVar: FARMING_PAYMENTS_WHITELIST_SBIS
   submission:
     grantCode: frps-private-beta
-    submissionSchemaPath: ./schemas/find-funding-for-land-or-farms.schema.json
+    submissionSchemaPath: ./schemas/farm-payments.schema.json
   confirmationContent:
     html: |
       <h2 class="govuk-heading-m">What happens next</h2>
