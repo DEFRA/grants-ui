@@ -35,7 +35,7 @@ export async function retry(operation, options = {}) {
       if (timeout) {
         return await Promise.race([
           operation(),
-          new Promise((resolve, reject) =>
+          new Promise((_resolve, reject) =>
             setTimeout(() => reject(new Error(`Operation timed out after ${timeout}ms`)), timeout)
           )
         ])
