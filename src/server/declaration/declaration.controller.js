@@ -63,7 +63,7 @@ export default class DeclarationPageController extends SummaryPageController {
         const grantCode = request.params?.slug
 
         const identifiers = {
-          clientRef: `${sbi}-${grantCode}`,
+          clientRef: context.referenceNumber.toLowerCase(),
           sbi,
           frn: 'frn',
           crn,

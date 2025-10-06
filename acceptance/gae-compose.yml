@@ -2,6 +2,7 @@ services:
  
   gae-acceptance-tests:
     image: defradigital/grants-ui-acceptance-tests
+    pull_policy: always
     depends_on:
       selenium-chrome:
         condition: service_healthy
@@ -19,12 +20,7 @@ services:
       - grants-ui-net
 
   selenium-chrome:
-    image: selenium/standalone-chrome
-    #image: seleniarm/standalone-chrome
-    # To set SELENIUM_ARCHITECTURE, create a .env file in this directory with:
-    # SELENIUM_ARCHITECTURE=linux/arm64  # for Apple Silicon (M1/M2/M3) 
-    # Intel/AMD is default
-    platform: ${SELENIUM_ARCHITECTURE:-linux/amd64}
+    image: selenium/standalone-chromium:4.34.0-20250727
     shm_size: 2g
     ports:
       - "4444:4444"

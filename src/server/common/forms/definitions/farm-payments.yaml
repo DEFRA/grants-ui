@@ -1,11 +1,25 @@
 engine: V2
-name: Find Funding for Land or Farms
+name: Farm payments
 metadata:
   id: 5c67688f-3c61-4839-a6e1-d48b598257f1
   enabledInProd: true
+  whitelistCrnEnvVar: FARMING_PAYMENTS_WHITELIST_CRNS
+  whitelistSbiEnvVar: FARMING_PAYMENTS_WHITELIST_SBIS
   submission:
     grantCode: frps-private-beta
-    submissionSchemaPath: ./schemas/find-funding-for-land-or-farms.schema.json
+    submissionSchemaPath: ./schemas/farm-payments.schema.json
+  confirmationContent:
+    html: |
+      <h2 class="govuk-heading-m">What happens next</h2>
+      <p class="govuk-body">Defra will email you when your funding offer is available to review. This will be within 5 working days.</p>
+      <p class="govuk-body">You will need to sign in to the service to accept your funding offer.</p>
+      <p class="govuk-body">You should not start work on the actions you have applied for until:</p>
+      <ul class="govuk-list govuk-list--bullet govuk-!-margin-bottom-6">
+        <li>you have accepted your offer</li>
+        <li>the Rural Payments Agency confirms your start date</li>
+      </ul>
+
+      {{DEFRASUPPORTDETAILS}}
 pages:
   - title: Confirm your details
     path: /confirm-farm-details
@@ -51,11 +65,6 @@ pages:
     controller: SubmissionPageController
     next: []
     id: 5a1535ca-0c2a-4d34-80d7-385f17dfbf5e
-  - title: Confirmation
-    path: /confirmation
-    controller: LandGrantsConfirmationController
-    next: []
-    id: 59ff2511-0145-4a7f-8dee-b7104a235dea
 lists: []
 sections: []
 conditions: []

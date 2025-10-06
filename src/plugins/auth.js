@@ -46,13 +46,13 @@ async function setupOidcConfig() {
   }
 }
 
-function getLoggingDetails(oidcConfig) {
-  function setConfiguration(baseConfig) {
-    return function (key, defaultValue = 'NOT_SET') {
-      return baseConfig[key] ?? defaultValue
-    }
+function setConfiguration(baseConfig) {
+  return function (key, defaultValue = 'NOT_SET') {
+    return baseConfig[key] ?? defaultValue
   }
+}
 
+function getLoggingDetails(oidcConfig) {
   const getOidcValue = setConfiguration(oidcConfig)
 
   return {

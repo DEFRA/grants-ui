@@ -49,8 +49,10 @@ services:
       APP_BASE_URL: ${APP_BASE_URL:-http://localhost:3000}
       HOST: 0.0.0.0
       GAS_API_URL: http://mockserver:1080
-      EXAMPLE_GRANT_WITH_AUTH_WHITELIST_CRNS: 1100957269,1100960953,1100953760
-      EXAMPLE_GRANT_WITH_AUTH_WHITELIST_SBIS: 107593059,115460751,108633093
+      EXAMPLE_GRANT_WITH_AUTH_WHITELIST_CRNS: 1100957269,1100960953,1100953760,1109990001,1109990002,1101003693,1100995056
+      EXAMPLE_GRANT_WITH_AUTH_WHITELIST_SBIS: 107593059,115460751,108633093,119000002,115722586,115680267
+      FARMING_PAYMENTS_WHITELIST_CRNS: 1102838829, 1102760349, 1100495932
+      FARMING_PAYMENTS_WHITELIST_SBIS: 106284736, 121428499, 106238988
     volumes:
       - ./src:/home/node/src
       - /home/node/node_modules
@@ -66,6 +68,7 @@ services:
 
   grants-ui-backend:
     image: defradigital/grants-ui-backend
+    pull_policy: always
     ports:
       - '3001:3001'
     depends_on:
@@ -89,6 +92,7 @@ services:
 
   ffc-grants-scoring:
     image: defradigital/ffc-grants-scoring
+    pull_policy: always
     ports:
       - '3002:3002'
     environment:

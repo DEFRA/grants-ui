@@ -26,17 +26,10 @@
  * @param {Function} transformAnswers - a function to transform the state object into the desired answers format
  * @returns {GASPayload}
  */
-export const transformStateObjectToGasApplication = (
-  { sbi, frn = 'frn', crn, defraId = 'defraId', clientRef },
-  state,
-  transformAnswers
-) => ({
+export const transformStateObjectToGasApplication = (identifiers, state, transformAnswers) => ({
   metadata: {
-    sbi,
-    frn,
-    crn,
-    defraId,
-    clientRef,
+    ...identifiers,
+    defraId: identifiers?.defraId || 'defraId',
     submittedAt: new Date().toISOString()
   },
   answers: transformAnswers(state)

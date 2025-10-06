@@ -1,7 +1,6 @@
 import { StatusPageController } from '@defra/forms-engine-plugin/controllers/StatusPageController.js'
 import { getConfirmationPath, storeSlugInContext } from '~/src/server/common/helpers/form-slug-helper.js'
 import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/forms-cache.js'
-import { ApplicationStatus } from '~/src/server/common/constants/application-status.js'
 
 export default class ConfirmationPageController extends StatusPageController {
   viewName = 'confirmation-page.html'
@@ -19,34 +18,36 @@ export default class ConfirmationPageController extends StatusPageController {
      * @param {Pick<ResponseToolkit, 'redirect' | 'view'>} h
      */
     return async (request, context, h) => {
-      const { collection, viewName } = this
-
-      // Store the slug in context if it's available in request.params
       storeSlugInContext(request, context, 'ConfirmationController')
 
       const cacheService = getFormsCacheService(request.server)
       const state = await cacheService.getState(request)
       const referenceNumber = state.$$__referenceNumber
 
-      // Log the confirmation state for debugging
-      request.logger.debug('ConfirmationController: State:', state)
-      request.logger.debug('ConfirmationController: Current path:', request.path)
-
-      // Get and log the start path - pass request to getStartPath for logging
-      const startPath = this.getStartPath()
-      request.logger.debug('ConfirmationController: Start path:', startPath)
-
-      if (state.applicationStatus === ApplicationStatus.SUBMITTED) {
-        request.logger.info('ConfirmationController: Application submitted, showing confirmation page')
-      }
-
-      const viewModel = {
-        ...super.getViewModel(request, context),
-        errors: collection.getErrors(collection.getErrors()),
-        referenceNumber
-      }
-      return h.view(viewName, viewModel)
+      return this.renderConfirmationPage(request, context, h, referenceNumber)
     }
+  }
+
+  /**
+   * Render the confirmation page
+   * @param {FormRequest} request - The request object
+   * @param {FormContext} context - The context object
+   * @param {Pick<ResponseToolkit, 'redirect' | 'view'>} h - Response toolkit
+   * @param {string} referenceNumber - The reference number
+   * @returns {Promise<object>} View response
+   */
+  renderConfirmationPage(request, context, h, referenceNumber) {
+    const { collection } = this
+    const viewModel = {
+      ...super.getViewModel(request, context),
+      errors: collection.getErrors(collection.getErrors()),
+      referenceNumber,
+      businessName: request.yar?.get('businessName'),
+      sbi: request.yar?.get('sbi'),
+      contactName: request.yar?.get('contactName')
+    }
+
+    return h.view(this.viewName, viewModel)
   }
 
   /**

@@ -723,6 +723,76 @@ FORMS: {
 
 This structured logging system provides a robust foundation for monitoring, debugging, and maintaining the Grants UI application with consistent, searchable, and actionable logging throughout the system.
 
+## Config-Driven Confirmation Pages
+
+The application supports config-driven confirmation pages that allow forms to define custom confirmation content through YAML configuration. This provides a flexible way to create tailored confirmation experiences for different grants without code changes.
+
+### What you can add
+
+- Custom HTML content with GOV.UK Design System components
+- Reusable template components through placeholders
+- Dynamic content insertion using session data (reference numbers, business details, etc.)
+
+### How to Use Config Confirmations
+
+#### Define Confirmation Content in Form YAML
+
+Please see journeys for examples
+
+#### Route Configuration
+
+The config confirmation system automatically handles routes matching `/{slug}/confirmation` for any form that has `confirmationContent` defined in its YAML configuration.
+
+### Reusable Template Components
+
+The system includes a components registry that allows you to define reusable HTML snippets that can be inserted into confirmation content using placeholders.
+
+#### Available Components
+
+- `{{DEFRASUPPORTDETAILS}}` - Renders contact information and support details for DEFRA
+
+Simply include the placeholder in your confirmation content HTML:
+
+```yaml
+confirmationContent:
+  html: |
+    <h2 class="govuk-heading-m">Application submitted</h2>
+    <p class="govuk-body">Your reference number is: <strong>{{referenceNumber}}</strong></p>
+
+    {{DEFRASUPPORTDETAILS}}
+```
+
+#### Adding New Reusable Components
+
+Register new components in `src/server/confirmation/services/components.registry.js`:
+
+```javascript
+ComponentsRegistry.register(
+  'myComponent',
+  `<div class="govuk-inset-text">
+    <p>This is a reusable component</p>
+  </div>`
+)
+```
+
+Then use it in your YAML with `{{MYCOMPONENT}}` (uppercase).
+
+### Development Tools for Confirmation Pages
+
+The application includes dev tools to help test and preview confirmation pages during development.
+
+#### Demo Confirmation Route
+
+Access demo confirmation pages at: `http://localhost:3000/dev/demo-confirmation/{form-slug}`
+
+When running in development mode, the demo confirmation handler:
+
+- Shows warning messages when no confirmation config is found
+- Provides fallback demonstration content
+- Displays form metadata (title, slug, ID) for debugging
+- Includes error details when configuration issues occur
+- Uses mock data for testing dynamic content insertion
+
 ## Licence
 
 THIS INFORMATION IS LICENSED UNDER THE CONDITIONS OF THE OPEN GOVERNMENT LICENCE found at:

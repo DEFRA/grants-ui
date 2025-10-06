@@ -100,8 +100,7 @@ describe('ConfirmFarmDetailsController', () => {
         expect.objectContaining({
           applicant: {
             ...mockData
-          },
-          sbi: 'SBI123456'
+          }
         })
       )
 

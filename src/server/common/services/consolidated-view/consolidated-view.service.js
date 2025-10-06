@@ -183,6 +183,7 @@ export async function fetchBusinessAndCustomerInformation(sbi, crn) {
       }
       business(sbi: "${sbi}") {
         info {
+          reference
           email {
             address
           }
