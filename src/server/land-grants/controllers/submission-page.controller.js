@@ -22,16 +22,6 @@ export default class SubmissionPageController extends SummaryPageController {
   }
 
   /**
-   * Gets the path to the status page (in this case /confirmation page) for the POST handler.
-   * @param {object} request - The request object containing the URL info
-   * @param {object} [context] - The context object which may contain form state
-   * @returns {string} path to the status page
-   */
-  getStatusPath(request, context) {
-    return getConfirmationPath(request, context, 'SubmissionPageController')
-  }
-
-  /**
    * Submits the land grant application
    * @param {object} identifiers - User identifiers
    * @param {object} state - Application state
@@ -47,6 +37,17 @@ export default class SubmissionPageController extends SummaryPageController {
     )
 
     return submitGrantApplication(this.grantCode, applicationData)
+  }
+
+  /**
+   * Handles successful submission
+   * @private
+   * @param {object} request - Request object
+   * @param {object} context - Form context
+   * @returns {Promise<string>} - Redirect response
+   */
+  getStatusPath(request, context) {
+    return getConfirmationPath(request, context, 'SubmissionPageController')
   }
 
   /**

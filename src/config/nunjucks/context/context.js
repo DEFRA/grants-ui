@@ -59,6 +59,7 @@ export async function context(request) {
       serviceName: config.get('serviceName'),
       serviceUrl: '/',
       defraIdEnabled: config.get('defraId.enabled'),
+      cdpEnvironment: config.get('cdpEnvironment'),
       gaTrackingId: config.get('googleAnalytics.trackingId'),
       auth,
       breadcrumbs: [],
@@ -81,6 +82,7 @@ export async function context(request) {
       assetPath: `${assetPath}/assets/rebrand`,
       serviceName: config.get('serviceName'),
       serviceUrl: '/',
+      cdpEnvironment: config.get('cdpEnvironment'),
       defraIdEnabled: config.get('defraId.enabled'),
       gaTrackingId: config.get('googleAnalytics.trackingId'),
       auth: {
