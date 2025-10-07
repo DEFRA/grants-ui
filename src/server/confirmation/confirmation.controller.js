@@ -1,5 +1,4 @@
 import { StatusPageController } from '@defra/forms-engine-plugin/controllers/StatusPageController.js'
-import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { getConfirmationPath, storeSlugInContext } from '~/src/server/common/helpers/form-slug-helper.js'
 import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/forms-cache.js'
 

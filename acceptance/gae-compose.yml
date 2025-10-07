@@ -13,6 +13,8 @@ services:
       GRANTS_UI_BACKEND_AUTH_TOKEN: auth_token
       GRANTS_UI_BACKEND_ENCRYPTION_KEY: encryption_key
       DEFRA_ID_USER_PASSWORD: x
+      MOCKSERVER_HOST: mockserver
+      MOCKSERVER_PORT: 1080
     volumes:
       - ../nginx/certs:/etc/ssl/certs:ro
     command: ["npm", "run", "test:ci"]

@@ -16,7 +16,6 @@ import { grantsUiPaths, nunjucksConfig } from '~/src/config/nunjucks/nunjucks.js
 import auth from '~/src/plugins/auth.js'
 import sso from '~/src/plugins/sso.js'
 import { contentSecurityPolicy } from '~/src/plugins/content-security-policy.js'
-import { formsAuthCallback } from '~/src/server/auth/forms-engine-plugin-auth-helpers.js'
 import CheckResponsesPageController from '~/src/server/check-responses/check-responses.controller.js'
 import { formsService } from '~/src/server/common/forms/services/form.js'
 import { outputService } from '~/src/server/common/forms/services/output.js'
@@ -124,7 +123,6 @@ const registerFormsPlugin = async (server, prefix = '') => {
       ...(prefix && { routes: { prefix } }),
       cache: new StatePersistenceService({ server }),
       baseUrl: config.get('baseUrl'),
-      onRequest: formsAuthCallback,
       services: {
         formsService: await formsService(),
         outputService
