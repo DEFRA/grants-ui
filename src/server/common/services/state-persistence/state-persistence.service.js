@@ -9,7 +9,7 @@ import { ADDITIONAL_IDENTIFIER, CacheService } from '@defra/forms-engine-plugin/
  */
 export class StatePersistenceService extends CacheService {
   /**
-   * @param {import('@hapi/hapi').Server} options.server - Hapi server (used for logging)
+   * @param {{server: Server}} options.server - Hapi server (used for logging)
    */
   constructor({ server }) {
     super({ server })
@@ -20,7 +20,7 @@ export class StatePersistenceService extends CacheService {
 
   /**
    * Get form state from backend persistence.
-   * @param {import('../plugins/engine/types.js').AnyRequest} request
+   * @param {AnyRequest} request
    * @returns {Promise<object>} resolved state or empty object
    */
   async getState(request) {
@@ -31,7 +31,7 @@ export class StatePersistenceService extends CacheService {
 
   /**
    * Persist form state to backend.
-   * @param {import('../plugins/engine/types.js').AnyFormRequest} request
+   * @param {AnyFormRequest} request
    * @param {object} state
    * @returns {Promise<object>} the persisted state
    */
@@ -46,13 +46,14 @@ export class StatePersistenceService extends CacheService {
    * This typically tracks whether the user has confirmed submission or similar actions.
    * The state is persisted via the backend API rather than in-memory cache.
    *
-   * @param {import('@hapi/hapi').Request} request
+   * @param {Request} request
    * @returns {Promise<{ confirmed?: true }>} Confirmation state
    */
   async getConfirmationState(request) {
     // NO-OP because you want to keep state even after submission
     const key = this._ConfirmationKey(request)
     this.logger?.info(`getConfirmationState called for ${key || this.UNKNOWN_SESSION}, but no action taken.`)
+    return {}
   }
 
   /**
@@ -60,7 +61,7 @@ export class StatePersistenceService extends CacheService {
    * This allows tracking of actions such as submission confirmation across sessions.
    * The state is saved to the backend API rather than in-memory cache.
    *
-   * @param {import('@hapi/hapi').Request} request
+   * @param {Request} request
    * @param {{ confirmed?: true }} _confirmationState
    */
   async setConfirmationState(request, _confirmationState) {
@@ -71,7 +72,7 @@ export class StatePersistenceService extends CacheService {
 
   /**
    * Clear state in backend (no-op if you don’t want to clear on submission).
-   * @param {import('../plugins/engine/types.js').AnyFormRequest} request
+   * @param {AnyFormRequest} request
    */
   async clearState(request, force = false) {
     // NO-OP because you want to keep state even after submission
@@ -85,7 +86,7 @@ export class StatePersistenceService extends CacheService {
 
   /**
    * Generate a unique key for this request.
-   * @param {import('../plugins/engine/types.js').AnyRequest} request
+   * @param {AnyRequest} request
    * @returns string
    */
   _Key(request) {
@@ -95,7 +96,7 @@ export class StatePersistenceService extends CacheService {
 
   /**
    * Generate a unique confirmation key for this request.
-   * @param {import('../plugins/engine/types.js').AnyRequest} request
+   * @param {AnyRequest} request
    * @returns string
    */
   _ConfirmationKey(request) {
@@ -103,3 +104,8 @@ export class StatePersistenceService extends CacheService {
     return `${key}${ADDITIONAL_IDENTIFIER.Confirmation}`
   }
 }
+
+/**
+ * @import { AnyRequest, AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
+ * @import { Request, Server } from '@hapi/hapi'
+ */

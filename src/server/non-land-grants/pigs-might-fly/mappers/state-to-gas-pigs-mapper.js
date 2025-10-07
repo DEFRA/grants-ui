@@ -1,12 +1,12 @@
 /**
  * @typedef {object} GASAnswers
- * @property {string} isPigFarmer - isPigFarmer
+ * @property {boolean} isPigFarmer - isPigFarmer
  * @property {number} totalPigs - totalPigs
  * @property {string} [pigBreeds] - types of pigs
- * @property {number} whitePigsCount - number of white pigs
- * @property {number} britishLandracePigsCount - number of british landrace pigs
- * @property {number} berkshirePigsCount - number of berkshire pigs
- * @property {number} otherPigsCount - number of other pigs
+ * @property {number} [whitePigsCount] - number of white pigs
+ * @property {number} [britishLandracePigsCount] - number of british landrace pigs
+ * @property {number} [berkshirePigsCount] - number of berkshire pigs
+ * @property {number} [otherPigsCount] - number of other pigs
  */
 
 /**

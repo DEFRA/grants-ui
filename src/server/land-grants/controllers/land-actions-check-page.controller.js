@@ -187,20 +187,21 @@ export default class LandActionsCheckPageController extends QuestionPageControll
   /**
    * Render error view for POST validation
    * @param {object} h - Response toolkit
-   * @param {FormRequest} request - Request object
+   * @param {AnyFormRequest} request - Request object
    * @param {FormContext} context - Form context
    * @param {string} errorMessage - Error message to display
    * @returns {object} - Error view response
    */
   renderPostErrorView(h, request, context, errorMessage) {
     const { state } = context
+    const annualTotalPence = state.payment ? state.payment['annualTotalPence'] : undefined
 
     return h.view(this.viewName, {
       ...this.getViewModel(request, context),
       ...state,
       parcelItems: this.parcelItems,
       additionalYearlyPayments: this.additionalYearlyPayments,
-      totalYearlyPayment: this.getPrice(state.payment?.annualTotalPence || 0),
+      totalYearlyPayment: this.getPrice(annualTotalPence || 0),
       errorMessage
     })
   }
@@ -222,7 +223,7 @@ export default class LandActionsCheckPageController extends QuestionPageControll
 
   /**
    * Build view model for GET request
-   * @param {FormRequest} request - Request object
+   * @param {AnyFormRequest} request - Request object
    * @param {FormContext} context - Form context
    * @param {object} payment - Payment information
    * @returns {object} - Complete view model
@@ -266,7 +267,14 @@ export default class LandActionsCheckPageController extends QuestionPageControll
    * Handle POST requests to the page
    */
   makePostRouteHandler() {
-    return (request, context, h) => {
+    /**
+     * Handle POST requests to the confirm farm details page.
+     * @param {AnyFormRequest} request
+     * @param {FormContext} context
+     * @param {Pick<ResponseToolkit, 'redirect' | 'view'>} h
+     * @returns {Promise<ResponseObject>}
+     */
+    const fn = async (request, context, h) => {
       const payload = request.payload ?? {}
 
       const validationError = this.validatePostPayload(payload)
@@ -278,11 +286,12 @@ export default class LandActionsCheckPageController extends QuestionPageControll
       const nextPath = this.getNextPathFromSelection(addMoreActions)
       return this.proceed(request, h, nextPath)
     }
+
+    return fn
   }
 }
 
 /**
- * @import { type FormRequest } from '~/src/server/routes/types.js'
- * @import { type FormContext } from '~/src/server/plugins/engine/types.js'
- * @import { type ResponseToolkit } from '@hapi/hapi'
+ * @import { FormContext, AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
+ * @import { ResponseObject, ResponseToolkit } from '@hapi/hapi'
  */

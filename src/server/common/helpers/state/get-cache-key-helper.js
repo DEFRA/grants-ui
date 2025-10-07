@@ -28,6 +28,7 @@ export const getCacheKey = (request) => {
     outputLog(request, 'Missing auth credentials')
     throw new Error('Missing auth credentials')
   }
+  /** @type {object} */
   const { crn, organisationId: sbi } = credentials
 
   if (!crn) {

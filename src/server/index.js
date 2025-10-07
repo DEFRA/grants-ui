@@ -111,6 +111,11 @@ const createHapiServer = () => {
   })
 }
 
+/**
+ *
+ * @param {Server} server
+ * @param {string} prefix
+ */
 const registerFormsPlugin = async (server, prefix = '') => {
   await server.register({
     plugin,
@@ -284,6 +289,7 @@ export async function createServer() {
   })
 
   server.ext('onPreHandler', (request, h) => {
+    /** @type {string[]} */
     const prev = request.yar.get('visitedSubSections') || []
     const entry = request?.paramsArray[0] || null
 
@@ -301,13 +307,13 @@ export async function createServer() {
     return handleMockDefraAuth(request, h, log, LogCodes)
   })
 
-  server.app.cache = server.cache({
+  server.app['cache'] = server.cache({
     cache: config.get(SESSION_CACHE_NAME),
     segment: config.get('session.cookie.cache.segment'),
     expiresIn: config.get('session.cookie.cache.ttl')
   })
 
-  server.app.cacheTemp = server.cache({
+  server.app['cacheTemp'] = server.cache({
     cache: config.get(SESSION_CACHE_NAME),
     segment: 'tasklist-section-data',
     expiresIn: config.get('session.cache.ttl')
@@ -317,3 +323,8 @@ export async function createServer() {
 
   return server
 }
+
+/**
+ * @import { Engine } from '~/src/server/common/helpers/session-cache/cache-engine.js'
+ * @import { Server } from '@hapi/hapi'
+ */

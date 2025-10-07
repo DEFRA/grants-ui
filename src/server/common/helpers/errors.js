@@ -59,7 +59,7 @@ function statusCodeMessage(statusCode) {
 }
 
 /**
- * @param { Request } request
+ * @param { AnyRequest } request
  * @param { ResponseToolkit } h
  */
 export function catchAll(request, h) {
@@ -224,5 +224,6 @@ function renderErrorView(h, errorMessage, statusCode) {
 }
 
 /**
- * @import { Request, ResponseToolkit } from '@hapi/hapi'
+ * @import { AnyRequest } from '@defra/forms-engine-plugin/engine/types.js'
+ * @import { ResponseToolkit } from '@hapi/hapi'
  */

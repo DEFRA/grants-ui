@@ -31,11 +31,10 @@ export default class SelectLandParcelPageController extends LandGrantsQuestionWi
 
   makePostRouteHandler() {
     /**
-     * Handle POST requests to the land parcel page.
-     * @param {FormRequest} request
+     * @param {AnyFormRequest} request
      * @param {FormContext} context
-     * @param {Pick} h
-     * @returns {Promise<void>}
+     * @param {Pick<ResponseToolkit, 'redirect' | 'view'>} h
+     * @returns {Promise<ResponseObject>}
      */
     const fn = async (request, context, h) => {
       const { state } = context
@@ -76,9 +75,9 @@ export default class SelectLandParcelPageController extends LandGrantsQuestionWi
   makeGetRouteHandler() {
     /**
      * Handle GET requests to the land parcel page.
-     * @param {FormRequest} request
+     * @param {AnyFormRequest} request
      * @param {FormContext} context
-     * @param {Pick} h
+     * @param {Pick<ResponseToolkit, 'redirect' | 'view'>} h
      */
     const fn = async (request, context, h) => {
       const { selectedLandParcel = '', landParcels } = context.state || {}
@@ -122,7 +121,6 @@ export default class SelectLandParcelPageController extends LandGrantsQuestionWi
 }
 
 /**
- * @import { type FormRequest } from '~/src/server/routes/types.js'
- * @import { type FormContext } from '~/src/server/plugins/engine/types.js'
- * @import { type ResponseToolkit } from '@hapi/hapi'
+ * @import { FormContext, AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
+ * @import { ResponseObject, ResponseToolkit } from '@hapi/hapi'
  */

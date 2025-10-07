@@ -7,6 +7,7 @@ import 'dotenv/config'
  * @typedef {object} AgreementsConfig
  * @property {string} apiToken
  * @property {string} apiUrl
+ * @property {string} baseUrl
  * @property {string} jwtSecret
  */
 

@@ -400,7 +400,7 @@ export const config = convict({
       }
     }
   },
-  defraId: defraId.getProperties(),
+  defraId: /** @type {Schema<DefraIdConfig>} */ (defraId.getProperties()),
   landGrants: /** @type {Schema<LandGrantsConfig>} */ (landGrants.getProperties()),
   agreements: /** @type {Schema<AgreementsConfig>} */ (agreements.getProperties())
 })
@@ -413,4 +413,6 @@ validateBackendAuthConfig(config)
  * @import { Schema, SchemaObj } from 'convict'
  * @import { RedisConfig } from '~/src/server/common/helpers/redis-client.js'
  * @import { LandGrantsConfig } from '~/src/config/land-grants.js'
+ * @import { AgreementsConfig } from '~/src/config/agreements.js'
+ * @import { DefraIdConfig } from '~/src/config/defra-id.js'
  */

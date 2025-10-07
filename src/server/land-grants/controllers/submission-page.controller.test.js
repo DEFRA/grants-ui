@@ -17,7 +17,7 @@ vi.mock('@defra/forms-engine-plugin/controllers/SummaryPageController.js', () =>
   SummaryPageController: class {
     proceed() {}
     getNextPath() {}
-    getViewModel() {}
+    getSummaryViewModel() {}
   }
 }))
 

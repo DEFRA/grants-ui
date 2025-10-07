@@ -4,7 +4,7 @@ import { getFormsCacheService } from '../../common/helpers/forms-cache/forms-cac
  * Clears the current application state
  * @param {object} request - Hapi request object
  * @param {object} h - Hapi response toolkit
- * @returns {object} Hapi response
+ * @returns {Promise<Response>} Hapi response
  */
 export async function clearApplicationStateHandler(request, h) {
   const slug = request.params?.slug || ''

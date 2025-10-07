@@ -147,12 +147,12 @@ describe('PotentialFundingController', () => {
       controller.getNextPath = vi.fn().mockReturnValue('/next-path')
     })
 
-    it('should call proceed with the next path', () => {
+    it('should call proceed with the next path', async () => {
       const handler = controller.makePostRouteHandler()
 
       vi.spyOn(controller, 'proceed').mockReturnValue('nextPath')
 
-      const result = handler(mockRequest, mockContext, mockResponseToolkit)
+      const result = await handler(mockRequest, mockContext, mockResponseToolkit)
 
       expect(controller.proceed).toHaveBeenCalledWith(
         mockRequest,

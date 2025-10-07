@@ -1,5 +1,16 @@
 import convict from 'convict'
 
+/**
+ * @typedef {object} DefraIdConfig
+ * @property {boolean} enabled
+ * @property {string} wellKnownUrl
+ * @property {string} clientId
+ * @property {string} clientSecret
+ * @property {string} serviceId
+ * @property {string} redirectUrl
+ * @property {string} signOutRedirectUrl
+ * @property {boolean} refreshTokens
+ */
 const config = convict({
   enabled: {
     doc: 'Enable Defra Identity authentication strategy. If set to false, mock data will be used.',

@@ -55,10 +55,22 @@ export class PotentialFundingController extends QuestionPageController {
   }
 
   makePostRouteHandler() {
-    const fn = (request, context, h) => {
+    /**
+     * Handle POST requests to the confirm farm details page.
+     * @param {AnyFormRequest} request
+     * @param {FormContext} context
+     * @param {Pick<ResponseToolkit, 'redirect' | 'view'>} h
+     * @returns {Promise<ResponseObject>}
+     */
+    const fn = async (request, context, h) => {
       return this.proceed(request, h, this.getNextPath(context))
     }
 
     return fn
   }
 }
+
+/**
+ * @import { FormContext, AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
+ * @import { ResponseObject, ResponseToolkit } from '@hapi/hapi'
+ */
