@@ -24,9 +24,12 @@ export const formsAuthCallback = (request, _params, _definition) => {
 
     const currentPath = request.url.pathname + request.url.search
     const redirectUrl = `/auth/sign-in?redirect=${encodeURIComponent(currentPath)}`
+    /** @type {import('@hapi/boom').Boom} */
+    // @ts-ignore
     const redirectError = new Error('Redirect')
     redirectError.output = {
       statusCode: statusCodes.redirect,
+      // @ts-ignore
       payload: '',
       headers: {
         location: redirectUrl
@@ -54,9 +57,12 @@ export const formsAuthCallback = (request, _params, _definition) => {
   })
 
   if (!validation.overallAccess) {
+    /** @type {import('@hapi/boom').Boom} */
+    // @ts-ignore
     const unauthorisedError = new Error('Unauthorised')
     unauthorisedError.output = {
       statusCode: statusCodes.redirect,
+      // @ts-ignore
       payload: '',
       headers: {
         location: '/auth/journey-unauthorised'
