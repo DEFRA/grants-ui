@@ -1,5 +1,6 @@
 import { vi } from 'vitest'
 
+/** @type {Record<string, BufferEncoding>} */
 const CRYPTO_ENCODING = {
   UTF8: 'utf8',
   BASE64: 'base64'
@@ -118,7 +119,7 @@ export function encryptTokenForTest(_token, encryptionKey) {
 /**
  * Creates an expected Authorization header for testing
  * @param {string} token - The token to use
- * @param {string} encryptionKey - Optional encryption key for token encryption
+ * @param {string | null} [encryptionKey] - Optional encryption key for token encryption
  * @returns {string} Authorization header value
  */
 export function createExpectedAuthHeader(token, encryptionKey = null) {
@@ -128,7 +129,7 @@ export function createExpectedAuthHeader(token, encryptionKey = null) {
     actualToken = encryptTokenForTest(token, encryptionKey)
   }
 
-  return `${AUTH_SCHEME} ${Buffer.from(actualToken).toString(CRYPTO_ENCODING.BASE64 || '')}`
+  return `${AUTH_SCHEME} ${Buffer.from(actualToken).toString(CRYPTO_ENCODING.BASE64)}`
 }
 
 /**

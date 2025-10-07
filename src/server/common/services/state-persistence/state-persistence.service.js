@@ -9,7 +9,7 @@ import { ADDITIONAL_IDENTIFIER, CacheService } from '@defra/forms-engine-plugin/
  */
 export class StatePersistenceService extends CacheService {
   /**
-   * @param {Server} options.server - Hapi server (used for logging)
+   * @param {{server: Server}} options.server - Hapi server (used for logging)
    */
   constructor({ server }) {
     super({ server })
@@ -53,6 +53,7 @@ export class StatePersistenceService extends CacheService {
     // NO-OP because you want to keep state even after submission
     const key = this._ConfirmationKey(request)
     this.logger?.info(`getConfirmationState called for ${key || this.UNKNOWN_SESSION}, but no action taken.`)
+    return {}
   }
 
   /**

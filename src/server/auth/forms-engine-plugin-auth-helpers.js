@@ -3,6 +3,10 @@ import { log } from '~/src/server/common/helpers/logging/log.js'
 import { LogCodes } from '~/src/server/common/helpers/logging/log-codes.js'
 import { WhitelistServiceFactory } from './services/whitelist.service.js'
 
+/**
+ * @typedef {Error & { output?: { statusCode: number, payload: string, headers: Record<string, string> }, isBoom?: boolean }} BoomError
+ */
+
 export const formsAuthCallback = (request, _params, _definition) => {
   if (request.path.startsWith('/auth/')) {
     return
@@ -24,6 +28,7 @@ export const formsAuthCallback = (request, _params, _definition) => {
 
     const currentPath = request.url.pathname + request.url.search
     const redirectUrl = `/auth/sign-in?redirect=${encodeURIComponent(currentPath)}`
+    /** @type {BoomError} */
     const redirectError = new Error('Redirect')
     redirectError.output = {
       statusCode: statusCodes.redirect,
@@ -54,6 +59,7 @@ export const formsAuthCallback = (request, _params, _definition) => {
   })
 
   if (!validation.overallAccess) {
+    /** @type {BoomError} */
     const unauthorisedError = new Error('Unauthorised')
     unauthorisedError.output = {
       statusCode: statusCodes.redirect,

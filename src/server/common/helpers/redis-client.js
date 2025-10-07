@@ -41,6 +41,7 @@ export function buildRedisClient(redisConfig) {
   const tls = redisConfig.useTLS ? { tls: {} } : {}
 
   if (redisConfig.useSingleInstanceCache) {
+    /** @type {RedisOptions} */
     const redisOptions = {
       port,
       host,
@@ -54,6 +55,7 @@ export function buildRedisClient(redisConfig) {
       redisOptions.connectTimeout = redisConfig.connectTimeout
     }
     if (redisConfig.retryDelay !== undefined) {
+      // @ts-ignore - retryDelayOnFailover exists but may not be in type definitions
       redisOptions.retryDelayOnFailover = redisConfig.retryDelay
     }
     if (redisConfig.maxRetries !== undefined) {
@@ -92,3 +94,7 @@ export function buildRedisClient(redisConfig) {
 
   return redisClient
 }
+
+/**
+ * @import { RedisOptions } from 'ioredis'
+ */

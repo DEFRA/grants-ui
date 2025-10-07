@@ -61,6 +61,6 @@ export default class FlyingPigsSubmissionPageController extends SummaryPageContr
 }
 
 /**
- * @import { FormModel } from '@defra/forms-engine-plugin/engine/models/FormModel.js'
+ * @import { FormModel } from '@defra/forms-engine-plugin/engine/models/index.js'
  * @import { PageSummary } from '@defra/forms-model'
  */

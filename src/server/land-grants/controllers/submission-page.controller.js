@@ -55,7 +55,7 @@ export default class SubmissionPageController extends SummaryPageController {
    */
   handleValidationError(h, request, context, validationId) {
     return h.view('submission-error', {
-      ...this.getViewModel(request, context),
+      ...this.getSummaryViewModel(request, context),
       backLink: null,
       heading: 'Sorry, there was a problem validating the application',
       refNumber: validationId

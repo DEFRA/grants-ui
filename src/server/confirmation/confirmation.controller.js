@@ -1,9 +1,19 @@
 import { StatusPageController } from '@defra/forms-engine-plugin/controllers/StatusPageController.js'
+import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { getConfirmationPath, storeSlugInContext } from '~/src/server/common/helpers/form-slug-helper.js'
 import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/forms-cache.js'
 
 export default class ConfirmationPageController extends StatusPageController {
   viewName = 'confirmation-page.html'
+
+  /**
+   * @param {FormModel} model
+   * @param {PageStatus} pageDef
+   */
+  constructor(model, pageDef) {
+    super(model, pageDef)
+    this.model = model
+  }
 
   /**
    * This method is called when there is a GET request to the confirmation page.
@@ -34,12 +44,14 @@ export default class ConfirmationPageController extends StatusPageController {
    * @param {FormContext} context - The context object
    * @param {Pick<ResponseToolkit, 'redirect' | 'view'>} h - Response toolkit
    * @param {string} referenceNumber - The reference number
-   * @returns {Promise<object>} View response
+   * @returns {ResponseObject} View response
    */
   renderConfirmationPage(request, context, h, referenceNumber) {
+    /** @type {object} */
     const { collection } = this
+    const baseViewModel = QuestionPageController.prototype.getViewModel.call(request, context)
     const viewModel = {
-      ...super.getViewModel(request, context),
+      ...baseViewModel,
       errors: collection.getErrors(collection.getErrors()),
       referenceNumber,
       businessName: request.yar?.get('businessName'),
@@ -66,7 +78,7 @@ export default class ConfirmationPageController extends StatusPageController {
    */
   getStartPath() {
     // Use the model's default implementation
-    const defaultPath = super.getStartPath()
+    const defaultPath = this.getStartPath()
 
     // Try to get the slug from the model if possible
     const slug = this.model?.def?.metadata?.slug
@@ -80,5 +92,7 @@ export default class ConfirmationPageController extends StatusPageController {
 
 /**
  * @import { type FormContext, AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
- * @import { type ResponseToolkit } from '@hapi/hapi'
+ * @import { ResponseObject, type ResponseToolkit } from '@hapi/hapi'
+ * @import { FormModel } from '@defra/forms-engine-plugin/engine/models/index.js'
+ * @import { PageStatus } from '@defra/forms-model'
  */

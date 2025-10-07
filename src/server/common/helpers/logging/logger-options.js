@@ -13,7 +13,7 @@ const serviceVersion = config.get('serviceVersion')
 const formatters = {
   ecs: {
     ...ecsFormat({
-      serviceVersion,
+      serviceVersion: serviceVersion ?? undefined,
       serviceName
     })
   },

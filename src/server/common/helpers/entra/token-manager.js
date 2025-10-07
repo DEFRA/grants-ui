@@ -102,7 +102,7 @@ export async function refreshToken() {
       tokenExpiry: Date.now() + data.expires_in * 1000
     }
 
-    return tokenState.currentToken // ?? '' - Removed as line is unreachable
+    return tokenState.currentToken ?? ''
   } catch (error) {
     logger.error(error, 'Failed to refresh token')
     throw error

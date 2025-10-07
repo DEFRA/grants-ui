@@ -5,6 +5,7 @@ const IV_LENGTH_BYTES = 12
 const KEY_LENGTH_BYTES = 32
 const SCRYPT_SALT = 'salt'
 const CIPHER_ALGORITHM = 'aes-256-gcm'
+/** @type {Record<string, BufferEncoding>} */
 const ENCODING = {
   UTF8: 'utf8',
   BASE64: 'base64'

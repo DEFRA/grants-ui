@@ -1,6 +1,7 @@
 import { config } from '~/src/config/config.js'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 
+/** @type {RouteOptions<ReqRefDefaults>} */
 const options = {
   auth: false,
   cache: {
@@ -60,5 +61,5 @@ export const serveStaticFiles = {
 }
 
 /**
- * @import { ServerRegisterPluginObject } from '@hapi/hapi'
+ * @import { ReqRefDefaults, RouteOptions, ServerRegisterPluginObject } from '@hapi/hapi'
  */
