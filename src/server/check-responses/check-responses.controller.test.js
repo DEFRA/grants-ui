@@ -56,7 +56,7 @@ describe('CheckResponsesPageController', () => {
   describe('makePostRouteHandler', () => {
     let handler
 
-    beforeEach(() => {
+    beforeEach(async () => {
       handler = controller.makePostRouteHandler()
     })
 
@@ -64,7 +64,7 @@ describe('CheckResponsesPageController', () => {
       expect(typeof handler).toBe('function')
     })
 
-    it('should call getNextPath with context and proceed with correct arguments, returning its result', () => {
+    it('should call getNextPath with context and proceed with correct arguments, returning its result', async () => {
       const request = mockSimpleRequest({ method: 'post', path: '/some-path' })
       const context = mockContext({ payload: { foo: 'bar' } })
       const h = mockHapiResponseToolkit({ redirect: vi.fn() })
@@ -75,7 +75,7 @@ describe('CheckResponsesPageController', () => {
       const proceedResult = Symbol('proceed-result')
       controller.proceed = vi.fn().mockReturnValue(proceedResult)
 
-      const result = handler(request, context, h)
+      const result = await handler(request, context, h)
 
       expect(controller.getNextPath).toHaveBeenCalledTimes(1)
       expect(controller.getNextPath).toHaveBeenCalledWith(context)
@@ -86,7 +86,7 @@ describe('CheckResponsesPageController', () => {
       expect(result).toBe(proceedResult)
     })
 
-    it('should preserve controller context inside returned handler', () => {
+    it('should preserve controller context inside returned handler', async () => {
       // If `this` is lost, spies won't be hit
       const request = mockSimpleRequest()
       const context = mockContext()
@@ -96,7 +96,7 @@ describe('CheckResponsesPageController', () => {
       controller.proceed = vi.fn().mockReturnValue('ok')
 
       const fn = controller.makePostRouteHandler()
-      const ret = fn(request, context, h)
+      const ret = await fn(request, context, h)
 
       expect(controller.proceed).toHaveBeenCalledWith(request, h, '/next')
       expect(ret).toBe('ok')
@@ -117,7 +117,7 @@ describe('CheckResponsesPageController', () => {
     it('should override makePostRouteHandler from parent', () => {
       const handler = controller.makePostRouteHandler()
       expect(typeof handler).toBe('function')
-      expect(handler.constructor.name).toBe('Function')
+      expect(handler.constructor.name).toBe('AsyncFunction')
     })
   })
 

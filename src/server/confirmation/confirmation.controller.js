@@ -49,7 +49,8 @@ export default class ConfirmationPageController extends StatusPageController {
   renderConfirmationPage(request, context, h, referenceNumber) {
     /** @type {object} */
     const { collection } = this
-    const baseViewModel = QuestionPageController.prototype.getViewModel.call(request, context)
+    // @ts-ignore - super not being recognised as QuestionPageController as it is two levels above and it's on a node module
+    const baseViewModel = super.getViewModel(request, context)
     const viewModel = {
       ...baseViewModel,
       errors: collection.getErrors(collection.getErrors()),
@@ -77,8 +78,8 @@ export default class ConfirmationPageController extends StatusPageController {
    * @returns {string} The start path for the form
    */
   getStartPath() {
-    // Use the model's default implementation
-    const defaultPath = this.getStartPath()
+    // @ts-ignore - super not being recognised as QuestionPageController as it is two levels above and it's on a node module
+    const defaultPath = super.getStartPath()
 
     // Try to get the slug from the model if possible
     const slug = this.model?.def?.metadata?.slug
