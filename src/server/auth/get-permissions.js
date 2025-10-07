@@ -8,13 +8,7 @@ function getPermissions(crn, organisationId, token) {
   // 1. Get personId from RPS API
   const personId = getPersonId({ crn, token })
   // 2. Get roles and privileges from Siti Agri API
-  const { role, privileges } = getRolesAndPrivileges(
-    personId,
-    organisationId /* {
-    crn,
-    token
-  } */
-  )
+  const { role, privileges } = getRolesAndPrivileges(personId, organisationId)
   // 3. Map roles and privileges to scope
   // An application specific permission is added to demonstrate how to add local, non-Siti Agri permissions
   const scope = [DEFAULT_SCOPE, ...privileges]
@@ -60,7 +54,7 @@ function getPersonId(_headers) {
   return mockResponse._data.id
 }
 
-function getRolesAndPrivileges(_personId, _organisationId /* { _headers } */) {
+function getRolesAndPrivileges(_personId, _organisationId) {
   // simulate call to Siti Agri API
   // returns all roles and privileges for so need to filter for logged in user
   // PATH: /SitiAgriApi/authorisation/organisation/<organisationId>/authorisation

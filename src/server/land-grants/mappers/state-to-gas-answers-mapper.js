@@ -93,8 +93,8 @@ export function stateToLandGrantsGasAnswers(state) {
     const { actionsObj } = data
     const [sheetId, parcelId] = parcelKey.split('-') ?? []
 
-    const actionApplications = processParcelActions(actionsObj, sheetId, parcelId)
-    result.actionApplications.push(...actionApplications)
+    const parcelActions = processParcelActions(actionsObj, sheetId, parcelId)
+    result.actionApplications.push(...parcelActions)
   }
 
   return result
