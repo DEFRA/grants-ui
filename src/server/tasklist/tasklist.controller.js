@@ -1,6 +1,7 @@
 import { TasklistGenerator } from './services/tasklist-generator.js'
 import { loadTasklistConfig, validateTasklistConfig } from './services/config-loader.js'
 import { statusCodes } from '../common/constants/status-codes.js'
+import { formsAuthCallback } from '~/src/server/auth/forms-engine-plugin-auth-helpers.js'
 
 const HTTP_MOVED_PERMANENTLY = 301
 
@@ -31,6 +32,7 @@ export function createTasklistRoute(tasklistId) {
           method: 'GET',
           path: `/${tasklistId}-tasklist/tasklist`,
           handler: async (request, h) => {
+            formsAuthCallback(request)
             try {
               const config = await loadTasklistConfig(tasklistId)
               validateTasklistConfig(config)
