@@ -16,7 +16,6 @@ import { grantsUiPaths, nunjucksConfig } from '~/src/config/nunjucks/nunjucks.js
 import auth from '~/src/plugins/auth.js'
 import sso from '~/src/plugins/sso.js'
 import { contentSecurityPolicy } from '~/src/plugins/content-security-policy.js'
-import { formsAuthCallback } from '~/src/server/auth/forms-engine-plugin-auth-helpers.js'
 import CheckResponsesPageController from '~/src/server/check-responses/check-responses.controller.js'
 import { formsService } from '~/src/server/common/forms/services/form.js'
 import { outputService } from '~/src/server/common/forms/services/output.js'
@@ -45,6 +44,7 @@ import { StatePersistenceService } from './common/services/state-persistence/sta
 import RemoveActionPageController from './land-grants/controllers/remove-action-page.controller.js'
 import { router } from './router.js'
 import SectionEndController from './section-end/section-end.controller.js'
+import whitelist from '~/src/server/common/helpers/whitelist/whitelist.js'
 
 const SESSION_CACHE_NAME = 'session.cache.name'
 
@@ -124,7 +124,6 @@ const registerFormsPlugin = async (server, prefix = '') => {
       ...(prefix && { routes: { prefix } }),
       cache: new StatePersistenceService({ server }),
       baseUrl: config.get('baseUrl'),
-      onRequest: formsAuthCallback,
       services: {
         formsService: await formsService(),
         outputService
@@ -172,7 +171,8 @@ const registerPlugins = async (server) => {
     sessionCache,
     nunjucksConfig,
     sso,
-    contentSecurityPolicy
+    contentSecurityPolicy,
+    whitelist
   ])
 
   await server.register([router])
