@@ -107,6 +107,15 @@ The table below outlines the data the cookies control.
   </tbody>
 </table>
 
+### Inspecting cookies
+
+There is a tool provided `/tools/unseal-cookies.js` that will decode and decrypt the cookies for inspection on the command line. You will need the appropriate cookie password.
+To use the tool:
+
+```bash
+node ./tools/unseal-cookie.js '<cookie-string>' '<cookie-password>'
+```
+
 ## Server-side Caching
 
 We use Catbox for server-side caching. By default the service will use CatboxRedis when deployed and CatboxMemory for
