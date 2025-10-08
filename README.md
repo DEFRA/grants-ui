@@ -113,7 +113,11 @@ There is a tool provided `/tools/unseal-cookies.js` that will decode and decrypt
 To use the tool:
 
 ```bash
+// With node directly
 node ./tools/unseal-cookie.js '<cookie-string>' '<cookie-password>'
+
+// With the NPM script
+npm run unseal-cookie -- '<cookie-string>' '<cookie-password>'
 ```
 
 ## Server-side Caching
