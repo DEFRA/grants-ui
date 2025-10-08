@@ -2,11 +2,11 @@
 import Iron from '@hapi/iron'
 
 if (process.argv.length < 4) {
-  console.error('usage: node unseal.js <sealedCookie> <password>')
+  console.error('usage: node unseal-cookie.js <sealedCookie> <password>')
   process.exit(2)
 }
 
-const sealed = decodeURIComponent(process.argv[2].replace(/^s:/, '')) // strip s: and decode
+const sealed = decodeURIComponent(process.argv[2].replace(/^s:/, ''))
 const password = process.argv[3]
 
 const ironOptions = {
