@@ -10,6 +10,8 @@ import { agreements } from '~/src/server/agreements/index.js'
 import { devTools } from '~/src/server/dev-tools/index.js'
 import { configConfirmation } from '~/src/server/confirmation/config-confirmation.js'
 import { clearApplicationState } from './dev-tools/clear-application-state.js'
+import { mockStatus } from '~/src/server/gas/status/index.js'
+import { mockApplication } from './gas/application/index.js'
 
 const defraIdEnabled = config.get('defraId.enabled')
 const cdpEnvironment = config.get('cdpEnvironment')
@@ -25,6 +27,9 @@ export const router = {
 
       // Health-check route. Used by platform to check if service is running, do not remove!
       await server.register([health])
+
+      // Mock Status route
+      await server.register([mockStatus, mockApplication])
 
       // Dev specific routes
       if (!defraIdEnabled) {
