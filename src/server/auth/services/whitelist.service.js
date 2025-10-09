@@ -10,9 +10,9 @@ const SCENARIO_FLAGS = {
 
 class WhitelistServiceFactory {
   static #serviceCache = new Map()
-  static getService(grantDefinition) {
-    const whitelistCrnEnvVar = grantDefinition?.metadata?.whitelistCrnEnvVar
-    const whitelistSbiEnvVar = grantDefinition?.metadata?.whitelistSbiEnvVar
+  static getService(grantMetadata) {
+    const whitelistCrnEnvVar = grantMetadata?.whitelistCrnEnvVar
+    const whitelistSbiEnvVar = grantMetadata?.whitelistSbiEnvVar
 
     const cacheKey = `${whitelistCrnEnvVar || 'none'}:${whitelistSbiEnvVar || 'none'}`
 

@@ -49,7 +49,11 @@ const TEST_FORMS_ARRAY = [
     path: 'path/to/form3.yaml',
     id: 'form-id-3',
     slug: 'form-slug-3',
-    title: 'Form 3'
+    title: 'Form 3',
+    metadata: {
+      whitelistCrnEnvVar: 'TEST_WHITELIST_CRNS',
+      whitelistSbiEnvVar: 'TEST_WHITELIST_SBIS'
+    }
   }
 ]
 
@@ -305,7 +309,11 @@ describe('form', () => {
         expect.objectContaining({
           id: 'form-id-3',
           slug: 'form-slug-3',
-          title: 'Form 3'
+          title: 'Form 3',
+          metadata: {
+            whitelistCrnEnvVar: 'TEST_WHITELIST_CRNS',
+            whitelistSbiEnvVar: 'TEST_WHITELIST_SBIS'
+          }
         })
       )
     })
