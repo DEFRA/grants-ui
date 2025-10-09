@@ -5,6 +5,7 @@ import vitestPlugin from '@vitest/eslint-plugin'
 export default [
   ...neostandard({
     env: ['node'],
+    // @ts-ignore
     jsx: false,
     style: false,
     ignores: ['.server', '.public', 'coverage', 'node_modules']

@@ -15,6 +15,7 @@ export default class DeclarationPageController extends SummaryPageController {
    */
   constructor(model, pageDef) {
     super(model, pageDef)
+    this.model = model
     this.viewName = 'declaration-page.html'
     this.grantCode = model.def.metadata.submission.grantCode
   }
@@ -100,7 +101,7 @@ export default class DeclarationPageController extends SummaryPageController {
           await cacheService.setState(request, {
             ...currentState,
             applicationStatus: ApplicationStatus.SUBMITTED,
-            submittedAt: applicationData.metadata.submittedAt,
+            submittedAt: applicationData.metadata?.submittedAt,
             submittedBy: crn
           })
           request.logger.debug('DeclarationController: Set application status to SUBMITTED')
@@ -112,7 +113,7 @@ export default class DeclarationPageController extends SummaryPageController {
             grantCode,
             grantVersion: context.grantVersion,
             referenceNumber: context.referenceNumber,
-            submittedAt: applicationData.metadata.submittedAt
+            submittedAt: applicationData.metadata?.submittedAt
           })
         }
 
@@ -132,6 +133,6 @@ export default class DeclarationPageController extends SummaryPageController {
 }
 
 /**
- * @import { type FormModel } from '~/src/server/plugins/engine/models/index.js'
- * @import { type PageSummary } from '@defra/forms-model'
+ * @import { FormModel } from '@defra/forms-engine-plugin/engine/models/index.js'
+ * @import { PageSummary } from '@defra/forms-model'
  */

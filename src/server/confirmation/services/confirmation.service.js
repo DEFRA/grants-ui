@@ -22,7 +22,7 @@ export class ConfirmationService {
    */
   static async loadConfirmationContent(form) {
     if (!form?.id) {
-      logger?.warn('Invalid form object provided to loadConfirmationContent', { form })
+      logger.warn({ form }, 'Invalid form object provided to loadConfirmationContent')
       return null
     }
 
@@ -31,11 +31,14 @@ export class ConfirmationService {
       const formDefinition = await service.getFormDefinition(form.id)
       return formDefinition?.metadata?.confirmationContent || null
     } catch (error) {
-      logger?.warn('Failed to load form configuration', {
-        error: error.message,
-        slug: form.slug,
-        formId: form.id
-      })
+      logger.warn(
+        {
+          error: error.message,
+          slug: form.slug,
+          formId: form.id
+        },
+        'Failed to load form configuration'
+      )
       return null
     }
   }
@@ -69,9 +72,9 @@ export class ConfirmationService {
    * @param {string} options.sbi - SBI number
    * @param {string} options.contactName - Contact name
    * @param {object} options.confirmationContent - Confirmation content from config
-   * @param {boolean} options.isDevelopmentMode - Whether in development mode
-   * @param {object} options.form - Form object (optional)
-   * @param {string} options.slug - Form slug (optional)
+   * @param {boolean} [options.isDevelopmentMode] - Whether in development mode
+   * @param {object} [options.form] - Form object (optional)
+   * @param {string | null} [options.slug] - Form slug (optional)
    * @returns {object} View model for template
    */
   static buildViewModel({
@@ -92,7 +95,6 @@ export class ConfirmationService {
       confirmationContent,
       serviceName: 'Manage land-based actions',
       serviceUrl: '/find-funding-for-land-or-farms',
-      auth: {},
       breadcrumbs: []
     }
 
@@ -102,7 +104,13 @@ export class ConfirmationService {
         isDevelopmentMode: true,
         formTitle: form?.title,
         formSlug: slug,
-        usingSessionData: false
+        usingSessionData: false,
+        // Add dev mode user details as auth strategy is disabled for dev routes
+        auth: {
+          name: 'Dev Mode User',
+          organisationName: 'Dev Mode Organisation',
+          organisationId: '999999999'
+        }
       }
     }
 

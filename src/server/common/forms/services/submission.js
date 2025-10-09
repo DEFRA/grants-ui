@@ -1,11 +1,14 @@
-import addFormats from 'ajv-formats'
-import Ajv2020 from 'ajv/dist/2020.js'
+import addFormatsModule from 'ajv-formats'
+import AjvModule from 'ajv/dist/2020.js'
 import fs from 'fs'
 import path from 'path'
 import YAML from 'yaml'
 
 const SCHEMAS_BASE_PATH = './src/server/common/forms/schemas'
 const DEFINITIONS_BASE_PATH = './src/server/common/forms/definitions'
+
+const Ajv2020 = AjvModule.default || AjvModule
+const addFormats = addFormatsModule.default || addFormatsModule
 
 const ajv = new Ajv2020({
   strict: true,

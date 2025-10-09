@@ -165,10 +165,10 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
   makePostRouteHandler() {
     /**
      * Handle POST requests to the confirm farm details page.
-     * @param {FormRequest} request
+     * @param {AnyFormRequest} request
      * @param {FormContext} context
-     * @param {Pick} h
-     * @returns {Promise<void>}
+     * @param {Pick<ResponseToolkit, 'redirect' | 'view'>} h
+     * @returns {Promise<ResponseObject>}
      */
     const fn = async (request, context, h) => {
       const { state } = context
@@ -190,7 +190,6 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
 }
 
 /**
- * @import { type FormRequest } from '~/src/server/routes/types.js'
- * @import { type FormContext } from '~/src/server/plugins/engine/types.js'
- * @import { type ResponseToolkit } from '@hapi/hapi'
+ * @import { FormContext, AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
+ * @import { ResponseObject, ResponseToolkit } from '@hapi/hapi'
  */

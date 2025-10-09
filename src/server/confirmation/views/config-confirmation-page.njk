@@ -32,26 +32,7 @@
           </div>
         </div>
       {% endif %}
-      {# Business details section - optional #}
-      {% if businessName %}
-        <div style="display: flex; justify-content: space-between; align-items: baseline;">
-          <div>
-            <h1 class="govuk-heading-m govuk-!-margin-bottom-2">{{ businessName }}</h1>
-            {% if sbi %}
-              <p class="govuk-body govuk-!-margin-bottom-0">Single business identifier (SBI): {{ sbi }}</p>
-            {% endif %}
-          </div>
-          {% if contactName %}
-            <div>
-              <p class="govuk-body govuk-!-margin-bottom-0" style="font-size: 24px; font-weight: bold;">{{ contactName }}</p>
-            </div>
-          {% endif %}
-        </div>
-        {% if sbi %}
-          <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible" style="margin-top: 10px; margin-bottom: 30px;">
-        {% endif %}
-      {% endif %}
-      
+
       {# FIXED SECTION: Always displayed - Application complete message and reference number #}
       {{ govukPanel({
         titleText: confirmationContent.panelTitle or "Application complete",
@@ -72,7 +53,7 @@
           <li>you have accepted your offer</li>
           <li>the Rural Payments Agency confirms your start date</li>
         </ul>
-        
+
         <p class="govuk-body">
           <a class="govuk-link" href="#">If you have a question</a>
         </p>

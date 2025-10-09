@@ -58,3 +58,7 @@ export const router = {
     }
   }
 }
+
+/**
+ * @import { ServerRegisterPluginObject } from '@hapi/hapi'
+ */

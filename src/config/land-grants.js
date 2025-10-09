@@ -7,6 +7,10 @@ import 'dotenv/config'
  * @typedef {object} LandGrantsConfig
  * @property {string} grantCode
  * @property {string} grantsServiceApiEndpoint
+ * @property {number} customerReferenceNumber
+ * @property {number} defaultSbi
+ * @property {string} mockSessionCurrentRelationshipId
+ * @property {string} mockSessionRelationships
  */
 
 const landGrants = convict({

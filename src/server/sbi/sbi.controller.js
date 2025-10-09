@@ -8,11 +8,9 @@ import { sbiStore } from './state.js'
  */
 export const sbiSelectorController = {
   handler(request, h) {
-    const {
-      method,
-      payload: { sbi }
-    } = request
+    const { method, payload } = request
 
+    const sbi = payload['sbi']
     if (method === 'post') {
       sbiStore.set('sbi', sbi)
 

@@ -3,7 +3,7 @@
  * @param {string} endpoint
  * @param {object} body
  * @param {string} baseUrl
- * @returns {Promise<any>}
+ * @returns {Promise<Object>}
  * @throws {Error}
  */
 export async function postToLandGrantsApi(endpoint, body, baseUrl) {
@@ -29,13 +29,13 @@ export async function postToLandGrantsApi(endpoint, body, baseUrl) {
 
 /**
  * Calls the Land Grants API calculate endpoint.
- * @param {LandActions[]} landParcels
+ * @param {{landActions: LandActions[]}} payload
  * @param {string} baseUrl
  * @returns {Promise<PaymentCalculationResponse>} - Payment calculation result
  * @throws {Error}
  */
-export async function calculate(landParcels, baseUrl) {
-  return postToLandGrantsApi('/payments/calculate', landParcels, baseUrl)
+export async function calculate(payload, baseUrl) {
+  return postToLandGrantsApi('/payments/calculate', payload, baseUrl)
 }
 
 /**
@@ -84,5 +84,6 @@ export async function validate(request, baseUrl) {
 }
 
 /**
- * @import { Parcel, LandActions, PaymentCalculationResponse, Action, ValidateApplicationRequest, ParcelResponse, ValidateApplicationResponse } from './land-grants.client.d.js'
+ * @import { Parcel, LandActions, ValidateApplicationRequest, ParcelResponse, ValidateApplicationResponse } from '~/src/server/land-grants/types/land-grants.client.d.js'
+ * @import {  PaymentCalculationResponse } from '~/src/server/land-grants/types/payment.d.js'
  */

@@ -44,7 +44,7 @@ function verifyTokenSignature(token, key) {
 }
 
 function logSuccessfulVerification(decoded) {
-  const tokenPayload = decoded.decoded?.payload || decoded.payload || {}
+  const tokenPayload = decoded.decoded?.payload || decoded['payload'] || {}
   const userId = tokenPayload.contactId || 'unknown'
 
   log(LogCodes.AUTH.TOKEN_VERIFICATION_SUCCESS, {
@@ -60,7 +60,7 @@ function handleVerificationError(error, token) {
 
   try {
     const decoded = Jwt.token.decode(token)
-    const tokenPayload = decoded.decoded?.payload || decoded.payload || {}
+    const tokenPayload = decoded.decoded?.payload || decoded['payload'] || {}
     userId = tokenPayload.contactId || 'unknown'
   } catch {
     step = 'token_decode_failed'

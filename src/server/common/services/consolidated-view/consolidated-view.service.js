@@ -138,7 +138,7 @@ async function fetchFromConsolidatedView({ sbi, query, formatResponse }) {
 
 /**
  * Fetches business parcels data from Consolidated View
- * @param {string} sbi - Standard Business Identifier
+ * @param {number} sbi - Standard Business Identifier
  * @returns {Promise<Array>} - Promise that resolves to the parcels array
  * @throws {ConsolidatedViewApiError} - If the API request fails
  * @throws {Error} - For other unexpected errors

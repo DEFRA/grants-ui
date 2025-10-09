@@ -57,7 +57,7 @@ export const contentSecurityPolicy = {
         response.header('Referrer-Policy', 'no-referrer')
 
         // Only set this header in non-production environments for debugging
-        if (!config.isProduction) {
+        if (!config.get('isProduction')) {
           response.header('X-CSP-Nonce', nonce)
         }
       }

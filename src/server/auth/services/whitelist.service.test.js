@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import { WhitelistService, WhitelistServiceFactory, whitelistService } from './whitelist.service.js'
+import { WhitelistService, whitelistService, WhitelistServiceFactory } from './whitelist.service.js'
 import { log } from '~/src/server/common/helpers/logging/log.js'
 import { LogCodes } from '~/src/server/common/helpers/logging/log-codes.js'
 
@@ -68,8 +68,8 @@ describe('WhitelistServiceFactory', () => {
 
   describe('getService', () => {
     it('should create service with empty whitelists when no env vars configured', () => {
-      const grantDefinition = { metadata: {} }
-      const service = WhitelistServiceFactory.getService(grantDefinition)
+      const grantMetadata = {}
+      const service = WhitelistServiceFactory.getService(grantMetadata)
 
       expect(service.crnWhitelist).toEqual([])
       expect(service.sbiWhitelist).toEqual([])
@@ -79,23 +79,21 @@ describe('WhitelistServiceFactory', () => {
       process.env[TEST_ENV_VARS.CRN_WHITELIST] = TEST_WHITELIST_VALUES.CRN_VALUES
       process.env[TEST_ENV_VARS.SBI_WHITELIST] = TEST_WHITELIST_VALUES.SBI_VALUES
 
-      const grantDefinition = {
-        metadata: {
-          whitelistCrnEnvVar: TEST_ENV_VARS.CRN_WHITELIST,
-          whitelistSbiEnvVar: TEST_ENV_VARS.SBI_WHITELIST
-        }
+      const grantMetadata = {
+        whitelistCrnEnvVar: TEST_ENV_VARS.CRN_WHITELIST,
+        whitelistSbiEnvVar: TEST_ENV_VARS.SBI_WHITELIST
       }
 
-      const service = WhitelistServiceFactory.getService(grantDefinition)
+      const service = WhitelistServiceFactory.getService(grantMetadata)
 
       expect(service.crnWhitelist).toEqual(TEST_WHITELIST_ARRAYS.CRN_VALUES)
       expect(service.sbiWhitelist).toEqual(TEST_WHITELIST_ARRAYS.SBI_VALUES)
     })
 
     it('should cache and reuse service instances', () => {
-      const grantDefinition = { metadata: {} }
-      const service1 = WhitelistServiceFactory.getService(grantDefinition)
-      const service2 = WhitelistServiceFactory.getService(grantDefinition)
+      const grantMetadata = {}
+      const service1 = WhitelistServiceFactory.getService(grantMetadata)
+      const service2 = WhitelistServiceFactory.getService(grantMetadata)
 
       expect(service1).toBe(service2)
     })
@@ -103,13 +101,11 @@ describe('WhitelistServiceFactory', () => {
     it('should handle whitespace and empty values in env vars', () => {
       process.env[TEST_ENV_VARS.CRN_WHITELIST] = TEST_WHITELIST_VALUES.WITH_SPACES
 
-      const grantDefinition = {
-        metadata: {
-          whitelistCrnEnvVar: TEST_ENV_VARS.CRN_WHITELIST
-        }
+      const grantMetadata = {
+        whitelistCrnEnvVar: TEST_ENV_VARS.CRN_WHITELIST
       }
 
-      const service = WhitelistServiceFactory.getService(grantDefinition)
+      const service = WhitelistServiceFactory.getService(grantMetadata)
 
       expect(service.crnWhitelist).toEqual(TEST_WHITELIST_ARRAYS.BASIC)
     })

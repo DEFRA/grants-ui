@@ -2,6 +2,9 @@
  * @param {Parameters<Intl.NumberFormat['format']>[0]} value
  * @param {Intl.LocalesArgument} locale
  * @param {string} currency
+ * @param {number} maximumFractionDigits
+ * @param {keyof Intl.NumberFormatOptionsStyleRegistry} style
+ * @return {string}
  */
 export function formatCurrency(
   value,

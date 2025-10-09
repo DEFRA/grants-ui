@@ -64,7 +64,8 @@ export async function addAllForms(loader, forms) {
         ...metadata,
         id: form.id,
         slug: form.slug,
-        title: form.title
+        title: form.title,
+        metadata: form.metadata
       })
     )
   )
@@ -155,7 +156,8 @@ async function discoverFormsFromYaml(baseDir = path.resolve(process.cwd(), 'src/
           path: filePath,
           id,
           slug: fileName,
-          title
+          title,
+          metadata: formMetadata
         })
       }
     } catch (err) {

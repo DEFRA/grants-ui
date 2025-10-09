@@ -10,9 +10,9 @@ const SCENARIO_FLAGS = {
 
 class WhitelistServiceFactory {
   static #serviceCache = new Map()
-  static getService(grantDefinition) {
-    const whitelistCrnEnvVar = grantDefinition?.metadata?.whitelistCrnEnvVar
-    const whitelistSbiEnvVar = grantDefinition?.metadata?.whitelistSbiEnvVar
+  static getService(grantMetadata) {
+    const whitelistCrnEnvVar = grantMetadata?.whitelistCrnEnvVar
+    const whitelistSbiEnvVar = grantMetadata?.whitelistSbiEnvVar
 
     const cacheKey = `${whitelistCrnEnvVar || 'none'}:${whitelistSbiEnvVar || 'none'}`
 
@@ -123,7 +123,9 @@ class WhitelistService {
 
   /**
    * Helper method to log whitelist events with consistent structure
-   * @param {string} logCode - The log code to use
+   * @param {object} logCode - Logging options.
+   * @param {string} logCode.level - The log level.
+   * @param {Function} logCode.messageFunc - A function that creates an interpolated message string
    * @param {string} crn - The user's CRN
    * @param {string} sbi - The SBI number
    * @param {string} path - The request path

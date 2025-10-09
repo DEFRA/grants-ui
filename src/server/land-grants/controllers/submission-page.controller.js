@@ -11,21 +11,15 @@ import { persistSubmissionToApi } from '~/src/server/common/helpers/state/persis
 import { getConfirmationPath } from '~/src/server/common/helpers/form-slug-helper.js'
 
 export default class SubmissionPageController extends SummaryPageController {
-  /**
-   * @param {FormModel} model
-   * @param {PageSummary} pageDef
-   */
-  constructor(model, pageDef) {
-    super(model, pageDef)
-    this.viewName = 'submit-your-application'
-    this.grantCode = config.get('landGrants.grantCode')
-  }
+  viewName = 'submit-your-application'
+  grantCode = config.get('landGrants.grantCode')
 
   /**
    * Submits the land grant application
-   * @param {object} identifiers - User identifiers
-   * @param {object} state - Application state
-   * @param {string} validationId - Land Grants API validation ID
+   * @param {object} data
+   * @param {object} data.identifiers - User identifiers
+   * @param {object} data.state - Form application state
+   * @param {string} data.validationId - Land grants validation ID
    * @returns {Promise<object>} - The result of the grant application submission
    */
   async submitGasApplication(data) {
@@ -44,7 +38,7 @@ export default class SubmissionPageController extends SummaryPageController {
    * @private
    * @param {object} request - Request object
    * @param {object} context - Form context
-   * @returns {Promise<string>} - Redirect response
+   * @returns {string} - Status url path
    */
   getStatusPath(request, context) {
     return getConfirmationPath(request, context, 'SubmissionPageController')
@@ -61,7 +55,7 @@ export default class SubmissionPageController extends SummaryPageController {
    */
   handleValidationError(h, request, context, validationId) {
     return h.view('submission-error', {
-      ...this.getViewModel(request, context),
+      ...this.getSummaryViewModel(request, context),
       backLink: null,
       heading: 'Sorry, there was a problem validating the application',
       refNumber: validationId
@@ -71,7 +65,6 @@ export default class SubmissionPageController extends SummaryPageController {
   /**
    * Handles successful submission
    * @private
-   * @param {object} result - Submission result
    * @param {object} request - Request object
    * @param {object} context - Form context
    * @param {number} submissionStatus - Submission status code
@@ -120,13 +113,19 @@ export default class SubmissionPageController extends SummaryPageController {
 
   /**
    * Creates the POST route handler for form submission
-   * @returns {Function} - The route handler function
    */
   makePostRouteHandler() {
-    return async (request, context, h) => {
+    /**
+     * @param {AnyFormRequest} request
+     * @param {FormContext} context
+     * @param {Pick<ResponseToolkit, 'redirect' | 'view'>} h
+     * @returns {Promise<ResponseObject>}
+     */
+    const fn = async (request, context, h) => {
       try {
         const { state, referenceNumber } = context
         const { sbi, crn } = request.auth.credentials
+        const frn = state.applicant ? state.applicant['business']?.reference : undefined
 
         // Validate application with Land Grants API
         const validationResult = await validateApplication({ applicationId: referenceNumber, crn, sbi, state })
@@ -136,12 +135,7 @@ export default class SubmissionPageController extends SummaryPageController {
         }
 
         const result = await this.submitGasApplication({
-          identifiers: {
-            sbi,
-            crn,
-            frn: state.applicant?.business?.reference,
-            clientRef: referenceNumber?.toLowerCase()
-          },
+          identifiers: { sbi, crn, frn, clientRef: referenceNumber?.toLowerCase() },
           state,
           validationId
         })
@@ -153,10 +147,12 @@ export default class SubmissionPageController extends SummaryPageController {
         throw error
       }
     }
+
+    return fn
   }
 }
 
 /**
- * @import { type FormModel } from '~/src/server/plugins/engine/models/index.js'
- * @import { type PageSummary } from '@defra/forms-model'
+ * @import { FormContext, AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
+ * @import { ResponseObject, type ResponseToolkit } from '@hapi/hapi'
  */

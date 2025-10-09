@@ -43,7 +43,7 @@ function validateRequestAndFindForm(request, h) {
  * @param {object} form - Form configuration object
  * @param {string} slug - Form slug
  * @param {object} h - Hapi response toolkit
- * @returns {object} Content result or error response
+ * @returns {Promise<object>} Content result or error response
  */
 async function loadConfirmationContent(form, slug, h) {
   const rawConfirmationContent = await ConfirmationService.loadConfirmationContent(form)
@@ -64,8 +64,7 @@ async function loadConfirmationContent(form, slug, h) {
 /**
  * Retrieves reference number from various sources
  * @param {object} request - Hapi request object
- * @param {string} slug - Form slug
- * @returns {object} Reference number result
+ * @returns {Promise<object>} Reference number result
  */
 async function getReferenceNumber(request) {
   const cacheService = getFormsCacheService(request.server)

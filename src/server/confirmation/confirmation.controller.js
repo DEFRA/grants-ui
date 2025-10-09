@@ -6,6 +6,15 @@ export default class ConfirmationPageController extends StatusPageController {
   viewName = 'confirmation-page.html'
 
   /**
+   * @param {FormModel} model
+   * @param {PageStatus} pageDef
+   */
+  constructor(model, pageDef) {
+    super(model, pageDef)
+    this.model = model
+  }
+
+  /**
    * This method is called when there is a GET request to the confirmation page.
    * The method then uses the `h.view` method to render the page using the
    * view name and the view model.
@@ -13,7 +22,7 @@ export default class ConfirmationPageController extends StatusPageController {
   makeGetRouteHandler() {
     /**
      * Handle GET requests to the score page.
-     * @param {FormRequest} request
+     * @param {AnyFormRequest} request
      * @param {FormContext} context
      * @param {Pick<ResponseToolkit, 'redirect' | 'view'>} h
      */
@@ -30,16 +39,19 @@ export default class ConfirmationPageController extends StatusPageController {
 
   /**
    * Render the confirmation page
-   * @param {FormRequest} request - The request object
+   * @param {AnyFormRequest} request - The request object
    * @param {FormContext} context - The context object
    * @param {Pick<ResponseToolkit, 'redirect' | 'view'>} h - Response toolkit
    * @param {string} referenceNumber - The reference number
-   * @returns {Promise<object>} View response
+   * @returns {ResponseObject} View response
    */
   renderConfirmationPage(request, context, h, referenceNumber) {
+    /** @type {object} */
     const { collection } = this
+    // @ts-ignore - super not being recognised as QuestionPageController as it is two levels above and it's on a node module
+    const baseViewModel = super.getViewModel(request, context)
     const viewModel = {
-      ...super.getViewModel(request, context),
+      ...baseViewModel,
       errors: collection.getErrors(collection.getErrors()),
       referenceNumber,
       businessName: request.yar?.get('businessName'),
@@ -65,7 +77,7 @@ export default class ConfirmationPageController extends StatusPageController {
    * @returns {string} The start path for the form
    */
   getStartPath() {
-    // Use the model's default implementation
+    // @ts-ignore - super not being recognised as QuestionPageController as it is two levels above and it's on a node module
     const defaultPath = super.getStartPath()
 
     // Try to get the slug from the model if possible
@@ -79,7 +91,8 @@ export default class ConfirmationPageController extends StatusPageController {
 }
 
 /**
- * @import { type FormRequest } from '~/src/server/routes/types.js'
- * @import { type FormContext } from '~/src/server/plugins/engine/types.js'
- * @import { type ResponseToolkit } from '@hapi/hapi'
+ * @import { type FormContext, AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
+ * @import { ResponseObject, type ResponseToolkit } from '@hapi/hapi'
+ * @import { FormModel } from '@defra/forms-engine-plugin/engine/models/index.js'
+ * @import { PageStatus } from '@defra/forms-model'
  */
