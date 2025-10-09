@@ -95,7 +95,6 @@ export class ConfirmationService {
       confirmationContent,
       serviceName: 'Manage land-based actions',
       serviceUrl: '/find-funding-for-land-or-farms',
-      auth: {},
       breadcrumbs: []
     }
 
@@ -105,7 +104,13 @@ export class ConfirmationService {
         isDevelopmentMode: true,
         formTitle: form?.title,
         formSlug: slug,
-        usingSessionData: false
+        usingSessionData: false,
+        // Add dev mode user details as auth strategy is disabled for dev routes
+        auth: {
+          name: 'Dev Mode User',
+          organisationName: 'Dev Mode Organisation',
+          organisationId: '999999999'
+        }
       }
     }
 
