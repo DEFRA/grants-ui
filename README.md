@@ -8,9 +8,21 @@ Core delivery platform Node.js Frontend Template.
 
 - [Requirements](#requirements)
   - [Node.js](#nodejs)
+- [DXT Forms Engine Plugin](#dxt-forms-engine-plugin)
+- [Development Tools & Configuration](#development-tools--configuration)
+  - [Testing Framework](#testing-framework)
+  - [Code Quality & Linting](#code-quality--linting)
+  - [Build & Development Tools](#build--development-tools)
+  - [Authentication & Security](#authentication--security)
+  - [Development Services Integration](#development-services-integration)
+  - [Custom NPM Scripts](#custom-npm-scripts)
 - [Cookies](#cookies)
+  - [Inspecting cookies](#inspecting-cookies)
 - [Server-side Caching](#server-side-caching)
+- [Session Rehydration](#session-rehydration)
 - [Redis](#redis)
+- [Proxy](#proxy)
+- [Feature Structure](#feature-structure)
 - [Local Development](#local-development)
   - [Setup](#setup)
   - [Development](#development)
@@ -48,7 +60,7 @@ Core delivery platform Node.js Frontend Template.
 
 ### Node.js
 
-Please install [Node.js](http://nodejs.org/) `>= v18` and [npm](https://nodejs.org/) `>= v9`. You will find it
+Please install [Node.js](http://nodejs.org/) `>= v22` and [npm](https://nodejs.org/) `>= v9`. You will find it
 easier to use the Node Version Manager [nvm](https://github.com/creationix/nvm)
 
 To use the correct version of Node.js for this application, via nvm:
@@ -68,6 +80,39 @@ CheckResponsesPageController renders a page showing the questions and answers th
 
 DeclarationPageController renders a declaration page and submits the form to GAS. It does not use the `confirmationState` used by DXT and does not clear the state.
 Instead it sets `applicationStatus` to `SUBMITTED` along with `submittedAt` and `submittedBy` fields.
+
+## Development Tools & Configuration
+
+### Testing Framework
+
+The application uses **Vitest** as its test framework with custom module aliases for mocking external dependencies like `@defra/forms-engine-plugin`.
+
+### Code Quality & Linting
+
+- **Neostandard**: Modern JavaScript/Node.js linting configuration that provides opinionated code quality rules
+- **TSX**: Modern Node.js runtime used for development server (better ES module support)
+
+### Authentication & Security
+
+- **Defra ID Integration**: Primary authentication service using OpenID Connect (OIDC) protocol
+  - For detailed environment variable configuration, see [DEFRA ID Integration](#defra-id-integration)
+- **Whitelist System**: CRN (Customer Reference Number) and SBI (Single Business Identifier) whitelisting for specific grants:
+  - `EXAMPLE_GRANT_WITH_AUTH_WHITELIST_CRNS`: Authorized CRNs for example grant
+  - `EXAMPLE_GRANT_WITH_AUTH_WHITELIST_SBIS`: Authorized SBIs for example grant
+  - For complete whitelist configuration, see [Feature Flags & Misc](#feature-flags--misc)
+
+### Development Services Integration (docker compose)
+
+- **Grants UI Backend**: Separate Node.js service (`defradigital/grants-ui-backend`) for data persistence
+- **MongoDB**: Document database used by the backend service for storing application data
+- **FFC Grants Scoring**: External scoring service (`defradigital/ffc-grants-scoring`) for grant evaluation
+- **MockServer**: API mocking service for development and testing with predefined expectations
+
+For complete service configuration and setup, see [Docker Compose](#docker-compose) section.
+
+### Custom NPM Scripts
+
+Beyond the standard scripts, the application includes contract testing via `npm run test:contracts` using Vitest.
 
 ## Cookies
 
