@@ -107,7 +107,6 @@ describe('ConfirmationService', () => {
         confirmationContent: { html: '<h2>Test content</h2>' },
         serviceName: 'Manage land-based actions',
         serviceUrl: '/find-funding-for-land-or-farms',
-        auth: {},
         breadcrumbs: []
       })
     })
@@ -125,6 +124,9 @@ describe('ConfirmationService', () => {
       expect(result.isDevelopmentMode).toBe(true)
       expect(result.formTitle).toBe('Test Form')
       expect(result.formSlug).toBe('test-form')
+      expect(result.auth.name).toBe('Dev Mode User')
+      expect(result.auth.organisationName).toBe('Dev Mode Organisation')
+      expect(result.auth.organisationId).toBe('999999999')
     })
   })
 
