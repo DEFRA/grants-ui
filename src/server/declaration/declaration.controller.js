@@ -7,6 +7,7 @@ import { transformAnswerKeysToText } from './state-to-gas-answers-mapper.js'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { persistSubmissionToApi } from '~/src/server/common/helpers/state/persist-submission-helper.js'
 import { ApplicationStatus } from '~/src/server/common/constants/application-status.js'
+import { handleGasApiError } from '~/src/server/common/helpers/gas-error-messages.js'
 
 export default class DeclarationPageController extends SummaryPageController {
   /**
@@ -124,6 +125,11 @@ export default class DeclarationPageController extends SummaryPageController {
         return h.redirect(redirectPath)
       } catch (error) {
         request.logger.error(error, 'Failed to submit form')
+
+        if (error.name === 'GrantApplicationServiceApiError') {
+          return handleGasApiError(h, context, error)
+        }
+
         throw error
       }
     }
