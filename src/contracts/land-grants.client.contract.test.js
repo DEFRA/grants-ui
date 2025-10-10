@@ -27,7 +27,7 @@ describe('parcelsWithFields', () => {
     const EXPECTED_BODY = like(badRequestResponseExample)
 
     await provider
-      .given('has a parcel with ID', { sheetId: 'SD6743', parcelId: '8083' })
+      .given('has parcels', { parcels: [{ sheetId: 'SD6743', parcelId: '8083' }] })
       .uponReceiving('a request for a wrong field name')
       .withRequest({
         method: 'POST',
@@ -53,7 +53,7 @@ describe('parcelsWithSize', () => {
     const EXPECTED_BODY = like({ message: 'success', parcels: eachLike(parcelWithSizeExample) })
 
     await provider
-      .given('has a parcel with ID', { sheetId: 'SD6743', parcelId: '8083' })
+      .given('has parcels', { parcels: [{ sheetId: 'SD6743', parcelId: '8083' }] })
       .uponReceiving('a request for specific parcels & the "size" field requested')
       .withRequest({
         method: 'POST',
@@ -106,8 +106,8 @@ describe('parcelsWithSize', () => {
     const EXPECTED_BODY = like(notFoundParcelExample)
 
     await provider
-      .given("doesn't have parcels")
-      .uponReceiving('a request for a not found parcel & the "size" field requested')
+      .given('has parcels', { parcels: [] })
+      .uponReceiving('a request for a not found pa}rcel & the "size" field requested')
       .withRequest({
         method: 'POST',
         path: '/parcels',
@@ -157,7 +157,7 @@ describe('parcelsWithActionsAndSize', () => {
     const EXPECTED_BODY = like({ message: 'success', parcels: eachLike(parcelWithActionsAndSizeExample) })
 
     await provider
-      .given('has a parcel with ID', { sheetId: 'SD6743', parcelId: '8083' })
+      .given('has parcels', { parcels: [{ sheetId: 'SD6743', parcelId: '8083' }] })
       .uponReceiving('a request for specific parcels & the "actions" and "size" fields requested')
       .withRequest({
         method: 'POST',
@@ -210,8 +210,8 @@ describe('parcelsWithActionsAndSize', () => {
     const EXPECTED_BODY = like(notFoundParcelExample)
 
     await provider
-      .given("doesn't have parcels")
-      .uponReceiving('a request for a not found parcel & the "actions" and "size" fields requested')
+      .given('has parcels', { parcels: [] })
+      .uponReceiving('a request for a not found pa}rcel & the "actions" and "size" fields requested')
       .withRequest({
         method: 'POST',
         path: '/parcels',
@@ -362,7 +362,12 @@ describe('calculate', () => {
       payment: calculateResponseContract
     })
     await provider
-      .given('has a parcel with ID', { sheetId: 'SD6743', parcelId: '8083' })
+      .given('has parcels', {
+        parcels: [
+          { sheetId: 'SD6743', parcelId: '8083' },
+          { sheetId: 'SD6743', parcelId: '8084' }
+        ]
+      })
       .uponReceiving('a calculate request for a valid parcel and action')
       .withRequest({
         method: 'POST',
@@ -398,10 +403,11 @@ describe('calculate', () => {
     const notFoundResponseExample = {
       statusCode: 400,
       error: 'Bad Request',
-      message: 'Error getting parcel information'
+      message: 'Land parcels not found: INVALID-PARCEL'
     }
     const EXPECTED_BODY = like(notFoundResponseExample)
     await provider
+      .given('has parcels', { parcels: [] })
       .uponReceiving('a calculate request for an invalid parcel')
       .withRequest({
         method: 'POST',
@@ -441,11 +447,11 @@ describe('calculate', () => {
     const notFoundResponseExample = {
       statusCode: 400,
       error: 'Bad Request',
-      message: 'Error getting actions information'
+      message: 'Actions not found: INVALID_ACTION'
     }
     const EXPECTED_BODY = like(notFoundResponseExample)
     await provider
-      .given('has a parcel with ID', { sheetId: 'SD6743', parcelId: '8083' })
+      .given('has parcels', { parcels: [{ sheetId: 'SD6743', parcelId: '8083' }] })
       .uponReceiving('a calculate request for an invalid action')
       .withRequest({
         method: 'POST',
@@ -489,7 +495,7 @@ describe('calculate', () => {
     }
     const EXPECTED_BODY = like(unprocessableResponseExample)
     await provider
-      .given('has a parcel with ID', { sheetId: 'SD6743', parcelId: '8083' })
+      .given('has parcels', { parcels: [{ sheetId: 'SD6743', parcelId: '8083' }] })
       .uponReceiving('a calculate request with a negative quantity')
       .withRequest({
         method: 'POST',
@@ -533,7 +539,7 @@ describe('calculate', () => {
     }
     const EXPECTED_BODY = like(unprocessableResponseExample)
     await provider
-      .given('has a parcel with ID', { sheetId: 'SD6743', parcelId: '8083' })
+      .given('has parcels', { parcels: [{ sheetId: 'SD6743', parcelId: '8083' }] })
       .uponReceiving('a calculate request with a negative quantity')
       .withRequest({
         method: 'POST',
@@ -585,7 +591,7 @@ describe('validate', () => {
     const EXPECTED_BODY = like(validateResponseExample)
 
     await provider
-      .given('has a parcel with ID', { sheetId: 'SD6843', parcelId: '9485' })
+      .given('has parcels', { parcels: [{ sheetId: 'SD6843', parcelId: '9485' }] })
       .uponReceiving('a validation request for valid parcel and actions applied for each parcel')
       .withRequest({
         method: 'POST',
@@ -627,7 +633,7 @@ describe('validate', () => {
     const EXPECTED_BODY = like(unprocessableResponseExample)
 
     await provider
-      .given('has a parcel with ID', { sheetId: 'SD6743', parcelId: '8083' })
+      .given('has parcels', { parcels: [{ sheetId: 'SD6743', parcelId: '8083' }] })
       .uponReceiving('a validation request for negative quantity')
       .withRequest({
         method: 'POST',
@@ -672,7 +678,7 @@ describe('validate', () => {
     const EXPECTED_BODY = like(unprocessableResponseExample)
 
     await provider
-      .given('has a parcel with ID', { sheetId: 'SD6743', parcelId: '8083' })
+      .given('has parcels', { parcels: [{ sheetId: 'SD6743', parcelId: '8083' }] })
       .uponReceiving('a validation request for negative quantity')
       .withRequest({
         method: 'POST',
@@ -710,7 +716,7 @@ describe('validate', () => {
     const EXPECTED_BODY = like(badRequestResponseExample)
 
     await provider
-      .given('has a parcel with ID', { sheetId: 'S38234', parcelId: '1235' })
+      .given('has parcels', { parcels: [{ sheetId: 'SD6743', parcelId: '8083' }] })
       .uponReceiving('a validation request with missing required fields')
       .withRequest({
         method: 'POST',
@@ -757,8 +763,8 @@ describe('validate', () => {
     const EXPECTED_BODY = like(notFoundResponseExample)
 
     await provider
-      .given("doesn't have parcels")
-      .uponReceiving('a validation request for a non-existent parcel')
+      .given('has parcels', { parcels: [] })
+      .uponReceiving('a validation request for a non-ex}istent parcel')
       .withRequest({
         method: 'POST',
         path: '/application/validate',
