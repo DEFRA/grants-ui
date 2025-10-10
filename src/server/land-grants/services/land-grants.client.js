@@ -42,17 +42,21 @@ export async function calculate(payload, baseUrl) {
  *
  * @param {string[]} parcelIds
  * @param {string} baseUrl
- * @returns {Promise<{parcels: Parcel[]}>}
+ * @returns {Promise<ParcelResponse>}
  */
 export async function parcelsWithSize(parcelIds, baseUrl) {
-  return postToLandGrantsApi(
-    '/parcels',
-    {
-      parcelIds,
-      fields: ['size']
-    },
-    baseUrl
-  )
+  return parcelsWithFields(['size'], parcelIds, baseUrl)
+}
+
+/**
+ *
+ * @param {string[]} fields
+ * @param {string[]} parcelIds
+ * @param {string} baseUrl
+ * @returns {Promise<ParcelResponse>}
+ */
+export async function parcelsWithFields(fields, parcelIds, baseUrl) {
+  return postToLandGrantsApi('/parcels', { parcelIds, fields }, baseUrl)
 }
 
 /**
@@ -62,14 +66,7 @@ export async function parcelsWithSize(parcelIds, baseUrl) {
  * @returns {Promise<ParcelResponse>}
  */
 export async function parcelsWithActionsAndSize(parcelIds, baseUrl) {
-  return postToLandGrantsApi(
-    '/parcels',
-    {
-      parcelIds,
-      fields: ['actions', 'size']
-    },
-    baseUrl
-  )
+  return parcelsWithFields(['actions', 'size'], parcelIds, baseUrl)
 }
 
 /**
