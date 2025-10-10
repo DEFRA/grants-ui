@@ -385,6 +385,7 @@ describe('calculate', () => {
         expect(response.payment).toEqual(expectedPaymentResponse)
       })
   })
+
   it('returns HTTP 400 when parcel is invalid', async () => {
     const badRequestPayload = {
       landActions: [
@@ -429,6 +430,7 @@ describe('calculate', () => {
         }
       })
   })
+
   it('returns HTTP 400 when action code is invalid', async () => {
     const badRequestPayload = {
       landActions: [
@@ -473,6 +475,7 @@ describe('calculate', () => {
         }
       })
   })
+
   it('returns HTTP 422 when quantity is a string', async () => {
     const invalidQuantityPayload = {
       landActions: [
@@ -517,6 +520,7 @@ describe('calculate', () => {
         }
       })
   })
+
   it('returns HTTP 422 when quantity is negative', async () => {
     const invalidQuantityPayload = {
       landActions: [
