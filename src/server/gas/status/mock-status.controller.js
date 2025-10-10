@@ -3,7 +3,7 @@ export const applicationStatuses = new Map()
 export const mockStatusController = {
   handler: (request, h) => {
     const { code, clientRef } = request.params
-    const key = `${code}_${clientRef}`
+    const key = `${clientRef}_${code}`
 
     if (!applicationStatuses.has(key)) {
       // Not submitted yet → return 404

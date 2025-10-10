@@ -118,10 +118,10 @@ export default class DeclarationPageController extends SummaryPageController {
             submittedAt: applicationData.metadata?.submittedAt
           })
 
-          const code = request.params?.slug
-          const clientRef = request.auth.credentials?.sbi
-          const key = `${code}_${clientRef}`
-          applicationStatuses.set(key, 'SUBMITTED')
+          const grantId = request.params?.slug
+          const applicationRef = context.referenceNumber
+          const key = `${applicationRef}_${grantId}`
+          applicationStatuses.set(key, 'RECEIVED')
         }
 
         // Get the redirect path
