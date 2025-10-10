@@ -6,6 +6,9 @@
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
       <h1 class="govuk-heading-l">{{heading}}</h1>
+      {% if message %}
+        <p class="govuk-body">{{message}}</p>
+      {% endif %}
       <p class="govuk-body">Contact the Rural Payments Agency and mention the reference number below if you have a query.</p>
       <p class="govuk-body"><b>Reference number: {{refNumber}}</b></p>
       <p class="govuk-body">
