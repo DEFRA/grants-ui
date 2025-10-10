@@ -8,17 +8,17 @@ export const mockApplication = {
   plugin: {
     name: 'mock-application',
     register(server) {
-      server.route(
-        mockApplicationController.map((route) => ({
-          ...route,
-          options: {
-            auth: { mode: 'optional' }, // like your status route
-            plugins: {
-              crumb: false // disable CSRF for mock endpoint
-            }
+      server.route({
+        method: 'POST',
+        path: '/mock/applications/{code}/{clientRef}/status',
+        options: {
+          auth: { mode: 'optional' }, // like your status route
+          plugins: {
+            crumb: false // disable CSRF for mock endpoint
           }
-        }))
-      )
+        },
+        ...mockApplicationController
+      })
     }
   }
 }
