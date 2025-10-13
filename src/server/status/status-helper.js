@@ -1,5 +1,6 @@
 import { ApplicationStatus } from '../common/constants/application-status.js'
 import { getFormsCacheService } from '../common/helpers/forms-cache/forms-cache.js'
+import { HTTP_STATUS } from '../common/helpers/state/test-helpers/auth-test-helpers.js'
 import { updateApplicationStatus } from '../common/helpers/status/update-application-status-helper.js'
 import { getApplicationStatus } from '../common/services/grant-application/grant-application.service.js'
 
@@ -100,7 +101,7 @@ export const formsStatusCallback = async (request, h, context) => {
     const redirectUrl = mapStatusToUrl(gasStatus, newStatus, grantId)
     return request.path === redirectUrl ? h.continue : h.redirect(redirectUrl).takeover()
   } catch (err) {
-    if (err.status === 404) {
+    if (err.status === HTTP_STATUS.NOT_FOUND) {
       // no submission yet — allow flow-through
       return h.continue
     }
