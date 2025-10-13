@@ -132,29 +132,36 @@ describe('formsStatusCallback', () => {
     expect(result).toEqual(expect.any(Symbol))
   })
 
-  it('should continue when a non-404 error occurs but request.path equals fallbackUrl', async () => {
-    const fakeError = new Error('Internal failure')
-    fakeError.status = 500
+  it('continues when non-404 error occurs but path equals fallback URL', async () => {
+    const error = new Error('server error')
+    getApplicationStatus.mockRejectedValue(error)
+    request.path = '/grant-a/confirmation'
 
-    const grantId = 'some-grant'
-    const fallbackUrl = `/${grantId}/confirmation`
+    const result = await formsStatusCallback(request, h, context)
 
-    const request = {
-      params: { slug: grantId },
-      path: fallbackUrl, // 👈 equals fallbackUrl
-      auth: { credentials: { sbi: 'org123' } },
-      server: { logger: { error: vi.fn() } }
-    }
-
-    const h = { continue: Symbol('continue'), redirect: vi.fn() }
-
-    // mock getApplicationStatus to throw
-    vi.mocked(getApplicationStatus).mockRejectedValue(fakeError)
-
-    const result = await formsStatusCallback(request, h, { state: {} })
-
-    expect(request.server.logger.error).toHaveBeenCalledWith(fakeError)
-    expect(result).toBe(h.continue) // 👈 ensure it continues (not redirects)
+    expect(request.server.logger.error).toHaveBeenCalledWith(error)
+    expect(result).toBe(h.continue)
     expect(h.redirect).not.toHaveBeenCalled()
+  })
+
+  it('updates status to SUBMITTED and redirects when GAS status is OFFER_SENT', async () => {
+    getApplicationStatus.mockResolvedValue({
+      json: async () => ({ status: 'OFFER_SENT' })
+    })
+
+    const result = await formsStatusCallback(request, h, context)
+
+    expect(h.redirect).toHaveBeenCalledWith('/grant-a/confirmation')
+    expect(result).toEqual(expect.any(Symbol))
+  })
+
+  it('uses default redirect when GAS status is unknown', async () => {
+    getApplicationStatus.mockResolvedValue({
+      json: async () => ({ status: 'SOMETHING_NEW' })
+    })
+
+    const result = await formsStatusCallback(request, h, context)
+    expect(h.redirect).toHaveBeenCalledWith('/grant-a/confirmation')
+    expect(result).toEqual(expect.any(Symbol))
   })
 })
