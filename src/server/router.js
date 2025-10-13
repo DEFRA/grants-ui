@@ -10,8 +10,8 @@ import { agreements } from '~/src/server/agreements/index.js'
 import { devTools } from '~/src/server/dev-tools/index.js'
 import { configConfirmation } from '~/src/server/confirmation/config-confirmation.js'
 import { clearApplicationState } from './dev-tools/clear-application-state.js'
-import { mockStatus } from '~/src/server/gas/status/index.js'
-import { mockApplication } from './gas/application/index.js'
+import { mockStatus } from '~/src/__mocks__/gas/status/index.js'
+import { mockApplication } from '../__mocks__/gas/application/index.js'
 
 const defraIdEnabled = config.get('defraId.enabled')
 const cdpEnvironment = config.get('cdpEnvironment')
