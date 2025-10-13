@@ -6,24 +6,24 @@ import { getApplicationStatus } from '../common/services/grant-application/grant
 
 const statusToUrlConfig = {
   // GrantsUI → GAS combined mapping
-  SUBMITTED: {
-    RECEIVED: (slug) => `/${slug}/confirmation`,
-    OFFER_SENT: (slug) => `/${slug}/confirmation`,
-    OFFER_WITHDRAWN: (slug) => `/${slug}/confirmation`,
-    OFFER_ACCEPTED: (slug) => `/${slug}/confirmation`,
-    DEFAULT: (slug) => `/${slug}/confirmation`
+  submitted: {
+    received: (slug) => `/${slug}/confirmation`,
+    offerSent: (slug) => `/${slug}/confirmation`,
+    offerWithdrawn: (slug) => `/${slug}/confirmation`,
+    offerAccepted: (slug) => `/${slug}/confirmation`,
+    default: (slug) => `/${slug}/confirmation`
   },
-  REOPENED: {
-    DEFAULT: (slug) => `/${slug}/summary`
+  reopened: {
+    default: (slug) => `/${slug}/summary`
   },
-  CLEARED: {
-    DEFAULT: (slug) => `/${slug}/start`
+  cleared: {
+    default: (slug) => `/${slug}/start`
   },
-  AWAITING_AMENDMENTS: {
-    DEFAULT: (slug) => `/${slug}/summary`
+  awaitingAmendments: {
+    default: (slug) => `/${slug}/summary`
   },
-  DEFAULT: {
-    DEFAULT: (slug) => `/${slug}/confirmation`
+  default: {
+    default: (slug) => `/${slug}/confirmation`
   }
 }
 
@@ -37,8 +37,8 @@ const gasToGrantsUiStatus = {
 }
 
 function mapStatusToUrl(gasStatus, grantsUiStatus, slug) {
-  const grantsUiConfig = statusToUrlConfig[grantsUiStatus] ?? statusToUrlConfig.DEFAULT
-  const fn = grantsUiConfig[gasStatus] ?? grantsUiConfig.DEFAULT ?? statusToUrlConfig.DEFAULT.DEFAULT
+  const grantsUiConfig = statusToUrlConfig[grantsUiStatus.toLowerCase()] ?? statusToUrlConfig.default
+  const fn = grantsUiConfig[gasStatus.toLowerCase()] ?? grantsUiConfig.default ?? statusToUrlConfig.default.default
   return fn(slug)
 }
 
@@ -108,7 +108,7 @@ export const formsStatusCallback = async (request, h, context) => {
 
     // unexpected error — log and fallback
     request.server.logger.error(err)
-    const fallbackUrl = statusToUrlConfig.DEFAULT.DEFAULT(grantId)
+    const fallbackUrl = statusToUrlConfig.default.default(grantId)
     if (request.path === fallbackUrl) {
       return h.continue
     }
