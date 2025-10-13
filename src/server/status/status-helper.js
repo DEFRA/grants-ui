@@ -41,6 +41,41 @@ function mapStatusToUrl(gasStatus, grantsUiStatus, slug) {
   return fn(slug)
 }
 
+function getNewStatus(gasStatus, previousStatus) {
+  if (gasStatus === 'AWAITING_AMENDMENTS' && previousStatus === 'SUBMITTED') {
+    return 'REOPENED'
+  }
+  return gasToGrantsUiStatus[gasStatus] ?? 'SUBMITTED'
+}
+
+async function persistStatus(request, newStatus, previousStatus, grantId) {
+  if (newStatus === previousStatus) {
+    return
+  }
+
+  const organisationId = request.auth.credentials?.sbi
+  if (newStatus === 'CLEARED') {
+    const cacheService = getFormsCacheService(request.server)
+    const { crn } = request.auth.credentials
+    await cacheService.setState(request, {
+      applicationStatus: ApplicationStatus.CLEARED,
+      submittedAt: new Date().toISOString(),
+      submittedBy: crn
+    })
+  } else {
+    await updateApplicationStatus(newStatus, `${organisationId}:${grantId}`)
+  }
+}
+
+function shouldContinueDefault(gasStatus, newStatus, previousStatus) {
+  return (
+    (gasStatus === 'AWAITING_AMENDMENTS' && newStatus === 'REOPENED' && previousStatus !== 'SUBMITTED') ||
+    (gasStatus === 'APPLICATION_WITHDRAWN' &&
+      newStatus === 'CLEARED' &&
+      !['SUBMITTED', 'REOPENED'].includes(previousStatus))
+  )
+}
+
 // higher-order callback that wraps the existing one
 export const formsStatusCallback = async (request, h, context) => {
   const grantId = request.params?.slug
@@ -49,53 +84,21 @@ export const formsStatusCallback = async (request, h, context) => {
     return h.continue
   }
 
-  const organisationId = request.auth.credentials?.sbi
   const previousStatus = context.state.applicationStatus
 
   try {
     const response = await getApplicationStatus(grantId, context.referenceNumber)
-    const result = await response.json()
-    const gasStatus = result?.status
+    const { status: gasStatus } = await response.json()
 
-    // Determine new GrantsUI status based on GAS + previous context state
-    let newStatus
-    if (gasStatus === 'AWAITING_AMENDMENTS' && previousStatus === 'SUBMITTED') {
-      newStatus = 'REOPENED'
-    } else {
-      newStatus = gasToGrantsUiStatus[gasStatus] ?? 'SUBMITTED'
-    }
+    const newStatus = getNewStatus(gasStatus, previousStatus)
+    await persistStatus(request, newStatus, previousStatus, grantId)
 
-    if (newStatus !== previousStatus) {
-      if (newStatus === 'CLEARED') {
-        const cacheService = getFormsCacheService(request.server)
-        const { crn } = request.auth.credentials
-        await cacheService.setState(request, {
-          applicationStatus: ApplicationStatus.CLEARED,
-          submittedAt: new Date().toISOString(),
-          submittedBy: crn
-        })
-      } else {
-        await updateApplicationStatus(newStatus, `${organisationId}:${grantId}`)
-      }
-    }
-
-    // Let the DXT plugin handle its default behaviour
-    if (
-      (gasStatus === 'AWAITING_AMENDMENTS' && newStatus === 'REOPENED' && previousStatus !== 'SUBMITTED') ||
-      (gasStatus === 'APPLICATION_WITHDRAWN' &&
-        newStatus === 'CLEARED' &&
-        !['SUBMITTED', 'REOPENED'].includes(previousStatus))
-    ) {
+    if (shouldContinueDefault(gasStatus, newStatus, previousStatus)) {
       return h.continue
     }
 
-    // Redirect if path doesn't match expected URL for the new status
     const redirectUrl = mapStatusToUrl(gasStatus, newStatus, grantId)
-    if (request.path === redirectUrl) {
-      return h.continue
-    }
-
-    return h.redirect(redirectUrl).takeover()
+    return request.path === redirectUrl ? h.continue : h.redirect(redirectUrl).takeover()
   } catch (err) {
     if (err.status === 404) {
       // no submission yet — allow flow-through
