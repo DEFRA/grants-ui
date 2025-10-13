@@ -13,22 +13,41 @@ import {
 
 vi.mock('fs/promises')
 vi.mock('yaml')
+vi.mock('~/src/config/config.js', () => ({
+  config: {
+    get: vi.fn()
+  }
+}))
 
 describe('config-loader', () => {
   const mockTasklistId = 'test-tasklist'
-
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
-  describe('loadTasklistConfig', () => {
-    it('should load and parse valid YAML config', async () => {
-      const mockYamlContent = `
+  const expectedFilePath = 'test-tasklist-tasklist.yaml'
+  const mockYamlContent = `
 tasklist:
   id: test-tasklist
   title: Test Tasklist
   sections: []
 `
+  let mockConfig
+
+  const createParsedConfig = (overrides = {}) => ({
+    tasklist: {
+      id: mockTasklistId,
+      title: 'Test Tasklist',
+      sections: [],
+      ...overrides
+    }
+  })
+
+  beforeEach(async () => {
+    vi.clearAllMocks()
+    const { config } = await import('~/src/config/config.js')
+    mockConfig = config
+    mockConfig.get.mockReturnValue('local')
+  })
+
+  describe('loadTasklistConfig', () => {
+    it('should load and parse valid YAML config', async () => {
       const mockParsedConfig = createMockTasklistConfig()
 
       readFile.mockResolvedValue(mockYamlContent)
@@ -36,7 +55,7 @@ tasklist:
 
       const result = await loadTasklistConfig(mockTasklistId)
 
-      expect(readFile).toHaveBeenCalledWith(expect.stringContaining('test-tasklist-tasklist.yaml'), 'utf8')
+      expect(readFile).toHaveBeenCalledWith(expect.stringContaining(expectedFilePath), 'utf8')
       expect(parse).toHaveBeenCalledWith(mockYamlContent)
       expect(result).toEqual(mockParsedConfig)
     })
@@ -53,48 +72,52 @@ tasklist:
 
     it('should throw error when file cannot be read', async () => {
       const fileError = new Error('File not found')
+      const expectedErrorMsg = `Failed to load tasklist config for '${mockTasklistId}': File not found`
       readFile.mockRejectedValue(fileError)
 
       const errorPromise = loadTasklistConfig(mockTasklistId)
 
-      await expect(errorPromise).rejects.toThrow("Failed to load tasklist config for 'test-tasklist': File not found")
+      await expect(errorPromise).rejects.toThrow(expectedErrorMsg)
 
       try {
         await errorPromise
       } catch (error) {
         expect(error.name).toBe('TasklistNotFoundError')
         expect(error.status).toBe(404)
-        expect(error.tasklistId).toBe('test-tasklist')
+        expect(error.tasklistId).toBe(mockTasklistId)
         expect(error.responseBody).toBe('File not found')
       }
 
-      expect(readFile).toHaveBeenCalledWith(expect.stringContaining('test-tasklist-tasklist.yaml'), 'utf8')
+      expect(readFile).toHaveBeenCalledWith(expect.stringContaining(expectedFilePath), 'utf8')
       expect(readFile).toHaveBeenCalledTimes(1)
     })
 
     it('should throw error when YAML parsing fails', async () => {
       const parseError = new Error('Invalid YAML')
-      readFile.mockResolvedValue('invalid yaml content')
+      const invalidYaml = 'invalid yaml content'
+      const expectedErrorMsg = `Failed to load tasklist config for '${mockTasklistId}': Invalid YAML`
+
+      readFile.mockResolvedValue(invalidYaml)
       parse.mockImplementation(() => {
         throw parseError
       })
 
       const errorPromise = loadTasklistConfig(mockTasklistId)
 
-      await expect(errorPromise).rejects.toThrow("Failed to load tasklist config for 'test-tasklist': Invalid YAML")
+      await expect(errorPromise).rejects.toThrow(expectedErrorMsg)
 
       try {
         await errorPromise
       } catch (error) {
         expect(error.name).toBe('TasklistNotFoundError')
         expect(error.status).toBe(404)
-        expect(error.tasklistId).toBe('test-tasklist')
+        expect(error.tasklistId).toBe(mockTasklistId)
         expect(error.responseBody).toBe('Invalid YAML')
       }
 
-      expect(readFile).toHaveBeenCalledWith(expect.stringContaining('test-tasklist-tasklist.yaml'), 'utf8')
+      expect(readFile).toHaveBeenCalledWith(expect.stringContaining(expectedFilePath), 'utf8')
       expect(readFile).toHaveBeenCalledTimes(1)
-      expect(parse).toHaveBeenCalledWith('invalid yaml content')
+      expect(parse).toHaveBeenCalledWith(invalidYaml)
       expect(parse).toHaveBeenCalledTimes(1)
     })
 
@@ -106,6 +129,89 @@ tasklist:
       await loadTasklistConfig('')
 
       expect(readFile).toHaveBeenCalledWith(expect.stringContaining('-tasklist.yaml'), 'utf8')
+    })
+
+    it('should throw TasklistNotFoundError when tasklist has enabledInProd false in production', async () => {
+      const expectedErrorMsg = `Tasklist '${mockTasklistId}' is not available in production`
+      mockConfig.get.mockReturnValue('prod')
+
+      const mockParsedConfig = createParsedConfig({
+        metadata: {
+          enabledInProd: false
+        }
+      })
+
+      readFile.mockResolvedValue('content')
+      parse.mockReturnValue(mockParsedConfig)
+
+      const errorPromise = loadTasklistConfig(mockTasklistId)
+
+      await expect(errorPromise).rejects.toThrow(expectedErrorMsg)
+
+      try {
+        await errorPromise
+      } catch (error) {
+        expect(error.name).toBe('TasklistNotFoundError')
+        expect(error.status).toBe(404)
+        expect(error.tasklistId).toBe(mockTasklistId)
+        expect(error.responseBody).toBe('Tasklist not found')
+      }
+    })
+
+    it('should load config successfully when tasklist has enabledInProd true in production', async () => {
+      mockConfig.get.mockReturnValue('prod')
+
+      const mockParsedConfig = createParsedConfig({
+        metadata: {
+          enabledInProd: true
+        }
+      })
+
+      readFile.mockResolvedValue('content')
+      parse.mockReturnValue(mockParsedConfig)
+
+      const result = await loadTasklistConfig(mockTasklistId)
+
+      expect(result).toEqual(mockParsedConfig)
+    })
+
+    it('should load config successfully when enabledInProd is undefined in production', async () => {
+      mockConfig.get.mockReturnValue('prod')
+
+      const mockParsedConfig = createParsedConfig({
+        metadata: {}
+      })
+
+      readFile.mockResolvedValue('content')
+      parse.mockReturnValue(mockParsedConfig)
+
+      const result = await loadTasklistConfig(mockTasklistId)
+
+      expect(result).toEqual(mockParsedConfig)
+    })
+
+    it('should re-throw TasklistNotFoundError without wrapping it', async () => {
+      mockConfig.get.mockReturnValue('prod')
+
+      const mockParsedConfig = createParsedConfig({
+        metadata: {
+          enabledInProd: false
+        }
+      })
+
+      readFile.mockResolvedValue('content')
+      parse.mockReturnValue(mockParsedConfig)
+
+      try {
+        await loadTasklistConfig(mockTasklistId)
+        expect(true).toBe(false)
+      } catch (error) {
+        expect(error.name).toBe('TasklistNotFoundError')
+        expect(error.message).toBe(`Tasklist '${mockTasklistId}' is not available in production`)
+        expect(error.status).toBe(404)
+        expect(error.responseBody).toBe('Tasklist not found')
+        expect(error.tasklistId).toBe(mockTasklistId)
+      }
     })
   })
 

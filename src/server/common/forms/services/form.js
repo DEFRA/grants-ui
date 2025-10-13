@@ -191,5 +191,24 @@ export const formsService = async () => {
     }
   }
 
-  return loader.toFormsService()
+  const baseService = loader.toFormsService()
+
+  return {
+    getFormMetadata: async (slug) => {
+      try {
+        return await baseService.getFormMetadata(slug)
+      } catch (error) {
+        const { notFound } = await import('@hapi/boom')
+        throw notFound(`Form '${slug}' not found`, error)
+      }
+    },
+    getFormDefinition: async (id, state) => {
+      try {
+        return await baseService.getFormDefinition(id, state)
+      } catch (error) {
+        const { notFound } = await import('@hapi/boom')
+        throw notFound(`Form definition '${id}' not found`, error)
+      }
+    }
+  }
 }

@@ -2,6 +2,7 @@ import { readFile } from 'fs/promises'
 import { parse } from 'yaml'
 import { join } from 'path'
 import { statusCodes } from '../../common/constants/status-codes.js'
+import { config } from '~/src/config/config.js'
 
 const CONFIGS_PATH = join(process.cwd(), 'src/server/common/forms/definitions/tasklists')
 
@@ -29,8 +30,26 @@ export async function loadTasklistConfig(tasklistId) {
   try {
     const configPath = join(CONFIGS_PATH, `${tasklistId}-tasklist.yaml`)
     const fileContent = await readFile(configPath, 'utf8')
-    return parse(fileContent)
+    const parsedConfig = parse(fileContent)
+
+    const isProduction = config.get('cdpEnvironment')?.toLowerCase() === 'prod'
+    const enabledInProd = parsedConfig.tasklist?.metadata?.enabledInProd
+
+    if (isProduction && enabledInProd === false) {
+      throw new TasklistNotFoundError(
+        `Tasklist '${tasklistId}' is not available in production`,
+        statusCodes.notFound,
+        'Tasklist not found',
+        tasklistId
+      )
+    }
+
+    return parsedConfig
   } catch (error) {
+    if (error instanceof TasklistNotFoundError) {
+      throw error
+    }
+
     throw new TasklistNotFoundError(
       `Failed to load tasklist config for '${tasklistId}': ${error.message}`,
       statusCodes.notFound,
@@ -40,8 +59,8 @@ export async function loadTasklistConfig(tasklistId) {
   }
 }
 
-function validateTasklistRoot(config, tasklistId) {
-  if (!config.tasklist) {
+function validateTasklistRoot(tasklistConfig, tasklistId) {
+  if (!tasklistConfig.tasklist) {
     throw new TasklistValidationError(
       'Missing tasklist root element in config',
       statusCodes.badRequest,
@@ -129,10 +148,10 @@ function validateSubsection(subsection, subsectionIndex, sectionId, tasklistId) 
   }
 }
 
-export function validateTasklistConfig(config, tasklistId = 'unknown') {
-  validateTasklistRoot(config, tasklistId)
+export function validateTasklistConfig(tasklistConfig, tasklistId = 'unknown') {
+  validateTasklistRoot(tasklistConfig, tasklistId)
 
-  const { tasklist } = config
+  const { tasklist } = tasklistConfig
   validateTasklistProperties(tasklist, tasklistId)
 
   tasklist.sections.forEach((section, sectionIndex) => {
