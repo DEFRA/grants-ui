@@ -4,30 +4,47 @@ import { updateApplicationStatus } from '../common/helpers/status/update-applica
 import { getApplicationStatus } from '../common/services/grant-application/grant-application.service.js'
 
 const statusToUrlConfig = {
-  SUBMITTED: (slug) => `/${slug}/confirmation`,
-  REOPENED: (slug) => `/${slug}/summary`,
-  CLEARED: (slug) => `/${slug}/start`,
-  AWAITING_AMENDMENTS: (slug) => `/${slug}/summary`,
-  DEFAULT: (slug) => `/${slug}/confirmation`
+  // GrantsUI → GAS combined mapping
+  SUBMITTED: {
+    RECEIVED: (slug) => `/${slug}/confirmation`,
+    OFFER_SENT: (slug) => `/${slug}/confirmation`,
+    OFFER_WITHDRAWN: (slug) => `/${slug}/confirmation`,
+    OFFER_ACCEPTED: (slug) => `/${slug}/confirmation`,
+    DEFAULT: (slug) => `/${slug}/confirmation`
+  },
+  REOPENED: {
+    DEFAULT: (slug) => `/${slug}/summary`
+  },
+  CLEARED: {
+    DEFAULT: (slug) => `/${slug}/start`
+  },
+  AWAITING_AMENDMENTS: {
+    DEFAULT: (slug) => `/${slug}/summary`
+  },
+  DEFAULT: {
+    DEFAULT: (slug) => `/${slug}/confirmation`
+  }
 }
 
 const gasToGrantsUiStatus = {
   RECEIVED: 'SUBMITTED',
-  AWAITING_AMENDMENTS: 'REOPENED', // first visit post-submission → re-opened
+  AWAITING_AMENDMENTS: 'REOPENED', // first visit post-submission -> re-opened
   APPLICATION_WITHDRAWN: 'CLEARED',
   OFFER_SENT: 'SUBMITTED',
   OFFER_WITHDRAWN: 'SUBMITTED',
   OFFER_ACCEPTED: 'SUBMITTED'
 }
 
-function mapStatusToUrl(status, slug) {
-  const fn = statusToUrlConfig[status] ?? statusToUrlConfig.DEFAULT
+function mapStatusToUrl(gasStatus, grantsUiStatus, slug) {
+  const grantsUiConfig = statusToUrlConfig[grantsUiStatus] ?? statusToUrlConfig.DEFAULT
+  const fn = grantsUiConfig[gasStatus] ?? grantsUiConfig.DEFAULT ?? statusToUrlConfig.DEFAULT.DEFAULT
   return fn(slug)
 }
 
 // higher-order callback that wraps the existing one
 export const formsStatusCallback = async (request, h, context) => {
   const grantId = request.params?.slug
+
   if (!grantId) {
     return h.continue
   }
@@ -73,7 +90,7 @@ export const formsStatusCallback = async (request, h, context) => {
     }
 
     // Redirect if path doesn't match expected URL for the new status
-    const redirectUrl = mapStatusToUrl(newStatus, grantId)
+    const redirectUrl = mapStatusToUrl(gasStatus, newStatus, grantId)
     if (request.path === redirectUrl) {
       return h.continue
     }
@@ -87,7 +104,7 @@ export const formsStatusCallback = async (request, h, context) => {
 
     // unexpected error — log and fallback
     request.server.logger.error(err)
-    const fallbackUrl = statusToUrlConfig.DEFAULT(grantId)
+    const fallbackUrl = statusToUrlConfig.DEFAULT.DEFAULT(grantId)
     if (request.path === fallbackUrl) {
       return h.continue
     }
