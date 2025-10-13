@@ -43,6 +43,14 @@ pages:
           <ul class="govuk-list govuk-list--bullet">
               <li class="govuk-body">identify you and your organisation do due diligence checks and prevent fraud</li>
           </ul>
+          <h2 class="govuk-heading-s">Help using the service</h2>
+          <p class="govuk-body">If you need help or want to report a problem contact</p>
+          <p class="govuk-body">The Rural Payments Agency (RPA)</p>
+          <p class="govuk-body">Email: <a href="mailto:ruralpayments@defra.gov.uk" class="govuk-link">ruralpayments@defra.gov.uk</a></p>
+          <p class="govuk-body">Telephone: 03000 200 301</p>
+          <p class="govuk-body">Monday to Friday, 8.30am to 5pm, except bank holidays</p>
+          <p class="govuk-body"><a href=" https://fcp-future-grants-7b4b3e12d36a.herokuapp.com/manage-prototype/password?returnURL=%2F_common%2Fnot-testing.html" class="govuk-link" target="_blank">Find out about call charges (opens in new tab)</a></p>
+
         id: eb6eda3b-57ee-4440-bb0f-18e2a189bd8e
         options: {}
         schema: {}
