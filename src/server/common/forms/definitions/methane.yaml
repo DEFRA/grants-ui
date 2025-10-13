@@ -1,0 +1,314 @@
+name: Grants
+metadata:
+  id: 95e92559-968d-44ae-8666-2b1ad3dffd34
+  enabledInProd: true
+  submission:
+    grantCode: methane
+  confirmationContent:
+    html: >
+      <h2 class="govuk-heading-m">Methane Grant</h2>
+pages:
+  - title: Apply for a menthane suppressant feed product (MSFP) grant
+    path: /start
+    controller: StartPageController
+    components:
+      - name: startInfoOne
+        title: Html
+        type: Html
+        content: >-
+          <p class="govuk-body">Use this service to apply for help to buy MSFP products to feed dairy cattle in England.</p>
+          <p class="govuk-body">The annual MSFP grant allows you to make quarterly claims to cover the cost of eligible products to help farms reach carbon targets.</p>
+          <p class="govuk-body">They cover the cost of feeding housed dairy cattle with the potential to help reduce UK agricultural carbon emissions by up to one-third.</p>
+          <h2 class="govuk-heading-s">Applications open:<span class="govuk-body"> midnight, 28 February 2026</span></h2>
+          <h2 class="govuk-heading-s">Applications close:<span class="govuk-body"> midday, 31 May 2026 </span></h2>
+          <h2 class="govuk-heading-s">First quarterly payments:<span class="govuk-body"> from 1 September 2026 </span></h2>
+          <h2 class="govuk-heading-m">Before you apply</h2>
+          <p class="govuk-body">You must have <a href="https://www.gov.uk/guidance/update-personal-and-business-details-in-the-rural-payments-service" class="govuk-link">registered with the Rural Payments service </a> to apply.</p>
+          <p class="govuk-body">You can apply for someone else if they've given you permission to apply on their behalf in the Rural Payments service.</p>
+          <p class="govuk-body">To see which products are eligible for help check the Methane suppressant feed product list.</p>
+          <h2 class="govuk-heading-m">Before you start</h2>
+          <p class="govuk-body">If you apply, you’ll need:</p>
+          <p class="govuk-body">Your Rural Payments service customer reference number (CRN) and password your county parish holding (CPH) number details of the MSFP you're buying - including amounts, supplier details and <span class="govuk-heading-s">quotes</span> </p>
+          <p class="govuk-body">We’ll also ask you to check and confirm the following details from the Rural Payments service:</p>
+          <ul class="govuk-list govuk-list--bullet">
+              <li>agent details (if you're applying on someone's behalf)</li>
+              <li>applicant details</li>
+              <li>organisation name, address and contact details</li>
+              <li>organisation type - for example, a limited company</li>
+              <li>registration numbers like <a href="https://find-and-update.company-information.service.gov.uk/" class="govuk-link">company registration number</a> and VAT registration number </li>
+              <li>land details including size of your land in hectares</li>
+          </ul>
+          <h2 class="govuk-heading-m">How we use this information</h2>
+          <p class="govuk-body">We use this information to:</p>
+          <ul class="govuk-list govuk-list--bullet">
+              <li class="govuk-body">identify you and your organisation do due diligence checks and prevent fraud</li>
+          </ul>
+        id: eb6eda3b-57ee-4440-bb0f-18e2a189bd8e
+        options: {}
+        schema: {}
+    id: 4afc672b-71d6-4889-999d-c7934184f3cc
+  - title: Are you a pig farmer?
+    path: /are-you-pig-farmer
+    components:
+      - name: isPigFarmer
+        title: Are you a pig farmer?
+        type: YesNoField
+        hint: ""
+        options: {}
+        schema: {}
+        shortDescription: Are you a pig farmer?
+        id: 45052db5-d620-4382-b2ec-918168c98bc7
+    id: d40c01ac-f492-4665-90c6-b62a6e58d6aa
+  - title: You are not eligible for this grant
+    path: /you-must-be-pig-farmer
+    components:
+      - name: FGyiLS
+        title: You are not eligible for this grant
+        type: Html
+        hint: ""
+        content: >
+          <p class="govuk-body">Sorry, this grant is only available for pig
+          farmers.</p>
+        options: {}
+        schema: {}
+        id: 2324fb1a-5c1d-4f49-ace0-5a9d5eaa088c
+    id: 21347447-b831-4074-bc25-a35ac5a9fd8f
+    condition: 341c2742-74d4-439e-91ee-641f4e56093f
+  - title: How many pigs do you have?
+    path: /pig-count
+    components:
+      - name: pigCountInfo
+        type: Html
+        title: Html
+        content: <p class="govuk-hint">Enter the total number of pigs you
+          have<br><br>You can apply for wings for up to 1,000 pigs</p>
+        id: d22f5165-8952-4fb7-9fd3-139f4fb73e53
+        options: {}
+        schema: {}
+      - name: totalPigs
+        type: NumberField
+        title: Enter number of pigs
+        options:
+          required: true
+          classes: govuk-!-width-one-third
+          customValidationMessages:
+            any.required: Enter the number of pigs you have
+            number.max: You can apply for wings for up to 1,000 pigs
+            number.min: You must have at least 1 pig
+        schema:
+          min: 1
+          precision: 0
+        shortDescription: Enter number of pigs
+        id: 11311189-f228-449a-90ee-68bbb6640fac
+    id: f04b730c-b5f3-4c37-9c89-fb2297153c73
+  - title: You are not eligible for this grant
+    path: /not-eligible
+    controller: TerminalPageController
+    components:
+      - name: FGyiLA
+        title: You are not eligible for this grant
+        type: Html
+        hint: ""
+        content: >
+          <p class="govuk-body">Sorry, this grant is only available for pig
+          farmers with up to 1,000 pigs</p>
+        options: {}
+        schema: {}
+        id: 10a9cac2-e419-42ee-9baa-b36240aca0c3
+    condition: 53386d88-be5b-4637-8b90-7843f4473d4e
+    id: d7848b42-24b3-4ed0-abcc-1c31f967cb25
+  - title: What type of pigs?
+    path: /what-type-of-pigs
+    components:
+      - name: pigBreeds
+        title: What type of pigs?
+        type: CheckboxesField
+        list: 3fdc57b9-f644-4255-886a-474e2b6743b0
+        hint: Select all that apply.
+        options: {}
+        schema: {}
+        shortDescription: What type of pigs?
+        id: b9e18c89-64fb-466d-8e2c-46021b3b8a76
+    id: 3c71604b-92e9-4729-a67a-c7ac0f77dca2
+  - title: How many White pigs do you have?
+    path: /how-many-white-pigs
+    components:
+      - name: whitePigsCount
+        title: How many White pigs do you have?
+        type: NumberField
+        hint: ""
+        options:
+          required: true
+          classes: govuk-!-width-one-third
+          customValidationMessages:
+            any.required: Enter the number of white pigs you have
+            number.min: You must have at least 1 pig
+            number.max: You can apply for wings for up to 1,000 pigs
+        schema:
+          min: 1
+          max: 1000
+          precision: 0
+        shortDescription: How many White pigs do you have?
+        id: c35baac6-cfc7-4984-a099-9965f7479ca5
+    condition: 90d64978-0714-41fb-b3d5-b37ad3537a57
+    id: 39d6d558-d0b3-43bd-855f-d09cf810db7a
+  - title: How many British Landrace pigs do you have?
+    path: /how-many-british-landrace
+    components:
+      - name: britishLandracePigsCount
+        title: How many British Landrace pigs do you have?
+        type: NumberField
+        hint: ""
+        options:
+          required: true
+          classes: govuk-!-width-one-third
+          customValidationMessages:
+            any.required: Enter the number of British Landrace pigs you have
+            number.min: You must have at least 1 pig
+            number.max: You can apply for wings for up to 1,000 pigs
+        schema:
+          min: 1
+          max: 1000
+          precision: 0
+        shortDescription: How many British Landrace pigs do you have?
+        id: 95be4663-635e-4d97-beca-ea383df0ba15
+    condition: 506f0683-d615-40ec-b746-b31797dac464
+    id: 114798d7-622e-46da-943d-729f4d102d8c
+  - title: How many Berkshire pigs do you have?
+    path: /how-many-berkshire-pigs
+    components:
+      - name: berkshirePigsCount
+        title: How many Berkshire pigs do you have?
+        type: NumberField
+        hint: ""
+        options:
+          required: true
+          classes: govuk-!-width-one-third
+          customValidationMessages:
+            any.required: Enter the number of Berkshire pigs you have
+            number.min: You must have at least 1 pig
+            number.max: You can apply for wings for up to 1,000 pigs
+        schema:
+          min: 1
+          max: 1000
+          precision: 0
+        shortDescription: How many Berkshire pigs do you have?
+        id: 66316a29-4e30-4ee5-821b-c33eb9ce888b
+    condition: 850d2d80-d0a4-492a-8927-19b5ad89a6c1
+    id: 2377d567-2723-4bc1-b51b-10aaf8047980
+  - title: How many Other pigs do you have?
+    path: /how-many-other-pigs
+    components:
+      - name: otherPigsCount
+        title: How many Other pigs do you have?
+        type: NumberField
+        hint: ""
+        options:
+          required: true
+          classes: govuk-!-width-one-third
+          customValidationMessages:
+            any.required: Enter the number of Other pigs you have
+            number.min: You must have at least 1 pig
+            number.max: You can apply for wings for up to 1,000 pigs
+        schema:
+          min: 1
+          max: 1000
+          precision: 0
+        shortDescription: How many Other pigs do you have?
+        id: d24f82c6-a82c-45fb-987e-44ec73149567
+    condition: 1f672a37-ad80-40fd-8675-54265ece3ef8
+    id: 534eed46-bd88-4e37-823f-5dc9d23409e8
+  - title: Potential grant funding
+    path: /potential-funding
+    controller: PotentialFundingController
+    id: 0ca92c0d-1318-491f-a461-bad92554dae3
+  - path: /check-answers
+    controller: FlyingPigsSubmissionPageController
+    title: Check your answers
+    id: e18e2a8f-4dcf-4f70-ae75-235752260c51
+lists:
+  - title: What type of pigs do you have?
+    name: pigBreedsList
+    type: string
+    items:
+      - text: Large White
+        description: £10 per pig funding rate
+        value: largeWhite
+        id: 4b9b35f6-16e8-434d-b9a5-267377c25a9a
+      - text: British Landrace
+        description: £15 per pig funding rate
+        value: britishLandrace
+        id: 6e4dc730-3a3b-41f2-9f76-ee2b30ce0946
+      - text: Berkshire
+        description: £18 per pig funding rate
+        value: berkshire
+        id: 2b55f154-b759-4ab2-9e58-dc8e6f420571
+      - text: Other
+        description: £10 per pig funding rate
+        value: other
+        id: f0973fe0-c200-44ad-9fdf-80707c4710dd
+    id: 3fdc57b9-f644-4255-886a-474e2b6743b0
+sections:
+  - title: Contact details
+    name: dhpiZu
+    hideTitle: false
+conditions:
+  - id: 341c2742-74d4-439e-91ee-641f4e56093f
+    displayName: notPigFarmer
+    items:
+      - id: 47977a3b-2c17-42c4-b9ab-1f10e831df84
+        componentId: 45052db5-d620-4382-b2ec-918168c98bc7
+        operator: is
+        type: BooleanValue
+        value: false
+  - id: 53386d88-be5b-4637-8b90-7843f4473d4e
+    displayName: Too many pigs entered
+    items:
+      - id: 8dfd0741-5b42-4feb-97b5-e233d2f26da5
+        componentId: 11311189-f228-449a-90ee-68bbb6640fac
+        operator: is more than
+        type: NumberValue
+        value: 1000
+  - id: 90d64978-0714-41fb-b3d5-b37ad3537a57
+    displayName: User selected white pig
+    items:
+      - id: 767a51ff-7d3b-4fe3-a96b-b31de6864dca
+        componentId: b9e18c89-64fb-466d-8e2c-46021b3b8a76
+        operator: contains
+        type: ListItemRef
+        value:
+          listId: 3fdc57b9-f644-4255-886a-474e2b6743b0
+          itemId: 4b9b35f6-16e8-434d-b9a5-267377c25a9a
+  - id: 506f0683-d615-40ec-b746-b31797dac464
+    displayName: User selected british landrace
+    items:
+      - id: fff3b27f-49bf-42e3-8b08-1ab7813d4f9d
+        componentId: b9e18c89-64fb-466d-8e2c-46021b3b8a76
+        operator: contains
+        type: ListItemRef
+        value:
+          listId: 3fdc57b9-f644-4255-886a-474e2b6743b0
+          itemId: 6e4dc730-3a3b-41f2-9f76-ee2b30ce0946
+  - id: 850d2d80-d0a4-492a-8927-19b5ad89a6c1
+    displayName: User selected berkshire
+    items:
+      - id: 098d44ee-a400-4a49-83a6-c75dfb709f9f
+        componentId: b9e18c89-64fb-466d-8e2c-46021b3b8a76
+        operator: contains
+        type: ListItemRef
+        value:
+          listId: 3fdc57b9-f644-4255-886a-474e2b6743b0
+          itemId: 2b55f154-b759-4ab2-9e58-dc8e6f420571
+  - id: 1f672a37-ad80-40fd-8675-54265ece3ef8
+    displayName: User selected other pig
+    items:
+      - id: ad002d54-47e8-4851-918a-9ef06c714581
+        componentId: b9e18c89-64fb-466d-8e2c-46021b3b8a76
+        operator: contains
+        type: ListItemRef
+        value:
+          listId: 3fdc57b9-f644-4255-886a-474e2b6743b0
+          itemId: f0973fe0-c200-44ad-9fdf-80707c4710dd
+startPage: /start
+engine: V2
+schema: 2
