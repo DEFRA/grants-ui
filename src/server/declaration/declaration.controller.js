@@ -8,7 +8,7 @@ import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { persistSubmissionToApi } from '~/src/server/common/helpers/state/persist-submission-helper.js'
 import { ApplicationStatus } from '~/src/server/common/constants/application-status.js'
 import { handleGasApiError } from '~/src/server/common/helpers/gas-error-messages.js'
-import { applicationStatuses } from '../gas/status/mock-status.controller.js'
+import { applicationStatuses } from '../../__mocks__/gas/status/mock-status.controller.js'
 
 export default class DeclarationPageController extends SummaryPageController {
   /**
