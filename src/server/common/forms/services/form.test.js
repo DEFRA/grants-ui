@@ -132,14 +132,13 @@ Object.defineProperty(process, 'env', {
 })
 
 describe('form', () => {
-  let mockWarn
-  let mockError
+  let mockWarn, mockError, logger
 
   beforeEach(() => {
     vi.clearAllMocks()
     config.get.mockImplementation((key) => DEFAULT_CONFIG_MOCK[key])
     // Get the warn function from the mocked logger
-    const logger = vi.mocked(createLogger)()
+    logger = vi.mocked(createLogger)()
     mockWarn = logger.warn
     mockError = logger.error
 
@@ -166,7 +165,23 @@ describe('form', () => {
 
     test('throws error for unknown id', async () => {
       const service = await formsService()
-      expect(() => service.getFormDefinition('unknown-id')).toThrow()
+      await expect(service.getFormDefinition('unknown-id')).rejects.toThrow()
+    })
+
+    test('getFormMetadata throws notFound boom error for unknown slug', async () => {
+      const service = await formsService()
+      const error = await service.getFormMetadata('unknown-slug').catch((e) => e)
+      expect(error.isBoom).toBe(true)
+      expect(error.output.statusCode).toBe(404)
+      expect(error.message).toContain("Form 'unknown-slug' not found")
+    })
+
+    test('getFormDefinition throws notFound boom error for unknown id', async () => {
+      const service = await formsService()
+      const error = await service.getFormDefinition('unknown-id').catch((e) => e)
+      expect(error.isBoom).toBe(true)
+      expect(error.output.statusCode).toBe(404)
+      expect(error.message).toContain("Form definition 'unknown-id' not found")
     })
   })
 
@@ -178,7 +193,7 @@ describe('form', () => {
         'http://ffc-grants-scoring:3002/scoring/api/v1/adding-value/score?allowPartialScoring=true'
       ],
       ['non-local environment', 'dev', 'http://dev.example.com']
-    ])('configures URLs correctly for %s', (description, environment, expectedUrl) => {
+    ])('configures URLs correctly for %s', (_description, environment, expectedUrl) => {
       config.get.mockImplementation((key) => (key === 'cdpEnvironment' ? environment : DEFAULT_CONFIG_MOCK[key]))
 
       const definition = {
@@ -274,18 +289,17 @@ describe('form', () => {
   })
 
   describe('addAllForms', () => {
-    test('handles duplicate forms and logs warning', async () => {
-      const mockLoader = {
-        addForm: vi.fn().mockResolvedValue(undefined)
-      }
+    const createMockLoader = () => ({
+      addForm: vi.fn().mockResolvedValue(undefined)
+    })
 
+    test('handles duplicate forms and logs warning', async () => {
+      const mockLoader = createMockLoader()
       const result = await addAllForms(mockLoader, TEST_FORMS_ARRAY)
 
       expect(mockWarn).toHaveBeenCalledWith('Skipping duplicate form: form-slug-1 with id form-id-1')
-
       expect(result).toBe(3)
       expect(mockLoader.addForm).toHaveBeenCalledTimes(3)
-
       expect(mockLoader.addForm).not.toHaveBeenCalledWith('path/to/form1-duplicate.yaml', expect.any(Object))
 
       expect(mockLoader.addForm).toHaveBeenCalledWith(
@@ -317,11 +331,9 @@ describe('form', () => {
         })
       )
     })
-    test('handles empty forms array', async () => {
-      const mockLoader = {
-        addForm: vi.fn()
-      }
 
+    test('handles empty forms array', async () => {
+      const mockLoader = { addForm: vi.fn() }
       const result = await addAllForms(mockLoader, [])
 
       expect(result).toBe(0)
@@ -330,10 +342,7 @@ describe('form', () => {
     })
 
     test('handles all unique forms', async () => {
-      const mockLoader = {
-        addForm: vi.fn().mockResolvedValue(undefined)
-      }
-
+      const mockLoader = createMockLoader()
       const result = await addAllForms(mockLoader, UNIQUE_FORMS_ARRAY)
 
       expect(result).toBe(2)
@@ -403,34 +412,33 @@ tasklist:
   })
 
   describe('validateWhitelistConfiguration', () => {
+    const testForm = { title: 'Test Form' }
+
     test('throws error when only CRN environment variable is provided', () => {
-      const form = { title: 'Test Form' }
       const definition = {
         metadata: {
           whitelistCrnEnvVar: 'EXAMPLE_WHITELIST_CRNS'
         }
       }
 
-      expect(() => validateWhitelistConfiguration(form, definition)).toThrow(
+      expect(() => validateWhitelistConfiguration(testForm, definition)).toThrow(
         'Incomplete whitelist configuration in form Test Form: whitelistCrnEnvVar is defined but whitelistSbiEnvVar is missing. Both CRN and SBI whitelist variables must be configured together.'
       )
     })
 
     test('throws error when only SBI environment variable is provided', () => {
-      const form = { title: 'Test Form' }
       const definition = {
         metadata: {
           whitelistSbiEnvVar: 'EXAMPLE_WHITELIST_SBIS'
         }
       }
 
-      expect(() => validateWhitelistConfiguration(form, definition)).toThrow(
+      expect(() => validateWhitelistConfiguration(testForm, definition)).toThrow(
         'Incomplete whitelist configuration in form Test Form: whitelistSbiEnvVar is defined but whitelistCrnEnvVar is missing. Both CRN and SBI whitelist variables must be configured together.'
       )
     })
 
     test('throws error when CRN environment variable is missing', () => {
-      const form = { title: 'Test Form' }
       const definition = {
         metadata: {
           whitelistCrnEnvVar: 'MISSING_CRN_VAR',
@@ -438,13 +446,12 @@ tasklist:
         }
       }
 
-      expect(() => validateWhitelistConfiguration(form, definition)).toThrow(
+      expect(() => validateWhitelistConfiguration(testForm, definition)).toThrow(
         'CRN whitelist environment variable MISSING_CRN_VAR is defined in form Test Form but not configured in environment'
       )
     })
 
     test('throws error when SBI environment variable is missing', () => {
-      const form = { title: 'Test Form' }
       const definition = {
         metadata: {
           whitelistCrnEnvVar: 'EXAMPLE_WHITELIST_CRNS',
@@ -452,7 +459,7 @@ tasklist:
         }
       }
 
-      expect(() => validateWhitelistConfiguration(form, definition)).toThrow(
+      expect(() => validateWhitelistConfiguration(testForm, definition)).toThrow(
         'SBI whitelist environment variable MISSING_SBI_VAR is defined in form Test Form but not configured in environment'
       )
     })

@@ -214,6 +214,14 @@ function handleClientErrors(request, response, statusCode) {
 }
 
 function renderErrorView(h, errorMessage, statusCode) {
+  if (statusCode === statusCodes.notFound) {
+    return h
+      .view('page-not-found', {
+        pageTitle: errorMessage
+      })
+      .code(statusCode)
+  }
+
   return h
     .view('error/index', {
       pageTitle: errorMessage,
