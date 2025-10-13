@@ -13,3 +13,5 @@ coverage
 tsconfig.tsbuildinfo
 .eslintcache
 src/contracts/pacts
+iron-decode.js
+src/__mocks__/gas
