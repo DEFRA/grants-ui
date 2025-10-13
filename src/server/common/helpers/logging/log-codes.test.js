@@ -58,8 +58,8 @@ const TEST_AGREEMENT_TYPES = {
 }
 
 const TEST_ENDPOINTS = {
-  API_GRANTS: '/api/grants',
-  API_TEST: '/api/test'
+  API_GRANTS: 'http://example.com/api/grants',
+  API_TEST: 'http://example.com/api/test'
 }
 
 const TEST_PORTS = {
@@ -462,7 +462,7 @@ describe('LogCodes', () => {
           method: TEST_METHODS.GET,
           identity: TEST_USER_IDS.DEFAULT
         },
-        `External ${TEST_METHODS.GET} API call to ${TEST_ENDPOINTS.API_GRANTS} for identity=${TEST_USER_IDS.DEFAULT} - summary="N/A"`
+        `External ${TEST_METHODS.GET} to /api/grants (${TEST_USER_IDS.DEFAULT})`
       ],
       ['SYSTEM_SHUTDOWN', 'info', {}, 'System shutdown initiated'],
       [
@@ -476,6 +476,17 @@ describe('LogCodes', () => {
       expect(logCode.level).toBe(expectedLevel)
       expect(typeof logCode.messageFunc).toBe('function')
       expect(logCode.messageFunc(testParams)).toBe(expectedMessage)
+    })
+
+    it('should handle EXTERNAL_API_CALL_DEBUG with unknown identity', () => {
+      const logCode = LogCodes.SYSTEM.EXTERNAL_API_CALL_DEBUG
+      expect(logCode.level).toBe('debug')
+      expect(typeof logCode.messageFunc).toBe('function')
+      const result = logCode.messageFunc({
+        endpoint: TEST_ENDPOINTS.API_GRANTS,
+        method: TEST_METHODS.POST
+      })
+      expect(result).toBe(`External ${TEST_METHODS.POST} to /api/grants (unknown)`)
     })
 
     it('should have valid VIEW_DEBUG log code', () => {

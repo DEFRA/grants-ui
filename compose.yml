@@ -30,7 +30,7 @@ services:
       REDIS_MAX_RETRIES: 10
       REDIS_USERNAME: ""
       REDIS_PASSWORD: ""
-      LOG_LEVEL: ${LOG_LEVEL:-debug}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
       SESSION_COOKIE_PASSWORD: "53409gjhfcdiklgjidfglkgjidfglkelrku634"
       SESSION_COOKIE_TTL: 2419200000
       SESSION_CACHE_TTL: 14400000
