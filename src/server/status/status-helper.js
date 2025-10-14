@@ -87,6 +87,10 @@ export const formsStatusCallback = async (request, h, context) => {
 
   const previousStatus = context.state.applicationStatus
 
+  if (previousStatus !== 'SUBMITTED') {
+    return h.continue
+  }
+
   try {
     const response = await getApplicationStatus(grantId, context.referenceNumber)
     const { status: gasStatus } = await response.json()
