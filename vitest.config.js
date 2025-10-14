@@ -24,7 +24,11 @@ export default {
         '**/index.js',
         '**/__mocks__/**',
         '**/test-constants.js',
-        '**/*.d.js'
+        '**/*.d.js',
+        '**/logger-options.js',
+        '**/config.js',
+        '**/config/land-grants.js',
+        '**/plugins/tasklist-back-button.js'
       ],
       reportsDirectory: './coverage'
     }
