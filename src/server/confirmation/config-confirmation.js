@@ -41,23 +41,15 @@ function validateRequestAndFindForm(request, h) {
 /**
  * Loads and validates confirmation content for the form
  * @param {object} form - Form configuration object
- * @param {string} slug - Form slug
- * @param {object} h - Hapi response toolkit
- * @returns {Promise<object>} Content result or error response
+ * @returns {Promise<object|null>} Content result with confirmationContent and formDefinition
  */
-async function loadConfirmationContent(form, slug, h) {
+async function loadConfirmationContent(form) {
   const { confirmationContent: rawConfirmationContent, formDefinition } =
     await ConfirmationService.loadConfirmationContent(form)
 
-  if (!rawConfirmationContent) {
-    log(LogCodes.CONFIRMATION.CONFIRMATION_ERROR, {
-      userId: 'system',
-      error: `No confirmation content found for form: ${slug}`
-    })
-    return { error: h.response('Confirmation content not configured').code(HTTP_STATUS.INTERNAL_SERVER_ERROR) }
-  }
-
-  const confirmationContent = ConfirmationService.processConfirmationContent(rawConfirmationContent)
+  const confirmationContent = rawConfirmationContent
+    ? ConfirmationService.processConfirmationContent(rawConfirmationContent)
+    : null
 
   return { confirmationContent, formDefinition }
 }
@@ -143,12 +135,7 @@ export const configConfirmation = {
 
             const { form, slug } = validationResult
 
-            const contentResult = await loadConfirmationContent(form, slug, h)
-            if (contentResult.error) {
-              return contentResult.error
-            }
-
-            const { confirmationContent, formDefinition } = contentResult
+            const { confirmationContent, formDefinition } = await loadConfirmationContent(form)
             const sessionData = await getReferenceNumber(request)
 
             log(LogCodes.CONFIRMATION.CONFIRMATION_SUCCESS, {

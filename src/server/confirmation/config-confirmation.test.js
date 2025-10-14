@@ -123,20 +123,35 @@ describe('config-confirmation', () => {
       expect(result).toBe('not-found')
     })
 
-    test('should return 500 when no config-driven content available', async () => {
+    test('should render page with default content when no config-driven content available', async () => {
+      const mockFormDefinition = { metadata: {} }
+
+      mockYarSession.get
+        .mockReturnValueOnce('Test Business')
+        .mockReturnValueOnce('123456789')
+        .mockReturnValueOnce('Test Contact')
+
       ConfirmationService.findFormBySlug.mockReturnValue(mockForm)
       ConfirmationService.loadConfirmationContent.mockResolvedValue({
         confirmationContent: null,
-        formDefinition: null
+        formDefinition: mockFormDefinition
       })
-      const mockResponse = { code: vi.fn().mockReturnValue('error') }
-      mockH.response.mockReturnValue(mockResponse)
+      ConfirmationService.buildViewModel.mockReturnValue({ test: 'viewModel' })
 
-      const result = await handler(mockRequest, mockH)
+      await handler(mockRequest, mockH)
 
       expect(ConfirmationService.processConfirmationContent).not.toHaveBeenCalled()
-      expect(mockResponse.code).toHaveBeenCalledWith(500)
-      expect(result).toBe('error')
+      expect(ConfirmationService.buildViewModel).toHaveBeenCalledWith({
+        referenceNumber: 'REF123',
+        businessName: 'Test Business',
+        sbi: '123456789',
+        contactName: 'Test Contact',
+        confirmationContent: null,
+        form: mockForm,
+        slug: 'test-slug',
+        formDefinition: mockFormDefinition
+      })
+      expect(mockH.view).toHaveBeenCalledWith('confirmation/views/config-confirmation-page', { test: 'viewModel' })
     })
 
     test('should handle reference number from confirmation state', async () => {
