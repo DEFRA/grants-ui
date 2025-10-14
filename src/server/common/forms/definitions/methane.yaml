@@ -82,6 +82,33 @@ pages:
         id: 2324fb1a-5c1d-4f49-ace0-5a9d5eaa088c
     id: 21347447-b831-4074-bc25-a35ac5a9fd8f
     condition: 341c2742-74d4-439e-91ee-641f4e56093f
+  - title: Are your dairy cows kept on land in England?
+    path: /diary-cows
+    components:
+      - name: isDiaryKeptInEngland
+        title: Are your dairy cows kept on land in England?
+        type: YesNoField
+        hint: ""
+        options: { }
+        schema: { }
+        shortDescription: Are your dairy cows kept on land in England?
+        id: 713f5093-19c5-4817-8064-81465f59bac3
+    id: 6b886bdb-4c11-4742-b8ea-2b76590c1417
+  - title: Your dairy cows must kept on land in England to apply for a MSFP grant
+    path: /cows-in-england-only
+    next: [ ]
+    components:
+      - name: NotKeptInEngland
+        title: Your dairy cows must kept on land in England to apply for a MSFP grant
+        type: Html
+        hint: ""
+        content: >
+          <p class="govuk-body">Only dairy cows kept on land in England are eligible for MSFP grants. </p>
+        options: { }
+        schema: { }
+        id: 78caa271-3dc9-47b2-8cfe-ed2858c9c4d1
+    id: ba8d8f0f-9f49-4235-9df7-f179c9b74181
+    condition: bbdf08fa-7eaa-47a6-bc14-5d08d1de20f9
   - title: Do you house your dairy herd for at least some of the year?
     path: /house-diary-herd
     components:
@@ -103,7 +130,6 @@ pages:
         type: Html
         hint: ""
         content: >
-          <p class="govuk-body">You must be a dairy farmer to apply for a MSFP grant.</p>
           <p class="govuk-body">Only dairy herds which are housed for at least some of the year are eligible for MSFP grants</p>
         options: { }
         schema: { }
@@ -131,6 +157,14 @@ conditions:
     items:
       - id: a506dd3e-aa11-4a0e-8c67-4d8c1cf80bf2
         componentId: 1a0d8a06-93b9-4c1d-9961-9696089ef42e
+        operator: is
+        type: BooleanValue
+        value: false
+  - id: bbdf08fa-7eaa-47a6-bc14-5d08d1de20f9
+    displayName: NotInEngland
+    items:
+      - id: a6670111-16e4-40dc-a094-4f1820442133
+        componentId: 713f5093-19c5-4817-8064-81465f59bac3
         operator: is
         type: BooleanValue
         value: false
