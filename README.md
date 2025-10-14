@@ -9,6 +9,7 @@ Core delivery platform Node.js Frontend Template.
 - [Requirements](#requirements)
   - [Node.js](#nodejs)
 - [DXT Forms Engine Plugin](#dxt-forms-engine-plugin)
+- [Features](#features)
 - [Development Tools & Configuration](#development-tools--configuration)
   - [Testing Framework](#testing-framework)
   - [Code Quality & Linting](#code-quality--linting)
@@ -69,6 +70,21 @@ To use the correct version of Node.js for this application, via nvm:
 cd grants-ui
 nvm use
 ```
+
+## Features
+
+The Grants UI service provides a comprehensive set of features for building grant application forms. These features are demonstrated in the Example Grant with Auth journey and documented in detail in [FEATURES.md](./FEATURES.md).
+
+Key features include:
+- **Form Components**: 13 different input components (TextField, RadiosField, CheckboxesField, etc.)
+- **Page Types**: Summary, Declaration, Confirmation, Terminal, and Conditional pages
+- **Guidance Components**: Html, Details, InsetText, Markdown, and List components
+- **Authentication**: Defra ID integration with whitelist support
+- **Conditional Logic**: Dynamic page routing and content display
+- **Validation**: Custom validation messages and schema validation
+- **Configuration**: YAML-based form definitions with confirmation content
+
+For complete documentation of all available features, see [FEATURES.md](./FEATURES.md).
 
 ## DXT Forms Engine Plugin
 
