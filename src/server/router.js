@@ -29,7 +29,10 @@ export const router = {
       await server.register([health])
 
       // Mock Status route
-      await server.register([mockStatus, mockApplication])
+      if (process.env.NODE_ENV !== 'production') {
+        // Only register mocks for dev/test
+        await server.register([mockStatus, mockApplication])
+      }
 
       // Dev specific routes
       if (!defraIdEnabled) {
