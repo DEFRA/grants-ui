@@ -53,6 +53,13 @@ describe('formsStatusCallback', () => {
     expect(result).toBe(h.continue)
   })
 
+  it.each(['REOPENED', 'CLEARED'])('continues without GAS call when status = %s', async (status) => {
+    context.state.applicationStatus = status
+    const result = await formsStatusCallback(request, h, context)
+    expect(result).toBe(h.continue)
+    expect(getApplicationStatus).not.toHaveBeenCalled()
+  })
+
   it('sets CLEARED state when GAS returns APPLICATION_WITHDRAWN', async () => {
     getApplicationStatus.mockResolvedValue({
       json: async () => ({ status: 'APPLICATION_WITHDRAWN' })
