@@ -671,6 +671,45 @@ Logging is configured via environment variables:
 - `LOG_LEVEL`: Log level (debug, info, warn, error, etc.)
 - `LOG_FORMAT`: Output format (ecs for production, pino-pretty for development)
 
+#### Log Verbosity Control
+
+The application automatically adjusts log verbosity based on the `LOG_LEVEL` setting:
+
+**INFO Level (Default)**
+
+- Simplified, readable request/response logs
+- Excludes verbose details like headers, cookies, and query parameters
+- Shows essential information: method, URL, status code, and response time
+- Example: `[response] GET /adding-value/start 200 (384ms)`
+
+**DEBUG Level (Development)**
+
+- Full detailed request/response logs
+- Includes all headers, cookies, query parameters, and request body
+- Useful for troubleshooting and deep debugging
+- Shows external API calls with full context
+
+To enable debug logging:
+
+```bash
+# In Docker Compose
+LOG_LEVEL=debug docker compose up
+
+# Or set in .env file
+LOG_LEVEL=debug
+
+# Or set in compose.yml environment variables
+LOG_LEVEL: debug
+```
+
+**Note**: When changing `LOG_LEVEL` in `compose.yml`, restart the container:
+
+```bash
+docker compose restart grants-ui
+# or
+docker compose up -d --force-recreate grants-ui
+```
+
 ### Best Practices
 
 1. **Use Structured Logging**: Prefer log codes over direct logger calls
