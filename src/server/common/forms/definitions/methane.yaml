@@ -94,6 +94,22 @@ pages:
         shortDescription: Do you house your dairy herd for at least some of the year?
         id: 1a0d8a06-93b9-4c1d-9961-9696089ef42e
     id: 0d1ed099-020c-49aa-b1bf-82a909add133
+  - title: You must house your dairy herd to apply for a MSFP grant
+    path: /you-must-be-herd-farmer
+    next: [ ]
+    components:
+      - name: NotEligibleDiaryHerd
+        title: You must house your dairy herd to apply for a MSFP grant
+        type: Html
+        hint: ""
+        content: >
+          <p class="govuk-body">You must be a dairy farmer to apply for a MSFP grant.</p>
+          <p class="govuk-body">Only dairy herds which are housed for at least some of the year are eligible for MSFP grants</p>
+        options: { }
+        schema: { }
+        id: 44018210-32c6-42f4-937f-51f29bcd903c
+    id: cd1ef5c9-ac49-44cd-85b3-99764347f785
+    condition: 72c8cb60-7069-420e-8da6-ec7a72e39ca5
   - title: Methane confirmation
     path: /confirm-methane-details
     controller: ConfirmMethaneDetailsController
