@@ -32,6 +32,11 @@ export const mockLogHelper = () => ({
     },
     SYSTEM: {
       SERVER_ERROR: { level: 'error', messageFunc: vi.fn() }
+    },
+    RESOURCE_NOT_FOUND: {
+      FORM_NOT_FOUND: { level: 'info', messageFunc: vi.fn() },
+      TASKLIST_NOT_FOUND: { level: 'info', messageFunc: vi.fn() },
+      PAGE_NOT_FOUND: { level: 'info', messageFunc: vi.fn() }
     }
   }
 })

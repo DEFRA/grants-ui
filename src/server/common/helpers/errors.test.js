@@ -319,6 +319,139 @@ describe('#catchAll', () => {
   })
 })
 
+describe('#catchAll 404 Logging', () => {
+  const mockToolkit = {
+    view: vi.fn().mockReturnThis(),
+    code: vi.fn().mockReturnThis()
+  }
+
+  beforeEach(() => {
+    log.mockClear()
+  })
+
+  test('Should log form not found with context', () => {
+    const request = {
+      response: {
+        isBoom: true,
+        message: "Form 'adding-value' not found",
+        output: { statusCode: statusCodes.notFound }
+      },
+      path: '/adding-value/start',
+      method: 'GET',
+      auth: { credentials: { contactId: 'user123', sbi: '105001234' } },
+      headers: { referer: 'https://gov.uk', 'user-agent': 'Mozilla/5.0' }
+    }
+
+    catchAll(request, mockToolkit)
+
+    expect(log).toHaveBeenCalledWith(
+      expect.objectContaining({
+        level: 'info',
+        messageFunc: expect.any(Function)
+      }),
+      expect.objectContaining({
+        slug: 'adding-value',
+        userId: 'user123',
+        sbi: '105001234',
+        reason: 'not_found',
+        referer: 'https://gov.uk',
+        userAgent: 'Mozilla/5.0',
+        environment: expect.any(String)
+      })
+    )
+  })
+
+  test('Should log form disabled in production', () => {
+    const request = {
+      response: {
+        isBoom: true,
+        message: "Form 'test-grant' is not available in production",
+        output: { statusCode: statusCodes.notFound }
+      },
+      path: '/test-grant/eligibility',
+      method: 'GET',
+      auth: { credentials: { contactId: 'user456', sbi: '105009999' } },
+      headers: { referer: 'none', 'user-agent': 'Chrome' }
+    }
+
+    catchAll(request, mockToolkit)
+
+    expect(log).toHaveBeenCalledWith(
+      expect.objectContaining({
+        level: 'info',
+        messageFunc: expect.any(Function)
+      }),
+      expect.objectContaining({
+        slug: 'test-grant',
+        userId: 'user456',
+        sbi: '105009999',
+        reason: 'disabled_in_production',
+        environment: expect.any(String)
+      })
+    )
+  })
+
+  test('Should log tasklist not found with context', () => {
+    const request = {
+      response: {
+        isBoom: true,
+        message: "Tasklist 'frps-beta' not found",
+        output: { statusCode: statusCodes.notFound }
+      },
+      path: '/tasklist/frps-beta',
+      method: 'GET',
+      auth: { credentials: { contactId: 'user789', sbi: '106001111' } },
+      headers: { referer: 'none', 'user-agent': 'Safari' }
+    }
+
+    catchAll(request, mockToolkit)
+
+    expect(log).toHaveBeenCalledWith(
+      expect.objectContaining({
+        level: 'info',
+        messageFunc: expect.any(Function)
+      }),
+      expect.objectContaining({
+        tasklistId: 'frps-beta',
+        userId: 'user789',
+        sbi: '106001111',
+        reason: 'not_found',
+        environment: expect.any(String)
+      })
+    )
+  })
+
+  test('Should log generic page not found for anonymous user', () => {
+    const request = {
+      response: {
+        isBoom: true,
+        message: 'Not Found',
+        output: { statusCode: statusCodes.notFound }
+      },
+      path: '/unknown-path',
+      method: 'GET',
+      auth: undefined,
+      headers: { 'user-agent': 'curl/7.68.0' }
+    }
+
+    catchAll(request, mockToolkit)
+
+    expect(log).toHaveBeenCalledWith(
+      expect.objectContaining({
+        level: 'info',
+        messageFunc: expect.any(Function)
+      }),
+      expect.objectContaining({
+        path: '/unknown-path',
+        userId: 'anonymous',
+        sbi: 'unknown',
+        referer: 'none',
+        userAgent: 'curl/7.68.0'
+      })
+    )
+  })
+})
+
 describe('#catchAll Redirect Handling', () => {
   const mockToolkitRedirect = vi.fn()
   const mockToolkit = {

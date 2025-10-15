@@ -206,6 +206,24 @@ export const LogCodes = {
     }
   },
 
+  RESOURCE_NOT_FOUND: {
+    FORM_NOT_FOUND: {
+      level: 'info',
+      messageFunc: (messageOptions) =>
+        `Form not found: slug=${messageOptions.slug}, userId=${messageOptions.userId || 'anonymous'}, sbi=${messageOptions.sbi || 'unknown'}, reason=${messageOptions.reason || 'not_found'}, environment=${messageOptions.environment || 'unknown'}, referer=${messageOptions.referer || 'none'}`
+    },
+    TASKLIST_NOT_FOUND: {
+      level: 'info',
+      messageFunc: (messageOptions) =>
+        `Tasklist not found: tasklistId=${messageOptions.tasklistId}, userId=${messageOptions.userId || 'anonymous'}, sbi=${messageOptions.sbi || 'unknown'}, reason=${messageOptions.reason || 'not_found'}, environment=${messageOptions.environment || 'unknown'}, referer=${messageOptions.referer || 'none'}`
+    },
+    PAGE_NOT_FOUND: {
+      level: 'info',
+      messageFunc: (messageOptions) =>
+        `Page not found: path=${messageOptions.path}, userId=${messageOptions.userId || 'anonymous'}, sbi=${messageOptions.sbi || 'unknown'}, referer=${messageOptions.referer || 'none'}, userAgent=${messageOptions.userAgent || 'unknown'}`
+    }
+  },
+
   SYSTEM: {
     VIEW_DEBUG: {
       level: 'debug',
