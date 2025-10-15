@@ -768,7 +768,7 @@ describe('validate', () => {
 
     await provider
       .given('has parcels', { parcels: [] })
-      .uponReceiving('a validation request for a non-ex}istent parcel')
+      .uponReceiving('a validation request for a non-existent parcel')
       .withRequest({
         method: 'POST',
         path: '/application/validate',
