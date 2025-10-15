@@ -212,3 +212,57 @@ export async function fetchBusinessAndCustomerInformation(sbi, crn) {
 
   return fetchFromConsolidatedView({ sbi, query, formatResponse })
 }
+
+export async function fetchBusinessAndCPH(sbi, crn) {
+  const query = `
+    query Business {
+      customer(crn: "${crn}") {
+        info {
+          name {
+            title
+            first
+            middle
+            last
+          }
+        }
+      }
+      business(sbi: "${sbi}") {
+        info {
+          reference
+          email {
+            address
+          }
+          phone {
+            mobile
+          }
+          name
+          address {
+            line1
+            line2
+            line3
+            line4
+            line5
+            street
+            city
+            postalCode
+          }
+          vat
+          type {
+            code
+            type
+          }
+        }
+        countyParishHoldings {
+            cphNumber
+        }
+      }
+    }`
+
+  const formatResponse = (r) => ({
+    business: r.data?.business?.info,
+    countyParishHoldings: r.data?.business.countyParishHoldings[0].cphNumber,
+    customer: r.data?.customer?.info
+  })
+
+  return fetchFromConsolidatedView({ sbi, query, formatResponse })
+}

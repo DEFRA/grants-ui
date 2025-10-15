@@ -1,6 +1,6 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
-import { fetchBusinessAndCustomerInformation } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
+import { fetchBusinessAndCPH } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
 import { formatPhone } from '~/src/server/land-grants/utils/format-phone.js'
 
 const logger = createLogger()
@@ -33,17 +33,44 @@ export default class ConfirmMethaneDetailsController extends QuestionPageControl
    * @returns {Promise<object>} Farm details object with rows array
    */
   async buildFarmDetails(crn, sbi) {
-    const data = await fetchBusinessAndCustomerInformation(sbi, crn)
+    const data = await fetchBusinessAndCPH(sbi, crn)
 
     const rows = [
       this.createCustomerNameRow(data.customer?.name),
       this.createBusinessNameRow(data.business?.name),
-      this.createAddressRow(data.business?.address),
       this.createSbiRow(sbi),
-      this.createContactDetailsRow(data.business?.phone?.mobile, data.business?.email?.address)
+      this.createContactDetailsRow(data.business?.phone?.mobile, data.business?.email?.address),
+      this.createAddressRow(data.business?.address),
+      this.createTypeRow(data.business?.type),
+      this.createCPHRow(data.countyParishHoldings),
+      this.createVATRow(data.business?.vat)
     ].filter(Boolean)
 
     return { rows }
+  }
+
+  createVATRow(vat) {
+    if (!vat) {
+      return null
+    }
+
+    return {
+      key: { text: 'VAT number' },
+      value: { text: vat }
+    }
+  }
+
+  createCPHRow(countyParishHoldings) {
+    if (countyParishHoldings.length === 0) {
+      return null
+    }
+
+    return {
+      key: { text: 'County Parish Holdings' },
+      value: {
+        text: countyParishHoldings
+      }
+    }
   }
 
   /**
@@ -175,7 +202,7 @@ export default class ConfirmMethaneDetailsController extends QuestionPageControl
       const { sbi, crn } = request.auth.credentials
 
       if (sbi) {
-        const applicant = await fetchBusinessAndCustomerInformation(sbi, crn)
+        const applicant = await fetchBusinessAndCPH(sbi, crn)
         await this.setState(request, {
           ...state,
           applicant
@@ -186,6 +213,19 @@ export default class ConfirmMethaneDetailsController extends QuestionPageControl
     }
 
     return fn
+  }
+
+  createTypeRow(type) {
+    if (!type) {
+      return null
+    }
+
+    const { type: organisationType } = type
+
+    return {
+      key: { text: 'Type' },
+      value: { text: organisationType }
+    }
   }
 }
 

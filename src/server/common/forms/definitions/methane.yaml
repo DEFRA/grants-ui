@@ -163,11 +163,53 @@ pages:
         id: 25845086-4fcf-4ee5-ab2b-cb5d3c3d1117
     id: e102ac90-990a-443b-b70a-d43ba2e5a424
     condition: 914c4364-1a6c-4475-a41d-58d30f684d1c
-  - title: Methane confirmation
+  - title: Check your details are correct
     path: /confirm-methane-details
     controller: ConfirmMethaneDetailsController
     next: [ ]
     id: a24cb35f-a359-4934-b8c8-56ff92cb3df1
+  - title: How many dairy cows will you feed MSFP?
+    path: /how-many-diary-cows
+    components:
+      - name: diaryCowsFedCount
+        title: How many dairy cows will you feed MSFP?
+        type: NumberField
+        hint: ""
+        options:
+          required: true
+          classes: govuk-!-width-one-third
+          customValidationMessages:
+            any.required: Enter the number of diary cows you have
+            number.min: You must have at least 10 diary cow
+            number.max: You can apply for up to 10,000 diary cows
+        schema:
+          min: 10
+          max: 10000
+          precision: 0
+        shortDescription:  How many dairy cows will you feed MSFP?
+        id: 76f04de6-2eef-4ea5-bbd8-d4e84818528a
+    id: 114798d7-622e-46da-943d-729f4d102d8c
+  - title: How many months are your dairy cows housed during the year?
+    path: /how-many-months
+    components:
+      - name: monthsDiaryCowHoused
+        title: How many months are your dairy cows housed during the year?
+        type: NumberField
+        hint: ""
+        options:
+          required: true
+          classes: govuk-!-width-one-third
+          customValidationMessages:
+            any.required: Enter the number of months you have housed diary cows during the year
+            number.min: You must have at least 1
+            number.max: Maximum number of months is 12
+        schema:
+          min: 1
+          max: 12
+          precision: 0
+        shortDescription: How many months are your dairy cows housed during the year?
+        id: e6b474d1-18c7-4db6-82e1-a977956e4c6b
+    id: 847615e9-194b-4cda-9313-4be65c38edf2
 lists: []
 sections: []
 conditions:

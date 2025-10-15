@@ -175,8 +175,18 @@
           "street": "Gisburn Road",
           "city": "Clitheroe",
           "postalCode": "BB7 4LQ"
+        },
+        "vat": "345456782",
+        "type": {
+          "code": 101443,
+          "type": "Farmer"
         }
-      }
+      },
+      "countyParishHoldings": [
+        {
+          "cphNumber": "06/593/4729"
+        }
+      ]
     },
     "customer": {
       "info": {
