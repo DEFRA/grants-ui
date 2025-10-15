@@ -51,6 +51,7 @@ export async function context(request) {
       name: request?.auth?.credentials?.name,
       organisationId: request?.auth?.credentials?.organisationId,
       organisationName: request?.auth?.credentials?.organisationName,
+      relationshipId: request?.auth?.credentials?.relationshipId,
       role: session.role
     }
 
@@ -90,6 +91,7 @@ export async function context(request) {
         sbi: null,
         name: null,
         organisationId: null,
+        relationshipId: null,
         role: null
       },
       breadcrumbs: [],
