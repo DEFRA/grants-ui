@@ -73,7 +73,7 @@
     "date-fns": "4.1.0",
     "dotenv": "16.6.1",
     "global-agent": "3.0.0",
-    "govuk-frontend": "5.11.2",
+    "govuk-frontend": "5.12.0",
     "hapi-pino": "12.1.0",
     "hapi-pulse": "3.0.1",
     "ioredis": "5.7.0",
