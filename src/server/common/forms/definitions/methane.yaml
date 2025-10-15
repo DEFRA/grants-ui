@@ -210,7 +210,43 @@ pages:
         shortDescription: How many months are your dairy cows housed during the year?
         id: e6b474d1-18c7-4db6-82e1-a977956e4c6b
     id: 847615e9-194b-4cda-9313-4be65c38edf2
-lists: []
+  - title: Which MSFP will you use?
+    path: /msfp
+    components:
+      - name: whichMsfp
+        title: Html
+        type: Html
+        content: <p class="govuk-body"> Which MSFP will you use?</p>
+        id: 545895da-dc16-4bd6-8d6a-4308277982df
+        options: { }
+        schema: { }
+      - name: msfpOptions
+        title: MSFP option
+        type: RadiosField
+        list: 57f1e7a6-d27a-4144-ace6-6ddacad103df
+        options:
+          customValidationMessages:
+            any.required: Select the option that applies
+        shortDescription: MSFP
+        id: b48a816e-a810-4346-a111-5c7a0cac8a5b
+        schema: { }
+    id: 5cd9ac2a-d211-4f8e-b1b9-1a377d121148
+  - title: Check your answers
+    path: /summary
+    controller: CheckResponsesPageController
+    id: aa34c1e0-e119-4e69-ab91-06d6b092055e
+lists:
+  - title: RadiosField List
+    name: radiosFieldList
+    type: string
+    items:
+      - text: Bovaer - 3-NOP (3-nitrooxypropanol)
+        value: bovaerOption
+        id: 277989e5-7414-47d0-93d5-b8b6469daeea
+      - text: SilvAir
+        value: silvAirOption
+        id: 6a18e5e5-a705-4f8d-9139-678400ac35c8
+    id: 57f1e7a6-d27a-4144-ace6-6ddacad103df
 sections: []
 conditions:
   - id: 341c2742-74d4-439e-91ee-641f4e56093f
