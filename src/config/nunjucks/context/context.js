@@ -13,6 +13,23 @@ const manifestPath = path.join(config.get('root'), '.public/assets-manifest.json
 let webpackManifest
 
 /**
+ * @param {Request | null } request
+ * @param {string|null} tempSbi
+ * @param {string|null} role
+ */
+const usersDetails = (request, tempSbi, role) => {
+  return {
+    isAuthenticated: request?.auth?.isAuthenticated ?? false,
+    sbi: request?.auth?.credentials?.sbi || tempSbi, // Use temp SBI if no session SBI
+    crn: request?.auth?.credentials?.crn,
+    name: request?.auth?.credentials?.name,
+    organisationId: request?.auth?.credentials?.organisationId,
+    organisationName: request?.auth?.credentials?.organisationName,
+    relationshipId: request?.auth?.credentials?.relationshipId,
+    role
+  }
+}
+/**
  * @param {Request | null} request
  */
 export async function context(request) {
@@ -44,16 +61,7 @@ export async function context(request) {
         session = {}
       }
     }
-    const auth = {
-      isAuthenticated: request?.auth?.isAuthenticated ?? false,
-      sbi: request?.auth?.credentials?.sbi || session.sbi || tempSbi, // Use temp SBI if no session SBI
-      crn: request?.auth?.credentials?.crn,
-      name: request?.auth?.credentials?.name,
-      organisationId: request?.auth?.credentials?.organisationId,
-      organisationName: request?.auth?.credentials?.organisationName,
-      relationshipId: request?.auth?.credentials?.relationshipId,
-      role: session.role
-    }
+    const auth = usersDetails(request, session.sbi || tempSbi, session.role)
 
     return {
       assetPath: `${assetPath}/assets/rebrand`,
