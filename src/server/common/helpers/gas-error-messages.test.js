@@ -5,13 +5,13 @@ import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 describe('gas-error-messages', () => {
   describe('getGasErrorMessage', () => {
     it.each([
-      { statusCode: 400, heading: 'Invalid application data' },
-      { statusCode: 401, heading: 'Authentication issue' },
-      { statusCode: 403, heading: 'Authentication issue' },
-      { statusCode: 404, heading: 'Service not found' },
-      { statusCode: 409, heading: 'Application already submitted' },
-      { statusCode: 422, heading: 'Application validation failed' },
-      { statusCode: 429, heading: 'Too many requests' },
+      { statusCode: 400, heading: 'Something went wrong' },
+      { statusCode: 401, heading: 'Something went wrong' },
+      { statusCode: 403, heading: 'Something went wrong' },
+      { statusCode: 404, heading: 'Something went wrong' },
+      { statusCode: 409, heading: 'Something went wrong' },
+      { statusCode: 422, heading: 'Something went wrong' },
+      { statusCode: 429, heading: 'Something went wrong' },
       { statusCode: 500, heading: 'Service temporarily unavailable' },
       { statusCode: 502, heading: 'Service temporarily unavailable' },
       { statusCode: 503, heading: 'Service temporarily unavailable' }
@@ -52,10 +52,11 @@ describe('gas-error-messages', () => {
     it('should render submission-error view with correct data', () => {
       handleGasApiError(mockH, mockContext, mockError)
 
-      expect(mockH.view).toHaveBeenCalledWith('land-grants/submission-error', {
+      expect(mockH.view).toHaveBeenCalledWith('submission-error', {
         backLink: null,
-        heading: 'Too many requests',
-        message: 'You have submitted too many requests. Please wait a moment and try again.',
+        heading: 'Something went wrong',
+        message:
+          'An unexpected error occurred while submitting your application. Please try again or contact support if the problem persists.',
         refNumber: 'REF123'
       })
       expect(mockH.code).toHaveBeenCalledWith(429)
@@ -75,7 +76,7 @@ describe('gas-error-messages', () => {
       handleGasApiError(mockH, mockContext, mockError)
 
       expect(mockH.view).toHaveBeenCalledWith(
-        'land-grants/submission-error',
+        'submission-error',
         expect.objectContaining({
           refNumber: 'N/A'
         })
