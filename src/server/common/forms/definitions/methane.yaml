@@ -69,7 +69,7 @@ pages:
     id: d40c01ac-f492-4665-90c6-b62a6e58d6aa
   - title: You are not eligible for this grant
     path: /you-must-be-diary-farmer
-    next: [ ]
+    controller: TerminalPageController
     components:
       - name: FGyiLS
         title: You are not eligible for this grant
@@ -123,7 +123,7 @@ pages:
     id: 0d1ed099-020c-49aa-b1bf-82a909add133
   - title: You must house your dairy herd to apply for a MSFP grant
     path: /you-must-be-herd-farmer
-    next: [ ]
+    controller: TerminalPageController
     components:
       - name: NotEligibleDiaryHerd
         title: You must house your dairy herd to apply for a MSFP grant
@@ -150,7 +150,7 @@ pages:
     id: 9adab313-f6f5-49a7-946d-6f2699f4dc57
   - title: You must feed your dairy cows a total mixed ration (TMR) when housed to apply for a MSFP grant
     path: /you-must-feed-mixed-tmr
-    next: [ ]
+    controller: TerminalPageController
     components:
       - name: NotFeedTMR
         title: You must feed your dairy cows a total mixed ration (TMR) when housed to apply for a MSFP grant
@@ -216,12 +216,11 @@ pages:
       - name: whichMsfp
         title: Html
         type: Html
-        content: <p class="govuk-body"> Which MSFP will you use?</p>
         id: 545895da-dc16-4bd6-8d6a-4308277982df
         options: { }
         schema: { }
       - name: msfpOptions
-        title: MSFP option
+        title: Choose product
         type: RadiosField
         list: 57f1e7a6-d27a-4144-ace6-6ddacad103df
         options:
@@ -235,12 +234,41 @@ pages:
     path: /summary
     controller: CheckResponsesPageController
     id: aa34c1e0-e119-4e69-ab91-06d6b092055e
+  - title: Potential funding
+    path: /potential-funding
+    components:
+      - name: potentialFundingInfo
+        title: Html
+        type: Html
+        content: >
+          {% assign mfspSelected = 'msfpOptions' | answer %}
+          {% if mfspSelected == "Bovaer" %} {% assign pricePerCow = 80 %} {% else %} {% assign pricePerCow = 40 %} {% endif %}
+          {% assign cowCount = 'diaryCowsFedCount' | answer %}
+          {% assign monthsHoused = 'monthsDiaryCowHoused' | answer %}
+          {% assign monthsAsYears = monthsHoused | divided_by: 12 %}
+          {% assign total = cowCount | times: monthsAsYears | times: pricePerCow %}
+          <p class="govuk-body">You may be able eligible for a grant of up to £{{ total }}. </p>
+          <h3 class="govuk-heading-s">MSFP grant calculation</h3>
+          <p class="govuk-body">This calculation is based on the following information you provided:</p>
+          <ul class="govuk-list govuk-list--bullet">
+            <li>{{ cowCount }} dairy cows fed on Bovaer (at £{{ pricePerCow }} per cow per year) for {{ monthsHoused }} months whilst housed = £{{ total }}</li>
+          </ul>
+          <p class="govuk-body">There’s no guarantee you’ll receive a grant</p>
+
+        options: { }
+        schema: { }
+        id: 83d8325d-1762-4276-a2a8-d89acb1c66d7
+  - title: Confirm and send
+    path: /declaration
+    controller: DeclarationPageController
+    view: declaration-page.html
+    id: bc087fb8-e499-4344-a0bf-d427ded069b8
 lists:
-  - title: RadiosField List
-    name: radiosFieldList
+  - title: MFSP Selection List
+    name: mfspSelection
     type: string
     items:
-      - text: Bovaer - 3-NOP (3-nitrooxypropanol)
+      - text: Bovaer
         value: bovaerOption
         id: 277989e5-7414-47d0-93d5-b8b6469daeea
       - text: SilvAir
