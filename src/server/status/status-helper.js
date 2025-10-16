@@ -37,12 +37,26 @@ const gasToGrantsUiStatus = {
   OFFER_ACCEPTED: 'SUBMITTED'
 }
 
+/**
+ * Maps GAS status and Grants UI status to the appropriate redirect URL
+ * @param {string} gasStatus - The status from GAS API (e.g., 'RECEIVED', 'OFFER_SENT')
+ * @param {string} grantsUiStatus - The current Grants UI status (e.g., 'SUBMITTED', 'REOPENED')
+ * @param {string} slug - The grant slug/ID
+ * @returns {string} The URL path to redirect to
+ */
 function mapStatusToUrl(gasStatus, grantsUiStatus, slug) {
   const grantsUiConfig = statusToUrlConfig[grantsUiStatus.toLowerCase()] ?? statusToUrlConfig.default
   const fn = grantsUiConfig[gasStatus.toLowerCase()] ?? grantsUiConfig.default ?? statusToUrlConfig.default.default
   return fn(slug)
 }
 
+/**
+ * Determines the new Grants UI status based on GAS status and previous status
+ * Handles special case where AWAITING_AMENDMENTS transitions SUBMITTED to REOPENED
+ * @param {string} gasStatus - The status from GAS API
+ * @param {string} previousStatus - The previous Grants UI status
+ * @returns {string} The new Grants UI status
+ */
 function getNewStatus(gasStatus, previousStatus) {
   if (gasStatus === 'AWAITING_AMENDMENTS' && previousStatus === 'SUBMITTED') {
     return 'REOPENED'
@@ -50,6 +64,15 @@ function getNewStatus(gasStatus, previousStatus) {
   return gasToGrantsUiStatus[gasStatus] ?? 'SUBMITTED'
 }
 
+/**
+ * Persists the new status to the appropriate storage
+ * Uses cache service for CLEARED status, otherwise updates application status
+ * @param {object} request - The Hapi request object
+ * @param {string} newStatus - The new status to persist
+ * @param {string} previousStatus - The previous status for comparison
+ * @param {string} grantId - The grant ID
+ * @returns {Promise<void>}
+ */
 async function persistStatus(request, newStatus, previousStatus, grantId) {
   if (newStatus === previousStatus) {
     return
@@ -69,6 +92,14 @@ async function persistStatus(request, newStatus, previousStatus, grantId) {
   }
 }
 
+/**
+ * Determines if the request should continue without redirecting
+ * Handles special cases where status has already been transitioned
+ * @param {string} gasStatus - The status from GAS API
+ * @param {string} newStatus - The new Grants UI status
+ * @param {string} previousStatus - The previous Grants UI status
+ * @returns {boolean} True if request should continue without redirect
+ */
 function shouldContinueDefault(gasStatus, newStatus, previousStatus) {
   return (
     (gasStatus === 'AWAITING_AMENDMENTS' && newStatus === 'REOPENED' && previousStatus !== 'SUBMITTED') ||
