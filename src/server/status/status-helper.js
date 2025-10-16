@@ -5,7 +5,7 @@ import { updateApplicationStatus } from '../common/helpers/status/update-applica
 import { getApplicationStatus } from '../common/services/grant-application/grant-application.service.js'
 
 const statusToUrlConfig = {
-  // GrantsUI → GAS combined mapping
+  // GrantsUI -> GAS combined mapping
   submitted: {
     received: (slug) => `/${slug}/confirmation`,
     offerSent: (slug) => `/${slug}/confirmation`,
@@ -80,6 +80,8 @@ function shouldContinueDefault(gasStatus, newStatus, previousStatus) {
 // higher-order callback that wraps the existing one
 export const formsStatusCallback = async (request, h, context) => {
   const grantId = request.params?.slug
+  // grantCode should always be available in the config
+  const grantCode = request.app.model?.def?.metadata?.submission.grantCode
 
   if (!grantId) {
     return h.continue
@@ -92,7 +94,7 @@ export const formsStatusCallback = async (request, h, context) => {
   }
 
   try {
-    const response = await getApplicationStatus(grantId, context.referenceNumber)
+    const response = await getApplicationStatus(grantCode, context.referenceNumber)
     const { status: gasStatus } = await response.json()
 
     const newStatus = getNewStatus(gasStatus, previousStatus)
