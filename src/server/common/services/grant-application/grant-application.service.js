@@ -132,6 +132,6 @@ export async function submitGrantApplication(code, payload) {
  * @throws {GrantApplicationServiceApiError} - If the API request fails
  */
 export async function getApplicationStatus(code, clientRef) {
-  const url = `http://localhost:3000/grants/${code}/applications/${clientRef}/status`
+  const url = `${GAS_API_ENDPOINT}/grants/${code}/applications/${clientRef}/status`
   return makeGasApiRequest(url, code, { method: 'GET' })
 }

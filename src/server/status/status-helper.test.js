@@ -29,6 +29,7 @@ describe('formsStatusCallback', () => {
 
     request = {
       params: { slug: 'grant-a' },
+      app: { model: { def: { metadata: { submission: { grantCode: 'grant-a-code' } } } } },
       path: '/grant-a/start',
       auth: { credentials: { sbi: '12345', crn: 'CRN123' } },
       server: { logger: { error: vi.fn() } }
