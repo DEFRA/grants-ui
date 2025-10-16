@@ -21,9 +21,10 @@ The Grants UI service supports a comprehensive set of form input components, eac
 ### Text Input Components
 
 #### TextField
+
 - **Purpose**: Single-line text input
 - **Use Cases**: Names, short descriptions, single values
-- **Features**: 
+- **Features**:
   - Custom validation messages
   - Pattern matching with regex
   - Character limits
@@ -31,6 +32,7 @@ The Grants UI service supports a comprehensive set of form input components, eac
 - **Example**: Applicant name field with pattern validation for letters, hyphens, and apostrophes
 
 #### MultilineTextField
+
 - **Purpose**: Multi-line text input for longer content
 - **Use Cases**: Descriptions, comments, detailed explanations
 - **Features**:
@@ -40,6 +42,7 @@ The Grants UI service supports a comprehensive set of form input components, eac
 - **Example**: Project description with 400-word limit
 
 #### EmailAddressField
+
 - **Purpose**: Email address input with built-in validation
 - **Use Cases**: Contact information, notifications
 - **Features**:
@@ -49,6 +52,7 @@ The Grants UI service supports a comprehensive set of form input components, eac
 - **Example**: Applicant email with format validation
 
 #### TelephoneNumberField
+
 - **Purpose**: Phone number input with pattern validation
 - **Use Cases**: Contact numbers, mobile/landline
 - **Features**:
@@ -60,6 +64,7 @@ The Grants UI service supports a comprehensive set of form input components, eac
 ### Selection Components
 
 #### RadiosField
+
 - **Purpose**: Single selection from multiple options
 - **Use Cases**: Exclusive choices, category selection
 - **Features**:
@@ -69,6 +74,7 @@ The Grants UI service supports a comprehensive set of form input components, eac
 - **Example**: Business type selection with conditional page routing
 
 #### CheckboxesField
+
 - **Purpose**: Multiple selection from available options
 - **Use Cases**: Multi-select categories, feature selection
 - **Features**:
@@ -78,6 +84,7 @@ The Grants UI service supports a comprehensive set of form input components, eac
 - **Example**: Eligible items selection requiring at least one choice
 
 #### SelectField
+
 - **Purpose**: Dropdown selection from a list
 - **Use Cases**: Long lists, category selection
 - **Features**:
@@ -86,6 +93,7 @@ The Grants UI service supports a comprehensive set of form input components, eac
 - **Example**: Country selection from predefined list
 
 #### AutocompleteField
+
 - **Purpose**: Searchable dropdown with filtering
 - **Use Cases**: Large datasets, country/location selection
 - **Features**:
@@ -95,6 +103,7 @@ The Grants UI service supports a comprehensive set of form input components, eac
 - **Example**: Country selection with type-ahead functionality
 
 #### YesNoField
+
 - **Purpose**: Binary choice (Yes/No) input
 - **Use Cases**: Eligibility questions, boolean decisions
 - **Features**:
@@ -105,6 +114,7 @@ The Grants UI service supports a comprehensive set of form input components, eac
 ### Numeric Components
 
 #### NumberField
+
 - **Purpose**: Numeric input with validation
 - **Use Cases**: Costs, quantities, measurements
 - **Features**:
@@ -117,6 +127,7 @@ The Grants UI service supports a comprehensive set of form input components, eac
 ### Date Components
 
 #### DatePartsField
+
 - **Purpose**: Date input with separate day/month/year fields
 - **Use Cases**: Project start dates, deadlines
 - **Features**:
@@ -126,6 +137,7 @@ The Grants UI service supports a comprehensive set of form input components, eac
 - **Example**: Project start date with 90-day future limit
 
 #### MonthYearField
+
 - **Purpose**: Month and year selection
 - **Use Cases**: Approximate dates, planning periods
 - **Features**:
@@ -136,6 +148,7 @@ The Grants UI service supports a comprehensive set of form input components, eac
 ### Address Components
 
 #### UkAddressField
+
 - **Purpose**: UK address input with multiple fields
 - **Use Cases**: Business addresses, contact addresses
 - **Features**:
@@ -150,11 +163,13 @@ The Grants UI service supports a comprehensive set of form input components, eac
 The service supports several specialized page types for different stages of the application process.
 
 ### Standard Pages
+
 - **Purpose**: Regular form pages with input components
 - **Features**: Component rendering, validation, navigation
 - **Example**: Individual question pages
 
 ### Summary Pages
+
 - **Purpose**: Review and edit previously entered data
 - **Features**:
   - Display all form answers
@@ -164,6 +179,7 @@ The service supports several specialized page types for different stages of the 
 - **Example**: "Check your answers" page
 
 ### Declaration Pages
+
 - **Purpose**: Final confirmation and submission
 - **Features**:
   - Declaration text
@@ -173,6 +189,7 @@ The service supports several specialized page types for different stages of the 
 - **Example**: "Confirm and send" page
 
 ### Confirmation Pages
+
 - **Purpose**: Post-submission confirmation and next steps
 - **Features**:
   - Custom HTML content
@@ -183,6 +200,7 @@ The service supports several specialized page types for different stages of the 
 - **Example**: Application submitted confirmation
 
 ### Terminal Pages
+
 - **Purpose**: End the application process with specific messaging
 - **Features**:
   - Custom HTML content
@@ -192,6 +210,7 @@ The service supports several specialized page types for different stages of the 
 - **Example**: "You cannot apply" page
 
 ### Conditional Pages
+
 - **Purpose**: Show content based on previous answers
 - **Features**:
   - Conditional logic
@@ -203,30 +222,35 @@ The service supports several specialized page types for different stages of the 
 Guidance components provide contextual help and information without requiring user input.
 
 ### Html Component
+
 - **Purpose**: Custom HTML content
 - **Use Cases**: Instructions, information, warnings
 - **Features**: Full HTML support with GOV.UK Design System classes
 - **Example**: Service introduction text
 
 ### Details Component
+
 - **Purpose**: Collapsible content sections
 - **Use Cases**: Additional information, help text
 - **Features**: Expandable/collapsible sections
 - **Example**: Component and page type lists
 
 ### InsetText Component
+
 - **Purpose**: Highlighted information boxes
 - **Use Cases**: Important notices, warnings
 - **Features**: Styled information boxes
 - **Example**: Guidance component demonstration
 
 ### Markdown Component
+
 - **Purpose**: Markdown-formatted content
 - **Use Cases**: Rich text formatting
 - **Features**: Markdown syntax support
 - **Example**: Formatted text with bold, italic, strikethrough
 
 ### List Component
+
 - **Purpose**: Display predefined lists
 - **Use Cases**: Reference data, options
 - **Features**: Linked to list definitions
@@ -235,6 +259,7 @@ Guidance components provide contextual help and information without requiring us
 ## Form Configuration
 
 ### Metadata Configuration
+
 - **Form ID**: Unique identifier for the form
 - **Production Enablement**: `enabledInProd` flag
 - **Reference Number Prefix**: Custom prefix for application references
@@ -242,12 +267,14 @@ Guidance components provide contextual help and information without requiring us
 - **Submission Configuration**: Grant code and schema path
 
 ### Confirmation Content Configuration
+
 - **Panel Title**: Reference number panel title
 - **Panel Text**: Reference number panel text
 - **Custom HTML**: Full HTML content for confirmation page
 - **Template Components**: Reusable components like `{{DEFRASUPPORTDETAILS}}`
 
 ### Page Configuration
+
 - **Title**: Page heading
 - **Path**: URL path for the page
 - **Controller**: Custom controller (optional)
@@ -258,6 +285,7 @@ Guidance components provide contextual help and information without requiring us
 ## Authentication & Authorization
 
 ### Defra ID Integration
+
 - **Purpose**: Secure user authentication
 - **Features**:
   - OpenID Connect (OIDC) protocol
@@ -266,12 +294,14 @@ Guidance components provide contextual help and information without requiring us
   - Automatic redirect handling
 
 ### Whitelist System
+
 - **CRN Whitelisting**: Customer Reference Number validation
 - **SBI Whitelisting**: Single Business Identifier validation
 - **Environment Variables**: Configurable whitelist management
 - **Access Control**: Grant-specific access restrictions
 
 ### Session Management
+
 - **Save and Return**: Resume incomplete applications
 - **Session Persistence**: Redis-based session storage
 - **Timeout Handling**: Automatic session expiration
@@ -280,6 +310,7 @@ Guidance components provide contextual help and information without requiring us
 ## Conditional Logic
 
 ### Conditions
+
 - **Purpose**: Control page visibility and navigation
 - **Types**:
   - Boolean value conditions
@@ -288,6 +319,7 @@ Guidance components provide contextual help and information without requiring us
 - **Example**: Show terminal page when "No" is selected
 
 ### Conditional Navigation
+
 - **Purpose**: Dynamic page routing based on user input
 - **Features**:
   - Multiple navigation paths
@@ -298,6 +330,7 @@ Guidance components provide contextual help and information without requiring us
 ## Lists & Data Sources
 
 ### List Definitions
+
 - **Purpose**: Predefined data for dropdowns and selections
 - **Types**: String-based lists with text/value pairs
 - **Features**:
@@ -307,6 +340,7 @@ Guidance components provide contextual help and information without requiring us
 - **Example**: Country list with ISO codes
 
 ### Dynamic Lists
+
 - **Purpose**: Runtime data loading
 - **Features**:
   - API integration
@@ -317,6 +351,7 @@ Guidance components provide contextual help and information without requiring us
 ## Validation & Error Handling
 
 ### Custom Validation Messages
+
 - **Purpose**: User-friendly error messages
 - **Features**:
   - Field-specific messages
@@ -325,6 +360,7 @@ Guidance components provide contextual help and information without requiring us
 - **Example**: "Enter a country" for autocomplete field
 
 ### Schema Validation
+
 - **Purpose**: Data structure validation
 - **Features**:
   - JSON Schema validation
@@ -334,6 +370,7 @@ Guidance components provide contextual help and information without requiring us
 - **Example**: Email format validation with regex
 
 ### Error Display
+
 - **Purpose**: Clear error communication
 - **Features**:
   - Inline error messages
@@ -344,6 +381,7 @@ Guidance components provide contextual help and information without requiring us
 ## Submission & Confirmation
 
 ### Form Submission
+
 - **Purpose**: Submit completed applications
 - **Features**:
   - Data validation
@@ -353,6 +391,7 @@ Guidance components provide contextual help and information without requiring us
 - **Process**: Declaration → Submission → Confirmation
 
 ### Confirmation System
+
 - **Purpose**: Post-submission user experience
 - **Features**:
   - Custom HTML content
@@ -362,6 +401,7 @@ Guidance components provide contextual help and information without requiring us
 - **Configuration**: YAML-based confirmation content
 
 ### State Management
+
 - **Purpose**: Application state persistence
 - **Features**:
   - Session storage
@@ -373,6 +413,7 @@ Guidance components provide contextual help and information without requiring us
 ## Development Features
 
 ### Dev Tools
+
 - **Purpose**: Development and testing support
 - **Features**:
   - Demo confirmation pages
@@ -382,6 +423,7 @@ Guidance components provide contextual help and information without requiring us
 - **Access**: Development environment only
 
 ### Testing Support
+
 - **Purpose**: Automated testing capabilities
 - **Features**:
   - Contract testing
@@ -393,24 +435,24 @@ Guidance components provide contextual help and information without requiring us
 ## Best Practices
 
 ### Form Design
+
 - Use appropriate components for data types
 - Provide clear validation messages
 - Implement progressive disclosure
 - Ensure accessibility compliance
 
 ### Configuration
+
 - Use meaningful page titles and paths
 - Implement proper conditional logic
 - Configure appropriate validation rules
 - Test all user journeys
 
 ### Security
+
 - Implement proper authentication
 - Use whitelist restrictions
 - Validate all user input
 - Protect sensitive data
 
 This comprehensive feature set enables the creation of sophisticated, user-friendly grant application forms that can handle complex business logic, validation requirements, and user experience needs.
-
-
-

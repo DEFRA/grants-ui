@@ -76,6 +76,7 @@ nvm use
 The Grants UI service provides a comprehensive set of features for building grant application forms. These features are demonstrated in the Example Grant with Auth journey and documented in detail in [FEATURES.md](./FEATURES.md).
 
 Key features include:
+
 - **Form Components**: 13 different input components (TextField, RadiosField, CheckboxesField, etc.)
 - **Page Types**: Summary, Declaration, Confirmation, Terminal, and Conditional pages
 - **Guidance Components**: Html, Details, InsetText, Markdown, and List components
@@ -113,9 +114,13 @@ The application uses **Vitest** as its test framework with custom module aliases
 - **Defra ID Integration**: Primary authentication service using OpenID Connect (OIDC) protocol
   - For detailed environment variable configuration, see [DEFRA ID Integration](#defra-id-integration)
 - **Whitelist System**: CRN (Customer Reference Number) and SBI (Single Business Identifier) whitelisting for specific grants:
-  - `EXAMPLE_GRANT_WITH_AUTH_WHITELIST_CRNS`: Authorized CRNs for example grant
-  - `EXAMPLE_GRANT_WITH_AUTH_WHITELIST_SBIS`: Authorized SBIs for example grant
+  - `EXAMPLE_WHITELIST_CRNS`: Authorized CRNs for Example Grant journeys (used by the Example Whitelist form definition)
+  - `EXAMPLE_WHITELIST_SBIS`: Authorized SBIs for Example Grant journeys (used by the Example Whitelist form definition)
   - For complete whitelist configuration, see [Feature Flags & Misc](#feature-flags--misc)
+
+### Whitelist Functionality
+
+Whitelisting restricts access to specific grant journeys based on Customer Reference Numbers (CRNs) and Single Business Identifiers (SBIs). Forms that require whitelisting declare the relevant environment variables in their YAML definition (see [`src/server/common/forms/definitions/example-whitelist.yaml`](./src/server/common/forms/definitions/example-whitelist.yaml)). At runtime, the whitelist service (`src/server/auth/services/whitelist.service.js`) reads the configured environment variables, normalises the values, and validates incoming CRN/SBI credentials. If a user’s identifiers are not present in the configured whitelist, the journey is terminated and the user is shown a terminal page.
 
 ### Development Services Integration (docker compose)
 
@@ -170,7 +175,7 @@ The table below outlines the data the cookies control.
 
 ### Inspecting cookies
 
-There is a tool provided `/tools/unseal-cookies.js` that will decode and decrypt the cookies for inspection on the command line. You will need the appropriate cookie password.
+There is a tool provided `tools/unseal-cookie.js` that will decode and decrypt the cookies for inspection on the command line. You will need the appropriate cookie password.
 To use the tool:
 
 ```bash
@@ -198,17 +203,19 @@ The application includes session rehydration functionality that allows user sess
 ### How Session Rehydration Works
 
 The application fetches saved state from the backend API using the endpoint configured in `GRANTS_UI_BACKEND_URL`.
-When a user is authenticated, the serivce:
+When a user is authenticated, the service:
 
 - Checks for existing cache
-- If there is none, fetches data from Mongo
+- If there is none, fetches data from the Grants UI Backend service (which persists data to Mongo)
 - Performs session rehydration
 
 ### Configuration
 
 Session rehydration is controlled by the following environment variables:
 
-- `GRANTS_UI_BACKEND_URL`: The backend API endpoint for fetching/storing session state
+- `GRANTS_UI_BACKEND_URL`: The Grants UI Backend service endpoint used for state persistence
+- `GRANTS_UI_BACKEND_AUTH_TOKEN`: Bearer token used to authenticate requests to the backend
+- `GRANTS_UI_BACKEND_ENCRYPTION_KEY`: Encryption key used to secure the backend bearer token
 
 ### Error Handling
 
@@ -229,7 +236,7 @@ disable setting `SESSION_CACHE_ENGINE=false` or changing the default value in `~
 
 ## Proxy
 
-We are using forward-proxy which is set up by default. To make use of this: `import { fetch } from 'undici'` then because of the `setGlobalDispatcher(new ProxyAgent(proxyUrl))` calls will use the ProxyAgent Dispatcher
+A forward-proxy can be enabled by setting the `HTTP_PROXY` environment variable. When present, `setGlobalDispatcher(new ProxyAgent(proxyUrl))` is invoked automatically so calls made with `fetch` from `undici` use the proxy.
 
 If you are not using Wreck, Axios or Undici or a similar http that uses `Request`. Then you may have to provide the proxy dispatcher:
 
