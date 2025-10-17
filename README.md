@@ -98,6 +98,37 @@ CheckResponsesPageController renders a page showing the questions and answers th
 DeclarationPageController renders a declaration page and submits the form to GAS. It does not use the `confirmationState` used by DXT and does not clear the state.
 Instead it sets `applicationStatus` to `SUBMITTED` along with `submittedAt` and `submittedBy` fields.
 
+```mermaid
+sequenceDiagram
+  participant User
+  participant Hapi as Grants UI (Hapi)
+  participant DXT as DXT Forms Plugin
+  participant Ctrl as Feature Controller
+  participant Cache as StatePersistenceService
+  participant Backend as Grants UI Backend
+  participant Redis
+  participant GAS as GAS API (Mocked)
+
+  User->>Hapi: HTTP request (e.g. /{grant}/page)
+  Hapi->>DXT: Delegate route handling
+  DXT->>Ctrl: Invoke controller logic for page
+  Ctrl->>Cache: getState(request)
+  Cache->>Redis: Retrieve session
+  Redis-->>Cache: State hit? (optional)
+  Cache->>Backend: fetchSavedStateFromApi (if needed)
+  Backend-->>Cache: Persisted state payload
+  Cache-->>Ctrl: Merged state
+  Ctrl-->>DXT: Render view / continue journey
+  DXT-->>User: HTML response
+  User->>Hapi: Submit declaration
+  Hapi->>DXT: Handle submission
+  DXT->>Ctrl: Declaration controller makePostRouteHandler
+  Ctrl->>Cache: setState / persistStateToApi
+  Ctrl->>GAS: submitGrantApplication
+  GAS-->>Ctrl: Submission result
+  Ctrl-->>User: Redirect to confirmation
+```
+
 ## Development Tools & Configuration
 
 ### Testing Framework
@@ -208,6 +239,28 @@ You can override the default behaviour by setting the `SESSION_CACHE_ENGINE` env
 
 Please note: CatboxMemory (`memory`) is _not_ suitable for production use! The cache will not be shared between each
 instance of the service and it will not persist between restarts.
+
+```mermaid
+sequenceDiagram
+  participant User
+  participant UI as Grants UI
+  participant Catbox as Catbox Cache
+  participant Redis as Redis (session cache)
+  participant Backend as Grants UI Backend
+  participant Mongo as MongoDB
+
+  User->>UI: Request protected page
+  UI->>Catbox: Check cache (CatboxRedis/CatboxMemory)
+  Catbox-->>UI: Cache miss
+  UI->>Redis: Retrieve session data
+  Redis-->>UI: Session state (if present)
+  UI->>Backend: Persist state (async) / fetch saved state
+  Backend->>Mongo: Read/write persisted state
+  Mongo-->>Backend: State data
+  Backend-->>UI: Saved state response
+  UI->>Catbox: Update cache entry
+  UI-->>User: Rendered page
+```
 
 ## Session Rehydration
 
@@ -675,6 +728,17 @@ The application implements a comprehensive structured logging system providing c
 - **Log Codes**: Structured, hierarchical log definitions
 - **Validation**: Runtime validation of log code definitions
 - **Tracing**: Distributed tracing with request correlation
+
+```mermaid
+flowchart LR
+  Request["Incoming request<br/>controller/service"] --> Wrapper["log()/logger wrapper"]
+  Wrapper -->|Selects code| LogCodes["LogCodes definitions"]
+  Wrapper -->|Builds payload| Logger["Logger factory (pino)"]
+  Logger --> Output["Structured log output<br/>(ECS or pretty)"]
+  LogCodes --> Validator["Log code validator"]
+  Validator --> LogCodes
+  Logger --> Transports["Console / Cloud Logging"]
+```
 
 ### Directory Structure
 
