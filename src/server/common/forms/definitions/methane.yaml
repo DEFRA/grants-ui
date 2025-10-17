@@ -5,8 +5,31 @@ metadata:
   submission:
     grantCode: methane
   confirmationContent:
-    html: >
-      <h2 class="govuk-heading-m">Methane Grant</h2>
+    html: |
+      <h2 class="govuk-heading-m">What happens next</h2>
+      <p class="govuk-body">We’ve sent your application to the Rural Payments Agency (RPA).</p>
+      <p class="govuk-body">They’ll contact you after 31 May 2026 (the application closing date) to tell you if your application has been successful, or to ask for more information.</p>
+      <p class="govuk-body">It normally takes around 6 weeks after the closing date to process applications.</p>
+      <p class="govuk-body">If you’re successful, we’ll send you a grant funding agreement (GFA) with a list of items you can claim for.</p>
+
+      <h2 class="govuk-heading-m">Track and manage your application</h2>
+      <p class="govuk-body">Sign in to your application to track progress and manage it. </p>
+
+      <details class="govuk-details" data-module="govuk-details">
+        <summary class="govuk-details__summary">
+          <span class="govuk-details__summary-text">
+            If you have a question
+          </span>
+        </summary>
+        <div class="govuk-details__text">
+          <p class="govuk-body">Contact the Rural Payments Agency if you have a query.</p>
+          <p class="govuk-body">
+            Telephone: 03000 200 301<br>
+            Monday to Friday, 8:30am to 5pm (except bank holidays)</p>
+          <p class="govuk-body"><a class="govuk-link" href="https://www.gov.uk/call-charges" target="_blank">Find out about call charges (opens in new tab)</a></p>
+          <p class="govuk-body">Email: <a class="govuk-link" href="mailto:ruralpayments@defra.gov.uk">ruralpayments@defra.gov.uk</a></p>
+        </div>
+      </details>
 pages:
   - title: Apply for a menthane suppressant feed product (MSFP) grant
     path: /start
@@ -96,7 +119,7 @@ pages:
     id: 6b886bdb-4c11-4742-b8ea-2b76590c1417
   - title: Your dairy cows must kept on land in England to apply for a MSFP grant
     path: /cows-in-england-only
-    next: [ ]
+    controller: TerminalPageController
     components:
       - name: NotKeptInEngland
         title: Your dairy cows must kept on land in England to apply for a MSFP grant
@@ -247,11 +270,11 @@ pages:
           {% assign monthsHoused = 'monthsDiaryCowHoused' | answer %}
           {% assign monthsAsYears = monthsHoused | divided_by: 12 %}
           {% assign total = cowCount | times: monthsAsYears | times: pricePerCow %}
-          <p class="govuk-body">You may be able eligible for a grant of up to £{{ total }}. </p>
+          <p class="govuk-body">You may be able eligible for a grant of up to {{ total | formatCurrency: 'en-GB', 'GBP', 0 }}.</p>
           <h3 class="govuk-heading-s">MSFP grant calculation</h3>
           <p class="govuk-body">This calculation is based on the following information you provided:</p>
           <ul class="govuk-list govuk-list--bullet">
-            <li>{{ cowCount }} dairy cows fed on Bovaer (at £{{ pricePerCow }} per cow per year) for {{ monthsHoused }} months whilst housed = £{{ total }}</li>
+            <li>{{ cowCount }} dairy cows fed on Bovaer (at £{{ pricePerCow }} per cow per year) for {{ monthsHoused }} months whilst housed = {{ total | formatCurrency: 'en-GB', 'GBP', 0 }}</li>
           </ul>
           <p class="govuk-body">There’s no guarantee you’ll receive a grant</p>
 
