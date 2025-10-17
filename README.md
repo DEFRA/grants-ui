@@ -129,6 +129,7 @@ Whitelisting restricts access to specific grant journeys based on Customer Refer
 - **FFC Grants Scoring**: External scoring service (`defradigital/ffc-grants-scoring`) for grant evaluation
 - **MockServer**: API mocking service for development and testing with predefined expectations
 - **Defra ID Stub**: Local OpenID Connect provider used to mimic Defra ID authentication flows
+- **GAS API (Mocked)**: Grants Application Service endpoint stubbed by MockServer for submissions and confirmation flows
 
 ```mermaid
 graph TD
@@ -137,7 +138,7 @@ graph TD
   UI -->|State API| Backend[Grants UI Backend]
   Backend -->|Persist/Fetch| Mongo[(MongoDB)]
   UI -->|Scoring request| Scoring[FFC Grants Scoring]
-  Scoring --> MockServer[MockServer]
+  UI -->|Grant submission| GAS[MockServer (GAS API)]
   UI -.->|OIDC flows| DefraID[Defra ID Stub]
 ```
 
