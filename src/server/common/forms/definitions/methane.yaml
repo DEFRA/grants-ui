@@ -274,7 +274,7 @@ pages:
           <h3 class="govuk-heading-s">MSFP grant calculation</h3>
           <p class="govuk-body">This calculation is based on the following information you provided:</p>
           <ul class="govuk-list govuk-list--bullet">
-            <li>{{ cowCount }} dairy cows fed on Bovaer (at £{{ pricePerCow }} per cow per year) for {{ monthsHoused }} months whilst housed = {{ total | formatCurrency: 'en-GB', 'GBP', 0 }}</li>
+            <li>{{ cowCount }} dairy cows fed on {{ mfspSelected }} (at £{{ pricePerCow }} per cow per year) for {{ monthsHoused }} months whilst housed = {{ total | formatCurrency: 'en-GB', 'GBP', 0 }}</li>
           </ul>
           <p class="govuk-body">There’s no guarantee you’ll receive a grant</p>
 
