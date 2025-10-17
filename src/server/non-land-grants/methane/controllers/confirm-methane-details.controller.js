@@ -61,7 +61,7 @@ export default class ConfirmMethaneDetailsController extends QuestionPageControl
   }
 
   createCPHRow(countyParishHoldings) {
-    if (countyParishHoldings.length === 0) {
+    if (!countyParishHoldings || countyParishHoldings.length === 0) {
       return null
     }
 

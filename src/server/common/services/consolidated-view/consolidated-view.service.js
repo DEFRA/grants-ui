@@ -260,7 +260,7 @@ export async function fetchBusinessAndCPH(sbi, crn) {
 
   const formatResponse = (r) => ({
     business: r.data?.business?.info,
-    countyParishHoldings: r.data?.business.countyParishHoldings[0].cphNumber,
+    countyParishHoldings: r.data?.business.countyParishHoldings[0]?.cphNumber,
     customer: r.data?.customer?.info
   })
 
