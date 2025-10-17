@@ -7,6 +7,9 @@ import { transformAnswerKeysToText } from './state-to-gas-answers-mapper.js'
 import { vi } from 'vitest'
 import { mockFormsCacheService, mockHapiRequest } from '~/src/__mocks__'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
+import { handleGasApiError } from '~/src/server/common/helpers/gas-error-messages.js'
+
+vi.mock('~/src/server/common/helpers/gas-error-messages.js')
 
 const mockCacheService = mockFormsCacheService({
   getState: vi.fn().mockReturnValue({
@@ -259,6 +262,39 @@ describe('DeclarationPageController', () => {
       await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow(error)
 
       expect(mockRequest.logger.error).toHaveBeenCalledWith(error, 'Failed to submit form')
+    })
+
+    test('should handle GrantApplicationServiceApiError and show custom error page', async () => {
+      const gasError = new Error('GAS API Error')
+      gasError.name = 'GrantApplicationServiceApiError'
+      gasError.status = 429
+      submitGrantApplication.mockRejectedValue(gasError)
+
+      const mockErrorView = {
+        code: vi.fn().mockReturnThis()
+      }
+      mockH.view = vi.fn().mockReturnValue(mockErrorView)
+      handleGasApiError.mockReturnValue(mockErrorView)
+
+      const handler = controller.makePostRouteHandler()
+      const result = await handler(mockRequest, mockContext, mockH)
+
+      expect(mockRequest.logger.error).toHaveBeenCalledWith(gasError, 'Failed to submit form')
+      expect(handleGasApiError).toHaveBeenCalledWith(mockH, mockContext, gasError)
+      expect(result).toBe(mockErrorView)
+    })
+
+    test('should re-throw non-GAS errors', async () => {
+      const error = new Error('Some other error')
+      error.name = 'SomeOtherError'
+      submitGrantApplication.mockRejectedValue(error)
+
+      const handler = controller.makePostRouteHandler()
+
+      await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow(error)
+
+      expect(mockRequest.logger.error).toHaveBeenCalledWith(error, 'Failed to submit form')
+      expect(handleGasApiError).not.toHaveBeenCalled()
     })
   })
 })

@@ -16,20 +16,23 @@ export class ConfirmationService {
   }
 
   /**
-   * Load confirmation content from form definition
+   * Load confirmation content and form definition metadata
    * @param {object} form - Form object
-   * @returns {Promise<object|null>} Confirmation content object or null
+   * @returns {Promise<{confirmationContent: object|null, formDefinition: object|null}>} Confirmation content and form definition
    */
   static async loadConfirmationContent(form) {
     if (!form?.id) {
       logger.warn({ form }, 'Invalid form object provided to loadConfirmationContent')
-      return null
+      return { confirmationContent: null, formDefinition: null }
     }
 
     try {
       const service = await formsService()
       const formDefinition = await service.getFormDefinition(form.id)
-      return formDefinition?.metadata?.confirmationContent || null
+      return {
+        confirmationContent: formDefinition?.metadata?.confirmationContent || null,
+        formDefinition: formDefinition || null
+      }
     } catch (error) {
       logger.warn(
         {
@@ -39,7 +42,7 @@ export class ConfirmationService {
         },
         'Failed to load form configuration'
       )
-      return null
+      return { confirmationContent: null, formDefinition: null }
     }
   }
 
@@ -75,6 +78,7 @@ export class ConfirmationService {
    * @param {boolean} [options.isDevelopmentMode] - Whether in development mode
    * @param {object} [options.form] - Form object (optional)
    * @param {string | null} [options.slug] - Form slug (optional)
+   * @param {object} [options.formDefinition] - Form definition with metadata (optional)
    * @returns {object} View model for template
    */
   static buildViewModel({
@@ -87,14 +91,19 @@ export class ConfirmationService {
     form = null,
     slug = null
   }) {
+    const title = form.title
+    const url = `/${slug}`
+
     const baseModel = {
+      pageTitle: 'Confirmation',
       referenceNumber,
       businessName,
       sbi,
       contactName,
       confirmationContent,
-      serviceName: 'Manage land-based actions',
-      serviceUrl: '/find-funding-for-land-or-farms',
+      serviceName: title,
+      serviceUrl: url,
+      auth: {},
       breadcrumbs: []
     }
 
@@ -102,8 +111,8 @@ export class ConfirmationService {
       return {
         ...baseModel,
         isDevelopmentMode: true,
-        formTitle: form?.title,
-        formSlug: slug,
+        formTitle: title,
+        formSlug: url,
         usingSessionData: false,
         // Add dev mode user details as auth strategy is disabled for dev routes
         auth: {
@@ -123,7 +132,7 @@ export class ConfirmationService {
    * @returns {Promise<boolean>} True if form has config-driven confirmation
    */
   static async hasConfigDrivenConfirmation(form) {
-    const confirmationContent = await this.loadConfirmationContent(form)
+    const { confirmationContent } = await this.loadConfirmationContent(form)
     return !!confirmationContent
   }
 }

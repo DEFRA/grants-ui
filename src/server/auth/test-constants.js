@@ -12,8 +12,8 @@ export const TEST_CONSTANTS = {
     WHITELISTED: ['106953974', '115766011', '106380686', '110191709', '115816271']
   },
   ENV_VARS: {
-    CRN_WHITELIST: 'EXAMPLE_GRANT_WITH_AUTH_WHITELIST_CRNS',
-    SBI_WHITELIST: 'EXAMPLE_GRANT_WITH_AUTH_WHITELIST_SBIS'
+    CRN_WHITELIST: 'EXAMPLE_WHITELIST_CRNS',
+    SBI_WHITELIST: 'EXAMPLE_WHITELIST_SBIS'
   },
   PATHS: {
     START: '/example-grant/start',
@@ -46,18 +46,18 @@ export const TEST_CONSTANTS = {
   FORM_DEFINITIONS: {
     WITH_WHITELIST: {
       metadata: {
-        whitelistCrnEnvVar: 'EXAMPLE_GRANT_WITH_AUTH_WHITELIST_CRNS',
-        whitelistSbiEnvVar: 'EXAMPLE_GRANT_WITH_AUTH_WHITELIST_SBIS'
+        whitelistCrnEnvVar: 'EXAMPLE_WHITELIST_CRNS',
+        whitelistSbiEnvVar: 'EXAMPLE_WHITELIST_SBIS'
       }
     },
     WITH_CRN_ONLY: {
       metadata: {
-        whitelistCrnEnvVar: 'EXAMPLE_GRANT_WITH_AUTH_WHITELIST_CRNS'
+        whitelistCrnEnvVar: 'EXAMPLE_WHITELIST_CRNS'
       }
     },
     WITH_SBI_ONLY: {
       metadata: {
-        whitelistSbiEnvVar: 'EXAMPLE_GRANT_WITH_AUTH_WHITELIST_SBIS'
+        whitelistSbiEnvVar: 'EXAMPLE_WHITELIST_SBIS'
       }
     },
     WITHOUT_WHITELIST: {

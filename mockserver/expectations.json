@@ -1,5 +1,7 @@
 [
   {
+    "id": "applications-default-204",
+    "priority": 0,
     "httpRequest": {
       "method": "POST",
       "path": "/grants/[^/]+/applications"

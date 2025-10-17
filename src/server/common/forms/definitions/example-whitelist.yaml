@@ -1,0 +1,22 @@
+engine: V2
+name: Example Whitelist
+metadata:
+  id: 7bcafdd6-f8a7-4a31-8f98-8cd71e2c0f16
+  referenceNumberPrefix: EW
+  whitelistCrnEnvVar: EXAMPLE_WHITELIST_CRNS
+  whitelistSbiEnvVar: EXAMPLE_WHITELIST_SBIS
+pages:
+  - title: Example Whitelist
+    path: /start
+    controller: TerminalPageController
+    components:
+      - name: startInfo
+        title: Html
+        type: Html
+        content: <p class="govuk-body">If you see this page, the CRN you are using has been whitelisted for this grant application.</p>
+        id: 433902ae-69b0-4ab4-a476-5f1b6d241728
+    id: ade0d58c-d8cb-48d2-8172-5f9512c3e430
+sections: []
+lists: []
+conditions: []
+schema: 2

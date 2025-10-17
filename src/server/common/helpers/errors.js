@@ -1,6 +1,7 @@
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { badRequest, unauthorized, forbidden, notFound, conflict, badData, tooManyRequests, internal } from '@hapi/boom'
+import { config } from '~/src/config/config.js'
 
 const UNKNOWN_USER = 'unknown'
 
@@ -205,6 +206,12 @@ function logDebugInformation(request, response, statusCode, errorContext) {
 function handleClientErrors(request, response, statusCode) {
   const errorMessage = statusCodeMessage(statusCode)
 
+  // Special handling for 404s with detailed logging
+  if (statusCode === statusCodes.notFound) {
+    handle404WithContext(request, response)
+  }
+
+  // Keep existing general logging
   log(LogCodes.SYSTEM.SERVER_ERROR, {
     error: response?.message || errorMessage,
     statusCode,
@@ -213,7 +220,100 @@ function handleClientErrors(request, response, statusCode) {
   })
 }
 
+/**
+ * Parse resource path to determine type and context
+ * @param {string} path - Request path
+ * @param {object} response - Response object
+ * @returns {{type: string, identifier: string, reason: string}}
+ */
+function parseResourcePath(path, response) {
+  const errorMsg = response?.message || ''
+
+  // Form pattern: /form-slug/page
+  const formMatch = path.match(/^\/([^/]+)\//)
+  if (formMatch && errorMsg.includes('Form')) {
+    return {
+      type: 'form',
+      identifier: formMatch[1],
+      reason:
+        errorMsg.includes('not enabled') || errorMsg.includes('not available') ? 'disabled_in_production' : 'not_found'
+    }
+  }
+
+  // Tasklist pattern: /tasklist/tasklist-id
+  const tasklistMatch = path.match(/^\/tasklist\/([^/]+)/)
+  if (tasklistMatch || errorMsg.includes('Tasklist')) {
+    return {
+      type: 'tasklist',
+      identifier: tasklistMatch?.[1] || 'unknown',
+      reason: errorMsg.includes('not available') ? 'disabled_in_production' : 'not_found'
+    }
+  }
+
+  return { type: 'page', identifier: path, reason: 'not_found' }
+}
+
+/**
+ * Handle 404 errors with detailed context logging
+ * @param {AnyRequest} request
+ * @param {object} response
+ */
+function handle404WithContext(request, response) {
+  const path = request.path || 'unknown'
+  const userId = request.auth?.credentials?.contactId || 'anonymous'
+  const sbi = request.auth?.credentials?.sbi || 'unknown'
+  const referer = request.headers?.referer || 'none'
+  const userAgent = request.headers?.['user-agent'] || 'unknown'
+  const environment = config.get('cdpEnvironment')
+
+  // Parse the path to determine resource type
+  const resourceInfo = parseResourcePath(path, response)
+
+  switch (resourceInfo.type) {
+    case 'form':
+      log(LogCodes.RESOURCE_NOT_FOUND.FORM_NOT_FOUND, {
+        slug: resourceInfo.identifier,
+        userId,
+        sbi,
+        referer,
+        userAgent,
+        reason: resourceInfo.reason,
+        environment
+      })
+      break
+
+    case 'tasklist':
+      log(LogCodes.RESOURCE_NOT_FOUND.TASKLIST_NOT_FOUND, {
+        tasklistId: resourceInfo.identifier,
+        userId,
+        sbi,
+        referer,
+        userAgent,
+        reason: resourceInfo.reason,
+        environment
+      })
+      break
+
+    default:
+      log(LogCodes.RESOURCE_NOT_FOUND.PAGE_NOT_FOUND, {
+        path,
+        userId,
+        sbi,
+        referer,
+        userAgent
+      })
+  }
+}
+
 function renderErrorView(h, errorMessage, statusCode) {
+  if (statusCode === statusCodes.notFound) {
+    return h
+      .view('page-not-found', {
+        pageTitle: errorMessage
+      })
+      .code(statusCode)
+  }
+
   return h
     .view('error/index', {
       pageTitle: errorMessage,

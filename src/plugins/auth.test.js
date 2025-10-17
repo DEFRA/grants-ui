@@ -1016,16 +1016,17 @@ describe('Auth Plugin', () => {
         crn: '12345',
         name: 'John Doe',
         organisationId: '987654',
-        organisationName: 'Farm 1'
+        organisationName: 'Farm 1',
+        relationshipId: '123456'
       })
     })
 
     test('should handle multiple relationships and find correct current one', async () => {
       const relationships = [
-        '123456:987654:Farm 1:1234567890:relationship:relationshipLoa',
-        '789012:555666:Farm 2:9876543210:relationship:relationshipLoa'
+        '123456-farm-1:987654:Farm 1:1234567890:relationship:relationshipLoa',
+        '789012-farm-2:555666:Farm 2:9876543210:relationship:relationshipLoa'
       ]
-      const currentRelationshipId = '123456'
+      const currentRelationshipId = '123456-farm-1'
       server.route(createTestRoute(currentRelationshipId, relationships))
 
       const response = await server.inject({
@@ -1042,7 +1043,8 @@ describe('Auth Plugin', () => {
         crn: '12345',
         name: 'John Doe',
         organisationId: '987654',
-        organisationName: 'Farm 1'
+        organisationName: 'Farm 1',
+        relationshipId: '123456-farm-1'
       })
     })
 
@@ -1060,8 +1062,8 @@ describe('Auth Plugin', () => {
     })
 
     test('should handle different organisation details', async () => {
-      const relationships = ['123456:111222:Test Organisation:5555555555:relationship:relationshipLoa']
-      const currentRelationshipId = '123456'
+      const relationships = ['123456-farm1:111222:Test Organisation:5555555555:relationship:relationshipLoa']
+      const currentRelationshipId = '123456-farm1'
       server.route(createTestRoute(currentRelationshipId, relationships))
 
       const response = await server.inject({
@@ -1078,7 +1080,8 @@ describe('Auth Plugin', () => {
         crn: '12345',
         name: 'John Doe',
         organisationId: '111222',
-        organisationName: 'Test Organisation'
+        organisationName: 'Test Organisation',
+        relationshipId: '123456-farm1'
       })
     })
 

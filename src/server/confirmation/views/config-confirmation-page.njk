@@ -1,6 +1,7 @@
 {% extends "layouts/page.njk" %}
 {% set backLink = false %}
 {% from "govuk/components/panel/macro.njk" import govukPanel %}
+{% from "govuk/components/details/macro.njk" import govukDetails %}
 
 {% set mainClasses = "govuk-main-wrapper--l" %}
 
@@ -45,6 +46,8 @@
         {{ confirmationContent.html | safe }}
       {% else %}
         {# Default content from image if no configuration provided #}
+        <p class="govuk-body">It may be useful to write down your application number, so you have it ready if you need to contact us.</p>
+
         <h2 class="govuk-heading-m">What happens next</h2>
         <p class="govuk-body">Defra will email you when your funding offer is available to review. This will be within 5 working days.</p>
         <p class="govuk-body">You will need to sign in to the service to accept your funding offer.</p>
@@ -54,9 +57,10 @@
           <li>the Rural Payments Agency confirms your start date</li>
         </ul>
 
-        <p class="govuk-body">
-          <a class="govuk-link" href="#">If you have a question</a>
-        </p>
+        {{ govukDetails({
+          summaryText: "If you have a question",
+          html: "<p class='govuk-body'>Contact the Rural Payments Agency.</p>"
+        }) }}
       {% endif %}
     </div>
   </div>

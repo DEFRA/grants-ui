@@ -53,9 +53,13 @@ describe('demo-confirmation.handler', () => {
   describe('demo confirmation handler', () => {
     test('should render demo confirmation page for valid form', async () => {
       const processedConfirmationContent = { html: '<h2>Processed demo content</h2>' }
+      const mockFormDefinition = { metadata: { confirmationContent: mockConfirmationContent } }
 
       ConfirmationService.findFormBySlug.mockReturnValue(mockForm)
-      ConfirmationService.loadConfirmationContent.mockResolvedValue(mockConfirmationContent)
+      ConfirmationService.loadConfirmationContent.mockResolvedValue({
+        confirmationContent: mockConfirmationContent,
+        formDefinition: mockFormDefinition
+      })
       ConfirmationService.processConfirmationContent.mockReturnValue(processedConfirmationContent)
       ConfirmationService.buildViewModel.mockReturnValue({ test: 'viewModel' })
 
@@ -69,7 +73,8 @@ describe('demo-confirmation.handler', () => {
         confirmationContent: processedConfirmationContent,
         isDevelopmentMode: true,
         form: mockForm,
-        slug: 'test-form'
+        slug: 'test-form',
+        formDefinition: mockFormDefinition
       })
       expect(mockH.view).toHaveBeenCalledWith('confirmation/views/config-confirmation-page', { test: 'viewModel' })
     })
@@ -90,7 +95,10 @@ describe('demo-confirmation.handler', () => {
       }
 
       ConfirmationService.findFormBySlug.mockReturnValue(mockForm)
-      ConfirmationService.loadConfirmationContent.mockResolvedValue(null)
+      ConfirmationService.loadConfirmationContent.mockResolvedValue({
+        confirmationContent: null,
+        formDefinition: null
+      })
       ConfirmationService.processConfirmationContent.mockReturnValue(fallbackConfirmationContent)
       ConfirmationService.buildViewModel.mockReturnValue({ test: 'viewModel' })
 
@@ -104,7 +112,8 @@ describe('demo-confirmation.handler', () => {
         }),
         isDevelopmentMode: true,
         form: mockForm,
-        slug: 'test-form'
+        slug: 'test-form',
+        formDefinition: null
       })
     })
 

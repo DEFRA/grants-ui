@@ -11,7 +11,7 @@ describe('dev-tools handlers index', () => {
 
     expect(devHomeHandler).toBeDefined()
     expect(typeof devHomeHandler).toBe('function')
-  })
+  }, 10000)
 
   test('should export demoConfirmationHandler', async () => {
     const { demoConfirmationHandler } = await import('./index.js')

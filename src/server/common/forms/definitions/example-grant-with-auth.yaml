@@ -4,8 +4,6 @@ metadata:
   id: 9f9c5ec4-e237-4e6e-b67c-f232a6377d76
   enabledInProd: false
   referenceNumberPrefix: EGWA
-  whitelistCrnEnvVar: EXAMPLE_GRANT_WITH_AUTH_WHITELIST_CRNS
-  whitelistSbiEnvVar: EXAMPLE_GRANT_WITH_AUTH_WHITELIST_SBIS
   submission:
     grantCode: example-grant-with-auth-v3
     submissionSchemaPath: ./schemas/example-grant-with-auth-submission.schema.json

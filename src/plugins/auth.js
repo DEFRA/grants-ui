@@ -266,7 +266,7 @@ export function mapPayloadToProfile(request, h) {
       (relationship) => relationship.split(':')[0] === userData.currentRelationshipId
     )
     // eslint-disable-next-line no-unused-vars
-    const [_relationshipId, organisationId, organisationName, _organisationLoa, _relationship, _relationshipLoa] =
+    const [relationshipId, organisationId, organisationName, _organisationLoa, _relationship, _relationshipLoa] =
       extractFarmDetails(currentRelationship)
 
     const existingCreds = request.auth.credentials
@@ -277,7 +277,8 @@ export function mapPayloadToProfile(request, h) {
       crn: String(userData.contactId),
       name: `${userData.firstName} ${userData.lastName}`,
       organisationId: String(organisationId),
-      organisationName
+      organisationName,
+      relationshipId: String(relationshipId)
     }
   }
 

@@ -51,7 +51,9 @@ export const router = {
       }
 
       // Generic tasklist routes
-      await server.register([createTasklistRoute('example')])
+      if (cdpEnvironment !== 'prod') {
+        await server.register([createTasklistRoute('example')])
+      }
 
       // Static assets
       await server.register([serveStaticFiles])

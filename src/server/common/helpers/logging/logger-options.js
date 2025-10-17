@@ -20,6 +20,8 @@ const formatters = {
   'pino-pretty': { transport: { target: 'pino-pretty' } }
 }
 
+const isDebugMode = logConfig.level === 'debug' || logConfig.level === 'trace'
+
 /**
  * @satisfies {Options}
  */
@@ -33,6 +35,20 @@ export const loggerOptions = {
   level: logConfig.level,
   ...formatters[logConfig.format],
   nesting: true,
+  ...(!isDebugMode && {
+    serializers: {
+      req: (req) => ({
+        id: req.id,
+        url: req.url
+      }),
+      res: (res) => ({
+        statusCode: res.statusCode
+      })
+    },
+    customRequestCompleted: (req, res, responseTime) => {
+      return `[response] ${req.method} ${req.url} ${res.statusCode} (${responseTime}ms)`
+    }
+  }),
   mixin() {
     const mixinValues = {}
     const traceId = getTraceId()

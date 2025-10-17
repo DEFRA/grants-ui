@@ -83,6 +83,7 @@ const getMinimalFallbackContext = () => ({
     sbi: null,
     name: null,
     organisationId: null,
+    relationshipId: null,
     role: null
   },
   breadcrumbs: [],
