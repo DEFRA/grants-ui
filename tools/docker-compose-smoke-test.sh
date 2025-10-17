@@ -32,7 +32,7 @@ COMPOSE_COMMAND='docker compose -f compose.yml -f compose.ci.override.yml'
 echo "Building docker compose containers..."
 eval "${COMPOSE_COMMAND} build --quiet > /dev/null 2>&1"
 echo "Starting services with docker compose..."
-eval "${COMPOSE_COMMAND} up -d --quiet-pull"
+eval "${COMPOSE_COMMAND} up -d --quiet-pull --scale grants-ui=2"
 
 echo "Waiting for services to be healthy..."
 ATTEMPTS=0
@@ -55,7 +55,7 @@ echo "Service started, now waiting for health check to pass..."
 
 ATTEMPTS=0
 
-until curl -f http://localhost:3000/health >/dev/null 2>&1; do
+until curl -skf https://localhost:4000/health >/dev/null 2>&1; do
     if [ ${ATTEMPTS} -eq ${MAX_ATTEMPTS} ]; then
         echo "Error: Timed out waiting for grants-ui service to be accessible."
         echo "--- Current Service Status ---"
@@ -64,7 +64,7 @@ until curl -f http://localhost:3000/health >/dev/null 2>&1; do
         docker compose logs grants-ui
         echo "--- Redis Service Logs ---"
         docker compose logs redis
-        docker compose down
+        eval "${COMPOSE_COMMAND} down"
         exit 1
     fi
     printf 'h'

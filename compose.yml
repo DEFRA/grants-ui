@@ -4,9 +4,6 @@ services:
     build:
       context: .
       target: ${BUILD_TARGET:-development}
-    ports:
-      - '3000:3000'
-      - '9229:9229'
     depends_on:
       redis:
         condition: service_healthy

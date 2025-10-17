@@ -553,6 +553,35 @@ A local environment with:
 docker compose up --build -d
 ```
 
+#### High-availability (HA) local proxy
+
+For local testing behind HTTPS and to simulate an HA entry point, there is an optional Nginx reverse proxy defined in `compose.ha.yml`.
+
+What it provides:
+
+- TLS termination using the self-signed certs in `nginx/certs`
+- A single HTTPS entry point for the UI at `https://localhost:4000`
+- HTTPS access to the DEFRA ID Stub at `https://localhost:4007`
+- Environment overrides so the UI talks to the proxy over HTTPS (see `compose.ha.yml` and `nginx/nginx.conf`)
+
+Start the stack with the HA proxy:
+
+```bash
+docker compose -f compose.yml -f compose.ha.yml up -d --build
+```
+
+Stop the HA stack:
+
+```bash
+docker compose -f compose.yml -f compose.ha.yml down
+```
+
+Notes:
+
+- The proxy container is `grants-ui-proxy` and uses `nginx/nginx.conf`.
+- Certificates are mounted from `nginx/certs` (`nginx.crt` and `nginx.key`). Your browser may require trusting the cert the first time you visit `https://localhost:4000`.
+- The UI container is configured with `NODE_EXTRA_CA_CERTS=/etc/ssl/certs/nginx.crt` so it trusts the proxy's certificate when calling internal HTTPS endpoints.
+
 **Authorise Snyk**
 
 Run `snyk auth` to authenticate your local machine with Snyk.
