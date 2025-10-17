@@ -61,7 +61,8 @@ describe('#errors', () => {
       url: '/non-existent-path'
     })
 
-    expect(result).toEqual(expect.stringContaining('Page not found | Manage land-based actions'))
+    expect(result).toEqual(expect.stringMatching(/<title>\s*Page not found\s*<\/title>/))
+    expect(result).toEqual(expect.stringContaining('Page not found'))
     expect(statusCode).toBe(statusCodes.notFound)
   })
 })
@@ -70,6 +71,13 @@ describe('#catchAll', () => {
   const mockErrorLogger = vi.fn()
   const mockStack = 'Mock error stack'
   const errorPage = 'error/index'
+  const mockToolkitView = vi.fn()
+  const mockToolkitCode = vi.fn()
+  const mockToolkit = {
+    view: mockToolkitView.mockReturnThis(),
+    code: mockToolkitCode.mockReturnThis()
+  }
+
   const mockRequest = (/** @type {number} */ statusCode) => ({
     response: {
       isBoom: true,
@@ -83,12 +91,6 @@ describe('#catchAll', () => {
     path: '/test-path',
     method: 'GET'
   })
-  const mockToolkitView = vi.fn()
-  const mockToolkitCode = vi.fn()
-  const mockToolkit = {
-    view: mockToolkitView.mockReturnThis(),
-    code: mockToolkitCode.mockReturnThis()
-  }
 
   beforeEach(() => {
     mockErrorLogger.mockClear()
@@ -101,10 +103,8 @@ describe('#catchAll', () => {
     catchAll(mockRequest(statusCodes.notFound), mockToolkit)
 
     expect(mockErrorLogger).not.toHaveBeenCalledWith(mockStack)
-    expect(mockToolkitView).toHaveBeenCalledWith(errorPage, {
-      pageTitle: 'Page not found',
-      heading: statusCodes.notFound,
-      message: 'Page not found'
+    expect(mockToolkitView).toHaveBeenCalledWith('page-not-found', {
+      pageTitle: 'Page not found'
     })
     expect(mockToolkitCode).toHaveBeenCalledWith(statusCodes.notFound)
   })
@@ -319,6 +319,139 @@ describe('#catchAll', () => {
   })
 })
 
+describe('#catchAll 404 Logging', () => {
+  const mockToolkit = {
+    view: vi.fn().mockReturnThis(),
+    code: vi.fn().mockReturnThis()
+  }
+
+  beforeEach(() => {
+    log.mockClear()
+  })
+
+  test('Should log form not found with context', () => {
+    const request = {
+      response: {
+        isBoom: true,
+        message: "Form 'adding-value' not found",
+        output: { statusCode: statusCodes.notFound }
+      },
+      path: '/adding-value/start',
+      method: 'GET',
+      auth: { credentials: { contactId: 'user123', sbi: '105001234' } },
+      headers: { referer: 'https://gov.uk', 'user-agent': 'Mozilla/5.0' }
+    }
+
+    catchAll(request, mockToolkit)
+
+    expect(log).toHaveBeenCalledWith(
+      expect.objectContaining({
+        level: 'info',
+        messageFunc: expect.any(Function)
+      }),
+      expect.objectContaining({
+        slug: 'adding-value',
+        userId: 'user123',
+        sbi: '105001234',
+        reason: 'not_found',
+        referer: 'https://gov.uk',
+        userAgent: 'Mozilla/5.0',
+        environment: expect.any(String)
+      })
+    )
+  })
+
+  test('Should log form disabled in production', () => {
+    const request = {
+      response: {
+        isBoom: true,
+        message: "Form 'test-grant' is not available in production",
+        output: { statusCode: statusCodes.notFound }
+      },
+      path: '/test-grant/eligibility',
+      method: 'GET',
+      auth: { credentials: { contactId: 'user456', sbi: '105009999' } },
+      headers: { referer: 'none', 'user-agent': 'Chrome' }
+    }
+
+    catchAll(request, mockToolkit)
+
+    expect(log).toHaveBeenCalledWith(
+      expect.objectContaining({
+        level: 'info',
+        messageFunc: expect.any(Function)
+      }),
+      expect.objectContaining({
+        slug: 'test-grant',
+        userId: 'user456',
+        sbi: '105009999',
+        reason: 'disabled_in_production',
+        environment: expect.any(String)
+      })
+    )
+  })
+
+  test('Should log tasklist not found with context', () => {
+    const request = {
+      response: {
+        isBoom: true,
+        message: "Tasklist 'frps-beta' not found",
+        output: { statusCode: statusCodes.notFound }
+      },
+      path: '/tasklist/frps-beta',
+      method: 'GET',
+      auth: { credentials: { contactId: 'user789', sbi: '106001111' } },
+      headers: { referer: 'none', 'user-agent': 'Safari' }
+    }
+
+    catchAll(request, mockToolkit)
+
+    expect(log).toHaveBeenCalledWith(
+      expect.objectContaining({
+        level: 'info',
+        messageFunc: expect.any(Function)
+      }),
+      expect.objectContaining({
+        tasklistId: 'frps-beta',
+        userId: 'user789',
+        sbi: '106001111',
+        reason: 'not_found',
+        environment: expect.any(String)
+      })
+    )
+  })
+
+  test('Should log generic page not found for anonymous user', () => {
+    const request = {
+      response: {
+        isBoom: true,
+        message: 'Not Found',
+        output: { statusCode: statusCodes.notFound }
+      },
+      path: '/unknown-path',
+      method: 'GET',
+      auth: undefined,
+      headers: { 'user-agent': 'curl/7.68.0' }
+    }
+
+    catchAll(request, mockToolkit)
+
+    expect(log).toHaveBeenCalledWith(
+      expect.objectContaining({
+        level: 'info',
+        messageFunc: expect.any(Function)
+      }),
+      expect.objectContaining({
+        path: '/unknown-path',
+        userId: 'anonymous',
+        sbi: 'unknown',
+        referer: 'none',
+        userAgent: 'curl/7.68.0'
+      })
+    )
+  })
+})
+
 describe('#catchAll Redirect Handling', () => {
   const mockToolkitRedirect = vi.fn()
   const mockToolkit = {
@@ -327,53 +460,35 @@ describe('#catchAll Redirect Handling', () => {
     code: vi.fn().mockReturnThis()
   }
 
+  const createRedirectRequest = (statusCode, location) => ({
+    response: {
+      isBoom: true,
+      output: {
+        statusCode,
+        headers: location ? { location } : {}
+      }
+    }
+  })
+
   beforeEach(() => {
     mockToolkitRedirect.mockClear()
   })
 
   test('should handle redirects when status code is 302 and location header is present', () => {
     const redirectUrl = '/somewhere-else'
-    const mockRequest = {
-      response: {
-        isBoom: true,
-        output: {
-          statusCode: statusCodes.redirect,
-          headers: {
-            location: redirectUrl
-          }
-        }
-      }
-    }
+    const mockRequest = createRedirectRequest(statusCodes.redirect, redirectUrl)
     catchAll(mockRequest, mockToolkit)
     expect(mockToolkitRedirect).toHaveBeenCalledWith(redirectUrl)
   })
 
   test('should not handle redirect if location header is missing', () => {
-    const mockRequest = {
-      response: {
-        isBoom: true,
-        output: {
-          statusCode: statusCodes.redirect,
-          headers: {}
-        }
-      }
-    }
+    const mockRequest = createRedirectRequest(statusCodes.redirect)
     catchAll(mockRequest, mockToolkit)
     expect(mockToolkitRedirect).not.toHaveBeenCalled()
   })
 
   test('should not handle redirect if status code is not 302', () => {
-    const mockRequest = {
-      response: {
-        isBoom: true,
-        output: {
-          statusCode: statusCodes.notFound,
-          headers: {
-            location: '/not-a-redirect'
-          }
-        }
-      }
-    }
+    const mockRequest = createRedirectRequest(statusCodes.notFound, '/not-a-redirect')
     catchAll(mockRequest, mockToolkit)
     expect(mockToolkitRedirect).not.toHaveBeenCalled()
   })
