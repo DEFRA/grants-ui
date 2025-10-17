@@ -29,7 +29,7 @@ The Grants UI service supports a comprehensive set of form input components, eac
   - Pattern matching with regex
   - Character limits
   - Required/optional configuration
-- **Example**: Applicant name field with pattern validation for letters, hyphens, and apostrophes
+- **Example**: [Example Grant – Multi Field Form (/multi-field-form)](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L320-L352) – applicant name field with pattern validation for letters, hyphens, and apostrophes
 
 #### MultilineTextField
 
@@ -39,7 +39,7 @@ The Grants UI service supports a comprehensive set of form input components, eac
   - Configurable number of rows
   - Word count limits
   - Custom validation messages
-- **Example**: Project description with 400-word limit
+- **Example**: [Example Grant – Multiline Text page (/multiline-text-field)](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L304-L319) – description prompt with a 400-word limit
 
 #### EmailAddressField
 
@@ -49,7 +49,7 @@ The Grants UI service supports a comprehensive set of form input components, eac
   - Email format validation
   - Custom validation messages
   - Required/optional configuration
-- **Example**: Applicant email with format validation
+- **Example**: [Example Grant – Multi Field Form (/multi-field-form)](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L320-L364) – applicant email with format validation
 
 #### TelephoneNumberField
 
@@ -59,7 +59,7 @@ The Grants UI service supports a comprehensive set of form input components, eac
   - Pattern matching for various phone formats
   - Autocomplete support
   - Custom validation messages
-- **Example**: Mobile number with regex pattern validation
+- **Example**: [Example Grant – Multi Field Form (/multi-field-form)](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L320-L378) – mobile number with regex pattern validation
 
 ### Selection Components
 
@@ -71,7 +71,7 @@ The Grants UI service supports a comprehensive set of form input components, eac
   - Custom validation messages
   - Option descriptions/hints
   - Conditional navigation
-- **Example**: Business type selection with conditional page routing
+- **Example**: [Example Grant – Radios page (/radios-field)](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L169-L193) – business type selection with conditional routing
 
 #### CheckboxesField
 
@@ -81,7 +81,7 @@ The Grants UI service supports a comprehensive set of form input components, eac
   - Required/optional configuration
   - Option descriptions
   - Custom validation messages
-- **Example**: Eligible items selection requiring at least one choice
+- **Example**: [Example Grant – Checkboxes page (/checkboxes-field)](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L208-L220) – multi-select list requiring at least one choice
 
 #### SelectField
 
@@ -90,7 +90,7 @@ The Grants UI service supports a comprehensive set of form input components, eac
 - **Features**:
   - Required/optional configuration
   - Custom validation messages
-- **Example**: Country selection from predefined list
+- **Example**: [Example Grant – Select page (/select-field)](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L288-L303) – dropdown populated from a predefined list
 
 #### AutocompleteField
 
@@ -100,7 +100,7 @@ The Grants UI service supports a comprehensive set of form input components, eac
   - Real-time filtering
   - Custom validation messages
   - Hint text for user guidance
-- **Example**: Country selection with type-ahead functionality
+- **Example**: [Example Grant – Autocomplete page (/autocomplete-field)](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L139-L168) – country selection with type-ahead filtering
 
 #### YesNoField
 
@@ -109,7 +109,7 @@ The Grants UI service supports a comprehensive set of form input components, eac
 - **Features**:
   - Custom validation messages
   - Conditional navigation to terminal pages
-- **Example**: Eligibility confirmation with terminal page routing
+- **Example**: [Example Grant – Yes/No page (/yes-no-field)](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L109-L123) – eligibility confirmation that can route to a terminal page
 
 ### Numeric Components
 
@@ -122,7 +122,7 @@ The Grants UI service supports a comprehensive set of form input components, eac
   - Precision control
   - Currency prefix support
   - Custom validation messages
-- **Example**: Project cost input with £ prefix and £10,000-£999,999 range
+- **Example**: [Example Grant – Number field page (/number-field)](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L226-L254) – project cost entry with £ prefix and range validation
 
 ### Date Components
 
@@ -134,7 +134,7 @@ The Grants UI service supports a comprehensive set of form input components, eac
   - Past/future date restrictions
   - Custom validation messages
   - Autocomplete control
-- **Example**: Project start date with 90-day future limit
+- **Example**: [Example Grant – Date parts page (/date-parts-field)](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L255-L269) – project start date constrained to the next 90 days
 
 #### MonthYearField
 
@@ -143,7 +143,7 @@ The Grants UI service supports a comprehensive set of form input components, eac
 - **Features**:
   - Required/optional configuration
   - Custom validation messages
-- **Example**: Planning permission month/year
+- **Example**: [Example Grant – Month & year page (/month-year-field)](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L271-L280) – planning permission month/year selector
 
 ### Address Components
 
@@ -156,7 +156,7 @@ The Grants UI service supports a comprehensive set of form input components, eac
   - Optional fields (address line 2, county)
   - Postcode validation
   - Automatic field grouping
-- **Example**: Business address with optional fields
+- **Example**: [Example Grant – Multi Field Form (/multi-field-form)](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L320-L392) – business address entry with optional lines and postcode validation
 
 ## Page Types
 
@@ -166,7 +166,7 @@ The service supports several specialized page types for different stages of the 
 
 - **Purpose**: Regular form pages with input components
 - **Features**: Component rendering, validation, navigation
-- **Example**: Individual question pages
+- **Example**: [Example Grant – Radios page (/radios-field)](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L169-L193)
 
 ### Summary Pages
 
@@ -176,7 +176,7 @@ The service supports several specialized page types for different stages of the 
   - Edit functionality
   - Change links for each section
 - **Controller**: `CheckResponsesPageController`
-- **Example**: "Check your answers" page
+- **Example**: [Example Grant – Summary page (/summary)](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L394-L397)
 
 ### Declaration Pages
 
@@ -186,7 +186,7 @@ The service supports several specialized page types for different stages of the 
   - Form submission to GAS
   - Application status management
 - **Controller**: `DeclarationPageController`
-- **Example**: "Confirm and send" page
+- **Example**: [Example Grant – Declaration page (/declaration)](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L398-L401)
 
 ### Confirmation Pages
 
@@ -197,7 +197,7 @@ The service supports several specialized page types for different stages of the 
   - Next steps information
   - Support contact details
 - **Controller**: `ConfirmationPageController`
-- **Example**: Application submitted confirmation
+- **Example**: [Example Grant – Confirmation content](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L1-L37)
 
 ### Terminal Pages
 
@@ -207,7 +207,7 @@ The service supports several specialized page types for different stages of the 
   - Eligibility messaging
   - Alternative options
 - **Controller**: `TerminalPageController`
-- **Example**: "You cannot apply" page
+- **Example**: [Example Grant – Terminal page (/terminal-page)](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L124-L138)
 
 ### Conditional Pages
 
@@ -215,7 +215,7 @@ The service supports several specialized page types for different stages of the 
 - **Features**:
   - Conditional logic
   - Dynamic content display
-- **Example**: Additional information based on previous selections
+- **Example**: [Example Grant – Conditional page (/conditional-page)](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L194-L207)
 
 ## Guidance Components
 
@@ -226,35 +226,35 @@ Guidance components provide contextual help and information without requiring us
 - **Purpose**: Custom HTML content
 - **Use Cases**: Instructions, information, warnings
 - **Features**: Full HTML support with GOV.UK Design System classes
-- **Example**: Service introduction text
+- **Example**: [Example Grant – Start page HTML (/start)](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L39-L51)
 
 ### Details Component
 
 - **Purpose**: Collapsible content sections
 - **Use Cases**: Additional information, help text
 - **Features**: Expandable/collapsible sections
-- **Example**: Component and page type lists
+- **Example**: [Example Grant – Start page details components (/start)](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L52-L88)
 
 ### InsetText Component
 
 - **Purpose**: Highlighted information boxes
 - **Use Cases**: Important notices, warnings
 - **Features**: Styled information boxes
-- **Example**: Guidance component demonstration
+- **Example**: [Example Grant – Start page inset text (/start)](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L89-L98)
 
 ### Markdown Component
 
 - **Purpose**: Markdown-formatted content
 - **Use Cases**: Rich text formatting
 - **Features**: Markdown syntax support
-- **Example**: Formatted text with bold, italic, strikethrough
+- **Example**: [Example Grant – Start page markdown (/start)](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L99-L106)
 
 ### List Component
 
 - **Purpose**: Display predefined lists
 - **Use Cases**: Reference data, options
 - **Features**: Linked to list definitions
-- **Example**: Country list for autocomplete
+- **Example**: [Example Grant – Autocomplete page list component (/autocomplete-field)](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L139-L156)
 
 ## Form Configuration
 
@@ -316,7 +316,7 @@ Guidance components provide contextual help and information without requiring us
   - Boolean value conditions
   - List item reference conditions
   - Complex logical operators
-- **Example**: Show terminal page when "No" is selected
+- **Example**: [Example Grant – Yes/No branch to terminal (/yes-no-field)](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L109-L138) when the user selects "No"
 
 ### Conditional Navigation
 
@@ -325,7 +325,7 @@ Guidance components provide contextual help and information without requiring us
   - Multiple navigation paths
   - Conditional page display
   - Dynamic form flow
-- **Example**: Different paths based on radio button selection
+- **Example**: [Example Grant – Radios page (/radios-field)](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L169-L207) with different paths per option
 
 ## Lists & Data Sources
 
@@ -337,16 +337,13 @@ Guidance components provide contextual help and information without requiring us
   - Item descriptions
   - Unique identifiers
   - Hierarchical organization
-- **Example**: Country list with ISO codes
+- **Example**: [Example Grant – Country list definition](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L404-L456)
 
 ### Dynamic Lists
 
-- **Purpose**: Runtime data loading
-- **Features**:
-  - API integration
-  - Real-time updates
-  - Caching support
-- **Example**: Dynamic scoring data
+- **Purpose**: Support journeys that need to populate options from external services
+- **Approach**: Implement custom controllers or plugin extensions to fetch data before rendering form components
+- **Example**: Not included in the Example Grant journey; other grants can integrate APIs prior to page render
 
 ## Validation & Error Handling
 
@@ -357,7 +354,7 @@ Guidance components provide contextual help and information without requiring us
   - Field-specific messages
   - Validation type-specific messages
   - Contextual guidance
-- **Example**: "Enter a country" for autocomplete field
+- **Example**: ["Enter a country" validation message on the Autocomplete page](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L157-L165)
 
 ### Schema Validation
 
@@ -367,7 +364,7 @@ Guidance components provide contextual help and information without requiring us
   - Type checking
   - Range validation
   - Pattern matching
-- **Example**: Email format validation with regex
+- **Example**: [Email format validation on the Multi Field Form](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L352-L364)
 
 ### Error Display
 
@@ -376,7 +373,7 @@ Guidance components provide contextual help and information without requiring us
   - Inline error messages
   - Error summary
   - Accessibility support
-- **Example**: Form validation with error highlighting
+- **Example**: [Example Grant – Yes/No page (/yes-no-field)](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L109-L123) uses inline errors and summaries when validation fails
 
 ## Submission & Confirmation
 
@@ -408,7 +405,7 @@ Guidance components provide contextual help and information without requiring us
   - Backend integration
   - State rehydration
   - Progress tracking
-- **Example**: Save and return functionality
+- **Example**: [StatePersistenceService integration](./src/server/common/services/state-persistence/state-persistence.service.js#L24-L74) powering save-and-return functionality
 
 ## Development Features
 
