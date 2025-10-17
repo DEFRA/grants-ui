@@ -5,6 +5,7 @@ import { config } from '~/src/config/config.js'
 import { mockFetch } from '~/src/__mocks__'
 import { getValidToken } from '~/src/server/common/helpers/entra/token-manager.js'
 import {
+  fetchBusinessAndCPH,
   fetchBusinessAndCustomerInformation,
   fetchParcelsForSbi
 } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
@@ -292,6 +293,81 @@ describe('Consolidated View Service', () => {
       })
 
       await expect(fetchParcelsForSbi(mockSbi)).rejects.toThrow('Cannot read property of undefined')
+    })
+  })
+
+  describe('fetchBusinessAndCPH', () => {
+    const mockBusinessCPHResponse = {
+      data: {
+        business: {
+          info: {
+            name: 'Test Farm',
+            vat: '123456789',
+            type: { type: 'Farmer' }
+          },
+          countyParishHoldings: [{ cphNumber: 'CPH123' }]
+        },
+        customer: {
+          info: {
+            name: { first: 'John', last: 'Doe' }
+          }
+        }
+      }
+    }
+
+    it('should fetch business and CPH information successfully', async () => {
+      mockFetchInstance.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockBusinessCPHResponse)
+      })
+
+      const result = await fetchBusinessAndCPH(mockSbi, mockCrn)
+
+      expect(mockFetchInstance).toHaveBeenCalledTimes(1)
+      expect(result).toEqual({
+        business: mockBusinessCPHResponse.data.business.info,
+        countyParishHoldings: 'CPH123',
+        customer: mockBusinessCPHResponse.data.customer.info
+      })
+
+      const [[, calledOptions]] = mockFetchInstance.mock.calls
+      const body = JSON.parse(calledOptions.body)
+      expect(body.query).toContain(`business(sbi: "${mockSbi}")`)
+      expect(body.query).toContain(`customer(crn: "${mockCrn}")`)
+    })
+
+    it('should handle missing business or CPH data gracefully', async () => {
+      const partialResponse = {
+        data: {
+          business: { info: null, countyParishHoldings: [] },
+          customer: { info: null }
+        }
+      }
+      mockFetchInstance.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(partialResponse)
+      })
+
+      const result = await fetchBusinessAndCPH(mockSbi, mockCrn)
+
+      expect(result).toEqual({
+        business: null,
+        countyParishHoldings: undefined,
+        customer: null
+      })
+    })
+
+    it('should throw error when API call fails', async () => {
+      mockFetchInstance.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        statusText: 'Internal Server Error',
+        text: () => Promise.resolve('Server error')
+      })
+
+      await expect(fetchBusinessAndCPH(mockSbi, mockCrn)).rejects.toThrow(
+        'Failed to fetch business data: 500 Internal Server Error'
+      )
     })
   })
 })

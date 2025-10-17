@@ -1,0 +1,202 @@
+{
+  "data": {
+    "business": {
+      "sbi": "106238988",
+      "organisationId": "5559799",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "0155",
+            "sheetId": "SD7946",
+            "area": 4.0383
+          },
+          {
+            "parcelId": "4509",
+            "sheetId": "SD7846",
+            "area": 0.0633
+          },
+          {
+            "parcelId": "7245",
+            "sheetId": "SD7846",
+            "area": 6.7412
+          },
+          {
+            "parcelId": "0926",
+            "sheetId": "SD7846",
+            "area": 1.7908
+          },
+          {
+            "parcelId": "9135",
+            "sheetId": "SD7846",
+            "area": 2.9989
+          },
+          {
+            "parcelId": "0638",
+            "sheetId": "SD7946",
+            "area": 0.9335
+          },
+          {
+            "parcelId": "1215",
+            "sheetId": "SD7846",
+            "area": 0.0972
+          },
+          {
+            "parcelId": "0617",
+            "sheetId": "SD7846",
+            "area": 0.7099
+          },
+          {
+            "parcelId": "7013",
+            "sheetId": "SD7846",
+            "area": 8.9902
+          },
+          {
+            "parcelId": "0155",
+            "sheetId": "SD7642",
+            "area": 1.2324
+          },
+          {
+            "parcelId": "0412",
+            "sheetId": "SD7846",
+            "area": 0.4666
+          },
+          {
+            "parcelId": "4503",
+            "sheetId": "SD7846",
+            "area": 0.7252
+          },
+          {
+            "parcelId": "5103",
+            "sheetId": "SD7846",
+            "area": 0.0585
+          },
+          {
+            "parcelId": "5197",
+            "sheetId": "SD7845",
+            "area": 0.9849
+          },
+          {
+            "parcelId": "9420",
+            "sheetId": "SD7746",
+            "area": 0.1854
+          },
+          {
+            "parcelId": "2147",
+            "sheetId": "SD7946",
+            "area": 2.5796
+          },
+          {
+            "parcelId": "1533",
+            "sheetId": "SD7946",
+            "area": 3.2249
+          },
+          {
+            "parcelId": "9538",
+            "sheetId": "SD7542",
+            "area": 1.2224
+          },
+          {
+            "parcelId": "2024",
+            "sheetId": "SD7846",
+            "area": 0.8704
+          },
+          {
+            "parcelId": "8954",
+            "sheetId": "SD7846",
+            "area": 2.5109
+          },
+          {
+            "parcelId": "5637",
+            "sheetId": "SD7846",
+            "area": 3.5502
+          },
+          {
+            "parcelId": "8408",
+            "sheetId": "SD7746",
+            "area": 7.2496
+          },
+          {
+            "parcelId": "1162",
+            "sheetId": "SD7946",
+            "area": 2.2103
+          },
+          {
+            "parcelId": "0345",
+            "sheetId": "SD7642",
+            "area": 2.3867
+          },
+          {
+            "parcelId": "4510",
+            "sheetId": "SD7846",
+            "area": 0.0368
+          },
+          {
+            "parcelId": "5112",
+            "sheetId": "SD7846",
+            "area": 0.4277
+          },
+          {
+            "parcelId": "4624",
+            "sheetId": "SD7846",
+            "area": 3.4107
+          },
+          {
+            "parcelId": "4156",
+            "sheetId": "SD7946",
+            "area": 5.1567
+          },
+          {
+            "parcelId": "5465",
+            "sheetId": "SD7946",
+            "area": 1.2932
+          },
+          {
+            "parcelId": "2533",
+            "sheetId": "SD7946",
+            "area": 0.1052
+          }
+        ]
+      },
+      "info": {
+        "name": "T G MORTIMER AND SON",
+        "reference": "5464386611",
+        "email": {
+          "address": "cliffspencetasabbeyfarmf@mrafyebbasatecnepsffilcm.com.test"
+        },
+        "phone": {
+          "mobile": "01234031670"
+        },
+        "address": {
+          "line1": "Higher Greenhead Farm, Gisburn Road",
+          "line2": "",
+          "line3": null,
+          "line4": null,
+          "line5": null,
+          "street": "Gisburn Road",
+          "city": "Clitheroe",
+          "postalCode": "BB7 4LQ"
+        },
+        "vat": "345456782",
+        "type": {
+          "code": 101443,
+          "type": "Farmer"
+        }
+      },
+      "countyParishHoldings": [
+        {
+          "cphNumber": "06/593/4729"
+        }
+      ]
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Miss",
+          "first": "Sarah",
+          "middle": "A",
+          "last": "Farmer"
+        }
+      }
+    }
+  }
+}
