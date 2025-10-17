@@ -128,6 +128,18 @@ Whitelisting restricts access to specific grant journeys based on Customer Refer
 - **MongoDB**: Document database used by the backend service for storing application data
 - **FFC Grants Scoring**: External scoring service (`defradigital/ffc-grants-scoring`) for grant evaluation
 - **MockServer**: API mocking service for development and testing with predefined expectations
+- **Defra ID Stub**: Local OpenID Connect provider used to mimic Defra ID authentication flows
+
+```mermaid
+graph TD
+  User[Browser / User] -->|HTTP :3000| UI[Grants UI]
+  UI -->|Session data| Redis[(Redis)]
+  UI -->|State API| Backend[Grants UI Backend]
+  Backend -->|Persist/Fetch| Mongo[(MongoDB)]
+  UI -->|Scoring request| Scoring[FFC Grants Scoring]
+  Scoring --> MockServer[MockServer]
+  UI -.->|OIDC flows| DefraID[Defra ID Stub]
+```
 
 For complete service configuration and setup, see [Docker Compose](#docker-compose) section.
 
@@ -208,6 +220,24 @@ When a user is authenticated, the service:
 - Checks for existing cache
 - If there is none, fetches data from the Grants UI Backend service (which persists data to Mongo)
 - Performs session rehydration
+
+```mermaid
+sequenceDiagram
+  participant U as Authenticated User
+  participant UI as Grants UI
+  participant R as Redis cache
+  participant B as Grants UI Backend
+  participant M as MongoDB
+
+  U->>UI: Request page / resume journey
+  UI->>R: Check for cached session state
+  R-->>UI: Cache miss
+  UI->>B: GET /state?sbi&grantCode
+  B->>M: Query persisted state
+  M-->>B: Stored state payload
+  B-->>UI: Rehydrated state JSON
+  UI->>UI: Restore session & continue journey
+```
 
 ### Configuration
 
