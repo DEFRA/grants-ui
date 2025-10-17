@@ -18,7 +18,7 @@
     "docker:down": "docker compose down --remove-orphans",
     "docker:reset": "docker compose down --volumes --remove-orphans",
     "docker:rebuild": "docker compose down --volumes --remove-orphans && docker compose build --no-cache && docker compose up -d",
-    "docker:ha:up": "docker compose -f compose.yml -f compose.ha.yml up --build -d --scale grants-ui=2",
+    "docker:ha:up": "docker compose -f compose.yml -f compose.ha.yml up --build -d --scale grants-ui=2 --scale grants-ui-backend=2",
     "docker:ha:down": "docker compose -f compose.yml -f compose.ha.yml down --remove-orphans",
     "format": "prettier --write \"src/**/*.js\" \"**/*.{js,cjs,md,json,config.js,test.js,contract.test.js}\"",
     "json:format:single": "npx prettier --write",

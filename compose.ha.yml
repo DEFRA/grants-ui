@@ -27,6 +27,10 @@ services:
     volumes:
       - ./nginx/certs:/etc/ssl/certs:ro
 
+  grants-ui-backend:
+    expose:
+      - "3001"
+
   fcp-defra-id-stub:
     environment:
       WELL_KNOWN_HOST_OVERRIDE: https://localhost:4007

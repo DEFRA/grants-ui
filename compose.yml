@@ -66,13 +66,12 @@ services:
   grants-ui-backend:
     image: defradigital/grants-ui-backend
     pull_policy: always
-    ports:
-      - '3001:3001'
     depends_on:
       mongodb:
         condition: service_healthy
     environment:
       PORT: 3001
+      HOST: 0.0.0.0
       NODE_ENV: development
       MONGO_URI: mongodb://mongodb:27017/
       GRANTS_UI_BACKEND_AUTH_TOKEN: ${GRANTS_UI_BACKEND_AUTH_TOKEN:-auth_token}

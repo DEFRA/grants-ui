@@ -32,7 +32,7 @@ COMPOSE_COMMAND='docker compose -f compose.yml -f compose.ha.yml -f compose.ci.y
 echo "Building docker compose containers..."
 eval "${COMPOSE_COMMAND} build --quiet > /dev/null 2>&1"
 echo "Starting services with docker compose..."
-eval "${COMPOSE_COMMAND} up -d --quiet-pull --scale grants-ui=2"
+eval "${COMPOSE_COMMAND} up -d --quiet-pull --scale grants-ui=2 --scale grants-ui-backend=2"
 
 echo "Waiting for services to be healthy..."
 ATTEMPTS=0

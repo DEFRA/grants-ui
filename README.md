@@ -711,6 +711,7 @@ For local testing behind HTTPS and to simulate an HA entry point, there is an op
 
 What it provides:
 
+- Scalability of `grants-ui` and `grants-ui-backend` using `docker compose --scale`
 - TLS termination using the self-signed certs in `nginx/certs`
 - A single HTTPS entry point for the UI at `https://localhost:4000`
 - HTTPS access to the DEFRA ID Stub at `https://localhost:4007`
@@ -719,7 +720,7 @@ What it provides:
 Start the stack with the HA proxy:
 
 ```bash
-docker compose -f compose.yml -f compose.ha.yml up -d --build
+docker compose -f compose.yml -f compose.ha.yml up -d --build --scale grants-ui=2 --scale grants-ui-backend=2
 ```
 
 Stop the HA stack:
