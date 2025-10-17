@@ -123,3 +123,15 @@ export async function submitGrantApplication(code, payload) {
   const url = `${GAS_API_ENDPOINT}/grants/${code}/applications`
   return makeGasApiRequest(url, code, { method: 'POST', payload })
 }
+
+/**
+ * Fetches the status of a specific application from GAS
+ * @param {string} code - Grant code
+ * @param {string} clientRef - Application client reference
+ * @returns {Promise<object|null>} - Status JSON from GAS, or null if not found
+ * @throws {GrantApplicationServiceApiError} - If the API request fails
+ */
+export async function getApplicationStatus(code, clientRef) {
+  const url = `${GAS_API_ENDPOINT}/grants/${code}/applications/${clientRef}/status`
+  return makeGasApiRequest(url, code, { method: 'GET' })
+}
