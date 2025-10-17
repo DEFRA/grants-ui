@@ -292,6 +292,7 @@ Guidance components provide contextual help and information without requiring us
   - JWT token validation
   - User session management
   - Automatic redirect handling
+- **Example**: [Auth plugin registration with Defra ID support](./src/plugins/auth.js#L91-L114)
 
 ### Whitelist System
 
@@ -299,6 +300,7 @@ Guidance components provide contextual help and information without requiring us
 - **SBI Whitelisting**: Single Business Identifier validation
 - **Environment Variables**: Configurable whitelist management
 - **Access Control**: Grant-specific access restrictions
+- **Example**: [Example Whitelist definition and metadata](./src/server/common/forms/definitions/example-whitelist.yaml#L1-L18)
 
 ### Session Management
 
@@ -343,7 +345,7 @@ Guidance components provide contextual help and information without requiring us
 
 - **Purpose**: Support journeys that need to populate options from external services
 - **Approach**: Implement custom controllers or plugin extensions to fetch data before rendering form components
-- **Example**: Not included in the Example Grant journey; other grants can integrate APIs prior to page render
+- **Example**: [Adding Value – Score results page fetches scoring data on load](./src/server/common/forms/definitions/adding-value.yaml#L862-L870)
 
 ## Validation & Error Handling
 
@@ -386,6 +388,7 @@ Guidance components provide contextual help and information without requiring us
   - Reference number generation
   - Status tracking
 - **Process**: Declaration → Submission → Confirmation
+- **Example**: [DeclarationPageController submission workflow](./src/server/declaration/declaration.controller.js#L51-L126)
 
 ### Confirmation System
 
@@ -396,6 +399,7 @@ Guidance components provide contextual help and information without requiring us
   - Next steps guidance
   - Support information
 - **Configuration**: YAML-based confirmation content
+- **Example**: [ConfirmationPageController renders confirmation view](./src/server/confirmation/confirmation.controller.js#L17-L63)
 
 ### State Management
 
@@ -418,6 +422,7 @@ Guidance components provide contextual help and information without requiring us
   - Debug information
   - Mock data support
 - **Access**: Development environment only
+- **Example**: [Dev tools plugin registering development routes](./src/server/dev-tools/index.js#L1-L120)
 
 ### Testing Support
 
@@ -427,7 +432,7 @@ Guidance components provide contextual help and information without requiring us
   - Integration testing
   - Mock services
   - Test data management
-- **Example**: Vitest-based test suite
+- **Example**: [Vitest scripts defined in package.json](./package.json#L30-L34)
 
 ## Best Practices
 
