@@ -1,7 +1,6 @@
-name: Grants
+name: Methane Grant
 metadata:
   id: 95e92559-968d-44ae-8666-2b1ad3dffd34
-  enabledInProd: true
   submission:
     grantCode: methane
   confirmationContent:
@@ -31,7 +30,7 @@ metadata:
         </div>
       </details>
 pages:
-  - title: Apply for a menthane suppressant feed product (MSFP) grant
+  - title: Apply for a methane suppressant feed product (MSFP) grant
     path: /start
     controller: StartPageController
     components:
