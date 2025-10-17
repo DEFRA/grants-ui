@@ -1,70 +1,79 @@
+x-grants-ui-common: &grants-ui-common
+  build:
+    context: .
+    target: ${BUILD_TARGET:-development}
+  depends_on:
+    redis:
+      condition: service_healthy
+    grants-ui-backend:
+      condition: service_started
+    ffc-grants-scoring:
+      condition: service_started
+    fcp-defra-id-stub:
+      condition: service_healthy
+  environment:
+    PORT: 3000
+    NODE_ENV: ${NODE_ENV:-development}
+    ENVIRONMENT: local
+    REDIS_HOST: redis
+    USE_SINGLE_INSTANCE_CACHE: true
+    SESSION_CACHE_ENGINE: redis
+    REDIS_KEY_PREFIX: "grants-ui:"
+    SESSION_CACHE_NAME: session
+    REDIS_CONNECT_TIMEOUT: 30000
+    REDIS_RETRY_DELAY: 1000
+    REDIS_MAX_RETRIES: 10
+    REDIS_USERNAME: ""
+    REDIS_PASSWORD: ""
+    LOG_LEVEL: ${LOG_LEVEL:-info}
+    SESSION_COOKIE_PASSWORD: "53409gjhfcdiklgjidfglkgjidfglkelrku634"
+    SESSION_COOKIE_TTL: 2419200000
+    SESSION_CACHE_TTL: 14400000
+    FEEDBACK_LINK: "mailto:defraforms@defra.gov.uk"
+    CV_API_MOCK_ENABLED: ${CV_API_MOCK_ENABLED:-true}
+    DEFRA_ID_WELL_KNOWN_URL: ${DEFRA_ID_WELL_KNOWN_URL:-http://fcp-defra-id-stub:3007/idphub/b2c/b2c_1a_cui_cpdev_signupsigninsfi/.well-known/openid-configuration}
+    DEFRA_ID_CLIENT_ID: ${DEFRA_ID_CLIENT_ID:-client_id}
+    DEFRA_ID_CLIENT_SECRET: ${DEFRA_ID_CLIENT_SECRET:-client_secret}
+    DEFRA_ID_SERVICE_ID: ${DEFRA_ID_SERVICE_ID:-service_id}
+    DEFRA_ID_REDIRECT_URL: ${DEFRA_ID_REDIRECT_URL:-http://localhost:3000/auth/sign-in-oidc}
+    DEFRA_ID_SIGN_OUT_REDIRECT_URL: ${DEFRA_ID_SIGN_OUT_REDIRECT_URL:-http://localhost:3000/auth/sign-out-oidc}
+    COOKIE_PASSWORD: ${COOKIE_PASSWORD}
+    GRANTS_UI_BACKEND_URL: ${GRANTS_UI_BACKEND_URL:-http://grants-ui-backend:3001}
+    GRANTS_UI_BACKEND_AUTH_TOKEN: ${GRANTS_UI_BACKEND_AUTH_TOKEN:-auth_token}
+    GRANTS_UI_BACKEND_ENCRYPTION_KEY: ${GRANTS_UI_BACKEND_ENCRYPTION_KEY:-encryption_key}
+    APP_BASE_URL: ${APP_BASE_URL:-http://localhost:3000}
+    HOST: 0.0.0.0
+    GAS_API_URL: http://mockserver:1080
+    EXAMPLE_WHITELIST_CRNS: 1100957269,1100953760
+    EXAMPLE_WHITELIST_SBIS: 107593059,108633093
+    FARMING_PAYMENTS_WHITELIST_CRNS: 1102838829, 1102760349, 1100495932
+    FARMING_PAYMENTS_WHITELIST_SBIS: 106284736, 121428499, 106238988
+  volumes:
+    - ./src:/home/node/src
+    - /home/node/node_modules
+  networks:
+    - grants-ui-net
+  restart: unless-stopped
+  healthcheck:
+    test: ["CMD-SHELL", "ps aux | grep 'node .' | grep -v grep || exit 1"]
+    interval: 10s
+    timeout: 5s
+    retries: 6
+    start_period: 60s
+
 services:
 
   grants-ui:
-    build:
-      context: .
-      target: ${BUILD_TARGET:-development}
+    <<: *grants-ui-common
     ports:
       - '3000:3000'
       - '9229:9229'
-    depends_on:
-      redis:
-        condition: service_healthy
-      grants-ui-backend:
-        condition: service_started
-      ffc-grants-scoring:
-        condition: service_started
-      fcp-defra-id-stub:
-        condition: service_healthy
-    environment:
-      PORT: 3000
-      NODE_ENV: ${NODE_ENV:-development}
-      ENVIRONMENT: local
-      REDIS_HOST: redis
-      USE_SINGLE_INSTANCE_CACHE: true
-      SESSION_CACHE_ENGINE: redis
-      REDIS_KEY_PREFIX: "grants-ui:"
-      SESSION_CACHE_NAME: session
-      REDIS_CONNECT_TIMEOUT: 30000
-      REDIS_RETRY_DELAY: 1000
-      REDIS_MAX_RETRIES: 10
-      REDIS_USERNAME: ""
-      REDIS_PASSWORD: ""
-      LOG_LEVEL: ${LOG_LEVEL:-info}
-      SESSION_COOKIE_PASSWORD: "53409gjhfcdiklgjidfglkgjidfglkelrku634"
-      SESSION_COOKIE_TTL: 2419200000
-      SESSION_CACHE_TTL: 14400000
-      FEEDBACK_LINK: "mailto:defraforms@defra.gov.uk"
-      CV_API_MOCK_ENABLED: ${CV_API_MOCK_ENABLED:-true}
-      DEFRA_ID_WELL_KNOWN_URL: ${DEFRA_ID_WELL_KNOWN_URL:-http://fcp-defra-id-stub:3007/idphub/b2c/b2c_1a_cui_cpdev_signupsigninsfi/.well-known/openid-configuration}
-      DEFRA_ID_CLIENT_ID: ${DEFRA_ID_CLIENT_ID:-client_id}
-      DEFRA_ID_CLIENT_SECRET: ${DEFRA_ID_CLIENT_SECRET:-client_secret}
-      DEFRA_ID_SERVICE_ID: ${DEFRA_ID_SERVICE_ID:-service_id}
-      DEFRA_ID_REDIRECT_URL: ${DEFRA_ID_REDIRECT_URL:-http://localhost:3000/auth/sign-in-oidc}
-      DEFRA_ID_SIGN_OUT_REDIRECT_URL: ${DEFRA_ID_SIGN_OUT_REDIRECT_URL:-http://localhost:3000/auth/sign-out-oidc}
-      COOKIE_PASSWORD: ${COOKIE_PASSWORD}
-      GRANTS_UI_BACKEND_URL: ${GRANTS_UI_BACKEND_URL:-http://grants-ui-backend:3001}
-      GRANTS_UI_BACKEND_AUTH_TOKEN: ${GRANTS_UI_BACKEND_AUTH_TOKEN:-auth_token}
-      GRANTS_UI_BACKEND_ENCRYPTION_KEY: ${GRANTS_UI_BACKEND_ENCRYPTION_KEY:-encryption_key}
-      APP_BASE_URL: ${APP_BASE_URL:-http://localhost:3000}
-      HOST: 0.0.0.0
-      GAS_API_URL: http://mockserver:1080
-      EXAMPLE_WHITELIST_CRNS: 1100957269,1100953760
-      EXAMPLE_WHITELIST_SBIS: 107593059,108633093
-      FARMING_PAYMENTS_WHITELIST_CRNS: 1102838829, 1102760349, 1100495932
-      FARMING_PAYMENTS_WHITELIST_SBIS: 106284736, 121428499, 106238988
-    volumes:
-      - ./src:/home/node/src
-      - /home/node/node_modules
-    networks:
-      - grants-ui-net
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "ps aux | grep 'node .' | grep -v grep || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 6
-      start_period: 60s
+
+  grants-ui-2:
+    <<: *grants-ui-common
+    ports:
+      - '3003:3000'
+      - '9230:9229'
 
   grants-ui-backend:
     image: defradigital/grants-ui-backend
