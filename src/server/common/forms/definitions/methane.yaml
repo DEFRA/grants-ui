@@ -30,7 +30,7 @@ metadata:
         </div>
       </details>
 pages:
-  - title: Apply for a methane suppressant feed product (MSFP) grant
+  - title: Apply for a methane suppressant feed product (MSFP) grant for dairy cows
     path: /start
     controller: StartPageController
     components:
@@ -38,32 +38,36 @@ pages:
         title: Html
         type: Html
         content: >-
-          <p class="govuk-body">Use this service to apply for help to buy MSFP products to feed dairy cattle in England.</p>
-          <p class="govuk-body">The annual MSFP grant allows you to make quarterly claims to cover the cost of eligible products to help farms reach carbon targets.</p>
-          <p class="govuk-body">They cover the cost of feeding housed dairy cattle with the potential to help reduce UK agricultural carbon emissions by up to one-third.</p>
+          <p class="govuk-body">Use this service to apply for help to buy methane suppressant feed products (MSFP) to feed dairy cows on land in England.</p>
+          <p class="govuk-body">This annual grant allows you to make quarterly claims to cover the cost of eligible products and feeding MSFPs to dairy cows while they’re housed.</p>
+          <p class="govuk-body">The grant will help farms reach carbon targets and has the potential to reduce UK agricultural carbon emissions by up to one-third.</p>
           <h2 class="govuk-heading-s">Applications open:<span class="govuk-body"> midnight, 28 February 2026</span></h2>
           <h2 class="govuk-heading-s">Applications close:<span class="govuk-body"> midday, 31 May 2026 </span></h2>
           <h2 class="govuk-heading-s">First quarterly payments:<span class="govuk-body"> from 1 September 2026 </span></h2>
           <h2 class="govuk-heading-m">Before you apply</h2>
           <p class="govuk-body">You must have <a href="https://www.gov.uk/guidance/update-personal-and-business-details-in-the-rural-payments-service" class="govuk-link">registered with the Rural Payments service </a> to apply.</p>
           <p class="govuk-body">You can apply for someone else if they've given you permission to apply on their behalf in the Rural Payments service.</p>
-          <p class="govuk-body">To see which products are eligible for help check the Methane suppressant feed product list.</p>
+          <p class="govuk-body">To see which MSFPs are eligible for the grant check our Methane suppressant feed product list. </p>
           <h2 class="govuk-heading-m">Before you start</h2>
           <p class="govuk-body">If you apply, you’ll need:</p>
-          <p class="govuk-body">Your Rural Payments service customer reference number (CRN) and password your county parish holding (CPH) number details of the MSFP you're buying - including amounts, supplier details and <span class="govuk-heading-s">quotes</span> </p>
+          <ul class="govuk-list govuk-list--bullet">
+              <li>your Rural Payments service customer reference number (CRN) and password</li>
+              <li>your number of dairy cows </li>
+              <li>details of the MSFP you’ll be using</li>
+          </ul>
           <p class="govuk-body">We’ll also ask you to check and confirm the following details from the Rural Payments service:</p>
           <ul class="govuk-list govuk-list--bullet">
-              <li>agent details (if you're applying on someone's behalf)</li>
               <li>applicant details</li>
               <li>organisation name, address and contact details</li>
               <li>organisation type - for example, a limited company</li>
               <li>registration numbers like <a href="https://find-and-update.company-information.service.gov.uk/" class="govuk-link">company registration number</a> and VAT registration number </li>
-              <li>land details including size of your land in hectares</li>
+              <li>county parish holding (CPH) number</li>
           </ul>
           <h2 class="govuk-heading-m">How we use this information</h2>
           <p class="govuk-body">We use this information to:</p>
           <ul class="govuk-list govuk-list--bullet">
-              <li class="govuk-body">identify you and your organisation do due diligence checks and prevent fraud</li>
+              <li class="govuk-body">identify you and your organisation</li>
+              <li>carry out due diligence checks to prevent fraud</li>
           </ul>
           <h2 class="govuk-heading-s">Help using the service</h2>
           <p class="govuk-body">If you need help or want to report a problem contact</p>
