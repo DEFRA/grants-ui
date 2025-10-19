@@ -1,7 +1,13 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
+import {
+  createAddressRow,
+  createBusinessNameRow,
+  createContactDetailsRow,
+  createCustomerNameRow,
+  createSbiRow
+} from '~/src/server/common/helpers/create-rows.js'
 import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
 import { fetchBusinessAndCPH } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
-import { formatPhone } from '~/src/server/land-grants/utils/format-phone.js'
 
 const logger = createLogger()
 
@@ -36,11 +42,11 @@ export default class ConfirmMethaneDetailsController extends QuestionPageControl
     const data = await fetchBusinessAndCPH(sbi, crn)
 
     const rows = [
-      this.createCustomerNameRow(data.customer?.name),
-      this.createBusinessNameRow(data.business?.name),
-      this.createSbiRow(sbi),
-      this.createContactDetailsRow(data.business?.phone?.mobile, data.business?.email?.address),
-      this.createAddressRow(data.business?.address),
+      createCustomerNameRow(data.customer?.name),
+      createBusinessNameRow(data.business?.name),
+      createSbiRow(sbi),
+      createContactDetailsRow(data.business?.phone?.mobile, data.business?.email?.address),
+      createAddressRow(data.business?.address),
       this.createTypeRow(data.business?.type),
       this.createCPHRow(data.countyParishHoldings),
       this.createVATRow(data.business?.vat)
@@ -70,102 +76,6 @@ export default class ConfirmMethaneDetailsController extends QuestionPageControl
       value: {
         text: countyParishHoldings
       }
-    }
-  }
-
-  /**
-   * Create customer name row if available
-   * @returns {object|null} Row object or null if no valid name
-   */
-  createCustomerNameRow(name) {
-    if (!name) {
-      return null
-    }
-
-    const fullName = [name.first, name.middle, name.last].filter(Boolean).join(' ')
-
-    if (!fullName) {
-      return null
-    }
-
-    return {
-      key: { text: 'Name' },
-      value: { text: fullName }
-    }
-  }
-
-  /**
-   * Create business name row if available
-   * @returns {object|null} Row object or null if no business name
-   */
-  createBusinessNameRow(businessName) {
-    if (!businessName) {
-      return null
-    }
-
-    return {
-      key: { text: 'Business name' },
-      value: { text: businessName }
-    }
-  }
-
-  /**
-   * Create address row if available
-   * @returns {object|null} Row object or null if no valid address
-   */
-  createAddressRow(address) {
-    if (!address) {
-      return null
-    }
-
-    const addressParts = [address.line1, address.line2, address.line3, address.street, address.city, address.postalCode]
-      .filter(Boolean)
-      .map((part) => part.trim())
-      .filter((part) => part.length > 0)
-
-    if (addressParts.length === 0) {
-      return null
-    }
-
-    return {
-      key: { text: 'Address' },
-      value: { html: addressParts.join('<br/>') }
-    }
-  }
-
-  /**
-   * Create SBI number row
-   * @returns {object} Row object with SBI number
-   */
-  createSbiRow(sbi) {
-    return {
-      key: { text: 'SBI number' },
-      value: { text: sbi }
-    }
-  }
-
-  /**
-   * Create contact details row if available
-   * @returns {object|null} Row object or null if no contact details
-   */
-  createContactDetailsRow(mobile, emailAddress) {
-    const contactParts = []
-
-    if (mobile) {
-      contactParts.push(formatPhone(mobile))
-    }
-
-    if (emailAddress) {
-      contactParts.push(emailAddress)
-    }
-
-    if (contactParts.length === 0) {
-      return null
-    }
-
-    return {
-      key: { text: 'Contact details' },
-      value: { html: contactParts.join('<br/>') }
     }
   }
 
