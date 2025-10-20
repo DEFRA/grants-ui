@@ -10,6 +10,7 @@ import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
  * @param {boolean} [options.exponential=true] - Whether to use exponential backoff
  * @param {Function} [options.shouldRetry] - Function to determine if a retry should be attempted
  * @param {number} [options.timeout] - Operation timeout in milliseconds
+ * @param {boolean} [options.checkFetchResponse] - Whether to check fetch response.ok from operation
  * @param {Function} [options.onRetry] - Called before each retry attempt
  * @returns {Promise<any>} - Result of the operation
  * @throws {Error} - Last error encountered after all retry attempts
@@ -22,6 +23,7 @@ export async function retry(operation, options = {}) {
     exponential = true,
     shouldRetry = () => true,
     timeout,
+    checkFetchResponse = false,
     onRetry = (error, attempt) => {
       const message = `Retry attempt ${attempt}/${maxAttempts} after error: ${error.message}`
       createLogger().error(error, message)
@@ -32,6 +34,7 @@ export async function retry(operation, options = {}) {
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
+      let result
       if (timeout) {
         return await Promise.race([
           operation(),
@@ -40,8 +43,18 @@ export async function retry(operation, options = {}) {
           )
         ])
       } else {
-        return await operation()
+        result = await operation()
       }
+
+      // If we're checking fetch responses and it's not OK, but not at max attempts, throw to trigger retry
+      if (checkFetchResponse && result && typeof result === 'object' && 'ok' in result && !result.ok) {
+        if (attempt < maxAttempts && shouldRetry(new Error(`HTTP ${result.status}`))) {
+          const errorMessage = `Request failed with status ${result.status}: ${result.statusText}`
+          throw new Error(errorMessage)
+        }
+      }
+
+      return result
     } catch (error) {
       lastError = error
 
