@@ -44,10 +44,7 @@ export async function retry(operation, options = {}) {
 
       if (
         checkFetchResponse &&
-        result &&
-        typeof result === 'object' &&
-        'ok' in result &&
-        !result.ok &&
+        isFetchFailure(result) &&
         attempt < maxAttempts &&
         shouldRetry(new Error(`HTTP ${result.status}`))
       ) {
@@ -104,4 +101,13 @@ function getDelay(exponential, initialDelay, attempt, maxDelay) {
   }
 
   return initialDelay
+}
+
+/**
+ * Check if a fetch result indicates a failure
+ * @param result
+ * @returns {boolean}
+ */
+function isFetchFailure(result) {
+  return result && typeof result === 'object' && 'ok' in result && !result.ok
 }
