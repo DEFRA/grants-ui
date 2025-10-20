@@ -8,6 +8,7 @@ import {
   fetchBusinessAndCustomerInformation,
   fetchParcelsForSbi
 } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
+import { fetchBusinessAndCPH } from './consolidated-view.service.js'
 
 vi.mock('~/src/server/common/helpers/entra/token-manager.js', () => ({
   getValidToken: vi.fn()
@@ -124,6 +125,194 @@ describe('Consolidated View Service', () => {
       const result = await fetchParcelsForSbi(mockSbi)
 
       expect(result).toEqual([])
+    })
+  })
+
+  describe('fetchBusinessAndCPH', () => {
+    it('should fetch business and CPH information successfully', async () => {
+      const mockCPHResponse = {
+        data: {
+          business: {
+            info: {
+              reference: 'REF123',
+              email: { address: 'test@business.com' },
+              phone: { mobile: '07123456789' },
+              name: 'Test Business Ltd',
+              address: {
+                line1: '123 Test Street',
+                line2: 'Suite 1',
+                line3: '',
+                line4: '',
+                line5: '',
+                street: 'Test Street',
+                city: 'Test City',
+                postalCode: 'TC1 2AB'
+              },
+              vat: 'GB123456789',
+              type: {
+                code: 'LTD',
+                type: 'Limited Company'
+              }
+            },
+            countyParishHoldings: [{ cphNumber: 'CPH12345' }]
+          },
+          customer: {
+            info: {
+              name: {
+                title: 'Mr',
+                first: 'John',
+                middle: 'William',
+                last: 'Doe'
+              }
+            }
+          }
+        }
+      }
+
+      mockFetchInstance.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockCPHResponse)
+      })
+
+      const result = await fetchBusinessAndCPH(mockSbi, mockCrn)
+
+      expect(mockFetchInstance).toHaveBeenCalledTimes(1)
+      expect(result).toEqual({
+        business: mockCPHResponse.data.business.info,
+        countyParishHoldings: 'CPH12345',
+        customer: mockCPHResponse.data.customer.info
+      })
+
+      const [[, calledOptions]] = mockFetchInstance.mock.calls
+      const body = JSON.parse(calledOptions.body)
+      expect(body.query).toContain(`business(sbi: "${mockSbi}")`)
+      expect(body.query).toContain(`customer(crn: "${mockCrn}")`)
+      expect(body.query).toContain('countyParishHoldings')
+      expect(body.query).toContain('vat')
+      expect(body.query).toContain('type')
+    })
+
+    it('should handle missing countyParishHoldings array', async () => {
+      const responseWithoutCPH = {
+        data: {
+          business: {
+            info: {
+              name: 'Test Business',
+              vat: 'GB123456789'
+            }
+            // countyParishHoldings is missing
+          },
+          customer: {
+            info: {
+              name: {
+                first: 'John',
+                last: 'Doe'
+              }
+            }
+          }
+        }
+      }
+      mockFetchInstance.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(responseWithoutCPH)
+      })
+
+      await expect(async () => {
+        await fetchBusinessAndCPH(mockSbi, mockCrn)
+      }).rejects.toThrow() // Will throw when trying to access [0] on undefined
+    })
+
+    it('should throw error when API call fails', async () => {
+      mockFetchInstance.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        statusText: 'Internal Server Error',
+        text: () => Promise.resolve('Server error')
+      })
+
+      await expect(fetchBusinessAndCPH(mockSbi, mockCrn)).rejects.toThrow(
+        'Failed to fetch business data: 500 Internal Server Error'
+      )
+    })
+
+    it('should work correctly in mock mode', async () => {
+      // Enable mock mode
+      config.set('consolidatedView', {
+        apiEndpoint: 'https://api.example.com/graphql',
+        authEmail: 'test@example.com',
+        mockDALEnabled: true
+      })
+
+      const mockFileData = {
+        data: {
+          business: {
+            info: {
+              reference: 'MOCK-REF123',
+              name: 'Mock Business Ltd',
+              email: { address: 'mock@business.com' },
+              phone: { mobile: '07987654321' },
+              address: {
+                line1: '456 Mock Street',
+                city: 'Mock City',
+                postalCode: 'MC1 2DE'
+              },
+              vat: 'GB987654321',
+              type: {
+                code: 'LLP',
+                type: 'Limited Liability Partnership'
+              }
+            },
+            countyParishHoldings: [{ cphNumber: 'MOCK-CPH67890' }]
+          },
+          customer: {
+            info: {
+              name: {
+                title: 'Mrs',
+                first: 'Jane',
+                middle: 'Mary',
+                last: 'Smith'
+              }
+            }
+          }
+        }
+      }
+
+      fs.readFile.mockResolvedValueOnce(JSON.stringify(mockFileData))
+
+      const result = await fetchBusinessAndCPH(mockSbi, mockCrn)
+
+      expect(result).toEqual({
+        business: mockFileData.data.business.info,
+        countyParishHoldings: 'MOCK-CPH67890',
+        customer: mockFileData.data.customer.info
+      })
+      expect(fs.readFile).toHaveBeenCalledTimes(1)
+      expect(mockFetchInstance).not.toHaveBeenCalled()
+    })
+
+    it('should extract CPH number from first element in array', async () => {
+      const responseWithMultipleCPH = {
+        data: {
+          business: {
+            info: { name: 'Test Business' },
+            countyParishHoldings: [{ cphNumber: 'CPH-FIRST' }, { cphNumber: 'CPH-SECOND' }]
+          },
+          customer: {
+            info: {
+              name: { first: 'John', last: 'Doe' }
+            }
+          }
+        }
+      }
+
+      mockFetchInstance.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(responseWithMultipleCPH)
+      })
+
+      const result = await fetchBusinessAndCPH(mockSbi, mockCrn)
+
+      expect(result.countyParishHoldings).toBe('CPH-FIRST')
     })
   })
 

@@ -1,0 +1,341 @@
+name: Methane Grant
+metadata:
+  id: 95e92559-968d-44ae-8666-2b1ad3dffd34
+  submission:
+    grantCode: methane
+  confirmationContent:
+    html: |
+      <h2 class="govuk-heading-m">What happens next</h2>
+      <p class="govuk-body">We’ve sent your application to the Rural Payments Agency (RPA).</p>
+      <p class="govuk-body">They’ll contact you after 31 May 2026 (the application closing date) to tell you if your application has been successful, or to ask for more information.</p>
+      <p class="govuk-body">It normally takes around 6 weeks after the closing date to process applications.</p>
+      <p class="govuk-body">If you’re successful, we’ll send you a grant funding agreement (GFA) with a list of items you can claim for.</p>
+
+      <h2 class="govuk-heading-m">Track and manage your application</h2>
+      <p class="govuk-body">Sign in to your application to track progress and manage it. </p>
+
+      <details class="govuk-details" data-module="govuk-details">
+        <summary class="govuk-details__summary">
+          <span class="govuk-details__summary-text">
+            If you have a question
+          </span>
+        </summary>
+        <div class="govuk-details__text">
+          <p class="govuk-body">Contact the Rural Payments Agency if you have a query.</p>
+          <p class="govuk-body">
+            Telephone: 03000 200 301<br>
+            Monday to Friday, 8:30am to 5pm (except bank holidays)</p>
+          <p class="govuk-body"><a class="govuk-link" href="https://www.gov.uk/call-charges" target="_blank">Find out about call charges (opens in new tab)</a></p>
+          <p class="govuk-body">Email: <a class="govuk-link" href="mailto:ruralpayments@defra.gov.uk">ruralpayments@defra.gov.uk</a></p>
+        </div>
+      </details>
+pages:
+  - title: Apply for a methane suppressant feed product (MSFP) grant for dairy cows
+    path: /start
+    controller: StartPageController
+    components:
+      - name: startInfoOne
+        title: Html
+        type: Html
+        content: >-
+          <p class="govuk-body">Use this service to apply for help to buy methane suppressant feed products (MSFP) to feed dairy cows on land in England.</p>
+          <p class="govuk-body">This annual grant allows you to make quarterly claims to cover the cost of eligible products and feeding MSFPs to dairy cows while they’re housed.</p>
+          <p class="govuk-body">The grant will help farms reach carbon targets and has the potential to reduce UK agricultural carbon emissions by up to one-third.</p>
+          <h2 class="govuk-heading-s">Applications open:<span class="govuk-body"> midnight, 28 February 2026</span></h2>
+          <h2 class="govuk-heading-s">Applications close:<span class="govuk-body"> midday, 31 May 2026 </span></h2>
+          <h2 class="govuk-heading-s">First quarterly payments:<span class="govuk-body"> from 1 September 2026 </span></h2>
+          <h2 class="govuk-heading-m">Before you apply</h2>
+          <p class="govuk-body">You must have <a href="https://www.gov.uk/guidance/update-personal-and-business-details-in-the-rural-payments-service" class="govuk-link">registered with the Rural Payments service </a> to apply.</p>
+          <p class="govuk-body">You can apply for someone else if they've given you permission to apply on their behalf in the Rural Payments service.</p>
+          <p class="govuk-body">To see which MSFPs are eligible for the grant check our Methane suppressant feed product list. </p>
+          <h2 class="govuk-heading-m">Before you start</h2>
+          <p class="govuk-body">If you apply, you’ll need:</p>
+          <ul class="govuk-list govuk-list--bullet">
+              <li>your Rural Payments service customer reference number (CRN) and password</li>
+              <li>your number of dairy cows </li>
+              <li>details of the MSFP you’ll be using</li>
+          </ul>
+          <p class="govuk-body">We’ll also ask you to check and confirm the following details from the Rural Payments service:</p>
+          <ul class="govuk-list govuk-list--bullet">
+              <li>applicant details</li>
+              <li>organisation name, address and contact details</li>
+              <li>organisation type - for example, a limited company</li>
+              <li>registration numbers like <a href="https://find-and-update.company-information.service.gov.uk/" class="govuk-link">company registration number</a> and VAT registration number </li>
+              <li>county parish holding (CPH) number</li>
+          </ul>
+          <h2 class="govuk-heading-m">How we use this information</h2>
+          <p class="govuk-body">We use this information to:</p>
+          <ul class="govuk-list govuk-list--bullet">
+              <li class="govuk-body">identify you and your organisation</li>
+              <li>carry out due diligence checks to prevent fraud</li>
+          </ul>
+          <h2 class="govuk-heading-s">Help using the service</h2>
+          <p class="govuk-body">If you need help or want to report a problem contact</p>
+          <p class="govuk-body">The Rural Payments Agency (RPA)</p>
+          <p class="govuk-body">Email: <a href="mailto:ruralpayments@defra.gov.uk" class="govuk-link">ruralpayments@defra.gov.uk</a></p>
+          <p class="govuk-body">Telephone: 03000 200 301</p>
+          <p class="govuk-body">Monday to Friday, 8.30am to 5pm, except bank holidays</p>
+          <p class="govuk-body"><a href=" https://fcp-future-grants-7b4b3e12d36a.herokuapp.com/manage-prototype/password?returnURL=%2F_common%2Fnot-testing.html" class="govuk-link" target="_blank">Find out about call charges (opens in new tab)</a></p>
+
+        id: eb6eda3b-57ee-4440-bb0f-18e2a189bd8e
+        options: {}
+        schema: {}
+    id: 4afc672b-71d6-4889-999d-c7934184f3cc
+  - title: Are you a diary farmer?
+    path: /are-you-diary-farmer
+    components:
+      - name: isDiaryFarmer
+        title: Are you a diary farmer?
+        type: YesNoField
+        hint: ""
+        options: { }
+        schema: { }
+        shortDescription: Are you a diary farmer?
+        id: 45052db5-d620-4382-b2ec-918168c98bc7
+    id: d40c01ac-f492-4665-90c6-b62a6e58d6aa
+  - title: You are not eligible for this grant
+    path: /you-must-be-diary-farmer
+    controller: TerminalPageController
+    components:
+      - name: FGyiLS
+        title: You are not eligible for this grant
+        type: Html
+        hint: ""
+        content: >
+          <p class="govuk-body">You must be a dairy farmer to apply for a MSFP grant.</p>
+        options: { }
+        schema: { }
+        id: 2324fb1a-5c1d-4f49-ace0-5a9d5eaa088c
+    id: 21347447-b831-4074-bc25-a35ac5a9fd8f
+    condition: 341c2742-74d4-439e-91ee-641f4e56093f
+  - title: Are your dairy cows kept on land in England?
+    path: /diary-cows
+    components:
+      - name: isDiaryKeptInEngland
+        title: Are your dairy cows kept on land in England?
+        type: YesNoField
+        hint: ""
+        options: { }
+        schema: { }
+        shortDescription: Are your dairy cows kept on land in England?
+        id: 713f5093-19c5-4817-8064-81465f59bac3
+    id: 6b886bdb-4c11-4742-b8ea-2b76590c1417
+  - title: Your dairy cows must kept on land in England to apply for a MSFP grant
+    path: /cows-in-england-only
+    controller: TerminalPageController
+    components:
+      - name: NotKeptInEngland
+        title: Your dairy cows must kept on land in England to apply for a MSFP grant
+        type: Html
+        hint: ""
+        content: >
+          <p class="govuk-body">Only dairy cows kept on land in England are eligible for MSFP grants. </p>
+        options: { }
+        schema: { }
+        id: 78caa271-3dc9-47b2-8cfe-ed2858c9c4d1
+    id: ba8d8f0f-9f49-4235-9df7-f179c9b74181
+    condition: bbdf08fa-7eaa-47a6-bc14-5d08d1de20f9
+  - title: Do you house your dairy herd for at least some of the year?
+    path: /house-diary-herd
+    components:
+      - name: isDiaryHerdForYear
+        title: Do you house your dairy herd for at least some of the year?
+        type: YesNoField
+        hint: ""
+        options: { }
+        schema: { }
+        shortDescription: Do you house your dairy herd for at least some of the year?
+        id: 1a0d8a06-93b9-4c1d-9961-9696089ef42e
+    id: 0d1ed099-020c-49aa-b1bf-82a909add133
+  - title: You must house your dairy herd to apply for a MSFP grant
+    path: /you-must-be-herd-farmer
+    controller: TerminalPageController
+    components:
+      - name: NotEligibleDiaryHerd
+        title: You must house your dairy herd to apply for a MSFP grant
+        type: Html
+        hint: ""
+        content: >
+          <p class="govuk-body">Only dairy herds which are housed for at least some of the year are eligible for MSFP grants</p>
+        options: { }
+        schema: { }
+        id: 44018210-32c6-42f4-937f-51f29bcd903c
+    id: cd1ef5c9-ac49-44cd-85b3-99764347f785
+    condition: 72c8cb60-7069-420e-8da6-ec7a72e39ca5
+  - title: Do you feed your dairy cows a total mixed ration (TMR) when housed?
+    path: /feed-tmr
+    components:
+      - name: feedTMR
+        title: Do you feed your dairy cows a total mixed ration (TMR) when housed?
+        type: YesNoField
+        hint: ""
+        options: { }
+        schema: { }
+        shortDescription: Do you feed your dairy cows a total mixed ration (TMR) when housed?
+        id: f6755ff8-953f-4f2e-8fff-22a2ec622fd5
+    id: 9adab313-f6f5-49a7-946d-6f2699f4dc57
+  - title: You must feed your dairy cows a total mixed ration (TMR) when housed to apply for a MSFP grant
+    path: /you-must-feed-mixed-tmr
+    controller: TerminalPageController
+    components:
+      - name: NotFeedTMR
+        title: You must feed your dairy cows a total mixed ration (TMR) when housed to apply for a MSFP grant
+        type: Html
+        hint: ""
+        content: >
+          <p class="govuk-body">Only dairy cows fed using a TMR when housed are eligible for MSFP grants. </p>
+        options: { }
+        schema: { }
+        id: 25845086-4fcf-4ee5-ab2b-cb5d3c3d1117
+    id: e102ac90-990a-443b-b70a-d43ba2e5a424
+    condition: 914c4364-1a6c-4475-a41d-58d30f684d1c
+  - title: Check your details are correct
+    path: /confirm-methane-details
+    controller: ConfirmMethaneDetailsController
+    next: [ ]
+    id: a24cb35f-a359-4934-b8c8-56ff92cb3df1
+  - title: How many dairy cows will you feed MSFP?
+    path: /how-many-diary-cows
+    components:
+      - name: diaryCowsFedCount
+        title: How many dairy cows will you feed MSFP?
+        type: NumberField
+        hint: ""
+        options:
+          required: true
+          classes: govuk-!-width-one-third
+          customValidationMessages:
+            any.required: Enter the number of diary cows you have
+            number.min: You must have at least 10 diary cow
+            number.max: You can apply for up to 10,000 diary cows
+        schema:
+          min: 10
+          max: 10000
+          precision: 0
+        shortDescription:  How many dairy cows will you feed MSFP?
+        id: 76f04de6-2eef-4ea5-bbd8-d4e84818528a
+    id: 114798d7-622e-46da-943d-729f4d102d8c
+  - title: How many months are your dairy cows housed during the year?
+    path: /how-many-months
+    components:
+      - name: monthsDiaryCowHoused
+        title: How many months are your dairy cows housed during the year?
+        type: NumberField
+        hint: ""
+        options:
+          required: true
+          classes: govuk-!-width-one-third
+          customValidationMessages:
+            any.required: Enter the number of months you have housed diary cows during the year
+            number.min: You must have at least 1
+            number.max: Maximum number of months is 12
+        schema:
+          min: 1
+          max: 12
+          precision: 0
+        shortDescription: How many months are your dairy cows housed during the year?
+        id: e6b474d1-18c7-4db6-82e1-a977956e4c6b
+    id: 847615e9-194b-4cda-9313-4be65c38edf2
+  - title: Which MSFP will you use?
+    path: /msfp
+    components:
+      - name: whichMsfp
+        title: Html
+        type: Html
+        id: 545895da-dc16-4bd6-8d6a-4308277982df
+        options: { }
+        schema: { }
+      - name: msfpOptions
+        title: Choose product
+        type: RadiosField
+        list: 57f1e7a6-d27a-4144-ace6-6ddacad103df
+        options:
+          customValidationMessages:
+            any.required: Select the option that applies
+        shortDescription: MSFP
+        id: b48a816e-a810-4346-a111-5c7a0cac8a5b
+        schema: { }
+    id: 5cd9ac2a-d211-4f8e-b1b9-1a377d121148
+  - title: Check your answers
+    path: /summary
+    controller: CheckResponsesPageController
+    id: aa34c1e0-e119-4e69-ab91-06d6b092055e
+  - title: Potential funding
+    path: /potential-funding
+    components:
+      - name: potentialFundingInfo
+        title: Html
+        type: Html
+        content: >
+          {% assign mfspSelected = 'msfpOptions' | answer %}
+          {% if mfspSelected == "Bovaer" %} {% assign pricePerCow = 80 %} {% else %} {% assign pricePerCow = 40 %} {% endif %}
+          {% assign cowCount = 'diaryCowsFedCount' | answer %}
+          {% assign monthsHoused = 'monthsDiaryCowHoused' | answer %}
+          {% assign monthsAsYears = monthsHoused | divided_by: 12 %}
+          {% assign total = cowCount | times: monthsAsYears | times: pricePerCow %}
+          <p class="govuk-body">You may be able eligible for a grant of up to {{ total | formatCurrency: 'en-GB', 'GBP', 0 }}.</p>
+          <h3 class="govuk-heading-s">MSFP grant calculation</h3>
+          <p class="govuk-body">This calculation is based on the following information you provided:</p>
+          <ul class="govuk-list govuk-list--bullet">
+            <li>{{ cowCount }} dairy cows fed on {{ mfspSelected }} (at £{{ pricePerCow }} per cow per year) for {{ monthsHoused }} months whilst housed = {{ total | formatCurrency: 'en-GB', 'GBP', 0 }}</li>
+          </ul>
+          <p class="govuk-body">There’s no guarantee you’ll receive a grant</p>
+
+        options: { }
+        schema: { }
+        id: 83d8325d-1762-4276-a2a8-d89acb1c66d7
+  - title: Confirm and send
+    path: /declaration
+    controller: DeclarationPageController
+    view: declaration-page.html
+    id: bc087fb8-e499-4344-a0bf-d427ded069b8
+lists:
+  - title: MFSP Selection List
+    name: mfspSelection
+    type: string
+    items:
+      - text: Bovaer
+        value: bovaerOption
+        id: 277989e5-7414-47d0-93d5-b8b6469daeea
+      - text: SilvAir
+        value: silvAirOption
+        id: 6a18e5e5-a705-4f8d-9139-678400ac35c8
+    id: 57f1e7a6-d27a-4144-ace6-6ddacad103df
+sections: []
+conditions:
+  - id: 341c2742-74d4-439e-91ee-641f4e56093f
+    displayName: notDiaryFarmer
+    items:
+      - id: 47977a3b-2c17-42c4-b9ab-1f10e831df84
+        componentId: 45052db5-d620-4382-b2ec-918168c98bc7
+        operator: is
+        type: BooleanValue
+        value: false
+  - id: 72c8cb60-7069-420e-8da6-ec7a72e39ca5
+    displayName: NotHouseDiaryHerd
+    items:
+      - id: a506dd3e-aa11-4a0e-8c67-4d8c1cf80bf2
+        componentId: 1a0d8a06-93b9-4c1d-9961-9696089ef42e
+        operator: is
+        type: BooleanValue
+        value: false
+  - id: bbdf08fa-7eaa-47a6-bc14-5d08d1de20f9
+    displayName: NotInEngland
+    items:
+      - id: a6670111-16e4-40dc-a094-4f1820442133
+        componentId: 713f5093-19c5-4817-8064-81465f59bac3
+        operator: is
+        type: BooleanValue
+        value: false
+  - id: 914c4364-1a6c-4475-a41d-58d30f684d1c
+    displayName: NotFedTMR
+    items:
+      - id: effa09d0-ba5a-45e3-9f99-2cfcb0684430
+        componentId: f6755ff8-953f-4f2e-8fff-22a2ec622fd5
+        operator: is
+        type: BooleanValue
+        value: false
+
+startPage: /start
+engine: V2
+schema: 2
