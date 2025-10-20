@@ -49,27 +49,35 @@ describe('ConfirmationService', () => {
       const mockConfirmationContent = {
         html: '<h2>Test confirmation content</h2>'
       }
-
-      mockFormsService.getFormDefinition.mockResolvedValue({
+      const mockFormDefinition = {
         metadata: {
           confirmationContent: mockConfirmationContent
         }
-      })
+      }
+
+      mockFormsService.getFormDefinition.mockResolvedValue(mockFormDefinition)
 
       const result = await ConfirmationService.loadConfirmationContent(validForm)
 
       expect(mockFormsService.getFormDefinition).toHaveBeenCalledWith('test-form-id')
-      expect(result).toEqual(mockConfirmationContent)
+      expect(result).toEqual({
+        confirmationContent: mockConfirmationContent,
+        formDefinition: mockFormDefinition
+      })
     })
 
     test('should return null when no confirmation content exists', async () => {
-      mockFormsService.getFormDefinition.mockResolvedValue({
+      const mockFormDefinition = {
         metadata: {}
-      })
+      }
+      mockFormsService.getFormDefinition.mockResolvedValue(mockFormDefinition)
 
       const result = await ConfirmationService.loadConfirmationContent(validForm)
 
-      expect(result).toBeNull()
+      expect(result).toEqual({
+        confirmationContent: null,
+        formDefinition: mockFormDefinition
+      })
     })
 
     test('should handle service errors gracefully', async () => {
@@ -77,13 +85,19 @@ describe('ConfirmationService', () => {
 
       const result = await ConfirmationService.loadConfirmationContent(validForm)
 
-      expect(result).toBeNull()
+      expect(result).toEqual({
+        confirmationContent: null,
+        formDefinition: null
+      })
     })
 
     test('should handle invalid form gracefully', async () => {
       const result = await ConfirmationService.loadConfirmationContent(null)
 
-      expect(result).toBeNull()
+      expect(result).toEqual({
+        confirmationContent: null,
+        formDefinition: null
+      })
     })
   })
 
@@ -93,20 +107,24 @@ describe('ConfirmationService', () => {
       businessName: 'Test Business Ltd',
       sbi: '123456789',
       contactName: 'John Doe',
-      confirmationContent: { html: '<h2>Test content</h2>' }
+      confirmationContent: { html: '<h2>Test content</h2>' },
+      form: { title: 'Test Form' },
+      slug: 'test-form'
     }
 
     test('should build basic view model', () => {
       const result = ConfirmationService.buildViewModel(baseOptions)
 
       expect(result).toEqual({
+        pageTitle: 'Confirmation',
         referenceNumber: 'REF123',
         businessName: 'Test Business Ltd',
         sbi: '123456789',
         contactName: 'John Doe',
         confirmationContent: { html: '<h2>Test content</h2>' },
-        serviceName: 'Manage land-based actions',
-        serviceUrl: '/find-funding-for-land-or-farms',
+        serviceName: 'Test Form',
+        serviceUrl: '/test-form',
+        auth: {},
         breadcrumbs: []
       })
     })
@@ -123,7 +141,7 @@ describe('ConfirmationService', () => {
 
       expect(result.isDevelopmentMode).toBe(true)
       expect(result.formTitle).toBe('Test Form')
-      expect(result.formSlug).toBe('test-form')
+      expect(result.formSlug).toBe('/test-form')
       expect(result.auth.name).toBe('Dev Mode User')
       expect(result.auth.organisationName).toBe('Dev Mode Organisation')
       expect(result.auth.organisationId).toBe('999999999')

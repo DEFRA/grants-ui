@@ -8,9 +8,22 @@ Core delivery platform Node.js Frontend Template.
 
 - [Requirements](#requirements)
   - [Node.js](#nodejs)
+- [DXT Forms Engine Plugin](#dxt-forms-engine-plugin)
+- [Features](#features)
+- [Development Tools & Configuration](#development-tools--configuration)
+  - [Testing Framework](#testing-framework)
+  - [Code Quality & Linting](#code-quality--linting)
+  - [Build & Development Tools](#build--development-tools)
+  - [Authentication & Security](#authentication--security)
+  - [Development Services Integration](#development-services-integration)
+  - [Custom NPM Scripts](#custom-npm-scripts)
 - [Cookies](#cookies)
+  - [Inspecting cookies](#inspecting-cookies)
 - [Server-side Caching](#server-side-caching)
+- [Session Rehydration](#session-rehydration)
 - [Redis](#redis)
+- [Proxy](#proxy)
+- [Feature Structure](#feature-structure)
 - [Local Development](#local-development)
   - [Setup](#setup)
   - [Development](#development)
@@ -48,7 +61,7 @@ Core delivery platform Node.js Frontend Template.
 
 ### Node.js
 
-Please install [Node.js](http://nodejs.org/) `>= v18` and [npm](https://nodejs.org/) `>= v9`. You will find it
+Please install [Node.js](http://nodejs.org/) `>= v22` and [npm](https://nodejs.org/) `>= v9`. You will find it
 easier to use the Node Version Manager [nvm](https://github.com/creationix/nvm)
 
 To use the correct version of Node.js for this application, via nvm:
@@ -57,6 +70,22 @@ To use the correct version of Node.js for this application, via nvm:
 cd grants-ui
 nvm use
 ```
+
+## Features
+
+The Grants UI service provides a comprehensive set of features for building grant application forms. These features are demonstrated in the Example Grant with Auth journey and documented in detail in [FEATURES.md](./FEATURES.md).
+
+Key features include:
+
+- **Form Components**: 13 different input components (TextField, RadiosField, CheckboxesField, etc.)
+- **Page Types**: Summary, Declaration, Confirmation, Terminal, and Conditional pages
+- **Guidance Components**: Html, Details, InsetText, Markdown, and List components
+- **Authentication**: Defra ID integration with whitelist support
+- **Conditional Logic**: Dynamic page routing and content display
+- **Validation**: Custom validation messages and schema validation
+- **Configuration**: YAML-based form definitions with confirmation content
+
+For complete documentation of all available features, see [FEATURES.md](./FEATURES.md).
 
 ## DXT Forms Engine Plugin
 
@@ -68,6 +97,102 @@ CheckResponsesPageController renders a page showing the questions and answers th
 
 DeclarationPageController renders a declaration page and submits the form to GAS. It does not use the `confirmationState` used by DXT and does not clear the state.
 Instead it sets `applicationStatus` to `SUBMITTED` along with `submittedAt` and `submittedBy` fields.
+
+### Forms Engine State Model
+
+DXT Controllers pass a `context` object into every handler. Grants UI relies on two key properties:
+
+- `context.state`: the full mutable state bag for the current journey. Grants UI stores intermediate answers, lookups, and UI scaffolding here (for example `context.state.applicantContactDetails`). Use the helper methods exposed by the base controllers—primarily `await this.setState(request, newState)` or `await this.mergeState(request, context.state, update)`—to persist changes so they flow through the cache layer (`QuestionPageController.setState`, `QuestionPageController.mergeState` in the forms engine plugin).
+- `context.relevantState`: a projection produced by the forms engine that contains only the answers needed for submission. This is the source of truth used by declaration/confirmation controllers when building payloads for GAS (see `DeclarationPageController`).
+
+StatePersistenceService persists both structures through Grants UI Backend + Redis so that state survives page refreshes and “save and return” flows. When working on new controllers, prefer `context.relevantState` for data you plan to submit, and use `context.state` for auxiliary UI data. Changes to either must be serialisable because the persistence layer stores them as JSON.
+
+Practical usage tips:
+
+- `await this.setState(request, { ...context.state, applicantContactDetails: updated })` completely replaces the stored state for the current journey.
+- `await this.mergeState(request, context.state, { applicantContactDetails: updated })` applies a shallow merge when you only need to tweak a subset of keys.
+- Never mutate `context.state` in place; always go through the helpers so that the new state is flushed through the cache service and persisted for save-and-return flows.
+
+```mermaid
+sequenceDiagram
+  participant User
+  participant Hapi as Grants UI (Hapi)
+  participant DXT as DXT Forms Plugin
+  participant Ctrl as Feature Controller
+  participant Cache as StatePersistenceService
+  participant Backend as Grants UI Backend
+  participant Redis
+  participant GAS as GAS API (Mocked)
+
+  User->>Hapi: HTTP request (e.g. /{grant}/page)
+  Hapi->>DXT: Delegate route handling
+  DXT->>Ctrl: Invoke controller logic for page
+  Ctrl->>Cache: getState(request)
+  Cache->>Redis: Retrieve session
+  Redis-->>Cache: State hit? (optional)
+  Cache->>Backend: fetchSavedStateFromApi (if needed)
+  Backend-->>Cache: Persisted state payload
+  Cache-->>Ctrl: Merged state
+  Ctrl-->>DXT: Render view / continue journey
+  DXT-->>User: HTML response
+  User->>Hapi: Submit declaration
+  Hapi->>DXT: Handle submission
+  DXT->>Ctrl: Declaration controller makePostRouteHandler
+  Ctrl->>Cache: setState / persistStateToApi
+  Ctrl->>GAS: submitGrantApplication
+  GAS-->>Ctrl: Submission result
+  Ctrl-->>User: Redirect to confirmation
+```
+
+## Development Tools & Configuration
+
+### Testing Framework
+
+The application uses **Vitest** as its test framework with custom module aliases for mocking external dependencies like `@defra/forms-engine-plugin`.
+
+### Code Quality & Linting
+
+- **Neostandard**: Modern JavaScript/Node.js linting configuration that provides opinionated code quality rules
+- **TSX**: Modern Node.js runtime used for development server (better ES module support)
+
+### Authentication & Security
+
+- **Defra ID Integration**: Primary authentication service using OpenID Connect (OIDC) protocol
+  - For detailed environment variable configuration, see [DEFRA ID Integration](#defra-id-integration)
+- **Whitelist System**: CRN (Customer Reference Number) and SBI (Single Business Identifier) whitelisting for specific grants:
+  - `EXAMPLE_WHITELIST_CRNS`: Authorized CRNs for Example Grant journeys (used by the Example Whitelist form definition)
+  - `EXAMPLE_WHITELIST_SBIS`: Authorized SBIs for Example Grant journeys (used by the Example Whitelist form definition)
+  - For complete whitelist configuration, see [Feature Flags & Misc](#feature-flags--misc)
+
+### Whitelist Functionality
+
+Whitelisting restricts access to specific grant journeys based on Customer Reference Numbers (CRNs) and Single Business Identifiers (SBIs). Forms that require whitelisting declare the relevant environment variables in their YAML definition (see [`src/server/common/forms/definitions/example-whitelist.yaml`](./src/server/common/forms/definitions/example-whitelist.yaml)). At runtime, the whitelist service (`src/server/auth/services/whitelist.service.js`) reads the configured environment variables, normalises the values, and validates incoming CRN/SBI credentials. If a user’s identifiers are not present in the configured whitelist, the journey is terminated and the user is shown a terminal page.
+
+### Development Services Integration (docker compose)
+
+- **Grants UI Backend**: Separate Node.js service (`defradigital/grants-ui-backend`) for data persistence
+- **MongoDB**: Document database used by the backend service for storing application data
+- **FFC Grants Scoring**: External scoring service (`defradigital/ffc-grants-scoring`) for grant evaluation
+- **MockServer**: API mocking service for development and testing with predefined expectations
+- **Defra ID Stub**: Local OpenID Connect provider used to mimic Defra ID authentication flows
+- **GAS API (Mocked)**: Grants Application Service endpoint stubbed by MockServer for submissions and confirmation flows
+
+```mermaid
+graph TD
+  User[Browser / User] -->|HTTP :3000| UI[Grants UI]
+  UI -->|Session data| Redis[(Redis)]
+  UI -->|State API| Backend[Grants UI Backend]
+  Backend -->|Persist/Fetch| Mongo[(MongoDB)]
+  UI -->|Scoring request| Scoring[FFC Grants Scoring]
+  UI -->|Grant submission| GAS[MockServer (GAS API)]
+  UI -.->|OIDC flows| DefraID[Defra ID Stub]
+```
+
+For complete service configuration and setup, see [Docker Compose](#docker-compose) section.
+
+### Custom NPM Scripts
+
+Beyond the standard scripts, the application includes contract testing via `npm run test:contracts` using Vitest.
 
 ## Cookies
 
@@ -109,7 +234,7 @@ The table below outlines the data the cookies control.
 
 ### Inspecting cookies
 
-There is a tool provided `/tools/unseal-cookies.js` that will decode and decrypt the cookies for inspection on the command line. You will need the appropriate cookie password.
+There is a tool provided `tools/unseal-cookie.js` that will decode and decrypt the cookies for inspection on the command line. You will need the appropriate cookie password.
 To use the tool:
 
 ```bash
@@ -130,6 +255,28 @@ You can override the default behaviour by setting the `SESSION_CACHE_ENGINE` env
 Please note: CatboxMemory (`memory`) is _not_ suitable for production use! The cache will not be shared between each
 instance of the service and it will not persist between restarts.
 
+```mermaid
+sequenceDiagram
+  participant User
+  participant UI as Grants UI
+  participant Catbox as Catbox Cache
+  participant Redis as Redis (session cache)
+  participant Backend as Grants UI Backend
+  participant Mongo as MongoDB
+
+  User->>UI: Request protected page
+  UI->>Catbox: Check cache (CatboxRedis/CatboxMemory)
+  Catbox-->>UI: Cache miss
+  UI->>Redis: Retrieve session data
+  Redis-->>UI: Session state (if present)
+  UI->>Backend: Persist state (async) / fetch saved state
+  Backend->>Mongo: Read/write persisted state
+  Mongo-->>Backend: State data
+  Backend-->>UI: Saved state response
+  UI->>Catbox: Update cache entry
+  UI-->>User: Rendered page
+```
+
 ## Session Rehydration
 
 The application includes session rehydration functionality that allows user sessions to be restored from a backend API. This is particularly useful for maintaining user state across different services.
@@ -137,17 +284,37 @@ The application includes session rehydration functionality that allows user sess
 ### How Session Rehydration Works
 
 The application fetches saved state from the backend API using the endpoint configured in `GRANTS_UI_BACKEND_URL`.
-When a user is authenticated, the serivce:
+When a user is authenticated, the service:
 
 - Checks for existing cache
-- If there is none, fetches data from Mongo
+- If there is none, fetches data from the Grants UI Backend service (which persists data to Mongo)
 - Performs session rehydration
+
+```mermaid
+sequenceDiagram
+  participant U as Authenticated User
+  participant UI as Grants UI
+  participant R as Redis cache
+  participant B as Grants UI Backend
+  participant M as MongoDB
+
+  U->>UI: Request page / resume journey
+  UI->>R: Check for cached session state
+  R-->>UI: Cache miss
+  UI->>B: GET /state?sbi&grantCode
+  B->>M: Query persisted state
+  M-->>B: Stored state payload
+  B-->>UI: Rehydrated state JSON
+  UI->>UI: Restore session & continue journey
+```
 
 ### Configuration
 
 Session rehydration is controlled by the following environment variables:
 
-- `GRANTS_UI_BACKEND_URL`: The backend API endpoint for fetching/storing session state
+- `GRANTS_UI_BACKEND_URL`: The Grants UI Backend service endpoint used for state persistence
+- `GRANTS_UI_BACKEND_AUTH_TOKEN`: Bearer token used to authenticate requests to the backend
+- `GRANTS_UI_BACKEND_ENCRYPTION_KEY`: Encryption key used to secure the backend bearer token
 
 ### Error Handling
 
@@ -168,7 +335,7 @@ disable setting `SESSION_CACHE_ENGINE=false` or changing the default value in `~
 
 ## Proxy
 
-We are using forward-proxy which is set up by default. To make use of this: `import { fetch } from 'undici'` then because of the `setGlobalDispatcher(new ProxyAgent(proxyUrl))` calls will use the ProxyAgent Dispatcher
+A forward-proxy can be enabled by setting the `HTTP_PROXY` environment variable. When present, `setGlobalDispatcher(new ProxyAgent(proxyUrl))` is invoked automatically so calls made with `fetch` from `undici` use the proxy.
 
 If you are not using Wreck, Axios or Undici or a similar http that uses `Request`. Then you may have to provide the proxy dispatcher:
 
@@ -577,6 +744,17 @@ The application implements a comprehensive structured logging system providing c
 - **Validation**: Runtime validation of log code definitions
 - **Tracing**: Distributed tracing with request correlation
 
+```mermaid
+flowchart LR
+  Request["Incoming request<br/>controller/service"] --> Wrapper["log()/logger wrapper"]
+  Wrapper -->|Selects code| LogCodes["LogCodes definitions"]
+  Wrapper -->|Builds payload| Logger["Logger factory (pino)"]
+  Logger --> Output["Structured log output<br/>(ECS or pretty)"]
+  LogCodes --> Validator["Log code validator"]
+  Validator --> LogCodes
+  Logger --> Transports["Console / Cloud Logging"]
+```
+
 ### Directory Structure
 
 ```
@@ -670,6 +848,45 @@ Logging is configured via environment variables:
 - `LOG_ENABLED`: Enable/disable logging (default: enabled except in test)
 - `LOG_LEVEL`: Log level (debug, info, warn, error, etc.)
 - `LOG_FORMAT`: Output format (ecs for production, pino-pretty for development)
+
+#### Log Verbosity Control
+
+The application automatically adjusts log verbosity based on the `LOG_LEVEL` setting:
+
+**INFO Level (Default)**
+
+- Simplified, readable request/response logs
+- Excludes verbose details like headers, cookies, and query parameters
+- Shows essential information: method, URL, status code, and response time
+- Example: `[response] GET /adding-value/start 200 (384ms)`
+
+**DEBUG Level (Development)**
+
+- Full detailed request/response logs
+- Includes all headers, cookies, query parameters, and request body
+- Useful for troubleshooting and deep debugging
+- Shows external API calls with full context
+
+To enable debug logging:
+
+```bash
+# In Docker Compose
+LOG_LEVEL=debug docker compose up
+
+# Or set in .env file
+LOG_LEVEL=debug
+
+# Or set in compose.yml environment variables
+LOG_LEVEL: debug
+```
+
+**Note**: When changing `LOG_LEVEL` in `compose.yml`, restart the container:
+
+```bash
+docker compose restart grants-ui
+# or
+docker compose up -d --force-recreate grants-ui
+```
 
 ### Best Practices
 
@@ -862,8 +1079,3 @@ information providers in the public sector to license the use and re-use of thei
 licence.
 
 It is designed to encourage use and re-use of information freely and flexibly, with only a few conditions.
-
-## TODO
-
-src/server/land-grants/parcels/controller.js L51
-sbi is a hardcoded value for testing purposes, should come from Defra ID (CRN included in the JWT returned from Defra ID in the contactId property)

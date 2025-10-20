@@ -41,24 +41,17 @@ function validateRequestAndFindForm(request, h) {
 /**
  * Loads and validates confirmation content for the form
  * @param {object} form - Form configuration object
- * @param {string} slug - Form slug
- * @param {object} h - Hapi response toolkit
- * @returns {Promise<object>} Content result or error response
+ * @returns {Promise<object|null>} Content result with confirmationContent and formDefinition
  */
-async function loadConfirmationContent(form, slug, h) {
-  const rawConfirmationContent = await ConfirmationService.loadConfirmationContent(form)
+async function loadConfirmationContent(form) {
+  const { confirmationContent: rawConfirmationContent, formDefinition } =
+    await ConfirmationService.loadConfirmationContent(form)
 
-  if (!rawConfirmationContent) {
-    log(LogCodes.CONFIRMATION.CONFIRMATION_ERROR, {
-      userId: 'system',
-      error: `No confirmation content found for form: ${slug}`
-    })
-    return { error: h.response('Confirmation content not configured').code(HTTP_STATUS.INTERNAL_SERVER_ERROR) }
-  }
+  const confirmationContent = rawConfirmationContent
+    ? ConfirmationService.processConfirmationContent(rawConfirmationContent)
+    : null
 
-  const confirmationContent = ConfirmationService.processConfirmationContent(rawConfirmationContent)
-
-  return { confirmationContent }
+  return { confirmationContent, formDefinition }
 }
 
 /**
@@ -87,16 +80,22 @@ async function getReferenceNumber(request) {
  * Builds view model and returns confirmation page response
  * @param {object} confirmationContent - Confirmation content configuration
  * @param {object} sessionData - Session data including reference number
+ * @param {object} form - Form object
+ * @param {string} slug - Form slug
+ * @param {object} formDefinition - Form definition with metadata
  * @param {object} h - Hapi response toolkit
  * @returns {object} Hapi response
  */
-function buildConfirmationResponse(confirmationContent, sessionData, h) {
+function buildConfirmationResponse(confirmationContent, sessionData, form, slug, formDefinition, h) {
   const viewModel = ConfirmationService.buildViewModel({
     referenceNumber: sessionData.referenceNumber,
     businessName: sessionData.businessName,
     sbi: sessionData.sbi,
     contactName: sessionData.contactName,
-    confirmationContent
+    confirmationContent,
+    form,
+    slug,
+    formDefinition
   })
 
   return h.view('confirmation/views/config-confirmation-page', viewModel)
@@ -136,12 +135,7 @@ export const configConfirmation = {
 
             const { form, slug } = validationResult
 
-            const contentResult = await loadConfirmationContent(form, slug, h)
-            if (contentResult.error) {
-              return contentResult.error
-            }
-
-            const { confirmationContent } = contentResult
+            const { confirmationContent, formDefinition } = await loadConfirmationContent(form)
             const sessionData = await getReferenceNumber(request)
 
             log(LogCodes.CONFIRMATION.CONFIRMATION_SUCCESS, {
@@ -149,7 +143,7 @@ export const configConfirmation = {
               referenceNumber: sessionData.referenceNumber
             })
 
-            return buildConfirmationResponse(confirmationContent, sessionData, h)
+            return buildConfirmationResponse(confirmationContent, sessionData, form, slug, formDefinition, h)
           } catch (error) {
             return handleError(error, request, h)
           }
