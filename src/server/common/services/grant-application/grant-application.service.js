@@ -1,5 +1,6 @@
 import { config } from '~/src/config/config.js'
 import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
+import { retry } from '~/src/server/common/helpers/retry.js'
 
 const GAS_API_ENDPOINT = config.get('gas.apiEndpoint')
 const logger = createLogger()
@@ -54,7 +55,7 @@ export async function makeGasApiRequest(url, grantCode, options = {}) {
       requestOptions.body = JSON.stringify(payload)
     }
 
-    const response = await fetch(requestUrl, requestOptions)
+    const response = await retry(() => fetch(requestUrl, requestOptions))
 
     if (!response.ok) {
       const error = await response.json()
