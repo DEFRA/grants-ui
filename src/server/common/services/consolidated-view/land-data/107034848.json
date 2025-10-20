@@ -1,0 +1,57 @@
+{
+  "data": {
+    "customer": {
+      "info": {
+        "name": { "title": "Mrs", "first": "Jennifer", "middle": "Edwin", "last": "Bayman" }
+      }
+    },
+    "business": {
+      "sbi": "107034848",
+      "organisationId": "5375642",
+      "land": {
+        "parcels": [
+          { "parcelId": "2943", "sheetId": "NY8937" },
+          { "parcelId": "4753", "sheetId": "NY8937" },
+          { "parcelId": "2208", "sheetId": "NY8937" },
+          { "parcelId": "4399", "sheetId": "NY8936" },
+          { "parcelId": "2237", "sheetId": "NY8937" },
+          { "parcelId": "3953", "sheetId": "NY8937" },
+          { "parcelId": "4130", "sheetId": "NY8937" },
+          { "parcelId": "1597", "sheetId": "NY8936" },
+          { "parcelId": "2724", "sheetId": "NY8937" },
+          { "parcelId": "3743", "sheetId": "NY8937" },
+          { "parcelId": "5215", "sheetId": "NY8937" },
+          { "parcelId": "5343", "sheetId": "NY8937" },
+          { "parcelId": "6516", "sheetId": "NY8836" },
+          { "parcelId": "4551", "sheetId": "NY8937" },
+          { "parcelId": "3581", "sheetId": "NY8936" },
+          { "parcelId": "4116", "sheetId": "NY8937" },
+          { "parcelId": "4737", "sheetId": "NY8937" },
+          { "parcelId": "4652", "sheetId": "NY8937" },
+          { "parcelId": "4344", "sheetId": "NY8937" },
+          { "parcelId": "4200", "sheetId": "NY8937" },
+          { "parcelId": "3949", "sheetId": "NY8937" },
+          { "parcelId": "1428", "sheetId": "NY8937" },
+          { "parcelId": "3900", "sheetId": "NY8937" },
+          { "parcelId": "4093", "sheetId": "NY8936" }
+        ]
+      },
+      "info": {
+        "reference": "1100281541",
+        "email": { "address": "mascottsonx@nosttocsamt.com.test" },
+        "phone": { "mobile": "01234979079" },
+        "name": "MA SCOTT & SON",
+        "address": {
+          "line1": "Meadowsbank",
+          "line2": "Oakhill",
+          "line3": "Titlington",
+          "line4": null,
+          "line5": null,
+          "street": "CATFOSS AIRFIELD",
+          "city": "WESTERHAM",
+          "postalCode": "LE4 0SR"
+        }
+      }
+    }
+  }
+}
