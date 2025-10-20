@@ -368,6 +368,12 @@ describe('LogCodes', () => {
         'error',
         { taskName: TEST_TASK_NAMES.DECLARATION, error: TEST_ERRORS.PROCESSING_FAILED },
         `Task processing error for ${TEST_TASK_NAMES.DECLARATION}: ${TEST_ERRORS.PROCESSING_FAILED}`
+      ],
+      [
+        'CONFIG_LOAD_SKIPPED',
+        'debug',
+        { tasklistId: 'example', error: TEST_ERRORS.PROCESSING_FAILED },
+        `Tasklist config load skipped: tasklistId=example, error=${TEST_ERRORS.PROCESSING_FAILED}`
       ]
     ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
       const logCode = LogCodes.TASKLIST[logCodeName]
