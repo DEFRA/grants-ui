@@ -46,7 +46,6 @@ export async function retry(operation, options = {}) {
         result = await operation()
       }
 
-      // If we're checking fetch responses and it's not OK, but not at max attempts, throw to trigger retry
       if (checkFetchResponse && result && typeof result === 'object' && 'ok' in result && !result.ok) {
         if (attempt < maxAttempts && shouldRetry(new Error(`HTTP ${result.status}`))) {
           const errorMessage = `Request failed with status ${result.status}: ${result.statusText}`
