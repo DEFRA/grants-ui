@@ -8,6 +8,7 @@ services:
       - fcp-defra-id-stub
     ports:
       - "4000:4000"
+      - "4001:4001"
       - "4007:4007"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro

@@ -1,11 +1,5 @@
 services:
 
-  grants-ui-proxy:
-    ports:
-      - "4000:4000"
-      - "4001:4001"
-      - "4007:4007"
-
   grants-ui:
     environment:
       DEFRA_ID_REDIRECT_URL: https://grants-ui-proxy:4000/auth/sign-in-oidc
