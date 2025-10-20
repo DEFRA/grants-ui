@@ -3,6 +3,7 @@ import { join } from 'path'
 import { loadTasklistConfig } from '../tasklist/services/config-loader.js'
 import { parse } from 'yaml'
 import { getFormsCache } from '../common/forms/services/form.js'
+import { log, LogCodes } from '../common/helpers/logging/log.js'
 
 const tasklistFirstPages = new Map()
 const tasklistIds = new Set()
@@ -54,12 +55,16 @@ export async function loadAllTasklistConfigs() {
   await Promise.all(
     files.map(async (file) => {
       const tasklistId = file.replace('-tasklist.yaml', '')
-      const config = await loadTasklistConfig(tasklistId)
+      try {
+        const config = await loadTasklistConfig(tasklistId)
 
-      if (config?.tasklist) {
-        const firstPages = extractFirstPages(config.tasklist)
-        tasklistFirstPages.set(`${tasklistId}-tasklist`, firstPages)
-        tasklistIds.add(`${tasklistId}-tasklist`)
+        if (config?.tasklist) {
+          const firstPages = extractFirstPages(config.tasklist)
+          tasklistFirstPages.set(`${tasklistId}-tasklist`, firstPages)
+          tasklistIds.add(`${tasklistId}-tasklist`)
+        }
+      } catch (error) {
+        log(LogCodes.TASKLIST.CONFIG_LOAD_SKIPPED, { tasklistId, error: error.message })
       }
     })
   )

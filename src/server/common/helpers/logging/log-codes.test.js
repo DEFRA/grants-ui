@@ -368,6 +368,12 @@ describe('LogCodes', () => {
         'error',
         { taskName: TEST_TASK_NAMES.DECLARATION, error: TEST_ERRORS.PROCESSING_FAILED },
         `Task processing error for ${TEST_TASK_NAMES.DECLARATION}: ${TEST_ERRORS.PROCESSING_FAILED}`
+      ],
+      [
+        'CONFIG_LOAD_SKIPPED',
+        'debug',
+        { tasklistId: 'example', error: TEST_ERRORS.PROCESSING_FAILED },
+        `Tasklist config load skipped: tasklistId=example, error=${TEST_ERRORS.PROCESSING_FAILED}`
       ]
     ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
       const logCode = LogCodes.TASKLIST[logCodeName]
@@ -427,6 +433,54 @@ describe('LogCodes', () => {
       ]
     ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
       const logCode = LogCodes.AGREEMENTS[logCodeName]
+      expect(logCode.level).toBe(expectedLevel)
+      expect(typeof logCode.messageFunc).toBe('function')
+      expect(logCode.messageFunc(testParams)).toBe(expectedMessage)
+    })
+  })
+
+  describe('RESOURCE_NOT_FOUND log codes', () => {
+    it.each([
+      [
+        'FORM_NOT_FOUND',
+        'info',
+        {
+          slug: 'test-form',
+          userId: TEST_USER_IDS.DEFAULT,
+          sbi: TEST_SBI.DEFAULT,
+          reason: 'not_found',
+          environment: 'production',
+          referer: 'http://example.com'
+        },
+        `Form not found: slug=test-form, userId=${TEST_USER_IDS.DEFAULT}, sbi=${TEST_SBI.DEFAULT}, reason=not_found, environment=production, referer=http://example.com`
+      ],
+      [
+        'TASKLIST_NOT_FOUND',
+        'info',
+        {
+          tasklistId: 'test-tasklist',
+          userId: TEST_USER_IDS.DEFAULT,
+          sbi: TEST_SBI.DEFAULT,
+          reason: 'not_found',
+          environment: 'production',
+          referer: 'http://example.com'
+        },
+        `Tasklist not found: tasklistId=test-tasklist, userId=${TEST_USER_IDS.DEFAULT}, sbi=${TEST_SBI.DEFAULT}, reason=not_found, environment=production, referer=http://example.com`
+      ],
+      [
+        'PAGE_NOT_FOUND',
+        'info',
+        {
+          path: TEST_PATHS.TEST_PATH,
+          userId: TEST_USER_IDS.DEFAULT,
+          sbi: TEST_SBI.DEFAULT,
+          referer: 'http://example.com',
+          userAgent: 'Mozilla/5.0'
+        },
+        `Page not found: path=${TEST_PATHS.TEST_PATH}, userId=${TEST_USER_IDS.DEFAULT}, sbi=${TEST_SBI.DEFAULT}, referer=http://example.com, userAgent=Mozilla/5.0`
+      ]
+    ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
+      const logCode = LogCodes.RESOURCE_NOT_FOUND[logCodeName]
       expect(logCode.level).toBe(expectedLevel)
       expect(typeof logCode.messageFunc).toBe('function')
       expect(logCode.messageFunc(testParams)).toBe(expectedMessage)

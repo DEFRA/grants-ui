@@ -170,6 +170,11 @@ export const LogCodes = {
     TASK_ERROR: {
       level: 'error',
       messageFunc: (messageOptions) => `Task processing error for ${messageOptions.taskName}: ${messageOptions.error}`
+    },
+    CONFIG_LOAD_SKIPPED: {
+      level: 'debug',
+      messageFunc: (messageOptions) =>
+        `Tasklist config load skipped: tasklistId=${messageOptions.tasklistId}, error=${messageOptions.error}`
     }
   },
   LAND_GRANTS: {
