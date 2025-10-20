@@ -35,22 +35,24 @@ export async function retry(operation, options = {}) {
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       let result
+
       if (timeout) {
-        return await Promise.race([
-          operation(),
-          new Promise((_resolve, reject) =>
-            setTimeout(() => reject(new Error(`Operation timed out after ${timeout}ms`)), timeout)
-          )
-        ])
+        return race(operation, timeout)
       } else {
         result = await operation()
       }
 
-      if (checkFetchResponse && result && typeof result === 'object' && 'ok' in result && !result.ok) {
-        if (attempt < maxAttempts && shouldRetry(new Error(`HTTP ${result.status}`))) {
-          const errorMessage = `Request failed with status ${result.status}: ${result.statusText}`
-          throw new Error(errorMessage)
-        }
+      if (
+        checkFetchResponse &&
+        result &&
+        typeof result === 'object' &&
+        'ok' in result &&
+        !result.ok &&
+        attempt < maxAttempts &&
+        shouldRetry(new Error(`HTTP ${result.status}`))
+      ) {
+        const errorMessage = `Request failed with status ${result.status}: ${result.statusText}`
+        throw new Error(errorMessage)
       }
 
       return result
@@ -61,8 +63,7 @@ export async function retry(operation, options = {}) {
         break
       }
 
-      const jitter = 1 + Math.random() * 0.5 // NOSONAR - Math.random() is safe for non-cryptographic jitter in retry delays
-      const delay = exponential ? Math.min(initialDelay * Math.pow(2, attempt - 1) * jitter, maxDelay) : initialDelay
+      const delay = getDelay(exponential, initialDelay, attempt, maxDelay)
 
       onRetry(error, attempt, delay)
 
@@ -71,4 +72,36 @@ export async function retry(operation, options = {}) {
   }
 
   throw lastError
+}
+
+/**
+ * Race an operation against a timeout
+ * @param operation {Function}
+ * @param timeout {number}
+ * @returns {Promise}
+ */
+async function race(operation, timeout = 5000) {
+  return await Promise.race([
+    operation(),
+    new Promise((_resolve, reject) =>
+      setTimeout(() => reject(new Error(`Operation timed out after ${timeout}ms`)), timeout)
+    )
+  ])
+}
+
+/**
+ * Calculate delay for a retry attempt
+ * @param exponential {boolean}
+ * @param initialDelay {number}
+ * @param attempt {number}
+ * @param maxDelay {number}
+ * @returns {number|*}
+ */
+function getDelay(exponential, initialDelay, attempt, maxDelay) {
+  if (exponential) {
+    const jitter = 1 + Math.random() * 0.5
+    return Math.min(initialDelay * Math.pow(2, attempt - 1) * jitter, maxDelay)
+  }
+
+  return initialDelay
 }
