@@ -477,7 +477,7 @@ describe('makeGasApiRequest', () => {
     const errorStatus = 400
     const statusText = 'Bad Request'
 
-    mockedFetch.mockResolvedValueOnce({
+    mockedFetch.mockResolvedValue({
       ok: false,
       status: errorStatus,
       statusText,
@@ -504,7 +504,7 @@ describe('makeGasApiRequest', () => {
     const errorStatus = 500
     const statusText = 'Internal Server Error'
 
-    mockedFetch.mockResolvedValueOnce({
+    mockedFetch.mockResolvedValue({
       ok: false,
       status: errorStatus,
       statusText,
@@ -535,6 +535,32 @@ describe('makeGasApiRequest', () => {
     expect(thrownError.name).toBe('GrantApplicationServiceApiError')
     expect(thrownError.message).toBe('Failed to process GAS API request: Network connection failed')
     expect(thrownError.grantCode).toBe(testGrantCode)
+  })
+
+  test('should retry up to maxRetries on transient errors', async () => {
+    const mockedFetch = mockFetch()
+    const transientErrorResponse = {
+      ok: false,
+      status: 503,
+      statusText: 'Service Unavailable',
+      json: () => ({ message: 'Service is temporarily unavailable' })
+    }
+    const successResponse = {
+      ok: true,
+      json: vi.fn().mockResolvedValueOnce({ success: true })
+    }
+
+    mockedFetch
+      .mockResolvedValueOnce(transientErrorResponse)
+      .mockResolvedValueOnce(transientErrorResponse)
+      .mockResolvedValueOnce(successResponse)
+
+    const result = await makeGasApiRequest(testUrl, testGrantCode, {
+      retryConfig: { maxRetries: 3, checkFetchResponse: true }
+    })
+
+    expect(mockedFetch).toHaveBeenCalledTimes(3)
+    expect(result).toEqual(successResponse)
   })
 })
 
