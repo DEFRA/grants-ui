@@ -3,6 +3,7 @@ import { statusCodes } from '../common/constants/status-codes.js'
 import { getFormsCacheService } from '../common/helpers/forms-cache/forms-cache.js'
 import { updateApplicationStatus } from '../common/helpers/status/update-application-status-helper.js'
 import { getApplicationStatus } from '../common/services/grant-application/grant-application.service.js'
+import { log, LogCodes } from '../common/helpers/logging/log.js'
 
 const statusToUrlConfig = {
   // GrantsUI -> GAS combined mapping
@@ -113,7 +114,12 @@ export const formsStatusCallback = async (request, h, context) => {
     }
 
     // unexpected error — log and fallback
-    request.server.logger.error(err)
+    log(LogCodes.SUBMISSION.SUBMISSION_REDIRECT_FAILURE, {
+      grantType: grantCode,
+      referenceNumber: context.referenceNumber,
+      error: err.message
+    })
+
     const fallbackUrl = statusToUrlConfig.default.default(grantId)
     if (request.path === fallbackUrl) {
       return h.continue

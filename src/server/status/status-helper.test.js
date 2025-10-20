@@ -1,10 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { formsStatusCallback } from './status-helper.js'
 import { getApplicationStatus } from '../common/services/grant-application/grant-application.service.js'
 import { updateApplicationStatus } from '../common/helpers/status/update-application-status-helper.js'
 import { getFormsCacheService } from '../common/helpers/forms-cache/forms-cache.js'
 import { ApplicationStatus } from '../common/constants/application-status.js'
+import { formsStatusCallback } from './status-helper.js'
+import { log, LogCodes } from '../common/helpers/logging/log.js'
 
+vi.mock('../common/helpers/logging/log.js', () => ({
+  log: vi.fn(),
+  LogCodes: {
+    SUBMISSION: {
+      SUBMISSION_REDIRECT_FAILURE: { level: 'error', messageFunc: vi.fn() }
+    }
+  }
+}))
 vi.mock('../common/services/grant-application/grant-application.service.js', () => ({
   getApplicationStatus: vi.fn()
 }))
@@ -135,7 +144,14 @@ describe('formsStatusCallback', () => {
 
     const result = await formsStatusCallback(request, h, context)
 
-    expect(request.server.logger.error).toHaveBeenCalledWith(error)
+    expect(log).toHaveBeenCalledWith(
+      LogCodes.SUBMISSION.SUBMISSION_REDIRECT_FAILURE,
+      expect.objectContaining({
+        grantType: 'grant-a-code',
+        referenceNumber: 'REF-001',
+        error: error.message
+      })
+    )
     expect(h.redirect).toHaveBeenCalledWith('/grant-a/confirmation')
     expect(result).toEqual(expect.any(Symbol))
   })
@@ -147,7 +163,14 @@ describe('formsStatusCallback', () => {
 
     const result = await formsStatusCallback(request, h, context)
 
-    expect(request.server.logger.error).toHaveBeenCalledWith(error)
+    expect(log).toHaveBeenCalledWith(
+      LogCodes.SUBMISSION.SUBMISSION_REDIRECT_FAILURE,
+      expect.objectContaining({
+        grantType: 'grant-a-code',
+        referenceNumber: 'REF-001',
+        error: error.message
+      })
+    )
     expect(result).toBe(h.continue)
     expect(h.redirect).not.toHaveBeenCalled()
   })
