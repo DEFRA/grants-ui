@@ -1,0 +1,46 @@
+{
+  "data": {
+    "customer": {
+      "info": {
+        "name": { "title": "Mrs", "first": "Bernard", "middle": null, "last": "Tarrant" }
+      }
+    },
+    "business": {
+      "sbi": "107365747",
+      "organisationId": "5478814",
+      "land": {
+        "parcels": [
+          { "parcelId": "5623", "sheetId": "SD7858" },
+          { "parcelId": "5806", "sheetId": "SD7858" },
+          { "parcelId": "9226", "sheetId": "SD7758" },
+          { "parcelId": "3634", "sheetId": "SD7858" },
+          { "parcelId": "8110", "sheetId": "SD7758" },
+          { "parcelId": "8179", "sheetId": "SD7758" },
+          { "parcelId": "7429", "sheetId": "SD7758" },
+          { "parcelId": "5933", "sheetId": "SD7858" },
+          { "parcelId": "7135", "sheetId": "SD7858" },
+          { "parcelId": "2606", "sheetId": "SD7858" },
+          { "parcelId": "3009", "sheetId": "SD7858" },
+          { "parcelId": "2906", "sheetId": "SD7858" },
+          { "parcelId": "1059", "sheetId": "SD7858" }
+        ]
+      },
+      "info": {
+        "reference": "1101313269",
+        "email": { "address": "griffinmrm@rmniffirgr.com.test" },
+        "phone": { "mobile": null },
+        "name": "Griffin, M R",
+        "address": {
+          "line1": "Lang Cottage",
+          "line2": "Eastfield House",
+          "line3": "Haute Vienne",
+          "line4": null,
+          "line5": null,
+          "street": "FAIRVIEW CRESCENT",
+          "city": "SELBY",
+          "postalCode": "TR12 7AZ"
+        }
+      }
+    }
+  }
+}
