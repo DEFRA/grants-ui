@@ -6,7 +6,7 @@ import 'dotenv/config'
 /**
  * @typedef {object} AgreementsConfig
  * @property {string} apiToken
- * @property {string} apiUrl
+ * @property {string} frontendUrl
  * @property {string} baseUrl
  * @property {string} jwtSecret
  */
@@ -18,10 +18,10 @@ const agreements = convict({
     default: 'default-agreements-api-token',
     env: 'AGREEMENTS_API_TOKEN'
   },
-  apiUrl: {
+  frontendUrl: {
     format: String,
     default: 'http://localhost:3555',
-    env: 'AGREEMENTS_API_URL'
+    env: 'AGREEMENTS_UI_URL'
   },
   baseUrl: {
     doc: 'Agreements base URL',

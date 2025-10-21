@@ -80,7 +80,7 @@ describe('Agreements Controller', () => {
     // Default config setup
     config.get.mockImplementation((key) => {
       switch (key) {
-        case 'agreements.apiUrl':
+        case 'agreements.frontendUrl':
           return 'http://localhost:3003'
         case 'agreements.apiToken':
           return 'test-token'
@@ -98,7 +98,7 @@ describe('Agreements Controller', () => {
     test('should validate configuration successfully with valid values', async () => {
       await getAgreementController.handler(mockRequest, mockH)
 
-      expect(config.get).toHaveBeenCalledWith('agreements.apiUrl')
+      expect(config.get).toHaveBeenCalledWith('agreements.frontendUrl')
       expect(config.get).toHaveBeenCalledWith('agreements.apiToken')
       expect(config.get).toHaveBeenCalledWith('agreements.jwtSecret')
       expect(mockH.proxy).toHaveBeenCalledWith({
@@ -111,7 +111,7 @@ describe('Agreements Controller', () => {
     test('should return 503 when agreements API URL is missing', async () => {
       config.get.mockImplementation((key) => {
         switch (key) {
-          case 'agreements.apiUrl':
+          case 'agreements.frontendUrl':
             return undefined
           case 'agreements.apiToken':
             return 'test-token'
@@ -134,7 +134,7 @@ describe('Agreements Controller', () => {
     test('should return 503 when agreements API token is missing', async () => {
       config.get.mockImplementation((key) => {
         switch (key) {
-          case 'agreements.apiUrl':
+          case 'agreements.frontendUrl':
             return 'http://localhost:3003'
           case 'agreements.apiToken':
             return undefined
@@ -155,7 +155,7 @@ describe('Agreements Controller', () => {
     test('should handle baseUrl with trailing slashes', async () => {
       config.get.mockImplementation((key) => {
         switch (key) {
-          case 'agreements.apiUrl':
+          case 'agreements.frontendUrl':
             return 'http://localhost:3003///'
           case 'agreements.apiToken':
             return 'test-token'
@@ -213,7 +213,7 @@ describe('Agreements Controller', () => {
     test('should build target URI correctly with base URL having trailing slash', async () => {
       config.get.mockImplementation((key) => {
         switch (key) {
-          case 'agreements.apiUrl':
+          case 'agreements.frontendUrl':
             return 'http://localhost:3003/'
           case 'agreements.apiToken':
             return 'test-token'

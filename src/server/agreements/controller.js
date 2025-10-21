@@ -9,7 +9,7 @@ import { LogCodes } from '~/src/server/common/helpers/logging/log-codes.js'
  * @throws {Error} If required config is missing
  */
 function validateConfig() {
-  const baseUrl = config.get('agreements.apiUrl')
+  const baseUrl = config.get('agreements.frontendUrl')
   const token = config.get('agreements.apiToken')
 
   if (!baseUrl || !token) {
