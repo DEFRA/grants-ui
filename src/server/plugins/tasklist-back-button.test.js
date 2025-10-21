@@ -437,6 +437,50 @@ describe('Tasklist Back Button Plugin - Integration Tests', () => {
       expect(server.ext).toHaveBeenCalledTimes(2)
     })
 
+    it('should log error when tasklist config loading fails', async () => {
+      vi.resetModules()
+
+      const mockLog = vi.fn()
+      const mockLogCodes = {
+        TASKLIST: {
+          CONFIG_LOAD_SKIPPED: { level: 'debug', messageFunc: vi.fn() }
+        }
+      }
+
+      vi.doMock('../common/helpers/logging/log.js', () => ({
+        log: mockLog,
+        LogCodes: mockLogCodes
+      }))
+
+      vi.doMock('fs', async (importOriginal) => {
+        const actual = await importOriginal()
+        return {
+          ...actual,
+          existsSync: vi.fn().mockReturnValue(true),
+          readdirSync: vi.fn().mockReturnValue(['example-tasklist.yaml'])
+        }
+      })
+
+      vi.doMock('../tasklist/services/config-loader.js', () => ({
+        loadTasklistConfig: vi.fn().mockRejectedValue(new Error('Config load failed'))
+      }))
+
+      const { loadAllTasklistConfigs: loadAllTasklistConfigsTest } = await import('./tasklist-back-button.js')
+
+      await loadAllTasklistConfigsTest()
+
+      expect(mockLog).toHaveBeenCalled()
+      expect(mockLog).toHaveBeenCalledWith(
+        expect.objectContaining({ level: 'debug' }),
+        expect.objectContaining({
+          tasklistId: 'example',
+          error: 'Config load failed'
+        })
+      )
+
+      vi.resetModules()
+    })
+
     it('should achieve 100% coverage by using existing real form (line 81 coverage)', async () => {
       const realBusinessStatusYaml = `pages:
   - path: /nature-of-business

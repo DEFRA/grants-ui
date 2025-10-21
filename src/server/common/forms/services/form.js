@@ -5,6 +5,7 @@ import { FileFormService } from '@defra/forms-engine-plugin/file-form-service.js
 import path from 'node:path'
 import fs from 'node:fs/promises'
 import { parse as parseYaml } from 'yaml'
+import { notFound } from '@hapi/boom'
 
 // Simple in-memory cache of discovered forms metadata
 let formsCache = []
@@ -191,5 +192,22 @@ export const formsService = async () => {
     }
   }
 
-  return loader.toFormsService()
+  const baseService = loader.toFormsService()
+
+  return {
+    getFormMetadata: async (slug) => {
+      try {
+        return await baseService.getFormMetadata(slug)
+      } catch (error) {
+        throw notFound(`Form '${slug}' not found`, error)
+      }
+    },
+    getFormDefinition: async (id, state) => {
+      try {
+        return await baseService.getFormDefinition(id, state)
+      } catch (error) {
+        throw notFound(`Form definition '${id}' not found`, error)
+      }
+    }
+  }
 }

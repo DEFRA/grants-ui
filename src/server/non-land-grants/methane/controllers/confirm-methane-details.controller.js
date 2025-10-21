@@ -1,18 +1,18 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
-import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
-import { fetchBusinessAndCustomerInformation } from '../../common/services/consolidated-view/consolidated-view.service.js'
 import {
   createAddressRow,
   createBusinessNameRow,
   createContactDetailsRow,
   createCustomerNameRow,
   createSbiRow
-} from '../../common/helpers/create-rows.js'
+} from '~/src/server/common/helpers/create-rows.js'
+import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
+import { fetchBusinessAndCPH } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
 
 const logger = createLogger()
 
-export default class ConfirmFarmDetailsController extends QuestionPageController {
-  viewName = 'confirm-farm-details'
+export default class ConfirmMethaneDetailsController extends QuestionPageController {
+  viewName = 'confirm-methane-details'
 
   // Constants
   static ERROR_MESSAGE = 'Unable to find farm information, please try again later.'
@@ -39,17 +39,44 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
    * @returns {Promise<object>} Farm details object with rows array
    */
   async buildFarmDetails(crn, sbi) {
-    const data = await fetchBusinessAndCustomerInformation(sbi, crn)
+    const data = await fetchBusinessAndCPH(sbi, crn)
 
     const rows = [
       createCustomerNameRow(data.customer?.name),
       createBusinessNameRow(data.business?.name),
-      createAddressRow(data.business?.address),
       createSbiRow(sbi),
-      createContactDetailsRow(data.business?.phone?.mobile, data.business?.email?.address)
+      createContactDetailsRow(data.business?.phone?.mobile, data.business?.email?.address),
+      createAddressRow(data.business?.address),
+      this.createTypeRow(data.business?.type),
+      this.createCPHRow(data.countyParishHoldings),
+      this.createVATRow(data.business?.vat)
     ].filter(Boolean)
 
     return { rows }
+  }
+
+  createVATRow(vat) {
+    if (!vat) {
+      return null
+    }
+
+    return {
+      key: { text: 'VAT number' },
+      value: { text: vat }
+    }
+  }
+
+  createCPHRow(countyParishHoldings) {
+    if (countyParishHoldings.length === 0) {
+      return null
+    }
+
+    return {
+      key: { text: 'County Parish Holdings' },
+      value: {
+        text: countyParishHoldings
+      }
+    }
   }
 
   /**
@@ -64,7 +91,7 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
         titleText: 'There is a problem',
         errorList: [
           {
-            text: ConfirmFarmDetailsController.ERROR_MESSAGE,
+            text: ConfirmMethaneDetailsController.ERROR_MESSAGE,
             href: ''
           }
         ]
@@ -85,7 +112,7 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
       const { sbi, crn } = request.auth.credentials
 
       if (sbi) {
-        const applicant = await fetchBusinessAndCustomerInformation(sbi, crn)
+        const applicant = await fetchBusinessAndCPH(sbi, crn)
         await this.setState(request, {
           ...state,
           applicant
@@ -96,6 +123,19 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
     }
 
     return fn
+  }
+
+  createTypeRow(type) {
+    if (!type) {
+      return null
+    }
+
+    const { type: organisationType } = type
+
+    return {
+      key: { text: 'Type' },
+      value: { text: organisationType }
+    }
   }
 }
 

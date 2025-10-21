@@ -121,6 +121,11 @@ export const LogCodes = {
       level: 'debug',
       messageFunc: (messageOptions) =>
         `Submission payload for grantType=${messageOptions.grantType}:\n${JSON.stringify(messageOptions.payload, null, 2)}`
+    },
+    SUBMISSION_REDIRECT_FAILURE: {
+      level: 'error',
+      messageFunc: (messageOptions) =>
+        `Submission redirect failure for grantType=${messageOptions.grantType}, referenceNumber=${messageOptions.referenceNumber}. Error: ${messageOptions.error}`
     }
   },
   DECLARATION: {
@@ -170,6 +175,11 @@ export const LogCodes = {
     TASK_ERROR: {
       level: 'error',
       messageFunc: (messageOptions) => `Task processing error for ${messageOptions.taskName}: ${messageOptions.error}`
+    },
+    CONFIG_LOAD_SKIPPED: {
+      level: 'debug',
+      messageFunc: (messageOptions) =>
+        `Tasklist config load skipped: tasklistId=${messageOptions.tasklistId}, error=${messageOptions.error}`
     }
   },
   LAND_GRANTS: {
@@ -203,6 +213,24 @@ export const LogCodes = {
       level: 'error',
       messageFunc: (messageOptions) =>
         `Agreement processing error for user=${messageOptions.userId}: ${messageOptions.error}`
+    }
+  },
+
+  RESOURCE_NOT_FOUND: {
+    FORM_NOT_FOUND: {
+      level: 'info',
+      messageFunc: (messageOptions) =>
+        `Form not found: slug=${messageOptions.slug}, userId=${messageOptions.userId || 'anonymous'}, sbi=${messageOptions.sbi || 'unknown'}, reason=${messageOptions.reason || 'not_found'}, environment=${messageOptions.environment || 'unknown'}, referer=${messageOptions.referer || 'none'}`
+    },
+    TASKLIST_NOT_FOUND: {
+      level: 'info',
+      messageFunc: (messageOptions) =>
+        `Tasklist not found: tasklistId=${messageOptions.tasklistId}, userId=${messageOptions.userId || 'anonymous'}, sbi=${messageOptions.sbi || 'unknown'}, reason=${messageOptions.reason || 'not_found'}, environment=${messageOptions.environment || 'unknown'}, referer=${messageOptions.referer || 'none'}`
+    },
+    PAGE_NOT_FOUND: {
+      level: 'info',
+      messageFunc: (messageOptions) =>
+        `Page not found: path=${messageOptions.path}, userId=${messageOptions.userId || 'anonymous'}, sbi=${messageOptions.sbi || 'unknown'}, referer=${messageOptions.referer || 'none'}, userAgent=${messageOptions.userAgent || 'unknown'}`
     }
   },
 

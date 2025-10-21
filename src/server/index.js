@@ -16,6 +16,7 @@ import { grantsUiPaths, nunjucksConfig } from '~/src/config/nunjucks/nunjucks.js
 import auth from '~/src/plugins/auth.js'
 import sso from '~/src/plugins/sso.js'
 import { contentSecurityPolicy } from '~/src/plugins/content-security-policy.js'
+import { formsStatusCallback } from '~/src/server/status/status-helper.js'
 import CheckResponsesPageController from '~/src/server/check-responses/check-responses.controller.js'
 import { formsService } from '~/src/server/common/forms/services/form.js'
 import { outputService } from '~/src/server/common/forms/services/output.js'
@@ -45,6 +46,7 @@ import RemoveActionPageController from './land-grants/controllers/remove-action-
 import { router } from './router.js'
 import SectionEndController from './section-end/section-end.controller.js'
 import whitelist from '~/src/server/common/helpers/whitelist/whitelist.js'
+import ConfirmMethaneDetailsController from '~/src/server/non-land-grants/methane/controllers/confirm-methane-details.controller.js'
 
 const SESSION_CACHE_NAME = 'session.cache.name'
 
@@ -55,6 +57,7 @@ const getViewPaths = () => {
     path.join(serverDir, 'auth/views'),
     path.join(serverDir, 'land-grants/views'),
     path.join(serverDir, 'non-land-grants/pigs-might-fly/views'),
+    path.join(serverDir, 'non-land-grants/methane/views'),
     path.join(serverDir, 'about'),
     path.join(serverDir, 'home'),
     path.join(serverDir, 'home/views'),
@@ -124,6 +127,7 @@ const registerFormsPlugin = async (server, prefix = '') => {
       ...(prefix && { routes: { prefix } }),
       cache: new StatePersistenceService({ server }),
       baseUrl: config.get('baseUrl'),
+      onRequest: formsStatusCallback,
       services: {
         formsService: await formsService(),
         outputService
@@ -149,7 +153,8 @@ const registerFormsPlugin = async (server, prefix = '') => {
         FlyingPigsSubmissionPageController,
         PotentialFundingController,
         SummaryPageController,
-        CheckResponsesPageController
+        CheckResponsesPageController,
+        ConfirmMethaneDetailsController
       }
     }
   })
