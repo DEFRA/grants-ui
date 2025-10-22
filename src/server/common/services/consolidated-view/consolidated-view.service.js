@@ -92,8 +92,8 @@ async function fetchMockDataForBusiness(sbi) {
 
 /**
  * Makes a request to the Consolidated View API
+ * @param {AnyFormRequest} request
  * @param {string} query - GraphQL query
- * @param {number} sbi - Standard Business Identifier (for error reporting)
  * @returns {Promise<object>} API response JSON
  * @throws {ConsolidatedViewApiError} - If the API request fails
  */

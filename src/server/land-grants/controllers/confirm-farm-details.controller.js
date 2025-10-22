@@ -85,10 +85,10 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
      */
     const fn = async (request, context, h) => {
       const { state } = context
-      const { sbi, crn } = request.auth.credentials
+      const { sbi } = request.auth.credentials
 
       if (sbi) {
-        const applicant = await fetchBusinessAndCustomerInformation(sbi, crn)
+        const applicant = await fetchBusinessAndCustomerInformation(request)
         await this.setState(request, {
           ...state,
           applicant
