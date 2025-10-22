@@ -119,7 +119,7 @@ export const formsStatusCallback = async (request, h, context) => {
     return h.continue
   }
 
-  const previousStatus = context.state.applicationStatus
+  const previousStatus = context.state?.applicationStatus
 
   if (previousStatus !== 'SUBMITTED') {
     return h.continue
