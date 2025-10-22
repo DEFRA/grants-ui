@@ -116,7 +116,7 @@ async function fetchParcelsSize(parcelIds) {
 
 /**
  * Fetches parcels with area data for a given SBI.
- * @param {AnyFormRequest} request
+ * @param {Request} request
  * @returns {Promise<Parcel[]>}
  * @throws {Error}
  */
@@ -158,5 +158,4 @@ export async function validateApplication(data) {
 /**
  * @import { ActionOption, LandActions, ActionGroup, Parcel, ValidateApplicationResponse, Action } from '~/src/server/land-grants/types/land-grants.client.d.js'
  * @import { PaymentCalculation } from '~/src/server/land-grants/types/payment.d.js'
- * @import { AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
  */

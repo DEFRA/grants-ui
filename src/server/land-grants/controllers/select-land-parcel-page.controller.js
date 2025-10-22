@@ -81,14 +81,13 @@ export default class SelectLandParcelPageController extends LandGrantsQuestionWi
      */
     const fn = async (request, context, h) => {
       const { selectedLandParcel = '', landParcels } = context.state || {}
-      const { sbi } = request.auth.credentials
 
       const { viewName } = this
       const baseViewModel = super.getViewModel(request, context)
       const existingLandParcels = Object.keys(landParcels || {}).length > 0
 
       try {
-        const parcels = await fetchParcels(sbi)
+        const parcels = await fetchParcels(request)
         this.parcels = parcels.map((parcel) => {
           const parcelKey = `${parcel.sheetId}-${parcel.parcelId}`
           const parcelData = landParcels?.[parcelKey]
@@ -105,6 +104,7 @@ export default class SelectLandParcelPageController extends LandGrantsQuestionWi
 
         return h.view(viewName, viewModel)
       } catch (error) {
+        const { sbi } = request.auth?.credentials
         logger.error({ err: error, sbi }, 'Unexpected error when fetching parcel data')
         const errorMessage = 'Unable to find parcel information, please try again later.'
 
