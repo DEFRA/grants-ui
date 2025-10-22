@@ -39,6 +39,7 @@ class ConsolidatedViewApiError extends Error {
 
 /**
  * Creates request options for Consolidated View API calls
+ * @param {AnyFormRequest} request
  * @param {object} params - Request parameters
  * @param {string} [params.method] - HTTP method
  * @param {string} params.query - GraphQL query string

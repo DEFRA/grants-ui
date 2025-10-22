@@ -94,7 +94,7 @@ describe('ConfirmFarmDetailsController', () => {
       const handler = controller.makePostRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
 
-      expect(fetchBusinessAndCustomerInformation).toHaveBeenCalledWith('SBI123456', '1100014934')
+      expect(fetchBusinessAndCustomerInformation).toHaveBeenCalledWith(mockRequest)
       expect(controller.setState).toHaveBeenCalledWith(
         mockRequest,
         expect.objectContaining({
