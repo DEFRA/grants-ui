@@ -20,12 +20,6 @@ vi.mock('~/src/server/common/helpers/logging/logger.js', async () => {
   })
 })
 
-const mockRequest = {
-  auth: {
-    sbi: 'SBI123456',
-    crn: '1100014934'
-  }
-}
 const mockData = {
   business: {
     name: 'Test Methane Business',
