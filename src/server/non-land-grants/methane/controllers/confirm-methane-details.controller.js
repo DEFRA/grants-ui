@@ -40,13 +40,12 @@ export default class ConfirmMethaneDetailsController extends QuestionPageControl
    * @returns {Promise<object>} Farm details object with rows array
    */
   async buildFarmDetails(request) {
-    const { credentials: { sbi } = {} } = request.auth ?? {}
     const data = await fetchBusinessAndCPH(request)
 
     const rows = [
       createCustomerNameRow(data.customer?.name),
       createBusinessNameRow(data.business?.name),
-      createSbiRow(sbi),
+      createSbiRow(request.auth?.credentials?.sbi),
       createContactDetailsRow(data.business?.phone?.mobile, data.business?.email?.address),
       createAddressRow(data.business?.address),
       this.createTypeRow(data.business?.type),

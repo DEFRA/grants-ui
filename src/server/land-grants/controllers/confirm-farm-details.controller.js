@@ -40,15 +40,13 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
    * @returns {Promise<object>} Farm details object with rows array
    */
   async buildFarmDetails(request) {
-    const { credentials: { sbi } = {} } = request.auth ?? {}
-
     const data = await fetchBusinessAndCustomerInformation(request)
 
     const rows = [
       createCustomerNameRow(data.customer?.name),
       createBusinessNameRow(data.business?.name),
       createAddressRow(data.business?.address),
-      createSbiRow(sbi),
+      createSbiRow(request.auth?.credentials?.sbi),
       createContactDetailsRow(data.business?.phone?.mobile, data.business?.email?.address)
     ].filter(Boolean)
 
