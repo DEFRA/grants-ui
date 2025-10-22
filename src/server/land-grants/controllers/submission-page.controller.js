@@ -72,7 +72,7 @@ export default class SubmissionPageController extends SummaryPageController {
    * @returns {Promise<object>} - Redirect response
    */
   async handleSuccessfulSubmission(request, context, h, submissionStatus) {
-    const { sbi, crn } = request.auth?.credentials || {}
+    const { credentials: { sbi, crn } = {} } = request.auth ?? {}
     const submittedAt = new Date().toISOString()
     const cacheService = getFormsCacheService(request.server)
 

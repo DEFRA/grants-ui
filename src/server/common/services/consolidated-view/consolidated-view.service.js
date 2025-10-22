@@ -44,15 +44,24 @@ class ConsolidatedViewApiError extends Error {
  * @param {string} params.query - GraphQL query string
  * @returns {Promise<object>} Request options object
  */
-async function getConsolidatedViewRequestOptions({ method = 'POST', query }) {
-  const CV_API_AUTH_EMAIL = config.get('consolidatedView.authEmail')
+async function getConsolidatedViewRequestOptions(request, { method = 'POST', query }) {
+  const isDefraIdEnabled = config.get('defraId.enabled')
+  const headers = {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${await getValidToken()}`
+  }
+
+  if (isDefraIdEnabled) {
+    const { credentials: { token } = {} } = request.auth ?? {}
+    headers['gateway-type'] = 'external'
+    headers['x-forwarded-authorization'] = token
+  } else {
+    headers['email'] = config.get('consolidatedView.authEmail')
+  }
+
   return {
     method,
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${await getValidToken()}`,
-      email: CV_API_AUTH_EMAIL
-    },
+    headers,
     body: JSON.stringify({
       query
     })
@@ -88,9 +97,10 @@ async function fetchMockDataForBusiness(sbi) {
  * @returns {Promise<object>} API response JSON
  * @throws {ConsolidatedViewApiError} - If the API request fails
  */
-async function makeConsolidatedViewRequest(query, sbi) {
+async function makeConsolidatedViewRequest(request, query) {
+  const sbi = request.auth.credentials.sbi
   const CV_API_ENDPOINT = config.get('consolidatedView.apiEndpoint')
-  const response = await fetch(CV_API_ENDPOINT, await getConsolidatedViewRequestOptions({ query }))
+  const response = await fetch(CV_API_ENDPOINT, await getConsolidatedViewRequestOptions(request, { query }))
 
   if (!response.ok) {
     const errorText = await response.text()
@@ -107,15 +117,16 @@ async function makeConsolidatedViewRequest(query, sbi) {
 
 /**
  * Generic function to fetch data from Consolidated View with mock support
+ * @param {AnyFormRequest} request
  * @param {object} params - Request parameters
- * @param {number} params.sbi - Standard Business Identifier
  * @param {string} params.query - GraphQL query
  * @param {Function} params.formatResponse - Function to format the response
  * @returns {Promise<any>} Formatted response data
  * @throws {ConsolidatedViewApiError} - If the API request fails
  */
-async function fetchFromConsolidatedView({ sbi, query, formatResponse }) {
+async function fetchFromConsolidatedView(request, { query, formatResponse }) {
   const mockDALEnabled = config.get('consolidatedView.mockDALEnabled')
+  const { credentials: { sbi } = {} } = request.auth ?? {}
 
   try {
     if (mockDALEnabled) {
@@ -123,7 +134,7 @@ async function fetchFromConsolidatedView({ sbi, query, formatResponse }) {
       return formatResponse(mockResponse)
     }
 
-    const responseJson = await makeConsolidatedViewRequest(query, sbi)
+    const responseJson = await makeConsolidatedViewRequest(request, query)
     return formatResponse(responseJson)
   } catch (error) {
     logger.error({ err: error }, 'Unexpected error fetching business data from Consolidated View API')
@@ -138,12 +149,13 @@ async function fetchFromConsolidatedView({ sbi, query, formatResponse }) {
 
 /**
  * Fetches business parcels data from Consolidated View
- * @param {number} sbi - Standard Business Identifier
+ * @param {AnyFormRequest} request
  * @returns {Promise<Array>} - Promise that resolves to the parcels array
  * @throws {ConsolidatedViewApiError} - If the API request fails
  * @throws {Error} - For other unexpected errors
  */
-export async function fetchParcelsForSbi(sbi) {
+export async function fetchParcelsFromDal(request) {
+  const { credentials: { sbi } = {} } = request.auth ?? {}
   const query = `
     query Business {
       business(sbi: "${sbi}") {
@@ -157,18 +169,18 @@ export async function fetchParcelsForSbi(sbi) {
     }`
 
   const formatResponse = (r) => r.data?.business?.land?.parcels || []
-  return fetchFromConsolidatedView({ sbi, query, formatResponse })
+  return fetchFromConsolidatedView(request, { query, formatResponse })
 }
 
 /**
  * Fetches business and customer information from Consolidated View
- * @param {number} sbi - Standard Business Identifier
- * @param {string} crn - Customer Reference Number
+ * @param {AnyFormRequest} request
  * @returns {Promise<object>} - Promise that resolves to business and customer info
  * @throws {ConsolidatedViewApiError} - If the API request fails
  * @throws {Error} - For other unexpected errors
  */
-export async function fetchBusinessAndCustomerInformation(sbi, crn) {
+export async function fetchBusinessAndCustomerInformation(request) {
+  const { credentials: { sbi, crn } = {} } = request.auth ?? {}
   const query = `
     query Business {
       customer(crn: "${crn}") {
@@ -210,10 +222,12 @@ export async function fetchBusinessAndCustomerInformation(sbi, crn) {
     customer: r.data?.customer?.info
   })
 
-  return fetchFromConsolidatedView({ sbi, query, formatResponse })
+  return fetchFromConsolidatedView(request, { query, formatResponse })
 }
 
-export async function fetchBusinessAndCPH(sbi, crn) {
+export async function fetchBusinessAndCPH(request) {
+  const { credentials: { sbi, crn } = {} } = request.auth ?? {}
+
   const query = `
     query Business {
       customer(crn: "${crn}") {
@@ -264,5 +278,9 @@ export async function fetchBusinessAndCPH(sbi, crn) {
     customer: r.data?.customer?.info
   })
 
-  return fetchFromConsolidatedView({ sbi, query, formatResponse })
+  return fetchFromConsolidatedView(request, { query, formatResponse })
 }
+
+/**
+ * @import { AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
+ */

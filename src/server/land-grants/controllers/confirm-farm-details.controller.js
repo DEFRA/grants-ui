@@ -23,10 +23,10 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
   makeGetRouteHandler() {
     return async (request, context, h) => {
       const baseViewModel = super.getViewModel(request, context)
-      const { sbi, crn } = request.auth.credentials
+      const { sbi } = request.auth.credentials
 
       try {
-        const farmDetails = await this.buildFarmDetails(crn, sbi)
+        const farmDetails = await this.buildFarmDetails(request)
         return h.view(this.viewName, { ...baseViewModel, farmDetails })
       } catch (error) {
         return this.handleError(sbi, error, baseViewModel, h)
@@ -36,10 +36,13 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
 
   /**
    * Build farm details view model
+   * @param {AnyFormRequest} request
    * @returns {Promise<object>} Farm details object with rows array
    */
-  async buildFarmDetails(crn, sbi) {
-    const data = await fetchBusinessAndCustomerInformation(sbi, crn)
+  async buildFarmDetails(request) {
+    const { credentials: { sbi } = {} } = request.auth ?? {}
+
+    const data = await fetchBusinessAndCustomerInformation(request)
 
     const rows = [
       createCustomerNameRow(data.customer?.name),

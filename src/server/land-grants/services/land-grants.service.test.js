@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { vi } from 'vitest'
 import { formatCurrency } from '~/src/config/nunjucks/filters/format-currency.js'
-import { fetchParcelsForSbi } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
+import { fetchParcelsFromDal } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
 import {
   calculateGrantPayment,
   fetchAvailableActionsForParcel,
@@ -37,7 +37,7 @@ vi.mock('~/src/server/common/helpers/logging/logger.js', async () => {
   })
 })
 vi.mock('~/src/server/common/services/consolidated-view/consolidated-view.service.js', () => ({
-  fetchParcelsForSbi: vi.fn()
+  fetchParcelsFromDal: vi.fn()
 }))
 
 describe('land-grants service', () => {
@@ -519,12 +519,12 @@ describe('land-grants service', () => {
         ]
       }
 
-      fetchParcelsForSbi.mockResolvedValueOnce(mockParcels)
+      fetchParcelsFromDal.mockResolvedValueOnce(mockParcels)
       parcelsWithSize.mockResolvedValueOnce(mockSizeResponse)
 
       const result = await fetchParcels('106284736')
 
-      expect(fetchParcelsForSbi).toHaveBeenCalledWith('106284736')
+      expect(fetchParcelsFromDal).toHaveBeenCalledWith('106284736')
       expect(parcelsWithSize).toHaveBeenCalledWith(['SHEET1-PARCEL1', 'SHEET2-PARCEL2'], mockApiEndpoint)
       expect(result).toEqual([
         {
@@ -556,7 +556,7 @@ describe('land-grants service', () => {
         ]
       }
 
-      fetchParcelsForSbi.mockResolvedValueOnce(mockParcels)
+      fetchParcelsFromDal.mockResolvedValueOnce(mockParcels)
       parcelsWithSize.mockResolvedValueOnce(mockSizeResponse)
 
       const result = await fetchParcels('106284736')
@@ -579,7 +579,7 @@ describe('land-grants service', () => {
       const mockParcels = []
       const mockSizeResponse = { parcels: [] }
 
-      fetchParcelsForSbi.mockResolvedValueOnce(mockParcels)
+      fetchParcelsFromDal.mockResolvedValueOnce(mockParcels)
       parcelsWithSize.mockResolvedValueOnce(mockSizeResponse)
 
       const result = await fetchParcels('106284736')
@@ -587,15 +587,15 @@ describe('land-grants service', () => {
       expect(result).toEqual([])
     })
 
-    it('should handle fetchParcelsForSbi error', async () => {
-      fetchParcelsForSbi.mockRejectedValueOnce(new Error('SBI service error'))
+    it('should handle fetchParcelsFromDal error', async () => {
+      fetchParcelsFromDal.mockRejectedValueOnce(new Error('SBI service error'))
 
       await expect(fetchParcels('106284736')).rejects.toThrow('SBI service error')
     })
 
     it('should handle size API error', async () => {
       const mockParcels = [{ parcelId: 'PARCEL1', sheetId: 'SHEET1' }]
-      fetchParcelsForSbi.mockResolvedValueOnce(mockParcels)
+      fetchParcelsFromDal.mockResolvedValueOnce(mockParcels)
       parcelsWithSize.mockRejectedValueOnce(new Error('Size API error'))
 
       await expect(fetchParcels('106284736')).rejects.toThrow('Size API error')

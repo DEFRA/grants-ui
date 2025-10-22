@@ -1,5 +1,5 @@
 import { formatCurrency } from '~/src/config/nunjucks/filters/format-currency.js'
-import { fetchParcelsForSbi } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
+import { fetchParcelsFromDal } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
 import { landActionWithCode } from '~/src/server/land-grants/utils/land-action-with-code.js'
 import { stringifyParcel } from '../utils/format-parcel.js'
 import { stateToLandActionsMapper } from '../mappers/state-to-land-grants-mapper.js'
@@ -120,8 +120,8 @@ async function fetchParcelsSize(parcelIds) {
  * @returns {Promise<Parcel[]>}
  * @throws {Error}
  */
-export async function fetchParcels(sbi) {
-  const parcels = await fetchParcelsForSbi(sbi)
+export async function fetchParcels(request) {
+  const parcels = await fetchParcelsFromDal(request)
   const parcelKeys = parcels.map(stringifyParcel)
   const sizes = await fetchParcelsSize(parcelKeys)
   const hydratedParcels = parcels.map((p) => ({
