@@ -104,11 +104,11 @@ async function makeConsolidatedViewRequest(request, query) {
   const response = await fetch(CV_API_ENDPOINT, await getConsolidatedViewRequestOptions(request, { query }))
 
   if (!response.ok) {
-    const errorText = await response.text()
+    const error = await response.json()
     throw new ConsolidatedViewApiError(
-      `Failed to fetch business data: ${response.status} ${response.statusText}`,
+      `Failed to fetch business data: ${response.status} ${response.statusText} - ${JSON.stringify(error)}`,
       response.status,
-      errorText,
+      JSON.stringify(error),
       sbi
     )
   }
@@ -138,7 +138,16 @@ async function fetchFromConsolidatedView(request, { query, formatResponse }) {
     const responseJson = await makeConsolidatedViewRequest(request, query)
     return formatResponse(responseJson)
   } catch (error) {
-    logger.error({ err: error }, 'Unexpected error fetching business data from Consolidated View API')
+    logger.error(
+      {
+        error: {
+          message: error.message,
+          stack_trace: error.stack,
+          type: error.constructor.name
+        }
+      },
+      'Unexpected error fetching business data from Consolidated View API'
+    )
     throw new ConsolidatedViewApiError(
       'Failed to fetch business data: ' + error.message,
       error.status,
