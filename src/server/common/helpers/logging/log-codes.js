@@ -190,7 +190,8 @@ export const LogCodes = {
   LAND_GRANTS: {
     LAND_GRANT_APPLICATION_STARTED: {
       level: 'info',
-      messageFunc: (messageOptions) => `Land grant application started for user=${messageOptions.userId}`
+      messageFunc: (messageOptions) =>
+        `Land grant application started userCrn=${messageOptions.userCrn} | userSbi=${messageOptions.userSbi}`
     },
     LAND_GRANT_APPLICATION_SUBMITTED: {
       level: 'info',

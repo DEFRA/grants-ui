@@ -398,8 +398,8 @@ describe('LogCodes', () => {
       [
         'LAND_GRANT_APPLICATION_STARTED',
         'info',
-        { userId: TEST_USER_IDS.DEFAULT },
-        `Land grant application started for user=${TEST_USER_IDS.DEFAULT}`
+        { userCrn: TEST_USER_IDS.DEFAULT, userSbi: TEST_SBI.DEFAULT },
+        `Land grant application started userCrn=${TEST_USER_IDS.DEFAULT} | userSbi=${TEST_SBI.DEFAULT}`
       ],
       [
         'LAND_GRANT_APPLICATION_SUBMITTED',

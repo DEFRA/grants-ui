@@ -1,5 +1,6 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { fetchBusinessAndCustomerInformation } from '../../common/services/consolidated-view/consolidated-view.service.js'
+import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import {
   createAddressRow,
   createBusinessNameRow,
@@ -7,7 +8,6 @@ import {
   createCustomerNameRow,
   createSbiRow
 } from '../../common/helpers/create-rows.js'
-import { log, LogCodes } from '../../common/helpers/logging/log.js'
 
 export default class ConfirmFarmDetailsController extends QuestionPageController {
   viewName = 'confirm-farm-details'
@@ -21,13 +21,11 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
   makeGetRouteHandler() {
     return async (request, context, h) => {
       const baseViewModel = super.getViewModel(request, context)
-      const { sbi } = request.auth.credentials
-
       try {
         const farmDetails = await this.buildFarmDetails(request)
         return h.view(this.viewName, { ...baseViewModel, farmDetails })
       } catch (error) {
-        return this.handleError(sbi, error, baseViewModel, h)
+        return this.handleError(baseViewModel, h)
       }
     }
   }
@@ -84,13 +82,18 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
      */
     const fn = async (request, context, h) => {
       const { state } = context
-      const { sbi } = request.auth.credentials
+      const { crn, sbi } = request.auth.credentials
 
       if (sbi) {
         const applicant = await fetchBusinessAndCustomerInformation(request)
         await this.setState(request, {
           ...state,
           applicant
+        })
+
+        log(LogCodes.LAND_GRANTS.LAND_GRANT_APPLICATION_STARTED, {
+          userCrn: crn,
+          userSbi: sbi
         })
       }
 
