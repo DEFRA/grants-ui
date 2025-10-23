@@ -32,6 +32,6 @@ Standard GA4 automatic events are being tracked, including `page_view`, `form_st
 
 These are considered non-critical for initial day 1 launch but should be addressed in future iterations.
 
-## Access Requests
+## Access Requests & Support
 
-Analytics access is managed by the Grants Enablement team. To request access, please send a request to the [#grants-ui-support](https://defra-digital-team.slack.com/archives/C08RCBK5J3E) slack channel under Defra Digital Team workspace.
+Analytics access and support is managed by the Grants Enablement team. To request access, please send a request to the [#grants-ui-support](https://defra-digital-team.slack.com/archives/C08RCBK5J3E) slack channel under Defra Digital Team workspace.
