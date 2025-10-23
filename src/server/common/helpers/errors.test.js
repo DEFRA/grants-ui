@@ -77,6 +77,14 @@ describe('#catchAll', () => {
     view: mockToolkitView.mockReturnThis(),
     code: mockToolkitCode.mockReturnThis()
   }
+  const SERVER_ERROR_STATUS = statusCodes.internalServerError
+  const HTTP_METHOD = 'GET'
+
+  const expectLogCall = () =>
+    expect.objectContaining({
+      level: expect.anything(),
+      messageFunc: expect.any(Function)
+    })
 
   const mockRequest = (/** @type {number} */ statusCode) => ({
     response: {
@@ -89,7 +97,7 @@ describe('#catchAll', () => {
     },
     logger: { error: mockErrorLogger },
     path: '/test-path',
-    method: 'GET'
+    method: HTTP_METHOD
   })
 
   beforeEach(() => {
@@ -307,6 +315,146 @@ describe('#catchAll', () => {
     )
   })
 
+  test('Should log auth error with default user and message when credentials missing', () => {
+    const request = mockRequest(SERVER_ERROR_STATUS)
+    request.response.alreadyLogged = false
+    request.path = '/auth/callback'
+    request.response.message = undefined
+    request.auth = undefined
+    request.headers = {}
+    request.query = {}
+
+    catchAll(request, mockToolkit)
+
+    expect(log).toHaveBeenCalledWith(
+      expectLogCall(),
+      expect.objectContaining({
+        userId: 'unknown',
+        error: 'Authentication error',
+        step: 'auth_flow_error'
+      })
+    )
+  })
+
+  test('Should log Bell error with default user when credentials missing', () => {
+    const request = mockRequest(SERVER_ERROR_STATUS)
+    request.response.alreadyLogged = false
+    request.path = '/oauth-callback'
+    request.response.message = 'OAuth configuration error'
+    request.auth = undefined
+    request.headers = {}
+
+    catchAll(request, mockToolkit)
+
+    expect(log).toHaveBeenCalledWith(
+      expectLogCall(),
+      expect.objectContaining({
+        userId: 'unknown',
+        error: 'OAuth configuration error',
+        step: 'bell_oauth_error'
+      })
+    )
+  })
+
+  test('Should log Bell error with default message when response message missing', () => {
+    const request = mockRequest(SERVER_ERROR_STATUS)
+    request.response.alreadyLogged = false
+    request.path = '/oauth-callback'
+    request.response.message = 'bell'
+    request.response.name = 'BellError'
+    request.auth = { credentials: { contactId: 'user456' } }
+    request.headers = {}
+
+    catchAll(request, mockToolkit)
+
+    expect(log).toHaveBeenCalledWith(
+      expectLogCall(),
+      expect.objectContaining({
+        userId: 'user456',
+        error: 'bell',
+        step: 'bell_oauth_error'
+      })
+    )
+  })
+
+  test('Should log Bell error with fallback message when response message is undefined', () => {
+    const request = mockRequest(SERVER_ERROR_STATUS)
+    request.response.alreadyLogged = false
+    request.path = '/somewhere'
+    request.response.message = 'Bell'
+    request.auth = undefined
+    request.headers = {}
+
+    catchAll(request, mockToolkit)
+
+    expect(log).toHaveBeenCalledWith(
+      expectLogCall(),
+      expect.objectContaining({
+        userId: 'unknown',
+        error: 'Bell',
+        step: 'bell_oauth_error'
+      })
+    )
+  })
+
+  test('Should include errorOutput in authContext when available', () => {
+    const request = mockRequest(SERVER_ERROR_STATUS)
+    request.response.alreadyLogged = false
+    request.path = '/auth/sign-in'
+    request.response.message = 'Auth failure'
+    request.response.output.payload = { message: 'Detailed error payload message' }
+    request.auth = { credentials: { contactId: 'user789' } }
+    request.headers = {}
+
+    catchAll(request, mockToolkit)
+
+    expect(log).toHaveBeenCalledWith(
+      expectLogCall(),
+      expect.objectContaining({
+        authContext: expect.objectContaining({
+          errorOutput: 'Detailed error payload message'
+        })
+      })
+    )
+  })
+
+  test('Should log system error with default message when response message missing', () => {
+    const request = mockRequest(SERVER_ERROR_STATUS)
+    request.response.alreadyLogged = false
+    request.response.message = undefined
+    request.path = '/some-system-path'
+
+    catchAll(request, mockToolkit)
+
+    expect(log).toHaveBeenCalledWith(
+      expectLogCall(),
+      expect.objectContaining({
+        error: 'Internal server error',
+        statusCode: SERVER_ERROR_STATUS,
+        path: '/some-system-path',
+        method: HTTP_METHOD
+      })
+    )
+  })
+
+  test('Should include responseOutput in debug log when available', () => {
+    const request = mockRequest(SERVER_ERROR_STATUS)
+    request.response.alreadyLogged = false
+    request.response.output.payload = { message: 'Debug payload message' }
+    request.path = '/debug-path'
+
+    catchAll(request, mockToolkit)
+
+    expect(log).toHaveBeenCalledWith(
+      expectLogCall(),
+      expect.objectContaining({
+        errorDetails: expect.objectContaining({
+          responseOutput: 'Debug payload message'
+        })
+      })
+    )
+  })
+
   test('Should default to 200 if no statusCode on non-Boom response', () => {
     const responseObj = { payload: 'OK' }
     const mockResponse = vi.fn().mockReturnThis()
@@ -324,31 +472,52 @@ describe('#catchAll 404 Logging', () => {
     view: vi.fn().mockReturnThis(),
     code: vi.fn().mockReturnThis()
   }
+  const NOT_FOUND_STATUS = statusCodes.notFound
+  const HTTP_METHOD = 'GET'
+
+  const expectInfoLogCall = () =>
+    expect.objectContaining({
+      level: 'info',
+      messageFunc: expect.any(Function)
+    })
+
+  const create404Request = (
+    message,
+    path,
+    userId = 'user123',
+    sbi = '105001234',
+    userAgent = 'Chrome',
+    referer = 'none'
+  ) => ({
+    response: {
+      isBoom: true,
+      message,
+      output: { statusCode: NOT_FOUND_STATUS }
+    },
+    path,
+    method: HTTP_METHOD,
+    auth: userId ? { credentials: { contactId: userId, sbi } } : undefined,
+    headers: { referer, 'user-agent': userAgent }
+  })
 
   beforeEach(() => {
     log.mockClear()
   })
 
   test('Should log form not found with context', () => {
-    const request = {
-      response: {
-        isBoom: true,
-        message: "Form 'adding-value' not found",
-        output: { statusCode: statusCodes.notFound }
-      },
-      path: '/adding-value/start',
-      method: 'GET',
-      auth: { credentials: { contactId: 'user123', sbi: '105001234' } },
-      headers: { referer: 'https://gov.uk', 'user-agent': 'Mozilla/5.0' }
-    }
+    const request = create404Request(
+      "Form 'adding-value' not found",
+      '/adding-value/start',
+      'user123',
+      '105001234',
+      'Mozilla/5.0',
+      'https://gov.uk'
+    )
 
     catchAll(request, mockToolkit)
 
     expect(log).toHaveBeenCalledWith(
-      expect.objectContaining({
-        level: 'info',
-        messageFunc: expect.any(Function)
-      }),
+      expectInfoLogCall(),
       expect.objectContaining({
         slug: 'adding-value',
         userId: 'user123',
@@ -362,25 +531,17 @@ describe('#catchAll 404 Logging', () => {
   })
 
   test('Should log form disabled in production', () => {
-    const request = {
-      response: {
-        isBoom: true,
-        message: "Form 'test-grant' is not available in production",
-        output: { statusCode: statusCodes.notFound }
-      },
-      path: '/test-grant/eligibility',
-      method: 'GET',
-      auth: { credentials: { contactId: 'user456', sbi: '105009999' } },
-      headers: { referer: 'none', 'user-agent': 'Chrome' }
-    }
+    const request = create404Request(
+      "Form 'test-grant' is not available in production",
+      '/test-grant/eligibility',
+      'user456',
+      '105009999'
+    )
 
     catchAll(request, mockToolkit)
 
     expect(log).toHaveBeenCalledWith(
-      expect.objectContaining({
-        level: 'info',
-        messageFunc: expect.any(Function)
-      }),
+      expectInfoLogCall(),
       expect.objectContaining({
         slug: 'test-grant',
         userId: 'user456',
@@ -392,25 +553,18 @@ describe('#catchAll 404 Logging', () => {
   })
 
   test('Should log tasklist not found with context', () => {
-    const request = {
-      response: {
-        isBoom: true,
-        message: "Tasklist 'frps-beta' not found",
-        output: { statusCode: statusCodes.notFound }
-      },
-      path: '/tasklist/frps-beta',
-      method: 'GET',
-      auth: { credentials: { contactId: 'user789', sbi: '106001111' } },
-      headers: { referer: 'none', 'user-agent': 'Safari' }
-    }
+    const request = create404Request(
+      "Tasklist 'frps-beta' not found",
+      '/tasklist/frps-beta',
+      'user789',
+      '106001111',
+      'Safari'
+    )
 
     catchAll(request, mockToolkit)
 
     expect(log).toHaveBeenCalledWith(
-      expect.objectContaining({
-        level: 'info',
-        messageFunc: expect.any(Function)
-      }),
+      expectInfoLogCall(),
       expect.objectContaining({
         tasklistId: 'frps-beta',
         userId: 'user789',
@@ -421,26 +575,59 @@ describe('#catchAll 404 Logging', () => {
     )
   })
 
-  test('Should log generic page not found for anonymous user', () => {
-    const request = {
-      response: {
-        isBoom: true,
-        message: 'Not Found',
-        output: { statusCode: statusCodes.notFound }
-      },
-      path: '/unknown-path',
-      method: 'GET',
-      auth: undefined,
-      headers: { 'user-agent': 'curl/7.68.0' }
-    }
+  test('Should log tasklist not found with unknown identifier when path does not match pattern', () => {
+    const request = create404Request(
+      'Tasklist configuration error',
+      '/some-other-path',
+      'user999',
+      '107002222',
+      'Firefox'
+    )
 
     catchAll(request, mockToolkit)
 
     expect(log).toHaveBeenCalledWith(
+      expectInfoLogCall(),
       expect.objectContaining({
-        level: 'info',
-        messageFunc: expect.any(Function)
-      }),
+        tasklistId: 'unknown',
+        userId: 'user999',
+        sbi: '107002222',
+        reason: 'not_found',
+        environment: expect.any(String)
+      })
+    )
+  })
+
+  test('Should log tasklist disabled in production', () => {
+    const request = create404Request(
+      "Tasklist 'beta-feature' is not available in production",
+      '/tasklist/beta-feature',
+      'user888',
+      '108003333',
+      'Edge'
+    )
+
+    catchAll(request, mockToolkit)
+
+    expect(log).toHaveBeenCalledWith(
+      expectInfoLogCall(),
+      expect.objectContaining({
+        tasklistId: 'beta-feature',
+        userId: 'user888',
+        sbi: '108003333',
+        reason: 'disabled_in_production',
+        environment: expect.any(String)
+      })
+    )
+  })
+
+  test('Should log generic page not found for anonymous user', () => {
+    const request = create404Request('Not Found', '/unknown-path', null, null, 'curl/7.68.0')
+
+    catchAll(request, mockToolkit)
+
+    expect(log).toHaveBeenCalledWith(
+      expectInfoLogCall(),
       expect.objectContaining({
         path: '/unknown-path',
         userId: 'anonymous',

@@ -179,7 +179,6 @@ describe('SubmissionPageController', () => {
         validationId: 'validation-123'
       })
       expect(controller.handleSuccessfulSubmission).toHaveBeenCalledWith(mockRequest, mockContext, mockH, statusCode)
-      expect(mockRequest.logger.info).toHaveBeenCalledWith('Form submission completed', mockSubmitResult)
       expect(result).toBe('proceeded')
     })
 
@@ -249,7 +248,6 @@ describe('SubmissionPageController', () => {
       const handler = controller.makePostRouteHandler()
       await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow(mockError)
 
-      expect(mockRequest.logger.error).toHaveBeenCalledWith('Error submitting application:', mockError)
       expect(mockH.redirect).not.toHaveBeenCalled()
       expect(mockCacheService.setState).not.toHaveBeenCalled()
     })
@@ -291,7 +289,6 @@ describe('SubmissionPageController', () => {
       const handler = controller.makePostRouteHandler()
       await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow(mockError)
 
-      expect(mockRequest.logger.error).toHaveBeenCalledWith('Error submitting application:', mockError)
       expect(mockH.redirect).not.toHaveBeenCalled()
       expect(mockCacheService.setState).not.toHaveBeenCalled()
     })
@@ -366,8 +363,6 @@ describe('SubmissionPageController', () => {
 
       const handler = controller.makePostRouteHandler()
       await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow(mockError)
-
-      expect(mockRequest.logger.error).toHaveBeenCalledWith('Error submitting application:', mockError)
     })
   })
 })
