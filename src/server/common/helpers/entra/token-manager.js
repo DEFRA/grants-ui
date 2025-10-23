@@ -101,6 +101,7 @@ export async function refreshToken() {
       currentToken: data.access_token,
       tokenExpiry: Date.now() + data.expires_in * 1000
     }
+    logger.info(`Refresh token: ${JSON.stringify(tokenState)}`)
 
     return tokenState.currentToken ?? ''
   } catch (error) {
@@ -118,6 +119,7 @@ export async function refreshToken() {
  */
 export async function getValidToken() {
   if (!isTokenExpired(tokenState.tokenExpiry) && tokenState.currentToken) {
+    logger.info(`Reuse Token: ${JSON.stringify(tokenState)}`)
     return tokenState.currentToken
   }
 
