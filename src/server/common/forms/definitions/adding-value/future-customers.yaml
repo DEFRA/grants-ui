@@ -2,12 +2,14 @@ engine: V2
 name: Future customers
 metadata:
   id: b36a6415-f46f-4ac5-84ca-db0d209a6559
+  submission:
+    grantCode: future-customers
 pages:
   - title: Who will your new customers be after the project?
     path: /future-customers
     section: futureCustomersSection
     id: 38935ec2-bed2-4c4b-a367-8e8e9b685d02
-  - title: "Check your answers: Future customers"
+  - title: 'Check your answers: Future customers'
     path: /summary
     controller: SectionEndController
     id: bea2e5a5-869e-4141-a6a9-a0b648af8afe

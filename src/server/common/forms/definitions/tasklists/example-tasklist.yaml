@@ -1,6 +1,3 @@
-metadata:
-  submission:
-    grantCode: example-tasklist
 tasklist:
   id: example
   title: Apply for example grant

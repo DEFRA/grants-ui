@@ -2,6 +2,8 @@ engine: V2
 name: Manual Labour Amount
 metadata:
   id: 1c662c58-35ed-4975-bfb8-418acd607a34
+  submission:
+    grantCode: manual-labour-amount
 pages:
   - title: Will this project use any mechanisation instead of manual labour?
     path: /mechanisation
@@ -37,7 +39,7 @@ pages:
         schema: {}
     condition: e789ea59-bec9-40fb-aa32-12198d85c850
     id: aab2bd1b-d720-4504-9d10-2151d61a2b9e
-  - title: "Check your answers: Manual Labour Amount"
+  - title: 'Check your answers: Manual Labour Amount'
     path: /summary
     controller: SectionEndController
     id: e6fcdef1-dfd5-4597-b9d2-24960fc66260

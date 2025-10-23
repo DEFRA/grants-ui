@@ -2,6 +2,8 @@ engine: V2
 name: Business status
 metadata:
   id: 93f1e83f-cb08-4615-84fd-4daabab9a552
+  submission:
+    grantCode: business-status
 pages:
   - title: What is your business?
     path: /nature-of-business
@@ -122,7 +124,7 @@ pages:
         schema: {}
     condition: 4cdc0305-aa64-4cd7-b50c-fa2e8cc87ff7
     id: 27c2b90f-417a-4fce-bb30-364618cf8e58
-  - title: "Check your answers: Business status"
+  - title: 'Check your answers: Business status'
     path: /summary
     controller: SectionEndController
     id: 9b15c139-8385-4959-91ae-5ad352e14470

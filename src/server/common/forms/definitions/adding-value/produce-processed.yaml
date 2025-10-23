@@ -2,6 +2,8 @@ engine: V2
 name: Produce processed
 metadata:
   id: 61a9c744-c2f5-4b19-8aaa-1ebce72063d3
+  submission:
+    grantCode: produce-processed
 pages:
   - title: What type of produce is being processed?
     path: /produce-processed
@@ -19,7 +21,7 @@ pages:
         id: c7b015d9-f1d2-455c-8171-8fa9cde77b81
         schema: {}
     id: 92891350-046d-4467-90fd-4fb292573705
-  - title: "Check your answers: Produce processed"
+  - title: 'Check your answers: Produce processed'
     path: /summary
     controller: SectionEndController
     id: bd5c2aca-240f-465c-81ca-92daa96e1948
