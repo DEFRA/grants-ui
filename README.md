@@ -54,6 +54,7 @@ Core delivery platform Node.js Frontend Template.
   - [Migration from Manual Logging](#migration-from-manual-logging)
   - [Adding New Log Codes](#adding-new-log-codes)
   - [Development Workflow](#development-workflow)
+- [Analytics](#analytics)
 - [Licence](#licence)
   - [About the licence](#about-the-licence)
 
@@ -1103,6 +1104,10 @@ When running in development mode, the demo confirmation handler:
 - Displays form metadata (title, slug, ID) for debugging
 - Includes error details when configuration issues occur
 - Uses mock data for testing dynamic content insertion
+
+## Analytics
+
+For more information about analytics, see [Analytics](./docs/ANALYTICS.md).
 
 ## Licence
 
