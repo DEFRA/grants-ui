@@ -3,6 +3,8 @@ import { config } from '~/src/config/config.js'
 import { fetchBusinessAndCustomerInformation } from '../../common/services/consolidated-view/consolidated-view.service.js'
 import { sbiStore } from '~/src/server/sbi/state.js'
 import ConfirmFarmDetailsController from './confirm-farm-details.controller.js'
+import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+
 vi.mock('~/src/config/config.js')
 vi.mock('~/src/server/sbi/state.js', async () => {
   const { mockSbiState } = await import('~/src/__mocks__')
@@ -15,6 +17,20 @@ vi.mock('~/src/server/common/helpers/logging/logger.js', async () => {
     error: vi.fn()
   })
 })
+
+vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
+  log: vi.fn(),
+  LogCodes: {
+    LAND_GRANTS: {
+      LAND_GRANT_APPLICATION_STARTED: 'LAND_GRANT_APPLICATION_STARTED'
+    }
+  }
+}))
+
+vi.mock('../../common/services/consolidated-view/consolidated-view.service.js', () => ({
+  fetchBusinessAndCustomerInformation: vi.fn()
+}))
+
 vi.mock('~/src/server/land-grants/utils/format-phone.js', () => ({
   formatPhone: vi.fn((phone) => (phone ? `formatted-${phone}` : ''))
 }))
@@ -79,12 +95,13 @@ describe('ConfirmFarmDetailsController', () => {
 
   describe('POST route handler', () => {
     test('should not update state and proceed if no sbi', async () => {
-      sbiStore.get = vi.fn().mockReturnValue(null)
       const handler = controller.makePostRouteHandler()
+      mockRequest.auth.credentials.sbi = null
       const result = await handler(mockRequest, mockContext, mockH)
 
-      expect(fetchBusinessAndCustomerInformation).toHaveBeenCalled()
-      expect(controller.setState).toHaveBeenCalled()
+      expect(fetchBusinessAndCustomerInformation).not.toHaveBeenCalled()
+      expect(controller.setState).not.toHaveBeenCalled()
+      expect(log).not.toHaveBeenCalled()
 
       expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-path')
       expect(result).toBe('redirected')
@@ -103,6 +120,11 @@ describe('ConfirmFarmDetailsController', () => {
           }
         })
       )
+
+      expect(log).toHaveBeenCalledWith(LogCodes.LAND_GRANTS.LAND_GRANT_APPLICATION_STARTED, {
+        userCrn: '1100014934',
+        userSbi: 'SBI123456'
+      })
 
       expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-path')
       expect(result).toBe('redirected')
@@ -203,11 +225,10 @@ describe('ConfirmFarmDetailsController', () => {
   })
 
   describe('handleError', () => {
-    it('should log error and return error view', () => {
-      const error = new Error('Test error')
+    it('should return error view', () => {
       const baseViewModel = { baseProperty: 'value' }
 
-      const result = controller.handleError('sbi-123', error, baseViewModel, mockH)
+      const result = controller.handleError(baseViewModel, mockH)
 
       expect(mockH.view).toHaveBeenCalledWith('confirm-farm-details', {
         baseProperty: 'value',
