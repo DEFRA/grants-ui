@@ -184,7 +184,7 @@ function decodeTokenPayload(token) {
         tokenLength: token ? token.length : 0
       }
     })
-    throw new Error(`Failed to decode JWT token: ${jwtError.message}`)
+    throw jwtError
   }
 }
 

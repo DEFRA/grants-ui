@@ -9,7 +9,8 @@ import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { ApplicationStatus } from '~/src/server/common/constants/application-status.js'
 import { persistSubmissionToApi } from '~/src/server/common/helpers/state/persist-submission-helper.js'
 import { getConfirmationPath } from '~/src/server/common/helpers/form-slug-helper.js'
-import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { log } from '~/src/server/common/helpers/logging/log.js'
+import { LogCodes } from '~/src/server/common/helpers/logging/log-codes.js'
 
 export default class SubmissionPageController extends SummaryPageController {
   viewName = 'submit-your-application'
@@ -55,6 +56,12 @@ export default class SubmissionPageController extends SummaryPageController {
    * @returns {object} - Error view response
    */
   handleValidationError(h, request, context, validationId) {
+    log(LogCodes.SUBMISSION.SUBMISSION_VALIDATION_ERROR, {
+      grantType: this.grantCode,
+      referenceNumber: context.referenceNumber,
+      validationId
+    })
+
     return h.view('submission-error', {
       ...this.getSummaryViewModel(request, context),
       backLink: null,
@@ -79,9 +86,11 @@ export default class SubmissionPageController extends SummaryPageController {
 
     // Log submission details if available
     if (submissionStatus === statusCodes.noContent) {
-      log(LogCodes.SUBMISSION.SUBMISSION_SUCCESS, {
+      log(LogCodes.SUBMISSION.SUBMISSION_COMPLETED, {
         grantType: this.grantCode,
-        referenceNumber: context.referenceNumber
+        referenceNumber: context.referenceNumber,
+        numberOfFields: context.relevantState ? Object.keys(context.relevantState).length : 0,
+        status: submissionStatus
       })
 
       const currentState = await cacheService.getState(request)
@@ -139,12 +148,17 @@ export default class SubmissionPageController extends SummaryPageController {
           validationId
         })
 
+        log(LogCodes.SUBMISSION.SUBMISSION_SUCCESS, {
+          grantType: this.grantCode,
+          referenceNumber: context.referenceNumber
+        })
+
         return await this.handleSuccessfulSubmission(request, context, h, result.status)
       } catch (error) {
         log(LogCodes.SUBMISSION.SUBMISSION_FAILURE, {
           grantType: this.grantCode,
-          userId: request.auth?.credentials?.crn,
-          error: error.message
+          error: error.message,
+          stack: error.stack
         })
         throw error
       }

@@ -28,8 +28,8 @@ const logger = createLogger()
  */
 
 class ConsolidatedViewApiError extends Error {
-  constructor(message, statusCode, responseBody, sbi) {
-    super(message)
+  constructor(message, statusCode, responseBody, sbi, cause = null) {
+    super(message, cause ? { cause } : undefined)
     this.name = 'ConsolidatedViewApiError'
     this.status = statusCode
     this.responseBody = responseBody
@@ -139,11 +139,15 @@ async function fetchFromConsolidatedView(request, { query, formatResponse }) {
     return formatResponse(responseJson)
   } catch (error) {
     logger.error({ err: error }, 'Unexpected error fetching business data from Consolidated View API')
+    if (error instanceof ConsolidatedViewApiError) {
+      throw error
+    }
     throw new ConsolidatedViewApiError(
       'Failed to fetch business data: ' + error.message,
       error.status,
       error.message,
-      sbi
+      sbi,
+      error
     )
   }
 }
