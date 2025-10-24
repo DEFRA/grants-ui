@@ -54,6 +54,7 @@ Core delivery platform Node.js Frontend Template.
   - [Migration from Manual Logging](#migration-from-manual-logging)
   - [Adding New Log Codes](#adding-new-log-codes)
   - [Development Workflow](#development-workflow)
+- [Analytics](#analytics)
 - [Licence](#licence)
   - [About the licence](#about-the-licence)
 
@@ -951,7 +952,7 @@ Acceptance Tests for the grants-ui platform will be developed by multiple teams 
 
 #### Compose files
 
-The main repository `compose.yml` file will stand up the system at `http://localhost:3000`. There is also a `compose.ci.override.yml` override file which is used to run acceptance tests. This adds an nginx proxy and stands the system up at `https://grants-ui-proxy:4000` inside the Docker network with a self-signed certificate. This override approach has been taken to allow local development to continue using HTTP, whilst to work correctly with the Defra ID stub inside the Docker network, the acceptance tests need to run over HTTPS.
+There is an override file `compose.ci.yml` which is used when running acceptance tests. This stands the system up at `https://grants-ui-proxy:4000` and the tests are then run in their own containers on the same Docker network.
 
 #### Changes to Journey Test Repositories
 
@@ -965,11 +966,19 @@ See `grants-ui-acceptance-tests` for an example.
 
 #### Running Acceptance Tests locally
 
-To run the full set of acceptance tests locally the developer can run script `./tools/run-acceptance-tests.sh`. Each acceptance test suite will have a compose file in `/acceptance` and a call in `./tools/run-acceptance-tests.sh`, and will be run sequentially against the containerised system.
+To run the full set of acceptance tests locally the developer can run script `./tools/run-acceptance-tests.sh`. Each acceptance test suite will have a compose file in `/acceptance` and a call in `run-acceptance-tests.sh`, and will be run sequentially against the containerised system.
+
+#### Running individual Acceptance Tests
+
+It is possible to run acceptance tests at individual feature file level by passing the path to the feature file in the test container to `run-acceptance-tests.sh`. For example:
+
+```bash
+./tools/run-acceptance-tests.sh ./test/features/example-whitelist/whitelist.feature
+```
 
 #### CI
 
-The same script is run as part of the GitHub PR workflow for grants-ui.
+The `run-acceptance-tests.sh` script is run as part of the GitHub PR workflow for grants-ui.
 
 ### Monitoring and Observability
 
@@ -1091,6 +1100,10 @@ When running in development mode, the demo confirmation handler:
 - Displays form metadata (title, slug, ID) for debugging
 - Includes error details when configuration issues occur
 - Uses mock data for testing dynamic content insertion
+
+## Analytics
+
+For more information about analytics, see [Analytics](./docs/ANALYTICS.md).
 
 ## Licence
 
