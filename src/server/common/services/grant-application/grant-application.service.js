@@ -1,5 +1,6 @@
 import { config } from '~/src/config/config.js'
 import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
+import { retry } from '~/src/server/common/helpers/retry.js'
 
 const GAS_API_ENDPOINT = config.get('gas.apiEndpoint')
 const logger = createLogger()
@@ -22,11 +23,12 @@ class GrantApplicationServiceApiError extends Error {
  * @param {string} [options.method] - HTTP method (GET, POST, etc.)
  * @param {object} [options.payload] - Request payload for POST requests
  * @param {object} [options.queryParams] - Query parameters for GET requests
+ * @param {object} [options.retryConfig] - Configuration for the retry mechanism
  * @returns {Promise} - Promise that resolves to the response
  * @throws {GrantApplicationServiceApiError} - If the API request fails
  */
 export async function makeGasApiRequest(url, grantCode, options = {}) {
-  const { method = 'POST', payload, queryParams } = options
+  const { method = 'POST', payload, queryParams, retryConfig = {} } = options
 
   try {
     // Add query parameters for GET requests
@@ -54,7 +56,7 @@ export async function makeGasApiRequest(url, grantCode, options = {}) {
       requestOptions.body = JSON.stringify(payload)
     }
 
-    const response = await fetch(requestUrl, requestOptions)
+    const response = await retry(() => fetch(requestUrl, requestOptions), { ...retryConfig, checkFetchResponse: true })
 
     if (!response.ok) {
       const error = await response.json()
