@@ -81,20 +81,20 @@ pages:
         options: {}
         schema: {}
     id: 4afc672b-71d6-4889-999d-c7934184f3cc
-  - title: Are you a diary farmer?
-    path: /are-you-diary-farmer
+  - title: Are you a dairy farmer?
+    path: /are-you-dairy-farmer
     components:
-      - name: isDiaryFarmer
-        title: Are you a diary farmer?
+      - name: isDairyFarmer
+        title: Are you a dairy farmer?
         type: YesNoField
         hint: ""
         options: { }
         schema: { }
-        shortDescription: Are you a diary farmer?
+        shortDescription: Are you a dairy farmer?
         id: 45052db5-d620-4382-b2ec-918168c98bc7
     id: d40c01ac-f492-4665-90c6-b62a6e58d6aa
   - title: You are not eligible for this grant
-    path: /you-must-be-diary-farmer
+    path: /you-must-be-dairy-farmer
     controller: TerminalPageController
     components:
       - name: FGyiLS
@@ -109,9 +109,9 @@ pages:
     id: 21347447-b831-4074-bc25-a35ac5a9fd8f
     condition: 341c2742-74d4-439e-91ee-641f4e56093f
   - title: Are your dairy cows kept on land in England?
-    path: /diary-cows
+    path: /dairy-cows
     components:
-      - name: isDiaryKeptInEngland
+      - name: isDairyKeptInEngland
         title: Are your dairy cows kept on land in England?
         type: YesNoField
         hint: ""
@@ -136,9 +136,9 @@ pages:
     id: ba8d8f0f-9f49-4235-9df7-f179c9b74181
     condition: bbdf08fa-7eaa-47a6-bc14-5d08d1de20f9
   - title: Do you house your dairy herd for at least some of the year?
-    path: /house-diary-herd
+    path: /house-dairy-herd
     components:
-      - name: isDiaryHerdForYear
+      - name: isDairyHerdForYear
         title: Do you house your dairy herd for at least some of the year?
         type: YesNoField
         hint: ""
@@ -151,7 +151,7 @@ pages:
     path: /you-must-be-herd-farmer
     controller: TerminalPageController
     components:
-      - name: NotEligibleDiaryHerd
+      - name: NotEligibleDairyHerd
         title: You must house your dairy herd to apply for a MSFP grant
         type: Html
         hint: ""
@@ -195,9 +195,9 @@ pages:
     next: [ ]
     id: a24cb35f-a359-4934-b8c8-56ff92cb3df1
   - title: How many dairy cows will you feed MSFP?
-    path: /how-many-diary-cows
+    path: /how-many-dairy-cows
     components:
-      - name: diaryCowsFedCount
+      - name: dairyCowsFedCount
         title: How many dairy cows will you feed MSFP?
         type: NumberField
         hint: ""
@@ -205,9 +205,9 @@ pages:
           required: true
           classes: govuk-!-width-one-third
           customValidationMessages:
-            any.required: Enter the number of diary cows you have
-            number.min: You must have at least 10 diary cow
-            number.max: You can apply for up to 10,000 diary cows
+            any.required: Enter the number of dairy cows you have
+            number.min: You must have at least 10 dairy cow
+            number.max: You can apply for up to 10,000 dairy cows
         schema:
           min: 10
           max: 10000
@@ -218,7 +218,7 @@ pages:
   - title: How many months are your dairy cows housed during the year?
     path: /how-many-months
     components:
-      - name: monthsDiaryCowHoused
+      - name: monthsDairyCowHoused
         title: How many months are your dairy cows housed during the year?
         type: NumberField
         hint: ""
@@ -226,7 +226,7 @@ pages:
           required: true
           classes: govuk-!-width-one-third
           customValidationMessages:
-            any.required: Enter the number of months you have housed diary cows during the year
+            any.required: Enter the number of months you have housed dairy cows during the year
             number.min: You must have at least 1
             number.max: Maximum number of months is 12
         schema:
@@ -269,8 +269,8 @@ pages:
         content: >
           {% assign mfspSelected = 'msfpOptions' | answer %}
           {% if mfspSelected == "Bovaer" %} {% assign pricePerCow = 80 %} {% else %} {% assign pricePerCow = 40 %} {% endif %}
-          {% assign cowCount = 'diaryCowsFedCount' | answer %}
-          {% assign monthsHoused = 'monthsDiaryCowHoused' | answer %}
+          {% assign cowCount = 'dairyCowsFedCount' | answer %}
+          {% assign monthsHoused = 'monthsDairyCowHoused' | answer %}
           {% assign monthsAsYears = monthsHoused | divided_by: 12 %}
           {% assign total = cowCount | times: monthsAsYears | times: pricePerCow %}
           <p class="govuk-body">You may be able eligible for a grant of up to {{ total | formatCurrency: 'en-GB', 'GBP', 0 }}.</p>
@@ -304,7 +304,7 @@ lists:
 sections: []
 conditions:
   - id: 341c2742-74d4-439e-91ee-641f4e56093f
-    displayName: notDiaryFarmer
+    displayName: notDairyFarmer
     items:
       - id: 47977a3b-2c17-42c4-b9ab-1f10e831df84
         componentId: 45052db5-d620-4382-b2ec-918168c98bc7
@@ -312,7 +312,7 @@ conditions:
         type: BooleanValue
         value: false
   - id: 72c8cb60-7069-420e-8da6-ec7a72e39ca5
-    displayName: NotHouseDiaryHerd
+    displayName: NotHouseDairyHerd
     items:
       - id: a506dd3e-aa11-4a0e-8c67-4d8c1cf80bf2
         componentId: 1a0d8a06-93b9-4c1d-9961-9696089ef42e
