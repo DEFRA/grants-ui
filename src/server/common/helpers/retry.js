@@ -37,7 +37,7 @@ export async function retry(operation, options = {}) {
       let result
 
       if (timeout) {
-        return race(operation, timeout)
+        return await race(operation, timeout)
       } else {
         result = await operation()
       }

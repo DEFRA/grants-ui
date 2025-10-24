@@ -558,7 +558,7 @@ describe('makeGasApiRequest', () => {
       .mockResolvedValueOnce(successResponse)
 
     const result = await makeGasApiRequest(testUrl, testGrantCode, {
-      retryConfig: { maxRetries: 3, checkFetchResponse: true }
+      retryConfig: { maxAttempts: 3, checkFetchResponse: true }
     })
 
     expect(mockedFetch).toHaveBeenCalledTimes(3)
