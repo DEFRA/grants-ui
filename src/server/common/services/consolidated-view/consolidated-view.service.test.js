@@ -276,7 +276,7 @@ describe('Consolidated View Service', () => {
         ok: false,
         status: 500,
         statusText: 'Internal Server Error',
-        text: () => Promise.resolve('Server error')
+        json: () => Promise.resolve({ message: 'Server error' })
       })
 
       await expect(fetchBusinessAndCPH(mockRequest)).rejects.toThrow(
@@ -411,7 +411,7 @@ describe('Consolidated View Service', () => {
         ok: false,
         status: 500,
         statusText: 'Internal Server Error',
-        text: () => Promise.resolve('Server error')
+        json: () => Promise.resolve({ message: 'Server error' })
       })
 
       await expect(fetchBusinessAndCustomerInformation(mockRequest)).rejects.toThrow(
@@ -526,7 +526,7 @@ describe('Consolidated View Service', () => {
         ok: false,
         status: 403,
         statusText: 'Forbidden',
-        text: () => Promise.resolve('Access denied')
+        json: () => Promise.resolve({ message: 'forbidden' })
       })
 
       await expect(fetchParcelsFromDal(mockRequest)).rejects.toThrow('Failed to fetch business data: 403 Forbidden')
