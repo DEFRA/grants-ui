@@ -362,7 +362,7 @@ describe('Agreements Controller', () => {
       expect(mockH.response).toHaveBeenCalledWith({
         error: 'External Service Unavailable',
         message: 'Unable to process request',
-        details: 'Failed to generate JWT token: JWT secret invalid'
+        details: 'JWT secret invalid'
       })
     })
   })

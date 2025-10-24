@@ -9,7 +9,7 @@ import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
  * @param {number} [options.maxDelay=30000] - Maximum delay in milliseconds
  * @param {boolean} [options.exponential=true] - Whether to use exponential backoff
  * @param {Function} [options.shouldRetry] - Function to determine if a retry should be attempted
- * @param {number} [options.timeout] - Operation timeout in milliseconds
+ * @param {number} [options.timeout=10000] - Operation timeout in milliseconds (default: 10 seconds)
  * @param {Function} [options.onRetry] - Called before each retry attempt
  * @returns {Promise<any>} - Result of the operation
  * @throws {Error} - Last error encountered after all retry attempts
@@ -21,10 +21,19 @@ export async function retry(operation, options = {}) {
     maxDelay = 30000,
     exponential = true,
     shouldRetry = () => true,
-    timeout,
-    onRetry = (error, attempt) => {
-      const message = `Retry attempt ${attempt}/${maxAttempts} after error: ${error.message}`
-      createLogger().error(error, message)
+    timeout = 10000,
+    onRetry = (error, attempt, delay) => {
+      createLogger().error(
+        {
+          error: error.message,
+          stack: error.stack,
+          attempt,
+          maxAttempts,
+          nextRetryIn: delay,
+          operation: operation.name || 'anonymous'
+        },
+        `Retry attempt ${attempt}/${maxAttempts} after error`
+      )
     }
   } = options
 

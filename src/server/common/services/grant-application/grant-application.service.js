@@ -5,8 +5,8 @@ const GAS_API_ENDPOINT = config.get('gas.apiEndpoint')
 const logger = createLogger()
 
 class GrantApplicationServiceApiError extends Error {
-  constructor(message, statusCode, responseBody, code) {
-    super(message)
+  constructor(message, statusCode, responseBody, code, cause = null) {
+    super(message, cause ? { cause } : undefined)
     this.name = 'GrantApplicationServiceApiError'
     this.status = statusCode
     this.responseBody = responseBody
@@ -69,11 +69,16 @@ export async function makeGasApiRequest(url, grantCode, options = {}) {
     return response
   } catch (error) {
     logger.error({ err: error }, `Unexpected error in GAS API request: ${error.message}`)
+    if (error instanceof GrantApplicationServiceApiError) {
+      throw error
+    }
+
     throw new GrantApplicationServiceApiError(
       'Failed to process GAS API request: ' + error.message,
       error.status,
       error.message,
-      grantCode
+      grantCode,
+      error
     )
   }
 }

@@ -463,7 +463,7 @@ describe('Auth Plugin', () => {
       })
       expect(() => {
         options.provider.profile(credentials)
-      }).toThrow('Failed to decode JWT token: JWT decode error')
+      }).toThrow('JWT decode error')
     })
 
     test('logs JWT decode error with detailed information', () => {
@@ -477,7 +477,7 @@ describe('Auth Plugin', () => {
 
       expect(() => {
         options.provider.profile(credentials)
-      }).toThrow('Failed to decode JWT token: Invalid JWT structure')
+      }).toThrow('Invalid JWT structure')
 
       expect(log).toHaveBeenCalledWith(LogCodes.AUTH.SIGN_IN_FAILURE, {
         ...LOG_MESSAGES.signInFailure.baseFields,
@@ -515,7 +515,7 @@ describe('Auth Plugin', () => {
 
       expect(() => {
         options.provider.profile(credentials)
-      }).toThrow('Failed to decode JWT token: Token processing error')
+      }).toThrow('Token processing error')
 
       expect(log).toHaveBeenCalledWith(LogCodes.AUTH.SIGN_IN_FAILURE, {
         ...LOG_MESSAGES.signInFailure.baseFields,
@@ -616,12 +616,12 @@ describe('Auth Plugin', () => {
 
       expect(log).toHaveBeenCalledWith(LogCodes.AUTH.SIGN_IN_FAILURE, {
         ...LOG_MESSAGES.signInFailure.baseFields,
-        error: 'Bell profile processing failed: Failed to decode JWT token: Unexpected processing error',
+        error: 'Bell profile processing failed: Unexpected processing error',
         step: LOG_MESSAGES.signInFailure.steps.PROCESSING_ERROR,
         errorDetails: {
-          message: 'Failed to decode JWT token: Unexpected processing error',
+          message: 'Unexpected processing error',
           stack: expect.any(String),
-          name: 'Error',
+          name: 'ProcessingError',
           alreadyLogged: undefined
         },
         credentialsState: {

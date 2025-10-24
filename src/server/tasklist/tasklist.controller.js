@@ -5,8 +5,8 @@ import { statusCodes } from '../common/constants/status-codes.js'
 const HTTP_MOVED_PERMANENTLY = 301
 
 class TasklistGenerationError extends Error {
-  constructor(message, statusCode, responseBody, tasklistId) {
-    super(message)
+  constructor(message, statusCode, responseBody, tasklistId, cause = null) {
+    super(message, cause ? { cause } : undefined)
     this.name = 'TasklistGenerationError'
     this.status = statusCode
     this.responseBody = responseBody
@@ -63,7 +63,8 @@ export function createTasklistRoute(tasklistId) {
                 `Failed to generate tasklist for ${tasklistId}: ${error.message}`,
                 statusCodes.internalServerError,
                 error.message,
-                tasklistId
+                tasklistId,
+                error
               )
             }
           }

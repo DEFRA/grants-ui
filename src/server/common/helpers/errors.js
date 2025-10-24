@@ -221,6 +221,54 @@ function handleClientErrors(request, response, statusCode) {
 }
 
 /**
+ * Determine the reason for resource error based on error message
+ * @param {string} errorMsg - Error message from response
+ * @returns {string} Reason code
+ */
+function determineErrorReason(errorMsg) {
+  const isDisabledError = errorMsg.includes('not enabled') || errorMsg.includes('not available')
+  return isDisabledError ? 'disabled_in_production' : 'not_found'
+}
+
+/**
+ * Try to parse path as a form resource
+ * @param {string} path - Request path
+ * @param {string} errorMsg - Error message
+ * @returns {{type: string, identifier: string, reason: string} | null}
+ */
+function tryParseForm(path, errorMsg) {
+  const formRegex = /^\/([^/]+)\//
+  const formMatch = formRegex.exec(path)
+  if (formMatch && errorMsg.includes('Form')) {
+    return {
+      type: 'form',
+      identifier: formMatch[1],
+      reason: determineErrorReason(errorMsg)
+    }
+  }
+  return null
+}
+
+/**
+ * Try to parse path as a tasklist resource
+ * @param {string} path - Request path
+ * @param {string} errorMsg - Error message
+ * @returns {{type: string, identifier: string, reason: string} | null}
+ */
+function tryParseTasklist(path, errorMsg) {
+  const tasklistRegex = /^\/tasklist\/([^/]+)/
+  const tasklistMatch = tasklistRegex.exec(path)
+  if (tasklistMatch || errorMsg.includes('Tasklist')) {
+    return {
+      type: 'tasklist',
+      identifier: tasklistMatch?.[1] || 'unknown',
+      reason: errorMsg.includes('not available') ? 'disabled_in_production' : 'not_found'
+    }
+  }
+  return null
+}
+
+/**
  * Parse resource path to determine type and context
  * @param {string} path - Request path
  * @param {object} response - Response object
@@ -229,25 +277,14 @@ function handleClientErrors(request, response, statusCode) {
 function parseResourcePath(path, response) {
   const errorMsg = response?.message || ''
 
-  // Form pattern: /form-slug/page
-  const formMatch = path.match(/^\/([^/]+)\//)
-  if (formMatch && errorMsg.includes('Form')) {
-    return {
-      type: 'form',
-      identifier: formMatch[1],
-      reason:
-        errorMsg.includes('not enabled') || errorMsg.includes('not available') ? 'disabled_in_production' : 'not_found'
-    }
+  const formResource = tryParseForm(path, errorMsg)
+  if (formResource) {
+    return formResource
   }
 
-  // Tasklist pattern: /tasklist/tasklist-id
-  const tasklistMatch = path.match(/^\/tasklist\/([^/]+)/)
-  if (tasklistMatch || errorMsg.includes('Tasklist')) {
-    return {
-      type: 'tasklist',
-      identifier: tasklistMatch?.[1] || 'unknown',
-      reason: errorMsg.includes('not available') ? 'disabled_in_production' : 'not_found'
-    }
+  const tasklistResource = tryParseTasklist(path, errorMsg)
+  if (tasklistResource) {
+    return tasklistResource
   }
 
   return { type: 'page', identifier: path, reason: 'not_found' }
