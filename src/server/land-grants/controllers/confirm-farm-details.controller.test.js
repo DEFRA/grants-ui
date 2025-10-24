@@ -21,8 +21,8 @@ vi.mock('~/src/server/common/helpers/logging/logger.js', async () => {
 vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
   log: vi.fn(),
   LogCodes: {
-    LAND_GRANTS: {
-      LAND_GRANT_APPLICATION_STARTED: 'LAND_GRANT_APPLICATION_STARTED'
+    FORMS: {
+      FORM_STARTED: 'LAND_GRANT_APPLICATION_STARTED'
     }
   }
 }))
@@ -121,7 +121,8 @@ describe('ConfirmFarmDetailsController', () => {
         })
       )
 
-      expect(log).toHaveBeenCalledWith(LogCodes.LAND_GRANTS.LAND_GRANT_APPLICATION_STARTED, {
+      expect(log).toHaveBeenCalledWith(LogCodes.FORMS.FORM_STARTED, {
+        formName: 'Farm payments',
         userCrn: '1100014934',
         userSbi: 'SBI123456'
       })
