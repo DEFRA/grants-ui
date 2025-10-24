@@ -73,6 +73,10 @@ export const LogCodes = {
       messageFunc: (messageOptions) =>
         `Form loaded: ${messageOptions.formName} for user=${messageOptions.userId || 'unknown'}`
     },
+    FORM_STARTED: {
+      level: 'info',
+      messageFunc: (messageOptions) => `Form started:${formatContext(messageOptions)}`
+    },
     FORM_SUBMIT: {
       level: 'info',
       messageFunc: (messageOptions) =>
@@ -183,10 +187,6 @@ export const LogCodes = {
     }
   },
   LAND_GRANTS: {
-    LAND_GRANT_APPLICATION_STARTED: {
-      level: 'info',
-      messageFunc: (messageOptions) => `Land grant application started for user=${messageOptions.userId}`
-    },
     LAND_GRANT_APPLICATION_SUBMITTED: {
       level: 'info',
       messageFunc: (messageOptions) =>
@@ -285,6 +285,23 @@ export const LogCodes = {
       messageFunc: (messageOptions) => `External API error for ${messageOptions.endpoint}: ${messageOptions.error}`
     }
   }
+}
+
+/**
+ * Format context object into readable string
+ * @param {object} [context]
+ * @returns {string}
+ */
+const formatContext = (context) => {
+  if (!context || typeof context !== 'object' || Object.keys(context).length === 0) {
+    return ''
+  }
+
+  const parts = Object.entries(context)
+    .map(([key, value]) => `${key}=${value}`)
+    .join(' | ')
+
+  return ` [${parts}]`
 }
 
 // Validate all log codes once at startup
