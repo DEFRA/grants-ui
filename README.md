@@ -966,23 +966,19 @@ See `grants-ui-acceptance-tests` for an example.
 
 #### Running Acceptance Tests locally
 
-To run the full set of acceptance tests locally the developer can run script `./tools/run-acceptance-tests.sh`. Each acceptance test suite will have a compose file in `/acceptance` and a call in `./tools/run-acceptance-tests.sh`, and will be run sequentially against the containerised system.
+To run the full set of acceptance tests locally the developer can run script `./tools/run-acceptance-tests.sh`. Each acceptance test suite will have a compose file in `/acceptance` and a call in `run-acceptance-tests.sh`, and will be run sequentially against the containerised system.
 
 #### Running individual Acceptance Tests
 
-It is possible to run acceptance tests at individual feature file level by amending the acceptance test compose file command as follows. For example in `acceptance/gae-compose.yml`:
+It is possible to run acceptance tests at individual feature file level by passing the path to the feature file in the test container to `run-acceptance-tests.sh`. For example:
 
-```yaml
-# extend the command..
-command: ["npm", "run", "test:ci"]
-
-# .. like so
-command: ["npm", "run", "test:ci", "--", "--spec", "./test/features/example-whitelist/whitelist.feature"]
+```bash
+./tools/run-acceptance-tests.sh ./test/features/example-whitelist/whitelist.feature
 ```
 
 #### CI
 
-The `./tools/run-acceptance-tests.sh` script is run as part of the GitHub PR workflow for grants-ui.
+The `run-acceptance-tests.sh` script is run as part of the GitHub PR workflow for grants-ui.
 
 ### Monitoring and Observability
 
