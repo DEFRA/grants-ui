@@ -218,6 +218,12 @@ describe('LogCodes', () => {
         `Form validation error in ${TEST_FORM_NAMES.DECLARATION}: ${TEST_ERRORS.REQUIRED_FIELD}`
       ],
       [
+        'FORM_STARTED',
+        'info',
+        { formName: TEST_FORM_NAMES.DECLARATION, userCrn: TEST_USER_IDS.DEFAULT, userSbi: TEST_SBI.DEFAULT },
+        `Form started: ${TEST_FORM_NAMES.DECLARATION} for userCrn=${TEST_USER_IDS.DEFAULT} | userSbi=${TEST_SBI.DEFAULT}`
+      ],
+      [
         'FORM_SUBMIT',
         'info',
         { formName: TEST_FORM_NAMES.DECLARATION, userId: TEST_USER_IDS.DEFAULT },
@@ -395,12 +401,6 @@ describe('LogCodes', () => {
 
   describe('LAND_GRANTS log codes', () => {
     it.each([
-      [
-        'LAND_GRANT_APPLICATION_STARTED',
-        'info',
-        { userCrn: TEST_USER_IDS.DEFAULT, userSbi: TEST_SBI.DEFAULT },
-        `Land grant application started userCrn=${TEST_USER_IDS.DEFAULT} | userSbi=${TEST_SBI.DEFAULT}`
-      ],
       [
         'LAND_GRANT_APPLICATION_SUBMITTED',
         'info',

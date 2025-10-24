@@ -73,6 +73,11 @@ export const LogCodes = {
       messageFunc: (messageOptions) =>
         `Form loaded: ${messageOptions.formName} for user=${messageOptions.userId || 'unknown'}`
     },
+    FORM_STARTED: {
+      level: 'info',
+      messageFunc: (messageOptions) =>
+        `Form started: ${messageOptions.formName} for userCrn=${messageOptions.userCrn || 'unknown'} | userSbi=${messageOptions.userSbi || 'unknown'}`
+    },
     FORM_SUBMIT: {
       level: 'info',
       messageFunc: (messageOptions) =>
@@ -188,11 +193,6 @@ export const LogCodes = {
     }
   },
   LAND_GRANTS: {
-    LAND_GRANT_APPLICATION_STARTED: {
-      level: 'info',
-      messageFunc: (messageOptions) =>
-        `Land grant application started userCrn=${messageOptions.userCrn} | userSbi=${messageOptions.userSbi}`
-    },
     LAND_GRANT_APPLICATION_SUBMITTED: {
       level: 'info',
       messageFunc: (messageOptions) =>

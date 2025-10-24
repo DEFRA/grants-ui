@@ -91,7 +91,8 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
           applicant
         })
 
-        log(LogCodes.LAND_GRANTS.LAND_GRANT_APPLICATION_STARTED, {
+        log(LogCodes.FORMS.FORM_STARTED, {
+          formName: 'Farm payments',
           userCrn: crn,
           userSbi: sbi
         })
