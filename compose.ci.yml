@@ -1,0 +1,11 @@
+services:
+
+  grants-ui:
+    environment:
+      DEFRA_ID_REDIRECT_URL: https://grants-ui-proxy:4000/auth/sign-in-oidc
+      DEFRA_ID_SIGN_OUT_REDIRECT_URL: https://grants-ui-proxy:4000/auth/sign-out-oidc
+      APP_BASE_URL: https://grants-ui-proxy:4000
+
+  fcp-defra-id-stub:
+    environment:
+      WELL_KNOWN_HOST_OVERRIDE: https://grants-ui-proxy:4007

@@ -5,6 +5,8 @@ metadata:
   referenceNumberPrefix: EW
   whitelistCrnEnvVar: EXAMPLE_WHITELIST_CRNS
   whitelistSbiEnvVar: EXAMPLE_WHITELIST_SBIS
+  submission:
+    grantCode: example-whitelist
 pages:
   - title: Example Whitelist
     path: /start

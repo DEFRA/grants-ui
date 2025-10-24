@@ -3,6 +3,8 @@ schema: 2
 name: Project preparation
 metadata:
   id: 30757a0e-2648-458b-9ade-030680662033
+  submission:
+    grantCode: project-preparation
 pages:
   - title: Does the project have planning permission?
     path: /planning-permission
@@ -150,7 +152,7 @@ pages:
         schema: {}
     condition: e4570a1f-2c5c-493e-a806-70aa47de4988
     id: 855f1c54-fc6d-4107-87fe-cd0f1bfcd950
-  - title: "Check your answers: Project preparation"
+  - title: 'Check your answers: Project preparation'
     path: /summary
     controller: SectionEndController
     id: ec3b4cb1-3506-432f-a938-54732c763c6a

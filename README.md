@@ -54,6 +54,7 @@ Core delivery platform Node.js Frontend Template.
   - [Migration from Manual Logging](#migration-from-manual-logging)
   - [Adding New Log Codes](#adding-new-log-codes)
   - [Development Workflow](#development-workflow)
+- [Analytics](#analytics)
 - [Licence](#licence)
   - [About the licence](#about-the-licence)
 
@@ -720,6 +721,36 @@ A local environment with:
 docker compose up --build -d
 ```
 
+#### High-availability (HA) local proxy
+
+For local testing behind HTTPS and to simulate an HA entry point, there is an optional Nginx reverse proxy defined in `compose.ha.yml`.
+
+What it provides:
+
+- Scalability of `grants-ui` and `grants-ui-backend` using `docker compose --scale`
+- TLS termination using the self-signed certs in `nginx/certs`
+- A single HTTPS entry point for the UI at `https://localhost:4000`
+- HTTPS access to the DEFRA ID Stub at `https://localhost:4007`
+- Environment overrides so the UI talks to the proxy over HTTPS (see `compose.ha.yml` and `nginx/nginx.conf`)
+
+Start the stack with the HA proxy:
+
+```bash
+docker compose -f compose.yml -f compose.ha.yml up -d --build --scale grants-ui=2 --scale grants-ui-backend=2
+```
+
+Stop the HA stack:
+
+```bash
+docker compose -f compose.yml -f compose.ha.yml down
+```
+
+Notes:
+
+- The proxy container is `grants-ui-proxy` and uses `nginx/nginx.conf`.
+- Certificates are mounted from `nginx/certs` (`nginx.crt` and `nginx.key`). Your browser may require trusting the cert the first time you visit `https://localhost:4000`.
+- The UI container is configured with `NODE_EXTRA_CA_CERTS=/etc/ssl/certs/nginx.crt` so it trusts the proxy's certificate when calling internal HTTPS endpoints.
+
 **Authorise Snyk**
 
 Run `snyk auth` to authenticate your local machine with Snyk.
@@ -921,7 +952,7 @@ Acceptance Tests for the grants-ui platform will be developed by multiple teams 
 
 #### Compose files
 
-The main repository `compose.yml` file will stand up the system at `http://localhost:3000`. There is also a `compose.ci.override.yml` override file which is used to run acceptance tests. This adds an nginx proxy and stands the system up at `https://grants-ui-proxy:4000` inside the Docker network with a self-signed certificate. This override approach has been taken to allow local development to continue using HTTP, whilst to work correctly with the Defra ID stub inside the Docker network, the acceptance tests need to run over HTTPS.
+There is an override file `compose.ci.yml` which is used when running acceptance tests. This stands the system up at `https://grants-ui-proxy:4000` and the tests are then run in their own containers on the same Docker network.
 
 #### Changes to Journey Test Repositories
 
@@ -937,9 +968,21 @@ See `grants-ui-acceptance-tests` for an example.
 
 To run the full set of acceptance tests locally the developer can run script `./tools/run-acceptance-tests.sh`. Each acceptance test suite will have a compose file in `/acceptance` and a call in `./tools/run-acceptance-tests.sh`, and will be run sequentially against the containerised system.
 
+#### Running individual Acceptance Tests
+
+It is possible to run acceptance tests at individual feature file level by amending the acceptance test compose file command as follows. For example in `acceptance/gae-compose.yml`:
+
+```yaml
+# extend the command..
+command: ["npm", "run", "test:ci"]
+
+# .. like so
+command: ["npm", "run", "test:ci", "--", "--spec", "./test/features/example-whitelist/whitelist.feature"]
+```
+
 #### CI
 
-The same script is run as part of the GitHub PR workflow for grants-ui.
+The `./tools/run-acceptance-tests.sh` script is run as part of the GitHub PR workflow for grants-ui.
 
 ### Monitoring and Observability
 
@@ -1061,6 +1104,10 @@ When running in development mode, the demo confirmation handler:
 - Displays form metadata (title, slug, ID) for debugging
 - Includes error details when configuration issues occur
 - Uses mock data for testing dynamic content insertion
+
+## Analytics
+
+For more information about analytics, see [Analytics](./docs/ANALYTICS.md).
 
 ## Licence
 

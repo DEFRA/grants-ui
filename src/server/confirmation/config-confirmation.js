@@ -64,7 +64,7 @@ async function getReferenceNumber(request) {
   const state = await cacheService.getState(request)
   const referenceNumber = state.$$__referenceNumber
 
-  if (state.applicationStatus === ApplicationStatus.SUBMITTED) {
+  if (state && state.applicationStatus === ApplicationStatus.SUBMITTED) {
     request.logger.info('ConfirmationController: Application submitted, showing confirmation page')
   }
 

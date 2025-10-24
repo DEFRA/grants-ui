@@ -3,53 +3,53 @@ tasklist:
   title: Apply for example grant
   closingDate: 17 June 2025
   helpText: Contact the team if you need help, want to report a problem or want to make a change to your Grant Funding Agreement.
-  
+
   conditions:
     otherFarmersYesOrFruitStorage:
       type: conditional
       rules:
         - if:
             and:
-              - field: "facilities.isBuildingSmallerAbattoir"
+              - field: 'facilities.isBuildingSmallerAbattoir'
                 notEquals: true
-              - field: "facilities.isBuildingFruitStorage"
+              - field: 'facilities.isBuildingFruitStorage'
                 notEquals: true
-          then: "hidden"
+          then: 'hidden'
         - if:
             or:
-              - field: "facilities.isProvidingServicesToOtherFarmers"
+              - field: 'facilities.isProvidingServicesToOtherFarmers'
                 equals: true
-              - field: "facilities.isProvidingFruitStorage"
+              - field: 'facilities.isProvidingFruitStorage'
                 equals: true
-          then: "not_yet_started"
-      default: "cannot_start_yet"
-    
+          then: 'not_yet_started'
+      default: 'cannot_start_yet'
+
     agentDetails:
       type: conditional
       rules:
         - if:
-            field: "who-is-applying.grantApplicantType"
+            field: 'who-is-applying.grantApplicantType'
             exists: false
-          then: "hidden"
+          then: 'hidden'
         - if:
-            field: "who-is-applying.grantApplicantType"
-            equals: "applying-A2"
-          then: "not_yet_started"
-      default: "hidden"
-    
+            field: 'who-is-applying.grantApplicantType'
+            equals: 'applying-A2'
+          then: 'not_yet_started'
+      default: 'hidden'
+
     applicantDetails:
       type: conditional
       rules:
         - if:
-            field: "who-is-applying.grantApplicantType"
+            field: 'who-is-applying.grantApplicantType'
             exists: false
-          then: "hidden"
+          then: 'hidden'
         - if:
-            field: "who-is-applying.grantApplicantType"
-            equals: "applying-A1"
-          then: "not_yet_started"
-      default: "hidden"
-  
+            field: 'who-is-applying.grantApplicantType'
+            equals: 'applying-A1'
+          then: 'not_yet_started'
+      default: 'hidden'
+
   sections:
     - id: check-before-start
       title: 1. Check before you start
@@ -140,7 +140,7 @@ tasklist:
         - future-customers
         - collaboration
         - environmental-impact
-    
+
     check-details:
       type: allComplete
       dependsOn:
@@ -159,7 +159,7 @@ tasklist:
         - who-is-applying
         - agent-details
         - applicant-details
-    
+
     declaration:
       type: allComplete
       dependsOn:

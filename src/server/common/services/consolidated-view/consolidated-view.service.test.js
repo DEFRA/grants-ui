@@ -6,7 +6,7 @@ import { mockFetch } from '~/src/__mocks__'
 import { getValidToken } from '~/src/server/common/helpers/entra/token-manager.js'
 import {
   fetchBusinessAndCustomerInformation,
-  fetchParcelsForSbi
+  fetchParcelsFromDal
 } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
 import { fetchBusinessAndCPH } from './consolidated-view.service.js'
 
@@ -35,6 +35,17 @@ describe('Consolidated View Service', () => {
   const mockSbi = 106284736
   const mockCrn = 'CRN123456'
   const mockToken = 'mock-token-123'
+  const mockDefraIdToken = 'mock-defra-id-token-123'
+
+  const mockRequest = {
+    auth: {
+      credentials: {
+        sbi: mockSbi,
+        crn: mockCrn,
+        token: mockDefraIdToken
+      }
+    }
+  }
 
   /**
    * @type {object}
@@ -91,6 +102,9 @@ describe('Consolidated View Service', () => {
     mockFetchInstance.mockReset()
     getValidToken.mockResolvedValue(mockToken)
 
+    config.set('defraId', {
+      enabled: true
+    })
     config.set('consolidatedView', {
       apiEndpoint: 'https://api.example.com/graphql',
       authEmail: 'test@example.com',
@@ -98,21 +112,56 @@ describe('Consolidated View Service', () => {
     })
   })
 
-  describe('fetchParcelsForSbi', () => {
+  describe('fetchParcelsFromDal', () => {
     it('should fetch land parcels successfully', async () => {
       mockFetchInstance.mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve(mockParcelsResponse)
       })
 
-      const result = await fetchParcelsForSbi(mockSbi)
+      const result = await fetchParcelsFromDal(mockRequest)
 
       expect(mockFetchInstance).toHaveBeenCalledTimes(1)
       expect(result).toEqual(mockParcelsResponse.data.business.land.parcels)
 
       const [[, calledOptions]] = mockFetchInstance.mock.calls
       expect(calledOptions.headers.Authorization).toBe(`Bearer ${mockToken}`)
-      expect(calledOptions.headers.email).toBe('test@example.com')
+    })
+
+    it('should set external headers for defraID requests', async () => {
+      mockFetchInstance.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockParcelsResponse)
+      })
+
+      const result = await fetchParcelsFromDal(mockRequest)
+
+      expect(mockFetchInstance).toHaveBeenCalledTimes(1)
+      expect(result).toEqual(mockParcelsResponse.data.business.land.parcels)
+
+      const [[, calledOptions]] = mockFetchInstance.mock.calls
+      expect(calledOptions.headers['gateway-type']).toBe(`external`)
+      expect(calledOptions.headers['x-forwarded-authorization']).toBe(mockDefraIdToken)
+    })
+
+    it('should set internal headers for non-defraID requests', async () => {
+      config.set('defraId', {
+        enabled: false
+      })
+      mockFetchInstance.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockParcelsResponse)
+      })
+
+      const result = await fetchParcelsFromDal(mockRequest)
+
+      expect(mockFetchInstance).toHaveBeenCalledTimes(1)
+      expect(result).toEqual(mockParcelsResponse.data.business.land.parcels)
+
+      const [[, calledOptions]] = mockFetchInstance.mock.calls
+      expect(calledOptions.headers['email']).toBe('test@example.com')
+      expect(calledOptions.headers['gateway-type']).toBeUndefined()
+      expect(calledOptions.headers['x-forwarded-authorization']).toBeUndefined()
     })
 
     it('should return empty array when parcels data is missing', async () => {
@@ -122,7 +171,7 @@ describe('Consolidated View Service', () => {
         json: () => Promise.resolve(emptyResponse)
       })
 
-      const result = await fetchParcelsForSbi(mockSbi)
+      const result = await fetchParcelsFromDal(mockRequest)
 
       expect(result).toEqual([])
     })
@@ -174,7 +223,7 @@ describe('Consolidated View Service', () => {
         json: () => Promise.resolve(mockCPHResponse)
       })
 
-      const result = await fetchBusinessAndCPH(mockSbi, mockCrn)
+      const result = await fetchBusinessAndCPH(mockRequest)
 
       expect(mockFetchInstance).toHaveBeenCalledTimes(1)
       expect(result).toEqual({
@@ -218,7 +267,7 @@ describe('Consolidated View Service', () => {
       })
 
       await expect(async () => {
-        await fetchBusinessAndCPH(mockSbi, mockCrn)
+        await fetchBusinessAndCPH(mockRequest)
       }).rejects.toThrow() // Will throw when trying to access [0] on undefined
     })
 
@@ -230,7 +279,7 @@ describe('Consolidated View Service', () => {
         text: () => Promise.resolve('Server error')
       })
 
-      await expect(fetchBusinessAndCPH(mockSbi, mockCrn)).rejects.toThrow(
+      await expect(fetchBusinessAndCPH(mockRequest)).rejects.toThrow(
         'Failed to fetch business data: 500 Internal Server Error'
       )
     })
@@ -279,7 +328,7 @@ describe('Consolidated View Service', () => {
 
       fs.readFile.mockResolvedValueOnce(JSON.stringify(mockFileData))
 
-      const result = await fetchBusinessAndCPH(mockSbi, mockCrn)
+      const result = await fetchBusinessAndCPH(mockRequest)
 
       expect(result).toEqual({
         business: mockFileData.data.business.info,
@@ -310,7 +359,7 @@ describe('Consolidated View Service', () => {
         json: () => Promise.resolve(responseWithMultipleCPH)
       })
 
-      const result = await fetchBusinessAndCPH(mockSbi, mockCrn)
+      const result = await fetchBusinessAndCPH(mockRequest)
 
       expect(result.countyParishHoldings).toBe('CPH-FIRST')
     })
@@ -323,7 +372,7 @@ describe('Consolidated View Service', () => {
         json: () => Promise.resolve(mockBusinessCustomerResponse)
       })
 
-      const result = await fetchBusinessAndCustomerInformation(mockSbi, mockCrn)
+      const result = await fetchBusinessAndCustomerInformation(mockRequest)
 
       expect(mockFetchInstance).toHaveBeenCalledTimes(1)
       expect(result).toEqual({
@@ -349,7 +398,7 @@ describe('Consolidated View Service', () => {
         json: () => Promise.resolve(partialResponse)
       })
 
-      const result = await fetchBusinessAndCustomerInformation(mockSbi, mockCrn)
+      const result = await fetchBusinessAndCustomerInformation(mockRequest)
 
       expect(result).toEqual({
         business: null,
@@ -365,7 +414,7 @@ describe('Consolidated View Service', () => {
         text: () => Promise.resolve('Server error')
       })
 
-      await expect(fetchBusinessAndCustomerInformation(mockSbi, mockCrn)).rejects.toThrow(
+      await expect(fetchBusinessAndCustomerInformation(mockRequest)).rejects.toThrow(
         'Failed to fetch business data: 500 Internal Server Error'
       )
     })
@@ -415,7 +464,7 @@ describe('Consolidated View Service', () => {
     it('should read mock data from file for parcels', async () => {
       fs.readFile.mockResolvedValueOnce(JSON.stringify(mockFileData))
 
-      const result = await fetchParcelsForSbi(mockSbi)
+      const result = await fetchParcelsFromDal(mockRequest)
 
       expect(result).toEqual(mockFileData.data.business.land.parcels)
       expect(fs.readFile).toHaveBeenCalledTimes(1)
@@ -427,7 +476,7 @@ describe('Consolidated View Service', () => {
     it('should read mock data from file for business and customer info', async () => {
       fs.readFile.mockResolvedValueOnce(JSON.stringify(mockFileData))
 
-      const result = await fetchBusinessAndCustomerInformation(mockSbi, mockCrn)
+      const result = await fetchBusinessAndCustomerInformation(mockRequest)
 
       expect(result).toEqual({
         business: mockFileData.data.business.info,
@@ -442,7 +491,7 @@ describe('Consolidated View Service', () => {
       fileError.code = 'ENOENT'
       fs.readFile.mockRejectedValueOnce(fileError)
 
-      await expect(fetchParcelsForSbi(mockSbi)).rejects.toThrow(
+      await expect(fetchParcelsFromDal(mockRequest)).rejects.toThrow(
         'Failed to fetch business data: ENOENT: no such file or directory'
       )
     })
@@ -450,14 +499,22 @@ describe('Consolidated View Service', () => {
     it('should handle invalid JSON in mock file', async () => {
       fs.readFile.mockResolvedValueOnce('invalid json content')
 
-      await expect(fetchParcelsForSbi(mockSbi)).rejects.toThrow('Failed to fetch business data:')
+      await expect(fetchParcelsFromDal(mockRequest)).rejects.toThrow('Failed to fetch business data:')
     })
 
     it('should use correct file path for different SBI', async () => {
       const differentSbi = 987654321
+      const differentMockRequest = {
+        auth: {
+          credentials: {
+            ...mockRequest.auth.credentials,
+            sbi: differentSbi
+          }
+        }
+      }
       fs.readFile.mockResolvedValueOnce(JSON.stringify(mockFileData))
 
-      await fetchParcelsForSbi(differentSbi)
+      await fetchParcelsFromDal(differentMockRequest)
 
       expect(fs.readFile).toHaveBeenCalledWith(getMockFilePath(differentSbi), 'utf8')
     })
@@ -472,7 +529,7 @@ describe('Consolidated View Service', () => {
         text: () => Promise.resolve('Access denied')
       })
 
-      await expect(fetchParcelsForSbi(mockSbi)).rejects.toThrow('Failed to fetch business data: 403 Forbidden')
+      await expect(fetchParcelsFromDal(mockRequest)).rejects.toThrow('Failed to fetch business data: 403 Forbidden')
     })
 
     it('should wrap non-API errors in ConsolidatedViewApiError', async () => {
@@ -480,7 +537,7 @@ describe('Consolidated View Service', () => {
         throw new Error('Cannot read property of undefined')
       })
 
-      await expect(fetchParcelsForSbi(mockSbi)).rejects.toThrow('Cannot read property of undefined')
+      await expect(fetchParcelsFromDal(mockRequest)).rejects.toThrow('Cannot read property of undefined')
     })
   })
 })

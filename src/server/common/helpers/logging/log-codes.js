@@ -121,6 +121,11 @@ export const LogCodes = {
       level: 'debug',
       messageFunc: (messageOptions) =>
         `Submission payload for grantType=${messageOptions.grantType}:\n${JSON.stringify(messageOptions.payload, null, 2)}`
+    },
+    SUBMISSION_REDIRECT_FAILURE: {
+      level: 'error',
+      messageFunc: (messageOptions) =>
+        `Submission redirect failure for grantType=${messageOptions.grantType}, referenceNumber=${messageOptions.referenceNumber}. Error: ${messageOptions.error}`
     }
   },
   DECLARATION: {
