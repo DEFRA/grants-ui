@@ -85,6 +85,7 @@ export default class SelectLandParcelPageController extends LandGrantsQuestionWi
       const { viewName } = this
       const baseViewModel = super.getViewModel(request, context)
       const existingLandParcels = Object.keys(landParcels || {}).length > 0
+      const sbi = request.auth?.credentials?.sbi
 
       try {
         const parcels = await fetchParcels(request)
@@ -104,7 +105,6 @@ export default class SelectLandParcelPageController extends LandGrantsQuestionWi
 
         return h.view(viewName, viewModel)
       } catch (error) {
-        const sbi = request.auth?.credentials?.sbi
         logger.error({ err: error, sbi }, 'Unexpected error when fetching parcel data')
         const errorMessage =
           'Unable to find parcel information, please try again later or contact the Rural Payments Agency.'

@@ -221,7 +221,7 @@ describe('LogCodes', () => {
         'FORM_STARTED',
         'info',
         { formName: TEST_FORM_NAMES.DECLARATION, userCrn: TEST_USER_IDS.DEFAULT, userSbi: TEST_SBI.DEFAULT },
-        `Form started: ${TEST_FORM_NAMES.DECLARATION} for userCrn=${TEST_USER_IDS.DEFAULT} | userSbi=${TEST_SBI.DEFAULT}`
+        `Form started: [formName=${TEST_FORM_NAMES.DECLARATION} | userCrn=${TEST_USER_IDS.DEFAULT} | userSbi=${TEST_SBI.DEFAULT}]`
       ],
       [
         'FORM_SUBMIT',

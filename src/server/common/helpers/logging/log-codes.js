@@ -75,8 +75,7 @@ export const LogCodes = {
     },
     FORM_STARTED: {
       level: 'info',
-      messageFunc: (messageOptions) =>
-        `Form started: ${messageOptions.formName} for userCrn=${messageOptions.userCrn || 'unknown'} | userSbi=${messageOptions.userSbi || 'unknown'}`
+      messageFunc: (messageOptions) => `Form started:${formatContext(messageOptions)}`
     },
     FORM_SUBMIT: {
       level: 'info',
@@ -291,6 +290,23 @@ export const LogCodes = {
       messageFunc: (messageOptions) => `External API error for ${messageOptions.endpoint}: ${messageOptions.error}`
     }
   }
+}
+
+/**
+ * Format context object into readable string
+ * @param {object} [context]
+ * @returns {string}
+ */
+const formatContext = (context) => {
+  if (!context || typeof context !== 'object' || Object.keys(context).length === 0) {
+    return ''
+  }
+
+  const parts = Object.entries(context)
+    .map(([key, value]) => `${key}=${value}`)
+    .join(' | ')
+
+  return ` [${parts}]`
 }
 
 // Validate all log codes once at startup
