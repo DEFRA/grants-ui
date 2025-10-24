@@ -60,6 +60,8 @@ async function getConsolidatedViewRequestOptions(request, { method = 'POST', que
     headers['email'] = config.get('consolidatedView.authEmail')
   }
 
+  logger.info('CV request headers: ' + Object.keys(headers))
+
   return {
     method,
     headers,
