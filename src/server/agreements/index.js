@@ -1,6 +1,8 @@
 import { getAgreementController } from '~/src/server/agreements/controller.js'
 import { config } from '~/src/config/config.js'
 
+// TODO BS Replicate in fg-cw-frontend register agreements proxy routes with GET/POST support and authentication
+
 /**
  * Sets up the routes used in the /agreements page.
  * @satisfies {ServerRegisterPluginObject<void>}

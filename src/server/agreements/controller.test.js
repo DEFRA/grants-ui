@@ -3,6 +3,8 @@ import { getAgreementController } from './controller.js'
 import { config } from '~/src/config/config.js'
 import Jwt from '@hapi/jwt'
 import { log } from '~/src/server/common/helpers/logging/log.js'
+
+// TODO BS Replicate in fg-cw-frontend, add tests for agreements proxy route with JWT and error handling
 import { LogCodes } from '~/src/server/common/helpers/logging/log-codes.js'
 import { mockHapiRequest, mockHapiResponseToolkit } from '~/src/__mocks__/hapi-mocks.js'
 

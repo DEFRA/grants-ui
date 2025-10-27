@@ -1,0 +1,54 @@
+name: agreement
+title: Agreement
+pages:
+  - title: Agreement Review
+    path: /review
+    components:
+      - type: Html
+        name: agreementContent
+        title: Agreement Content
+        content: |
+          <p>This is where the agreement content would be displayed.</p>
+          <p>The agreement details will be loaded from the agreements API.</p>
+    next:
+      - path: /accept
+        condition: agreementAccepted
+      - path: /decline
+        condition: agreementDeclined
+
+  - title: Accept Agreement
+    path: /accept
+    components:
+      - type: Radios
+        name: agreementAccepted
+        title: Do you accept this agreement?
+        options:
+          - value: true
+            text: Yes, I accept the agreement
+          - value: false
+            text: No, I decline the agreement
+    next:
+      - path: /confirmation
+        condition: agreementAccepted
+      - path: /decline
+        condition: !agreementAccepted
+
+  - title: Agreement Confirmation
+    path: /confirmation
+    components:
+      - type: Html
+        name: confirmationMessage
+        title: Agreement Accepted
+        content: |
+          <p>Your agreement has been accepted successfully.</p>
+          <p>You will receive confirmation details shortly.</p>
+
+  - title: Agreement Declined
+    path: /decline
+    components:
+      - type: Html
+        name: declineMessage
+        title: Agreement Declined
+        content: |
+          <p>You have declined the agreement.</p>
+          <p>If you change your mind, you can review the agreement again.</p> 

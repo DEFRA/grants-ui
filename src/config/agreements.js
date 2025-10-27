@@ -1,4 +1,5 @@
 // istanbul ignore file
+// TODO BS Replicate in fg-cw-frontend, add agreements config with UI URL, token, base URL, JWT secret (check in CDP portal/ask team on values for config vars) optionally add these to a .env file for local dev
 
 import convict from 'convict'
 import 'dotenv/config'
