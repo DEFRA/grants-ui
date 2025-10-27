@@ -73,7 +73,7 @@ async function getConsolidatedViewRequestOptions(request, { method = 'POST', que
         tid: payload['tid']
       }
     : {}
-  logger.info(`CV request headers: ${Object.keys(headers)} - Token info: ${JSON.stringify(tokenInfo)}`)
+  logger.info(`CV request headers: ${Object.keys(headers)} - ${JSON.stringify(tokenInfo)}`)
 
   return {
     method,
