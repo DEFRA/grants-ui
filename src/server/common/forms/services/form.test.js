@@ -5,6 +5,7 @@ import {
   configureFormDefinition,
   formsService,
   getFormsCache,
+  validateGrantRedirectRules,
   validateWhitelistConfiguration
 } from './form.js'
 import { logger } from '~/src/server/common/helpers/logging/log.js'
@@ -461,6 +462,50 @@ tasklist:
       expect(() => validateWhitelistConfiguration(testForm, definition)).toThrow(
         'SBI whitelist environment variable MISSING_SBI_VAR is defined in form Test Form but not configured in environment'
       )
+    })
+  })
+
+  describe('startup configuration validation', () => {
+    const testForm = { title: 'Test Form' }
+    test('throws error if redirect rules are missing required properties', async () => {
+      const badDefinition = {
+        metadata: {
+          grantRedirectRules: {
+            postSubmission: [
+              {
+                // Missing required toPath
+                fromGrantsStatus: 'SUBMITTED',
+                gasStatus: 'RECEIVED',
+                toGrantsStatus: 'SUBMITTED'
+              }
+            ]
+          }
+        }
+      }
+
+      expect(() => validateGrantRedirectRules(testForm, badDefinition)).toThrow(
+        'Invalid redirect rules in form Test Form: "[0].toPath" is required'
+      )
+    })
+
+    test('does not throw when all redirect rules are valid', async () => {
+      const goodDefinition = {
+        metadata: {
+          grantRedirectRules: {
+            preSubmission: [{ toPath: '/start' }],
+            postSubmission: [
+              {
+                fromGrantsStatus: 'SUBMITTED',
+                gasStatus: 'RECEIVED',
+                toGrantsStatus: 'SUBMITTED',
+                toPath: '/confirmation'
+              }
+            ]
+          }
+        }
+      }
+
+      expect(() => validateGrantRedirectRules(testForm, goodDefinition)).not.toThrow()
     })
   })
 

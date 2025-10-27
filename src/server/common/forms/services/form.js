@@ -6,6 +6,7 @@ import path from 'node:path'
 import fs from 'node:fs/promises'
 import { parse as parseYaml } from 'yaml'
 import { notFound } from '@hapi/boom'
+import Joi from 'joi'
 
 // Simple in-memory cache of discovered forms metadata
 let formsCache = []
@@ -122,6 +123,22 @@ async function listYamlFilesRecursively(baseDir) {
   return out
 }
 
+const redirectRuleSchema = Joi.object({
+  fromGrantsStatus: Joi.string().required(),
+  gasStatus: Joi.string().required(),
+  toGrantsStatus: Joi.string().required(),
+  toPath: Joi.string().pattern(/^\/.*/).required()
+})
+
+export function validateGrantRedirectRules(form, definition) {
+  const redirectRules = definition.metadata?.grantRedirectRules?.postSubmission ?? []
+
+  const { error } = Joi.array().items(redirectRuleSchema).validate(redirectRules)
+  if (error) {
+    throw new Error(`Invalid redirect rules in form ${definition.name || form.title || 'unnamed'}: ${error.message}`)
+  }
+}
+
 async function discoverFormsFromYaml(baseDir = path.resolve(process.cwd(), 'src/server/common/forms/definitions')) {
   const isProduction = config.get('cdpEnvironment')?.toLowerCase() === 'prod'
   let files = []
@@ -178,6 +195,7 @@ export const formsService = async () => {
     try {
       const definition = loader.getFormDefinition(form.id)
       validateWhitelistConfiguration(form, definition)
+      validateGrantRedirectRules(form, definition)
 
       if (definition.metadata?.whitelistCrnEnvVar || definition.metadata?.whitelistSbiEnvVar) {
         logger.info(`Whitelist configuration validated for form: ${form.title}`)
