@@ -64,13 +64,15 @@ async function getConsolidatedViewRequestOptions(request, { method = 'POST', que
     headers['email'] = config.get('consolidatedView.authEmail')
   }
 
-  const { payload } = decodedToken.decoded
-  const tokenInfo = {
-    aud: payload['aud'],
-    appid: payload['appid'],
-    groups: payload['groups'],
-    tid: payload['tid']
-  }
+  const { payload } = decodedToken?.decoded || {}
+  const tokenInfo = payload
+    ? {
+        aud: payload['aud'],
+        appid: payload['appid'],
+        groups: payload['groups'],
+        tid: payload['tid']
+      }
+    : {}
   logger.info(`CV request headers: ${Object.keys(headers)} - Token info: ${JSON.stringify(tokenInfo)}`)
 
   return {
