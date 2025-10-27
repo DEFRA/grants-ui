@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url'
 import { config } from '~/src/config/config.js'
 import { getValidToken } from '~/src/server/common/helpers/entra/token-manager.js'
 import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
+import Jwt from '@hapi/jwt'
 
 const logger = createLogger()
 
@@ -47,9 +48,12 @@ class ConsolidatedViewApiError extends Error {
  */
 async function getConsolidatedViewRequestOptions(request, { method = 'POST', query }) {
   const isDefraIdEnabled = config.get('defraId.enabled')
+  const entraToken = await getValidToken()
+  const decodedToken = Jwt.token.decode(entraToken)
+
   const headers = {
     'Content-Type': 'application/json',
-    Authorization: `Bearer ${await getValidToken()}`
+    Authorization: `Bearer ${entraToken}`
   }
 
   if (isDefraIdEnabled) {
@@ -60,7 +64,14 @@ async function getConsolidatedViewRequestOptions(request, { method = 'POST', que
     headers['email'] = config.get('consolidatedView.authEmail')
   }
 
-  logger.info('CV request headers: ' + Object.keys(headers))
+  const { payload } = decodedToken.decoded
+  const tokenInfo = {
+    aud: payload['aud'],
+    appid: payload['appid'],
+    groups: payload['groups'],
+    tid: payload['tid']
+  }
+  logger.info(`CV request headers: ${Object.keys(headers)} - Token info: ${JSON.stringify(tokenInfo)}`)
 
   return {
     method,
