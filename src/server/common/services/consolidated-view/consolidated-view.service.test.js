@@ -505,15 +505,15 @@ describe('Consolidated View Service', () => {
       fileError.code = 'ENOENT'
       fs.readFile.mockRejectedValueOnce(fileError)
 
-      await expect(fetchParcelsFromDal(mockRequest)).rejects.toThrow(
-        'Failed to fetch business data: ENOENT: no such file or directory'
-      )
+      await expect(fetchParcelsFromDal(mockRequest)).rejects.toThrow('ENOENT: no such file or directory')
     })
 
     it('should handle invalid JSON in mock file', async () => {
       fs.readFile.mockResolvedValueOnce('invalid json content')
 
-      await expect(fetchParcelsFromDal(mockRequest)).rejects.toThrow('Failed to fetch business data:')
+      await expect(fetchParcelsFromDal(mockRequest)).rejects.toThrow(
+        'Unexpected token \'i\', "invalid json content" is not valid JSON'
+      )
     })
 
     it('should use correct file path for different SBI', async () => {

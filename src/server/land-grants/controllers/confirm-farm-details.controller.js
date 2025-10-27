@@ -24,7 +24,7 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
       try {
         const farmDetails = await this.buildFarmDetails(request)
         return h.view(this.viewName, { ...baseViewModel, farmDetails })
-      } catch (error) {
+      } catch {
         return this.handleError(baseViewModel, h)
       }
     }

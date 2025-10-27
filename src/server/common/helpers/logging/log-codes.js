@@ -192,6 +192,11 @@ export const LogCodes = {
     }
   },
   LAND_GRANTS: {
+    EXTERNAL_API_ERROR: {
+      level: 'error',
+      messageFunc: (messageOptions) =>
+        `External API error for ${messageOptions.endpoint}: ${formatContext(messageOptions)}`
+    },
     LAND_GRANT_APPLICATION_SUBMITTED: {
       level: 'info',
       messageFunc: (messageOptions) =>
@@ -278,7 +283,7 @@ export const LogCodes = {
     EXTERNAL_API_CALL: {
       level: 'info',
       messageFunc: (messageOptions) =>
-        `External API call to ${messageOptions.endpoint} for user=${messageOptions.userId || 'unknown'}`
+        `External API call to ${messageOptions.endpoint} for [ userCrn=${messageOptions.userCrn || 'unknown'} | userSbi=${messageOptions.userSbi || 'unknown'} ]`
     },
     EXTERNAL_API_CALL_DEBUG: {
       level: 'debug',

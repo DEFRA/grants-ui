@@ -5,6 +5,7 @@ import { config } from '~/src/config/config.js'
 import { getValidToken } from '~/src/server/common/helpers/entra/token-manager.js'
 import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
+import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
 const logger = createLogger()
 
@@ -100,14 +101,31 @@ async function fetchMockDataForBusiness(sbi) {
  * @throws {ConsolidatedViewApiError} - If the API request fails
  */
 async function makeConsolidatedViewRequest(request, query) {
-  const sbi = request.auth.credentials.sbi
+  const { sbi, crn } = request.auth.credentials
   const CV_API_ENDPOINT = config.get('consolidatedView.apiEndpoint')
 
   const fetchOperation = async () => {
+    log(LogCodes.SYSTEM.EXTERNAL_API_CALL, {
+      endpoint: CV_API_ENDPOINT,
+      userCrn: crn,
+      userSbi: sbi
+    })
+
     const response = await fetch(CV_API_ENDPOINT, await getConsolidatedViewRequestOptions(request, { query }))
 
     if (!response.ok) {
       const errorText = await response.text()
+
+      log(LogCodes.LAND_GRANTS.EXTERNAL_API_ERROR, {
+        endpoint: CV_API_ENDPOINT,
+        userCrn: crn,
+        userSbi: sbi,
+        query,
+        status: response.status,
+        statusText: response.statusText,
+        error: errorText
+      })
+
       throw new ConsolidatedViewApiError(
         `Failed to fetch business data: ${response.status} ${response.statusText}`,
         response.status,
@@ -150,11 +168,15 @@ async function fetchFromConsolidatedView(request, { query, formatResponse }) {
     return formatResponse(responseJson)
   } catch (error) {
     logger.error({ err: error }, 'Unexpected error fetching business data from Consolidated View API')
+
+    if (error instanceof ConsolidatedViewApiError) {
+      throw error
+    }
     throw new ConsolidatedViewApiError(
       'Failed to fetch business data: ' + error.message,
       error.status,
       error.message,
-      sbi
+      error
     )
   }
 }

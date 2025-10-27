@@ -514,8 +514,8 @@ describe('LogCodes', () => {
       [
         'EXTERNAL_API_CALL',
         'info',
-        { endpoint: TEST_ENDPOINTS.API_GRANTS, userId: TEST_USER_IDS.DEFAULT },
-        `External API call to ${TEST_ENDPOINTS.API_GRANTS} for user=${TEST_USER_IDS.DEFAULT}`
+        { endpoint: TEST_ENDPOINTS.API_GRANTS, userCrn: TEST_USER_IDS.DEFAULT, userSbi: TEST_SBI.DEFAULT },
+        `External API call to ${TEST_ENDPOINTS.API_GRANTS} for [ userCrn=${TEST_USER_IDS.DEFAULT} | userSbi=${TEST_SBI.DEFAULT} ]`
       ],
       [
         'EXTERNAL_API_CALL_DEBUG',
@@ -722,7 +722,7 @@ describe('LogCodes', () => {
         'SYSTEM log codes',
         LogCodes.SYSTEM.EXTERNAL_API_CALL,
         { endpoint: TEST_ENDPOINTS.API_TEST },
-        `External API call to ${TEST_ENDPOINTS.API_TEST} for user=unknown`
+        `External API call to ${TEST_ENDPOINTS.API_TEST} for [ userCrn=unknown | userSbi=unknown ]`
       ]
     ])('should handle unknown users in %s', (description, logCode, testParams, expectedMessage) => {
       expect(logCode.messageFunc(testParams)).toBe(expectedMessage)
