@@ -49,7 +49,7 @@ export default class LandActionsCheckPageController extends QuestionPageControll
     const [sheetId, parcelId] = parcelKey.split('-')
     const actions = Object.entries(parcelData.actionsObj).map(([code, actionData]) => ({
       code,
-      quantity: parseFloat(actionData.value)
+      quantity: Number.parseFloat(actionData.value)
     }))
 
     return {
