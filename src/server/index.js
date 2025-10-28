@@ -185,7 +185,7 @@ const registerPlugins = async (server) => {
 
 const mockSessionData = async (request, log, LogCodes) => {
   try {
-    const crypto = await import('crypto')
+    const crypto = await import('node:crypto')
     const sessionId = request.state.sid?.sessionId || crypto.randomUUID()
 
     const sessionData = {
