@@ -48,7 +48,56 @@ describe('formsStatusCallback', () => {
           def: {
             metadata: {
               submission: { grantCode: 'grant-a-code' },
-              grantRedirectRules: { preSubmission: [{ toPath: '/check-selected-land-actions' }] }
+              grantRedirectRules: {
+                preSubmission: [{ toPath: '/check-selected-land-actions' }],
+                postSubmission: [
+                  {
+                    fromGrantsStatus: 'SUBMITTED,REOPENED',
+                    gasStatus: 'APPLICATION_WITHDRAWN',
+                    toGrantsStatus: 'CLEARED',
+                    toPath: '/start'
+                  },
+
+                  // Awaiting amendments
+                  {
+                    fromGrantsStatus: 'SUBMITTED',
+                    gasStatus: 'AWAITING_AMENDMENTS',
+                    toGrantsStatus: 'REOPENED',
+                    toPath: '/summary'
+                  },
+
+                  // Reopened
+                  {
+                    fromGrantsStatus: 'REOPENED',
+                    gasStatus: 'default',
+                    toGrantsStatus: 'REOPENED',
+                    toPath: '/summary'
+                  },
+
+                  {
+                    fromGrantsStatus: 'SUBMITTED',
+                    gasStatus: 'OFFER_SENT,OFFER_WITHDRAWN,OFFER_ACCEPTED',
+                    toGrantsStatus: 'SUBMITTED',
+                    toPath: __AGREEMENTS_BASE_URL__
+                  },
+
+                  // Submitted -> confirmation (default for most GAS statuses)
+                  {
+                    fromGrantsStatus: 'SUBMITTED',
+                    gasStatus: 'default',
+                    toGrantsStatus: 'SUBMITTED',
+                    toPath: '/confirmation'
+                  },
+
+                  // Default fallback
+                  {
+                    fromGrantsStatus: 'default',
+                    gasStatus: 'default',
+                    toGrantsStatus: 'SUBMITTED',
+                    toPath: '/confirmation'
+                  }
+                ]
+              }
             }
           }
         }
@@ -111,7 +160,7 @@ describe('formsStatusCallback', () => {
     }
   )
 
-  it('sets CLEARED state when GAS returns APPLICATION_WITHDRAWN', async () => {
+  it('sets CLEARED state when GAS returns APPLICATION_WITHDRAWN from SUBMITTED grant status', async () => {
     getApplicationStatus.mockResolvedValue({
       json: async () => ({ status: 'APPLICATION_WITHDRAWN' })
     })
@@ -128,7 +177,7 @@ describe('formsStatusCallback', () => {
   })
 
   it('continues when GAS returns APPLICATION_WITHDRAWN but previousStatus is neither SUBMITTED nor REOPENED', async () => {
-    context.state.applicationStatus = 'CLEARED'
+    context.state.applicationStatus = ApplicationStatus.CLEARED
     getApplicationStatus.mockResolvedValue({
       json: async () => ({ status: 'APPLICATION_WITHDRAWN' })
     })
@@ -147,7 +196,7 @@ describe('formsStatusCallback', () => {
   })
 
   it('continues when gasStatus is AWAITING_AMENDMENTS and previousStatus is REOPENED', async () => {
-    context.state.applicationStatus = 'REOPENED'
+    context.state.applicationStatus = ApplicationStatus.REOPENED
     getApplicationStatus.mockResolvedValue({
       json: async () => ({ status: 'AWAITING_AMENDMENTS' })
     })

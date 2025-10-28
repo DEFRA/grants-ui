@@ -7,49 +7,47 @@ import { log, LogCodes } from '../common/helpers/logging/log.js'
 import agreements from '../../config/agreements.js'
 import { shouldRedirectToAgreements } from '../common/helpers/agreements-redirect-helper.js'
 
-const gasToGrantsUiStatus = {
-  RECEIVED: 'SUBMITTED',
-  AWAITING_AMENDMENTS: 'REOPENED', // first visit post-submission -> re-opened
-  APPLICATION_WITHDRAWN: 'CLEARED',
-  OFFER_SENT: 'SUBMITTED',
-  OFFER_WITHDRAWN: 'SUBMITTED',
-  OFFER_ACCEPTED: 'SUBMITTED'
-}
+/**
+ * @typedef {Object} RedirectRule
+ * @property {string} fromGrantsStatus - Grants UI status or comma-separated statuses or 'default'
+ * @property {string} gasStatus - GAS status or 'default'
+ * @property {string} toGrantsStatus - Grants UI status to update to
+ * @property {string} toPath - URL path to redirect the user to
+ */
 
 /**
- * Maps GAS status and Grants UI status to the appropriate redirect URL
- * @param {string} gasStatus - The status from GAS API (e.g., 'RECEIVED', 'OFFER_SENT')
- * @param {string} grantsUiStatus - The current Grants UI status (e.g., 'SUBMITTED', 'REOPENED')
- * @param {string} slug - The grant slug/ID
- * @returns {string} The URL path to redirect to
+ * Finds the first redirect rule that matches the given Grants UI status
+ * and GAS (Grant Administration System) status.
+ *
+ * If a rule uses 'default', it matches any status for that field.
+ *
+ * @param {string} fromGrantsStatus - Current status in the Grants UI (previous state)
+ * @param {string} gasStatus - Current status returned from GAS
+ * @param {RedirectRule[]} redirectRules - Array of redirect rule objects to match against
+ * @returns {RedirectRule} The first matching redirect rule
+ * @throws {Error} If no matching rule is found
+ *
+ * @example
+ * const rule = mapStatusToUrl('SUBMITTED', 'AWAITING_AMENDMENTS', redirectRules);
+ * console.log(rule.toPath); // e.g., '/summary'
  */
-function mapStatusToUrl(gasStatus, grantsUiStatus, slug, redirectRules = []) {
-  if (shouldRedirectToAgreements(slug, gasStatus)) {
-    return agreements.get('baseUrl')
-  }
-  const match =
-    redirectRules.find(
-      (rule) =>
-        (rule.fromGrantsStatus === grantsUiStatus || rule.fromGrantsStatus === 'default') &&
-        (rule.gasStatus === gasStatus || rule.gasStatus === 'default')
-    ) || redirectRules.find((r) => r.fromGrantsStatus === 'default' && r.gasStatus === 'default')
+function mapStatusToUrl(fromGrantsStatus, gasStatus, redirectRules = []) {
+  const match = redirectRules.find((rule) => {
+    const fromMatch =
+      (rule.fromGrantsStatus || 'default')
+        .split(',') // support multiple comma-separated
+        .includes(fromGrantsStatus) || rule.fromGrantsStatus === 'default'
 
-  const path = match?.toPath ?? '/confirmation'
-  return `/${slug}${path.startsWith('/') ? path : `/${path}`}`
-}
+    const gasMatch = rule.gasStatus === gasStatus || rule.gasStatus === 'default'
 
-/**
- * Determines the new Grants UI status based on GAS status and previous status
- * Handles special case where AWAITING_AMENDMENTS transitions SUBMITTED to REOPENED
- * @param {string} gasStatus - The status from GAS API
- * @param {string} previousStatus - The previous Grants UI status
- * @returns {string} The new Grants UI status
- */
-function getNewStatus(gasStatus, previousStatus) {
-  if (gasStatus === 'AWAITING_AMENDMENTS' && previousStatus === 'SUBMITTED') {
-    return 'REOPENED'
+    return fromMatch && gasMatch
+  })
+
+  if (!match) {
+    throw new Error(`No redirect rule found for fromGrantsStatus=${fromGrantsStatus} gasStatus=${gasStatus}`)
   }
-  return gasToGrantsUiStatus[gasStatus] ?? 'SUBMITTED'
+
+  return match
 }
 
 /**
@@ -180,15 +178,18 @@ export const formsStatusCallback = async (request, h, context) => {
     const response = await getApplicationStatus(grantCode, context.referenceNumber)
     const { status: gasStatus } = await response.json()
 
-    const newStatus = getNewStatus(gasStatus, previousStatus)
-    await persistStatus(request, newStatus, previousStatus, grantId)
+    const postSubmissionRules = grantRedirectRules?.postSubmission ?? []
+    const rule = mapStatusToUrl(previousStatus, gasStatus, postSubmissionRules)
 
-    if (shouldContinueDefault(gasStatus, newStatus, previousStatus)) {
+    await persistStatus(request, rule.toGrantsStatus, previousStatus, grantId)
+
+    if (shouldContinueDefault(gasStatus, rule.toGrantsStatus, previousStatus)) {
       return h.continue
     }
 
-    const rules = grantRedirectRules?.postSubmission ?? []
-    const redirectUrl = mapStatusToUrl(gasStatus, newStatus, grantId, rules)
+    // Prefix with grant slug if relative
+    const redirectUrl = rule.toPath.startsWith('/') ? `/${grantId}${rule.toPath}` : `/${grantId}/${rule.toPath}`
+
     return request.path === redirectUrl ? h.continue : h.redirect(redirectUrl).takeover()
   } catch (err) {
     if (err.status === statusCodes.notFound) {
@@ -203,7 +204,14 @@ export const formsStatusCallback = async (request, h, context) => {
       error: err.message
     })
 
-    const fallbackUrl = mapStatusToUrl('default', 'default', grantId, [])
+    const fallbackRule = mapStatusToUrl(
+      'default',
+      'default',
+      request.app.model?.def?.metadata?.grantRedirectRules?.postSubmission ?? []
+    )
+    const fallbackUrl = fallbackRule.toPath.startsWith('/')
+      ? `/${grantId}${fallbackRule.toPath}`
+      : `/${grantId}/${fallbackRule.toPath}`
 
     if (request.path === fallbackUrl) {
       return h.continue

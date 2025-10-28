@@ -8,31 +8,17 @@ metadata:
     preSubmission:
       - toPath: /summary
     postSubmission:
-      # Submitted -> confirmation
-      - fromGrantsStatus: SUBMITTED
-        gasStatus: RECEIVED
-        toGrantsStatus: SUBMITTED
-        toPath: /confirmation
+      # Cleared
+      - fromGrantsStatus: SUBMITTED,REOPENED
+        gasStatus: APPLICATION_WITHDRAWN
+        toGrantsStatus: CLEARED
+        toPath: /start
 
+      # Awaiting amendments
       - fromGrantsStatus: SUBMITTED
-        gasStatus: OFFER_SENT
-        toGrantsStatus: SUBMITTED
-        toPath: /confirmation
-
-      - fromGrantsStatus: SUBMITTED
-        gasStatus: OFFER_WITHDRAWN
-        toGrantsStatus: SUBMITTED
-        toPath: /confirmation
-
-      - fromGrantsStatus: SUBMITTED
-        gasStatus: OFFER_ACCEPTED
-        toGrantsStatus: SUBMITTED
-        toPath: /confirmation
-
-      - fromGrantsStatus: SUBMITTED
-        gasStatus: default
-        toGrantsStatus: SUBMITTED
-        toPath: /confirmation
+        gasStatus: AWAITING_AMENDMENTS
+        toGrantsStatus: REOPENED
+        toPath: /summary
 
       # Reopened
       - fromGrantsStatus: REOPENED
@@ -40,17 +26,11 @@ metadata:
         toGrantsStatus: REOPENED
         toPath: /summary
 
-      # Cleared
-      - fromGrantsStatus: CLEARED
+      # Submitted -> confirmation (default for most GAS statuses)
+      - fromGrantsStatus: SUBMITTED
         gasStatus: default
-        toGrantsStatus: CLEARED
-        toPath: /start
-
-      # Awaiting amendments
-      - fromGrantsStatus: AWAITING_AMENDMENTS
-        gasStatus: default
-        toGrantsStatus: REOPENED
-        toPath: /summary
+        toGrantsStatus: SUBMITTED
+        toPath: /confirmation
 
       # Default fallback
       - fromGrantsStatus: default
