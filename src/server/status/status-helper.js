@@ -81,11 +81,8 @@ async function persistStatus(request, newStatus, previousStatus, grantId) {
   const organisationId = request.auth.credentials?.sbi
   if (newStatus === 'CLEARED') {
     const cacheService = getFormsCacheService(request.server)
-    const { crn } = request.auth.credentials
     await cacheService.setState(request, {
-      applicationStatus: ApplicationStatus.CLEARED,
-      submittedAt: new Date().toISOString(),
-      submittedBy: crn
+      applicationStatus: ApplicationStatus.CLEARED
     })
   } else {
     await updateApplicationStatus(newStatus, `${organisationId}:${grantId}`)
@@ -109,6 +106,22 @@ function shouldContinueDefault(gasStatus, newStatus, previousStatus) {
   )
 }
 
+function preSubmissionRedirect(request, h, context) {
+  // TODO refactor to use config driven approach in TGC-903
+  const isFarmPayments = request.params?.slug === 'farm-payments'
+  const redirectUrl = isFarmPayments ? 'check-selected-land-actions' : 'summary'
+
+  // If state contains any saved values and the user has navigated to the "start" page, redirect to the "check answers" page
+  // Otherwise just continue
+  if (
+    Object.keys(context.state).some((k) => !['$$__referenceNumber', 'applicationStatus'].includes(k)) &&
+    request.path === `/${request.params?.slug}${context.paths[0]}`
+  ) {
+    return h.redirect(redirectUrl).takeover()
+  }
+  return h.continue
+}
+
 // higher-order callback that wraps the existing one
 export const formsStatusCallback = async (request, h, context) => {
   const grantId = request.params?.slug
@@ -121,8 +134,12 @@ export const formsStatusCallback = async (request, h, context) => {
 
   const previousStatus = context.state?.applicationStatus
 
-  if (!previousStatus || previousStatus !== 'SUBMITTED') {
-    return h.continue
+  if (
+    !previousStatus ||
+    previousStatus === ApplicationStatus.CLEARED ||
+    previousStatus === ApplicationStatus.REOPENED
+  ) {
+    return preSubmissionRedirect(request, h, context)
   }
 
   try {
