@@ -399,7 +399,7 @@ Guidance components provide contextual help and information without requiring us
   - Next steps guidance
   - Support information
 - **Configuration**: YAML-based confirmation content
-- **Example**: [ConfirmationPageController renders confirmation view](./src/server/confirmation/confirmation.controller.js#L17-L63)
+- **Example**: [ConfirmationPageController renders confirmation view](./src/server/confirmation/confirmation-page.controller.js#L17-L63)
 
 ### State Management
 
