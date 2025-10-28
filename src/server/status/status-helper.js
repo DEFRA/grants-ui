@@ -115,7 +115,8 @@ function preSubmissionRedirect(request, h, context) {
   // Otherwise just continue
   if (
     Object.keys(context.state).some((k) => !['$$__referenceNumber', 'applicationStatus'].includes(k)) &&
-    request.path === `/${request.params?.slug}${context.paths[0]}`
+    request.path === `/${request.params?.slug}${context.paths[0]}` &&
+    request.app.model?.def?.metadata?.tasklistId == null
   ) {
     return h.redirect(redirectUrl).takeover()
   }
