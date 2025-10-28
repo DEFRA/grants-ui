@@ -388,7 +388,7 @@ Guidance components provide contextual help and information without requiring us
   - Reference number generation
   - Status tracking
 - **Process**: Declaration → Submission → Confirmation
-- **Example**: [DeclarationPageController submission workflow](./src/server/declaration/declaration.controller.js#L51-L126)
+- **Example**: [DeclarationPageController submission workflow](./src/server/declaration/declaration-page.controller.js#L51-L126)
 
 ### Confirmation System
 
