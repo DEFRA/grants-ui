@@ -8,6 +8,59 @@ metadata:
   submission:
     grantCode: frps-private-beta
     submissionSchemaPath: ./schemas/farm-payments.schema.json
+  grantRedirectRules:
+    preSubmission:
+      - toPath: /check-selected-land-actions
+    postSubmission:
+      # Submitted -> confirmation
+      - fromGrantsStatus: SUBMITTED
+        gasStatus: RECEIVED
+        toGrantsStatus: SUBMITTED
+        toPath: /confirmation
+
+      - fromGrantsStatus: SUBMITTED
+        gasStatus: OFFER_SENT
+        toGrantsStatus: SUBMITTED
+        toPath: /confirmation
+
+      - fromGrantsStatus: SUBMITTED
+        gasStatus: OFFER_WITHDRAWN
+        toGrantsStatus: SUBMITTED
+        toPath: /confirmation
+
+      - fromGrantsStatus: SUBMITTED
+        gasStatus: OFFER_ACCEPTED
+        toGrantsStatus: SUBMITTED
+        toPath: /confirmation
+
+      - fromGrantsStatus: SUBMITTED
+        gasStatus: default
+        toGrantsStatus: SUBMITTED
+        toPath: /confirmation
+
+      # Reopened
+      - fromGrantsStatus: REOPENED
+        gasStatus: default
+        toGrantsStatus: REOPENED
+        toPath: /summary
+
+      # Cleared
+      - fromGrantsStatus: CLEARED
+        gasStatus: default
+        toGrantsStatus: CLEARED
+        toPath: /start
+
+      # Awaiting amendments
+      - fromGrantsStatus: AWAITING_AMENDMENTS
+        gasStatus: default
+        toGrantsStatus: REOPENED
+        toPath: /summary
+
+      # Default fallback
+      - fromGrantsStatus: default
+        gasStatus: default
+        toGrantsStatus: SUBMITTED
+        toPath: /confirmation
   confirmationContent:
     html: |
       <h2 class="govuk-heading-m">What happens next</h2>

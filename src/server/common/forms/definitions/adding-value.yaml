@@ -7,9 +7,62 @@ metadata:
   submission:
     grantCode: adding-value
     submissionSchemaPath: ./schemas/adding-value-submission.schema.json
+  grantRedirectRules:
+    preSubmission:
+      - toPath: /summary
+    postSubmission:
+      # Submitted -> confirmation
+      - fromGrantsStatus: SUBMITTED
+        gasStatus: RECEIVED
+        toGrantsStatus: SUBMITTED
+        toPath: /confirmation
+
+      - fromGrantsStatus: SUBMITTED
+        gasStatus: OFFER_SENT
+        toGrantsStatus: SUBMITTED
+        toPath: /confirmation
+
+      - fromGrantsStatus: SUBMITTED
+        gasStatus: OFFER_WITHDRAWN
+        toGrantsStatus: SUBMITTED
+        toPath: /confirmation
+
+      - fromGrantsStatus: SUBMITTED
+        gasStatus: OFFER_ACCEPTED
+        toGrantsStatus: SUBMITTED
+        toPath: /confirmation
+
+      - fromGrantsStatus: SUBMITTED
+        gasStatus: default
+        toGrantsStatus: SUBMITTED
+        toPath: /confirmation
+
+      # Reopened
+      - fromGrantsStatus: REOPENED
+        gasStatus: default
+        toGrantsStatus: REOPENED
+        toPath: /summary
+
+      # Cleared
+      - fromGrantsStatus: CLEARED
+        gasStatus: default
+        toGrantsStatus: CLEARED
+        toPath: /start
+
+      # Awaiting amendments
+      - fromGrantsStatus: AWAITING_AMENDMENTS
+        gasStatus: default
+        toGrantsStatus: REOPENED
+        toPath: /summary
+
+      # Default fallback
+      - fromGrantsStatus: default
+        gasStatus: default
+        toGrantsStatus: SUBMITTED
+        toPath: /confirmation
   confirmationContent:
-    panelTitle: "Details submitted"
-    panelText: "Your reference number"
+    panelTitle: 'Details submitted'
+    panelText: 'Your reference number'
     html: |
       <p class="govuk-body">We have sent you a confirmation email with a record of your answers.</p>
       <p class="govuk-body">If you do not get an email within 72 hours, call the RPA helpline and follow the options for the Farming Investment Fund scheme.</p>
@@ -1214,7 +1267,7 @@ lists:
         value: howAddingValue-A3
       - id: afd9e2fb-76ef-4a71-bb1e-c32acf19e66b
         text: A new retail facility to sell direct to consumers
-        description: ""
+        description: ''
         value: howAddingValue-A4
     id: df716d26-1ee3-4a50-a771-45862dd195e9
   - title: What impact will this project have?
@@ -1223,11 +1276,11 @@ lists:
     items:
       - id: fe910958-2784-43cb-b56d-a00234fa80f9
         text: Increasing range of added-value products
-        description: ""
+        description: ''
         value: projectImpact-A1
       - id: 6ef2a428-a6df-4d76-8443-33a5c5665294
         text: Increasing volume of added-value products
-        description: ""
+        description: ''
         value: projectImpact-A2
       - id: 438c9c06-7ebf-4448-8d20-6a3072b197fd
         text: Allow selling direct to consumer
@@ -1605,9 +1658,9 @@ conditions:
     items:
       - id: d7d99527-fc60-4895-a069-7d4f03d240c1
         conditionId: d7d99527-fc60-4895-a069-7d4f03d240c1
-#        conditionName: 'otherFarmersConditionYes'
+      #        conditionName: 'otherFarmersConditionYes'
       - id: ca3278a5-6116-47bc-86be-97c62a36a1c5
         conditionId: 807142b4-7723-47e8-b4ea-b3c8c0b60ccb
-#        conditionName: 'fruitStorageConditionNo'
+    #        conditionName: 'fruitStorageConditionNo'
     coordinator: or
 schema: 2

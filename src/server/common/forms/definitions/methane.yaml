@@ -3,6 +3,59 @@ metadata:
   id: 95e92559-968d-44ae-8666-2b1ad3dffd34
   submission:
     grantCode: methane
+  grantRedirectRules:
+    preSubmission:
+      - toPath: /summary
+    postSubmission:
+      # Submitted -> confirmation
+      - fromGrantsStatus: SUBMITTED
+        gasStatus: RECEIVED
+        toGrantsStatus: SUBMITTED
+        toPath: /confirmation
+
+      - fromGrantsStatus: SUBMITTED
+        gasStatus: OFFER_SENT
+        toGrantsStatus: SUBMITTED
+        toPath: /confirmation
+
+      - fromGrantsStatus: SUBMITTED
+        gasStatus: OFFER_WITHDRAWN
+        toGrantsStatus: SUBMITTED
+        toPath: /confirmation
+
+      - fromGrantsStatus: SUBMITTED
+        gasStatus: OFFER_ACCEPTED
+        toGrantsStatus: SUBMITTED
+        toPath: /confirmation
+
+      - fromGrantsStatus: SUBMITTED
+        gasStatus: default
+        toGrantsStatus: SUBMITTED
+        toPath: /confirmation
+
+      # Reopened
+      - fromGrantsStatus: REOPENED
+        gasStatus: default
+        toGrantsStatus: REOPENED
+        toPath: /summary
+
+      # Cleared
+      - fromGrantsStatus: CLEARED
+        gasStatus: default
+        toGrantsStatus: CLEARED
+        toPath: /start
+
+      # Awaiting amendments
+      - fromGrantsStatus: AWAITING_AMENDMENTS
+        gasStatus: default
+        toGrantsStatus: REOPENED
+        toPath: /summary
+
+      # Default fallback
+      - fromGrantsStatus: default
+        gasStatus: default
+        toGrantsStatus: SUBMITTED
+        toPath: /confirmation
   confirmationContent:
     html: |
       <h2 class="govuk-heading-m">What happens next</h2>
@@ -87,9 +140,9 @@ pages:
       - name: isDairyFarmer
         title: Are you a dairy farmer?
         type: YesNoField
-        hint: ""
-        options: { }
-        schema: { }
+        hint: ''
+        options: {}
+        schema: {}
         shortDescription: Are you a dairy farmer?
         id: 45052db5-d620-4382-b2ec-918168c98bc7
     id: d40c01ac-f492-4665-90c6-b62a6e58d6aa
@@ -100,11 +153,11 @@ pages:
       - name: FGyiLS
         title: You are not eligible for this grant
         type: Html
-        hint: ""
+        hint: ''
         content: >
           <p class="govuk-body">You must be a dairy farmer to apply for a MSFP grant.</p>
-        options: { }
-        schema: { }
+        options: {}
+        schema: {}
         id: 2324fb1a-5c1d-4f49-ace0-5a9d5eaa088c
     id: 21347447-b831-4074-bc25-a35ac5a9fd8f
     condition: 341c2742-74d4-439e-91ee-641f4e56093f
@@ -114,9 +167,9 @@ pages:
       - name: isDairyKeptInEngland
         title: Are your dairy cows kept on land in England?
         type: YesNoField
-        hint: ""
-        options: { }
-        schema: { }
+        hint: ''
+        options: {}
+        schema: {}
         shortDescription: Are your dairy cows kept on land in England?
         id: 713f5093-19c5-4817-8064-81465f59bac3
     id: 6b886bdb-4c11-4742-b8ea-2b76590c1417
@@ -127,11 +180,11 @@ pages:
       - name: NotKeptInEngland
         title: Your dairy cows must kept on land in England to apply for a MSFP grant
         type: Html
-        hint: ""
+        hint: ''
         content: >
           <p class="govuk-body">Only dairy cows kept on land in England are eligible for MSFP grants. </p>
-        options: { }
-        schema: { }
+        options: {}
+        schema: {}
         id: 78caa271-3dc9-47b2-8cfe-ed2858c9c4d1
     id: ba8d8f0f-9f49-4235-9df7-f179c9b74181
     condition: bbdf08fa-7eaa-47a6-bc14-5d08d1de20f9
@@ -141,9 +194,9 @@ pages:
       - name: isDairyHerdForYear
         title: Do you house your dairy herd for at least some of the year?
         type: YesNoField
-        hint: ""
-        options: { }
-        schema: { }
+        hint: ''
+        options: {}
+        schema: {}
         shortDescription: Do you house your dairy herd for at least some of the year?
         id: 1a0d8a06-93b9-4c1d-9961-9696089ef42e
     id: 0d1ed099-020c-49aa-b1bf-82a909add133
@@ -154,11 +207,11 @@ pages:
       - name: NotEligibleDairyHerd
         title: You must house your dairy herd to apply for a MSFP grant
         type: Html
-        hint: ""
+        hint: ''
         content: >
           <p class="govuk-body">Only dairy herds which are housed for at least some of the year are eligible for MSFP grants</p>
-        options: { }
-        schema: { }
+        options: {}
+        schema: {}
         id: 44018210-32c6-42f4-937f-51f29bcd903c
     id: cd1ef5c9-ac49-44cd-85b3-99764347f785
     condition: 72c8cb60-7069-420e-8da6-ec7a72e39ca5
@@ -168,9 +221,9 @@ pages:
       - name: feedTMR
         title: Do you feed your dairy cows a total mixed ration (TMR) when housed?
         type: YesNoField
-        hint: ""
-        options: { }
-        schema: { }
+        hint: ''
+        options: {}
+        schema: {}
         shortDescription: Do you feed your dairy cows a total mixed ration (TMR) when housed?
         id: f6755ff8-953f-4f2e-8fff-22a2ec622fd5
     id: 9adab313-f6f5-49a7-946d-6f2699f4dc57
@@ -181,18 +234,18 @@ pages:
       - name: NotFeedTMR
         title: You must feed your dairy cows a total mixed ration (TMR) when housed to apply for a MSFP grant
         type: Html
-        hint: ""
+        hint: ''
         content: >
           <p class="govuk-body">Only dairy cows fed using a TMR when housed are eligible for MSFP grants. </p>
-        options: { }
-        schema: { }
+        options: {}
+        schema: {}
         id: 25845086-4fcf-4ee5-ab2b-cb5d3c3d1117
     id: e102ac90-990a-443b-b70a-d43ba2e5a424
     condition: 914c4364-1a6c-4475-a41d-58d30f684d1c
   - title: Check your details are correct
     path: /confirm-methane-details
     controller: ConfirmMethaneDetailsController
-    next: [ ]
+    next: []
     id: a24cb35f-a359-4934-b8c8-56ff92cb3df1
   - title: How many dairy cows will you feed MSFP?
     path: /how-many-dairy-cows
@@ -200,7 +253,7 @@ pages:
       - name: dairyCowsFedCount
         title: How many dairy cows will you feed MSFP?
         type: NumberField
-        hint: ""
+        hint: ''
         options:
           required: true
           classes: govuk-!-width-one-third
@@ -212,7 +265,7 @@ pages:
           min: 10
           max: 10000
           precision: 0
-        shortDescription:  How many dairy cows will you feed MSFP?
+        shortDescription: How many dairy cows will you feed MSFP?
         id: 76f04de6-2eef-4ea5-bbd8-d4e84818528a
     id: 114798d7-622e-46da-943d-729f4d102d8c
   - title: How many months are your dairy cows housed during the year?
@@ -221,7 +274,7 @@ pages:
       - name: monthsDairyCowHoused
         title: How many months are your dairy cows housed during the year?
         type: NumberField
-        hint: ""
+        hint: ''
         options:
           required: true
           classes: govuk-!-width-one-third
@@ -243,8 +296,8 @@ pages:
         title: Html
         type: Html
         id: 545895da-dc16-4bd6-8d6a-4308277982df
-        options: { }
-        schema: { }
+        options: {}
+        schema: {}
       - name: msfpOptions
         title: Choose product
         type: RadiosField
@@ -254,7 +307,7 @@ pages:
             any.required: Select the option that applies
         shortDescription: MSFP
         id: b48a816e-a810-4346-a111-5c7a0cac8a5b
-        schema: { }
+        schema: {}
     id: 5cd9ac2a-d211-4f8e-b1b9-1a377d121148
   - title: Check your answers
     path: /summary
@@ -281,8 +334,8 @@ pages:
           </ul>
           <p class="govuk-body">There’s no guarantee you’ll receive a grant</p>
 
-        options: { }
-        schema: { }
+        options: {}
+        schema: {}
         id: 83d8325d-1762-4276-a2a8-d89acb1c66d7
   - title: Confirm and send
     path: /declaration

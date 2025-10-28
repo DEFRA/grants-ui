@@ -123,7 +123,11 @@ async function listYamlFilesRecursively(baseDir) {
   return out
 }
 
-const redirectRuleSchema = Joi.object({
+const preSubmissionRuleSchema = Joi.object({
+  toPath: Joi.string().pattern(/^\/.*/).required()
+})
+
+const postSubmissionRuleSchema = Joi.object({
   fromGrantsStatus: Joi.string().required(),
   gasStatus: Joi.string().required(),
   toGrantsStatus: Joi.string().required(),
@@ -131,11 +135,39 @@ const redirectRuleSchema = Joi.object({
 })
 
 export function validateGrantRedirectRules(form, definition) {
-  const redirectRules = definition.metadata?.grantRedirectRules?.postSubmission ?? []
+  const formName = definition.name || form.title || 'unnamed'
 
-  const { error } = Joi.array().items(redirectRuleSchema).validate(redirectRules)
-  if (error) {
-    throw new Error(`Invalid redirect rules in form ${definition.name || form.title || 'unnamed'}: ${error.message}`)
+  const redirectRules = definition.metadata?.grantRedirectRules ?? {}
+  const preSubmission = redirectRules.preSubmission ?? []
+  const postSubmission = redirectRules.postSubmission ?? []
+
+  //
+  // Validate preSubmission
+  //
+  const { error: preError } = Joi.array().items(preSubmissionRuleSchema).length(1).validate(preSubmission)
+  if (preError) {
+    throw new Error(`Invalid redirect rules in form ${formName}: ${preError.message}`)
+  }
+
+  //
+  // Validate postSubmission
+  //
+  const { error: postError } = Joi.array().items(postSubmissionRuleSchema).validate(postSubmission)
+  if (postError) {
+    throw new Error(`Invalid redirect rules in form ${formName}: ${postError.message}`)
+  }
+
+  if (postSubmission.length === 0) {
+    throw new Error(`Invalid redirect configuration in form ${formName}: no postSubmission redirect rules defined`)
+  }
+
+  const hasFallbackRule = postSubmission.some(
+    (rule) => rule.fromGrantsStatus === 'default' && rule.gasStatus === 'default'
+  )
+  if (!hasFallbackRule) {
+    throw new Error(
+      `Invalid redirect configuration in form ${formName}: missing default/default fallback rule in postSubmission`
+    )
   }
 }
 

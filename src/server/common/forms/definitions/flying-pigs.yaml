@@ -4,6 +4,59 @@ metadata:
   enabledInProd: true
   submission:
     grantCode: pigs-might-fly
+  grantRedirectRules:
+    preSubmission:
+      - toPath: /summary
+    postSubmission:
+      # Submitted -> confirmation
+      - fromGrantsStatus: SUBMITTED
+        gasStatus: RECEIVED
+        toGrantsStatus: SUBMITTED
+        toPath: /confirmation
+
+      - fromGrantsStatus: SUBMITTED
+        gasStatus: OFFER_SENT
+        toGrantsStatus: SUBMITTED
+        toPath: /confirmation
+
+      - fromGrantsStatus: SUBMITTED
+        gasStatus: OFFER_WITHDRAWN
+        toGrantsStatus: SUBMITTED
+        toPath: /confirmation
+
+      - fromGrantsStatus: SUBMITTED
+        gasStatus: OFFER_ACCEPTED
+        toGrantsStatus: SUBMITTED
+        toPath: /confirmation
+
+      - fromGrantsStatus: SUBMITTED
+        gasStatus: default
+        toGrantsStatus: SUBMITTED
+        toPath: /confirmation
+
+      # Reopened
+      - fromGrantsStatus: REOPENED
+        gasStatus: default
+        toGrantsStatus: REOPENED
+        toPath: /summary
+
+      # Cleared
+      - fromGrantsStatus: CLEARED
+        gasStatus: default
+        toGrantsStatus: CLEARED
+        toPath: /start
+
+      # Awaiting amendments
+      - fromGrantsStatus: AWAITING_AMENDMENTS
+        gasStatus: default
+        toGrantsStatus: REOPENED
+        toPath: /summary
+
+      # Default fallback
+      - fromGrantsStatus: default
+        gasStatus: default
+        toGrantsStatus: SUBMITTED
+        toPath: /confirmation
   confirmationContent:
     html: >
       <h2 class="govuk-heading-m">What happens next</h2>
@@ -140,7 +193,7 @@ pages:
       - name: isPigFarmer
         title: Are you a pig farmer?
         type: YesNoField
-        hint: ""
+        hint: ''
         options: {}
         schema: {}
         shortDescription: Are you a pig farmer?
@@ -152,7 +205,7 @@ pages:
       - name: FGyiLS
         title: You are not eligible for this grant
         type: Html
-        hint: ""
+        hint: ''
         content: >
           <p class="govuk-body">Sorry, this grant is only available for pig
           farmers.</p>
@@ -195,7 +248,7 @@ pages:
       - name: FGyiLA
         title: You are not eligible for this grant
         type: Html
-        hint: ""
+        hint: ''
         content: >
           <p class="govuk-body">Sorry, this grant is only available for pig
           farmers with up to 1,000 pigs</p>
@@ -223,7 +276,7 @@ pages:
       - name: whitePigsCount
         title: How many White pigs do you have?
         type: NumberField
-        hint: ""
+        hint: ''
         options:
           required: true
           classes: govuk-!-width-one-third
@@ -245,7 +298,7 @@ pages:
       - name: britishLandracePigsCount
         title: How many British Landrace pigs do you have?
         type: NumberField
-        hint: ""
+        hint: ''
         options:
           required: true
           classes: govuk-!-width-one-third
@@ -267,7 +320,7 @@ pages:
       - name: berkshirePigsCount
         title: How many Berkshire pigs do you have?
         type: NumberField
-        hint: ""
+        hint: ''
         options:
           required: true
           classes: govuk-!-width-one-third
@@ -289,7 +342,7 @@ pages:
       - name: otherPigsCount
         title: How many Other pigs do you have?
         type: NumberField
-        hint: ""
+        hint: ''
         options:
           required: true
           classes: govuk-!-width-one-third

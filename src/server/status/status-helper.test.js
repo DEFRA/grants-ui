@@ -43,7 +43,16 @@ describe('formsStatusCallback', () => {
 
     request = {
       params: { slug: 'grant-a' },
-      app: { model: { def: { metadata: { submission: { grantCode: 'grant-a-code' } } } } },
+      app: {
+        model: {
+          def: {
+            metadata: {
+              submission: { grantCode: 'grant-a-code' },
+              grantRedirectRules: { preSubmission: [{ toPath: '/check-selected-land-actions' }] }
+            }
+          }
+        }
+      },
       path: '/grant-a/start',
       auth: { credentials: { sbi: '12345', crn: 'CRN123' } },
       server: { logger: { error: vi.fn() } }
@@ -69,24 +78,38 @@ describe('formsStatusCallback', () => {
     expect(result).toBe(h.continue)
   })
 
-  it.each(['REOPENED', 'CLEARED'])('continues without GAS call when status = %s and no saved state', async (status) => {
-    context.state = {
-      applicationStatus: status
-    }
+  it('continues when previousStatus is SUBMITTED and no redirect needed', async () => {
+    getApplicationStatus.mockResolvedValue({ json: async () => ({ status: 'RECEIVED' }) })
+    request.path = '/grant-a/confirmation'
+
     const result = await formsStatusCallback(request, h, context)
     expect(result).toBe(h.continue)
-    expect(getApplicationStatus).not.toHaveBeenCalled()
   })
 
-  it.each(['REOPENED', 'CLEARED'])('redirects to "check answers" page if some saved state', async (status) => {
-    context.state = {
-      applicationStatus: status,
-      question: 'answer'
+  it.each([undefined, 'REOPENED', 'CLEARED'])(
+    'continues without GAS call when status = %s and no saved state',
+    async (status) => {
+      context.state = {
+        applicationStatus: status
+      }
+      const result = await formsStatusCallback(request, h, context)
+      expect(result).toBe(h.continue)
+      expect(getApplicationStatus).not.toHaveBeenCalled()
     }
-    await formsStatusCallback(request, h, context)
-    expect(h.redirect).toBeCalled()
-    expect(getApplicationStatus).not.toHaveBeenCalled()
-  })
+  )
+
+  it.each([undefined, 'REOPENED', 'CLEARED'])(
+    'redirects to "check answers" page if some saved state',
+    async (status) => {
+      context.state = {
+        applicationStatus: status,
+        question: 'answer'
+      }
+      await formsStatusCallback(request, h, context)
+      expect(h.redirect).toBeCalled()
+      expect(getApplicationStatus).not.toHaveBeenCalled()
+    }
+  )
 
   it('sets CLEARED state when GAS returns APPLICATION_WITHDRAWN', async () => {
     getApplicationStatus.mockResolvedValue({
@@ -102,6 +125,15 @@ describe('formsStatusCallback', () => {
       })
     )
     expect(result).toEqual(expect.any(Symbol))
+  })
+
+  it('continues when GAS returns APPLICATION_WITHDRAWN but previousStatus is neither SUBMITTED nor REOPENED', async () => {
+    context.state.applicationStatus = 'CLEARED'
+    getApplicationStatus.mockResolvedValue({
+      json: async () => ({ status: 'APPLICATION_WITHDRAWN' })
+    })
+    const result = await formsStatusCallback(request, h, context)
+    expect(result).toBe(h.continue)
   })
 
   it('updates status to REOPENED when awaiting amendments and previous is SUBMITTED', async () => {
@@ -144,6 +176,26 @@ describe('formsStatusCallback', () => {
 
     const result = await formsStatusCallback(request, h, context)
     expect(result).toBe(h.continue)
+  })
+
+  it('uses custom postSubmission redirect rule when available', async () => {
+    const customRules = [
+      { fromGrantsStatus: 'SUBMITTED', gasStatus: 'RECEIVED', toPath: '/custom-path' },
+      { fromGrantsStatus: 'default', gasStatus: 'default', toPath: '/fallback-path' }
+    ]
+
+    // Override grantRedirectRules in request
+    request.app.model.def.metadata.grantRedirectRules.postSubmission = customRules
+
+    getApplicationStatus.mockResolvedValue({
+      json: async () => ({ status: 'RECEIVED' })
+    })
+
+    const result = await formsStatusCallback(request, h, context)
+
+    // It should pick the custom path instead of default /confirmation
+    expect(h.redirect).toHaveBeenCalledWith('/grant-a/custom-path')
+    expect(result).toEqual(expect.any(Symbol))
   })
 
   it('continues when getApplicationStatus throws 404', async () => {

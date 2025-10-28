@@ -6,6 +6,59 @@ metadata:
   tasklistId: example
   submission:
     grantCode: agent-details
+  grantRedirectRules:
+    preSubmission:
+      - toPath: /check-selected-land-actions
+    postSubmission:
+      # Submitted -> confirmation
+      - fromGrantsStatus: SUBMITTED
+        gasStatus: RECEIVED
+        toGrantsStatus: SUBMITTED
+        toPath: /confirmation
+
+      - fromGrantsStatus: SUBMITTED
+        gasStatus: OFFER_SENT
+        toGrantsStatus: SUBMITTED
+        toPath: /confirmation
+
+      - fromGrantsStatus: SUBMITTED
+        gasStatus: OFFER_WITHDRAWN
+        toGrantsStatus: SUBMITTED
+        toPath: /confirmation
+
+      - fromGrantsStatus: SUBMITTED
+        gasStatus: OFFER_ACCEPTED
+        toGrantsStatus: SUBMITTED
+        toPath: /confirmation
+
+      - fromGrantsStatus: SUBMITTED
+        gasStatus: default
+        toGrantsStatus: SUBMITTED
+        toPath: /confirmation
+
+      # Reopened
+      - fromGrantsStatus: REOPENED
+        gasStatus: default
+        toGrantsStatus: REOPENED
+        toPath: /summary
+
+      # Cleared
+      - fromGrantsStatus: CLEARED
+        gasStatus: default
+        toGrantsStatus: CLEARED
+        toPath: /start
+
+      # Awaiting amendments
+      - fromGrantsStatus: AWAITING_AMENDMENTS
+        gasStatus: default
+        toGrantsStatus: REOPENED
+        toPath: /summary
+
+      # Default fallback
+      - fromGrantsStatus: default
+        gasStatus: default
+        toGrantsStatus: SUBMITTED
+        toPath: /confirmation
 pages:
   - title: Agent's details
     path: /agent-details

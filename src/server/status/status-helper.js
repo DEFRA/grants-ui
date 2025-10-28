@@ -7,29 +7,6 @@ import { log, LogCodes } from '../common/helpers/logging/log.js'
 import agreements from '../../config/agreements.js'
 import { shouldRedirectToAgreements } from '../common/helpers/agreements-redirect-helper.js'
 
-const statusToUrlConfig = {
-  // GrantsUI -> GAS combined mapping
-  submitted: {
-    received: (slug) => `/${slug}/confirmation`,
-    offerSent: (slug) => `/${slug}/confirmation`,
-    offerWithdrawn: (slug) => `/${slug}/confirmation`,
-    offerAccepted: (slug) => `/${slug}/confirmation`,
-    default: (slug) => `/${slug}/confirmation`
-  },
-  reopened: {
-    default: (slug) => `/${slug}/summary`
-  },
-  cleared: {
-    default: (slug) => `/${slug}/start`
-  },
-  awaitingAmendments: {
-    default: (slug) => `/${slug}/summary`
-  },
-  default: {
-    default: (slug) => `/${slug}/confirmation`
-  }
-}
-
 const gasToGrantsUiStatus = {
   RECEIVED: 'SUBMITTED',
   AWAITING_AMENDMENTS: 'REOPENED', // first visit post-submission -> re-opened
@@ -46,14 +23,19 @@ const gasToGrantsUiStatus = {
  * @param {string} slug - The grant slug/ID
  * @returns {string} The URL path to redirect to
  */
-function mapStatusToUrl(gasStatus, grantsUiStatus, slug) {
+function mapStatusToUrl(gasStatus, grantsUiStatus, slug, redirectRules = []) {
   if (shouldRedirectToAgreements(slug, gasStatus)) {
     return agreements.get('baseUrl')
   }
+  const match =
+    redirectRules.find(
+      (rule) =>
+        (rule.fromGrantsStatus === grantsUiStatus || rule.fromGrantsStatus === 'default') &&
+        (rule.gasStatus === gasStatus || rule.gasStatus === 'default')
+    ) || redirectRules.find((r) => r.fromGrantsStatus === 'default' && r.gasStatus === 'default')
 
-  const grantsUiConfig = statusToUrlConfig[grantsUiStatus.toLowerCase()] ?? statusToUrlConfig.default
-  const fn = grantsUiConfig[gasStatus.toLowerCase()] ?? grantsUiConfig.default ?? statusToUrlConfig.default.default
-  return fn(slug)
+  const path = match?.toPath ?? '/confirmation'
+  return `/${slug}${path.startsWith('/') ? path : `/${path}`}`
 }
 
 /**
@@ -183,7 +165,8 @@ export const formsStatusCallback = async (request, h, context) => {
     return h.continue
   }
 
-  const previousStatus = context.state?.applicationStatus
+  const previousStatus = context.state.applicationStatus
+  const grantRedirectRules = request.app.model?.def?.metadata?.grantRedirectRules
 
   if (
     !previousStatus ||
@@ -204,7 +187,8 @@ export const formsStatusCallback = async (request, h, context) => {
       return h.continue
     }
 
-    const redirectUrl = mapStatusToUrl(gasStatus, newStatus, grantId)
+    const rules = grantRedirectRules?.postSubmission ?? []
+    const redirectUrl = mapStatusToUrl(gasStatus, newStatus, grantId, rules)
     return request.path === redirectUrl ? h.continue : h.redirect(redirectUrl).takeover()
   } catch (err) {
     if (err.status === statusCodes.notFound) {
@@ -219,7 +203,8 @@ export const formsStatusCallback = async (request, h, context) => {
       error: err.message
     })
 
-    const fallbackUrl = statusToUrlConfig.default.default(grantId)
+    const fallbackUrl = mapStatusToUrl('default', 'default', grantId, [])
+
     if (request.path === fallbackUrl) {
       return h.continue
     }
