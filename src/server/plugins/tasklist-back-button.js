@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, readFileSync } from 'fs'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { loadTasklistConfig } from '../tasklist/services/config-loader.js'
 import { parse } from 'yaml'
