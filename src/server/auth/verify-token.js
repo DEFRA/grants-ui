@@ -33,8 +33,8 @@ async function fetchJwksKeys() {
   return keys
 }
 
-async function convertJwkToPem(keys) {
-  return await jose.JWK.asKey(keys[0])
+function convertJwkToPem(keys) {
+  return jose.JWK.asKey(keys[0])
 }
 
 function verifyTokenSignature(token, key) {
