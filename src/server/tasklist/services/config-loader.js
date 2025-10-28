@@ -154,13 +154,15 @@ export function validateTasklistConfig(tasklistConfig, tasklistId = 'unknown') {
   const { tasklist } = tasklistConfig
   validateTasklistProperties(tasklist, tasklistId)
 
-  tasklist.sections.forEach((section, sectionIndex) => {
+  for (let sectionIndex = 0; sectionIndex < tasklist.sections.length; sectionIndex++) {
+    const section = tasklist.sections[sectionIndex]
     validateSection(section, sectionIndex, tasklistId)
 
-    section.subsections.forEach((subsection, subsectionIndex) => {
+    for (let subsectionIndex = 0; subsectionIndex < section.subsections.length; subsectionIndex++) {
+      const subsection = section.subsections[subsectionIndex]
       validateSubsection(subsection, subsectionIndex, section.id, tasklistId)
-    })
-  })
+    }
+  }
 
   return true
 }
