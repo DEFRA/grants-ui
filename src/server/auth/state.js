@@ -1,4 +1,4 @@
-import crypto from 'crypto'
+import crypto from 'node:crypto'
 
 function createState(request) {
   // Generate a unique state value and store it in the session
