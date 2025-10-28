@@ -1,6 +1,6 @@
 import { readFile } from 'fs/promises'
 import { parse } from 'yaml'
-import { join } from 'path'
+import { join } from 'node:path'
 import { statusCodes } from '../../common/constants/status-codes.js'
 import { config } from '~/src/config/config.js'
 

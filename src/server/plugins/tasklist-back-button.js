@@ -1,5 +1,5 @@
 import { existsSync, readdirSync, readFileSync } from 'fs'
-import { join } from 'path'
+import { join } from 'node:path'
 import { loadTasklistConfig } from '../tasklist/services/config-loader.js'
 import { parse } from 'yaml'
 import { getFormsCache } from '../common/forms/services/form.js'
