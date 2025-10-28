@@ -9,7 +9,7 @@ import Scooter from '@hapi/scooter'
 
 import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
 import path from 'node:path'
-import { fileURLToPath } from 'url'
+import { fileURLToPath } from 'node:url'
 import { config } from '~/src/config/config.js'
 import { context } from '~/src/config/nunjucks/context/context.js'
 import { grantsUiPaths, nunjucksConfig } from '~/src/config/nunjucks/nunjucks.js'
