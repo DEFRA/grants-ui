@@ -8,8 +8,8 @@ import inert from '@hapi/inert'
 import Scooter from '@hapi/scooter'
 
 import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
-import path from 'path'
-import { fileURLToPath } from 'url'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { config } from '~/src/config/config.js'
 import { context } from '~/src/config/nunjucks/context/context.js'
 import { grantsUiPaths, nunjucksConfig } from '~/src/config/nunjucks/nunjucks.js'
@@ -185,7 +185,7 @@ const registerPlugins = async (server) => {
 
 const mockSessionData = async (request, log, LogCodes) => {
   try {
-    const crypto = await import('crypto')
+    const crypto = await import('node:crypto')
     const sessionId = request.state.sid?.sessionId || crypto.randomUUID()
 
     const sessionData = {

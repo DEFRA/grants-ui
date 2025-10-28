@@ -75,7 +75,9 @@ export async function fetchAvailableActionsForParcel({ parcelId = '', sheetId = 
   actionGroups.forEach((group) => {
     const groupActions = actions.filter((a) => group.actions.includes(a.code))
     if (groupActions.length > 0) {
-      groupActions.forEach((a) => usedCodes.add(a.code))
+      for (const action of groupActions) {
+        usedCodes.add(action.code)
+      }
       result.push(createGroup(group.name, groupActions))
     }
   })
