@@ -1,6 +1,6 @@
 [
   {
-    "id": "applications-default-204",
+    "id": "gas-applications-post-204",
     "priority": 0,
     "httpRequest": {
       "method": "POST",
@@ -8,6 +8,183 @@
     },
     "httpResponse": {
       "statusCode": 204
+    }
+  },
+  {
+    "id": "gas-farm-payments-application-status-200",
+    "priority": 0,
+    "httpRequest": {
+      "method": "GET",
+      "path": "/grants/frps-private-beta/applications/.*/status"
+    },
+    "httpResponse": {
+      "statusCode": 200,
+      "body": {
+        "status": "OFFER_SENT"
+      }
+    }
+  },
+  {
+    "id": "land-grants-api-application-validate-200",
+    "priority": 0,
+    "httpRequest": {
+      "method": "POST",
+      "path": "/application/validate"
+    },
+    "httpResponse": {
+      "statusCode": 200,
+      "body": {
+        "id": "VALIDATION-001",
+        "message": "Validation successful",
+        "valid": true,
+        "errorMessages": []
+      }
+    }
+  },
+  {
+    "id": "land-grants-api-calculate-payment-both-200",
+    "priority": 10,
+    "httpRequest": {
+      "method": "POST",
+      "path": "/payments/calculate",
+      "body": {
+        "type": "JSON_PATH",
+        "jsonPath": "$.landActions[*].actions[1]"
+      }
+    },
+    "httpResponse": {
+      "statusCode": 200,
+      "body": {
+        "payment": {
+          "annualTotalPence": 98750
+        }
+      }
+    }
+  },
+  {
+    "id": "land-grants-api-calculate-payment-test1-200",
+    "priority": 5,
+    "httpRequest": {
+      "method": "POST",
+      "path": "/payments/calculate",
+      "body": {
+        "type": "JSON_PATH",
+        "jsonPath": "$.landActions[*].actions[?(@.code == 'TEST1')]"
+      }
+    },
+    "httpResponse": {
+      "statusCode": 200,
+      "body": {
+        "payment": {
+          "annualTotalPence": 35000
+        }
+      }
+    }
+  },
+  {
+    "id": "land-grants-api-calculate-payment-test2-200",
+    "priority": 5,
+    "httpRequest": {
+      "method": "POST",
+      "path": "/payments/calculate",
+      "body": {
+        "type": "JSON_PATH",
+        "jsonPath": "$.landActions[*].actions[?(@.code == 'TEST2')]"
+      }
+    },
+    "httpResponse": {
+      "statusCode": 200,
+      "body": {
+        "payment": {
+          "annualTotalPence": 63750
+        }
+      }
+    }
+  },
+  {
+    "id": "land-grants-api-calculate-payment-200",
+    "priority": 0,
+    "httpRequest": {
+      "method": "POST",
+      "path": "/payments/calculate"
+    },
+    "httpResponse": {
+      "statusCode": 200,
+      "body": {
+        "payment": {
+          "annualTotalPence": 98750
+        }
+      }
+    }
+  },
+  {
+    "id": "land-grants-api-parcels-actions-200",
+    "priority": 0,
+    "httpRequest": {
+      "method": "POST",
+      "path": "/parcels",
+      "body": {
+        "type": "JSON_PATH",
+        "jsonPath": "$.fields[?(@ == 'actions')]"
+      }
+    },
+    "httpResponse": {
+      "statusCode": 200,
+      "body": {
+        "parcels": [
+          {
+            "parcelId": "7039",
+            "sheetId": "SD6843",
+            "size": {
+              "total": 15.5,
+              "unit": "ha"
+            },
+            "actions": [
+              {
+                "code": "TEST1",
+                "availableArea": {
+                  "value": 7.0,
+                  "unit": "ha"
+                },
+                "ratePerUnitGbp": 50.0,
+                "description": "Test action 1"
+              },
+              {
+                "code": "TEST2",
+                "availableArea": {
+                  "value": 8.5,
+                  "unit": "ha"
+                },
+                "ratePerUnitGbp": 75.0,
+                "description": "Test action 2"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "land-grants-api-parcels-size-200",
+    "priority": 0,
+    "httpRequest": {
+      "method": "POST",
+      "path": "/parcels"
+    },
+    "httpResponse": {
+      "statusCode": 200,
+      "body": {
+        "parcels": [
+          {
+            "parcelId": "7039",
+            "sheetId": "SD6843",
+            "size": {
+              "total": 15.5,
+              "unit": "ha"
+            }
+          }
+        ]
+      }
     }
   }
 ]

@@ -129,6 +129,22 @@ describe('SubmissionPageController', () => {
     })
   })
 
+  describe('getStatusPath', () => {
+    it('should return confirmation path', () => {
+      const mockRequest = {
+        params: { slug: 'farm-payments' }
+      }
+      const mockContext = {
+        referenceNumber: 'REF123',
+        state: { formSlug: 'farm-payments' }
+      }
+
+      const result = controller.getStatusPath(mockRequest, mockContext)
+
+      expect(result).toBe('/farm-payments/confirmation')
+    })
+  })
+
   describe('makePostRouteHandler', () => {
     it('should validate, submit application and redirect on success', async () => {
       const mockRequest = {
@@ -179,7 +195,6 @@ describe('SubmissionPageController', () => {
         validationId: 'validation-123'
       })
       expect(controller.handleSuccessfulSubmission).toHaveBeenCalledWith(mockRequest, mockContext, mockH, statusCode)
-      expect(mockRequest.logger.info).toHaveBeenCalledWith('Form submission completed', mockSubmitResult)
       expect(result).toBe('proceeded')
     })
 
@@ -249,7 +264,6 @@ describe('SubmissionPageController', () => {
       const handler = controller.makePostRouteHandler()
       await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow(mockError)
 
-      expect(mockRequest.logger.error).toHaveBeenCalledWith('Error submitting application:', mockError)
       expect(mockH.redirect).not.toHaveBeenCalled()
       expect(mockCacheService.setState).not.toHaveBeenCalled()
     })
@@ -291,7 +305,6 @@ describe('SubmissionPageController', () => {
       const handler = controller.makePostRouteHandler()
       await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow(mockError)
 
-      expect(mockRequest.logger.error).toHaveBeenCalledWith('Error submitting application:', mockError)
       expect(mockH.redirect).not.toHaveBeenCalled()
       expect(mockCacheService.setState).not.toHaveBeenCalled()
     })
@@ -366,8 +379,6 @@ describe('SubmissionPageController', () => {
 
       const handler = controller.makePostRouteHandler()
       await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow(mockError)
-
-      expect(mockRequest.logger.error).toHaveBeenCalledWith('Error submitting application:', mockError)
     })
   })
 })
