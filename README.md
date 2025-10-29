@@ -1156,6 +1156,33 @@ It is possible to run acceptance tests at individual feature file level by passi
 ./tools/run-acceptance-tests.sh ./test/features/example-whitelist/whitelist.feature
 ```
 
+#### Parallel Test Execution
+
+The acceptance tests support parallel execution through the `SE_NODE_MAX_SESSIONS` environment variable, which controls the Selenium node's maximum concurrent sessions. The default value is 1 session.
+
+**Configuration:**
+
+The `SE_NODE_MAX_SESSIONS` variable can be set in your `.env` file:
+
+```bash
+# Default value is 1
+SE_NODE_MAX_SESSIONS=1
+
+# To run with more parallelization
+SE_NODE_MAX_SESSIONS=2
+```
+
+**Running Tests with SE_NODE_MAX_SESSIONS:**
+
+You can also set the `SE_NODE_MAX_SESSIONS` environment variable directly when running acceptance tests:
+
+```bash
+# Run all acceptance tests with 2 parallel sessions
+SE_NODE_MAX_SESSIONS=2 ./tools/run-acceptance-tests.sh
+```
+
+**Note:** A higher value may not reduce test execution time beyond a certain point and can introduce more instability into your Selenium node. Beyond this approach a Selenium grid of hub and multiple nodes becomes necessary, but which testing shows uses much more resource for only small gains in our usage.
+
 #### CI
 
 The `run-acceptance-tests.sh` script is run as part of the GitHub PR workflow for grants-ui.
