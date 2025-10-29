@@ -76,7 +76,8 @@ export class TasklistGenerator {
       }
     }
 
-    return subsection.required === true ? TaskListStatus.NOT_YET_STARTED : TaskListStatus.HIDDEN
+    // NOSONAR - Negated condition is intentional: subsections are required by default unless explicitly set to false
+    return subsection.required !== false ? TaskListStatus.NOT_YET_STARTED : TaskListStatus.HIDDEN
   }
 
   checkDependencies(dependencies, statuses) {
