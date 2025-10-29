@@ -230,7 +230,8 @@ function parseResourcePath(path, response) {
   const errorMsg = response?.message || ''
 
   // Form pattern: /form-slug/page
-  const formMatch = path.match(/^\/([^/]+)\//)
+  const formRegex = /^\/([^/]+)\//
+  const formMatch = formRegex.exec(path)
   if (formMatch && errorMsg.includes('Form')) {
     return {
       type: 'form',
@@ -241,7 +242,8 @@ function parseResourcePath(path, response) {
   }
 
   // Tasklist pattern: /tasklist/tasklist-id
-  const tasklistMatch = path.match(/^\/tasklist\/([^/]+)/)
+  const tasklistRegex = /^\/tasklist\/([^/]+)/
+  const tasklistMatch = tasklistRegex.exec(path)
   if (tasklistMatch || errorMsg.includes('Tasklist')) {
     return {
       type: 'tasklist',

@@ -27,7 +27,7 @@ export async function persistSubmissionToApi(submission) {
       headers: createApiHeaders(),
       body: JSON.stringify({
         ...submission,
-        grantVersion: 1 // TODO: Update when support for same grant versioning is implemented
+        grantVersion: 1 // NOSONAR TODO: Update when support for same grant versioning is implemented
       })
     })
 
@@ -46,7 +46,7 @@ export async function persistSubmissionToApi(submission) {
       referenceNumber: submission.referenceNumber,
       error: err.message
     })
-    // TODO: See TGC-873
+    // NOSONAR TODO: See TGC-873
     // throw err
   }
 }

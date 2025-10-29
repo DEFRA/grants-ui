@@ -50,7 +50,7 @@ export async function updateApplicationStatus(applicationStatus, key) {
       identity: key,
       error: err.message
     })
-    // TODO: See TGC-873
+    // NOSONAR TODO: See TGC-873
     // throw err
   }
 }
