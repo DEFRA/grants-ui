@@ -19,13 +19,13 @@ const nunjucksTestEnv = nunjucks.configure(
   }
 )
 
-Object.entries(globals).forEach(([name, global]) => {
+for (const [name, global] of Object.entries(globals)) {
   nunjucksTestEnv.addGlobal(name, global)
-})
+}
 
-Object.entries(filters).forEach(([name, filter]) => {
+for (const [name, filter] of Object.entries(filters)) {
   nunjucksTestEnv.addFilter(name, filter)
-})
+}
 
 /**
  * @param {string} componentName

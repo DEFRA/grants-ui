@@ -18,6 +18,6 @@ export const validateLogCode = (logCode) => {
   }
 
   if (typeof logCode.messageFunc !== 'function') {
-    throw new Error('logCode.messageFunc must be a function')
+    throw new TypeError('logCode.messageFunc must be a function')
   }
 }

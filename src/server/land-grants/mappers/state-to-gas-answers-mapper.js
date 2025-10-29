@@ -12,7 +12,7 @@ function createAppliedForObject(actionData) {
 
   if (actionData.value != null) {
     const quantity = Number.parseFloat(actionData.value)
-    appliedFor.quantity = !Number.isNaN(quantity) ? quantity : undefined
+    appliedFor.quantity = Number.isFinite(quantity) ? quantity : undefined
   }
 
   return appliedFor

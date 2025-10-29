@@ -94,7 +94,7 @@ export async function refreshToken() {
 
     const data = await response.json()
     if (typeof data.access_token !== 'string') {
-      throw new Error('Invalid token response: missing or invalid access_token')
+      throw new TypeError('Invalid token response: missing or invalid access_token')
     }
 
     tokenState = {

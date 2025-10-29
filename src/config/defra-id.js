@@ -11,7 +11,7 @@ import convict from 'convict'
  * @property {string} signOutRedirectUrl
  * @property {boolean} refreshTokens
  */
-const config = convict({
+const defraId = convict({
   enabled: {
     doc: 'Enable Defra Identity authentication strategy. If set to false, mock data will be used.',
     format: Boolean,
@@ -62,6 +62,6 @@ const config = convict({
   }
 })
 
-config.validate({ allowed: 'strict' })
+defraId.validate({ allowed: 'strict' })
 
-export default config
+export default defraId

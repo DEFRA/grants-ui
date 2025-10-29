@@ -23,9 +23,9 @@ export const secureContext = {
 
           const tlsSecureContext = originalTlsCreateSecureContext(options)
 
-          trustStoreCerts.forEach((cert) => {
+          for (const cert of trustStoreCerts) {
             tlsSecureContext.context.addCACert(cert)
-          })
+          }
 
           return tlsSecureContext
         }

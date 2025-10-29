@@ -72,7 +72,7 @@ export async function fetchAvailableActionsForParcel({ parcelId = '', sheetId = 
   const actions = parcels?.find((p) => p.parcelId === parcelId && p.sheetId === sheetId)?.actions?.map(mapAction) || []
   const usedCodes = new Set()
 
-  actionGroups.forEach((group) => {
+  for (const group of actionGroups) {
     const groupActions = actions.filter((a) => group.actions.includes(a.code))
     if (groupActions.length > 0) {
       for (const action of groupActions) {
@@ -80,7 +80,7 @@ export async function fetchAvailableActionsForParcel({ parcelId = '', sheetId = 
       }
       result.push(createGroup(group.name, groupActions))
     }
-  })
+  }
 
   const ungroupedActions = actions.filter((a) => !usedCodes.has(a.code))
   if (ungroupedActions.length > 0) {

@@ -47,7 +47,7 @@ export default class RemoveActionPageController extends LandGrantsQuestionWithAu
    * @returns {object} - Updated state
    */
   deleteParcelFromState(state, parcel) {
-    const newState = JSON.parse(JSON.stringify(state))
+    const newState = structuredClone(state)
     delete newState.landParcels[parcel]
     return newState
   }
@@ -60,7 +60,7 @@ export default class RemoveActionPageController extends LandGrantsQuestionWithAu
    * @returns {object} - Updated state
    */
   deleteActionFromState(state, parcel, action) {
-    const newState = JSON.parse(JSON.stringify(state))
+    const newState = structuredClone(state)
     if (newState.landParcels[parcel]?.actionsObj) {
       delete newState.landParcels[parcel].actionsObj[action]
 

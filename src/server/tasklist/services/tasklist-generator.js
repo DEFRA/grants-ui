@@ -76,7 +76,7 @@ export class TasklistGenerator {
       }
     }
 
-    return subsection.required !== false ? TaskListStatus.NOT_YET_STARTED : TaskListStatus.HIDDEN
+    return subsection.required === true ? TaskListStatus.NOT_YET_STARTED : TaskListStatus.HIDDEN
   }
 
   checkDependencies(dependencies, statuses) {

@@ -362,7 +362,8 @@ export const config = convict({
     trackingId: {
       doc: 'Google Analytics tracking ID',
       format: String,
-      default: undefined,
+      nullable: true,
+      default: null,
       env: 'GA_TRACKING_ID'
     }
   },

@@ -289,8 +289,8 @@ export const LogCodes = {
 
 // Validate all log codes once at startup
 export const validateLogCodes = (logCodes) => {
-  Object.values(logCodes).forEach((entry) => {
-    Object.entries(entry).forEach(([key, value]) => {
+  for (const entry of Object.values(logCodes)) {
+    for (const [key, value] of Object.entries(entry)) {
       if (value === null || value === undefined) {
         throw new Error('logCode must be a non-empty object')
       }
@@ -315,8 +315,8 @@ export const validateLogCodes = (logCodes) => {
       } else {
         throw new Error(`Invalid log code definition for "${key}": unexpected value type`)
       }
-    })
-  })
+    }
+  }
 }
 
 // Validate log codes at startup

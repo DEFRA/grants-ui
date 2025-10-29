@@ -63,7 +63,7 @@ export const contentSecurityPolicy = {
       }
 
       if (response.variety === 'view') {
-        response.source.context = { ...(response.source.context ?? {}), cspNonce: nonce }
+        response.source.context = { ...response.source.context, cspNonce: nonce }
       }
 
       return h.continue

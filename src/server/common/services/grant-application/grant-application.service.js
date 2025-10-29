@@ -33,11 +33,11 @@ export async function makeGasApiRequest(url, grantCode, options = {}) {
     let requestUrl = url
     if (method === 'GET' && queryParams) {
       const searchParams = new URLSearchParams()
-      Object.entries(queryParams).forEach(([key, value]) => {
+      for (const [key, value] of Object.entries(queryParams)) {
         if (value !== undefined && value !== null) {
           searchParams.append(key, value.toString())
         }
-      })
+      }
       if (searchParams.toString()) {
         requestUrl += `?${searchParams.toString()}`
       }

@@ -2,7 +2,7 @@ import { vi } from 'vitest'
 import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
 import { existsSync } from 'fs'
 import { join } from 'path'
-import CheckResponsesPageController from '~/src/server/check-responses/check-responses.controller.js'
+import CheckResponsesPageController from '~/src/server/check-responses/check-responses-page.controller.js'
 import { mockSimpleRequest, mockHapiResponseToolkit, mockContext } from '~/src/__mocks__/hapi-mocks.js'
 
 describe('CheckResponsesPageController', () => {
