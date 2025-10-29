@@ -3,6 +3,8 @@ schema: 2
 name: Agent
 metadata:
   id: 21dc9fc7-15da-419a-b7fd-baa2a7500a18
+  submission:
+    grantCode: agent-details
 pages:
   - title: Agent's details
     path: /agent-details
@@ -115,7 +117,7 @@ pages:
         options: {}
         schema: {}
     id: c0d7417d-8155-46e4-adab-5ff741e30e5a
-  - title: "Check your answers: Agent"
+  - title: 'Check your answers: Agent'
     path: /summary
     controller: SectionEndController
     id: 1f592de7-a72e-46f7-bf49-81f7b91069ed

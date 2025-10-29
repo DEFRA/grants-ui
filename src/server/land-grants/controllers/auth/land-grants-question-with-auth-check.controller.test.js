@@ -65,7 +65,7 @@ describe('LandGrantsQuestionWithAuthCheckController', () => {
 
       await controller.performAuthCheck(mockRequest, mockH)
 
-      expect(fetchParcels).toHaveBeenCalledWith(mockRequest.auth.credentials.sbi)
+      expect(fetchParcels).toHaveBeenCalledWith(mockRequest)
       expect(controller.renderUnauthorisedView).toHaveBeenCalledWith(mockH)
     })
 
@@ -75,7 +75,7 @@ describe('LandGrantsQuestionWithAuthCheckController', () => {
 
       const result = await controller.performAuthCheck(mockRequest, mockH)
 
-      expect(fetchParcels).toHaveBeenCalledWith(mockRequest.auth.credentials.sbi)
+      expect(fetchParcels).toHaveBeenCalledWith(mockRequest)
       expect(result).toBeNull()
     })
   })

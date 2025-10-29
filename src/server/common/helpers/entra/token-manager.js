@@ -1,4 +1,4 @@
-import { URLSearchParams } from 'url'
+import { URLSearchParams } from 'node:url'
 
 import { config } from '~/src/config/config.js'
 import { createLogger } from '~/src/server/common/helpers/logging/logger.js'

@@ -94,7 +94,7 @@ describe('ConfirmFarmDetailsController', () => {
       const handler = controller.makePostRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
 
-      expect(fetchBusinessAndCustomerInformation).toHaveBeenCalledWith('SBI123456', '1100014934')
+      expect(fetchBusinessAndCustomerInformation).toHaveBeenCalledWith(mockRequest)
       expect(controller.setState).toHaveBeenCalledWith(
         mockRequest,
         expect.objectContaining({
@@ -119,7 +119,7 @@ describe('ConfirmFarmDetailsController', () => {
       const handler = controller.makeGetRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
 
-      expect(fetchBusinessAndCustomerInformation).toHaveBeenCalledWith('SBI123456', '1100014934')
+      expect(fetchBusinessAndCustomerInformation).toHaveBeenCalledWith(mockRequest)
       expect(mockH.view).toHaveBeenCalledWith('confirm-farm-details', {
         farmDetails: expect.objectContaining({
           rows: expect.any(Array)
@@ -173,7 +173,7 @@ describe('ConfirmFarmDetailsController', () => {
 
       fetchBusinessAndCustomerInformation.mockResolvedValue(mockData)
 
-      const result = await controller.buildFarmDetails('1100014934', 'SBI123456')
+      const result = await controller.buildFarmDetails(mockRequest)
 
       expect(result).toEqual({
         rows: [

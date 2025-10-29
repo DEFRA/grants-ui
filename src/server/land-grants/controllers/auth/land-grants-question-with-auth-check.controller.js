@@ -12,7 +12,7 @@ export default class LandGrantsQuestionWithAuthCheckController extends QuestionP
   }
 
   performAuthCheck = async (request, h) => {
-    const landParcels = (await fetchParcels(request.auth.credentials.sbi)) || []
+    const landParcels = (await fetchParcels(request)) || []
     this.landParcelsForSbi = landParcels.map((parcel) => stringifyParcel(parcel))
 
     if (!this.landParcelBelongsToSbi()) {

@@ -1,5 +1,5 @@
 import { config } from '~/src/config/config.js'
-import crypto from 'crypto'
+import crypto from 'node:crypto'
 
 const IV_LENGTH_BYTES = 12
 const KEY_LENGTH_BYTES = 32

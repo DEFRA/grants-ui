@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 import { StatusPageController } from '@defra/forms-engine-plugin/controllers/StatusPageController.js'
-import ConfirmationPageController from './confirmation.controller.js'
+import ConfirmationPageController from './confirmation-page.controller.js'
 import * as formSlugHelper from '~/src/server/common/helpers/form-slug-helper.js'
 import { mockContext as mockHapiContext, mockHapiRequest, mockHapiResponseToolkit } from '~/src/__mocks__/hapi-mocks.js'
 

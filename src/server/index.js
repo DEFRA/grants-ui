@@ -8,8 +8,8 @@ import inert from '@hapi/inert'
 import Scooter from '@hapi/scooter'
 
 import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
-import path from 'path'
-import { fileURLToPath } from 'url'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { config } from '~/src/config/config.js'
 import { context } from '~/src/config/nunjucks/context/context.js'
 import { grantsUiPaths, nunjucksConfig } from '~/src/config/nunjucks/nunjucks.js'
@@ -29,14 +29,14 @@ import { requestTracing } from '~/src/server/common/helpers/request-tracing.js'
 import { secureContext } from '~/src/server/common/helpers/secure-context/index.js'
 import { getCacheEngine } from '~/src/server/common/helpers/session-cache/cache-engine.js'
 import { sessionCache } from '~/src/server/common/helpers/session-cache/session-cache.js'
-import ConfirmationPageController from '~/src/server/confirmation/confirmation.controller.js'
-import DeclarationPageController from '~/src/server/declaration/declaration.controller.js'
+import ConfirmationPageController from '~/src/server/confirmation/confirmation-page.controller.js'
+import DeclarationPageController from '~/src/server/declaration/declaration-page.controller.js'
 import ConfirmFarmDetailsController from '~/src/server/land-grants/controllers/confirm-farm-details.controller.js'
 import LandActionsCheckPageController from '~/src/server/land-grants/controllers/land-actions-check-page.controller.js'
 import SelectLandParcelPageController from '~/src/server/land-grants/controllers/select-land-parcel-page.controller.js'
 import SelectLandActionsPageController from '~/src/server/land-grants/controllers/select-land-actions-page.controller.js'
 import SubmissionPageController from '~/src/server/land-grants/controllers/submission-page.controller.js'
-import FlyingPigsSubmissionPageController from '~/src/server/non-land-grants/pigs-might-fly/controllers/pig-types-submission.controller.js'
+import FlyingPigsSubmissionPageController from '~/src/server/non-land-grants/pigs-might-fly/controllers/flying-pigs-submission-page.controller.js'
 import { PotentialFundingController } from '~/src/server/non-land-grants/pigs-might-fly/controllers/potential-funding.controller.js'
 import { tasklistBackButton } from '~/src/server/plugins/tasklist-back-button.js'
 import { sbiStore } from '~/src/server/sbi/state.js'
@@ -185,7 +185,7 @@ const registerPlugins = async (server) => {
 
 const mockSessionData = async (request, log, LogCodes) => {
   try {
-    const crypto = await import('crypto')
+    const crypto = await import('node:crypto')
     const sessionId = request.state.sid?.sessionId || crypto.randomUUID()
 
     const sessionData = {

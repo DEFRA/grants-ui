@@ -182,7 +182,7 @@ export class ConfigDrivenConditionEvaluator {
 
   normaliseStatus(status) {
     if (typeof status === 'string') {
-      const normalised = status.toLowerCase().replace(/_/g, '')
+      const normalised = status.toLowerCase().replaceAll('_', '')
 
       switch (normalised) {
         case 'completed':
