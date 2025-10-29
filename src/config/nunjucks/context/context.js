@@ -53,9 +53,7 @@ export async function context(request) {
         session = (await request.server.app['cache'].get(request.auth.credentials.sessionId)) || {}
       } catch (cacheError) {
         const rawSessionId = request.auth.credentials.sessionId
-        const sessionId = (rawSessionId && typeof rawSessionId !== 'object') 
-          ? String(rawSessionId) 
-          : 'unknown'
+        const sessionId = rawSessionId && typeof rawSessionId !== 'object' ? String(rawSessionId) : 'unknown'
         log(LogCodes.AUTH.SIGN_IN_FAILURE, {
           userId: 'unknown',
           error: `Cache retrieval failed for session ${sessionId}: ${cacheError.message}`,
