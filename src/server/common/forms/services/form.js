@@ -246,6 +246,9 @@ export const formsService = async () => {
       validateWhitelistConfiguration(form, definition)
       validateGrantRedirectRules(form, definition)
 
+      if (definition.metadata?.grantRedirectRules) {
+        logger.info(`Grant redirect rules validated for form: ${form.title}`)
+      }
       if (definition.metadata?.whitelistCrnEnvVar || definition.metadata?.whitelistSbiEnvVar) {
         logger.info(`Whitelist configuration validated for form: ${form.title}`)
       }
