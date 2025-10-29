@@ -32,7 +32,7 @@ export async function persistStateToApi(state, key) {
       body: JSON.stringify({
         sbi,
         grantCode,
-        grantVersion: 1, // TODO: Update when support for same grant versioning is implemented
+        grantVersion: 1, // NOSONAR TODO: Update when support for same grant versioning is implemented
         state
       })
     })
@@ -52,7 +52,7 @@ export async function persistStateToApi(state, key) {
       identity: key,
       error: err.message
     })
-    // TODO: See TGC-873
+    // NOSONAR TODO: See TGC-873
     // throw err
   }
 }
