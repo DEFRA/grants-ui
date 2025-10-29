@@ -49,8 +49,7 @@ export async function retry(operation, options = {}) {
         break
       }
 
-      // Safe use of Math.random() for non-security purposes
-      const jitter = 1 + Math.random() * 0.5
+      const jitter = 1 + Math.random() * 0.5 // NOSONAR - Math.random() is safe for non-cryptographic jitter in retry delays
       const delay = exponential ? Math.min(initialDelay * Math.pow(2, attempt - 1) * jitter, maxDelay) : initialDelay
 
       onRetry(error, attempt, delay)
