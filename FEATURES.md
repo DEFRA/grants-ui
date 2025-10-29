@@ -388,7 +388,7 @@ Guidance components provide contextual help and information without requiring us
   - Reference number generation
   - Status tracking
 - **Process**: Declaration → Submission → Confirmation
-- **Example**: [DeclarationPageController submission workflow](./src/server/declaration/declaration.controller.js#L51-L126)
+- **Example**: [DeclarationPageController submission workflow](./src/server/declaration/declaration-page.controller.js#L51-L126)
 
 ### Confirmation System
 
@@ -399,7 +399,7 @@ Guidance components provide contextual help and information without requiring us
   - Next steps guidance
   - Support information
 - **Configuration**: YAML-based confirmation content
-- **Example**: [ConfirmationPageController renders confirmation view](./src/server/confirmation/confirmation.controller.js#L17-L63)
+- **Example**: [ConfirmationPageController renders confirmation view](./src/server/confirmation/confirmation-page.controller.js#L17-L63)
 
 ### State Management
 

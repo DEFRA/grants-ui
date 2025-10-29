@@ -14,10 +14,8 @@ const createLinks = (data) => {
   const links = []
 
   links.push(
-    `<li class='govuk-summary-list__actions-list-item'><a class='govuk-link' href='select-actions-for-land-parcel?parcelId=${parcelParam}'>Change</a><span class="govuk-visually-hidden"> land action ${data.code} for parcel ${parcel}</span></li>`
-  )
-  links.push(
-    `<li class='govuk-summary-list__actions-list-item'><a class='govuk-link' href='remove-action?parcelId=${parcelParam}&action=${data.code}'>Remove</a><span class="govuk-visually-hidden"> land action ${data.code} for parcel ${parcel}</span></li>`
+    `<li class='govuk-summary-list__actions-list-item'><a class='govuk-link' href='select-actions-for-land-parcel?parcelId=${parcelParam}'>Change</a><span class="govuk-visually-hidden"> land action ${data.code} for parcel ${parcel}</span></li>
+    <li class='govuk-summary-list__actions-list-item'><a class='govuk-link' href='remove-action?parcelId=${parcelParam}&action=${data.code}'>Remove</a><span class="govuk-visually-hidden"> land action ${data.code} for parcel ${parcel}</span></li>`
   )
 
   return {
@@ -49,7 +47,7 @@ export default class LandActionsCheckPageController extends QuestionPageControll
     const [sheetId, parcelId] = parcelKey.split('-')
     const actions = Object.entries(parcelData.actionsObj).map(([code, actionData]) => ({
       code,
-      quantity: parseFloat(actionData.value)
+      quantity: Number.parseFloat(actionData.value)
     }))
 
     return {
