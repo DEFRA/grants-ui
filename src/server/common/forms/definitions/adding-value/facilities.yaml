@@ -6,39 +6,7 @@ metadata:
   tasklistId: example
   submission:
     grantCode: facilities
-  grantRedirectRules:
-    preSubmission:
-      - toPath: /summary
-    postSubmission:
-      # Cleared
-      - fromGrantsStatus: SUBMITTED,REOPENED
-        gasStatus: APPLICATION_WITHDRAWN
-        toGrantsStatus: CLEARED
-        toPath: /start
-
-      # Awaiting amendments
-      - fromGrantsStatus: SUBMITTED
-        gasStatus: AWAITING_AMENDMENTS
-        toGrantsStatus: REOPENED
-        toPath: /summary
-
-      # Reopened
-      - fromGrantsStatus: REOPENED
-        gasStatus: default
-        toGrantsStatus: REOPENED
-        toPath: /summary
-
-      # Submitted -> confirmation (default for most GAS statuses)
-      - fromGrantsStatus: SUBMITTED
-        gasStatus: default
-        toGrantsStatus: SUBMITTED
-        toPath: /confirmation
-
-      # Default fallback
-      - fromGrantsStatus: default
-        gasStatus: default
-        toGrantsStatus: SUBMITTED
-        toPath: /confirmation
+  grantRedirectRules: null
 pages:
   - title: Do you want to build a new smaller abattoir?
     path: /smaller-abattoir

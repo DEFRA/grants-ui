@@ -11,36 +11,6 @@ metadata:
   grantRedirectRules:
     preSubmission:
       - toPath: /check-selected-land-actions
-    postSubmission:
-      # Cleared
-      - fromGrantsStatus: SUBMITTED,REOPENED
-        gasStatus: APPLICATION_WITHDRAWN
-        toGrantsStatus: CLEARED
-        toPath: /start
-
-      # Awaiting amendments
-      - fromGrantsStatus: SUBMITTED
-        gasStatus: AWAITING_AMENDMENTS
-        toGrantsStatus: REOPENED
-        toPath: /summary
-
-      # Reopened
-      - fromGrantsStatus: REOPENED
-        gasStatus: default
-        toGrantsStatus: REOPENED
-        toPath: /summary
-
-      # Submitted -> confirmation (default for most GAS statuses)
-      - fromGrantsStatus: SUBMITTED
-        gasStatus: default
-        toGrantsStatus: SUBMITTED
-        toPath: /confirmation
-
-      # Default fallback
-      - fromGrantsStatus: default
-        gasStatus: default
-        toGrantsStatus: SUBMITTED
-        toPath: /confirmation
   confirmationContent:
     html: |
       <h2 class="govuk-heading-m">What happens next</h2>

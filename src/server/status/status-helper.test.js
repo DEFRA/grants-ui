@@ -78,7 +78,7 @@ describe('formsStatusCallback', () => {
                     fromGrantsStatus: 'SUBMITTED',
                     gasStatus: 'OFFER_SENT,OFFER_WITHDRAWN,OFFER_ACCEPTED',
                     toGrantsStatus: 'SUBMITTED',
-                    toPath: __AGREEMENTS_BASE_URL__
+                    toPath: '/agreement'
                   },
 
                   // Submitted -> confirmation (default for most GAS statuses)

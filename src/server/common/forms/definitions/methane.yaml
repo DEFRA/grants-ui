@@ -3,39 +3,7 @@ metadata:
   id: 95e92559-968d-44ae-8666-2b1ad3dffd34
   submission:
     grantCode: methane
-  grantRedirectRules:
-    preSubmission:
-      - toPath: /summary
-    postSubmission:
-      # Cleared
-      - fromGrantsStatus: SUBMITTED,REOPENED
-        gasStatus: APPLICATION_WITHDRAWN
-        toGrantsStatus: CLEARED
-        toPath: /start
-
-      # Awaiting amendments
-      - fromGrantsStatus: SUBMITTED
-        gasStatus: AWAITING_AMENDMENTS
-        toGrantsStatus: REOPENED
-        toPath: /summary
-
-      # Reopened
-      - fromGrantsStatus: REOPENED
-        gasStatus: default
-        toGrantsStatus: REOPENED
-        toPath: /summary
-
-      # Submitted -> confirmation (default for most GAS statuses)
-      - fromGrantsStatus: SUBMITTED
-        gasStatus: default
-        toGrantsStatus: SUBMITTED
-        toPath: /confirmation
-
-      # Default fallback
-      - fromGrantsStatus: default
-        gasStatus: default
-        toGrantsStatus: SUBMITTED
-        toPath: /confirmation
+  grantRedirectRules: null
   confirmationContent:
     html: |
       <h2 class="govuk-heading-m">What happens next</h2>
