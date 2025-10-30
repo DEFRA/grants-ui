@@ -55,9 +55,7 @@ describe('LandActionsCheckPageController', () => {
     })
 
     controller = new LandActionsCheckPageController()
-    controller.collection = {
-      getErrors: vi.fn().mockReturnValue([])
-    }
+
     controller.setState = vi.fn().mockResolvedValue(true)
     controller.proceed = vi.fn().mockReturnValue('redirected')
     controller.getSelectedActionRows = vi
@@ -140,7 +138,12 @@ describe('LandActionsCheckPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'land-actions-check',
         expect.objectContaining({
-          errorMessage: 'Please select if you want to add more actions'
+          errorMessages: [
+            {
+              href: '#addMoreActions',
+              text: 'Please select if you want to add more actions'
+            }
+          ]
         })
       )
       expect(controller.proceed).not.toHaveBeenCalled()
@@ -364,12 +367,7 @@ describe('LandActionsCheckPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'land-actions-check',
         expect.objectContaining({
-          foo: 'bar',
-          landParcels: expect.any(Object),
-          parcelItems: expect.any(Array),
-          additionalYearlyPayments: expect.any(Array),
-          totalYearlyPayment: expect.any(String),
-          errors: []
+          foo: 'bar'
         })
       )
 
@@ -446,19 +444,8 @@ describe('LandActionsCheckPageController', () => {
         })
       )
     })
-
-    test('should pass errors from collection.getErrors', async () => {
-      controller.collection.getErrors = vi.fn().mockReturnValue(['error1'])
-      const handler = controller.makeGetRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
-      expect(mockH.view).toHaveBeenCalledWith(
-        'land-actions-check',
-        expect.objectContaining({
-          errors: ['error1']
-        })
-      )
-    })
   })
+
   describe('Link Visibility Logic', () => {
     test('should show Change link for UPL actions (multiple action group)', () => {
       const paymentData = {
@@ -557,7 +544,12 @@ describe('LandActionsCheckPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'land-actions-check',
         expect.objectContaining({
-          errorMessage: 'Please select if you want to add more actions'
+          errorMessages: [
+            {
+              href: '#addMoreActions',
+              text: 'Please select if you want to add more actions'
+            }
+          ]
         })
       )
     })

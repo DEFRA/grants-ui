@@ -1,5 +1,6 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
+import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { fetchParcels } from '~/src/server/land-grants/services/land-grants.service.js'
 import { stringifyParcel } from '~/src/server/land-grants/utils/format-parcel.js'
 
@@ -12,7 +13,15 @@ export default class LandGrantsQuestionWithAuthCheckController extends QuestionP
   }
 
   performAuthCheck = async (request, h) => {
-    const landParcels = (await fetchParcels(request)) || []
+    let landParcels = []
+    try {
+      landParcels = (await fetchParcels(request)) || []
+    } catch (error) {
+      log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
+        endpoint: `Land grants API`,
+        error: `fetch parcel data for auth check: ${error.message}`
+      })
+    }
     this.landParcelsForSbi = landParcels.map((parcel) => stringifyParcel(parcel))
 
     if (!this.landParcelBelongsToSbi()) {
