@@ -23,6 +23,11 @@ vi.mock('../common/helpers/status/update-application-status-helper.js', () => ({
 vi.mock('../common/helpers/forms-cache/forms-cache.js', () => ({
   getFormsCacheService: vi.fn()
 }))
+vi.mock('../../config/agreements.js', () => ({
+  default: {
+    get: vi.fn().mockReturnValue('/agreement')
+  }
+}))
 
 describe('formsStatusCallback', () => {
   let request
@@ -206,5 +211,66 @@ describe('formsStatusCallback', () => {
     const result = await formsStatusCallback(request, h, context)
     expect(h.redirect).toHaveBeenCalledWith('/grant-a/confirmation')
     expect(result).toEqual(expect.any(Symbol))
+  })
+
+  describe('farm-payments agreements service redirect', () => {
+    beforeEach(() => {
+      request.params.slug = 'farm-payments'
+      request.path = '/farm-payments/start'
+    })
+
+    it.each(['OFFER_SENT', 'OFFER_WITHDRAWN', 'OFFER_ACCEPTED'])(
+      'redirects farm-payments to /agreement when GAS status is %s',
+      async (gasStatus) => {
+        getApplicationStatus.mockResolvedValue({
+          json: async () => ({ status: gasStatus })
+        })
+
+        const result = await formsStatusCallback(request, h, context)
+
+        expect(h.redirect).toHaveBeenCalledWith('/agreement')
+        expect(result).toEqual(expect.any(Symbol))
+      }
+    )
+
+    it('does not redirect farm-payments to /agreement when GAS status is RECEIVED', async () => {
+      getApplicationStatus.mockResolvedValue({
+        json: async () => ({ status: 'RECEIVED' })
+      })
+
+      const result = await formsStatusCallback(request, h, context)
+
+      expect(h.redirect).toHaveBeenCalledWith('/farm-payments/confirmation')
+      expect(result).toEqual(expect.any(Symbol))
+    })
+
+    it('continues when farm-payments request path is already /agreement', async () => {
+      request.path = '/agreement'
+      getApplicationStatus.mockResolvedValue({
+        json: async () => ({ status: 'OFFER_SENT' })
+      })
+
+      const result = await formsStatusCallback(request, h, context)
+      expect(result).toBe(h.continue)
+      expect(h.redirect).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('non-farm-payments forms with offer statuses', () => {
+    it.each(['OFFER_SENT', 'OFFER_WITHDRAWN', 'OFFER_ACCEPTED'])(
+      'redirects non-farm-payments forms to /{slug}/confirmation when GAS status is %s',
+      async (gasStatus) => {
+        request.params.slug = 'other-grant'
+        request.path = '/other-grant/start'
+        getApplicationStatus.mockResolvedValue({
+          json: async () => ({ status: gasStatus })
+        })
+
+        const result = await formsStatusCallback(request, h, context)
+
+        expect(h.redirect).toHaveBeenCalledWith('/other-grant/confirmation')
+        expect(result).toEqual(expect.any(Symbol))
+      }
+    )
   })
 })

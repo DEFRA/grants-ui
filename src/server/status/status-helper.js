@@ -4,6 +4,8 @@ import { getFormsCacheService } from '../common/helpers/forms-cache/forms-cache.
 import { updateApplicationStatus } from '../common/helpers/status/update-application-status-helper.js'
 import { getApplicationStatus } from '../common/services/grant-application/grant-application.service.js'
 import { log, LogCodes } from '../common/helpers/logging/log.js'
+import agreements from '../../config/agreements.js'
+import { shouldRedirectToAgreements } from '../common/helpers/agreements-redirect-helper.js'
 
 const statusToUrlConfig = {
   // GrantsUI -> GAS combined mapping
@@ -45,6 +47,10 @@ const gasToGrantsUiStatus = {
  * @returns {string} The URL path to redirect to
  */
 function mapStatusToUrl(gasStatus, grantsUiStatus, slug) {
+  if (shouldRedirectToAgreements(slug, gasStatus)) {
+    return agreements.get('baseUrl')
+  }
+
   const grantsUiConfig = statusToUrlConfig[grantsUiStatus.toLowerCase()] ?? statusToUrlConfig.default
   const fn = grantsUiConfig[gasStatus.toLowerCase()] ?? grantsUiConfig.default ?? statusToUrlConfig.default.default
   return fn(slug)

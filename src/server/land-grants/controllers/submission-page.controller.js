@@ -9,6 +9,7 @@ import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { ApplicationStatus } from '~/src/server/common/constants/application-status.js'
 import { persistSubmissionToApi } from '~/src/server/common/helpers/state/persist-submission-helper.js'
 import { getConfirmationPath } from '~/src/server/common/helpers/form-slug-helper.js'
+import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
 export default class SubmissionPageController extends SummaryPageController {
   viewName = 'submit-your-application'
@@ -34,11 +35,11 @@ export default class SubmissionPageController extends SummaryPageController {
   }
 
   /**
-   * Handles successful submission
+   * Gets the confirmation page path for successful submission
    * @private
    * @param {object} request - Request object
    * @param {object} context - Form context
-   * @returns {string} - Status url path
+   * @returns {string} - Confirmation page path
    */
   getStatusPath(request, context) {
     return getConfirmationPath(request, context, 'SubmissionPageController')
@@ -78,11 +79,9 @@ export default class SubmissionPageController extends SummaryPageController {
 
     // Log submission details if available
     if (submissionStatus === statusCodes.noContent) {
-      request.logger.info({
-        message: 'Form submission completed',
-        referenceNumber: context.referenceNumber,
-        numberOfSubmittedFields: context.relevantState ? Object.keys(context.relevantState).length : 0,
-        timestamp: new Date().toISOString()
+      log(LogCodes.SUBMISSION.SUBMISSION_SUCCESS, {
+        grantType: this.grantCode,
+        referenceNumber: context.referenceNumber
       })
 
       const currentState = await cacheService.getState(request)
@@ -140,10 +139,13 @@ export default class SubmissionPageController extends SummaryPageController {
           validationId
         })
 
-        request.logger.info('Form submission completed', result)
         return await this.handleSuccessfulSubmission(request, context, h, result.status)
       } catch (error) {
-        request.logger.error('Error submitting application:', error)
+        log(LogCodes.SUBMISSION.SUBMISSION_FAILURE, {
+          grantType: this.grantCode,
+          userId: request.auth?.credentials?.crn,
+          error: error.message
+        })
         throw error
       }
     }
