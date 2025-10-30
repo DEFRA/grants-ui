@@ -465,7 +465,16 @@ describe('SelectLandActionsPageController', () => {
       await handler(mockRequest, mockContext, mockH)
 
       expect(controller.groupedActions).toEqual([])
-      expect(mockRequest.logger.error).toHaveBeenCalled()
+      expect(mockH.view).toHaveBeenCalledWith(
+        'select-actions-for-land-parcel',
+        expect.objectContaining({
+          errors: [
+            {
+              text: 'Unable to find actions information for parcel, please try again later or contact the Rural Payments Agency.'
+            }
+          ]
+        })
+      )
     })
 
     test('should log when no actions found', async () => {

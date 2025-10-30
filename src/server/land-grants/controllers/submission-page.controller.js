@@ -156,7 +156,10 @@ export default class SubmissionPageController extends SummaryPageController {
 
           return await this.handleSuccessfulSubmission(request, context, h, result.status)
         } catch (error) {
-          request.logger.error({ sbi, crn }, 'Error validating application on form submission: ' + error.message)
+          log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
+            endpoint: `land grants API: validate application for sbi: ${sbi} and crn: ${crn}`,
+            error: error.message
+          })
           return this.renderErrorMessage(h, request, context, [
             {
               text: 'There was a problem submitting the application, please try again later or contact the Rural Payments Agency.'

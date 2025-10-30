@@ -3,6 +3,7 @@ import { URLSearchParams } from 'node:url'
 import { config } from '~/src/config/config.js'
 import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
+import { log, LogCodes } from '../logging/log.js'
 
 const logger = createLogger()
 const msInSec = 1000
@@ -119,7 +120,10 @@ export async function refreshToken() {
       }
     })
   } catch (error) {
-    logger.error(error, 'Failed to refresh token after retries')
+    log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
+      endpoint: `Entra token refresh`,
+      error: error.message
+    })
     throw error
   }
 }

@@ -5,6 +5,7 @@ import { config } from '~/src/config/config.js'
 import { getValidToken } from '~/src/server/common/helpers/entra/token-manager.js'
 import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
+import { log, LogCodes } from '../../helpers/logging/log.js'
 
 const logger = createLogger()
 
@@ -149,7 +150,11 @@ async function fetchFromConsolidatedView(request, { query, formatResponse }) {
     const responseJson = await makeConsolidatedViewRequest(request, query)
     return formatResponse(responseJson)
   } catch (error) {
-    logger.error({ err: error }, 'Unexpected error fetching business data from Consolidated View API')
+    log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
+      endpoint: `DAL: fetch business data for sbi ${sbi}`,
+      error: error.message
+    })
+
     throw new ConsolidatedViewApiError(
       'Failed to fetch business data: ' + error.message,
       error.status,

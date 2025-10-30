@@ -8,6 +8,7 @@ import {
   createCustomerNameRow,
   createSbiRow
 } from '../../common/helpers/create-rows.js'
+import { log, LogCodes } from '../../common/helpers/logging/log.js'
 
 const logger = createLogger()
 
@@ -57,7 +58,10 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
    * Handle errors and return error view
    */
   handleError(sbi, error, baseViewModel, h) {
-    logger.error({ err: error, sbi }, 'Unexpected error when fetching farm information')
+    log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
+      endpoint: `fetch farm details for sbi ${sbi}`,
+      error: error.message
+    })
 
     return h.view(this.viewName, {
       ...baseViewModel,

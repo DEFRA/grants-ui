@@ -4,6 +4,7 @@ import { landActionWithCode } from '~/src/server/land-grants/utils/land-action-w
 import { sbiStore } from '~/src/server/sbi/state.js'
 import { actionGroups, calculateGrantPayment } from '../services/land-grants.service.js'
 import { stringifyParcel } from '../utils/format-parcel.js'
+import { log, LogCodes } from '../../common/helpers/logging/log.js'
 
 const createLinks = (data) => {
   const parcelParam = stringifyParcel({
@@ -258,7 +259,10 @@ export default class LandActionsCheckPageController extends QuestionPageControll
         })
       } catch (error) {
         const sbi = request.auth?.credentials?.sbi
-        request.logger.error({ err: error, sbi }, 'Unexpected error when fetching payment data')
+        log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
+          endpoint: `land grants API: fetch payment data for sbi ${sbi}`,
+          error: error.message
+        })
         return this.renderErrorView(h, request, context, [
           {
             text: 'Unable to get payment information, please try again later or contact the Rural Payments Agency.'

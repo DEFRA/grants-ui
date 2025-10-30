@@ -4,6 +4,7 @@ import {
 } from '~/src/server/land-grants/services/land-grants.service.js'
 import LandGrantsQuestionWithAuthCheckController from '~/src/server/land-grants/controllers/auth/land-grants-question-with-auth-check.controller.js'
 import { parseLandParcel } from '~/src/server/land-grants/utils/format-parcel.js'
+import { log, LogCodes } from '../../common/helpers/logging/log.js'
 
 export default class SelectLandActionsPageController extends LandGrantsQuestionWithAuthCheckController {
   viewName = 'select-actions-for-land-parcel'
@@ -177,7 +178,10 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
         this.groupedActions = []
         this.addedActions = []
         const sbi = request.auth?.credentials?.sbi
-        request.logger.error({ err: error, sbi, sheetId, parcelId }, 'Unexpected error when fetching actions data')
+        log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
+          endpoint: `land grants API: fetch available actions for sbi ${sbi} and parcel ${sheetId}-${parcelId}`,
+          error: error.message
+        })
         errors = [
           {
             text: 'Unable to find actions information for parcel, please try again later or contact the Rural Payments Agency.'
