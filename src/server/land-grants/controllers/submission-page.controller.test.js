@@ -7,12 +7,15 @@ import { stateToLandGrantsGasAnswers } from '../mappers/state-to-gas-answers-map
 import { validateApplication } from '../services/land-grants.service.js'
 import SubmissionPageController from './submission-page.controller.js'
 import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
+import { log } from '~/src/server/common/helpers/logging/log.js'
+import { LogCodes } from '../../common/helpers/logging/log-codes.js'
 
 vi.mock('~/src/server/common/services/grant-application/grant-application.service.js')
 vi.mock('~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js')
 vi.mock('../mappers/state-to-gas-answers-mapper.js')
 vi.mock('~/src/server/common/helpers/forms-cache/forms-cache.js')
 vi.mock('../services/land-grants.service.js')
+vi.mock('~/src/server/common/helpers/logging/log.js')
 vi.mock('@defra/forms-engine-plugin/controllers/SummaryPageController.js', () => ({
   SummaryPageController: class {
     proceed() {}
@@ -278,7 +281,7 @@ describe('SubmissionPageController', () => {
       )
     })
 
-    it('should handle submission errors', async () => {
+    it('should handle submission errors and rethrow them', async () => {
       const mockError = new Error('Submission failed')
       const mockRequest = {
         logger: {
@@ -364,6 +367,39 @@ describe('SubmissionPageController', () => {
         sbi: '123456789',
         state: {}
       })
+    })
+
+    it('should handle missing auth credentials when error occurs', async () => {
+      const mockError = new Error('Validation failed')
+      const mockRequest = {
+        logger: {
+          info: vi.fn(),
+          error: vi.fn()
+        },
+        auth: undefined,
+        server: {}
+      }
+      const mockContext = {
+        state: {},
+        referenceNumber: 'REF123'
+      }
+      const mockH = {
+        redirect: vi.fn(),
+        view: vi.fn()
+      }
+
+      validateApplication.mockRejectedValue(mockError)
+
+      const handler = controller.makePostRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(log).toHaveBeenCalledWith(
+        LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+        expect.objectContaining({
+          endpoint: 'Land grants API',
+          error: 'validate application for sbi: undefined and crn: undefined - Validation failed'
+        })
+      )
     })
 
     it('should handle errors from handleSuccessfulSubmission', async () => {

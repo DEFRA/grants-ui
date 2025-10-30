@@ -55,7 +55,9 @@ describe('LandActionsCheckPageController', () => {
     })
 
     controller = new LandActionsCheckPageController()
-
+    controller.collection = {
+      getErrors: vi.fn().mockReturnValue([])
+    }
     controller.setState = vi.fn().mockResolvedValue(true)
     controller.proceed = vi.fn().mockReturnValue('redirected')
     controller.getSelectedActionRows = vi
@@ -138,12 +140,7 @@ describe('LandActionsCheckPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'land-actions-check',
         expect.objectContaining({
-          errorMessages: [
-            {
-              href: '#addMoreActions',
-              text: 'Please select if you want to add more actions'
-            }
-          ]
+          errorMessages: [{ href: '#addMoreActions', text: 'Please select if you want to add more actions' }]
         })
       )
       expect(controller.proceed).not.toHaveBeenCalled()
@@ -353,17 +350,12 @@ describe('LandActionsCheckPageController', () => {
 
   describe('makeGetRouteHandler', () => {
     test('should call h.view with correct viewName and viewModel', async () => {
-      // Arrange
       controller.getViewModel = vi.fn().mockReturnValue({ foo: 'bar' })
-      controller.collection = {
-        getErrors: vi.fn().mockReturnValue([])
-      }
+
       const handler = controller.makeGetRouteHandler()
 
-      // Act
       const result = await handler(mockRequest, mockContext, mockH)
 
-      // Assert
       expect(mockH.view).toHaveBeenCalledWith(
         'land-actions-check',
         expect.objectContaining({
@@ -441,6 +433,24 @@ describe('LandActionsCheckPageController', () => {
           parcelItems: expect.any(Array),
           additionalYearlyPayments: expect.any(Array),
           totalYearlyPayment: expect.any(String)
+        })
+      )
+    })
+
+    test('should render an error if process payment calculation fails', async () => {
+      calculateGrantPayment.mockRejectedValue(new Error('error'))
+
+      const handler = controller.makeGetRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'land-actions-check',
+        expect.objectContaining({
+          errorMessages: [
+            {
+              text: 'Unable to get payment information, please try again later or contact the Rural Payments Agency.'
+            }
+          ]
         })
       )
     })
