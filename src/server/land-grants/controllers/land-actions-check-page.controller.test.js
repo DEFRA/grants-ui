@@ -436,6 +436,24 @@ describe('LandActionsCheckPageController', () => {
         })
       )
     })
+
+    test('should render an error if process payment calculation fails', async () => {
+      calculateGrantPayment.mockRejectedValue(new Error('error'))
+
+      const handler = controller.makeGetRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'land-actions-check',
+        expect.objectContaining({
+          errorMessages: [
+            {
+              text: 'Unable to get payment information, please try again later or contact the Rural Payments Agency.'
+            }
+          ]
+        })
+      )
+    })
   })
 
   describe('Link Visibility Logic', () => {
