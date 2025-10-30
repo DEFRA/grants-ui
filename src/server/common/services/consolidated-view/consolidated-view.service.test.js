@@ -9,6 +9,9 @@ import {
   fetchParcelsFromDal
 } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
 import { fetchBusinessAndCPH } from './consolidated-view.service.js'
+import { retry } from '~/src/server/common/helpers/retry.js'
+
+vi.mock('~/src/server/common/helpers/retry.js')
 
 vi.mock('~/src/server/common/helpers/entra/token-manager.js', () => ({
   getValidToken: vi.fn()
@@ -101,6 +104,17 @@ describe('Consolidated View Service', () => {
     vi.clearAllMocks()
     mockFetchInstance.mockReset()
     getValidToken.mockResolvedValue(mockToken)
+
+    retry.mockImplementation(async (operation, options) => {
+      try {
+        return await operation()
+      } catch (error) {
+        if (options?.onRetry) {
+          options.onRetry(error, 1)
+        }
+        throw error
+      }
+    })
 
     config.set('defraId', {
       enabled: true

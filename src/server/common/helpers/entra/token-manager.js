@@ -2,6 +2,8 @@ import { URLSearchParams } from 'node:url'
 
 import { config } from '~/src/config/config.js'
 import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
+import { retry } from '~/src/server/common/helpers/retry.js'
+import { log, LogCodes } from '../logging/log.js'
 
 const logger = createLogger()
 const msInSec = 1000
@@ -76,7 +78,7 @@ export async function refreshToken() {
   const clientSecret = config.get('entra.clientSecret')
   const scope = `${clientId}/.default`
 
-  try {
+  const tokenOperation = async () => {
     const params = createTokenRequestParams(clientId, scope, clientSecret)
 
     const response = await fetch(`${tokenEndpoint}/${tenantId}/oauth2/v2.0/token`, {
@@ -89,7 +91,12 @@ export async function refreshToken() {
 
     if (!response.ok) {
       const errorText = await response.text()
-      throw new Error(errorText)
+      /**
+       * @type {Error & {status?: number}}
+       */
+      const error = new Error(`Token request failed: ${response.status} ${response.statusText} - ${errorText}`)
+      error.status = response.status
+      throw error
     }
 
     const data = await response.json()
@@ -103,8 +110,20 @@ export async function refreshToken() {
     }
 
     return tokenState.currentToken ?? ''
+  }
+
+  try {
+    return await retry(tokenOperation, {
+      timeout: 15000,
+      onRetry: (error, attempt) => {
+        logger.warn(`Token refresh retry attempt ${attempt}, error: ${error.message}`)
+      }
+    })
   } catch (error) {
-    logger.error(error, 'Failed to refresh token')
+    log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
+      endpoint: `Entra token refresh`,
+      error: error.message
+    })
     throw error
   }
 }
