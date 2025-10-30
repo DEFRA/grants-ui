@@ -248,7 +248,7 @@ export default class LandActionsCheckPageController extends QuestionPageControll
       const { state } = context
       let payment = {}
 
-      // Update state with payment information
+      // Fetch payment information and update current state
       try {
         payment = await this.processPaymentCalculation(state)
         await this.setState(request, {
