@@ -269,18 +269,16 @@ describe('SubmissionPageController', () => {
       await handler(mockRequest, mockContext, mockH)
 
       expect(mockH.view).toHaveBeenCalledWith(
-        'submit-your-application',
+        'submission-error',
         expect.objectContaining({
-          errors: [
-            {
-              text: 'There was a problem submitting the application, please try again later or contact the Rural Payments Agency.'
-            }
-          ]
+          backLink: null,
+          heading: 'Sorry, there was a problem validating the application',
+          refNumber: 'N/A'
         })
       )
     })
 
-    it('should handle submission errors and rethrow them', async () => {
+    it('should handle submission errors', async () => {
       const mockError = new Error('Submission failed')
       const mockRequest = {
         logger: {
@@ -318,13 +316,11 @@ describe('SubmissionPageController', () => {
       await handler(mockRequest, mockContext, mockH)
 
       expect(mockH.view).toHaveBeenCalledWith(
-        'submit-your-application',
+        'submission-error',
         expect.objectContaining({
-          errors: [
-            {
-              text: 'There was a problem submitting the application, please try again later or contact the Rural Payments Agency.'
-            }
-          ]
+          backLink: null,
+          heading: 'Sorry, there was a problem validating the application',
+          refNumber: 'N/A'
         })
       )
     })
@@ -403,13 +399,11 @@ describe('SubmissionPageController', () => {
       await handler(mockRequest, mockContext, mockH)
 
       expect(mockH.view).toHaveBeenCalledWith(
-        'submit-your-application',
+        'submission-error',
         expect.objectContaining({
-          errors: [
-            {
-              text: 'There was a problem submitting the application, please try again later or contact the Rural Payments Agency.'
-            }
-          ]
+          backLink: null,
+          heading: 'Sorry, there was a problem validating the application',
+          refNumber: 'N/A'
         })
       )
     })
