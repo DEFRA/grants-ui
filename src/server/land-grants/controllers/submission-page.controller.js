@@ -113,7 +113,7 @@ export default class SubmissionPageController extends SummaryPageController {
   /**
    * Render error message with validation errors
    * @param {object} h - Response toolkitt
-   * @param {{text: string; href: string | undefined}[]} errors - Errors
+   * @param {{text: string; href?: string}[]} errors - Errors
    * @returns {object} - Error view response
    */
   renderErrorMessage(h, request, context, errors) {
@@ -159,8 +159,7 @@ export default class SubmissionPageController extends SummaryPageController {
           request.logger.error({ sbi, crn }, 'Error validating application on form submission: ' + error.message)
           return this.renderErrorMessage(h, request, context, [
             {
-              text: 'There was a problem submitting the application, please try again later or contact the Rural Payments Agency.',
-              href: undefined
+              text: 'There was a problem submitting the application, please try again later or contact the Rural Payments Agency.'
             }
           ])
         }

@@ -188,7 +188,7 @@ export default class LandActionsCheckPageController extends QuestionPageControll
    * @param {object} h - Response toolkit
    * @param {AnyFormRequest} request - Request object
    * @param {FormContext} context - Form context
-   * @param {{text: string; href: string | undefined}[]} errorMessages - Error Summary
+   * @param {{text: string; href?: string}[]} errorMessages - Error Summary
    * @returns {object} - Error view response
    */
   renderErrorView(h, request, context, errorMessages) {
@@ -261,7 +261,6 @@ export default class LandActionsCheckPageController extends QuestionPageControll
         request.logger.error({ err: error, sbi }, 'Unexpected error when fetching payment data')
         return this.renderErrorView(h, request, context, [
           {
-            href: undefined,
             text: 'Unable to get payment information, please try again later or contact the Rural Payments Agency.'
           }
         ])

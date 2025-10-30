@@ -1,4 +1,5 @@
 import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
+import { HTTP_STATUS } from './state/test-helpers/auth-test-helpers.js'
 
 /**
  * Retry an asynchronous operation with configurable options
@@ -21,13 +22,17 @@ export async function retry(operation, options = {}) {
     maxDelay = 30000,
     exponential = true,
     shouldRetry = (error) => {
-      // Retry on network errors, timeouts, and 5xx server errors
-      // Don't retry on 4xx client errors (auth issues)
+      if (error.status >= HTTP_STATUS.BAD_REQUEST && error.status < HTTP_STATUS.INTERNAL_SERVER_ERROR) {
+        return error.status === HTTP_STATUS.REQUEST_TIMEOUT || error.status === HTTP_STATUS.TOO_MANY_REQUESTS
+      }
+
       return (
-        error.name === 'TypeError' || // Network error
         error.message?.includes('timeout') ||
         error.message?.includes('timed out') ||
-        (error.status >= 500 && error.status < 600)
+        error.message?.includes('ECONNRESET') ||
+        error.message?.includes('ETIMEDOUT') ||
+        error.message?.includes('ECONNREFUSED') ||
+        (error.status >= HTTP_STATUS.INTERNAL_SERVER_ERROR && error.status <= HTTP_STATUS.NETWORK_CONNECT_TIMEOUT)
       )
     },
     timeout,
