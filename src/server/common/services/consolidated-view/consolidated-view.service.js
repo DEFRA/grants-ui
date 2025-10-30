@@ -30,8 +30,8 @@ const logger = createLogger()
  */
 
 class ConsolidatedViewApiError extends Error {
-  constructor(message, statusCode, responseBody, sbi) {
-    super(message)
+  constructor(message, statusCode, responseBody, sbi, cause = null) {
+    super(message, cause ? { cause } : undefined)
     this.name = 'ConsolidatedViewApiError'
     this.status = statusCode
     this.responseBody = responseBody
@@ -151,7 +151,7 @@ async function fetchFromConsolidatedView(request, { query, formatResponse }) {
     return formatResponse(responseJson)
   } catch (error) {
     log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
-      endpoint: `DAL: fetch business data for sbi ${sbi}`,
+      endpoint: `DAL: fetch business data from Consolidated View API - sbi ${sbi}`,
       error: error.message
     })
 
@@ -159,7 +159,8 @@ async function fetchFromConsolidatedView(request, { query, formatResponse }) {
       'Failed to fetch business data: ' + error.message,
       error.status,
       error.message,
-      sbi
+      sbi,
+      error
     )
   }
 }

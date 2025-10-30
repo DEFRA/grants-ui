@@ -179,8 +179,8 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
         this.addedActions = []
         const sbi = request.auth?.credentials?.sbi
         log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
-          endpoint: `land grants API: fetch available actions for sbi ${sbi} and parcel ${sheetId}-${parcelId}`,
-          error: error.message
+          endpoint: `Land grants API`,
+          error: `fetch available actions for sbi ${sbi} and parcel ${sheetId}-${parcelId}: ${error.message}`
         })
         errors = [
           {

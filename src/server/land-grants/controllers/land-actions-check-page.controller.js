@@ -260,8 +260,8 @@ export default class LandActionsCheckPageController extends QuestionPageControll
       } catch (error) {
         const sbi = request.auth?.credentials?.sbi
         log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
-          endpoint: `land grants API: fetch payment data for sbi ${sbi}`,
-          error: error.message
+          endpoint: `Land grants API`,
+          error: `error fetching payment data for sbi ${sbi} - ${error.message}`
         })
         return this.renderErrorView(h, request, context, [
           {

@@ -18,8 +18,8 @@ export default class LandGrantsQuestionWithAuthCheckController extends QuestionP
       landParcels = (await fetchParcels(request)) || []
     } catch (error) {
       log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
-        endpoint: `land grants API: fetch parcel data for auth check`,
-        error: error.message
+        endpoint: `Land grants API`,
+        error: `fetch parcel data for auth check: ${error.message}`
       })
     }
     this.landParcelsForSbi = landParcels.map((parcel) => stringifyParcel(parcel))
