@@ -5,7 +5,7 @@ import { config } from '~/src/config/config.js'
 
 const UNKNOWN_USER = 'unknown'
 
-const HTTP_STATUS = {
+export const HTTP_STATUS = {
   BAD_REQUEST: 400,
   UNAUTHORIZED: 401,
   FORBIDDEN: 403,

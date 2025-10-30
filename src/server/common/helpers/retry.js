@@ -1,5 +1,5 @@
 import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
-import { HTTP_STATUS } from './state/test-helpers/auth-test-helpers.js'
+import { HTTP_STATUS } from '~/src/server/common/helpers/errors.js'
 
 /**
  * Retry an asynchronous operation with configurable options
