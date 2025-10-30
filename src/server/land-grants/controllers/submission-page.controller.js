@@ -11,6 +11,7 @@ import { persistSubmissionToApi } from '~/src/server/common/helpers/state/persis
 import { getConfirmationPath } from '~/src/server/common/helpers/form-slug-helper.js'
 import { log } from '~/src/server/common/helpers/logging/log.js'
 import { LogCodes } from '~/src/server/common/helpers/logging/log-codes.js'
+import { handleGasApiError } from '../../common/helpers/gas-error-messages.js'
 
 export default class SubmissionPageController extends SummaryPageController {
   viewName = 'submit-your-application'
@@ -171,6 +172,14 @@ export default class SubmissionPageController extends SummaryPageController {
 
           return await this.handleSuccessfulSubmission(request, context, h, result.status)
         } catch (error) {
+          if (error.name === 'GrantApplicationServiceApiError') {
+            log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
+              endpoint: `Grant application service`,
+              error: `error submitting application to GAS for sbi: ${sbi} and crn: ${crn} - ${error.message}`
+            })
+            return handleGasApiError(h, context, error)
+          }
+
           log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
             endpoint: `Land grants API`,
             error: `validate application for sbi: ${sbi} and crn: ${crn} - ${error.message}`
