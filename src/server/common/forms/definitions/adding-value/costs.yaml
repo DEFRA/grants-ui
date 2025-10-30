@@ -2,6 +2,7 @@ engine: V2
 name: Costs
 metadata:
   id: 92f595e3-b88b-41ef-b55b-1e88b0495827
+  tasklistId: example
   submission:
     grantCode: costs
 pages:
