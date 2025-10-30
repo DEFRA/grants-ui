@@ -22,18 +22,15 @@ export async function retry(operation, options = {}) {
     maxDelay = 30000,
     exponential = true,
     shouldRetry = (error) => {
-      if (error.status >= HTTP_STATUS.BAD_REQUEST && error.status < HTTP_STATUS.INTERNAL_SERVER_ERROR) {
-        return error.status === HTTP_STATUS.REQUEST_TIMEOUT || error.status === HTTP_STATUS.TOO_MANY_REQUESTS
-      }
+      const RETRYABLE_4XX = [HTTP_STATUS.REQUEST_TIMEOUT, HTTP_STATUS.TOO_MANY_REQUESTS]
+      const NETWORK_ERRORS = ['timeout', 'timed out', 'ECONNRESET', 'ETIMEDOUT', 'ECONNREFUSED']
 
-      return (
-        error.message?.includes('timeout') ||
-        error.message?.includes('timed out') ||
-        error.message?.includes('ECONNRESET') ||
-        error.message?.includes('ETIMEDOUT') ||
-        error.message?.includes('ECONNREFUSED') ||
+      const isRetryableStatus =
+        RETRYABLE_4XX.includes(error.status) ||
         (error.status >= HTTP_STATUS.INTERNAL_SERVER_ERROR && error.status <= HTTP_STATUS.NETWORK_CONNECT_TIMEOUT)
-      )
+      const hasNetworkError = NETWORK_ERRORS.some((msg) => error.message?.includes(msg))
+
+      return isRetryableStatus || hasNetworkError
     },
     timeout,
     onRetry = (error, attempt) => {
