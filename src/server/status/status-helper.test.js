@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getApplicationStatus } from '../common/services/grant-application/grant-application.service.js'
 import { updateApplicationStatus } from '../common/helpers/status/update-application-status-helper.js'
 import { getFormsCacheService } from '../common/helpers/forms-cache/forms-cache.js'
@@ -57,6 +57,7 @@ describe('formsStatusCallback', () => {
     }
 
     context = {
+      paths: ['/start', '/confirmation'],
       referenceNumber: 'REF-001',
       state: { applicationStatus: 'SUBMITTED' }
     }
@@ -68,10 +69,22 @@ describe('formsStatusCallback', () => {
     expect(result).toBe(h.continue)
   })
 
-  it.each(['REOPENED', 'CLEARED'])('continues without GAS call when status = %s', async (status) => {
-    context.state.applicationStatus = status
+  it.each(['REOPENED', 'CLEARED'])('continues without GAS call when status = %s and no saved state', async (status) => {
+    context.state = {
+      applicationStatus: status
+    }
     const result = await formsStatusCallback(request, h, context)
     expect(result).toBe(h.continue)
+    expect(getApplicationStatus).not.toHaveBeenCalled()
+  })
+
+  it.each(['REOPENED', 'CLEARED'])('redirects to "check answers" page if some saved state', async (status) => {
+    context.state = {
+      applicationStatus: status,
+      question: 'answer'
+    }
+    await formsStatusCallback(request, h, context)
+    expect(h.redirect).toBeCalled()
     expect(getApplicationStatus).not.toHaveBeenCalled()
   })
 
@@ -85,8 +98,7 @@ describe('formsStatusCallback', () => {
     expect(mockCacheService.setState).toHaveBeenCalledWith(
       request,
       expect.objectContaining({
-        applicationStatus: ApplicationStatus.CLEARED,
-        submittedBy: 'CRN123'
+        applicationStatus: ApplicationStatus.CLEARED
       })
     )
     expect(result).toEqual(expect.any(Symbol))
