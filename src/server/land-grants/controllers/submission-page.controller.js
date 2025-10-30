@@ -11,7 +11,6 @@ import { persistSubmissionToApi } from '~/src/server/common/helpers/state/persis
 import { getConfirmationPath } from '~/src/server/common/helpers/form-slug-helper.js'
 import { log } from '~/src/server/common/helpers/logging/log.js'
 import { LogCodes } from '~/src/server/common/helpers/logging/log-codes.js'
-import { handleGasApiError } from '../../common/helpers/gas-error-messages.js'
 
 export default class SubmissionPageController extends SummaryPageController {
   viewName = 'submit-your-application'
@@ -56,18 +55,18 @@ export default class SubmissionPageController extends SummaryPageController {
    * @param {string} [validationId] - Validation ID
    * @returns {object} - Error view response
    */
-  handleValidationError(h, request, context, validationId) {
+  handleSubmissionError(h, request, context, validationId) {
     log(LogCodes.SUBMISSION.SUBMISSION_VALIDATION_ERROR, {
       grantType: this.grantCode,
       referenceNumber: context.referenceNumber,
-      validationId: validationId || 'N/A'
+      validationId: validationId || context.referenceNumber || 'N/A'
     })
 
     return h.view('submission-error', {
       ...this.getSummaryViewModel(request, context),
       backLink: null,
-      heading: 'Sorry, there was a problem validating the application',
-      refNumber: validationId || 'N/A'
+      heading: 'Sorry, there was a problem submitting the application',
+      refNumber: validationId || context.referenceNumber || 'N/A'
     })
   }
 
@@ -142,7 +141,7 @@ export default class SubmissionPageController extends SummaryPageController {
           const validationResult = await validateApplication({ applicationId: referenceNumber, crn, sbi, state })
           const { id: validationId, valid } = validationResult
           if (!valid) {
-            return this.handleValidationError(h, request, context, validationId)
+            return this.handleSubmissionError(h, request, context, validationId)
           }
 
           const result = await this.submitGasApplication({
@@ -158,19 +157,11 @@ export default class SubmissionPageController extends SummaryPageController {
 
           return await this.handleSuccessfulSubmission(request, context, h, result.status)
         } catch (error) {
-          if (error.name === 'GrantApplicationServiceApiError') {
-            log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
-              endpoint: `Grant application service`,
-              error: `error submitting application to GAS for sbi: ${sbi} and crn: ${crn} - ${error.message}`
-            })
-            return handleGasApiError(h, context, error)
-          }
-
           log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
-            endpoint: `Land grants API`,
-            error: `validate application for sbi: ${sbi} and crn: ${crn} - ${error.message}`
+            endpoint: `Land grants submission`,
+            error: `submitting application for sbi: ${sbi} and crn: ${crn} - ${error.message}`
           })
-          return this.handleValidationError(h, request, context)
+          return this.handleSubmissionError(h, request, context)
         }
       } catch (error) {
         log(LogCodes.SUBMISSION.SUBMISSION_FAILURE, {
