@@ -7,14 +7,12 @@ import { stateToLandGrantsGasAnswers } from '../mappers/state-to-gas-answers-map
 import { validateApplication } from '../services/land-grants.service.js'
 import SubmissionPageController from './submission-page.controller.js'
 import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
-import { log } from '~/src/server/common/helpers/logging/log.js'
 
 vi.mock('~/src/server/common/services/grant-application/grant-application.service.js')
 vi.mock('~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js')
 vi.mock('../mappers/state-to-gas-answers-mapper.js')
 vi.mock('~/src/server/common/helpers/forms-cache/forms-cache.js')
 vi.mock('../services/land-grants.service.js')
-vi.mock('~/src/server/common/helpers/logging/log.js')
 vi.mock('@defra/forms-engine-plugin/controllers/SummaryPageController.js', () => ({
   SummaryPageController: class {
     proceed() {}
@@ -40,6 +38,10 @@ describe('SubmissionPageController', () => {
       setState: vi.fn().mockResolvedValue(),
       getState: vi.fn().mockResolvedValue()
     }
+
+    SubmissionPageController.prototype.getViewModel = vi.fn().mockReturnValue({
+      pageTitle: 'Submission page'
+    })
 
     validateApplication.mockReturnValue(() => ({ valid: true }))
     getFormsCacheService.mockReturnValue(mockCacheService)
@@ -237,7 +239,7 @@ describe('SubmissionPageController', () => {
       expect(result).toBe('error-view')
     })
 
-    it('should handle validation errors and rethrow them', async () => {
+    it('should handle validation errors', async () => {
       const mockError = new Error('Validation failed')
       const mockRequest = {
         logger: {
@@ -264,17 +266,16 @@ describe('SubmissionPageController', () => {
       validateApplication.mockRejectedValue(mockError)
 
       const handler = controller.makePostRouteHandler()
-      await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow(mockError)
+      await handler(mockRequest, mockContext, mockH)
 
-      expect(mockH.redirect).not.toHaveBeenCalled()
-      expect(mockCacheService.setState).not.toHaveBeenCalled()
-      expect(log).toHaveBeenCalledWith(
-        expect.any(Object),
+      expect(mockH.view).toHaveBeenCalledWith(
+        'submit-your-application',
         expect.objectContaining({
-          grantType: code,
-          userCrn: 'crn123',
-          userSbi: '123456789',
-          error: 'Validation failed'
+          errors: [
+            {
+              text: 'There was a problem submitting the application, please try again later or contact the Rural Payments Agency.'
+            }
+          ]
         })
       )
     })
@@ -314,10 +315,18 @@ describe('SubmissionPageController', () => {
       vi.spyOn(controller, 'submitGasApplication').mockRejectedValue(mockError)
 
       const handler = controller.makePostRouteHandler()
-      await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow(mockError)
+      await handler(mockRequest, mockContext, mockH)
 
-      expect(mockH.redirect).not.toHaveBeenCalled()
-      expect(mockCacheService.setState).not.toHaveBeenCalled()
+      expect(mockH.view).toHaveBeenCalledWith(
+        'submit-your-application',
+        expect.objectContaining({
+          errors: [
+            {
+              text: 'There was a problem submitting the application, please try again later or contact the Rural Payments Agency.'
+            }
+          ]
+        })
+      )
     })
 
     it('should use empty object for landParcels if not present in state', async () => {
@@ -361,41 +370,6 @@ describe('SubmissionPageController', () => {
       })
     })
 
-    it('should handle missing auth credentials when error occurs', async () => {
-      const mockError = new Error('Validation failed')
-      const mockRequest = {
-        logger: {
-          info: vi.fn(),
-          error: vi.fn()
-        },
-        auth: undefined,
-        server: {}
-      }
-      const mockContext = {
-        state: {},
-        referenceNumber: 'REF123'
-      }
-      const mockH = {
-        redirect: vi.fn(),
-        view: vi.fn()
-      }
-
-      validateApplication.mockRejectedValue(mockError)
-
-      const handler = controller.makePostRouteHandler()
-      await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow(mockError)
-
-      expect(log).toHaveBeenCalledWith(
-        expect.any(Object),
-        expect.objectContaining({
-          grantType: code,
-          userCrn: undefined,
-          userSbi: undefined,
-          error: 'Validation failed'
-        })
-      )
-    })
-
     it('should handle errors from handleSuccessfulSubmission', async () => {
       const mockError = new Error('Cache service failed')
       const mockRequest = {
@@ -415,7 +389,9 @@ describe('SubmissionPageController', () => {
         state: {},
         referenceNumber: 'REF123'
       }
-      const mockH = {}
+      const mockH = {
+        view: vi.fn().mockReturnValue('error-view')
+      }
       const mockValidationResult = { id: 'validation-123', valid: true }
       const mockSubmitResult = { success: true }
 
@@ -424,7 +400,18 @@ describe('SubmissionPageController', () => {
       vi.spyOn(controller, 'handleSuccessfulSubmission').mockRejectedValue(mockError)
 
       const handler = controller.makePostRouteHandler()
-      await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow(mockError)
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'submit-your-application',
+        expect.objectContaining({
+          errors: [
+            {
+              text: 'There was a problem submitting the application, please try again later or contact the Rural Payments Agency.'
+            }
+          ]
+        })
+      )
     })
   })
 })
