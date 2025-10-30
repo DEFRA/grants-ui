@@ -130,9 +130,10 @@ export default class SubmissionPageController extends SummaryPageController {
      * @returns {Promise<ResponseObject>}
      */
     const fn = async (request, context, h) => {
+      const { credentials: { sbi, crn } = {} } = request.auth ?? {}
+
       try {
         const { state, referenceNumber } = context
-        const { sbi, crn } = request.auth.credentials
         const frn = state.applicant ? state.applicant['business']?.reference : undefined
 
         // Validate application with Land Grants API
@@ -157,6 +158,8 @@ export default class SubmissionPageController extends SummaryPageController {
       } catch (error) {
         log(LogCodes.SUBMISSION.SUBMISSION_FAILURE, {
           grantType: this.grantCode,
+          userCrn: crn,
+          userSbi: sbi,
           error: error.message,
           stack: error.stack
         })
