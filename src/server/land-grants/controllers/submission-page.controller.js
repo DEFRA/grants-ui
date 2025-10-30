@@ -53,21 +53,21 @@ export default class SubmissionPageController extends SummaryPageController {
    * @param {object} h - Response toolkit
    * @param {object} request - Request object
    * @param {object} context - Form context
-   * @param {string} validationId - Validation ID
+   * @param {string} [validationId] - Validation ID
    * @returns {object} - Error view response
    */
   handleValidationError(h, request, context, validationId) {
     log(LogCodes.SUBMISSION.SUBMISSION_VALIDATION_ERROR, {
       grantType: this.grantCode,
       referenceNumber: context.referenceNumber,
-      validationId
+      validationId: validationId || 'N/A'
     })
 
     return h.view('submission-error', {
       ...this.getSummaryViewModel(request, context),
       backLink: null,
       heading: 'Sorry, there was a problem validating the application',
-      refNumber: validationId
+      refNumber: validationId || 'N/A'
     })
   }
 
@@ -184,11 +184,7 @@ export default class SubmissionPageController extends SummaryPageController {
             endpoint: `Land grants API`,
             error: `validate application for sbi: ${sbi} and crn: ${crn} - ${error.message}`
           })
-          return this.renderErrorMessage(h, request, context, [
-            {
-              text: 'There was a problem submitting the application, please try again later or contact the Rural Payments Agency.'
-            }
-          ])
+          return this.handleValidationError(h, request, context)
         }
       } catch (error) {
         log(LogCodes.SUBMISSION.SUBMISSION_FAILURE, {

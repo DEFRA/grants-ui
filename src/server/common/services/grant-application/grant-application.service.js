@@ -1,6 +1,5 @@
 import { config } from '~/src/config/config.js'
 import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
-import { retry } from '~/src/server/common/helpers/retry.js'
 
 const GAS_API_ENDPOINT = config.get('gas.apiEndpoint')
 const logger = createLogger()
@@ -29,16 +28,16 @@ class GrantApplicationServiceApiError extends Error {
 export async function makeGasApiRequest(url, grantCode, options = {}) {
   const { method = 'POST', payload, queryParams } = options
 
-  const gasOperation = async () => {
+  try {
     // Add query parameters for GET requests
     let requestUrl = url
     if (method === 'GET' && queryParams) {
       const searchParams = new URLSearchParams()
-      for (const [key, value] of Object.entries(queryParams)) {
+      Object.entries(queryParams).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
           searchParams.append(key, value.toString())
         }
-      }
+      })
       if (searchParams.toString()) {
         requestUrl += `?${searchParams.toString()}`
       }
@@ -68,15 +67,6 @@ export async function makeGasApiRequest(url, grantCode, options = {}) {
     }
 
     return response
-  }
-
-  try {
-    return await retry(gasOperation, {
-      timeout: 30000,
-      onRetry: (error, attempt) => {
-        logger.warn(`GAS API retry attempt ${attempt} for ${method} ${url}, error: ${error.message}`)
-      }
-    })
   } catch (error) {
     logger.error({ err: error }, `Unexpected error in GAS API request: ${error.message}`)
     if (error instanceof GrantApplicationServiceApiError) {
