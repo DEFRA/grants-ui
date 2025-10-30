@@ -1,5 +1,4 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
-import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
 import { fetchBusinessAndCustomerInformation } from '../../common/services/consolidated-view/consolidated-view.service.js'
 import {
   createAddressRow,
@@ -9,8 +8,6 @@ import {
   createSbiRow
 } from '../../common/helpers/create-rows.js'
 import { log, LogCodes } from '../../common/helpers/logging/log.js'
-
-const logger = createLogger()
 
 export default class ConfirmFarmDetailsController extends QuestionPageController {
   viewName = 'confirm-farm-details'
