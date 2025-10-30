@@ -369,7 +369,7 @@ describe('SubmissionPageController', () => {
       })
     })
 
-    it('should handle missing auth credentials when error occurs', async () => {
+    it('should handle validation error gracefully', async () => {
       const mockError = new Error('Validation failed')
       const mockRequest = {
         logger: {
@@ -398,6 +398,47 @@ describe('SubmissionPageController', () => {
         expect.objectContaining({
           endpoint: 'Land grants API',
           error: 'validate application for sbi: undefined and crn: undefined - Validation failed'
+        })
+      )
+    })
+
+    it('should handle GAS error gracefully', async () => {
+      const mockError = new Error('GAS submission failed')
+      const mockRequest = {
+        logger: {
+          info: vi.fn(),
+          error: vi.fn()
+        },
+        auth: {
+          credentials: {
+            sbi: '123456789',
+            crn: 'crn123'
+          }
+        },
+        server: {}
+      }
+      const mockContext = {
+        state: {},
+        referenceNumber: 'REF123'
+      }
+      const mockH = {
+        redirect: vi.fn(),
+        view: vi.fn()
+      }
+
+      const mockValidationResult = { id: 'validation-123', valid: true }
+      validateApplication.mockResolvedValue(mockValidationResult)
+      vi.spyOn(controller, 'submitGasApplication').mockResolvedValue(mockError)
+
+      const handler = controller.makePostRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'submission-error',
+        expect.objectContaining({
+          backLink: null,
+          heading: 'Sorry, there was a problem validating the application',
+          refNumber: 'N/A'
         })
       )
     })
