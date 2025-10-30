@@ -112,18 +112,62 @@ function shouldContinueDefault(gasStatus, newStatus, previousStatus) {
   )
 }
 
+/**
+ * Determines if the state contains any meaningful values other than the base keys.
+ * @param state - The state object to check
+ * @returns {boolean} - True if state contains meaningful values, otherwise false
+ */
+function hasMeaningfulState(state) {
+  const baseStateKeys = ['$$__referenceNumber', 'applicationStatus']
+  return Object.keys(state).some((k) => !baseStateKeys.includes(k))
+}
+
+/**
+ * Determines if the current request is for the start page of a grant.
+ * @param request - The Hapi request object
+ * @param context - The context object containing paths and state
+ * @returns {boolean} - True if the current request is for the start page of a grant, otherwise false
+ */
+function isFormsStartPage(request, context) {
+  const slug = request.params?.slug
+  const startPath = context.paths?.[0]
+  const currentPath = request.path
+
+  if (!slug || !startPath) {
+    return false
+  }
+
+  return currentPath === `/${slug}${startPath}`
+}
+
+/**
+ * Determines if the current request is for a tasklist page.
+ * @param request - The Hapi request object
+ * @returns {boolean} - True if the current request is for a tasklist page, otherwise false
+ */
+function isTasklistPage(request) {
+  return request.app.model?.def?.metadata?.tasklistId != null
+}
+
+/**
+ * Determines if a pre-submission request should redirect to the "check answers" page.
+ *
+ * If there is any meaningful state and the user has navigated to the "start" page, redirect to the "check answers" page
+ * Otherwise just continue
+ *
+ * Tasklist journeys are not supported currently
+ *
+ * @param request - Hapi request object
+ * @param h - Hapi response toolkit
+ * @param context - { paths: ['/start'], state: { applicationStatus: 'CLEARED' } }
+ * @returns {Symbol} - Symbol.for('continue') if no redirect is required, otherwise Symbol.for('redirect')
+ */
 function preSubmissionRedirect(request, h, context) {
   // TODO refactor to use config driven approach in TGC-903
   const isFarmPayments = request.params?.slug === 'farm-payments'
   const redirectUrl = isFarmPayments ? 'check-selected-land-actions' : 'summary'
 
-  // If state contains any saved values and the user has navigated to the "start" page, redirect to the "check answers" page
-  // Otherwise just continue
-  if (
-    Object.keys(context.state).some((k) => !['$$__referenceNumber', 'applicationStatus'].includes(k)) &&
-    request.path === `/${request.params?.slug}${context.paths[0]}` &&
-    request.app.model?.def?.metadata?.tasklistId == null
-  ) {
+  if (hasMeaningfulState(context.state) && isFormsStartPage(request, context) && !isTasklistPage(request)) {
     return h.redirect(redirectUrl).takeover()
   }
   return h.continue
