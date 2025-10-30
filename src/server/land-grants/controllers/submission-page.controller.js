@@ -121,20 +121,6 @@ export default class SubmissionPageController extends SummaryPageController {
   }
 
   /**
-   * Render error message with validation errors
-   * @param {object} h - Response toolkitt
-   * @param {{text: string; href?: string}[]} errors - Errors
-   * @returns {object} - Error view response
-   */
-  renderErrorMessage(h, request, context, errors) {
-    return h.view(this.viewName, {
-      // @ts-ignore - super not being recognised as QuestionPageController as it is two levels above and it's on a node module
-      ...this.getViewModel(request, context),
-      errors
-    })
-  }
-
-  /**
    * Creates the POST route handler for form submission
    */
   makePostRouteHandler() {
