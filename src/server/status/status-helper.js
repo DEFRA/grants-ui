@@ -118,8 +118,8 @@ function shouldContinueDefault(gasStatus, newStatus, previousStatus) {
  * @returns {boolean} - True if state contains meaningful values, otherwise false
  */
 function hasMeaningfulState(state) {
-  const baseStateKeys = ['$$__referenceNumber', 'applicationStatus']
-  return Object.keys(state).some((k) => !baseStateKeys.includes(k))
+  const baseStateKeys = new Set(['$$__referenceNumber', 'applicationStatus'])
+  return Object.keys(state).some((k) => !baseStateKeys.has(k))
 }
 
 /**
