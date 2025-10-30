@@ -20,7 +20,16 @@ export async function retry(operation, options = {}) {
     initialDelay = 1000,
     maxDelay = 30000,
     exponential = true,
-    shouldRetry = () => true,
+    shouldRetry = (error) => {
+      // Retry on network errors, timeouts, and 5xx server errors
+      // Don't retry on 4xx client errors (auth issues)
+      return (
+        error.name === 'TypeError' || // Network error
+        error.message?.includes('timeout') ||
+        error.message?.includes('timed out') ||
+        (error.status >= 500 && error.status < 600)
+      )
+    },
     timeout,
     onRetry = (error, attempt) => {
       const message = `Retry attempt ${attempt}/${maxAttempts} after error: ${error.message}`

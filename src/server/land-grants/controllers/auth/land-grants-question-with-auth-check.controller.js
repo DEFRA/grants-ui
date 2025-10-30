@@ -12,7 +12,12 @@ export default class LandGrantsQuestionWithAuthCheckController extends QuestionP
   }
 
   performAuthCheck = async (request, h) => {
-    const landParcels = (await fetchParcels(request)) || []
+    let landParcels = []
+    try {
+      landParcels = (await fetchParcels(request)) || []
+    } catch (error) {
+      request.logger.error({ err: error }, 'Unexpected error when fetching parcel data for auth check')
+    }
     this.landParcelsForSbi = landParcels.map((parcel) => stringifyParcel(parcel))
 
     if (!this.landParcelBelongsToSbi()) {

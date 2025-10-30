@@ -15,7 +15,7 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
   viewName = 'confirm-farm-details'
 
   // Constants
-  static ERROR_MESSAGE = 'Unable to find farm information, please try again later.'
+  static ERROR_MESSAGE = 'Unable to find farm information, please try again later or contact the Rural Payments Agency.'
 
   /**
    * Handle GET requests to the confirm farm details page

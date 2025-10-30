@@ -7,12 +7,17 @@ import {
   isTokenExpired,
   refreshToken
 } from '~/src/server/common/helpers/entra/token-manager.js'
+import { retry } from '~/src/server/common/helpers/retry.js'
+
+vi.mock('~/src/server/common/helpers/retry.js')
 
 const mockFetch = vi.fn()
 global.fetch = mockFetch
 
 describe('Token Manager', () => {
   beforeEach(() => {
+    retry.mockImplementation((operation) => operation())
+
     config.set('entra', {
       tokenEndpoint: 'https://login.microsoftonline.com',
       tenantId: 'mock-tenant-id',

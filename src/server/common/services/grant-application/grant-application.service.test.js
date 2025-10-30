@@ -7,6 +7,9 @@ import {
   makeGasApiRequest,
   submitGrantApplication
 } from '~/src/server/common/services/grant-application/grant-application.service.js'
+import { retry } from '~/src/server/common/helpers/retry.js'
+
+vi.mock('~/src/server/common/helpers/retry.js')
 
 const gasApi = config.get('gas.apiEndpoint')
 const code = config.get('landGrants.grantCode')
@@ -45,7 +48,18 @@ describe('submitGrantApplication', () => {
   }
 
   beforeEach(() => {
-    vi.resetAllMocks()
+    vi.clearAllMocks()
+
+    retry.mockImplementation(async (operation, options) => {
+      try {
+        return await operation()
+      } catch (error) {
+        if (options?.onRetry) {
+          options.onRetry(error, 1)
+        }
+        throw error
+      }
+    })
   })
 
   test('should successfully submit a grant application', async () => {
@@ -120,6 +134,17 @@ describe('invokeGasPostAction', () => {
 
   beforeEach(() => {
     vi.resetAllMocks()
+
+    retry.mockImplementation(async (operation, options) => {
+      try {
+        return await operation()
+      } catch (error) {
+        if (options?.onRetry) {
+          options.onRetry(error, 1)
+        }
+        throw error
+      }
+    })
   })
 
   test('should successfully invoke a POST action', async () => {
@@ -223,6 +248,17 @@ describe('invokeGasGetAction', () => {
 
   beforeEach(() => {
     vi.resetAllMocks()
+
+    retry.mockImplementation(async (operation, options) => {
+      try {
+        return await operation()
+      } catch (error) {
+        if (options?.onRetry) {
+          options.onRetry(error, 1)
+        }
+        throw error
+      }
+    })
   })
 
   test('should successfully invoke a GET action without query params', async () => {
@@ -340,6 +376,17 @@ describe('makeGasApiRequest', () => {
 
   beforeEach(() => {
     vi.resetAllMocks()
+
+    retry.mockImplementation(async (operation, options) => {
+      try {
+        return await operation()
+      } catch (error) {
+        if (options?.onRetry) {
+          options.onRetry(error, 1)
+        }
+        throw error
+      }
+    })
   })
 
   test('should use default options when none provided', async () => {
@@ -523,6 +570,17 @@ describe('makeGasApiRequest', () => {
 describe('makeGasApiRequest edge cases', () => {
   beforeEach(() => {
     vi.resetAllMocks()
+
+    retry.mockImplementation(async (operation, options) => {
+      try {
+        return await operation()
+      } catch (error) {
+        if (options?.onRetry) {
+          options.onRetry(error, 1)
+        }
+        throw error
+      }
+    })
   })
 
   test('should handle GrantApplicationServiceApiError being re-thrown', async () => {

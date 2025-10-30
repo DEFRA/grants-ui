@@ -111,6 +111,20 @@ export default class SubmissionPageController extends SummaryPageController {
   }
 
   /**
+   * Render error message with validation errors
+   * @param {object} h - Response toolkitt
+   * @param {{text: string; href: string | undefined}[]} errors - Errors
+   * @returns {object} - Error view response
+   */
+  renderErrorMessage(h, request, context, errors) {
+    return h.view(this.viewName, {
+      // @ts-ignore - super not being recognised as QuestionPageController as it is two levels above and it's on a node module
+      ...this.getViewModel(request, context),
+      errors
+    })
+  }
+
+  /**
    * Creates the POST route handler for form submission
    */
   makePostRouteHandler() {
@@ -127,19 +141,29 @@ export default class SubmissionPageController extends SummaryPageController {
         const frn = state.applicant ? state.applicant['business']?.reference : undefined
 
         // Validate application with Land Grants API
-        const validationResult = await validateApplication({ applicationId: referenceNumber, crn, sbi, state })
-        const { id: validationId, valid } = validationResult
-        if (!valid) {
-          return this.handleValidationError(h, request, context, validationId)
+        try {
+          const validationResult = await validateApplication({ applicationId: referenceNumber, crn, sbi, state })
+          const { id: validationId, valid } = validationResult
+          if (!valid) {
+            return this.handleValidationError(h, request, context, validationId)
+          }
+
+          const result = await this.submitGasApplication({
+            identifiers: { sbi, crn, frn, clientRef: referenceNumber?.toLowerCase() },
+            state,
+            validationId
+          })
+
+          return await this.handleSuccessfulSubmission(request, context, h, result.status)
+        } catch (error) {
+          request.logger.error({ sbi, crn }, 'Error validating application on form submission: ' + error.message)
+          return this.renderErrorMessage(h, request, context, [
+            {
+              text: 'There was a problem submitting the application, please try again later or contact the Rural Payments Agency.',
+              href: undefined
+            }
+          ])
         }
-
-        const result = await this.submitGasApplication({
-          identifiers: { sbi, crn, frn, clientRef: referenceNumber?.toLowerCase() },
-          state,
-          validationId
-        })
-
-        return await this.handleSuccessfulSubmission(request, context, h, result.status)
       } catch (error) {
         log(LogCodes.SUBMISSION.SUBMISSION_FAILURE, {
           grantType: this.grantCode,

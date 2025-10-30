@@ -12,6 +12,13 @@
       {% endif %}
 
 
+      {% if errors.length > 0 %}
+          {{ govukErrorSummary({
+          titleText: "There is a problem",
+          errorList: errors
+        }) }}
+      {% endif %}
+
       <h1 class="govuk-heading-l">{{ pageTitle }}</h1>
 
       <p class="govuk-body">By submitting your application you confirm that:</p>
