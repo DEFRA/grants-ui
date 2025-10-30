@@ -7,6 +7,8 @@ import 'dotenv/config'
  * @typedef {object} LandGrantsConfig
  * @property {string} grantCode
  * @property {string} grantsServiceApiEndpoint
+ * @property {string} authToken
+ * @property {string} encryptionKey
  * @property {number} customerReferenceNumber
  * @property {number} defaultSbi
  * @property {string} mockSessionCurrentRelationshipId
@@ -30,6 +32,20 @@ const landGrants = convict({
     format: Number,
     default: 1100014934,
     env: 'DEFAULT_CRN'
+  },
+  authToken: {
+    doc: 'Bearer token for authenticating with Land Grants Api',
+    format: String,
+    default: '',
+    env: 'LAND_GRANTS_API_AUTH_TOKEN',
+    sensitive: true
+  },
+  encryptionKey: {
+    doc: 'Encryption key for securing bearer token transmission',
+    format: String,
+    default: '',
+    env: 'LAND_GRANTS_API_ENCRYPTION_KEY',
+    sensitive: true
   },
   defaultSbi: {
     doc: 'Default SBI for land grants forms',

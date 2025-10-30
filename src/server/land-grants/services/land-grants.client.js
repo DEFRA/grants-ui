@@ -1,3 +1,20 @@
+import { config } from '~/src/config/config.js'
+import { createAuthenticatedHeaders } from '../../common/helpers/state/backend-auth-helper.js'
+
+const CONTENT_TYPE_JSON = 'application/json'
+
+/**
+ * Creates standard headers for API requests to grants-ui-backend
+ * @returns {object} Headers with Content-Type and authentication
+ */
+function createApiHeadersForLandGrantsApi() {
+  const landGrantsApiToken = config.get('landGrants.authToken')
+  const encryptionKey = config.get('landGrants.encryptionKey')
+  return createAuthenticatedHeaders(landGrantsApiToken, encryptionKey, {
+    'Content-Type': CONTENT_TYPE_JSON
+  })
+}
+
 /**
  * Performs a POST request to the Land Grants API.
  * @param {string} endpoint
@@ -9,9 +26,7 @@
 export async function postToLandGrantsApi(endpoint, body, baseUrl) {
   const response = await fetch(`${baseUrl}${endpoint}`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
+    headers: createApiHeadersForLandGrantsApi(),
     body: JSON.stringify(body)
   })
 
