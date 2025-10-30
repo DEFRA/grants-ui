@@ -199,7 +199,7 @@ describe('invokeGasPostAction', () => {
     expect(thrownError).toBeDefined()
     expect(thrownError.name).toBe('GrantApplicationServiceApiError')
     expect(thrownError.status).toBe(errorStatus)
-    expect(thrownError.responseBody).toBe('422 Internal Server Error - Gas error')
+    expect(thrownError.responseBody).toBe('Gas error')
     expect(thrownError.grantCode).toBe(code)
 
     expect(fetch).toHaveBeenCalledWith(`${gasApi}/grants/${code}/actions/${actionName}/invoke`, {
@@ -330,7 +330,7 @@ describe('invokeGasGetAction', () => {
     expect(thrownError.name).toBe('GrantApplicationServiceApiError')
     expect(thrownError.status).toBe(errorStatus)
     expect(thrownError.grantCode).toBe(code)
-    expect(thrownError.message).toBe('Failed to process GAS API request: 422 Bad Request - Gas error')
+    expect(thrownError.message).toBe('422 Bad Request - Gas error')
   })
 })
 
@@ -457,7 +457,6 @@ describe('makeGasApiRequest', () => {
 
   test('should throw GrantApplicationServiceApiError on API error', async () => {
     const errorStatus = 400
-    const errorText = '400 Bad Request'
     const statusText = 'Bad Request'
 
     fetch.mockResolvedValueOnce({
@@ -476,15 +475,14 @@ describe('makeGasApiRequest', () => {
 
     expect(thrownError).toBeDefined()
     expect(thrownError.name).toBe('GrantApplicationServiceApiError')
-    expect(thrownError.message).toBe(`Failed to process GAS API request: ${errorStatus} ${statusText} - Gas error`)
+    expect(thrownError.message).toBe(`${errorStatus} ${statusText} - Gas error`)
     expect(thrownError.status).toBe(errorStatus)
-    expect(thrownError.responseBody).toBe(`${errorText} - Gas error`)
+    expect(thrownError.responseBody).toBe('Gas error')
     expect(thrownError.grantCode).toBe(testGrantCode)
   })
 
   test('should re-throw GrantApplicationServiceApiError without wrapping', async () => {
     const errorStatus = 500
-    const errorText = '500 Internal Server Error'
     const statusText = 'Internal Server Error'
 
     fetch.mockResolvedValueOnce({
@@ -497,7 +495,7 @@ describe('makeGasApiRequest', () => {
     await expect(makeGasApiRequest(testUrl, testGrantCode)).rejects.toMatchObject({
       name: 'GrantApplicationServiceApiError',
       status: errorStatus,
-      responseBody: `${errorText} - Gas error`,
+      responseBody: 'Gas error',
       grantCode: testGrantCode
     })
   })

@@ -438,7 +438,7 @@ function redirectAfterSignIn(request, h, profile) {
       step: 'redirect_error',
       sessionId: profile.sessionId
     })
-    throw new Error(`Failed to redirect after sign in: ${redirectError.message}`)
+    throw redirectError
   }
 }
 
