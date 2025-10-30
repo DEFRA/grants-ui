@@ -1,4 +1,5 @@
 import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
+import { HTTP_STATUS } from '~/src/server/common/helpers/errors.js'
 
 /**
  * Retry an asynchronous operation with configurable options
@@ -20,7 +21,17 @@ export async function retry(operation, options = {}) {
     initialDelay = 1000,
     maxDelay = 30000,
     exponential = true,
-    shouldRetry = () => true,
+    shouldRetry = (error) => {
+      const RETRYABLE_4XX = [HTTP_STATUS.REQUEST_TIMEOUT, HTTP_STATUS.TOO_MANY_REQUESTS]
+      const NETWORK_ERRORS = ['timeout', 'timed out', 'ECONNRESET', 'ETIMEDOUT', 'ECONNREFUSED']
+
+      const isRetryableStatus =
+        RETRYABLE_4XX.includes(error.status) ||
+        (error.status >= HTTP_STATUS.INTERNAL_SERVER_ERROR && error.status <= HTTP_STATUS.NETWORK_CONNECT_TIMEOUT)
+      const hasNetworkError = NETWORK_ERRORS.some((msg) => error.message?.includes(msg))
+
+      return isRetryableStatus || hasNetworkError
+    },
     timeout = 10000,
     onRetry = (error, attempt, delay) => {
       createLogger().error(
