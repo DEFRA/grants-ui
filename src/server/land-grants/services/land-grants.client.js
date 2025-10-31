@@ -1,3 +1,4 @@
+import { createApiHeadersForLandGrantsBackend } from '~/src/server/common/helpers/state/backend-auth-helper.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
 import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
 
@@ -15,9 +16,7 @@ export async function postToLandGrantsApi(endpoint, body, baseUrl) {
   const apiOperation = async () => {
     const response = await fetch(`${baseUrl}${endpoint}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: createApiHeadersForLandGrantsBackend(),
       body: JSON.stringify(body)
     })
 
