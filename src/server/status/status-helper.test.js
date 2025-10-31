@@ -145,6 +145,14 @@ describe('formsStatusCallback', () => {
     expect(result).toEqual(expect.any(Symbol))
   })
 
+  it('throws an error if grantCode is missing', async () => {
+    delete request.app.model.def.metadata.submission.grantCode
+
+    await expect(formsStatusCallback(request, h, context)).rejects.toThrow(
+      'grantCode missing from request.app.model.def.metadata.submission'
+    )
+  })
+
   it('throws when no redirect rule matches the combination', async () => {
     request.app.model.def.metadata.grantRedirectRules.postSubmission = [
       { fromGrantsStatus: 'SUBMITTED', gasStatus: 'KNOWN_STATUS', toPath: '/known' }

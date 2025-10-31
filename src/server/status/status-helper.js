@@ -154,16 +154,47 @@ function preSubmissionRedirect(request, h, context) {
   return h.continue
 }
 
+/**
+ * Determines whether the pre-submission redirect logic should run.
+ *
+ * @param {string | undefined} previousStatus - The previous application status stored in the session or state.
+ * @returns {boolean} `true` if the application has no previous status or was cleared/reopened, otherwise `false`.
+ */
 function shouldHandlePreSubmission(previousStatus) {
   return (
     !previousStatus || previousStatus === ApplicationStatus.CLEARED || previousStatus === ApplicationStatus.REOPENED
   )
 }
 
+/**
+ * Builds a redirect URL for a given grant ID and path.
+ *
+ * @param {string} grantId - The unique identifier (slug) of the grant.
+ * @param {string} path - The redirect path defined in the grant redirect rules.
+ * @returns {string} A formatted URL combining the grant ID and path.
+ *
+ * @example
+ * buildRedirectUrl('grant-a', '/summary') // "/grant-a/summary"
+ * buildRedirectUrl('grant-a', 'summary')  // "/grant-a/summary"
+ */
 function buildRedirectUrl(grantId, path) {
   return path.startsWith('/') ? `/${grantId}${path}` : `/${grantId}/${path}`
 }
 
+/**
+ * Handles post-submission redirects and status updates after a form has been submitted.
+ *
+ * @async
+ * @param {import('@hapi/hapi').Request} request - The Hapi request object.
+ * @param {import('@hapi/hapi').ResponseToolkit} h - The Hapi response toolkit.
+ * @param {object} context - The request context containing state and reference data.
+ * @param {string} previousStatus - The previous application status (e.g. "SUBMITTED").
+ * @param {string} grantCode - The grant code used to fetch status from GAS.
+ * @param {object} [grantRedirectRules] - The redirect rules configuration from metadata.
+ * @returns {Promise<import('@hapi/hapi').ResponseObject | symbol>} A redirect or `h.continue`.
+ *
+ * @throws {Error} If GAS returns an unexpected response or no redirect rule matches.
+ */
 async function handlePostSubmission(request, h, context, previousStatus, grantCode, grantRedirectRules) {
   const grantId = request.params?.slug
   const response = await getApplicationStatus(grantCode, context.referenceNumber)
@@ -182,6 +213,19 @@ async function handlePostSubmission(request, h, context, previousStatus, grantCo
   return request.path === redirectUrl ? h.continue : h.redirect(redirectUrl).takeover()
 }
 
+/**
+ * Handles errors that occur during post-submission redirect processing.
+ * Falls back to a default redirect rule if available.
+ *
+ * @param {Error & { status?: number }} err - The error thrown during post-submission handling.
+ * @param {import('@hapi/hapi').Request} request - The Hapi request object.
+ * @param {import('@hapi/hapi').ResponseToolkit} h - The Hapi response toolkit.
+ * @param {object} context - The request context containing state and reference data.
+ * @param {string} grantId - The grant slug identifying the grant type.
+ * @param {string} grantCode - The grant code used in GAS lookups.
+ * @param {object} [grantRedirectRules] - The redirect rules configuration from metadata.
+ * @returns {import('@hapi/hapi').ResponseObject | symbol} A fallback redirect or `h.continue`.
+ */
 function handlePostSubmissionError(err, request, h, context, grantId, grantCode, grantRedirectRules) {
   if (err.status === statusCodes.notFound) {
     return h.continue
@@ -199,15 +243,45 @@ function handlePostSubmissionError(err, request, h, context, grantId, grantCode,
   return request.path === fallbackUrl ? h.continue : h.redirect(fallbackUrl).takeover()
 }
 
-// higher-order callback that wraps the existing one
+/**
+ * @typedef {object} GrantModel
+ * @property {{ submission: { grantCode: string }, grantRedirectRules?: object }} metadata
+ */
+
+/**
+ * @typedef {import('@hapi/hapi').Request & { app: { model?: { def?: GrantModel } } }} ExtendedRequest
+ */
+
+/**
+ * Retrieves the grantCode from the request metadata.
+ * Throws an error if not found.
+ * @param {ExtendedRequest} request - Hapi request object
+ * @returns {string} - The grantCode
+ */
+function getGrantCode(request) {
+  // grantCode should always be available in the configured metadata
+  const grantCode = request.app.model?.def?.metadata?.submission?.grantCode
+  if (!grantCode) {
+    throw new Error('grantCode missing from request.app.model.def.metadata.submission')
+  }
+  return grantCode
+}
+
+/**
+ * Main callback for handling form status transitions.
+ *
+ * @param {ExtendedRequest} request - Hapi request object (extended to include app.model)
+ * @param {import('@hapi/hapi').ResponseToolkit} h - Hapi response toolkit
+ * @param {object} context - Current page context including form state and reference number
+ * @returns {Promise<import('@hapi/hapi').ResponseObject | any>} Hapi response or continue symbol
+ */
 export const formsStatusCallback = async (request, h, context) => {
   const grantId = request.params?.slug
-  // grantCode should always be available in the config
-  const grantCode = request.app.model?.def?.metadata?.submission.grantCode
-
   if (!grantId) {
     return h.continue
   }
+
+  const grantCode = getGrantCode(request)
 
   const previousStatus = context.state.applicationStatus
   const grantRedirectRules = request.app.model?.def?.metadata?.grantRedirectRules
