@@ -5,6 +5,7 @@ metadata:
   tasklistId: example
   submission:
     grantCode: score-results
+  grantRedirectRules: null
 pages:
   - title: Score results
     path: /score-results

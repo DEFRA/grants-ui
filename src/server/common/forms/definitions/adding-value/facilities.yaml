@@ -6,6 +6,7 @@ metadata:
   tasklistId: example
   submission:
     grantCode: facilities
+  grantRedirectRules: null
 pages:
   - title: Do you want to build a new smaller abattoir?
     path: /smaller-abattoir

@@ -5,6 +5,7 @@ metadata:
   tasklistId: example
   submission:
     grantCode: who-is-applying
+  grantRedirectRules: null
 pages:
   - title: Who is applying for this grant?
     path: /applying

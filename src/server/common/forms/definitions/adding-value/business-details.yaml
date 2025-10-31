@@ -5,6 +5,7 @@ metadata:
   tasklistId: example
   submission:
     grantCode: business-details
+  grantRedirectRules: null
 pages:
   - title: Business Details
     path: /business-details

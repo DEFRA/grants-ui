@@ -5,6 +5,7 @@ metadata:
   tasklistId: example
   submission:
     grantCode: future-customers
+  grantRedirectRules: null
 pages:
   - title: Who will your new customers be after the project?
     path: /future-customers
