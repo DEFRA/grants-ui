@@ -19,7 +19,7 @@ export default class LandGrantsQuestionWithAuthCheckController extends QuestionP
       }
     } catch (error) {
       log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
-        endpoint: `Land grants API`,
+        endpoint: `Consolidated view`,
         error: `fetch parcel data for auth check: ${error.message}`
       })
       return this.renderUnauthorisedView(h)
