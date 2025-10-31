@@ -8,6 +8,7 @@ import { validateApplication } from '../services/land-grants.service.js'
 import SubmissionPageController from './submission-page.controller.js'
 import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
 import { log } from '~/src/server/common/helpers/logging/log.js'
+import { LogCodes } from '../../common/helpers/logging/log-codes.js'
 
 vi.mock('~/src/server/common/services/grant-application/grant-application.service.js')
 vi.mock('~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js')
@@ -40,6 +41,10 @@ describe('SubmissionPageController', () => {
       setState: vi.fn().mockResolvedValue(),
       getState: vi.fn().mockResolvedValue()
     }
+
+    SubmissionPageController.prototype.getViewModel = vi.fn().mockReturnValue({
+      pageTitle: 'Submission page'
+    })
 
     validateApplication.mockReturnValue(() => ({ valid: true }))
     getFormsCacheService.mockReturnValue(mockCacheService)
@@ -91,7 +96,7 @@ describe('SubmissionPageController', () => {
     })
   })
 
-  describe('handleValidationError', () => {
+  describe('handleSubmissionError', () => {
     it('should return error view with correct data', () => {
       const mockH = {
         view: vi.fn().mockReturnValue('error-view')
@@ -100,11 +105,11 @@ describe('SubmissionPageController', () => {
       const mockContext = {}
       const validationId = 'validation-123'
 
-      controller.handleValidationError(mockH, mockRequest, mockContext, validationId)
+      controller.handleSubmissionError(mockH, mockRequest, mockContext, validationId)
 
       expect(mockH.view).toHaveBeenCalledWith('submission-error', {
         backLink: null,
-        heading: 'Sorry, there was a problem validating the application',
+        heading: 'Sorry, there was a problem submitting the application',
         refNumber: 'validation-123'
       })
     })
@@ -226,18 +231,18 @@ describe('SubmissionPageController', () => {
       const mockValidationResult = { id: 'validation-123', valid: false }
 
       validateApplication.mockResolvedValue(mockValidationResult)
-      vi.spyOn(controller, 'handleValidationError').mockReturnValue('error-view')
+      vi.spyOn(controller, 'handleSubmissionError').mockReturnValue('error-view')
       vi.spyOn(controller, 'submitGasApplication').mockResolvedValue({ success: true })
 
       const handler = controller.makePostRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
 
-      expect(controller.handleValidationError).toHaveBeenCalledWith(mockH, mockRequest, mockContext, 'validation-123')
+      expect(controller.handleSubmissionError).toHaveBeenCalledWith(mockH, mockRequest, mockContext, 'validation-123')
       expect(controller.submitGasApplication).not.toHaveBeenCalled()
       expect(result).toBe('error-view')
     })
 
-    it('should handle validation errors and rethrow them', async () => {
+    it('should handle validation errors', async () => {
       const mockError = new Error('Validation failed')
       const mockRequest = {
         logger: {
@@ -264,22 +269,19 @@ describe('SubmissionPageController', () => {
       validateApplication.mockRejectedValue(mockError)
 
       const handler = controller.makePostRouteHandler()
-      await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow(mockError)
+      await handler(mockRequest, mockContext, mockH)
 
-      expect(mockH.redirect).not.toHaveBeenCalled()
-      expect(mockCacheService.setState).not.toHaveBeenCalled()
-      expect(log).toHaveBeenCalledWith(
-        expect.any(Object),
+      expect(mockH.view).toHaveBeenCalledWith(
+        'submission-error',
         expect.objectContaining({
-          grantType: code,
-          userCrn: 'crn123',
-          userSbi: '123456789',
-          error: 'Validation failed'
+          backLink: null,
+          heading: 'Sorry, there was a problem submitting the application',
+          refNumber: 'REF123'
         })
       )
     })
 
-    it('should handle submission errors and rethrow them', async () => {
+    it('should handle submission errors', async () => {
       const mockError = new Error('Submission failed')
       const mockRequest = {
         logger: {
@@ -314,10 +316,16 @@ describe('SubmissionPageController', () => {
       vi.spyOn(controller, 'submitGasApplication').mockRejectedValue(mockError)
 
       const handler = controller.makePostRouteHandler()
-      await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow(mockError)
+      await handler(mockRequest, mockContext, mockH)
 
-      expect(mockH.redirect).not.toHaveBeenCalled()
-      expect(mockCacheService.setState).not.toHaveBeenCalled()
+      expect(mockH.view).toHaveBeenCalledWith(
+        'submission-error',
+        expect.objectContaining({
+          backLink: null,
+          heading: 'Sorry, there was a problem submitting the application',
+          refNumber: 'REF123'
+        })
+      )
     })
 
     it('should use empty object for landParcels if not present in state', async () => {
@@ -361,7 +369,7 @@ describe('SubmissionPageController', () => {
       })
     })
 
-    it('should handle missing auth credentials when error occurs', async () => {
+    it('should handle validation error gracefully', async () => {
       const mockError = new Error('Validation failed')
       const mockRequest = {
         logger: {
@@ -383,15 +391,13 @@ describe('SubmissionPageController', () => {
       validateApplication.mockRejectedValue(mockError)
 
       const handler = controller.makePostRouteHandler()
-      await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow(mockError)
+      await handler(mockRequest, mockContext, mockH)
 
       expect(log).toHaveBeenCalledWith(
-        expect.any(Object),
+        LogCodes.SYSTEM.EXTERNAL_API_ERROR,
         expect.objectContaining({
-          grantType: code,
-          userCrn: undefined,
-          userSbi: undefined,
-          error: 'Validation failed'
+          endpoint: 'Land grants submission',
+          error: 'submitting application for sbi: undefined and crn: undefined - Validation failed'
         })
       )
     })
@@ -415,7 +421,9 @@ describe('SubmissionPageController', () => {
         state: {},
         referenceNumber: 'REF123'
       }
-      const mockH = {}
+      const mockH = {
+        view: vi.fn().mockReturnValue('error-view')
+      }
       const mockValidationResult = { id: 'validation-123', valid: true }
       const mockSubmitResult = { success: true }
 
@@ -424,7 +432,16 @@ describe('SubmissionPageController', () => {
       vi.spyOn(controller, 'handleSuccessfulSubmission').mockRejectedValue(mockError)
 
       const handler = controller.makePostRouteHandler()
-      await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow(mockError)
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'submission-error',
+        expect.objectContaining({
+          backLink: null,
+          heading: 'Sorry, there was a problem submitting the application',
+          refNumber: 'REF123'
+        })
+      )
     })
   })
 })

@@ -4,6 +4,7 @@ import { landActionWithCode } from '~/src/server/land-grants/utils/land-action-w
 import { sbiStore } from '~/src/server/sbi/state.js'
 import { actionGroups, calculateGrantPayment } from '../services/land-grants.service.js'
 import { stringifyParcel } from '../utils/format-parcel.js'
+import { log, LogCodes } from '../../common/helpers/logging/log.js'
 
 const createLinks = (data) => {
   const parcelParam = stringifyParcel({
@@ -166,7 +167,8 @@ export default class LandActionsCheckPageController extends QuestionPageControll
 
     if (action === 'validate' && !addMoreActions) {
       return {
-        errorMessage: 'Please select if you want to add more actions'
+        href: '#addMoreActions',
+        text: 'Please select if you want to add more actions'
       }
     }
 
@@ -187,10 +189,10 @@ export default class LandActionsCheckPageController extends QuestionPageControll
    * @param {object} h - Response toolkit
    * @param {AnyFormRequest} request - Request object
    * @param {FormContext} context - Form context
-   * @param {string} errorMessage - Error message to display
+   * @param {{text: string; href?: string}[]} errorMessages - Error Summary
    * @returns {object} - Error view response
    */
-  renderPostErrorView(h, request, context, errorMessage) {
+  renderErrorView(h, request, context, errorMessages) {
     const { state } = context
     const annualTotalPence = state.payment ? state.payment['annualTotalPence'] : undefined
 
@@ -200,7 +202,7 @@ export default class LandActionsCheckPageController extends QuestionPageControll
       parcelItems: this.parcelItems,
       additionalYearlyPayments: this.additionalYearlyPayments,
       totalYearlyPayment: this.getPrice(annualTotalPence || 0),
-      errorMessage
+      errorMessages
     })
   }
 
@@ -227,7 +229,6 @@ export default class LandActionsCheckPageController extends QuestionPageControll
    * @returns {object} - Complete view model
    */
   buildGetViewModel(request, context, payment) {
-    const { collection } = this
     const { state } = context
 
     return {
@@ -235,8 +236,7 @@ export default class LandActionsCheckPageController extends QuestionPageControll
       ...state,
       parcelItems: this.parcelItems,
       additionalYearlyPayments: this.additionalYearlyPayments,
-      totalYearlyPayment: this.getPrice(payment?.annualTotalPence || 0),
-      errors: collection.getErrors(collection.getErrors())
+      totalYearlyPayment: this.getPrice(payment?.annualTotalPence || 0)
     }
   }
 
@@ -247,14 +247,28 @@ export default class LandActionsCheckPageController extends QuestionPageControll
     return async (request, context, h) => {
       const { viewName } = this
       const { state } = context
+      let payment = {}
 
-      // Update state with payment information
-      const payment = await this.processPaymentCalculation(state)
-      await this.setState(request, {
-        ...state,
-        payment,
-        draftApplicationAnnualTotalPence: payment?.annualTotalPence
-      })
+      // Fetch payment information and update current state
+      try {
+        payment = await this.processPaymentCalculation(state)
+        await this.setState(request, {
+          ...state,
+          payment,
+          draftApplicationAnnualTotalPence: payment?.annualTotalPence
+        })
+      } catch (error) {
+        const sbi = request.auth?.credentials?.sbi
+        log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
+          endpoint: `Land grants API`,
+          error: `error fetching payment data for sbi ${sbi} - ${error.message}`
+        })
+        return this.renderErrorView(h, request, context, [
+          {
+            text: 'Unable to get payment information, please try again later or contact the Rural Payments Agency.'
+          }
+        ])
+      }
 
       const viewModel = this.buildGetViewModel(request, context, payment)
       return h.view(viewName, viewModel)
@@ -277,7 +291,7 @@ export default class LandActionsCheckPageController extends QuestionPageControll
 
       const validationError = this.validatePostPayload(payload)
       if (validationError) {
-        return this.renderPostErrorView(h, request, context, validationError.errorMessage)
+        return this.renderErrorView(h, request, context, [validationError])
       }
 
       const { addMoreActions } = payload

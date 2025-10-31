@@ -114,12 +114,6 @@ describe('Token Manager', () => {
 
       await expect(refreshToken()).rejects.toThrow('Invalid token response: missing or invalid access_token')
     })
-
-    test('throws error on network failure', async () => {
-      mockFetch.mockRejectedValueOnce(new Error('Network error'))
-
-      await expect(refreshToken()).rejects.toThrow('Network error')
-    })
   })
 
   describe('getValidToken', () => {

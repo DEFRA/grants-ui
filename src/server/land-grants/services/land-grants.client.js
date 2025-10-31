@@ -1,4 +1,8 @@
 import { createApiHeadersForLandGrantsBackend } from '~/src/server/common/helpers/state/backend-auth-helper.js'
+import { retry } from '~/src/server/common/helpers/retry.js'
+import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
+
+const logger = createLogger()
 
 /**
  * Performs a POST request to the Land Grants API.
@@ -9,22 +13,32 @@ import { createApiHeadersForLandGrantsBackend } from '~/src/server/common/helper
  * @throws {Error}
  */
 export async function postToLandGrantsApi(endpoint, body, baseUrl) {
-  const response = await fetch(`${baseUrl}${endpoint}`, {
-    method: 'POST',
-    headers: createApiHeadersForLandGrantsBackend(),
-    body: JSON.stringify(body)
-  })
+  const apiOperation = async () => {
+    const response = await fetch(`${baseUrl}${endpoint}`, {
+      method: 'POST',
+      headers: createApiHeadersForLandGrantsBackend(),
+      body: JSON.stringify(body)
+    })
 
-  if (!response.ok) {
-    /**
-     * @type {Error & {code?: number}}
-     */
-    const error = new Error(response.statusText)
-    error.code = response.status
-    throw error
+    if (!response.ok) {
+      /**
+       * @type {Error & {code?: number, status?: number}}
+       */
+      const error = new Error(response.statusText)
+      error.code = response.status
+      error.status = response.status
+      throw error
+    }
+
+    return response.json()
   }
 
-  return response.json()
+  return retry(apiOperation, {
+    timeout: 30000,
+    onRetry: (error, attempt) => {
+      logger.warn(`Land Grants API retry attempt ${attempt} for ${endpoint}, error: ${error.message}`)
+    }
+  })
 }
 
 /**
