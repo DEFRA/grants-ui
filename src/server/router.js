@@ -35,7 +35,7 @@ export const router = {
       await server.register([auth])
 
       // Application specific routes, add your own routes here
-      await server.register([home, agreements, configConfirmation])
+      await server.register([home, agreements, configConfirmation]) // TODO BS replicate in fg-cw-frontend register agreements plugin in cases module
 
       // Development tools (only available in development mode)
       if (
