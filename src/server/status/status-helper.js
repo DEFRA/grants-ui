@@ -31,12 +31,11 @@ import { log, LogCodes } from '../common/helpers/logging/log.js'
  */
 function mapStatusToUrl(fromGrantsStatus, gasStatus, redirectRules = []) {
   const match = redirectRules.find((rule) => {
-    const fromStatuses = (rule.fromGrantsStatus || 'default').split(',').map((s) => s.trim())
-    const gasStatuses = (rule.gasStatus || 'default').split(',').map((s) => s.trim())
+    const fromStatuses = new Set((rule.fromGrantsStatus || 'default').split(',').map((s) => s.trim()))
+    const gasStatuses = new Set((rule.gasStatus || 'default').split(',').map((s) => s.trim()))
 
-    const fromMatch = fromStatuses.includes(fromGrantsStatus) || fromStatuses.includes('default')
-
-    const gasMatch = gasStatuses.includes(gasStatus) || gasStatuses.includes('default')
+    const fromMatch = fromStatuses.has(fromGrantsStatus) || fromStatuses.has('default')
+    const gasMatch = gasStatuses.has(gasStatus) || gasStatuses.has('default')
 
     return fromMatch && gasMatch
   })
