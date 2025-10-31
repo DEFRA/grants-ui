@@ -154,6 +154,51 @@ function preSubmissionRedirect(request, h, context) {
   return h.continue
 }
 
+function shouldHandlePreSubmission(previousStatus) {
+  return (
+    !previousStatus || previousStatus === ApplicationStatus.CLEARED || previousStatus === ApplicationStatus.REOPENED
+  )
+}
+
+function buildRedirectUrl(grantId, path) {
+  return path.startsWith('/') ? `/${grantId}${path}` : `/${grantId}/${path}`
+}
+
+async function handlePostSubmission(request, h, context, previousStatus, grantCode, grantRedirectRules) {
+  const grantId = request.params?.slug
+  const response = await getApplicationStatus(grantCode, context.referenceNumber)
+  const { status: gasStatus } = await response.json()
+
+  const postSubmissionRules = grantRedirectRules?.postSubmission ?? []
+  const rule = mapStatusToUrl(previousStatus, gasStatus, postSubmissionRules)
+
+  await persistStatus(request, rule.toGrantsStatus, previousStatus, grantId)
+
+  if (shouldContinueDefault(gasStatus, rule.toGrantsStatus, previousStatus)) {
+    return h.continue
+  }
+
+  const redirectUrl = buildRedirectUrl(grantId, rule.toPath)
+  return request.path === redirectUrl ? h.continue : h.redirect(redirectUrl).takeover()
+}
+
+function handlePostSubmissionError(err, request, h, context, grantId, grantCode, grantRedirectRules) {
+  if (err.status === statusCodes.notFound) {
+    return h.continue
+  }
+
+  log(LogCodes.SUBMISSION.SUBMISSION_REDIRECT_FAILURE, {
+    grantType: grantCode,
+    referenceNumber: context.referenceNumber,
+    error: err.message
+  })
+
+  const fallbackRule = mapStatusToUrl('default', 'default', grantRedirectRules?.postSubmission ?? [])
+  const fallbackUrl = buildRedirectUrl(grantId, fallbackRule.toPath)
+
+  return request.path === fallbackUrl ? h.continue : h.redirect(fallbackUrl).takeover()
+}
+
 // higher-order callback that wraps the existing one
 export const formsStatusCallback = async (request, h, context) => {
   const grantId = request.params?.slug
@@ -167,11 +212,7 @@ export const formsStatusCallback = async (request, h, context) => {
   const previousStatus = context.state.applicationStatus
   const grantRedirectRules = request.app.model?.def?.metadata?.grantRedirectRules
 
-  if (
-    !previousStatus ||
-    previousStatus === ApplicationStatus.CLEARED ||
-    previousStatus === ApplicationStatus.REOPENED
-  ) {
+  if (shouldHandlePreSubmission(previousStatus)) {
     return preSubmissionRedirect(request, h, context)
   }
 
@@ -180,47 +221,8 @@ export const formsStatusCallback = async (request, h, context) => {
   }
 
   try {
-    const response = await getApplicationStatus(grantCode, context.referenceNumber)
-    const { status: gasStatus } = await response.json()
-
-    const postSubmissionRules = grantRedirectRules?.postSubmission ?? []
-    const rule = mapStatusToUrl(previousStatus, gasStatus, postSubmissionRules)
-
-    await persistStatus(request, rule.toGrantsStatus, previousStatus, grantId)
-
-    if (shouldContinueDefault(gasStatus, rule.toGrantsStatus, previousStatus)) {
-      return h.continue
-    }
-
-    // Prefix with grant slug if relative
-    const redirectUrl = rule.toPath.startsWith('/') ? `/${grantId}${rule.toPath}` : `/${grantId}/${rule.toPath}`
-
-    return request.path === redirectUrl ? h.continue : h.redirect(redirectUrl).takeover()
+    return await handlePostSubmission(request, h, context, previousStatus, grantCode, grantRedirectRules)
   } catch (err) {
-    if (err.status === statusCodes.notFound) {
-      // no submission yet — allow flow-through
-      return h.continue
-    }
-
-    // unexpected error — log and fallback
-    log(LogCodes.SUBMISSION.SUBMISSION_REDIRECT_FAILURE, {
-      grantType: grantCode,
-      referenceNumber: context.referenceNumber,
-      error: err.message
-    })
-
-    const fallbackRule = mapStatusToUrl(
-      'default',
-      'default',
-      request.app.model?.def?.metadata?.grantRedirectRules?.postSubmission ?? []
-    )
-    const fallbackUrl = fallbackRule.toPath.startsWith('/')
-      ? `/${grantId}${fallbackRule.toPath}`
-      : `/${grantId}/${fallbackRule.toPath}`
-
-    if (request.path === fallbackUrl) {
-      return h.continue
-    }
-    return h.redirect(fallbackUrl).takeover()
+    return handlePostSubmissionError(err, request, h, context, grantId, grantCode, grantRedirectRules)
   }
 }
