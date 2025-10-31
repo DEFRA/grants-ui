@@ -13,20 +13,21 @@ export default class LandGrantsQuestionWithAuthCheckController extends QuestionP
   }
 
   performAuthCheck = async (request, h) => {
-    let landParcels = []
     try {
-      landParcels = (await fetchParcels(request)) || []
+      const landParcels = (await fetchParcels(request)) || []
+      this.landParcelsForSbi = landParcels.map((parcel) => stringifyParcel(parcel))
+
+      if (!this.landParcelBelongsToSbi()) {
+        return this.renderUnauthorisedView(h)
+      }
     } catch (error) {
       log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
         endpoint: `Land grants API`,
         error: `fetch parcel data for auth check: ${error.message}`
       })
-    }
-    this.landParcelsForSbi = landParcels.map((parcel) => stringifyParcel(parcel))
-
-    if (!this.landParcelBelongsToSbi()) {
       return this.renderUnauthorisedView(h)
     }
+
     return null
   }
 
