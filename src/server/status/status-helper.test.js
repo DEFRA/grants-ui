@@ -130,6 +130,45 @@ describe('formsStatusCallback', () => {
     }
   })
 
+  it('uses default when redirect rule has no fromGrantsStatus or gasStatus', async () => {
+    request.app.model.def.metadata.grantRedirectRules.postSubmission = [
+      { toGrantsStatus: 'SUBMITTED', toPath: '/confirmation' }
+    ]
+
+    getApplicationStatus.mockResolvedValue({
+      json: async () => ({ status: 'RECEIVED' })
+    })
+
+    const result = await formsStatusCallback(request, h, context)
+
+    expect(h.redirect).toHaveBeenCalledWith('/grant-a/confirmation')
+    expect(result).toEqual(expect.any(Symbol))
+  })
+
+  it('throws when no redirect rule matches the combination', async () => {
+    request.app.model.def.metadata.grantRedirectRules.postSubmission = [
+      { fromGrantsStatus: 'SUBMITTED', gasStatus: 'KNOWN_STATUS', toPath: '/known' }
+    ]
+
+    getApplicationStatus.mockResolvedValue({
+      json: async () => ({ status: 'UNEXPECTED_STATUS' })
+    })
+
+    await expect(formsStatusCallback(request, h, context)).rejects.toThrow(/No redirect rule found/)
+  })
+
+  it('returns false when slug is missing', async () => {
+    request.params.slug = undefined
+    const result = await formsStatusCallback(request, h, context)
+    expect(result).toBe(h.continue)
+  })
+
+  it('returns false when startPath missing in context', async () => {
+    const badContext = { referenceNumber: 'REF-005', state: { someField: 'val' } }
+    const result = await formsStatusCallback(request, h, badContext)
+    expect(result).toBe(h.continue)
+  })
+
   it('continues when no slug is present', async () => {
     request.params = {}
     const result = await formsStatusCallback(request, h, context)
