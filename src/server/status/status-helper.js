@@ -4,6 +4,7 @@ import { getFormsCacheService } from '../common/helpers/forms-cache/forms-cache.
 import { updateApplicationStatus } from '../common/helpers/status/update-application-status-helper.js'
 import { getApplicationStatus } from '../common/services/grant-application/grant-application.service.js'
 import { log, LogCodes } from '../common/helpers/logging/log.js'
+import agreements from '~/src/config/agreements.js'
 
 /**
  * @typedef {Object} RedirectRule
@@ -208,7 +209,7 @@ async function handlePostSubmission(request, h, context, previousStatus, grantCo
     return h.continue
   }
 
-  const redirectUrl = buildRedirectUrl(grantId, rule.toPath)
+  const redirectUrl = rule.toPath === agreements.get('baseUrl') ? rule.toPath : buildRedirectUrl(grantId, rule.toPath)
   return request.path === redirectUrl ? h.continue : h.redirect(redirectUrl).takeover()
 }
 

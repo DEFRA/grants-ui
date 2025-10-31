@@ -420,7 +420,7 @@ describe('formsStatusCallback', () => {
 
         const result = await formsStatusCallback(request, h, context)
 
-        expect(h.redirect).toHaveBeenCalledWith('/grant-a/agreement')
+        expect(h.redirect).toHaveBeenCalledWith('/agreement')
         expect(result).toEqual(expect.any(Symbol))
       }
     )
@@ -437,7 +437,7 @@ describe('formsStatusCallback', () => {
     })
 
     it('continues when farm-payments request path is already /agreement', async () => {
-      request.path = '/' + request.params.slug + '/agreement'
+      request.path = '/agreement'
       getApplicationStatus.mockResolvedValue({
         json: async () => ({ status: 'OFFER_SENT' })
       })
