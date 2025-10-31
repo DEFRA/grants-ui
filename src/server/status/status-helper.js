@@ -4,8 +4,6 @@ import { getFormsCacheService } from '../common/helpers/forms-cache/forms-cache.
 import { updateApplicationStatus } from '../common/helpers/status/update-application-status-helper.js'
 import { getApplicationStatus } from '../common/services/grant-application/grant-application.service.js'
 import { log, LogCodes } from '../common/helpers/logging/log.js'
-import agreements from '../../config/agreements.js'
-import { shouldRedirectToAgreements } from '../common/helpers/agreements-redirect-helper.js'
 
 /**
  * @typedef {Object} RedirectRule
@@ -33,12 +31,12 @@ import { shouldRedirectToAgreements } from '../common/helpers/agreements-redirec
  */
 function mapStatusToUrl(fromGrantsStatus, gasStatus, redirectRules = []) {
   const match = redirectRules.find((rule) => {
-    const fromMatch =
-      (rule.fromGrantsStatus || 'default')
-        .split(',') // support multiple comma-separated
-        .includes(fromGrantsStatus) || rule.fromGrantsStatus === 'default'
+    const fromStatuses = (rule.fromGrantsStatus || 'default').split(',').map((s) => s.trim())
+    const gasStatuses = (rule.gasStatus || 'default').split(',').map((s) => s.trim())
 
-    const gasMatch = rule.gasStatus === gasStatus || rule.gasStatus === 'default'
+    const fromMatch = fromStatuses.includes(fromGrantsStatus) || fromStatuses.includes('default')
+
+    const gasMatch = gasStatuses.includes(gasStatus) || gasStatuses.includes('default')
 
     return fromMatch && gasMatch
   })
@@ -143,12 +141,15 @@ function isTasklistPage(request) {
  * @returns {Symbol} - Symbol.for('continue') if no redirect is required, otherwise Symbol.for('redirect')
  */
 function preSubmissionRedirect(request, h, context) {
-  // TODO refactor to use config driven approach in TGC-903
-  const isFarmPayments = request.params?.slug === 'farm-payments'
-  const redirectUrl = isFarmPayments ? 'check-selected-land-actions' : 'summary'
+  const grantId = request.params?.slug
+  const grantRedirectRules = request.app.model?.def?.metadata?.grantRedirectRules
+  const preSubmissionRedirectRule = grantRedirectRules.preSubmission[0]
+  const preSubmissionRedirectUrl = preSubmissionRedirectRule.toPath.startsWith('/')
+    ? `/${grantId}${preSubmissionRedirectRule.toPath}`
+    : `/${grantId}/${preSubmissionRedirectRule.toPath}`
 
   if (hasMeaningfulState(context.state) && isFormsStartPage(request, context) && !isTasklistPage(request)) {
-    return h.redirect(redirectUrl).takeover()
+    return h.redirect(preSubmissionRedirectUrl).takeover()
   }
   return h.continue
 }
@@ -172,6 +173,10 @@ export const formsStatusCallback = async (request, h, context) => {
     previousStatus === ApplicationStatus.REOPENED
   ) {
     return preSubmissionRedirect(request, h, context)
+  }
+
+  if (previousStatus !== 'SUBMITTED') {
+    return h.continue
   }
 
   try {

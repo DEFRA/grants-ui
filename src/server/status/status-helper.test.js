@@ -66,6 +66,15 @@ describe('formsStatusCallback', () => {
                     toPath: '/summary'
                   },
 
+                  // Offer sent, withdrawn, accepted -> agreements service
+
+                  {
+                    fromGrantsStatus: 'SUBMITTED',
+                    gasStatus: 'OFFER_SENT,OFFER_WITHDRAWN,OFFER_ACCEPTED',
+                    toGrantsStatus: 'SUBMITTED',
+                    toPath: '/agreement'
+                  },
+
                   // Reopened
                   {
                     fromGrantsStatus: 'REOPENED',
@@ -125,6 +134,57 @@ describe('formsStatusCallback', () => {
     request.params = {}
     const result = await formsStatusCallback(request, h, context)
     expect(result).toBe(h.continue)
+  })
+
+  it.each([
+    { description: 'no previous status', state: { someFiled: 'someValue' } },
+    {
+      description: 'previous status is CLEARED',
+      state: { applicationStatus: ApplicationStatus.CLEARED, someFiled: 'someValue' }
+    },
+    {
+      description: 'previous status is REOPENED',
+      state: { applicationStatus: ApplicationStatus.REOPENED, someFiled: 'someValue' }
+    }
+  ])(
+    'redirects to preSubmission path if $description and has meaningful state and is requesting forms startPage while not being a task list page',
+    async ({ state }) => {
+      const preSubmissionContext = {
+        referenceNumber: 'REF-002',
+        state,
+        paths: ['/start']
+      }
+
+      const result = await formsStatusCallback(request, h, preSubmissionContext)
+
+      expect(h.redirect).toHaveBeenCalledWith('/grant-a/check-selected-land-actions')
+      expect(result).toEqual(expect.any(Symbol))
+    }
+  )
+
+  it('continues when state has no meaningful keys', async () => {
+    const noMeaningfulContext = {
+      referenceNumber: 'REF-003',
+      state: { $$__referenceNumber: 'REF-003', applicationStatus: 'CLEARED' },
+      paths: ['/start']
+    }
+
+    const result = await formsStatusCallback(request, h, noMeaningfulContext)
+    expect(result).toBe(h.continue)
+    expect(h.redirect).not.toHaveBeenCalled()
+  })
+
+  it('continues when tasklist page is detected', async () => {
+    request.app.model.def.metadata.tasklistId = 'tasklist-1'
+    const preSubmissionContext = {
+      referenceNumber: 'REF-004',
+      state: { someField: 'someValue' },
+      paths: ['/start']
+    }
+
+    const result = await formsStatusCallback(request, h, preSubmissionContext)
+    expect(result).toBe(h.continue)
+    expect(h.redirect).not.toHaveBeenCalled()
   })
 
   it('continues when previousStatus is SUBMITTED and no redirect needed', async () => {
@@ -293,17 +353,6 @@ describe('formsStatusCallback', () => {
     expect(h.redirect).not.toHaveBeenCalled()
   })
 
-  it('updates status to SUBMITTED and redirects when GAS status is OFFER_SENT', async () => {
-    getApplicationStatus.mockResolvedValue({
-      json: async () => ({ status: 'OFFER_SENT' })
-    })
-
-    const result = await formsStatusCallback(request, h, context)
-
-    expect(h.redirect).toHaveBeenCalledWith('/grant-a/confirmation')
-    expect(result).toEqual(expect.any(Symbol))
-  })
-
   it('uses default redirect when GAS status is unknown', async () => {
     getApplicationStatus.mockResolvedValue({
       json: async () => ({ status: 'SOMETHING_NEW' })
@@ -315,11 +364,6 @@ describe('formsStatusCallback', () => {
   })
 
   describe('farm-payments agreements service redirect', () => {
-    beforeEach(() => {
-      request.params.slug = 'farm-payments'
-      request.path = '/farm-payments/start'
-    })
-
     it.each(['OFFER_SENT', 'OFFER_WITHDRAWN', 'OFFER_ACCEPTED'])(
       'redirects farm-payments to /agreement when GAS status is %s',
       async (gasStatus) => {
@@ -329,7 +373,7 @@ describe('formsStatusCallback', () => {
 
         const result = await formsStatusCallback(request, h, context)
 
-        expect(h.redirect).toHaveBeenCalledWith('/agreement')
+        expect(h.redirect).toHaveBeenCalledWith('/grant-a/agreement')
         expect(result).toEqual(expect.any(Symbol))
       }
     )
@@ -341,12 +385,12 @@ describe('formsStatusCallback', () => {
 
       const result = await formsStatusCallback(request, h, context)
 
-      expect(h.redirect).toHaveBeenCalledWith('/farm-payments/confirmation')
+      expect(h.redirect).toHaveBeenCalledWith('/grant-a/confirmation')
       expect(result).toEqual(expect.any(Symbol))
     })
 
     it('continues when farm-payments request path is already /agreement', async () => {
-      request.path = '/agreement'
+      request.path = '/' + request.params.slug + '/agreement'
       getApplicationStatus.mockResolvedValue({
         json: async () => ({ status: 'OFFER_SENT' })
       })
@@ -355,23 +399,5 @@ describe('formsStatusCallback', () => {
       expect(result).toBe(h.continue)
       expect(h.redirect).not.toHaveBeenCalled()
     })
-  })
-
-  describe('non-farm-payments forms with offer statuses', () => {
-    it.each(['OFFER_SENT', 'OFFER_WITHDRAWN', 'OFFER_ACCEPTED'])(
-      'redirects non-farm-payments forms to /{slug}/confirmation when GAS status is %s',
-      async (gasStatus) => {
-        request.params.slug = 'other-grant'
-        request.path = '/other-grant/start'
-        getApplicationStatus.mockResolvedValue({
-          json: async () => ({ status: gasStatus })
-        })
-
-        const result = await formsStatusCallback(request, h, context)
-
-        expect(h.redirect).toHaveBeenCalledWith('/other-grant/confirmation')
-        expect(result).toEqual(expect.any(Symbol))
-      }
-    )
   })
 })

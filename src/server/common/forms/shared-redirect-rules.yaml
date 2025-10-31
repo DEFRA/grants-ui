@@ -17,6 +17,12 @@ sharedRedirectRules:
       toGrantsStatus: REOPENED
       toPath: /summary
 
+    # Offer sent, withdrawn, accepted -> agreements service
+    - fromGrantsStatus: 'SUBMITTED'
+      gasStatus: 'OFFER_SENT,OFFER_WITHDRAWN,OFFER_ACCEPTED'
+      toGrantsStatus: 'SUBMITTED'
+      toPath: __AGREEMENTS_BASE_URL__
+
     # Reopened
     - fromGrantsStatus: REOPENED
       gasStatus: default

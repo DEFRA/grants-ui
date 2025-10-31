@@ -7,6 +7,7 @@ import fs, { readFile } from 'node:fs/promises'
 import { parse as parseYaml } from 'yaml'
 import { notFound } from '@hapi/boom'
 import Joi from 'joi'
+import agreements from '~/src/config/agreements.js'
 
 // Simple in-memory cache of discovered forms metadata
 let formsCache = []
@@ -15,8 +16,16 @@ async function loadSharedRedirectRules() {
   const filePath = path.resolve(process.cwd(), 'src/server/common/forms/shared-redirect-rules.yaml')
   const raw = await readFile(filePath, 'utf8')
   const parsed = parseYaml(raw)
+  const rules = parsed.sharedRedirectRules ?? {}
 
-  return parsed.sharedRedirectRules
+  if (rules.postSubmission) {
+    rules.postSubmission = rules.postSubmission.map((rule) => ({
+      ...rule,
+      toPath: rule.toPath === '__AGREEMENTS_BASE_URL__' ? agreements.get('baseUrl') : rule.toPath
+    }))
+  }
+
+  return rules
 }
 
 export function getFormsCache() {
