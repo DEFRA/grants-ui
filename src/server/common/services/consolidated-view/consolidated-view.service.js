@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { config } from '~/src/config/config.js'
 import { getValidToken } from '~/src/server/common/helpers/entra/token-manager.js'
 import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
+import { retry } from '~/src/server/common/helpers/retry.js'
 
 const logger = createLogger()
 
@@ -28,8 +29,8 @@ const logger = createLogger()
  */
 
 class ConsolidatedViewApiError extends Error {
-  constructor(message, statusCode, responseBody, sbi, cause = null) {
-    super(message, cause ? { cause } : undefined)
+  constructor(message, statusCode, responseBody, sbi) {
+    super(message)
     this.name = 'ConsolidatedViewApiError'
     this.status = statusCode
     this.responseBody = responseBody
@@ -101,19 +102,29 @@ async function fetchMockDataForBusiness(sbi) {
 async function makeConsolidatedViewRequest(request, query) {
   const sbi = request.auth.credentials.sbi
   const CV_API_ENDPOINT = config.get('consolidatedView.apiEndpoint')
-  const response = await fetch(CV_API_ENDPOINT, await getConsolidatedViewRequestOptions(request, { query }))
 
-  if (!response.ok) {
-    const errorText = await response.text()
-    throw new ConsolidatedViewApiError(
-      `Failed to fetch business data: ${response.status} ${response.statusText}`,
-      response.status,
-      errorText,
-      sbi
-    )
+  const fetchOperation = async () => {
+    const response = await fetch(CV_API_ENDPOINT, await getConsolidatedViewRequestOptions(request, { query }))
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new ConsolidatedViewApiError(
+        `Failed to fetch business data: ${response.status} ${response.statusText}`,
+        response.status,
+        errorText,
+        sbi
+      )
+    }
+
+    return response.json()
   }
 
-  return response.json()
+  return retry(fetchOperation, {
+    timeout: 30000,
+    onRetry: (error, attempt) => {
+      logger.warn(`Consolidated View API retry attempt ${attempt}, error: ${error.message}`)
+    }
+  })
 }
 
 /**
@@ -139,15 +150,11 @@ async function fetchFromConsolidatedView(request, { query, formatResponse }) {
     return formatResponse(responseJson)
   } catch (error) {
     logger.error({ err: error }, 'Unexpected error fetching business data from Consolidated View API')
-    if (error instanceof ConsolidatedViewApiError) {
-      throw error
-    }
     throw new ConsolidatedViewApiError(
       'Failed to fetch business data: ' + error.message,
       error.status,
       error.message,
-      sbi,
-      error
+      sbi
     )
   }
 }

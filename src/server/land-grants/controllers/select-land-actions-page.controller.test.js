@@ -365,65 +365,26 @@ describe('SelectLandActionsPageController', () => {
     })
   })
 
-  describe('loadAvailableActions', () => {
-    test('should load actions successfully', async () => {
-      const result = await controller.loadAvailableActions('sheet1', 'parcel1', mockRequest.logger)
-
-      expect(fetchAvailableActionsForParcel).toHaveBeenCalledWith({
-        parcelId: 'parcel1',
-        sheetId: 'sheet1'
-      })
-      expect(result).toEqual({ success: true, hasActions: true })
-      expect(controller.groupedActions).toEqual(mockGroupedActions)
-    })
-
-    test('should handle empty actions response', async () => {
-      fetchAvailableActionsForParcel.mockResolvedValue([])
-
-      const result = await controller.loadAvailableActions('sheet1', 'parcel1', mockRequest.logger)
-
-      expect(result).toEqual({ success: true, hasActions: false })
-      expect(mockRequest.logger.error).toHaveBeenCalledWith({
-        message: 'No actions found for parcel sheet1-parcel1',
-        selectedLandParcel: 'sheet1-parcel1'
-      })
-    })
-
-    test('should handle fetch errors', async () => {
-      const error = new Error('API Error')
-      fetchAvailableActionsForParcel.mockRejectedValue(error)
-
-      const result = await controller.loadAvailableActions('sheet1', 'parcel1', mockRequest.logger)
-
-      expect(result).toEqual({ success: false, error })
-      expect(controller.groupedActions).toEqual([])
-      expect(mockRequest.logger.error).toHaveBeenCalledWith(
-        error,
-        'Failed to fetch land parcel data for id sheet1-parcel1'
-      )
-    })
-  })
-
   describe('renderErrorMessage', () => {
     test('should render error view with validation errors', () => {
-      const errorSummary = [{ text: 'Error message', href: '#field' }]
+      const errors = [{ text: 'Error message', href: '#field' }]
 
-      controller.renderErrorMessage(mockH, mockRequest, mockContext, errorSummary)
+      controller.renderErrorMessage(mockH, mockRequest, mockContext, errors)
 
       expect(mockH.view).toHaveBeenCalledWith(
         'select-actions-for-land-parcel',
         expect.objectContaining({
           parcelName: 'sheet1 parcel1',
-          errorSummary
+          errors
         })
       )
     })
 
     test('should include additional state when provided', () => {
-      const errorSummary = [{ text: 'Error', href: '#field' }]
+      const errors = [{ text: 'Error', href: '#field' }]
       const additionalState = { customProp: 'value' }
 
-      controller.renderErrorMessage(mockH, mockRequest, mockContext, errorSummary, additionalState)
+      controller.renderErrorMessage(mockH, mockRequest, mockContext, errors, additionalState)
 
       expect(mockH.view).toHaveBeenCalledWith(
         'select-actions-for-land-parcel',
@@ -574,7 +535,7 @@ describe('SelectLandActionsPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'select-actions-for-land-parcel',
         expect.objectContaining({
-          errorSummary: [{ text: 'Select an action to do on this land parcel', href: '#landAction_1' }]
+          errors: [{ text: 'Select an action to do on this land parcel', href: '#landAction_1' }]
         })
       )
     })
@@ -621,7 +582,7 @@ describe('SelectLandActionsPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'select-actions-for-land-parcel',
         expect.objectContaining({
-          errorSummary: [{ text: 'Invalid area: CMOR1', href: '#landAction_1' }]
+          errors: [{ text: 'Invalid area: CMOR1', href: '#landAction_1' }]
         })
       )
       expect(controller.proceed).not.toHaveBeenCalled()
@@ -646,7 +607,7 @@ describe('SelectLandActionsPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'select-actions-for-land-parcel',
         expect.objectContaining({
-          errorSummary: [expect.objectContaining({ text: 'Failed check: UPL1' })]
+          errors: [expect.objectContaining({ text: 'Failed check: UPL1' })]
         })
       )
     })
@@ -765,7 +726,7 @@ describe('SelectLandActionsPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'select-actions-for-land-parcel',
         expect.objectContaining({
-          errorSummary: [{ text: 'Error for UPL1: UPL1', href: '#landAction_2' }]
+          errors: [{ text: 'Error for UPL1: UPL1', href: '#landAction_2' }]
         })
       )
     })
@@ -816,7 +777,7 @@ describe('SelectLandActionsPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'select-actions-for-land-parcel',
         expect.objectContaining({
-          errorSummary: expect.arrayContaining([
+          errors: expect.arrayContaining([
             expect.objectContaining({ text: 'Error 1: CMOR1', href: '#landAction_1' }),
             expect.objectContaining({ text: 'Error 2: UPL1', href: '#landAction_2' })
           ])
@@ -824,7 +785,7 @@ describe('SelectLandActionsPageController', () => {
       )
     })
 
-    test('should throw createBoomError when validateApplication throws error with status code', async () => {
+    test('should render view with error when validateApplication throws error with status code', async () => {
       const apiError = new Error('Validation API failed')
       apiError.code = 400
 
@@ -836,13 +797,19 @@ describe('SelectLandActionsPageController', () => {
       validateApplication.mockRejectedValue(apiError)
 
       const handler = controller.makePostRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
 
-      await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow('Validation API failed')
-
-      expect(mockRequest.logger.error).toHaveBeenCalledWith({
-        message: 'Validation API failed',
-        selectedLandParcel: 'sheet1-parcel1'
-      })
+      expect(mockH.view).toHaveBeenCalledWith(
+        'select-actions-for-land-parcel',
+        expect.objectContaining({
+          errors: expect.arrayContaining([
+            {
+              href: '',
+              text: 'There has been an issue validating the application, please try again later or contact the Rural Payments Agency.'
+            }
+          ])
+        })
+      )
     })
 
     describe('when the user does not own the land parcel', () => {
