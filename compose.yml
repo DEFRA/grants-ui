@@ -1,5 +1,4 @@
 services:
-
   grants-ui:
     build:
       context: .
@@ -20,18 +19,18 @@ services:
       REDIS_HOST: redis
       USE_SINGLE_INSTANCE_CACHE: true
       SESSION_CACHE_ENGINE: redis
-      REDIS_KEY_PREFIX: "grants-ui:"
+      REDIS_KEY_PREFIX: 'grants-ui:'
       SESSION_CACHE_NAME: session
       REDIS_CONNECT_TIMEOUT: 30000
       REDIS_RETRY_DELAY: 1000
       REDIS_MAX_RETRIES: 10
-      REDIS_USERNAME: ""
-      REDIS_PASSWORD: ""
+      REDIS_USERNAME: ''
+      REDIS_PASSWORD: ''
       LOG_LEVEL: ${LOG_LEVEL:-info}
-      SESSION_COOKIE_PASSWORD: "53409gjhfcdiklgjidfglkgjidfglkelrku634"
+      SESSION_COOKIE_PASSWORD: '53409gjhfcdiklgjidfglkgjidfglkelrku634'
       SESSION_COOKIE_TTL: 2419200000
       SESSION_CACHE_TTL: 14400000
-      FEEDBACK_LINK: "mailto:defraforms@defra.gov.uk"
+      FEEDBACK_LINK: 'mailto:defraforms@defra.gov.uk'
       CV_API_MOCK_ENABLED: ${CV_API_MOCK_ENABLED:-true}
       DEFRA_ID_WELL_KNOWN_URL: ${DEFRA_ID_WELL_KNOWN_URL:-http://fcp-defra-id-stub:3007/idphub/b2c/b2c_1a_cui_cpdev_signupsigninsfi/.well-known/openid-configuration}
       DEFRA_ID_CLIENT_ID: ${DEFRA_ID_CLIENT_ID:-client_id}
@@ -47,6 +46,8 @@ services:
       HOST: 0.0.0.0
       GAS_API_URL: ${GAS_API_URL:-http://mockserver:1080}
       LAND_GRANTS_API_URL: ${LAND_GRANTS_API_URL:-http://mockserver:1080}
+      LAND_GRANTS_API_AUTH_TOKEN: ${LAND_GRANTS_API_AUTH_TOKEN:-auth_token}
+      LAND_GRANTS_API_ENCRYPTION_KEY: ${LAND_GRANTS_API_ENCRYPTION_KEY:-encryption_key}
       EXAMPLE_WHITELIST_CRNS: 1100957269,1100953760
       EXAMPLE_WHITELIST_SBIS: 107593059,108633093
       FARMING_PAYMENTS_WHITELIST_CRNS: 1102838829, 1102760349, 1100495932
@@ -58,7 +59,7 @@ services:
       - grants-ui-net
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "ps aux | grep 'node .' | grep -v grep || exit 1"]
+      test: ['CMD-SHELL', "ps aux | grep 'node .' | grep -v grep || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 6
@@ -81,7 +82,7 @@ services:
       - grants-ui-net
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      test: ['CMD', 'curl', '-f', 'http://localhost:3001/health']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -99,7 +100,7 @@ services:
       - grants-ui-net
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3002/health"]
+      test: ['CMD', 'curl', '-f', 'http://localhost:3002/health']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -119,9 +120,9 @@ services:
     volumes:
       - ./fcp-defra-id-stub/users.json:/data/users.json
     ports:
-      - "3007:3007"
+      - '3007:3007'
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3007/health"]
+      test: ['CMD', 'curl', '-f', 'http://localhost:3007/health']
       interval: 15s
       timeout: 10s
       retries: 5
@@ -146,7 +147,7 @@ services:
       - '6379:6379'
     restart: always
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 10s
       timeout: 5s
       retries: 3
@@ -158,12 +159,12 @@ services:
     networks:
       - grants-ui-net
     ports:
-    - '27017:27017'
+      - '27017:27017'
     volumes:
-    - mongodb-data:/data
+      - mongodb-data:/data
     restart: always
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      test: ['CMD', 'mongosh', '--eval', "db.adminCommand('ping')"]
       interval: 10s
       timeout: 5s
       retries: 3

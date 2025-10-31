@@ -19,6 +19,7 @@ Core delivery platform Node.js Frontend Template.
   - [Inspecting cookies](#inspecting-cookies)
 - [Server-side Caching](#server-side-caching)
 - [Session Rehydration](#session-rehydration)
+- [Land Grants API Authentication](#land-grants-api-authentication)
 - [Redis](#redis)
 - [Proxy](#proxy)
 - [Feature Structure](#feature-structure)
@@ -322,6 +323,50 @@ If session rehydration fails (e.g., backend unavailable, network issues), the ap
 - Log the error for debugging
 - Continue normal operation without restored state
 - Allow the user to proceed with a fresh session
+
+## Land Grants Api Authentication
+
+The application now supports **server-to-server (S2S) authentication** when communicating with the **Land Grants API**.
+
+When any request is made to the Land Grants API (e.g., `/payments/calculate`, `/parcels`), the system automatically includes an encrypted Bearer token in the `Authorization` header. This ensures secure, authenticated communication between services.
+
+### How it works
+
+1. The helper reads the following environment variables:
+   - `LAND_GRANTS_API_AUTH_TOKEN` — static bearer token used for authentication.
+   - `LAND_GRANTS_API_ENCRYPTION_KEY` — symmetric key used to encrypt the token.
+
+2. The token is encrypted using **AES-256-GCM** before transmission.
+
+3. The resulting value is encoded and set as the Bearer token in the `Authorization` header.
+
+4. API clients like `land-grants.client.js` automatically include these headers in every request using:
+
+   ```javascript
+   import { createApiHeadersForLandGrantsBackend } from '~/src/server/common/helpers/state/backend-auth-helper.js'
+
+   const response = await fetch(`${baseUrl}/payments/calculate`, {
+     method: 'POST',
+     headers: createApiHeadersForLandGrantsBackend(),
+     body: JSON.stringify(payload)
+   })
+   ```
+
+### Example Authorization Header
+
+```
+Authorization: Bearer <base64-encoded-encrypted-token>
+Content-Type: application/json
+```
+
+### Environment Variables
+
+| Variable                         | Description                                               |
+| -------------------------------- | --------------------------------------------------------- |
+| `LAND_GRANTS_API_AUTH_TOKEN`     | Bearer token used to authenticate to the Land Grants API. |
+| `LAND_GRANTS_API_ENCRYPTION_KEY` | Key used to encrypt the auth token before transmission.   |
+
+This mechanism provides a secure, environment-driven way to authenticate backend-to-backend requests without exposing plain-text tokens in configuration or logs.
 
 ## Redis
 
