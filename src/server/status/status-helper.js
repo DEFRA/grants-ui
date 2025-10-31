@@ -120,7 +120,7 @@ function shouldContinueDefault(gasStatus, newStatus, previousStatus) {
 function hasMeaningfulState(state) {
   const baseStateKeys = new Set(['$$__referenceNumber', 'applicationStatus', 'applicant'])
 
-  // TODO remove workaround for state clearing bug when SFI-XXX is complete
+  // TODO remove workaround for state clearing bug when SFIR-647 and SFIR-648 are complete
   const farmPaymentsStateKeys = new Set(['selectedLandParcel', 'payment', 'draftApplicationAnnualTotalPence'])
   farmPaymentsStateKeys.forEach((key) => baseStateKeys.add(key))
   if (!Object.keys(state.landParcels || {}).length) {
