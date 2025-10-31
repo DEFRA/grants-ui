@@ -78,16 +78,26 @@ export async function refreshToken() {
   const clientSecret = config.get('entra.clientSecret')
   const scope = `${clientId}/.default`
 
-  const tokenOperation = async () => {
+  try {
     const params = createTokenRequestParams(clientId, scope, clientSecret)
 
-    const response = await fetch(`${tokenEndpoint}/${tenantId}/oauth2/v2.0/token`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: params
-    })
+    const response = await retry(
+      () =>
+        fetch(`${tokenEndpoint}/${tenantId}/oauth2/v2.0/token`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: params
+        }),
+      {
+        timeout: 15000,
+        onRetry: (error, attempt) => {
+          logger.warn(`Token refresh retry attempt ${attempt}, error: ${error.message}`)
+        },
+        checkFetchResponse: true
+      }
+    )
 
     if (!response.ok) {
       const errorText = await response.text()
@@ -110,15 +120,6 @@ export async function refreshToken() {
     }
 
     return tokenState.currentToken ?? ''
-  }
-
-  try {
-    return await retry(tokenOperation, {
-      timeout: 15000,
-      onRetry: (error, attempt) => {
-        logger.warn(`Token refresh retry attempt ${attempt}, error: ${error.message}`)
-      }
-    })
   } catch (error) {
     log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
       endpoint: `Entra token refresh`,
