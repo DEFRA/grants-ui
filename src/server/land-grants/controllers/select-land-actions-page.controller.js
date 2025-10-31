@@ -159,7 +159,7 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
 
       const existingLandParcels = Object.keys(state.landParcels || {}).length > 0
 
-      const authResult = await this.performAuthCheck(request, h)
+      const authResult = await this.performAuthCheck(request, h, this.selectedLandParcel)
       if (authResult) {
         return authResult
       }
@@ -218,7 +218,7 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
         return this.renderErrorMessage(h, request, context, errors, prevState)
       }
 
-      const authResult = await this.performAuthCheck(request, h)
+      const authResult = await this.performAuthCheck(request, h, this.selectedLandParcel)
       if (authResult) {
         return authResult
       }

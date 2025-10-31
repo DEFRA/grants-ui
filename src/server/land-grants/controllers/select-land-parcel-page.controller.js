@@ -52,7 +52,7 @@ export default class SelectLandParcelPageController extends LandGrantsQuestionWi
         })
       }
 
-      const authResult = await this.performAuthCheck(request, h)
+      const authResult = await this.performAuthCheck(request, h, selectedLandParcel)
       if (authResult) {
         return authResult
       }
