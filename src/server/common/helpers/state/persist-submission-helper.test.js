@@ -23,7 +23,7 @@ const mockCreateApiHeaders = vi.fn().mockReturnValue({
   Authorization: 'Bearer test-token'
 })
 vi.doMock('./backend-auth-helper.js', () => ({
-  createApiHeaders: mockCreateApiHeaders
+  createApiHeadersForGrantsUiBackend: mockCreateApiHeaders
 }))
 
 let persistSubmissionToApi
@@ -62,7 +62,7 @@ describe('persistSubmissionToApi', () => {
         }
       }))
       vi.doMock('./backend-auth-helper.js', () => ({
-        createApiHeaders: mockCreateApiHeaders
+        createApiHeadersForGrantsUiBackend: mockCreateApiHeaders
       }))
       vi.doMock('~/src/config/config.js', createMockConfig)
       await importHelperAndDeps()
@@ -172,7 +172,7 @@ describe('persistSubmissionToApi', () => {
         }
       }))
       vi.doMock('./backend-auth-helper.js', () => ({
-        createApiHeaders: mockCreateApiHeaders
+        createApiHeadersForGrantsUiBackend: mockCreateApiHeaders
       }))
       vi.doMock('~/src/config/config.js', createMockConfigWithoutEndpoint)
       await importHelperAndDeps()

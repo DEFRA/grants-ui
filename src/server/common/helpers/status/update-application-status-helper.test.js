@@ -24,7 +24,7 @@ const mockCreateApiHeaders = vi.fn().mockReturnValue({
   Authorization: 'Bearer test-token'
 })
 vi.doMock('../state/backend-auth-helper.js', () => ({
-  createApiHeaders: mockCreateApiHeaders
+  createApiHeadersForGrantsUiBackend: mockCreateApiHeaders
 }))
 
 const mockParseSessionKey = vi.fn()
@@ -66,7 +66,7 @@ describe('updateApplicationStatus', () => {
         }
       }))
       vi.doMock('../state/backend-auth-helper.js', () => ({
-        createApiHeaders: mockCreateApiHeaders
+        createApiHeadersForGrantsUiBackend: mockCreateApiHeaders
       }))
       vi.doMock('../state/get-cache-key-helper.js', () => ({
         parseSessionKey: mockParseSessionKey
@@ -183,7 +183,7 @@ describe('updateApplicationStatus', () => {
         }
       }))
       vi.doMock('../state/backend-auth-helper.js', () => ({
-        createApiHeaders: mockCreateApiHeaders
+        createApiHeadersForGrantsUiBackend: mockCreateApiHeaders
       }))
       vi.doMock('../state/get-cache-key-helper.js', () => ({
         parseSessionKey: mockParseSessionKey
