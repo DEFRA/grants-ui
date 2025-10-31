@@ -253,16 +253,12 @@ export const formsService = async () => {
       }
 
       validateWhitelistConfiguration(form, definition)
-      validateGrantRedirectRules(form, definition)
+      logger.info(`Whitelist configuration validated for form: ${form.title}`)
 
-      if (definition.metadata?.grantRedirectRules) {
-        logger.info(`Grant redirect rules validated for form: ${form.title}`)
-      }
-      if (definition.metadata?.whitelistCrnEnvVar || definition.metadata?.whitelistSbiEnvVar) {
-        logger.info(`Whitelist configuration validated for form: ${form.title}`)
-      }
+      validateGrantRedirectRules(form, definition)
+      logger.info(`Grant redirect rules validated for form: ${form.title}`)
     } catch (error) {
-      logger.error(`Whitelist validation failed during startup: ${error.message}`)
+      logger.error(`Form validation failed during startup for ${form.title}: ${error.message}`)
       throw error
     }
   }
