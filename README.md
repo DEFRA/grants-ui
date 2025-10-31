@@ -13,9 +13,7 @@ Core delivery platform Node.js Frontend Template.
 - [Development Tools & Configuration](#development-tools--configuration)
   - [Testing Framework](#testing-framework)
   - [Code Quality & Linting](#code-quality--linting)
-  - [Build & Development Tools](#build--development-tools)
   - [Authentication & Security](#authentication--security)
-  - [Development Services Integration](#development-services-integration)
   - [Custom NPM Scripts](#custom-npm-scripts)
 - [Cookies](#cookies)
   - [Inspecting cookies](#inspecting-cookies)
@@ -721,6 +719,30 @@ A local environment with:
 docker compose up --build -d
 ```
 
+And optionally:
+
+- Land Grants API and Postgres via `compose.land-grants.yml`
+
+```bash
+docker compose up -f compose.yml -f compose.override.yml -f compose.land-grants.yml --build -d
+```
+
+Note: Running the Land Grants API and Postgres requires land data to be populated in the Land Grants Postgres database.
+This must be done manually using the compose scripts in the [land-grants-api](http://github.com/DEFRA/land-grants-api) repository
+and only needs to be done once, unless you need to clear and re-seed the database, or if you remove the `postgres_data` volume.
+
+Once that repository is cloned locally, `compose.migrations.yml` provides `database-up` and `database-down` services to run migrations against the Postgres database.
+
+Convenient npm scripts have been added in that repository for this workflow:
+
+```bash
+# Apply migrations to the grants-ui database
+npm run docker:db:migrate:up
+
+# Roll back all migrations to the base tag v0.0.0
+npm run docker:db:migrate:down
+```
+
 #### High-availability (HA) local proxy
 
 For local testing behind HTTPS and to simulate an HA entry point, there is an optional Nginx reverse proxy defined in `compose.ha.yml`.
@@ -743,6 +765,20 @@ Stop the HA stack:
 
 ```bash
 docker compose -f compose.yml -f compose.ha.yml down
+```
+
+You can also run the HA stack with the Land Grants API and Postgres via npm scripts:
+
+Start the stack with Land Grants API and the HA proxy:
+
+```bash
+npm run docker:landgrants:ha:up
+```
+
+Stop the HA stack:
+
+```bash
+npm run docker:landgrants:ha:down
 ```
 
 Notes:
