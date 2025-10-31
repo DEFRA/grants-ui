@@ -4,6 +4,13 @@ import { vi } from 'vitest'
 /** @type {import('vitest').MockedFunction<any>} */
 const mockFetch = vi.fn()
 
+vi.mock('~/src/server/common/helpers/state/backend-auth-helper.js', () => ({
+  createApiHeadersForLandGrantsBackend: () => ({
+    Authorization: 'Bearer token',
+    'Content-Type': 'application/json'
+  })
+}))
+
 global.fetch = mockFetch
 
 const mockApiEndpoint = 'http://mock-land-grants-api'
@@ -21,8 +28,8 @@ describe('postToLandGrantsApi', () => {
     expect(mockFetch).toHaveBeenCalledWith(`${mockApiEndpoint}/submit`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        Authorization: expect.any(String)
+        Authorization: expect.any(String),
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({ data: 'test' })
     })
