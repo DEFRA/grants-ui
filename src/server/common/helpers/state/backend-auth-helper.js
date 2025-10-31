@@ -13,9 +13,10 @@ const ENCODING = {
 
 const CONTENT_TYPE_JSON = 'application/json'
 const AUTH_SCHEME = 'Bearer'
-
 const GRANTS_UI_BACKEND_AUTH_TOKEN = config.get('session.cache.authToken')
-
+const ENCRYPTION_KEY = config.get('session.cache.encryptionKey')
+const LAND_GRANTS_AUTH_TOKEN = config.get('landGrants.authToken')
+const LAND_GRANTS_ENCRYPTION_KEY = config.get('landGrants.encryptionKey')
 /**
  * Encrypts the bearer token using AES-256-GCM
  * @param {string} token - The token to encrypt
@@ -59,8 +60,17 @@ export function createAuthenticatedHeaders(token, encryptionKey, baseHeaders = {
  * @returns {object} Headers with Content-Type and authentication
  */
 export function createApiHeadersForGrantsUiBackend() {
-  const ENCRYPTION_KEY = config.get('session.cache.encryptionKey')
   return createAuthenticatedHeaders(GRANTS_UI_BACKEND_AUTH_TOKEN, ENCRYPTION_KEY, {
+    'Content-Type': CONTENT_TYPE_JSON
+  })
+}
+
+/**
+ * Creates standard headers for API requests to land-grants-api
+ * @returns {object} Headers with Content-Type and authentication
+ */
+export function createApiHeadersForLandGrantsBackend() {
+  return createAuthenticatedHeaders(LAND_GRANTS_AUTH_TOKEN, LAND_GRANTS_ENCRYPTION_KEY, {
     'Content-Type': CONTENT_TYPE_JSON
   })
 }

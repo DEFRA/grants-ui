@@ -21,7 +21,8 @@ describe('postToLandGrantsApi', () => {
     expect(mockFetch).toHaveBeenCalledWith(`${mockApiEndpoint}/submit`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        Authorization: expect.any(String)
       },
       body: JSON.stringify({ data: 'test' })
     })
