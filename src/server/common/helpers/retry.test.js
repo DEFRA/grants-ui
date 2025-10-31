@@ -25,15 +25,18 @@ describe('retry with exponential backoff', () => {
 
       return 'success'
     })
+    const shouldRetry = vi.fn(() => true)
 
-    const result = await retry(mockOperation, { maxAttempts: 3 })
+    const result = await retry(mockOperation, { maxAttempts: 3, shouldRetry })
     expect(result).toBe('success')
     expect(mockOperation).toHaveBeenCalledTimes(3)
   })
 
   it('should throw the last error if all retry attempts fail', async () => {
     const mockOperation = vi.fn().mockRejectedValue(new Error('Permanent failure'))
-    await expect(retry(mockOperation, { maxAttempts: 3 })).rejects.toThrow('Permanent failure')
+    const shouldRetry = vi.fn(() => true)
+
+    await expect(retry(mockOperation, { maxAttempts: 3, shouldRetry })).rejects.toThrow('Permanent failure')
     expect(mockOperation).toHaveBeenCalledTimes(3)
   })
 
@@ -51,8 +54,11 @@ describe('retry with exponential backoff', () => {
     const initialDelay = 20
     const delays = []
     const onRetry = vi.fn((_, __, delay) => delays.push(delay))
+    const shouldRetry = vi.fn(() => true)
 
-    await expect(retry(mockOperation, { maxAttempts: 3, initialDelay, maxDelay, onRetry })).rejects.toThrow('Fail')
+    await expect(
+      retry(mockOperation, { maxAttempts: 3, initialDelay, shouldRetry, maxDelay, onRetry })
+    ).rejects.toThrow('Fail')
 
     expect(delays.length).toBe(2)
     expect(delays[0]).toBeGreaterThanOrEqual(initialDelay)
@@ -63,8 +69,9 @@ describe('retry with exponential backoff', () => {
   it('should call onRetry callback on each retry attempt', async () => {
     const mockOperation = vi.fn().mockRejectedValue(new Error('Retry error'))
     const onRetry = vi.fn()
+    const shouldRetry = vi.fn(() => true)
 
-    await expect(retry(mockOperation, { maxAttempts: 3, onRetry })).rejects.toThrow('Retry error')
+    await expect(retry(mockOperation, { maxAttempts: 3, onRetry, shouldRetry })).rejects.toThrow('Retry error')
     expect(onRetry).toHaveBeenCalledTimes(2)
     expect(onRetry).toHaveBeenCalledWith(expect.any(Error), 1, expect.any(Number))
     expect(onRetry).toHaveBeenCalledWith(expect.any(Error), 2, expect.any(Number))

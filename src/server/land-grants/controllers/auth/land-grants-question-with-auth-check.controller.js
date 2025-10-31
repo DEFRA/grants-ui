@@ -5,26 +5,26 @@ import { fetchParcelsFromDal } from '~/src/server/common/services/consolidated-v
 import { stringifyParcel } from '~/src/server/land-grants/utils/format-parcel.js'
 
 export default class LandGrantsQuestionWithAuthCheckController extends QuestionPageController {
-  landParcelBelongsToSbi = (landParcel, landParcelsForSbi) => {
-    return landParcelsForSbi.includes(landParcel)
-  }
-
   performAuthCheck = async (request, h, landParcel) => {
-    const sbi = request.auth?.credentials?.sbi
     if (!landParcel) {
       return null
     }
-    const landParcels = (await fetchParcelsFromDal(request)) || []
-    const landParcelsForSbi = landParcels.map((parcel) => stringifyParcel(parcel))
 
-    if (!this.landParcelBelongsToSbi(landParcel, landParcelsForSbi)) {
-      log(LogCodes.LAND_GRANTS.UNAUTHORISED_PARCEL, {
-        sbi,
-        selectedLandParcel: landParcel,
-        landParcelsForSbi
+    try {
+      const landParcels = (await fetchParcelsFromDal(request)) || []
+      const landParcelsForSbi = landParcels.map((parcel) => stringifyParcel(parcel))
+
+      if (!landParcelsForSbi.includes(landParcel)) {
+        return this.renderUnauthorisedView(h)
+      }
+    } catch (error) {
+      log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
+        endpoint: `Land grants API`,
+        error: `fetch parcel data for auth check: ${error.message}`
       })
       return this.renderUnauthorisedView(h)
     }
+
     return null
   }
 

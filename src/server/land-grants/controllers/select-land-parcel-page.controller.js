@@ -106,7 +106,8 @@ export default class SelectLandParcelPageController extends LandGrantsQuestionWi
       } catch (error) {
         const sbi = request.auth?.credentials?.sbi
         logger.error({ err: error, sbi }, 'Unexpected error when fetching parcel data')
-        const errorMessage = 'Unable to find parcel information, please try again later.'
+        const errorMessage =
+          'Unable to find parcel information, please try again later or contact the Rural Payments Agency.'
 
         return h.view(viewName, {
           ...baseViewModel,

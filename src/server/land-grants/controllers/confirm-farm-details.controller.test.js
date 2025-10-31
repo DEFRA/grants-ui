@@ -228,7 +228,7 @@ describe('ConfirmFarmDetailsController', () => {
   describe('constants', () => {
     it('should have correct static constants', () => {
       expect(ConfirmFarmDetailsController.ERROR_MESSAGE).toBe(
-        'Unable to find farm information, please try again later.'
+        'Unable to find farm information, please try again later or contact the Rural Payments Agency.'
       )
     })
   })

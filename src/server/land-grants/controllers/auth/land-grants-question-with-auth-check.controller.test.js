@@ -37,26 +37,6 @@ describe('LandGrantsQuestionWithAuthCheckController', () => {
     vi.clearAllMocks()
   })
 
-  describe('landParcelBelongsToSbi', () => {
-    test('returns true if selectedLandParcel is in landParcelsForSbi', () => {
-      const landParcelsForSbi = ['sheet1-parcel1', 'sheet2-parcel2']
-      const selectedLandParcel = 'sheet1-parcel1'
-
-      const result = controller.landParcelBelongsToSbi(selectedLandParcel, landParcelsForSbi)
-
-      expect(result).toBe(true)
-    })
-
-    test('returns false if selectedLandParcel is not in landParcelsForSbi', () => {
-      const landParcelsForSbi = ['sheet1-parcel1', 'sheet2-parcel2']
-      const selectedLandParcel = 'sheet3-parcel3'
-
-      const result = controller.landParcelBelongsToSbi(selectedLandParcel, landParcelsForSbi)
-
-      expect(result).toBe(false)
-    })
-  })
-
   describe('performAuthCheck', () => {
     test('fetches parcels and calls renderUnauthorisedView if parcel does not belong to SBI', async () => {
       fetchParcelsFromDal.mockResolvedValue([{ sheetId: 'sheet1', parcelId: 'parcel1' }])

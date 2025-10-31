@@ -211,7 +211,7 @@ describe('SelectLandParcelPageController', () => {
         'select-land-parcel',
         expect.objectContaining({
           pageTitle: 'Select Land Parcel',
-          errors: ['Unable to find parcel information, please try again later.']
+          errors: ['Unable to find parcel information, please try again later or contact the Rural Payments Agency.']
         })
       )
       expect(result).toBe(renderedViewMock)

@@ -1,5 +1,4 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
-import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
 import { fetchBusinessAndCustomerInformation } from '../../common/services/consolidated-view/consolidated-view.service.js'
 import {
   createAddressRow,
@@ -8,14 +7,13 @@ import {
   createCustomerNameRow,
   createSbiRow
 } from '../../common/helpers/create-rows.js'
-
-const logger = createLogger()
+import { log, LogCodes } from '../../common/helpers/logging/log.js'
 
 export default class ConfirmFarmDetailsController extends QuestionPageController {
   viewName = 'confirm-farm-details'
 
   // Constants
-  static ERROR_MESSAGE = 'Unable to find farm information, please try again later.'
+  static ERROR_MESSAGE = 'Unable to find farm information, please try again later or contact the Rural Payments Agency.'
 
   /**
    * Handle GET requests to the confirm farm details page
@@ -57,7 +55,10 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
    * Handle errors and return error view
    */
   handleError(sbi, error, baseViewModel, h) {
-    logger.error({ err: error, sbi }, 'Unexpected error when fetching farm information')
+    log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
+      endpoint: `fetch farm details for sbi ${sbi}`,
+      error: error.message
+    })
 
     return h.view(this.viewName, {
       ...baseViewModel,

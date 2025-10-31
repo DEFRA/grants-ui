@@ -4,7 +4,6 @@ import {
 } from '~/src/server/land-grants/services/land-grants.service.js'
 import LandGrantsQuestionWithAuthCheckController from '~/src/server/land-grants/controllers/auth/land-grants-question-with-auth-check.controller.js'
 import { parseLandParcel } from '~/src/server/land-grants/utils/format-parcel.js'
-import { createBoomError } from '~/src/server/common/helpers/errors.js'
 
 export default class SelectLandActionsPageController extends LandGrantsQuestionWithAuthCheckController {
   viewName = 'select-actions-for-land-parcel'
@@ -128,49 +127,22 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
   }
 
   /**
-   * Load available actions for the land parcel
-   * @param {string} sheetId - Sheet ID
-   * @param {string} parcelId - Parcel ID
-   * @param {object} logger - Request logger
-   * @returns {Promise<{success: boolean, hasActions?: boolean, error?: Error}>} - Load result
-   */
-  async loadAvailableActions(sheetId, parcelId, logger) {
-    try {
-      this.groupedActions = await fetchAvailableActionsForParcel({ parcelId, sheetId })
-
-      if (!this.groupedActions.length) {
-        logger.error({
-          message: `No actions found for parcel ${sheetId}-${parcelId}`,
-          selectedLandParcel: `${sheetId}-${parcelId}`
-        })
-        return { success: true, hasActions: false }
-      }
-
-      return { success: true, hasActions: true }
-    } catch (error) {
-      this.groupedActions = []
-      logger.error(error, `Failed to fetch land parcel data for id ${sheetId}-${parcelId}`)
-      return { success: false, error }
-    }
-  }
-
-  /**
    * Render error message with validation errors
    * @param {object} h - Response toolkit
    * @param {AnyFormRequest} request - Request object
    * @param {FormContext} context - Form context
-   * @param {{text: string; href: string | undefined}[]} errorSummary - Error Summary
+   * @param {{text: string; href: string | undefined}[]} errors - Errors
    * @param {object} additionalState - Additional state to merge
    * @returns {object} - Error view response
    */
-  renderErrorMessage(h, request, context, errorSummary, additionalState = {}) {
+  renderErrorMessage(h, request, context, errors, additionalState = {}) {
     const [sheetId, parcelId] = parseLandParcel(this.selectedLandParcel)
     return h.view(this.viewName, {
       ...this.getViewModel(request, context),
       ...additionalState,
       parcelName: `${sheetId} ${parcelId}`,
       addedActions: this.addedActions,
-      errorSummary
+      errors
     })
   }
 
@@ -179,7 +151,8 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
    */
   makeGetRouteHandler() {
     return async (request, context, h) => {
-      const { collection, viewName } = this
+      const { viewName } = this
+      let errors = []
       const { state } = context
       this.selectedLandParcel = request?.query?.parcelId || state.selectedLandParcel
       const [sheetId = '', parcelId = ''] = parseLandParcel(this.selectedLandParcel)
@@ -199,14 +172,18 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
             selectedLandParcel: this.selectedLandParcel
           })
         }
+        this.addedActions = this.getAddedActionsForStateParcel(state)
       } catch (error) {
         this.groupedActions = []
-        request.logger.error(error, `Failed to fetch land parcel data for id ${sheetId}-${parcelId}`)
+        this.addedActions = []
+        const sbi = request.auth?.credentials?.sbi
+        request.logger.error({ err: error, sbi, sheetId, parcelId }, 'Unexpected error when fetching actions data')
+        errors = [
+          {
+            text: 'Unable to find actions information for parcel, please try again later or contact the Rural Payments Agency.'
+          }
+        ]
       }
-
-      this.addedActions = this.getAddedActionsForStateParcel(state)
-
-      await this.loadAvailableActions(sheetId, parcelId, request.logger)
 
       const viewModel = {
         ...this.getViewModel(request, context),
@@ -214,7 +191,7 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
         addedActions: this.addedActions,
         parcelName: `${sheetId} ${parcelId}`,
         existingLandParcels,
-        errors: collection.getErrors(collection.getErrors())
+        errors
       }
 
       return h.view(viewName, viewModel)
@@ -269,7 +246,18 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
             message: e.message,
             selectedLandParcel: this.selectedLandParcel
           })
-          throw createBoomError(e.code, e.message)
+          return this.renderErrorMessage(
+            h,
+            request,
+            context,
+            [
+              {
+                text: 'There has been an issue validating the application, please try again later or contact the Rural Payments Agency.',
+                href: ''
+              }
+            ],
+            state
+          )
         }
       }
 
