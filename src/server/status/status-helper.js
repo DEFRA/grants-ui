@@ -122,7 +122,9 @@ function hasMeaningfulState(state) {
 
   // TODO remove workaround for state clearing bug when SFIR-647 and SFIR-648 are complete
   const farmPaymentsStateKeys = new Set(['selectedLandParcel', 'payment', 'draftApplicationAnnualTotalPence'])
-  farmPaymentsStateKeys.forEach((key) => baseStateKeys.add(key))
+  for (const key of farmPaymentsStateKeys) {
+    baseStateKeys.add(key)
+  }
   if (!Object.keys(state.landParcels || {}).length) {
     baseStateKeys.add('landParcels')
   }
