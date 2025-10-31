@@ -81,41 +81,6 @@ describe('RemoveActionPageController', () => {
     expect(controller.viewName).toBe('remove-action')
   })
 
-  describe('extractParcelInfo', () => {
-    test('should extract parcel information correctly', () => {
-      const query = { parcelId: 'SD6743-8083', action: 'CMOR1' }
-      const result = controller.extractParcelInfo(query)
-
-      expect(result).toEqual({
-        action: 'CMOR1',
-        parcelKey: 'SD6743-8083',
-        parcel: 'SD6743-8083'
-      })
-    })
-
-    test('should handle empty query gracefully', () => {
-      const query = {}
-      const result = controller.extractParcelInfo(query)
-
-      expect(result).toEqual({
-        action: undefined,
-        parcelKey: '-',
-        parcel: undefined
-      })
-    })
-
-    test('should handle missing action in query', () => {
-      const query = { parcelId: 'SD6743-8083' }
-      const result = controller.extractParcelInfo(query)
-
-      expect(result).toEqual({
-        action: undefined,
-        parcelKey: 'SD6743-8083',
-        parcel: 'SD6743-8083'
-      })
-    })
-  })
-
   describe('findActionInfo', () => {
     test('should find action info when it exists', () => {
       const result = controller.findActionInfo(mockLandParcels, 'SD6743-8083', 'CMOR1')
@@ -564,7 +529,7 @@ describe('RemoveActionPageController', () => {
 
       const result = await handler(mockRequest, mockContext, mockH)
 
-      expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH)
+      expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH, mockRequest.query.parcelId)
       expect(controller.action).toBe('CMOR1')
       expect(controller.parcel).toBe('SD6743-8083')
       expect(controller.actionDescription).toBe('Assess moorland and produce a written record: CMOR1')
@@ -646,7 +611,7 @@ describe('RemoveActionPageController', () => {
 
         const result = await handler(mockRequest, mockContext, mockH)
 
-        expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH)
+        expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH, mockRequest.query.parcelId)
 
         expect(result).toEqual('failed auth check')
       })
@@ -696,11 +661,12 @@ describe('RemoveActionPageController', () => {
 
     test('should remove action and redirect to check page when other actions remain', async () => {
       mockRequest.payload = { remove: 'true' }
+      controller.selectedLandParcel = mockRequest.query.parcelId
 
       const handler = controller.makePostRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
 
-      expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH)
+      expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH, mockRequest.query.parcelId)
 
       expect(controller.setState).toHaveBeenCalledWith(
         mockRequest,
@@ -807,13 +773,14 @@ describe('RemoveActionPageController', () => {
 
     describe('when the user does not own the land parcel', () => {
       it('should return unauthorized response when user does not own the selected land parcel', async () => {
+        controller.selectedLandParcel = mockRequest.query.parcelId
         controller.performAuthCheck.mockResolvedValue('failed auth check')
 
         const handler = controller.makePostRouteHandler()
 
         const result = await handler(mockRequest, mockContext, mockH)
 
-        expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH)
+        expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH, mockRequest.query.parcelId)
 
         expect(result).toEqual('failed auth check')
       })

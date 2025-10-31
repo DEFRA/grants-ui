@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import LandGrantsQuestionWithAuthCheckController from './land-grants-question-with-auth-check.controller'
-import { fetchParcels } from '../../services/land-grants.service'
-vi.mock('~/src/server/land-grants/services/land-grants.service.js', () => ({
-  fetchParcels: vi.fn()
+import { fetchParcelsFromDal } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
+
+vi.mock('~/src/server/common/services/consolidated-view/consolidated-view.service.js', () => ({
+  fetchParcelsFromDal: vi.fn()
 }))
 
 describe('LandGrantsQuestionWithAuthCheckController', () => {
@@ -26,7 +27,7 @@ describe('LandGrantsQuestionWithAuthCheckController', () => {
       code: vi.fn()
     }
 
-    fetchParcels.mockResolvedValue([
+    fetchParcelsFromDal.mockResolvedValue([
       { sheetId: 'SD7946', parcelId: '0155' },
       { sheetId: 'SD7846', parcelId: '4509' }
     ])
@@ -38,19 +39,19 @@ describe('LandGrantsQuestionWithAuthCheckController', () => {
 
   describe('landParcelBelongsToSbi', () => {
     test('returns true if selectedLandParcel is in landParcelsForSbi', () => {
-      controller.landParcelsForSbi = ['sheet1-parcel1', 'sheet2-parcel2']
-      controller.selectedLandParcel = 'sheet1-parcel1'
+      const landParcelsForSbi = ['sheet1-parcel1', 'sheet2-parcel2']
+      const selectedLandParcel = 'sheet1-parcel1'
 
-      const result = controller.landParcelBelongsToSbi()
+      const result = controller.landParcelBelongsToSbi(selectedLandParcel, landParcelsForSbi)
 
       expect(result).toBe(true)
     })
 
     test('returns false if selectedLandParcel is not in landParcelsForSbi', () => {
-      controller.landParcelsForSbi = ['sheet1-parcel1', 'sheet2-parcel2']
-      controller.selectedLandParcel = 'sheet3-parcel3'
+      const landParcelsForSbi = ['sheet1-parcel1', 'sheet2-parcel2']
+      const selectedLandParcel = 'sheet3-parcel3'
 
-      const result = controller.landParcelBelongsToSbi()
+      const result = controller.landParcelBelongsToSbi(selectedLandParcel, landParcelsForSbi)
 
       expect(result).toBe(false)
     })
@@ -58,24 +59,21 @@ describe('LandGrantsQuestionWithAuthCheckController', () => {
 
   describe('performAuthCheck', () => {
     test('fetches parcels and calls renderUnauthorisedView if parcel does not belong to SBI', async () => {
-      fetchParcels.mockResolvedValue([{ sheetId: 'sheet1', parcelId: 'parcel1' }])
-      controller.landParcelsForSbi = []
-      controller.selectedLandParcel = 'sheet3-parcel3'
+      fetchParcelsFromDal.mockResolvedValue([{ sheetId: 'sheet1', parcelId: 'parcel1' }])
       vi.spyOn(controller, 'renderUnauthorisedView')
 
-      await controller.performAuthCheck(mockRequest, mockH)
+      await controller.performAuthCheck(mockRequest, mockH, 'sheet3-parcel3')
 
-      expect(fetchParcels).toHaveBeenCalledWith(mockRequest)
+      expect(fetchParcelsFromDal).toHaveBeenCalledWith(mockRequest)
       expect(controller.renderUnauthorisedView).toHaveBeenCalledWith(mockH)
     })
 
     test('returns null if parcel belongs to SBI', async () => {
-      fetchParcels.mockResolvedValue([{ sheetId: 'sheet1', parcelId: 'parcel1' }])
-      controller.selectedLandParcel = 'sheet1-parcel1'
+      fetchParcelsFromDal.mockResolvedValue([{ sheetId: 'sheet1', parcelId: 'parcel1' }])
 
-      const result = await controller.performAuthCheck(mockRequest, mockH)
+      const result = await controller.performAuthCheck(mockRequest, mockH, 'sheet1-parcel1')
 
-      expect(fetchParcels).toHaveBeenCalledWith(mockRequest)
+      expect(fetchParcelsFromDal).toHaveBeenCalledWith(mockRequest)
       expect(result).toBeNull()
     })
   })

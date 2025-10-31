@@ -1,5 +1,4 @@
 import LandGrantsQuestionWithAuthCheckController from '~/src/server/land-grants/controllers/auth/land-grants-question-with-auth-check.controller.js'
-import { parseLandParcel } from '../utils/format-parcel.js'
 
 const checkSelectedLandActionsPath = '/check-selected-land-actions'
 const selectActionsForParcelPath = '/select-actions-for-land-parcel'
@@ -10,23 +9,6 @@ export default class RemoveActionPageController extends LandGrantsQuestionWithAu
   parcel = ''
   actionDescription = ''
   action = ''
-
-  /**
-   * Extract parcel information from query parameters
-   * @param {object} query - Request query parameters
-   * @returns {object} - Parsed parcel information
-   */
-  extractParcelInfo(query) {
-    const [sheetId = '', parcelId = ''] = parseLandParcel(query.parcelId)
-    const action = query.action
-    const parcelKey = `${sheetId}-${parcelId}`
-
-    return {
-      action,
-      parcelKey,
-      parcel: query.parcelId
-    }
-  }
 
   /**
    * Find action information from land parcels state
@@ -170,21 +152,22 @@ export default class RemoveActionPageController extends LandGrantsQuestionWithAu
       const {
         state: { landParcels }
       } = context
-      const { action, parcelKey, parcel } = this.extractParcelInfo(request.query)
-      if (!parcel) {
+
+      const { action, parcelId } = request.query
+
+      if (!parcelId) {
         return this.proceed(request, h, checkSelectedLandActionsPath)
       }
-      this.selectedLandParcel = parcelKey
 
-      const authResult = await this.performAuthCheck(request, h)
+      const authResult = await this.performAuthCheck(request, h, parcelId)
       if (authResult) {
         return authResult
       }
 
-      const actionInfo = this.findActionInfo(landParcels, parcelKey, action)
+      const actionInfo = this.findActionInfo(landParcels, parcelId, action)
 
       this.action = action
-      this.parcel = parcel
+      this.parcel = parcelId
       this.actionDescription = actionInfo?.description
 
       const viewModel = this.buildGetViewModel(request, context)
@@ -207,9 +190,7 @@ export default class RemoveActionPageController extends LandGrantsQuestionWithAu
       const { state } = context
       const payload = request.payload ?? {}
 
-      this.selectedLandParcel = this.parcel
-
-      const authResult = await this.performAuthCheck(request, h)
+      const authResult = await this.performAuthCheck(request, h, this.parcel)
       if (authResult) {
         return authResult
       }
