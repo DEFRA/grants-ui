@@ -387,7 +387,15 @@ describe('SelectLandActionsPageController', () => {
       const groupedActions = mockGroupedActions
       const addedActions = []
 
-      controller.renderErrorMessage(mockH, mockRequest, mockContext, errors, selectedLandParcel, groupedActions, addedActions)
+      controller.renderErrorMessage(
+        mockH,
+        mockRequest,
+        mockContext,
+        errors,
+        selectedLandParcel,
+        groupedActions,
+        addedActions
+      )
 
       expect(mockH.view).toHaveBeenCalledWith(
         'select-actions-for-land-parcel',
@@ -405,7 +413,16 @@ describe('SelectLandActionsPageController', () => {
       const addedActions = []
       const additionalState = { customProp: 'value' }
 
-      controller.renderErrorMessage(mockH, mockRequest, mockContext, errors, selectedLandParcel, groupedActions, addedActions, additionalState)
+      controller.renderErrorMessage(
+        mockH,
+        mockRequest,
+        mockContext,
+        errors,
+        selectedLandParcel,
+        groupedActions,
+        addedActions,
+        additionalState
+      )
 
       expect(mockH.view).toHaveBeenCalledWith(
         'select-actions-for-land-parcel',

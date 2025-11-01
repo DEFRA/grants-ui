@@ -370,7 +370,14 @@ describe('RemoveActionPageController', () => {
       const actionDescription = 'Test Action Description'
       controller.performAuthCheck = vi.fn().mockResolvedValue(null)
 
-      const result = controller.renderPostErrorView(mockH, mockRequest, mockContext, 'Test error message', parcel, actionDescription)
+      const result = controller.renderPostErrorView(
+        mockH,
+        mockRequest,
+        mockContext,
+        'Test error message',
+        parcel,
+        actionDescription
+      )
 
       expect(controller.getViewModel).toHaveBeenCalledWith(mockRequest, mockContext)
       expect(mockH.view).toHaveBeenCalledWith('remove-action', {
