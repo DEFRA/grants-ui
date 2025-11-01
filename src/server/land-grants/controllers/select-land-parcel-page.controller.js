@@ -6,7 +6,6 @@ const logger = createLogger()
 
 export default class SelectLandParcelPageController extends LandGrantsQuestionWithAuthCheckController {
   viewName = 'select-land-parcel'
-  parcels = []
 
   formatParcelForView = (parcel, actionsForParcel) => {
     const hasArea = parcel.area.value && parcel.area.unit
@@ -41,13 +40,26 @@ export default class SelectLandParcelPageController extends LandGrantsQuestionWi
       const payload = request.payload ?? {}
       const { selectedLandParcel, action } = payload
 
-      this.selectedLandParcel = selectedLandParcel
-
       if (action === 'validate' && !selectedLandParcel) {
+        // Need to fetch parcels for error rendering
+        let parcels = []
+        try {
+          const fetchedParcels = await fetchParcels(request)
+          const { landParcels } = state || {}
+          parcels = fetchedParcels.map((parcel) => {
+            const parcelKey = `${parcel.sheetId}-${parcel.parcelId}`
+            const parcelData = landParcels?.[parcelKey]
+            const actionsForParcel = parcelData?.actionsObj ? Object.keys(parcelData.actionsObj).length : 0
+            return this.formatParcelForView(parcel, actionsForParcel)
+          })
+        } catch (error) {
+          logger.error({ err: error }, 'Error fetching parcels for validation error rendering')
+        }
+
         return h.view(this.viewName, {
           ...super.getViewModel(request, context),
           ...state,
-          parcels: this.parcels,
+          parcels,
           errorMessage: 'Please select a land parcel from the list'
         })
       }
@@ -87,8 +99,8 @@ export default class SelectLandParcelPageController extends LandGrantsQuestionWi
       const existingLandParcels = Object.keys(landParcels || {}).length > 0
 
       try {
-        const parcels = await fetchParcels(request)
-        this.parcels = parcels.map((parcel) => {
+        const fetchedParcels = await fetchParcels(request)
+        const parcels = fetchedParcels.map((parcel) => {
           const parcelKey = `${parcel.sheetId}-${parcel.parcelId}`
           const parcelData = landParcels?.[parcelKey]
           const actionsForParcel = parcelData?.actionsObj ? Object.keys(parcelData.actionsObj).length : 0
@@ -97,7 +109,7 @@ export default class SelectLandParcelPageController extends LandGrantsQuestionWi
 
         const viewModel = {
           ...baseViewModel,
-          parcels: this.parcels,
+          parcels,
           selectedLandParcel,
           existingLandParcels
         }
