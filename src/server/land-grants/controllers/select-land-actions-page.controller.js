@@ -133,23 +133,17 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
    * @param {object} h - Response toolkit
    * @param {AnyFormRequest} request - Request object
    * @param {FormContext} context - Form context
-   * @param {{text: string; href: string | undefined}[]} errors - Errors
-   * @param {string} selectedLandParcel - The selected land parcel ID
-   * @param {Array} groupedActions - The grouped actions
-   * @param {Array} addedActions - The added actions
-   * @param {object} additionalState - Additional state to merge
+   * @param {object} options - Error rendering options
+   * @param {Array} options.errors - Errors array
+   * @param {string} options.selectedLandParcel - The selected land parcel ID
+   * @param {Array} [options.groupedActions] - The grouped actions
+   * @param {Array} [options.addedActions] - The added actions
+   * @param {object} [options.additionalState] - Additional state to merge
    * @returns {object} - Error view response
    */
-  renderErrorMessage(
-    h,
-    request,
-    context,
-    errors,
-    selectedLandParcel,
-    groupedActions = [],
-    addedActions = [],
-    additionalState = {}
-  ) {
+  renderErrorMessage(h, request, context, options) {
+    const { errors, selectedLandParcel, groupedActions = [], addedActions = [], additionalState = {} } = options
+
     const [sheetId, parcelId] = parseLandParcel(selectedLandParcel)
     return h.view(this.viewName, {
       ...this.getViewModelWithActions(request, context, groupedActions, addedActions),
@@ -160,12 +154,42 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
   }
 
   /**
+   * Fetch actions and handle errors for GET request
+   * @private
+   */
+  async fetchActionsForGet(request, state, selectedLandParcel, sheetId, parcelId) {
+    let errors = []
+    let groupedActions = []
+    let addedActions = []
+
+    try {
+      groupedActions = await fetchAvailableActionsForParcel({ parcelId, sheetId })
+      if (!groupedActions.length) {
+        request.logger.error({
+          message: `No actions found for parcel ${sheetId}-${parcelId}`,
+          selectedLandParcel
+        })
+      }
+      addedActions = this.getAddedActionsForStateParcel(state, selectedLandParcel)
+    } catch (error) {
+      const sbi = request.auth?.credentials?.sbi
+      request.logger.error({ err: error, sbi, sheetId, parcelId }, 'Unexpected error when fetching actions data')
+      errors = [
+        {
+          text: 'Unable to find actions information for parcel, please try again later or contact the Rural Payments Agency.'
+        }
+      ]
+    }
+
+    return { errors, groupedActions, addedActions }
+  }
+
+  /**
    * Handle GET requests to the page
    */
   makeGetRouteHandler() {
     return async (request, context, h) => {
       const { viewName } = this
-      let errors = []
       const { state } = context
       const selectedLandParcel = request?.query?.parcelId || state.selectedLandParcel
       const [sheetId = '', parcelId = ''] = parseLandParcel(selectedLandParcel)
@@ -177,29 +201,13 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
         return authResult
       }
 
-      let groupedActions = []
-      let addedActions = []
-
-      try {
-        groupedActions = await fetchAvailableActionsForParcel({ parcelId, sheetId })
-        if (!groupedActions.length) {
-          request.logger.error({
-            message: `No actions found for parcel ${sheetId}-${parcelId}`,
-            selectedLandParcel
-          })
-        }
-        addedActions = this.getAddedActionsForStateParcel(state, selectedLandParcel)
-      } catch (error) {
-        groupedActions = []
-        addedActions = []
-        const sbi = request.auth?.credentials?.sbi
-        request.logger.error({ err: error, sbi, sheetId, parcelId }, 'Unexpected error when fetching actions data')
-        errors = [
-          {
-            text: 'Unable to find actions information for parcel, please try again later or contact the Rural Payments Agency.'
-          }
-        ]
-      }
+      const { errors, groupedActions, addedActions } = await this.fetchActionsForGet(
+        request,
+        state,
+        selectedLandParcel,
+        sheetId,
+        parcelId
+      )
 
       const viewModel = {
         ...this.getViewModelWithActions(request, context, groupedActions, addedActions),
@@ -211,6 +219,46 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
 
       return h.view(viewName, viewModel)
     }
+  }
+
+  /**
+   * Fetch actions for POST request
+   * @private
+   */
+  async fetchActionsForPost(request, prevState, selectedLandParcel, sheetId, parcelId) {
+    let fetchedGroupedActions = []
+    let fetchedAddedActions = []
+
+    try {
+      fetchedGroupedActions = await fetchAvailableActionsForParcel({ parcelId, sheetId })
+      fetchedAddedActions = this.getAddedActionsForStateParcel(prevState, selectedLandParcel)
+    } catch (error) {
+      request.logger.error({ err: error }, 'Error fetching actions for POST processing')
+    }
+
+    return { fetchedGroupedActions, fetchedAddedActions }
+  }
+
+  /**
+   * Handle validation errors from POST request
+   * @private
+   */
+  async handlePostValidationErrors(request, context, h, errors, selectedLandParcel, prevState, sheetId, parcelId) {
+    const { fetchedGroupedActions, fetchedAddedActions } = await this.fetchActionsForPost(
+      request,
+      prevState,
+      selectedLandParcel,
+      sheetId,
+      parcelId
+    )
+
+    return this.renderErrorMessage(h, request, context, {
+      errors,
+      selectedLandParcel,
+      groupedActions: fetchedGroupedActions,
+      addedActions: fetchedAddedActions,
+      additionalState: prevState
+    })
   }
 
   /**
@@ -233,24 +281,15 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
 
       const errors = this.validateUserInput(payload)
       if (errors.length > 0) {
-        // Need to re-fetch actions for error rendering
-        let groupedActions = []
-        let addedActions = []
-        try {
-          groupedActions = await fetchAvailableActionsForParcel({ parcelId, sheetId })
-          addedActions = this.getAddedActionsForStateParcel(prevState, selectedLandParcel)
-        } catch (error) {
-          request.logger.error({ err: error }, 'Error fetching actions for validation error rendering')
-        }
-        return this.renderErrorMessage(
-          h,
+        return this.handlePostValidationErrors(
           request,
           context,
+          h,
           errors,
           selectedLandParcel,
-          groupedActions,
-          addedActions,
-          prevState
+          prevState,
+          sheetId,
+          parcelId
         )
       }
 
@@ -260,31 +299,29 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
       }
 
       // Fetch actions to process payload
-      let groupedActions = []
-      let addedActions = []
-      try {
-        groupedActions = await fetchAvailableActionsForParcel({ parcelId, sheetId })
-        addedActions = this.getAddedActionsForStateParcel(prevState, selectedLandParcel)
-      } catch (error) {
-        request.logger.error({ err: error }, 'Error fetching actions for POST processing')
-        return this.renderErrorMessage(
-          h,
-          request,
-          context,
-          [
+      const { fetchedGroupedActions, fetchedAddedActions } = await this.fetchActionsForPost(
+        request,
+        prevState,
+        selectedLandParcel,
+        sheetId,
+        parcelId
+      )
+
+      if (fetchedGroupedActions.length === 0) {
+        return this.renderErrorMessage(h, request, context, {
+          errors: [
             {
-              text: 'Unable to find actions information for parcel, please try again later or contact the Rural Payments Agency.',
-              href: undefined
+              text: 'Unable to find actions information for parcel, please try again later or contact the Rural Payments Agency.'
             }
           ],
           selectedLandParcel,
-          [],
-          [],
-          prevState
-        )
+          groupedActions: [],
+          addedActions: [],
+          additionalState: prevState
+        })
       }
 
-      const state = this.createNewStateFromPayload(prevState, payload, groupedActions, selectedLandParcel)
+      const state = this.createNewStateFromPayload(prevState, payload, fetchedGroupedActions, selectedLandParcel)
 
       if (payload.action === 'validate') {
         try {
@@ -300,37 +337,31 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
                 href: e.code ? `#${landActionFields.find((field) => payload[field] === e.code)}` : undefined
               }))
 
-            return this.renderErrorMessage(
-              h,
-              request,
-              context,
-              validationErrors,
+            return this.renderErrorMessage(h, request, context, {
+              errors: validationErrors,
               selectedLandParcel,
-              groupedActions,
-              addedActions,
-              state
-            )
+              groupedActions: fetchedGroupedActions,
+              addedActions: fetchedAddedActions,
+              additionalState: state
+            })
           }
         } catch (e) {
           request.logger.error({
             message: e.message,
             selectedLandParcel
           })
-          return this.renderErrorMessage(
-            h,
-            request,
-            context,
-            [
+          return this.renderErrorMessage(h, request, context, {
+            errors: [
               {
                 text: 'There has been an issue validating the application, please try again later or contact the Rural Payments Agency.',
                 href: ''
               }
             ],
             selectedLandParcel,
-            groupedActions,
-            addedActions,
-            state
-          )
+            groupedActions: fetchedGroupedActions,
+            addedActions: fetchedAddedActions,
+            additionalState: state
+          })
         }
       }
 

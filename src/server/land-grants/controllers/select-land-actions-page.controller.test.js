@@ -387,15 +387,12 @@ describe('SelectLandActionsPageController', () => {
       const groupedActions = mockGroupedActions
       const addedActions = []
 
-      controller.renderErrorMessage(
-        mockH,
-        mockRequest,
-        mockContext,
+      controller.renderErrorMessage(mockH, mockRequest, mockContext, {
         errors,
         selectedLandParcel,
         groupedActions,
         addedActions
-      )
+      })
 
       expect(mockH.view).toHaveBeenCalledWith(
         'select-actions-for-land-parcel',
@@ -413,21 +410,48 @@ describe('SelectLandActionsPageController', () => {
       const addedActions = []
       const additionalState = { customProp: 'value' }
 
-      controller.renderErrorMessage(
-        mockH,
-        mockRequest,
-        mockContext,
+      controller.renderErrorMessage(mockH, mockRequest, mockContext, {
         errors,
         selectedLandParcel,
         groupedActions,
         addedActions,
         additionalState
-      )
+      })
 
       expect(mockH.view).toHaveBeenCalledWith(
         'select-actions-for-land-parcel',
         expect.objectContaining({
           customProp: 'value'
+        })
+      )
+    })
+
+    test('should render error with unable to find actions message', () => {
+      const errors = [
+        {
+          text: 'Unable to find actions information for parcel, please try again later or contact the Rural Payments Agency.'
+        }
+      ]
+      const selectedLandParcel = 'sheet1-parcel1'
+      const groupedActions = []
+      const addedActions = []
+
+      controller.renderErrorMessage(mockH, mockRequest, mockContext, {
+        errors,
+        selectedLandParcel,
+        groupedActions,
+        addedActions
+      })
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'select-actions-for-land-parcel',
+        expect.objectContaining({
+          parcelName: 'sheet1 parcel1',
+          errors: [
+            {
+              text: 'Unable to find actions information for parcel, please try again later or contact the Rural Payments Agency.'
+            }
+          ]
         })
       )
     })
