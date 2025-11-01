@@ -243,7 +243,8 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
    * Handle validation errors from POST request
    * @private
    */
-  async handlePostValidationErrors(request, context, h, errors, selectedLandParcel, prevState, sheetId, parcelId) {
+  async handlePostValidationErrors(request, context, h, options) {
+    const { errors, selectedLandParcel, prevState, sheetId, parcelId } = options
     const { fetchedGroupedActions, fetchedAddedActions } = await this.fetchActionsForPost(
       request,
       prevState,
@@ -259,6 +260,65 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
       addedActions: fetchedAddedActions,
       additionalState: prevState
     })
+  }
+
+  /**
+   * Handle application validation (when action === 'validate')
+   * @private
+   */
+  async handleApplicationValidation(request, context, h, options) {
+    const {
+      referenceNumber,
+      sbi,
+      crn,
+      state,
+      payload,
+      selectedLandParcel,
+      fetchedGroupedActions,
+      fetchedAddedActions
+    } = options
+
+    try {
+      const validationResult = await validateApplication({ applicationId: referenceNumber, sbi, crn, state })
+      const { valid, errorMessages = [] } = validationResult
+
+      if (!valid) {
+        const landActionFields = this.extractLandActionFieldsFromPayload(payload)
+        const validationErrors = errorMessages
+          .filter((e) => !e.passed)
+          .map((e) => ({
+            text: `${e.description}${e.code ? ': ' + e.code : ''}`,
+            href: e.code ? `#${landActionFields.find((field) => payload[field] === e.code)}` : undefined
+          }))
+
+        return this.renderErrorMessage(h, request, context, {
+          errors: validationErrors,
+          selectedLandParcel,
+          groupedActions: fetchedGroupedActions,
+          addedActions: fetchedAddedActions,
+          additionalState: state
+        })
+      }
+
+      return null
+    } catch (e) {
+      request.logger.error({
+        message: e.message,
+        selectedLandParcel
+      })
+      return this.renderErrorMessage(h, request, context, {
+        errors: [
+          {
+            text: 'There has been an issue validating the application, please try again later or contact the Rural Payments Agency.',
+            href: ''
+          }
+        ],
+        selectedLandParcel,
+        groupedActions: fetchedGroupedActions,
+        addedActions: fetchedAddedActions,
+        additionalState: state
+      })
+    }
   }
 
   /**
@@ -281,16 +341,13 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
 
       const errors = this.validateUserInput(payload)
       if (errors.length > 0) {
-        return this.handlePostValidationErrors(
-          request,
-          context,
-          h,
+        return this.handlePostValidationErrors(request, context, h, {
           errors,
           selectedLandParcel,
           prevState,
           sheetId,
           parcelId
-        )
+        })
       }
 
       const authResult = await this.performAuthCheck(request, h, selectedLandParcel)
@@ -324,44 +381,19 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
       const state = this.createNewStateFromPayload(prevState, payload, fetchedGroupedActions, selectedLandParcel)
 
       if (payload.action === 'validate') {
-        try {
-          const validationResult = await validateApplication({ applicationId: referenceNumber, sbi, crn, state })
-          const { valid, errorMessages = [] } = validationResult
+        const validationResult = await this.handleApplicationValidation(request, context, h, {
+          referenceNumber,
+          sbi,
+          crn,
+          state,
+          payload,
+          selectedLandParcel,
+          fetchedGroupedActions,
+          fetchedAddedActions
+        })
 
-          if (!valid) {
-            const landActionFields = this.extractLandActionFieldsFromPayload(payload)
-            const validationErrors = errorMessages
-              .filter((e) => !e.passed)
-              .map((e) => ({
-                text: `${e.description}${e.code ? ': ' + e.code : ''}`,
-                href: e.code ? `#${landActionFields.find((field) => payload[field] === e.code)}` : undefined
-              }))
-
-            return this.renderErrorMessage(h, request, context, {
-              errors: validationErrors,
-              selectedLandParcel,
-              groupedActions: fetchedGroupedActions,
-              addedActions: fetchedAddedActions,
-              additionalState: state
-            })
-          }
-        } catch (e) {
-          request.logger.error({
-            message: e.message,
-            selectedLandParcel
-          })
-          return this.renderErrorMessage(h, request, context, {
-            errors: [
-              {
-                text: 'There has been an issue validating the application, please try again later or contact the Rural Payments Agency.',
-                href: ''
-              }
-            ],
-            selectedLandParcel,
-            groupedActions: fetchedGroupedActions,
-            addedActions: fetchedAddedActions,
-            additionalState: state
-          })
+        if (validationResult) {
+          return validationResult
         }
       }
 
