@@ -6,9 +6,6 @@ const selectLandParcelPath = '/select-land-parcel'
 
 export default class RemoveActionPageController extends LandGrantsQuestionWithAuthCheckController {
   viewName = 'remove-action'
-  parcel = ''
-  actionDescription = ''
-  action = ''
 
   /**
    * Find action information from land parcels state
@@ -57,15 +54,17 @@ export default class RemoveActionPageController extends LandGrantsQuestionWithAu
   /**
    * Determine next path after action removal
    * @param {object} newState - Updated state after removal
+   * @param {string} parcel - Parcel key
+   * @param {string} action - Action code (optional)
    * @returns {string} - Next path to navigate to
    */
-  getNextPathAfterRemoval(newState) {
-    const hasRemainingActions = newState.landParcels[this.parcel]?.actionsObj
+  getNextPathAfterRemoval(newState, parcel, action) {
+    const hasRemainingActions = newState.landParcels[parcel]?.actionsObj
     const hasRemainingParcels = Object.keys(newState.landParcels).length > 0
 
     // remove the only action
-    if (!hasRemainingActions && this.action) {
-      return `${selectActionsForParcelPath}?parcelId=${this.parcel}`
+    if (!hasRemainingActions && action) {
+      return `${selectActionsForParcelPath}?parcelId=${parcel}`
     }
 
     // remove the only parcel
@@ -79,16 +78,18 @@ export default class RemoveActionPageController extends LandGrantsQuestionWithAu
   /**
    * Validate POST request payload
    * @param {object} payload - Request payload
+   * @param {string} parcel - Parcel key
+   * @param {string} actionDescription - Action description (optional)
    * @returns {object|null} - Validation error or null if valid
    */
-  validatePostPayload(payload) {
+  validatePostPayload(payload, parcel, actionDescription) {
     const { remove } = payload
 
     if (remove === undefined) {
       return {
-        errorMessage: this.actionDescription
-          ? `Select yes to remove ${this.actionDescription} from land parcel ${this.parcel}`
-          : `Select yes to remove land parcel ${this.parcel} from this application`
+        errorMessage: actionDescription
+          ? `Select yes to remove ${actionDescription} from land parcel ${parcel}`
+          : `Select yes to remove land parcel ${parcel} from this application`
       }
     }
 
@@ -101,13 +102,15 @@ export default class RemoveActionPageController extends LandGrantsQuestionWithAu
    * @param {AnyFormRequest} request - Request object
    * @param {FormContext} context - Form context
    * @param {string} errorMessage - Error message to display
+   * @param {string} parcel - Parcel key
+   * @param {string} actionDescription - Action description (optional)
    * @returns {object} - Error view response
    */
-  renderPostErrorView(h, request, context, errorMessage) {
+  renderPostErrorView(h, request, context, errorMessage, parcel, actionDescription) {
     return h.view(this.viewName, {
       ...this.getViewModel(request, context),
-      parcel: this.parcel,
-      actionDescription: this.actionDescription,
+      parcel,
+      actionDescription,
       errorMessage
     })
   }
@@ -117,13 +120,15 @@ export default class RemoveActionPageController extends LandGrantsQuestionWithAu
    * @param {AnyFormRequest} request - Request object
    * @param {object} state - Current state
    * @param {object} h - Response toolkit
+   * @param {string} parcel - Parcel key
+   * @param {string} action - Action code (optional)
    * @returns {Promise<object>} - Response object
    */
-  async processRemoval(request, state, h) {
-    const newState = this.action
-      ? this.deleteActionFromState(state, this.parcel, this.action)
-      : this.deleteParcelFromState(state, this.parcel)
-    const nextPath = this.getNextPathAfterRemoval(newState)
+  async processRemoval(request, state, h, parcel, action) {
+    const newState = action
+      ? this.deleteActionFromState(state, parcel, action)
+      : this.deleteParcelFromState(state, parcel)
+    const nextPath = this.getNextPathAfterRemoval(newState, parcel, action)
 
     await this.setState(request, newState)
     return this.proceed(request, h, nextPath)
@@ -133,13 +138,15 @@ export default class RemoveActionPageController extends LandGrantsQuestionWithAu
    * Build view model for GET request
    * @param {AnyFormRequest} request - Request object
    * @param {FormContext} context - Form context
+   * @param {string} parcel - Parcel key
+   * @param {string} actionDescription - Action description (optional)
    * @returns {object} - Complete view model
    */
-  buildGetViewModel(request, context) {
+  buildGetViewModel(request, context, parcel, actionDescription) {
     return {
       ...this.getViewModel(request, context),
-      parcel: this.parcel,
-      actionDescription: this.actionDescription
+      parcel,
+      actionDescription
     }
   }
 
@@ -165,12 +172,9 @@ export default class RemoveActionPageController extends LandGrantsQuestionWithAu
       }
 
       const actionInfo = this.findActionInfo(landParcels, parcelId, action)
+      const actionDescription = actionInfo?.description
 
-      this.action = action
-      this.parcel = parcelId
-      this.actionDescription = actionInfo?.description
-
-      const viewModel = this.buildGetViewModel(request, context)
+      const viewModel = this.buildGetViewModel(request, context, parcelId, actionDescription)
       return h.view(viewName, viewModel)
     }
   }
@@ -189,20 +193,25 @@ export default class RemoveActionPageController extends LandGrantsQuestionWithAu
     const fn = async (request, context, h) => {
       const { state } = context
       const payload = request.payload ?? {}
+      const { action, parcelId } = request.query
 
-      const authResult = await this.performAuthCheck(request, h, this.parcel)
+      const authResult = await this.performAuthCheck(request, h, parcelId)
       if (authResult) {
         return authResult
       }
 
-      const validationError = this.validatePostPayload(payload)
+      // Get action description from state for error messages
+      const actionInfo = this.findActionInfo(state.landParcels, parcelId, action)
+      const actionDescription = actionInfo?.description
+
+      const validationError = this.validatePostPayload(payload, parcelId, actionDescription)
       if (validationError) {
-        return this.renderPostErrorView(h, request, context, validationError.errorMessage)
+        return this.renderPostErrorView(h, request, context, validationError.errorMessage, parcelId, actionDescription)
       }
 
       const { remove } = payload
       if (remove === 'true') {
-        return this.processRemoval(request, state, h)
+        return this.processRemoval(request, state, h, parcelId, action)
       }
 
       return this.proceed(request, h, checkSelectedLandActionsPath)
