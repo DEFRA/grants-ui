@@ -263,65 +263,6 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
   }
 
   /**
-   * Handle application validation (when action === 'validate')
-   * @private
-   */
-  async handleApplicationValidation(request, context, h, options) {
-    const {
-      referenceNumber,
-      sbi,
-      crn,
-      state,
-      payload,
-      selectedLandParcel,
-      fetchedGroupedActions,
-      fetchedAddedActions
-    } = options
-
-    try {
-      const validationResult = await validateApplication({ applicationId: referenceNumber, sbi, crn, state })
-      const { valid, errorMessages = [] } = validationResult
-
-      if (!valid) {
-        const landActionFields = this.extractLandActionFieldsFromPayload(payload)
-        const validationErrors = errorMessages
-          .filter((e) => !e.passed)
-          .map((e) => ({
-            text: `${e.description}${e.code ? ': ' + e.code : ''}`,
-            href: e.code ? `#${landActionFields.find((field) => payload[field] === e.code)}` : undefined
-          }))
-
-        return this.renderErrorMessage(h, request, context, {
-          errors: validationErrors,
-          selectedLandParcel,
-          groupedActions: fetchedGroupedActions,
-          addedActions: fetchedAddedActions,
-          additionalState: state
-        })
-      }
-
-      return null
-    } catch (e) {
-      request.logger.error({
-        message: e.message,
-        selectedLandParcel
-      })
-      return this.renderErrorMessage(h, request, context, {
-        errors: [
-          {
-            text: 'There has been an issue validating the application, please try again later or contact the Rural Payments Agency.',
-            href: ''
-          }
-        ],
-        selectedLandParcel,
-        groupedActions: fetchedGroupedActions,
-        addedActions: fetchedAddedActions,
-        additionalState: state
-      })
-    }
-  }
-
-  /**
    * This method is called when there is a POST request to the select land actions page.
    * It gets the land parcel id and redirects to the next step in the journey.
    */
@@ -381,19 +322,44 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
       const state = this.createNewStateFromPayload(prevState, payload, fetchedGroupedActions, selectedLandParcel)
 
       if (payload.action === 'validate') {
-        const validationResult = await this.handleApplicationValidation(request, context, h, {
-          referenceNumber,
-          sbi,
-          crn,
-          state,
-          payload,
-          selectedLandParcel,
-          fetchedGroupedActions,
-          fetchedAddedActions
-        })
+        try {
+          const validationResult = await validateApplication({ applicationId: referenceNumber, sbi, crn, state })
+          const { valid, errorMessages = [] } = validationResult
 
-        if (validationResult) {
-          return validationResult
+          if (!valid) {
+            const landActionFields = this.extractLandActionFieldsFromPayload(payload)
+            const validationErrors = errorMessages
+              .filter((e) => !e.passed)
+              .map((e) => ({
+                text: `${e.description}${e.code ? ': ' + e.code : ''}`,
+                href: e.code ? `#${landActionFields.find((field) => payload[field] === e.code)}` : undefined
+              }))
+
+            return this.renderErrorMessage(h, request, context, {
+              errors: validationErrors,
+              selectedLandParcel,
+              groupedActions: fetchedGroupedActions,
+              addedActions: fetchedAddedActions,
+              additionalState: state
+            })
+          }
+        } catch (e) {
+          request.logger.error({
+            message: e.message,
+            selectedLandParcel
+          })
+          return this.renderErrorMessage(h, request, context, {
+            errors: [
+              {
+                text: 'There has been an issue validating the application, please try again later or contact the Rural Payments Agency.',
+                href: ''
+              }
+            ],
+            selectedLandParcel,
+            groupedActions: fetchedGroupedActions,
+            addedActions: fetchedAddedActions,
+            additionalState: state
+          })
         }
       }
 
