@@ -288,7 +288,6 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
 
       if (payload.action === 'validate') {
         try {
-          console.log('validateApplication', { referenceNumber, sbi, crn, state })
           const validationResult = await validateApplication({ applicationId: referenceNumber, sbi, crn, state })
           const { valid, errorMessages = [] } = validationResult
 
