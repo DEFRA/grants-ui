@@ -1,9 +1,0 @@
-services:
-  grants-ui:
-    ports:
-      - '3000:3000'
-      - '9229:9229'
-
-  grants-ui-backend:
-    ports:
-      - '3001:3001'
