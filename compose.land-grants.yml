@@ -33,6 +33,8 @@ services:
       NODE_ENV: local
       DISABLE_POSTGRES: false
       POSTGRES_HOST: land-grants-backend-postgres
+      LAND_GRANTS_AUTH_TOKEN: ${LAND_GRANTS_API_AUTH_TOKEN:-auth_token}
+      LAND_GRANTS_ENCRYPTION_KEY: ${LAND_GRANTS_API_ENCRYPTION_KEY:-encryption_key}
     ports:
       - 3009:3009
     depends_on:
