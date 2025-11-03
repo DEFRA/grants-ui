@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000087",
+      "organisationId": "7400087",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "6221",
+            "sheetId": "SD5055",
+            "area": 1.4839
+          }
+        ]
+      },
+      "info": {
+        "name": "Birch Grange",
+        "reference": "0300000087",
+        "email": {
+          "address": "contact+300000087@example.test"
+        },
+        "phone": {
+          "mobile": "07300000087"
+        },
+        "address": {
+          "line1": "88 Manor Road",
+          "line2": "Depot",
+          "line3": "Bradford",
+          "line4": "Nottinghamshire",
+          "line5": "",
+          "street": "Manor Road",
+          "city": "Bradford",
+          "postalCode": "PL38 1TW"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Ms",
+          "first": "Liam",
+          "middle": "Daniel",
+          "last": "Reed"
+        }
+      }
+    }
+  }
+}

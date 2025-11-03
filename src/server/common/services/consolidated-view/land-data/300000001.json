@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000001",
+      "organisationId": "7400001",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "8654",
+            "sheetId": "SD4858",
+            "area": 3.7035
+          }
+        ]
+      },
+      "info": {
+        "name": "Green Farm",
+        "reference": "0300000001",
+        "email": {
+          "address": "contact+300000001@example.test"
+        },
+        "phone": {
+          "mobile": "07300000001"
+        },
+        "address": {
+          "line1": "2 Station Road",
+          "line2": "Business Park",
+          "line3": "Maidstone",
+          "line4": "Somerset",
+          "line5": "",
+          "street": "Station Road",
+          "city": "Maidstone",
+          "postalCode": "W50 5UY"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Ms",
+          "first": "Alice",
+          "middle": "Louise",
+          "last": "Carter"
+        }
+      }
+    }
+  }
+}

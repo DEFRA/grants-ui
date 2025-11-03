@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000086",
+      "organisationId": "7400086",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "6057",
+            "sheetId": "SD5055",
+            "area": 5.6565
+          }
+        ]
+      },
+      "info": {
+        "name": "Pine Grange",
+        "reference": "0300000086",
+        "email": {
+          "address": "contact+300000086@example.test"
+        },
+        "phone": {
+          "mobile": "07300000086"
+        },
+        "address": {
+          "line1": "87 Victoria Road",
+          "line2": "Works",
+          "line3": "Coventry",
+          "line4": "Derbyshire",
+          "line5": "",
+          "street": "Victoria Road",
+          "city": "Coventry",
+          "postalCode": "PH37 9TW"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Mr",
+          "first": "Keira",
+          "middle": "Charlotte",
+          "last": "Reed"
+        }
+      }
+    }
+  }
+}

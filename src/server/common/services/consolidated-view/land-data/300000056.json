@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000056",
+      "organisationId": "7400056",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "6641",
+            "sheetId": "SD4960",
+            "area": 2.0238
+          }
+        ]
+      },
+      "info": {
+        "name": "Hill Holdings",
+        "reference": "0300000056",
+        "email": {
+          "address": "contact+300000056@example.test"
+        },
+        "phone": {
+          "mobile": "07300000056"
+        },
+        "address": {
+          "line1": "57 Mill Lane",
+          "line2": "Farm Buildings",
+          "line3": "Norwich",
+          "line4": "Hampshire",
+          "line5": "",
+          "street": "Mill Lane",
+          "city": "Norwich",
+          "postalCode": "HU7 6CN"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Mr",
+          "first": "Finley",
+          "middle": "Charlotte",
+          "last": "Turner"
+        }
+      }
+    }
+  }
+}

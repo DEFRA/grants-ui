@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000041",
+      "organisationId": "7400041",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "4039",
+            "sheetId": "SD4959",
+            "area": 3.1077
+          }
+        ]
+      },
+      "info": {
+        "name": "Green Holdings",
+        "reference": "0300000041",
+        "email": {
+          "address": "contact+300000041@example.test"
+        },
+        "phone": {
+          "mobile": "07300000041"
+        },
+        "address": {
+          "line1": "42 Station Road",
+          "line2": "Business Park",
+          "line3": "York",
+          "line4": "Oxfordshire",
+          "line5": "",
+          "street": "Station Road",
+          "city": "York",
+          "postalCode": "EC90 9SJ"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Ms",
+          "first": "Peter",
+          "middle": "Thomas",
+          "last": "Turner"
+        }
+      }
+    }
+  }
+}

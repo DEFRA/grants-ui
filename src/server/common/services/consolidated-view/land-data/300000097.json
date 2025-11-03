@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000097",
+      "organisationId": "7400097",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "9269",
+            "sheetId": "SD5055",
+            "area": 1.8377
+          }
+        ]
+      },
+      "info": {
+        "name": "Lake Grange",
+        "reference": "0300000097",
+        "email": {
+          "address": "contact+300000097@example.test"
+        },
+        "phone": {
+          "mobile": "07300000097"
+        },
+        "address": {
+          "line1": "98 Blackberry Lane",
+          "line2": "Business Park",
+          "line3": "Leeds",
+          "line4": "Somerset",
+          "line5": "",
+          "street": "Blackberry Lane",
+          "city": "Leeds",
+          "postalCode": "SK48 2AA"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Ms",
+          "first": "Vincent",
+          "middle": "Alan",
+          "last": "Reed"
+        }
+      }
+    }
+  }
+}

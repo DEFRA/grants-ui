@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000070",
+      "organisationId": "7400070",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "9554",
+            "sheetId": "SD4963",
+            "area": 2.3287
+          }
+        ]
+      },
+      "info": {
+        "name": "Hawthorn Acres",
+        "reference": "0300000070",
+        "email": {
+          "address": "contact+300000070@example.test"
+        },
+        "phone": {
+          "mobile": "07300000070"
+        },
+        "address": {
+          "line1": "71 London Road",
+          "line2": "Works",
+          "line3": "Derby",
+          "line4": "Derbyshire",
+          "line5": "",
+          "street": "London Road",
+          "city": "Derby",
+          "postalCode": "LU21 2KR"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Mr",
+          "first": "Thomas",
+          "middle": "Rose",
+          "last": "Reed"
+        }
+      }
+    }
+  }
+}

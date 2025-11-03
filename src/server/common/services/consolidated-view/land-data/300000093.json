@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000093",
+      "organisationId": "7400093",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "8372",
+            "sheetId": "SD5055",
+            "area": 2.1139
+          }
+        ]
+      },
+      "info": {
+        "name": "Meadow Grange",
+        "reference": "0300000093",
+        "email": {
+          "address": "contact+300000093@example.test"
+        },
+        "phone": {
+          "mobile": "07300000093"
+        },
+        "address": {
+          "line1": "94 New Road",
+          "line2": "Yard",
+          "line3": "Oxford",
+          "line4": "Staffordshire",
+          "line5": "",
+          "street": "New Road",
+          "city": "Oxford",
+          "postalCode": "S44 7YZ"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Ms",
+          "first": "Ruby",
+          "middle": "Anne",
+          "last": "Reed"
+        }
+      }
+    }
+  }
+}

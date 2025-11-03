@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000003",
+      "organisationId": "7400003",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "9884",
+            "sheetId": "SD4858",
+            "area": 1.5786
+          }
+        ]
+      },
+      "info": {
+        "name": "Willow Farm",
+        "reference": "0300000003",
+        "email": {
+          "address": "contact+300000003@example.test"
+        },
+        "phone": {
+          "mobile": "07300000003"
+        },
+        "address": {
+          "line1": "4 Main Street",
+          "line2": "Trading Estate",
+          "line3": "Oxford",
+          "line4": "Essex",
+          "line5": "",
+          "street": "Main Street",
+          "city": "Oxford",
+          "postalCode": "WC52 7WY"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Ms",
+          "first": "Chloe",
+          "middle": "Anne",
+          "last": "Carter"
+        }
+      }
+    }
+  }
+}

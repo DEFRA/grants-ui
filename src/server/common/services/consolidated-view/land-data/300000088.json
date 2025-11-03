@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000088",
+      "organisationId": "7400088",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "6537",
+            "sheetId": "SD5055",
+            "area": 5.4269
+          }
+        ]
+      },
+      "info": {
+        "name": "Elm Grange",
+        "reference": "0300000088",
+        "email": {
+          "address": "contact+300000088@example.test"
+        },
+        "phone": {
+          "mobile": "07300000088"
+        },
+        "address": {
+          "line1": "89 Church Lane",
+          "line2": "Farm Buildings",
+          "line3": "Derby",
+          "line4": "Hampshire",
+          "line5": "",
+          "street": "Church Lane",
+          "city": "Derby",
+          "postalCode": "PO39 2UY"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Mr",
+          "first": "Mia",
+          "middle": "Amy",
+          "last": "Reed"
+        }
+      }
+    }
+  }
+}

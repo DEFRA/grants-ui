@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000100",
+      "organisationId": "7400100",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "9966",
+            "sheetId": "SD5055",
+            "area": 1.0703
+          }
+        ]
+      },
+      "info": {
+        "name": "Golden Grange",
+        "reference": "0300000100",
+        "email": {
+          "address": "contact+300000100@example.test"
+        },
+        "phone": {
+          "mobile": "07300000100"
+        },
+        "address": {
+          "line1": "101 High Street",
+          "line2": "Barns",
+          "line3": "Manchester",
+          "line4": "Lancashire",
+          "line5": "",
+          "street": "High Street",
+          "city": "Manchester",
+          "postalCode": "SN51 5CB"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Mr",
+          "first": "Yasmine",
+          "middle": "Rose",
+          "last": "Reed"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000096",
+      "organisationId": "7400096",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "9112",
+            "sheetId": "SD5055",
+            "area": 4.7141
+          }
+        ]
+      },
+      "info": {
+        "name": "Hill Grange",
+        "reference": "0300000096",
+        "email": {
+          "address": "contact+300000096@example.test"
+        },
+        "phone": {
+          "mobile": "07300000096"
+        },
+        "address": {
+          "line1": "97 Mill Lane",
+          "line2": "Farm Buildings",
+          "line3": "Bristol",
+          "line4": "Devon",
+          "line5": "",
+          "street": "Mill Lane",
+          "city": "Bristol",
+          "postalCode": "SG47 1AA"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Mr",
+          "first": "Una",
+          "middle": "Marie",
+          "last": "Reed"
+        }
+      }
+    }
+  }
+}
