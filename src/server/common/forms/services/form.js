@@ -3,12 +3,30 @@ import { logger } from '~/src/server/common/helpers/logging/log.js'
 import { metadata } from '../config.js'
 import { FileFormService } from '@defra/forms-engine-plugin/file-form-service.js'
 import path from 'node:path'
-import fs from 'node:fs/promises'
+import fs, { readFile } from 'node:fs/promises'
 import { parse as parseYaml } from 'yaml'
 import { notFound } from '@hapi/boom'
+import Joi from 'joi'
+import agreements from '~/src/config/agreements.js'
 
 // Simple in-memory cache of discovered forms metadata
 let formsCache = []
+
+async function loadSharedRedirectRules() {
+  const filePath = path.resolve(process.cwd(), 'src/server/common/forms/shared-redirect-rules.yaml')
+  const raw = await readFile(filePath, 'utf8')
+  const parsed = parseYaml(raw)
+  const rules = parsed.sharedRedirectRules ?? {}
+
+  if (rules.postSubmission) {
+    rules.postSubmission = rules.postSubmission.map((rule) => ({
+      ...rule,
+      toPath: rule.toPath === '__AGREEMENTS_BASE_URL__' ? agreements.get('baseUrl') : rule.toPath
+    }))
+  }
+
+  return rules
+}
 
 export function getFormsCache() {
   return formsCache
@@ -122,6 +140,56 @@ async function listYamlFilesRecursively(baseDir) {
   return out
 }
 
+const preSubmissionRuleSchema = Joi.object({
+  toPath: Joi.string().pattern(/^\/.*/).required()
+})
+
+const postSubmissionRuleSchema = Joi.object({
+  fromGrantsStatus: Joi.string().required(),
+  gasStatus: Joi.string().required(),
+  toGrantsStatus: Joi.string().required(),
+  toPath: Joi.string().pattern(/^\/.*/).required()
+})
+
+export function validateGrantRedirectRules(form, definition) {
+  const formName = definition.name || form.title || 'unnamed'
+
+  const redirectRules = definition.metadata?.grantRedirectRules ?? {}
+  const preSubmission = redirectRules.preSubmission ?? []
+  const postSubmission = redirectRules.postSubmission ?? []
+
+  //
+  // Validate preSubmission
+  //
+  const { error: preError } = Joi.array().items(preSubmissionRuleSchema).length(1).validate(preSubmission)
+  if (preError) {
+    throw new Error(
+      `Invalid redirect rules in form ${formName}: ${preError.message}. Expected one rule with toPath property.`
+    )
+  }
+
+  //
+  // Validate postSubmission
+  //
+  const { error: postError } = Joi.array().items(postSubmissionRuleSchema).validate(postSubmission)
+  if (postError) {
+    throw new Error(`Invalid redirect rules in form ${formName}: ${postError.message}`)
+  }
+
+  if (postSubmission.length === 0) {
+    throw new Error(`Invalid redirect configuration in form ${formName}: no postSubmission redirect rules defined`)
+  }
+
+  const hasFallbackRule = postSubmission.some(
+    (rule) => rule.fromGrantsStatus === 'default' && rule.gasStatus === 'default'
+  )
+  if (!hasFallbackRule) {
+    throw new Error(
+      `Invalid redirect configuration in form ${formName}: missing default/default fallback rule in postSubmission`
+    )
+  }
+}
+
 async function discoverFormsFromYaml(baseDir = path.resolve(process.cwd(), 'src/server/common/forms/definitions')) {
   const isProduction = config.get('cdpEnvironment')?.toLowerCase() === 'prod'
   let files = []
@@ -174,16 +242,23 @@ export const formsService = async () => {
   formsCache = forms
   await addAllForms(loader, forms)
 
+  const sharedRules = await loadSharedRedirectRules()
+
   for (const form of forms) {
     try {
       const definition = loader.getFormDefinition(form.id)
-      validateWhitelistConfiguration(form, definition)
-
-      if (definition.metadata?.whitelistCrnEnvVar || definition.metadata?.whitelistSbiEnvVar) {
-        logger.info(`Whitelist configuration validated for form: ${form.title}`)
+      definition.metadata.grantRedirectRules = {
+        ...sharedRules,
+        ...definition.metadata.grantRedirectRules
       }
+
+      validateWhitelistConfiguration(form, definition)
+      logger.info(`Whitelist configuration validated for form: ${form.title}`)
+
+      validateGrantRedirectRules(form, definition)
+      logger.info(`Grant redirect rules validated for form: ${form.title}`)
     } catch (error) {
-      logger.error(`Whitelist validation failed during startup: ${error.message}`)
+      logger.error(`Form validation failed during startup for ${form.title}: ${error.message}`)
       throw error
     }
   }

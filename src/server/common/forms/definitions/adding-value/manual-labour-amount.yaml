@@ -5,6 +5,7 @@ metadata:
   tasklistId: example
   submission:
     grantCode: manual-labour-amount
+  grantRedirectRules: null
 pages:
   - title: Will this project use any mechanisation instead of manual labour?
     path: /mechanisation

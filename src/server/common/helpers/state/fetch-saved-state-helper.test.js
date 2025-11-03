@@ -17,8 +17,8 @@ const mockLogger = {
   error: vi.fn()
 }
 
-vi.mock('../logging/logger.js', () => ({
-  createLogger: () => mockLogger
+vi.mock('../logging/log.js', () => ({
+  logger: () => mockLogger
 }))
 
 // Mock parseSessionKey

@@ -5,6 +5,7 @@ metadata:
   tasklistId: example
   submission:
     grantCode: declaration
+  grantRedirectRules: null
 pages:
   - title: Confirm and send
     path: /declaration

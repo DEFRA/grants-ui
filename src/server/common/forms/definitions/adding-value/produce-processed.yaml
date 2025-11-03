@@ -5,6 +5,7 @@ metadata:
   tasklistId: example
   submission:
     grantCode: produce-processed
+  grantRedirectRules: null
 pages:
   - title: What type of produce is being processed?
     path: /produce-processed

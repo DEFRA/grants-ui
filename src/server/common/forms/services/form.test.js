@@ -5,6 +5,7 @@ import {
   configureFormDefinition,
   formsService,
   getFormsCache,
+  validateGrantRedirectRules,
   validateWhitelistConfiguration
 } from './form.js'
 import { logger } from '~/src/server/common/helpers/logging/log.js'
@@ -461,6 +462,106 @@ tasklist:
       expect(() => validateWhitelistConfiguration(testForm, definition)).toThrow(
         'SBI whitelist environment variable MISSING_SBI_VAR is defined in form Test Form but not configured in environment'
       )
+    })
+  })
+
+  describe('startup configuration validation', () => {
+    const testForm = { title: 'Test Form' }
+
+    test('throws error if redirect rules are missing required properties in preSubmission', async () => {
+      const badDefinition = {
+        metadata: {
+          grantRedirectRules: {
+            preSubmission: [{}], // missing toPath
+            postSubmission: [
+              {
+                toPath: '/confirmation',
+                fromGrantsStatus: 'SUBMITTED',
+                gasStatus: 'RECEIVED',
+                toGrantsStatus: 'SUBMITTED'
+              }
+            ]
+          }
+        }
+      }
+
+      expect(() => validateGrantRedirectRules(testForm, badDefinition)).toThrow(
+        'Invalid redirect rules in form Test Form: "[0].toPath" is required'
+      )
+    })
+
+    test('throws error if redirect rules are missing required properties in postSubmission', async () => {
+      const badDefinition = {
+        metadata: {
+          grantRedirectRules: {
+            preSubmission: [
+              {
+                toPath: '/summary'
+              }
+            ],
+            postSubmission: [
+              {
+                // Missing required toPath
+                fromGrantsStatus: 'SUBMITTED',
+                gasStatus: 'RECEIVED',
+                toGrantsStatus: 'SUBMITTED'
+              }
+            ]
+          }
+        }
+      }
+
+      expect(() => validateGrantRedirectRules(testForm, badDefinition)).toThrow(
+        'Invalid redirect rules in form Test Form: "[0].toPath" is required'
+      )
+    })
+
+    test('does throw if redirect rules are missing required fallback rule in postSubmission', async () => {
+      const badDefinition = {
+        metadata: {
+          grantRedirectRules: {
+            preSubmission: [{ toPath: '/start' }],
+            postSubmission: [
+              {
+                fromGrantsStatus: 'SUBMITTED',
+                gasStatus: 'RECEIVED',
+                toGrantsStatus: 'SUBMITTED',
+                toPath: '/confirmation'
+              }
+            ]
+          }
+        }
+      }
+
+      expect(() => validateGrantRedirectRules(testForm, badDefinition)).toThrow(
+        'Invalid redirect configuration in form Test Form: missing default/default fallback rule in postSubmission'
+      )
+    })
+
+    test('does not throw when all redirect rules are valid', async () => {
+      const goodDefinition = {
+        metadata: {
+          grantRedirectRules: {
+            preSubmission: [{ toPath: '/start' }],
+            postSubmission: [
+              {
+                fromGrantsStatus: 'SUBMITTED',
+                gasStatus: 'RECEIVED',
+                toGrantsStatus: 'SUBMITTED',
+                toPath: '/confirmation'
+              },
+              {
+                fromGrantsStatus: 'default',
+                gasStatus: 'default',
+                toGrantsStatus: 'default',
+                toPath: '/default-redirect'
+              }
+            ]
+          }
+        }
+      }
+
+      expect(() => validateGrantRedirectRules(testForm, goodDefinition)).not.toThrow()
     })
   })
 

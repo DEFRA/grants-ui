@@ -5,6 +5,7 @@ metadata:
   tasklistId: example
   submission:
     grantCode: business-status
+  grantRedirectRules: null
 pages:
   - title: What is your business?
     path: /nature-of-business

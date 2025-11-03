@@ -871,7 +871,6 @@ flowchart LR
 
 ```
 src/server/common/helpers/logging/
-├── logger.js              # Logger factory
 ├── logger-options.js      # Logger configuration
 ├── request-logger.js      # Hapi request logger plugin
 ├── log.js                 # Structured logging wrapper

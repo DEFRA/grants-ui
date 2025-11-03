@@ -5,6 +5,7 @@ metadata:
   tasklistId: example
   submission:
     grantCode: environmental-impact
+  grantRedirectRules: null
 pages:
   - title: How will this project improve the environment?
     path: /environmental-impact
