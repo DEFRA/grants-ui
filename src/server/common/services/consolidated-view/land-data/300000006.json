@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000006",
+      "organisationId": "7400006",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "5567",
+            "sheetId": "SD4957",
+            "area": 2.3811
+          }
+        ]
+      },
+      "info": {
+        "name": "Pine Farm",
+        "reference": "0300000006",
+        "email": {
+          "address": "contact+300000006@example.test"
+        },
+        "phone": {
+          "mobile": "07300000006"
+        },
+        "address": {
+          "line1": "7 Victoria Road",
+          "line2": "Works",
+          "line3": "Bristol",
+          "line4": "Derbyshire",
+          "line5": "",
+          "street": "Victoria Road",
+          "city": "Bristol",
+          "postalCode": "WN55 1ZZ"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Mr",
+          "first": "Finley",
+          "middle": "Marie",
+          "last": "Carter"
+        }
+      }
+    }
+  }
+}

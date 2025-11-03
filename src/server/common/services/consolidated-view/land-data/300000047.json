@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000047",
+      "organisationId": "7400047",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "7197",
+            "sheetId": "SD4959",
+            "area": 3.5328
+          }
+        ]
+      },
+      "info": {
+        "name": "Birch Holdings",
+        "reference": "0300000047",
+        "email": {
+          "address": "contact+300000047@example.test"
+        },
+        "phone": {
+          "mobile": "07300000047"
+        },
+        "address": {
+          "line1": "48 Manor Road",
+          "line2": "Depot",
+          "line3": "Birmingham",
+          "line4": "Suffolk",
+          "line5": "",
+          "street": "Manor Road",
+          "city": "Birmingham",
+          "postalCode": "G96 6WK"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Ms",
+          "first": "Vincent",
+          "middle": "Amelia",
+          "last": "Turner"
+        }
+      }
+    }
+  }
+}

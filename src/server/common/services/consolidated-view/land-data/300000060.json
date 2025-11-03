@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000060",
+      "organisationId": "7400060",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "8092",
+            "sheetId": "SD4960",
+            "area": 1.3079
+          }
+        ]
+      },
+      "info": {
+        "name": "Golden Holdings",
+        "reference": "0300000060",
+        "email": {
+          "address": "contact+300000060@example.test"
+        },
+        "phone": {
+          "mobile": "07300000060"
+        },
+        "address": {
+          "line1": "61 High Street",
+          "line2": "Barns",
+          "line3": "Bristol",
+          "line4": "Warwickshire",
+          "line5": "",
+          "street": "High Street",
+          "city": "Bristol",
+          "postalCode": "IV11 1EO"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Mr",
+          "first": "Jack",
+          "middle": "James",
+          "last": "Turner"
+        }
+      }
+    }
+  }
+}

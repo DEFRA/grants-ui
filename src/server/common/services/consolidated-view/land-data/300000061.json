@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000061",
+      "organisationId": "7400061",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "8307",
+            "sheetId": "SD4960",
+            "area": 2.5689
+          }
+        ]
+      },
+      "info": {
+        "name": "Green Acres",
+        "reference": "0300000061",
+        "email": {
+          "address": "contact+300000061@example.test"
+        },
+        "phone": {
+          "mobile": "07300000061"
+        },
+        "address": {
+          "line1": "62 Station Road",
+          "line2": "Yard",
+          "line3": "Leeds",
+          "line4": "Staffordshire",
+          "line5": "",
+          "street": "Station Road",
+          "city": "Leeds",
+          "postalCode": "JE12 2EO"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Ms",
+          "first": "Keira",
+          "middle": "Louise",
+          "last": "Reed"
+        }
+      }
+    }
+  }
+}

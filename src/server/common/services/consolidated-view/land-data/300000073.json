@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000073",
+      "organisationId": "7400073",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "8708",
+            "sheetId": "SD5046",
+            "area": 1.0642
+          }
+        ]
+      },
+      "info": {
+        "name": "Meadow Acres",
+        "reference": "0300000073",
+        "email": {
+          "address": "contact+300000073@example.test"
+        },
+        "phone": {
+          "mobile": "07300000073"
+        },
+        "address": {
+          "line1": "74 New Road",
+          "line2": "Business Park",
+          "line3": "Maidstone",
+          "line4": "Oxfordshire",
+          "line5": "",
+          "street": "New Road",
+          "city": "Maidstone",
+          "postalCode": "MK24 5LS"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Ms",
+          "first": "Willow",
+          "middle": "Kate",
+          "last": "Reed"
+        }
+      }
+    }
+  }
+}

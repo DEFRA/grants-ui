@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000057",
+      "organisationId": "7400057",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "6818",
+            "sheetId": "SD4960",
+            "area": 1.735
+          }
+        ]
+      },
+      "info": {
+        "name": "Lake Holdings",
+        "reference": "0300000057",
+        "email": {
+          "address": "contact+300000057@example.test"
+        },
+        "phone": {
+          "mobile": "07300000057"
+        },
+        "address": {
+          "line1": "58 Blackberry Lane",
+          "line2": "Business Park",
+          "line3": "Oxford",
+          "line4": "Oxfordshire",
+          "line5": "",
+          "street": "Blackberry Lane",
+          "city": "Oxford",
+          "postalCode": "HX8 7CN"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Ms",
+          "first": "Grace",
+          "middle": "Daniel",
+          "last": "Turner"
+        }
+      }
+    }
+  }
+}

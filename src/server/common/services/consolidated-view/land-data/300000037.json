@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000037",
+      "organisationId": "7400037",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "2543",
+            "sheetId": "SD4959",
+            "area": 3.637
+          }
+        ]
+      },
+      "info": {
+        "name": "Lake Estate",
+        "reference": "0300000037",
+        "email": {
+          "address": "contact+300000037@example.test"
+        },
+        "phone": {
+          "mobile": "07300000037"
+        },
+        "address": {
+          "line1": "38 Blackberry Lane",
+          "line2": "Yard",
+          "line3": "Maidstone",
+          "line4": "Yorkshire",
+          "line5": "",
+          "street": "Blackberry Lane",
+          "city": "Maidstone",
+          "postalCode": "DN86 5PH"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Ms",
+          "first": "Liam",
+          "middle": "Alan",
+          "last": "Howard"
+        }
+      }
+    }
+  }
+}

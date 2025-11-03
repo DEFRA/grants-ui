@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000020",
+      "organisationId": "7400020",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "4199",
+            "sheetId": "SD4958",
+            "area": 5.918
+          }
+        ]
+      },
+      "info": {
+        "name": "Golden Farm",
+        "reference": "0300000020",
+        "email": {
+          "address": "contact+300000020@example.test"
+        },
+        "phone": {
+          "mobile": "07300000020"
+        },
+        "address": {
+          "line1": "21 High Street",
+          "line2": "Barns",
+          "line3": "Norwich",
+          "line4": "Lancashire",
+          "line5": "",
+          "street": "High Street",
+          "city": "Norwich",
+          "postalCode": "BN69 6GD"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Mr",
+          "first": "Thomas",
+          "middle": "Henry",
+          "last": "Carter"
+        }
+      }
+    }
+  }
+}

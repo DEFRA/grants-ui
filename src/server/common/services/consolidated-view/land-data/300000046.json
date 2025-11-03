@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000046",
+      "organisationId": "7400046",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "6583",
+            "sheetId": "SD4959",
+            "area": 9.6042
+          }
+        ]
+      },
+      "info": {
+        "name": "Pine Holdings",
+        "reference": "0300000046",
+        "email": {
+          "address": "contact+300000046@example.test"
+        },
+        "phone": {
+          "mobile": "07300000046"
+        },
+        "address": {
+          "line1": "47 Victoria Road",
+          "line2": "Works",
+          "line3": "Manchester",
+          "line4": "Norfolk",
+          "line5": "",
+          "street": "Victoria Road",
+          "city": "Manchester",
+          "postalCode": "FY95 5WK"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Mr",
+          "first": "Una",
+          "middle": "George",
+          "last": "Turner"
+        }
+      }
+    }
+  }
+}

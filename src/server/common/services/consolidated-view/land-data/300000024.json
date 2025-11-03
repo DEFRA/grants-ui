@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000024",
+      "organisationId": "7400024",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "5863",
+            "sheetId": "SD4958",
+            "area": 4.1521
+          }
+        ]
+      },
+      "info": {
+        "name": "Maple Estate",
+        "reference": "0300000024",
+        "email": {
+          "address": "contact+300000024@example.test"
+        },
+        "phone": {
+          "mobile": "07300000024"
+        },
+        "address": {
+          "line1": "25 Park Road",
+          "line2": "Farm Buildings",
+          "line3": "Bristol",
+          "line4": "Hampshire",
+          "line5": "",
+          "street": "Park Road",
+          "city": "Bristol",
+          "postalCode": "CB73 1JE"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Mr",
+          "first": "Xavier",
+          "middle": "Peter",
+          "last": "Howard"
+        }
+      }
+    }
+  }
+}

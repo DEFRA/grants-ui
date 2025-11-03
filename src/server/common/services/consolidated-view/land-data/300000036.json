@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000036",
+      "organisationId": "7400036",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "2303",
+            "sheetId": "SD4959",
+            "area": 2.7867
+          }
+        ]
+      },
+      "info": {
+        "name": "Hill Estate",
+        "reference": "0300000036",
+        "email": {
+          "address": "contact+300000036@example.test"
+        },
+        "phone": {
+          "mobile": "07300000036"
+        },
+        "address": {
+          "line1": "37 Mill Lane",
+          "line2": "Barns",
+          "line3": "Gloucester",
+          "line4": "Lancashire",
+          "line5": "",
+          "street": "Mill Lane",
+          "city": "Gloucester",
+          "postalCode": "DL85 4PH"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Mr",
+          "first": "Keira",
+          "middle": "Marie",
+          "last": "Howard"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000064",
+      "organisationId": "7400064",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "9119",
+            "sheetId": "SD4960",
+            "area": 2.9625
+          }
+        ]
+      },
+      "info": {
+        "name": "Maple Acres",
+        "reference": "0300000064",
+        "email": {
+          "address": "contact+300000064@example.test"
+        },
+        "phone": {
+          "mobile": "07300000064"
+        },
+        "address": {
+          "line1": "65 Park Road",
+          "line2": "Farm Buildings",
+          "line3": "Manchester",
+          "line4": "Devon",
+          "line5": "",
+          "street": "Park Road",
+          "city": "Manchester",
+          "postalCode": "L15 5GP"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Mr",
+          "first": "Noah",
+          "middle": "Grace",
+          "last": "Reed"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000062",
+      "organisationId": "7400062",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "8453",
+            "sheetId": "SD4960",
+            "area": 3.5902
+          }
+        ]
+      },
+      "info": {
+        "name": "Oak Acres",
+        "reference": "0300000062",
+        "email": {
+          "address": "contact+300000062@example.test"
+        },
+        "phone": {
+          "mobile": "07300000062"
+        },
+        "address": {
+          "line1": "63 Church Street",
+          "line2": "Works",
+          "line3": "Nottingham",
+          "line4": "Norfolk",
+          "line5": "",
+          "street": "Church Street",
+          "city": "Nottingham",
+          "postalCode": "KA13 3FO"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Mr",
+          "first": "Liam",
+          "middle": "John",
+          "last": "Reed"
+        }
+      }
+    }
+  }
+}

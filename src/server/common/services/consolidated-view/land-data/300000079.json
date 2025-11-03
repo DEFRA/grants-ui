@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000079",
+      "organisationId": "7400079",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "9385",
+            "sheetId": "SD5054",
+            "area": 3.2899
+          }
+        ]
+      },
+      "info": {
+        "name": "Sunny Acres",
+        "reference": "0300000079",
+        "email": {
+          "address": "contact+300000079@example.test"
+        },
+        "phone": {
+          "mobile": "07300000079"
+        },
+        "address": {
+          "line1": "80 Chapel Street",
+          "line2": "Depot",
+          "line3": "Leeds",
+          "line4": "Suffolk",
+          "line5": "",
+          "street": "Chapel Street",
+          "city": "Leeds",
+          "postalCode": "NP30 2OT"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Ms",
+          "first": "Daniel",
+          "middle": "May",
+          "last": "Reed"
+        }
+      }
+    }
+  }
+}

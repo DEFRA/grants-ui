@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000050",
+      "organisationId": "7400050",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "8655",
+            "sheetId": "SD4959",
+            "area": 2.246
+          }
+        ]
+      },
+      "info": {
+        "name": "Hawthorn Holdings",
+        "reference": "0300000050",
+        "email": {
+          "address": "contact+300000050@example.test"
+        },
+        "phone": {
+          "mobile": "07300000050"
+        },
+        "address": {
+          "line1": "51 London Road",
+          "line2": "Industrial Estate",
+          "line3": "Coventry",
+          "line4": "Kent",
+          "line5": "",
+          "street": "London Road",
+          "city": "Coventry",
+          "postalCode": "HA1 9ZL"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Mr",
+          "first": "Yasmine",
+          "middle": "Henry",
+          "last": "Turner"
+        }
+      }
+    }
+  }
+}

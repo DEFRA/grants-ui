@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000032",
+      "organisationId": "7400032",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "8906",
+            "sheetId": "SD4958",
+            "area": 1.9958
+          }
+        ]
+      },
+      "info": {
+        "name": "Ivy Estate",
+        "reference": "0300000032",
+        "email": {
+          "address": "contact+300000032@example.test"
+        },
+        "phone": {
+          "mobile": "07300000032"
+        },
+        "address": {
+          "line1": "33 George Street",
+          "line2": "Farm Buildings",
+          "line3": "Coventry",
+          "line4": "Devon",
+          "line5": "",
+          "street": "George Street",
+          "city": "Coventry",
+          "postalCode": "DA81 9NG"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Mr",
+          "first": "Grace",
+          "middle": "John",
+          "last": "Howard"
+        }
+      }
+    }
+  }
+}

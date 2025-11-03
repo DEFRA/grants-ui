@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000026",
+      "organisationId": "7400026",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "6983",
+            "sheetId": "SD4958",
+            "area": 2.4342
+          }
+        ]
+      },
+      "info": {
+        "name": "Pine Estate",
+        "reference": "0300000026",
+        "email": {
+          "address": "contact+300000026@example.test"
+        },
+        "phone": {
+          "mobile": "07300000026"
+        },
+        "address": {
+          "line1": "27 Victoria Road",
+          "line2": "Industrial Estate",
+          "line3": "Nottingham",
+          "line4": "Gloucestershire",
+          "line5": "",
+          "street": "Victoria Road",
+          "city": "Nottingham",
+          "postalCode": "CH75 3KE"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Mr",
+          "first": "Alice",
+          "middle": "Charlotte",
+          "last": "Howard"
+        }
+      }
+    }
+  }
+}

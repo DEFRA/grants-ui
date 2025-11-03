@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000092",
+      "organisationId": "7400092",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "8085",
+            "sheetId": "SD5055",
+            "area": 1.9662
+          }
+        ]
+      },
+      "info": {
+        "name": "Ivy Grange",
+        "reference": "0300000092",
+        "email": {
+          "address": "contact+300000092@example.test"
+        },
+        "phone": {
+          "mobile": "07300000092"
+        },
+        "address": {
+          "line1": "93 George Street",
+          "line2": "Barns",
+          "line3": "Norwich",
+          "line4": "Warwickshire",
+          "line5": "",
+          "street": "George Street",
+          "city": "Norwich",
+          "postalCode": "RM43 6YZ"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Mr",
+          "first": "Quinn",
+          "middle": "John",
+          "last": "Reed"
+        }
+      }
+    }
+  }
+}

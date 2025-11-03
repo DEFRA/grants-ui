@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000031",
+      "organisationId": "7400031",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "8844",
+            "sheetId": "SD4958",
+            "area": 1.3264
+          }
+        ]
+      },
+      "info": {
+        "name": "Rose Estate",
+        "reference": "0300000031",
+        "email": {
+          "address": "contact+300000031@example.test"
+        },
+        "phone": {
+          "mobile": "07300000031"
+        },
+        "address": {
+          "line1": "32 Green Lane",
+          "line2": "Depot",
+          "line3": "Leicester",
+          "line4": "Suffolk",
+          "line5": "",
+          "street": "Green Lane",
+          "city": "Leicester",
+          "postalCode": "CW80 8MF"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Ms",
+          "first": "Finley",
+          "middle": "Louise",
+          "last": "Howard"
+        }
+      }
+    }
+  }
+}
