@@ -769,7 +769,7 @@ And optionally:
 - Land Grants API and Postgres via `compose.land-grants.yml`
 
 ```bash
-docker compose up -f compose.yml -f compose.override.yml -f compose.land-grants.yml --build -d
+docker compose up -f compose.yml -f compose.land-grants.yml --build -d
 ```
 
 Note: Running the Land Grants API and Postgres requires land data to be populated in the Land Grants Postgres database.

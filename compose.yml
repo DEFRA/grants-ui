@@ -12,6 +12,9 @@ services:
         condition: service_started
       fcp-defra-id-stub:
         condition: service_healthy
+    ports:
+      - '3000:3000'
+      - '9229:9229'
     environment:
       PORT: 3000
       NODE_ENV: ${NODE_ENV:-development}
@@ -71,6 +74,8 @@ services:
     depends_on:
       mongodb:
         condition: service_healthy
+    ports:
+      - '3001:3001'
     environment:
       PORT: 3001
       HOST: 0.0.0.0
