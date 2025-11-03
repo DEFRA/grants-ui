@@ -1,8 +1,6 @@
 import { formsService, getFormsCache } from '~/src/server/common/forms/services/form.js'
 import { ComponentsRegistry } from './components.registry.js'
-import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
-
-const logger = createLogger()
+import { logger } from '~/src/server/common/helpers/logging/log.js'
 
 export class ConfirmationService {
   /**

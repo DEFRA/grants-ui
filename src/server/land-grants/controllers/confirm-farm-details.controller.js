@@ -7,7 +7,7 @@ import {
   createCustomerNameRow,
   createSbiRow
 } from '../../common/helpers/create-rows.js'
-import { log, LogCodes } from '../../common/helpers/logging/log.js'
+import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
 export default class ConfirmFarmDetailsController extends QuestionPageController {
   viewName = 'confirm-farm-details'

@@ -1,5 +1,5 @@
 import { config } from '~/src/config/config.js'
-import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
+import { logger } from '~/src/server/common/helpers/logging/log.js'
 import { metadata } from '../config.js'
 import { FileFormService } from '@defra/forms-engine-plugin/file-form-service.js'
 import path from 'node:path'
@@ -15,7 +15,6 @@ export function getFormsCache() {
 }
 
 export function configureFormDefinition(definition) {
-  const logger = createLogger()
   const environment = config.get('cdpEnvironment')
 
   for (const page of definition.pages ?? []) {
@@ -47,7 +46,6 @@ class GrantsFormLoader extends FileFormService {
 
 export async function addAllForms(loader, forms) {
   const addedForms = new Set()
-  const logger = createLogger()
 
   const uniqueForms = forms.filter((form) => {
     const key = `${form.id}-${form.slug}`
@@ -126,7 +124,6 @@ async function listYamlFilesRecursively(baseDir) {
 
 async function discoverFormsFromYaml(baseDir = path.resolve(process.cwd(), 'src/server/common/forms/definitions')) {
   const isProduction = config.get('cdpEnvironment')?.toLowerCase() === 'prod'
-  const logger = createLogger()
   let files = []
   try {
     files = await listYamlFilesRecursively(baseDir)
@@ -177,7 +174,6 @@ export const formsService = async () => {
   formsCache = forms
   await addAllForms(loader, forms)
 
-  const logger = createLogger()
   for (const form of forms) {
     try {
       const definition = loader.getFormDefinition(form.id)

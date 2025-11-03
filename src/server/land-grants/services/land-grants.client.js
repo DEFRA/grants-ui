@@ -1,8 +1,6 @@
 import { createApiHeadersForLandGrantsBackend } from '~/src/server/common/helpers/state/backend-auth-helper.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
-import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
-
-const logger = createLogger()
+import { logger } from '~/src/server/common/helpers/logging/log.js'
 
 /**
  * Performs a POST request to the Land Grants API.

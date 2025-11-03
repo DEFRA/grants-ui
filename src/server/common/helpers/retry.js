@@ -1,5 +1,4 @@
-import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
-
+import { logger } from '~/src/server/common/helpers/logging/log.js'
 /**
  * Retry an asynchronous operation with configurable options
  * @param {Function} operation - Async function to retry
@@ -26,7 +25,7 @@ export async function retry(operation, options = {}) {
     checkFetchResponse = false,
     onRetry = (error, attempt) => {
       const message = `Retry attempt ${attempt}/${maxAttempts} after error: ${error.message}`
-      createLogger().error(error, message)
+      logger.error(error, message)
     }
   } = options
 

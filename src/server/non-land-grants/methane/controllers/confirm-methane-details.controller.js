@@ -6,10 +6,8 @@ import {
   createCustomerNameRow,
   createSbiRow
 } from '~/src/server/common/helpers/create-rows.js'
-import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
+import { logger } from '~/src/server/common/helpers/logging/log.js'
 import { fetchBusinessAndCPH } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
-
-const logger = createLogger()
 
 export default class ConfirmMethaneDetailsController extends QuestionPageController {
   viewName = 'confirm-methane-details'
