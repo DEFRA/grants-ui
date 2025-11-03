@@ -41,7 +41,6 @@ export default class SelectLandParcelPageController extends LandGrantsQuestionWi
       const { selectedLandParcel, action } = payload
 
       if (action === 'validate' && !selectedLandParcel) {
-        // Need to fetch parcels for error rendering
         let parcels = []
         try {
           const fetchedParcels = await fetchParcels(request)
@@ -92,7 +91,8 @@ export default class SelectLandParcelPageController extends LandGrantsQuestionWi
      * @param {Pick<ResponseToolkit, 'redirect' | 'view'>} h
      */
     const fn = async (request, context, h) => {
-      const { selectedLandParcel = '', landParcels } = context.state || {}
+      const { state } = context
+      const { landParcels } = state || {}
 
       const { viewName } = this
       const baseViewModel = super.getViewModel(request, context)
@@ -110,10 +110,14 @@ export default class SelectLandParcelPageController extends LandGrantsQuestionWi
         const viewModel = {
           ...baseViewModel,
           parcels,
-          selectedLandParcel,
-          existingLandParcels
+          existingLandParcels,
+          selectedLandParcel: null
         }
 
+        await this.setState(request, {
+          ...state,
+          selectedLandParcel: null
+        })
         return h.view(viewName, viewModel)
       } catch (error) {
         const sbi = request.auth?.credentials?.sbi
@@ -124,6 +128,7 @@ export default class SelectLandParcelPageController extends LandGrantsQuestionWi
         return h.view(viewName, {
           ...baseViewModel,
           existingLandParcels,
+          selectedLandParcel: null,
           errors: [errorMessage]
         })
       }
