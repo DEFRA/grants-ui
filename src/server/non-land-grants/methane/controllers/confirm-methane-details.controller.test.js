@@ -13,11 +13,14 @@ import {
 // Mock dependencies
 vi.mock('~/src/server/common/services/consolidated-view/consolidated-view.service.js')
 vi.mock('~/src/server/common/helpers/create-rows.js')
-vi.mock('~/src/server/common/helpers/logging/logger.js', async () => {
+vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
   const { mockLoggerFactoryWithCustomMethods } = await import('~/src/__mocks__')
-  return mockLoggerFactoryWithCustomMethods({
-    error: vi.fn()
-  })
+
+  return {
+    logger: mockLoggerFactoryWithCustomMethods({
+      error: vi.fn()
+    })
+  }
 })
 
 const mockData = {

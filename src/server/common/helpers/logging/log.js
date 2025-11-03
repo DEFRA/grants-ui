@@ -1,7 +1,8 @@
-import { createLogger } from './logger.js'
 import { LogCodes } from './log-codes.js'
+import { pino } from 'pino'
+import { loggerOptions } from '~/src/server/common/helpers/logging/logger-options.js'
 
-const logger = createLogger()
+const logger = pino(loggerOptions)
 
 /**
  * @typedef {'info' | 'debug' | 'error'} LogLevel
