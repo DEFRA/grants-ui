@@ -72,15 +72,6 @@ export const getAgreementController = {
       const { baseUrl, token } = validateConfig()
       const { path } = request.params
 
-      if (!path) {
-        return h
-          .response({
-            error: 'Bad Request',
-            message: 'Path parameter is required'
-          })
-          .code(statusCodes.badRequest)
-      }
-
       const uri = buildTargetUri(baseUrl, path)
       const headers = buildProxyHeaders(token, request)
       const apiResponse = await Promise.resolve(
