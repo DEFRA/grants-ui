@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000053",
+      "organisationId": "7400053",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "4932",
+            "sheetId": "SD4960",
+            "area": 1.0608
+          }
+        ]
+      },
+      "info": {
+        "name": "Meadow Holdings",
+        "reference": "0300000053",
+        "email": {
+          "address": "contact+300000053@example.test"
+        },
+        "phone": {
+          "mobile": "07300000053"
+        },
+        "address": {
+          "line1": "54 New Road",
+          "line2": "Yard",
+          "line3": "Exeter",
+          "line4": "Yorkshire",
+          "line5": "",
+          "street": "New Road",
+          "city": "Exeter",
+          "postalCode": "HP4 3AM"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Ms",
+          "first": "Chloe",
+          "middle": "Jade",
+          "last": "Turner"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000002",
+      "organisationId": "7400002",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "8890",
+            "sheetId": "SD4858",
+            "area": 2.8728
+          }
+        ]
+      },
+      "info": {
+        "name": "Oak Farm",
+        "reference": "0300000002",
+        "email": {
+          "address": "contact+300000002@example.test"
+        },
+        "phone": {
+          "mobile": "07300000002"
+        },
+        "address": {
+          "line1": "3 Church Street",
+          "line2": "Industrial Estate",
+          "line3": "Norwich",
+          "line4": "Kent",
+          "line5": "",
+          "street": "Church Street",
+          "city": "Norwich",
+          "postalCode": "WA51 6WY"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Mr",
+          "first": "Benjamin",
+          "middle": "John",
+          "last": "Carter"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000054",
+      "organisationId": "7400054",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "5447",
+            "sheetId": "SD4960",
+            "area": 2.2001
+          }
+        ]
+      },
+      "info": {
+        "name": "Valley Holdings",
+        "reference": "0300000054",
+        "email": {
+          "address": "contact+300000054@example.test"
+        },
+        "phone": {
+          "mobile": "07300000054"
+        },
+        "address": {
+          "line1": "55 Grange Road",
+          "line2": "Works",
+          "line3": "Gloucester",
+          "line4": "Derbyshire",
+          "line5": "",
+          "street": "Grange Road",
+          "city": "Gloucester",
+          "postalCode": "HR5 4BM"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Mr",
+          "first": "Daniel",
+          "middle": "Peter",
+          "last": "Turner"
+        }
+      }
+    }
+  }
+}

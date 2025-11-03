@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000048",
+      "organisationId": "7400048",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "7439",
+            "sheetId": "SD4959",
+            "area": 1.7246
+          }
+        ]
+      },
+      "info": {
+        "name": "Elm Holdings",
+        "reference": "0300000048",
+        "email": {
+          "address": "contact+300000048@example.test"
+        },
+        "phone": {
+          "mobile": "07300000048"
+        },
+        "address": {
+          "line1": "49 Church Lane",
+          "line2": "Farm Buildings",
+          "line3": "Liverpool",
+          "line4": "Devon",
+          "line5": "",
+          "street": "Church Lane",
+          "city": "Liverpool",
+          "postalCode": "GL97 7YL"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Mr",
+          "first": "Willow",
+          "middle": "Edward",
+          "last": "Turner"
+        }
+      }
+    }
+  }
+}

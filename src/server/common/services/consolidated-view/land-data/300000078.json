@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000078",
+      "organisationId": "7400078",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "7685",
+            "sheetId": "SD5054",
+            "area": 4.7903
+          }
+        ]
+      },
+      "info": {
+        "name": "Stone Acres",
+        "reference": "0300000078",
+        "email": {
+          "address": "contact+300000078@example.test"
+        },
+        "phone": {
+          "mobile": "07300000078"
+        },
+        "address": {
+          "line1": "79 Market Street",
+          "line2": "Works",
+          "line3": "Bristol",
+          "line4": "Norfolk",
+          "line5": "",
+          "street": "Market Street",
+          "city": "Bristol",
+          "postalCode": "NN29 1OT"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Mr",
+          "first": "Chloe",
+          "middle": "Edward",
+          "last": "Reed"
+        }
+      }
+    }
+  }
+}

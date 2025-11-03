@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000099",
+      "organisationId": "7400099",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "9648",
+            "sheetId": "SD5055",
+            "area": 1.7908
+          }
+        ]
+      },
+      "info": {
+        "name": "Sunny Grange",
+        "reference": "0300000099",
+        "email": {
+          "address": "contact+300000099@example.test"
+        },
+        "phone": {
+          "mobile": "07300000099"
+        },
+        "address": {
+          "line1": "100 Chapel Street",
+          "line2": "Trading Estate",
+          "line3": "Sheffield",
+          "line4": "Essex",
+          "line5": "",
+          "street": "Chapel Street",
+          "city": "Sheffield",
+          "postalCode": "SM50 4BA"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Ms",
+          "first": "Xavier",
+          "middle": "Elizabeth",
+          "last": "Reed"
+        }
+      }
+    }
+  }
+}

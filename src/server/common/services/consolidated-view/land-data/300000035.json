@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000035",
+      "organisationId": "7400035",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "8222",
+            "sheetId": "SD5066",
+            "area": 2.5242
+          }
+        ]
+      },
+      "info": {
+        "name": "River Estate",
+        "reference": "0300000035",
+        "email": {
+          "address": "contact+300000035@example.test"
+        },
+        "phone": {
+          "mobile": "07300000035"
+        },
+        "address": {
+          "line1": "36 Kingsway",
+          "line2": "Trading Estate",
+          "line3": "Exeter",
+          "line4": "Essex",
+          "line5": "",
+          "street": "Kingsway",
+          "city": "Exeter",
+          "postalCode": "DG84 3OG"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Ms",
+          "first": "Jack",
+          "middle": "Lee",
+          "last": "Howard"
+        }
+      }
+    }
+  }
+}

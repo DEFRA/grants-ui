@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000090",
+      "organisationId": "7400090",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "7278",
+            "sheetId": "SD5055",
+            "area": 1.8038
+          }
+        ]
+      },
+      "info": {
+        "name": "Hawthorn Grange",
+        "reference": "0300000090",
+        "email": {
+          "address": "contact+300000090@example.test"
+        },
+        "phone": {
+          "mobile": "07300000090"
+        },
+        "address": {
+          "line1": "91 London Road",
+          "line2": "Industrial Estate",
+          "line3": "Gloucester",
+          "line4": "Gloucestershire",
+          "line5": "",
+          "street": "London Road",
+          "city": "Gloucester",
+          "postalCode": "RG41 4WY"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Mr",
+          "first": "Olivia",
+          "middle": "James",
+          "last": "Reed"
+        }
+      }
+    }
+  }
+}

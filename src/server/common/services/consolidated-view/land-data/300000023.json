@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000023",
+      "organisationId": "7400023",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "4918",
+            "sheetId": "SD4958",
+            "area": 1.2861
+          }
+        ]
+      },
+      "info": {
+        "name": "Willow Estate",
+        "reference": "0300000023",
+        "email": {
+          "address": "contact+300000023@example.test"
+        },
+        "phone": {
+          "mobile": "07300000023"
+        },
+        "address": {
+          "line1": "24 Main Street",
+          "line2": "Depot",
+          "line3": "York",
+          "line4": "Nottinghamshire",
+          "line5": "",
+          "street": "Main Street",
+          "city": "York",
+          "postalCode": "CA72 9HD"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Ms",
+          "first": "Willow",
+          "middle": "Jade",
+          "last": "Howard"
+        }
+      }
+    }
+  }
+}

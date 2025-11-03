@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000095",
+      "organisationId": "7400095",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "8533",
+            "sheetId": "SD5055",
+            "area": 2.5403
+          }
+        ]
+      },
+      "info": {
+        "name": "River Grange",
+        "reference": "0300000095",
+        "email": {
+          "address": "contact+300000095@example.test"
+        },
+        "phone": {
+          "mobile": "07300000095"
+        },
+        "address": {
+          "line1": "96 Kingsway",
+          "line2": "Depot",
+          "line3": "York",
+          "line4": "Suffolk",
+          "line5": "",
+          "street": "Kingsway",
+          "city": "York",
+          "postalCode": "SE46 9ZZ"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Ms",
+          "first": "Thomas",
+          "middle": "Lee",
+          "last": "Reed"
+        }
+      }
+    }
+  }
+}

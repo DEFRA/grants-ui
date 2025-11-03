@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000019",
+      "organisationId": "7400019",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "3700",
+            "sheetId": "SD4958",
+            "area": 3.3122
+          }
+        ]
+      },
+      "info": {
+        "name": "Sunny Farm",
+        "reference": "0300000019",
+        "email": {
+          "address": "contact+300000019@example.test"
+        },
+        "phone": {
+          "mobile": "07300000019"
+        },
+        "address": {
+          "line1": "20 Chapel Street",
+          "line2": "Trading Estate",
+          "line3": "Maidstone",
+          "line4": "Essex",
+          "line5": "",
+          "street": "Chapel Street",
+          "city": "Maidstone",
+          "postalCode": "BL68 5FC"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Ms",
+          "first": "Sophia",
+          "middle": "May",
+          "last": "Carter"
+        }
+      }
+    }
+  }
+}

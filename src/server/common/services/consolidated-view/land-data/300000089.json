@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000089",
+      "organisationId": "7400089",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "7009",
+            "sheetId": "SD5055",
+            "area": 2.9628
+          }
+        ]
+      },
+      "info": {
+        "name": "Ash Grange",
+        "reference": "0300000089",
+        "email": {
+          "address": "contact+300000089@example.test"
+        },
+        "phone": {
+          "mobile": "07300000089"
+        },
+        "address": {
+          "line1": "90 The Avenue",
+          "line2": "Business Park",
+          "line3": "Exeter",
+          "line4": "Oxfordshire",
+          "line5": "",
+          "street": "The Avenue",
+          "city": "Exeter",
+          "postalCode": "PR40 3UY"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Ms",
+          "first": "Noah",
+          "middle": "Joseph",
+          "last": "Reed"
+        }
+      }
+    }
+  }
+}

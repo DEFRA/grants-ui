@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000044",
+      "organisationId": "7400044",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "5435",
+            "sheetId": "SD4959",
+            "area": 3.821
+          }
+        ]
+      },
+      "info": {
+        "name": "Maple Holdings",
+        "reference": "0300000044",
+        "email": {
+          "address": "contact+300000044@example.test"
+        },
+        "phone": {
+          "mobile": "07300000044"
+        },
+        "address": {
+          "line1": "45 Park Road",
+          "line2": "Barns",
+          "line3": "Nottingham",
+          "line4": "Warwickshire",
+          "line5": "",
+          "street": "Park Road",
+          "city": "Nottingham",
+          "postalCode": "EX93 3UK"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Mr",
+          "first": "Sophia",
+          "middle": "Michael",
+          "last": "Turner"
+        }
+      }
+    }
+  }
+}
