@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000072",
+      "organisationId": "7400072",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "7210",
+            "sheetId": "SD4964",
+            "area": 2.2459
+          }
+        ]
+      },
+      "info": {
+        "name": "Ivy Acres",
+        "reference": "0300000072",
+        "email": {
+          "address": "contact+300000072@example.test"
+        },
+        "phone": {
+          "mobile": "07300000072"
+        },
+        "address": {
+          "line1": "73 George Street",
+          "line2": "Farm Buildings",
+          "line3": "Gloucester",
+          "line4": "Hampshire",
+          "line5": "",
+          "street": "George Street",
+          "city": "Gloucester",
+          "postalCode": "ME23 4LS"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Mr",
+          "first": "Vincent",
+          "middle": "William",
+          "last": "Reed"
+        }
+      }
+    }
+  }
+}

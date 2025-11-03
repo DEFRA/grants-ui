@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000094",
+      "organisationId": "7400094",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "8445",
+            "sheetId": "SD5055",
+            "area": 1.9664
+          }
+        ]
+      },
+      "info": {
+        "name": "Valley Grange",
+        "reference": "0300000094",
+        "email": {
+          "address": "contact+300000094@example.test"
+        },
+        "phone": {
+          "mobile": "07300000094"
+        },
+        "address": {
+          "line1": "95 Grange Road",
+          "line2": "Works",
+          "line3": "Reading",
+          "line4": "Norfolk",
+          "line5": "",
+          "street": "Grange Road",
+          "city": "Reading",
+          "postalCode": "SA45 8ZZ"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Mr",
+          "first": "Sophia",
+          "middle": "Grace",
+          "last": "Reed"
+        }
+      }
+    }
+  }
+}

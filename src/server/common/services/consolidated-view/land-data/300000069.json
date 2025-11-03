@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000069",
+      "organisationId": "7400069",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "9081",
+            "sheetId": "SD4963",
+            "area": 2.1293
+          }
+        ]
+      },
+      "info": {
+        "name": "Ash Acres",
+        "reference": "0300000069",
+        "email": {
+          "address": "contact+300000069@example.test"
+        },
+        "phone": {
+          "mobile": "07300000069"
+        },
+        "address": {
+          "line1": "70 The Avenue",
+          "line2": "Yard",
+          "line3": "Bradford",
+          "line4": "Yorkshire",
+          "line5": "",
+          "street": "The Avenue",
+          "city": "Bradford",
+          "postalCode": "LS20 1JR"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Ms",
+          "first": "Sophia",
+          "middle": "Elizabeth",
+          "last": "Reed"
+        }
+      }
+    }
+  }
+}

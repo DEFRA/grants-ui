@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000015",
+      "organisationId": "7400015",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "1610",
+            "sheetId": "SD4958",
+            "area": 2.0167
+          }
+        ]
+      },
+      "info": {
+        "name": "River Farm",
+        "reference": "0300000015",
+        "email": {
+          "address": "contact+300000015@example.test"
+        },
+        "phone": {
+          "mobile": "07300000015"
+        },
+        "address": {
+          "line1": "16 Kingsway",
+          "line2": "Depot",
+          "line3": "Bradford",
+          "line4": "Suffolk",
+          "line5": "",
+          "street": "Kingsway",
+          "city": "Bradford",
+          "postalCode": "BA64 1DB"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Ms",
+          "first": "Olivia",
+          "middle": "Paige",
+          "last": "Carter"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000080",
+      "organisationId": "7400080",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "3718",
+            "sheetId": "SD5055",
+            "area": 4.1306
+          }
+        ]
+      },
+      "info": {
+        "name": "Golden Acres",
+        "reference": "0300000080",
+        "email": {
+          "address": "contact+300000080@example.test"
+        },
+        "phone": {
+          "mobile": "07300000080"
+        },
+        "address": {
+          "line1": "81 High Street",
+          "line2": "Farm Buildings",
+          "line3": "Nottingham",
+          "line4": "Devon",
+          "line5": "",
+          "street": "High Street",
+          "city": "Nottingham",
+          "postalCode": "NR31 3PU"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Mr",
+          "first": "Emily",
+          "middle": "Henry",
+          "last": "Reed"
+        }
+      }
+    }
+  }
+}

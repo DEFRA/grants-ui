@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000081",
+      "organisationId": "7400081",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "3854",
+            "sheetId": "SD5055",
+            "area": 2.5329
+          }
+        ]
+      },
+      "info": {
+        "name": "Green Grange",
+        "reference": "0300000081",
+        "email": {
+          "address": "contact+300000081@example.test"
+        },
+        "phone": {
+          "mobile": "07300000081"
+        },
+        "address": {
+          "line1": "82 Station Road",
+          "line2": "Business Park",
+          "line3": "Sheffield",
+          "line4": "Somerset",
+          "line5": "",
+          "street": "Station Road",
+          "city": "Sheffield",
+          "postalCode": "NW32 4PU"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Ms",
+          "first": "Finley",
+          "middle": "Claire",
+          "last": "Reed"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000085",
+      "organisationId": "7400085",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "5511",
+            "sheetId": "SD5055",
+            "area": 1.5835
+          }
+        ]
+      },
+      "info": {
+        "name": "Cedar Grange",
+        "reference": "0300000085",
+        "email": {
+          "address": "contact+300000085@example.test"
+        },
+        "phone": {
+          "mobile": "07300000085"
+        },
+        "address": {
+          "line1": "86 The Green",
+          "line2": "Yard",
+          "line3": "Leicester",
+          "line4": "Yorkshire",
+          "line5": "",
+          "street": "The Green",
+          "city": "Leicester",
+          "postalCode": "PE36 8SW"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Ms",
+          "first": "Jack",
+          "middle": "Mary",
+          "last": "Reed"
+        }
+      }
+    }
+  }
+}

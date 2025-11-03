@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000055",
+      "organisationId": "7400055",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "6111",
+            "sheetId": "SD4960",
+            "area": 3.7922
+          }
+        ]
+      },
+      "info": {
+        "name": "River Holdings",
+        "reference": "0300000055",
+        "email": {
+          "address": "contact+300000055@example.test"
+        },
+        "phone": {
+          "mobile": "07300000055"
+        },
+        "address": {
+          "line1": "56 Kingsway",
+          "line2": "Depot",
+          "line3": "Maidstone",
+          "line4": "Nottinghamshire",
+          "line5": "",
+          "street": "Kingsway",
+          "city": "Maidstone",
+          "postalCode": "HS6 5BM"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Ms",
+          "first": "Emily",
+          "middle": "Mary",
+          "last": "Turner"
+        }
+      }
+    }
+  }
+}

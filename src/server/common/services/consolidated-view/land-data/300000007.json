@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000007",
+      "organisationId": "7400007",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "6697",
+            "sheetId": "SD4957",
+            "area": 5.7775
+          }
+        ]
+      },
+      "info": {
+        "name": "Birch Farm",
+        "reference": "0300000007",
+        "email": {
+          "address": "contact+300000007@example.test"
+        },
+        "phone": {
+          "mobile": "07300000007"
+        },
+        "address": {
+          "line1": "8 Manor Road",
+          "line2": "Depot",
+          "line3": "Leeds",
+          "line4": "Nottinghamshire",
+          "line5": "",
+          "street": "Manor Road",
+          "city": "Leeds",
+          "postalCode": "WR56 2ZZ"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Ms",
+          "first": "Grace",
+          "middle": "Alan",
+          "last": "Carter"
+        }
+      }
+    }
+  }
+}

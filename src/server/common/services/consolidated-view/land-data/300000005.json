@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000005",
+      "organisationId": "7400005",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "5485",
+            "sheetId": "SD4957",
+            "area": 2.0077
+          }
+        ]
+      },
+      "info": {
+        "name": "Cedar Farm",
+        "reference": "0300000005",
+        "email": {
+          "address": "contact+300000005@example.test"
+        },
+        "phone": {
+          "mobile": "07300000005"
+        },
+        "address": {
+          "line1": "6 The Green",
+          "line2": "Yard",
+          "line3": "York",
+          "line4": "Yorkshire",
+          "line5": "",
+          "street": "The Green",
+          "city": "York",
+          "postalCode": "WF54 9YZ"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Ms",
+          "first": "Emily",
+          "middle": "Lee",
+          "last": "Carter"
+        }
+      }
+    }
+  }
+}

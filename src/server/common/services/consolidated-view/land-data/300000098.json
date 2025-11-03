@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000098",
+      "organisationId": "7400098",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "9619",
+            "sheetId": "SD5055",
+            "area": 1.7609
+          }
+        ]
+      },
+      "info": {
+        "name": "Stone Grange",
+        "reference": "0300000098",
+        "email": {
+          "address": "contact+300000098@example.test"
+        },
+        "phone": {
+          "mobile": "07300000098"
+        },
+        "address": {
+          "line1": "99 Market Street",
+          "line2": "Industrial Estate",
+          "line3": "Nottingham",
+          "line4": "Kent",
+          "line5": "",
+          "street": "Market Street",
+          "city": "Nottingham",
+          "postalCode": "SL49 3BA"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Mr",
+          "first": "Willow",
+          "middle": "David",
+          "last": "Reed"
+        }
+      }
+    }
+  }
+}

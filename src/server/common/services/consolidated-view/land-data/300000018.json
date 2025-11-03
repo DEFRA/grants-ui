@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000018",
+      "organisationId": "7400018",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "2805",
+            "sheetId": "SD4958",
+            "area": 1.3221
+          }
+        ]
+      },
+      "info": {
+        "name": "Stone Farm",
+        "reference": "0300000018",
+        "email": {
+          "address": "contact+300000018@example.test"
+        },
+        "phone": {
+          "mobile": "07300000018"
+        },
+        "address": {
+          "line1": "19 Market Street",
+          "line2": "Industrial Estate",
+          "line3": "Gloucester",
+          "line4": "Kent",
+          "line5": "",
+          "street": "Market Street",
+          "city": "Gloucester",
+          "postalCode": "BH67 4FC"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Mr",
+          "first": "Ruby",
+          "middle": "Edward",
+          "last": "Carter"
+        }
+      }
+    }
+  }
+}

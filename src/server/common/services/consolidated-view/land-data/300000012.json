@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000012",
+      "organisationId": "7400012",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "9837",
+            "sheetId": "SD5065",
+            "area": 2.5298
+          }
+        ]
+      },
+      "info": {
+        "name": "Ivy Farm",
+        "reference": "0300000012",
+        "email": {
+          "address": "contact+300000012@example.test"
+        },
+        "phone": {
+          "mobile": "07300000012"
+        },
+        "address": {
+          "line1": "13 George Street",
+          "line2": "Barns",
+          "line3": "Liverpool",
+          "line4": "Warwickshire",
+          "line5": "",
+          "street": "George Street",
+          "city": "Liverpool",
+          "postalCode": "AB61 7CB"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Mr",
+          "first": "Liam",
+          "middle": "William",
+          "last": "Carter"
+        }
+      }
+    }
+  }
+}

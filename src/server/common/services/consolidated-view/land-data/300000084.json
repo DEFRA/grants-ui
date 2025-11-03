@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000084",
+      "organisationId": "7400084",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "5173",
+            "sheetId": "SD5055",
+            "area": 3.8023
+          }
+        ]
+      },
+      "info": {
+        "name": "Maple Grange",
+        "reference": "0300000084",
+        "email": {
+          "address": "contact+300000084@example.test"
+        },
+        "phone": {
+          "mobile": "07300000084"
+        },
+        "address": {
+          "line1": "85 Park Road",
+          "line2": "Barns",
+          "line3": "Liverpool",
+          "line4": "Lancashire",
+          "line5": "",
+          "street": "Park Road",
+          "city": "Liverpool",
+          "postalCode": "PA35 7SW"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Mr",
+          "first": "Isla",
+          "middle": "Peter",
+          "last": "Reed"
+        }
+      }
+    }
+  }
+}

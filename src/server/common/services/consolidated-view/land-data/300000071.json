@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000071",
+      "organisationId": "7400071",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "9899",
+            "sheetId": "SD4963",
+            "area": 5.7663
+          }
+        ]
+      },
+      "info": {
+        "name": "Rose Acres",
+        "reference": "0300000071",
+        "email": {
+          "address": "contact+300000071@example.test"
+        },
+        "phone": {
+          "mobile": "07300000071"
+        },
+        "address": {
+          "line1": "72 Green Lane",
+          "line2": "Depot",
+          "line3": "Exeter",
+          "line4": "Nottinghamshire",
+          "line5": "",
+          "street": "Green Lane",
+          "city": "Exeter",
+          "postalCode": "M22 3KR"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Ms",
+          "first": "Una",
+          "middle": "Thomas",
+          "last": "Reed"
+        }
+      }
+    }
+  }
+}
