@@ -10,9 +10,9 @@ vi.mock('~/src/config/config.js', async () => {
   const { mockConfigSimple } = await import('~/src/__mocks__')
   return mockConfigSimple()
 })
-vi.mock('~/src/server/common/helpers/logging/logger.js', async () => {
+vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
   const { mockLoggerFactory } = await import('~/src/__mocks__')
-  return mockLoggerFactory()
+  return mockLoggerFactory
 })
 vi.mock('~/src/server/sbi/state.js', async () => {
   const { mockSbiStateWithValue } = await import('~/src/__mocks__')

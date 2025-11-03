@@ -1,22 +1,18 @@
 import { vi } from 'vitest'
 
 export const mockLoggerFactory = () => ({
-  createLogger: vi.fn(() => ({
-    info: vi.fn(),
-    error: vi.fn(),
-    warn: vi.fn(),
-    debug: vi.fn()
-  }))
+  info: vi.fn(),
+  error: vi.fn(),
+  warn: vi.fn(),
+  debug: vi.fn()
 })
 
 export const mockLoggerFactoryWithCustomMethods = (customMethods = {}) => ({
-  createLogger: vi.fn(() => ({
-    info: vi.fn(),
-    error: vi.fn(),
-    warn: vi.fn(),
-    debug: vi.fn(),
-    ...customMethods
-  }))
+  info: vi.fn(),
+  error: vi.fn(),
+  warn: vi.fn(),
+  debug: vi.fn(),
+  ...customMethods
 })
 
 export const mockLogHelper = () => ({
