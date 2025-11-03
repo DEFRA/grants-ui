@@ -1,9 +1,8 @@
 import { config } from '~/src/config/config.js'
-import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
+import { logger } from '~/src/server/common/helpers/logging/log.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
 
 const GAS_API_ENDPOINT = config.get('gas.apiEndpoint')
-const logger = createLogger()
 
 class GrantApplicationServiceApiError extends Error {
   constructor(message, statusCode, responseBody, code, cause = null) {

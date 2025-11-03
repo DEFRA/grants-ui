@@ -1,11 +1,9 @@
 import { URLSearchParams } from 'node:url'
 
 import { config } from '~/src/config/config.js'
-import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
+import { logger, log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
-import { log, LogCodes } from '../logging/log.js'
 
-const logger = createLogger()
 const msInSec = 1000
 const secsInMins = 60
 const numMins = 5

@@ -30,12 +30,6 @@ vi.mock('~/src/config/config', async () => {
     'landGrants.grantsServiceApiEndpoint': 'https://land-grants-api'
   })
 })
-vi.mock('~/src/server/common/helpers/logging/logger.js', async () => {
-  const { mockLoggerFactoryWithCustomMethods } = await import('~/src/__mocks__')
-  return mockLoggerFactoryWithCustomMethods({
-    error: vi.fn()
-  })
-})
 vi.mock('~/src/server/common/services/consolidated-view/consolidated-view.service.js', () => ({
   fetchParcelsFromDal: vi.fn()
 }))
