@@ -313,6 +313,17 @@ describe('formsStatusCallback', () => {
     expect(updateApplicationStatus).not.toHaveBeenCalled()
   })
 
+  it('converts reference number to lowercase when calling getApplicationStatus', async () => {
+    context.referenceNumber = '89B-AEC-5A6'
+    getApplicationStatus.mockResolvedValue({
+      json: async () => ({ status: 'RECEIVED' })
+    })
+
+    await formsStatusCallback(request, h, context)
+
+    expect(getApplicationStatus).toHaveBeenCalledWith('grant-a-code', '89b-aec-5a6')
+  })
+
   it('redirects when newStatus path differs from current path', async () => {
     getApplicationStatus.mockResolvedValue({
       json: async () => ({ status: 'RECEIVED' })
