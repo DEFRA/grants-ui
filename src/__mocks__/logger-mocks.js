@@ -8,20 +8,12 @@ export const mockLoggerFactory = () => ({
 })
 
 export const mockLoggerFactoryWithCustomMethods = (customMethods = {}) => ({
-  info: vi.fn(),
-  error: vi.fn(),
-  warn: vi.fn(),
-  debug: vi.fn(),
+  ...mockLoggerFactory(),
   ...customMethods
 })
 
 export const mockLogHelper = () => ({
-  logger: {
-    info: vi.fn(),
-    error: vi.fn(),
-    warn: vi.fn(),
-    debug: vi.fn()
-  },
+  logger: mockLoggerFactory(),
   log: vi.fn(),
   LogCodes: {
     AUTH: {
@@ -63,16 +55,4 @@ export const mockLogHelperWithCustomCodes = (customCodes = {}) => ({
   }
 })
 
-export const mockLoggerSimple = () => ({
-  info: vi.fn(),
-  error: vi.fn(),
-  warn: vi.fn(),
-  debug: vi.fn()
-})
-
-export const mockRequestLogger = () => ({
-  info: vi.fn(),
-  error: vi.fn(),
-  warn: vi.fn(),
-  debug: vi.fn()
-})
+export const mockRequestLogger = () => mockLoggerFactory()
