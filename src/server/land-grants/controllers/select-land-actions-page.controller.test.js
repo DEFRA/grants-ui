@@ -396,6 +396,10 @@ describe('SelectLandActionsPageController', () => {
   })
 
   describe('GET route handler', () => {
+    beforeEach(() => {
+      mockContext.state.selectedLandParcel = 'sheet1-parcel1'
+    })
+
     test('should parse valid land parcel and fetch grouped actions', async () => {
       mockRequest.query.parcelId = 'sheet2-parcel2'
       parseLandParcel.mockReturnValue(['sheet2', 'parcel2'])
@@ -403,7 +407,7 @@ describe('SelectLandActionsPageController', () => {
       const handler = controller.makeGetRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
-      expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH)
+      expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH, 'sheet2-parcel2')
 
       expect(parseLandParcel).toHaveBeenCalledWith('sheet2-parcel2')
       expect(fetchAvailableActionsForParcel).toHaveBeenCalledWith({
@@ -487,7 +491,7 @@ describe('SelectLandActionsPageController', () => {
 
         const result = await controller.makeGetRouteHandler()(mockRequest, mockContext, mockH)
 
-        expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH)
+        expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH, 'sheet1-parcel1')
 
         expect(result).toEqual('failed auth check')
       })
@@ -519,7 +523,7 @@ describe('SelectLandActionsPageController', () => {
           }
         })
       )
-      expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH)
+      expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH, 'sheet1-parcel1')
 
       expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-path')
       expect(result).toBe('redirected')
@@ -815,10 +819,11 @@ describe('SelectLandActionsPageController', () => {
     describe('when the user does not own the land parcel', () => {
       it('should return unauthorized response when user does not own the selected land parcel', async () => {
         controller.performAuthCheck.mockResolvedValue('failed auth check')
+        controller.selectedLandParcel = 'sheet1-parcel1'
 
         const result = await controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
 
-        expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH)
+        expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH, 'sheet1-parcel1')
 
         expect(result).toEqual('failed auth check')
       })
