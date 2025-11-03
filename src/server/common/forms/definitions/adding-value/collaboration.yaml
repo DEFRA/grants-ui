@@ -5,6 +5,7 @@ metadata:
   tasklistId: example
   submission:
     grantCode: collaboration
+  grantRedirectRules: null
 pages:
   - title: Will you work in partnership or collaborate with other farmers or
       producers?

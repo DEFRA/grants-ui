@@ -6,6 +6,7 @@ metadata:
   tasklistId: example
   submission:
     grantCode: project-preparation
+  grantRedirectRules: null
 pages:
   - title: Does the project have planning permission?
     path: /planning-permission

@@ -5,6 +5,7 @@ metadata:
   tasklistId: example
   submission:
     grantCode: project-impact
+  grantRedirectRules: null
 pages:
   - title: How will this project add value to the produce?
     path: /how-adding-value
