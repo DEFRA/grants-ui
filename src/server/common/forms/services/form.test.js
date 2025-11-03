@@ -7,7 +7,7 @@ import {
   getFormsCache,
   validateWhitelistConfiguration
 } from './form.js'
-import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
+import { logger } from '~/src/server/common/helpers/logging/log.js'
 import fs from 'node:fs/promises'
 
 const mockUrl = { pathname: '/mock/path' }
@@ -88,14 +88,14 @@ vi.mock('~/src/config/config.js', async () => {
   return mockConfig(configData)
 })
 
-vi.mock('~/src/server/common/helpers/logging/logger.js', async () => {
-  const { mockLoggerFactoryWithCustomMethods } = await import('~/src/__mocks__')
-  const { vi: vitest } = await import('vitest')
-  return mockLoggerFactoryWithCustomMethods({
-    warn: vitest.fn(),
-    error: vitest.fn()
-  })
-})
+vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
+  logger: {
+    warn: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    debug: vi.fn()
+  }
+}))
 
 vi.mock('../config.js', () => ({
   metadata: {
@@ -132,13 +132,12 @@ Object.defineProperty(process, 'env', {
 })
 
 describe('form', () => {
-  let mockWarn, mockError, logger
+  let mockWarn, mockError
 
   beforeEach(() => {
     vi.clearAllMocks()
     config.get.mockImplementation((key) => DEFAULT_CONFIG_MOCK[key])
     // Get the warn function from the mocked logger
-    logger = vi.mocked(createLogger)()
     mockWarn = logger.warn
     mockError = logger.error
 

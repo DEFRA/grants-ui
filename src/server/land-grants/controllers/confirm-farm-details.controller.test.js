@@ -9,11 +9,11 @@ vi.mock('~/src/server/sbi/state.js', async () => {
   return mockSbiState()
 })
 vi.mock('../../common/services/consolidated-view/consolidated-view.service.js')
-vi.mock('~/src/server/common/helpers/logging/logger.js', async () => {
-  const { mockLoggerFactoryWithCustomMethods } = await import('~/src/__mocks__')
-  return mockLoggerFactoryWithCustomMethods({
-    error: vi.fn()
-  })
+
+// Mock the logging module with both possible exports
+vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
+  const { mockLogHelper } = await import('~/src/__mocks__')
+  return mockLogHelper()
 })
 vi.mock('~/src/server/land-grants/utils/format-phone.js', () => ({
   formatPhone: vi.fn((phone) => (phone ? `formatted-${phone}` : ''))

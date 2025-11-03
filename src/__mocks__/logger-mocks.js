@@ -20,6 +20,12 @@ export const mockLoggerFactoryWithCustomMethods = (customMethods = {}) => ({
 })
 
 export const mockLogHelper = () => ({
+  logger: {
+    info: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
+    debug: vi.fn()
+  },
   log: vi.fn(),
   LogCodes: {
     AUTH: {
