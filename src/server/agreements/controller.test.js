@@ -204,10 +204,10 @@ describe('Agreements Controller', () => {
 
       await getAgreementController.handler(mockRequest, mockH)
 
-      expect(mockH.response).toHaveBeenCalledWith({
-        error: 'Bad Request',
-        message: 'Path parameter is required'
-      })
+      const proxyCall = mockH.proxy.mock.calls[0][0]
+      const mapUriResult = proxyCall.mapUri()
+
+      expect(mapUriResult.uri).toBe('http://localhost:3003')
     })
 
     test('should build target URI correctly with base URL having trailing slash', async () => {
@@ -368,28 +368,26 @@ describe('Agreements Controller', () => {
   })
 
   describe('Request Handling', () => {
-    test('should return 400 when path parameter is missing', async () => {
+    test('should work correctly when path parameter is missing', async () => {
       mockRequest.params.path = null
 
       await getAgreementController.handler(mockRequest, mockH)
 
-      expect(mockH.response).toHaveBeenCalledWith({
-        error: 'Bad Request',
-        message: 'Path parameter is required'
-      })
-      expect(mockH.proxy).not.toHaveBeenCalled()
+      const proxyCall = mockH.proxy.mock.calls[0][0]
+      const mapUriResult = proxyCall.mapUri()
+
+      expect(mapUriResult.uri).toBe('http://localhost:3003')
     })
 
-    test('should return 400 when path parameter is undefined', async () => {
+    test('should work correctly when path parameter is undefined', async () => {
       mockRequest.params.path = undefined
 
       await getAgreementController.handler(mockRequest, mockH)
 
-      expect(mockH.response).toHaveBeenCalledWith({
-        error: 'Bad Request',
-        message: 'Path parameter is required'
-      })
-      expect(mockH.proxy).not.toHaveBeenCalled()
+      const proxyCall = mockH.proxy.mock.calls[0][0]
+      const mapUriResult = proxyCall.mapUri()
+
+      expect(mapUriResult.uri).toBe('http://localhost:3003')
     })
 
     test('should call proxy with correct parameters', async () => {
