@@ -50,14 +50,14 @@ const extractCookieConsentConfig = (request) => {
   }
 }
 
-const loadWebpackManifest = () => {
+const loadWebpackManifest = (request) => {
   if (!webpackManifest) {
     try {
       webpackManifest = JSON.parse(readFileSync(manifestPath, 'utf-8'))
     } catch (error) {
       log(LogCodes.SYSTEM.SERVER_ERROR, {
         error: `Webpack ${path.basename(manifestPath)} not found: ${error.message}`
-      })
+      }, request)
     }
   }
 }
@@ -78,7 +78,7 @@ const getSessionData = async (request) => {
       userId: 'unknown',
       error: `Cache retrieval failed for session ${sessionId}: ${cacheError.message}`,
       step: 'context_cache_retrieval'
-    })
+    }, request)
     return {}
   }
 }
@@ -178,7 +178,7 @@ export async function context(request) {
 
   try {
     const tempSbi = sbiStore.get('sbi')
-    loadWebpackManifest()
+    loadWebpackManifest(request)
     const session = await getSessionData(request)
     const auth = usersDetails(request, session.sbi || tempSbi, session.role)
 
@@ -186,7 +186,7 @@ export async function context(request) {
   } catch (error) {
     log(LogCodes.SYSTEM.SERVER_ERROR, {
       error: `Error building context: ${error.message}`
-    })
+    }, request)
     return buildFallbackContext(serviceName, cookiePolicyUrl, cookieConsentExpiryDays)
   }
 }

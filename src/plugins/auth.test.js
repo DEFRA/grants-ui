@@ -810,13 +810,17 @@ describe('Auth Plugin', () => {
       expect(refreshTokens).not.toHaveBeenCalled()
       expect(result).toEqual({ isValid: false })
 
-      expect(log).toHaveBeenCalledWith(LogCodes.AUTH.SESSION_EXPIRED, {
-        userId: MOCK_USERS.user123.contactId,
-        sessionId: 'test-session',
-        path: '/protected-route',
-        reason: LOG_MESSAGES.sessionExpired.reasons.TOKEN_EXPIRED_REFRESH_DISABLED,
-        error: 'Token expired'
-      })
+      expect(log).toHaveBeenCalledWith(
+        LogCodes.AUTH.SESSION_EXPIRED,
+        {
+          userId: MOCK_USERS.user123.contactId,
+          sessionId: 'test-session',
+          path: '/protected-route',
+          reason: LOG_MESSAGES.sessionExpired.reasons.TOKEN_EXPIRED_REFRESH_DISABLED,
+          error: 'Token expired'
+        },
+        mockRequest
+      )
     })
 
     test('validate function logs session not found in cache', async () => {
@@ -829,12 +833,16 @@ describe('Auth Plugin', () => {
       })
 
       expect(result).toEqual({ isValid: false })
-      expect(log).toHaveBeenCalledWith(LogCodes.AUTH.SESSION_EXPIRED, {
-        userId: 'unknown',
-        sessionId: 'missing-session',
-        path: '/dashboard',
-        reason: LOG_MESSAGES.sessionExpired.reasons.NOT_FOUND
-      })
+      expect(log).toHaveBeenCalledWith(
+        LogCodes.AUTH.SESSION_EXPIRED,
+        {
+          userId: 'unknown',
+          sessionId: 'missing-session',
+          path: '/dashboard',
+          reason: LOG_MESSAGES.sessionExpired.reasons.NOT_FOUND
+        },
+        mockRequest
+      )
     })
 
     test('validate function handles token refresh failure', async () => {
@@ -867,12 +875,16 @@ describe('Auth Plugin', () => {
 
       expect(result).toEqual({ isValid: false })
 
-      expect(log).toHaveBeenCalledWith(LogCodes.AUTH.TOKEN_VERIFICATION_FAILURE, {
-        userId: MOCK_USERS.user456.contactId,
-        error: 'Refresh service unavailable',
-        step: LOG_MESSAGES.tokenVerification.steps.REFRESH_FAILED,
-        originalTokenError: 'Token expired'
-      })
+      expect(log).toHaveBeenCalledWith(
+        LogCodes.AUTH.TOKEN_VERIFICATION_FAILURE,
+        {
+          userId: MOCK_USERS.user456.contactId,
+          error: 'Refresh service unavailable',
+          step: LOG_MESSAGES.tokenVerification.steps.REFRESH_FAILED,
+          originalTokenError: 'Token expired'
+        },
+        mockRequest
+      )
     })
 
     test('validate function logs successful token refresh', async () => {
@@ -910,11 +922,15 @@ describe('Auth Plugin', () => {
       expect(userSession.token).toBe('new-token')
       expect(userSession.refreshToken).toBe('new-refresh-token')
 
-      expect(log).toHaveBeenCalledWith(LogCodes.AUTH.TOKEN_VERIFICATION_SUCCESS, {
-        userId: MOCK_USERS.user789.contactId,
-        organisationId: MOCK_USERS.user789.organisationId,
-        step: LOG_MESSAGES.tokenVerification.steps.REFRESH_SUCCESS
-      })
+      expect(log).toHaveBeenCalledWith(
+        LogCodes.AUTH.TOKEN_VERIFICATION_SUCCESS,
+        {
+          userId: MOCK_USERS.user789.contactId,
+          organisationId: MOCK_USERS.user789.organisationId,
+          step: LOG_MESSAGES.tokenVerification.steps.REFRESH_SUCCESS
+        },
+        mockRequest
+      )
     })
   })
 

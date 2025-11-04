@@ -56,11 +56,15 @@ export default class SubmissionPageController extends SummaryPageController {
    * @returns {object} - Error view response
    */
   handleSubmissionError(h, request, context, validationId) {
-    log(LogCodes.SUBMISSION.SUBMISSION_VALIDATION_ERROR, {
-      grantType: this.grantCode,
-      referenceNumber: context.referenceNumber,
-      validationId: validationId || context.referenceNumber || 'N/A'
-    })
+    log(
+      LogCodes.SUBMISSION.SUBMISSION_VALIDATION_ERROR,
+      {
+        grantType: this.grantCode,
+        referenceNumber: context.referenceNumber,
+        validationId: validationId || context.referenceNumber || 'N/A'
+      },
+      request
+    )
 
     return h.view('submission-error', {
       ...this.getSummaryViewModel(request, context),
@@ -150,14 +154,14 @@ export default class SubmissionPageController extends SummaryPageController {
         log(LogCodes.SUBMISSION.SUBMISSION_SUCCESS, {
           grantType: this.grantCode,
           referenceNumber: context.referenceNumber
-        })
+        }, request)
 
         return await this.handleSuccessfulSubmission(request, context, h, result.status)
       } catch (error) {
         log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
           endpoint: `Land grants submission`,
           error: `submitting application for sbi: ${sbi} and crn: ${crn} - ${error.message}`
-        })
+        }, request)
         return this.handleSubmissionError(h, request, context)
       }
     }

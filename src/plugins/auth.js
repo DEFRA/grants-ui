@@ -373,12 +373,16 @@ function getCookieOptions() {
 
       // If a session does not exist, return an invalid session
       if (!userSession) {
-        log(LogCodes.AUTH.SESSION_EXPIRED, {
-          userId: 'unknown',
-          sessionId: session.sessionId,
-          path: request.path,
-          reason: 'Session not found in cache'
-        })
+        log(
+          LogCodes.AUTH.SESSION_EXPIRED,
+          {
+            userId: 'unknown',
+            sessionId: session.sessionId,
+            path: request.path,
+            reason: 'Session not found in cache'
+          },
+          request
+        )
 
         return { isValid: false }
       }
@@ -391,13 +395,17 @@ function getCookieOptions() {
           Jwt.token.verifyTime(decoded)
         } catch (tokenError) {
           if (!config.get('defraId.refreshTokens')) {
-            log(LogCodes.AUTH.SESSION_EXPIRED, {
-              userId: userSession.contactId,
-              sessionId: session.sessionId,
-              path: request.path,
-              reason: 'Token expired, refresh disabled',
-              error: tokenError.message
-            })
+            log(
+              LogCodes.AUTH.SESSION_EXPIRED,
+              {
+                userId: userSession.contactId,
+                sessionId: session.sessionId,
+                path: request.path,
+                reason: 'Token expired, refresh disabled',
+                error: tokenError.message
+              },
+              request
+            )
             return { isValid: false }
           }
 
@@ -409,18 +417,26 @@ function getCookieOptions() {
             userSession.refreshToken = newRefreshToken
             await request.server.app.cache.set(session.sessionId, userSession)
 
-            log(LogCodes.AUTH.TOKEN_VERIFICATION_SUCCESS, {
-              userId: userSession.contactId,
-              organisationId: userSession.organisationId,
-              step: 'token_refresh_success'
-            })
+            log(
+              LogCodes.AUTH.TOKEN_VERIFICATION_SUCCESS,
+              {
+                userId: userSession.contactId,
+                organisationId: userSession.organisationId,
+                step: 'token_refresh_success'
+              },
+              request
+            )
           } catch (refreshError) {
-            log(LogCodes.AUTH.TOKEN_VERIFICATION_FAILURE, {
-              userId: userSession.contactId,
-              error: refreshError.message,
-              step: 'token_refresh_failed',
-              originalTokenError: tokenError.message
-            })
+            log(
+              LogCodes.AUTH.TOKEN_VERIFICATION_FAILURE,
+              {
+                userId: userSession.contactId,
+                error: refreshError.message,
+                step: 'token_refresh_failed',
+                originalTokenError: tokenError.message
+              },
+              request
+            )
 
             return { isValid: false }
           }

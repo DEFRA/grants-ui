@@ -211,20 +211,28 @@ const mockSessionData = async (request, log, LogCodes) => {
 
     request.cookieAuth.set({ sessionId })
 
-    log(LogCodes.AUTH.SIGN_IN_SUCCESS, {
-      userId: 'anonymous-user-id',
-      sessionId,
-      role: 'user',
-      scope: 'user',
-      authMethod: 'auto-session'
-    })
+    log(
+      LogCodes.AUTH.SIGN_IN_SUCCESS,
+      {
+        userId: 'anonymous-user-id',
+        sessionId,
+        role: 'user',
+        scope: 'user',
+        authMethod: 'auto-session'
+      },
+      request
+    )
   } catch (error) {
-    log(LogCodes.AUTH.SIGN_IN_FAILURE, {
-      userId: 'unknown',
-      error: `Failed to create auto-session: ${error.message}`,
-      step: 'auto_session_creation_error',
-      errorStack: error.stack
-    })
+    log(
+      LogCodes.AUTH.SIGN_IN_FAILURE,
+      {
+        userId: 'unknown',
+        error: `Failed to create auto-session: ${error.message}`,
+        step: 'auto_session_creation_error',
+        errorStack: error.stack
+      },
+      request
+    )
   }
 }
 
