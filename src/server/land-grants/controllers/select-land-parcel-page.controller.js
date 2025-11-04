@@ -106,7 +106,7 @@ export default class SelectLandParcelPageController extends LandGrantsQuestionWi
           return this.formatParcelForView(parcel, actionsForParcel)
         })
 
-        if (!parcels || !parcels.length) {
+        if (!parcels?.length) {
           logger.warn(`No land parcels for sbi = ${sbi}`)
           const errorMessage =
             'Unable to find parcel information, please try again later or contact the Rural Payments Agency.'

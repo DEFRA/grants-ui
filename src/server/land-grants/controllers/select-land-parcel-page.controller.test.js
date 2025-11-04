@@ -216,6 +216,21 @@ describe('SelectLandParcelPageController', () => {
       expect(result).toBe(renderedViewMock)
     })
 
+    it('handles empty parcels list info', async () => {
+      fetchParcels.mockResolvedValue([])
+
+      const result = await controller.makeGetRouteHandler()(mockRequest, mockContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'select-land-parcel',
+        expect.objectContaining({
+          pageTitle: 'Select Land Parcel',
+          errors: ['Unable to find parcel information, please try again later or contact the Rural Payments Agency.']
+        })
+      )
+      expect(result).toBe(renderedViewMock)
+    })
+
     it('defaults state fields when context.state is undefined', async () => {
       mockContext.state = undefined
 
