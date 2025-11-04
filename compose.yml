@@ -12,6 +12,9 @@ services:
         condition: service_started
       fcp-defra-id-stub:
         condition: service_healthy
+    ports:
+      - '3000:3000'
+      - '9229:9229'
     environment:
       PORT: 3000
       NODE_ENV: ${NODE_ENV:-development}
@@ -44,8 +47,8 @@ services:
       GRANTS_UI_BACKEND_ENCRYPTION_KEY: ${GRANTS_UI_BACKEND_ENCRYPTION_KEY:-encryption_key}
       APP_BASE_URL: ${APP_BASE_URL:-http://localhost:3000}
       HOST: 0.0.0.0
-      GAS_API_URL: http://mockserver:1080
-      LAND_GRANTS_API_URL: http://mockserver:1080
+      GAS_API_URL: ${GAS_API_URL:-http://mockserver:1080}
+      LAND_GRANTS_API_URL: ${LAND_GRANTS_API_URL:-http://mockserver:1080}
       LAND_GRANTS_API_AUTH_TOKEN: ${LAND_GRANTS_API_AUTH_TOKEN:-auth_token}
       LAND_GRANTS_API_ENCRYPTION_KEY: ${LAND_GRANTS_API_ENCRYPTION_KEY:-encryption_key}
       EXAMPLE_WHITELIST_CRNS: 1100957269,1100953760
@@ -71,6 +74,8 @@ services:
     depends_on:
       mongodb:
         condition: service_healthy
+    ports:
+      - '3001:3001'
     environment:
       PORT: 3001
       HOST: 0.0.0.0

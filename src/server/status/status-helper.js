@@ -96,7 +96,18 @@ function shouldContinueDefault(gasStatus, newStatus, previousStatus) {
  * @returns {boolean} - True if state contains meaningful values, otherwise false
  */
 function hasMeaningfulState(state) {
-  const baseStateKeys = new Set(['$$__referenceNumber', 'applicationStatus'])
+  const baseStateKeys = new Set(['$$__referenceNumber', 'applicationStatus', 'applicant'])
+
+  // TODO remove workaround for state clearing bug when SFIR-647 and SFIR-648 are complete
+  const farmPaymentsStateKeys = new Set(['selectedLandParcel', 'payment', 'draftApplicationAnnualTotalPence'])
+  for (const key of farmPaymentsStateKeys) {
+    baseStateKeys.add(key)
+  }
+  if (!Object.keys(state.landParcels || {}).length) {
+    baseStateKeys.add('landParcels')
+  }
+  // end workaround
+
   return Object.keys(state).some((k) => !baseStateKeys.has(k))
 }
 
