@@ -17,11 +17,13 @@ vi.mock('aws-embedded-metrics', async () => {
     })
   }
 })
-vi.mock('~/src/server/common/helpers/logging/logger.js', async () => {
+vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
   const { mockLoggerFactoryWithCustomMethods } = await import('~/src/__mocks__')
-  return mockLoggerFactoryWithCustomMethods({
-    error: (...args) => mockLoggerError(...args)
-  })
+  return {
+    logger: mockLoggerFactoryWithCustomMethods({
+      error: (...args) => mockLoggerError(...args)
+    })
+  }
 })
 
 const mockMetricsName = 'mock-metrics-name'

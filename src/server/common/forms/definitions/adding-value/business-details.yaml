@@ -2,12 +2,16 @@ engine: V2
 name: Business Details
 metadata:
   id: a6d41baf-17a5-48fc-9aa2-fe5e9246fa48
+  tasklistId: example
+  submission:
+    grantCode: business-details
+  grantRedirectRules: null
 pages:
   - title: Business Details
     path: /business-details
     section: businessDetailsSection
     id: a16b5dc1-e286-4a61-be6c-18e937e5fb7b
-  - title: "Check your answers: Business details"
+  - title: 'Check your answers: Business details'
     path: /summary
     controller: SectionEndController
     id: 56a600e8-48cb-4d40-8eae-61d5707617f5

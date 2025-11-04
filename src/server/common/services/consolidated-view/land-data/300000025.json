@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000025",
+      "organisationId": "7400025",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "6532",
+            "sheetId": "SD4958",
+            "area": 1.7757
+          }
+        ]
+      },
+      "info": {
+        "name": "Cedar Estate",
+        "reference": "0300000025",
+        "email": {
+          "address": "contact+300000025@example.test"
+        },
+        "phone": {
+          "mobile": "07300000025"
+        },
+        "address": {
+          "line1": "26 The Green",
+          "line2": "Business Park",
+          "line3": "Leeds",
+          "line4": "Oxfordshire",
+          "line5": "",
+          "street": "The Green",
+          "city": "Leeds",
+          "postalCode": "CF74 2JE"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Ms",
+          "first": "Yasmine",
+          "middle": "Mary",
+          "last": "Howard"
+        }
+      }
+    }
+  }
+}

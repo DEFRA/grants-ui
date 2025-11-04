@@ -1,5 +1,5 @@
 import Jwt from '@hapi/jwt'
-import crypto from 'crypto'
+import crypto from 'node:crypto'
 import { config } from '~/src/config/config.js'
 import { getOidcConfig } from '~/src/server/auth/get-oidc-config.js'
 import { getSafeRedirect } from '~/src/server/auth/get-safe-redirect.js'
@@ -184,7 +184,7 @@ function decodeTokenPayload(token) {
         tokenLength: token ? token.length : 0
       }
     })
-    throw new Error(`Failed to decode JWT token: ${jwtError.message}`)
+    throw jwtError
   }
 }
 

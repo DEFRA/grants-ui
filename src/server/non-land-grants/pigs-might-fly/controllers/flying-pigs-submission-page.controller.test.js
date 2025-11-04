@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import FlyingPigsSubmissionPageController from '~/src/server/non-land-grants/pigs-might-fly/controllers/pig-types-submission.controller.js'
+import FlyingPigsSubmissionPageController from '~/src/server/non-land-grants/pigs-might-fly/controllers/flying-pigs-submission-page.controller.js'
 import { stateToPigsMightFlyGasAnswers } from '~/src/server/non-land-grants/pigs-might-fly/mappers/state-to-gas-pigs-mapper.js'
 import { transformStateObjectToGasApplication } from '~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
 import { submitGrantApplication } from '~/src/server/common/services/grant-application/grant-application.service.js'
@@ -81,6 +81,7 @@ describe('FlyingPigsSubmissionPageController', () => {
     await postHandler(mockRequest, mockContext, mockResponseToolkit)
 
     expect(mockCacheService.setConfirmationState).toHaveBeenCalledWith(mockRequest, {
+      ...mockContext.state,
       $$__referenceNumber: '123456',
       confirmed: true
     })

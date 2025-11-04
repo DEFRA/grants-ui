@@ -60,13 +60,13 @@ describe('Backend Auth Helper', () => {
     vi.resetModules()
   })
 
-  describe('createAuthenticatedHeaders', () => {
+  describe('createApiHeadersForGrantsUiBackend', () => {
     describe('when no token is configured', () => {
       it('should return base headers when no token is configured', async () => {
         setupMockConfig('', TEST_ENCRYPTION_KEY)
 
-        const { createAuthenticatedHeaders } = await importBackendAuthHelper()
-        const headers = createAuthenticatedHeaders(HEADER_OBJECTS.CONTENT_TYPE_JSON)
+        const { createApiHeadersForGrantsUiBackend } = await importBackendAuthHelper()
+        const headers = createApiHeadersForGrantsUiBackend(HEADER_OBJECTS.CONTENT_TYPE_JSON)
 
         expect(mockConfigGet).toHaveBeenCalledWith(CONFIG_SESSION_CACHE_AUTH_TOKEN)
         expect(headers).toEqual(HEADER_OBJECTS.CONTENT_TYPE_JSON)
@@ -78,8 +78,8 @@ describe('Backend Auth Helper', () => {
       it('should add Authorization header when token is configured', async () => {
         setupMockConfig(MOCK_TOKENS.DEFAULT)
 
-        const { createAuthenticatedHeaders } = await importBackendAuthHelper()
-        const headers = createAuthenticatedHeaders(HEADER_OBJECTS.CONTENT_TYPE_JSON)
+        const { createApiHeadersForGrantsUiBackend } = await importBackendAuthHelper()
+        const headers = createApiHeadersForGrantsUiBackend(HEADER_OBJECTS.CONTENT_TYPE_JSON)
 
         expect(mockConfigGet).toHaveBeenCalledWith(CONFIG_SESSION_CACHE_AUTH_TOKEN)
         expect(headers).toHaveProperty('Content-Type', 'application/json')
@@ -94,8 +94,8 @@ describe('Backend Auth Helper', () => {
       it('should work with empty base headers', async () => {
         setupMockConfig(MOCK_TOKENS.ALTERNATIVE)
 
-        const { createAuthenticatedHeaders } = await importBackendAuthHelper()
-        const headers = createAuthenticatedHeaders(undefined)
+        const { createApiHeadersForGrantsUiBackend } = await importBackendAuthHelper()
+        const headers = createApiHeadersForGrantsUiBackend(undefined)
 
         expect(mockConfigGet).toHaveBeenCalledWith(CONFIG_SESSION_CACHE_AUTH_TOKEN)
         expect(headers).toHaveProperty('Authorization')
@@ -113,10 +113,8 @@ describe('Backend Auth Helper', () => {
           'X-Custom-Header': TEST_HEADERS.CUSTOM_VALUE
         }
 
-        setupMockConfig(MOCK_TOKENS.THIRD)
-
         const { createAuthenticatedHeaders } = await importBackendAuthHelper()
-        const headers = createAuthenticatedHeaders(baseHeaders)
+        const headers = createAuthenticatedHeaders(MOCK_TOKENS.THIRD, TEST_ENCRYPTION_KEY, baseHeaders)
 
         expect(mockConfigGet).toHaveBeenCalledWith(CONFIG_SESSION_CACHE_AUTH_TOKEN)
         expect(headers).toHaveProperty('Content-Type', CONTENT_TYPE_JSON)
@@ -136,8 +134,8 @@ describe('Backend Auth Helper', () => {
 
       setupMockConfig(MOCK_TOKENS.MUTATION_TEST)
 
-      const { createAuthenticatedHeaders } = await importBackendAuthHelper()
-      const headers = createAuthenticatedHeaders(baseHeaders)
+      const { createApiHeadersForGrantsUiBackend } = await importBackendAuthHelper()
+      const headers = createApiHeadersForGrantsUiBackend(baseHeaders)
 
       expect(baseHeaders).toEqual(HEADER_OBJECTS.CONTENT_TYPE_JSON)
       expect(baseHeaders.Authorization).toBeUndefined()
@@ -147,8 +145,8 @@ describe('Backend Auth Helper', () => {
     it('should handle null token correctly', async () => {
       setupMockConfig(null, TEST_ENCRYPTION_KEY)
 
-      const { createAuthenticatedHeaders } = await importBackendAuthHelper()
-      const headers = createAuthenticatedHeaders({ 'Content-Type': CONTENT_TYPE_JSON })
+      const { createApiHeadersForGrantsUiBackend } = await importBackendAuthHelper()
+      const headers = createApiHeadersForGrantsUiBackend({ 'Content-Type': CONTENT_TYPE_JSON })
 
       expect(headers).toEqual(HEADER_OBJECTS.CONTENT_TYPE_JSON)
       expect(headers.Authorization).toBeUndefined()
@@ -159,8 +157,8 @@ describe('Backend Auth Helper', () => {
     it('should return headers with Content-Type and no auth when no token configured', async () => {
       setupMockConfig('', TEST_ENCRYPTION_KEY)
 
-      const { createApiHeaders } = await importBackendAuthHelper()
-      const headers = createApiHeaders()
+      const { createApiHeadersForGrantsUiBackend } = await importBackendAuthHelper()
+      const headers = createApiHeadersForGrantsUiBackend()
 
       expect(headers).toEqual(HEADER_OBJECTS.CONTENT_TYPE_JSON)
     })
@@ -168,8 +166,8 @@ describe('Backend Auth Helper', () => {
     it('should return headers with Content-Type and Authorization when token configured', async () => {
       setupMockConfig(MOCK_TOKENS.API)
 
-      const { createApiHeaders } = await importBackendAuthHelper()
-      const headers = createApiHeaders()
+      const { createApiHeadersForGrantsUiBackend } = await importBackendAuthHelper()
+      const headers = createApiHeadersForGrantsUiBackend()
 
       expect(headers).toHaveProperty('Content-Type', 'application/json')
       expect(headers).toHaveProperty('Authorization')
@@ -185,8 +183,8 @@ describe('Backend Auth Helper', () => {
     it('should encode encrypted token with blank username correctly', async () => {
       setupMockConfig(MOCK_TOKENS.SECRET)
 
-      const { createAuthenticatedHeaders } = await importBackendAuthHelper()
-      const headers = createAuthenticatedHeaders()
+      const { createApiHeadersForGrantsUiBackend } = await importBackendAuthHelper()
+      const headers = createApiHeadersForGrantsUiBackend()
       const authHeader = headers.Authorization
 
       const base64Part = authHeader.replace('Bearer ', '')
@@ -210,8 +208,8 @@ describe('Backend Auth Helper', () => {
 
       mockConfigGet.mockImplementation((key) => configValues[key] || null)
 
-      const { createAuthenticatedHeaders } = await importBackendAuthHelper()
-      const headers = createAuthenticatedHeaders(HEADER_OBJECTS.CONTENT_TYPE_JSON)
+      const { createApiHeadersForGrantsUiBackend } = await importBackendAuthHelper()
+      const headers = createApiHeadersForGrantsUiBackend(HEADER_OBJECTS.CONTENT_TYPE_JSON)
 
       expect(mockConfigGet).toHaveBeenCalledWith(CONFIG_SESSION_CACHE_AUTH_TOKEN)
       expect(mockConfigGet).toHaveBeenCalledWith(CONFIG_SESSION_CACHE_ENCRYPTION_KEY)

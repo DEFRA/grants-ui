@@ -4,6 +4,7 @@ import { landActionWithCode } from '~/src/server/land-grants/utils/land-action-w
 import { sbiStore } from '~/src/server/sbi/state.js'
 import { actionGroups, calculateGrantPayment } from '../services/land-grants.service.js'
 import { stringifyParcel } from '../utils/format-parcel.js'
+import { log, LogCodes } from '../../common/helpers/logging/log.js'
 
 const createLinks = (data) => {
   const parcelParam = stringifyParcel({
@@ -14,10 +15,8 @@ const createLinks = (data) => {
   const links = []
 
   links.push(
-    `<li class='govuk-summary-list__actions-list-item'><a class='govuk-link' href='select-actions-for-land-parcel?parcelId=${parcelParam}'>Change</a><span class="govuk-visually-hidden"> land action ${data.code} for parcel ${parcel}</span></li>`
-  )
-  links.push(
-    `<li class='govuk-summary-list__actions-list-item'><a class='govuk-link' href='remove-action?parcelId=${parcelParam}&action=${data.code}'>Remove</a><span class="govuk-visually-hidden"> land action ${data.code} for parcel ${parcel}</span></li>`
+    `<li class='govuk-summary-list__actions-list-item'><a class='govuk-link' href='select-actions-for-land-parcel?parcelId=${parcelParam}'>Change</a><span class="govuk-visually-hidden"> land action ${data.code} for parcel ${parcel}</span></li>
+    <li class='govuk-summary-list__actions-list-item'><a class='govuk-link' href='remove-action?parcelId=${parcelParam}&action=${data.code}'>Remove</a><span class="govuk-visually-hidden"> land action ${data.code} for parcel ${parcel}</span></li>`
   )
 
   return {
@@ -27,8 +26,6 @@ const createLinks = (data) => {
 
 export default class LandActionsCheckPageController extends QuestionPageController {
   viewName = 'land-actions-check'
-  parcelItems = []
-  additionalYearlyPayments = []
 
   /**
    * Check if parcel data has valid actions
@@ -49,7 +46,7 @@ export default class LandActionsCheckPageController extends QuestionPageControll
     const [sheetId, parcelId] = parcelKey.split('-')
     const actions = Object.entries(parcelData.actionsObj).map(([code, actionData]) => ({
       code,
-      quantity: parseFloat(actionData.value)
+      quantity: Number.parseFloat(actionData.value)
     }))
 
     return {
@@ -168,7 +165,8 @@ export default class LandActionsCheckPageController extends QuestionPageControll
 
     if (action === 'validate' && !addMoreActions) {
       return {
-        errorMessage: 'Please select if you want to add more actions'
+        href: '#addMoreActions',
+        text: 'Please select if you want to add more actions'
       }
     }
 
@@ -189,36 +187,38 @@ export default class LandActionsCheckPageController extends QuestionPageControll
    * @param {object} h - Response toolkit
    * @param {AnyFormRequest} request - Request object
    * @param {FormContext} context - Form context
-   * @param {string} errorMessage - Error message to display
+   * @param {{text: string; href?: string}[]} errorMessages - Error Summary
+   * @param {Array} parcelItems - Parcel items to display
+   * @param {Array} additionalYearlyPayments - Additional payments to display
    * @returns {object} - Error view response
    */
-  renderPostErrorView(h, request, context, errorMessage) {
+  renderErrorView(h, request, context, errorMessages, parcelItems = [], additionalYearlyPayments = []) {
     const { state } = context
     const annualTotalPence = state.payment ? state.payment['annualTotalPence'] : undefined
 
     return h.view(this.viewName, {
       ...this.getViewModel(request, context),
       ...state,
-      parcelItems: this.parcelItems,
-      additionalYearlyPayments: this.additionalYearlyPayments,
+      parcelItems,
+      additionalYearlyPayments,
       totalYearlyPayment: this.getPrice(annualTotalPence || 0),
-      errorMessage
+      errorMessages
     })
   }
 
   /**
-   * Process payment calculation and update instance data
+   * Process payment calculation
    * @param {object} state - Current state
-   * @returns {Promise<object>} - Payment information
+   * @returns {Promise<object>} - Payment information with parcel and payment items
    */
   async processPaymentCalculation(state) {
     const paymentResult = await calculateGrantPayment(state)
     const { payment } = paymentResult
 
-    this.parcelItems = this.getParcelItems(payment)
-    this.additionalYearlyPayments = this.getAdditionalYearlyPayments(payment)
+    const parcelItems = this.getParcelItems(payment)
+    const additionalYearlyPayments = this.getAdditionalYearlyPayments(payment)
 
-    return payment
+    return { payment, parcelItems, additionalYearlyPayments }
   }
 
   /**
@@ -226,19 +226,19 @@ export default class LandActionsCheckPageController extends QuestionPageControll
    * @param {AnyFormRequest} request - Request object
    * @param {FormContext} context - Form context
    * @param {object} payment - Payment information
+   * @param {Array} parcelItems - Parcel items to display
+   * @param {Array} additionalYearlyPayments - Additional payments to display
    * @returns {object} - Complete view model
    */
-  buildGetViewModel(request, context, payment) {
-    const { collection } = this
+  buildGetViewModel(request, context, payment, parcelItems, additionalYearlyPayments) {
     const { state } = context
 
     return {
       ...this.getViewModel(request, context),
       ...state,
-      parcelItems: this.parcelItems,
-      additionalYearlyPayments: this.additionalYearlyPayments,
-      totalYearlyPayment: this.getPrice(payment?.annualTotalPence || 0),
-      errors: collection.getErrors(collection.getErrors())
+      parcelItems,
+      additionalYearlyPayments,
+      totalYearlyPayment: this.getPrice(payment?.annualTotalPence || 0)
     }
   }
 
@@ -249,16 +249,36 @@ export default class LandActionsCheckPageController extends QuestionPageControll
     return async (request, context, h) => {
       const { viewName } = this
       const { state } = context
+      let payment = {}
+      let parcelItems = []
+      let additionalYearlyPayments = []
 
-      // Update state with payment information
-      const payment = await this.processPaymentCalculation(state)
-      await this.setState(request, {
-        ...state,
-        payment,
-        draftApplicationAnnualTotalPence: payment?.annualTotalPence
-      })
+      // Fetch payment information and update current state
+      try {
+        const result = await this.processPaymentCalculation(state)
+        payment = result.payment
+        parcelItems = result.parcelItems
+        additionalYearlyPayments = result.additionalYearlyPayments
 
-      const viewModel = this.buildGetViewModel(request, context, payment)
+        await this.setState(request, {
+          ...state,
+          payment,
+          draftApplicationAnnualTotalPence: payment?.annualTotalPence
+        })
+      } catch (error) {
+        const sbi = request.auth?.credentials?.sbi
+        log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
+          endpoint: `Land grants API`,
+          error: `error fetching payment data for sbi ${sbi} - ${error.message}`
+        })
+        return this.renderErrorView(h, request, context, [
+          {
+            text: 'Unable to get payment information, please try again later or contact the Rural Payments Agency.'
+          }
+        ])
+      }
+
+      const viewModel = this.buildGetViewModel(request, context, payment, parcelItems, additionalYearlyPayments)
       return h.view(viewName, viewModel)
     }
   }
@@ -276,10 +296,24 @@ export default class LandActionsCheckPageController extends QuestionPageControll
      */
     const fn = async (request, context, h) => {
       const payload = request.payload ?? {}
+      const { state } = context
 
       const validationError = this.validatePostPayload(payload)
       if (validationError) {
-        return this.renderPostErrorView(h, request, context, validationError.errorMessage)
+        // Need to re-fetch payment data for error rendering
+        let parcelItems = []
+        let additionalYearlyPayments = []
+        try {
+          const result = await this.processPaymentCalculation(state)
+          parcelItems = result.parcelItems
+          additionalYearlyPayments = result.additionalYearlyPayments
+        } catch (error) {
+          log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
+            endpoint: `Land grants API`,
+            error: `error fetching payment data for validation error - ${error.message}`
+          })
+        }
+        return this.renderErrorView(h, request, context, [validationError], parcelItems, additionalYearlyPayments)
       }
 
       const { addMoreActions } = payload

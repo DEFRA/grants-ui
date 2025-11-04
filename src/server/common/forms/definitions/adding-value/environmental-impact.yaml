@@ -2,12 +2,16 @@ engine: V2
 name: Environment
 metadata:
   id: d5e8404c-73fb-4721-b329-4ab604840e53
+  tasklistId: example
+  submission:
+    grantCode: environmental-impact
+  grantRedirectRules: null
 pages:
   - title: How will this project improve the environment?
     path: /environmental-impact
     section: environmentSection
     id: c6b1800f-b1f8-4874-a455-f1e007f1e0b5
-  - title: "Check your answers: Environment"
+  - title: 'Check your answers: Environment'
     path: /summary
     controller: SectionEndController
     id: 0d9d1728-b4cc-47b8-9527-dd7de25cc44b

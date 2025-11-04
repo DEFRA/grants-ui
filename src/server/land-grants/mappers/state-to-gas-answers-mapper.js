@@ -11,8 +11,8 @@ function createAppliedForObject(actionData) {
   }
 
   if (actionData.value != null) {
-    const quantity = parseFloat(actionData.value)
-    appliedFor.quantity = !isNaN(quantity) ? quantity : undefined
+    const quantity = Number.parseFloat(actionData.value)
+    appliedFor.quantity = !Number.isNaN(quantity) ? quantity : undefined
   }
 
   return appliedFor

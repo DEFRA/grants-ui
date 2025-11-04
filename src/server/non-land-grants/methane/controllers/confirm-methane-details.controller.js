@@ -6,10 +6,8 @@ import {
   createCustomerNameRow,
   createSbiRow
 } from '~/src/server/common/helpers/create-rows.js'
-import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
+import { logger } from '~/src/server/common/helpers/logging/log.js'
 import { fetchBusinessAndCPH } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
-
-const logger = createLogger()
 
 export default class ConfirmMethaneDetailsController extends QuestionPageController {
   viewName = 'confirm-methane-details'
@@ -23,10 +21,10 @@ export default class ConfirmMethaneDetailsController extends QuestionPageControl
   makeGetRouteHandler() {
     return async (request, context, h) => {
       const baseViewModel = super.getViewModel(request, context)
-      const { sbi, crn } = request.auth.credentials
+      const { sbi } = request.auth.credentials
 
       try {
-        const farmDetails = await this.buildFarmDetails(crn, sbi)
+        const farmDetails = await this.buildFarmDetails(request)
         return h.view(this.viewName, { ...baseViewModel, farmDetails })
       } catch (error) {
         return this.handleError(sbi, error, baseViewModel, h)
@@ -36,15 +34,16 @@ export default class ConfirmMethaneDetailsController extends QuestionPageControl
 
   /**
    * Build farm details view model
+   * @param {AnyFormRequest} request
    * @returns {Promise<object>} Farm details object with rows array
    */
-  async buildFarmDetails(crn, sbi) {
-    const data = await fetchBusinessAndCPH(sbi, crn)
+  async buildFarmDetails(request) {
+    const data = await fetchBusinessAndCPH(request)
 
     const rows = [
       createCustomerNameRow(data.customer?.name),
       createBusinessNameRow(data.business?.name),
-      createSbiRow(sbi),
+      createSbiRow(request.auth?.credentials?.sbi),
       createContactDetailsRow(data.business?.phone?.mobile, data.business?.email?.address),
       createAddressRow(data.business?.address),
       this.createTypeRow(data.business?.type),
@@ -109,10 +108,10 @@ export default class ConfirmMethaneDetailsController extends QuestionPageControl
      */
     const fn = async (request, context, h) => {
       const { state } = context
-      const { sbi, crn } = request.auth.credentials
+      const { sbi } = request.auth.credentials
 
       if (sbi) {
-        const applicant = await fetchBusinessAndCPH(sbi, crn)
+        const applicant = await fetchBusinessAndCPH(request)
         await this.setState(request, {
           ...state,
           applicant

@@ -1,5 +1,4 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
-import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
 import { fetchBusinessAndCustomerInformation } from '../../common/services/consolidated-view/consolidated-view.service.js'
 import {
   createAddressRow,
@@ -8,14 +7,13 @@ import {
   createCustomerNameRow,
   createSbiRow
 } from '../../common/helpers/create-rows.js'
-
-const logger = createLogger()
+import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
 export default class ConfirmFarmDetailsController extends QuestionPageController {
   viewName = 'confirm-farm-details'
 
   // Constants
-  static ERROR_MESSAGE = 'Unable to find farm information, please try again later.'
+  static ERROR_MESSAGE = 'Unable to find farm information, please try again later or contact the Rural Payments Agency.'
 
   /**
    * Handle GET requests to the confirm farm details page
@@ -23,10 +21,10 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
   makeGetRouteHandler() {
     return async (request, context, h) => {
       const baseViewModel = super.getViewModel(request, context)
-      const { sbi, crn } = request.auth.credentials
+      const { sbi } = request.auth.credentials
 
       try {
-        const farmDetails = await this.buildFarmDetails(crn, sbi)
+        const farmDetails = await this.buildFarmDetails(request)
         return h.view(this.viewName, { ...baseViewModel, farmDetails })
       } catch (error) {
         return this.handleError(sbi, error, baseViewModel, h)
@@ -36,16 +34,17 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
 
   /**
    * Build farm details view model
+   * @param {AnyFormRequest} request
    * @returns {Promise<object>} Farm details object with rows array
    */
-  async buildFarmDetails(crn, sbi) {
-    const data = await fetchBusinessAndCustomerInformation(sbi, crn)
+  async buildFarmDetails(request) {
+    const data = await fetchBusinessAndCustomerInformation(request)
 
     const rows = [
       createCustomerNameRow(data.customer?.name),
       createBusinessNameRow(data.business?.name),
       createAddressRow(data.business?.address),
-      createSbiRow(sbi),
+      createSbiRow(request.auth?.credentials?.sbi),
       createContactDetailsRow(data.business?.phone?.mobile, data.business?.email?.address)
     ].filter(Boolean)
 
@@ -56,7 +55,10 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
    * Handle errors and return error view
    */
   handleError(sbi, error, baseViewModel, h) {
-    logger.error({ err: error, sbi }, 'Unexpected error when fetching farm information')
+    log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
+      endpoint: `fetch farm details for sbi ${sbi}`,
+      error: error.message
+    })
 
     return h.view(this.viewName, {
       ...baseViewModel,
@@ -82,10 +84,10 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
      */
     const fn = async (request, context, h) => {
       const { state } = context
-      const { sbi, crn } = request.auth.credentials
+      const { sbi } = request.auth.credentials
 
       if (sbi) {
-        const applicant = await fetchBusinessAndCustomerInformation(sbi, crn)
+        const applicant = await fetchBusinessAndCustomerInformation(request)
         await this.setState(request, {
           ...state,
           applicant

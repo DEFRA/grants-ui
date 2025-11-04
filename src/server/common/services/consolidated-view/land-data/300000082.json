@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000082",
+      "organisationId": "7400082",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "4636",
+            "sheetId": "SD5055",
+            "area": 5.051
+          }
+        ]
+      },
+      "info": {
+        "name": "Oak Grange",
+        "reference": "0300000082",
+        "email": {
+          "address": "contact+300000082@example.test"
+        },
+        "phone": {
+          "mobile": "07300000082"
+        },
+        "address": {
+          "line1": "83 Church Street",
+          "line2": "Industrial Estate",
+          "line3": "Manchester",
+          "line4": "Kent",
+          "line5": "",
+          "street": "Church Street",
+          "city": "Manchester",
+          "postalCode": "OL33 5RU"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Mr",
+          "first": "Grace",
+          "middle": "Alice",
+          "last": "Reed"
+        }
+      }
+    }
+  }
+}

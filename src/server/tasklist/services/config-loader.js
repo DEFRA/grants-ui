@@ -1,18 +1,19 @@
-import { readFile } from 'fs/promises'
+import { readFile } from 'node:fs/promises'
 import { parse } from 'yaml'
-import { join } from 'path'
+import { join } from 'node:path'
 import { statusCodes } from '../../common/constants/status-codes.js'
 import { config } from '~/src/config/config.js'
 
 const CONFIGS_PATH = join(process.cwd(), 'src/server/common/forms/definitions/tasklists')
 
 class TasklistNotFoundError extends Error {
-  constructor(message, statusCode, responseBody, tasklistId) {
-    super(message)
+  constructor(message, statusCode, responseBody, tasklistId, reason = 'not_found', cause = null) {
+    super(message, cause ? { cause } : undefined)
     this.name = 'TasklistNotFoundError'
     this.status = statusCode
     this.responseBody = responseBody
     this.tasklistId = tasklistId
+    this.reason = reason // 'disabled_in_production' | 'not_found'
   }
 }
 
@@ -40,7 +41,8 @@ export async function loadTasklistConfig(tasklistId) {
         `Tasklist '${tasklistId}' is not available in production`,
         statusCodes.notFound,
         'Tasklist not found',
-        tasklistId
+        tasklistId,
+        'disabled_in_production'
       )
     }
 
@@ -54,7 +56,9 @@ export async function loadTasklistConfig(tasklistId) {
       `Failed to load tasklist config for '${tasklistId}': ${error.message}`,
       statusCodes.notFound,
       error.message,
-      tasklistId
+      tasklistId,
+      'not_found',
+      error
     )
   }
 }
@@ -154,13 +158,15 @@ export function validateTasklistConfig(tasklistConfig, tasklistId = 'unknown') {
   const { tasklist } = tasklistConfig
   validateTasklistProperties(tasklist, tasklistId)
 
-  tasklist.sections.forEach((section, sectionIndex) => {
+  for (let sectionIndex = 0; sectionIndex < tasklist.sections.length; sectionIndex++) {
+    const section = tasklist.sections[sectionIndex]
     validateSection(section, sectionIndex, tasklistId)
 
-    section.subsections.forEach((subsection, subsectionIndex) => {
+    for (let subsectionIndex = 0; subsectionIndex < section.subsections.length; subsectionIndex++) {
+      const subsection = section.subsections[subsectionIndex]
       validateSubsection(subsection, subsectionIndex, section.id, tasklistId)
-    })
-  })
+    }
+  }
 
   return true
 }

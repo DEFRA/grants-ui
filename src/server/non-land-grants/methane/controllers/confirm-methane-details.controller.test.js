@@ -13,11 +13,14 @@ import {
 // Mock dependencies
 vi.mock('~/src/server/common/services/consolidated-view/consolidated-view.service.js')
 vi.mock('~/src/server/common/helpers/create-rows.js')
-vi.mock('~/src/server/common/helpers/logging/logger.js', async () => {
+vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
   const { mockLoggerFactoryWithCustomMethods } = await import('~/src/__mocks__')
-  return mockLoggerFactoryWithCustomMethods({
-    error: vi.fn()
-  })
+
+  return {
+    logger: mockLoggerFactoryWithCustomMethods({
+      error: vi.fn()
+    })
+  }
 })
 
 const mockData = {
@@ -121,7 +124,7 @@ describe('ConfirmMethaneDetailsController', () => {
 
       await handler(mockRequest, mockContext, mockH)
 
-      expect(fetchBusinessAndCPH).toHaveBeenCalledWith('SBI123456', '1100014934')
+      expect(fetchBusinessAndCPH).toHaveBeenCalledWith(mockRequest)
       expect(QuestionPageController.prototype.getViewModel).toHaveBeenCalledWith(mockRequest, mockContext)
       expect(mockH.view).toHaveBeenCalledWith('confirm-methane-details', {
         baseModel: 'data',
@@ -180,9 +183,9 @@ describe('ConfirmMethaneDetailsController', () => {
     })
 
     it('should build farm details with all row types', async () => {
-      const result = await controller.buildFarmDetails('1100014934', 'SBI123456')
+      const result = await controller.buildFarmDetails(mockRequest)
 
-      expect(fetchBusinessAndCPH).toHaveBeenCalledWith('SBI123456', '1100014934')
+      expect(fetchBusinessAndCPH).toHaveBeenCalledWith(mockRequest)
       expect(createCustomerNameRow).toHaveBeenCalledWith(mockData.customer?.name)
       expect(createBusinessNameRow).toHaveBeenCalledWith(mockData.business?.name)
       expect(createSbiRow).toHaveBeenCalledWith('SBI123456')
@@ -207,7 +210,7 @@ describe('ConfirmMethaneDetailsController', () => {
         value: { text: 'Test Business' }
       })
 
-      const result = await controller.buildFarmDetails('1100014934', 'SBI123456')
+      const result = await controller.buildFarmDetails(mockRequest)
 
       expect(result.rows).not.toContain(null)
       expect(result.rows.some((row) => row?.key?.text === 'Business name')).toBe(true)
@@ -300,7 +303,7 @@ describe('ConfirmMethaneDetailsController', () => {
 
       const result = await handler(mockRequest, mockContext, mockH)
 
-      expect(fetchBusinessAndCPH).toHaveBeenCalledWith('SBI123456', '1100014934')
+      expect(fetchBusinessAndCPH).toHaveBeenCalledWith(mockRequest)
       expect(controller.setState).toHaveBeenCalledWith(mockRequest, {
         someState: 'value',
         applicant: mockData

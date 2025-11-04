@@ -1,5 +1,5 @@
 import { formatCurrency } from '~/src/config/nunjucks/filters/format-currency.js'
-import { fetchParcelsForSbi } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
+import { fetchParcelsFromDal } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
 import { landActionWithCode } from '~/src/server/land-grants/utils/land-action-with-code.js'
 import { stringifyParcel } from '../utils/format-parcel.js'
 import { stateToLandActionsMapper } from '../mappers/state-to-land-grants-mapper.js'
@@ -14,7 +14,7 @@ import {
 
 const LAND_GRANTS_API_URL = config.get('landGrants.grantsServiceApiEndpoint')
 
-// TODO: This needs to come from the backend
+// NOSONAR TODO: Ideally this needs to come from the backend
 export const actionGroups = [
   {
     name: 'Assess moorland',
@@ -75,7 +75,9 @@ export async function fetchAvailableActionsForParcel({ parcelId = '', sheetId = 
   actionGroups.forEach((group) => {
     const groupActions = actions.filter((a) => group.actions.includes(a.code))
     if (groupActions.length > 0) {
-      groupActions.forEach((a) => usedCodes.add(a.code))
+      for (const action of groupActions) {
+        usedCodes.add(action.code)
+      }
       result.push(createGroup(group.name, groupActions))
     }
   })
@@ -116,12 +118,12 @@ async function fetchParcelsSize(parcelIds) {
 
 /**
  * Fetches parcels with area data for a given SBI.
- * @param {number} sbi - Single Business Identifier
+ * @param {Request} request
  * @returns {Promise<Parcel[]>}
  * @throws {Error}
  */
-export async function fetchParcels(sbi) {
-  const parcels = await fetchParcelsForSbi(sbi)
+export async function fetchParcels(request) {
+  const parcels = await fetchParcelsFromDal(request)
   const parcelKeys = parcels.map(stringifyParcel)
   const sizes = await fetchParcelsSize(parcelKeys)
   const hydratedParcels = parcels.map((p) => ({

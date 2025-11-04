@@ -1,8 +1,6 @@
 import { TaskListStatus, taskListStatusComponents } from '../../common/constants/tasklist-status-components.js'
 import { ConfigDrivenConditionEvaluator } from './config-driven-condition-evaluator.js'
-import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
-
-const logger = createLogger()
+import { logger } from '~/src/server/common/helpers/logging/log.js'
 
 export class TasklistGenerator {
   constructor(config) {
@@ -25,16 +23,16 @@ export class TasklistGenerator {
   determineStatuses(data, visitedSubSections, conditions) {
     const statuses = {}
 
-    this.config.tasklist.sections.forEach((section) => {
-      section.subsections.forEach((subsection) => {
+    for (const section of this.config.tasklist.sections) {
+      for (const subsection of section.subsections) {
         statuses[subsection.id] = this.getSubsectionStatus(subsection, data, visitedSubSections, conditions, statuses)
-      })
-    })
+      }
+    }
 
     if (this.config.tasklist.statusRules) {
-      Object.entries(this.config.tasklist.statusRules).forEach(([id, rule]) => {
+      for (const [id, rule] of Object.entries(this.config.tasklist.statusRules)) {
         statuses[id] = this.evaluateStatusRule(id, rule, statuses, data, visitedSubSections)
-      })
+      }
     }
 
     return statuses

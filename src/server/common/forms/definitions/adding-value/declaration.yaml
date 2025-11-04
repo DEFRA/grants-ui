@@ -2,6 +2,10 @@ engine: V2
 name: Confirm and send
 metadata:
   id: 7ccfcdda-6e8f-4963-be8e-2b16f12d7ebf
+  tasklistId: example
+  submission:
+    grantCode: declaration
+  grantRedirectRules: null
 pages:
   - title: Confirm and send
     path: /declaration

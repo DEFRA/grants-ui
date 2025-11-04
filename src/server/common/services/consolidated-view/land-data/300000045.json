@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000045",
+      "organisationId": "7400045",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "5617",
+            "sheetId": "SD4959",
+            "area": 2.3268
+          }
+        ]
+      },
+      "info": {
+        "name": "Cedar Holdings",
+        "reference": "0300000045",
+        "email": {
+          "address": "contact+300000045@example.test"
+        },
+        "phone": {
+          "mobile": "07300000045"
+        },
+        "address": {
+          "line1": "46 The Green",
+          "line2": "Yard",
+          "line3": "Sheffield",
+          "line4": "Staffordshire",
+          "line5": "",
+          "street": "The Green",
+          "city": "Sheffield",
+          "postalCode": "FK94 4UK"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Ms",
+          "first": "Thomas",
+          "middle": "Paige",
+          "last": "Turner"
+        }
+      }
+    }
+  }
+}

@@ -8,6 +8,9 @@ metadata:
   submission:
     grantCode: frps-private-beta
     submissionSchemaPath: ./schemas/farm-payments.schema.json
+  grantRedirectRules:
+    preSubmission:
+      - toPath: /check-selected-land-actions
   confirmationContent:
     html: |
       <h2 class="govuk-heading-m">What happens next</h2>

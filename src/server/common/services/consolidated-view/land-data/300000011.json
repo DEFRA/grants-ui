@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000011",
+      "organisationId": "7400011",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "9765",
+            "sheetId": "SD5065",
+            "area": 5.4065
+          }
+        ]
+      },
+      "info": {
+        "name": "Rose Farm",
+        "reference": "0300000011",
+        "email": {
+          "address": "contact+300000011@example.test"
+        },
+        "phone": {
+          "mobile": "07300000011"
+        },
+        "address": {
+          "line1": "12 Green Lane",
+          "line2": "Trading Estate",
+          "line3": "Birmingham",
+          "line4": "Cheshire",
+          "line5": "",
+          "street": "Green Lane",
+          "city": "Birmingham",
+          "postalCode": "ZE60 6BA"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Ms",
+          "first": "Keira",
+          "middle": "Thomas",
+          "last": "Carter"
+        }
+      }
+    }
+  }
+}

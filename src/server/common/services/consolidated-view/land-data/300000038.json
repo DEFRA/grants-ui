@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000038",
+      "organisationId": "7400038",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "3185",
+            "sheetId": "SD4959",
+            "area": 2.7279
+          }
+        ]
+      },
+      "info": {
+        "name": "Stone Estate",
+        "reference": "0300000038",
+        "email": {
+          "address": "contact+300000038@example.test"
+        },
+        "phone": {
+          "mobile": "07300000038"
+        },
+        "address": {
+          "line1": "39 Market Street",
+          "line2": "Works",
+          "line3": "Norwich",
+          "line4": "Derbyshire",
+          "line5": "",
+          "street": "Market Street",
+          "city": "Norwich",
+          "postalCode": "DT87 6RH"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Mr",
+          "first": "Mia",
+          "middle": "David",
+          "last": "Howard"
+        }
+      }
+    }
+  }
+}

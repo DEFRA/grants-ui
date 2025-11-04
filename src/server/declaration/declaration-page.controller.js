@@ -39,12 +39,11 @@ export default class DeclarationPageController extends SummaryPageController {
     const parentHandler = super.makeGetRouteHandler()
 
     // Return a wrapped version that stores the slug
-    return async (request, context, h) => {
+    return (request, context, h) => {
       // Store the slug in context if it's available in request.params
       storeSlugInContext(request, context, 'DeclarationController')
 
-      // Call the parent handler with await since it returns a promise
-      return await parentHandler(request, context, h)
+      return parentHandler(request, context, h)
     }
   }
 

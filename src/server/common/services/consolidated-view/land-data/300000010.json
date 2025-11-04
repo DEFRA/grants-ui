@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000010",
+      "organisationId": "7400010",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "8781",
+            "sheetId": "SD5065",
+            "area": 3.2298
+          }
+        ]
+      },
+      "info": {
+        "name": "Hawthorn Farm",
+        "reference": "0300000010",
+        "email": {
+          "address": "contact+300000010@example.test"
+        },
+        "phone": {
+          "mobile": "07300000010"
+        },
+        "address": {
+          "line1": "11 London Road",
+          "line2": "Industrial Estate",
+          "line3": "Manchester",
+          "line4": "Gloucestershire",
+          "line5": "",
+          "street": "London Road",
+          "city": "Manchester",
+          "postalCode": "YO59 5BA"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Mr",
+          "first": "Jack",
+          "middle": "Rose",
+          "last": "Carter"
+        }
+      }
+    }
+  }
+}

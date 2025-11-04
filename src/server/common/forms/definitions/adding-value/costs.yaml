@@ -2,6 +2,10 @@ engine: V2
 name: Costs
 metadata:
   id: 92f595e3-b88b-41ef-b55b-1e88b0495827
+  tasklistId: example
+  submission:
+    grantCode: costs
+  grantRedirectRules: null
 pages:
   - title: What is the estimated cost of the items?
     path: /project-cost
@@ -164,7 +168,7 @@ pages:
         schema: {}
     condition: 9d66dfef-41bb-438c-b8a6-b5290991033a
     id: 7a7f17c6-b447-4b59-aab4-1576fe333dcd
-  - title: "Check your answers: Costs"
+  - title: 'Check your answers: Costs'
     path: /summary
     controller: SectionEndController
     id: 78733063-3c7a-404b-a05c-10490372f492

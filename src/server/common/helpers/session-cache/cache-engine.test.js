@@ -14,12 +14,14 @@ vi.mock('ioredis', async () => ({
 }))
 vi.mock('@hapi/catbox-redis')
 vi.mock('@hapi/catbox-memory')
-vi.mock('~/src/server/common/helpers/logging/logger.js', async () => {
+vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
   const { mockLoggerFactoryWithCustomMethods } = await import('~/src/__mocks__')
-  return mockLoggerFactoryWithCustomMethods({
-    info: (...args) => mockLoggerInfo(...args),
-    error: (...args) => mockLoggerError(...args)
-  })
+  return {
+    logger: mockLoggerFactoryWithCustomMethods({
+      info: (...args) => mockLoggerInfo(...args),
+      error: (...args) => mockLoggerError(...args)
+    })
+  }
 })
 
 describe('#getCacheEngine', () => {

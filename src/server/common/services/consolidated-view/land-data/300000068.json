@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000068",
+      "organisationId": "7400068",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "7238",
+            "sheetId": "SD4963",
+            "area": 8.373
+          }
+        ]
+      },
+      "info": {
+        "name": "Elm Acres",
+        "reference": "0300000068",
+        "email": {
+          "address": "contact+300000068@example.test"
+        },
+        "phone": {
+          "mobile": "07300000068"
+        },
+        "address": {
+          "line1": "69 Church Lane",
+          "line2": "Barns",
+          "line3": "Coventry",
+          "line4": "Lancashire",
+          "line5": "",
+          "street": "Church Lane",
+          "city": "Coventry",
+          "postalCode": "LN19 9JR"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Mr",
+          "first": "Ruby",
+          "middle": "David",
+          "last": "Reed"
+        }
+      }
+    }
+  }
+}

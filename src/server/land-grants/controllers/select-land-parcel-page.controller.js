@@ -1,12 +1,9 @@
-import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
+import { logger } from '~/src/server/common/helpers/logging/log.js'
 import { fetchParcels } from '../services/land-grants.service.js'
 import LandGrantsQuestionWithAuthCheckController from '~/src/server/land-grants/controllers/auth/land-grants-question-with-auth-check.controller.js'
 
-const logger = createLogger()
-
 export default class SelectLandParcelPageController extends LandGrantsQuestionWithAuthCheckController {
   viewName = 'select-land-parcel'
-  parcels = []
 
   formatParcelForView = (parcel, actionsForParcel) => {
     const hasArea = parcel.area.value && parcel.area.unit
@@ -41,18 +38,30 @@ export default class SelectLandParcelPageController extends LandGrantsQuestionWi
       const payload = request.payload ?? {}
       const { selectedLandParcel, action } = payload
 
-      this.selectedLandParcel = selectedLandParcel
-
       if (action === 'validate' && !selectedLandParcel) {
+        let parcels = []
+        try {
+          const fetchedParcels = await fetchParcels(request)
+          const { landParcels } = state || {}
+          parcels = fetchedParcels.map((parcel) => {
+            const parcelKey = `${parcel.sheetId}-${parcel.parcelId}`
+            const parcelData = landParcels?.[parcelKey]
+            const actionsForParcel = parcelData?.actionsObj ? Object.keys(parcelData.actionsObj).length : 0
+            return this.formatParcelForView(parcel, actionsForParcel)
+          })
+        } catch (error) {
+          logger.error({ err: error }, 'Error fetching parcels for validation error rendering')
+        }
+
         return h.view(this.viewName, {
           ...super.getViewModel(request, context),
           ...state,
-          parcels: this.parcels,
+          parcels,
           errorMessage: 'Please select a land parcel from the list'
         })
       }
 
-      const authResult = await this.performAuthCheck(request, h)
+      const authResult = await this.performAuthCheck(request, h, selectedLandParcel)
       if (authResult) {
         return authResult
       }
@@ -80,16 +89,16 @@ export default class SelectLandParcelPageController extends LandGrantsQuestionWi
      * @param {Pick<ResponseToolkit, 'redirect' | 'view'>} h
      */
     const fn = async (request, context, h) => {
-      const { selectedLandParcel = '', landParcels } = context.state || {}
-      const { sbi } = request.auth.credentials
+      const { state } = context
+      const { landParcels } = state || {}
 
       const { viewName } = this
       const baseViewModel = super.getViewModel(request, context)
       const existingLandParcels = Object.keys(landParcels || {}).length > 0
 
       try {
-        const parcels = await fetchParcels(sbi)
-        this.parcels = parcels.map((parcel) => {
+        const fetchedParcels = await fetchParcels(request)
+        const parcels = fetchedParcels.map((parcel) => {
           const parcelKey = `${parcel.sheetId}-${parcel.parcelId}`
           const parcelData = landParcels?.[parcelKey]
           const actionsForParcel = parcelData?.actionsObj ? Object.keys(parcelData.actionsObj).length : 0
@@ -98,19 +107,26 @@ export default class SelectLandParcelPageController extends LandGrantsQuestionWi
 
         const viewModel = {
           ...baseViewModel,
-          parcels: this.parcels,
-          selectedLandParcel,
-          existingLandParcels
+          parcels,
+          existingLandParcels,
+          selectedLandParcel: null
         }
 
+        await this.setState(request, {
+          ...state,
+          selectedLandParcel: null
+        })
         return h.view(viewName, viewModel)
       } catch (error) {
+        const sbi = request.auth?.credentials?.sbi
         logger.error({ err: error, sbi }, 'Unexpected error when fetching parcel data')
-        const errorMessage = 'Unable to find parcel information, please try again later.'
+        const errorMessage =
+          'Unable to find parcel information, please try again later or contact the Rural Payments Agency.'
 
         return h.view(viewName, {
           ...baseViewModel,
           existingLandParcels,
+          selectedLandParcel: null,
           errors: [errorMessage]
         })
       }

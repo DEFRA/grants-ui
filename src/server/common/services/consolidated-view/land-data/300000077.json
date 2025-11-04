@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000077",
+      "organisationId": "7400077",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "5752",
+            "sheetId": "SD5054",
+            "area": 3.3009
+          }
+        ]
+      },
+      "info": {
+        "name": "Lake Acres",
+        "reference": "0300000077",
+        "email": {
+          "address": "contact+300000077@example.test"
+        },
+        "phone": {
+          "mobile": "07300000077"
+        },
+        "address": {
+          "line1": "78 Blackberry Lane",
+          "line2": "Yard",
+          "line3": "York",
+          "line4": "Staffordshire",
+          "line5": "",
+          "street": "Blackberry Lane",
+          "city": "York",
+          "postalCode": "NG28 9NT"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Ms",
+          "first": "Benjamin",
+          "middle": "Amelia",
+          "last": "Reed"
+        }
+      }
+    }
+  }
+}

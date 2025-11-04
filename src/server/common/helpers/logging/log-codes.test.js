@@ -266,14 +266,24 @@ describe('LogCodes', () => {
       [
         'SUBMISSION_FAILURE',
         'error',
-        { grantType: TEST_GRANT_TYPES.ADDING_VALUE, userId: TEST_USER_IDS.DEFAULT, error: TEST_ERRORS.NETWORK_ERROR },
-        `Grant submission failed for grantType=${TEST_GRANT_TYPES.ADDING_VALUE}, user=${TEST_USER_IDS.DEFAULT}. Error: ${TEST_ERRORS.NETWORK_ERROR}`
+        {
+          grantType: TEST_GRANT_TYPES.ADDING_VALUE,
+          userCrn: TEST_USER_IDS.DEFAULT,
+          userSbi: TEST_SBI.DEFAULT,
+          error: TEST_ERRORS.NETWORK_ERROR,
+          stack: 'Error stack trace'
+        },
+        `Grant submission failed for grantType=${TEST_GRANT_TYPES.ADDING_VALUE}, userCrn=${TEST_USER_IDS.DEFAULT}, userSbi=${TEST_SBI.DEFAULT}, error=${TEST_ERRORS.NETWORK_ERROR}, stack=Error stack trace`
       ],
       [
         'SUBMISSION_VALIDATION_ERROR',
         'error',
-        { grantType: TEST_GRANT_TYPES.ADDING_VALUE, error: TEST_ERRORS.INVALID_DATA },
-        `Submission validation error for grantType=${TEST_GRANT_TYPES.ADDING_VALUE}: ${TEST_ERRORS.INVALID_DATA}`
+        {
+          grantType: TEST_GRANT_TYPES.ADDING_VALUE,
+          referenceNumber: TEST_REFERENCE_NUMBERS.REF_123,
+          validationId: 'VAL123'
+        },
+        `Submission validation error for grantType=${TEST_GRANT_TYPES.ADDING_VALUE}, referenceNumber=${TEST_REFERENCE_NUMBERS.REF_123}, validationId=VAL123`
       ]
     ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
       const logCode = LogCodes.SUBMISSION[logCodeName]

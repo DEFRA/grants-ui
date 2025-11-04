@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000066",
+      "organisationId": "7400066",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "9819",
+            "sheetId": "SD4961",
+            "area": 1.4607
+          }
+        ]
+      },
+      "info": {
+        "name": "Pine Acres",
+        "reference": "0300000066",
+        "email": {
+          "address": "contact+300000066@example.test"
+        },
+        "phone": {
+          "mobile": "07300000066"
+        },
+        "address": {
+          "line1": "67 Victoria Road",
+          "line2": "Industrial Estate",
+          "line3": "Liverpool",
+          "line4": "Kent",
+          "line5": "",
+          "street": "Victoria Road",
+          "city": "Liverpool",
+          "postalCode": "LE17 7HP"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Mr",
+          "first": "Peter",
+          "middle": "Marie",
+          "last": "Reed"
+        }
+      }
+    }
+  }
+}

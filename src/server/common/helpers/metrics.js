@@ -1,7 +1,7 @@
 import { createMetricsLogger, Unit, StorageResolution } from 'aws-embedded-metrics'
 
 import { config } from '~/src/config/config.js'
-import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
+import { logger } from '~/src/server/common/helpers/logging/log.js'
 
 /**
  * Aws embedded metrics wrapper
@@ -21,6 +21,6 @@ export async function metricsCounter(metricName, value = 1) {
     metricsLogger.putMetric(metricName, value, Unit.Count, StorageResolution.Standard)
     await metricsLogger.flush()
   } catch (error) {
-    createLogger().error(error, error.message)
+    logger.error(error, error.message)
   }
 }

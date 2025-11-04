@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000034",
+      "organisationId": "7400034",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "7708",
+            "sheetId": "SD5066",
+            "area": 4.9336
+          }
+        ]
+      },
+      "info": {
+        "name": "Valley Estate",
+        "reference": "0300000034",
+        "email": {
+          "address": "contact+300000034@example.test"
+        },
+        "phone": {
+          "mobile": "07300000034"
+        },
+        "address": {
+          "line1": "35 Grange Road",
+          "line2": "Industrial Estate",
+          "line3": "Derby",
+          "line4": "Kent",
+          "line5": "",
+          "street": "Grange Road",
+          "city": "Derby",
+          "postalCode": "DE83 2OG"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Mr",
+          "first": "Isla",
+          "middle": "Grace",
+          "last": "Howard"
+        }
+      }
+    }
+  }
+}

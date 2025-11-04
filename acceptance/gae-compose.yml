@@ -1,5 +1,4 @@
 services:
- 
   gae-acceptance-tests:
     image: defradigital/grants-ui-acceptance-tests
     pull_policy: always
@@ -12,12 +11,14 @@ services:
       BASE_BACKEND_URL: https://grants-ui-proxy:4001
       GRANTS_UI_BACKEND_AUTH_TOKEN: auth_token
       GRANTS_UI_BACKEND_ENCRYPTION_KEY: encryption_key
+      LAND_GRANTS_API_AUTH_TOKEN: auth_token
+      LAND_GRANTS_API_ENCRYPTION_KEY: encryption_key
       DEFRA_ID_USER_PASSWORD: x
       MOCKSERVER_HOST: mockserver
       MOCKSERVER_PORT: 1080
     volumes:
       - ../nginx/certs:/etc/ssl/certs:ro
-    command: ["npm", "run", "test:ci"]
+    command: ['npm', 'run', 'test:ci']
     networks:
       - grants-ui-net
 
@@ -25,9 +26,9 @@ services:
     image: selenium/standalone-chromium:4.34.0-20250727
     shm_size: 2g
     ports:
-      - "4444:4444"
+      - '4444:4444'
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:4444/wd/hub/status"]
+      test: ['CMD', 'curl', '-f', 'http://localhost:4444/wd/hub/status']
       interval: 5s
       timeout: 10s
       retries: 12

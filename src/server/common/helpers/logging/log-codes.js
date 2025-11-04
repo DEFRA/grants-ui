@@ -107,20 +107,30 @@ export const LogCodes = {
       messageFunc: (messageOptions) =>
         `Grant submission successful for grantType=${messageOptions.grantType}, referenceNumber=${messageOptions.referenceNumber}`
     },
+    SUBMISSION_COMPLETED: {
+      level: 'info',
+      messageFunc: (messageOptions) =>
+        `Form submission completed for grantType=${messageOptions.grantType}, referenceNumber=${messageOptions.referenceNumber}, fields=${messageOptions.numberOfFields || 0}, status=${messageOptions.status}`
+    },
     SUBMISSION_FAILURE: {
       level: 'error',
       messageFunc: (messageOptions) =>
-        `Grant submission failed for grantType=${messageOptions.grantType}, user=${messageOptions.userId}. Error: ${messageOptions.error}`
+        `Grant submission failed for grantType=${messageOptions.grantType}, userCrn=${messageOptions.userCrn}, userSbi=${messageOptions.userSbi}, error=${messageOptions.error}, stack=${messageOptions.stack || 'N/A'}`
     },
     SUBMISSION_VALIDATION_ERROR: {
       level: 'error',
       messageFunc: (messageOptions) =>
-        `Submission validation error for grantType=${messageOptions.grantType}: ${messageOptions.error}`
+        `Submission validation error for grantType=${messageOptions.grantType}, referenceNumber=${messageOptions.referenceNumber}, validationId=${messageOptions.validationId}`
     },
     SUBMISSION_PAYLOAD_LOG: {
       level: 'debug',
       messageFunc: (messageOptions) =>
         `Submission payload for grantType=${messageOptions.grantType}:\n${JSON.stringify(messageOptions.payload, null, 2)}`
+    },
+    SUBMISSION_REDIRECT_FAILURE: {
+      level: 'error',
+      messageFunc: (messageOptions) =>
+        `Submission redirect failure for grantType=${messageOptions.grantType}, referenceNumber=${messageOptions.referenceNumber}. Error: ${messageOptions.error}`
     }
   },
   DECLARATION: {
@@ -191,6 +201,11 @@ export const LogCodes = {
       level: 'error',
       messageFunc: (messageOptions) =>
         `Land grant processing error for user=${messageOptions.userId}: ${messageOptions.error}`
+    },
+    UNAUTHORISED_PARCEL: {
+      level: 'error',
+      messageFunc: (messageOptions) =>
+        `Land parcel doesn't belong to sbi=${messageOptions.sbi} | selectedLandParcel: ${messageOptions.selectedLandParcel} | landParcelsForSbi=${JSON.stringify(messageOptions.landParcelsForSbi)}`
     }
   },
   AGREEMENTS: {
@@ -301,7 +316,7 @@ export const validateLogCodes = (logCodes) => {
           try {
             validateLogCode(value)
           } catch (e) {
-            throw new Error(`Invalid log code definition for "${key}": ${e.message}`)
+            throw new Error(`Invalid log code definition for "${key}": ${e.message}`, { cause: e })
           }
         } else {
           // This is a nested node, recursively validate it
@@ -318,5 +333,5 @@ export const validateLogCodes = (logCodes) => {
 try {
   validateLogCodes(LogCodes)
 } catch (error) {
-  throw new Error(`Log code validation failed: ${error.message}`)
+  throw new Error(`Log code validation failed: ${error.message}`, { cause: error })
 }

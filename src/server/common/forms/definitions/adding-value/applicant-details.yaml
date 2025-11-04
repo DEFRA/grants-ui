@@ -2,6 +2,10 @@ engine: V2
 name: Applicant
 metadata:
   id: f3f08612-a020-44e9-9851-9618820129ff
+  tasklistId: example
+  submission:
+    grantCode: application-details
+  grantRedirectRules: null
 pages:
   - title: Applicant's details
     path: /applicant-details
@@ -120,7 +124,7 @@ pages:
         shortDescription: Project postcode
         id: 0ba77157-6c70-48ff-8156-84249e8e9b1d
     id: 9530d5f6-0370-439f-80a7-f6a8122c18f7
-  - title: "Check your answers: Applicant"
+  - title: 'Check your answers: Applicant'
     path: /summary
     controller: SectionEndController
     id: 2146cc65-3fc3-428e-aad4-df2f0b4637fe

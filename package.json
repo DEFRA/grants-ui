@@ -6,7 +6,7 @@
   "main": ".server/index.js",
   "type": "module",
   "engines": {
-    "node": ">=22"
+    "node": ">=24.11.0"
   },
   "scripts": {
     "build": "run-s build:frontend build:server",
@@ -16,10 +16,13 @@
     "dev:debug": "run-p frontend:watch server:debug",
     "docker:up": "docker compose up --build -d",
     "docker:down": "docker compose down --remove-orphans",
-    "docker:reset": "docker compose down --volumes --remove-orphans",
-    "docker:rebuild": "docker compose down --volumes --remove-orphans && docker compose build --no-cache && docker compose up -d",
+    "docker:reset": "docker compose down --volumes --remove-orphans --rmi local",
     "docker:ha:up": "docker compose -f compose.yml -f compose.ha.yml up --build -d --scale grants-ui=2 --scale grants-ui-backend=2",
     "docker:ha:down": "docker compose -f compose.yml -f compose.ha.yml down --remove-orphans",
+    "docker:landgrants:up": "docker compose -f compose.yml -f compose.land-grants.yml up --build -d",
+    "docker:landgrants:down": "docker compose -f compose.yml -f compose.land-grants.yml down --remove-orphans",
+    "docker:landgrants:ha:up": "docker compose -f compose.yml -f compose.ha.yml -f compose.land-grants.yml up --build -d --scale grants-ui=2 --scale grants-ui-backend=2",
+    "docker:landgrants:ha:down": "docker compose -f compose.yml -f compose.ha.yml -f compose.land-grants.yml down --remove-orphans",
     "format": "prettier --write \"src/**/*.js\" \"**/*.{js,cjs,md,json,config.js,test.js,contract.test.js}\"",
     "json:format:single": "npx prettier --write",
     "format:check": "prettier --check \"src/**/*.js\" \"**/*.{js,cjs,md,json,config.js,test.js}\"",
@@ -52,7 +55,7 @@
   },
   "dependencies": {
     "@babel/runtime": "7.28.4",
-    "@defra/forms-engine-plugin": "3.0.0",
+    "@defra/forms-engine-plugin": "4.0.0",
     "@defra/hapi-tracing": "1.28.0",
     "@elastic/ecs-pino-format": "1.5.0",
     "@hapi/bell": "13.1.0",

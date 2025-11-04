@@ -9,11 +9,11 @@ vi.mock('~/src/server/sbi/state.js', async () => {
   return mockSbiState()
 })
 vi.mock('../../common/services/consolidated-view/consolidated-view.service.js')
-vi.mock('~/src/server/common/helpers/logging/logger.js', async () => {
-  const { mockLoggerFactoryWithCustomMethods } = await import('~/src/__mocks__')
-  return mockLoggerFactoryWithCustomMethods({
-    error: vi.fn()
-  })
+
+// Mock the logging module with both possible exports
+vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
+  const { mockLogHelper } = await import('~/src/__mocks__')
+  return mockLogHelper()
 })
 vi.mock('~/src/server/land-grants/utils/format-phone.js', () => ({
   formatPhone: vi.fn((phone) => (phone ? `formatted-${phone}` : ''))
@@ -94,7 +94,7 @@ describe('ConfirmFarmDetailsController', () => {
       const handler = controller.makePostRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
 
-      expect(fetchBusinessAndCustomerInformation).toHaveBeenCalledWith('SBI123456', '1100014934')
+      expect(fetchBusinessAndCustomerInformation).toHaveBeenCalledWith(mockRequest)
       expect(controller.setState).toHaveBeenCalledWith(
         mockRequest,
         expect.objectContaining({
@@ -119,7 +119,7 @@ describe('ConfirmFarmDetailsController', () => {
       const handler = controller.makeGetRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
 
-      expect(fetchBusinessAndCustomerInformation).toHaveBeenCalledWith('SBI123456', '1100014934')
+      expect(fetchBusinessAndCustomerInformation).toHaveBeenCalledWith(mockRequest)
       expect(mockH.view).toHaveBeenCalledWith('confirm-farm-details', {
         farmDetails: expect.objectContaining({
           rows: expect.any(Array)
@@ -173,7 +173,7 @@ describe('ConfirmFarmDetailsController', () => {
 
       fetchBusinessAndCustomerInformation.mockResolvedValue(mockData)
 
-      const result = await controller.buildFarmDetails('1100014934', 'SBI123456')
+      const result = await controller.buildFarmDetails(mockRequest)
 
       expect(result).toEqual({
         rows: [
@@ -228,7 +228,7 @@ describe('ConfirmFarmDetailsController', () => {
   describe('constants', () => {
     it('should have correct static constants', () => {
       expect(ConfirmFarmDetailsController.ERROR_MESSAGE).toBe(
-        'Unable to find farm information, please try again later.'
+        'Unable to find farm information, please try again later or contact the Rural Payments Agency.'
       )
     })
   })
