@@ -195,8 +195,7 @@ describe('SelectLandParcelPageController', () => {
         'select-land-parcel',
         expect.objectContaining({
           pageTitle: 'Select Land Parcel',
-          parcels: controllerParcelsResponse,
-          selectedLandParcel: null
+          parcels: controllerParcelsResponse
         })
       )
       expect(result).toBe(renderedViewMock)
@@ -227,8 +226,7 @@ describe('SelectLandParcelPageController', () => {
         expect.objectContaining({
           existingLandParcels: false,
           pageTitle: 'Select Land Parcel',
-          parcels: controllerParcelsResponse,
-          selectedLandParcel: null
+          parcels: controllerParcelsResponse
         })
       )
       expect(result).toBe(renderedViewMock)
@@ -244,8 +242,7 @@ describe('SelectLandParcelPageController', () => {
         expect.objectContaining({
           existingLandParcels: false,
           parcels: controllerParcelsResponse,
-          pageTitle: 'Select Land Parcel',
-          selectedLandParcel: null
+          pageTitle: 'Select Land Parcel'
         })
       )
       expect(result).toBe(renderedViewMock)

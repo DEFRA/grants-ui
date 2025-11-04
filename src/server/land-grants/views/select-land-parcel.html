@@ -21,59 +21,51 @@
         }) }}
       {% endif %}
 
-      {% if parcels %}
-        <form method="post" data-actions="{{ actions }}" >
-          {% set radioItems = [] %}
-          {% for parcel in parcels %}
-            {% set radioItems = radioItems.concat([{
-              value: parcel.value,
-              text: parcel.text,
-              hint: {
-                text: parcel.hint
+      <form method="post" data-actions="{{ actions }}" >
+        {% set radioItems = [] %}
+        {% for parcel in parcels %}
+          {% set radioItems = radioItems.concat([{
+            value: parcel.value,
+            text: parcel.text,
+            hint: {
+              text: parcel.hint
+            }
+          }]) %}
+        {% endfor %}
+
+        {{ govukRadios({
+            name: "selectedLandParcel",
+            fieldset: {
+              legend: {
+                text: pageTitle,
+                isPageHeading: true,
+                classes: "govuk-fieldset__legend--l"
               }
-            }]) %}
-          {% endfor %}
+            },
+            hint: {
+              text: "Use your map to check these reference numbers against your land parcels."
+            },
+            items: radioItems,
+            value: parcelId,
+            errorMessage: errorMessage and { text: errorMessage }
+          })
+        }}
+        {% if radioItems.length > 0 %}
+          <p class="govuk-body">
+            You will be able to add actions to the other land parcels before submitting your application.
+          </p>
 
-          {% if radioItems.length > 0 %}
-            {{ govukRadios({
-                name: "selectedLandParcel",
-                fieldset: {
-                  legend: {
-                    text: pageTitle,
-                    isPageHeading: true,
-                    classes: "govuk-fieldset__legend--l"
-                  }
-                },
-                hint: {
-                  text: "Use your map to check these reference numbers against your land parcels."
-                },
-                items: radioItems,
-                value: parcelId,
-                errorMessage: errorMessage and { text: errorMessage }
-              })
-            }}
-
-            <p class="govuk-body">
-              You will be able to add actions to the other land parcels before submitting your application.
-            </p>
-
-            <div id="landParcels" class="govuk-button-group">
-              <input type="hidden" name="crumb" value="{{ crumb }}">
-              {% block form %}
-                  {{ govukButton({
-                    text: "Continue",
-                    preventDoubleClick: true
-                  }) }}
-              {% endblock %}
-            </div>
-          {% else %}
-            {{ govukWarningText({
-              text: "No land parcels available to select.",
-              iconFallbackText: "Warning"
-            }) }}
-          {% endif %}
-        </form>
-      {% endif %}
+          <div id="landParcels" class="govuk-button-group">
+            <input type="hidden" name="crumb" value="{{ crumb }}">
+            {% block form %}
+                {{ govukButton({
+                  text: "Continue",
+                  preventDoubleClick: true
+                }) }}
+            {% endblock %}
+          </div>
+        {% endif %}
+      </form>
 
       {% if existingLandParcels and ((not errors) or (errors.length == 0)) %}
           <p class="govuk-body govuk-!-margin-bottom-5">
