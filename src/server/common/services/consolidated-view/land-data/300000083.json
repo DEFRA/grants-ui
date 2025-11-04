@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000083",
+      "organisationId": "7400083",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "5086",
+            "sheetId": "SD5055",
+            "area": 3.174
+          }
+        ]
+      },
+      "info": {
+        "name": "Willow Grange",
+        "reference": "0300000083",
+        "email": {
+          "address": "contact+300000083@example.test"
+        },
+        "phone": {
+          "mobile": "07300000083"
+        },
+        "address": {
+          "line1": "84 Main Street",
+          "line2": "Trading Estate",
+          "line3": "Birmingham",
+          "line4": "Essex",
+          "line5": "",
+          "street": "Main Street",
+          "city": "Birmingham",
+          "postalCode": "OX34 6RU"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Ms",
+          "first": "Harry",
+          "middle": "Jade",
+          "last": "Reed"
+        }
+      }
+    }
+  }
+}

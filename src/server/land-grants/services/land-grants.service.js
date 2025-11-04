@@ -14,7 +14,7 @@ import {
 
 const LAND_GRANTS_API_URL = config.get('landGrants.grantsServiceApiEndpoint')
 
-// TODO: This needs to come from the backend
+// NOSONAR TODO: Ideally this needs to come from the backend
 export const actionGroups = [
   {
     name: 'Assess moorland',

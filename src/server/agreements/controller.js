@@ -58,7 +58,7 @@ function buildProxyHeaders(token, request) {
       userId: request.userId,
       error: `JWT generate failed: ${jwtError.message}`
     })
-    throw new Error(`Failed to generate JWT token: ${jwtError.message}`)
+    throw jwtError
   }
 }
 
@@ -71,15 +71,6 @@ export const getAgreementController = {
     try {
       const { baseUrl, token } = validateConfig()
       const { path } = request.params
-
-      if (!path) {
-        return h
-          .response({
-            error: 'Bad Request',
-            message: 'Path parameter is required'
-          })
-          .code(statusCodes.badRequest)
-      }
 
       const uri = buildTargetUri(baseUrl, path)
       const headers = buildProxyHeaders(token, request)

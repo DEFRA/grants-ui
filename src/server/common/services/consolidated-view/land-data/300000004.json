@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000004",
+      "organisationId": "7400004",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "2681",
+            "sheetId": "SD4957",
+            "area": 1.3331
+          }
+        ]
+      },
+      "info": {
+        "name": "Maple Farm",
+        "reference": "0300000004",
+        "email": {
+          "address": "contact+300000004@example.test"
+        },
+        "phone": {
+          "mobile": "07300000004"
+        },
+        "address": {
+          "line1": "5 Park Road",
+          "line2": "Barns",
+          "line3": "Reading",
+          "line4": "Lancashire",
+          "line5": "",
+          "street": "Park Road",
+          "city": "Reading",
+          "postalCode": "WD53 8YZ"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Mr",
+          "first": "Daniel",
+          "middle": "Grace",
+          "last": "Carter"
+        }
+      }
+    }
+  }
+}

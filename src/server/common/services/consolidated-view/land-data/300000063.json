@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000063",
+      "organisationId": "7400063",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "8599",
+            "sheetId": "SD4960",
+            "area": 1.2831
+          }
+        ]
+      },
+      "info": {
+        "name": "Willow Acres",
+        "reference": "0300000063",
+        "email": {
+          "address": "contact+300000063@example.test"
+        },
+        "phone": {
+          "mobile": "07300000063"
+        },
+        "address": {
+          "line1": "64 Main Street",
+          "line2": "Depot",
+          "line3": "Sheffield",
+          "line4": "Suffolk",
+          "line5": "",
+          "street": "Main Street",
+          "city": "Sheffield",
+          "postalCode": "KT14 4FO"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Ms",
+          "first": "Mia",
+          "middle": "Anne",
+          "last": "Reed"
+        }
+      }
+    }
+  }
+}

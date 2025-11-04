@@ -7,12 +7,13 @@ import { config } from '~/src/config/config.js'
 const CONFIGS_PATH = join(process.cwd(), 'src/server/common/forms/definitions/tasklists')
 
 class TasklistNotFoundError extends Error {
-  constructor(message, statusCode, responseBody, tasklistId) {
-    super(message)
+  constructor(message, statusCode, responseBody, tasklistId, reason = 'not_found', cause = null) {
+    super(message, cause ? { cause } : undefined)
     this.name = 'TasklistNotFoundError'
     this.status = statusCode
     this.responseBody = responseBody
     this.tasklistId = tasklistId
+    this.reason = reason // 'disabled_in_production' | 'not_found'
   }
 }
 
@@ -40,7 +41,8 @@ export async function loadTasklistConfig(tasklistId) {
         `Tasklist '${tasklistId}' is not available in production`,
         statusCodes.notFound,
         'Tasklist not found',
-        tasklistId
+        tasklistId,
+        'disabled_in_production'
       )
     }
 
@@ -54,7 +56,9 @@ export async function loadTasklistConfig(tasklistId) {
       `Failed to load tasklist config for '${tasklistId}': ${error.message}`,
       statusCodes.notFound,
       error.message,
-      tasklistId
+      tasklistId,
+      'not_found',
+      error
     )
   }
 }

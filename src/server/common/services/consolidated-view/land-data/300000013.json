@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000013",
+      "organisationId": "7400013",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "1180",
+            "sheetId": "SD4958",
+            "area": 1.7972
+          }
+        ]
+      },
+      "info": {
+        "name": "Meadow Farm",
+        "reference": "0300000013",
+        "email": {
+          "address": "contact+300000013@example.test"
+        },
+        "phone": {
+          "mobile": "07300000013"
+        },
+        "address": {
+          "line1": "14 New Road",
+          "line2": "Yard",
+          "line3": "Leicester",
+          "line4": "Staffordshire",
+          "line5": "",
+          "street": "New Road",
+          "city": "Leicester",
+          "postalCode": "AL62 8CB"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Ms",
+          "first": "Mia",
+          "middle": "Kate",
+          "last": "Carter"
+        }
+      }
+    }
+  }
+}

@@ -1,14 +1,9 @@
 import { vi } from 'vitest'
 import { log, logger, LogCodes } from './log.js'
 
-// Mock the logger
-vi.mock('./logger.js', () => ({
-  createLogger: () => ({
-    info: vi.fn(),
-    debug: vi.fn(),
-    error: vi.fn()
-  })
-}))
+vi.spyOn(logger, 'info')
+vi.spyOn(logger, 'debug')
+vi.spyOn(logger, 'error')
 
 describe('Logger Functionality', () => {
   const mockLogCode = {

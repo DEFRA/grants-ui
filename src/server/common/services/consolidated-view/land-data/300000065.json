@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000065",
+      "organisationId": "7400065",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "9209",
+            "sheetId": "SD4961",
+            "area": 2.9021
+          }
+        ]
+      },
+      "info": {
+        "name": "Cedar Acres",
+        "reference": "0300000065",
+        "email": {
+          "address": "contact+300000065@example.test"
+        },
+        "phone": {
+          "mobile": "07300000065"
+        },
+        "address": {
+          "line1": "66 The Green",
+          "line2": "Business Park",
+          "line3": "Birmingham",
+          "line4": "Somerset",
+          "line5": "",
+          "street": "The Green",
+          "city": "Birmingham",
+          "postalCode": "LA16 6GP"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Ms",
+          "first": "Olivia",
+          "middle": "Lee",
+          "last": "Reed"
+        }
+      }
+    }
+  }
+}

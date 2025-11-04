@@ -1,14 +1,36 @@
 import { postToLandGrantsApi } from './land-grants.client.js'
 import { vi } from 'vitest'
+import { retry } from '~/src/server/common/helpers/retry.js'
+
+vi.mock('~/src/server/common/helpers/retry.js')
 
 /** @type {import('vitest').MockedFunction<any>} */
 const mockFetch = vi.fn()
+
+vi.mock('~/src/server/common/helpers/state/backend-auth-helper.js', () => ({
+  createApiHeadersForLandGrantsBackend: () => ({
+    Authorization: 'Bearer token',
+    'Content-Type': 'application/json'
+  })
+}))
 
 global.fetch = mockFetch
 
 const mockApiEndpoint = 'http://mock-land-grants-api'
 
 describe('postToLandGrantsApi', () => {
+  beforeEach(() => {
+    retry.mockImplementation(async (operation, options) => {
+      try {
+        return await operation()
+      } catch (error) {
+        if (options?.onRetry) {
+          options.onRetry(error, 1)
+        }
+        throw error
+      }
+    })
+  })
   it('should make successful POST request', async () => {
     const mockResponse = { id: 1, status: 'success' }
     mockFetch.mockResolvedValueOnce({
@@ -21,6 +43,7 @@ describe('postToLandGrantsApi', () => {
     expect(mockFetch).toHaveBeenCalledWith(`${mockApiEndpoint}/submit`, {
       method: 'POST',
       headers: {
+        Authorization: expect.any(String),
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ data: 'test' })

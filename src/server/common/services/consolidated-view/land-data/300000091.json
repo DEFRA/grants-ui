@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000091",
+      "organisationId": "7400091",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "7662",
+            "sheetId": "SD5055",
+            "area": 1.0765
+          }
+        ]
+      },
+      "info": {
+        "name": "Rose Grange",
+        "reference": "0300000091",
+        "email": {
+          "address": "contact+300000091@example.test"
+        },
+        "phone": {
+          "mobile": "07300000091"
+        },
+        "address": {
+          "line1": "92 Green Lane",
+          "line2": "Trading Estate",
+          "line3": "Maidstone",
+          "line4": "Cheshire",
+          "line5": "",
+          "street": "Green Lane",
+          "city": "Maidstone",
+          "postalCode": "RH42 5WY"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Ms",
+          "first": "Peter",
+          "middle": "Louise",
+          "last": "Reed"
+        }
+      }
+    }
+  }
+}

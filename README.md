@@ -13,14 +13,13 @@ Core delivery platform Node.js Frontend Template.
 - [Development Tools & Configuration](#development-tools--configuration)
   - [Testing Framework](#testing-framework)
   - [Code Quality & Linting](#code-quality--linting)
-  - [Build & Development Tools](#build--development-tools)
   - [Authentication & Security](#authentication--security)
-  - [Development Services Integration](#development-services-integration)
   - [Custom NPM Scripts](#custom-npm-scripts)
 - [Cookies](#cookies)
   - [Inspecting cookies](#inspecting-cookies)
 - [Server-side Caching](#server-side-caching)
 - [Session Rehydration](#session-rehydration)
+- [Land Grants API Authentication](#land-grants-api-authentication)
 - [Redis](#redis)
 - [Proxy](#proxy)
 - [Feature Structure](#feature-structure)
@@ -62,7 +61,7 @@ Core delivery platform Node.js Frontend Template.
 
 ### Node.js
 
-Please install [Node.js](http://nodejs.org/) `>= v22` and [npm](https://nodejs.org/) `>= v9`. You will find it
+Please install [Node.js](http://nodejs.org/) `>= v24` and [npm](https://nodejs.org/) `>= v9`. You will find it
 easier to use the Node Version Manager [nvm](https://github.com/creationix/nvm)
 
 To use the correct version of Node.js for this application, via nvm:
@@ -324,6 +323,50 @@ If session rehydration fails (e.g., backend unavailable, network issues), the ap
 - Log the error for debugging
 - Continue normal operation without restored state
 - Allow the user to proceed with a fresh session
+
+## Land Grants Api Authentication
+
+The application now supports **server-to-server (S2S) authentication** when communicating with the **Land Grants API**.
+
+When any request is made to the Land Grants API (e.g., `/payments/calculate`, `/parcels`), the system automatically includes an encrypted Bearer token in the `Authorization` header. This ensures secure, authenticated communication between services.
+
+### How it works
+
+1. The helper reads the following environment variables:
+   - `LAND_GRANTS_API_AUTH_TOKEN` — static bearer token used for authentication.
+   - `LAND_GRANTS_API_ENCRYPTION_KEY` — symmetric key used to encrypt the token.
+
+2. The token is encrypted using **AES-256-GCM** before transmission.
+
+3. The resulting value is encoded and set as the Bearer token in the `Authorization` header.
+
+4. API clients like `land-grants.client.js` automatically include these headers in every request using:
+
+   ```javascript
+   import { createApiHeadersForLandGrantsBackend } from '~/src/server/common/helpers/state/backend-auth-helper.js'
+
+   const response = await fetch(`${baseUrl}/payments/calculate`, {
+     method: 'POST',
+     headers: createApiHeadersForLandGrantsBackend(),
+     body: JSON.stringify(payload)
+   })
+   ```
+
+### Example Authorization Header
+
+```
+Authorization: Bearer <base64-encoded-encrypted-token>
+Content-Type: application/json
+```
+
+### Environment Variables
+
+| Variable                         | Description                                               |
+| -------------------------------- | --------------------------------------------------------- |
+| `LAND_GRANTS_API_AUTH_TOKEN`     | Bearer token used to authenticate to the Land Grants API. |
+| `LAND_GRANTS_API_ENCRYPTION_KEY` | Key used to encrypt the auth token before transmission.   |
+
+This mechanism provides a secure, environment-driven way to authenticate backend-to-backend requests without exposing plain-text tokens in configuration or logs.
 
 ## Redis
 
@@ -721,6 +764,30 @@ A local environment with:
 docker compose up --build -d
 ```
 
+And optionally:
+
+- Land Grants API and Postgres via `compose.land-grants.yml`
+
+```bash
+docker compose up -f compose.yml -f compose.land-grants.yml --build -d
+```
+
+Note: Running the Land Grants API and Postgres requires land data to be populated in the Land Grants Postgres database.
+This must be done manually using the compose scripts in the [land-grants-api](http://github.com/DEFRA/land-grants-api) repository
+and only needs to be done once, unless you need to clear and re-seed the database, or if you remove the `postgres_data` volume.
+
+Once that repository is cloned locally, `compose.migrations.yml` provides `database-up` and `database-down` services to run migrations against the Postgres database.
+
+Convenient npm scripts have been added in that repository for this workflow:
+
+```bash
+# Apply migrations to the grants-ui database
+npm run docker:db:migrate:up
+
+# Roll back all migrations to the base tag v0.0.0
+npm run docker:db:migrate:down
+```
+
 #### High-availability (HA) local proxy
 
 For local testing behind HTTPS and to simulate an HA entry point, there is an optional Nginx reverse proxy defined in `compose.ha.yml`.
@@ -743,6 +810,20 @@ Stop the HA stack:
 
 ```bash
 docker compose -f compose.yml -f compose.ha.yml down
+```
+
+You can also run the HA stack with the Land Grants API and Postgres via npm scripts:
+
+Start the stack with Land Grants API and the HA proxy:
+
+```bash
+npm run docker:landgrants:ha:up
+```
+
+Stop the HA stack:
+
+```bash
+npm run docker:landgrants:ha:down
 ```
 
 Notes:
@@ -790,7 +871,6 @@ flowchart LR
 
 ```
 src/server/common/helpers/logging/
-├── logger.js              # Logger factory
 ├── logger-options.js      # Logger configuration
 ├── request-logger.js      # Hapi request logger plugin
 ├── log.js                 # Structured logging wrapper

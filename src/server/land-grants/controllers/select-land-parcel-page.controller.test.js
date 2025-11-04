@@ -196,7 +196,7 @@ describe('SelectLandParcelPageController', () => {
         expect.objectContaining({
           pageTitle: 'Select Land Parcel',
           parcels: controllerParcelsResponse,
-          selectedLandParcel: ''
+          selectedLandParcel: null
         })
       )
       expect(result).toBe(renderedViewMock)
@@ -211,7 +211,7 @@ describe('SelectLandParcelPageController', () => {
         'select-land-parcel',
         expect.objectContaining({
           pageTitle: 'Select Land Parcel',
-          errors: ['Unable to find parcel information, please try again later.']
+          errors: ['Unable to find parcel information, please try again later or contact the Rural Payments Agency.']
         })
       )
       expect(result).toBe(renderedViewMock)
@@ -225,8 +225,10 @@ describe('SelectLandParcelPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'select-land-parcel',
         expect.objectContaining({
-          selectedLandParcel: '',
-          parcels: controllerParcelsResponse
+          existingLandParcels: false,
+          pageTitle: 'Select Land Parcel',
+          parcels: controllerParcelsResponse,
+          selectedLandParcel: null
         })
       )
       expect(result).toBe(renderedViewMock)
@@ -240,9 +242,10 @@ describe('SelectLandParcelPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'select-land-parcel',
         expect.objectContaining({
-          selectedLandParcel: 'sheet123',
+          existingLandParcels: false,
           parcels: controllerParcelsResponse,
-          pageTitle: 'Select Land Parcel'
+          pageTitle: 'Select Land Parcel',
+          selectedLandParcel: null
         })
       )
       expect(result).toBe(renderedViewMock)
@@ -256,7 +259,7 @@ describe('SelectLandParcelPageController', () => {
 
       const result = await controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
 
-      expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH)
+      expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH, state.selectedLandParcel)
       expect(controller.setState).toHaveBeenCalledWith(mockRequest, {
         existing: 'value',
         selectedLandParcel: state.selectedLandParcel

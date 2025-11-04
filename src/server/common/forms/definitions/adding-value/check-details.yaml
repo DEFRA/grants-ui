@@ -2,8 +2,10 @@ engine: V2
 name: Check your details
 metadata:
   id: 9dd81344-0c6b-405c-b345-f7d11cfc05b6
+  tasklistId: example
   submission:
     grantCode: check-details
+  grantRedirectRules: null
 pages:
   - title: Check your details
     path: /check-details

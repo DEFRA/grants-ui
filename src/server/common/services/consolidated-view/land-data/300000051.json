@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000051",
+      "organisationId": "7400051",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "3612",
+            "sheetId": "SD4960",
+            "area": 2.1116
+          }
+        ]
+      },
+      "info": {
+        "name": "Rose Holdings",
+        "reference": "0300000051",
+        "email": {
+          "address": "contact+300000051@example.test"
+        },
+        "phone": {
+          "mobile": "07300000051"
+        },
+        "address": {
+          "line1": "52 Green Lane",
+          "line2": "Trading Estate",
+          "line3": "Bradford",
+          "line4": "Essex",
+          "line5": "",
+          "street": "Green Lane",
+          "city": "Bradford",
+          "postalCode": "HD2 1ZL"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Ms",
+          "first": "Alice",
+          "middle": "Claire",
+          "last": "Turner"
+        }
+      }
+    }
+  }
+}

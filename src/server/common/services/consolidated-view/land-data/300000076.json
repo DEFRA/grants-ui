@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000076",
+      "organisationId": "7400076",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "3363",
+            "sheetId": "SD5054",
+            "area": 2.1331
+          }
+        ]
+      },
+      "info": {
+        "name": "Hill Acres",
+        "reference": "0300000076",
+        "email": {
+          "address": "contact+300000076@example.test"
+        },
+        "phone": {
+          "mobile": "07300000076"
+        },
+        "address": {
+          "line1": "77 Mill Lane",
+          "line2": "Barns",
+          "line3": "Reading",
+          "line4": "Warwickshire",
+          "line5": "",
+          "street": "Mill Lane",
+          "city": "Reading",
+          "postalCode": "NE27 8NT"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Mr",
+          "first": "Alice",
+          "middle": "George",
+          "last": "Reed"
+        }
+      }
+    }
+  }
+}

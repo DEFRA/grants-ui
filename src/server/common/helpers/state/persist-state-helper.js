@@ -1,7 +1,7 @@
 import 'dotenv/config'
 import { config } from '~/src/config/config.js'
 import { parseSessionKey } from './get-cache-key-helper.js'
-import { createApiHeaders } from './backend-auth-helper.js'
+import { createApiHeadersForGrantsUiBackend } from './backend-auth-helper.js'
 import { log, LogCodes } from '../logging/log.js'
 
 const GRANTS_UI_BACKEND_ENDPOINT = config.get('session.cache.apiEndpoint')
@@ -28,11 +28,11 @@ export async function persistStateToApi(state, key) {
   try {
     const response = await fetch(url.href, {
       method: 'POST',
-      headers: createApiHeaders(),
+      headers: createApiHeadersForGrantsUiBackend(),
       body: JSON.stringify({
         sbi,
         grantCode,
-        grantVersion: 1, // TODO: Update when support for same grant versioning is implemented
+        grantVersion: 1, // NOSONAR TODO: Update when support for same grant versioning is implemented
         state
       })
     })
@@ -52,7 +52,7 @@ export async function persistStateToApi(state, key) {
       identity: key,
       error: err.message
     })
-    // TODO: See TGC-873
+    // NOSONAR TODO: See TGC-873
     // throw err
   }
 }

@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000042",
+      "organisationId": "7400042",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "4699",
+            "sheetId": "SD4959",
+            "area": 1.18
+          }
+        ]
+      },
+      "info": {
+        "name": "Oak Holdings",
+        "reference": "0300000042",
+        "email": {
+          "address": "contact+300000042@example.test"
+        },
+        "phone": {
+          "mobile": "07300000042"
+        },
+        "address": {
+          "line1": "43 Church Street",
+          "line2": "Industrial Estate",
+          "line3": "Bristol",
+          "line4": "Gloucestershire",
+          "line5": "",
+          "street": "Church Street",
+          "city": "Bristol",
+          "postalCode": "EH91 1TJ"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Mr",
+          "first": "Quinn",
+          "middle": "William",
+          "last": "Turner"
+        }
+      }
+    }
+  }
+}

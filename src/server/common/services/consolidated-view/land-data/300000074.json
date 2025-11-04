@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000074",
+      "organisationId": "7400074",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "9156",
+            "sheetId": "SD5046",
+            "area": 4.1429
+          }
+        ]
+      },
+      "info": {
+        "name": "Valley Acres",
+        "reference": "0300000074",
+        "email": {
+          "address": "contact+300000074@example.test"
+        },
+        "phone": {
+          "mobile": "07300000074"
+        },
+        "address": {
+          "line1": "75 Grange Road",
+          "line2": "Industrial Estate",
+          "line3": "Norwich",
+          "line4": "Gloucestershire",
+          "line5": "",
+          "street": "Grange Road",
+          "city": "Norwich",
+          "postalCode": "ML25 6MS"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Mr",
+          "first": "Xavier",
+          "middle": "Michael",
+          "last": "Reed"
+        }
+      }
+    }
+  }
+}

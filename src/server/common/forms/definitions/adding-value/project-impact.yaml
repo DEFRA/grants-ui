@@ -2,8 +2,10 @@ engine: V2
 name: Project Impact
 metadata:
   id: 2f675a91-01c0-41bb-8558-296b5e0eafd9
+  tasklistId: example
   submission:
     grantCode: project-impact
+  grantRedirectRules: null
 pages:
   - title: How will this project add value to the produce?
     path: /how-adding-value

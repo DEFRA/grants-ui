@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000067",
+      "organisationId": "7400067",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "9193",
+            "sheetId": "SD4962",
+            "area": 9.5322
+          }
+        ]
+      },
+      "info": {
+        "name": "Birch Acres",
+        "reference": "0300000067",
+        "email": {
+          "address": "contact+300000067@example.test"
+        },
+        "phone": {
+          "mobile": "07300000067"
+        },
+        "address": {
+          "line1": "68 Manor Road",
+          "line2": "Trading Estate",
+          "line3": "Leicester",
+          "line4": "Essex",
+          "line5": "",
+          "street": "Manor Road",
+          "city": "Leicester",
+          "postalCode": "LL18 8HP"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Ms",
+          "first": "Quinn",
+          "middle": "Alan",
+          "last": "Reed"
+        }
+      }
+    }
+  }
+}

@@ -13,10 +13,10 @@
     <div class="govuk-grid-row">
       <div class="govuk-grid-column-two-thirds-from-desktop">
 
-        {% if errorSummary.length > 0 %}
+        {% if errors.length > 0 %}
           {{ govukErrorSummary({
           titleText: "There is a problem",
-          errorList: errorSummary
+          errorList: errors
         }) }}
         {% endif %}
 
@@ -109,7 +109,7 @@
               {% endblock %}
             </div>
           </form>
-        {% else %}
+        {% elif ((not errors) or (errors.length == 0)) %}
           {{ govukWarningText({
           text: "No actions available to select.",
           iconFallbackText: "Warning"
@@ -118,7 +118,7 @@
       </div>
     </div>
   </div>
-  {% if existingLandParcels %}
+      {% if existingLandParcels and ((not errors) or (errors.length == 0)) %}
     <p class="govuk-body govuk-!-margin-bottom-5">
       <a href="check-selected-land-actions" class="govuk-link govuk-link--no-visited-state">Back to review selected actions</a>
     </p>

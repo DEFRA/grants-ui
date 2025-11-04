@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000008",
+      "organisationId": "7400008",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "7673",
+            "sheetId": "SD4957",
+            "area": 8.8276
+          }
+        ]
+      },
+      "info": {
+        "name": "Elm Farm",
+        "reference": "0300000008",
+        "email": {
+          "address": "contact+300000008@example.test"
+        },
+        "phone": {
+          "mobile": "07300000008"
+        },
+        "address": {
+          "line1": "9 Church Lane",
+          "line2": "Farm Buildings",
+          "line3": "Nottingham",
+          "line4": "Hampshire",
+          "line5": "",
+          "street": "Church Lane",
+          "city": "Nottingham",
+          "postalCode": "WS57 3AA"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Mr",
+          "first": "Harry",
+          "middle": "David",
+          "last": "Carter"
+        }
+      }
+    }
+  }
+}

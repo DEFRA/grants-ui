@@ -7,9 +7,10 @@ metadata:
   submission:
     grantCode: example-grant-with-auth-v3
     submissionSchemaPath: ./schemas/example-grant-with-auth-submission.schema.json
+  grantRedirectRules: null
   confirmationContent:
-    panelTitle: "Details submitted"
-    panelText: "Your reference number"
+    panelTitle: 'Details submitted'
+    panelText: 'Your reference number'
     html: |
       <h2 class="govuk-heading-m">What happens next</h2>
       <p class="govuk-body">Defra will email you when your funding offer is available to review. This will be within 5 working days.</p>
@@ -19,7 +20,7 @@ metadata:
         <li>you have accepted your offer</li>
         <li>the Rural Payments Agency confirms your start date</li>
       </ul>
-      
+
       <details class="govuk-details" data-module="govuk-details">
         <summary class="govuk-details__summary">
           <span class="govuk-details__summary-text">

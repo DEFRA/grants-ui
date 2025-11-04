@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000052",
+      "organisationId": "7400052",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "4523",
+            "sheetId": "SD4960",
+            "area": 2.1073
+          }
+        ]
+      },
+      "info": {
+        "name": "Ivy Holdings",
+        "reference": "0300000052",
+        "email": {
+          "address": "contact+300000052@example.test"
+        },
+        "phone": {
+          "mobile": "07300000052"
+        },
+        "address": {
+          "line1": "53 George Street",
+          "line2": "Barns",
+          "line3": "Derby",
+          "line4": "Lancashire",
+          "line5": "",
+          "street": "George Street",
+          "city": "Derby",
+          "postalCode": "HG3 2AM"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Mr",
+          "first": "Benjamin",
+          "middle": "Alice",
+          "last": "Turner"
+        }
+      }
+    }
+  }
+}

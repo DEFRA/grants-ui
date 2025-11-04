@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000059",
+      "organisationId": "7400059",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "7830",
+            "sheetId": "SD4960",
+            "area": 4.427
+          }
+        ]
+      },
+      "info": {
+        "name": "Sunny Holdings",
+        "reference": "0300000059",
+        "email": {
+          "address": "contact+300000059@example.test"
+        },
+        "phone": {
+          "mobile": "07300000059"
+        },
+        "address": {
+          "line1": "60 Chapel Street",
+          "line2": "Trading Estate",
+          "line3": "York",
+          "line4": "Cheshire",
+          "line5": "",
+          "street": "Chapel Street",
+          "city": "York",
+          "postalCode": "IP10 9DN"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Ms",
+          "first": "Isla",
+          "middle": "Joseph",
+          "last": "Turner"
+        }
+      }
+    }
+  }
+}

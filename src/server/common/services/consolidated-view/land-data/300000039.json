@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000039",
+      "organisationId": "7400039",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "3218",
+            "sheetId": "SD4959",
+            "area": 2.6112
+          }
+        ]
+      },
+      "info": {
+        "name": "Sunny Estate",
+        "reference": "0300000039",
+        "email": {
+          "address": "contact+300000039@example.test"
+        },
+        "phone": {
+          "mobile": "07300000039"
+        },
+        "address": {
+          "line1": "40 Chapel Street",
+          "line2": "Depot",
+          "line3": "Oxford",
+          "line4": "Nottinghamshire",
+          "line5": "",
+          "street": "Chapel Street",
+          "city": "Oxford",
+          "postalCode": "DY88 7RH"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Ms",
+          "first": "Noah",
+          "middle": "Elizabeth",
+          "last": "Howard"
+        }
+      }
+    }
+  }
+}

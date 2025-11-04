@@ -1,8 +1,6 @@
 import { TaskListStatus, taskListStatusComponents } from '../../common/constants/tasklist-status-components.js'
 import { ConfigDrivenConditionEvaluator } from './config-driven-condition-evaluator.js'
-import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
-
-const logger = createLogger()
+import { logger } from '~/src/server/common/helpers/logging/log.js'
 
 export class TasklistGenerator {
   constructor(config) {

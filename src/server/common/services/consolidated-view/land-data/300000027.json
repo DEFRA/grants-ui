@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000027",
+      "organisationId": "7400027",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "7044",
+            "sheetId": "SD4958",
+            "area": 2.3219
+          }
+        ]
+      },
+      "info": {
+        "name": "Birch Estate",
+        "reference": "0300000027",
+        "email": {
+          "address": "contact+300000027@example.test"
+        },
+        "phone": {
+          "mobile": "07300000027"
+        },
+        "address": {
+          "line1": "28 Manor Road",
+          "line2": "Trading Estate",
+          "line3": "Sheffield",
+          "line4": "Cheshire",
+          "line5": "",
+          "street": "Manor Road",
+          "city": "Sheffield",
+          "postalCode": "CM76 4KE"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Ms",
+          "first": "Benjamin",
+          "middle": "Daniel",
+          "last": "Howard"
+        }
+      }
+    }
+  }
+}

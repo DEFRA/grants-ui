@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000049",
+      "organisationId": "7400049",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "8569",
+            "sheetId": "SD4959",
+            "area": 2.8419
+          }
+        ]
+      },
+      "info": {
+        "name": "Ash Holdings",
+        "reference": "0300000049",
+        "email": {
+          "address": "contact+300000049@example.test"
+        },
+        "phone": {
+          "mobile": "07300000049"
+        },
+        "address": {
+          "line1": "50 The Avenue",
+          "line2": "Business Park",
+          "line3": "Leicester",
+          "line4": "Somerset",
+          "line5": "",
+          "street": "The Avenue",
+          "city": "Leicester",
+          "postalCode": "GY98 8YL"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Ms",
+          "first": "Xavier",
+          "middle": "May",
+          "last": "Turner"
+        }
+      }
+    }
+  }
+}

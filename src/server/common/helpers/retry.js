@@ -1,5 +1,4 @@
-import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
-
+import { logger } from '~/src/server/common/helpers/logging/log.js'
 /**
  * Retry an asynchronous operation with configurable options
  * @param {Function} operation - Async function to retry
@@ -10,6 +9,7 @@ import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
  * @param {boolean} [options.exponential=true] - Whether to use exponential backoff
  * @param {Function} [options.shouldRetry] - Function to determine if a retry should be attempted
  * @param {number} [options.timeout] - Operation timeout in milliseconds
+ * @param {boolean} [options.checkFetchResponse] - Whether to check fetch response.ok from operation
  * @param {Function} [options.onRetry] - Called before each retry attempt
  * @returns {Promise<any>} - Result of the operation
  * @throws {Error} - Last error encountered after all retry attempts
@@ -22,9 +22,10 @@ export async function retry(operation, options = {}) {
     exponential = true,
     shouldRetry = () => true,
     timeout,
+    checkFetchResponse = false,
     onRetry = (error, attempt) => {
       const message = `Retry attempt ${attempt}/${maxAttempts} after error: ${error.message}`
-      createLogger().error(error, message)
+      logger.error(error, message)
     }
   } = options
 
@@ -32,16 +33,25 @@ export async function retry(operation, options = {}) {
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
+      let result
+
       if (timeout) {
-        return await Promise.race([
-          operation(),
-          new Promise((_resolve, reject) =>
-            setTimeout(() => reject(new Error(`Operation timed out after ${timeout}ms`)), timeout)
-          )
-        ])
+        return await race(operation, timeout)
       } else {
-        return await operation()
+        result = await operation()
       }
+
+      if (
+        checkFetchResponse &&
+        isFetchFailure(result) &&
+        attempt < maxAttempts &&
+        shouldRetry(new Error(`HTTP ${result.status}`))
+      ) {
+        const errorMessage = `Request failed with status ${result.status}: ${result.statusText}`
+        throw new Error(errorMessage)
+      }
+
+      return result
     } catch (error) {
       lastError = error
 
@@ -49,9 +59,7 @@ export async function retry(operation, options = {}) {
         break
       }
 
-      // Safe use of Math.random() for non-security purposes
-      const jitter = 1 + Math.random() * 0.5
-      const delay = exponential ? Math.min(initialDelay * Math.pow(2, attempt - 1) * jitter, maxDelay) : initialDelay
+      const delay = getDelay(exponential, initialDelay, attempt, maxDelay)
 
       onRetry(error, attempt, delay)
 
@@ -60,4 +68,45 @@ export async function retry(operation, options = {}) {
   }
 
   throw lastError
+}
+
+/**
+ * Race an operation against a timeout
+ * @param operation {Function}
+ * @param timeout {number}
+ * @returns {Promise}
+ */
+async function race(operation, timeout = 5000) {
+  return await Promise.race([
+    operation(),
+    new Promise((_resolve, reject) =>
+      setTimeout(() => reject(new Error(`Operation timed out after ${timeout}ms`)), timeout)
+    )
+  ])
+}
+
+/**
+ * Calculate delay for a retry attempt
+ * @param exponential {boolean}
+ * @param initialDelay {number}
+ * @param attempt {number}
+ * @param maxDelay {number}
+ * @returns {number|*}
+ */
+function getDelay(exponential, initialDelay, attempt, maxDelay) {
+  if (exponential) {
+    const jitter = 1 + Math.random() * 0.5
+    return Math.min(initialDelay * Math.pow(2, attempt - 1) * jitter, maxDelay)
+  }
+
+  return initialDelay
+}
+
+/**
+ * Check if a fetch result indicates a failure
+ * @param result
+ * @returns {boolean}
+ */
+function isFetchFailure(result) {
+  return result && typeof result === 'object' && 'ok' in result && !result.ok
 }

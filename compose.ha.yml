@@ -17,6 +17,7 @@ services:
       - grants-ui-net
 
   grants-ui:
+    ports: !reset []
     expose:
       - "3000"
     environment:
@@ -29,6 +30,7 @@ services:
       - ./nginx/certs:/etc/ssl/certs:ro
 
   grants-ui-backend:
+    ports: !reset []
     expose:
       - "3001"
 

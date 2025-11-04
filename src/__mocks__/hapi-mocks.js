@@ -122,12 +122,21 @@ export const mockContext = (customProps = {}) => ({
   ...customProps
 })
 
+/**
+ * Mocks the global fetch function.
+ * @returns {import('vitest').Mock} The mocked fetch function.
+ */
 export const mockFetch = () => {
   const mockFetch = vi.fn()
   global.fetch = mockFetch
   return mockFetch
 }
 
+/**
+ *
+ * @param response
+ * @returns {import('vitest').Mock}
+ */
 export const mockFetchWithResponse = (response = {}) => {
   const mockFetch = vi.fn().mockResolvedValue({
     ok: true,

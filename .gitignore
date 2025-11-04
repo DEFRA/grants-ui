@@ -13,3 +13,4 @@ coverage
 tsconfig.tsbuildinfo
 .eslintcache
 src/contracts/pacts
+compose.override.yml

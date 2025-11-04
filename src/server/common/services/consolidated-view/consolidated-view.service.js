@@ -3,9 +3,8 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { config } from '~/src/config/config.js'
 import { getValidToken } from '~/src/server/common/helpers/entra/token-manager.js'
-import { createLogger } from '~/src/server/common/helpers/logging/logger.js'
-
-const logger = createLogger()
+import { logger } from '~/src/server/common/helpers/logging/log.js'
+import { retry } from '~/src/server/common/helpers/retry.js'
 
 /**
  * @typedef {object} LandParcel
@@ -101,19 +100,29 @@ async function fetchMockDataForBusiness(sbi) {
 async function makeConsolidatedViewRequest(request, query) {
   const sbi = request.auth.credentials.sbi
   const CV_API_ENDPOINT = config.get('consolidatedView.apiEndpoint')
-  const response = await fetch(CV_API_ENDPOINT, await getConsolidatedViewRequestOptions(request, { query }))
 
-  if (!response.ok) {
-    const errorText = await response.text()
-    throw new ConsolidatedViewApiError(
-      `Failed to fetch business data: ${response.status} ${response.statusText}`,
-      response.status,
-      errorText,
-      sbi
-    )
+  const fetchOperation = async () => {
+    const response = await fetch(CV_API_ENDPOINT, await getConsolidatedViewRequestOptions(request, { query }))
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new ConsolidatedViewApiError(
+        `Failed to fetch business data: ${response.status} ${response.statusText}`,
+        response.status,
+        errorText,
+        sbi
+      )
+    }
+
+    return response.json()
   }
 
-  return response.json()
+  return retry(fetchOperation, {
+    timeout: 30000,
+    onRetry: (error, attempt) => {
+      logger.warn(`Consolidated View API retry attempt ${attempt}, error: ${error.message}`)
+    }
+  })
 }
 
 /**

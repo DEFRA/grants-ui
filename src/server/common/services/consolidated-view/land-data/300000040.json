@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000040",
+      "organisationId": "7400040",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "3695",
+            "sheetId": "SD4959",
+            "area": 3.3174
+          }
+        ]
+      },
+      "info": {
+        "name": "Golden Estate",
+        "reference": "0300000040",
+        "email": {
+          "address": "contact+300000040@example.test"
+        },
+        "phone": {
+          "mobile": "07300000040"
+        },
+        "address": {
+          "line1": "41 High Street",
+          "line2": "Farm Buildings",
+          "line3": "Reading",
+          "line4": "Hampshire",
+          "line5": "",
+          "street": "High Street",
+          "city": "Reading",
+          "postalCode": "E89 8SJ"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Mr",
+          "first": "Olivia",
+          "middle": "Rose",
+          "last": "Howard"
+        }
+      }
+    }
+  }
+}

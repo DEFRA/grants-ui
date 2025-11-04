@@ -1,0 +1,47 @@
+{
+  "data": {
+    "business": {
+      "sbi": "300000009",
+      "organisationId": "7400009",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "8154",
+            "sheetId": "SD4957",
+            "area": 2.7134
+          }
+        ]
+      },
+      "info": {
+        "name": "Ash Farm",
+        "reference": "0300000009",
+        "email": {
+          "address": "contact+300000009@example.test"
+        },
+        "phone": {
+          "mobile": "07300000009"
+        },
+        "address": {
+          "line1": "10 The Avenue",
+          "line2": "Business Park",
+          "line3": "Sheffield",
+          "line4": "Oxfordshire",
+          "line5": "",
+          "street": "The Avenue",
+          "city": "Sheffield",
+          "postalCode": "WV58 4AA"
+        }
+      }
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Ms",
+          "first": "Isla",
+          "middle": "Elizabeth",
+          "last": "Carter"
+        }
+      }
+    }
+  }
+}
