@@ -36,6 +36,7 @@
     "lint:scss": "stylelint \"src/**/*.scss\" --cache --cache-location .cache/stylelint --cache-strategy content --color --ignore-path .gitignore",
     "postversion": "git add package.json package-lock.json && git commit -m $npm_package_version",
     "test": "vitest run --coverage",
+    "test:unit": "vitest run --config vitest.unit.config.js",
     "test:contracts": "vitest run src/contracts",
     "test:acceptance": "./tools/run-acceptance-tests.sh",
     "test:watch": "vitest --watch",

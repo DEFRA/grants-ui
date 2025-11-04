@@ -150,6 +150,45 @@ sequenceDiagram
 
 The application uses **Vitest** as its test framework with custom module aliases for mocking external dependencies like `@defra/forms-engine-plugin`.
 
+#### Test Types
+
+The test suite is organized into different categories:
+
+- **Unit Tests**: Fast, isolated tests for individual functions and components (run with `npm run test:unit`)
+- **Integration Tests**: Slower tests that verify interactions between components, external services, or the full server stack
+- **Contract Tests**: Pact-based contract tests that verify API contracts with external services (run with `npm run test:contracts`)
+- **Acceptance Tests**: End-to-end browser tests for complete user journeys (run with `npm run test:acceptance`)
+
+#### Running Tests
+
+```bash
+# Run all tests with coverage (unit + integration)
+npm test
+
+# Run only unit tests (fast, excludes slow integration tests)
+npm run test:unit
+
+# Run only contract/Pact tests
+npm run test:contracts
+
+# Run acceptance tests
+npm run test:acceptance
+
+# Run tests in watch mode during development
+npm run test:watch
+```
+
+#### Test Configuration
+
+- `vitest.config.js` - Main configuration for all tests
+- `vitest.unit.config.js` - Configuration for unit tests only (excludes integration tests)
+
+Integration tests are identified by:
+
+- `**/*.contract.test.js` - Pact contract tests
+- Tests that start the full Hapi server (e.g., `start-server.test.js`)
+- Tests making real external service calls (e.g., `grant-application.service.test.js`)
+
 ### Code Quality & Linting
 
 - **Neostandard**: Modern JavaScript/Node.js linting configuration that provides opinionated code quality rules
@@ -692,7 +731,10 @@ npm run
 - **`format:check`** - Check code formatting without making changes
 - **`lint`** - Run all linting checks (JavaScript, SCSS, TypeScript)
 - **`lint:fix`** - Automatically fix linting issues where possible
-- **`test`** - Run test suite with coverage
+- **`test`** - Run all tests with coverage (includes unit and integration tests)
+- **`test:unit`** - Run unit tests only (fast, excludes slow integration/contract tests)
+- **`test:contracts`** - Run Pact contract tests only
+- **`test:acceptance`** - Run acceptance tests
 - **`test:watch`** - Run tests in watch mode
 - **`start`** - Start production server (requires build first)
 - **`snyk-test`** - Run Snyk security vulnerability tests
