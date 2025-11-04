@@ -2,7 +2,9 @@
   "name": "grants-ui",
   "version": "0.0.0",
   "description": "CDP Frontend Template",
-  "sideEffects": false,
+  "sideEffects": [
+    "src/client/javascripts/cookie-consent.js"
+  ],
   "main": ".server/index.js",
   "type": "module",
   "engines": {

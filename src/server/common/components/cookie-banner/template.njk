@@ -1,0 +1,8 @@
+{% from "govuk/components/cookie-banner/macro.njk" import govukCookieBanner %}
+
+{# Fallback for users with JavaScript disabled #}
+<noscript>
+  {{ govukCookieBanner(params.noscriptConfig) }}
+</noscript>
+
+{{ govukCookieBanner(params.config) }}
