@@ -19,19 +19,27 @@ function validateRequestAndFindForm(request, h) {
   const { slug } = request.params
 
   if (!slug) {
-    log(LogCodes.CONFIRMATION.CONFIRMATION_ERROR, {
-      userId: request.auth?.credentials?.userId || 'unknown',
-      error: 'No slug provided in confirmation route'
-    })
+    log(
+      LogCodes.CONFIRMATION.CONFIRMATION_ERROR,
+      {
+        userId: request.auth?.credentials?.userId || 'unknown',
+        error: 'No slug provided in confirmation route'
+      },
+      request
+    )
     return { error: h.response('Bad request - missing slug').code(HTTP_STATUS.BAD_REQUEST) }
   }
 
   const form = ConfirmationService.findFormBySlug(slug)
   if (!form) {
-    log(LogCodes.CONFIRMATION.CONFIRMATION_ERROR, {
-      userId: request.auth?.credentials?.userId || 'unknown',
-      error: `Form not found for slug: ${slug}`
-    })
+    log(
+      LogCodes.CONFIRMATION.CONFIRMATION_ERROR,
+      {
+        userId: request.auth?.credentials?.userId || 'unknown',
+        error: `Form not found for slug: ${slug}`
+      },
+      request
+    )
     return { error: h.response('Form not found').code(HTTP_STATUS.NOT_FOUND) }
   }
 
@@ -109,10 +117,14 @@ function buildConfirmationResponse(confirmationContent, sessionData, form, slug,
  * @returns {object} Error response
  */
 function handleError(error, request, h) {
-  log(LogCodes.CONFIRMATION.CONFIRMATION_ERROR, {
-    userId: request.auth?.credentials?.userId || 'unknown',
-    error: `Config-driven confirmation route error for slug: ${request.params?.slug || 'unknown'}. ${error.message}`
-  })
+  log(
+    LogCodes.CONFIRMATION.CONFIRMATION_ERROR,
+    {
+      userId: request.auth?.credentials?.userId || 'unknown',
+      error: `Config-driven confirmation route error for slug: ${request.params?.slug || 'unknown'}. ${error.message}`
+    },
+    request
+  )
   return h.response('Server error').code(HTTP_STATUS.INTERNAL_SERVER_ERROR)
 }
 
@@ -138,10 +150,14 @@ export const configConfirmation = {
             const { confirmationContent, formDefinition } = await loadConfirmationContent(form)
             const sessionData = await getReferenceNumber(request)
 
-            log(LogCodes.CONFIRMATION.CONFIRMATION_SUCCESS, {
-              userId: request.auth?.credentials?.userId || 'unknown',
-              referenceNumber: sessionData.referenceNumber
-            })
+            log(
+              LogCodes.CONFIRMATION.CONFIRMATION_SUCCESS,
+              {
+                userId: request.auth?.credentials?.userId || 'unknown',
+                referenceNumber: sessionData.referenceNumber
+              },
+              request
+            )
 
             return buildConfirmationResponse(confirmationContent, sessionData, form, slug, formDefinition, h)
           } catch (error) {

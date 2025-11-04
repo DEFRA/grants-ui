@@ -213,11 +213,15 @@ export const formsStatusCallback = async (request, h, context) => {
     }
 
     // unexpected error — log and fallback
-    log(LogCodes.SUBMISSION.SUBMISSION_REDIRECT_FAILURE, {
-      grantType: grantCode,
-      referenceNumber: context.referenceNumber,
-      error: err.message
-    })
+    log(
+      LogCodes.SUBMISSION.SUBMISSION_REDIRECT_FAILURE,
+      {
+        grantType: grantCode,
+        referenceNumber: context.referenceNumber,
+        error: err.message
+      },
+      request
+    )
 
     const fallbackUrl = statusToUrlConfig.default.default(grantId)
     if (request.path === fallbackUrl) {

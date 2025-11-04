@@ -354,10 +354,14 @@ describe('Agreements Controller', () => {
 
       await getAgreementController.handler(mockRequest, mockH)
 
-      expect(log).toHaveBeenCalledWith(LogCodes.AGREEMENTS.AGREEMENT_ERROR, {
-        userId: 'test-user-123',
-        error: 'JWT generate failed: JWT secret invalid'
-      })
+      expect(log).toHaveBeenCalledWith(
+        LogCodes.AGREEMENTS.AGREEMENT_ERROR,
+        {
+          userId: 'test-user-123',
+          error: 'JWT generate failed: JWT secret invalid'
+        },
+        mockRequest
+      )
 
       expect(mockH.response).toHaveBeenCalledWith({
         error: 'External Service Unavailable',

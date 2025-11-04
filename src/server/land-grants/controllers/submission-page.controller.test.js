@@ -398,7 +398,8 @@ describe('SubmissionPageController', () => {
         expect.objectContaining({
           endpoint: 'Land grants submission',
           error: 'submitting application for sbi: undefined and crn: undefined - Validation failed'
-        })
+        }),
+        mockRequest
       )
     })
 

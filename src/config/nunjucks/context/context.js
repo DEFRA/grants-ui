@@ -40,9 +40,13 @@ export async function context(request) {
       try {
         webpackManifest = JSON.parse(readFileSync(manifestPath, 'utf-8'))
       } catch (error) {
-        log(LogCodes.SYSTEM.SERVER_ERROR, {
-          error: `Webpack ${path.basename(manifestPath)} not found: ${error.message}`
-        })
+        log(
+          LogCodes.SYSTEM.SERVER_ERROR,
+          {
+            error: `Webpack ${path.basename(manifestPath)} not found: ${error.message}`
+          },
+          request
+        )
         // Don't let this break the context, just continue without manifest
       }
     }
@@ -53,11 +57,15 @@ export async function context(request) {
         session = (await request.server.app['cache'].get(request.auth.credentials.sessionId)) || {}
       } catch (cacheError) {
         const sessionId = String(request.auth.credentials.sessionId || 'unknown')
-        log(LogCodes.AUTH.SIGN_IN_FAILURE, {
-          userId: 'unknown',
-          error: `Cache retrieval failed for session ${sessionId}: ${cacheError.message}`,
-          step: 'context_cache_retrieval'
-        })
+        log(
+          LogCodes.AUTH.SIGN_IN_FAILURE,
+          {
+            userId: 'unknown',
+            error: `Cache retrieval failed for session ${sessionId}: ${cacheError.message}`,
+            step: 'context_cache_retrieval'
+          },
+          request
+        )
         session = {}
       }
     }
@@ -83,9 +91,13 @@ export async function context(request) {
       }
     }
   } catch (error) {
-    log(LogCodes.SYSTEM.SERVER_ERROR, {
-      error: `Error building context: ${error.message}`
-    })
+    log(
+      LogCodes.SYSTEM.SERVER_ERROR,
+      {
+        error: `Error building context: ${error.message}`
+      },
+      request
+    )
     // Return a minimal context to prevent complete failure
     return {
       assetPath: `${assetPath}/assets/rebrand`,

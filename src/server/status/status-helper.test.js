@@ -167,7 +167,8 @@ describe('formsStatusCallback', () => {
         grantType: 'grant-a-code',
         referenceNumber: 'REF-001',
         error: error.message
-      })
+      }),
+      request
     )
     expect(h.redirect).toHaveBeenCalledWith('/grant-a/confirmation')
     expect(result).toEqual(expect.any(Symbol))
@@ -186,7 +187,8 @@ describe('formsStatusCallback', () => {
         grantType: 'grant-a-code',
         referenceNumber: 'REF-001',
         error: error.message
-      })
+      }),
+      request
     )
     expect(result).toBe(h.continue)
     expect(h.redirect).not.toHaveBeenCalled()

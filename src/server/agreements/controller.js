@@ -54,10 +54,14 @@ function buildProxyHeaders(token, request) {
       'x-csp-nonce': request.app.cspNonce
     }
   } catch (jwtError) {
-    log(LogCodes.AGREEMENTS.AGREEMENT_ERROR, {
-      userId: request.userId,
-      error: `JWT generate failed: ${jwtError.message}`
-    })
+    log(
+      LogCodes.AGREEMENTS.AGREEMENT_ERROR,
+      {
+        userId: request.userId,
+        error: `JWT generate failed: ${jwtError.message}`
+      },
+      request
+    )
     throw jwtError
   }
 }
