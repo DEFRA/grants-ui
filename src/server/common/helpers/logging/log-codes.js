@@ -215,7 +215,7 @@ export const LogCodes = {
     FETCH_ACTIONS_ERROR: {
       level: 'error',
       messageFunc: (messageOptions) =>
-        `Error fetching actions for sbi=${messageOptions.sbi} | parcelId: ${messageOptions.parcelId} | sheetId: ${messageOptions.sheetId}`
+        `Error fetching actions: ${messageOptions.message} | ${messageOptions.sbi} | parcelId: ${messageOptions.parcelId} | sheetId: ${messageOptions.sheetId}`
     },
     UNAUTHORISED_PARCEL: {
       level: 'error',
