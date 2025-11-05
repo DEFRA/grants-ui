@@ -240,8 +240,18 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
 
   /**
    * Handle validation errors by rendering error view with actions
+   * @param {object} options - Validation error options
+   * @param {object} options.h - Hapi response toolkit
+   * @param {object} options.request - Request object
+   * @param {object} options.context - Form context
+   * @param {Array} options.errors - Validation errors
+   * @param {string} options.selectedLandParcel - Selected land parcel ID
+   * @param {string} options.sheetId - Sheet ID
+   * @param {string} options.parcelId - Parcel ID
+   * @param {object} options.prevState - Previous state
    */
-  async handleValidationErrors(h, request, context, errors, selectedLandParcel, sheetId, parcelId, prevState) {
+  async handleValidationErrors(options) {
+    const { h, request, context, errors, selectedLandParcel, sheetId, parcelId, prevState } = options
     const result = await this.fetchActions(request, sheetId, parcelId)
     const addedActions = this.getAddedActionsForStateParcel(prevState, selectedLandParcel)
     return this.renderErrorView(h, request, context, {
@@ -255,8 +265,16 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
 
   /**
    * Validate that actions are available for the parcel
+   * @param {object} options - Validation options
+   * @param {object} options.h - Hapi response toolkit
+   * @param {object} options.request - Request object
+   * @param {object} options.context - Form context
+   * @param {string} options.selectedLandParcel - Selected land parcel ID
+   * @param {string} options.sheetId - Sheet ID
+   * @param {string} options.parcelId - Parcel ID
    */
-  async validateActionsAvailable(h, request, context, selectedLandParcel, sheetId, parcelId) {
+  async validateActionsAvailable(options) {
+    const { h, request, context, selectedLandParcel, sheetId, parcelId } = options
     const result = await this.fetchActions(request, sheetId, parcelId)
     if (!result?.actions?.length) {
       return this.renderErrorView(h, request, context, {
@@ -349,7 +367,7 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
       // Validate user input
       const errors = this.validateUserInput(payload)
       if (errors.length > 0) {
-        return await this.handleValidationErrors(
+        return this.handleValidationErrors({
           h,
           request,
           context,
@@ -358,7 +376,7 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
           sheetId,
           parcelId,
           prevState
-        )
+        })
       }
 
       // Check authorization
@@ -368,8 +386,15 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
       }
 
       // Validate actions are available
-      const result = await this.validateActionsAvailable(h, request, context, selectedLandParcel, sheetId, parcelId)
-      if (!result || !result.actions) {
+      const result = await this.validateActionsAvailable({
+        h,
+        request,
+        context,
+        selectedLandParcel,
+        sheetId,
+        parcelId
+      })
+      if (!result?.actions) {
         return result
       }
 
