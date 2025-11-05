@@ -22,7 +22,7 @@ export default class SelectLandParcelPageController extends LandGrantsQuestionWi
     return {
       text: `${parcel.sheetId} ${parcel.parcelId}`,
       value: `${parcel.sheetId}-${parcel.parcelId}`,
-      hint
+      hint: hint ? { text: hint } : undefined
     }
   }
 

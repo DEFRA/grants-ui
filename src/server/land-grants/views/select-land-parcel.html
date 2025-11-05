@@ -22,17 +22,6 @@
       {% endif %}
 
       <form method="post" data-actions="{{ actions }}" >
-        {% set radioItems = [] %}
-        {% for parcel in parcels %}
-          {% set radioItems = radioItems.concat([{
-            value: parcel.value,
-            text: parcel.text,
-            hint: {
-              text: parcel.hint
-            }
-          }]) %}
-        {% endfor %}
-
         {{ govukRadios({
             name: "selectedLandParcel",
             fieldset: {
@@ -45,12 +34,12 @@
             hint: {
               text: "Use your map to check these reference numbers against your land parcels."
             },
-            items: radioItems,
+            items: parcels,
             value: parcelId,
             errorMessage: errorMessage and { text: errorMessage }
           })
         }}
-        {% if radioItems.length > 0 %}
+        {% if parcels.length > 0 %}
           <p class="govuk-body">
             You will be able to add actions to the other land parcels before submitting your application.
           </p>
