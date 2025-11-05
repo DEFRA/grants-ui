@@ -2,19 +2,11 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "additionalProperties": false,
-  "required": ["scheme", "year", "hasCheckedLandIsUpToDate", "parcels", "applicant"],
+  "required": ["scheme", "applicationValidationRunId", "totalAnnualPaymentPence", "parcels", "applicant"],
   "properties": {
     "scheme": {
       "type": "string",
       "title": "Defra scheme name"
-    },
-    "year": {
-      "type": "integer",
-      "title": "Scheme year"
-    },
-    "hasCheckedLandIsUpToDate": {
-      "type": "boolean",
-      "title": "Has the applicant checked that their land data is up to date?"
     },
     "totalAnnualPaymentPence": {
       "type": "integer",

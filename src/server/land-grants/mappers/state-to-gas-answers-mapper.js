@@ -193,9 +193,7 @@ export function stateToLandGrantsGasAnswers(state) {
   }
 
   return {
-    hasCheckedLandIsUpToDate: true,
     scheme: 'SFI',
-    year: 2025,
     applicant,
     applicationValidationRunId,
     totalAnnualPaymentPence: payment?.annualTotalPence,

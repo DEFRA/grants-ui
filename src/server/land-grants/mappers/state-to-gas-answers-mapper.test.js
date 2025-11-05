@@ -135,8 +135,6 @@ describe('stateToLandGrantsGasAnswers', () => {
 
     const expected = {
       scheme: 'SFI',
-      year: 2025,
-      hasCheckedLandIsUpToDate: true,
       applicant,
       applicationValidationRunId: '12345678',
       totalAnnualPaymentPence: 32006,

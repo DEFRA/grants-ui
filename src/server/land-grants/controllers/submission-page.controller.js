@@ -131,47 +131,34 @@ export default class SubmissionPageController extends SummaryPageController {
      */
     const fn = async (request, context, h) => {
       const { credentials: { sbi, crn } = {} } = request.auth ?? {}
+      const { state, referenceNumber } = context
+      const frn = state.applicant ? state.applicant['business']?.reference : undefined
 
       try {
-        const { state, referenceNumber } = context
-        const frn = state.applicant ? state.applicant['business']?.reference : undefined
-
-        // Validate application with Land Grants API
-        try {
-          const validationResult = await validateApplication({ applicationId: referenceNumber, crn, sbi, state })
-          const { id: validationId, valid } = validationResult
-          if (!valid) {
-            return this.handleSubmissionError(h, request, context, validationId)
-          }
-
-          const result = await this.submitGasApplication({
-            identifiers: { sbi, crn, frn, clientRef: referenceNumber?.toLowerCase() },
-            state,
-            validationId
-          })
-
-          log(LogCodes.SUBMISSION.SUBMISSION_SUCCESS, {
-            grantType: this.grantCode,
-            referenceNumber: context.referenceNumber
-          })
-
-          return await this.handleSuccessfulSubmission(request, context, h, result.status)
-        } catch (error) {
-          log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
-            endpoint: `Land grants submission`,
-            error: `submitting application for sbi: ${sbi} and crn: ${crn} - ${error.message}`
-          })
-          return this.handleSubmissionError(h, request, context)
+        const validationResult = await validateApplication({ applicationId: referenceNumber, crn, sbi, state })
+        const { id: validationId, valid } = validationResult
+        if (!valid) {
+          return this.handleSubmissionError(h, request, context, validationId)
         }
-      } catch (error) {
-        log(LogCodes.SUBMISSION.SUBMISSION_FAILURE, {
-          grantType: this.grantCode,
-          userCrn: crn,
-          userSbi: sbi,
-          error: error.message,
-          stack: error.stack
+
+        const result = await this.submitGasApplication({
+          identifiers: { sbi, crn, frn, clientRef: referenceNumber?.toLowerCase() },
+          state,
+          validationId
         })
-        throw error
+
+        log(LogCodes.SUBMISSION.SUBMISSION_SUCCESS, {
+          grantType: this.grantCode,
+          referenceNumber: context.referenceNumber
+        })
+
+        return await this.handleSuccessfulSubmission(request, context, h, result.status)
+      } catch (error) {
+        log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
+          endpoint: `Land grants submission`,
+          error: `submitting application for sbi: ${sbi} and crn: ${crn} - ${error.message}`
+        })
+        return this.handleSubmissionError(h, request, context)
       }
     }
 

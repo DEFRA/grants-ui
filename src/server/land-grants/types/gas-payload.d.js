@@ -41,9 +41,7 @@
 
 /**
  * @typedef {Object} Application
- * @property {boolean} hasCheckedLandIsUpToDate - Land check confirmation
  * @property {string} scheme - Scheme name (e.g., "SFI")
- * @property {number} year - Application year
  * @property {number} [totalAnnualPaymentPence] - Total annual payment in pence
  * @property {Parcel[]} parcels - Array of parcels with actions
  * @property {string} [applicationValidationRunId] - Application validation run ID (optional)
