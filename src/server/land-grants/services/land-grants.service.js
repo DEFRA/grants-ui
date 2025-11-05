@@ -62,32 +62,43 @@ const createGroup = (name, groupActions) => ({
 /**
  * Fetches available actions for a given parcel.
  * @param {{ parcelId: string, sheetId: string }} parcel
- * @returns {Promise<ActionGroup[]>}- Parcel data with actions
+ * @returns {Promise<{actions: ActionGroup[], parcel: {parcelId: string, sheetId: string, size: Size}}>}- Parcel data with actions
  * @throws {Error}
  */
 export async function fetchAvailableActionsForParcel({ parcelId = '', sheetId = '' }) {
-  const result = []
+  const actions = []
   const parcelIds = [stringifyParcel({ sheetId, parcelId })]
   const { parcels } = await parcelsWithActionsAndSize(parcelIds, LAND_GRANTS_API_URL)
-  const actions = parcels?.find((p) => p.parcelId === parcelId && p.sheetId === sheetId)?.actions?.map(mapAction) || []
+  const foundParcel = parcels?.find((p) => p.parcelId === parcelId && p.sheetId === sheetId)
+  const actionsForParcel = foundParcel?.actions?.map(mapAction) || []
   const usedCodes = new Set()
 
   actionGroups.forEach((group) => {
-    const groupActions = actions.filter((a) => group.actions.includes(a.code))
+    const groupActions = actionsForParcel.filter((a) => group.actions.includes(a.code))
     if (groupActions.length > 0) {
       for (const action of groupActions) {
         usedCodes.add(action.code)
       }
-      result.push(createGroup(group.name, groupActions))
+      actions.push(createGroup(group.name, groupActions))
     }
   })
 
-  const ungroupedActions = actions.filter((a) => !usedCodes.has(a.code))
+  const ungroupedActions = actionsForParcel.filter((a) => !usedCodes.has(a.code))
   if (ungroupedActions.length > 0) {
-    result.push(createGroup('', ungroupedActions))
+    actions.push(createGroup('', ungroupedActions))
   }
 
-  return result
+  return {
+    parcel: {
+      sheetId,
+      parcelId,
+      size: {
+        unit: foundParcel?.size?.unit ?? '',
+        value: foundParcel?.size?.value ?? 0
+      }
+    },
+    actions
+  }
 }
 
 /**
@@ -158,6 +169,6 @@ export async function validateApplication(data) {
 }
 
 /**
- * @import { ActionOption, LandActions, ActionGroup, Parcel, ValidateApplicationResponse, Action } from '~/src/server/land-grants/types/land-grants.client.d.js'
+ * @import { ActionOption, LandActions, ActionGroup, Parcel, ValidateApplicationResponse, Action, Size } from '~/src/server/land-grants/types/land-grants.client.d.js'
  * @import { PaymentCalculation } from '~/src/server/land-grants/types/payment.d.js'
  */

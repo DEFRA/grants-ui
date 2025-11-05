@@ -9,35 +9,51 @@
  */
 
 /**
- * @typedef {Object} AppliedFor
+ * @typedef {Object} UnitQuantity
  * @property {string} [unit] - Unit of measurement (e.g., "ha")
- * @property {number} [quantity] - Quantity applied for
+ * @property {number} [quantity] - Quantity value
  */
 
 /**
- * @typedef {Object} ActionApplication
+ * @typedef {Object} PaymentRates
+ * @property {number} [ratePerUnitPence] - Rate per unit in pence
+ * @property {number} [agreementLevelAmountPence] - Agreement level amount in pence
+ */
+
+/**
+ * @typedef {Object} Action
  * @property {string} code - Action code (e.g., "CMOR1", "UPL1")
+ * @property {string} [description] - Action description
+ * @property {number} [durationYears] - Duration in years
+ * @property {UnitQuantity} [eligible] - Eligible quantity details
+ * @property {UnitQuantity} [appliedFor] - Applied for quantity details
+ * @property {PaymentRates} [paymentRates] - Payment rate information
+ * @property {number} [annualPaymentPence] - Annual payment in pence
+ */
+
+/**
+ * @typedef {Object} Parcel
  * @property {string} sheetId - Sheet identifier
  * @property {string} parcelId - Parcel identifier
- * @property {AppliedFor} [appliedFor] - Applied quantity details
+ * @property {UnitQuantity} area - Parcel area details
+ * @property {Action[]} actions - Array of actions for this parcel
  */
 
 /**
- * @typedef {Object} Answers
+ * @typedef {Object} Application
  * @property {boolean} hasCheckedLandIsUpToDate - Land check confirmation
- * @property {string} [agreementName] - Agreement name (optional)
  * @property {string} scheme - Scheme name (e.g., "SFI")
  * @property {number} year - Application year
- * @property {ActionApplication[]} actionApplications - Array of action applications
+ * @property {number} [totalAnnualPaymentPence] - Total annual payment in pence
+ * @property {Parcel[]} parcels - Array of parcels with actions
  * @property {string} [applicationValidationRunId] - Application validation run ID (optional)
- * @property {PaymentCalculation} [payment] - Payment details (optional)
- * @property {Applicant} [applicant] - Applicant details (optional)
+ * @property {Applicant} applicant - Applicant details
  */
 
 /**
  * @typedef {Object} SFIApplication
  * @property {Metadata} metadata - Application metadata
- * @property {Answers} answers - Application answers and details
+ * @property {Application} answers - Application answers and details
  */
 
 /**

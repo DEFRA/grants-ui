@@ -202,6 +202,21 @@ export const LogCodes = {
       messageFunc: (messageOptions) =>
         `Land grant processing error for user=${messageOptions.userId}: ${messageOptions.error}`
     },
+    NO_ACTIONS_FOUND: {
+      level: 'error',
+      messageFunc: (messageOptions) =>
+        `No actions found | parcelId: ${messageOptions.parcelId} | sheetId: ${messageOptions.sheetId}`
+    },
+    VALIDATE_APPLICATION_ERROR: {
+      level: 'error',
+      messageFunc: (messageOptions) =>
+        `Error validating application: ${messageOptions.message} | parcelId: ${messageOptions.parcelId} | sheetId: ${messageOptions.sheetId}`
+    },
+    FETCH_ACTIONS_ERROR: {
+      level: 'error',
+      messageFunc: (messageOptions) =>
+        `Error fetching actions for sbi=${messageOptions.sbi} | parcelId: ${messageOptions.parcelId} | sheetId: ${messageOptions.sheetId}`
+    },
     UNAUTHORISED_PARCEL: {
       level: 'error',
       messageFunc: (messageOptions) =>
