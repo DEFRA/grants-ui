@@ -169,6 +169,6 @@ export async function validateApplication(data) {
 }
 
 /**
- * @import { ActionOption, LandActions, ActionGroup, Parcel, ValidateApplicationResponse, Action, Size } from '~/src/server/land-grants/types/land-grants.client.d.js'
+ * @import { ActionOption, LandActions, ActionGroup, Parcel, ValidateApplicationResponse, Size } from '~/src/server/land-grants/types/land-grants.client.d.js'
  * @import { PaymentCalculation } from '~/src/server/land-grants/types/payment.d.js'
  */

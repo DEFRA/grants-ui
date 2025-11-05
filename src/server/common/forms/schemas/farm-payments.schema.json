@@ -28,7 +28,7 @@
     "parcels": {
       "type": "array",
       "title": "Land parcels with their actions",
-      "minItems": 0,
+      "minItems": 1,
       "items": {
         "$ref": "#/$defs/Parcel"
       }
@@ -84,7 +84,15 @@
     "Action": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["code"],
+      "required": [
+        "code",
+        "description",
+        "durationYears",
+        "eligible",
+        "appliedFor",
+        "paymentRates",
+        "annualPaymentPence"
+      ],
       "properties": {
         "code": {
           "type": "string",

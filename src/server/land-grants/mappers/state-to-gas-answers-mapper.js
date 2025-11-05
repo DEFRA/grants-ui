@@ -41,7 +41,7 @@ function hasProperties(obj) {
  * @param {string} parcelId - The parcel ID
  * @returns {object|null} The combined payment item data or null
  */
-function findPaymentItem(paymentData, actionCode, sheetId, parcelId) {
+function extractPaymentItemInfo(paymentData, actionCode, sheetId, parcelId) {
   if (!paymentData) {
     return null
   }
@@ -102,7 +102,7 @@ function createPaymentRates(paymentItem) {
  * @returns {Action} The action object
  */
 function createAction(actionCode, actionData, sheetId, parcelId, paymentData) {
-  const paymentItem = findPaymentItem(paymentData, actionCode, sheetId, parcelId)
+  const paymentItem = extractPaymentItemInfo(paymentData, actionCode, sheetId, parcelId)
 
   const action = { code: actionCode }
 
