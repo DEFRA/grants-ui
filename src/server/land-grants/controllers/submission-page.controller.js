@@ -11,6 +11,7 @@ import { persistSubmissionToApi } from '~/src/server/common/helpers/state/persis
 import { getConfirmationPath } from '~/src/server/common/helpers/form-slug-helper.js'
 import { log } from '~/src/server/common/helpers/logging/log.js'
 import { LogCodes } from '~/src/server/common/helpers/logging/log-codes.js'
+import { performance } from 'node:perf_hooks'
 
 export default class SubmissionPageController extends SummaryPageController {
   viewName = 'submit-your-application'
@@ -93,8 +94,18 @@ export default class SubmissionPageController extends SummaryPageController {
         status: submissionStatus
       })
 
+      const cacheServiceStartTime = performance.now()
       const currentState = await cacheService.getState(request)
+      const cacheServiceEndTime = performance.now()
+      log(
+        {
+          level: 'debug',
+          messageFunc: (messageOptions) => `cache service duration: ${cacheServiceEndTime - cacheServiceStartTime}`
+        },
+        {}
+      )
 
+      const cacheServiceSetStateStartTime = performance.now()
       // Update application status so the confirmation page knows a submission happened
       await cacheService.setState(request, {
         ...currentState,
@@ -102,7 +113,17 @@ export default class SubmissionPageController extends SummaryPageController {
         submittedAt,
         submittedBy: crn
       })
+      const cacheServiceSetStateEndTime = performance.now()
+      log(
+        {
+          level: 'debug',
+          messageFunc: (messageOptions) =>
+            `cache service set state duration: ${cacheServiceSetStateEndTime - cacheServiceSetStateStartTime}`
+        },
+        {}
+      )
 
+      const persistSubmissionToApiStartTime = performance.now()
       // Add to submissions collection
       await persistSubmissionToApi({
         crn,
@@ -112,6 +133,15 @@ export default class SubmissionPageController extends SummaryPageController {
         referenceNumber: context.referenceNumber,
         submittedAt
       })
+      const persistSubmissionToApiEndTime = performance.now()
+      log(
+        {
+          level: 'debug',
+          messageFunc: (messageOptions) =>
+            `persist submission to api duration: ${persistSubmissionToApiEndTime - persistSubmissionToApiStartTime}`
+        },
+        {}
+      )
     }
 
     // Get the redirect path
@@ -135,17 +165,38 @@ export default class SubmissionPageController extends SummaryPageController {
       const frn = state.applicant ? state.applicant['business']?.reference : undefined
 
       try {
+          const validateApplicationStartTime = performance.now()
         const validationResult = await validateApplication({ applicationId: referenceNumber, crn, sbi, state })
+          const validateApplicationEndTime = performance.now()
+          log(
+            {
+              level: 'debug',
+              messageFunc: (messageOptions) =>
+                `validation duration: ${validateApplicationEndTime - validateApplicationStartTime}`
+            },
+            {}
+          )
+
         const { id: validationId, valid } = validationResult
         if (!valid) {
           return this.handleSubmissionError(h, request, context, validationId)
         }
 
+          const submitGasApplicationStartTime = performance.now()
         const result = await this.submitGasApplication({
           identifiers: { sbi, crn, frn, clientRef: referenceNumber?.toLowerCase() },
           state,
           validationId
         })
+          const submitGasApplicationEndTime = performance.now()
+          log(
+            {
+              level: 'debug',
+              messageFunc: (messageOptions) =>
+                `submit gas application duration: ${submitGasApplicationEndTime - submitGasApplicationStartTime}`
+            },
+            {}
+          )
 
         log(LogCodes.SUBMISSION.SUBMISSION_SUCCESS, {
           grantType: this.grantCode,
