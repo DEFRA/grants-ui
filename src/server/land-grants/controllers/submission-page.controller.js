@@ -32,7 +32,6 @@ export default class SubmissionPageController extends SummaryPageController {
       stateToLandGrantsGasAnswers
     )
 
-    console.log('submitGrantApplication', JSON.stringify(applicationData))
     return submitGrantApplication(this.grantCode, applicationData)
   }
 

@@ -8,18 +8,8 @@ import {
 } from '~/src/server/land-grants/services/land-grants.service.js'
 import { parseLandParcel, stringifyParcel } from '~/src/server/land-grants/utils/format-parcel.js'
 import SelectLandActionsPageController from './select-land-actions-page.controller.js'
-import { LogCodes } from '~/src/server/common/helpers/logging/log-codes.js'
 import { log } from '~/src/server/common/helpers/logging/log.js'
 
-// vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
-//   const { mockLogHelperWithCustomCodes } = await import('~/src/__mocks__')
-//   return mockLogHelperWithCustomCodes({
-//     LAND_GRANTS: {
-//       NO_ACTIONS_FOUND: { level: 'error', messageFunc: vi.fn() },
-//       FETCH_ACTIONS_ERROR: { level: 'error', messageFunc: vi.fn() }
-//     }
-//   })
-// })
 vi.mock('~/src/server/common/helpers/logging/log.js')
 vi.mock('~/src/server/land-grants/services/land-grants.service.js')
 vi.mock('~/src/server/land-grants/utils/format-parcel.js')
