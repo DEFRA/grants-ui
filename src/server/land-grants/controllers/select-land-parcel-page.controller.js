@@ -22,7 +22,7 @@ export default class SelectLandParcelPageController extends LandGrantsQuestionWi
     return {
       text: `${parcel.sheetId} ${parcel.parcelId}`,
       value: `${parcel.sheetId}-${parcel.parcelId}`,
-      hint
+      hint: hint ? { text: hint } : undefined
     }
   }
 
@@ -91,6 +91,7 @@ export default class SelectLandParcelPageController extends LandGrantsQuestionWi
     const fn = async (request, context, h) => {
       const { state } = context
       const { landParcels } = state || {}
+      const sbi = request.auth?.credentials?.sbi
 
       const { viewName } = this
       const baseViewModel = super.getViewModel(request, context)
@@ -105,11 +106,23 @@ export default class SelectLandParcelPageController extends LandGrantsQuestionWi
           return this.formatParcelForView(parcel, actionsForParcel)
         })
 
+        if (!parcels?.length) {
+          logger.warn(`No land parcels for sbi = ${sbi}`)
+          const errorMessage =
+            'Unable to find parcel information, please try again later or contact the Rural Payments Agency.'
+
+          return h.view(viewName, {
+            ...baseViewModel,
+            parcels: [],
+            existingLandParcels,
+            errors: [errorMessage]
+          })
+        }
+
         const viewModel = {
           ...baseViewModel,
           parcels,
-          existingLandParcels,
-          selectedLandParcel: null
+          existingLandParcels
         }
 
         await this.setState(request, {
@@ -118,7 +131,6 @@ export default class SelectLandParcelPageController extends LandGrantsQuestionWi
         })
         return h.view(viewName, viewModel)
       } catch (error) {
-        const sbi = request.auth?.credentials?.sbi
         logger.error({ err: error, sbi }, 'Unexpected error when fetching parcel data')
         const errorMessage =
           'Unable to find parcel information, please try again later or contact the Rural Payments Agency.'
@@ -126,7 +138,6 @@ export default class SelectLandParcelPageController extends LandGrantsQuestionWi
         return h.view(viewName, {
           ...baseViewModel,
           existingLandParcels,
-          selectedLandParcel: null,
           errors: [errorMessage]
         })
       }
