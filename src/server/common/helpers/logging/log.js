@@ -28,7 +28,7 @@ const log = (logCode, messageOptions, request) => {
  * @returns {(message: string) => void} Logger function.
  */
 const getLoggerOfType = (level, request) => {
-  const requestLogger = request && request.log
+  const requestLogger = request?.log
 
   return {
     info: (message) => (requestLogger ? request.log(['info'], message) : logger.info(message)),

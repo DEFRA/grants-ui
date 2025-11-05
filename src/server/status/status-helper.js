@@ -242,11 +242,14 @@ function handlePostSubmissionError(err, request, h, context, grantId, grantCode,
     return h.continue
   }
 
-  log(LogCodes.SUBMISSION.SUBMISSION_REDIRECT_FAILURE, {
-    grantType: grantCode,
-    referenceNumber: context.referenceNumber,
-    error: err.message
-  }, request
+  log(
+    LogCodes.SUBMISSION.SUBMISSION_REDIRECT_FAILURE,
+    {
+      grantType: grantCode,
+      referenceNumber: context.referenceNumber,
+      error: err.message
+    },
+    request
   )
 
   const fallbackRule = mapStatusToUrl('default', 'default', grantRedirectRules?.postSubmission ?? [])
