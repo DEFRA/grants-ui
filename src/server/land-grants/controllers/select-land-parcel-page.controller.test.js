@@ -29,12 +29,12 @@ const controllerParcelsResponse = [
   {
     value: 'SD7946-0155',
     text: 'SD7946 0155',
-    hint: 'Total size: 4.0383 ha'
+    hint: { text: 'Total size: 4.0383 ha' }
   },
   {
     value: 'SD7846-4509',
     text: 'SD7846 4509',
-    hint: 'Total size: 0.0633 sqm'
+    hint: { text: 'Total size: 0.0633 sqm' }
   }
 ]
 
@@ -117,7 +117,7 @@ describe('SelectLandParcelPageController', () => {
       expect(result).toEqual({
         text: 'SD7946 0155',
         value: 'SD7946-0155',
-        hint: 'Total size: 4.0383 ha'
+        hint: { text: 'Total size: 4.0383 ha' }
       })
     })
 
@@ -133,7 +133,7 @@ describe('SelectLandParcelPageController', () => {
       expect(result).toEqual({
         text: 'SD7946 0155',
         value: 'SD7946-0155',
-        hint: 'Total size 4.0383 ha, 2 actions added'
+        hint: { text: 'Total size 4.0383 ha, 2 actions added' }
       })
     })
 
@@ -149,7 +149,7 @@ describe('SelectLandParcelPageController', () => {
       expect(result).toEqual({
         text: 'SD7946 0155',
         value: 'SD7946-0155',
-        hint: 'Total size 4.0383 ha, 1 action added'
+        hint: { text: 'Total size 4.0383 ha, 1 action added' }
       })
     })
 
@@ -165,7 +165,7 @@ describe('SelectLandParcelPageController', () => {
       expect(result).toEqual({
         text: 'SD7946 0155',
         value: 'SD7946-0155',
-        hint: '3 actions added'
+        hint: { text: '3 actions added' }
       })
     })
 
@@ -181,7 +181,7 @@ describe('SelectLandParcelPageController', () => {
       expect(result).toEqual({
         text: 'SD7946 0155',
         value: 'SD7946-0155',
-        hint: ''
+        hint: undefined
       })
     })
   })
@@ -195,8 +195,7 @@ describe('SelectLandParcelPageController', () => {
         'select-land-parcel',
         expect.objectContaining({
           pageTitle: 'Select Land Parcel',
-          parcels: controllerParcelsResponse,
-          selectedLandParcel: null
+          parcels: controllerParcelsResponse
         })
       )
       expect(result).toBe(renderedViewMock)
@@ -204,6 +203,21 @@ describe('SelectLandParcelPageController', () => {
 
     it('handles missing parcels info', async () => {
       fetchParcels.mockRejectedValue(new Error('not found'))
+
+      const result = await controller.makeGetRouteHandler()(mockRequest, mockContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'select-land-parcel',
+        expect.objectContaining({
+          pageTitle: 'Select Land Parcel',
+          errors: ['Unable to find parcel information, please try again later or contact the Rural Payments Agency.']
+        })
+      )
+      expect(result).toBe(renderedViewMock)
+    })
+
+    it('handles empty parcels list info', async () => {
+      fetchParcels.mockResolvedValue([])
 
       const result = await controller.makeGetRouteHandler()(mockRequest, mockContext, mockH)
 
@@ -227,8 +241,7 @@ describe('SelectLandParcelPageController', () => {
         expect.objectContaining({
           existingLandParcels: false,
           pageTitle: 'Select Land Parcel',
-          parcels: controllerParcelsResponse,
-          selectedLandParcel: null
+          parcels: controllerParcelsResponse
         })
       )
       expect(result).toBe(renderedViewMock)
@@ -244,8 +257,7 @@ describe('SelectLandParcelPageController', () => {
         expect.objectContaining({
           existingLandParcels: false,
           parcels: controllerParcelsResponse,
-          pageTitle: 'Select Land Parcel',
-          selectedLandParcel: null
+          pageTitle: 'Select Land Parcel'
         })
       )
       expect(result).toBe(renderedViewMock)

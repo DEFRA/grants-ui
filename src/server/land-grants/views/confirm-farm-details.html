@@ -21,17 +21,18 @@
       </h1>
 
         {{ govukSummaryList(farmDetails) }}
+    
+      {% if not error %}
+        <form method="post" novalidate>
+          <input type="hidden" name="crumb" value="{{ crumb }}">
+          {{ govukButton({
+              text: "Continue",
+              preventDoubleClick: true
+            })
+          }}
+        </form>
+      {% endif%}
 
-      <form method="post" novalidate>
-        <input type="hidden" name="crumb" value="{{ crumb }}">
-        {{ govukButton({
-            text: "Continue",
-            preventDoubleClick: true
-          })
-        }}
-      </form>
-
-<!--      Add support details component -->
       {{ defraSupportDetails() }}
     </div>
   </div>
