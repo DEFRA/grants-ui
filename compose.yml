@@ -150,6 +150,8 @@ services:
     image: redis:7.2.3-alpine3.18
     ports:
       - '6379:6379'
+    volumes:
+      - redis-data:/data
     restart: always
     healthcheck:
       test: ['CMD', 'redis-cli', 'ping']
@@ -166,7 +168,8 @@ services:
     ports:
       - '27017:27017'
     volumes:
-      - mongodb-data:/data
+      - mongodb-data:/data/db
+      - mongodb-config:/data/configdb
     restart: always
     healthcheck:
       test: ['CMD', 'mongosh', '--eval', "db.adminCommand('ping')"]
@@ -175,7 +178,9 @@ services:
       retries: 3
 
 volumes:
+  redis-data:
   mongodb-data:
+  mongodb-config:
 
 networks:
   grants-ui-net:
