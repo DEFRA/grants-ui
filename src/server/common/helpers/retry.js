@@ -16,7 +16,7 @@ import { logger } from '~/src/server/common/helpers/logging/log.js'
  */
 export async function retry(operation, options = {}) {
   const {
-    maxAttempts = 3,
+    maxAttempts = 1,
     initialDelay = 1000,
     maxDelay = 30000,
     exponential = true,
