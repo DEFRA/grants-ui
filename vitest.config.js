@@ -7,7 +7,7 @@ export default {
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./.vitest/setup-file.js'],
-    include: ['**/src/**/*.test.js'],
+    include: ['src/**/*.test.js'],
     reporters: ['default', CoverageAnalyserReporter()],
     coverage: {
       enabled: true,
