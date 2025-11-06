@@ -165,38 +165,38 @@ export default class SubmissionPageController extends SummaryPageController {
       const frn = state.applicant ? state.applicant['business']?.reference : undefined
 
       try {
-          const validateApplicationStartTime = performance.now()
+        const validateApplicationStartTime = performance.now()
         const validationResult = await validateApplication({ applicationId: referenceNumber, crn, sbi, state })
-          const validateApplicationEndTime = performance.now()
-          log(
-            {
-              level: 'debug',
-              messageFunc: (messageOptions) =>
-                `validation duration: ${validateApplicationEndTime - validateApplicationStartTime}`
-            },
-            {}
-          )
+        const validateApplicationEndTime = performance.now()
+        log(
+          {
+            level: 'debug',
+            messageFunc: (messageOptions) =>
+              `validation duration: ${validateApplicationEndTime - validateApplicationStartTime}`
+          },
+          {}
+        )
 
         const { id: validationId, valid } = validationResult
         if (!valid) {
           return this.handleSubmissionError(h, request, context, validationId)
         }
 
-          const submitGasApplicationStartTime = performance.now()
+        const submitGasApplicationStartTime = performance.now()
         const result = await this.submitGasApplication({
           identifiers: { sbi, crn, frn, clientRef: referenceNumber?.toLowerCase() },
           state,
           validationId
         })
-          const submitGasApplicationEndTime = performance.now()
-          log(
-            {
-              level: 'debug',
-              messageFunc: (messageOptions) =>
-                `submit gas application duration: ${submitGasApplicationEndTime - submitGasApplicationStartTime}`
-            },
-            {}
-          )
+        const submitGasApplicationEndTime = performance.now()
+        log(
+          {
+            level: 'debug',
+            messageFunc: (messageOptions) =>
+              `submit gas application duration: ${submitGasApplicationEndTime - submitGasApplicationStartTime}`
+          },
+          {}
+        )
 
         log(LogCodes.SUBMISSION.SUBMISSION_SUCCESS, {
           grantType: this.grantCode,
