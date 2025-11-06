@@ -160,6 +160,7 @@ export default class SubmissionPageController extends SummaryPageController {
      * @returns {Promise<ResponseObject>}
      */
     const fn = async (request, context, h) => {
+      const submissionStartTime = performance.now()
       const { credentials: { sbi, crn } = {} } = request.auth ?? {}
       const { state, referenceNumber } = context
       const frn = state.applicant ? state.applicant['business']?.reference : undefined
@@ -203,7 +204,16 @@ export default class SubmissionPageController extends SummaryPageController {
           referenceNumber: context.referenceNumber
         })
 
-        return await this.handleSuccessfulSubmission(request, context, h, result.status)
+        const subRespon = await this.handleSuccessfulSubmission(request, context, h, result.status)
+        const submissionEndTime = performance.now()
+        log(
+          {
+            level: 'debug',
+            messageFunc: (messageOptions) => `submission duration: ${submissionEndTime - submissionStartTime}`
+          },
+          {}
+        )
+        return subRespon
       } catch (error) {
         log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
           endpoint: `Land grants submission`,
