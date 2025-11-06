@@ -14,3 +14,6 @@ tsconfig.tsbuildinfo
 .eslintcache
 src/contracts/pacts
 compose.override.yml
+
+# stryker temp files
+.stryker-tmp
