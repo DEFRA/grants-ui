@@ -6,9 +6,11 @@ import {
   fetchParcels,
   validateApplication
 } from '~/src/server/land-grants/services/land-grants.service.js'
-import { parseLandParcel } from '~/src/server/land-grants/utils/format-parcel.js'
+import { parseLandParcel, stringifyParcel } from '~/src/server/land-grants/utils/format-parcel.js'
 import SelectLandActionsPageController from './select-land-actions-page.controller.js'
+import { log } from '~/src/server/common/helpers/logging/log.js'
 
+vi.mock('~/src/server/common/helpers/logging/log.js')
 vi.mock('~/src/server/land-grants/services/land-grants.service.js')
 vi.mock('~/src/server/land-grants/utils/format-parcel.js')
 
@@ -116,7 +118,11 @@ describe('SelectLandActionsPageController', () => {
     }
 
     parseLandParcel.mockReturnValue(['sheet1', 'parcel1'])
-    fetchAvailableActionsForParcel.mockResolvedValue(mockGroupedActions)
+    stringifyParcel.mockImplementation(({ sheetId, parcelId }) => `${sheetId}-${parcelId}`)
+    fetchAvailableActionsForParcel.mockResolvedValue({
+      actions: mockGroupedActions,
+      parcel: { parcelId: 'parcel1', sheetId: 'sheet1', size: 10 }
+    })
     validateApplication.mockResolvedValue({ valid: true, errorMessages: [] })
   })
 
@@ -230,11 +236,11 @@ describe('SelectLandActionsPageController', () => {
       const actionsObj = {
         CMOR1: { description: 'Test', value: 10, unit: 'ha' }
       }
-      const selectedLandParcel = 'sheet1-parcel1'
+      const parcel = { parcelId: 'parcel1', sheetId: 'sheet1', size: 10 }
 
-      const result = controller.buildNewState(state, actionsObj, selectedLandParcel)
+      const result = controller.buildNewState(state, actionsObj, parcel)
 
-      expect(result.landParcels['sheet1-parcel1']).toEqual({ actionsObj })
+      expect(result.landParcels['sheet1-parcel1']).toEqual({ size: 10, actionsObj })
     })
 
     test('should update existing parcel', () => {
@@ -243,18 +249,20 @@ describe('SelectLandActionsPageController', () => {
           'sheet1-parcel1': {
             actionsObj: {
               CMOR1: { description: 'Old', value: 5, unit: 'ha' }
-            }
+            },
+            size: 5
           }
         }
       }
       const actionsObj = {
         UPL1: { description: 'New', value: 3, unit: 'ha' }
       }
-      const selectedLandParcel = 'sheet1-parcel1'
+      const parcel = { parcelId: 'parcel1', sheetId: 'sheet1', size: 10 }
 
-      const result = controller.buildNewState(state, actionsObj, selectedLandParcel)
+      const result = controller.buildNewState(state, actionsObj, parcel)
 
       expect(result.landParcels['sheet1-parcel1'].actionsObj).toHaveProperty('UPL1')
+      expect(result.landParcels['sheet1-parcel1'].size).toBe(10)
     })
   })
 
@@ -263,9 +271,9 @@ describe('SelectLandActionsPageController', () => {
       const state = {}
       const payload = { landAction_1: 'CMOR1' }
       const groupedActions = mockGroupedActions
-      const selectedLandParcel = 'sheet1-parcel1'
+      const parcel = { parcelId: 'parcel1', sheetId: 'sheet1', size: 10 }
 
-      const result = controller.createNewStateFromPayload(state, payload, groupedActions, selectedLandParcel)
+      const result = controller.createNewStateFromPayload(state, payload, groupedActions, parcel)
 
       expect(result.landParcels['sheet1-parcel1'].actionsObj).toEqual({
         CMOR1: {
@@ -280,9 +288,9 @@ describe('SelectLandActionsPageController', () => {
       const state = {}
       const payload = {}
       const groupedActions = mockGroupedActions
-      const selectedLandParcel = 'sheet1-parcel1'
+      const parcel = { parcelId: 'parcel1', sheetId: 'sheet1', size: 10 }
 
-      const result = controller.createNewStateFromPayload(state, payload, groupedActions, selectedLandParcel)
+      const result = controller.createNewStateFromPayload(state, payload, groupedActions, parcel)
 
       expect(result).toEqual({})
     })
@@ -294,9 +302,9 @@ describe('SelectLandActionsPageController', () => {
         landAction_2: 'UPL1'
       }
       const groupedActions = mockGroupedActions
-      const selectedLandParcel = 'sheet1-parcel1'
+      const parcel = { parcelId: 'parcel1', sheetId: 'sheet1', size: 10 }
 
-      const result = controller.createNewStateFromPayload(state, payload, groupedActions, selectedLandParcel)
+      const result = controller.createNewStateFromPayload(state, payload, groupedActions, parcel)
 
       expect(Object.keys(result.landParcels['sheet1-parcel1'].actionsObj)).toHaveLength(2)
     })
@@ -307,9 +315,9 @@ describe('SelectLandActionsPageController', () => {
         landAction_1: 'INVALID_CODE'
       }
       const groupedActions = mockGroupedActions
-      const selectedLandParcel = 'sheet1-parcel1'
+      const parcel = { parcelId: 'parcel1', sheetId: 'sheet1', size: 10 }
 
-      const result = controller.createNewStateFromPayload(state, payload, groupedActions, selectedLandParcel)
+      const result = controller.createNewStateFromPayload(state, payload, groupedActions, parcel)
 
       expect(result.landParcels['sheet1-parcel1'].actionsObj).toEqual({})
     })
@@ -323,9 +331,9 @@ describe('SelectLandActionsPageController', () => {
       ]
       const state = {}
       const payload = { landAction_1: 'TEST1' }
-      const selectedLandParcel = 'sheet1-parcel1'
+      const parcel = { parcelId: 'parcel1', sheetId: 'sheet1', size: 10 }
 
-      const result = controller.createNewStateFromPayload(state, payload, groupedActions, selectedLandParcel)
+      const result = controller.createNewStateFromPayload(state, payload, groupedActions, parcel)
 
       expect(result.landParcels['sheet1-parcel1'].actionsObj.TEST1).toEqual({
         description: 'Test Action',
@@ -380,17 +388,17 @@ describe('SelectLandActionsPageController', () => {
     })
   })
 
-  describe('renderErrorMessage', () => {
+  describe('renderErrorView', () => {
     test('should render error view with validation errors', () => {
       const errors = [{ text: 'Error message', href: '#field' }]
       const selectedLandParcel = 'sheet1-parcel1'
-      const groupedActions = mockGroupedActions
+      const actions = mockGroupedActions
       const addedActions = []
 
-      controller.renderErrorMessage(mockH, mockRequest, mockContext, {
+      controller.renderErrorView(mockH, mockRequest, mockContext, {
         errors,
         selectedLandParcel,
-        groupedActions,
+        actions,
         addedActions
       })
 
@@ -406,14 +414,14 @@ describe('SelectLandActionsPageController', () => {
     test('should include additional state when provided', () => {
       const errors = [{ text: 'Error', href: '#field' }]
       const selectedLandParcel = 'sheet1-parcel1'
-      const groupedActions = mockGroupedActions
+      const actions = mockGroupedActions
       const addedActions = []
       const additionalState = { customProp: 'value' }
 
-      controller.renderErrorMessage(mockH, mockRequest, mockContext, {
+      controller.renderErrorView(mockH, mockRequest, mockContext, {
         errors,
         selectedLandParcel,
-        groupedActions,
+        actions,
         addedActions,
         additionalState
       })
@@ -433,13 +441,13 @@ describe('SelectLandActionsPageController', () => {
         }
       ]
       const selectedLandParcel = 'sheet1-parcel1'
-      const groupedActions = []
+      const actions = []
       const addedActions = []
 
-      controller.renderErrorMessage(mockH, mockRequest, mockContext, {
+      controller.renderErrorView(mockH, mockRequest, mockContext, {
         errors,
         selectedLandParcel,
-        groupedActions,
+        actions,
         addedActions
       })
 
@@ -543,20 +551,40 @@ describe('SelectLandActionsPageController', () => {
           ])
         })
       )
-      expect(mockRequest.logger.error).toHaveBeenCalled()
+
+      expect(log).toHaveBeenCalledWith(
+        expect.objectContaining({
+          level: 'error',
+          messageFunc: expect.any(Function)
+        }),
+        expect.objectContaining({
+          sbi: '106284736',
+          sheetId: 'sheet1',
+          parcelId: 'parcel1'
+        })
+      )
     })
 
     test('should log when no actions found', async () => {
-      fetchAvailableActionsForParcel.mockResolvedValue([])
+      fetchAvailableActionsForParcel.mockResolvedValue({
+        actions: [],
+        parcel: { parcelId: 'parcel1', sheetId: 'sheet1', size: 10 }
+      })
       mockContext.state.selectedLandParcel = 'sheet1-parcel1'
 
       const handler = controller.makeGetRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
-      expect(mockRequest.logger.error).toHaveBeenCalledWith({
-        message: 'No actions found for parcel sheet1-parcel1',
-        selectedLandParcel: 'sheet1-parcel1'
-      })
+      expect(log).toHaveBeenCalledWith(
+        expect.objectContaining({
+          level: 'error',
+          messageFunc: expect.any(Function)
+        }),
+        expect.objectContaining({
+          sheetId: 'sheet1',
+          parcelId: 'parcel1'
+        })
+      )
     })
 
     describe('when the user does not own the land parcel', () => {
@@ -589,6 +617,7 @@ describe('SelectLandActionsPageController', () => {
         expect.objectContaining({
           landParcels: {
             'sheet1-parcel1': {
+              size: 10,
               actionsObj: {
                 CMOR1: expect.objectContaining({
                   description: 'Assess moorland and produce a written record: CMOR1'
@@ -705,6 +734,7 @@ describe('SelectLandActionsPageController', () => {
         expect.objectContaining({
           landParcels: {
             'sheet1-parcel1': {
+              size: 10,
               actionsObj: expect.objectContaining({
                 CMOR1: expect.any(Object),
                 UPL1: expect.any(Object)
