@@ -156,13 +156,10 @@ export default class RemoveActionPageController extends LandGrantsQuestionWithAu
   makeGetRouteHandler() {
     return async (request, context, h) => {
       const { viewName } = this
-      const {
-        state: { landParcels }
-      } = context
-
+      const landParcels = context.state?.landParcels
       const { action, parcelId } = request.query
 
-      if (!parcelId) {
+      if (!parcelId || !landParcels[parcelId]) {
         return this.proceed(request, h, checkSelectedLandActionsPath)
       }
 

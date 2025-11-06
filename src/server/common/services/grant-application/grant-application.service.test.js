@@ -23,8 +23,6 @@ describe('submitGrantApplication', () => {
     },
     answers: {
       scheme: 'SFI',
-      year: 2025,
-      hasCheckedLandIsUpToDate: true,
       actionApplications: [
         {
           parcelId: '9238',
