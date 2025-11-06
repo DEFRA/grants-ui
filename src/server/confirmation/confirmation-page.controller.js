@@ -1,6 +1,8 @@
 import { StatusPageController } from '@defra/forms-engine-plugin/controllers/StatusPageController.js'
 import { getConfirmationPath, storeSlugInContext } from '~/src/server/common/helpers/form-slug-helper.js'
 import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/forms-cache.js'
+import { log } from '~/src/server/common/helpers/logging/log.js'
+import { performance } from 'node:perf_hooks'
 
 export default class ConfirmationPageController extends StatusPageController {
   viewName = 'confirmation-page.html'
@@ -30,7 +32,16 @@ export default class ConfirmationPageController extends StatusPageController {
       storeSlugInContext(request, context, 'ConfirmationController')
 
       const cacheService = getFormsCacheService(request.server)
+      const cacheServiceStartTime = performance.now()
       const state = await cacheService.getState(request)
+      const cacheServiceEndTime = performance.now()
+      log(
+        {
+          level: 'debug',
+          messageFunc: (messageOptions) => `cache service duration: ${cacheServiceEndTime - cacheServiceStartTime}`
+        },
+        {}
+      )
       const referenceNumber = state.$$__referenceNumber
 
       return this.renderConfirmationPage(request, context, h, referenceNumber)
