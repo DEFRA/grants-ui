@@ -57,7 +57,7 @@ services:
       FARMING_PAYMENTS_WHITELIST_SBIS: 106284736, 121428499, 106238988
     volumes:
       - ./src:/home/node/src
-      - node_deps:/home/node/node_modules
+      - /home/node/node_modules
     networks:
       - grants-ui-net
     restart: unless-stopped
@@ -178,7 +178,6 @@ services:
       retries: 3
 
 volumes:
-  node_deps:
   redis-data:
   mongodb-data:
   mongodb-config:
