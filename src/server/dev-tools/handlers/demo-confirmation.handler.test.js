@@ -44,6 +44,7 @@ describe('demo-confirmation.handler', () => {
       params: { slug: 'test-form' },
       logger: mockLogger
     })
+    mockRequest.server.app.formsService = { getFormDefinition: vi.fn() }
     mockH = mockHapiResponseToolkit()
 
     buildDemoData.mockReturnValue(mockDemoData)
@@ -66,7 +67,10 @@ describe('demo-confirmation.handler', () => {
       await demoConfirmationHandler(mockRequest, mockH)
 
       expect(ConfirmationService.findFormBySlug).toHaveBeenCalledWith('test-form')
-      expect(ConfirmationService.loadConfirmationContent).toHaveBeenCalledWith(mockForm)
+      expect(ConfirmationService.loadConfirmationContent).toHaveBeenCalledWith(
+        mockForm,
+        mockRequest.server.app.formsService
+      )
       expect(ConfirmationService.processConfirmationContent).toHaveBeenCalledWith(mockConfirmationContent)
       expect(ConfirmationService.buildViewModel).toHaveBeenCalledWith({
         ...mockDemoData,

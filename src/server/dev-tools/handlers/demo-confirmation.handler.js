@@ -7,9 +7,9 @@ import { log, LogCodes } from '../../common/helpers/logging/log.js'
  * @param {object} form - Form object
  * @returns {Promise<{confirmationContent: object, formDefinition: object|null}>} Confirmation content and form definition
  */
-export async function loadConfirmationContent(form) {
+export async function loadConfirmationContent(form, formsServiceInstance) {
   const { confirmationContent: rawConfirmationContent, formDefinition } =
-    await ConfirmationService.loadConfirmationContent(form)
+    await ConfirmationService.loadConfirmationContent(form, formsServiceInstance)
 
   if (!rawConfirmationContent) {
     return {
@@ -84,7 +84,7 @@ export async function demoConfirmationHandler(request, h) {
       return generateFormNotFoundResponse(slug, h)
     }
 
-    const { confirmationContent, formDefinition } = await loadConfirmationContent(form)
+    const { confirmationContent, formDefinition } = await loadConfirmationContent(form, request.server.app.formsService)
     const demoData = buildDemoData()
     const viewModel = buildViewModel(demoData, confirmationContent, form, slug, formDefinition)
 

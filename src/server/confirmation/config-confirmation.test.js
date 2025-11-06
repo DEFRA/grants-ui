@@ -53,6 +53,7 @@ describe('config-confirmation', () => {
       logger: mockLogger,
       yar: mockYarSession
     })
+    mockRequest.server.app.formsService = { getFormDefinition: vi.fn() }
     mockH = mockHapiResponseToolkit()
 
     ConfirmationService.findFormBySlug = vi.fn()
@@ -97,7 +98,10 @@ describe('config-confirmation', () => {
       await handler(mockRequest, mockH)
 
       expect(ConfirmationService.findFormBySlug).toHaveBeenCalledWith('test-slug')
-      expect(ConfirmationService.loadConfirmationContent).toHaveBeenCalledWith(mockForm)
+      expect(ConfirmationService.loadConfirmationContent).toHaveBeenCalledWith(
+        mockForm,
+        mockRequest.server.app.formsService
+      )
       expect(ConfirmationService.processConfirmationContent).toHaveBeenCalledWith(mockConfirmationContent)
       expect(ConfirmationService.buildViewModel).toHaveBeenCalledWith({
         referenceNumber: 'REF123',

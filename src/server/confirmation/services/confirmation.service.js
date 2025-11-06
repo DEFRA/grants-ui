@@ -2,6 +2,31 @@ import { formsService, getFormsCache } from '~/src/server/common/forms/services/
 import { ComponentsRegistry } from './components.registry.js'
 import { logger } from '~/src/server/common/helpers/logging/log.js'
 
+/**
+ * @typedef {object} FormsService
+ * @property {(slug: string) => Promise<object>} getFormMetadata
+ * @property {(id: string, state?: object) => Promise<object>} getFormDefinition
+ */
+
+let memoisedFormsServicePromise
+
+/**
+ * Resolve a forms service instance, preferring an injected singleton and falling back to a shared memoised instance.
+ * @param {FormsService} [providedService]
+ * @returns {Promise<FormsService>}
+ */
+async function resolveFormsService(providedService) {
+  if (providedService) {
+    return providedService
+  }
+
+  if (!memoisedFormsServicePromise) {
+    memoisedFormsServicePromise = formsService()
+  }
+
+  return memoisedFormsServicePromise
+}
+
 export class ConfirmationService {
   /**
    * Find form by slug from cache
@@ -18,14 +43,14 @@ export class ConfirmationService {
    * @param {object} form - Form object
    * @returns {Promise<{confirmationContent: object|null, formDefinition: object|null}>} Confirmation content and form definition
    */
-  static async loadConfirmationContent(form) {
+  static async loadConfirmationContent(form, providedService) {
     if (!form?.id) {
       logger.warn({ form }, 'Invalid form object provided to loadConfirmationContent')
       return { confirmationContent: null, formDefinition: null }
     }
 
     try {
-      const service = await formsService()
+      const service = await resolveFormsService(providedService)
       const formDefinition = await service.getFormDefinition(form.id)
       return {
         confirmationContent: formDefinition?.metadata?.confirmationContent || null,
@@ -129,8 +154,8 @@ export class ConfirmationService {
    * @param {object} form - Form object
    * @returns {Promise<boolean>} True if form has config-driven confirmation
    */
-  static async hasConfigDrivenConfirmation(form) {
-    const { confirmationContent } = await this.loadConfirmationContent(form)
+  static async hasConfigDrivenConfirmation(form, providedService) {
+    const { confirmationContent } = await this.loadConfirmationContent(form, providedService)
     return !!confirmationContent
   }
 }

@@ -10,6 +10,12 @@ const HTTP_STATUS = {
 }
 
 /**
+ * @typedef {object} FormsService
+ * @property {(slug: string) => Promise<object>} getFormMetadata
+ * @property {(id: string, state?: object) => Promise<object>} getFormDefinition
+ */
+
+/**
  * Validates request parameters and finds form by slug
  * @param {object} request - Hapi request object
  * @param {object} h - Hapi response toolkit
@@ -41,11 +47,12 @@ function validateRequestAndFindForm(request, h) {
 /**
  * Loads and validates confirmation content for the form
  * @param {object} form - Form configuration object
- * @returns {Promise<object|null>} Content result with confirmationContent and formDefinition
+ * @param {FormsService} formsServiceInstance
+ * @returns {Promise<{confirmationContent: object|null, formDefinition: object|null}>} Content result with confirmationContent and formDefinition
  */
-async function loadConfirmationContent(form) {
+async function loadConfirmationContent(form, formsServiceInstance) {
   const { confirmationContent: rawConfirmationContent, formDefinition } =
-    await ConfirmationService.loadConfirmationContent(form)
+    await ConfirmationService.loadConfirmationContent(form, formsServiceInstance)
 
   const confirmationContent = rawConfirmationContent
     ? ConfirmationService.processConfirmationContent(rawConfirmationContent)
@@ -135,7 +142,10 @@ export const configConfirmation = {
 
             const { form, slug } = validationResult
 
-            const { confirmationContent, formDefinition } = await loadConfirmationContent(form)
+            const { confirmationContent, formDefinition } = await loadConfirmationContent(
+              form,
+              /** @type {{ formsService: FormsService }} */ (request.server.app).formsService
+            )
             const sessionData = await getReferenceNumber(request)
 
             log(LogCodes.CONFIRMATION.CONFIRMATION_SUCCESS, {
