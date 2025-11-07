@@ -203,7 +203,6 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
       const { state } = context
       const selectedLandParcel = request?.query?.parcelId || (state.selectedLandParcel ?? '')
 
-      console.log({ state: state.selectedLandParcel, selectedLandParcel })
       const [sheetId = '', parcelId = ''] = parseLandParcel(selectedLandParcel)
 
       // Check authorization
