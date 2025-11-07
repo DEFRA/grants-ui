@@ -27,7 +27,7 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
         const farmDetails = await this.buildFarmDetails(request)
         return h.view(this.viewName, { ...baseViewModel, farmDetails })
       } catch (error) {
-        return this.handleError(sbi, error, baseViewModel, h)
+        return this.handleError(sbi, error, baseViewModel, h, request)
       }
     }
   }
@@ -54,11 +54,15 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
   /**
    * Handle errors and return error view
    */
-  handleError(sbi, error, baseViewModel, h) {
-    log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
-      endpoint: `fetch farm details for sbi ${sbi}`,
-      error: error.message
-    })
+  handleError(sbi, error, baseViewModel, h, request) {
+    log(
+      LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+      {
+        endpoint: `fetch farm details for sbi ${sbi}`,
+        error: error.message
+      },
+      request
+    )
 
     return h.view(this.viewName, {
       ...baseViewModel,

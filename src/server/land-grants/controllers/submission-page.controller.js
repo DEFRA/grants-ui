@@ -90,12 +90,16 @@ export default class SubmissionPageController extends SummaryPageController {
 
     // Log submission details if available
     if (submissionStatus === statusCodes.noContent) {
-      log(LogCodes.SUBMISSION.SUBMISSION_COMPLETED, {
-        grantType: this.grantCode,
-        referenceNumber: context.referenceNumber,
-        numberOfFields: context.relevantState ? Object.keys(context.relevantState).length : 0,
-        status: submissionStatus
-      })
+      log(
+        LogCodes.SUBMISSION.SUBMISSION_COMPLETED,
+        {
+          grantType: this.grantCode,
+          referenceNumber: context.referenceNumber,
+          numberOfFields: context.relevantState ? Object.keys(context.relevantState).length : 0,
+          status: submissionStatus
+        },
+        request
+      )
 
       const currentState = await cacheService.getState(request)
 

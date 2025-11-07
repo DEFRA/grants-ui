@@ -202,6 +202,10 @@ export const LogCodes = {
       messageFunc: (messageOptions) =>
         `Land grant processing error for user=${messageOptions.userId}: ${messageOptions.error}`
     },
+    NO_LAND_PARCELS_FOUND: {
+      level: 'warn',
+      messageFunc: (messageOptions) => `No land parcels found for sbi=${messageOptions.sbi}`
+    },
     NO_ACTIONS_FOUND: {
       level: 'error',
       messageFunc: (messageOptions) =>

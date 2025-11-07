@@ -13,6 +13,7 @@ const logger = pino(loggerOptions)
  * @param {object} logCode - Logging options.
  * @param {string} logCode.level - The log level.
  * @param {Function} logCode.messageFunc - A function that creates an interpolated message string
+ * @param {object} [logCode.error] - An error object (optional)
  * @param {object} messageOptions - Values for message interpolation
  * @param {object} [request] - Hapi request object (optional)
  * @throws {Error} If log parameters are invalid.
