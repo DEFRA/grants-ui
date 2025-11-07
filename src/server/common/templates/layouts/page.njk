@@ -11,27 +11,22 @@
 {% from "heading/macro.njk" import appHeading %}
 {% from "account-bar/macro.njk" import defraAccountBar %}
 {% from "sbi-selector/macro.njk" import sbiSelector %}
+{% from "cookie-banner/macro.njk" import defraCookieBanner %}
 
 {% set mainClasses = "" %}
 
 {% block head %}
   <link href="{{ getAssetPath('stylesheets/application.scss') }}" rel="stylesheet">
 
-  {%  if gaTrackingId %}
-  <script nonce="{{ cspNonce }}">(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-      new Date().getTime(),event:'gtm.js'});let f=d.getElementsByTagName(s)[0],
-    j=d.createElement(s),dl=l!=='dataLayer'?'&l='+l:'';j.async=true;j.src=
-    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-  })(window,document,'script','dataLayer','{{ gaTrackingId }}');</script>
-  {% endif %}
+  {# Google Analytics is loaded conditionally by cookie-consent.js after user consent #}
 {% endblock %}
 
 {% block bodyStart %}
-  {%  if gaTrackingId %}
-  <noscript>
-    <iframe src="https://www.googletagmanager.com/ns.html?id={{ gaTrackingId }}" height="0" width="0" style="display:none;visibility:hidden"></iframe>
-  </noscript>
-  {% endif %}
+  {# Cookie banner appears at the top of the page, before the skip link #}
+  {{ defraCookieBanner({
+    config: cookieBannerConfig,
+    noscriptConfig: cookieBannerNoscriptConfig
+  }) }}
 {% endblock %}
 
 {% block header %}
@@ -83,7 +78,7 @@
       text: "Privacy"
     },
     {
-      href: "https://www.gov.uk/help/cookies",
+      href: cookiePolicyUrl,
       text: "Cookies"
     },
     {

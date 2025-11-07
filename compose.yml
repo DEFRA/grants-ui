@@ -34,6 +34,9 @@ services:
       SESSION_COOKIE_TTL: 2419200000
       SESSION_CACHE_TTL: 14400000
       FEEDBACK_LINK: 'mailto:defraforms@defra.gov.uk'
+      SERVICE_NAME: ${SERVICE_NAME:-Manage land-based actions}
+      COOKIE_POLICY_URL: ${COOKIE_POLICY_URL:-/cookies}
+      COOKIE_CONSENT_EXPIRY_DAYS: ${COOKIE_CONSENT_EXPIRY_DAYS:-365}
       CV_API_MOCK_ENABLED: ${CV_API_MOCK_ENABLED:-true}
       DEFRA_ID_WELL_KNOWN_URL: ${DEFRA_ID_WELL_KNOWN_URL:-http://fcp-defra-id-stub:3007/idphub/b2c/b2c_1a_cui_cpdev_signupsigninsfi/.well-known/openid-configuration}
       DEFRA_ID_CLIENT_ID: ${DEFRA_ID_CLIENT_ID:-client_id}
