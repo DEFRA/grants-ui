@@ -1,15 +1,14 @@
-import { generateFormNotFoundResponse, buildDemoData } from '../utils/index.js'
+import { buildDemoData, generateFormNotFoundResponse } from '../utils/index.js'
 import { ConfirmationService } from '../../confirmation/services/confirmation.service.js'
 import { log, LogCodes } from '../../common/helpers/logging/log.js'
 
 /**
  * Load confirmation content with development fallback
  * @param {object} form - Form object
- * @returns {Promise<{confirmationContent: object, formDefinition: object|null}>} Confirmation content and form definition
+ * @returns {Promise<{confirmationContent: object}>} Confirmation content
  */
 export async function loadConfirmationContent(form) {
-  const { confirmationContent: rawConfirmationContent, formDefinition } =
-    await ConfirmationService.loadConfirmationContent(form)
+  const { confirmationContent: rawConfirmationContent } = await ConfirmationService.loadConfirmationContent(form)
 
   if (!rawConfirmationContent) {
     return {
@@ -18,14 +17,13 @@ export async function loadConfirmationContent(form) {
                <p class="govuk-body"><strong>⚠️ This is demo content - no configuration found.</strong></p>
                <p class="govuk-body">Form: ${form.title} (${form.slug})</p>
                <p class="govuk-body">Showing fallback demonstration content...</p>`
-      },
-      formDefinition: null
+      }
     }
   }
 
   const confirmationContent = ConfirmationService.processConfirmationContent(rawConfirmationContent)
 
-  return { confirmationContent, formDefinition }
+  return { confirmationContent }
 }
 
 /**
@@ -34,17 +32,15 @@ export async function loadConfirmationContent(form) {
  * @param {object} confirmationContent - Confirmation content from config
  * @param {object} form - Form object
  * @param {string} slug - Form slug
- * @param {object} formDefinition - Form definition with metadata
  * @returns {object} View model for template
  */
-export function buildViewModel(demoData, confirmationContent, form, slug, formDefinition) {
+export function buildViewModel(demoData, confirmationContent, form, slug) {
   return ConfirmationService.buildViewModel({
     ...demoData,
     confirmationContent,
     isDevelopmentMode: true,
     form,
-    slug,
-    formDefinition
+    slug
   })
 }
 
@@ -84,9 +80,9 @@ export async function demoConfirmationHandler(request, h) {
       return generateFormNotFoundResponse(slug, h)
     }
 
-    const { confirmationContent, formDefinition } = await loadConfirmationContent(form)
+    const { confirmationContent } = await loadConfirmationContent(form)
     const demoData = buildDemoData()
-    const viewModel = buildViewModel(demoData, confirmationContent, form, slug, formDefinition)
+    const viewModel = buildViewModel(demoData, confirmationContent, form, slug)
 
     return h.view('confirmation/views/config-confirmation-page', viewModel)
   } catch (error) {

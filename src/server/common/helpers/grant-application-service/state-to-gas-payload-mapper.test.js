@@ -118,9 +118,6 @@ describe('transformStateObjectToGasApplication', () => {
     }
 
     const mockAnswersTransformer = vi.fn().mockImplementation((state) => ({
-      scheme: 'Land Grants',
-      year: 2025,
-      hasCheckedLandIsUpToDate: true,
       actionApplications: state.actionApplications
     }))
 
@@ -136,9 +133,6 @@ describe('transformStateObjectToGasApplication', () => {
         submittedAt: mockDate.toISOString()
       },
       answers: {
-        scheme: 'Land Grants',
-        year: 2025,
-        hasCheckedLandIsUpToDate: true,
         actionApplications: [
           {
             parcelId: 'PARCEL-001',

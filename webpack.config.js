@@ -81,10 +81,7 @@ export default {
               }
             ]
           ]
-        },
-
-        // Flag loaded modules as side effect free
-        sideEffects: false
+        }
       },
       {
         test: /\.scss$/,

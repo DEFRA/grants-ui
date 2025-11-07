@@ -15,8 +15,6 @@
 /**
  * @typedef {object} GASAnswers
  * @property {string} [scheme] - Scheme
- * @property {number} [year] - Scheme year
- * @property {boolean} [hasCheckedLandIsUpToDate] - Land details are up to date
  * @property {ActionApplication[]} [actionApplications] - Action applications information
  */
 

@@ -45,21 +45,22 @@ const payment = {
   annualTotalPence: 32006,
   parcelItems: {
     1: {
-      code: 'CMOR1',
-      description: 'CMOR1: Assess moorland and produce a written record',
+      code: 'CSAM1',
+      description: 'CSAM1: Assess moorland and produce a written record',
+      durationYears: 3,
       version: 1,
       unit: 'ha',
       quantity: 4.53411078,
       rateInPence: 1060,
       annualPaymentPence: 4806,
-      sheetId: 'SD6743',
-      parcelId: '8083'
+      sheetId: 'SX0679',
+      parcelId: '9238'
     }
   },
   agreementLevelItems: {
     1: {
-      code: 'CMOR1',
-      description: 'CMOR1: Assess moorland and produce a written record',
+      code: 'CSAM1',
+      description: 'CSAM1: Assess moorland and produce a written record',
       version: 1,
       annualPaymentPence: 27200
     }
@@ -113,13 +114,14 @@ const payment = {
 describe('stateToLandGrantsGasAnswers', () => {
   it('should transform a complete object correctly', () => {
     const input = {
-      hasCheckedLandIsUpToDate: true,
-      scheme: 'SFI',
-      year: 2025,
       applicant,
       payment,
       landParcels: {
         'SX0679-9238': {
+          size: {
+            value: 10.5,
+            unit: 'ha'
+          },
           actionsObj: {
             CSAM1: {
               value: '44',
@@ -133,29 +135,86 @@ describe('stateToLandGrantsGasAnswers', () => {
 
     const expected = {
       scheme: 'SFI',
-      year: 2025,
-      hasCheckedLandIsUpToDate: true,
       applicant,
-      payment,
-      actionApplications: [
+      applicationValidationRunId: '12345678',
+      totalAnnualPaymentPence: 32006,
+      parcels: [
         {
-          parcelId: '9238',
           sheetId: 'SX0679',
-          code: 'CSAM1',
-          appliedFor: {
+          parcelId: '9238',
+          area: {
             unit: 'ha',
-            quantity: 44
-          }
+            quantity: 10.5
+          },
+          actions: [
+            {
+              code: 'CSAM1',
+              description: 'CSAM1: Assess moorland and produce a written record',
+              durationYears: 3,
+              eligible: {
+                unit: 'ha',
+                quantity: 44
+              },
+              appliedFor: {
+                unit: 'ha',
+                quantity: 44
+              },
+              paymentRates: {
+                ratePerUnitPence: 1060,
+                agreementLevelAmountPence: 27200
+              },
+              annualPaymentPence: 4806
+            }
+          ]
         }
-      ],
-      applicationValidationRunId: '12345678'
+      ]
     }
 
     expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
   })
 
   it('should handle multiple actions with different units', () => {
+    const paymentMultiple = {
+      ...payment,
+      parcelItems: {
+        1: {
+          code: 'CSAM1',
+          description: 'Action 1',
+          durationYears: 3,
+          unit: 'ha',
+          quantity: 44,
+          rateInPence: 1060,
+          annualPaymentPence: 4664,
+          sheetId: 'SX0679',
+          parcelId: '9238'
+        },
+        2: {
+          code: 'CSAM2',
+          description: 'Action 2',
+          durationYears: 3,
+          unit: 'm2',
+          quantity: 100,
+          rateInPence: 50,
+          annualPaymentPence: 5000,
+          sheetId: 'SX0679',
+          parcelId: '9238'
+        },
+        3: {
+          code: 'CSAM3',
+          description: 'Action 3',
+          durationYears: 3,
+          unit: 'count',
+          quantity: 5,
+          rateInPence: 200,
+          annualPaymentPence: 1000,
+          sheetId: 'SX0679',
+          parcelId: '9238'
+        }
+      }
+    }
+
     const input = {
+      payment: paymentMultiple,
       landParcels: {
         'SX0679-9238': {
           actionsObj: {
@@ -177,89 +236,61 @@ describe('stateToLandGrantsGasAnswers', () => {
       applicationValidationRunId: '12345678'
     }
 
-    const expected = {
-      hasCheckedLandIsUpToDate: true,
-      scheme: 'SFI',
-      year: 2025,
-      actionApplications: [
-        {
-          parcelId: '9238',
-          sheetId: 'SX0679',
-          code: 'CSAM1',
-          appliedFor: {
-            unit: 'ha',
-            quantity: 44
-          }
-        },
-        {
-          parcelId: '9238',
-          sheetId: 'SX0679',
-          code: 'CSAM2',
-          appliedFor: {
-            unit: 'm2',
-            quantity: 100
-          }
-        },
-        {
-          parcelId: '9238',
-          sheetId: 'SX0679',
-          code: 'CSAM3',
-          appliedFor: {
-            unit: 'count',
-            quantity: 5
-          }
-        }
-      ],
-      applicationValidationRunId: '12345678'
-    }
+    const result = stateToLandGrantsGasAnswers(input)
 
-    expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
+    expect(result.parcels).toHaveLength(1)
+    expect(result.parcels[0].actions).toHaveLength(3)
+    expect(result.parcels[0].actions[0]).toMatchObject({
+      code: 'CSAM1',
+      appliedFor: { unit: 'ha', quantity: 44 }
+    })
+    expect(result.parcels[0].actions[1]).toMatchObject({
+      code: 'CSAM2',
+      appliedFor: { unit: 'm2', quantity: 100 }
+    })
+    expect(result.parcels[0].actions[2]).toMatchObject({
+      code: 'CSAM3',
+      appliedFor: { unit: 'count', quantity: 5 }
+    })
   })
 
-  it('should include actionApplications when landParcels object is missing', () => {
+  it('should include empty parcels array when landParcels object is missing', () => {
     const input = {
-      hasCheckedLandIsUpToDate: true,
-      scheme: 'SFI',
-      year: 2025,
+      payment,
       landParcels: {},
       applicationValidationRunId: '12345678'
     }
 
-    const expected = {
-      hasCheckedLandIsUpToDate: true,
-      scheme: 'SFI',
-      year: 2025,
-      actionApplications: [],
-      applicationValidationRunId: '12345678'
-    }
+    const result = stateToLandGrantsGasAnswers(input)
 
-    expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
+    expect(result.parcels).toEqual([])
+    expect(result.totalAnnualPaymentPence).toBe(32006)
   })
 
-  it('should not include actionApplications when actionsObj is missing', () => {
+  it('should create parcel with empty actions when actionsObj is missing', () => {
     const input = {
-      scheme: 'SFI',
-      year: 2025,
-      hasCheckedLandIsUpToDate: true,
+      payment,
       landParcels: {
-        'SX0679-9238': {}
+        'SX0679-9238': {
+          size: {
+            value: 10,
+            unit: 'ha'
+          }
+        }
       },
       applicationValidationRunId: '12345678'
     }
 
-    const expected = {
-      scheme: 'SFI',
-      year: 2025,
-      hasCheckedLandIsUpToDate: true,
-      actionApplications: [],
-      applicationValidationRunId: '12345678'
-    }
+    const result = stateToLandGrantsGasAnswers(input)
 
-    expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
+    expect(result.parcels).toHaveLength(1)
+    expect(result.parcels[0].actions).toEqual([])
+    expect(result.parcels[0].area).toEqual({ unit: 'ha', quantity: 10 })
   })
 
   it('should handle decimal values correctly', () => {
     const input = {
+      payment,
       landParcels: {
         'SX0679-9238': {
           actionsObj: {
@@ -273,35 +304,22 @@ describe('stateToLandGrantsGasAnswers', () => {
       applicationValidationRunId: '12345678'
     }
 
-    const expected = {
-      hasCheckedLandIsUpToDate: true,
-      scheme: 'SFI',
-      year: 2025,
-      actionApplications: [
-        {
-          parcelId: '9238',
-          sheetId: 'SX0679',
-          code: 'CSAM1',
-          appliedFor: {
-            unit: 'ha',
-            quantity: 44.75
-          }
-        }
-      ],
-      applicationValidationRunId: '12345678'
-    }
+    const result = stateToLandGrantsGasAnswers(input)
 
-    expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
+    expect(result.parcels[0].actions[0].appliedFor).toEqual({
+      unit: 'ha',
+      quantity: 44.75
+    })
   })
 
   it('should omit unit in appliedFor when unit is missing', () => {
     const input = {
+      payment,
       landParcels: {
         'SX0679-9238': {
           actionsObj: {
             CSAM1: {
               value: '44'
-              // unit is missing
             }
           }
         }
@@ -309,34 +327,22 @@ describe('stateToLandGrantsGasAnswers', () => {
       applicationValidationRunId: '12345678'
     }
 
-    const expected = {
-      hasCheckedLandIsUpToDate: true,
-      scheme: 'SFI',
-      year: 2025,
-      actionApplications: [
-        {
-          parcelId: '9238',
-          sheetId: 'SX0679',
-          code: 'CSAM1',
-          appliedFor: {
-            quantity: 44
-          }
-        }
-      ],
-      applicationValidationRunId: '12345678'
-    }
+    const result = stateToLandGrantsGasAnswers(input)
 
-    expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
+    expect(result.parcels[0].actions[0].appliedFor).toEqual({
+      quantity: 44
+    })
+    expect(result.parcels[0].actions[0].appliedFor.unit).toBeUndefined()
   })
 
   it('should omit quantity in appliedFor when value is missing', () => {
     const input = {
+      payment,
       landParcels: {
         'SX0679-9238': {
           actionsObj: {
             CSAM1: {
               unit: 'ha'
-              // value is missing
             }
           }
         }
@@ -344,28 +350,17 @@ describe('stateToLandGrantsGasAnswers', () => {
       applicationValidationRunId: '12345678'
     }
 
-    const expected = {
-      hasCheckedLandIsUpToDate: true,
-      scheme: 'SFI',
-      year: 2025,
-      actionApplications: [
-        {
-          parcelId: '9238',
-          sheetId: 'SX0679',
-          code: 'CSAM1',
-          appliedFor: {
-            unit: 'ha'
-          }
-        }
-      ],
-      applicationValidationRunId: '12345678'
-    }
+    const result = stateToLandGrantsGasAnswers(input)
 
-    expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
+    expect(result.parcels[0].actions[0].appliedFor).toEqual({
+      unit: 'ha'
+    })
+    expect(result.parcels[0].actions[0].appliedFor.quantity).toBeUndefined()
   })
 
   it('should omit quantity when value is not a valid number', () => {
     const input = {
+      payment,
       landParcels: {
         'SX0679-9238': {
           actionsObj: {
@@ -379,28 +374,16 @@ describe('stateToLandGrantsGasAnswers', () => {
       applicationValidationRunId: '12345678'
     }
 
-    const expected = {
-      hasCheckedLandIsUpToDate: true,
-      scheme: 'SFI',
-      year: 2025,
-      actionApplications: [
-        {
-          parcelId: '9238',
-          sheetId: 'SX0679',
-          code: 'CSAM1',
-          appliedFor: {
-            unit: 'ha'
-          }
-        }
-      ],
-      applicationValidationRunId: '12345678'
-    }
+    const result = stateToLandGrantsGasAnswers(input)
 
-    expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
+    expect(result.parcels[0].actions[0].appliedFor).toEqual({
+      unit: 'ha'
+    })
   })
 
-  it('should omit appliedFor when action data is empty', () => {
+  it('should create action with empty eligible/appliedFor when action data is empty', () => {
     const input = {
+      payment,
       landParcels: {
         'SX0679-9238': {
           actionsObj: {
@@ -411,87 +394,59 @@ describe('stateToLandGrantsGasAnswers', () => {
       applicationValidationRunId: '12345678'
     }
 
-    const expected = {
-      hasCheckedLandIsUpToDate: true,
-      scheme: 'SFI',
-      year: 2025,
-      actionApplications: [
-        {
-          parcelId: '9238',
-          sheetId: 'SX0679',
-          code: 'CSAM1'
-        }
-      ],
-      applicationValidationRunId: '12345678'
-    }
+    const result = stateToLandGrantsGasAnswers(input)
 
-    expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
+    expect(result.parcels[0].actions[0].code).toBe('CSAM1')
+    expect(result.parcels[0].actions[0].eligible).toEqual({})
+    expect(result.parcels[0].actions[0].appliedFor).toEqual({})
   })
 
-  it('should omit appliedFor when action data is not an object', () => {
+  it('should create action with empty eligible/appliedFor when action data is not an object', () => {
     const input = {
+      payment,
       landParcels: {
         'SX0679-9238': {
           actionsObj: {
-            CSAM1: 'string-value' // Not an object
+            CSAM1: 'string-value'
           }
         }
       },
       applicationValidationRunId: '12345678'
     }
 
-    const expected = {
-      hasCheckedLandIsUpToDate: true,
-      scheme: 'SFI',
-      year: 2025,
-      actionApplications: [
-        {
-          parcelId: '9238',
-          sheetId: 'SX0679',
-          code: 'CSAM1'
-        }
-      ],
-      applicationValidationRunId: '12345678'
-    }
+    const result = stateToLandGrantsGasAnswers(input)
 
-    expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
+    expect(result.parcels[0].actions[0].code).toBe('CSAM1')
+    expect(result.parcels[0].actions[0].eligible).toEqual({})
+    expect(result.parcels[0].actions[0].appliedFor).toEqual({})
   })
 
-  it('should return only basic properties when no action data is provided', () => {
+  it('should return empty parcels when no action data is provided', () => {
     const input = {
-      scheme: 'SFI',
-      year: 2025,
+      payment,
       applicationValidationRunId: '12345678'
     }
 
-    const expected = {
-      hasCheckedLandIsUpToDate: true,
-      scheme: 'SFI',
-      year: 2025,
-      actionApplications: [],
-      applicationValidationRunId: '12345678'
-    }
+    const result = stateToLandGrantsGasAnswers(input)
 
-    expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
-  })
-
-  it('should return minimal object when input is empty', () => {
-    const input = {
-      applicationValidationRunId: '12345678'
-    }
-    const expected = {
-      hasCheckedLandIsUpToDate: true,
-      scheme: 'SFI',
-      year: 2025,
-      actionApplications: [],
-      applicationValidationRunId: '12345678'
-    }
-
-    expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
+    expect(result.parcels).toEqual([])
+    expect(result.totalAnnualPaymentPence).toBe(32006)
   })
 
   it('should handle land parcels without dash', () => {
+    const paymentNoDash = {
+      ...payment,
+      parcelItems: {
+        1: {
+          ...payment.parcelItems[1],
+          sheetId: 'SX06799238',
+          parcelId: undefined
+        }
+      }
+    }
+
     const input = {
+      payment: paymentNoDash,
       landParcels: {
         SX06799238: {
           actionsObj: {
@@ -505,28 +460,15 @@ describe('stateToLandGrantsGasAnswers', () => {
       applicationValidationRunId: '12345678'
     }
 
-    const expected = {
-      hasCheckedLandIsUpToDate: true,
-      scheme: 'SFI',
-      year: 2025,
-      actionApplications: [
-        {
-          sheetId: 'SX06799238', // The entire value becomes sheetId
-          code: 'CSAM1',
-          appliedFor: {
-            unit: 'ha',
-            quantity: 44
-          }
-        }
-      ],
-      applicationValidationRunId: '12345678'
-    }
+    const result = stateToLandGrantsGasAnswers(input)
 
-    expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
+    expect(result.parcels[0].sheetId).toBe('SX06799238')
+    expect(result.parcels[0].parcelId).toBeUndefined()
   })
 
   it('should include zero as a valid quantity', () => {
     const input = {
+      payment,
       landParcels: {
         'SX0679-9238': {
           actionsObj: {
@@ -540,29 +482,17 @@ describe('stateToLandGrantsGasAnswers', () => {
       applicationValidationRunId: '12345678'
     }
 
-    const expected = {
-      hasCheckedLandIsUpToDate: true,
-      scheme: 'SFI',
-      year: 2025,
-      actionApplications: [
-        {
-          parcelId: '9238',
-          sheetId: 'SX0679',
-          code: 'CSAM1',
-          appliedFor: {
-            unit: 'ha',
-            quantity: 0
-          }
-        }
-      ],
-      applicationValidationRunId: '12345678'
-    }
+    const result = stateToLandGrantsGasAnswers(input)
 
-    expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
+    expect(result.parcels[0].actions[0].appliedFor).toEqual({
+      unit: 'ha',
+      quantity: 0
+    })
   })
 
   it('should handle landParcels with multiple dashes correctly', () => {
     const input = {
+      payment,
       landParcels: {
         'SX0679-9238-EXTRA': {
           actionsObj: {
@@ -576,118 +506,91 @@ describe('stateToLandGrantsGasAnswers', () => {
       applicationValidationRunId: '12345678'
     }
 
-    const expected = {
-      hasCheckedLandIsUpToDate: true,
-      scheme: 'SFI',
-      year: 2025,
-      actionApplications: [
-        {
-          sheetId: 'SX0679',
-          parcelId: '9238', // Only takes the first part after the dash
-          code: 'CSAM1',
-          appliedFor: {
-            unit: 'ha',
-            quantity: 44
-          }
-        }
-      ],
-      applicationValidationRunId: '12345678'
-    }
+    const result = stateToLandGrantsGasAnswers(input)
 
-    expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
+    expect(result.parcels[0].sheetId).toBe('SX0679')
+    expect(result.parcels[0].parcelId).toBe('9238')
   })
 
   it('should handle null values in actionsObj', () => {
     const input = {
+      payment,
       landParcels: {
         'SX0679-9238': {
           actionsObj: {
-            CSAM1: null // Null value for action
+            CSAM1: null
           }
         }
       },
       applicationValidationRunId: '12345678'
     }
 
-    const expected = {
-      hasCheckedLandIsUpToDate: true,
-      scheme: 'SFI',
-      year: 2025,
-      actionApplications: [
-        {
-          parcelId: '9238',
-          sheetId: 'SX0679',
-          code: 'CSAM1'
+    const result = stateToLandGrantsGasAnswers(input)
+
+    expect(result.parcels[0].actions[0].code).toBe('CSAM1')
+    // When actionData is null, eligible and appliedFor won't be added
+    expect(result.parcels[0].actions[0].eligible).toBeUndefined()
+    expect(result.parcels[0].actions[0].appliedFor).toBeUndefined()
+  })
+
+  it('should handle string values with spaces', () => {
+    const input = {
+      payment,
+      landParcels: {
+        'SX0679-9238': {
+          actionsObj: {
+            CSAM1: {
+              value: '  44  ',
+              unit: '  ha  '
+            }
+          }
         }
-      ],
+      },
       applicationValidationRunId: '12345678'
     }
 
-    expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
+    const result = stateToLandGrantsGasAnswers(input)
+
+    expect(result.parcels[0].actions[0].appliedFor).toEqual({
+      unit: 'ha',
+      quantity: 44
+    })
   })
 
-  it('should handle mixed action data types', () => {
+  it('should handle numeric strings with leading zeros', () => {
     const input = {
+      payment,
+      landParcels: {
+        'SX0679-9238': {
+          actionsObj: {
+            CSAM1: {
+              value: '0044.50',
+              unit: 'ha'
+            }
+          }
+        }
+      },
+      applicationValidationRunId: '12345678'
+    }
+
+    const result = stateToLandGrantsGasAnswers(input)
+
+    expect(result.parcels[0].actions[0].appliedFor).toEqual({
+      unit: 'ha',
+      quantity: 44.5
+    })
+  })
+
+  it('should include payment information from parcelItems and agreementLevelItems', () => {
+    const input = {
+      applicant,
+      payment,
       landParcels: {
         'SX0679-9238': {
           actionsObj: {
             CSAM1: {
               value: '44',
               unit: 'ha'
-            },
-            CSAM2: null, // Null action
-            CSAM3: 'string-value', // String action
-            CSAM4: {} // Empty object action
-          }
-        }
-      },
-      applicationValidationRunId: '12345678'
-    }
-
-    const expected = {
-      hasCheckedLandIsUpToDate: true,
-      scheme: 'SFI',
-      year: 2025,
-      actionApplications: [
-        {
-          parcelId: '9238',
-          sheetId: 'SX0679',
-          code: 'CSAM1',
-          appliedFor: {
-            unit: 'ha',
-            quantity: 44
-          }
-        },
-        {
-          parcelId: '9238',
-          sheetId: 'SX0679',
-          code: 'CSAM2'
-        },
-        {
-          parcelId: '9238',
-          sheetId: 'SX0679',
-          code: 'CSAM3'
-        },
-        {
-          parcelId: '9238',
-          sheetId: 'SX0679',
-          code: 'CSAM4'
-        }
-      ],
-      applicationValidationRunId: '12345678'
-    }
-
-    expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
-  })
-
-  it('should handle string values with spaces', () => {
-    const input = {
-      landParcels: {
-        'SX0679-9238': {
-          actionsObj: {
-            CSAM1: {
-              value: '  44  ', // String with leading and trailing spaces
-              unit: '  ha  ' // Unit with spaces
             }
           }
         }
@@ -695,90 +598,13 @@ describe('stateToLandGrantsGasAnswers', () => {
       applicationValidationRunId: '12345678'
     }
 
-    const expected = {
-      hasCheckedLandIsUpToDate: true,
-      scheme: 'SFI',
-      year: 2025,
-      actionApplications: [
-        {
-          parcelId: '9238',
-          sheetId: 'SX0679',
-          code: 'CSAM1',
-          appliedFor: {
-            unit: 'ha', // Units should be trimmed
-            quantity: 44 // Values should be parsed to numbers, which removes spaces
-          }
-        }
-      ],
-      applicationValidationRunId: '12345678'
-    }
+    const result = stateToLandGrantsGasAnswers(input)
 
-    expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
-  })
-
-  it('should handle numeric strings with leading zeros', () => {
-    const input = {
-      landParcels: {
-        'SX0679-9238': {
-          actionsObj: {
-            CSAM1: {
-              value: '0044.50', // Numeric string with leading zeros
-              unit: 'ha'
-            }
-          }
-        }
-      },
-      applicationValidationRunId: '12345678'
-    }
-
-    const expected = {
-      hasCheckedLandIsUpToDate: true,
-      scheme: 'SFI',
-      year: 2025,
-      actionApplications: [
-        {
-          parcelId: '9238',
-          sheetId: 'SX0679',
-          code: 'CSAM1',
-          appliedFor: {
-            unit: 'ha',
-            quantity: 44.5 // Leading zeros should be removed in parsed number
-          }
-        }
-      ],
-      applicationValidationRunId: '12345678'
-    }
-
-    expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
-  })
-
-  it('should handle undefined values in actionsObj', () => {
-    const input = {
-      landParcels: {
-        'SX0679-9238': {
-          actionsObj: {
-            CSAM1: undefined // Undefined action
-          }
-        }
-      },
-      applicationValidationRunId: '12345678'
-    }
-
-    const expected = {
-      hasCheckedLandIsUpToDate: true,
-      scheme: 'SFI',
-      year: 2025,
-      actionApplications: [
-        {
-          parcelId: '9238',
-          sheetId: 'SX0679',
-          code: 'CSAM1'
-        }
-      ],
-      applicationValidationRunId: '12345678'
-    }
-
-    expect(stateToLandGrantsGasAnswers(input)).toEqual(expected)
+    expect(result.parcels[0].actions[0].paymentRates).toEqual({
+      ratePerUnitPence: 1060,
+      agreementLevelAmountPence: 27200
+    })
+    expect(result.parcels[0].actions[0].annualPaymentPence).toBe(4806)
   })
 })
 
@@ -789,19 +615,16 @@ describe('schema validation', () => {
 
   it('output always conforms to GASPayload schema structure', () => {
     const stateObjectTestCases = [
-      // Complete object being set
+      // Complete object
       {
-        sbi: 'sbi-1234',
-        frn: 'frn-1234',
-        crn: 'crn-1234',
-        defraId: 'defra-id-1234',
-        scheme: 'SFI',
-        year: 2025,
-        hasCheckedLandIsUpToDate: true,
         applicant,
         payment,
         landParcels: {
           'SX0679-9238': {
+            size: {
+              value: 10,
+              unit: 'ha'
+            },
             actionsObj: {
               CSAM1: {
                 value: '44',
@@ -809,11 +632,11 @@ describe('schema validation', () => {
               }
             }
           }
-        }
+        },
+        applicationValidationRunId: '355'
       },
       // Minimal object with actions
       {
-        hasCheckedLandIsUpToDate: true,
         applicant,
         payment,
         landParcels: {
@@ -825,7 +648,8 @@ describe('schema validation', () => {
               }
             }
           }
-        }
+        },
+        applicationValidationRunId: '355'
       }
     ]
 
@@ -833,7 +657,6 @@ describe('schema validation', () => {
       const result = stateToLandGrantsGasAnswers(testCase)
       const { valid } = validateSubmissionAnswers(result, frpsGrantCode)
 
-      // We check here that the output always adheres to GasPayload expectations in terms of format
       expect(valid).toBe(true)
     })
   })

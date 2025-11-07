@@ -23,7 +23,6 @@
  * @typedef {Object} FormState
  * @property {string} sbi - Single Business Identifier
  * @property {string} crn - Customer Reference Number
- * @property {boolean} hasCheckedLandIsUpToDate - Land check confirmation
  * @property {Applicant} applicant - Applicant details
  * @property {PaymentCalculation} payment - Payment details
  * @property {LandParcels} landParcels - Land parcels with actions

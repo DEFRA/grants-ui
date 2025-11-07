@@ -578,26 +578,8 @@ describe('RemoveActionPageController', () => {
       const handler = controller.makeGetRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
 
-      expect(mockH.view).toHaveBeenCalledWith('remove-action', {
-        pageTitle: 'Remove action',
-        parcel: 'nonexistent-parcel',
-        actionDescription: undefined
-      })
-      expect(result).toBe('rendered view')
-    })
-
-    test('should handle empty land parcels state', async () => {
-      mockContext.state.landParcels = {}
-
-      const handler = controller.makeGetRouteHandler()
-      const result = await handler(mockRequest, mockContext, mockH)
-
-      expect(mockH.view).toHaveBeenCalledWith('remove-action', {
-        pageTitle: 'Remove action',
-        parcel: 'SD6743-8083',
-        actionDescription: undefined
-      })
-      expect(result).toBe('rendered view')
+      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/check-selected-land-actions')
+      expect(result).toBe('redirected')
     })
 
     describe('when the user does not own the land parcel', () => {

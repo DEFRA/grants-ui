@@ -149,6 +149,7 @@ describe('land-grants service', () => {
           {
             parcelId: 'PARCEL456',
             sheetId: 'SHEET123',
+            size: { value: 50.5, unit: 'ha' },
             actions: [
               {
                 code: 'CMOR1',
@@ -178,41 +179,48 @@ describe('land-grants service', () => {
 
       expect(parcelsWithActionsAndSize).toHaveBeenCalledWith(['SHEET123-PARCEL456'], mockApiEndpoint)
 
-      expect(result).toEqual([
-        {
-          name: 'Assess moorland',
-          totalAvailableArea: {
-            unit: 'ha',
-            value: 10.5
-          },
-          actions: [
-            {
-              code: 'CMOR1',
-              availableArea: { value: 10.5, unit: 'ha' },
-              description: 'Assess moorland and produce a written record: CMOR1'
-            }
-          ]
+      expect(result).toEqual({
+        parcel: {
+          parcelId: 'PARCEL456',
+          sheetId: 'SHEET123',
+          size: { value: 50.5, unit: 'ha' }
         },
-        {
-          name: 'Livestock grazing on moorland',
-          totalAvailableArea: {
-            unit: 'ha',
-            value: 20.75
-          },
-          actions: [
-            {
-              code: 'UPL1',
-              availableArea: { value: 20.75, unit: 'ha' },
-              description: 'Moderate livestock grazing on moorland: UPL1'
+        actions: [
+          {
+            name: 'Assess moorland',
+            totalAvailableArea: {
+              unit: 'ha',
+              value: 10.5
             },
-            {
-              code: 'UPL2',
-              availableArea: { value: 15.25, unit: 'ha' },
-              description: 'Moderate livestock grazing on moorland: UPL2'
-            }
-          ]
-        }
-      ])
+            actions: [
+              {
+                code: 'CMOR1',
+                availableArea: { value: 10.5, unit: 'ha' },
+                description: 'Assess moorland and produce a written record: CMOR1'
+              }
+            ]
+          },
+          {
+            name: 'Livestock grazing on moorland',
+            totalAvailableArea: {
+              unit: 'ha',
+              value: 20.75
+            },
+            actions: [
+              {
+                code: 'UPL1',
+                availableArea: { value: 20.75, unit: 'ha' },
+                description: 'Moderate livestock grazing on moorland: UPL1'
+              },
+              {
+                code: 'UPL2',
+                availableArea: { value: 15.25, unit: 'ha' },
+                description: 'Moderate livestock grazing on moorland: UPL2'
+              }
+            ]
+          }
+        ]
+      })
     })
 
     it('should handle actions not in predefined groups', async () => {
@@ -221,6 +229,7 @@ describe('land-grants service', () => {
           {
             parcelId: 'PARCEL456',
             sheetId: 'SHEET123',
+            size: { value: 30.0, unit: 'ha' },
             actions: [
               {
                 code: 'CMOR1',
@@ -249,33 +258,40 @@ describe('land-grants service', () => {
         sheetId: 'SHEET123'
       })
 
-      expect(result).toEqual([
-        {
-          name: 'Assess moorland',
-          totalAvailableArea: {
-            unit: 'ha',
-            value: 10.5
-          },
-          actions: [
-            {
-              code: 'CMOR1',
-              availableArea: { value: 10.5, unit: 'ha' },
-              description: 'Assess moorland and produce a written record: CMOR1'
-            }
-          ]
+      expect(result).toEqual({
+        parcel: {
+          parcelId: 'PARCEL456',
+          sheetId: 'SHEET123',
+          size: { value: 30.0, unit: 'ha' }
         },
-        {
-          name: '',
-          totalAvailableArea: {
-            unit: 'ha',
-            value: 5.0
+        actions: [
+          {
+            name: 'Assess moorland',
+            totalAvailableArea: {
+              unit: 'ha',
+              value: 10.5
+            },
+            actions: [
+              {
+                code: 'CMOR1',
+                availableArea: { value: 10.5, unit: 'ha' },
+                description: 'Assess moorland and produce a written record: CMOR1'
+              }
+            ]
           },
-          actions: [
-            { code: 'UNKNOWN1', availableArea: { value: 5.0, unit: 'ha' }, description: 'description: UNKNOWN1' },
-            { code: 'UNKNOWN2', availableArea: { value: 3.5, unit: 'ha' }, description: 'description: UNKNOWN2' }
-          ]
-        }
-      ])
+          {
+            name: '',
+            totalAvailableArea: {
+              unit: 'ha',
+              value: 5.0
+            },
+            actions: [
+              { code: 'UNKNOWN1', availableArea: { value: 5.0, unit: 'ha' }, description: 'description: UNKNOWN1' },
+              { code: 'UNKNOWN2', availableArea: { value: 3.5, unit: 'ha' }, description: 'description: UNKNOWN2' }
+            ]
+          }
+        ]
+      })
     })
 
     it('should handle only ungrouped actions', async () => {
@@ -284,6 +300,7 @@ describe('land-grants service', () => {
           {
             parcelId: 'PARCEL456',
             sheetId: 'SHEET123',
+            size: { value: 20.0, unit: 'ha' },
             actions: [
               {
                 code: 'UNKNOWN1',
@@ -307,19 +324,26 @@ describe('land-grants service', () => {
         sheetId: 'SHEET123'
       })
 
-      expect(result).toEqual([
-        {
-          name: '',
-          totalAvailableArea: {
-            unit: 'ha',
-            value: 5.0
-          },
-          actions: [
-            { code: 'UNKNOWN1', availableArea: { value: 5.0, unit: 'ha' }, description: 'description: UNKNOWN1' },
-            { code: 'UNKNOWN2', availableArea: { value: 3.5, unit: 'ha' }, description: 'description: UNKNOWN2' }
-          ]
-        }
-      ])
+      expect(result).toEqual({
+        parcel: {
+          parcelId: 'PARCEL456',
+          sheetId: 'SHEET123',
+          size: { value: 20.0, unit: 'ha' }
+        },
+        actions: [
+          {
+            name: '',
+            totalAvailableArea: {
+              unit: 'ha',
+              value: 5.0
+            },
+            actions: [
+              { code: 'UNKNOWN1', availableArea: { value: 5.0, unit: 'ha' }, description: 'description: UNKNOWN1' },
+              { code: 'UNKNOWN2', availableArea: { value: 3.5, unit: 'ha' }, description: 'description: UNKNOWN2' }
+            ]
+          }
+        ]
+      })
     })
 
     it('should handle empty parcel parameters', async () => {
@@ -330,7 +354,14 @@ describe('land-grants service', () => {
       const result = await fetchAvailableActionsForParcel({})
 
       expect(parcelsWithActionsAndSize).toHaveBeenCalledWith(['-'], mockApiEndpoint)
-      expect(result).toEqual([])
+      expect(result).toEqual({
+        parcel: {
+          sheetId: '',
+          parcelId: '',
+          size: { unit: '', value: 0 }
+        },
+        actions: []
+      })
     })
 
     it('should return empty array when parcel not found', async () => {
@@ -351,7 +382,14 @@ describe('land-grants service', () => {
         sheetId: 'SHEET123'
       })
 
-      expect(result).toEqual([])
+      expect(result).toEqual({
+        parcel: {
+          sheetId: 'SHEET123',
+          parcelId: 'PARCEL456',
+          size: { unit: '', value: 0 }
+        },
+        actions: []
+      })
     })
 
     it('should return empty array when parcel has no actions', async () => {
@@ -360,6 +398,7 @@ describe('land-grants service', () => {
           {
             parcelId: 'PARCEL456',
             sheetId: 'SHEET123',
+            size: { value: 10.0, unit: 'ha' },
             actions: []
           }
         ]
@@ -372,7 +411,14 @@ describe('land-grants service', () => {
         sheetId: 'SHEET123'
       })
 
-      expect(result).toEqual([])
+      expect(result).toEqual({
+        parcel: {
+          sheetId: 'SHEET123',
+          parcelId: 'PARCEL456',
+          size: { value: 10.0, unit: 'ha' }
+        },
+        actions: []
+      })
     })
 
     it('should handle partial group matches', async () => {
@@ -381,6 +427,7 @@ describe('land-grants service', () => {
           {
             parcelId: 'PARCEL456',
             sheetId: 'SHEET123',
+            size: { value: 25.0, unit: 'ha' },
             actions: [
               {
                 code: 'UPL1',
@@ -400,22 +447,29 @@ describe('land-grants service', () => {
         sheetId: 'SHEET123'
       })
 
-      expect(result).toEqual([
-        {
-          name: 'Livestock grazing on moorland',
-          totalAvailableArea: {
-            unit: 'ha',
-            value: 20.75
-          },
-          actions: [
-            {
-              code: 'UPL1',
-              availableArea: { value: 20.75, unit: 'ha' },
-              description: 'Moderate livestock grazing on moorland: UPL1'
-            }
-          ]
-        }
-      ])
+      expect(result).toEqual({
+        parcel: {
+          sheetId: 'SHEET123',
+          parcelId: 'PARCEL456',
+          size: { value: 25.0, unit: 'ha' }
+        },
+        actions: [
+          {
+            name: 'Livestock grazing on moorland',
+            totalAvailableArea: {
+              unit: 'ha',
+              value: 20.75
+            },
+            actions: [
+              {
+                code: 'UPL1',
+                availableArea: { value: 20.75, unit: 'ha' },
+                description: 'Moderate livestock grazing on moorland: UPL1'
+              }
+            ]
+          }
+        ]
+      })
     })
 
     it('should use maximum value when multiple actions have different areas', async () => {
@@ -424,6 +478,7 @@ describe('land-grants service', () => {
           {
             parcelId: 'PARCEL456',
             sheetId: 'SHEET123',
+            size: { value: 40.0, unit: 'ha' },
             actions: [
               {
                 code: 'UPL1',
@@ -452,32 +507,39 @@ describe('land-grants service', () => {
         sheetId: 'SHEET123'
       })
 
-      expect(result).toEqual([
-        {
-          name: 'Livestock grazing on moorland',
-          totalAvailableArea: {
-            unit: 'ha',
-            value: 25.5
-          },
-          actions: [
-            {
-              code: 'UPL1',
-              availableArea: { value: 15.0, unit: 'ha' },
-              description: 'Moderate livestock grazing on moorland: UPL1'
+      expect(result).toEqual({
+        parcel: {
+          sheetId: 'SHEET123',
+          parcelId: 'PARCEL456',
+          size: { value: 40.0, unit: 'ha' }
+        },
+        actions: [
+          {
+            name: 'Livestock grazing on moorland',
+            totalAvailableArea: {
+              unit: 'ha',
+              value: 25.5
             },
-            {
-              code: 'UPL2',
-              availableArea: { value: 25.5, unit: 'ha' },
-              description: 'Moderate livestock grazing on moorland: UPL2'
-            },
-            {
-              code: 'UPL3',
-              availableArea: { value: 10.0, unit: 'ha' },
-              description: 'Moderate livestock grazing on moorland: UPL3'
-            }
-          ]
-        }
-      ])
+            actions: [
+              {
+                code: 'UPL1',
+                availableArea: { value: 15.0, unit: 'ha' },
+                description: 'Moderate livestock grazing on moorland: UPL1'
+              },
+              {
+                code: 'UPL2',
+                availableArea: { value: 25.5, unit: 'ha' },
+                description: 'Moderate livestock grazing on moorland: UPL2'
+              },
+              {
+                code: 'UPL3',
+                availableArea: { value: 10.0, unit: 'ha' },
+                description: 'Moderate livestock grazing on moorland: UPL3'
+              }
+            ]
+          }
+        ]
+      })
     })
 
     it('should handle API errors', async () => {
