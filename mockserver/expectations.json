@@ -11,8 +11,22 @@
     }
   },
   {
-    "id": "gas-farm-payments-application-status-200",
+    "id": "gas-application-status-200",
     "priority": 0,
+    "httpRequest": {
+      "method": "GET",
+      "path": "/grants/.*/applications/.*/status"
+    },
+    "httpResponse": {
+      "statusCode": 200,
+      "body": {
+        "status": "RECEIVED"
+      }
+    }
+  },
+  {
+    "id": "gas-farm-payments-application-status-200",
+    "priority": 10,
     "httpRequest": {
       "method": "GET",
       "path": "/grants/frps-private-beta/applications/.*/status"
