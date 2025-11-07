@@ -137,7 +137,7 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
    */
   renderErrorView(h, request, context, options) {
     const { errors, selectedLandParcel, actions = [], addedActions = [], additionalState = {} } = options
-    const [sheetId, parcelId] = parseLandParcel(selectedLandParcel)
+    const [sheetId = '', parcelId = ''] = parseLandParcel(selectedLandParcel)
     return h.view(this.viewName, {
       ...this.getViewModelWithActions(request, context, actions, addedActions),
       ...additionalState,
@@ -201,7 +201,8 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
   makeGetRouteHandler() {
     return async (request, context, h) => {
       const { state } = context
-      const selectedLandParcel = request?.query?.parcelId || state.selectedLandParcel
+      const selectedLandParcel = request?.query?.parcelId || (state.selectedLandParcel ?? '')
+
       const [sheetId = '', parcelId = ''] = parseLandParcel(selectedLandParcel)
 
       // Check authorization
