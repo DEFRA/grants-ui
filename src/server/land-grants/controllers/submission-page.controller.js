@@ -151,17 +151,25 @@ export default class SubmissionPageController extends SummaryPageController {
           validationId
         })
 
-        log(LogCodes.SUBMISSION.SUBMISSION_SUCCESS, {
-          grantType: this.grantCode,
-          referenceNumber: context.referenceNumber
-        }, request)
+        log(
+          LogCodes.SUBMISSION.SUBMISSION_SUCCESS,
+          {
+            grantType: this.grantCode,
+            referenceNumber: context.referenceNumber
+          },
+          request
+        )
 
         return await this.handleSuccessfulSubmission(request, context, h, result.status)
       } catch (error) {
-        log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
-          endpoint: `Land grants submission`,
-          error: `submitting application for sbi: ${sbi} and crn: ${crn} - ${error.message}`
-        }, request)
+        log(
+          LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+          {
+            endpoint: `Land grants submission`,
+            error: `submitting application for sbi: ${sbi} and crn: ${crn} - ${error.message}`
+          },
+          request
+        )
         return this.handleSubmissionError(h, request, context)
       }
     }
