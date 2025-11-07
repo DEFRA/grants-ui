@@ -38,6 +38,7 @@
     "test": "vitest run --coverage",
     "test:contracts": "vitest run src/contracts",
     "test:acceptance": "./tools/run-acceptance-tests.sh",
+    "test:unit": "vitest run",
     "test:watch": "vitest --watch",
     "server:watch": "nodemon --ext js,mjs,json,njk,html --exec tsx --enable-source-maps ./src",
     "server:debug": "nodemon --ext js,mjs,json,njk,html --exec tsx --enable-source-maps --inspect ./src",

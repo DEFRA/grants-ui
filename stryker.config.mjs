@@ -9,6 +9,9 @@ const config = {
   testRunner_comment:
     'Take a look at https://stryker-mutator.io/docs/stryker-js/vitest-runner for information about the vitest plugin.',
   coverageAnalysis: 'perTest',
-  buildCommand: 'npm run build'
+  buildCommand: 'npm run build',
+  commandRunner: {
+    command: 'npm run test:unit'
+  }
 }
 export default config
