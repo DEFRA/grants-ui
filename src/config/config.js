@@ -65,7 +65,8 @@ export const config = convict({
   serviceName: {
     doc: 'Applications Service Name',
     format: String,
-    default: 'Manage land-based actions'
+    default: 'Manage land-based actions',
+    env: 'SERVICE_NAME'
   },
   root: {
     doc: 'Project root',
@@ -364,6 +365,25 @@ export const config = convict({
       format: String,
       default: undefined,
       env: 'GA_TRACKING_ID'
+    }
+  },
+  cookieConsent: {
+    cookiePolicyUrl: {
+      doc: 'URL for the cookie policy page (single source of truth for footer and banner links)',
+      format: String,
+      default: '/cookies',
+      env: 'COOKIE_POLICY_URL'
+    },
+    cookieName: {
+      doc: 'Name of the cookie consent preference cookie',
+      format: String,
+      default: 'cookie_consent'
+    },
+    expiryDays: {
+      doc: 'Number of days before cookie consent expires',
+      format: Number,
+      default: 365,
+      env: 'COOKIE_CONSENT_EXPIRY_DAYS'
     }
   },
   devTools: {
