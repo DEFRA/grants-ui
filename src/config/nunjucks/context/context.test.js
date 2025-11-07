@@ -36,7 +36,11 @@ vi.mock('~/src/config/config.js', async () => {
     assetPath: '/public',
     root: '/test/root',
     serviceName: 'Manage land-based actions',
-    'defraId.enabled': true
+    'defraId.enabled': true,
+    'cookieConsent.cookiePolicyUrl': '/cookies',
+    'cookieConsent.cookieName': 'cookie_consent',
+    'cookieConsent.expiryDays': 365,
+    'googleAnalytics.trackingId': undefined
   })
 })
 
@@ -64,11 +68,21 @@ const getExpectedContext = () => ({
   serviceName: 'Manage land-based actions',
   serviceUrl: '/',
   defraIdEnabled: expect.any(Boolean),
+  cdpEnvironment: undefined,
+  gaTrackingId: undefined,
+  cookiePolicyUrl: expect.any(String),
+  cookieConsentName: expect.any(String),
+  cookieConsentExpiryDays: expect.any(Number),
+  cookieBannerConfig: expect.any(Object),
+  cookieBannerNoscriptConfig: expect.any(Object),
   auth: {
     isAuthenticated: false,
     name: undefined,
     role: undefined,
     organisationId: undefined,
+    organisationName: undefined,
+    crn: undefined,
+    relationshipId: undefined,
     sbi: 106284736
   }
 })
@@ -78,11 +92,20 @@ const getMinimalFallbackContext = () => ({
   serviceName: 'Manage land-based actions',
   serviceUrl: '/',
   defraIdEnabled: expect.any(Boolean),
+  cdpEnvironment: undefined,
+  gaTrackingId: undefined,
+  cookiePolicyUrl: expect.any(String),
+  cookieConsentName: expect.any(String),
+  cookieConsentExpiryDays: expect.any(Number),
+  cookieBannerConfig: expect.any(Object),
+  cookieBannerNoscriptConfig: expect.any(Object),
   auth: {
     isAuthenticated: false,
     sbi: null,
+    crn: null,
     name: null,
     organisationId: null,
+    organisationName: null,
     relationshipId: null,
     role: null
   },
@@ -221,10 +244,20 @@ describe('context', () => {
         serviceName: 'Manage land-based actions',
         serviceUrl: '/',
         defraIdEnabled: expect.any(Boolean),
+        cdpEnvironment: undefined,
+        gaTrackingId: undefined,
+        cookiePolicyUrl: '/cookies',
+        cookieConsentName: 'cookie_consent',
+        cookieConsentExpiryDays: 365,
+        cookieBannerConfig: expect.any(Object),
+        cookieBannerNoscriptConfig: expect.any(Object),
         auth: {
           isAuthenticated: false,
           name: undefined,
           organisationId: undefined,
+          organisationName: undefined,
+          crn: undefined,
+          relationshipId: undefined,
           role: undefined,
           sbi: 106284736
         }
@@ -425,6 +458,110 @@ describe('context', () => {
         organisationId: undefined,
         role: undefined
       })
+    })
+  })
+
+  describe('Cookie consent configuration in context', () => {
+    test('includes cookie consent config values', async () => {
+      setupManifestSuccess()
+
+      const contextImport = await import('~/src/config/nunjucks/context/context.js')
+      const contextResult = await contextImport.context(mockRequest)
+
+      expect(contextResult).toMatchObject({
+        cookiePolicyUrl: '/cookies',
+        cookieConsentName: 'cookie_consent',
+        cookieConsentExpiryDays: 365,
+        gaTrackingId: undefined
+      })
+    })
+
+    test('includes cookie config in minimal fallback context', async () => {
+      setupSbiStoreError()
+      mockReadFileSync.mockReturnValue('{}')
+
+      const contextImport = await import('~/src/config/nunjucks/context/context.js')
+      const contextResult = await contextImport.context(mockRequest)
+
+      expect(contextResult.cookiePolicyUrl).toBe('/cookies')
+      expect(contextResult.cookieConsentName).toBe('cookie_consent')
+      expect(contextResult.cookieConsentExpiryDays).toBe(365)
+    })
+
+    test('includes cookieBannerConfig with correct structure', async () => {
+      setupManifestSuccess()
+
+      const contextImport = await import('~/src/config/nunjucks/context/context.js')
+      const contextResult = await contextImport.context(mockRequest)
+
+      expect(contextResult.cookieBannerConfig).toBeDefined()
+      expect(contextResult.cookieBannerConfig).toEqual({
+        ariaLabel: 'Cookies on Manage land-based actions',
+        hidden: true,
+        attributes: {
+          'data-nosnippet': '',
+          id: 'cookie-banner',
+          'data-cookie-name': 'cookie_consent',
+          'data-expiry-days': 365,
+          'data-ga-tracking-id': undefined
+        },
+        messages: [
+          {
+            headingText: 'Cookies on Manage land-based actions',
+            html: '<p class="govuk-body">We use some essential cookies to make this service work.</p><p class="govuk-body">We\'d like to set additional cookies to understand how you use the service, remember your settings and improve the service.</p>',
+            actions: [
+              {
+                text: 'Accept analytics cookies',
+                type: 'button',
+                attributes: { id: 'cookie-banner-accept', 'data-module': 'govuk-button' }
+              },
+              {
+                text: 'Reject analytics cookies',
+                type: 'button',
+                attributes: { id: 'cookie-banner-reject', 'data-module': 'govuk-button' }
+              },
+              {
+                text: 'View cookies',
+                href: '/cookies'
+              }
+            ]
+          }
+        ]
+      })
+    })
+
+    test('includes cookieBannerNoscriptConfig with correct structure', async () => {
+      setupManifestSuccess()
+
+      const contextImport = await import('~/src/config/nunjucks/context/context.js')
+      const contextResult = await contextImport.context(mockRequest)
+
+      expect(contextResult.cookieBannerNoscriptConfig).toBeDefined()
+      expect(contextResult.cookieBannerNoscriptConfig).toEqual({
+        ariaLabel: 'Cookies on Manage land-based actions',
+        attributes: { 'data-nosnippet': '' },
+        messages: [
+          {
+            headingText: 'Cookies on Manage land-based actions',
+            html: '<p class="govuk-body">We use some essential cookies to make this service work.</p><p class="govuk-body">JavaScript is disabled, so you cannot set cookie preferences. Analytics cookies will not run.</p>'
+          }
+        ]
+      })
+    })
+
+    test('includes cookie banner configs in fallback context', async () => {
+      setupSbiStoreError()
+      mockReadFileSync.mockReturnValue('{}')
+
+      const contextImport = await import('~/src/config/nunjucks/context/context.js')
+      const contextResult = await contextImport.context(mockRequest)
+
+      expect(contextResult.cookieBannerConfig).toBeDefined()
+      expect(contextResult.cookieBannerConfig.ariaLabel).toBe('Cookies on Manage land-based actions')
+      expect(contextResult.cookieBannerConfig.attributes['data-cookie-name']).toBe('cookie_consent')
+
+      expect(contextResult.cookieBannerNoscriptConfig).toBeDefined()
+      expect(contextResult.cookieBannerNoscriptConfig.ariaLabel).toBe('Cookies on Manage land-based actions')
     })
   })
 })
