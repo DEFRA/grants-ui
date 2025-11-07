@@ -2,6 +2,7 @@ import { isStrictObject } from '../../utils/isStrictObject.js'
 
 const LogLevel = {
   INFO: 'info',
+  WARN: 'warn',
   ERROR: 'error',
   DEBUG: 'debug'
 }
@@ -13,7 +14,7 @@ export const validateLogCode = (logCode) => {
     throw new Error('logCode must be a non-empty object')
   }
 
-  if (!['info', 'debug', 'error'].includes(logCode.level)) {
+  if (!['info', 'debug', 'warn', 'error'].includes(logCode.level)) {
     throw new Error('Invalid log level')
   }
 
