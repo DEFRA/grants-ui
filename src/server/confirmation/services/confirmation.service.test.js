@@ -3,12 +3,7 @@ import { ConfirmationService } from './confirmation.service.js'
 import { ComponentsRegistry } from './components.registry.js'
 import { MOCK_FORM_CACHE } from '../__test-fixtures__/confirmation-test-fixtures.js'
 
-const mockFormsService = {
-  getFormDefinition: vi.fn()
-}
-
 vi.mock('~/src/server/common/forms/services/form.js', () => ({
-  formsService: vi.fn(() => Promise.resolve(mockFormsService)),
   getFormsCache: vi.fn(() => MOCK_FORM_CACHE)
 }))
 
@@ -31,7 +26,12 @@ describe('ConfirmationService', () => {
       expect(result).toEqual({
         id: 'form1',
         slug: 'test-form',
-        title: 'Test Form'
+        title: 'Test Form',
+        metadata: {
+          confirmationContent: {
+            html: '<h2>Test confirmation content</h2>'
+          }
+        }
       })
     })
 
@@ -43,51 +43,22 @@ describe('ConfirmationService', () => {
   })
 
   describe('loadConfirmationContent', () => {
-    const validForm = { id: 'test-form-id', slug: 'test-form' }
-
     test('should return confirmation content when available', async () => {
-      const mockConfirmationContent = {
-        html: '<h2>Test confirmation content</h2>'
-      }
-      const mockFormDefinition = {
-        metadata: {
-          confirmationContent: mockConfirmationContent
-        }
-      }
-
-      mockFormsService.getFormDefinition.mockResolvedValue(mockFormDefinition)
-
+      const validForm = MOCK_FORM_CACHE[0]
       const result = await ConfirmationService.loadConfirmationContent(validForm)
 
-      expect(mockFormsService.getFormDefinition).toHaveBeenCalledWith('test-form-id')
       expect(result).toEqual({
-        confirmationContent: mockConfirmationContent,
-        formDefinition: mockFormDefinition
+        confirmationContent: MOCK_FORM_CACHE[0].metadata.confirmationContent
       })
     })
 
     test('should return null when no confirmation content exists', async () => {
-      const mockFormDefinition = {
-        metadata: {}
-      }
-      mockFormsService.getFormDefinition.mockResolvedValue(mockFormDefinition)
+      const formWithNoConfirmationContetn = MOCK_FORM_CACHE[1]
 
-      const result = await ConfirmationService.loadConfirmationContent(validForm)
+      const result = await ConfirmationService.loadConfirmationContent(formWithNoConfirmationContetn)
 
       expect(result).toEqual({
-        confirmationContent: null,
-        formDefinition: mockFormDefinition
-      })
-    })
-
-    test('should handle service errors gracefully', async () => {
-      mockFormsService.getFormDefinition.mockRejectedValue(new Error('Service error'))
-
-      const result = await ConfirmationService.loadConfirmationContent(validForm)
-
-      expect(result).toEqual({
-        confirmationContent: null,
-        formDefinition: null
+        confirmationContent: null
       })
     })
 
@@ -95,8 +66,7 @@ describe('ConfirmationService', () => {
       const result = await ConfirmationService.loadConfirmationContent(null)
 
       expect(result).toEqual({
-        confirmationContent: null,
-        formDefinition: null
+        confirmationContent: null
       })
     })
   })
@@ -149,33 +119,15 @@ describe('ConfirmationService', () => {
   })
 
   describe('hasConfigDrivenConfirmation', () => {
-    const testForm = { id: 'test-form-id', slug: 'test-form' }
-
     test('should return true when confirmation content exists', async () => {
-      mockFormsService.getFormDefinition.mockResolvedValue({
-        metadata: {
-          confirmationContent: { html: '<h2>Test content</h2>' }
-        }
-      })
-
+      const testForm = MOCK_FORM_CACHE[0]
       const result = await ConfirmationService.hasConfigDrivenConfirmation(testForm)
 
       expect(result).toBe(true)
     })
 
     test('should return false when no confirmation content exists', async () => {
-      mockFormsService.getFormDefinition.mockResolvedValue({
-        metadata: {}
-      })
-
-      const result = await ConfirmationService.hasConfigDrivenConfirmation(testForm)
-
-      expect(result).toBe(false)
-    })
-
-    test('should return false when service fails', async () => {
-      mockFormsService.getFormDefinition.mockRejectedValue(new Error('Service error'))
-
+      const testForm = MOCK_FORM_CACHE[1]
       const result = await ConfirmationService.hasConfigDrivenConfirmation(testForm)
 
       expect(result).toBe(false)

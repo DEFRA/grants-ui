@@ -1,4 +1,4 @@
-import { formsService, getFormsCache } from '~/src/server/common/forms/services/form.js'
+import { getFormsCache } from '~/src/server/common/forms/services/form.js'
 import { ComponentsRegistry } from './components.registry.js'
 import { logger } from '~/src/server/common/helpers/logging/log.js'
 
@@ -14,33 +14,18 @@ export class ConfirmationService {
   }
 
   /**
-   * Load confirmation content and form definition metadata
+   * Load confirmation content
    * @param {object} form - Form object
-   * @returns {Promise<{confirmationContent: object|null, formDefinition: object|null}>} Confirmation content and form definition
+   * @returns {Promise<{confirmationContent: object|null}>} Confirmation content
    */
   static async loadConfirmationContent(form) {
     if (!form?.id) {
       logger.warn({ form }, 'Invalid form object provided to loadConfirmationContent')
-      return { confirmationContent: null, formDefinition: null }
+      return { confirmationContent: null }
     }
 
-    try {
-      const service = await formsService()
-      const formDefinition = await service.getFormDefinition(form.id)
-      return {
-        confirmationContent: formDefinition?.metadata?.confirmationContent || null,
-        formDefinition: formDefinition || null
-      }
-    } catch (error) {
-      logger.warn(
-        {
-          error: error.message,
-          slug: form.slug,
-          formId: form.id
-        },
-        'Failed to load form configuration'
-      )
-      return { confirmationContent: null, formDefinition: null }
+    return {
+      confirmationContent: form?.metadata?.confirmationContent || null
     }
   }
 
@@ -76,7 +61,6 @@ export class ConfirmationService {
    * @param {boolean} [options.isDevelopmentMode] - Whether in development mode
    * @param {object} [options.form] - Form object (optional)
    * @param {string | null} [options.slug] - Form slug (optional)
-   * @param {object} [options.formDefinition] - Form definition with metadata (optional)
    * @returns {object} View model for template
    */
   static buildViewModel({
