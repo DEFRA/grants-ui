@@ -13,8 +13,8 @@ services:
       fcp-defra-id-stub:
         condition: service_healthy
     ports:
-      - '3000:3000'
-      - '9229:9229'
+      - "3000:3000"
+      - "9229:9229"
     environment:
       PORT: 3000
       NODE_ENV: ${NODE_ENV:-development}
@@ -22,36 +22,36 @@ services:
       REDIS_HOST: redis
       USE_SINGLE_INSTANCE_CACHE: true
       SESSION_CACHE_ENGINE: redis
-      REDIS_KEY_PREFIX: 'grants-ui:'
+      REDIS_KEY_PREFIX: "grants-ui:"
       SESSION_CACHE_NAME: session
       REDIS_CONNECT_TIMEOUT: 30000
       REDIS_RETRY_DELAY: 1000
       REDIS_MAX_RETRIES: 10
-      REDIS_USERNAME: ''
-      REDIS_PASSWORD: ''
+      REDIS_USERNAME: ""
+      REDIS_PASSWORD: ""
       LOG_LEVEL: ${LOG_LEVEL:-info}
-      SESSION_COOKIE_PASSWORD: '53409gjhfcdiklgjidfglkgjidfglkelrku634'
-      SESSION_COOKIE_TTL: 2419200000
+      SESSION_COOKIE_PASSWORD: ${SESSION_COOKIE_PASSWORD:-53409gjhfcdiklgjidfglkgjidfglkelrku634}
+      SESSION_COOKIE_TTL: ${SESSION_COOKIE_TTL:-2419200000}
       SESSION_CACHE_TTL: 14400000
-      FEEDBACK_LINK: 'mailto:defraforms@defra.gov.uk'
+      FEEDBACK_LINK: "${FEEDBACK_LINK:-mailto:defraforms@defra.gov.uk}"
       SERVICE_NAME: ${SERVICE_NAME:-Manage land-based actions}
       COOKIE_POLICY_URL: ${COOKIE_POLICY_URL:-/cookies}
       COOKIE_CONSENT_EXPIRY_DAYS: ${COOKIE_CONSENT_EXPIRY_DAYS:-365}
       CV_API_MOCK_ENABLED: ${CV_API_MOCK_ENABLED:-true}
-      DEFRA_ID_WELL_KNOWN_URL: ${DEFRA_ID_WELL_KNOWN_URL:-http://fcp-defra-id-stub:3007/idphub/b2c/b2c_1a_cui_cpdev_signupsigninsfi/.well-known/openid-configuration}
+      DEFRA_ID_WELL_KNOWN_URL: "${DEFRA_ID_WELL_KNOWN_URL:-http://fcp-defra-id-stub:3007/idphub/b2c/b2c_1a_cui_cpdev_signupsigninsfi/.well-known/openid-configuration}"
       DEFRA_ID_CLIENT_ID: ${DEFRA_ID_CLIENT_ID:-client_id}
       DEFRA_ID_CLIENT_SECRET: ${DEFRA_ID_CLIENT_SECRET:-client_secret}
       DEFRA_ID_SERVICE_ID: ${DEFRA_ID_SERVICE_ID:-service_id}
-      DEFRA_ID_REDIRECT_URL: ${DEFRA_ID_REDIRECT_URL:-http://localhost:3000/auth/sign-in-oidc}
-      DEFRA_ID_SIGN_OUT_REDIRECT_URL: ${DEFRA_ID_SIGN_OUT_REDIRECT_URL:-http://localhost:3000/auth/sign-out-oidc}
+      DEFRA_ID_REDIRECT_URL: "${DEFRA_ID_REDIRECT_URL:-http://localhost:3000/auth/sign-in-oidc}"
+      DEFRA_ID_SIGN_OUT_REDIRECT_URL: "${DEFRA_ID_SIGN_OUT_REDIRECT_URL:-http://localhost:3000/auth/sign-out-oidc}"
       COOKIE_PASSWORD: ${COOKIE_PASSWORD}
-      GRANTS_UI_BACKEND_URL: ${GRANTS_UI_BACKEND_URL:-http://grants-ui-backend:3001}
+      GRANTS_UI_BACKEND_URL: "${GRANTS_UI_BACKEND_URL:-http://grants-ui-backend:3001}"
       GRANTS_UI_BACKEND_AUTH_TOKEN: ${GRANTS_UI_BACKEND_AUTH_TOKEN:-auth_token}
       GRANTS_UI_BACKEND_ENCRYPTION_KEY: ${GRANTS_UI_BACKEND_ENCRYPTION_KEY:-encryption_key}
-      APP_BASE_URL: ${APP_BASE_URL:-http://localhost:3000}
+      APP_BASE_URL: "${APP_BASE_URL:-http://localhost:3000}"
       HOST: 0.0.0.0
-      GAS_API_URL: ${GAS_API_URL:-http://mockserver:1080}
-      LAND_GRANTS_API_URL: ${LAND_GRANTS_API_URL:-http://mockserver:1080}
+      GAS_API_URL: "${GAS_API_URL:-http://mockserver:1080}"
+      LAND_GRANTS_API_URL: "${LAND_GRANTS_API_URL:-http://mockserver:1080}"
       LAND_GRANTS_API_AUTH_TOKEN: ${LAND_GRANTS_API_AUTH_TOKEN:-auth_token}
       LAND_GRANTS_API_ENCRYPTION_KEY: ${LAND_GRANTS_API_ENCRYPTION_KEY:-encryption_key}
       EXAMPLE_WHITELIST_CRNS: ${EXAMPLE_WHITELIST_CRNS:-1100957269,1100953760}
@@ -65,7 +65,7 @@ services:
       - grants-ui-net
     restart: unless-stopped
     healthcheck:
-      test: ['CMD-SHELL', "ps aux | grep 'node .' | grep -v grep || exit 1"]
+      test: ["CMD-SHELL", "ps aux | grep 'node .' | grep -v grep || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 6
@@ -78,7 +78,7 @@ services:
       mongodb:
         condition: service_healthy
     ports:
-      - '3001:3001'
+      - "3001:3001"
     environment:
       PORT: 3001
       HOST: 0.0.0.0
@@ -90,7 +90,7 @@ services:
       - grants-ui-net
     restart: unless-stopped
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:3001/health']
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -100,7 +100,7 @@ services:
     image: defradigital/ffc-grants-scoring
     pull_policy: always
     ports:
-      - '3002:3002'
+      - "3002:3002"
     environment:
       PORT: 3002
       NODE_ENV: development
@@ -108,7 +108,7 @@ services:
       - grants-ui-net
     restart: unless-stopped
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:3002/health']
+      test: ["CMD", "curl", "-f", "http://localhost:3002/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -119,8 +119,8 @@ services:
     networks:
       - grants-ui-net
     environment:
-      WELL_KNOWN_HOST_OVERRIDE: ${WELL_KNOWN_HOST_OVERRIDE:-http://localhost:3007}
-      WELL_KNOWN_API_HOST_OVERRIDE: ${WELL_KNOWN_API_HOST_OVERRIDE:-http://fcp-defra-id-stub:3007}
+      WELL_KNOWN_HOST_OVERRIDE: "${WELL_KNOWN_HOST_OVERRIDE:-http://localhost:3007}"
+      WELL_KNOWN_API_HOST_OVERRIDE: "${WELL_KNOWN_API_HOST_OVERRIDE:-http://fcp-defra-id-stub:3007}"
       PORT: 3007
       AUTH_MODE: ${AUTH_MODE:-basic}
       AUTH_OVERRIDE: ${AUTH_OVERRIDE:-}
@@ -128,9 +128,9 @@ services:
     volumes:
       - ./fcp-defra-id-stub/users.json:/data/users.json
     ports:
-      - '3007:3007'
+      - "3007:3007"
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:3007/health']
+      test: ["CMD", "curl", "-f", "http://localhost:3007/health"]
       interval: 15s
       timeout: 10s
       retries: 5
@@ -143,7 +143,7 @@ services:
     environment:
       MOCKSERVER_INITIALIZATION_JSON_PATH: /config/expectations.json
     ports:
-      - '1080:1080'
+      - "1080:1080"
     volumes:
       - ./mockserver/expectations.json:/config/expectations.json
     command:
@@ -152,12 +152,12 @@ services:
   redis:
     image: redis:7.2.3-alpine3.18
     ports:
-      - '6379:6379'
+      - "6379:6379"
     volumes:
       - redis-data:/data
     restart: always
     healthcheck:
-      test: ['CMD', 'redis-cli', 'ping']
+      test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -169,13 +169,13 @@ services:
     networks:
       - grants-ui-net
     ports:
-      - '27017:27017'
+      - "27017:27017"
     volumes:
       - mongodb-data:/data/db
       - mongodb-config:/data/configdb
     restart: always
     healthcheck:
-      test: ['CMD', 'mongosh', '--eval', "db.adminCommand('ping')"]
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 10s
       timeout: 5s
       retries: 3
