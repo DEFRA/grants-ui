@@ -137,4 +137,24 @@ describe('config', () => {
 
     expect(() => config.validate()).not.toThrow()
   })
+
+  describe('cookie consent configuration', () => {
+    test('has correct default values', async () => {
+      const { config } = await import('./config.js')
+
+      expect(config.get('cookieConsent.cookiePolicyUrl')).toBe('/cookies')
+      expect(config.get('cookieConsent.cookieName')).toBe('cookie_consent')
+      expect(config.get('cookieConsent.expiryDays')).toBe(365)
+    })
+
+    test('allows cookie consent settings to be overridden via environment variables', async () => {
+      process.env.COOKIE_POLICY_URL = '/privacy/cookies'
+      process.env.COOKIE_CONSENT_EXPIRY_DAYS = '90'
+
+      const { config } = await import('./config.js')
+
+      expect(config.get('cookieConsent.cookiePolicyUrl')).toBe('/privacy/cookies')
+      expect(config.get('cookieConsent.expiryDays')).toBe(90)
+    })
+  })
 })

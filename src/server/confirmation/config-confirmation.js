@@ -44,14 +44,9 @@ function validateRequestAndFindForm(request, h) {
  * @returns {Promise<object|null>} Content result with confirmationContent and formDefinition
  */
 async function loadConfirmationContent(form) {
-  const { confirmationContent: rawConfirmationContent, formDefinition } =
-    await ConfirmationService.loadConfirmationContent(form)
+  const { confirmationContent: rawConfirmationContent } = await ConfirmationService.loadConfirmationContent(form)
 
-  const confirmationContent = rawConfirmationContent
-    ? ConfirmationService.processConfirmationContent(rawConfirmationContent)
-    : null
-
-  return { confirmationContent, formDefinition }
+  return rawConfirmationContent ? ConfirmationService.processConfirmationContent(rawConfirmationContent) : null
 }
 
 /**
@@ -82,11 +77,10 @@ async function getReferenceNumber(request) {
  * @param {object} sessionData - Session data including reference number
  * @param {object} form - Form object
  * @param {string} slug - Form slug
- * @param {object} formDefinition - Form definition with metadata
  * @param {object} h - Hapi response toolkit
  * @returns {object} Hapi response
  */
-function buildConfirmationResponse(confirmationContent, sessionData, form, slug, formDefinition, h) {
+function buildConfirmationResponse(confirmationContent, sessionData, form, slug, h) {
   const viewModel = ConfirmationService.buildViewModel({
     referenceNumber: sessionData.referenceNumber,
     businessName: sessionData.businessName,
@@ -94,8 +88,7 @@ function buildConfirmationResponse(confirmationContent, sessionData, form, slug,
     contactName: sessionData.contactName,
     confirmationContent,
     form,
-    slug,
-    formDefinition
+    slug
   })
 
   return h.view('confirmation/views/config-confirmation-page', viewModel)
@@ -135,7 +128,7 @@ export const configConfirmation = {
 
             const { form, slug } = validationResult
 
-            const { confirmationContent, formDefinition } = await loadConfirmationContent(form)
+            const confirmationContent = await loadConfirmationContent(form)
             const sessionData = await getReferenceNumber(request)
 
             log(LogCodes.CONFIRMATION.CONFIRMATION_SUCCESS, {
@@ -143,7 +136,7 @@ export const configConfirmation = {
               referenceNumber: sessionData.referenceNumber
             })
 
-            return buildConfirmationResponse(confirmationContent, sessionData, form, slug, formDefinition, h)
+            return buildConfirmationResponse(confirmationContent, sessionData, form, slug, h)
           } catch (error) {
             return handleError(error, request, h)
           }

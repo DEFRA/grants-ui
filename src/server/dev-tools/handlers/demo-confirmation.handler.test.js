@@ -1,12 +1,12 @@
 import { vi } from 'vitest'
 import { demoConfirmationHandler } from './demo-confirmation.handler.js'
 import { ConfirmationService } from '../../confirmation/services/confirmation.service.js'
-import { generateFormNotFoundResponse, buildDemoData } from '../utils/index.js'
+import { buildDemoData, generateFormNotFoundResponse } from '../utils/index.js'
 import { mockHapiRequest, mockHapiResponseToolkit } from '~/src/__mocks__/hapi-mocks.js'
 import {
-  MOCK_FORMS,
+  createMockLogger,
   MOCK_CONFIRMATION_CONTENT,
-  createMockLogger
+  MOCK_FORMS
 } from '../../confirmation/__test-fixtures__/confirmation-test-fixtures.js'
 import { log } from '../../common/helpers/logging/log.js'
 
@@ -53,12 +53,10 @@ describe('demo-confirmation.handler', () => {
   describe('demo confirmation handler', () => {
     test('should render demo confirmation page for valid form', async () => {
       const processedConfirmationContent = { html: '<h2>Processed demo content</h2>' }
-      const mockFormDefinition = { metadata: { confirmationContent: mockConfirmationContent } }
 
       ConfirmationService.findFormBySlug.mockReturnValue(mockForm)
       ConfirmationService.loadConfirmationContent.mockResolvedValue({
-        confirmationContent: mockConfirmationContent,
-        formDefinition: mockFormDefinition
+        confirmationContent: mockConfirmationContent
       })
       ConfirmationService.processConfirmationContent.mockReturnValue(processedConfirmationContent)
       ConfirmationService.buildViewModel.mockReturnValue({ test: 'viewModel' })
@@ -73,8 +71,7 @@ describe('demo-confirmation.handler', () => {
         confirmationContent: processedConfirmationContent,
         isDevelopmentMode: true,
         form: mockForm,
-        slug: 'test-form',
-        formDefinition: mockFormDefinition
+        slug: 'test-form'
       })
       expect(mockH.view).toHaveBeenCalledWith('confirmation/views/config-confirmation-page', { test: 'viewModel' })
     })
@@ -112,8 +109,7 @@ describe('demo-confirmation.handler', () => {
         }),
         isDevelopmentMode: true,
         form: mockForm,
-        slug: 'test-form',
-        formDefinition: null
+        slug: 'test-form'
       })
     })
 

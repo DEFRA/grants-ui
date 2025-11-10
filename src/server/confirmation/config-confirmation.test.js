@@ -3,9 +3,9 @@ import { configConfirmation } from './config-confirmation.js'
 import { ConfirmationService } from './services/confirmation.service.js'
 import { mockHapiRequest, mockHapiResponseToolkit } from '~/src/__mocks__/hapi-mocks.js'
 import {
-  MOCK_FORMS,
+  createMockLogger,
   MOCK_CONFIRMATION_CONTENT,
-  createMockLogger
+  MOCK_FORMS
 } from './__test-fixtures__/confirmation-test-fixtures.js'
 import { log } from '~/src/server/common/helpers/logging/log.js'
 
@@ -106,8 +106,7 @@ describe('config-confirmation', () => {
         contactName: 'Test Contact',
         confirmationContent: processedConfirmationContent,
         form: mockForm,
-        slug: 'test-slug',
-        formDefinition: mockFormDefinition
+        slug: 'test-slug'
       })
       expect(mockH.view).toHaveBeenCalledWith('confirmation/views/config-confirmation-page', { test: 'viewModel' })
     })
@@ -148,8 +147,7 @@ describe('config-confirmation', () => {
         contactName: 'Test Contact',
         confirmationContent: null,
         form: mockForm,
-        slug: 'test-slug',
-        formDefinition: mockFormDefinition
+        slug: 'test-slug'
       })
       expect(mockH.view).toHaveBeenCalledWith('confirmation/views/config-confirmation-page', { test: 'viewModel' })
     })

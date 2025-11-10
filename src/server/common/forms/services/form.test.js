@@ -111,23 +111,35 @@ const mockEnv = {
   EXAMPLE_WHITELIST_SBIS: '123456789,987654321'
 }
 
+const deletedEnvVars = new Set()
+
+const originalEnv = process.env
+
 Object.defineProperty(process, 'env', {
-  value: new Proxy(process.env, {
+  configurable: true,
+  value: new Proxy(originalEnv, {
     get(target, prop) {
+      // If explicitly deleted, return undefined
+      if (deletedEnvVars.has(prop)) {
+        return undefined
+      }
       if (prop in mockEnv) {
         return mockEnv[prop]
       }
       return target[prop]
     },
     has(target, prop) {
+      if (deletedEnvVars.has(prop)) {
+        return false
+      }
       return prop in mockEnv || prop in target
     },
     deleteProperty(target, prop) {
       if (prop in mockEnv) {
         delete mockEnv[prop]
-        return true
       }
-      return delete target[prop]
+      deletedEnvVars.add(prop)
+      return true
     }
   })
 })
@@ -142,6 +154,8 @@ describe('form', () => {
     mockWarn = logger.warn
     mockError = logger.error
 
+    // Restore mock env variables and clear deleted set
+    deletedEnvVars.clear()
     mockEnv.EXAMPLE_WHITELIST_CRNS = '1101009926,1101010029'
     mockEnv.EXAMPLE_WHITELIST_SBIS = '123456789,987654321'
     mockEnv.FARMING_PAYMENTS_WHITELIST_CRNS = '1102838829, 1102760349, 1100495932'
@@ -567,13 +581,26 @@ tasklist:
 
   describe('formsService error handling', () => {
     test('throws error during startup when whitelist validation fails', async () => {
+      // Store the original value from the real environment
+      const originalValue = originalEnv.EXAMPLE_WHITELIST_CRNS
+
+      // Delete from real env and mock env
+      delete originalEnv.EXAMPLE_WHITELIST_CRNS
       delete mockEnv.EXAMPLE_WHITELIST_CRNS
+      deletedEnvVars.add('EXAMPLE_WHITELIST_CRNS')
 
-      await expect(formsService()).rejects.toThrow(
-        'CRN whitelist environment variable EXAMPLE_WHITELIST_CRNS is defined in form Example Whitelist but not configured in environment'
-      )
-
-      mockEnv.EXAMPLE_WHITELIST_CRNS = '1101009926 1101010029'
+      try {
+        await expect(formsService()).rejects.toThrow(
+          'CRN whitelist environment variable EXAMPLE_WHITELIST_CRNS is defined in form Example Whitelist but not configured in environment'
+        )
+      } finally {
+        // Restore the original value
+        if (originalValue !== undefined) {
+          originalEnv.EXAMPLE_WHITELIST_CRNS = originalValue
+        }
+        mockEnv.EXAMPLE_WHITELIST_CRNS = '1101009926,1101010029'
+        deletedEnvVars.delete('EXAMPLE_WHITELIST_CRNS')
+      }
     })
   })
 })
