@@ -55,9 +55,13 @@ const loadWebpackManifest = (request) => {
     try {
       webpackManifest = JSON.parse(readFileSync(manifestPath, 'utf-8'))
     } catch (error) {
-      log(LogCodes.SYSTEM.SERVER_ERROR, {
-        error: `Webpack ${path.basename(manifestPath)} not found: ${error.message}`
-      }, request)
+      log(
+        LogCodes.SYSTEM.SERVER_ERROR,
+        {
+          error: `Webpack ${path.basename(manifestPath)} not found: ${error.message}`
+        },
+        request
+      )
     }
   }
 }
@@ -74,11 +78,15 @@ const getSessionData = async (request) => {
     return (await request.server.app['cache'].get(request.auth.credentials.sessionId)) || {}
   } catch (cacheError) {
     const sessionId = String(request.auth.credentials.sessionId || 'unknown')
-    log(LogCodes.AUTH.SIGN_IN_FAILURE, {
-      userId: 'unknown',
-      error: `Cache retrieval failed for session ${sessionId}: ${cacheError.message}`,
-      step: 'context_cache_retrieval'
-    }, request)
+    log(
+      LogCodes.AUTH.SIGN_IN_FAILURE,
+      {
+        userId: 'unknown',
+        error: `Cache retrieval failed for session ${sessionId}: ${cacheError.message}`,
+        step: 'context_cache_retrieval'
+      },
+      request
+    )
     return {}
   }
 }
@@ -184,9 +192,13 @@ export async function context(request) {
 
     return buildSuccessContext(auth, request, serviceName, cookiePolicyUrl, cookieConsentExpiryDays)
   } catch (error) {
-    log(LogCodes.SYSTEM.SERVER_ERROR, {
-      error: `Error building context: ${error.message}`
-    }, request)
+    log(
+      LogCodes.SYSTEM.SERVER_ERROR,
+      {
+        error: `Error building context: ${error.message}`
+      },
+      request
+    )
     return buildFallbackContext(serviceName, cookiePolicyUrl, cookieConsentExpiryDays)
   }
 }
