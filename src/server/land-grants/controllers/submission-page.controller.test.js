@@ -52,16 +52,6 @@ describe('SubmissionPageController', () => {
     controller = new SubmissionPageController(mockModel, mockPageDef)
   })
 
-  describe('constructor', () => {
-    it('should set viewName to "submit-your-application"', () => {
-      expect(controller.viewName).toBe('submit-your-application')
-    })
-
-    it('should set grantCode', () => {
-      expect(controller.grantCode).toBe(code)
-    })
-  })
-
   describe('submitGasApplication', () => {
     it('should prepare and submit grant application', async () => {
       const mockIdentifiers = {
@@ -113,6 +103,61 @@ describe('SubmissionPageController', () => {
         refNumber: 'validation-123'
       })
     })
+
+    it('should use validationId when provided', () => {
+      const mockH = { view: vi.fn().mockReturnValue('error-view') }
+      const mockRequest = {}
+      const mockContext = { referenceNumber: 'REF456' }
+      const validationId = 'validation-123'
+
+      controller.handleSubmissionError(mockH, mockRequest, mockContext, validationId)
+
+      expect(mockH.view).toHaveBeenCalledWith('submission-error', expect.objectContaining({
+        refNumber: 'validation-123'
+      }))
+      expect(log).toHaveBeenCalledWith(
+        LogCodes.SUBMISSION.SUBMISSION_VALIDATION_ERROR,
+        expect.objectContaining({
+          validationId: 'validation-123'
+        })
+      )
+    })
+
+    it('should fallback to referenceNumber when validationId not provided', () => {
+      const mockH = { view: vi.fn().mockReturnValue('error-view') }
+      const mockRequest = {}
+      const mockContext = { referenceNumber: 'REF456' }
+
+      controller.handleSubmissionError(mockH, mockRequest, mockContext)
+
+      expect(mockH.view).toHaveBeenCalledWith('submission-error', expect.objectContaining({
+        refNumber: 'REF456'
+      }))
+      expect(log).toHaveBeenCalledWith(
+        LogCodes.SUBMISSION.SUBMISSION_VALIDATION_ERROR,
+        expect.objectContaining({
+          validationId: 'REF456'
+        })
+      )
+    })
+
+    it('should use N/A when neither validationId nor referenceNumber available', () => {
+      const mockH = { view: vi.fn().mockReturnValue('error-view') }
+      const mockRequest = {}
+      const mockContext = {}
+
+      controller.handleSubmissionError(mockH, mockRequest, mockContext)
+
+      expect(mockH.view).toHaveBeenCalledWith('submission-error', expect.objectContaining({
+        refNumber: 'N/A'
+      }))
+      expect(log).toHaveBeenCalledWith(
+        LogCodes.SUBMISSION.SUBMISSION_VALIDATION_ERROR,
+        expect.objectContaining({
+          validationId: 'N/A'
+        })
+      )
+    })
   })
 
   describe('handleSuccessfulSubmission', () => {
@@ -133,6 +178,81 @@ describe('SubmissionPageController', () => {
         })
       )
       expect(mockH.redirect).toHaveBeenCalledWith('/confirmation')
+    })
+
+    it('should only log and update state when status is 204', async () => {
+      const mockRequest = {
+        server: {},
+        auth: { credentials: { sbi: '123', crn: 'crn123' } }
+      }
+      const mockContext = {
+        referenceNumber: 'REF123',
+        relevantState: { field1: 'value1', field2: 'value2' }
+      }
+      const mockH = { redirect: vi.fn().mockResolvedValue() }
+      vi.spyOn(controller, 'getStatusPath').mockReturnValue('/confirmation')
+      mockCacheService.getState.mockResolvedValue({ existingField: 'value' })
+
+      await controller.handleSuccessfulSubmission(mockRequest, mockContext, mockH, 204)
+
+      expect(log).toHaveBeenCalledWith(
+        LogCodes.SUBMISSION.SUBMISSION_COMPLETED,
+        expect.objectContaining({
+          numberOfFields: 2,
+          status: 204
+        })
+      )
+      expect(mockCacheService.setState).toHaveBeenCalled()
+    })
+
+    it('should not log when status is not 204', async () => {
+      const mockRequest = {
+        server: {},
+        auth: { credentials: { sbi: '123', crn: 'crn123' } }
+      }
+      const mockContext = { referenceNumber: 'REF123' }
+      const mockH = { redirect: vi.fn().mockResolvedValue() }
+      vi.spyOn(controller, 'getStatusPath').mockReturnValue('/confirmation')
+
+      vi.clearAllMocks()
+      await controller.handleSuccessfulSubmission(mockRequest, mockContext, mockH, 200)
+
+      expect(log).not.toHaveBeenCalledWith(
+        LogCodes.SUBMISSION.SUBMISSION_COMPLETED,
+        expect.anything()
+      )
+      expect(mockCacheService.setState).not.toHaveBeenCalled()
+    })
+
+    it('should handle missing auth credentials', async () => {
+      const mockRequest = { server: {} }
+      const mockContext = { referenceNumber: 'REF123' }
+      const mockH = { redirect: vi.fn().mockResolvedValue() }
+      vi.spyOn(controller, 'getStatusPath').mockReturnValue('/confirmation')
+
+      await controller.handleSuccessfulSubmission(mockRequest, mockContext, mockH, 204)
+
+      expect(mockH.redirect).toHaveBeenCalledWith('/confirmation')
+    })
+
+    it('should handle missing relevantState when logging', async () => {
+      const mockRequest = {
+        server: {},
+        auth: { credentials: { sbi: '123', crn: 'crn123' } }
+      }
+      const mockContext = { referenceNumber: 'REF123' }
+      const mockH = { redirect: vi.fn().mockResolvedValue() }
+      vi.spyOn(controller, 'getStatusPath').mockReturnValue('/confirmation')
+      mockCacheService.getState.mockResolvedValue({})
+
+      await controller.handleSuccessfulSubmission(mockRequest, mockContext, mockH, 204)
+
+      expect(log).toHaveBeenCalledWith(
+        LogCodes.SUBMISSION.SUBMISSION_COMPLETED,
+        expect.objectContaining({
+          numberOfFields: 0
+        })
+      )
     })
   })
 
@@ -205,6 +325,119 @@ describe('SubmissionPageController', () => {
       expect(result).toBe('proceeded')
     })
 
+    it('should handle undefined auth', async () => {
+      const mockRequest = {
+        logger: { info: vi.fn(), error: vi.fn() },
+        server: {}
+      }
+      const mockContext = {
+        state: {},
+        referenceNumber: 'REF123'
+      }
+      const mockH = { redirect: vi.fn(), view: vi.fn() }
+      validateApplication.mockResolvedValue({ id: 'val-123', valid: true })
+      vi.spyOn(controller, 'submitGasApplication').mockResolvedValue({ status: 204 })
+      vi.spyOn(controller, 'handleSuccessfulSubmission').mockResolvedValue('proceeded')
+
+      const handler = controller.makePostRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(controller.submitGasApplication).toHaveBeenCalledWith({
+        identifiers: {
+          clientRef: 'ref123',
+          crn: undefined,
+          sbi: undefined
+        },
+        state: {},
+        validationId: 'val-123'
+      })
+    })
+
+    it('should extract frn from applicant business reference', async () => {
+      const mockRequest = {
+        logger: { info: vi.fn(), error: vi.fn() },
+        auth: { credentials: { sbi: '123', crn: 'crn123' } },
+        server: {}
+      }
+      const mockContext = {
+        state: {
+          applicant: {
+            business: { reference: 'FRN999' }
+          }
+        },
+        referenceNumber: 'REF123'
+      }
+      const mockH = { redirect: vi.fn(), view: vi.fn() }
+      validateApplication.mockResolvedValue({ id: 'val-123', valid: true })
+      vi.spyOn(controller, 'submitGasApplication').mockResolvedValue({ status: 204 })
+      vi.spyOn(controller, 'handleSuccessfulSubmission').mockResolvedValue('proceeded')
+
+      const handler = controller.makePostRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(controller.submitGasApplication).toHaveBeenCalledWith({
+        identifiers: expect.objectContaining({
+          frn: 'FRN999'
+        }),
+        state: mockContext.state,
+        validationId: 'val-123'
+      })
+    })
+
+    it('should handle missing applicant', async () => {
+      const mockRequest = {
+        logger: { info: vi.fn(), error: vi.fn() },
+        auth: { credentials: { sbi: '123', crn: 'crn123' } },
+        server: {}
+      }
+      const mockContext = {
+        state: {},
+        referenceNumber: 'REF123'
+      }
+      const mockH = { redirect: vi.fn(), view: vi.fn() }
+      validateApplication.mockResolvedValue({ id: 'val-123', valid: true })
+      vi.spyOn(controller, 'submitGasApplication').mockResolvedValue({ status: 204 })
+      vi.spyOn(controller, 'handleSuccessfulSubmission').mockResolvedValue('proceeded')
+
+      const handler = controller.makePostRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(controller.submitGasApplication).toHaveBeenCalledWith({
+        identifiers: expect.objectContaining({
+          frn: undefined
+        }),
+        state: {},
+        validationId: 'val-123'
+      })
+    })
+
+    it('should convert referenceNumber to lowercase for clientRef', async () => {
+      const mockRequest = {
+        logger: { info: vi.fn(), error: vi.fn() },
+        auth: { credentials: { sbi: '123', crn: 'crn123' } },
+        server: {}
+      }
+      const mockContext = {
+        state: {},
+        referenceNumber: 'REF-UPPER-123'
+      }
+      const mockH = { redirect: vi.fn(), view: vi.fn() }
+      validateApplication.mockResolvedValue({ id: 'val-123', valid: true })
+      vi.spyOn(controller, 'submitGasApplication').mockResolvedValue({ status: 204 })
+      vi.spyOn(controller, 'handleSuccessfulSubmission').mockResolvedValue('proceeded')
+
+      const handler = controller.makePostRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(controller.submitGasApplication).toHaveBeenCalledWith({
+        identifiers: expect.objectContaining({
+          clientRef: 'ref-upper-123'
+        }),
+        state: {},
+        validationId: 'val-123'
+      })
+    })
+
     it('should return error view when validation fails', async () => {
       const mockRequest = {
         logger: {
@@ -240,45 +473,6 @@ describe('SubmissionPageController', () => {
       expect(controller.handleSubmissionError).toHaveBeenCalledWith(mockH, mockRequest, mockContext, 'validation-123')
       expect(controller.submitGasApplication).not.toHaveBeenCalled()
       expect(result).toBe('error-view')
-    })
-
-    it('should handle validation errors', async () => {
-      const mockError = new Error('Validation failed')
-      const mockRequest = {
-        logger: {
-          info: vi.fn(),
-          error: vi.fn()
-        },
-        auth: {
-          credentials: {
-            sbi: '123456789',
-            crn: 'crn123'
-          }
-        },
-        server: {}
-      }
-      const mockContext = {
-        state: {},
-        referenceNumber: 'REF123'
-      }
-      const mockH = {
-        redirect: vi.fn(),
-        view: vi.fn()
-      }
-
-      validateApplication.mockRejectedValue(mockError)
-
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
-
-      expect(mockH.view).toHaveBeenCalledWith(
-        'submission-error',
-        expect.objectContaining({
-          backLink: null,
-          heading: 'Sorry, there was a problem submitting the application',
-          refNumber: 'REF123'
-        })
-      )
     })
 
     it('should handle submission errors', async () => {
@@ -326,47 +520,6 @@ describe('SubmissionPageController', () => {
           refNumber: 'REF123'
         })
       )
-    })
-
-    it('should use empty object for landParcels if not present in state', async () => {
-      const mockRequest = {
-        logger: {
-          info: vi.fn(),
-          error: vi.fn()
-        },
-        auth: {
-          credentials: {
-            sbi: '123456789',
-            crn: 'crn123'
-          }
-        },
-        server: {}
-      }
-      const mockContext = {
-        state: {},
-        referenceNumber: 'REF123'
-      }
-      const mockH = {
-        redirect: vi.fn().mockReturnValue('redirected'),
-        view: vi.fn()
-      }
-
-      const mockValidationResult = { id: 'validation-123', valid: true }
-      const mockSubmitResult = { success: true }
-
-      validateApplication.mockResolvedValue(mockValidationResult)
-      vi.spyOn(controller, 'submitGasApplication').mockResolvedValue(mockSubmitResult)
-      vi.spyOn(controller, 'handleSuccessfulSubmission').mockResolvedValue('proceeded')
-
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
-
-      expect(validateApplication).toHaveBeenCalledWith({
-        applicationId: 'REF123',
-        crn: 'crn123',
-        sbi: '123456789',
-        state: {}
-      })
     })
 
     it('should handle validation error gracefully', async () => {

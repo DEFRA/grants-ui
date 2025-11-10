@@ -26,7 +26,7 @@ import { retry } from '~/src/server/common/helpers/retry.js'
  * @property {string} [data.business.customer.role] - Customer's role
  */
 
-class ConsolidatedViewApiError extends Error {
+export class ConsolidatedViewApiError extends Error {
   constructor(message, statusCode, responseBody, sbi) {
     super(message)
     this.name = 'ConsolidatedViewApiError'
@@ -106,6 +106,8 @@ async function makeConsolidatedViewRequest(request, query) {
 
     if (!response.ok) {
       const errorText = await response.text()
+
+      console.log({ response, errorText })
       throw new ConsolidatedViewApiError(
         `Failed to fetch business data: ${response.status} ${response.statusText}`,
         response.status,
@@ -148,12 +150,7 @@ async function fetchFromConsolidatedView(request, { query, formatResponse }) {
     return formatResponse(responseJson)
   } catch (error) {
     logger.error({ err: error }, 'Unexpected error fetching business data from Consolidated View API')
-    throw new ConsolidatedViewApiError(
-      'Failed to fetch business data: ' + error.message,
-      error.status,
-      error.message,
-      sbi
-    )
+    throw new ConsolidatedViewApiError(error.message, error.status, error.message, sbi)
   }
 }
 

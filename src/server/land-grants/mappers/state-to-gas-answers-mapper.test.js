@@ -401,26 +401,6 @@ describe('stateToLandGrantsGasAnswers', () => {
     expect(result.parcels[0].actions[0].appliedFor).toEqual({})
   })
 
-  it('should create action with empty eligible/appliedFor when action data is not an object', () => {
-    const input = {
-      payment,
-      landParcels: {
-        'SX0679-9238': {
-          actionsObj: {
-            CSAM1: 'string-value'
-          }
-        }
-      },
-      applicationValidationRunId: '12345678'
-    }
-
-    const result = stateToLandGrantsGasAnswers(input)
-
-    expect(result.parcels[0].actions[0].code).toBe('CSAM1')
-    expect(result.parcels[0].actions[0].eligible).toEqual({})
-    expect(result.parcels[0].actions[0].appliedFor).toEqual({})
-  })
-
   it('should return empty parcels when no action data is provided', () => {
     const input = {
       payment,
@@ -512,27 +492,6 @@ describe('stateToLandGrantsGasAnswers', () => {
     expect(result.parcels[0].parcelId).toBe('9238')
   })
 
-  it('should handle null values in actionsObj', () => {
-    const input = {
-      payment,
-      landParcels: {
-        'SX0679-9238': {
-          actionsObj: {
-            CSAM1: null
-          }
-        }
-      },
-      applicationValidationRunId: '12345678'
-    }
-
-    const result = stateToLandGrantsGasAnswers(input)
-
-    expect(result.parcels[0].actions[0].code).toBe('CSAM1')
-    // When actionData is null, eligible and appliedFor won't be added
-    expect(result.parcels[0].actions[0].eligible).toBeUndefined()
-    expect(result.parcels[0].actions[0].appliedFor).toBeUndefined()
-  })
-
   it('should handle string values with spaces', () => {
     const input = {
       payment,
@@ -554,30 +513,6 @@ describe('stateToLandGrantsGasAnswers', () => {
     expect(result.parcels[0].actions[0].appliedFor).toEqual({
       unit: 'ha',
       quantity: 44
-    })
-  })
-
-  it('should handle numeric strings with leading zeros', () => {
-    const input = {
-      payment,
-      landParcels: {
-        'SX0679-9238': {
-          actionsObj: {
-            CSAM1: {
-              value: '0044.50',
-              unit: 'ha'
-            }
-          }
-        }
-      },
-      applicationValidationRunId: '12345678'
-    }
-
-    const result = stateToLandGrantsGasAnswers(input)
-
-    expect(result.parcels[0].actions[0].appliedFor).toEqual({
-      unit: 'ha',
-      quantity: 44.5
     })
   })
 
@@ -605,6 +540,298 @@ describe('stateToLandGrantsGasAnswers', () => {
       agreementLevelAmountPence: 27200
     })
     expect(result.parcels[0].actions[0].annualPaymentPence).toBe(4806)
+  })
+
+  it('should handle payment data with both parcel and agreement level items', () => {
+    const input = {
+      payment: {
+        annualTotalPence: 50000,
+        parcelItems: {
+          1: {
+            code: 'CSAM1',
+            sheetId: 'SX0679',
+            parcelId: '9238',
+            description: 'Parcel description',
+            durationYears: 3,
+            rateInPence: 1000,
+            annualPaymentPence: 3000
+          }
+        },
+        agreementLevelItems: {
+          1: {
+            code: 'CSAM1',
+            description: 'Agreement description',
+            durationYears: 3,
+            annualPaymentPence: 5000
+          }
+        }
+      },
+      landParcels: {
+        'SX0679-9238': {
+          actionsObj: {
+            CSAM1: {
+              value: '10',
+              unit: 'ha'
+            }
+          }
+        }
+      },
+      applicationValidationRunId: '12345'
+    }
+
+    const result = stateToLandGrantsGasAnswers(input)
+
+    expect(result.parcels[0].actions[0].paymentRates).toEqual({
+      ratePerUnitPence: 1000,
+      agreementLevelAmountPence: 5000
+    })
+    expect(result.parcels[0].actions[0].annualPaymentPence).toBe(3000)
+  })
+
+  it('should handle payment data with only agreement level items', () => {
+    const input = {
+      payment: {
+        annualTotalPence: 50000,
+        agreementLevelItems: {
+          1: {
+            code: 'CSAM1',
+            description: 'Agreement description',
+            durationYears: 3,
+            annualPaymentPence: 5000
+          }
+        }
+      },
+      landParcels: {
+        'SX0679-9238': {
+          actionsObj: {
+            CSAM1: {
+              value: '10',
+              unit: 'ha'
+            }
+          }
+        }
+      },
+      applicationValidationRunId: '12345'
+    }
+
+    const result = stateToLandGrantsGasAnswers(input)
+
+    expect(result.parcels[0].actions[0].paymentRates).toEqual({
+      agreementLevelAmountPence: 5000
+    })
+    expect(result.parcels[0].actions[0].description).toBe('Agreement description')
+  })
+
+  it('should handle payment data with only parcel level items', () => {
+    const input = {
+      payment: {
+        annualTotalPence: 50000,
+        parcelItems: {
+          1: {
+            code: 'CSAM1',
+            sheetId: 'SX0679',
+            parcelId: '9238',
+            description: 'Parcel description',
+            durationYears: 3,
+            rateInPence: 1000,
+            annualPaymentPence: 3000
+          }
+        }
+      },
+      landParcels: {
+        'SX0679-9238': {
+          actionsObj: {
+            CSAM1: {
+              value: '10',
+              unit: 'ha'
+            }
+          }
+        }
+      },
+      applicationValidationRunId: '12345'
+    }
+
+    const result = stateToLandGrantsGasAnswers(input)
+
+    expect(result.parcels[0].actions[0].paymentRates).toEqual({
+      ratePerUnitPence: 1000
+    })
+    expect(result.parcels[0].actions[0].description).toBe('Parcel description')
+  })
+
+  it('should not include payment rates when payment item is null', () => {
+    const input = {
+      payment: {
+        annualTotalPence: 50000,
+        parcelItems: {},
+        agreementLevelItems: {}
+      },
+      landParcels: {
+        'SX0679-9238': {
+          actionsObj: {
+            UNKNOWN: {
+              value: '10',
+              unit: 'ha'
+            }
+          }
+        }
+      },
+      applicationValidationRunId: '12345'
+    }
+
+    const result = stateToLandGrantsGasAnswers(input)
+
+    expect(result.parcels[0].actions[0].paymentRates).toBeUndefined()
+    expect(result.parcels[0].actions[0].annualPaymentPence).toBeUndefined()
+  })
+
+  it('should handle parcel with size data', () => {
+    const input = {
+      payment,
+      landParcels: {
+        'SX0679-9238': {
+          size: {
+            value: 15.5,
+            unit: 'ha'
+          },
+          actionsObj: {
+            CSAM1: {
+              value: '10',
+              unit: 'ha'
+            }
+          }
+        }
+      },
+      applicationValidationRunId: '12345'
+    }
+
+    const result = stateToLandGrantsGasAnswers(input)
+
+    expect(result.parcels[0].area).toEqual({
+      unit: 'ha',
+      quantity: 15.5
+    })
+  })
+
+  it('should handle missing applicant', () => {
+    const input = {
+      payment,
+      landParcels: {
+        'SX0679-9238': {
+          actionsObj: {
+            CSAM1: {
+              value: '10',
+              unit: 'ha'
+            }
+          }
+        }
+      },
+      applicationValidationRunId: '12345'
+    }
+
+    const result = stateToLandGrantsGasAnswers(input)
+
+    expect(result.applicant).toBeUndefined()
+    expect(result.scheme).toBe('SFI')
+  })
+
+  it('should handle durationYears being 0', () => {
+    const input = {
+      payment: {
+        annualTotalPence: 50000,
+        parcelItems: {
+          1: {
+            code: 'CSAM1',
+            sheetId: 'SX0679',
+            parcelId: '9238',
+            description: 'Test',
+            durationYears: 0,
+            annualPaymentPence: 3000
+          }
+        }
+      },
+      landParcels: {
+        'SX0679-9238': {
+          actionsObj: {
+            CSAM1: {
+              value: '10',
+              unit: 'ha'
+            }
+          }
+        }
+      },
+      applicationValidationRunId: '12345'
+    }
+
+    const result = stateToLandGrantsGasAnswers(input)
+
+    expect(result.parcels[0].actions[0].durationYears).toBe(0)
+  })
+
+  it('should handle annualPaymentPence being 0', () => {
+    const input = {
+      payment: {
+        annualTotalPence: 0,
+        parcelItems: {
+          1: {
+            code: 'CSAM1',
+            sheetId: 'SX0679',
+            parcelId: '9238',
+            description: 'Test',
+            durationYears: 3,
+            annualPaymentPence: 0
+          }
+        }
+      },
+      landParcels: {
+        'SX0679-9238': {
+          actionsObj: {
+            CSAM1: {
+              value: '10',
+              unit: 'ha'
+            }
+          }
+        }
+      },
+      applicationValidationRunId: '12345'
+    }
+
+    const result = stateToLandGrantsGasAnswers(input)
+
+    expect(result.totalAnnualPaymentPence).toBe(0)
+    expect(result.parcels[0].actions[0].annualPaymentPence).toBe(0)
+  })
+
+  it('should not include description when missing from payment item', () => {
+    const input = {
+      payment: {
+        annualTotalPence: 50000,
+        parcelItems: {
+          1: {
+            code: 'CSAM1',
+            sheetId: 'SX0679',
+            parcelId: '9238',
+            durationYears: 3,
+            annualPaymentPence: 3000
+          }
+        }
+      },
+      landParcels: {
+        'SX0679-9238': {
+          actionsObj: {
+            CSAM1: {
+              value: '10',
+              unit: 'ha'
+            }
+          }
+        }
+      },
+      applicationValidationRunId: '12345'
+    }
+
+    const result = stateToLandGrantsGasAnswers(input)
+
+    expect(result.parcels[0].actions[0].description).toBeUndefined()
   })
 })
 

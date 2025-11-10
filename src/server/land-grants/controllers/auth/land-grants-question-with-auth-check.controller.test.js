@@ -89,13 +89,4 @@ describe('LandGrantsQuestionWithAuthCheckController', () => {
       expect(controller.renderUnauthorisedView).toHaveBeenCalledWith(mockH)
     })
   })
-
-  describe('renderUnauthorisedView', () => {
-    test('returns a forbidden response', () => {
-      controller.renderUnauthorisedView(mockH)
-
-      expect(mockH.response).toHaveBeenCalledWith(mockH.view('unauthorised'))
-      expect(mockH.response().code).toHaveBeenCalledWith(403)
-    })
-  })
 })

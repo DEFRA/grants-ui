@@ -28,36 +28,6 @@ export default class LandActionsCheckPageController extends QuestionPageControll
   viewName = 'land-actions-check'
 
   /**
-   * Check if parcel data has valid actions
-   * @param {object} parcelData - Parcel data
-   * @returns {boolean} - Whether parcel has valid actions
-   */
-  hasValidActions(parcelData) {
-    return parcelData?.actionsObj && Object.keys(parcelData.actionsObj).length > 0
-  }
-
-  /**
-   * Map parcel data to land action format
-   * @param {string} parcelKey - Parcel key (sheetId-parcelId)
-   * @param {object} parcelData - Parcel data
-   * @returns {object} - Land action object
-   */
-  mapParcelToLandAction(parcelKey, parcelData) {
-    const [sheetId, parcelId] = parcelKey.split('-')
-    const actions = Object.entries(parcelData.actionsObj).map(([code, actionData]) => ({
-      code,
-      quantity: Number.parseFloat(actionData.value)
-    }))
-
-    return {
-      sbi: sbiStore.get('sbi'),
-      sheetId,
-      parcelId,
-      actions
-    }
-  }
-
-  /**
    * Get formatted price from pence value
    * @param {number} value - Value in pence
    * @returns {string} - Formatted currency string

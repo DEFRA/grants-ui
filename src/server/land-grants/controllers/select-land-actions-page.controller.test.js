@@ -150,12 +150,6 @@ describe('SelectLandActionsPageController', () => {
 
       expect(result).toEqual([])
     })
-
-    test('should handle empty payload', () => {
-      const result = controller.extractLandActionFieldsFromPayload({})
-
-      expect(result).toEqual([])
-    })
   })
 
   describe('mapActionToViewModel', () => {
@@ -282,17 +276,6 @@ describe('SelectLandActionsPageController', () => {
           unit: 'ha'
         }
       })
-    })
-
-    test('should return empty object when no action fields', () => {
-      const state = {}
-      const payload = {}
-      const groupedActions = mockGroupedActions
-      const parcel = { parcelId: 'parcel1', sheetId: 'sheet1', size: 10 }
-
-      const result = controller.createNewStateFromPayload(state, payload, groupedActions, parcel)
-
-      expect(result).toEqual({})
     })
 
     test('should handle multiple actions', () => {
@@ -606,6 +589,137 @@ describe('SelectLandActionsPageController', () => {
       mockRequest.query = { parcelId: 'sheet1-parcel1' }
     })
 
+    test('should handle null payload', async () => {
+      mockRequest.payload = null
+
+      const handler = controller.makePostRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'select-actions-for-land-parcel',
+        expect.objectContaining({
+          errors: [{ text: 'Select an action to do on this land parcel', href: '#landAction_1' }]
+        })
+      )
+    })
+
+    test('should use query parcelId over state when both available', async () => {
+      mockRequest.query = { parcelId: 'query-parcel' }
+      mockContext.state.selectedLandParcel = 'state-parcel'
+      mockRequest.payload = { landAction_1: 'CMOR1' }
+
+      const handler = controller.makePostRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH, 'query-parcel')
+    })
+
+    test('should handle result with actions but empty array', async () => {
+      fetchAvailableActionsForParcel.mockResolvedValue({ actions: [], parcel: {} })
+      mockRequest.payload = { landAction_1: 'CMOR1' }
+
+      const handler = controller.makePostRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'select-actions-for-land-parcel',
+        expect.objectContaining({
+          errors: [
+            {
+              text: 'Unable to find actions information for parcel, please try again later or contact the Rural Payments Agency.'
+            }
+          ]
+        })
+      )
+    })
+
+    test('should verify payload.action === "validate" comparison', async () => {
+      mockRequest.payload = {
+        landAction_1: 'CMOR1',
+        action: 'validate'
+      }
+
+      const handler = controller.makePostRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(validateApplication).toHaveBeenCalled()
+    })
+
+    test('should skip validation when action is different', async () => {
+      mockRequest.payload = {
+        landAction_1: 'CMOR1',
+        action: 'continue'
+      }
+
+      const handler = controller.makePostRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(validateApplication).not.toHaveBeenCalled()
+      expect(controller.proceed).toHaveBeenCalled()
+    })
+
+    test('should return validation result when not null', async () => {
+      mockRequest.payload = {
+        landAction_1: 'CMOR1',
+        action: 'validate'
+      }
+      validateApplication.mockResolvedValue({
+        valid: false,
+        errorMessages: [{ code: 'CMOR1', description: 'Invalid', passed: false }]
+      })
+
+      const handler = controller.makePostRouteHandler()
+      const result = await handler(mockRequest, mockContext, mockH)
+
+      expect(controller.proceed).not.toHaveBeenCalled()
+      expect(result).not.toBe('redirected')
+    })
+
+    test('should handle validation error with no code property', async () => {
+      mockRequest.payload = {
+        landAction_1: 'CMOR1',
+        action: 'validate'
+      }
+      validateApplication.mockResolvedValue({
+        valid: false,
+        errorMessages: [{ description: 'Error without code', passed: false }]
+      })
+
+      const handler = controller.makePostRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'select-actions-for-land-parcel',
+        expect.objectContaining({
+          errors: [{ text: 'Error without code', href: undefined }]
+        })
+      )
+    })
+
+    test('should use actionCode && actionInfo for conditional logic', async () => {
+      const groupedActions = [
+        {
+          name: 'Test',
+          actions: [{ code: 'TEST1', description: 'Test Action', availableArea: { value: 5, unit: 'ha' } }]
+        }
+      ]
+      fetchAvailableActionsForParcel.mockResolvedValue({
+        actions: groupedActions,
+        parcel: { parcelId: 'parcel1', sheetId: 'sheet1', size: 10 }
+      })
+      mockRequest.payload = {
+        landAction_1: 'TEST1',
+        landAction_2: ''
+      }
+
+      const handler = controller.makePostRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      const stateArg = controller.setState.mock.calls[0][1]
+      expect(Object.keys(stateArg.landParcels['sheet1-parcel1'].actionsObj)).toHaveLength(1)
+      expect(stateArg.landParcels['sheet1-parcel1'].actionsObj).toHaveProperty('TEST1')
+    })
+
     test('should update state and proceed on valid submission', async () => {
       mockRequest.payload = { landAction_1: 'CMOR1' }
 
@@ -646,15 +760,6 @@ describe('SelectLandActionsPageController', () => {
           errors: [{ text: 'Select an action to do on this land parcel', href: '#landAction_1' }]
         })
       )
-    })
-
-    test('should handle null payload', async () => {
-      mockRequest.payload = null
-
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
-
-      expect(mockH.view).toHaveBeenCalled()
     })
 
     test('should validate actions when validate action requested', async () => {
@@ -795,21 +900,6 @@ describe('SelectLandActionsPageController', () => {
       validateApplication.mockResolvedValue({
         valid: true,
         errorMessages: []
-      })
-
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
-
-      expect(controller.proceed).toHaveBeenCalled()
-    })
-
-    test('should handle validation when errorMessages is undefined', async () => {
-      mockRequest.payload = {
-        landAction_1: 'CMOR1',
-        action: 'validate'
-      }
-      validateApplication.mockResolvedValue({
-        valid: true
       })
 
       const handler = controller.makePostRouteHandler()

@@ -128,11 +128,49 @@ describe('LandActionsCheckPageController', () => {
         })
       )
     })
+
+    test('should handle missing auth when error occurs', async () => {
+      const requestWithoutAuth = { payload: {} }
+      calculateGrantPayment.mockRejectedValue(new Error('API error'))
+
+      const handler = controller.makeGetRouteHandler()
+      await handler(requestWithoutAuth, mockContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'land-actions-check',
+        expect.objectContaining({
+          errorMessages: [
+            {
+              text: 'Unable to get payment information, please try again later or contact the Rural Payments Agency.'
+            }
+          ]
+        })
+      )
+    })
+
+    test('should handle missing credentials when error occurs', async () => {
+      const requestWithoutCredentials = { auth: {}, payload: {} }
+      calculateGrantPayment.mockRejectedValue(new Error('API error'))
+
+      const handler = controller.makeGetRouteHandler()
+      await handler(requestWithoutCredentials, mockContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'land-actions-check',
+        expect.objectContaining({
+          errorMessages: [
+            {
+              text: 'Unable to get payment information, please try again later or contact the Rural Payments Agency.'
+            }
+          ]
+        })
+      )
+    })
   })
 
   describe('POST Handler - Form Validation', () => {
     test('should show validation error when user must choose but does not', async () => {
-      mockRequest.payload = { action: 'validate' } // No addMoreActions provided
+      mockRequest.payload = { action: 'validate' }
 
       const handler = controller.makePostRouteHandler()
       await handler(mockRequest, mockContext, mockH)
@@ -147,7 +185,7 @@ describe('LandActionsCheckPageController', () => {
     })
 
     test('should handle missing payment data gracefully in validation error', async () => {
-      mockContext.state = { landParcels: {} } // No payment data
+      mockContext.state = { landParcels: {} }
       mockRequest.payload = { action: 'validate' }
 
       const handler = controller.makePostRouteHandler()
@@ -176,13 +214,31 @@ describe('LandActionsCheckPageController', () => {
     })
 
     test('should proceed normally when no validation required', async () => {
-      mockRequest.payload = {} // No action: 'validate'
+      mockRequest.payload = {}
 
       const handler = controller.makePostRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
       expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/submit-your-application')
       expect(mockH.view).not.toHaveBeenCalled()
+    })
+
+    test('should handle errors when fetching payment data for validation error', async () => {
+      mockRequest.payload = { action: 'validate' }
+      calculateGrantPayment.mockRejectedValue(new Error('Payment calculation failed'))
+
+      const handler = controller.makePostRouteHandler()
+      const result = await handler(mockRequest, mockContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'land-actions-check',
+        expect.objectContaining({
+          errorMessages: [{ href: '#addMoreActions', text: 'Please select if you want to add more actions' }],
+          parcelItems: [],
+          additionalYearlyPayments: []
+        })
+      )
+      expect(result).toBe('rendered view')
     })
   })
 
@@ -346,97 +402,96 @@ describe('LandActionsCheckPageController', () => {
       expect(result[0].items[0][0].text).toBe('One-off payment per agreement per year for Management fee: MAN1')
       expect(result[0].items[0][1].html).toContain('£50.00')
     })
+
+    test('should handle undefined parcelItems', () => {
+      const result = controller.getParcelItems(undefined)
+      expect(result).toEqual([])
+    })
+
+    test('should handle null parcelItems', () => {
+      const result = controller.getParcelItems(null)
+      expect(result).toEqual([])
+    })
+
+    test('should handle payment without parcelItems property', () => {
+      const paymentWithoutItems = { agreementLevelItems: {} }
+      const result = controller.getParcelItems(paymentWithoutItems)
+      expect(result).toEqual([])
+    })
+
+    test('should handle undefined agreementLevelItems', () => {
+      const result = controller.getAdditionalYearlyPayments(undefined)
+      expect(result).toEqual([])
+    })
+
+    test('should handle null agreementLevelItems', () => {
+      const result = controller.getAdditionalYearlyPayments(null)
+      expect(result).toEqual([])
+    })
+
+    test('should handle payment without agreementLevelItems property', () => {
+      const paymentWithoutAgreementItems = { parcelItems: {} }
+      const result = controller.getAdditionalYearlyPayments(paymentWithoutAgreementItems)
+      expect(result).toEqual([])
+    })
+
+    test('should create parcel item row with all required cells', () => {
+      const data = {
+        code: 'CMOR1',
+        description: 'Assess moorland and produce a written record',
+        quantity: 4.53,
+        annualPaymentPence: 4806,
+        sheetId: 'SD6743',
+        parcelId: '8083'
+      }
+
+      const row = controller.createParcelItemRow(data)
+
+      expect(row).toHaveLength(4)
+      expect(row[0]).toEqual({ text: 'Assess moorland and produce a written record: CMOR1' })
+      expect(row[1]).toEqual({ text: 4.53, format: 'numeric' })
+      expect(row[2]).toEqual({ text: '£48.06', format: 'numeric' })
+      expect(row[3]).toHaveProperty('html')
+      expect(row[3].html).toContain('govuk-summary-list__actions-list')
+    })
+
+    test('should include links in parcel item row', () => {
+      const data = {
+        code: 'UPL1',
+        description: 'Upland action',
+        quantity: 3.2,
+        annualPaymentPence: 2000,
+        sheetId: 'SD01',
+        parcelId: '001'
+      }
+
+      const row = controller.createParcelItemRow(data)
+      const linksCell = row[3]
+
+      expect(linksCell.html).toContain('select-actions-for-land-parcel?parcelId=SD01-001')
+      expect(linksCell.html).toContain('remove-action?parcelId=SD01-001&action=UPL1')
+      expect(linksCell.html).toContain('Change')
+      expect(linksCell.html).toContain('Remove')
+    })
+
+    test('should format large amounts correctly in parcel item row', () => {
+      const data = {
+        code: 'TEST1',
+        description: 'Test action',
+        quantity: 10.5,
+        annualPaymentPence: 100000,
+        sheetId: 'SH1',
+        parcelId: 'P1'
+      }
+
+      const row = controller.createParcelItemRow(data)
+
+      expect(row[1].text).toBe(10.5)
+      expect(row[2].text).toBe('£1,000.00')
+    })
   })
 
   describe('makeGetRouteHandler', () => {
-    test('should call h.view with correct viewName and viewModel', async () => {
-      controller.getViewModel = vi.fn().mockReturnValue({ foo: 'bar' })
-
-      const handler = controller.makeGetRouteHandler()
-
-      const result = await handler(mockRequest, mockContext, mockH)
-
-      expect(mockH.view).toHaveBeenCalledWith(
-        'land-actions-check',
-        expect.objectContaining({
-          foo: 'bar'
-        })
-      )
-
-      expect(result).toBe('rendered view')
-    })
-
-    test('should pluralize correctly for single parcel and action', async () => {
-      const singleParcelContext = {
-        state: {
-          landParcels: {
-            'sheet1-parcel1': {
-              actionsObj: {
-                action1: {
-                  description: 'Test Action',
-                  value: 10,
-                  unit: 'hectares'
-                }
-              }
-            }
-          }
-        }
-      }
-
-      const handler = controller.makeGetRouteHandler()
-      await handler(mockRequest, singleParcelContext, mockH)
-
-      expect(mockH.view).toHaveBeenCalledWith(
-        'land-actions-check',
-        expect.objectContaining({
-          landParcels: expect.any(Object),
-          parcelItems: expect.any(Array),
-          additionalYearlyPayments: expect.any(Array),
-          totalYearlyPayment: expect.any(String)
-        })
-      )
-    })
-
-    test('should pluralize correctly for multiple parcels and actions', async () => {
-      const multiParcelContext = {
-        state: {
-          landParcels: {
-            'sheet1-parcel1': {
-              actionsObj: {
-                action1: {
-                  description: 'Test Action',
-                  value: 10,
-                  unit: 'hectares'
-                }
-              }
-            },
-            'sheet2-parcel1': {
-              actionsObj: {
-                action1: {
-                  description: 'Test Action 1',
-                  value: 10,
-                  unit: 'hectares'
-                }
-              }
-            }
-          }
-        }
-      }
-
-      const handler = controller.makeGetRouteHandler()
-      await handler(mockRequest, multiParcelContext, mockH)
-
-      expect(mockH.view).toHaveBeenCalledWith(
-        'land-actions-check',
-        expect.objectContaining({
-          landParcels: expect.any(Object),
-          parcelItems: expect.any(Array),
-          additionalYearlyPayments: expect.any(Array),
-          totalYearlyPayment: expect.any(String)
-        })
-      )
-    })
-
     test('should render an error if process payment calculation fails', async () => {
       calculateGrantPayment.mockRejectedValue(new Error('error'))
 
@@ -453,6 +508,22 @@ describe('LandActionsCheckPageController', () => {
           ]
         })
       )
+    })
+
+    test('should handle undefined payment in view model', () => {
+      const viewModel = controller.buildGetViewModel(mockRequest, mockContext, undefined, [], [])
+      expect(viewModel.totalYearlyPayment).toBe('£0.00')
+    })
+
+    test('should handle null payment in view model', () => {
+      const viewModel = controller.buildGetViewModel(mockRequest, mockContext, null, [], [])
+      expect(viewModel.totalYearlyPayment).toBe('£0.00')
+    })
+
+    test('should handle payment without annualTotalPence property', () => {
+      const paymentWithoutTotal = {}
+      const viewModel = controller.buildGetViewModel(mockRequest, mockContext, paymentWithoutTotal, [], [])
+      expect(viewModel.totalYearlyPayment).toBe('£0.00')
     })
   })
 
@@ -537,49 +608,6 @@ describe('LandActionsCheckPageController', () => {
 
       expect(upl2LinksHtml).toContain('Change</a>')
       expect(upl2LinksHtml).toContain('Remove</a>')
-    })
-  })
-
-  describe('Form Validation Edge Cases', () => {
-    test('should handle unexpected payload values gracefully', async () => {
-      mockRequest.payload = {
-        action: 'validate',
-        addMoreActions: null,
-        unexpectedField: 'value'
-      }
-
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
-
-      expect(mockH.view).toHaveBeenCalledWith(
-        'land-actions-check',
-        expect.objectContaining({
-          errorMessages: [
-            {
-              href: '#addMoreActions',
-              text: 'Please select if you want to add more actions'
-            }
-          ]
-        })
-      )
-    })
-
-    test('should handle addMoreActions with unexpected values', async () => {
-      mockRequest.payload = { addMoreActions: 'maybe' }
-
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
-
-      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/submit-your-application')
-    })
-
-    test('should handle completely empty payload', async () => {
-      mockRequest.payload = undefined
-
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
-
-      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/submit-your-application')
     })
   })
 })

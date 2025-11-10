@@ -107,14 +107,20 @@ describe('ConfirmFarmDetailsController', () => {
       expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-path')
       expect(result).toBe('redirected')
     })
+
+    it('should not fetch business details if there is no sbi', async () => {
+      const handler = controller.makePostRouteHandler()
+      const result = await handler({ ...mockRequest, auth: { credentials: { sbi: undefined } } }, mockContext, mockH)
+
+      expect(fetchBusinessAndCustomerInformation).not.toHaveBeenCalled()
+      expect(controller.setState).not.toHaveBeenCalled()
+
+      expect(controller.proceed).toHaveBeenCalled()
+      expect(result).toBe('redirected')
+    })
   })
 
   describe('makeGetRouteHandler', () => {
-    it('should return a function', () => {
-      const handler = controller.makeGetRouteHandler()
-      expect(typeof handler).toBe('function')
-    })
-
     it('should handle successful data fetch and render view', async () => {
       const handler = controller.makeGetRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
@@ -199,6 +205,131 @@ describe('ConfirmFarmDetailsController', () => {
           }
         ]
       })
+    })
+
+    it('should handle missing optional data using optional chaining', async () => {
+      const mockDataWithMissing = {
+        business: {},
+        customer: {}
+      }
+
+      fetchBusinessAndCustomerInformation.mockResolvedValue(mockDataWithMissing)
+
+      const result = await controller.buildFarmDetails(mockRequest)
+
+      expect(result.rows).toEqual([
+        {
+          key: { text: 'SBI number' },
+          value: { text: 'SBI123456' }
+        }
+      ])
+    })
+
+    it('should handle missing auth credentials using optional chaining', async () => {
+      const requestWithoutAuth = {}
+
+      fetchBusinessAndCustomerInformation.mockResolvedValue(mockData)
+
+      const result = await controller.buildFarmDetails(requestWithoutAuth)
+
+      expect(result.rows).toHaveLength(5)
+      const sbiRow = result.rows.find((row) => row.key.text === 'SBI number')
+      expect(sbiRow).toBeDefined()
+      expect(sbiRow.value.text).toBeUndefined()
+    })
+
+    it('should handle missing credentials in auth using optional chaining', async () => {
+      const requestWithoutCredentials = {
+        auth: {} // No credentials
+      }
+
+      fetchBusinessAndCustomerInformation.mockResolvedValue(mockData)
+
+      const result = await controller.buildFarmDetails(requestWithoutCredentials)
+
+      expect(result.rows).toHaveLength(5)
+      const sbiRow = result.rows.find((row) => row.key.text === 'SBI number')
+      expect(sbiRow).toBeDefined()
+      expect(sbiRow.value.text).toBeUndefined()
+    })
+
+    it('should handle missing sbi in credentials using optional chaining', async () => {
+      const requestWithoutSbi = {
+        auth: {
+          credentials: {} // No sbi
+        }
+      }
+
+      fetchBusinessAndCustomerInformation.mockResolvedValue(mockData)
+
+      const result = await controller.buildFarmDetails(requestWithoutSbi)
+
+      expect(result.rows).toHaveLength(5)
+      const sbiRow = result.rows.find((row) => row.key.text === 'SBI number')
+      expect(sbiRow).toBeDefined()
+      expect(sbiRow.value.text).toBeUndefined()
+    })
+
+    it('should handle missing customer name using optional chaining', async () => {
+      const mockDataWithoutCustomerName = {
+        ...mockData,
+        customer: {} // No name
+      }
+
+      fetchBusinessAndCustomerInformation.mockResolvedValue(mockDataWithoutCustomerName)
+
+      const result = await controller.buildFarmDetails(mockRequest)
+
+      expect(result.rows.find((row) => row.key.text === 'Name')).toBeUndefined()
+    })
+
+    it('should handle missing business name using optional chaining', async () => {
+      const mockDataWithoutBusinessName = {
+        ...mockData,
+        business: {
+          ...mockData.business,
+          name: undefined
+        }
+      }
+
+      fetchBusinessAndCustomerInformation.mockResolvedValue(mockDataWithoutBusinessName)
+
+      const result = await controller.buildFarmDetails(mockRequest)
+
+      expect(result.rows.find((row) => row.key.text === 'Business name')).toBeUndefined()
+    })
+
+    it('should handle missing business address using optional chaining', async () => {
+      const mockDataWithoutAddress = {
+        ...mockData,
+        business: {
+          ...mockData.business,
+          address: undefined
+        }
+      }
+
+      fetchBusinessAndCustomerInformation.mockResolvedValue(mockDataWithoutAddress)
+
+      const result = await controller.buildFarmDetails(mockRequest)
+
+      expect(result.rows.find((row) => row.key.text === 'Address')).toBeUndefined()
+    })
+
+    it('should handle missing phone and email using optional chaining', async () => {
+      const mockDataWithoutContactDetails = {
+        ...mockData,
+        business: {
+          ...mockData.business,
+          phone: undefined,
+          email: undefined
+        }
+      }
+
+      fetchBusinessAndCustomerInformation.mockResolvedValue(mockDataWithoutContactDetails)
+
+      const result = await controller.buildFarmDetails(mockRequest)
+
+      expect(result.rows.find((row) => row.key.text === 'Contact details')).toBeUndefined()
     })
   })
 

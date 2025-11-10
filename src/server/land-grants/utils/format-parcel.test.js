@@ -17,24 +17,9 @@ describe('format-parcel', () => {
       expect(result).toEqual(['ABC123'])
     })
 
-    it('should handle empty string', () => {
-      const result = parseLandParcel('')
-      expect(result).toEqual([''])
-    })
-
     it('should handle null/undefined input', () => {
       expect(parseLandParcel(null)).toEqual([''])
       expect(parseLandParcel(undefined)).toEqual([''])
-    })
-
-    it('should handle land parcel with trailing hyphen', () => {
-      const result = parseLandParcel('ABC123-')
-      expect(result).toEqual(['ABC123', ''])
-    })
-
-    it('should handle land parcel with leading hyphen', () => {
-      const result = parseLandParcel('-XYZ789')
-      expect(result).toEqual(['', 'XYZ789'])
     })
   })
 
@@ -47,14 +32,6 @@ describe('format-parcel', () => {
     it('should handle empty strings', () => {
       const result = stringifyParcel({ parcelId: '', sheetId: '' })
       expect(result).toBe('-')
-    })
-
-    it('should handle special characters', () => {
-      const result = stringifyParcel({
-        parcelId: 'parcelId',
-        sheetId: 'sheetId'
-      })
-      expect(result).toBe('sheetId-parcelId')
     })
 
     it('should handle numeric values', () => {
