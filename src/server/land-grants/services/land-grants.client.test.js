@@ -14,9 +14,9 @@ vi.mock('~/src/server/common/helpers/state/backend-auth-helper.js', () => ({
   })
 }))
 
-vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
-  log: vi.fn()
-}))
+// vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
+//   log: vi.fn()
+// }))
 
 global.fetch = mockFetch
 
