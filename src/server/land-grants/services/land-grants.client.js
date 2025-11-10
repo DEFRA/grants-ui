@@ -1,6 +1,6 @@
 import { createApiHeadersForLandGrantsBackend } from '~/src/server/common/helpers/state/backend-auth-helper.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
-import { logger } from '~/src/server/common/helpers/logging/log.js'
+import { log } from '~/src/server/common/helpers/logging/log.js'
 
 /**
  * Performs a POST request to the Land Grants API.
@@ -34,7 +34,15 @@ export async function postToLandGrantsApi(endpoint, body, baseUrl) {
   return retry(apiOperation, {
     timeout: 30000,
     onRetry: (error, attempt) => {
-      logger.warn(`Land Grants API retry attempt ${attempt} for ${endpoint}, error: ${error.message}`)
+      log(
+        {
+          level: 'warn',
+          messageFunc: (messageOptions) =>
+            `Land Grants API retry attempt ${attempt} for ${endpoint}, error: ${error.message}`,
+          error
+        },
+        {}
+      )
     }
   })
 }
