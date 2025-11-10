@@ -361,7 +361,7 @@ describe('SelectLandParcelPageController', () => {
       expect(result).toBe('mock-rendered-view')
     })
 
-    it('should correctly calculate actions count using optional chaining', async () => {
+    it('should correctly calculate actions count', async () => {
       mockRequest.payload = { action: 'validate' }
       mockContext = setupContext({
         landParcels: {

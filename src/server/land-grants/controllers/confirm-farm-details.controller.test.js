@@ -207,7 +207,7 @@ describe('ConfirmFarmDetailsController', () => {
       })
     })
 
-    it('should handle missing optional data using optional chaining', async () => {
+    it('should handle missing optional data', async () => {
       const mockDataWithMissing = {
         business: {},
         customer: {}
@@ -225,7 +225,7 @@ describe('ConfirmFarmDetailsController', () => {
       ])
     })
 
-    it('should handle missing auth credentials using optional chaining', async () => {
+    it('should handle missing auth credentials', async () => {
       const requestWithoutAuth = {}
 
       fetchBusinessAndCustomerInformation.mockResolvedValue(mockData)
@@ -238,7 +238,7 @@ describe('ConfirmFarmDetailsController', () => {
       expect(sbiRow.value.text).toBeUndefined()
     })
 
-    it('should handle missing credentials in auth using optional chaining', async () => {
+    it('should handle missing credentials in auth', async () => {
       const requestWithoutCredentials = {
         auth: {} // No credentials
       }
@@ -253,7 +253,7 @@ describe('ConfirmFarmDetailsController', () => {
       expect(sbiRow.value.text).toBeUndefined()
     })
 
-    it('should handle missing sbi in credentials using optional chaining', async () => {
+    it('should handle missing sbi in credentials', async () => {
       const requestWithoutSbi = {
         auth: {
           credentials: {} // No sbi
@@ -270,7 +270,7 @@ describe('ConfirmFarmDetailsController', () => {
       expect(sbiRow.value.text).toBeUndefined()
     })
 
-    it('should handle missing customer name using optional chaining', async () => {
+    it('should handle missing customer name', async () => {
       const mockDataWithoutCustomerName = {
         ...mockData,
         customer: {} // No name
@@ -283,7 +283,7 @@ describe('ConfirmFarmDetailsController', () => {
       expect(result.rows.find((row) => row.key.text === 'Name')).toBeUndefined()
     })
 
-    it('should handle missing business name using optional chaining', async () => {
+    it('should handle missing business name', async () => {
       const mockDataWithoutBusinessName = {
         ...mockData,
         business: {
@@ -299,7 +299,7 @@ describe('ConfirmFarmDetailsController', () => {
       expect(result.rows.find((row) => row.key.text === 'Business name')).toBeUndefined()
     })
 
-    it('should handle missing business address using optional chaining', async () => {
+    it('should handle missing business address', async () => {
       const mockDataWithoutAddress = {
         ...mockData,
         business: {
@@ -315,7 +315,7 @@ describe('ConfirmFarmDetailsController', () => {
       expect(result.rows.find((row) => row.key.text === 'Address')).toBeUndefined()
     })
 
-    it('should handle missing phone and email using optional chaining', async () => {
+    it('should handle missing phone and email', async () => {
       const mockDataWithoutContactDetails = {
         ...mockData,
         business: {
