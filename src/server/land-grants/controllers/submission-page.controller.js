@@ -112,14 +112,17 @@ export default class SubmissionPageController extends SummaryPageController {
       })
 
       // Add to submissions collection
-      await persistSubmissionToApi({
-        crn,
-        sbi,
-        grantCode: this.grantCode,
-        grantVersion: context.grantVersion,
-        referenceNumber: context.referenceNumber,
-        submittedAt
-      })
+      await persistSubmissionToApi(
+        {
+          crn,
+          sbi,
+          grantCode: this.grantCode,
+          grantVersion: context.grantVersion,
+          referenceNumber: context.referenceNumber,
+          submittedAt
+        },
+        request
+      )
     }
 
     // Get the redirect path

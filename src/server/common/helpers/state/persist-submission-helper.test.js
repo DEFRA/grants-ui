@@ -5,6 +5,7 @@ import {
   HTTP_STATUS,
   TEST_BACKEND_URL
 } from './test-helpers/auth-test-helpers.js'
+import { mockSimpleRequest } from '~/src/__mocks__/hapi-mocks.js'
 
 global.fetch = vi.fn()
 
@@ -29,6 +30,7 @@ vi.doMock('./backend-auth-helper.js', () => ({
 let persistSubmissionToApi
 let log
 let LogCodes
+let mockRequest
 
 const TEST_SUBMISSION = {
   referenceNumber: 'REF123',
@@ -47,6 +49,7 @@ const importHelperAndDeps = async () => {
 describe('persistSubmissionToApi', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockRequest = mockSimpleRequest()
   })
 
   describe('With backend configured correctly', () => {
@@ -83,7 +86,7 @@ describe('persistSubmissionToApi', () => {
     it('persists submission successfully when response is ok', async () => {
       fetch.mockResolvedValue(createSuccessfulFetchResponse())
 
-      await persistSubmissionToApi(TEST_SUBMISSION)
+      await persistSubmissionToApi(TEST_SUBMISSION, mockRequest)
 
       const expectedBody = JSON.stringify({
         ...TEST_SUBMISSION,
@@ -115,7 +118,8 @@ describe('persistSubmissionToApi', () => {
             hasReference: true,
             keyCount: Object.keys(TEST_SUBMISSION).length
           }
-        })
+        }),
+        mockRequest
       )
 
       expect(log).not.toHaveBeenCalledWith(LogCodes.SYSTEM.EXTERNAL_API_ERROR, expect.anything())
@@ -125,7 +129,7 @@ describe('persistSubmissionToApi', () => {
       const failedResponse = createFailedFetchResponse()
       fetch.mockResolvedValue(failedResponse)
 
-      await persistSubmissionToApi(TEST_SUBMISSION)
+      await persistSubmissionToApi(TEST_SUBMISSION, mockRequest)
 
       expect(fetch).toHaveBeenCalledTimes(1)
       expect(log).toHaveBeenCalledWith(
@@ -135,7 +139,8 @@ describe('persistSubmissionToApi', () => {
           endpoint: expect.stringContaining('/submissions'),
           referenceNumber: TEST_SUBMISSION.referenceNumber,
           error: `${failedResponse.status} - ${failedResponse.statusText}`
-        })
+        }),
+        mockRequest
       )
     })
 
