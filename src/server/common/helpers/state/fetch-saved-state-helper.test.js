@@ -7,6 +7,7 @@ import {
   MOCK_STATE_DATA,
   TEST_USER_IDS
 } from './test-helpers/auth-test-helpers.js'
+import { mockSimpleRequest } from '~/src/__mocks__/hapi-mocks.js'
 
 const mockFetch = vi.hoisted(() => vi.fn())
 global.fetch = mockFetch
@@ -31,6 +32,7 @@ let fetchSavedStateFromApi
 let clearSavedStateFromApi
 let log
 let LogCodes
+let mockRequest
 
 describe('State API helpers', () => {
   const key = `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.ORGANISATION_ID}:${TEST_USER_IDS.GRANT_ID}`
@@ -49,6 +51,8 @@ describe('State API helpers', () => {
   })
 
   beforeEach(() => {
+    mockRequest = mockSimpleRequest()
+
     mockParseSessionKey.mockReturnValue({
       sbi: TEST_USER_IDS.ORGANISATION_ID,
       grantCode: TEST_USER_IDS.GRANT_ID
@@ -86,7 +90,7 @@ describe('State API helpers', () => {
       it('returns state when response is valid', async () => {
         mockFetch.mockResolvedValue(createSuccessfulResponse())
 
-        const result = await fetchSavedStateFromApi(key)
+        const result = await fetchSavedStateFromApi(key,mockRequest)
 
         expect(result).toHaveProperty('state')
         expect(mockFetch).toHaveBeenCalledTimes(1)
@@ -96,7 +100,7 @@ describe('State API helpers', () => {
             method: 'GET',
             endpoint: expect.stringContaining('/state/'),
             identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.ORGANISATION_ID}:${TEST_USER_IDS.GRANT_ID}`
-          })
+          }), mockRequest
         )
       })
 
@@ -123,7 +127,7 @@ describe('State API helpers', () => {
       it('returns null on 404', async () => {
         mockFetch.mockResolvedValue(createFailedResponse(HTTP_STATUS.NOT_FOUND))
 
-        const result = await fetchSavedStateFromApi(key)
+        const result = await fetchSavedStateFromApi(key, mockRequest)
 
         expect(result).toBeNull()
         expect(log).toHaveBeenCalledWith(
@@ -133,14 +137,14 @@ describe('State API helpers', () => {
             endpoint: expect.stringContaining('/state/'),
             identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.ORGANISATION_ID}:${TEST_USER_IDS.GRANT_ID}`,
             summary: 'No state found in backend'
-          })
+          }), mockRequest
         )
       })
 
       it('returns null on non-200 (not 404)', async () => {
         mockFetch.mockResolvedValue(createFailedResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR))
 
-        const result = await fetchSavedStateFromApi(key)
+        const result = await fetchSavedStateFromApi(key, mockRequest)
 
         expect(result).toBeNull()
         expect(log).toHaveBeenCalledWith(
@@ -150,14 +154,14 @@ describe('State API helpers', () => {
             endpoint: expect.stringContaining('/state/'),
             identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.ORGANISATION_ID}:${TEST_USER_IDS.GRANT_ID}`,
             error: 'Failed to fetch saved state: 500'
-          })
+          }), mockRequest
         )
       })
 
       it('returns null when response JSON is invalid or missing state', async () => {
         mockFetch.mockResolvedValue(createSuccessfulResponse(123))
 
-        const result = await fetchSavedStateFromApi(key)
+        const result = await fetchSavedStateFromApi(key, mockRequest)
 
         expect(result).toBeNull()
         expect(log).toHaveBeenCalledWith(
@@ -167,7 +171,8 @@ describe('State API helpers', () => {
             endpoint: expect.stringContaining('/state/'),
             identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.ORGANISATION_ID}:${TEST_USER_IDS.GRANT_ID}`,
             error: 'Unexpected or empty state format: 123'
-          })
+          }),
+          mockRequest
         )
       })
 
@@ -175,7 +180,7 @@ describe('State API helpers', () => {
         const networkError = new Error(ERROR_MESSAGES.NETWORK_ERROR)
         mockFetch.mockRejectedValue(networkError)
 
-        const result = await fetchSavedStateFromApi(key)
+        const result = await fetchSavedStateFromApi(key, mockRequest)
 
         expect(result).toBeNull()
         expect(log).toHaveBeenCalledWith(
@@ -185,7 +190,7 @@ describe('State API helpers', () => {
             endpoint: expect.stringContaining('/state/'),
             identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.ORGANISATION_ID}:${TEST_USER_IDS.GRANT_ID}`,
             error: 'Network error'
-          })
+          }), mockRequest
         )
       })
     })
@@ -246,7 +251,7 @@ describe('State API helpers', () => {
       it('returns state when response is valid', async () => {
         mockFetch.mockResolvedValue(createSuccessfulResponse())
 
-        const result = await clearSavedStateFromApi(key)
+        const result = await clearSavedStateFromApi(key, mockRequest)
 
         expect(result).toHaveProperty('state')
         expect(mockFetch).toHaveBeenCalledTimes(1)
@@ -256,7 +261,7 @@ describe('State API helpers', () => {
             method: 'DELETE',
             endpoint: expect.stringContaining('/state/'),
             identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.ORGANISATION_ID}:${TEST_USER_IDS.GRANT_ID}`
-          })
+          }), mockRequest
         )
       })
 
@@ -283,7 +288,7 @@ describe('State API helpers', () => {
       it('returns null on 404', async () => {
         mockFetch.mockResolvedValue(createFailedResponse(HTTP_STATUS.NOT_FOUND))
 
-        const result = await clearSavedStateFromApi(key)
+        const result = await clearSavedStateFromApi(key, mockRequest)
 
         expect(result).toBeNull()
         expect(log).toHaveBeenCalledWith(
@@ -293,14 +298,14 @@ describe('State API helpers', () => {
             endpoint: expect.stringContaining('/state/'),
             identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.ORGANISATION_ID}:${TEST_USER_IDS.GRANT_ID}`,
             summary: 'No state found in backend'
-          })
+          }), mockRequest
         )
       })
 
       it('returns null on non-200 (not 404)', async () => {
         mockFetch.mockResolvedValue(createFailedResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR))
 
-        const result = await clearSavedStateFromApi(key)
+        const result = await clearSavedStateFromApi(key, mockRequest)
 
         expect(result).toBeNull()
         expect(log).toHaveBeenCalledWith(
@@ -310,14 +315,14 @@ describe('State API helpers', () => {
             endpoint: expect.stringContaining('/state/'),
             identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.ORGANISATION_ID}:${TEST_USER_IDS.GRANT_ID}`,
             error: 'Failed to clear saved state: 500'
-          })
+          }), mockRequest
         )
       })
 
       it('returns null when response JSON is invalid or missing state', async () => {
         mockFetch.mockResolvedValue(createSuccessfulResponse(123))
 
-        const result = await clearSavedStateFromApi(key)
+        const result = await clearSavedStateFromApi(key, mockRequest)
 
         expect(result).toBeNull()
         expect(log).toHaveBeenCalledWith(
@@ -327,7 +332,7 @@ describe('State API helpers', () => {
             endpoint: expect.stringContaining('/state/'),
             identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.ORGANISATION_ID}:${TEST_USER_IDS.GRANT_ID}`,
             error: 'Unexpected or empty state format: 123'
-          })
+          }), mockRequest
         )
       })
 
@@ -335,7 +340,7 @@ describe('State API helpers', () => {
         const networkError = new Error(ERROR_MESSAGES.NETWORK_ERROR)
         mockFetch.mockRejectedValue(networkError)
 
-        const result = await clearSavedStateFromApi(key)
+        const result = await clearSavedStateFromApi(key, mockRequest)
 
         expect(result).toBeNull()
         expect(log).toHaveBeenCalledWith(
@@ -345,7 +350,8 @@ describe('State API helpers', () => {
             endpoint: expect.stringContaining('/state/'),
             identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.ORGANISATION_ID}:${TEST_USER_IDS.GRANT_ID}`,
             error: 'Network error'
-          })
+          }), mockRequest
+
         )
       })
     })
