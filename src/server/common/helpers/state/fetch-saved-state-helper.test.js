@@ -90,7 +90,7 @@ describe('State API helpers', () => {
       it('returns state when response is valid', async () => {
         mockFetch.mockResolvedValue(createSuccessfulResponse())
 
-        const result = await fetchSavedStateFromApi(key,mockRequest)
+        const result = await fetchSavedStateFromApi(key, mockRequest)
 
         expect(result).toHaveProperty('state')
         expect(mockFetch).toHaveBeenCalledTimes(1)
@@ -100,7 +100,8 @@ describe('State API helpers', () => {
             method: 'GET',
             endpoint: expect.stringContaining('/state/'),
             identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.ORGANISATION_ID}:${TEST_USER_IDS.GRANT_ID}`
-          }), mockRequest
+          }),
+          mockRequest
         )
       })
 
@@ -137,7 +138,8 @@ describe('State API helpers', () => {
             endpoint: expect.stringContaining('/state/'),
             identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.ORGANISATION_ID}:${TEST_USER_IDS.GRANT_ID}`,
             summary: 'No state found in backend'
-          }), mockRequest
+          }),
+          mockRequest
         )
       })
 
@@ -154,7 +156,8 @@ describe('State API helpers', () => {
             endpoint: expect.stringContaining('/state/'),
             identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.ORGANISATION_ID}:${TEST_USER_IDS.GRANT_ID}`,
             error: 'Failed to fetch saved state: 500'
-          }), mockRequest
+          }),
+          mockRequest
         )
       })
 
@@ -190,7 +193,8 @@ describe('State API helpers', () => {
             endpoint: expect.stringContaining('/state/'),
             identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.ORGANISATION_ID}:${TEST_USER_IDS.GRANT_ID}`,
             error: 'Network error'
-          }), mockRequest
+          }),
+          mockRequest
         )
       })
     })
@@ -261,7 +265,8 @@ describe('State API helpers', () => {
             method: 'DELETE',
             endpoint: expect.stringContaining('/state/'),
             identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.ORGANISATION_ID}:${TEST_USER_IDS.GRANT_ID}`
-          }), mockRequest
+          }),
+          mockRequest
         )
       })
 
@@ -298,7 +303,8 @@ describe('State API helpers', () => {
             endpoint: expect.stringContaining('/state/'),
             identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.ORGANISATION_ID}:${TEST_USER_IDS.GRANT_ID}`,
             summary: 'No state found in backend'
-          }), mockRequest
+          }),
+          mockRequest
         )
       })
 
@@ -315,7 +321,8 @@ describe('State API helpers', () => {
             endpoint: expect.stringContaining('/state/'),
             identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.ORGANISATION_ID}:${TEST_USER_IDS.GRANT_ID}`,
             error: 'Failed to clear saved state: 500'
-          }), mockRequest
+          }),
+          mockRequest
         )
       })
 
@@ -332,7 +339,8 @@ describe('State API helpers', () => {
             endpoint: expect.stringContaining('/state/'),
             identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.ORGANISATION_ID}:${TEST_USER_IDS.GRANT_ID}`,
             error: 'Unexpected or empty state format: 123'
-          }), mockRequest
+          }),
+          mockRequest
         )
       })
 
@@ -350,8 +358,8 @@ describe('State API helpers', () => {
             endpoint: expect.stringContaining('/state/'),
             identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.ORGANISATION_ID}:${TEST_USER_IDS.GRANT_ID}`,
             error: 'Network error'
-          }), mockRequest
-
+          }),
+          mockRequest
         )
       })
     })
