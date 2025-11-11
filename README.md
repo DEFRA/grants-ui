@@ -189,6 +189,52 @@ Integration tests are identified by:
 - Tests that start the full Hapi server (e.g., `start-server.test.js`)
 - Tests making real external service calls (e.g., `grant-application.service.test.js`)
 
+#### Mutation Testing
+
+The project uses **Stryker Mutator** to assess test quality by introducing mutations (small code changes) and verifying that tests catch them.
+
+**Running Mutation Tests:**
+
+```bash
+# Run Stryker mutation testing
+npx stryker run
+
+# View the mutation report
+open reports/mutation/mutation.html
+```
+
+**Configuration:**
+
+- `stryker.config.mjs` - Main Stryker configuration
+- `testRunner: 'command'` - Uses the custom test command defined in `commandRunner`
+- `commandRunner.command: 'npm run test:stryker'` - Runs tests for mutation testing
+- Reports are generated in `reports/mutation/` directory
+
+**What Mutation Testing Does:**
+
+Stryker creates modified versions of your code (mutants) by:
+- Changing operators (`===` to `!==`, `&&` to `||`)
+- Modifying conditionals (`>` to `>=`, `<` to `<=`)
+- Removing optional chaining (`?.`)
+- Altering return values
+
+Each mutant is tested against your test suite. If tests fail, the mutant is "killed" (good). If tests pass, the mutant "survived" (indicates weak test coverage).
+
+**Mutation Score:**
+
+The mutation score indicates test effectiveness:
+- **100%**: All mutants killed - excellent test quality
+- **80-99%**: Most mutants killed - good test quality
+- **60-79%**: Some mutants survived - tests need improvement
+- **<60%**: Many mutants survived - significant test gaps
+
+**Best Practices:**
+
+- Run mutation tests on specific files or modules rather than the entire codebase (faster feedback)
+- Focus on critical business logic and complex conditionals
+- Use mutation reports to identify untested edge cases
+- Mutation testing complements (not replaces) code coverage metrics
+
 ### Code Quality & Linting
 
 - **Neostandard**: Modern JavaScript/Node.js linting configuration that provides opinionated code quality rules
