@@ -208,7 +208,7 @@ function buildRedirectUrl(grantId, path) {
  */
 async function handlePostSubmission(request, h, context, previousStatus, grantCode, grantRedirectRules) {
   const grantId = request.params?.slug
-  const response = await getApplicationStatus(grantCode, context.referenceNumber.toLowerCase())
+  const response = await getApplicationStatus(grantCode, context.referenceNumber.toLowerCase(), request)
   const { status: gasStatus } = await response.json()
 
   const postSubmissionRules = grantRedirectRules?.postSubmission ?? []

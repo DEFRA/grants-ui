@@ -18,13 +18,14 @@ export default class SubmissionPageController extends SummaryPageController {
 
   /**
    * Submits the land grant application
+   * @param {object} request - Request object
    * @param {object} data
    * @param {object} data.identifiers - User identifiers
    * @param {object} data.state - Form application state
    * @param {string} data.validationId - Land grants validation ID
    * @returns {Promise<object>} - The result of the grant application submission
    */
-  async submitGasApplication(data) {
+  async submitGasApplication(request, data) {
     const { identifiers, state, validationId } = data
     const applicationData = transformStateObjectToGasApplication(
       identifiers,
@@ -32,7 +33,7 @@ export default class SubmissionPageController extends SummaryPageController {
       stateToLandGrantsGasAnswers
     )
 
-    return submitGrantApplication(this.grantCode, applicationData)
+    return submitGrantApplication(this.grantCode, applicationData, request)
   }
 
   /**
@@ -152,7 +153,7 @@ export default class SubmissionPageController extends SummaryPageController {
           return this.handleSubmissionError(h, request, context, validationId)
         }
 
-        const result = await this.submitGasApplication({
+        const result = await this.submitGasApplication(request, {
           identifiers: { sbi, crn, frn, clientRef: referenceNumber?.toLowerCase() },
           state,
           validationId

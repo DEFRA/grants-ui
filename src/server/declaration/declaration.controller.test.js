@@ -217,12 +217,16 @@ describe('DeclarationPageController', () => {
         expect.any(Function)
       )
 
-      expect(submitGrantApplication).toHaveBeenCalledWith('adding-value', {
-        transformedApp: true,
-        metadata: {
-          submittedAt: '2025-01-01T00:00:00.000Z'
-        }
-      })
+      expect(submitGrantApplication).toHaveBeenCalledWith(
+        'adding-value',
+        {
+          transformedApp: true,
+          metadata: {
+            submittedAt: '2025-01-01T00:00:00.000Z'
+          }
+        },
+        mockRequest
+      )
       expect(mockH.redirect).toHaveBeenCalledWith('/adding-value/confirmation')
     })
 

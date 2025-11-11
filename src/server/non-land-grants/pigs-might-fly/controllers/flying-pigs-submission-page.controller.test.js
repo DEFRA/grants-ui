@@ -5,6 +5,7 @@ import { transformStateObjectToGasApplication } from '~/src/server/common/helper
 import { submitGrantApplication } from '~/src/server/common/services/grant-application/grant-application.service.js'
 import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/forms-cache.js'
 import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
+import { mockSimpleRequest } from '~/src/__mocks__/hapi-mocks.js'
 
 vi.mock('~/src/server/non-land-grants/pigs-might-fly/mappers/state-to-gas-pigs-mapper.js')
 vi.mock('~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js')
@@ -16,6 +17,7 @@ describe('FlyingPigsSubmissionPageController', () => {
   let mockModel
   let mockPageDef
   let mockContext
+  let mockRequest
 
   beforeEach(() => {
     mockModel = {
@@ -39,6 +41,8 @@ describe('FlyingPigsSubmissionPageController', () => {
         britishLandracePigsCount: 15
       }
     }
+
+    mockRequest = mockSimpleRequest()
   })
 
   it('should initialize with the correct grant code and view name', () => {
@@ -51,7 +55,7 @@ describe('FlyingPigsSubmissionPageController', () => {
     stateToPigsMightFlyGasAnswers.mockReturnValue(mockContext.state)
     transformStateObjectToGasApplication.mockReturnValue(mockApplicationData)
 
-    await controller.submitPigTypesApplication(mockContext)
+    await controller.submitPigTypesApplication(mockContext, mockRequest)
 
     expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
       {
@@ -64,7 +68,7 @@ describe('FlyingPigsSubmissionPageController', () => {
       mockContext.state,
       stateToPigsMightFlyGasAnswers
     )
-    expect(submitGrantApplication).toHaveBeenCalledWith('pigs-might-fly', mockApplicationData)
+    expect(submitGrantApplication).toHaveBeenCalledWith('pigs-might-fly', mockApplicationData, mockRequest)
   })
 
   it('should handle POST route and redirect to /confirmation', async () => {

@@ -321,7 +321,7 @@ describe('formsStatusCallback', () => {
 
     await formsStatusCallback(request, h, context)
 
-    expect(getApplicationStatus).toHaveBeenCalledWith('grant-a-code', '89b-aec-5a6')
+    expect(getApplicationStatus).toHaveBeenCalledWith('grant-a-code', '89b-aec-5a6', request)
   })
 
   it('redirects when newStatus path differs from current path', async () => {
