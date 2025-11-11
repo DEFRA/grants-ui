@@ -102,7 +102,7 @@ describe('LogCodes', () => {
         'TOKEN_VERIFICATION_SUCCESS',
         'info',
         { userId: TEST_USER_IDS.DEFAULT, organisationId: TEST_ORGANIZATIONS.DEFAULT },
-        `Token verification successful for user=${TEST_USER_IDS.DEFAULT}, organisation=${TEST_ORGANIZATIONS.DEFAULT}`
+        `Token verification successful for userCRN=${TEST_USER_IDS.DEFAULT}, userSBI=${TEST_ORGANIZATIONS.DEFAULT}`
       ],
       [
         'TOKEN_VERIFICATION_FAILURE',

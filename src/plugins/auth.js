@@ -411,7 +411,8 @@ function getCookieOptions() {
 
           try {
             const { access_token: newToken, refresh_token: newRefreshToken } = await refreshTokens(
-              userSession.refreshToken
+              userSession.refreshToken,
+              request
             )
             userSession.token = newToken
             userSession.refreshToken = newRefreshToken
