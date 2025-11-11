@@ -1,7 +1,6 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { formatCurrency } from '~/src/config/nunjucks/filters/filters.js'
 import { landActionWithCode } from '~/src/server/land-grants/utils/land-action-with-code.js'
-import { sbiStore } from '~/src/server/sbi/state.js'
 import { actionGroups, calculateGrantPayment } from '../services/land-grants.service.js'
 import { stringifyParcel } from '../utils/format-parcel.js'
 import { log, LogCodes } from '../../common/helpers/logging/log.js'
