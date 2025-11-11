@@ -112,9 +112,12 @@ describe('SubmissionPageController', () => {
 
       controller.handleSubmissionError(mockH, mockRequest, mockContext, validationId)
 
-      expect(mockH.view).toHaveBeenCalledWith('submission-error', expect.objectContaining({
-        refNumber: 'validation-123'
-      }))
+      expect(mockH.view).toHaveBeenCalledWith(
+        'submission-error',
+        expect.objectContaining({
+          refNumber: 'validation-123'
+        })
+      )
       expect(log).toHaveBeenCalledWith(
         LogCodes.SUBMISSION.SUBMISSION_VALIDATION_ERROR,
         expect.objectContaining({
@@ -130,9 +133,12 @@ describe('SubmissionPageController', () => {
 
       controller.handleSubmissionError(mockH, mockRequest, mockContext)
 
-      expect(mockH.view).toHaveBeenCalledWith('submission-error', expect.objectContaining({
-        refNumber: 'REF456'
-      }))
+      expect(mockH.view).toHaveBeenCalledWith(
+        'submission-error',
+        expect.objectContaining({
+          refNumber: 'REF456'
+        })
+      )
       expect(log).toHaveBeenCalledWith(
         LogCodes.SUBMISSION.SUBMISSION_VALIDATION_ERROR,
         expect.objectContaining({
@@ -148,9 +154,12 @@ describe('SubmissionPageController', () => {
 
       controller.handleSubmissionError(mockH, mockRequest, mockContext)
 
-      expect(mockH.view).toHaveBeenCalledWith('submission-error', expect.objectContaining({
-        refNumber: 'N/A'
-      }))
+      expect(mockH.view).toHaveBeenCalledWith(
+        'submission-error',
+        expect.objectContaining({
+          refNumber: 'N/A'
+        })
+      )
       expect(log).toHaveBeenCalledWith(
         LogCodes.SUBMISSION.SUBMISSION_VALIDATION_ERROR,
         expect.objectContaining({
@@ -217,10 +226,7 @@ describe('SubmissionPageController', () => {
       vi.clearAllMocks()
       await controller.handleSuccessfulSubmission(mockRequest, mockContext, mockH, 200)
 
-      expect(log).not.toHaveBeenCalledWith(
-        LogCodes.SUBMISSION.SUBMISSION_COMPLETED,
-        expect.anything()
-      )
+      expect(log).not.toHaveBeenCalledWith(LogCodes.SUBMISSION.SUBMISSION_COMPLETED, expect.anything())
       expect(mockCacheService.setState).not.toHaveBeenCalled()
     })
 

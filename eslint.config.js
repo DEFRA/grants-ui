@@ -8,7 +8,7 @@ export default [
     // @ts-ignore
     jsx: false,
     style: false,
-    ignores: ['.server', '.public', 'coverage', 'node_modules']
+    ignores: ['.server', '.public', 'coverage', 'node_modules', '.stryker-tmp']
   }),
   prettier,
   {

@@ -7,13 +7,7 @@ export default {
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./.vitest/setup-file.js'],
-    include: ['src/**/*.test.js'],
-    exclude: [
-      '**/contracts/**',
-      '**/server/common/services/grant-application/grant-application.service.test.js',
-      '**/server/common/helpers/errors.test.js',
-      '**/server/common/helpers/retry.test.js'
-    ],
+    include: ['**/src/**/*.test.js'],
     reporters: ['default', CoverageAnalyserReporter()],
     coverage: {
       enabled: true,

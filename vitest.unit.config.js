@@ -7,8 +7,8 @@ export default {
 
     exclude: [
       '**/node_modules/**',
+      '**/.stryker-tmp/**',
       '**/*.contract.test.js',
-      '**/src/server/common/services/grant-application/grant-application.service.test.js',
       '**/src/server/common/helpers/start-server.test.js',
       '**/src/server/common/helpers/retry.test.js'
     ],
