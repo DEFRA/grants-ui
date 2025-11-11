@@ -213,6 +213,7 @@ open reports/mutation/mutation.html
 **What Mutation Testing Does:**
 
 Stryker creates modified versions of your code (mutants) by:
+
 - Changing operators (`===` to `!==`, `&&` to `||`)
 - Modifying conditionals (`>` to `>=`, `<` to `<=`)
 - Removing optional chaining (`?.`)
@@ -223,6 +224,7 @@ Each mutant is tested against your test suite. If tests fail, the mutant is "kil
 **Mutation Score:**
 
 The mutation score indicates test effectiveness:
+
 - **100%**: All mutants killed - excellent test quality
 - **80-99%**: Most mutants killed - good test quality
 - **60-79%**: Some mutants survived - tests need improvement
