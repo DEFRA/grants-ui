@@ -24,7 +24,7 @@ export const LogCodes = {
     TOKEN_VERIFICATION_SUCCESS: {
       level: 'info',
       messageFunc: (messageOptions) =>
-        `Token verification successful for user=${messageOptions.userId}, organisation=${messageOptions.organisationId}`
+        `Token verification successful for userCRN=${messageOptions.userId}, userSBI=${messageOptions.organisationId}`
     },
     TOKEN_VERIFICATION_FAILURE: {
       level: 'error',

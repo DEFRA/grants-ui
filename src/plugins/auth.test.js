@@ -750,7 +750,7 @@ describe('Auth Plugin', () => {
         sessionId: 'test-session'
       })
 
-      expect(refreshTokens).toHaveBeenCalledWith('refresh-token')
+      expect(refreshTokens).toHaveBeenCalledWith('refresh-token', mockRequest)
       expect(server.app.cache.set).toHaveBeenCalledWith('test-session', {
         token: 'new-token',
         refreshToken: 'new-refresh-token'

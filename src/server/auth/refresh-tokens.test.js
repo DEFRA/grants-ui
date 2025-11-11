@@ -4,6 +4,7 @@ import { config } from '~/src/config/config.js'
 import { getOidcConfig } from '~/src/server/auth/get-oidc-config.js'
 import { refreshTokens } from './refresh-tokens.js'
 import { log } from '~/src/server/common/helpers/logging/log.js'
+import { mockSimpleRequest } from '~/src/__mocks__/hapi-mocks.js'
 
 vi.mock('~/src/server/auth/get-oidc-config.js')
 vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
@@ -12,8 +13,12 @@ vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
 })
 
 describe('refreshTokens', () => {
+  let mockRequest
+
   beforeEach(() => {
     vi.clearAllMocks()
+
+    mockRequest = mockSimpleRequest()
 
     config.get = vi.fn((param) => {
       const configValues = {
@@ -39,7 +44,7 @@ describe('refreshTokens', () => {
 
     Wreck.post.mockResolvedValue({ payload: mockPayload })
 
-    const result = await refreshTokens('old-refresh-token')
+    const result = await refreshTokens('old-refresh-token', mockRequest)
 
     expect(getOidcConfig).toHaveBeenCalledTimes(1)
 
@@ -61,7 +66,7 @@ describe('refreshTokens', () => {
     const mockError = new Error('Network error')
     Wreck.post.mockRejectedValue(mockError)
 
-    await expect(refreshTokens('old-refresh-token')).rejects.toThrow('Network error')
+    await expect(refreshTokens('old-refresh-token', mockRequest)).rejects.toThrow('Network error')
 
     expect(getOidcConfig).toHaveBeenCalledTimes(1)
 
@@ -72,14 +77,14 @@ describe('refreshTokens', () => {
     const mockError = new Error('Configuration error')
     getOidcConfig.mockRejectedValue(mockError)
 
-    await expect(refreshTokens('old-refresh-token')).rejects.toThrow('Configuration error')
+    await expect(refreshTokens('old-refresh-token', mockRequest)).rejects.toThrow('Configuration error')
 
     expect(Wreck.post).not.toHaveBeenCalled()
   })
 
   it('should error when no access token is returned', async () => {
     Wreck.post.mockResolvedValue({ payload: {} })
-    await expect(refreshTokens('refresh-token')).rejects.toThrow('No access token in refresh response')
+    await expect(refreshTokens('refresh-token', mockRequest)).rejects.toThrow('No access token in refresh response')
   })
 
   describe('refreshTokens - error scenarios', () => {
@@ -106,14 +111,15 @@ describe('refreshTokens', () => {
         const mockError = new Error(errorMessage)
         getOidcConfig.mockRejectedValue(mockError)
 
-        await expect(refreshTokens('refresh-token')).rejects.toThrow(errorMessage)
+        await expect(refreshTokens('refresh-token', mockRequest)).rejects.toThrow(errorMessage)
 
         expect(log).toHaveBeenCalledTimes(1)
         expect(log).toHaveBeenCalledWith(
           expect.any(Object),
           expect.objectContaining({
             step: stepValue
-          })
+          }),
+          mockRequest
         )
       }
     )
@@ -122,14 +128,15 @@ describe('refreshTokens', () => {
       const mockError = new Error('not in list')
       getOidcConfig.mockRejectedValue(mockError)
 
-      await expect(refreshTokens('refresh-token')).rejects.toThrow('not in list')
+      await expect(refreshTokens('refresh-token', mockRequest)).rejects.toThrow('not in list')
 
       expect(log).toHaveBeenCalledTimes(1)
       expect(log).toHaveBeenCalledWith(
         expect.any(Object),
         expect.objectContaining({
           step: 'unknown'
-        })
+        }),
+        mockRequest
       )
     })
 
@@ -139,14 +146,15 @@ describe('refreshTokens', () => {
 
       getOidcConfig.mockRejectedValue(mockError)
 
-      await expect(refreshTokens('refresh-token')).rejects.toThrow('not in list')
+      await expect(refreshTokens('refresh-token', mockRequest)).rejects.toThrow('not in list')
 
       expect(log).toHaveBeenCalledTimes(1)
       expect(log).toHaveBeenCalledWith(
         expect.any(Object),
         expect.objectContaining({
           step: 'token_endpoint_response'
-        })
+        }),
+        mockRequest
       )
     })
   })

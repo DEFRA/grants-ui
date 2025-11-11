@@ -3,7 +3,7 @@ import { config } from '~/src/config/config.js'
 import { getOidcConfig } from '~/src/server/auth/get-oidc-config.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
-async function refreshTokens(refreshToken) {
+async function refreshTokens(refreshToken, request) {
   try {
     const { token_endpoint: url } = await getOidcConfig()
 
@@ -27,20 +27,28 @@ async function refreshTokens(refreshToken) {
     // Refresh tokens can only be used once, so the new refresh token should be stored in place of the old one
 
     if (!payload.access_token) {
-      log(LogCodes.AUTH.TOKEN_VERIFICATION_FAILURE, {
-        userId: 'system',
-        error: 'No access token in refresh response',
-        step: 'token_refresh_response_validation'
-      })
+      log(
+        LogCodes.AUTH.TOKEN_VERIFICATION_FAILURE,
+        {
+          userId: 'system',
+          error: 'No access token in refresh response',
+          step: 'token_refresh_response_validation'
+        },
+        request
+      )
       throw new Error('No access token in refresh response')
     }
 
-    log(LogCodes.AUTH.TOKEN_VERIFICATION_SUCCESS, {
-      userId: 'system',
-      organisationId: 'refresh_operation',
-      step: 'token_refresh_complete',
-      hasNewRefreshToken: !!payload.refresh_token
-    })
+    log(
+      LogCodes.AUTH.TOKEN_VERIFICATION_SUCCESS,
+      {
+        userId: 'system',
+        organisationId: 'refresh_operation',
+        step: 'token_refresh_complete',
+        hasNewRefreshToken: !!payload.refresh_token
+      },
+      request
+    )
 
     return payload
   } catch (error) {
@@ -59,13 +67,17 @@ async function refreshTokens(refreshToken) {
       step = 'unknown'
     }
 
-    log(LogCodes.AUTH.TOKEN_VERIFICATION_FAILURE, {
-      userId: 'system',
-      error: error.message,
-      step,
-      statusCode: error.statusCode,
-      hasRefreshToken: !!refreshToken
-    })
+    log(
+      LogCodes.AUTH.TOKEN_VERIFICATION_FAILURE,
+      {
+        userId: 'system',
+        error: error.message,
+        step,
+        statusCode: error.statusCode,
+        hasRefreshToken: !!refreshToken
+      },
+      request
+    )
 
     // Mark error as already logged to prevent duplicate logging in global handler
     error.alreadyLogged = true
