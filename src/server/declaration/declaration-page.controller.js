@@ -84,7 +84,7 @@ export default class DeclarationPageController extends SummaryPageController {
           (state) => state
         )
 
-        const result = await submitGrantApplication(this.grantCode, applicationData)
+        const result = await submitGrantApplication(this.grantCode, applicationData, request)
 
         // Log submission details if available
         if (result.status === statusCodes.noContent) {

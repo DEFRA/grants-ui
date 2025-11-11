@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import { mockFetch, mockFetchWithResponse } from '~/src/__mocks__/hapi-mocks.js'
+import { mockSimpleRequest, mockFetch, mockFetchWithResponse } from '~/src/__mocks__/hapi-mocks.js'
 import { config } from '~/src/config/config.js'
 import {
   invokeGasGetAction,
@@ -12,6 +12,7 @@ const gasApi = config.get('gas.apiEndpoint')
 const code = config.get('landGrants.grantCode')
 
 describe('submitGrantApplication', () => {
+  let mockRequest
   const payload = {
     metadata: {
       clientRef: 'abc123',
@@ -42,6 +43,9 @@ describe('submitGrantApplication', () => {
     applicationRef: 'APP-2025-001'
   }
 
+  beforeEach(() => {
+    mockRequest = mockSimpleRequest()
+  })
   afterEach(() => {
     vi.resetAllMocks()
   })
@@ -72,7 +76,7 @@ describe('submitGrantApplication', () => {
       json: vi.fn().mockResolvedValueOnce({ message: mockMessage })
     })
 
-    await expect(submitGrantApplication(code, payload)).rejects.toThrow(mockMessage)
+    await expect(submitGrantApplication(code, payload, mockRequest)).rejects.toThrow(mockMessage)
 
     expect(fetch).toHaveBeenCalledWith(`${gasApi}/grants/${code}/applications`, {
       method: 'POST',
@@ -217,6 +221,7 @@ describe('invokeGasPostAction', () => {
 })
 
 describe('invokeGasGetAction', () => {
+  let mockRequest
   const actionName = 'status'
   const mockResponse = {
     success: true,
@@ -227,6 +232,8 @@ describe('invokeGasGetAction', () => {
 
   beforeEach(() => {
     vi.resetAllMocks()
+
+    mockRequest = mockSimpleRequest()
   })
 
   test('should successfully invoke a GET action without query params', async () => {
@@ -238,7 +245,7 @@ describe('invokeGasGetAction', () => {
 
     mockedFetch.mockResolvedValueOnce(mockRawResponse)
 
-    const result = await invokeGasGetAction(code, actionName)
+    const result = await invokeGasGetAction(code, actionName, mockRequest)
 
     expect(mockedFetch).toHaveBeenCalledWith(`${gasApi}/grants/${code}/actions/${actionName}/invoke`, {
       method: 'GET',
@@ -260,7 +267,7 @@ describe('invokeGasGetAction', () => {
     mockedFetch.mockResolvedValueOnce(mockRawResponse)
 
     const queryParams = { parcelId: '9238', includeHistory: 'true' }
-    const result = await invokeGasGetAction(code, actionName, queryParams)
+    const result = await invokeGasGetAction(code, actionName, mockRequest, queryParams)
 
     expect(mockedFetch).toHaveBeenCalledWith(
       `${gasApi}/grants/${code}/actions/${actionName}/invoke?parcelId=9238&includeHistory=true`,
@@ -284,7 +291,7 @@ describe('invokeGasGetAction', () => {
 
     mockedFetch.mockResolvedValueOnce(mockRawResponse)
 
-    const result = await invokeGasGetAction(code, actionName, {})
+    const result = await invokeGasGetAction(code, actionName, mockRequest, {})
 
     expect(mockedFetch).toHaveBeenCalledWith(`${gasApi}/grants/${code}/actions/${actionName}/invoke`, {
       method: 'GET',
@@ -345,11 +352,13 @@ describe('invokeGasGetAction', () => {
 })
 
 describe('makeGasApiRequest', () => {
+  let mockRequest
   const testUrl = `${gasApi}/test/endpoint`
   const testGrantCode = 'TEST_GRANT'
 
   beforeEach(() => {
     vi.resetAllMocks()
+    mockRequest = mockSimpleRequest()
   })
 
   test('should use default options when none provided', async () => {
@@ -383,7 +392,7 @@ describe('makeGasApiRequest', () => {
 
     mockedFetch.mockResolvedValueOnce(mockRawResponse)
 
-    const result = await makeGasApiRequest(testUrl, testGrantCode, { payload })
+    const result = await makeGasApiRequest(testUrl, testGrantCode, mockRequest, { payload })
 
     expect(mockedFetch).toHaveBeenCalledWith(testUrl, {
       method: 'POST',
@@ -405,7 +414,7 @@ describe('makeGasApiRequest', () => {
 
     mockedFetch.mockResolvedValueOnce(mockRawResponse)
 
-    const result = await makeGasApiRequest(testUrl, testGrantCode, {
+    const result = await makeGasApiRequest(testUrl, testGrantCode, mockRequest, {
       method: 'GET',
       queryParams
     })
@@ -428,7 +437,7 @@ describe('makeGasApiRequest', () => {
 
     mockedFetch.mockResolvedValueOnce(mockRawResponse)
 
-    const result = await makeGasApiRequest(testUrl, testGrantCode, {
+    const result = await makeGasApiRequest(testUrl, testGrantCode, mockRequest, {
       method: 'GET'
     })
 
@@ -457,7 +466,7 @@ describe('makeGasApiRequest', () => {
 
     mockedFetch.mockResolvedValueOnce(mockRawResponse)
 
-    await makeGasApiRequest(testUrl, testGrantCode, {
+    await makeGasApiRequest(testUrl, testGrantCode, mockRequest, {
       method: 'GET',
       queryParams
     })
@@ -484,7 +493,7 @@ describe('makeGasApiRequest', () => {
 
     let thrownError
     try {
-      await makeGasApiRequest(testUrl, testGrantCode)
+      await makeGasApiRequest(testUrl, testGrantCode, mockRequest)
     } catch (error) {
       thrownError = error
     }
@@ -509,7 +518,7 @@ describe('makeGasApiRequest', () => {
       json: () => ({ message: 'Gas error' })
     })
 
-    await expect(makeGasApiRequest(testUrl, testGrantCode)).rejects.toMatchObject({
+    await expect(makeGasApiRequest(testUrl, testGrantCode, mockRequest)).rejects.toMatchObject({
       name: 'GrantApplicationServiceApiError',
       status: errorStatus,
       responseBody: 'Gas error',
@@ -524,7 +533,7 @@ describe('makeGasApiRequest', () => {
 
     let thrownError
     try {
-      await makeGasApiRequest(testUrl, testGrantCode)
+      await makeGasApiRequest(testUrl, testGrantCode, mockRequest)
     } catch (error) {
       thrownError = error
     }
@@ -553,7 +562,7 @@ describe('makeGasApiRequest', () => {
       .mockResolvedValueOnce(transientErrorResponse)
       .mockResolvedValueOnce(successResponse)
 
-    const result = await makeGasApiRequest(testUrl, testGrantCode, {
+    const result = await makeGasApiRequest(testUrl, testGrantCode, mockRequest, {
       retryConfig: { maxAttempts: 3, checkFetchResponse: true }
     })
 
@@ -563,6 +572,12 @@ describe('makeGasApiRequest', () => {
 })
 
 describe('makeGasApiRequest edge cases', () => {
+  let mockRequest
+
+  beforeEach(() => {
+    mockRequest = mockSimpleRequest()
+  })
+
   afterEach(() => {
     vi.resetAllMocks()
   })
@@ -612,7 +627,7 @@ describe('makeGasApiRequest edge cases', () => {
     mockedFetch.mockResolvedValueOnce(mockRawResponse)
 
     const queryParams = { page: 0, search: '', active: 'false' }
-    const result = await invokeGasGetAction(code, 'test', queryParams)
+    const result = await invokeGasGetAction(code, 'test', mockRequest, queryParams)
 
     expect(mockedFetch).toHaveBeenCalledWith(
       `${gasApi}/grants/${code}/actions/test/invoke?page=0&search=&active=false`,
