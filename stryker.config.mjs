@@ -5,11 +5,11 @@ const config = {
     "This config was generated using 'stryker init'. Please take a look at: https://stryker-mutator.io/docs/stryker-js/configuration/ for more information.",
   packageManager: 'npm',
   reporters: ['html', 'clear-text', 'progress'],
-  testRunner: 'command',
+  testRunner: 'vitest',
   coverageAnalysis: 'perTest',
-  buildCommand: 'npm run build',
-  commandRunner: {
-    command: 'npm run test:stryker'
-  }
+  vitest: {
+    configFile: 'vitest.stryker.config.js'
+  },
+  mutate: ['src/**/*.js', '!src/__mocks__/**', '!src/contracts/**']
 }
 export default config
