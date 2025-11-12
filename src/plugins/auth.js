@@ -351,6 +351,82 @@ function getBellOptions(oidcConfig) {
   }
 }
 
+function validateUserSession(userSession, sessionId, request) {
+  if (!userSession) {
+    log(
+      LogCodes.AUTH.SESSION_EXPIRED,
+      {
+        userId: 'unknown',
+        sessionId,
+        path: request.path,
+        reason: 'Session not found in cache'
+      },
+      request
+    )
+    return { isValid: false }
+  }
+  return { isValid: true }
+}
+
+async function verifyAndRefreshToken(userSession, sessionId, request) {
+  try {
+    const decoded = Jwt.token.decode(userSession.token)
+    Jwt.token.verifyTime(decoded)
+    return { isValid: true }
+  } catch (tokenError) {
+    return await handleTokenVerificationError(userSession, sessionId, request, tokenError)
+  }
+}
+
+async function handleTokenVerificationError(userSession, sessionId, request, tokenError) {
+  if (!config.get('defraId.refreshTokens')) {
+    log(
+      LogCodes.AUTH.SESSION_EXPIRED,
+      {
+        userId: userSession.contactId,
+        sessionId,
+        path: request.path,
+        reason: 'Token expired, refresh disabled',
+        error: tokenError.message
+      },
+      request
+    )
+    return { isValid: false }
+  }
+
+  try {
+    const { access_token: newToken, refresh_token: newRefreshToken } = await refreshTokens(
+      userSession.refreshToken,
+      request
+    )
+    userSession.token = newToken
+    userSession.refreshToken = newRefreshToken
+    await request.server.app.cache.set(sessionId, userSession)
+    log(
+      LogCodes.AUTH.TOKEN_VERIFICATION_SUCCESS,
+      {
+        userId: userSession.contactId,
+        organisationId: userSession.organisationId,
+        step: 'token_refresh_success'
+      },
+      request
+    )
+    return { isValid: true }
+  } catch (refreshError) {
+    log(
+      LogCodes.AUTH.TOKEN_VERIFICATION_FAILURE,
+      {
+        userId: userSession.contactId,
+        error: refreshError.message,
+        step: 'token_refresh_failed',
+        originalTokenError: tokenError.message
+      },
+      request
+    )
+    return { isValid: false }
+  }
+}
+
 function getCookieOptions() {
   return {
     cookie: {
@@ -371,76 +447,15 @@ function getCookieOptions() {
     validate: async function (request, session) {
       const userSession = await request.server.app.cache.get(session.sessionId)
 
-      // If a session does not exist, return an invalid session
-      if (!userSession) {
-        log(
-          LogCodes.AUTH.SESSION_EXPIRED,
-          {
-            userId: 'unknown',
-            sessionId: session.sessionId,
-            path: request.path,
-            reason: 'Session not found in cache'
-          },
-          request
-        )
-
-        return { isValid: false }
+      const sessionValidation = validateUserSession(userSession, session.sessionId, request)
+      if (!sessionValidation.isValid) {
+        return sessionValidation
       }
 
-      // Skip token verification if defra-id is disabled
       if (defraIdEnabled && userSession.token) {
-        // Verify Defra Identity token has not expired
-        try {
-          const decoded = Jwt.token.decode(userSession.token)
-          Jwt.token.verifyTime(decoded)
-        } catch (tokenError) {
-          if (!config.get('defraId.refreshTokens')) {
-            log(
-              LogCodes.AUTH.SESSION_EXPIRED,
-              {
-                userId: userSession.contactId,
-                sessionId: session.sessionId,
-                path: request.path,
-                reason: 'Token expired, refresh disabled',
-                error: tokenError.message
-              },
-              request
-            )
-            return { isValid: false }
-          }
-
-          try {
-            const { access_token: newToken, refresh_token: newRefreshToken } = await refreshTokens(
-              userSession.refreshToken,
-              request
-            )
-            userSession.token = newToken
-            userSession.refreshToken = newRefreshToken
-            await request.server.app.cache.set(session.sessionId, userSession)
-
-            log(
-              LogCodes.AUTH.TOKEN_VERIFICATION_SUCCESS,
-              {
-                userId: userSession.contactId,
-                organisationId: userSession.organisationId,
-                step: 'token_refresh_success'
-              },
-              request
-            )
-          } catch (refreshError) {
-            log(
-              LogCodes.AUTH.TOKEN_VERIFICATION_FAILURE,
-              {
-                userId: userSession.contactId,
-                error: refreshError.message,
-                step: 'token_refresh_failed',
-                originalTokenError: tokenError.message
-              },
-              request
-            )
-
-            return { isValid: false }
-          }
+        const tokenValidation = await verifyAndRefreshToken(userSession, session.sessionId, request)
+        if (!tokenValidation.isValid) {
+          return tokenValidation
         }
       }
 
