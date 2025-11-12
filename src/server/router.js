@@ -10,6 +10,7 @@ import { agreements } from '~/src/server/agreements/index.js'
 import { devTools } from '~/src/server/dev-tools/index.js'
 import { configConfirmation } from '~/src/server/confirmation/config-confirmation.js'
 import { clearApplicationState } from './dev-tools/clear-application-state.js'
+import { cookies } from '~/src/server/cookies/index.js'
 
 const defraIdEnabled = config.get('defraId.enabled')
 const cdpEnvironment = config.get('cdpEnvironment')
@@ -35,7 +36,7 @@ export const router = {
       await server.register([auth])
 
       // Application specific routes, add your own routes here
-      await server.register([home, agreements, configConfirmation])
+      await server.register([home, agreements, configConfirmation, cookies])
 
       // Development tools (only available in development mode)
       if (
