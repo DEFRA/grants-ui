@@ -14,33 +14,41 @@ describe('retry with exponential backoff', () => {
     expect(mockOperation).toHaveBeenCalledTimes(1)
   })
 
-  it('should retry the specified number of times if the operation fails', async () => {
-    let attempt = 0
-    const mockOperation = vi.fn(() => {
-      attempt++
+  it(
+    'should retry the specified number of times if the operation fails',
+    async () => {
+      let attempt = 0
+      const mockOperation = vi.fn(() => {
+        attempt++
 
-      if (attempt < 3) {
-        throw new Error('Fail')
-      }
+        if (attempt < 3) {
+          throw new Error('Fail')
+        }
 
-      return 'success'
-    })
-    const shouldRetry = vi.fn(() => true)
+        return 'success'
+      })
+      const shouldRetry = vi.fn(() => true)
 
-    const result = await retry(mockOperation, { maxAttempts: 3, shouldRetry, initialDelay: 1 })
-    expect(result).toBe('success')
-    expect(mockOperation).toHaveBeenCalledTimes(3)
-  })
+      const result = await retry(mockOperation, { maxAttempts: 3, shouldRetry, initialDelay: 1 })
+      expect(result).toBe('success')
+      expect(mockOperation).toHaveBeenCalledTimes(3)
+    },
+    2000
+  )
 
-  it('should throw the last error if all retry attempts fail', async () => {
-    const mockOperation = vi.fn().mockRejectedValue(new Error('Permanent failure'))
-    const shouldRetry = vi.fn(() => true)
+  it(
+    'should throw the last error if all retry attempts fail',
+    async () => {
+      const mockOperation = vi.fn().mockRejectedValue(new Error('Permanent failure'))
+      const shouldRetry = vi.fn(() => true)
 
-    await expect(retry(mockOperation, { maxAttempts: 3, shouldRetry, initialDelay: 1 })).rejects.toThrow(
-      'Permanent failure'
-    )
-    expect(mockOperation).toHaveBeenCalledTimes(3)
-  })
+      await expect(retry(mockOperation, { maxAttempts: 3, shouldRetry, initialDelay: 1 })).rejects.toThrow(
+        'Permanent failure'
+      )
+      expect(mockOperation).toHaveBeenCalledTimes(3)
+    },
+    2000
+  )
 
   it('should respect the shouldRetry function and stop retries if it returns false', async () => {
     const mockOperation = vi.fn().mockRejectedValue(new Error('Non-retriable'))
@@ -50,36 +58,44 @@ describe('retry with exponential backoff', () => {
     expect(shouldRetry).toHaveBeenCalledTimes(1)
   })
 
-  it('should apply exponential backoff with jitter', async () => {
-    const mockOperation = vi.fn().mockRejectedValue(new Error('Fail'))
-    const maxDelay = 10
-    const initialDelay = 2
-    const delays = []
-    const onRetry = vi.fn((_, __, delay) => delays.push(delay))
-    const shouldRetry = vi.fn(() => true)
+  it(
+    'should apply exponential backoff with jitter',
+    async () => {
+      const mockOperation = vi.fn().mockRejectedValue(new Error('Fail'))
+      const maxDelay = 10
+      const initialDelay = 2
+      const delays = []
+      const onRetry = vi.fn((_, __, delay) => delays.push(delay))
+      const shouldRetry = vi.fn(() => true)
 
-    await expect(
-      retry(mockOperation, { maxAttempts: 3, initialDelay, shouldRetry, maxDelay, onRetry })
-    ).rejects.toThrow('Fail')
+      await expect(
+        retry(mockOperation, { maxAttempts: 3, initialDelay, shouldRetry, maxDelay, onRetry })
+      ).rejects.toThrow('Fail')
 
-    expect(delays.length).toBe(2)
-    expect(delays[0]).toBeGreaterThanOrEqual(initialDelay)
-    expect(delays[0]).toBeLessThanOrEqual(maxDelay)
-    expect(mockOperation).toHaveBeenCalledTimes(3)
-  })
+      expect(delays.length).toBe(2)
+      expect(delays[0]).toBeGreaterThanOrEqual(initialDelay)
+      expect(delays[0]).toBeLessThanOrEqual(maxDelay)
+      expect(mockOperation).toHaveBeenCalledTimes(3)
+    },
+    2000
+  )
 
-  it('should call onRetry callback on each retry attempt', async () => {
-    const mockOperation = vi.fn().mockRejectedValue(new Error('Retry error'))
-    const onRetry = vi.fn()
-    const shouldRetry = vi.fn(() => true)
+  it(
+    'should call onRetry callback on each retry attempt',
+    async () => {
+      const mockOperation = vi.fn().mockRejectedValue(new Error('Retry error'))
+      const onRetry = vi.fn()
+      const shouldRetry = vi.fn(() => true)
 
-    await expect(retry(mockOperation, { maxAttempts: 3, onRetry, shouldRetry, initialDelay: 1 })).rejects.toThrow(
-      'Retry error'
-    )
-    expect(onRetry).toHaveBeenCalledTimes(2)
-    expect(onRetry).toHaveBeenCalledWith(expect.any(Error), 1, expect.any(Number))
-    expect(onRetry).toHaveBeenCalledWith(expect.any(Error), 2, expect.any(Number))
-  })
+      await expect(retry(mockOperation, { maxAttempts: 3, onRetry, shouldRetry, initialDelay: 1 })).rejects.toThrow(
+        'Retry error'
+      )
+      expect(onRetry).toHaveBeenCalledTimes(2)
+      expect(onRetry).toHaveBeenCalledWith(expect.any(Error), 1, expect.any(Number))
+      expect(onRetry).toHaveBeenCalledWith(expect.any(Error), 2, expect.any(Number))
+    },
+    2000
+  )
 
   describe('retry timeouts', () => {
     beforeEach(() => {

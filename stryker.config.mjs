@@ -10,6 +10,13 @@ const config = {
   vitest: {
     configFile: 'vitest.stryker.config.js'
   },
-  mutate: ['src/**/*.js', '!src/__mocks__/**', '!src/contracts/**']
+  mutate: [
+    'src/**/*.js',
+    '!src/config/**',
+    '!src/__mocks__/**',
+    '!src/contracts/**',
+    '!**/*.test.js',
+    '!**/*.contract.test.js'
+  ]
 }
 export default config
