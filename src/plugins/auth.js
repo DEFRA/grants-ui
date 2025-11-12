@@ -374,7 +374,7 @@ async function verifyAndRefreshToken(userSession, sessionId, request) {
     Jwt.token.verifyTime(decoded)
     return { isValid: true }
   } catch (tokenError) {
-    return await handleTokenVerificationError(userSession, sessionId, request, tokenError)
+    return await handleTokenVerificationError(userSession, sessionId, request, tokenError) // NOSONAR - await is necessary here
   }
 }
 
