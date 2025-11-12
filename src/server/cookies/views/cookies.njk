@@ -1,0 +1,133 @@
+{% extends "layouts/page.njk" %}
+{% from "govuk/components/radios/macro.njk" import govukRadios %}
+{% from "govuk/components/button/macro.njk" import govukButton %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+
+      <h1 class="govuk-heading-l">{{ heading }}</h1>
+
+      <p class="govuk-body">
+        Cookies are small files saved on your phone, tablet or computer when you visit a website.
+      </p>
+
+      <p class="govuk-body">
+        We use cookies to make {{ serviceName }} work and collect information about how you use our service.
+      </p>
+
+      <h2 class="govuk-heading-m">Essential cookies</h2>
+
+      <p class="govuk-body">
+        Essential cookies keep your information secure while you use {{ serviceName }}. We do not need to ask permission to use them.
+      </p>
+
+      <table class="govuk-table">
+        <caption class="govuk-table__caption govuk-table__caption--s govuk-visually-hidden">Essential cookies</caption>
+        <thead class="govuk-table__head">
+          <tr class="govuk-table__row">
+            <th scope="col" class="govuk-table__header">Name</th>
+            <th scope="col" class="govuk-table__header">Purpose</th>
+            <th scope="col" class="govuk-table__header">Expires</th>
+          </tr>
+        </thead>
+        <tbody class="govuk-table__body">
+          <tr class="govuk-table__row">
+            <th scope="row" class="govuk-table__header">crumb</th>
+            <td class="govuk-table__cell">Protects our services from bots and automated attacks</td>
+            <td class="govuk-table__cell">When you close your browser</td>
+          </tr>
+          <tr class="govuk-table__row">
+            <th scope="row" class="govuk-table__header">grants-ui-session-auth</th>
+            <td class="govuk-table__cell">Keeps you signed in and maintains your session</td>
+            <td class="govuk-table__cell">4 hours</td>
+          </tr>
+          <tr class="govuk-table__row">
+            <th scope="row" class="govuk-table__header">{{ cookieConsentName }}</th>
+            <td class="govuk-table__cell">Saves your cookie consent settings</td>
+            <td class="govuk-table__cell">{{ cookieConsentExpiryDays }} days</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2 class="govuk-heading-m">Analytics cookies (optional)</h2>
+
+      <p class="govuk-body">
+        With your permission, we use Google Analytics to collect data about how you use {{ serviceName }}. This information helps us to improve our service.
+      </p>
+
+      <p class="govuk-body">
+        Google is not allowed to use or share our analytics data with anyone.
+      </p>
+
+      <p class="govuk-body">
+        These are third-party cookies set by Google Analytics. Google Analytics stores anonymised information about:
+      </p>
+
+      <ul class="govuk-list govuk-list--bullet">
+        <li>how you got to {{ serviceName }}</li>
+        <li>the pages you visit on {{ serviceName }} and how long you spend on them</li>
+        <li>any errors you see while using {{ serviceName }}</li>
+      </ul>
+
+      <table class="govuk-table">
+        <caption class="govuk-table__caption govuk-table__caption--s govuk-visually-hidden">Analytics cookies</caption>
+        <thead class="govuk-table__head">
+          <tr class="govuk-table__row">
+            <th scope="col" class="govuk-table__header">Name</th>
+            <th scope="col" class="govuk-table__header">Purpose</th>
+            <th scope="col" class="govuk-table__header">Expires</th>
+          </tr>
+        </thead>
+        <tbody class="govuk-table__body">
+          <tr class="govuk-table__row">
+            <th scope="row" class="govuk-table__header">_ga</th>
+            <td class="govuk-table__cell">Checks if you've visited {{ serviceName }} before. This helps us count how many people visit our site.</td>
+            <td class="govuk-table__cell">2 years</td>
+          </tr>
+          <tr class="govuk-table__row">
+            <th scope="row" class="govuk-table__header">_ga_&lt;container-id&gt;</th>
+            <td class="govuk-table__cell">Checks if you've visited {{ serviceName }} before. This helps us count how many people visit our site.</td>
+            <td class="govuk-table__cell">2 years</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <form id="cookie-preferences-form" data-cookie-name="{{ cookieConsentName }}" data-expiry-days="{{ cookieConsentExpiryDays }}" data-ga-tracking-id="{{ gaTrackingId }}" data-referrer="{{ referrer }}">
+        {{ govukRadios({
+          name: "analytics",
+          fieldset: {
+            legend: {
+              text: "Do you want to accept analytics cookies?",
+              classes: "govuk-fieldset__legend--s"
+            }
+          },
+          items: [
+            {
+              value: "yes",
+              text: "Yes",
+              id: "analytics-yes"
+            },
+            {
+              value: "no",
+              text: "No",
+              id: "analytics-no"
+            }
+          ]
+        }) }}
+
+        {{ govukButton({
+          text: "Save cookie settings",
+          attributes: {
+            id: "save-cookie-settings"
+          }
+        }) }}
+
+        <noscript>
+          <p class="govuk-body">JavaScript is required to change your cookie settings. Please enable JavaScript in your browser to use this feature.</p>
+        </noscript>
+      </form>
+
+    </div>
+  </div>
+{% endblock %}
