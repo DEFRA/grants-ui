@@ -24,7 +24,7 @@ export const LogCodes = {
     TOKEN_VERIFICATION_SUCCESS: {
       level: 'info',
       messageFunc: (messageOptions) =>
-        `Token verification successful for user=${messageOptions.userId}, organisation=${messageOptions.organisationId}`
+        `Token verification successful for userCRN=${messageOptions.userId}, userSBI=${messageOptions.organisationId}`
     },
     TOKEN_VERIFICATION_FAILURE: {
       level: 'error',
@@ -201,6 +201,10 @@ export const LogCodes = {
       level: 'error',
       messageFunc: (messageOptions) =>
         `Land grant processing error for user=${messageOptions.userId}: ${messageOptions.error}`
+    },
+    NO_LAND_PARCELS_FOUND: {
+      level: 'warn',
+      messageFunc: (messageOptions) => `No land parcels found for sbi=${messageOptions.sbi}`
     },
     NO_ACTIONS_FOUND: {
       level: 'error',

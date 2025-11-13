@@ -9,6 +9,7 @@ import SubmissionPageController from './submission-page.controller.js'
 import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
 import { log } from '~/src/server/common/helpers/logging/log.js'
 import { LogCodes } from '../../common/helpers/logging/log-codes.js'
+import { mockSimpleRequest } from '~/src/__mocks__/hapi-mocks.js'
 
 vi.mock('~/src/server/common/services/grant-application/grant-application.service.js')
 vi.mock('~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js')
@@ -31,6 +32,7 @@ describe('SubmissionPageController', () => {
   let mockModel
   let mockPageDef
   let mockCacheService
+  let mockRequest
 
   beforeEach(() => {
     vi.resetAllMocks()
@@ -41,6 +43,7 @@ describe('SubmissionPageController', () => {
       setState: vi.fn().mockResolvedValue(),
       getState: vi.fn().mockResolvedValue()
     }
+    mockRequest = mockSimpleRequest()
 
     SubmissionPageController.prototype.getViewModel = vi.fn().mockReturnValue({
       pageTitle: 'Submission page'
@@ -74,14 +77,14 @@ describe('SubmissionPageController', () => {
       transformStateObjectToGasApplication.mockReturnValue(mockApplicationData)
       submitGrantApplication.mockResolvedValue(mockResult)
 
-      const result = await controller.submitGasApplication(mockGasApplicationData)
+      const result = await controller.submitGasApplication(mockRequest, mockGasApplicationData)
 
       expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
         mockIdentifiers,
         { ...mockState, applicationValidationRunId: validationId },
         stateToLandGrantsGasAnswers
       )
-      expect(submitGrantApplication).toHaveBeenCalledWith(code, mockApplicationData)
+      expect(submitGrantApplication).toHaveBeenCalledWith(code, mockApplicationData, mockRequest)
       expect(result).toEqual(mockResult)
     })
   })
@@ -122,7 +125,8 @@ describe('SubmissionPageController', () => {
         LogCodes.SUBMISSION.SUBMISSION_VALIDATION_ERROR,
         expect.objectContaining({
           validationId: 'validation-123'
-        })
+        }),
+        mockRequest
       )
     })
 
@@ -143,7 +147,8 @@ describe('SubmissionPageController', () => {
         LogCodes.SUBMISSION.SUBMISSION_VALIDATION_ERROR,
         expect.objectContaining({
           validationId: 'REF456'
-        })
+        }),
+        mockRequest
       )
     })
 
@@ -164,7 +169,8 @@ describe('SubmissionPageController', () => {
         LogCodes.SUBMISSION.SUBMISSION_VALIDATION_ERROR,
         expect.objectContaining({
           validationId: 'N/A'
-        })
+        }),
+        mockRequest
       )
     })
   })
@@ -209,7 +215,8 @@ describe('SubmissionPageController', () => {
         expect.objectContaining({
           numberOfFields: 2,
           status: 204
-        })
+        }),
+        mockRequest
       )
       expect(mockCacheService.setState).toHaveBeenCalled()
     })
@@ -257,7 +264,8 @@ describe('SubmissionPageController', () => {
         LogCodes.SUBMISSION.SUBMISSION_COMPLETED,
         expect.objectContaining({
           numberOfFields: 0
-        })
+        }),
+        mockRequest
       )
     })
   })
@@ -318,7 +326,7 @@ describe('SubmissionPageController', () => {
         sbi: '123456789',
         state: { landParcels: { parcel1: 'data' } }
       })
-      expect(controller.submitGasApplication).toHaveBeenCalledWith({
+      expect(controller.submitGasApplication).toHaveBeenCalledWith(mockRequest, {
         identifiers: {
           clientRef: 'ref123',
           crn: 'crn123',
@@ -348,7 +356,7 @@ describe('SubmissionPageController', () => {
       const handler = controller.makePostRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
-      expect(controller.submitGasApplication).toHaveBeenCalledWith({
+      expect(controller.submitGasApplication).toHaveBeenCalledWith(mockRequest, {
         identifiers: {
           clientRef: 'ref123',
           crn: undefined,
@@ -381,7 +389,7 @@ describe('SubmissionPageController', () => {
       const handler = controller.makePostRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
-      expect(controller.submitGasApplication).toHaveBeenCalledWith({
+      expect(controller.submitGasApplication).toHaveBeenCalledWith(mockRequest, {
         identifiers: expect.objectContaining({
           frn: 'FRN999'
         }),
@@ -408,7 +416,7 @@ describe('SubmissionPageController', () => {
       const handler = controller.makePostRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
-      expect(controller.submitGasApplication).toHaveBeenCalledWith({
+      expect(controller.submitGasApplication).toHaveBeenCalledWith(mockRequest, {
         identifiers: expect.objectContaining({
           frn: undefined
         }),
@@ -435,7 +443,7 @@ describe('SubmissionPageController', () => {
       const handler = controller.makePostRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
-      expect(controller.submitGasApplication).toHaveBeenCalledWith({
+      expect(controller.submitGasApplication).toHaveBeenCalledWith(mockRequest, {
         identifiers: expect.objectContaining({
           clientRef: 'ref-upper-123'
         }),
@@ -557,7 +565,8 @@ describe('SubmissionPageController', () => {
         expect.objectContaining({
           endpoint: 'Land grants submission',
           error: 'submitting application for sbi: undefined and crn: undefined - Validation failed'
-        })
+        }),
+        mockRequest
       )
     })
 

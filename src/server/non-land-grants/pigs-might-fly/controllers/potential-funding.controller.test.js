@@ -75,14 +75,19 @@ describe('PotentialFundingController', () => {
       await handler(mockRequest, mockContext, mockResponseToolkit)
 
       expect(invokeGasPostAction).toHaveBeenCalledTimes(1)
-      expect(invokeGasPostAction).toHaveBeenCalledWith('pigs-might-fly', 'calculate-pig-totals', {
-        pigTypes: [
-          { pigType: 'largeWhite', quantity: 10 },
-          { pigType: 'britishLandrace', quantity: 5 },
-          { pigType: 'berkshire', quantity: 3 },
-          { pigType: 'other', quantity: 2 }
-        ]
-      })
+      expect(invokeGasPostAction).toHaveBeenCalledWith(
+        'pigs-might-fly',
+        'calculate-pig-totals',
+        {
+          pigTypes: [
+            { pigType: 'largeWhite', quantity: 10 },
+            { pigType: 'britishLandrace', quantity: 5 },
+            { pigType: 'berkshire', quantity: 3 },
+            { pigType: 'other', quantity: 2 }
+          ]
+        },
+        mockRequest
+      )
 
       expect(mockContext.pigData).toEqual({
         largeWhite: { type: 'largeWhite', value: 50 },
@@ -118,14 +123,19 @@ describe('PotentialFundingController', () => {
 
       await handler(mockRequest, mockContext, mockResponseToolkit)
 
-      expect(invokeGasPostAction).toHaveBeenCalledWith('pigs-might-fly', 'calculate-pig-totals', {
-        pigTypes: [
-          { pigType: 'largeWhite', quantity: 0 }, // undefined || 0
-          { pigType: 'britishLandrace', quantity: 0 }, // null || 0
-          { pigType: 'berkshire', quantity: 0 }, // 0 || 0
-          { pigType: 'other', quantity: 5 } // 5 || 0
-        ]
-      })
+      expect(invokeGasPostAction).toHaveBeenCalledWith(
+        'pigs-might-fly',
+        'calculate-pig-totals',
+        {
+          pigTypes: [
+            { pigType: 'largeWhite', quantity: 0 }, // undefined || 0
+            { pigType: 'britishLandrace', quantity: 0 }, // null || 0
+            { pigType: 'berkshire', quantity: 0 }, // 0 || 0
+            { pigType: 'other', quantity: 5 } // 5 || 0
+          ]
+        },
+        mockRequest
+      )
     })
 
     it('should log and throw an error if invokeGasPostAction fails', async () => {

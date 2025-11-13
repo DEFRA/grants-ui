@@ -82,10 +82,14 @@ describe('LandGrantsQuestionWithAuthCheckController', () => {
       await controller.performAuthCheck(mockRequest, mockH, 'sheet1-parcel1')
 
       expect(fetchParcelsFromDal).toHaveBeenCalledWith(mockRequest)
-      expect(log).toHaveBeenCalledWith('EXTERNAL_API_ERROR', {
-        endpoint: 'Consolidated view',
-        error: 'fetch parcel data for auth check: API connection failed'
-      })
+      expect(log).toHaveBeenCalledWith(
+        'EXTERNAL_API_ERROR',
+        {
+          endpoint: 'Consolidated view',
+          error: 'fetch parcel data for auth check: API connection failed'
+        },
+        mockRequest
+      )
       expect(controller.renderUnauthorisedView).toHaveBeenCalledWith(mockH)
     })
   })

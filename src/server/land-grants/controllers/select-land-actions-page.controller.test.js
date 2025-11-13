@@ -544,7 +544,8 @@ describe('SelectLandActionsPageController', () => {
           sbi: '106284736',
           sheetId: 'sheet1',
           parcelId: 'parcel1'
-        })
+        }),
+        mockRequest
       )
     })
 
@@ -566,7 +567,8 @@ describe('SelectLandActionsPageController', () => {
         expect.objectContaining({
           sheetId: 'sheet1',
           parcelId: 'parcel1'
-        })
+        }),
+        mockRequest
       )
     })
 

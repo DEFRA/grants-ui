@@ -154,12 +154,16 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
       return await fetchAvailableActionsForParcel({ parcelId, sheetId })
     } catch (error) {
       const { sbi } = request.auth.credentials
-      log(LogCodes.LAND_GRANTS.FETCH_ACTIONS_ERROR, {
-        sbi,
-        sheetId,
-        parcelId,
-        message: error.message
-      })
+      log(
+        LogCodes.LAND_GRANTS.FETCH_ACTIONS_ERROR,
+        {
+          sbi,
+          sheetId,
+          parcelId,
+          message: error.message
+        },
+        request
+      )
       return null
     }
   }
@@ -183,7 +187,7 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
     const { state } = context
 
     if (!groupedActions.length) {
-      log(LogCodes.LAND_GRANTS.NO_ACTIONS_FOUND, { sheetId, parcelId })
+      log(LogCodes.LAND_GRANTS.NO_ACTIONS_FOUND, { sheetId, parcelId }, request)
     }
 
     return h.view(this.viewName, {
@@ -307,7 +311,7 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
         })
       }
     } catch (e) {
-      log(LogCodes.LAND_GRANTS.VALIDATE_APPLICATION_ERROR, { parcelId, sheetId, message: e.message })
+      log(LogCodes.LAND_GRANTS.VALIDATE_APPLICATION_ERROR, { parcelId, sheetId, message: e.message }, request)
       const addedActions = this.getAddedActionsForStateParcel(prevState, selectedLandParcel)
       return this.renderErrorView(h, request, context, {
         errors: [

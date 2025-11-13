@@ -180,6 +180,19 @@ describe('#catchAll', () => {
         path: expect.any(String),
         method: expect.any(String),
         stack: mockStack
+      }),
+      expect.objectContaining({
+        logger: expect.any(Object),
+        method: expect.any(String),
+        path: expect.any(String),
+        response: expect.objectContaining({
+          isBoom: true,
+          message: expect.any(String),
+          output: expect.objectContaining({
+            statusCode: statusCodes.internalServerError
+          }),
+          stack: expect.any(String)
+        })
       })
     )
     expect(mockErrorLogger).not.toHaveBeenCalled()
@@ -211,7 +224,8 @@ describe('#catchAll', () => {
         path: '/not-auth-or-bell',
         method: 'GET',
         stack: mockStack
-      })
+      }),
+      request
     )
     expect(mockToolkitView).toHaveBeenCalledWith(errorPage, {
       pageTitle: 'Something went wrong',
@@ -238,7 +252,8 @@ describe('#catchAll', () => {
       expect.objectContaining({
         error: 'bell authentication failed',
         step: 'bell_oauth_error'
-      })
+      }),
+      request
     )
     expect(mockToolkitView).toHaveBeenCalledWith(errorPage, {
       pageTitle: 'Something went wrong',
@@ -311,7 +326,8 @@ describe('#catchAll', () => {
           isBellError: false,
           statusCode
         })
-      })
+      }),
+      request
     )
   })
 
@@ -332,7 +348,8 @@ describe('#catchAll', () => {
         userId: 'unknown',
         error: 'Authentication error',
         step: 'auth_flow_error'
-      })
+      }),
+      request
     )
   })
 
@@ -352,7 +369,8 @@ describe('#catchAll', () => {
         userId: 'unknown',
         error: 'OAuth configuration error',
         step: 'bell_oauth_error'
-      })
+      }),
+      request
     )
   })
 
@@ -373,7 +391,8 @@ describe('#catchAll', () => {
         userId: 'user456',
         error: 'bell',
         step: 'bell_oauth_error'
-      })
+      }),
+      request
     )
   })
 
@@ -393,7 +412,8 @@ describe('#catchAll', () => {
         userId: 'unknown',
         error: 'Bell',
         step: 'bell_oauth_error'
-      })
+      }),
+      request
     )
   })
 
@@ -414,7 +434,8 @@ describe('#catchAll', () => {
         authContext: expect.objectContaining({
           errorOutput: 'Detailed error payload message'
         })
-      })
+      }),
+      request
     )
   })
 
@@ -433,7 +454,8 @@ describe('#catchAll', () => {
         statusCode: SERVER_ERROR_STATUS,
         path: '/some-system-path',
         method: HTTP_METHOD
-      })
+      }),
+      request
     )
   })
 
@@ -451,7 +473,8 @@ describe('#catchAll', () => {
         errorDetails: expect.objectContaining({
           responseOutput: 'Debug payload message'
         })
-      })
+      }),
+      request
     )
   })
 
@@ -526,7 +549,8 @@ describe('#catchAll 404 Logging', () => {
         referer: 'https://gov.uk',
         userAgent: 'Mozilla/5.0',
         environment: expect.any(String)
-      })
+      }),
+      request
     )
   })
 
@@ -548,7 +572,8 @@ describe('#catchAll 404 Logging', () => {
         sbi: '105009999',
         reason: 'disabled_in_production',
         environment: expect.any(String)
-      })
+      }),
+      request
     )
   })
 
@@ -571,7 +596,8 @@ describe('#catchAll 404 Logging', () => {
         sbi: '106001111',
         reason: 'not_found',
         environment: expect.any(String)
-      })
+      }),
+      request
     )
   })
 
@@ -594,7 +620,8 @@ describe('#catchAll 404 Logging', () => {
         sbi: '107002222',
         reason: 'not_found',
         environment: expect.any(String)
-      })
+      }),
+      request
     )
   })
 
@@ -617,7 +644,8 @@ describe('#catchAll 404 Logging', () => {
         sbi: '108003333',
         reason: 'disabled_in_production',
         environment: expect.any(String)
-      })
+      }),
+      request
     )
   })
 
@@ -634,7 +662,8 @@ describe('#catchAll 404 Logging', () => {
         sbi: 'unknown',
         referer: 'none',
         userAgent: 'curl/7.68.0'
-      })
+      }),
+      request
     )
   })
 })

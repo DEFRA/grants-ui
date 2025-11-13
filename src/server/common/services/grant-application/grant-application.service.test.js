@@ -1,5 +1,5 @@
 import { vi, beforeEach } from 'vitest'
-import { mockFetch, mockFetchWithResponse } from '~/src/__mocks__/hapi-mocks.js'
+import { mockSimpleRequest, mockFetch, mockFetchWithResponse } from '~/src/__mocks__/hapi-mocks.js'
 import { config } from '~/src/config/config.js'
 import {
   invokeGasGetAction,
@@ -18,6 +18,24 @@ const gasApi = config.get('gas.apiEndpoint')
 const code = config.get('landGrants.grantCode')
 
 describe('Grant Application service', () => {
+  let mockRequest
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockRequest = mockSimpleRequest()
+
+    retry.mockImplementation((operation, options) => {
+      try {
+        return operation()
+      } catch (error) {
+        if (options?.onRetry) {
+          options.onRetry(error, 1)
+        }
+        throw error
+      }
+    })
+  })
+
   describe('submitGrantApplication', () => {
     const payload = {
       metadata: {
@@ -48,20 +66,6 @@ describe('Grant Application service', () => {
       status: 'submitted',
       applicationRef: 'APP-2025-001'
     }
-    beforeEach(() => {
-      vi.clearAllMocks()
-
-      retry.mockImplementation((operation, options) => {
-        try {
-          return operation()
-        } catch (error) {
-          if (options?.onRetry) {
-            options.onRetry(error, 1)
-          }
-          throw error
-        }
-      })
-    })
 
     test('should successfully submit a grant application', async () => {
       const mockFetchInstance = mockFetchWithResponse(mockResponse)
@@ -89,7 +93,7 @@ describe('Grant Application service', () => {
         json: vi.fn().mockResolvedValueOnce({ message: mockMessage })
       })
 
-      await expect(submitGrantApplication(code, payload)).rejects.toThrow(mockMessage)
+      await expect(submitGrantApplication(code, payload, mockRequest)).rejects.toThrow(mockMessage)
 
       expect(fetch).toHaveBeenCalledWith(`${gasApi}/grants/${code}/applications`, {
         method: 'POST',
@@ -231,7 +235,7 @@ describe('Grant Application service', () => {
 
       mockedFetch.mockResolvedValueOnce(mockRawResponse)
 
-      const result = await invokeGasGetAction(code, actionName)
+      const result = await invokeGasGetAction(code, actionName, mockRequest)
 
       expect(mockedFetch).toHaveBeenCalledWith(`${gasApi}/grants/${code}/actions/${actionName}/invoke`, {
         method: 'GET',
@@ -253,7 +257,7 @@ describe('Grant Application service', () => {
       mockedFetch.mockResolvedValueOnce(mockRawResponse)
 
       const queryParams = { parcelId: '9238', includeHistory: 'true' }
-      const result = await invokeGasGetAction(code, actionName, queryParams)
+      const result = await invokeGasGetAction(code, actionName, mockRequest, queryParams)
 
       expect(mockedFetch).toHaveBeenCalledWith(
         `${gasApi}/grants/${code}/actions/${actionName}/invoke?parcelId=9238&includeHistory=true`,
@@ -279,7 +283,7 @@ describe('Grant Application service', () => {
         statusText: 'Forbidden'
       })
 
-      await expect(invokeGasGetAction(code, actionName)).rejects.toThrow(mockMessage)
+      await expect(invokeGasGetAction(code, actionName, mockRequest, {})).rejects.toThrow(mockMessage)
     })
 
     test('should handle network errors', async () => {
@@ -287,7 +291,7 @@ describe('Grant Application service', () => {
       const networkError = new Error('Network error')
       mockedFetch.mockRejectedValue(networkError)
 
-      await expect(invokeGasGetAction(code, actionName)).rejects.toThrow('Network error')
+      await expect(invokeGasGetAction(code, actionName, mockRequest, {})).rejects.toThrow('Network error')
     })
 
     test('should throw a GrantApplicationServiceApiError with correct properties', async () => {
@@ -303,7 +307,7 @@ describe('Grant Application service', () => {
 
       let thrownError
       try {
-        await invokeGasGetAction(code, actionName)
+        await invokeGasGetAction(code, actionName, mockRequest)
       } catch (error) {
         thrownError = error
       }
@@ -329,7 +333,7 @@ describe('Grant Application service', () => {
 
       mockedFetch.mockResolvedValueOnce(mockRawResponse)
 
-      const result = await makeGasApiRequest(testUrl, testGrantCode)
+      const result = await makeGasApiRequest(testUrl, testGrantCode, mockRequest)
 
       expect(mockedFetch).toHaveBeenCalledWith(testUrl, {
         method: 'POST',
@@ -351,7 +355,7 @@ describe('Grant Application service', () => {
 
       mockedFetch.mockResolvedValueOnce(mockRawResponse)
 
-      const result = await makeGasApiRequest(testUrl, testGrantCode, { payload })
+      const result = await makeGasApiRequest(testUrl, testGrantCode, mockRequest, { payload })
 
       expect(mockedFetch).toHaveBeenCalledWith(testUrl, {
         method: 'POST',
@@ -373,7 +377,7 @@ describe('Grant Application service', () => {
 
       mockedFetch.mockResolvedValueOnce(mockRawResponse)
 
-      const result = await makeGasApiRequest(testUrl, testGrantCode, {
+      const result = await makeGasApiRequest(testUrl, testGrantCode, mockRequest, {
         method: 'GET',
         queryParams
       })
@@ -403,7 +407,7 @@ describe('Grant Application service', () => {
 
       mockedFetch.mockResolvedValueOnce(mockRawResponse)
 
-      await makeGasApiRequest(testUrl, testGrantCode, {
+      await makeGasApiRequest(testUrl, testGrantCode, mockRequest, {
         method: 'GET',
         queryParams
       })
@@ -430,7 +434,7 @@ describe('Grant Application service', () => {
 
       let thrownError
       try {
-        await makeGasApiRequest(testUrl, testGrantCode)
+        await makeGasApiRequest(testUrl, testGrantCode, mockRequest)
       } catch (error) {
         thrownError = error
       }
@@ -450,7 +454,7 @@ describe('Grant Application service', () => {
 
       let thrownError
       try {
-        await makeGasApiRequest(testUrl, testGrantCode)
+        await makeGasApiRequest(testUrl, testGrantCode, mockRequest)
       } catch (error) {
         thrownError = error
       }

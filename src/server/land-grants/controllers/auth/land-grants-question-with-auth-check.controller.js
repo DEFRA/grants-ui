@@ -16,18 +16,26 @@ export default class LandGrantsQuestionWithAuthCheckController extends QuestionP
 
       if (!landParcelsForSbi.includes(landParcel)) {
         const sbi = request.auth?.credentials?.sbi
-        log(LogCodes.LAND_GRANTS.UNAUTHORISED_PARCEL, {
-          sbi,
-          selectedLandParcel: landParcel,
-          landParcelsForSbi
-        })
+        log(
+          LogCodes.LAND_GRANTS.UNAUTHORISED_PARCEL,
+          {
+            sbi,
+            selectedLandParcel: landParcel,
+            landParcelsForSbi
+          },
+          request
+        )
         return this.renderUnauthorisedView(h)
       }
     } catch (error) {
-      log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
-        endpoint: `Consolidated view`,
-        error: `fetch parcel data for auth check: ${error.message}`
-      })
+      log(
+        LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+        {
+          endpoint: `Consolidated view`,
+          error: `fetch parcel data for auth check: ${error.message}`
+        },
+        request
+      )
       return this.renderUnauthorisedView(h)
     }
 
