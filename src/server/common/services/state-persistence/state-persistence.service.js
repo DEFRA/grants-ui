@@ -25,7 +25,7 @@ export class StatePersistenceService extends CacheService {
    */
   async getState(request) {
     const key = this._Key(request)
-    const state = await fetchSavedStateFromApi(key)
+    const state = await fetchSavedStateFromApi(key, request)
     return state ?? {}
   }
 
@@ -80,7 +80,7 @@ export class StatePersistenceService extends CacheService {
     this.logger?.info(`clearState called for ${key || this.UNKNOWN_SESSION}, but no action taken.`)
 
     if (force) {
-      await clearSavedStateFromApi(key)
+      await clearSavedStateFromApi(key, request)
     }
   }
 

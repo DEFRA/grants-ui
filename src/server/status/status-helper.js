@@ -208,7 +208,7 @@ function buildRedirectUrl(grantId, path) {
  */
 async function handlePostSubmission(request, h, context, previousStatus, grantCode, grantRedirectRules) {
   const grantId = request.params?.slug
-  const response = await getApplicationStatus(grantCode, context.referenceNumber.toLowerCase())
+  const response = await getApplicationStatus(grantCode, context.referenceNumber.toLowerCase(), request)
   const { status: gasStatus } = await response.json()
 
   const postSubmissionRules = grantRedirectRules?.postSubmission ?? []
@@ -242,11 +242,15 @@ function handlePostSubmissionError(err, request, h, context, grantId, grantCode,
     return h.continue
   }
 
-  log(LogCodes.SUBMISSION.SUBMISSION_REDIRECT_FAILURE, {
-    grantType: grantCode,
-    referenceNumber: context.referenceNumber,
-    error: err.message
-  })
+  log(
+    LogCodes.SUBMISSION.SUBMISSION_REDIRECT_FAILURE,
+    {
+      grantType: grantCode,
+      referenceNumber: context.referenceNumber,
+      error: err.message
+    },
+    request
+  )
 
   const fallbackRule = mapStatusToUrl('default', 'default', grantRedirectRules?.postSubmission ?? [])
   const fallbackUrl = buildRedirectUrl(grantId, fallbackRule.toPath)

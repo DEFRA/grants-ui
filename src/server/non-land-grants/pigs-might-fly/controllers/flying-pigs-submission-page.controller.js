@@ -21,7 +21,7 @@ export default class FlyingPigsSubmissionPageController extends SummaryPageContr
     return getConfirmationPath(request, context, 'FlyingPigsSubmissionPageController')
   }
 
-  async submitPigTypesApplication(context) {
+  async submitPigTypesApplication(context, request) {
     const { sbi = 'sbi', crn = 'crn', defraId = 'defraId', frn = 'frn' } = context.state
     const identifiers = {
       sbi,
@@ -36,12 +36,12 @@ export default class FlyingPigsSubmissionPageController extends SummaryPageContr
       stateToPigsMightFlyGasAnswers
     )
 
-    return submitGrantApplication(this.grantCode, applicationData)
+    return submitGrantApplication(this.grantCode, applicationData, request)
   }
 
   makePostRouteHandler() {
     const fn = async (request, context, h) => {
-      const result = await this.submitPigTypesApplication(context)
+      const result = await this.submitPigTypesApplication(context, request)
 
       request.logger.info('Form submission completed', result)
       const cacheService = getFormsCacheService(request.server)

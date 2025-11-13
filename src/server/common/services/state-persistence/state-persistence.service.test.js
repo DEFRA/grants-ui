@@ -47,7 +47,7 @@ describe('StatePersistenceService', () => {
 
     const result = await service.getState(fakeRequest)
     expect(result).toEqual({ foo: 'bar' })
-    expect(fetchModule.fetchSavedStateFromApi).toHaveBeenCalledWith('biz-1:grant-a')
+    expect(fetchModule.fetchSavedStateFromApi).toHaveBeenCalledWith('biz-1:grant-a', fakeRequest)
   })
 
   test('setState calls persistStateToApi and returns state', async () => {

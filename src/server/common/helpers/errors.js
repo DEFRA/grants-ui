@@ -129,21 +129,29 @@ function isBellRelatedError(response) {
 }
 
 function logAuthError(request, response, errorContext) {
-  log(LogCodes.AUTH.SIGN_IN_FAILURE, {
-    userId: request.auth?.credentials?.contactId || UNKNOWN_USER,
-    error: response?.message || 'Authentication error',
-    step: 'auth_flow_error',
-    authContext: buildAuthContext(request, response, errorContext)
-  })
+  log(
+    LogCodes.AUTH.SIGN_IN_FAILURE,
+    {
+      userId: request.auth?.credentials?.contactId || UNKNOWN_USER,
+      error: response?.message || 'Authentication error',
+      step: 'auth_flow_error',
+      authContext: buildAuthContext(request, response, errorContext)
+    },
+    request
+  )
 }
 
 function logBellError(request, response, errorContext) {
-  log(LogCodes.AUTH.SIGN_IN_FAILURE, {
-    userId: request.auth?.credentials?.contactId || UNKNOWN_USER,
-    error: response?.message || 'Bell/OAuth error',
-    step: 'bell_oauth_error',
-    authContext: buildAuthContext(request, response, errorContext)
-  })
+  log(
+    LogCodes.AUTH.SIGN_IN_FAILURE,
+    {
+      userId: request.auth?.credentials?.contactId || UNKNOWN_USER,
+      error: response?.message || 'Bell/OAuth error',
+      step: 'bell_oauth_error',
+      authContext: buildAuthContext(request, response, errorContext)
+    },
+    request
+  )
 }
 
 function buildAuthContext(request, response, errorContext) {
@@ -166,42 +174,50 @@ function buildAuthContext(request, response, errorContext) {
 }
 
 function logSystemError(request, response, statusCode) {
-  log(LogCodes.SYSTEM.SERVER_ERROR, {
-    error: response?.message || 'Internal server error',
-    statusCode,
-    path: request.path,
-    method: request.method,
-    stack: response?.stack
-  })
+  log(
+    LogCodes.SYSTEM.SERVER_ERROR,
+    {
+      error: response?.message || 'Internal server error',
+      statusCode,
+      path: request.path,
+      method: request.method,
+      stack: response?.stack
+    },
+    request
+  )
 }
 
 function logDebugInformation(request, response, statusCode, errorContext) {
   const errorMessage = statusCodeMessage(statusCode)
 
-  log(LogCodes.AUTH.AUTH_DEBUG, {
-    path: request.path,
-    isAuthenticated: 'error_handler',
-    strategy: 'error_handler',
-    mode: 'error_processing',
-    hasCredentials: false,
-    hasToken: false,
-    hasProfile: false,
-    userAgent: request.headers?.['user-agent'] || UNKNOWN_USER,
-    referer: request.headers?.referer || 'none',
-    queryParams: request.query || {},
-    authError: 'none',
-    errorDetails: {
-      statusCode,
-      errorMessage,
-      responseMessage: response?.message,
-      responseName: response?.name,
-      responseOutput: response?.output?.payload?.message,
-      isAuthError: errorContext.isAuthError,
-      isBellError: errorContext.isBellError,
-      alreadyLogged: errorContext.alreadyLogged,
-      errorStack: response?.stack
-    }
-  })
+  log(
+    LogCodes.AUTH.AUTH_DEBUG,
+    {
+      path: request.path,
+      isAuthenticated: 'error_handler',
+      strategy: 'error_handler',
+      mode: 'error_processing',
+      hasCredentials: false,
+      hasToken: false,
+      hasProfile: false,
+      userAgent: request.headers?.['user-agent'] || UNKNOWN_USER,
+      referer: request.headers?.referer || 'none',
+      queryParams: request.query || {},
+      authError: 'none',
+      errorDetails: {
+        statusCode,
+        errorMessage,
+        responseMessage: response?.message,
+        responseName: response?.name,
+        responseOutput: response?.output?.payload?.message,
+        isAuthError: errorContext.isAuthError,
+        isBellError: errorContext.isBellError,
+        alreadyLogged: errorContext.alreadyLogged,
+        errorStack: response?.stack
+      }
+    },
+    request
+  )
 }
 
 function handleClientErrors(request, response, statusCode) {
@@ -213,12 +229,16 @@ function handleClientErrors(request, response, statusCode) {
   }
 
   // Keep existing general logging
-  log(LogCodes.SYSTEM.SERVER_ERROR, {
-    error: response?.message || errorMessage,
-    statusCode,
-    path: request.path,
-    method: request.method
-  })
+  log(
+    LogCodes.SYSTEM.SERVER_ERROR,
+    {
+      error: response?.message || errorMessage,
+      statusCode,
+      path: request.path,
+      method: request.method
+    },
+    request
+  )
 }
 
 /**
@@ -309,37 +329,49 @@ function handle404WithContext(request, response) {
 
   switch (resourceInfo.type) {
     case 'form':
-      log(LogCodes.RESOURCE_NOT_FOUND.FORM_NOT_FOUND, {
-        slug: resourceInfo.identifier,
-        userId,
-        sbi,
-        referer,
-        userAgent,
-        reason: resourceInfo.reason,
-        environment
-      })
+      log(
+        LogCodes.RESOURCE_NOT_FOUND.FORM_NOT_FOUND,
+        {
+          slug: resourceInfo.identifier,
+          userId,
+          sbi,
+          referer,
+          userAgent,
+          reason: resourceInfo.reason,
+          environment
+        },
+        request
+      )
       break
 
     case 'tasklist':
-      log(LogCodes.RESOURCE_NOT_FOUND.TASKLIST_NOT_FOUND, {
-        tasklistId: resourceInfo.identifier,
-        userId,
-        sbi,
-        referer,
-        userAgent,
-        reason: resourceInfo.reason,
-        environment
-      })
+      log(
+        LogCodes.RESOURCE_NOT_FOUND.TASKLIST_NOT_FOUND,
+        {
+          tasklistId: resourceInfo.identifier,
+          userId,
+          sbi,
+          referer,
+          userAgent,
+          reason: resourceInfo.reason,
+          environment
+        },
+        request
+      )
       break
 
     default:
-      log(LogCodes.RESOURCE_NOT_FOUND.PAGE_NOT_FOUND, {
-        path,
-        userId,
-        sbi,
-        referer,
-        userAgent
-      })
+      log(
+        LogCodes.RESOURCE_NOT_FOUND.PAGE_NOT_FOUND,
+        {
+          path,
+          userId,
+          sbi,
+          referer,
+          userAgent
+        },
+        request
+      )
   }
 }
 

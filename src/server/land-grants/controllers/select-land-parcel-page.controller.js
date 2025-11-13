@@ -1,4 +1,4 @@
-import { logger } from '~/src/server/common/helpers/logging/log.js'
+import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { fetchParcels } from '../services/land-grants.service.js'
 import LandGrantsQuestionWithAuthCheckController from '~/src/server/land-grants/controllers/auth/land-grants-question-with-auth-check.controller.js'
 
@@ -50,7 +50,11 @@ export default class SelectLandParcelPageController extends LandGrantsQuestionWi
             return this.formatParcelForView(parcel, actionsForParcel)
           })
         } catch (error) {
-          logger.error({ err: error }, 'Error fetching parcels for validation error rendering')
+          log(
+            { level: 'error', error, messageFunc: () => 'Error fetching parcels for validation error rendering' },
+            {},
+            request
+          )
         }
 
         return h.view(this.viewName, {
@@ -107,7 +111,8 @@ export default class SelectLandParcelPageController extends LandGrantsQuestionWi
         })
 
         if (!parcels?.length) {
-          logger.warn(`No land parcels for sbi = ${sbi}`)
+          log(LogCodes.LAND_GRANTS.NO_LAND_PARCELS_FOUND, { sbi })
+
           const errorMessage =
             'Unable to find parcel information, please try again later or contact the Rural Payments Agency.'
 
@@ -131,7 +136,7 @@ export default class SelectLandParcelPageController extends LandGrantsQuestionWi
         })
         return h.view(viewName, viewModel)
       } catch (error) {
-        logger.error({ err: error, sbi }, 'Unexpected error when fetching parcel data')
+        log({ level: 'error', error, messageFunc: () => `Unexpected error when fetching parcel data` }, {}, request)
         const errorMessage =
           'Unable to find parcel information, please try again later or contact the Rural Payments Agency.'
 

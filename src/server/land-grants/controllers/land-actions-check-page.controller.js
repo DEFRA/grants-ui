@@ -267,10 +267,14 @@ export default class LandActionsCheckPageController extends QuestionPageControll
         })
       } catch (error) {
         const sbi = request.auth?.credentials?.sbi
-        log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
-          endpoint: `Land grants API`,
-          error: `error fetching payment data for sbi ${sbi} - ${error.message}`
-        })
+        log(
+          LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+          {
+            endpoint: `Land grants API`,
+            error: `error fetching payment data for sbi ${sbi} - ${error.message}`
+          },
+          request
+        )
         return this.renderErrorView(h, request, context, [
           {
             text: 'Unable to get payment information, please try again later or contact the Rural Payments Agency.'
@@ -308,10 +312,14 @@ export default class LandActionsCheckPageController extends QuestionPageControll
           parcelItems = result.parcelItems
           additionalYearlyPayments = result.additionalYearlyPayments
         } catch (error) {
-          log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
-            endpoint: `Land grants API`,
-            error: `error fetching payment data for validation error - ${error.message}`
-          })
+          log(
+            LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+            {
+              endpoint: `Land grants API`,
+              error: `error fetching payment data for validation error - ${error.message}`
+            },
+            request
+          )
         }
         return this.renderErrorView(h, request, context, [validationError], parcelItems, additionalYearlyPayments)
       }

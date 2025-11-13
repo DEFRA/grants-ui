@@ -161,9 +161,13 @@ describe('context', () => {
       const contextImport = await import('~/src/config/nunjucks/context/context.js')
       await contextImport.context(mockRequest)
 
-      expect(mockLog).toHaveBeenCalledWith('SYSTEM_SERVER_ERROR', {
-        error: expect.stringContaining('Webpack assets-manifest.json not found')
-      })
+      expect(mockLog).toHaveBeenCalledWith(
+        'SYSTEM_SERVER_ERROR',
+        {
+          error: expect.stringContaining('Webpack assets-manifest.json not found')
+        },
+        mockRequest
+      )
     })
 
     test('Should cache webpack manifest file', async () => {
@@ -263,9 +267,13 @@ describe('context', () => {
         }
       })
 
-      expect(mockLog).toHaveBeenCalledWith('SYSTEM_SERVER_ERROR', {
-        error: expect.stringContaining('Webpack assets-manifest.json not found')
-      })
+      expect(mockLog).toHaveBeenCalledWith(
+        'SYSTEM_SERVER_ERROR',
+        {
+          error: expect.stringContaining('Webpack assets-manifest.json not found')
+        },
+        mockRequest
+      )
     })
 
     test('Should log error and continue when manifest read fails', async () => {
@@ -275,9 +283,13 @@ describe('context', () => {
       const contextImport = await import('~/src/config/nunjucks/context/context.js')
       const contextResult = await contextImport.context(mockRequest)
 
-      expect(mockLog).toHaveBeenCalledWith('SYSTEM_SERVER_ERROR', {
-        error: expect.stringContaining('Webpack assets-manifest.json not found')
-      })
+      expect(mockLog).toHaveBeenCalledWith(
+        'SYSTEM_SERVER_ERROR',
+        {
+          error: expect.stringContaining('Webpack assets-manifest.json not found')
+        },
+        mockRequest
+      )
       expect(contextResult.getAssetPath('test.js')).toBe('/public/test.js')
     })
 
@@ -289,9 +301,14 @@ describe('context', () => {
       const contextImport = await import('~/src/config/nunjucks/context/context.js')
       const contextResult = await contextImport.context(mockRequest)
 
-      expect(mockLog).toHaveBeenCalledWith('SYSTEM_SERVER_ERROR', {
-        error: expect.stringContaining('Error building context: SBI store access failed')
-      })
+      expect(mockLog).toHaveBeenCalledWith(
+        'SYSTEM_SERVER_ERROR',
+        {
+          error: expect.stringContaining('Error building context: SBI store access failed')
+        },
+        mockRequest
+      )
+      expect(contextResult).toEqual(getMinimalFallbackContext())
       expect(contextResult).toEqual(getMinimalFallbackContext())
     })
 
@@ -310,29 +327,51 @@ describe('context', () => {
 
   describe('Session and authentication handling', () => {
     test('Should log cache retrieval error and fallback to empty session', async () => {
+      // Create a mock cache that throws an error
+      const mockCache = {
+        get: vi.fn().mockImplementation(() => {
+          throw new Error('Cache retrieval failed')
+        })
+      }
+
       const requestWithAuth = {
         ...mockRequest,
         auth: { isAuthenticated: true, credentials: { sessionId: 'test-session' } },
         server: {
           app: {
-            cache: {
-              get: vi.fn().mockImplementation(() => {
-                throw new Error('Cache retrieval failed')
-              })
-            }
+            cache: mockCache
           }
         }
       }
 
-      vi.resetModules()
       const contextImport = await import('~/src/config/nunjucks/context/context.js')
       const contextResult = await contextImport.context(requestWithAuth)
 
-      expect(mockLog).toHaveBeenCalledWith('AUTH_SIGN_IN_FAILURE', {
-        userId: 'unknown',
-        error: expect.stringContaining('Cache retrieval failed for session test-session'),
-        step: 'context_cache_retrieval'
-      })
+      expect(mockLog).toHaveBeenCalledWith(
+        'AUTH_SIGN_IN_FAILURE',
+        {
+          userId: 'unknown',
+          error: expect.stringContaining('Cache retrieval failed for session test-session'),
+          step: 'context_cache_retrieval'
+        },
+        expect.objectContaining({
+          auth: expect.objectContaining({
+            isAuthenticated: true,
+            credentials: expect.objectContaining({
+              sessionId: expect.any(String) // Allow for sessionId to be preserved or nullified
+            })
+          }),
+          method: 'GET',
+          path: '/',
+          server: expect.objectContaining({
+            app: expect.objectContaining({
+              cache: expect.objectContaining({
+                get: expect.any(Function)
+              })
+            })
+          })
+        })
+      )
       expect(contextResult.auth).toEqual({
         isAuthenticated: true,
         sbi: 106284736,
@@ -446,11 +485,31 @@ describe('context', () => {
       const contextImport = await import('~/src/config/nunjucks/context/context.js')
       const contextResult = await contextImport.context(requestWithAuth)
 
-      expect(mockLog).toHaveBeenCalledWith('AUTH_SIGN_IN_FAILURE', {
-        userId: 'unknown',
-        error: expect.stringContaining('Cache retrieval failed for session unknown'),
-        step: 'context_cache_retrieval'
-      })
+      expect(mockLog).toHaveBeenCalledWith(
+        'AUTH_SIGN_IN_FAILURE',
+        {
+          userId: 'unknown',
+          error: expect.stringContaining('Cache retrieval failed for session unknown'),
+          step: 'context_cache_retrieval'
+        },
+        expect.objectContaining({
+          auth: expect.objectContaining({
+            isAuthenticated: true,
+            credentials: expect.objectContaining({
+              sessionId: null
+            })
+          }),
+          method: 'GET',
+          path: '/',
+          server: expect.objectContaining({
+            app: expect.objectContaining({
+              cache: expect.objectContaining({
+                get: expect.any(Function)
+              })
+            })
+          })
+        })
+      )
       expect(contextResult.auth).toEqual({
         isAuthenticated: true,
         sbi: 106284736,

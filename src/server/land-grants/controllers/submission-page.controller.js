@@ -18,13 +18,14 @@ export default class SubmissionPageController extends SummaryPageController {
 
   /**
    * Submits the land grant application
+   * @param {object} request - Request object
    * @param {object} data
    * @param {object} data.identifiers - User identifiers
    * @param {object} data.state - Form application state
    * @param {string} data.validationId - Land grants validation ID
    * @returns {Promise<object>} - The result of the grant application submission
    */
-  async submitGasApplication(data) {
+  async submitGasApplication(request, data) {
     const { identifiers, state, validationId } = data
     const applicationData = transformStateObjectToGasApplication(
       identifiers,
@@ -32,7 +33,7 @@ export default class SubmissionPageController extends SummaryPageController {
       stateToLandGrantsGasAnswers
     )
 
-    return submitGrantApplication(this.grantCode, applicationData)
+    return submitGrantApplication(this.grantCode, applicationData, request)
   }
 
   /**
@@ -56,11 +57,15 @@ export default class SubmissionPageController extends SummaryPageController {
    * @returns {object} - Error view response
    */
   handleSubmissionError(h, request, context, validationId) {
-    log(LogCodes.SUBMISSION.SUBMISSION_VALIDATION_ERROR, {
-      grantType: this.grantCode,
-      referenceNumber: context.referenceNumber,
-      validationId: validationId || context.referenceNumber || 'N/A'
-    })
+    log(
+      LogCodes.SUBMISSION.SUBMISSION_VALIDATION_ERROR,
+      {
+        grantType: this.grantCode,
+        referenceNumber: context.referenceNumber,
+        validationId: validationId || context.referenceNumber || 'N/A'
+      },
+      request
+    )
 
     return h.view('submission-error', {
       ...this.getSummaryViewModel(request, context),
@@ -86,12 +91,16 @@ export default class SubmissionPageController extends SummaryPageController {
 
     // Log submission details if available
     if (submissionStatus === statusCodes.noContent) {
-      log(LogCodes.SUBMISSION.SUBMISSION_COMPLETED, {
-        grantType: this.grantCode,
-        referenceNumber: context.referenceNumber,
-        numberOfFields: context.relevantState ? Object.keys(context.relevantState).length : 0,
-        status: submissionStatus
-      })
+      log(
+        LogCodes.SUBMISSION.SUBMISSION_COMPLETED,
+        {
+          grantType: this.grantCode,
+          referenceNumber: context.referenceNumber,
+          numberOfFields: context.relevantState ? Object.keys(context.relevantState).length : 0,
+          status: submissionStatus
+        },
+        request
+      )
 
       const currentState = await cacheService.getState(request)
 
@@ -104,14 +113,17 @@ export default class SubmissionPageController extends SummaryPageController {
       })
 
       // Add to submissions collection
-      await persistSubmissionToApi({
-        crn,
-        sbi,
-        grantCode: this.grantCode,
-        grantVersion: context.grantVersion,
-        referenceNumber: context.referenceNumber,
-        submittedAt
-      })
+      await persistSubmissionToApi(
+        {
+          crn,
+          sbi,
+          grantCode: this.grantCode,
+          grantVersion: context.grantVersion,
+          referenceNumber: context.referenceNumber,
+          submittedAt
+        },
+        request
+      )
     }
 
     // Get the redirect path
@@ -141,23 +153,31 @@ export default class SubmissionPageController extends SummaryPageController {
           return this.handleSubmissionError(h, request, context, validationId)
         }
 
-        const result = await this.submitGasApplication({
+        const result = await this.submitGasApplication(request, {
           identifiers: { sbi, crn, frn, clientRef: referenceNumber?.toLowerCase() },
           state,
           validationId
         })
 
-        log(LogCodes.SUBMISSION.SUBMISSION_SUCCESS, {
-          grantType: this.grantCode,
-          referenceNumber: context.referenceNumber
-        })
+        log(
+          LogCodes.SUBMISSION.SUBMISSION_SUCCESS,
+          {
+            grantType: this.grantCode,
+            referenceNumber: context.referenceNumber
+          },
+          request
+        )
 
         return await this.handleSuccessfulSubmission(request, context, h, result.status)
       } catch (error) {
-        log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
-          endpoint: `Land grants submission`,
-          error: `submitting application for sbi: ${sbi} and crn: ${crn} - ${error.message}`
-        })
+        log(
+          LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+          {
+            endpoint: `Land grants submission`,
+            error: `submitting application for sbi: ${sbi} and crn: ${crn} - ${error.message}`
+          },
+          request
+        )
         return this.handleSubmissionError(h, request, context)
       }
     }

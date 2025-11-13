@@ -29,6 +29,7 @@ describe('Pact between grants-ui (consumer) and fg-gas-backend (provider)', () =
           const response = await makeGasApiRequest(
             `${mockServer.url}/grants/example-grant-with-auth-v3/applications`,
             'example-grant-with-auth-v3',
+            {},
             {
               method: 'POST',
               payload

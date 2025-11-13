@@ -84,7 +84,7 @@ export default class DeclarationPageController extends SummaryPageController {
           (state) => state
         )
 
-        const result = await submitGrantApplication(this.grantCode, applicationData)
+        const result = await submitGrantApplication(this.grantCode, applicationData, request)
 
         // Log submission details if available
         if (result.status === statusCodes.noContent) {
@@ -107,14 +107,17 @@ export default class DeclarationPageController extends SummaryPageController {
           request.logger.debug('DeclarationController: Set application status to SUBMITTED')
 
           // Add to submissions collection
-          await persistSubmissionToApi({
-            crn,
-            sbi,
-            grantCode,
-            grantVersion: context.grantVersion,
-            referenceNumber: context.referenceNumber,
-            submittedAt: applicationData.metadata?.submittedAt
-          })
+          await persistSubmissionToApi(
+            {
+              crn,
+              sbi,
+              grantCode,
+              grantVersion: context.grantVersion,
+              referenceNumber: context.referenceNumber,
+              submittedAt: applicationData.metadata?.submittedAt
+            },
+            request
+          )
         }
 
         // Get the redirect path

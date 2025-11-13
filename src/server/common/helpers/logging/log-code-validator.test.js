@@ -35,7 +35,7 @@ describe('validateLogCode', () => {
   })
 
   it('should accept valid log levels', () => {
-    const levels = ['info', 'debug', 'error']
+    const levels = ['info', 'debug', 'warn', 'error']
 
     levels.forEach((level) => {
       const logCode = {
