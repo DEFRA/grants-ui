@@ -16,7 +16,8 @@
         {{ govukErrorSummary({
           titleText: "There is a problem",
           errorList: [{
-            text: errorMessage
+            text: errorMessage,
+            href: "#selectedLandParcel"
           }]
         }) }}
       {% endif %}
