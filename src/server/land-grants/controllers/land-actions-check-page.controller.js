@@ -45,7 +45,7 @@ export default class LandActionsCheckPageController extends QuestionPageControll
       items: [
         [
           {
-            text: `One-off payment per agreement per year for ${landActionWithCode(data.description, data.code)}`
+            text: `Additional payment per agreement per year for ${landActionWithCode(data.description, data.code)}`
           },
           {
             html: `<div class="govuk-!-width-one-half">${this.getPrice(data.annualPaymentPence)}</div>`,
