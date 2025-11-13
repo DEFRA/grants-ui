@@ -399,7 +399,7 @@ describe('LandActionsCheckPageController', () => {
 
       const result = controller.getAdditionalYearlyPayments(paymentData)
 
-      expect(result[0].items[0][0].text).toBe('One-off payment per agreement per year for Management fee: MAN1')
+      expect(result[0].items[0][0].text).toBe('Additional payment per agreement per year for Management fee: MAN1')
       expect(result[0].items[0][1].html).toContain('£50.00')
     })
 

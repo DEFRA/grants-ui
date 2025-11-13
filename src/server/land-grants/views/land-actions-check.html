@@ -97,41 +97,39 @@
         {% endfor %}
       </div>
         <div class="govuk-grid-column-two-thirds">
-          {% if not errorMessages %}
-            <form method="post" novalidate="novalidate">
-              {{ govukRadios({
-                  classes: "govuk-radios--inline",
-                  name: "addMoreActions",
-                  fieldset: {
-                    legend: {
-                      text: "Do you want to add actions to another land parcel?",
-                      classes: "govuk-fieldset__legend--m"
-                    }
+          <form method="post" novalidate="novalidate">
+            {{ govukRadios({
+                classes: "govuk-radios--inline",
+                name: "addMoreActions",
+                fieldset: {
+                  legend: {
+                    text: "Do you want to add actions to another land parcel?",
+                    classes: "govuk-fieldset__legend--m"
+                  }
+                },
+                items: [
+                  {
+                    value: "true",
+                    text: "Yes"
                   },
-                  items: [
-                    {
-                      value: "true",
-                      text: "Yes"
-                    },
-                    {
-                      value: "false",
-                      text: "No"
-                    }
-                  ],
-                  errorMessage: errorMessages and errorMessages[0] and errorMessages[0].href and { text: errorMessages[0].text, href: errorMessages[0].href }
-                })
-              }}
-              <div class="govuk-button-group">
-                <input type="hidden" name="crumb" value="{{ crumb }}">
-                {% block form %}
-                  {{ govukButton({
-                  text: "Continue",
-                  preventDoubleClick: true
-                }) }}
-                {% endblock %}
-              </div>
-            </form>
-          {% endif %}
+                  {
+                    value: "false",
+                    text: "No"
+                  }
+                ],
+                errorMessage: errorMessages and errorMessages[0] and errorMessages[0].href and { text: errorMessages[0].text, href: errorMessages[0].href }
+              })
+            }}
+            <div class="govuk-button-group">
+              <input type="hidden" name="crumb" value="{{ crumb }}">
+              {% block form %}
+                {{ govukButton({
+                text: "Continue",
+                preventDoubleClick: true
+              }) }}
+              {% endblock %}
+            </div>
+          </form>
         {{ defraSupportDetails() }}
       </div>
     </div>
