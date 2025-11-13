@@ -174,11 +174,13 @@ describe('context', () => {
       const contextImport = await importContext()
       await contextImport.context(mockRequest)
 
-      expect(mockLog).toHaveBeenCalledWith('SYSTEM_SERVER_ERROR', {
-        error: expect.stringContaining('Webpack assets-manifest.json not found'),
-        stack: expect.any(String),
-        context: 'loadWebpackManifest'
-      })
+      expect(mockLog).toHaveBeenCalledWith(
+        'SYSTEM_SERVER_ERROR',
+        {
+          error: expect.stringContaining('Webpack assets-manifest.json not found')
+        },
+        mockRequest
+      )
     })
 
     test('Should cache webpack manifest file', async () => {
