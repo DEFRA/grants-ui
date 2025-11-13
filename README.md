@@ -851,7 +851,7 @@ A local environment with:
 - MockServer, providing a stub for [fg-gas-backend](http://github.com/DEFRA/fg-gas-backend)
 
 ```bash
-docker compose up --build -d
+npm run docker:up
 ```
 
 And optionally:
@@ -859,7 +859,7 @@ And optionally:
 - Land Grants API and Postgres via `compose.land-grants.yml`
 
 ```bash
-docker compose up -f compose.yml -f compose.land-grants.yml --build -d
+npm run docker:landgrants:up
 ```
 
 Note: Running the Land Grants API and Postgres requires land data to be populated in the Land Grants Postgres database.
@@ -872,10 +872,10 @@ Convenient npm scripts have been added in that repository for this workflow:
 
 ```bash
 # Apply migrations to the grants-ui database
-npm run docker:db:migrate:up
+npm run docker:migrate:ext:up
 
 # Roll back all migrations to the base tag v0.0.0
-npm run docker:db:migrate:down
+npm run docker:migrate:ext:down
 ```
 
 #### High-availability (HA) local proxy
@@ -893,13 +893,13 @@ What it provides:
 Start the stack with the HA proxy:
 
 ```bash
-docker compose -f compose.yml -f compose.ha.yml up -d --build --scale grants-ui=2 --scale grants-ui-backend=2
+npm run docker:ha:up
 ```
 
 Stop the HA stack:
 
 ```bash
-docker compose -f compose.yml -f compose.ha.yml down
+npm run docker:ha:down
 ```
 
 You can also run the HA stack with the Land Grants API and Postgres via npm scripts:
