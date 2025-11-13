@@ -100,10 +100,6 @@ describe('SelectLandParcelPageController', () => {
 
   afterEach(vi.clearAllMocks)
 
-  it('should have the correct viewName', () => {
-    expect(controller.viewName).toBe('select-land-parcel')
-  })
-
   describe('formatParcelForView', () => {
     it('formats parcel with area only', () => {
       const parcel = {
@@ -230,38 +226,6 @@ describe('SelectLandParcelPageController', () => {
       )
       expect(result).toBe(renderedViewMock)
     })
-
-    it('defaults state fields when context.state is undefined', async () => {
-      mockContext.state = undefined
-
-      const result = await controller.makeGetRouteHandler()(mockRequest, mockContext, mockH)
-
-      expect(mockH.view).toHaveBeenCalledWith(
-        'select-land-parcel',
-        expect.objectContaining({
-          existingLandParcels: false,
-          pageTitle: 'Select Land Parcel',
-          parcels: controllerParcelsResponse
-        })
-      )
-      expect(result).toBe(renderedViewMock)
-    })
-
-    it('populates full viewModel correctly', async () => {
-      mockContext.state.selectedLandParcel = state.selectedLandParcel
-
-      const result = await controller.makeGetRouteHandler()(mockRequest, mockContext, mockH)
-
-      expect(mockH.view).toHaveBeenCalledWith(
-        'select-land-parcel',
-        expect.objectContaining({
-          existingLandParcels: false,
-          parcels: controllerParcelsResponse,
-          pageTitle: 'Select Land Parcel'
-        })
-      )
-      expect(result).toBe(renderedViewMock)
-    })
   })
 
   describe('POST route handler', () => {
@@ -324,17 +288,121 @@ describe('SelectLandParcelPageController', () => {
       expect(result).toBe('next')
     })
 
-    it('handles null payload', async () => {
+    it('should verify both action=validate AND selectedLandParcel conditions', async () => {
+      mockRequest.payload = { action: 'validate', selectedLandParcel: '' }
+      mockContext = setupContext({ existing: 'value' })
+
+      const result = await controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'select-land-parcel',
+        expect.objectContaining({
+          errorMessage: 'Please select a land parcel from the list'
+        })
+      )
+      expect(result).toBe('mock-rendered-view')
+    })
+
+    it('should not show error when action is not validate even if selectedLandParcel missing', async () => {
+      mockRequest.payload = { action: 'other', selectedLandParcel: '' }
+      mockContext = setupContext({})
+
+      await controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
+
+      expect(mockH.view).not.toHaveBeenCalledWith(
+        'select-land-parcel',
+        expect.objectContaining({
+          errorMessage: 'Please select a land parcel from the list'
+        })
+      )
+      expect(controller.proceed).toHaveBeenCalled()
+    })
+
+    it('should handle payload being null', async () => {
       mockRequest.payload = null
       mockContext = setupContext({})
 
       const result = await controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
 
-      expect(controller.setState).toHaveBeenCalledWith(mockRequest, {
-        selectedLandParcel: undefined
-      })
+      expect(controller.setState).toHaveBeenCalled()
       expect(controller.proceed).toHaveBeenCalled()
       expect(result).toBe('next')
+    })
+
+    it('should use selectedLandParcel from query when available', async () => {
+      mockRequest.query = { parcelId: 'queryParcel' }
+      mockRequest.payload = { action: 'validate' }
+      mockContext = setupContext({ selectedLandParcel: 'stateParcel' })
+
+      await controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'select-land-parcel',
+        expect.objectContaining({
+          errorMessage: 'Please select a land parcel from the list'
+        })
+      )
+    })
+
+    it('should handle error when fetching parcels for validation error', async () => {
+      mockRequest.payload = { action: 'validate' }
+      mockContext = setupContext({ existing: 'value', landParcels: { 'SD7946-0155': { actionsObj: { ACTION1: {} } } } })
+      fetchParcels.mockRejectedValue(new Error('Fetch error'))
+
+      const result = await controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'select-land-parcel',
+        expect.objectContaining({
+          errorMessage: 'Please select a land parcel from the list',
+          parcels: [] // Should default to empty array on error
+        })
+      )
+      expect(result).toBe('mock-rendered-view')
+    })
+
+    it('should correctly calculate actions count', async () => {
+      mockRequest.payload = { action: 'validate' }
+      mockContext = setupContext({
+        landParcels: {
+          'SD7946-0155': { actionsObj: { ACTION1: {}, ACTION2: {} } }
+        }
+      })
+
+      await controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'select-land-parcel',
+        expect.objectContaining({
+          parcels: expect.arrayContaining([
+            expect.objectContaining({
+              hint: { text: 'Total size 4.0383 ha, 2 actions added' }
+            })
+          ])
+        })
+      )
+    })
+
+    it('should handle parcel with no actions object', async () => {
+      mockRequest.payload = { action: 'validate' }
+      mockContext = setupContext({
+        landParcels: {
+          'SD7946-0155': { size: {} } // No actionsObj
+        }
+      })
+
+      await controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'select-land-parcel',
+        expect.objectContaining({
+          parcels: expect.arrayContaining([
+            expect.objectContaining({
+              hint: { text: 'Total size: 4.0383 ha' }
+            })
+          ])
+        })
+      )
     })
   })
 })

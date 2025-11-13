@@ -1,4 +1,11 @@
-import { postToLandGrantsApi } from './land-grants.client.js'
+import {
+  calculate,
+  parcelsWithActionsAndSize,
+  parcelsWithFields,
+  parcelsWithSize,
+  postToLandGrantsApi,
+  validate
+} from './land-grants.client.js'
 import { vi } from 'vitest'
 import { retry } from '~/src/server/common/helpers/retry.js'
 
@@ -22,7 +29,7 @@ global.fetch = mockFetch
 
 const mockApiEndpoint = 'http://mock-land-grants-api'
 
-describe('postToLandGrantsApi', () => {
+describe('Land Grants client', () => {
   beforeEach(() => {
     retry.mockImplementation(async (operation, options) => {
       try {
@@ -35,87 +42,329 @@ describe('postToLandGrantsApi', () => {
       }
     })
   })
-  it('should make successful POST request', async () => {
-    const mockResponse = { id: 1, status: 'success' }
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: () => mockResponse
-    })
 
-    const result = await postToLandGrantsApi('/submit', { data: 'test' }, mockApiEndpoint)
-
-    expect(mockFetch).toHaveBeenCalledWith(`${mockApiEndpoint}/submit`, {
-      method: 'POST',
-      headers: {
-        Authorization: expect.any(String),
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ data: 'test' })
-    })
-    expect(result).toEqual(mockResponse)
+  afterEach(() => {
+    vi.clearAllMocks()
   })
 
-  it('should handle 404 error', async () => {
-    mockFetch.mockResolvedValue({
-      ok: false,
-      status: 404,
-      statusText: 'Not Found'
+  describe('postToLandGrantsApi', () => {
+    it('should make successful POST request', async () => {
+      const mockResponse = { id: 1, status: 'success' }
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => mockResponse
+      })
+
+      const result = await postToLandGrantsApi('/submit', { data: 'test' }, mockApiEndpoint)
+
+      expect(mockFetch).toHaveBeenCalledWith(`${mockApiEndpoint}/submit`, {
+        method: 'POST',
+        headers: {
+          Authorization: expect.any(String),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ data: 'test' })
+      })
+      expect(result).toEqual(mockResponse)
     })
 
-    await expect(postToLandGrantsApi('/invalid', {}, mockApiEndpoint)).rejects.toThrow('Not Found')
+    it('should handle 404 error', async () => {
+      mockFetch.mockResolvedValue({
+        ok: false,
+        status: 404,
+        statusText: 'Not Found'
+      })
 
-    let code, message
-    try {
-      await postToLandGrantsApi('/invalid', {}, mockApiEndpoint)
-    } catch (error) {
-      code = error.code
-      message = error.message
-    }
-    expect(code).toBe(404)
-    expect(message).toBe('Not Found')
-  })
+      await expect(postToLandGrantsApi('/invalid', {}, mockApiEndpoint)).rejects.toThrow('Not Found')
 
-  it('should handle 500 error', async () => {
-    mockFetch.mockResolvedValue({
-      ok: false,
-      status: 500,
-      statusText: 'Internal Server Error'
+      let code, message
+      try {
+        await postToLandGrantsApi('/invalid', {}, mockApiEndpoint)
+      } catch (error) {
+        code = error.code
+        message = error.message
+      }
+      expect(code).toBe(404)
+      expect(message).toBe('Not Found')
     })
 
-    await expect(postToLandGrantsApi('/error', {}, mockApiEndpoint)).rejects.toThrow('Internal Server Error')
+    it('should handle empty endpoint', async () => {
+      const mockResponse = { success: true }
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => mockResponse
+      })
 
-    let code, message
-    try {
-      await postToLandGrantsApi('/error', {}, mockApiEndpoint)
-    } catch (error) {
-      code = error.code
-      message = error.message
-    }
+      await postToLandGrantsApi('', { test: 'data' }, mockApiEndpoint)
 
-    expect(code).toBe(500)
-    expect(message).toBe('Internal Server Error')
-  })
+      expect(mockFetch).toHaveBeenCalledWith(mockApiEndpoint, expect.any(Object))
+    })
 
-  it('should handle network error', async () => {
-    mockFetch.mockRejectedValueOnce(new Error('Network error'))
+    it('should verify error has status property set to same value as code', async () => {
+      mockFetch.mockResolvedValue({
+        ok: false,
+        status: 500,
+        statusText: 'Internal Server Error'
+      })
 
-    try {
+      try {
+        await postToLandGrantsApi('/error', {}, mockApiEndpoint)
+        expect.fail('Should have thrown an error')
+      } catch (error) {
+        expect(error.code).toBe(500)
+        expect(error.status).toBe(500)
+        expect(error.code).toBe(error.status)
+      }
+    })
+
+    it('should call response.json() when response is ok', async () => {
+      const mockJson = vi.fn().mockResolvedValue({ data: 'test' })
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: mockJson
+      })
+
       await postToLandGrantsApi('/test', {}, mockApiEndpoint)
-      expect(true).toBe(false) // Should not reach here
-    } catch (error) {
-      expect(error.message).toBe('Network error')
-    }
-  })
 
-  it('should handle empty endpoint', async () => {
-    const mockResponse = { success: true }
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: () => mockResponse
+      expect(mockJson).toHaveBeenCalledTimes(1)
     })
 
-    await postToLandGrantsApi('', { test: 'data' }, mockApiEndpoint)
+    it('should not call response.json() when response is not ok', async () => {
+      const mockJson = vi.fn().mockResolvedValue({ data: 'test' })
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        statusText: 'Bad Request',
+        json: mockJson
+      })
 
-    expect(mockFetch).toHaveBeenCalledWith(mockApiEndpoint, expect.any(Object))
+      try {
+        await postToLandGrantsApi('/test', {}, mockApiEndpoint)
+      } catch (error) {
+        // Expected error
+      }
+
+      expect(mockJson).not.toHaveBeenCalled()
+    })
+
+    it('should construct URL correctly with baseUrl and endpoint', async () => {
+      const mockResponse = { success: true }
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => mockResponse
+      })
+
+      await postToLandGrantsApi('/api/test', {}, 'http://example.com')
+
+      expect(mockFetch).toHaveBeenCalledWith('http://example.com/api/test', expect.any(Object))
+    })
+
+    it('should stringify body correctly', async () => {
+      const mockResponse = { success: true }
+      const testBody = { foo: 'bar', nested: { value: 123 } }
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => mockResponse
+      })
+
+      await postToLandGrantsApi('/test', testBody, mockApiEndpoint)
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          body: JSON.stringify(testBody)
+        })
+      )
+    })
+
+    it('should set POST method in fetch options', async () => {
+      const mockResponse = { success: true }
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => mockResponse
+      })
+
+      await postToLandGrantsApi('/test', {}, mockApiEndpoint)
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          method: 'POST'
+        })
+      )
+    })
+
+    it('should verify retry is called with correct parameters', async () => {
+      const mockResponse = { success: true }
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => mockResponse
+      })
+
+      await postToLandGrantsApi('/test', {}, mockApiEndpoint)
+
+      expect(retry).toHaveBeenCalledWith(
+        expect.any(Function),
+        expect.objectContaining({
+          timeout: 30000,
+          onRetry: expect.any(Function)
+        })
+      )
+    })
+
+    it('should handle error with different status codes', async () => {
+      const statusCodes = [400, 401, 403, 500, 502, 503]
+
+      for (const status of statusCodes) {
+        mockFetch.mockResolvedValueOnce({
+          ok: false,
+          status,
+          statusText: `Error ${status}`
+        })
+
+        try {
+          await postToLandGrantsApi('/test', {}, mockApiEndpoint)
+          expect.fail('Should have thrown an error')
+        } catch (error) {
+          expect(error.status).toBe(status)
+          expect(error.code).toBe(status)
+        }
+      }
+    })
+
+    it('should return the exact response from json()', async () => {
+      const expectedResponse = {
+        id: 123,
+        data: 'complex data',
+        nested: { value: true },
+        array: [1, 2, 3]
+      }
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => expectedResponse
+      })
+
+      const result = await postToLandGrantsApi('/test', {}, mockApiEndpoint)
+
+      expect(result).toEqual(expectedResponse)
+      expect(result).toBe(expectedResponse)
+    })
+  })
+
+  describe('calculate', () => {
+    it('should trigger a POST request to /payments/calculate', async () => {
+      const mockResponse = { id: 1, status: 'success' }
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => mockResponse
+      })
+
+      const result = await calculate({ data: 'test' }, mockApiEndpoint)
+
+      expect(mockFetch).toHaveBeenCalledWith(`${mockApiEndpoint}/payments/calculate`, {
+        method: 'POST',
+        headers: {
+          Authorization: expect.any(String),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ data: 'test' })
+      })
+      expect(result).toEqual(mockResponse)
+    })
+  })
+
+  describe('validate', () => {
+    it('should trigger a POST request to /application/validate', async () => {
+      const mockResponse = { id: 1, status: 'success' }
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => mockResponse
+      })
+
+      const result = await validate({ data: 'test' }, mockApiEndpoint)
+
+      expect(mockFetch).toHaveBeenCalledWith(`${mockApiEndpoint}/application/validate`, {
+        method: 'POST',
+        headers: {
+          Authorization: expect.any(String),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ data: 'test' })
+      })
+      expect(result).toEqual(mockResponse)
+    })
+  })
+
+  describe('parcelsWithFields', () => {
+    it('should trigger a POST request to /parcels with specific fields', async () => {
+      const mockResponse = { id: 1, status: 'success' }
+      const fields = ['specific-field']
+      const parcelIds = ['parcel1']
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => mockResponse
+      })
+
+      const result = await parcelsWithFields(fields, parcelIds, mockApiEndpoint)
+
+      expect(mockFetch).toHaveBeenCalledWith(`${mockApiEndpoint}/parcels`, {
+        method: 'POST',
+        headers: {
+          Authorization: expect.any(String),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ parcelIds, fields })
+      })
+      expect(result).toEqual(mockResponse)
+    })
+  })
+
+  describe('parcelsWithSize', () => {
+    it('should trigger a POST request to /parcels with size filtering', async () => {
+      const mockResponse = { parcels: [], status: 'success' }
+      const fields = ['size']
+      const parcelIds = ['parcel1']
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => mockResponse
+      })
+
+      const result = await parcelsWithSize(parcelIds, mockApiEndpoint)
+
+      expect(mockFetch).toHaveBeenCalledWith(`${mockApiEndpoint}/parcels`, {
+        method: 'POST',
+        headers: {
+          Authorization: expect.any(String),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ parcelIds, fields })
+      })
+      expect(result).toEqual(mockResponse)
+    })
+  })
+
+  describe('parcelsWithActionsAndSize', () => {
+    it('should trigger a POST request to /parcels with actions and size filtering', async () => {
+      const mockResponse = { id: 1, status: 'success' }
+      const fields = ['actions', 'size']
+      const parcelIds = ['parcel1']
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => mockResponse
+      })
+
+      const result = await parcelsWithActionsAndSize(parcelIds, mockApiEndpoint)
+
+      expect(mockFetch).toHaveBeenCalledWith(`${mockApiEndpoint}/parcels`, {
+        method: 'POST',
+        headers: {
+          Authorization: expect.any(String),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ parcelIds, fields })
+      })
+      expect(result).toEqual(mockResponse)
+    })
   })
 })

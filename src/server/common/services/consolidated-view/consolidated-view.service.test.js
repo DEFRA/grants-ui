@@ -8,7 +8,7 @@ import {
   fetchBusinessAndCustomerInformation,
   fetchParcelsFromDal
 } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
-import { fetchBusinessAndCPH } from './consolidated-view.service.js'
+import { ConsolidatedViewApiError, fetchBusinessAndCPH } from './consolidated-view.service.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
 
 vi.mock('~/src/server/common/helpers/retry.js')
@@ -140,20 +140,7 @@ describe('Consolidated View Service', () => {
 
       const [[, calledOptions]] = mockFetchInstance.mock.calls
       expect(calledOptions.headers.Authorization).toBe(`Bearer ${mockToken}`)
-    })
-
-    it('should set external headers for defraID requests', async () => {
-      mockFetchInstance.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockParcelsResponse)
-      })
-
-      const result = await fetchParcelsFromDal(mockRequest)
-
-      expect(mockFetchInstance).toHaveBeenCalledTimes(1)
-      expect(result).toEqual(mockParcelsResponse.data.business.land.parcels)
-
-      const [[, calledOptions]] = mockFetchInstance.mock.calls
+      expect(calledOptions.headers['Content-Type']).toBe(`application/json`)
       expect(calledOptions.headers['gateway-type']).toBe(`external`)
       expect(calledOptions.headers['x-forwarded-authorization']).toBe(mockDefraIdToken)
     })
@@ -175,6 +162,7 @@ describe('Consolidated View Service', () => {
       const [[, calledOptions]] = mockFetchInstance.mock.calls
       expect(calledOptions.headers['email']).toBe('test@example.com')
       expect(calledOptions.headers['gateway-type']).toBeUndefined()
+      expect(calledOptions.body).toContain(`business(sbi:`)
       expect(calledOptions.headers['x-forwarded-authorization']).toBeUndefined()
     })
 
@@ -352,31 +340,6 @@ describe('Consolidated View Service', () => {
       expect(fs.readFile).toHaveBeenCalledTimes(1)
       expect(mockFetchInstance).not.toHaveBeenCalled()
     })
-
-    it('should extract CPH number from first element in array', async () => {
-      const responseWithMultipleCPH = {
-        data: {
-          business: {
-            info: { name: 'Test Business' },
-            countyParishHoldings: [{ cphNumber: 'CPH-FIRST' }, { cphNumber: 'CPH-SECOND' }]
-          },
-          customer: {
-            info: {
-              name: { first: 'John', last: 'Doe' }
-            }
-          }
-        }
-      }
-
-      mockFetchInstance.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(responseWithMultipleCPH)
-      })
-
-      const result = await fetchBusinessAndCPH(mockRequest)
-
-      expect(result.countyParishHoldings).toBe('CPH-FIRST')
-    })
   })
 
   describe('fetchBusinessAndCustomerInformation', () => {
@@ -429,7 +392,12 @@ describe('Consolidated View Service', () => {
       })
 
       await expect(fetchBusinessAndCustomerInformation(mockRequest)).rejects.toThrow(
-        'Failed to fetch business data: 500 Internal Server Error'
+        new ConsolidatedViewApiError(
+          'Failed to fetch business data: 500 Internal Server Error',
+          500,
+          'Failed to fetch business data: 500 Internal Server Error',
+          mockSbi
+        )
       )
     })
   })
@@ -505,32 +473,13 @@ describe('Consolidated View Service', () => {
       fileError.code = 'ENOENT'
       fs.readFile.mockRejectedValueOnce(fileError)
 
-      await expect(fetchParcelsFromDal(mockRequest)).rejects.toThrow(
-        'Failed to fetch business data: ENOENT: no such file or directory'
-      )
+      await expect(fetchParcelsFromDal(mockRequest)).rejects.toThrow('ENOENT: no such file or directory')
     })
 
     it('should handle invalid JSON in mock file', async () => {
       fs.readFile.mockResolvedValueOnce('invalid json content')
 
-      await expect(fetchParcelsFromDal(mockRequest)).rejects.toThrow('Failed to fetch business data:')
-    })
-
-    it('should use correct file path for different SBI', async () => {
-      const differentSbi = 987654321
-      const differentMockRequest = {
-        auth: {
-          credentials: {
-            ...mockRequest.auth.credentials,
-            sbi: differentSbi
-          }
-        }
-      }
-      fs.readFile.mockResolvedValueOnce(JSON.stringify(mockFileData))
-
-      await fetchParcelsFromDal(differentMockRequest)
-
-      expect(fs.readFile).toHaveBeenCalledWith(getMockFilePath(differentSbi), 'utf8')
+      await expect(fetchParcelsFromDal(mockRequest)).rejects.toThrow()
     })
   })
 

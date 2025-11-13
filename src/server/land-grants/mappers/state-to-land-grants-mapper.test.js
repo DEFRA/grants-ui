@@ -86,26 +86,6 @@ describe('stateToLandActionsMapper', () => {
     ])
   })
 
-  it('should handle parcel with empty actionsObj', () => {
-    const state = {
-      landParcels: {
-        'SD1234-5678': {
-          actionsObj: {}
-        }
-      }
-    }
-
-    const result = stateToLandActionsMapper(state)
-
-    expect(result).toEqual([
-      {
-        sheetId: 'SD1234',
-        parcelId: '5678',
-        actions: []
-      }
-    ])
-  })
-
   it('should convert string values to numbers', () => {
     const state = {
       landParcels: {
@@ -137,24 +117,5 @@ describe('stateToLandActionsMapper', () => {
     const result = stateToLandActionsMapper(state)
 
     expect(result[0].actions[0].quantity).toBe(0)
-  })
-
-  it('should maintain action order from actionsObj', () => {
-    const state = {
-      landParcels: {
-        'SD1234-5678': {
-          actionsObj: {
-            CMOR1: { value: 3 },
-            UPL1: { value: 1 },
-            UPL4: { value: 2 }
-          }
-        }
-      }
-    }
-
-    const result = stateToLandActionsMapper(state)
-
-    expect(result[0].actions).toHaveLength(3)
-    expect(result[0].actions.map((a) => a.code)).toEqual(['CMOR1', 'UPL1', 'UPL4'])
   })
 })

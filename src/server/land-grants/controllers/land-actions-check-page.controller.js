@@ -1,7 +1,6 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { formatCurrency } from '~/src/config/nunjucks/filters/filters.js'
 import { landActionWithCode } from '~/src/server/land-grants/utils/land-action-with-code.js'
-import { sbiStore } from '~/src/server/sbi/state.js'
 import { actionGroups, calculateGrantPayment } from '../services/land-grants.service.js'
 import { stringifyParcel } from '../utils/format-parcel.js'
 import { log, LogCodes } from '../../common/helpers/logging/log.js'
@@ -26,36 +25,6 @@ const createLinks = (data) => {
 
 export default class LandActionsCheckPageController extends QuestionPageController {
   viewName = 'land-actions-check'
-
-  /**
-   * Check if parcel data has valid actions
-   * @param {object} parcelData - Parcel data
-   * @returns {boolean} - Whether parcel has valid actions
-   */
-  hasValidActions(parcelData) {
-    return parcelData?.actionsObj && Object.keys(parcelData.actionsObj).length > 0
-  }
-
-  /**
-   * Map parcel data to land action format
-   * @param {string} parcelKey - Parcel key (sheetId-parcelId)
-   * @param {object} parcelData - Parcel data
-   * @returns {object} - Land action object
-   */
-  mapParcelToLandAction(parcelKey, parcelData) {
-    const [sheetId, parcelId] = parcelKey.split('-')
-    const actions = Object.entries(parcelData.actionsObj).map(([code, actionData]) => ({
-      code,
-      quantity: Number.parseFloat(actionData.value)
-    }))
-
-    return {
-      sbi: sbiStore.get('sbi'),
-      sheetId,
-      parcelId,
-      actions
-    }
-  }
 
   /**
    * Get formatted price from pence value

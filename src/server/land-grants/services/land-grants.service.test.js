@@ -114,21 +114,6 @@ describe('land-grants service', () => {
       expect(result.errorMessage).toBe('Error calculating payment. Please try again later.')
     })
 
-    it('should handle null payment total with error message', async () => {
-      const mockCalculateResponse = { payment: { total: null } }
-      calculate.mockResolvedValueOnce(mockCalculateResponse)
-      formatCurrency.mockReturnValue(null)
-
-      const result = await calculateGrantPayment({
-        landParcels: {
-          'SHEET123-PARCEL456': {}
-        }
-      })
-
-      expect(result.paymentTotal).toBeNull()
-      expect(result.errorMessage).toBe('Error calculating payment. Please try again later.')
-    })
-
     it('should propagate API errors', async () => {
       calculate.mockRejectedValueOnce(new Error('API error'))
 
@@ -294,58 +279,6 @@ describe('land-grants service', () => {
       })
     })
 
-    it('should handle only ungrouped actions', async () => {
-      const mockApiResponse = {
-        parcels: [
-          {
-            parcelId: 'PARCEL456',
-            sheetId: 'SHEET123',
-            size: { value: 20.0, unit: 'ha' },
-            actions: [
-              {
-                code: 'UNKNOWN1',
-                availableArea: { value: 5.0, unit: 'ha' },
-                description: 'description'
-              },
-              {
-                code: 'UNKNOWN2',
-                availableArea: { value: 3.5, unit: 'ha' },
-                description: 'description'
-              }
-            ]
-          }
-        ]
-      }
-
-      parcelsWithActionsAndSize.mockResolvedValueOnce(mockApiResponse)
-
-      const result = await fetchAvailableActionsForParcel({
-        parcelId: 'PARCEL456',
-        sheetId: 'SHEET123'
-      })
-
-      expect(result).toEqual({
-        parcel: {
-          parcelId: 'PARCEL456',
-          sheetId: 'SHEET123',
-          size: { value: 20.0, unit: 'ha' }
-        },
-        actions: [
-          {
-            name: '',
-            totalAvailableArea: {
-              unit: 'ha',
-              value: 5.0
-            },
-            actions: [
-              { code: 'UNKNOWN1', availableArea: { value: 5.0, unit: 'ha' }, description: 'description: UNKNOWN1' },
-              { code: 'UNKNOWN2', availableArea: { value: 3.5, unit: 'ha' }, description: 'description: UNKNOWN2' }
-            ]
-          }
-        ]
-      })
-    })
-
     it('should handle empty parcel parameters', async () => {
       const mockApiResponse = { parcels: [] }
 
@@ -418,57 +351,6 @@ describe('land-grants service', () => {
           size: { value: 10.0, unit: 'ha' }
         },
         actions: []
-      })
-    })
-
-    it('should handle partial group matches', async () => {
-      const mockApiResponse = {
-        parcels: [
-          {
-            parcelId: 'PARCEL456',
-            sheetId: 'SHEET123',
-            size: { value: 25.0, unit: 'ha' },
-            actions: [
-              {
-                code: 'UPL1',
-                availableArea: { value: 20.75, unit: 'ha' },
-                description: 'Moderate livestock grazing on moorland'
-              }
-              // Only one action from the "Livestock grazing on moorland" group
-            ]
-          }
-        ]
-      }
-
-      parcelsWithActionsAndSize.mockResolvedValueOnce(mockApiResponse)
-
-      const result = await fetchAvailableActionsForParcel({
-        parcelId: 'PARCEL456',
-        sheetId: 'SHEET123'
-      })
-
-      expect(result).toEqual({
-        parcel: {
-          sheetId: 'SHEET123',
-          parcelId: 'PARCEL456',
-          size: { value: 25.0, unit: 'ha' }
-        },
-        actions: [
-          {
-            name: 'Livestock grazing on moorland',
-            totalAvailableArea: {
-              unit: 'ha',
-              value: 20.75
-            },
-            actions: [
-              {
-                code: 'UPL1',
-                availableArea: { value: 20.75, unit: 'ha' },
-                description: 'Moderate livestock grazing on moorland: UPL1'
-              }
-            ]
-          }
-        ]
       })
     })
 

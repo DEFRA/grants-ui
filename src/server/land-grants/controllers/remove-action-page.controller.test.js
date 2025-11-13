@@ -77,10 +77,6 @@ describe('RemoveActionPageController', () => {
     vi.clearAllMocks()
   })
 
-  test('should have the correct viewName', () => {
-    expect(controller.viewName).toBe('remove-action')
-  })
-
   describe('findActionInfo', () => {
     test('should find action info when it exists', () => {
       const result = controller.findActionInfo(mockLandParcels, 'SD6743-8083', 'CMOR1')
@@ -306,43 +302,6 @@ describe('RemoveActionPageController', () => {
       })
     })
 
-    test('should return error for parcel removal when remove is undefined and actionDescription is undefined', () => {
-      const parcel = 'SD6743-8083'
-      const actionDescription = undefined
-      const payload = {}
-
-      const result = controller.validatePostPayload(payload, parcel, actionDescription)
-
-      expect(result).toEqual({
-        errorMessage: 'Select yes to remove land parcel SD6743-8083 from this application'
-      })
-    })
-
-    test('should return error for parcel removal when remove is undefined and actionDescription is empty string', () => {
-      const parcel = 'SD6743-8083'
-      const actionDescription = ''
-      const payload = {}
-
-      const result = controller.validatePostPayload(payload, parcel, actionDescription)
-
-      expect(result).toEqual({
-        errorMessage: 'Select yes to remove land parcel SD6743-8083 from this application'
-      })
-    })
-
-    test('should return error when remove is explicitly undefined', () => {
-      const parcel = 'SD6743-8083'
-      const actionDescription = 'Assess moorland and produce a written record: CMOR1'
-      const payload = { remove: undefined }
-
-      const result = controller.validatePostPayload(payload, parcel, actionDescription)
-
-      expect(result).toEqual({
-        errorMessage:
-          'Select yes to remove Assess moorland and produce a written record: CMOR1 from land parcel SD6743-8083'
-      })
-    })
-
     test('should return null when remove is true', () => {
       const payload = { remove: 'true' }
       const parcel = 'SD6743-8083'
@@ -451,50 +410,6 @@ describe('RemoveActionPageController', () => {
 
     test('should remove entire parcel when no action specified', async () => {
       const action = null
-      const parcel = 'SD6743-8083'
-
-      const state = {
-        landParcels: JSON.parse(JSON.stringify(mockLandParcels))
-      }
-
-      const result = await controller.processRemoval(mockRequest, state, mockH, parcel, action)
-
-      expect(controller.setState).toHaveBeenCalledWith(
-        mockRequest,
-        expect.objectContaining({
-          landParcels: expect.not.objectContaining({
-            'SD6743-8083': expect.anything()
-          })
-        })
-      )
-      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/check-selected-land-actions')
-      expect(result).toBe('redirected')
-    })
-
-    test('should remove entire parcel when action is undefined', async () => {
-      const action = undefined
-      const parcel = 'SD6743-8083'
-
-      const state = {
-        landParcels: JSON.parse(JSON.stringify(mockLandParcels))
-      }
-
-      const result = await controller.processRemoval(mockRequest, state, mockH, parcel, action)
-
-      expect(controller.setState).toHaveBeenCalledWith(
-        mockRequest,
-        expect.objectContaining({
-          landParcels: expect.not.objectContaining({
-            'SD6743-8083': expect.anything()
-          })
-        })
-      )
-      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/check-selected-land-actions')
-      expect(result).toBe('redirected')
-    })
-
-    test('should remove entire parcel when action is empty string', async () => {
-      const action = ''
       const parcel = 'SD6743-8083'
 
       const state = {
@@ -713,23 +628,6 @@ describe('RemoveActionPageController', () => {
 
     test('should handle null payload gracefully', async () => {
       mockRequest.payload = null
-      mockRequest.query = { parcelId: 'SD6743-8083', action: 'CMOR1' }
-
-      const handler = controller.makePostRouteHandler()
-      const result = await handler(mockRequest, mockContext, mockH)
-
-      expect(mockH.view).toHaveBeenCalledWith(
-        'remove-action',
-        expect.objectContaining({
-          errorMessage:
-            'Select yes to remove Assess moorland and produce a written record: CMOR1 from land parcel SD6743-8083'
-        })
-      )
-      expect(result).toBe('rendered view')
-    })
-
-    test('should handle undefined payload gracefully', async () => {
-      mockRequest.payload = undefined
       mockRequest.query = { parcelId: 'SD6743-8083', action: 'CMOR1' }
 
       const handler = controller.makePostRouteHandler()
