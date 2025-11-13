@@ -85,7 +85,6 @@ export class ConfirmationService {
       confirmationContent,
       serviceName: title,
       serviceUrl: url,
-      auth: {},
       breadcrumbs: []
     }
 
