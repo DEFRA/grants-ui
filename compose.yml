@@ -51,6 +51,7 @@ services:
       APP_BASE_URL: "${APP_BASE_URL:-http://localhost:3000}"
       HOST: 0.0.0.0
       GAS_API_URL: "${GAS_API_URL:-http://mockserver:1080}"
+      GAS_API_AUTH_TOKEN: "${GAS_API_AUTH_TOKEN}"
       LAND_GRANTS_API_URL: "${LAND_GRANTS_API_URL:-http://mockserver:1080}"
       LAND_GRANTS_API_AUTH_TOKEN: ${LAND_GRANTS_API_AUTH_TOKEN:-auth_token}
       LAND_GRANTS_API_ENCRYPTION_KEY: ${LAND_GRANTS_API_ENCRYPTION_KEY:-encryption_key}

@@ -597,6 +597,16 @@ These are required only if DEFRA ID authentication is enabled, and you are using
 | `UPLOADER_URL`          | File uploader service endpoint.                |
 | `UPLOADER_BUCKET_NAME`  | Name of the S3 or storage bucket.              |
 
+#### GAS API
+
+| Variable             | Description                                |
+| -------------------- | ------------------------------------------ |
+| `GAS_API_AUTH_TOKEN` | Service to service auth token for GAS API. |
+
+Note: The token is a **SECRET** and needs to be generated using a script in the GAS API repo and
+a hash stored in the GAS MongoDB. This env var should be the raw token value,
+which is formatted as a GUID string.
+
 #### GOV.UK Notify
 
 | Variable             | Description                                           |

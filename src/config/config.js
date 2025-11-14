@@ -100,6 +100,12 @@ export const config = convict({
       format: String,
       default: '',
       env: 'GAS_API_URL'
+    },
+    authToken: {
+      doc: 'GAS API auth token',
+      format: String,
+      default: '',
+      env: 'GAS_API_AUTH_TOKEN'
     }
   },
   consolidatedView: {

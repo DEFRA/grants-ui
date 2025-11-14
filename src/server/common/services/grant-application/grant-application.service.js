@@ -3,6 +3,7 @@ import { log } from '~/src/server/common/helpers/logging/log.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
 
 const GAS_API_ENDPOINT = config.get('gas.apiEndpoint')
+const GAS_API_AUTH_TOKEN = config.get('gas.authToken')
 
 class GrantApplicationServiceApiError extends Error {
   constructor(message, statusCode, responseBody, code, cause = null) {
@@ -48,7 +49,8 @@ export async function makeGasApiRequest(url, grantCode, request, options = {}) {
     const requestOptions = {
       method,
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        ...(GAS_API_AUTH_TOKEN ? { Authorization: `Bearer ${GAS_API_AUTH_TOKEN}` } : {})
       }
     }
 
