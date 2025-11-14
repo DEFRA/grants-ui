@@ -1013,6 +1013,24 @@ describe('SelectLandActionsPageController', () => {
       )
     })
 
+    test('should handle timeout when fetching available actions gracefully', async () => {
+      fetchAvailableActionsForParcel.mockRejectedValue(new Error('Operation timed out after 30000ms'))
+
+      const handler = controller.makeGetRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'select-actions-for-land-parcel',
+        expect.objectContaining({
+          errors: [
+            {
+              text: 'Unable to find actions information for parcel, please try again later or contact the Rural Payments Agency.'
+            }
+          ]
+        })
+      )
+    })
+
     describe('when the user does not own the land parcel', () => {
       it('should return unauthorized response when user does not own the selected land parcel', async () => {
         controller.performAuthCheck.mockResolvedValue('failed auth check')

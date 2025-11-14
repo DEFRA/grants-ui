@@ -240,6 +240,24 @@ describe('LandActionsCheckPageController', () => {
       )
       expect(result).toBe('rendered view')
     })
+
+    test('should handle timeout when calculating grant payment gracefully', async () => {
+      calculateGrantPayment.mockRejectedValue(new Error('Operation timed out after 30000ms'))
+
+      const handler = controller.makeGetRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'land-actions-check',
+        expect.objectContaining({
+          errorMessages: [
+            {
+              text: 'Unable to get payment information, please try again later or contact the Rural Payments Agency.'
+            }
+          ]
+        })
+      )
+    })
   })
 
   describe('Data Formatting', () => {

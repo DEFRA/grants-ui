@@ -355,10 +355,24 @@ describe('SelectLandParcelPageController', () => {
         'select-land-parcel',
         expect.objectContaining({
           errorMessage: 'Please select a land parcel from the list',
-          parcels: [] // Should default to empty array on error
+          parcels: []
         })
       )
       expect(result).toBe('mock-rendered-view')
+    })
+
+    it('should handle timeout when fetching parcels gracefully', async () => {
+      fetchParcels.mockRejectedValue(new Error('Operation timed out after 30000ms'))
+
+      const result = await controller.makeGetRouteHandler()(mockRequest, mockContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'select-land-parcel',
+        expect.objectContaining({
+          errors: ['Unable to find parcel information, please try again later or contact the Rural Payments Agency.']
+        })
+      )
+      expect(result).toBe(renderedViewMock)
     })
 
     it('should correctly calculate actions count', async () => {
