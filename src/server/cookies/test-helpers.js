@@ -20,6 +20,7 @@ export const setupDOM = (html, url = 'http://localhost') => {
 
   globalThis.document = dom.window.document
   globalThis.window = dom.window
+  globalThis.location = dom.window.location
 
   return { dom, document: dom.window.document, window: dom.window }
 }
@@ -92,6 +93,7 @@ export const setupLoadingDocument = async (html, importCallback) => {
 
   globalThis.document = dom.window.document
   globalThis.window = dom.window
+  globalThis.location = dom.window.location
 
   let listenerAdded = false
   const originalAddEventListener = globalThis.document.addEventListener

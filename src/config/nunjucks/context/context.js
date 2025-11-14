@@ -129,7 +129,13 @@ const buildCommonConfig = (serviceName, cookiePolicyUrl, cookieConsentExpiryDays
     cookiePolicyUrl,
     cookieConsentName,
     cookieConsentExpiryDays,
-    cookieBannerConfig: buildCookieBannerConfig(serviceName, cookieConsentName, cookieConsentExpiryDays, gaTrackingId),
+    cookieBannerConfig: buildCookieBannerConfig(
+      serviceName,
+      cookieConsentName,
+      cookieConsentExpiryDays,
+      gaTrackingId,
+      cookiePolicyUrl
+    ),
     cookieBannerNoscriptConfig: buildCookieBannerNoscriptConfig(serviceName),
     breadcrumbs: []
   }

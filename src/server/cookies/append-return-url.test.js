@@ -29,7 +29,6 @@ const createPageWithBannerNoDataAttribute = () => `
 
 describe('append-return-url', () => {
   let document
-  let window
 
   beforeEach(() => {
     vi.resetModules()
@@ -38,7 +37,7 @@ describe('append-return-url', () => {
   it('should exit early if cookie banner is not present', async () => {
     const setup = setupDOM(createEmptyPage(), 'http://localhost/some-page?foo=bar')
     document = setup.document
-    window = setup.window
+    globalThis.window = setup.window
 
     const { appendReturnUrlToLinks } = await import('./append-return-url.js')
 
@@ -48,7 +47,7 @@ describe('append-return-url', () => {
   it('should use default cookie policy URL when data attribute is not present', async () => {
     const setup = setupDOM(createPageWithBannerNoDataAttribute(), 'http://localhost/some-page?foo=bar')
     document = setup.document
-    window = setup.window
+    globalThis.window = setup.window
 
     const { appendReturnUrlToLinks } = await import('./append-return-url.js')
     appendReturnUrlToLinks()
@@ -58,22 +57,34 @@ describe('append-return-url', () => {
   })
 
   it.each([
-    { cookiePolicyUrl: '/cookies', description: 'default cookie policy URL' },
-    { cookiePolicyUrl: '/custom-cookies', description: 'custom cookie policy URL' }
-  ])('should append returnUrl when using $description', async ({ cookiePolicyUrl }) => {
+    {
+      cookiePolicyUrl: '/cookies',
+      description: 'default cookie policy URL',
+      expectedHref: '/cookies?returnUrl=%2Fsome-page%3Ffoo%3Dbar'
+    },
+    {
+      cookiePolicyUrl: '/custom-cookies',
+      description: 'custom cookie policy URL',
+      expectedHref: '/custom-cookies?returnUrl=%2Fsome-page%3Ffoo%3Dbar'
+    },
+    {
+      cookiePolicyUrl: '/cookies?lang=cy',
+      description: 'cookie policy URL with existing query parameter',
+      expectedHref: '/cookies?lang=cy&returnUrl=%2Fsome-page%3Ffoo%3Dbar'
+    }
+  ])('should append returnUrl when using $description', async ({ cookiePolicyUrl, expectedHref }) => {
     const setup = setupDOM(createPageWithCookieBanner(cookiePolicyUrl), 'http://localhost/some-page?foo=bar')
     document = setup.document
-    window = setup.window
+    globalThis.window = setup.window
 
     const { appendReturnUrlToLinks } = await import('./append-return-url.js')
     appendReturnUrlToLinks()
 
-    const cookieLink = document.querySelector(`a[href="${cookiePolicyUrl}"]`)
-    const clickEvent = new window.Event('click', { bubbles: true, cancelable: true })
+    const cookieLinks = document.querySelectorAll(`a[href^="${cookiePolicyUrl}"]`)
+    expect(cookieLinks.length).toBeGreaterThan(0)
 
-    cookieLink.dispatchEvent(clickEvent)
-
-    expect(clickEvent.defaultPrevented).toBe(true)
+    const cookieLink = cookieLinks[0]
+    expect(cookieLink.getAttribute('href')).toBe(expectedHref)
   })
 
   it('should initialise on DOMContentLoaded when document is loading', async () => {
@@ -88,7 +99,7 @@ describe('append-return-url', () => {
   it('should initialise immediately when document is already loaded', async () => {
     const setup = setupDOM(createPageWithCookieBanner(), 'http://localhost/some-page?foo=bar')
     document = setup.document
-    window = setup.window
+    globalThis.window = setup.window
 
     Object.defineProperty(document, 'readyState', {
       writable: false,
@@ -98,11 +109,7 @@ describe('append-return-url', () => {
 
     await import('./append-return-url.js')
 
-    const cookieLink = document.querySelector('a[href="/cookies"]')
-    const clickEvent = new window.Event('click', { bubbles: true, cancelable: true })
-
-    cookieLink.dispatchEvent(clickEvent)
-
-    expect(clickEvent.defaultPrevented).toBe(true)
+    const cookieLink = document.querySelector('a[href^="/cookies"]')
+    expect(cookieLink.getAttribute('href')).toBe('/cookies?returnUrl=%2Fsome-page%3Ffoo%3Dbar')
   })
 })

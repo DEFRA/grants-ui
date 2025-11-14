@@ -8,7 +8,8 @@ const mockCookieConfig = {
   serviceName: 'Test Service',
   cookieConsentName: 'test_cookie_consent',
   cookieConsentExpiryDays: 365,
-  gaTrackingId: 'GA-12345'
+  gaTrackingId: 'GA-12345',
+  cookiePolicyUrl: '/cookies'
 }
 
 const expectedBannerConfig = {
@@ -59,15 +60,21 @@ const expectedNoscriptConfig = {
 
 describe('buildCookieBannerConfig', () => {
   test('should build complete cookie banner configuration with all properties', () => {
-    const { serviceName, cookieConsentName, cookieConsentExpiryDays, gaTrackingId } = mockCookieConfig
+    const { serviceName, cookieConsentName, cookieConsentExpiryDays, gaTrackingId, cookiePolicyUrl } = mockCookieConfig
 
-    const result = buildCookieBannerConfig(serviceName, cookieConsentName, cookieConsentExpiryDays, gaTrackingId)
+    const result = buildCookieBannerConfig(
+      serviceName,
+      cookieConsentName,
+      cookieConsentExpiryDays,
+      gaTrackingId,
+      cookiePolicyUrl
+    )
 
     expect(result).toEqual(expectedBannerConfig)
   })
 
   test('should handle undefined GA tracking ID', () => {
-    const result = buildCookieBannerConfig('My Service', 'cookie_consent', 90, undefined)
+    const result = buildCookieBannerConfig('My Service', 'cookie_consent', 90, undefined, '/cookies')
 
     expect(result.attributes['data-ga-tracking-id']).toBeUndefined()
   })
@@ -78,10 +85,20 @@ describe('buildCookieBannerConfig', () => {
   ])('$name should use service name in ariaLabel and heading', ({ func }) => {
     const serviceName = 'Manage land-based actions'
     const result =
-      func === buildCookieBannerConfig ? func(serviceName, 'cookie_consent', 365, undefined) : func(serviceName)
+      func === buildCookieBannerConfig
+        ? func(serviceName, 'cookie_consent', 365, undefined, '/cookies')
+        : func(serviceName)
 
     expect(result.ariaLabel).toBe('Cookies on Manage land-based actions')
     expect(result.messages[0].headingText).toBe('Cookies on Manage land-based actions')
+  })
+
+  test('should use custom cookie policy URL when provided', () => {
+    const customUrl = '/custom/cookie-policy'
+    const result = buildCookieBannerConfig('My Service', 'cookie_consent', 90, 'GA-123', customUrl)
+
+    expect(result.attributes['data-cookie-policy-url']).toBe(customUrl)
+    expect(result.messages[0].actions[2].href).toBe(customUrl)
   })
 })
 

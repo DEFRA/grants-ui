@@ -6,7 +6,7 @@ import {
   DEFAULT_EXPIRY_DAYS
 } from '../../shared/cookie-utils.js'
 
-export { loadGoogleAnalytics }
+export { loadGoogleAnalytics } from '../../shared/cookie-utils.js'
 
 /**
  * Loads current cookie preferences from cookie storage and sets radio button states
@@ -64,7 +64,7 @@ const handleSaveClick = (event, form, cookieName, expiryDays, gaTrackingId) => {
   }
 
   const referrer = form.dataset.referrer || '/'
-  window.location.href = referrer
+  globalThis.location.href = referrer
 }
 
 export const initCookiePreferences = () => {

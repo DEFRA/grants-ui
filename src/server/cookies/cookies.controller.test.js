@@ -12,7 +12,11 @@ const createMockRequest = (overrides = {}) => ({
 
 const createMockH = () => ({
   view: (template, context) => ({ template, context }),
-  redirect: (url) => ({ redirectUrl: url })
+  redirect: (url) => {
+    const response = { redirectUrl: url }
+    response.state = () => response
+    return response
+  }
 })
 
 describe('cookies.controller', () => {

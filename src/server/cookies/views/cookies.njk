@@ -1,12 +1,20 @@
 {% extends "layouts/page.njk" %}
 {% from "govuk/components/radios/macro.njk" import govukRadios %}
 {% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/notification-banner/macro.njk" import govukNotificationBanner %}
 
 {% block content %}
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
 
       <h1 class="govuk-heading-l">{{ heading }}</h1>
+
+      {% if success %}
+        {{ govukNotificationBanner({
+          type: "success",
+          html: '<p class="govuk-notification-banner__heading">Your cookie settings have been saved</p>'
+        }) }}
+      {% endif %}
 
       <p class="govuk-body">
         Cookies are small files saved on your phone, tablet or computer when you visit a website.
@@ -93,7 +101,9 @@
         </tbody>
       </table>
 
-      <form id="cookie-preferences-form" data-cookie-name="{{ cookieConsentName }}" data-expiry-days="{{ cookieConsentExpiryDays }}" data-ga-tracking-id="{{ gaTrackingId }}" data-referrer="{{ referrer }}">
+      <form id="cookie-preferences-form" method="POST" data-cookie-name="{{ cookieConsentName }}" data-expiry-days="{{ cookieConsentExpiryDays }}" data-ga-tracking-id="{{ gaTrackingId }}" data-referrer="{{ referrer }}">
+        <input type="hidden" name="returnUrl" value="{{ referrer }}">
+
         {{ govukRadios({
           name: "analytics",
           fieldset: {
@@ -124,7 +134,7 @@
         }) }}
 
         <noscript>
-          <p class="govuk-body">JavaScript is required to change your cookie settings. Please enable JavaScript in your browser to use this feature.</p>
+          <p class="govuk-body">You can change your cookie settings. Your settings will be saved when you submit the form.</p>
         </noscript>
       </form>
 

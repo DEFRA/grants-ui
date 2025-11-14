@@ -14,15 +14,15 @@ export const appendReturnUrlToLinks = () => {
   }
 
   const cookiePolicyUrl = cookieBanner.dataset.cookiePolicyUrl || '/cookies'
-  const cookieLinks = document.querySelectorAll(`a[href="${cookiePolicyUrl}"]`)
+  const cookieLinks = /** @type {HTMLAnchorElement[]} */ (
+    Array.from(document.querySelectorAll(`a[href="${cookiePolicyUrl}"]`))
+  )
+  const returnUrl = globalThis.location.pathname + globalThis.location.search + globalThis.location.hash
+  const separator = cookiePolicyUrl.includes('?') ? '&' : '?'
 
-  cookieLinks.forEach((link) => {
-    link.addEventListener('click', (event) => {
-      event.preventDefault()
-      const returnUrl = window.location.pathname + window.location.search
-      window.location.href = `${cookiePolicyUrl}?returnUrl=${encodeURIComponent(returnUrl)}`
-    })
-  })
+  for (const link of cookieLinks) {
+    link.href = `${cookiePolicyUrl}${separator}returnUrl=${encodeURIComponent(returnUrl)}`
+  }
 }
 
 if (document.readyState === 'loading') {
