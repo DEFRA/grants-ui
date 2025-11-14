@@ -4,6 +4,8 @@ import Jwt from '@hapi/jwt'
 import { log } from '~/src/server/common/helpers/logging/log.js'
 import { LogCodes } from '~/src/server/common/helpers/logging/log-codes.js'
 
+// TODO BS replicate in fg-cw-frontend, create agreements proxy controller with JWT authentication and header forwarding
+
 /**
  * Validates required configuration values
  * @throws {Error} If required config is missing
@@ -45,7 +47,7 @@ function buildProxyHeaders(token, request) {
   const source = 'defra'
   const jwtSecret = config.get('agreements.jwtSecret')
   try {
-    const encryptedAuth = Jwt.token.generate({ sbi: sbi.toString(), source }, jwtSecret)
+    const encryptedAuth = Jwt.token.generate({ sbi: sbi.toString(), source }, jwtSecret) // TODO BS replicate in fg-cw-frontend, create JWT generation utility with sbi and source='caseworking'
     return {
       Authorization: `Bearer ${token}`,
       'x-base-url': config.get('agreements.baseUrl'),

@@ -167,7 +167,7 @@ const registerPlugins = async (server) => {
     Bell,
     Cookie,
     Scooter,
-    h2o2,
+    h2o2, // TODO BS replicate in fg-cw-frontend register H2O2 plugin for agreements proxy
     auth,
     requestLogger,
     requestTracing,
