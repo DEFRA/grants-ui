@@ -1,6 +1,6 @@
 import { getCookie, getConsent, setConsent, loadGoogleAnalytics } from '../../shared/cookie-utils.js'
 
-export { loadGoogleAnalytics }
+export { loadGoogleAnalytics } from '../../shared/cookie-utils.js'
 
 const cookieBannerString = 'cookie-banner'
 

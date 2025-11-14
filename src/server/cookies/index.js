@@ -27,7 +27,10 @@ export const cookies = {
           method: 'POST',
           path: COOKIE_PAGE_URL,
           options: {
-            auth: false
+            auth: false,
+            plugins: {
+              crumb: false
+            }
           },
           ...cookiesPostController
         }

@@ -1,14 +1,19 @@
-import { COOKIE_PAGE_URL } from '~/src/server/cookies/constants.js'
-
 /**
  * Builds the complete GOV.UK cookie banner configuration object
  * @param {string} serviceName
  * @param {string} cookieConsentName
  * @param {number} cookieConsentExpiryDays
  * @param {string | undefined} gaTrackingId
+ * @param {string} cookiePolicyUrl
  * @returns {object} GOV.UK cookie banner configuration
  */
-export const buildCookieBannerConfig = (serviceName, cookieConsentName, cookieConsentExpiryDays, gaTrackingId) => ({
+export const buildCookieBannerConfig = (
+  serviceName,
+  cookieConsentName,
+  cookieConsentExpiryDays,
+  gaTrackingId,
+  cookiePolicyUrl
+) => ({
   ariaLabel: `Cookies on ${serviceName}`,
   hidden: true,
   attributes: {
@@ -17,7 +22,7 @@ export const buildCookieBannerConfig = (serviceName, cookieConsentName, cookieCo
     'data-cookie-name': cookieConsentName,
     'data-expiry-days': cookieConsentExpiryDays,
     'data-ga-tracking-id': gaTrackingId,
-    'data-cookie-policy-url': COOKIE_PAGE_URL
+    'data-cookie-policy-url': cookiePolicyUrl
   },
   messages: [
     {
@@ -36,7 +41,7 @@ export const buildCookieBannerConfig = (serviceName, cookieConsentName, cookieCo
         },
         {
           text: 'View cookies',
-          href: COOKIE_PAGE_URL
+          href: cookiePolicyUrl
         }
       ]
     }

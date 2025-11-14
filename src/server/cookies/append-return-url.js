@@ -14,15 +14,25 @@ export const appendReturnUrlToLinks = () => {
   }
 
   const cookiePolicyUrl = cookieBanner.dataset.cookiePolicyUrl || '/cookies'
-  const cookieLinks = document.querySelectorAll(`a[href="${cookiePolicyUrl}"]`)
+  const cookieLinks = /** @type {HTMLAnchorElement[]} */ (
+    Array.from(document.querySelectorAll(`a[href="${cookiePolicyUrl}"]`))
+  )
+  const returnUrl = globalThis.location.pathname + globalThis.location.search + globalThis.location.hash
 
-  cookieLinks.forEach((link) => {
-    link.addEventListener('click', (event) => {
-      event.preventDefault()
-      const returnUrl = window.location.pathname + window.location.search
-      window.location.href = `${cookiePolicyUrl}?returnUrl=${encodeURIComponent(returnUrl)}`
-    })
-  })
+  const hashIndex = cookiePolicyUrl.indexOf('#')
+  const urlWithoutFragment = hashIndex !== -1 ? cookiePolicyUrl.substring(0, hashIndex) : cookiePolicyUrl
+  const fragment = hashIndex !== -1 ? cookiePolicyUrl.substring(hashIndex) : ''
+  const hasReturnUrl = /[?&]returnUrl=/.test(urlWithoutFragment)
+
+  if (hasReturnUrl) {
+    return
+  }
+
+  const separator = urlWithoutFragment.includes('?') ? '&' : '?'
+
+  for (const link of cookieLinks) {
+    link.href = `${urlWithoutFragment}${separator}returnUrl=${encodeURIComponent(returnUrl)}${fragment}`
+  }
 }
 
 if (document.readyState === 'loading') {
