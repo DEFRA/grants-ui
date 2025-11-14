@@ -253,132 +253,101 @@ describe('Land Grants client', () => {
 
   describe('timeout handling', () => {
     describe('postToLandGrantsApi', () => {
-      it(
-        'should timeout when fetch hangs',
-        async () => {
-          mockFetch.mockImplementation(() => new Promise(() => {}))
+      it('should timeout when fetch hangs', async () => {
+        mockFetch.mockImplementation(() => new Promise(() => {}))
 
-          const timeoutPromise = new Promise((_resolve, reject) =>
-            setTimeout(() => reject(new Error('Operation timed out after 100ms')), 100)
-          )
+        const timeoutPromise = new Promise((_resolve, reject) =>
+          setTimeout(() => reject(new Error('Operation timed out after 100ms')), 100)
+        )
 
-          await expect(Promise.race([postToLandGrantsApi('/test', {}, mockApiEndpoint), timeoutPromise])).rejects.toThrow(
-            'Operation timed out'
-          )
-        },
-        10000
-      )
+        await expect(Promise.race([postToLandGrantsApi('/test', {}, mockApiEndpoint), timeoutPromise])).rejects.toThrow(
+          'Operation timed out'
+        )
+      }, 10000)
 
-      it(
-        'should timeout when fetch is slow',
-        async () => {
-          mockFetch.mockImplementation(
-            () =>
-              new Promise(resolve =>
-                setTimeout(() => resolve({ ok: true, json: () => ({ success: true }) }), 5000)
-              )
-          )
+      it('should timeout when fetch is slow', async () => {
+        mockFetch.mockImplementation(
+          () => new Promise((resolve) => setTimeout(() => resolve({ ok: true, json: () => ({ success: true }) }), 5000))
+        )
 
-          const timeoutPromise = new Promise((_resolve, reject) =>
-            setTimeout(() => reject(new Error('Operation timed out after 50ms')), 50)
-          )
+        const timeoutPromise = new Promise((_resolve, reject) =>
+          setTimeout(() => reject(new Error('Operation timed out after 50ms')), 50)
+        )
 
-          await expect(Promise.race([postToLandGrantsApi('/test', {}, mockApiEndpoint), timeoutPromise])).rejects.toThrow(
-            'Operation timed out after 50ms'
-          )
-        },
-        10000
-      )
+        await expect(Promise.race([postToLandGrantsApi('/test', {}, mockApiEndpoint), timeoutPromise])).rejects.toThrow(
+          'Operation timed out after 50ms'
+        )
+      }, 10000)
     })
 
     describe('calculate', () => {
-      it(
-        'should timeout when fetch hangs',
-        async () => {
-          mockFetch.mockImplementation(() => new Promise(() => {}))
+      it('should timeout when fetch hangs', async () => {
+        mockFetch.mockImplementation(() => new Promise(() => {}))
 
-          const timeoutPromise = new Promise((_resolve, reject) =>
-            setTimeout(() => reject(new Error('Operation timed out after 100ms')), 100)
-          )
+        const timeoutPromise = new Promise((_resolve, reject) =>
+          setTimeout(() => reject(new Error('Operation timed out after 100ms')), 100)
+        )
 
-          await expect(Promise.race([calculate({ data: 'test' }, mockApiEndpoint), timeoutPromise])).rejects.toThrow(
-            'Operation timed out'
-          )
-        },
-        10000
-      )
+        await expect(Promise.race([calculate({ data: 'test' }, mockApiEndpoint), timeoutPromise])).rejects.toThrow(
+          'Operation timed out'
+        )
+      }, 10000)
     })
 
     describe('validate', () => {
-      it(
-        'should timeout when fetch hangs',
-        async () => {
-          mockFetch.mockImplementation(() => new Promise(() => {}))
+      it('should timeout when fetch hangs', async () => {
+        mockFetch.mockImplementation(() => new Promise(() => {}))
 
-          const timeoutPromise = new Promise((_resolve, reject) =>
-            setTimeout(() => reject(new Error('Operation timed out after 100ms')), 100)
-          )
+        const timeoutPromise = new Promise((_resolve, reject) =>
+          setTimeout(() => reject(new Error('Operation timed out after 100ms')), 100)
+        )
 
-          await expect(Promise.race([validate({ data: 'test' }, mockApiEndpoint), timeoutPromise])).rejects.toThrow(
-            'Operation timed out'
-          )
-        },
-        10000
-      )
+        await expect(Promise.race([validate({ data: 'test' }, mockApiEndpoint), timeoutPromise])).rejects.toThrow(
+          'Operation timed out'
+        )
+      }, 10000)
     })
 
     describe('parcelsWithFields', () => {
-      it(
-        'should timeout when fetch hangs',
-        async () => {
-          mockFetch.mockImplementation(() => new Promise(() => {}))
+      it('should timeout when fetch hangs', async () => {
+        mockFetch.mockImplementation(() => new Promise(() => {}))
 
-          const timeoutPromise = new Promise((_resolve, reject) =>
-            setTimeout(() => reject(new Error('Operation timed out after 100ms')), 100)
-          )
+        const timeoutPromise = new Promise((_resolve, reject) =>
+          setTimeout(() => reject(new Error('Operation timed out after 100ms')), 100)
+        )
 
-          await expect(
-            Promise.race([parcelsWithFields(['field'], ['parcel1'], mockApiEndpoint), timeoutPromise])
-          ).rejects.toThrow('Operation timed out')
-        },
-        10000
-      )
+        await expect(
+          Promise.race([parcelsWithFields(['field'], ['parcel1'], mockApiEndpoint), timeoutPromise])
+        ).rejects.toThrow('Operation timed out')
+      }, 10000)
     })
 
     describe('parcelsWithSize', () => {
-      it(
-        'should timeout when fetch hangs',
-        async () => {
-          mockFetch.mockImplementation(() => new Promise(() => {}))
+      it('should timeout when fetch hangs', async () => {
+        mockFetch.mockImplementation(() => new Promise(() => {}))
 
-          const timeoutPromise = new Promise((_resolve, reject) =>
-            setTimeout(() => reject(new Error('Operation timed out after 100ms')), 100)
-          )
+        const timeoutPromise = new Promise((_resolve, reject) =>
+          setTimeout(() => reject(new Error('Operation timed out after 100ms')), 100)
+        )
 
-          await expect(Promise.race([parcelsWithSize(['parcel1'], mockApiEndpoint), timeoutPromise])).rejects.toThrow(
-            'Operation timed out'
-          )
-        },
-        10000
-      )
+        await expect(Promise.race([parcelsWithSize(['parcel1'], mockApiEndpoint), timeoutPromise])).rejects.toThrow(
+          'Operation timed out'
+        )
+      }, 10000)
     })
 
     describe('parcelsWithActionsAndSize', () => {
-      it(
-        'should timeout when fetch hangs',
-        async () => {
-          mockFetch.mockImplementation(() => new Promise(() => {}))
+      it('should timeout when fetch hangs', async () => {
+        mockFetch.mockImplementation(() => new Promise(() => {}))
 
-          const timeoutPromise = new Promise((_resolve, reject) =>
-            setTimeout(() => reject(new Error('Operation timed out after 100ms')), 100)
-          )
+        const timeoutPromise = new Promise((_resolve, reject) =>
+          setTimeout(() => reject(new Error('Operation timed out after 100ms')), 100)
+        )
 
-          await expect(
-            Promise.race([parcelsWithActionsAndSize(['parcel1'], mockApiEndpoint), timeoutPromise])
-          ).rejects.toThrow('Operation timed out')
-        },
-        10000
-      )
+        await expect(
+          Promise.race([parcelsWithActionsAndSize(['parcel1'], mockApiEndpoint), timeoutPromise])
+        ).rejects.toThrow('Operation timed out')
+      }, 10000)
     })
   })
 
