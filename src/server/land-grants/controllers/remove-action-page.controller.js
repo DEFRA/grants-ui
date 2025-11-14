@@ -78,18 +78,18 @@ export default class RemoveActionPageController extends LandGrantsQuestionWithAu
   /**
    * Validate POST request payload
    * @param {object} payload - Request payload
-   * @param {string} parcel - Parcel key
-   * @param {string} actionDescription - Action description (optional)
+   * @param {object} actionInfo - Action description (optional)
+   * @param {string} parcelId - Parcel ID
    * @returns {object|null} - Validation error or null if valid
    */
-  validatePostPayload(payload, parcel, actionDescription) {
+  validatePostPayload(payload, actionInfo, parcelId) {
     const { remove } = payload
 
     if (remove === undefined) {
       return {
-        errorMessage: actionDescription
-          ? `Select yes to remove ${actionDescription} from land parcel ${parcel}`
-          : `Select yes to remove land parcel ${parcel} from this application`
+        errorMessage: actionInfo?.description
+          ? `Select if you want to remove ${actionInfo.description} from this application`
+          : `Select if you want to remove land parcel ${parcelId} from this application`
       }
     }
 
@@ -103,14 +103,14 @@ export default class RemoveActionPageController extends LandGrantsQuestionWithAu
    * @param {FormContext} context - Form context
    * @param {string} errorMessage - Error message to display
    * @param {string} parcel - Parcel key
-   * @param {string} actionDescription - Action description (optional)
+   * @param {object} pageHeadingAndHint - Page header amd hint text
    * @returns {object} - Error view response
    */
-  renderPostErrorView(h, request, context, errorMessage, parcel, actionDescription) {
+  renderPostErrorView(h, request, context, errorMessage, parcel, pageHeadingAndHint) {
     return h.view(this.viewName, {
       ...this.getViewModel(request, context),
       parcel,
-      actionDescription,
+      ...pageHeadingAndHint,
       errorMessage
     })
   }
@@ -139,14 +139,29 @@ export default class RemoveActionPageController extends LandGrantsQuestionWithAu
    * @param {AnyFormRequest} request - Request object
    * @param {FormContext} context - Form context
    * @param {string} parcel - Parcel key
-   * @param {string} actionDescription - Action description (optional)
+   * @param {string} pageHeading - Page heading
+   * @param {string} hint - Hint text
    * @returns {object} - Complete view model
    */
-  buildGetViewModel(request, context, parcel, actionDescription) {
+  buildGetViewModel(request, context, parcel, pageHeading, hint) {
     return {
       ...this.getViewModel(request, context),
       parcel,
-      actionDescription
+      pageHeading,
+      hint
+    }
+  }
+
+  buildPageHeadingAndHint(actionInfo, parcelId = '') {
+    const hint = actionInfo?.description
+      ? `Select yes to remove this action from this land parcel. You can add a different action to the same parcel.`
+      : `If you remove this land parcel you will also remove all the actions added to this parcel.`
+
+    return {
+      pageHeading: actionInfo?.description
+        ? `Do you want to remove ${actionInfo.description} from land parcel ${parcelId}?`
+        : `Do you want to remove land parcel ${parcelId} from this application?`,
+      hint
     }
   }
 
@@ -169,9 +184,9 @@ export default class RemoveActionPageController extends LandGrantsQuestionWithAu
       }
 
       const actionInfo = this.findActionInfo(landParcels, parcelId, action)
-      const actionDescription = actionInfo?.description
+      const { pageHeading, hint } = this.buildPageHeadingAndHint(actionInfo, parcelId)
 
-      const viewModel = this.buildGetViewModel(request, context, parcelId, actionDescription)
+      const viewModel = this.buildGetViewModel(request, context, parcelId, pageHeading, hint)
       return h.view(viewName, viewModel)
     }
   }
@@ -197,13 +212,13 @@ export default class RemoveActionPageController extends LandGrantsQuestionWithAu
         return authResult
       }
 
-      // Get action description from state for error messages
+      // Get pageheading and hint from state for error messages
       const actionInfo = this.findActionInfo(state.landParcels, parcelId, action)
-      const actionDescription = actionInfo?.description
+      const pageHeadingAndHint = this.buildPageHeadingAndHint(actionInfo, parcelId)
 
-      const validationError = this.validatePostPayload(payload, parcelId, actionDescription)
+      const validationError = this.validatePostPayload(payload, actionInfo, parcelId)
       if (validationError) {
-        return this.renderPostErrorView(h, request, context, validationError.errorMessage, parcelId, actionDescription)
+        return this.renderPostErrorView(h, request, context, validationError.errorMessage, parcelId, pageHeadingAndHint)
       }
 
       const { remove } = payload
