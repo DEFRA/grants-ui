@@ -1,14 +1,13 @@
-import { vi, beforeEach } from 'vitest'
-import { mockSimpleRequest, mockFetch, mockFetchWithResponse } from '~/src/__mocks__/hapi-mocks.js'
+import { beforeEach, vi } from 'vitest'
+import { mockFetch, mockFetchWithResponse, mockSimpleRequest } from '~/src/__mocks__/hapi-mocks.js'
 import { config } from '~/src/config/config.js'
-import {
-  invokeGasGetAction,
-  invokeGasPostAction,
-  makeGasApiRequest,
-  submitGrantApplication
-} from '~/src/server/common/services/grant-application/grant-application.service.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
-import { getApplicationStatus } from './grant-application.service'
+
+let invokeGasGetAction
+let invokeGasPostAction
+let makeGasApiRequest
+let submitGrantApplication
+let getApplicationStatus
 
 vi.mock('~/src/server/common/helpers/retry.js')
 
@@ -17,8 +16,19 @@ global.fetch = mockFetch
 const gasApi = config.get('gas.apiEndpoint')
 const code = config.get('landGrants.grantCode')
 
-describe('Grant Application service', () => {
+describe('Grant Application service (token present)', () => {
   let mockRequest
+  beforeAll(async () => {
+    vi.stubEnv('GAS_API_AUTH_TOKEN', 'mock-auth-token')
+    vi.resetModules()
+    const mod = await import('~/src/server/common/services/grant-application/grant-application.service.js')
+    invokeGasGetAction = mod.invokeGasGetAction
+    invokeGasPostAction = mod.invokeGasPostAction
+    makeGasApiRequest = mod.makeGasApiRequest
+    submitGrantApplication = mod.submitGrantApplication
+    const mod2 = await import('./grant-application.service')
+    getApplicationStatus = mod2.getApplicationStatus
+  })
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -75,7 +85,8 @@ describe('Grant Application service', () => {
       expect(mockFetchInstance).toHaveBeenCalledWith(`${gasApi}/grants/${code}/applications`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer mock-auth-token'
         },
         body: JSON.stringify(payload)
       })
@@ -98,7 +109,8 @@ describe('Grant Application service', () => {
       expect(fetch).toHaveBeenCalledWith(`${gasApi}/grants/${code}/applications`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer mock-auth-token'
         },
         body: JSON.stringify(payload)
       })
@@ -137,7 +149,8 @@ describe('Grant Application service', () => {
       expect(mockedFetch).toHaveBeenCalledWith(`${gasApi}/grants/${code}/actions/${actionName}/invoke`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer mock-auth-token'
         },
         body: JSON.stringify(payload)
       })
@@ -161,7 +174,8 @@ describe('Grant Application service', () => {
       expect(mockedFetch).toHaveBeenCalledWith(`${gasApi}/grants/${code}/actions/${actionName}/invoke`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer mock-auth-token'
         },
         body: JSON.stringify(payload)
       })
@@ -177,7 +191,8 @@ describe('Grant Application service', () => {
       expect(mockedFetch).toHaveBeenCalledWith(`${gasApi}/grants/${code}/actions/${actionName}/invoke`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer mock-auth-token'
         },
         body: JSON.stringify(payload)
       })
@@ -210,7 +225,8 @@ describe('Grant Application service', () => {
       expect(mockedFetch).toHaveBeenCalledWith(`${gasApi}/grants/${code}/actions/${actionName}/invoke`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer mock-auth-token'
         },
         body: JSON.stringify(payload)
       })
@@ -240,7 +256,8 @@ describe('Grant Application service', () => {
       expect(mockedFetch).toHaveBeenCalledWith(`${gasApi}/grants/${code}/actions/${actionName}/invoke`, {
         method: 'GET',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer mock-auth-token'
         }
       })
       expect(result).toEqual(mockResponse)
@@ -264,7 +281,8 @@ describe('Grant Application service', () => {
         {
           method: 'GET',
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer mock-auth-token'
           }
         }
       )
@@ -338,7 +356,8 @@ describe('Grant Application service', () => {
       expect(mockedFetch).toHaveBeenCalledWith(testUrl, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer mock-auth-token'
         },
         body: JSON.stringify(undefined)
       })
@@ -360,7 +379,8 @@ describe('Grant Application service', () => {
       expect(mockedFetch).toHaveBeenCalledWith(testUrl, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer mock-auth-token'
         },
         body: JSON.stringify(payload)
       })
@@ -385,7 +405,8 @@ describe('Grant Application service', () => {
       expect(mockedFetch).toHaveBeenCalledWith(`${testUrl}?param1=value1&param2=value2`, {
         method: 'GET',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer mock-auth-token'
         }
       })
       expect(result).toEqual(mockRawResponse)
@@ -415,7 +436,8 @@ describe('Grant Application service', () => {
       expect(mockedFetch).toHaveBeenCalledWith(`${testUrl}?valid=value&emptyString=&zero=0`, {
         method: 'GET',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer mock-auth-token'
         }
       })
     })
@@ -481,10 +503,37 @@ describe('Grant Application service', () => {
       expect(mockedFetch).toHaveBeenCalledWith(`${gasApi}/grants/my-code/applications/client-ref/status`, {
         method: 'GET',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer mock-auth-token'
         }
       })
       expect(result).toEqual(mockRawResponse)
+    })
+  })
+
+  describe('authorization header handling (token absent)', () => {
+    let localMakeGasApiRequest
+    beforeAll(async () => {
+      vi.stubEnv('GAS_API_AUTH_TOKEN', '')
+      vi.resetModules()
+      const mod = await import('~/src/server/common/services/grant-application/grant-application.service.js')
+      localMakeGasApiRequest = mod.makeGasApiRequest
+    })
+
+    test('should not send Authorization header when GAS_API_AUTH_TOKEN is not set', async () => {
+      const mockedFetch = mockFetch()
+      const mockRawResponse = { ok: true, json: vi.fn().mockResolvedValueOnce({ ok: true }) }
+      mockedFetch.mockResolvedValueOnce(mockRawResponse)
+
+      const testUrl = `${gasApi}/no-auth/endpoint`
+      await localMakeGasApiRequest(testUrl, 'TEST_NO_AUTH', mockRequest, { method: 'GET' })
+
+      expect(mockedFetch).toHaveBeenCalledWith(testUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
     })
   })
 
