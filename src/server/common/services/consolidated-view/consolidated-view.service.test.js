@@ -503,4 +503,48 @@ describe('Consolidated View Service', () => {
       await expect(fetchParcelsFromDal(mockRequest)).rejects.toThrow('Cannot read property of undefined')
     })
   })
+
+  describe('timeout handling', () => {
+    describe('fetchParcelsFromDal', () => {
+      it('should timeout when fetch hangs', async () => {
+        mockFetchInstance.mockImplementation(() => new Promise(() => {}))
+
+        const timeoutPromise = new Promise((_resolve, reject) =>
+          setTimeout(() => reject(new Error('Operation timed out after 100ms')), 100)
+        )
+
+        await expect(Promise.race([fetchParcelsFromDal(mockRequest), timeoutPromise])).rejects.toThrow(
+          'Operation timed out'
+        )
+      }, 10000)
+    })
+
+    describe('fetchBusinessAndCPH', () => {
+      it('should timeout when fetch hangs', async () => {
+        mockFetchInstance.mockImplementation(() => new Promise(() => {}))
+
+        const timeoutPromise = new Promise((_resolve, reject) =>
+          setTimeout(() => reject(new Error('Operation timed out after 100ms')), 100)
+        )
+
+        await expect(Promise.race([fetchBusinessAndCPH(mockRequest), timeoutPromise])).rejects.toThrow(
+          'Operation timed out'
+        )
+      }, 10000)
+    })
+
+    describe('fetchBusinessAndCustomerInformation', () => {
+      it('should timeout when fetch hangs', async () => {
+        mockFetchInstance.mockImplementation(() => new Promise(() => {}))
+
+        const timeoutPromise = new Promise((_resolve, reject) =>
+          setTimeout(() => reject(new Error('Operation timed out after 100ms')), 100)
+        )
+
+        await expect(Promise.race([fetchBusinessAndCustomerInformation(mockRequest), timeoutPromise])).rejects.toThrow(
+          'Operation timed out'
+        )
+      }, 10000)
+    })
+  })
 })

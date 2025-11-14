@@ -611,5 +611,42 @@ describe('SubmissionPageController', () => {
         })
       )
     })
+
+    it('should handle timeout when submitting application gracefully', async () => {
+      const mockRequest = {
+        logger: {
+          info: vi.fn(),
+          error: vi.fn()
+        },
+        auth: {
+          credentials: {
+            sbi: '123456789',
+            crn: 'crn123'
+          }
+        },
+        server: {}
+      }
+      const mockContext = {
+        state: {},
+        referenceNumber: 'REF456'
+      }
+      const mockH = {
+        view: vi.fn().mockReturnValue('error-view')
+      }
+
+      validateApplication.mockRejectedValue(new Error('Operation timed out after 30000ms'))
+
+      const handler = controller.makePostRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'submission-error',
+        expect.objectContaining({
+          backLink: null,
+          heading: 'Sorry, there was a problem submitting the application',
+          refNumber: 'REF456'
+        })
+      )
+    })
   })
 })
