@@ -1,7 +1,7 @@
 # Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities
 version: v1.25.0
 ignore:
-  'SNYK-JS-EXPREVAL-13833679':
+  'SNYK-JS-EXPREVAL-13508636':
     - '*':
         reason: 'No fix available, indirect dependency'
         expires: '2026-12-31'
