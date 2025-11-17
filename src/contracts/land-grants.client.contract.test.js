@@ -330,7 +330,7 @@ describe('calculate', () => {
     }
     const payload = {
       startDate: '01-01-2026',
-      landActions: [
+      parcel: [
         {
           sheetId: 'SD6743',
           parcelId: '8083',
@@ -388,7 +388,7 @@ describe('calculate', () => {
 
   it('returns HTTP 400 when parcel is invalid', async () => {
     const badRequestPayload = {
-      landActions: [
+      parcel: [
         {
           sheetId: 'INVALID',
           parcelId: 'PARCEL',
@@ -433,7 +433,7 @@ describe('calculate', () => {
 
   it('returns HTTP 400 when action code is invalid', async () => {
     const badRequestPayload = {
-      landActions: [
+      parcel: [
         {
           sheetId: 'SD6743',
           parcelId: '8083',
@@ -478,7 +478,7 @@ describe('calculate', () => {
 
   it('returns HTTP 422 when quantity is a string', async () => {
     const invalidQuantityPayload = {
-      landActions: [
+      parcel: [
         {
           sheetId: 'SD6743',
           parcelId: '8083',
@@ -523,7 +523,7 @@ describe('calculate', () => {
 
   it('returns HTTP 422 when quantity is negative', async () => {
     const invalidQuantityPayload = {
-      landActions: [
+      parcel: [
         {
           sheetId: 'SD6743',
           parcelId: '8083',
