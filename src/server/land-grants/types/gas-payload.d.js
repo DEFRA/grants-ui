@@ -15,37 +15,76 @@
  */
 
 /**
- * @typedef {Object} PaymentRates
- * @property {number} [ratePerUnitPence] - Rate per unit in pence
- * @property {number} [agreementLevelAmountPence] - Agreement level amount in pence
+ * @typedef {Object} ApplicationAction
+ * @property {string} code - Action code (e.g., "CMOR1", "UPL1")
+ * @property {number} version - Action version
+ * @property {number} [durationYears] - Duration in years
+ * @property {UnitQuantity} [appliedFor] - Applied for quantity details
  */
 
 /**
- * @typedef {Object} Action
+ * @typedef {Object} PaymentAction
  * @property {string} code - Action code (e.g., "CMOR1", "UPL1")
  * @property {string} [description] - Action description
  * @property {number} [durationYears] - Duration in years
  * @property {UnitQuantity} [eligible] - Eligible quantity details
  * @property {UnitQuantity} [appliedFor] - Applied for quantity details
- * @property {PaymentRates} [paymentRates] - Payment rate information
+ * @property {number} [paymentRates] - Payment rate in pence
  * @property {number} [annualPaymentPence] - Annual payment in pence
  */
 
 /**
- * @typedef {Object} Parcel
+ * @typedef {Object} ApplicationParcel
  * @property {string} sheetId - Sheet identifier
  * @property {string} parcelId - Parcel identifier
  * @property {UnitQuantity} area - Parcel area details
- * @property {Action[]} actions - Array of actions for this parcel
+ * @property {ApplicationAction[]} actions - Array of actions for this parcel
+ */
+
+/**
+ * @typedef {Object} PaymentParcel
+ * @property {string} sheetId - Sheet identifier
+ * @property {string} parcelId - Parcel identifier
+ * @property {UnitQuantity} area - Parcel area details
+ * @property {PaymentAction[]} actions - Array of payment actions for this parcel
+ */
+
+/**
+ * @typedef {Object} ApplicationAgreement
+ * @property {string} code - Agreement action code
+ * @property {number} version - Agreement version
+ * @property {number} [durationYears] - Duration in years
+ */
+
+/**
+ * @typedef {Object} PaymentAgreement
+ * @property {string} code - Agreement action code
+ * @property {string} [description] - Agreement description
+ * @property {number} [durationYears] - Duration in years
+ * @property {number} [paymentRates] - Payment rate in pence
+ * @property {number} [annualPaymentPence] - Annual payment in pence
+ */
+
+/**
+ * @typedef {Object} ApplicationSection
+ * @property {ApplicationParcel[]} parcel - Array of parcels with actions
+ * @property {ApplicationAgreement[]} agreement - Array of agreement-level actions
+ */
+
+/**
+ * @typedef {Object} PaymentsSection
+ * @property {PaymentParcel[]} parcel - Array of parcels with payment details
+ * @property {PaymentAgreement[]} agreement - Array of agreement-level payment details
  */
 
 /**
  * @typedef {Object} Application
+ * @property {string} [applicationValidationRunId] - Application validation run ID
  * @property {string} scheme - Scheme name (e.g., "SFI")
- * @property {number} [totalAnnualPaymentPence] - Total annual payment in pence
- * @property {Parcel[]} parcels - Array of parcels with actions
- * @property {string} [applicationValidationRunId] - Application validation run ID (optional)
  * @property {Applicant} applicant - Applicant details
+ * @property {number} [totalAnnualPaymentPence] - Total annual payment in pence
+ * @property {ApplicationSection} application - Application parcels and agreements
+ * @property {PaymentsSection} payments - Payment details for parcels and agreements
  */
 
 /**

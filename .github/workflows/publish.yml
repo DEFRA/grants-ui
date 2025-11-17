@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Build and Publish
         uses: DEFRA/cdp-build-action/build@main
@@ -40,15 +40,19 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   pact:
+    needs: build
     runs-on: self-hosted
     if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name != 'pull_request'
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
+
+      - name: Fetch latest tags
+        run: git fetch --tags --force
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version-file: '.nvmrc'
           cache: npm
@@ -67,25 +71,25 @@ jobs:
         shell: bash
         run: |
           # Use bash to upload pacts manually since Azure Application Gateway blocks /contracts/publish
-          
+
           # Create base64 encoded auth header
           auth_header=$(echo -n "${PACT_BROKER_USERNAME}:${PACT_BROKER_PASSWORD}" | base64 -w 0)
-          
+
           # Loop through all pact files
           for pact_file in src/contracts/pacts/*.json; do
               if [[ -f "$pact_file" ]]; then
                   echo "Processing pact file: $pact_file"
-                  
+
                   # Extract consumer and provider names using jq
                   consumer=$(jq -r '.consumer.name' "$pact_file")
                   provider=$(jq -r '.provider.name' "$pact_file")
-                  version="${{ github.sha }}"
-                  
+                  version=$(git describe --tags --abbrev=0)
+
                   # Construct the URI
                   uri="${PACT_BROKER_BASE_URL}/pacts/provider/${provider}/consumer/${consumer}/version/${version}"
-                  
+
                   echo "Publishing pact: $consumer -> $provider (version: $version)"
-                  
+
                   # Upload the pact using curl
                   if curl -s -X PUT \
                       -H "Content-Type: application/json" \
