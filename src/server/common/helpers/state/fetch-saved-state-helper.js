@@ -7,10 +7,31 @@ import { log, LogCodes } from '../logging/log.js'
 
 const GRANTS_UI_BACKEND_ENDPOINT = config.get('session.cache.apiEndpoint')
 
+/**
+ * Logging function for API errors
+ * @param logCode
+ * @returns {(function(*, {}=): void)|*}
+ */
 function logApiError(logCode = LogCodes.SYSTEM.EXTERNAL_API_ERROR) {
-  return function (request, messageOptions = {}) {
-    log(logCode, messageOptions, request)
-  }
+  /**
+   * Logs API errors with the specified log code
+   * @param {Object} request - The request object
+   * @param {Object} messageOptions - Additional message options
+   */
+  return (request, messageOptions = {}) => log(logCode, messageOptions, request)
+}
+
+/**
+ * Constructs the endpoint URL for the state API based on the session key
+ * @param key
+ * @returns {string}
+ */
+function getEndpoint(key) {
+  const { sbi, grantCode } = parseSessionKey(key)
+  const url = new URL('/state/', GRANTS_UI_BACKEND_ENDPOINT)
+  url.searchParams.set('sbi', sbi)
+  url.searchParams.set('grantCode', grantCode)
+  return url.href
 }
 
 /**
@@ -29,12 +50,7 @@ async function callStateApi(key, method, request) {
   }
 
   let response
-
-  const { sbi, grantCode } = parseSessionKey(key)
-  const url = new URL('/state/', GRANTS_UI_BACKEND_ENDPOINT)
-  url.searchParams.set('sbi', sbi)
-  url.searchParams.set('grantCode', grantCode)
-  const endpoint = url.href
+  const endpoint = getEndpoint(key)
 
   logDebug(request, {
     method,
