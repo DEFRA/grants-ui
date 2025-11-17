@@ -2,7 +2,14 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "additionalProperties": false,
-  "required": ["scheme", "applicationValidationRunId", "totalAnnualPaymentPence", "parcels", "applicant"],
+  "required": [
+    "scheme",
+    "applicationValidationRunId",
+    "totalAnnualPaymentPence",
+    "application",
+    "payments",
+    "applicant"
+  ],
   "properties": {
     "scheme": {
       "type": "string",
@@ -17,12 +24,50 @@
       "type": "string",
       "title": "Application validation run ID"
     },
-    "parcels": {
-      "type": "array",
-      "title": "Land parcels with their actions",
-      "minItems": 1,
-      "items": {
-        "$ref": "#/$defs/Parcel"
+    "application": {
+      "type": "object",
+      "title": "Application section with parcels and agreements",
+      "additionalProperties": false,
+      "required": ["parcel", "agreement"],
+      "properties": {
+        "parcel": {
+          "type": "array",
+          "title": "Land parcels with their application actions",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/ApplicationParcel"
+          }
+        },
+        "agreement": {
+          "type": "array",
+          "title": "Agreement-level actions",
+          "items": {
+            "$ref": "#/$defs/ApplicationAgreement"
+          }
+        }
+      }
+    },
+    "payments": {
+      "type": "object",
+      "title": "Payments section with parcels and agreements",
+      "additionalProperties": false,
+      "required": ["parcel", "agreement"],
+      "properties": {
+        "parcel": {
+          "type": "array",
+          "title": "Land parcels with their payment actions",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/PaymentParcel"
+          }
+        },
+        "agreement": {
+          "type": "array",
+          "title": "Agreement-level payment actions",
+          "items": {
+            "$ref": "#/$defs/PaymentAgreement"
+          }
+        }
       }
     },
     "applicant": {
@@ -32,7 +77,7 @@
     }
   },
   "$defs": {
-    "Parcel": {
+    "ApplicationParcel": {
       "type": "object",
       "additionalProperties": false,
       "required": ["sheetId", "parcelId", "actions"],
@@ -65,26 +110,96 @@
         },
         "actions": {
           "type": "array",
-          "title": "Actions applied to this parcel",
+          "title": "Application actions for this parcel",
           "minItems": 0,
           "items": {
-            "$ref": "#/$defs/Action"
+            "$ref": "#/$defs/ApplicationAction"
           }
         }
       }
     },
-    "Action": {
+    "PaymentParcel": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "code",
-        "description",
-        "durationYears",
-        "eligible",
-        "appliedFor",
-        "paymentRates",
-        "annualPaymentPence"
-      ],
+      "required": ["sheetId", "parcelId", "actions"],
+      "properties": {
+        "sheetId": {
+          "type": "string",
+          "title": "OS Sheet ID",
+          "pattern": "[A-Z]{2}[0-9]{4}"
+        },
+        "parcelId": {
+          "type": "string",
+          "title": "Land parcel ID, unique within a OS Sheet ID",
+          "pattern": "^\\d+$"
+        },
+        "area": {
+          "type": "object",
+          "title": "Parcel area",
+          "additionalProperties": false,
+          "properties": {
+            "unit": {
+              "type": "string",
+              "title": "Unit of measurement",
+              "enum": ["kg", "m", "100m", "count", "ha", "m2", "sqm"]
+            },
+            "quantity": {
+              "type": "number",
+              "title": "Area quantity"
+            }
+          }
+        },
+        "actions": {
+          "type": "array",
+          "title": "Payment actions for this parcel",
+          "minItems": 0,
+          "items": {
+            "$ref": "#/$defs/PaymentAction"
+          }
+        }
+      }
+    },
+    "ApplicationAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "version"],
+      "properties": {
+        "code": {
+          "type": "string",
+          "title": "Code for the action to be taken on the land parcel"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "title": "Action version"
+        },
+        "durationYears": {
+          "type": "integer",
+          "minimum": 1,
+          "title": "Duration in years"
+        },
+        "appliedFor": {
+          "type": "object",
+          "title": "Applied for area or quantity",
+          "additionalProperties": false,
+          "properties": {
+            "unit": {
+              "type": "string",
+              "title": "Unit of measurement",
+              "enum": ["kg", "m", "100m", "count", "ha", "m2", "sqm"]
+            },
+            "quantity": {
+              "type": "number",
+              "title": "Quantity applied for"
+            }
+          }
+        }
+      }
+    },
+    "PaymentAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code"],
       "properties": {
         "code": {
           "type": "string",
@@ -132,21 +247,60 @@
           }
         },
         "paymentRates": {
-          "type": "object",
-          "title": "Payment rate information",
-          "additionalProperties": false,
-          "properties": {
-            "ratePerUnitPence": {
-              "type": "integer",
-              "minimum": 0,
-              "title": "Rate per unit in pence"
-            },
-            "agreementLevelAmountPence": {
-              "type": "integer",
-              "minimum": 0,
-              "title": "Agreement level amount in pence"
-            }
-          }
+          "type": "integer",
+          "minimum": 0,
+          "title": "Payment rate in pence"
+        },
+        "annualPaymentPence": {
+          "type": "integer",
+          "minimum": 0,
+          "title": "Annual payment in pence"
+        }
+      }
+    },
+    "ApplicationAgreement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "version"],
+      "properties": {
+        "code": {
+          "type": "string",
+          "title": "Agreement action code"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "title": "Agreement version"
+        },
+        "durationYears": {
+          "type": "integer",
+          "minimum": 1,
+          "title": "Duration in years"
+        }
+      }
+    },
+    "PaymentAgreement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code"],
+      "properties": {
+        "code": {
+          "type": "string",
+          "title": "Agreement action code"
+        },
+        "description": {
+          "type": "string",
+          "title": "Agreement description"
+        },
+        "durationYears": {
+          "type": "integer",
+          "minimum": 1,
+          "title": "Duration in years"
+        },
+        "paymentRates": {
+          "type": "integer",
+          "minimum": 0,
+          "title": "Payment rate in pence"
         },
         "annualPaymentPence": {
           "type": "integer",
