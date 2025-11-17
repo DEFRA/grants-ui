@@ -61,7 +61,7 @@ describe('land-grants service', () => {
 
       expect(calculate).toHaveBeenCalledWith(
         expect.objectContaining({
-          landActions: [
+          parcel: [
             {
               sheetId: 'SD1234',
               parcelId: '5678',

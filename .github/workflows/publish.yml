@@ -40,12 +40,16 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   pact:
+    needs: build
     runs-on: self-hosted
     if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name != 'pull_request'
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
+
+      - name: Fetch latest tags
+        run: git fetch --tags --force
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -79,7 +83,7 @@ jobs:
                   # Extract consumer and provider names using jq
                   consumer=$(jq -r '.consumer.name' "$pact_file")
                   provider=$(jq -r '.provider.name' "$pact_file")
-                  version="${{ github.sha }}"
+                  version=$(git describe --tags --abbrev=0)
 
                   # Construct the URI
                   uri="${PACT_BROKER_BASE_URL}/pacts/provider/${provider}/consumer/${consumer}/version/${version}"

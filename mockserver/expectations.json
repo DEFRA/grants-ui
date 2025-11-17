@@ -63,7 +63,7 @@
       "path": "/payments/calculate",
       "body": {
         "type": "JSON_PATH",
-        "jsonPath": "$.landActions[*].actions[1]"
+        "jsonPath": "$.parcel[*].actions[1]"
       }
     },
     "httpResponse": {
@@ -83,7 +83,7 @@
       "path": "/payments/calculate",
       "body": {
         "type": "JSON_PATH",
-        "jsonPath": "$.landActions[*].actions[?(@.code == 'TEST1')]"
+        "jsonPath": "$.parcel[*].actions[?(@.code == 'TEST1')]"
       }
     },
     "httpResponse": {
@@ -103,7 +103,7 @@
       "path": "/payments/calculate",
       "body": {
         "type": "JSON_PATH",
-        "jsonPath": "$.landActions[*].actions[?(@.code == 'TEST2')]"
+        "jsonPath": "$.parcel[*].actions[?(@.code == 'TEST2')]"
       }
     },
     "httpResponse": {
