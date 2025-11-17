@@ -8,7 +8,7 @@ import { log, LogCodes } from '../logging/log.js'
 const GRANTS_UI_BACKEND_ENDPOINT = config.get('session.cache.apiEndpoint')
 
 function logApiError(logCode = LogCodes.SYSTEM.EXTERNAL_API_ERROR) {
-  return function (messageOptions = {}, request) {
+  return function (request, messageOptions = {}) {
     log(logCode, messageOptions, request)
   }
 }
@@ -36,14 +36,11 @@ async function callStateApi(key, method, request) {
   url.searchParams.set('grantCode', grantCode)
   const endpoint = url.href
 
-  logDebug(
-    {
-      method,
-      endpoint,
-      identity: key
-    },
-    request
-  )
+  logDebug(request, {
+    method,
+    endpoint,
+    identity: key
+  })
 
   try {
     response = await fetch(endpoint, {
@@ -51,18 +48,18 @@ async function callStateApi(key, method, request) {
       headers: createApiHeadersForGrantsUiBackend()
     })
   } catch (err) {
-    logError({ method, endpoint, identity: key, error: err.message }, request)
+    logError(request, { method, endpoint, identity: key, error: err.message })
     throw err
   }
 
   if (!response.ok) {
     if (response.status === statusCodes.notFound) {
-      logDebug({ method, endpoint, identity: key, summary: 'No state found in backend' }, request)
+      logDebug(request, { method, endpoint, identity: key, summary: 'No state found in backend' })
       return null
     }
 
     const errorMessage = `Failed to ${method === 'DELETE' ? 'clear' : 'fetch'} saved state: ${response.status}`
-    logError({ method, endpoint, identity: key, error: errorMessage }, request)
+    logError(request, { method, endpoint, identity: key, error: errorMessage })
     throw new Error(errorMessage)
   }
 
@@ -70,7 +67,7 @@ async function callStateApi(key, method, request) {
 
   if (!json || typeof json !== 'object') {
     const errorMessage = `Unexpected or empty state format: ${json}`
-    logError({ method, endpoint, identity: key, error: errorMessage }, request)
+    logError(request, { method, endpoint, identity: key, error: errorMessage })
     throw new Error(errorMessage)
   }
 

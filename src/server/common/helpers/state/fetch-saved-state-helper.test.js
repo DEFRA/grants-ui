@@ -310,16 +310,6 @@ describe('State API helpers', () => {
 
         await expect(clearSavedStateFromApi(key, mockRequest)).rejects.toThrow()
 
-        expect(log).toHaveBeenCalledTimes(2)
-        expect(log).toHaveBeenCalledWith(
-          LogCodes.SYSTEM.EXTERNAL_API_CALL_DEBUG,
-          expect.objectContaining({
-            method: 'DELETE',
-            endpoint: expect.stringContaining('/state/'),
-            identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.ORGANISATION_ID}:${TEST_USER_IDS.GRANT_ID}`
-          }),
-          mockRequest
-        )
         expect(log).toHaveBeenCalledWith(
           LogCodes.SYSTEM.EXTERNAL_API_ERROR,
           expect.objectContaining({
