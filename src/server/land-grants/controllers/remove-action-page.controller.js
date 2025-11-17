@@ -101,14 +101,14 @@ export default class RemoveActionPageController extends LandGrantsQuestionWithAu
    * @param {AnyFormRequest} request - Request object
    * @param {FormContext} context - Form context
    * @param {string} errorMessage - Error message to display
-   * @param {string} parcel - Parcel key
+   * @param {string} parcelId - Parcel ID
    * @param {object} pageHeadingAndHint - Page header amd hint text
    * @returns {object} - Error view response
    */
-  renderPostErrorView(h, request, context, errorMessage, parcel, pageHeadingAndHint) {
+  renderPostErrorView(h, request, context, errorMessage, parcelId, pageHeadingAndHint) {
     return h.view(this.viewName, {
       ...this.getViewModel(request, context),
-      parcel,
+      parcelId,
       ...pageHeadingAndHint,
       errorMessage
     })
@@ -137,19 +137,27 @@ export default class RemoveActionPageController extends LandGrantsQuestionWithAu
    * Build view model for GET request
    * @param {AnyFormRequest} request - Request object
    * @param {FormContext} context - Form context
-   * @param {string} parcel - Parcel key
+   * @param {string} parcelId - Parcel ID
    * @param {string} pageHeading - Page heading
    * @param {string} hint - Hint text
    * @returns {object} - Complete view model
    */
-  buildGetViewModel(request, context, parcel, pageHeading, hint) {
+  buildGetViewModel(request, context, parcelId, pageHeading, hint) {
     return {
       ...this.getViewModel(request, context),
-      parcel,
+      parcelId,
       pageHeading,
       hint
     }
   }
+
+  /**
+   * Build page heading and hint for the removal confirmation page.
+   *
+   * @param {{description?: string}|null|undefined} actionInfo - Optional action info object; when present its `description` is used in the heading/hint.
+   * @param {string} [parcelId=''] - Parcel identifier to include in the heading.
+   * @returns {{pageHeading: string, hint: string}} Object with `pageHeading` and `hint` strings.
+   */
 
   buildPageHeadingAndHint(actionInfo, parcelId = '') {
     const hint = actionInfo?.description

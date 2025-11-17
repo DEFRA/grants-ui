@@ -336,7 +336,7 @@ describe('RemoveActionPageController', () => {
       expect(controller.getViewModel).toHaveBeenCalledWith(mockRequest, mockContext)
       expect(mockH.view).toHaveBeenCalledWith('remove-action', {
         pageTitle: 'Remove action',
-        parcel: 'SD6743-8083',
+        parcelId: 'SD6743-8083',
         ...pageHeadingAndHint,
         errorMessage: 'Test error message'
       })
@@ -437,7 +437,7 @@ describe('RemoveActionPageController', () => {
       expect(controller.getViewModel).toHaveBeenCalledWith(mockRequest, mockContext)
       expect(result).toEqual({
         pageTitle: 'Remove action',
-        parcel: 'SD6743-8083',
+        parcelId: 'SD6743-8083',
         pageHeading,
         hint
       })
@@ -453,7 +453,7 @@ describe('RemoveActionPageController', () => {
       expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH, mockRequest.query.parcelId)
       expect(mockH.view).toHaveBeenCalledWith('remove-action', {
         pageTitle: 'Remove action',
-        parcel: 'SD6743-8083',
+        parcelId: 'SD6743-8083',
         pageHeading: `Do you want to remove Assess moorland and produce a written record: CMOR1 from land parcel SD6743-8083?`,
         hint: 'Select yes to remove this action from this land parcel. You can add a different action to the same parcel.'
       })
@@ -468,7 +468,7 @@ describe('RemoveActionPageController', () => {
 
       expect(mockH.view).toHaveBeenCalledWith('remove-action', {
         pageTitle: 'Remove action',
-        parcel: 'SD6743-8083',
+        parcelId: 'SD6743-8083',
         pageHeading: 'Do you want to remove land parcel SD6743-8083 from this application?',
         hint: 'If you remove this land parcel you will also remove all the actions added to this parcel.'
       })
@@ -521,7 +521,7 @@ describe('RemoveActionPageController', () => {
 
       expect(mockH.view).toHaveBeenCalledWith('remove-action', {
         pageTitle: 'Remove action',
-        parcel: 'SD6743-8083',
+        parcelId: 'SD6743-8083',
         pageHeading:
           'Do you want to remove Assess moorland and produce a written record: CMOR1 from land parcel SD6743-8083?',
         hint: 'Select yes to remove this action from this land parcel. You can add a different action to the same parcel.',
@@ -540,7 +540,7 @@ describe('RemoveActionPageController', () => {
 
       expect(mockH.view).toHaveBeenCalledWith('remove-action', {
         pageTitle: 'Remove action',
-        parcel: 'SD6743-8083',
+        parcelId: 'SD6743-8083',
         hint: 'If you remove this land parcel you will also remove all the actions added to this parcel.',
         pageHeading: 'Do you want to remove land parcel SD6743-8083 from this application?',
         errorMessage: 'Select yes to remove this land parcel from this application'
