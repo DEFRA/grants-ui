@@ -22,8 +22,7 @@ describe('Pact between grants-ui (consumer) and fg-gas-backend (provider)', () =
         .uponReceiving('an example-grant-with-auth-v3 application')
         .withRequest('POST', '/grants/example-grant-with-auth-v3/applications', (builder) => {
           builder.headers({
-            'Content-Type': 'application/json',
-            Authorization: 'Bearer 00000000-0000-0000-0000-000000000000'
+            'Content-Type': 'application/json'
           })
           builder.jsonBody(payload)
         })
@@ -35,7 +34,10 @@ describe('Pact between grants-ui (consumer) and fg-gas-backend (provider)', () =
             {},
             {
               method: 'POST',
-              payload
+              payload,
+              headers: {
+                Authorization: 'Bearer 00000000-0000-0000-0000-000000000000'
+              }
             }
           )
 
