@@ -78,18 +78,17 @@ export default class RemoveActionPageController extends LandGrantsQuestionWithAu
   /**
    * Validate POST request payload
    * @param {object} payload - Request payload
-   * @param {object} actionInfo - Action description (optional)
-   * @param {string} parcelId - Parcel ID
+   * @param {object} actionInfo - Action Info (optional)
    * @returns {object|null} - Validation error or null if valid
    */
-  validatePostPayload(payload, actionInfo, parcelId) {
+  validatePostPayload(payload, actionInfo) {
     const { remove } = payload
 
     if (remove === undefined) {
       return {
         errorMessage: actionInfo?.description
           ? `Select yes to remove this action from this land parcel`
-          : `Select if you want to remove land parcel ${parcelId} from this application`
+          : `Select yes to remove this land parcel from this application`
       }
     }
 
@@ -216,7 +215,7 @@ export default class RemoveActionPageController extends LandGrantsQuestionWithAu
       const actionInfo = this.findActionInfo(state.landParcels, parcelId, action)
       const pageHeadingAndHint = this.buildPageHeadingAndHint(actionInfo, parcelId)
 
-      const validationError = this.validatePostPayload(payload, actionInfo, parcelId)
+      const validationError = this.validatePostPayload(payload, actionInfo)
       if (validationError) {
         return this.renderPostErrorView(h, request, context, validationError.errorMessage, parcelId, pageHeadingAndHint)
       }

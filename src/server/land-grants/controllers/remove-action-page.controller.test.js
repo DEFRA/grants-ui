@@ -278,11 +278,10 @@ describe('RemoveActionPageController', () => {
 
   describe('validatePostPayload', () => {
     test('should return error with action description when remove is undefined and actionDescription exists', () => {
-      const parcelId = 'SD6743-8083'
       const actionInfo = { description: 'Assess moorland and produce a written record: CMOR1' }
       const payload = {}
 
-      const result = controller.validatePostPayload(payload, actionInfo, parcelId)
+      const result = controller.validatePostPayload(payload, actionInfo)
 
       expect(result).toEqual({
         errorMessage: 'Select yes to remove this action from this land parcel'
@@ -290,33 +289,30 @@ describe('RemoveActionPageController', () => {
     })
 
     test('should return error for parcel removal when remove is undefined and actionDescription is null', () => {
-      const parcelId = 'SD6743-8083'
       const actionInfo = {}
       const payload = {}
 
-      const result = controller.validatePostPayload(payload, actionInfo, parcelId)
+      const result = controller.validatePostPayload(payload, actionInfo)
 
       expect(result).toEqual({
-        errorMessage: 'Select if you want to remove land parcel SD6743-8083 from this application'
+        errorMessage: 'Select yes to remove this land parcel from this application'
       })
     })
 
     test('should return null when remove is true', () => {
       const payload = { remove: 'true' }
-      const parcelId = 'SD6743-8083'
       const actionInfo = { description: 'Test action' }
 
-      const result = controller.validatePostPayload(payload, actionInfo, parcelId)
+      const result = controller.validatePostPayload(payload, actionInfo)
 
       expect(result).toBeNull()
     })
 
     test('should return null when remove is false', () => {
       const payload = { remove: 'false' }
-      const parcelId = 'SD6743-8083'
       const actionInfo = { description: 'Test action' }
 
-      const result = controller.validatePostPayload(payload, actionInfo, parcelId)
+      const result = controller.validatePostPayload(payload, actionInfo)
 
       expect(result).toBeNull()
     })
@@ -547,7 +543,7 @@ describe('RemoveActionPageController', () => {
         parcel: 'SD6743-8083',
         hint: 'If you remove this land parcel you will also remove all the actions added to this parcel.',
         pageHeading: 'Do you want to remove land parcel SD6743-8083 from this application?',
-        errorMessage: 'Select if you want to remove land parcel SD6743-8083 from this application'
+        errorMessage: 'Select yes to remove this land parcel from this application'
       })
       expect(controller.setState).not.toHaveBeenCalled()
       expect(result).toBe('rendered view')
