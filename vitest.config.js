@@ -8,7 +8,7 @@ export default {
     environment: 'jsdom',
     setupFiles: ['./.vitest/setup-file.js'],
     include: ['**/src/**/*.test.js'],
-    exclude: ['**/node_modules/**', '**/.stryker-tmp/**', '**/*.contract.test.js'],
+    exclude: ['**/node_modules/**', '**/.stryker-tmp/**'],
     reporters: ['default', CoverageAnalyserReporter()],
     coverage: {
       enabled: true,
