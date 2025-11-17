@@ -196,6 +196,7 @@ describe('stateToLandGrantsGasAnswers', () => {
             code: 'CSAM1',
             description: 'CSAM1: Assess moorland and produce a written record',
             durationYears: 3,
+            paymentRates: 27200,
             annualPaymentPence: 27200
           }
         ]
@@ -608,7 +609,7 @@ describe('stateToLandGrantsGasAnswers', () => {
 
     expect(result.payments.parcel[0].actions[0].paymentRates).toBe(1060)
     expect(result.payments.parcel[0].actions[0].annualPaymentPence).toBe(4806)
-    expect(result.payments.agreement[0].paymentRates).toBeUndefined()
+    expect(result.payments.agreement[0].paymentRates).toBe(27200)
     expect(result.payments.agreement[0].annualPaymentPence).toBe(27200)
   })
 

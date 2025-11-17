@@ -192,11 +192,13 @@ function createPaymentAgreementActions(agreementCodes, paymentData) {
     const paymentItem = findAgreementPaymentItem(paymentData, actionCode)
 
     if (paymentItem) {
+      const paymentRates = paymentItem.rateInPence ?? paymentItem.annualPaymentPence
+
       result.push({
         code: actionCode,
         ...(paymentItem.description != null && { description: paymentItem.description }),
         ...(paymentItem.durationYears != null && { durationYears: paymentItem.durationYears }),
-        ...(paymentItem.rateInPence != null && { paymentRates: paymentItem.rateInPence }),
+        ...(paymentRates != null && { paymentRates }),
         ...(paymentItem.annualPaymentPence != null && { annualPaymentPence: paymentItem.annualPaymentPence })
       })
     }
