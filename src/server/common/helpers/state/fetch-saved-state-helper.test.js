@@ -143,12 +143,11 @@ describe('State API helpers', () => {
         )
       })
 
-      it('returns null on non-200 (not 404)', async () => {
+      it('throws error on non-200 (not 404)', async () => {
         mockFetch.mockResolvedValue(createFailedResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR))
 
-        const result = await fetchSavedStateFromApi(key, mockRequest)
+        await expect(fetchSavedStateFromApi(key, mockRequest)).rejects.toThrow()
 
-        expect(result).toBeNull()
         expect(log).toHaveBeenCalledWith(
           LogCodes.SYSTEM.EXTERNAL_API_ERROR,
           expect.objectContaining({
@@ -161,12 +160,11 @@ describe('State API helpers', () => {
         )
       })
 
-      it('returns null when response JSON is invalid or missing state', async () => {
+      it('thrtows error when response JSON is invalid or missing state', async () => {
         mockFetch.mockResolvedValue(createSuccessfulResponse(123))
 
-        const result = await fetchSavedStateFromApi(key, mockRequest)
+        await expect(fetchSavedStateFromApi(key, mockRequest)).rejects.toThrow()
 
-        expect(result).toBeNull()
         expect(log).toHaveBeenCalledWith(
           LogCodes.SYSTEM.EXTERNAL_API_ERROR,
           expect.objectContaining({
@@ -179,13 +177,12 @@ describe('State API helpers', () => {
         )
       })
 
-      it('returns null and logs error on fetch failure', async () => {
+      it('throws and logs error on fetch failure', async () => {
         const networkError = new Error(ERROR_MESSAGES.NETWORK_ERROR)
         mockFetch.mockRejectedValue(networkError)
 
-        const result = await fetchSavedStateFromApi(key, mockRequest)
+        await expect(fetchSavedStateFromApi(key, mockRequest)).rejects.toThrow()
 
-        expect(result).toBeNull()
         expect(log).toHaveBeenCalledWith(
           LogCodes.SYSTEM.EXTERNAL_API_ERROR,
           expect.objectContaining({
@@ -308,12 +305,21 @@ describe('State API helpers', () => {
         )
       })
 
-      it('returns null on non-200 (not 404)', async () => {
+      it('throws error on non-200 response (not 404)', async () => {
         mockFetch.mockResolvedValue(createFailedResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR))
 
-        const result = await clearSavedStateFromApi(key, mockRequest)
+        await expect(clearSavedStateFromApi(key, mockRequest)).rejects.toThrow()
 
-        expect(result).toBeNull()
+        expect(log).toHaveBeenCalledTimes(2)
+        expect(log).toHaveBeenCalledWith(
+          LogCodes.SYSTEM.EXTERNAL_API_CALL_DEBUG,
+          expect.objectContaining({
+            method: 'DELETE',
+            endpoint: expect.stringContaining('/state/'),
+            identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.ORGANISATION_ID}:${TEST_USER_IDS.GRANT_ID}`
+          }),
+          mockRequest
+        )
         expect(log).toHaveBeenCalledWith(
           LogCodes.SYSTEM.EXTERNAL_API_ERROR,
           expect.objectContaining({
@@ -326,12 +332,11 @@ describe('State API helpers', () => {
         )
       })
 
-      it('returns null when response JSON is invalid or missing state', async () => {
+      it('throws error when response JSON is invalid or missing state', async () => {
         mockFetch.mockResolvedValue(createSuccessfulResponse(123))
 
-        const result = await clearSavedStateFromApi(key, mockRequest)
+        await expect(clearSavedStateFromApi(key, mockRequest)).rejects.toThrow()
 
-        expect(result).toBeNull()
         expect(log).toHaveBeenCalledWith(
           LogCodes.SYSTEM.EXTERNAL_API_ERROR,
           expect.objectContaining({
@@ -344,13 +349,12 @@ describe('State API helpers', () => {
         )
       })
 
-      it('returns null and logs error on fetch failure', async () => {
+      it('throws error and logs on fetch failure', async () => {
         const networkError = new Error(ERROR_MESSAGES.NETWORK_ERROR)
         mockFetch.mockRejectedValue(networkError)
 
-        const result = await clearSavedStateFromApi(key, mockRequest)
+        await expect(clearSavedStateFromApi(key, mockRequest)).rejects.toThrow()
 
-        expect(result).toBeNull()
         expect(log).toHaveBeenCalledWith(
           LogCodes.SYSTEM.EXTERNAL_API_ERROR,
           expect.objectContaining({

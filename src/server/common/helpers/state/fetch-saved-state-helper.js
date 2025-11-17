@@ -19,61 +19,27 @@ async function callStateApi(key, method, request) {
     return null
   }
 
+  let response
   const { sbi, grantCode } = parseSessionKey(key)
   const url = new URL('/state/', GRANTS_UI_BACKEND_ENDPOINT)
   url.searchParams.set('sbi', sbi)
   url.searchParams.set('grantCode', grantCode)
 
-  try {
-    log(
-      LogCodes.SYSTEM.EXTERNAL_API_CALL_DEBUG,
-      {
-        method,
-        endpoint: url.href,
-        identity: key
-      },
-      request
-    )
+  log(
+    LogCodes.SYSTEM.EXTERNAL_API_CALL_DEBUG,
+    {
+      method,
+      endpoint: url.href,
+      identity: key
+    },
+    request
+  )
 
-    const response = await fetch(url.href, {
+  try {
+    response = await fetch(url.href, {
       method,
       headers: createApiHeadersForGrantsUiBackend()
     })
-
-    if (!response.ok) {
-      if (response.status === statusCodes.notFound) {
-        log(
-          LogCodes.SYSTEM.EXTERNAL_API_CALL_DEBUG,
-          {
-            method,
-            endpoint: url.href,
-            identity: key,
-            summary: 'No state found in backend'
-          },
-          request
-        )
-        return null
-      }
-      throw new Error(`Failed to ${method === 'DELETE' ? 'clear' : 'fetch'} saved state: ${response.status}`)
-    }
-
-    const json = await response.json()
-
-    if (!json || typeof json !== 'object') {
-      log(
-        LogCodes.SYSTEM.EXTERNAL_API_ERROR,
-        {
-          method,
-          endpoint: url.href,
-          identity: key,
-          error: `Unexpected or empty state format: ${json}`
-        },
-        request
-      )
-      return null
-    }
-
-    return json
   } catch (err) {
     log(
       LogCodes.SYSTEM.EXTERNAL_API_ERROR,
@@ -85,8 +51,61 @@ async function callStateApi(key, method, request) {
       },
       request
     )
-    return null
+
+    throw err
   }
+
+  if (!response.ok) {
+    if (response.status === statusCodes.notFound) {
+      log(
+        LogCodes.SYSTEM.EXTERNAL_API_CALL_DEBUG,
+        {
+          method,
+          endpoint: url.href,
+          identity: key,
+          summary: 'No state found in backend'
+        },
+        request
+      )
+      return null
+    }
+
+    const err = `Failed to ${method === 'DELETE' ? 'clear' : 'fetch'} saved state: ${response.status}`
+
+    log(
+      LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+      {
+        method,
+        endpoint: url.href,
+        identity: key,
+        error: err
+      },
+      request
+    )
+
+    throw new Error(err)
+  }
+
+  const json = await response.json()
+
+  if (!json || typeof json !== 'object') {
+    const err = `Unexpected or empty state format: ${json}`
+
+    log(
+      LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+      {
+        method,
+        endpoint: url.href,
+        identity: key,
+        error: err
+      },
+      request
+    )
+
+    throw new Error(err)
+  }
+
+  return json
 }
 
 export async function fetchSavedStateFromApi(key, request) {
