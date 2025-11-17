@@ -278,46 +278,41 @@ describe('RemoveActionPageController', () => {
 
   describe('validatePostPayload', () => {
     test('should return error with action description when remove is undefined and actionDescription exists', () => {
-      const parcel = 'SD6743-8083'
-      const actionDescription = 'Assess moorland and produce a written record: CMOR1'
+      const actionInfo = { description: 'Assess moorland and produce a written record: CMOR1' }
       const payload = {}
 
-      const result = controller.validatePostPayload(payload, parcel, actionDescription)
+      const result = controller.validatePostPayload(payload, actionInfo)
 
       expect(result).toEqual({
-        errorMessage:
-          'Select yes to remove Assess moorland and produce a written record: CMOR1 from land parcel SD6743-8083'
+        errorMessage: 'Select yes to remove this action from this land parcel'
       })
     })
 
     test('should return error for parcel removal when remove is undefined and actionDescription is null', () => {
-      const parcel = 'SD6743-8083'
-      const actionDescription = null
+      const actionInfo = {}
       const payload = {}
 
-      const result = controller.validatePostPayload(payload, parcel, actionDescription)
+      const result = controller.validatePostPayload(payload, actionInfo)
 
       expect(result).toEqual({
-        errorMessage: 'Select yes to remove land parcel SD6743-8083 from this application'
+        errorMessage: 'Select yes to remove this land parcel from this application'
       })
     })
 
     test('should return null when remove is true', () => {
       const payload = { remove: 'true' }
-      const parcel = 'SD6743-8083'
-      const actionDescription = 'Test action'
+      const actionInfo = { description: 'Test action' }
 
-      const result = controller.validatePostPayload(payload, parcel, actionDescription)
+      const result = controller.validatePostPayload(payload, actionInfo)
 
       expect(result).toBeNull()
     })
 
     test('should return null when remove is false', () => {
       const payload = { remove: 'false' }
-      const parcel = 'SD6743-8083'
-      const actionDescription = 'Test action'
+      const actionInfo = { description: 'Test action' }
 
-      const result = controller.validatePostPayload(payload, parcel, actionDescription)
+      const result = controller.validatePostPayload(payload, actionInfo)
 
       expect(result).toBeNull()
     })
@@ -326,7 +321,7 @@ describe('RemoveActionPageController', () => {
   describe('renderPostErrorView', () => {
     test('should render error view with all properties', () => {
       const parcel = 'SD6743-8083'
-      const actionDescription = 'Test Action Description'
+      const pageHeadingAndHint = { pageHeading: 'Test Action Description', hint: 'hint text is here' }
       controller.performAuthCheck = vi.fn().mockResolvedValue(null)
 
       const result = controller.renderPostErrorView(
@@ -335,14 +330,14 @@ describe('RemoveActionPageController', () => {
         mockContext,
         'Test error message',
         parcel,
-        actionDescription
+        pageHeadingAndHint
       )
 
       expect(controller.getViewModel).toHaveBeenCalledWith(mockRequest, mockContext)
       expect(mockH.view).toHaveBeenCalledWith('remove-action', {
         pageTitle: 'Remove action',
-        parcel: 'SD6743-8083',
-        actionDescription: 'Test Action Description',
+        parcelId: 'SD6743-8083',
+        ...pageHeadingAndHint,
         errorMessage: 'Test error message'
       })
       expect(result).toBe('rendered view')
@@ -434,15 +429,17 @@ describe('RemoveActionPageController', () => {
   describe('buildGetViewModel', () => {
     test('should combine parent view model with controller properties', () => {
       const parcel = 'SD6743-8083'
-      const actionDescription = 'Test Action'
+      const pageHeading = 'Test Action'
+      const hint = 'hint text is here'
 
-      const result = controller.buildGetViewModel(mockRequest, mockContext, parcel, actionDescription)
+      const result = controller.buildGetViewModel(mockRequest, mockContext, parcel, pageHeading, hint)
 
       expect(controller.getViewModel).toHaveBeenCalledWith(mockRequest, mockContext)
       expect(result).toEqual({
         pageTitle: 'Remove action',
-        parcel: 'SD6743-8083',
-        actionDescription: 'Test Action'
+        parcelId: 'SD6743-8083',
+        pageHeading,
+        hint
       })
     })
   })
@@ -456,8 +453,9 @@ describe('RemoveActionPageController', () => {
       expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH, mockRequest.query.parcelId)
       expect(mockH.view).toHaveBeenCalledWith('remove-action', {
         pageTitle: 'Remove action',
-        parcel: 'SD6743-8083',
-        actionDescription: 'Assess moorland and produce a written record: CMOR1'
+        parcelId: 'SD6743-8083',
+        pageHeading: `Do you want to remove Assess moorland and produce a written record: CMOR1 from land parcel SD6743-8083?`,
+        hint: 'Select yes to remove this action from this land parcel. You can add a different action to the same parcel.'
       })
       expect(result).toBe('rendered view')
     })
@@ -470,8 +468,9 @@ describe('RemoveActionPageController', () => {
 
       expect(mockH.view).toHaveBeenCalledWith('remove-action', {
         pageTitle: 'Remove action',
-        parcel: 'SD6743-8083',
-        actionDescription: undefined
+        parcelId: 'SD6743-8083',
+        pageHeading: 'Do you want to remove land parcel SD6743-8083 from this application?',
+        hint: 'If you remove this land parcel you will also remove all the actions added to this parcel.'
       })
       expect(result).toBe('rendered view')
     })
@@ -522,10 +521,11 @@ describe('RemoveActionPageController', () => {
 
       expect(mockH.view).toHaveBeenCalledWith('remove-action', {
         pageTitle: 'Remove action',
-        parcel: 'SD6743-8083',
-        actionDescription: 'Assess moorland and produce a written record: CMOR1',
-        errorMessage:
-          'Select yes to remove Assess moorland and produce a written record: CMOR1 from land parcel SD6743-8083'
+        parcelId: 'SD6743-8083',
+        pageHeading:
+          'Do you want to remove Assess moorland and produce a written record: CMOR1 from land parcel SD6743-8083?',
+        hint: 'Select yes to remove this action from this land parcel. You can add a different action to the same parcel.',
+        errorMessage: 'Select yes to remove this action from this land parcel'
       })
       expect(controller.setState).not.toHaveBeenCalled()
       expect(result).toBe('rendered view')
@@ -540,9 +540,10 @@ describe('RemoveActionPageController', () => {
 
       expect(mockH.view).toHaveBeenCalledWith('remove-action', {
         pageTitle: 'Remove action',
-        parcel: 'SD6743-8083',
-        actionDescription: undefined,
-        errorMessage: 'Select yes to remove land parcel SD6743-8083 from this application'
+        parcelId: 'SD6743-8083',
+        hint: 'If you remove this land parcel you will also remove all the actions added to this parcel.',
+        pageHeading: 'Do you want to remove land parcel SD6743-8083 from this application?',
+        errorMessage: 'Select yes to remove this land parcel from this application'
       })
       expect(controller.setState).not.toHaveBeenCalled()
       expect(result).toBe('rendered view')
@@ -636,8 +637,10 @@ describe('RemoveActionPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'remove-action',
         expect.objectContaining({
-          errorMessage:
-            'Select yes to remove Assess moorland and produce a written record: CMOR1 from land parcel SD6743-8083'
+          errorMessage: 'Select yes to remove this action from this land parcel',
+          hint: 'Select yes to remove this action from this land parcel. You can add a different action to the same parcel.',
+          pageHeading:
+            'Do you want to remove Assess moorland and produce a written record: CMOR1 from land parcel SD6743-8083?'
         })
       )
       expect(result).toBe('rendered view')
