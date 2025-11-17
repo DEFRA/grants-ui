@@ -22,7 +22,7 @@ metadata:
         <li>the Rural Payments Agency confirms your start date</li>
       </ul>
 
-      {{DEFRASUPPORTDETAILS}}
+      {{DEFRASUPPORTDETAILS({typeOfSupport: 'question'})}}
 pages:
   - title: Confirm your details
     path: /confirm-farm-details
