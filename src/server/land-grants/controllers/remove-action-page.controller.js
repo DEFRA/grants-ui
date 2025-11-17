@@ -88,7 +88,7 @@ export default class RemoveActionPageController extends LandGrantsQuestionWithAu
     if (remove === undefined) {
       return {
         errorMessage: actionInfo?.description
-          ? `Select if you want to remove ${actionInfo.description} from this application`
+          ? `Select yes to remove this action from this land parcel`
           : `Select if you want to remove land parcel ${parcelId} from this application`
       }
     }

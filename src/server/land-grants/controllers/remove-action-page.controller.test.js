@@ -285,8 +285,7 @@ describe('RemoveActionPageController', () => {
       const result = controller.validatePostPayload(payload, actionInfo, parcelId)
 
       expect(result).toEqual({
-        errorMessage:
-          'Select if you want to remove Assess moorland and produce a written record: CMOR1 from this application'
+        errorMessage: 'Select yes to remove this action from this land parcel'
       })
     })
 
@@ -530,8 +529,7 @@ describe('RemoveActionPageController', () => {
         pageHeading:
           'Do you want to remove Assess moorland and produce a written record: CMOR1 from land parcel SD6743-8083?',
         hint: 'Select yes to remove this action from this land parcel. You can add a different action to the same parcel.',
-        errorMessage:
-          'Select if you want to remove Assess moorland and produce a written record: CMOR1 from this application'
+        errorMessage: 'Select yes to remove this action from this land parcel'
       })
       expect(controller.setState).not.toHaveBeenCalled()
       expect(result).toBe('rendered view')
@@ -643,8 +641,7 @@ describe('RemoveActionPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'remove-action',
         expect.objectContaining({
-          errorMessage:
-            'Select if you want to remove Assess moorland and produce a written record: CMOR1 from this application',
+          errorMessage: 'Select yes to remove this action from this land parcel',
           hint: 'Select yes to remove this action from this land parcel. You can add a different action to the same parcel.',
           pageHeading:
             'Do you want to remove Assess moorland and produce a written record: CMOR1 from land parcel SD6743-8083?'
