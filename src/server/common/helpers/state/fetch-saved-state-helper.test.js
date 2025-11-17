@@ -160,7 +160,7 @@ describe('State API helpers', () => {
         )
       })
 
-      it('thrtows error when response JSON is invalid or missing state', async () => {
+      it('throws error when response JSON is invalid or missing state', async () => {
         mockFetch.mockResolvedValue(createSuccessfulResponse(123))
 
         await expect(fetchSavedStateFromApi(key, mockRequest)).rejects.toThrow()
