@@ -215,6 +215,8 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
         return authResult
       }
 
+      this.title = `Select actions for land parcel ${sheetId} ${parcelId}`
+
       // Fetch and prepare actions data
       const { result, groupedActions, addedActions } = await this.fetchAndPrepareActions(
         request,
@@ -339,6 +341,8 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
       const payload = request.payload ?? {}
       const selectedLandParcel = request?.query?.parcelId || prevState.selectedLandParcel
       const [sheetId = '', parcelId = ''] = parseLandParcel(selectedLandParcel)
+
+      this.title = `Select actions for land parcel ${sheetId} ${parcelId}`
 
       // Validate user input
       const errors = this.validateUserInput(payload)
