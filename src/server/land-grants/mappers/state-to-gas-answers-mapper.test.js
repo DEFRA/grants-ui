@@ -1123,11 +1123,7 @@ describe('schema validation', () => {
 
     stateObjectTestCases.forEach((testCase) => {
       const result = stateToLandGrantsGasAnswers(testCase)
-      const { valid, errors } = validateSubmissionAnswers(result, frpsGrantCode)
-
-      if (!valid) {
-        console.error('Schema validation errors:', JSON.stringify(errors, null, 2))
-      }
+      const { valid } = validateSubmissionAnswers(result, frpsGrantCode)
 
       expect(valid).toBe(true)
     })
