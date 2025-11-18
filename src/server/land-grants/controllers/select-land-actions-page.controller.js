@@ -5,7 +5,6 @@ import {
 import LandGrantsQuestionWithAuthCheckController from '~/src/server/land-grants/controllers/auth/land-grants-question-with-auth-check.controller.js'
 import { parseLandParcel, stringifyParcel } from '~/src/server/land-grants/utils/format-parcel.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
-import { formatAreaUnit } from '~/src/server/land-grants/utils/format-area-unit.js'
 
 export default class SelectLandActionsPageController extends LandGrantsQuestionWithAuthCheckController {
   viewName = 'select-actions-for-land-parcel'

@@ -178,7 +178,9 @@ describe('LandActionsCheckPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'land-actions-check',
         expect.objectContaining({
-          errorMessages: [{ href: '#addMoreActions', text: 'Please select if you want to add more actions' }]
+          errorMessages: [
+            { href: '#addMoreActions', text: 'Select if you want to add an action to another land parcel' }
+          ]
         })
       )
       expect(controller.proceed).not.toHaveBeenCalled()
@@ -233,7 +235,9 @@ describe('LandActionsCheckPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'land-actions-check',
         expect.objectContaining({
-          errorMessages: [{ href: '#addMoreActions', text: 'Please select if you want to add more actions' }],
+          errorMessages: [
+            { href: '#addMoreActions', text: 'Select if you want to add an action to another land parcel' }
+          ],
           parcelItems: [],
           additionalYearlyPayments: []
         })
