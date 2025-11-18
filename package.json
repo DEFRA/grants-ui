@@ -3,7 +3,9 @@
   "version": "0.0.0",
   "description": "CDP Frontend Template",
   "sideEffects": [
-    "src/client/javascripts/cookie-consent.js"
+    "src/client/javascripts/cookie-consent.js",
+    "src/server/cookies/cookie-preferences.js",
+    "src/server/cookies/append-return-url.js"
   ],
   "main": ".server/index.js",
   "type": "module",
