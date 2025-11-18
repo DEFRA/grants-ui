@@ -269,7 +269,7 @@ describe('SelectLandParcelPageController', () => {
         'select-land-parcel',
         expect.objectContaining({
           pageTitle: 'Select Land Parcel',
-          errorMessage: 'Please select a land parcel from the list'
+          errorMessage: 'Select a land parcel'
         })
       )
       expect(result).toBe('mock-rendered-view')
@@ -297,7 +297,7 @@ describe('SelectLandParcelPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'select-land-parcel',
         expect.objectContaining({
-          errorMessage: 'Please select a land parcel from the list'
+          errorMessage: 'Select a land parcel'
         })
       )
       expect(result).toBe('mock-rendered-view')
@@ -312,7 +312,7 @@ describe('SelectLandParcelPageController', () => {
       expect(mockH.view).not.toHaveBeenCalledWith(
         'select-land-parcel',
         expect.objectContaining({
-          errorMessage: 'Please select a land parcel from the list'
+          errorMessage: 'Select a land parcel'
         })
       )
       expect(controller.proceed).toHaveBeenCalled()
@@ -339,7 +339,7 @@ describe('SelectLandParcelPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'select-land-parcel',
         expect.objectContaining({
-          errorMessage: 'Please select a land parcel from the list'
+          errorMessage: 'Select a land parcel'
         })
       )
     })
@@ -354,7 +354,7 @@ describe('SelectLandParcelPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'select-land-parcel',
         expect.objectContaining({
-          errorMessage: 'Please select a land parcel from the list',
+          errorMessage: 'Select a land parcel',
           parcels: []
         })
       )
