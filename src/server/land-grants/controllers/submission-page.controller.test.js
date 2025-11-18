@@ -63,14 +63,18 @@ describe('SubmissionPageController', () => {
         frn: 'frn123',
         clientRef: 'ref123'
       }
+      const mockValidationResult = {
+        id: 'validation-123',
+        message: 'success',
+        valid: true
+      }
       const mockGasApplicationData = {
         identifiers: mockIdentifiers,
         state: { key: 'value' },
-        validationId: 'validation-123'
+        validationResult: mockValidationResult
       }
 
       const mockState = { key: 'value' }
-      const validationId = 'validation-123'
       const mockApplicationData = { transformed: 'data' }
       const mockResult = { success: true }
 
@@ -81,7 +85,15 @@ describe('SubmissionPageController', () => {
 
       expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
         mockIdentifiers,
-        { ...mockState, applicationValidationRunId: validationId },
+        expect.objectContaining({
+          ...mockState,
+          rulesCalculations: expect.objectContaining({
+            id: 'validation-123',
+            message: 'success',
+            valid: true,
+            date: expect.any(Date)
+          })
+        }),
         stateToLandGrantsGasAnswers
       )
       expect(submitGrantApplication).toHaveBeenCalledWith(code, mockApplicationData, mockRequest)
@@ -330,10 +342,11 @@ describe('SubmissionPageController', () => {
         identifiers: {
           clientRef: 'ref123',
           crn: 'crn123',
+          frn: undefined,
           sbi: '123456789'
         },
         state: mockContext.state,
-        validationId: 'validation-123'
+        validationResult: mockValidationResult
       })
       expect(controller.handleSuccessfulSubmission).toHaveBeenCalledWith(mockRequest, mockContext, mockH, statusCode)
       expect(result).toBe('proceeded')
@@ -349,7 +362,8 @@ describe('SubmissionPageController', () => {
         referenceNumber: 'REF123'
       }
       const mockH = { redirect: vi.fn(), view: vi.fn() }
-      validateApplication.mockResolvedValue({ id: 'val-123', valid: true })
+      const mockValidationResult = { id: 'val-123', valid: true }
+      validateApplication.mockResolvedValue(mockValidationResult)
       vi.spyOn(controller, 'submitGasApplication').mockResolvedValue({ status: 204 })
       vi.spyOn(controller, 'handleSuccessfulSubmission').mockResolvedValue('proceeded')
 
@@ -360,10 +374,11 @@ describe('SubmissionPageController', () => {
         identifiers: {
           clientRef: 'ref123',
           crn: undefined,
+          frn: undefined,
           sbi: undefined
         },
         state: {},
-        validationId: 'val-123'
+        validationResult: mockValidationResult
       })
     })
 
@@ -382,7 +397,8 @@ describe('SubmissionPageController', () => {
         referenceNumber: 'REF123'
       }
       const mockH = { redirect: vi.fn(), view: vi.fn() }
-      validateApplication.mockResolvedValue({ id: 'val-123', valid: true })
+      const mockValidationResult = { id: 'val-123', valid: true }
+      validateApplication.mockResolvedValue(mockValidationResult)
       vi.spyOn(controller, 'submitGasApplication').mockResolvedValue({ status: 204 })
       vi.spyOn(controller, 'handleSuccessfulSubmission').mockResolvedValue('proceeded')
 
@@ -394,7 +410,7 @@ describe('SubmissionPageController', () => {
           frn: 'FRN999'
         }),
         state: mockContext.state,
-        validationId: 'val-123'
+        validationResult: mockValidationResult
       })
     })
 
@@ -409,7 +425,8 @@ describe('SubmissionPageController', () => {
         referenceNumber: 'REF123'
       }
       const mockH = { redirect: vi.fn(), view: vi.fn() }
-      validateApplication.mockResolvedValue({ id: 'val-123', valid: true })
+      const mockValidationResult = { id: 'val-123', valid: true }
+      validateApplication.mockResolvedValue(mockValidationResult)
       vi.spyOn(controller, 'submitGasApplication').mockResolvedValue({ status: 204 })
       vi.spyOn(controller, 'handleSuccessfulSubmission').mockResolvedValue('proceeded')
 
@@ -421,7 +438,7 @@ describe('SubmissionPageController', () => {
           frn: undefined
         }),
         state: {},
-        validationId: 'val-123'
+        validationResult: mockValidationResult
       })
     })
 
@@ -436,7 +453,8 @@ describe('SubmissionPageController', () => {
         referenceNumber: 'REF-UPPER-123'
       }
       const mockH = { redirect: vi.fn(), view: vi.fn() }
-      validateApplication.mockResolvedValue({ id: 'val-123', valid: true })
+      const mockValidationResult = { id: 'val-123', valid: true }
+      validateApplication.mockResolvedValue(mockValidationResult)
       vi.spyOn(controller, 'submitGasApplication').mockResolvedValue({ status: 204 })
       vi.spyOn(controller, 'handleSuccessfulSubmission').mockResolvedValue('proceeded')
 
@@ -448,7 +466,7 @@ describe('SubmissionPageController', () => {
           clientRef: 'ref-upper-123'
         }),
         state: {},
-        validationId: 'val-123'
+        validationResult: mockValidationResult
       })
     })
 

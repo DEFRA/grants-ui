@@ -130,12 +130,11 @@ describe('stateToLandGrantsGasAnswers', () => {
             }
           }
         }
-      },
-      applicationValidationRunId: '12345678'
+      }
     }
 
     const expected = {
-      applicationValidationRunId: '12345678',
+      rulesCalculations: undefined,
       scheme: 'SFI',
       applicant,
       totalAnnualPaymentPence: 32006,
@@ -294,8 +293,7 @@ describe('stateToLandGrantsGasAnswers', () => {
             }
           }
         }
-      },
-      applicationValidationRunId: '12345678'
+      }
     }
 
     const result = stateToLandGrantsGasAnswers(input)
@@ -326,8 +324,7 @@ describe('stateToLandGrantsGasAnswers', () => {
   it('should include empty parcels array when landParcels object is missing', () => {
     const input = {
       payment,
-      landParcels: {},
-      applicationValidationRunId: '12345678'
+      landParcels: {}
     }
 
     const result = stateToLandGrantsGasAnswers(input)
@@ -347,8 +344,7 @@ describe('stateToLandGrantsGasAnswers', () => {
             unit: 'ha'
           }
         }
-      },
-      applicationValidationRunId: '12345678'
+      }
     }
 
     const result = stateToLandGrantsGasAnswers(input)
@@ -370,8 +366,7 @@ describe('stateToLandGrantsGasAnswers', () => {
             }
           }
         }
-      },
-      applicationValidationRunId: '12345678'
+      }
     }
 
     const result = stateToLandGrantsGasAnswers(input)
@@ -393,8 +388,7 @@ describe('stateToLandGrantsGasAnswers', () => {
             }
           }
         }
-      },
-      applicationValidationRunId: '12345678'
+      }
     }
 
     const result = stateToLandGrantsGasAnswers(input)
@@ -416,8 +410,7 @@ describe('stateToLandGrantsGasAnswers', () => {
             }
           }
         }
-      },
-      applicationValidationRunId: '12345678'
+      }
     }
 
     const result = stateToLandGrantsGasAnswers(input)
@@ -440,8 +433,7 @@ describe('stateToLandGrantsGasAnswers', () => {
             }
           }
         }
-      },
-      applicationValidationRunId: '12345678'
+      }
     }
 
     const result = stateToLandGrantsGasAnswers(input)
@@ -460,8 +452,7 @@ describe('stateToLandGrantsGasAnswers', () => {
             CSAM1: {}
           }
         }
-      },
-      applicationValidationRunId: '12345678'
+      }
     }
 
     const result = stateToLandGrantsGasAnswers(input)
@@ -474,8 +465,7 @@ describe('stateToLandGrantsGasAnswers', () => {
 
   it('should return empty parcels when no action data is provided', () => {
     const input = {
-      payment,
-      applicationValidationRunId: '12345678'
+      payment
     }
 
     const result = stateToLandGrantsGasAnswers(input)
@@ -508,8 +498,7 @@ describe('stateToLandGrantsGasAnswers', () => {
             }
           }
         }
-      },
-      applicationValidationRunId: '12345678'
+      }
     }
 
     const result = stateToLandGrantsGasAnswers(input)
@@ -530,8 +519,7 @@ describe('stateToLandGrantsGasAnswers', () => {
             }
           }
         }
-      },
-      applicationValidationRunId: '12345678'
+      }
     }
 
     const result = stateToLandGrantsGasAnswers(input)
@@ -554,8 +542,7 @@ describe('stateToLandGrantsGasAnswers', () => {
             }
           }
         }
-      },
-      applicationValidationRunId: '12345678'
+      }
     }
 
     const result = stateToLandGrantsGasAnswers(input)
@@ -576,8 +563,7 @@ describe('stateToLandGrantsGasAnswers', () => {
             }
           }
         }
-      },
-      applicationValidationRunId: '12345678'
+      }
     }
 
     const result = stateToLandGrantsGasAnswers(input)
@@ -601,8 +587,7 @@ describe('stateToLandGrantsGasAnswers', () => {
             }
           }
         }
-      },
-      applicationValidationRunId: '12345678'
+      }
     }
 
     const result = stateToLandGrantsGasAnswers(input)
@@ -647,8 +632,7 @@ describe('stateToLandGrantsGasAnswers', () => {
             }
           }
         }
-      },
-      applicationValidationRunId: '12345'
+      }
     }
 
     const result = stateToLandGrantsGasAnswers(input)
@@ -682,8 +666,7 @@ describe('stateToLandGrantsGasAnswers', () => {
             }
           }
         }
-      },
-      applicationValidationRunId: '12345'
+      }
     }
 
     const result = stateToLandGrantsGasAnswers(input)
@@ -718,8 +701,7 @@ describe('stateToLandGrantsGasAnswers', () => {
             }
           }
         }
-      },
-      applicationValidationRunId: '12345'
+      }
     }
 
     const result = stateToLandGrantsGasAnswers(input)
@@ -744,8 +726,7 @@ describe('stateToLandGrantsGasAnswers', () => {
             }
           }
         }
-      },
-      applicationValidationRunId: '12345'
+      }
     }
 
     const result = stateToLandGrantsGasAnswers(input)
@@ -770,8 +751,7 @@ describe('stateToLandGrantsGasAnswers', () => {
             }
           }
         }
-      },
-      applicationValidationRunId: '12345'
+      }
     }
 
     const result = stateToLandGrantsGasAnswers(input)
@@ -794,8 +774,7 @@ describe('stateToLandGrantsGasAnswers', () => {
             }
           }
         }
-      },
-      applicationValidationRunId: '12345'
+      }
     }
 
     const result = stateToLandGrantsGasAnswers(input)
@@ -828,8 +807,7 @@ describe('stateToLandGrantsGasAnswers', () => {
             }
           }
         }
-      },
-      applicationValidationRunId: '12345'
+      }
     }
 
     const result = stateToLandGrantsGasAnswers(input)
@@ -861,8 +839,7 @@ describe('stateToLandGrantsGasAnswers', () => {
             }
           }
         }
-      },
-      applicationValidationRunId: '12345'
+      }
     }
 
     const result = stateToLandGrantsGasAnswers(input)
@@ -894,8 +871,7 @@ describe('stateToLandGrantsGasAnswers', () => {
             }
           }
         }
-      },
-      applicationValidationRunId: '12345'
+      }
     }
 
     const result = stateToLandGrantsGasAnswers(input)
@@ -965,8 +941,7 @@ describe('stateToLandGrantsGasAnswers', () => {
             }
           }
         }
-      },
-      applicationValidationRunId: '12345'
+      }
     }
 
     const result = stateToLandGrantsGasAnswers(input)
@@ -1063,7 +1038,6 @@ describe('stateToLandGrantsGasAnswers', () => {
           }
         }
       },
-      applicationValidationRunId: '396',
       applicant
     }
 
@@ -1118,7 +1092,12 @@ describe('schema validation', () => {
             }
           }
         },
-        applicationValidationRunId: '355'
+        rulesCalculations: {
+          id: '355',
+          message: 'success',
+          valid: true,
+          date: new Date().toISOString()
+        }
       },
       {
         applicant,
@@ -1133,13 +1112,22 @@ describe('schema validation', () => {
             }
           }
         },
-        applicationValidationRunId: '355'
+        rulesCalculations: {
+          id: '355',
+          message: 'success',
+          valid: true,
+          date: new Date().toISOString()
+        }
       }
     ]
 
     stateObjectTestCases.forEach((testCase) => {
       const result = stateToLandGrantsGasAnswers(testCase)
-      const { valid } = validateSubmissionAnswers(result, frpsGrantCode)
+      const { valid, errors } = validateSubmissionAnswers(result, frpsGrantCode)
+
+      if (!valid) {
+        console.error('Schema validation errors:', JSON.stringify(errors, null, 2))
+      }
 
       expect(valid).toBe(true)
     })
