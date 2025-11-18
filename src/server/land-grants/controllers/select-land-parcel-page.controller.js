@@ -61,7 +61,8 @@ export default class SelectLandParcelPageController extends LandGrantsQuestionWi
           ...super.getViewModel(request, context),
           ...state,
           parcels,
-          errorMessage: 'Select a land parcel'
+          errorMessage: 'Select a land parcel',
+          errors: ['Select a land parcel']
         })
       }
 
