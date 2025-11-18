@@ -171,7 +171,8 @@ export default class LandActionsCheckPageController extends QuestionPageControll
       parcelItems,
       additionalYearlyPayments,
       totalYearlyPayment: this.getPrice(annualTotalPence || 0),
-      errorMessages
+      errorMessages,
+      errors: [errorMessages]
     })
   }
 
