@@ -1,17 +1,18 @@
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { fetchParcels } from '../services/land-grants.service.js'
+import { formatAreaUnit } from '~/src/server/land-grants/utils/format-area-unit.js'
 import LandGrantsQuestionWithAuthCheckController from '~/src/server/land-grants/controllers/auth/land-grants-question-with-auth-check.controller.js'
 
 export default class SelectLandParcelPageController extends LandGrantsQuestionWithAuthCheckController {
   viewName = 'select-land-parcel'
 
   formatParcelForView = (parcel, actionsForParcel) => {
-    const hasArea = parcel.area.value && parcel.area.unit
+    const hasArea = parcel.area.value && formatAreaUnit(parcel.area.unit)
     const hasActions = actionsForParcel > 0
 
     let hint = ''
     if (hasArea) {
-      hint = `Total size${hasActions ? '' : ':'} ${parcel.area.value} ${parcel.area.unit}`
+      hint = `Total size${hasActions ? '' : ':'} ${parcel.area.value} ${formatAreaUnit(parcel.area.unit)}`
     }
 
     if (hasActions) {
