@@ -91,7 +91,7 @@ describe('SubmissionPageController', () => {
             id: 'validation-123',
             message: 'success',
             valid: true,
-            date: expect.any(Date)
+            date: expect.any(String)
           })
         }),
         stateToLandGrantsGasAnswers

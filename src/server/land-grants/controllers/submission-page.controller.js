@@ -32,7 +32,7 @@ export default class SubmissionPageController extends SummaryPageController {
       id,
       message,
       valid,
-      date: new Date()
+      date: new Date().toISOString()
     }
     const applicationData = transformStateObjectToGasApplication(
       identifiers,
