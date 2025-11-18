@@ -2,14 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "additionalProperties": false,
-  "required": [
-    "scheme",
-    "applicationValidationRunId",
-    "totalAnnualPaymentPence",
-    "application",
-    "payments",
-    "applicant"
-  ],
+  "required": ["scheme", "totalAnnualPaymentPence", "application", "payments", "applicant"],
   "properties": {
     "scheme": {
       "type": "string",
@@ -20,9 +13,27 @@
       "minimum": 0,
       "title": "Total annual payment in pence"
     },
-    "applicationValidationRunId": {
-      "type": "string",
-      "title": "Application validation run ID"
+    "rulesCalculations": {
+      "type": "object",
+      "title": "Rules calculations with validation details",
+      "properties": {
+        "id": {
+          "type": "string",
+          "title": "Validation run ID"
+        },
+        "message": {
+          "type": "string",
+          "title": "Validation response message"
+        },
+        "valid": {
+          "type": "boolean",
+          "title": "Validation result"
+        },
+        "date": {
+          "type": "string",
+          "title": "Validation date"
+        }
+      }
     },
     "application": {
       "type": "object",

@@ -22,14 +22,24 @@ export default class SubmissionPageController extends SummaryPageController {
    * @param {object} data
    * @param {object} data.identifiers - User identifiers
    * @param {object} data.state - Form application state
-   * @param {string} data.validationId - Land grants validation ID
+   * @param {ValidateApplicationResponse} data.validationResult - Validation result response
    * @returns {Promise<object>} - The result of the grant application submission
    */
   async submitGasApplication(request, data) {
-    const { identifiers, state, validationId } = data
+    const { identifiers, state, validationResult } = data
+    const { id, message, valid } = validationResult
+    const rulesCalculations = {
+      id,
+      message,
+      valid,
+      date: new Date().toISOString()
+    }
     const applicationData = transformStateObjectToGasApplication(
       identifiers,
-      { ...state, applicationValidationRunId: validationId },
+      {
+        ...state,
+        rulesCalculations
+      },
       stateToLandGrantsGasAnswers
     )
 
@@ -148,15 +158,15 @@ export default class SubmissionPageController extends SummaryPageController {
 
       try {
         const validationResult = await validateApplication({ applicationId: referenceNumber, crn, sbi, state })
-        const { id: validationId, valid } = validationResult
+        const { valid } = validationResult
         if (!valid) {
-          return this.handleSubmissionError(h, request, context, validationId)
+          return this.handleSubmissionError(h, request, context, validationResult.id)
         }
 
         const result = await this.submitGasApplication(request, {
           identifiers: { sbi, crn, frn, clientRef: referenceNumber?.toLowerCase() },
           state,
-          validationId
+          validationResult
         })
 
         log(
@@ -189,4 +199,5 @@ export default class SubmissionPageController extends SummaryPageController {
 /**
  * @import { FormContext, AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
  * @import { ResponseObject, type ResponseToolkit } from '@hapi/hapi'
+ * @import { ValidateApplicationResponse } from '../types/land-grants.client.d.js'
  */
