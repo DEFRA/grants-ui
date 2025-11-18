@@ -338,7 +338,8 @@ describe('RemoveActionPageController', () => {
         pageTitle: 'Remove action',
         parcelId: 'SD6743-8083',
         ...pageHeadingAndHint,
-        errorMessage: 'Test error message'
+        errorMessage: 'Test error message',
+        errors: ['Test error message']
       })
       expect(result).toBe('rendered view')
     })
@@ -525,7 +526,8 @@ describe('RemoveActionPageController', () => {
         pageHeading:
           'Do you want to remove Assess moorland and produce a written record: CMOR1 from land parcel SD6743-8083?',
         hint: 'Select yes to remove this action from this land parcel. You can add a different action to the same parcel.',
-        errorMessage: 'Select yes to remove this action from this land parcel'
+        errorMessage: 'Select yes to remove this action from this land parcel',
+        errors: ['Select yes to remove this action from this land parcel']
       })
       expect(controller.setState).not.toHaveBeenCalled()
       expect(result).toBe('rendered view')
@@ -543,7 +545,8 @@ describe('RemoveActionPageController', () => {
         parcelId: 'SD6743-8083',
         hint: 'If you remove this land parcel you will also remove all the actions added to this parcel.',
         pageHeading: 'Do you want to remove land parcel SD6743-8083 from this application?',
-        errorMessage: 'Select yes to remove this land parcel from this application'
+        errorMessage: 'Select yes to remove this land parcel from this application',
+        errors: ['Select yes to remove this land parcel from this application']
       })
       expect(controller.setState).not.toHaveBeenCalled()
       expect(result).toBe('rendered view')

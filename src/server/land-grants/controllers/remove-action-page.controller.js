@@ -110,7 +110,8 @@ export default class RemoveActionPageController extends LandGrantsQuestionWithAu
       ...this.getViewModel(request, context),
       parcelId,
       ...pageHeadingAndHint,
-      errorMessage
+      errorMessage,
+      errors: [errorMessage]
     })
   }
 
