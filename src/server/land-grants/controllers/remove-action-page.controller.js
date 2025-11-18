@@ -156,7 +156,7 @@ export default class RemoveActionPageController extends LandGrantsQuestionWithAu
    * Build page heading and hint for the removal confirmation page.
    *
    * @param {{description?: string}|null|undefined} actionInfo - Optional action info object; when present its `description` is used in the heading/hint.
-   * @param {string} [parcelId=''] - Parcel identifier to include in the heading.
+   * @param {string} parcelId ='' - Parcel identifier to include in the heading.
    * @returns {{pageHeading: string, hint: string}} Object with `pageHeading` and `hint` strings.
    */
 
@@ -167,8 +167,8 @@ export default class RemoveActionPageController extends LandGrantsQuestionWithAu
 
     return {
       pageHeading: actionInfo?.description
-        ? `Do you want to remove ${actionInfo.description} from land parcel ${parcelId}?`
-        : `Do you want to remove land parcel ${parcelId} from this application?`,
+        ? `Do you want to remove ${actionInfo.description} from land parcel ${parcelId.replaceAll('-', ' ')}?`
+        : `Do you want to remove land parcel ${parcelId.replaceAll('-', ' ')} from this application?`,
       hint
     }
   }
