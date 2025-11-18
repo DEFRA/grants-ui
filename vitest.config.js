@@ -9,6 +9,9 @@ export default {
     setupFiles: ['./.vitest/setup-file.js'],
     include: ['**/src/**/*.test.js'],
     exclude: ['**/node_modules/**', '**/.stryker-tmp/**'],
+    env: {
+      GAS_API_AUTH_TOKEN: '00000000-0000-0000-0000-000000000000'
+    },
     reporters: ['default', CoverageAnalyserReporter()],
     coverage: {
       enabled: true,
