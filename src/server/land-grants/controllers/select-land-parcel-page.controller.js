@@ -37,6 +37,7 @@ export default class SelectLandParcelPageController extends LandGrantsQuestionWi
       const { state } = context
       const payload = request.payload ?? {}
       const { selectedLandParcel, action } = payload
+      const existingLandParcels = Object.keys(state.landParcels || {}).length > 0
 
       if (action === 'validate' && !selectedLandParcel) {
         let parcels = []
@@ -61,6 +62,7 @@ export default class SelectLandParcelPageController extends LandGrantsQuestionWi
           ...super.getViewModel(request, context),
           ...state,
           parcels,
+          existingLandParcels,
           errorMessage: 'Select a land parcel',
           errors: ['Select a land parcel']
         })
