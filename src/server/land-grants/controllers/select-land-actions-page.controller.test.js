@@ -164,7 +164,7 @@ describe('SelectLandActionsPageController', () => {
         text: 'Assess moorland and produce a written record: CMOR1',
         checked: false,
         hint: {
-          html: 'Payment rate per year: <strong>£16.00 per ha</strong> and <strong>£272</strong> per agreement'
+          html: 'Payment rate per year: <strong>£16.00 per hectare</strong> and <strong>£272</strong> per agreement'
         }
       })
     })
@@ -180,7 +180,7 @@ describe('SelectLandActionsPageController', () => {
         text: 'Moderate livestock grazing on moorland: UPL1',
         checked: false,
         hint: {
-          html: 'Payment rate per year: <strong>£33.00 per ha</strong>'
+          html: 'Payment rate per year: <strong>£33.00 per hectare</strong>'
         }
       })
     })

@@ -5,6 +5,7 @@ import {
 import LandGrantsQuestionWithAuthCheckController from '~/src/server/land-grants/controllers/auth/land-grants-question-with-auth-check.controller.js'
 import { parseLandParcel, stringifyParcel } from '~/src/server/land-grants/utils/format-parcel.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { formatAreaUnit } from '~/src/server/land-grants/utils/format-area-unit.js'
 
 export default class SelectLandActionsPageController extends LandGrantsQuestionWithAuthCheckController {
   viewName = 'select-actions-for-land-parcel'
@@ -22,7 +23,7 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
       checked: existingActions.includes(action.code),
       hint: {
         html:
-          `Payment rate per year: <strong>£${action.ratePerUnitGbp?.toFixed(2)} per ha</strong>` +
+          `Payment rate per year: <strong>£${action.ratePerUnitGbp?.toFixed(2)} per hectare</strong>` +
           (action.ratePerAgreementPerYearGbp
             ? ` and <strong>£${action.ratePerAgreementPerYearGbp}</strong> per agreement`
             : '')

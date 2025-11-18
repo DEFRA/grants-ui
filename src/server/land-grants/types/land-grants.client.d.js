@@ -22,6 +22,7 @@
  * @typedef {object} Size
  * @property {number} value
  * @property {string} unit - The unit of measurement (e.g., "ha")
+ * @property {string} unitFullName - The full name for unit of measurement (e.g., "hectares")
  */
 
 /**
