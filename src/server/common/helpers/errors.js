@@ -374,7 +374,8 @@ function handle404WithContext(request, response) {
 }
 
 function renderErrorView(h, statusCode) {
-  let errorView = 'errors/500'
+  // SonarQube does not like this being set as the default for the switch, it's apparently a critical issue.
+  let errorView
 
   switch (statusCode) {
     case 401:
@@ -386,6 +387,8 @@ function renderErrorView(h, statusCode) {
     case 400:
       errorView = 'errors/400'
       break
+    default:
+      errorView = 'errors/500'
   }
 
   return h.view(errorView, {}).code(statusCode)
