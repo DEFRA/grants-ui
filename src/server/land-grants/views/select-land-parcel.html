@@ -12,11 +12,11 @@
 <div class="govuk-body">
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
-      {% if errorMessage %}
+      {% if errors %}
         {{ govukErrorSummary({
           titleText: "There is a problem",
           errorList: [{
-            text: errorMessage,
+            text: errors,
             href: "#selectedLandParcel"
           }]
         }) }}
@@ -37,7 +37,7 @@
             },
             items: parcels,
             value: parcelId,
-            errorMessage: errorMessage and { text: errorMessage }
+            errorMessage: errors and { text: errors }
           })
         }}
         {% if parcels.length > 0 %}
@@ -57,13 +57,13 @@
         {% endif %}
       </form>
 
-      {% if existingLandParcels and ((not errors) or (errors.length == 0)) %}
+      {% if existingLandParcels %}
           <p class="govuk-body govuk-!-margin-bottom-5">
           <a href="check-selected-land-actions" class="govuk-link govuk-link--no-visited-state">Back to review selected actions</a>
         </p>
       {% endif %}
 
-      {{ defraSupportDetails() }}
+      {{ defraSupportDetails({typeOfSupport: 'question'}) }}
     </div>
   </div>
 </div>

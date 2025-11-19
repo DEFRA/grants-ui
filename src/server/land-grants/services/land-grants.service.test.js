@@ -168,13 +168,14 @@ describe('land-grants service', () => {
         parcel: {
           parcelId: 'PARCEL456',
           sheetId: 'SHEET123',
-          size: { value: 50.5, unit: 'ha' }
+          size: { value: 50.5, unit: 'ha', unitFullName: 'hectares' }
         },
         actions: [
           {
             name: 'Assess moorland',
             totalAvailableArea: {
               unit: 'ha',
+              unitFullName: 'hectares',
               value: 10.5
             },
             actions: [
@@ -189,6 +190,7 @@ describe('land-grants service', () => {
             name: 'Livestock grazing on moorland',
             totalAvailableArea: {
               unit: 'ha',
+              unitFullName: 'hectares',
               value: 20.75
             },
             actions: [
@@ -247,13 +249,14 @@ describe('land-grants service', () => {
         parcel: {
           parcelId: 'PARCEL456',
           sheetId: 'SHEET123',
-          size: { value: 30.0, unit: 'ha' }
+          size: { value: 30.0, unit: 'ha', unitFullName: 'hectares' }
         },
         actions: [
           {
             name: 'Assess moorland',
             totalAvailableArea: {
               unit: 'ha',
+              unitFullName: 'hectares',
               value: 10.5
             },
             actions: [
@@ -268,6 +271,7 @@ describe('land-grants service', () => {
             name: '',
             totalAvailableArea: {
               unit: 'ha',
+              unitFullName: 'hectares',
               value: 5.0
             },
             actions: [
@@ -291,7 +295,7 @@ describe('land-grants service', () => {
         parcel: {
           sheetId: '',
           parcelId: '',
-          size: { unit: '', value: 0 }
+          size: { unit: '', value: 0, unitFullName: '' }
         },
         actions: []
       })
@@ -319,7 +323,7 @@ describe('land-grants service', () => {
         parcel: {
           sheetId: 'SHEET123',
           parcelId: 'PARCEL456',
-          size: { unit: '', value: 0 }
+          size: { unit: '', value: 0, unitFullName: '' }
         },
         actions: []
       })
@@ -348,7 +352,7 @@ describe('land-grants service', () => {
         parcel: {
           sheetId: 'SHEET123',
           parcelId: 'PARCEL456',
-          size: { value: 10.0, unit: 'ha' }
+          size: { value: 10.0, unit: 'ha', unitFullName: 'hectares' }
         },
         actions: []
       })
@@ -393,13 +397,14 @@ describe('land-grants service', () => {
         parcel: {
           sheetId: 'SHEET123',
           parcelId: 'PARCEL456',
-          size: { value: 40.0, unit: 'ha' }
+          size: { value: 40.0, unit: 'ha', unitFullName: 'hectares' }
         },
         actions: [
           {
             name: 'Livestock grazing on moorland',
             totalAvailableArea: {
               unit: 'ha',
+              unitFullName: 'hectares',
               value: 25.5
             },
             actions: [

@@ -135,7 +135,7 @@ export default class LandActionsCheckPageController extends QuestionPageControll
     if (action === 'validate' && !addMoreActions) {
       return {
         href: '#addMoreActions',
-        text: 'Please select if you want to add more actions'
+        text: 'Select if you want to add an action to another land parcel'
       }
     }
 
@@ -171,7 +171,7 @@ export default class LandActionsCheckPageController extends QuestionPageControll
       parcelItems,
       additionalYearlyPayments,
       totalYearlyPayment: this.getPrice(annualTotalPence || 0),
-      errorMessages
+      errors: errorMessages
     })
   }
 

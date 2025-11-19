@@ -56,7 +56,7 @@
 {% endblock %}
 
 {% block pageTitle %}
-  {{ pageTitle }} | {{ serviceName }}
+  {{ "Error: " if errors | length }}{{ pageTitle }} | {{ serviceName }}
 {% endblock %}
 
 {% block beforeContent %}
