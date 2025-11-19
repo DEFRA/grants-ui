@@ -1,0 +1,19 @@
+{% extends 'errors/template.njk' %}
+
+{% block errorContent %}
+<h1 class="govuk-heading-l">You are not able to complete this grant application</h1>
+
+<p class="govuk-body">This grant application is currently part of a private beta and is only available to a limited number of participants.</p>
+
+<div class="govuk-inset-text">
+  <p>If you believe you should have access to this grant application, please contact the Rural Payments Agency.</p>
+</div>
+
+<h2 class="govuk-heading-m">What you can do</h2>
+
+<ul class="govuk-list govuk-list--bullet">
+  <li>Check if there are other grants you may be eligible for</li>
+  <li>Contact the RPA if you think there has been an error</li>
+  <li>Sign out and try accessing with a different account if you have multiple businesses registered</li>
+</ul>
+{% endblock %}

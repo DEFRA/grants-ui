@@ -9,10 +9,9 @@ import Scooter from '@hapi/scooter'
 
 import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { config } from '~/src/config/config.js'
 import { context } from '~/src/config/nunjucks/context/context.js'
-import { grantsUiPaths, nunjucksConfig } from '~/src/config/nunjucks/nunjucks.js'
+import { viewPaths, nunjucksConfig } from '~/src/config/nunjucks/nunjucks.js'
 import auth from '~/src/plugins/auth.js'
 import sso from '~/src/plugins/sso.js'
 import { contentSecurityPolicy } from '~/src/plugins/content-security-policy.js'
@@ -49,29 +48,6 @@ import whitelist from '~/src/server/common/helpers/whitelist/whitelist.js'
 import ConfirmMethaneDetailsController from '~/src/server/non-land-grants/methane/controllers/confirm-methane-details.controller.js'
 
 const SESSION_CACHE_NAME = 'session.cache.name'
-
-const getViewPaths = () => {
-  const serverDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)))
-  return [
-    path.join(serverDir, 'views'),
-    path.join(serverDir, 'auth/views'),
-    path.join(serverDir, 'land-grants/views'),
-    path.join(serverDir, 'non-land-grants/pigs-might-fly/views'),
-    path.join(serverDir, 'non-land-grants/methane/views'),
-    path.join(serverDir, 'about'),
-    path.join(serverDir, 'home'),
-    path.join(serverDir, 'home/views'),
-    path.join(serverDir, 'error'),
-    path.join(serverDir, 'confirmation/views'),
-    path.join(serverDir, 'declaration/views'),
-    path.join(serverDir, 'score-results/views'),
-    path.join(serverDir, 'section-end/views'),
-    path.join(serverDir, 'tasklist/views'),
-    path.join(serverDir, 'check-responses/views'),
-    path.join(serverDir, 'common/components'),
-    ...grantsUiPaths
-  ]
-}
 
 const createHapiServer = () => {
   return hapi.server({
@@ -137,7 +113,7 @@ const registerFormsPlugin = async (server, prefix = '') => {
       },
       nunjucks: {
         baseLayoutPath: 'layouts/dxt-form.njk',
-        paths: getViewPaths()
+        paths: viewPaths
       },
       viewContext: context,
       controllers: {

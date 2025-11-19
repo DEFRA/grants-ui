@@ -223,7 +223,7 @@ function renderUnauthorisedView(request, h) {
       referer: 'none',
       queryParams: {},
       authError: 'Attempting to render unauthorised view',
-      viewAttempt: 'unauthorised.njk',
+      viewAttempt: 'errors/401.njk',
       serverWorkingDir: process.cwd(),
       timestamp: new Date().toISOString()
     },
@@ -259,7 +259,7 @@ function renderUnauthorisedView(request, h) {
         error: `Failed to render unauthorised view: ${viewError.message}`,
         step: 'view_render_error',
         errorStack: viewError.stack,
-        viewError: 'unauthorised.njk',
+        viewError: 'errors/401.njk',
         serverWorkingDir: process.cwd()
       },
       request

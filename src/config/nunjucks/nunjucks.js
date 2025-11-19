@@ -1,4 +1,3 @@
-import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import nunjucks from 'nunjucks'
 import hapiVision from '@hapi/vision'
@@ -8,13 +7,31 @@ import { context } from './context/context.js'
 import * as filters from './filters/filters.js'
 import * as globals from './globals.js'
 
-const dirname = path.dirname(fileURLToPath(import.meta.url))
-export const grantsUiPaths = [
-  path.resolve(dirname, '../../server/common/templates'),
-  path.resolve(dirname, '../../server/common/components'),
-  path.resolve(dirname, '../../server/land-grants/components')
-]
-const nunjucksEnvironment = nunjucks.configure(['node_modules/govuk-frontend/dist/', ...grantsUiPaths], {
+export const viewPaths = (() => {
+  const serverDir = path.resolve(path.join(process.cwd(), 'src/server'))
+  return [
+    path.join(serverDir, 'views'),
+    path.join(serverDir, 'auth/views'),
+    path.join(serverDir, 'land-grants/views'),
+    path.join(serverDir, 'land-grants/components'),
+    path.join(serverDir, 'non-land-grants/pigs-might-fly/views'),
+    path.join(serverDir, 'non-land-grants/methane/views'),
+    path.join(serverDir, 'about'),
+    path.join(serverDir, 'home'),
+    path.join(serverDir, 'home/views'),
+    path.join(serverDir, 'error'),
+    path.join(serverDir, 'confirmation/views'),
+    path.join(serverDir, 'declaration/views'),
+    path.join(serverDir, 'score-results/views'),
+    path.join(serverDir, 'section-end/views'),
+    path.join(serverDir, 'tasklist/views'),
+    path.join(serverDir, 'check-responses/views'),
+    path.join(serverDir, 'common/components'),
+    path.join(serverDir, 'common/templates')
+  ]
+})()
+
+const nunjucksEnvironment = nunjucks.configure(['node_modules/govuk-frontend/dist/', ...viewPaths], {
   autoescape: true,
   throwOnUndefined: false,
   trimBlocks: true,
@@ -46,7 +63,7 @@ export const nunjucksConfig = {
       environment: nunjucksEnvironment
     },
     relativeTo: path.resolve(process.cwd()),
-    path: ['src/server/views', 'src/server'],
+    path: viewPaths,
     isCached: config.get('isProduction'),
     context
   }
