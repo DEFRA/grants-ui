@@ -5,15 +5,17 @@
 {% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
 {% from "support-details/macro.njk" import defraSupportDetails %}
 
+{% set pageTitle = pageHeading %}
+
 {% block content %}
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds-from-desktop">
-      {% if errorMessage %}
+      {% if errors %}
           {{ govukErrorSummary({
           titleText: "There is a problem",
           errorList: [
             {
-              text: errorMessage,
+              text: errors,
               href: '#remove'
             }
           ]
@@ -46,7 +48,7 @@
                 text: "No"
               }
             ],
-            errorMessage: errorMessage and { text: errorMessage }
+            errorMessage: errors and { text: errors }
           })
         }}
 
@@ -57,7 +59,7 @@
         }}
       </form>
 
-      {{ defraSupportDetails() }}
+      {{ defraSupportDetails({typeOfSupport: 'question'}) }}
     </div>
   </div>
 {% endblock %}

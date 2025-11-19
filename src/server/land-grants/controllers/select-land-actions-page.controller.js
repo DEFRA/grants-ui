@@ -22,7 +22,7 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
       checked: existingActions.includes(action.code),
       hint: {
         html:
-          `Payment rate per year: <strong>£${action.ratePerUnitGbp?.toFixed(2)} per ha</strong>` +
+          `Payment rate per year: <strong>£${action.ratePerUnitGbp?.toFixed(2)} per hectare</strong>` +
           (action.ratePerAgreementPerYearGbp
             ? ` and <strong>£${action.ratePerAgreementPerYearGbp}</strong> per agreement`
             : '')
@@ -136,13 +136,22 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
    * Render error view
    */
   renderErrorView(h, request, context, options) {
-    const { errors, selectedLandParcel, actions = [], addedActions = [], additionalState = {} } = options
+    const {
+      errors,
+      selectedLandParcel,
+      actions = [],
+      addedActions = [],
+      additionalState,
+      existingLandParcels = {}
+    } = options
     const [sheetId = '', parcelId = ''] = parseLandParcel(selectedLandParcel)
     return h.view(this.viewName, {
       ...this.getViewModelWithActions(request, context, actions, addedActions),
       ...additionalState,
       parcelName: `${sheetId} ${parcelId}`,
-      errors
+      errors,
+      existingLandParcels,
+      pageTitle: `Select actions for land parcel ${sheetId} ${parcelId}`
     })
   }
 
@@ -195,7 +204,8 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
       ...state,
       parcelName: `${sheetId} ${parcelId}`,
       existingLandParcels: Object.keys(state.landParcels || {}).length > 0,
-      errors: []
+      errors: [],
+      pageTitle: `Select actions for land parcel ${sheetId} ${parcelId}`
     })
   }
 
@@ -254,9 +264,11 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
    * @param {string} options.sheetId - Sheet ID
    * @param {string} options.parcelId - Parcel ID
    * @param {object} options.prevState - Previous state
+   * @param {boolean} options.existingLandParcels - Whether there are existing land parcels in the draft application
    */
   async handleValidationErrors(options) {
-    const { h, request, context, errors, selectedLandParcel, sheetId, parcelId, prevState } = options
+    const { h, request, context, errors, selectedLandParcel, sheetId, parcelId, prevState, existingLandParcels } =
+      options
     const result = await this.fetchActions(request, sheetId, parcelId)
     const addedActions = this.getAddedActionsForStateParcel(prevState, selectedLandParcel)
     return this.renderErrorView(h, request, context, {
@@ -264,7 +276,8 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
       selectedLandParcel,
       actions: result?.actions || [],
       addedActions,
-      additionalState: prevState
+      additionalState: prevState,
+      existingLandParcels
     })
   }
 
@@ -340,6 +353,8 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
       const selectedLandParcel = request?.query?.parcelId || prevState.selectedLandParcel
       const [sheetId = '', parcelId = ''] = parseLandParcel(selectedLandParcel)
 
+      const existingLandParcels = Object.keys(context.state.landParcels || {}).length > 0
+
       // Validate user input
       const errors = this.validateUserInput(payload)
       if (errors.length > 0) {
@@ -351,7 +366,8 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
           selectedLandParcel,
           sheetId,
           parcelId,
-          prevState
+          prevState,
+          existingLandParcels
         })
       }
 

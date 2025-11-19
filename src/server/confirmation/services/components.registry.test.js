@@ -121,7 +121,7 @@ describe('ComponentsRegistry', () => {
       expect(defraSupportDetails).toContain('govuk-details')
       expect(defraSupportDetails).toContain('If you have a question')
       expect(defraSupportDetails).toContain('03000 200 301')
-      expect(defraSupportDetails).toContain('ruralpayments@defra.gov.uk')
+      expect(defraSupportDetails).toContain('farmpayments@rpa.gov.uk')
     })
 
     test('should replace DEFRASUPPORTDETAILS placeholder', () => {
