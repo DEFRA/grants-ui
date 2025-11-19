@@ -481,7 +481,7 @@ function handleOrganisationRedirect(request, h) {
 }
 
 function handleJourneyUnauthorised(_request, h) {
-  return h.view('journey-unauthorised')
+  return h.view('errors/401')
 }
 
 /**

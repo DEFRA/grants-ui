@@ -12,22 +12,20 @@ export const viewPaths = (() => {
   return [
     path.join(serverDir, 'views'),
     path.join(serverDir, 'auth/views'),
+    path.join(serverDir, 'check-responses/views'),
+    path.join(serverDir, 'common/components'),
+    path.join(serverDir, 'common/templates'),
+    path.join(serverDir, 'confirmation/views'),
+    path.join(serverDir, 'cookies/views'),
+    path.join(serverDir, 'declaration/views'),
+    path.join(serverDir, 'home/views'),
     path.join(serverDir, 'land-grants/views'),
     path.join(serverDir, 'land-grants/components'),
     path.join(serverDir, 'non-land-grants/pigs-might-fly/views'),
     path.join(serverDir, 'non-land-grants/methane/views'),
-    path.join(serverDir, 'about'),
-    path.join(serverDir, 'home'),
-    path.join(serverDir, 'home/views'),
-    path.join(serverDir, 'error'),
-    path.join(serverDir, 'confirmation/views'),
-    path.join(serverDir, 'declaration/views'),
     path.join(serverDir, 'score-results/views'),
     path.join(serverDir, 'section-end/views'),
-    path.join(serverDir, 'tasklist/views'),
-    path.join(serverDir, 'check-responses/views'),
-    path.join(serverDir, 'common/components'),
-    path.join(serverDir, 'common/templates')
+    path.join(serverDir, 'tasklist/views')
   ]
 })()
 

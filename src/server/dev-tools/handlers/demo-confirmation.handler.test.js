@@ -73,7 +73,7 @@ describe('demo-confirmation.handler', () => {
         form: mockForm,
         slug: 'test-form'
       })
-      expect(mockH.view).toHaveBeenCalledWith('confirmation/views/config-confirmation-page', { test: 'viewModel' })
+      expect(mockH.view).toHaveBeenCalledWith('config-confirmation-page', { test: 'viewModel' })
     })
 
     test('should return form not found response when form does not exist', async () => {
