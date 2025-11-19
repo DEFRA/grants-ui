@@ -469,16 +469,6 @@ describe('SelectLandActionsPageController', () => {
       })
     })
 
-    test('should parse valid land parcel and return correct page title', async () => {
-      mockRequest.query.parcelId = 'sheet2-parcel2'
-      parseLandParcel.mockReturnValue(['sheet2', 'parcel2'])
-
-      const handler = controller.makeGetRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
-
-      expect(controller.title).toEqual('Select actions for land parcel sheet2 parcel2')
-    })
-
     test('should use state parcel when query not present', async () => {
       mockContext.state.selectedLandParcel = 'sheet1-parcel1'
 
@@ -489,15 +479,6 @@ describe('SelectLandActionsPageController', () => {
         parcelId: 'parcel1',
         sheetId: 'sheet1'
       })
-    })
-
-    test('should use state parcel when query not present and set page title', async () => {
-      mockContext.state.selectedLandParcel = 'sheet1-parcel1'
-
-      const handler = controller.makeGetRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
-
-      expect(controller.title).toEqual('Select actions for land parcel sheet1 parcel1')
     })
 
     test('should render view with correct data', async () => {
@@ -608,26 +589,6 @@ describe('SelectLandActionsPageController', () => {
     beforeEach(() => {
       mockContext.state.selectedLandParcel = 'sheet1-parcel1'
       mockRequest.query = { parcelId: 'sheet1-parcel1' }
-    })
-
-    describe('.title', () => {
-      test('should return correct title is validations pass', async () => {
-        mockRequest.payload = { landAction_1: 'CMOR1' }
-
-        const handler = controller.makePostRouteHandler()
-        await handler(mockRequest, mockContext, mockH)
-
-        expect(controller.title).toEqual('Select actions for land parcel sheet1 parcel1')
-      })
-
-      test('should return correct title is validations fail', async () => {
-        mockRequest.payload = { landAction_1: '' }
-
-        const handler = controller.makePostRouteHandler()
-        await handler(mockRequest, mockContext, mockH)
-
-        expect(controller.title).toEqual('Select actions for land parcel sheet1 parcel1')
-      })
     })
 
     test('should handle null payload', async () => {

@@ -150,7 +150,8 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
       ...additionalState,
       parcelName: `${sheetId} ${parcelId}`,
       errors,
-      existingLandParcels
+      existingLandParcels,
+      pageTitle: `Select actions for land parcel ${sheetId} ${parcelId}`
     })
   }
 
@@ -203,7 +204,8 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
       ...state,
       parcelName: `${sheetId} ${parcelId}`,
       existingLandParcels: Object.keys(state.landParcels || {}).length > 0,
-      errors: []
+      errors: [],
+      pageTitle: `Select actions for land parcel ${sheetId} ${parcelId}`
     })
   }
 
@@ -222,8 +224,6 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
       if (authResult) {
         return authResult
       }
-
-      this.title = `Select actions for land parcel ${sheetId} ${parcelId}`
 
       // Fetch and prepare actions data
       const { result, groupedActions, addedActions } = await this.fetchAndPrepareActions(
@@ -352,8 +352,6 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
       const payload = request.payload ?? {}
       const selectedLandParcel = request?.query?.parcelId || prevState.selectedLandParcel
       const [sheetId = '', parcelId = ''] = parseLandParcel(selectedLandParcel)
-
-      this.title = `Select actions for land parcel ${sheetId} ${parcelId}`
 
       const existingLandParcels = Object.keys(context.state.landParcels || {}).length > 0
 
