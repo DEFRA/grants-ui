@@ -213,7 +213,7 @@ function createPaymentAgreementActions(agreementCodes, paymentData) {
  * @returns {Application}
  */
 export function stateToLandGrantsGasAnswers(state) {
-  const { landParcels = {}, payment, applicant, applicationValidationRunId } = state
+  const { landParcels = {}, payment, applicant, rulesCalculations } = state
 
   const applicationParcels = []
   const paymentParcels = []
@@ -228,7 +228,7 @@ export function stateToLandGrantsGasAnswers(state) {
   const paymentAgreements = createPaymentAgreementActions(agreementCodes, payment)
 
   return {
-    applicationValidationRunId,
+    rulesCalculations,
     scheme: 'SFI',
     applicant,
     totalAnnualPaymentPence: payment?.annualTotalPence,

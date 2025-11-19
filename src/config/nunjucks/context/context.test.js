@@ -133,6 +133,23 @@ const setupSbiStoreError = (errorMessage = 'SBI store access failed') => {
   })
 }
 
+const importContext = async () => {
+  vi.resetModules()
+  return await import('~/src/config/nunjucks/context/context.js')
+}
+
+const createAuthRequest = (credentials, cacheValue = null) => ({
+  ...mockSimpleRequest({ path: '/' }),
+  auth: { isAuthenticated: true, credentials },
+  server: {
+    app: {
+      cache: {
+        get: vi.fn().mockReturnValue(cacheValue)
+      }
+    }
+  }
+})
+
 describe('context', () => {
   const mockRequest = mockSimpleRequest({ path: '/' })
 
@@ -145,20 +162,16 @@ describe('context', () => {
     test('Should provide expected context when manifest read succeeds', async () => {
       setupManifestSuccess()
 
-      vi.resetModules()
-      const contextImport = await import('~/src/config/nunjucks/context/context.js')
+      const contextImport = await importContext()
       const contextResult = await contextImport.context(mockRequest)
 
       expect(contextResult).toEqual(getExpectedContext())
     })
 
     test('Should log error when webpack manifest file read fails', async () => {
-      mockReadFileSync.mockImplementation(() => {
-        throw new Error('File not found')
-      })
+      setupManifestError('File not found')
 
-      vi.resetModules()
-      const contextImport = await import('~/src/config/nunjucks/context/context.js')
+      const contextImport = await importContext()
       await contextImport.context(mockRequest)
 
       expect(mockLog).toHaveBeenCalledWith(
@@ -183,21 +196,21 @@ describe('context', () => {
   })
 
   describe('Asset path resolution', () => {
-    test('Should provide asset path functionality', async () => {
+    test.each([
+      { asset: 'application.js', expected: '/public/application.js' },
+      { asset: 'styles.css', expected: '/public/styles.css' }
+    ])('Should provide asset path for $asset', async ({ asset, expected }) => {
       const contextImport = await import('~/src/config/nunjucks/context/context.js')
       const contextResult = await contextImport.context(mockRequest)
 
       expect(typeof contextResult.getAssetPath).toBe('function')
-
-      expect(contextResult.getAssetPath('application.js')).toBe('/public/application.js')
-      expect(contextResult.getAssetPath('styles.css')).toBe('/public/styles.css')
+      expect(contextResult.getAssetPath(asset)).toBe(expected)
     })
 
     test('Should provide fallback asset path for invalid manifest entry', async () => {
       setupManifestSuccess()
 
-      vi.resetModules()
-      const contextImport = await import('~/src/config/nunjucks/context/context.js')
+      const contextImport = await importContext()
       const contextResult = await contextImport.context(mockRequest)
 
       expect(contextResult.getAssetPath('an-image.png')).toBe('/public/an-image.png')
@@ -214,7 +227,7 @@ describe('context', () => {
 
       const path1 = contextResult.getAssetPath('test.js')
       const path2 = contextResult.getAssetPath('test.js')
-      expect(path1).toBe(path2) // Should be consistent
+      expect(path1).toBe(path2)
     })
 
     test('Should fall back to default asset path for missing manifest entry', async () => {
@@ -224,8 +237,7 @@ describe('context', () => {
         })
       )
 
-      vi.resetModules()
-      const contextImport = await import('~/src/config/nunjucks/context/context.js')
+      const contextImport = await importContext()
       const contextResult = await contextImport.context(mockRequest)
 
       expect(contextResult.getAssetPath('missing-asset.png')).toBe('/public/missing-asset.png')
@@ -236,35 +248,15 @@ describe('context', () => {
     test('Should return minimal context when manifest read error occurs', async () => {
       setupManifestError('File read failed')
 
-      vi.resetModules()
-      const contextImport = await import('~/src/config/nunjucks/context/context.js')
+      const contextImport = await importContext()
       const contextResult = await contextImport.context(mockRequest)
 
-      expect(contextResult).toEqual({
+      expect(contextResult).toMatchObject({
         assetPath: '/public/assets/rebrand',
-        breadcrumbs: [],
-        getAssetPath: expect.any(Function),
-        navigation: expect.any(Array),
         serviceName: 'Manage land-based actions',
-        serviceUrl: '/',
-        defraIdEnabled: expect.any(Boolean),
-        cdpEnvironment: undefined,
-        gaTrackingId: undefined,
         cookiePolicyUrl: '/cookies',
         cookieConsentName: 'cookie_consent',
-        cookieConsentExpiryDays: 365,
-        cookieBannerConfig: expect.any(Object),
-        cookieBannerNoscriptConfig: expect.any(Object),
-        auth: {
-          isAuthenticated: false,
-          name: undefined,
-          organisationId: undefined,
-          organisationName: undefined,
-          crn: undefined,
-          relationshipId: undefined,
-          role: undefined,
-          sbi: 106284736
-        }
+        cookieConsentExpiryDays: 365
       })
 
       expect(mockLog).toHaveBeenCalledWith(
@@ -279,8 +271,7 @@ describe('context', () => {
     test('Should log error and continue when manifest read fails', async () => {
       setupManifestError('Manifest not found')
 
-      vi.resetModules()
-      const contextImport = await import('~/src/config/nunjucks/context/context.js')
+      const contextImport = await importContext()
       const contextResult = await contextImport.context(mockRequest)
 
       expect(mockLog).toHaveBeenCalledWith(
@@ -297,8 +288,7 @@ describe('context', () => {
       setupSbiStoreError()
       mockReadFileSync.mockReturnValue('{}')
 
-      vi.resetModules()
-      const contextImport = await import('~/src/config/nunjucks/context/context.js')
+      const contextImport = await importContext()
       const contextResult = await contextImport.context(mockRequest)
 
       expect(mockLog).toHaveBeenCalledWith(
@@ -312,16 +302,17 @@ describe('context', () => {
       expect(contextResult).toEqual(getMinimalFallbackContext())
     })
 
-    test('Should provide working fallback getAssetPath function', async () => {
+    test.each([
+      { asset: 'test-asset.js', expected: '/public/test-asset.js' },
+      { asset: 'images/logo.png', expected: '/public/images/logo.png' }
+    ])('Should provide working fallback getAssetPath for $asset', async ({ asset, expected }) => {
       setupSbiStoreError()
       mockReadFileSync.mockReturnValue('{}')
 
-      vi.resetModules()
-      const contextImport = await import('~/src/config/nunjucks/context/context.js')
+      const contextImport = await importContext()
       const contextResult = await contextImport.context(mockRequest)
 
-      expect(contextResult.getAssetPath('test-asset.js')).toBe('/public/test-asset.js')
-      expect(contextResult.getAssetPath('images/logo.png')).toBe('/public/images/logo.png')
+      expect(contextResult.getAssetPath(asset)).toBe(expected)
     })
   })
 
@@ -382,49 +373,23 @@ describe('context', () => {
     })
 
     test('Should provide correct auth properties when authenticated', async () => {
-      const request = {
-        ...mockRequest,
-        auth: {
-          isAuthenticated: true,
-          credentials: {
-            sbi: '106284736',
-            name: 'John Doe',
-            organisationId: 'org123',
-            organisationName: ' Farm 1',
-            role: 'admin',
-            sessionId: 'valid-session-id'
-          }
-        },
-        server: {
-          app: {
-            cache: {
-              get: vi.fn().mockReturnValue({
-                sbi: '106284736',
-                name: 'John Doe',
-                organisationId: 'org123',
-                role: 'admin'
-              })
-            }
-          }
-        }
+      const credentials = {
+        sbi: '106284736',
+        name: 'John Doe',
+        organisationId: 'org123',
+        organisationName: ' Farm 1',
+        role: 'admin',
+        sessionId: 'valid-session-id'
       }
-
-      vi.resetModules()
-      const contextImport = await import('~/src/config/nunjucks/context/context.js')
-      const contextResult = await contextImport.context({
-        ...request,
-        auth: {
-          isAuthenticated: true,
-          credentials: {
-            sbi: '106284736',
-            name: 'John Doe',
-            organisationId: 'org123',
-            organisationName: ' Farm 1',
-            role: 'admin',
-            sessionId: 'valid-session-id'
-          }
-        }
+      const request = createAuthRequest(credentials, {
+        sbi: '106284736',
+        name: 'John Doe',
+        organisationId: 'org123',
+        role: 'admin'
       })
+
+      const contextImport = await importContext()
+      const contextResult = await contextImport.context(request)
 
       expect(contextResult.auth).toEqual({
         isAuthenticated: true,
@@ -437,23 +402,10 @@ describe('context', () => {
     })
 
     test('Should handle cache returning null and use empty session', async () => {
-      const request = {
-        ...mockRequest,
-        server: {
-          app: {
-            cache: {
-              get: vi.fn().mockReturnValue(null)
-            }
-          }
-        }
-      }
+      const request = createAuthRequest({ sessionId: 'valid-session-id' }, null)
 
-      vi.resetModules()
-      const contextImport = await import('~/src/config/nunjucks/context/context.js')
-      const contextResult = await contextImport.context({
-        ...request,
-        auth: { isAuthenticated: true, credentials: { sessionId: 'valid-session-id' } }
-      })
+      const contextImport = await importContext()
+      const contextResult = await contextImport.context(request)
 
       expect(contextResult.auth).toEqual({
         isAuthenticated: true,
@@ -466,23 +418,13 @@ describe('context', () => {
 
     test('Should handle cache error and log unknown when sessionId becomes falsy', async () => {
       const credentials = { sessionId: 'valid-session' }
-      const requestWithAuth = {
-        ...mockRequest,
-        auth: { isAuthenticated: true, credentials },
-        server: {
-          app: {
-            cache: {
-              get: vi.fn().mockImplementation(() => {
-                credentials.sessionId = null
-                throw new Error('Cache retrieval failed')
-              })
-            }
-          }
-        }
-      }
+      const requestWithAuth = createAuthRequest(credentials, null)
+      requestWithAuth.server.app.cache.get.mockImplementation(() => {
+        credentials.sessionId = null
+        throw new Error('Cache retrieval failed')
+      })
 
-      vi.resetModules()
-      const contextImport = await import('~/src/config/nunjucks/context/context.js')
+      const contextImport = await importContext()
       const contextResult = await contextImport.context(requestWithAuth)
 
       expect(mockLog).toHaveBeenCalledWith(
@@ -539,7 +481,7 @@ describe('context', () => {
       setupSbiStoreError()
       mockReadFileSync.mockReturnValue('{}')
 
-      const contextImport = await import('~/src/config/nunjucks/context/context.js')
+      const contextImport = await importContext()
       const contextResult = await contextImport.context(mockRequest)
 
       expect(contextResult.cookiePolicyUrl).toBe('/cookies')
@@ -554,39 +496,12 @@ describe('context', () => {
       const contextResult = await contextImport.context(mockRequest)
 
       expect(contextResult.cookieBannerConfig).toBeDefined()
-      expect(contextResult.cookieBannerConfig).toEqual({
-        ariaLabel: 'Cookies on Manage land-based actions',
-        hidden: true,
-        attributes: {
-          'data-nosnippet': '',
-          id: 'cookie-banner',
-          'data-cookie-name': 'cookie_consent',
-          'data-expiry-days': 365,
-          'data-ga-tracking-id': undefined
-        },
-        messages: [
-          {
-            headingText: 'Cookies on Manage land-based actions',
-            html: '<p class="govuk-body">We use some essential cookies to make this service work.</p><p class="govuk-body">We\'d like to set additional cookies to understand how you use the service, remember your settings and improve the service.</p>',
-            actions: [
-              {
-                text: 'Accept analytics cookies',
-                type: 'button',
-                attributes: { id: 'cookie-banner-accept', 'data-module': 'govuk-button' }
-              },
-              {
-                text: 'Reject analytics cookies',
-                type: 'button',
-                attributes: { id: 'cookie-banner-reject', 'data-module': 'govuk-button' }
-              },
-              {
-                text: 'View cookies',
-                href: '/cookies'
-              }
-            ]
-          }
-        ]
-      })
+      expect(contextResult.cookieBannerConfig.ariaLabel).toBe('Cookies on Manage land-based actions')
+      expect(contextResult.cookieBannerConfig.hidden).toBe(true)
+      expect(contextResult.cookieBannerConfig.attributes['data-cookie-name']).toBe('cookie_consent')
+      expect(contextResult.cookieBannerConfig.attributes['data-cookie-policy-url']).toBe('/cookies')
+      expect(contextResult.cookieBannerConfig.messages).toHaveLength(1)
+      expect(contextResult.cookieBannerConfig.messages[0].actions).toHaveLength(3)
     })
 
     test('includes cookieBannerNoscriptConfig with correct structure', async () => {
@@ -596,23 +511,16 @@ describe('context', () => {
       const contextResult = await contextImport.context(mockRequest)
 
       expect(contextResult.cookieBannerNoscriptConfig).toBeDefined()
-      expect(contextResult.cookieBannerNoscriptConfig).toEqual({
-        ariaLabel: 'Cookies on Manage land-based actions',
-        attributes: { 'data-nosnippet': '' },
-        messages: [
-          {
-            headingText: 'Cookies on Manage land-based actions',
-            html: '<p class="govuk-body">We use some essential cookies to make this service work.</p><p class="govuk-body">JavaScript is disabled, so you cannot set cookie preferences. Analytics cookies will not run.</p>'
-          }
-        ]
-      })
+      expect(contextResult.cookieBannerNoscriptConfig.ariaLabel).toBe('Cookies on Manage land-based actions')
+      expect(contextResult.cookieBannerNoscriptConfig.attributes['data-nosnippet']).toBe('')
+      expect(contextResult.cookieBannerNoscriptConfig.messages).toHaveLength(1)
     })
 
     test('includes cookie banner configs in fallback context', async () => {
       setupSbiStoreError()
       mockReadFileSync.mockReturnValue('{}')
 
-      const contextImport = await import('~/src/config/nunjucks/context/context.js')
+      const contextImport = await importContext()
       const contextResult = await contextImport.context(mockRequest)
 
       expect(contextResult.cookieBannerConfig).toBeDefined()

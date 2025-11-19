@@ -78,8 +78,16 @@
  */
 
 /**
+ * @typedef {Object} RulesCalculations
+ * @property {number} id - Validation id
+ * @property {string} message - Validation response message
+ * @property {boolean} valid - Validation result
+ * @property {string} date - Validation date
+ */
+
+/**
  * @typedef {Object} Application
- * @property {string} [applicationValidationRunId] - Application validation run ID
+ * @property {RulesCalculations} [rulesCalculations] - Rules calculations object with validation details
  * @property {string} scheme - Scheme name (e.g., "SFI")
  * @property {Applicant} applicant - Applicant details
  * @property {number} [totalAnnualPaymentPence] - Total annual payment in pence
