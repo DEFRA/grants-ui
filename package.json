@@ -3,7 +3,9 @@
   "version": "0.0.0",
   "description": "CDP Frontend Template",
   "sideEffects": [
-    "src/client/javascripts/cookie-consent.js"
+    "src/client/javascripts/cookie-consent.js",
+    "src/server/cookies/cookie-preferences.js",
+    "src/server/cookies/append-return-url.js"
   ],
   "main": ".server/index.js",
   "type": "module",
@@ -60,7 +62,7 @@
   },
   "dependencies": {
     "@babel/runtime": "7.28.4",
-    "@defra/forms-engine-plugin": "4.0.0",
+    "@defra/forms-engine-plugin": "4.0.13",
     "@defra/hapi-tracing": "1.28.0",
     "@elastic/ecs-pino-format": "1.5.0",
     "@hapi/bell": "13.1.0",

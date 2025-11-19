@@ -28,12 +28,14 @@ export const actionGroups = [
 
 /**
  * Calculates grant payment for land actions.
- * @param {LandActions[]} state
+ * @param {object} state
  * @returns {Promise<{payment: PaymentCalculation, errorMessage?: string, paymentTotal: string}>} - Payment calculation result
  * @throws {Error}
  */
 export async function calculateGrantPayment(state) {
-  const payload = { landActions: stateToLandActionsMapper(state) }
+  const payload = {
+    parcel: stateToLandActionsMapper(state)
+  }
   const { payment } = await calculate(payload, LAND_GRANTS_API_URL)
   const paymentTotal = formatCurrency(payment?.annualTotalPence / 100)
 

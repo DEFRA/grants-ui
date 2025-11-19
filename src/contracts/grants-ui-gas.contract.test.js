@@ -1,7 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import { PactV4, SpecificationVersion } from '@pact-foundation/pact'
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { makeGasApiRequest } from '../server/common/services/grant-application/grant-application.service.js'
 
 const provider = new PactV4({
@@ -21,7 +21,10 @@ describe('Pact between grants-ui (consumer) and fg-gas-backend (provider)', () =
         .given('example-grant-with-auth-v3 is configured in fg-gas-backend')
         .uponReceiving('an example-grant-with-auth-v3 application')
         .withRequest('POST', '/grants/example-grant-with-auth-v3/applications', (builder) => {
-          builder.headers({ 'Content-Type': 'application/json' })
+          builder.headers({
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer 00000000-0000-0000-0000-000000000000'
+          })
           builder.jsonBody(payload)
         })
         .willRespondWith(204)
@@ -32,7 +35,10 @@ describe('Pact between grants-ui (consumer) and fg-gas-backend (provider)', () =
             {},
             {
               method: 'POST',
-              payload
+              payload,
+              headers: {
+                Authorization: 'Bearer 00000000-0000-0000-0000-000000000000'
+              }
             }
           )
 

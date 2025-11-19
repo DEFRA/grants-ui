@@ -8,7 +8,10 @@ export default {
     environment: 'jsdom',
     setupFiles: ['./.vitest/setup-file.js'],
     include: ['**/src/**/*.test.js'],
-    exclude: ['**/node_modules/**', '**/.stryker-tmp/**', '**/*.contract.test.js'],
+    exclude: ['**/node_modules/**', '**/.stryker-tmp/**'],
+    env: {
+      GAS_API_AUTH_TOKEN: '00000000-0000-0000-0000-000000000000'
+    },
     reporters: ['default', CoverageAnalyserReporter()],
     coverage: {
       enabled: true,
@@ -20,7 +23,8 @@ export default {
         '**/.server/**',
         '**/.stryker-tmp',
         '**/.public/**',
-        '**/src/server/common/test-helpers/**',
+        '**/test-helpers/**',
+        '**/test-helpers.js',
         '**/src/client/javascripts/application.js',
         '**/src/index.js',
         '**/index.js',

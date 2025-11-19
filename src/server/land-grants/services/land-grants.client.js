@@ -41,7 +41,7 @@ export async function postToLandGrantsApi(endpoint, body, baseUrl) {
 
 /**
  * Calls the Land Grants API calculate endpoint.
- * @param {{landActions: LandActions[]}} payload
+ * @param {{parcel: LandActions[], startDate?: string}} payload
  * @param {string} baseUrl
  * @returns {Promise<PaymentCalculationResponse>} - Payment calculation result
  * @throws {Error}

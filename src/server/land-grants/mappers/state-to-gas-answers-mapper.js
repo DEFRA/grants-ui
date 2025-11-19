@@ -2,7 +2,7 @@
  * Creates an object with unit and quantity if they exist
  * @param {object} data - The data object
  * @param {string} quantityField - The field name for quantity (default: 'value')
- * @returns {object} Object with unit and quantity
+ * @returns {UnitQuantity} Object with unit and quantity
  */
 function createUnitQuantity(data, quantityField = 'value') {
   if (!data) {
@@ -27,155 +27,184 @@ function createUnitQuantity(data, quantityField = 'value') {
 }
 
 /**
- * Helper to check if an object has any properties
- */
-function hasProperties(obj) {
-  return Object.keys(obj).length > 0
-}
-
-/**
- * Finds payment item data from API response
+ * Finds payment item data from API response for parcel-level items
  * @param {object} paymentData - The payment object from API
  * @param {string} actionCode - The action code
  * @param {string} sheetId - The sheet ID
  * @param {string} parcelId - The parcel ID
- * @returns {object|null} The combined payment item data or null
+ * @returns {object|null} The payment item data or null
  */
-function extractPaymentItemInfo(paymentData, actionCode, sheetId, parcelId) {
-  if (!paymentData) {
+function findParcelPaymentItem(paymentData, actionCode, sheetId, parcelId) {
+  if (!paymentData?.parcelItems) {
     return null
   }
 
-  const parcelLevelItem = Object.values(paymentData.parcelItems ?? {}).find(
+  return Object.values(paymentData.parcelItems).find(
     (item) => item.code === actionCode && item.sheetId === sheetId && item.parcelId === parcelId
   )
+}
 
-  const agreementLevelItem = Object.values(paymentData.agreementLevelItems ?? {}).find(
-    (item) => item.code === actionCode
-  )
-
-  if (!parcelLevelItem && !agreementLevelItem) {
+/**
+ * Finds agreement-level payment item from API response
+ * @param {object} paymentData - The payment object from API
+ * @param {string} actionCode - The action code
+ * @returns {object|null} The agreement-level payment item or null
+ */
+function findAgreementPaymentItem(paymentData, actionCode) {
+  if (!paymentData?.agreementLevelItems) {
     return null
   }
 
-  const baseItem = parcelLevelItem || agreementLevelItem
-
-  return {
-    description: baseItem.description,
-    durationYears: baseItem.durationYears,
-    annualPaymentPence: baseItem.annualPaymentPence,
-    ...(parcelLevelItem && { rateInPence: parcelLevelItem.rateInPence }),
-    ...(agreementLevelItem && { agreementLevelPaymentPence: agreementLevelItem.annualPaymentPence })
-  }
+  return Object.values(paymentData.agreementLevelItems).find((item) => item.code === actionCode)
 }
 
 /**
- * Creates payment rates object from payment item
- * @param {object} paymentItem - The payment item data
- * @returns {object} Payment rates object
- */
-function createPaymentRates(paymentItem) {
-  if (!paymentItem) {
-    return {}
-  }
-
-  const rates = {}
-
-  if (paymentItem.rateInPence != null) {
-    rates.ratePerUnitPence = paymentItem.rateInPence
-  }
-
-  if (paymentItem.agreementLevelPaymentPence != null) {
-    rates.agreementLevelAmountPence = paymentItem.agreementLevelPaymentPence
-  }
-
-  return rates
-}
-
-/**
- * Processes a single action and creates an action object
+ * Creates an action object for the application.parcel[].actions array
  * @param {string} actionCode - The action code
  * @param {object} actionData - The action data
- * @param {string} sheetId - The sheet ID
- * @param {string} parcelId - The parcel ID
- * @param {object} paymentData - The payment data from API
- * @returns {Action} The action object
+ * @param {object} paymentItem - The payment item data
+ * @returns {ApplicationAction} The application action object
  */
-function createAction(actionCode, actionData, sheetId, parcelId, paymentData) {
-  const paymentItem = extractPaymentItemInfo(paymentData, actionCode, sheetId, parcelId)
-
-  const action = { code: actionCode }
-
-  if (paymentItem) {
-    if (paymentItem.description) {
-      action.description = paymentItem.description
-    }
-
-    if (paymentItem.durationYears != null) {
-      action.durationYears = paymentItem.durationYears
-    }
+function createApplicationParcelAction(actionCode, actionData, paymentItem) {
+  return {
+    code: actionCode,
+    version: paymentItem?.version ?? 1,
+    ...(paymentItem?.durationYears != null && { durationYears: paymentItem.durationYears }),
+    ...(actionData && { appliedFor: createUnitQuantity(actionData, 'value') })
   }
-
-  if (actionData) {
-    action.eligible = createUnitQuantity(actionData, 'value')
-    action.appliedFor = createUnitQuantity(actionData, 'value')
-  }
-
-  if (paymentItem) {
-    const paymentRates = createPaymentRates(paymentItem)
-    if (hasProperties(paymentRates)) {
-      action.paymentRates = paymentRates
-    }
-
-    if (paymentItem.annualPaymentPence != null) {
-      action.annualPaymentPence = paymentItem.annualPaymentPence
-    }
-  }
-
-  return action
 }
 
 /**
- * Processes actions for a single parcel
- * @param {object} actionsObj - The actions object
- * @param {string} sheetId - The sheet ID
- * @param {string} parcelId - The parcel ID
- * @param {object} paymentData - The payment data from API
- * @returns {Action[]} Array of actions
+ * Creates an action object for the payments.parcel[].actions array
+ * @param {string} actionCode - The action code
+ * @param {object} actionData - The action data
+ * @param {object} paymentItem - The payment item data
+ * @returns {PaymentAction} The payment action object
  */
-function processParcelActions(actionsObj, sheetId, parcelId, paymentData) {
-  if (!actionsObj) {
-    return []
+function createPaymentParcelAction(actionCode, actionData, paymentItem) {
+  const unitQuantity = actionData ? createUnitQuantity(actionData, 'value') : undefined
+
+  return {
+    code: actionCode,
+    ...(paymentItem?.description != null && { description: paymentItem.description }),
+    ...(paymentItem?.durationYears != null && { durationYears: paymentItem.durationYears }),
+    ...(paymentItem?.rateInPence != null && { paymentRates: paymentItem.rateInPence }),
+    ...(paymentItem?.annualPaymentPence != null && { annualPaymentPence: paymentItem.annualPaymentPence }),
+    ...(unitQuantity && { eligible: unitQuantity, appliedFor: unitQuantity })
   }
-
-  const actions = []
-
-  for (const [actionCode, actionData] of Object.entries(actionsObj)) {
-    const action = createAction(actionCode, actionData, sheetId, parcelId, paymentData)
-    actions.push(action)
-  }
-
-  return actions
 }
 
 /**
- * Processes a single parcel
+ * Creates a parcel object for application.parcel array
  * @param {string} parcelKey - The parcel key (sheetId-parcelId)
  * @param {object} data - The parcel data
  * @param {object} paymentData - The payment data from API
- * @returns {Parcel} The parcel object
+ * @returns {ApplicationParcel} The application parcel object
  */
-function createParcel(parcelKey, data, paymentData) {
+function createApplicationParcel(parcelKey, data, paymentData) {
   const [sheetId, parcelId] = parcelKey.split('-') ?? []
-  return {
+  /** @type {ApplicationParcel} */
+  const parcel = {
     sheetId,
     parcelId,
-    area: {
-      unit: data.size?.unit,
-      quantity: data.size?.value
-    },
-    actions: processParcelActions(data.actionsObj, sheetId, parcelId, paymentData)
+    area: createUnitQuantity(data.size, 'value'),
+    actions: []
   }
+
+  if (data.actionsObj) {
+    for (const [actionCode, actionData] of Object.entries(data.actionsObj)) {
+      const paymentItem = findParcelPaymentItem(paymentData, actionCode, sheetId, parcelId)
+      const action = createApplicationParcelAction(actionCode, actionData, paymentItem)
+      parcel.actions.push(action)
+    }
+  }
+
+  return parcel
+}
+
+/**
+ * Creates a parcel object for payments.parcel array
+ * @param {string} parcelKey - The parcel key (sheetId-parcelId)
+ * @param {object} data - The parcel data
+ * @param {object} paymentData - The payment data from API
+ * @returns {PaymentParcel} The payment parcel object
+ */
+function createPaymentParcel(parcelKey, data, paymentData) {
+  const [sheetId, parcelId] = parcelKey.split('-') ?? []
+  /** @type {PaymentParcel} */
+  const parcel = {
+    sheetId,
+    parcelId,
+    area: createUnitQuantity(data.size, 'value'),
+    actions: []
+  }
+
+  if (data.actionsObj) {
+    for (const [actionCode, actionData] of Object.entries(data.actionsObj)) {
+      const paymentItem = findParcelPaymentItem(paymentData, actionCode, sheetId, parcelId)
+      const action = createPaymentParcelAction(actionCode, actionData, paymentItem)
+      parcel.actions.push(action)
+    }
+  }
+
+  return parcel
+}
+
+/**
+ * Collects unique agreement-level action codes from payment data
+ * @param {object} paymentData - The payment data from API
+ * @returns {Set<string>} Set of agreement-level action codes
+ */
+function collectAgreementActionCodes(paymentData) {
+  const agreementCodes = new Set()
+
+  if (paymentData?.agreementLevelItems) {
+    for (const item of Object.values(paymentData.agreementLevelItems)) {
+      if (item.code) {
+        agreementCodes.add(item.code)
+      }
+    }
+  }
+
+  return agreementCodes
+}
+
+/**
+ * Creates agreement-level action objects for application.agreement array
+ * This returns an empty array until we have agreement-level actions
+ * @returns {ApplicationAgreement[]} Empty array of agreement action objects
+ */
+function createApplicationAgreementActions() {
+  return []
+}
+
+/**
+ * Creates agreement-level payment objects for payments.agreement array
+ * @param {Set<string>} agreementCodes - Set of agreement action codes
+ * @param {object} paymentData - The payment data from API
+ * @returns {PaymentAgreement[]} Array of agreement payment objects
+ */
+function createPaymentAgreementActions(agreementCodes, paymentData) {
+  /** @type {PaymentAgreement[]} */
+  const result = []
+
+  for (const actionCode of agreementCodes) {
+    const paymentItem = findAgreementPaymentItem(paymentData, actionCode)
+
+    if (paymentItem) {
+      const paymentRates = paymentItem.rateInPence ?? paymentItem.annualPaymentPence
+
+      result.push({
+        code: actionCode,
+        ...(paymentItem.description != null && { description: paymentItem.description }),
+        ...(paymentItem.durationYears != null && { durationYears: paymentItem.durationYears }),
+        ...(paymentRates != null && { paymentRates }),
+        ...(paymentItem.annualPaymentPence != null && { annualPaymentPence: paymentItem.annualPaymentPence })
+      })
+    }
+  }
+
+  return result
 }
 
 /**
@@ -184,23 +213,36 @@ function createParcel(parcelKey, data, paymentData) {
  * @returns {Application}
  */
 export function stateToLandGrantsGasAnswers(state) {
-  const { landParcels = [], payment, applicant, applicationValidationRunId } = state
-  const parcels = []
+  const { landParcels = {}, payment, applicant, rulesCalculations } = state
+
+  const applicationParcels = []
+  const paymentParcels = []
 
   for (const [parcelKey, data] of Object.entries(landParcels)) {
-    const parcel = createParcel(parcelKey, data, payment)
-    parcels.push(parcel)
+    applicationParcels.push(createApplicationParcel(parcelKey, data, payment))
+    paymentParcels.push(createPaymentParcel(parcelKey, data, payment))
   }
 
+  const agreementCodes = collectAgreementActionCodes(payment)
+  const applicationAgreements = createApplicationAgreementActions()
+  const paymentAgreements = createPaymentAgreementActions(agreementCodes, payment)
+
   return {
+    rulesCalculations,
     scheme: 'SFI',
     applicant,
-    applicationValidationRunId,
     totalAnnualPaymentPence: payment?.annualTotalPence,
-    parcels
+    application: {
+      parcel: applicationParcels,
+      agreement: applicationAgreements
+    },
+    payments: {
+      parcel: paymentParcels,
+      agreement: paymentAgreements
+    }
   }
 }
 
 /**
- * @import { Application, Parcel, Action } from '~/src/server/land-grants/types/gas-payload.d.js'
+ * @import { Application, UnitQuantity, ApplicationAction, PaymentAction, ApplicationParcel, PaymentParcel, ApplicationAgreement, PaymentAgreement } from '~/src/server/land-grants/types/gas-payload.d.js'
  */

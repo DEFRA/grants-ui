@@ -20,6 +20,7 @@ let webpackManifest
  * @param {Request | null } request
  * @param {string|null} tempSbi
  * @param {string|null} role
+ * @returns {object} User authentication and authorization details
  */
 const usersDetails = (request, tempSbi, role) => {
   return {
@@ -39,6 +40,7 @@ const usersDetails = (request, tempSbi, role) => {
 
 /**
  * @param {ExtendedRequest | null} request
+ * @returns {object} Cookie consent configuration including service name, policy URL, and expiry days
  */
 const extractCookieConsentConfig = (request) => {
   const formMetadata = request?.app?.model?.def?.metadata
@@ -68,6 +70,7 @@ const loadWebpackManifest = (request) => {
 
 /**
  * @param {ExtendedRequest | null} request
+ * @returns {Promise<object>} Session data object or empty object if unavailable
  */
 const getSessionData = async (request) => {
   if (!request?.auth?.isAuthenticated || !request.auth.credentials?.sessionId) {
@@ -75,7 +78,12 @@ const getSessionData = async (request) => {
   }
 
   try {
-    return (await request.server.app['cache'].get(request.auth.credentials.sessionId)) || {}
+    // @ts-ignore - cache is a custom property added to server.app
+    const cache = request.server?.app?.cache
+    if (!cache) {
+      return {}
+    }
+    return (await cache.get(request.auth.credentials.sessionId)) || {}
   } catch (cacheError) {
     const sessionId = String(request.auth.credentials.sessionId || 'unknown')
     log(
@@ -93,6 +101,7 @@ const getSessionData = async (request) => {
 
 /**
  * @param {string} asset
+ * @returns {string} The full asset path including webpack hash if available
  */
 const createAssetPathGetter = (asset) => {
   const webpackAssetPath = webpackManifest?.[asset]
@@ -100,13 +109,13 @@ const createAssetPathGetter = (asset) => {
 }
 
 /**
- * @param {any} auth
- * @param {ExtendedRequest | null} request
+ * Builds common configuration shared between success and fallback contexts
  * @param {string} serviceName
  * @param {string} cookiePolicyUrl
  * @param {number} cookieConsentExpiryDays
+ * @returns {object} Common configuration object
  */
-const buildSuccessContext = (auth, request, serviceName, cookiePolicyUrl, cookieConsentExpiryDays) => {
+const buildCommonConfig = (serviceName, cookiePolicyUrl, cookieConsentExpiryDays) => {
   const cookieConsentName = config.get('cookieConsent.cookieName')
   const gaTrackingId = config.get('googleAnalytics.trackingId')
 
@@ -122,14 +131,28 @@ const buildSuccessContext = (auth, request, serviceName, cookiePolicyUrl, cookie
     cookieConsentExpiryDays,
     cookieBannerConfig: buildCookieBannerConfig(
       serviceName,
-      cookiePolicyUrl,
       cookieConsentName,
       cookieConsentExpiryDays,
-      gaTrackingId
+      gaTrackingId,
+      cookiePolicyUrl
     ),
     cookieBannerNoscriptConfig: buildCookieBannerNoscriptConfig(serviceName),
+    breadcrumbs: []
+  }
+}
+
+/**
+ * @param {any} auth
+ * @param {ExtendedRequest | null} request
+ * @param {string} serviceName
+ * @param {string} cookiePolicyUrl
+ * @param {number} cookieConsentExpiryDays
+ * @returns {object} Complete context object for successful authentication
+ */
+const buildSuccessContext = (auth, request, serviceName, cookiePolicyUrl, cookieConsentExpiryDays) => {
+  return {
+    ...buildCommonConfig(serviceName, cookiePolicyUrl, cookieConsentExpiryDays),
     auth,
-    breadcrumbs: [],
     navigation: buildNavigation(request),
     getAssetPath: createAssetPathGetter
   }
@@ -139,29 +162,11 @@ const buildSuccessContext = (auth, request, serviceName, cookiePolicyUrl, cookie
  * @param {string} serviceName
  * @param {string} cookiePolicyUrl
  * @param {number} cookieConsentExpiryDays
+ * @returns {object} Complete context object for fallback/unauthenticated state
  */
 const buildFallbackContext = (serviceName, cookiePolicyUrl, cookieConsentExpiryDays) => {
-  const cookieConsentName = config.get('cookieConsent.cookieName')
-  const gaTrackingId = config.get('googleAnalytics.trackingId')
-
   return {
-    assetPath: `${assetPath}/assets/rebrand`,
-    serviceName,
-    serviceUrl: '/',
-    cdpEnvironment: config.get('cdpEnvironment'),
-    defraIdEnabled: config.get('defraId.enabled'),
-    gaTrackingId,
-    cookiePolicyUrl,
-    cookieConsentName,
-    cookieConsentExpiryDays,
-    cookieBannerConfig: buildCookieBannerConfig(
-      serviceName,
-      cookiePolicyUrl,
-      cookieConsentName,
-      cookieConsentExpiryDays,
-      gaTrackingId
-    ),
-    cookieBannerNoscriptConfig: buildCookieBannerNoscriptConfig(serviceName),
+    ...buildCommonConfig(serviceName, cookiePolicyUrl, cookieConsentExpiryDays),
     auth: {
       isAuthenticated: false,
       sbi: null,
@@ -172,7 +177,6 @@ const buildFallbackContext = (serviceName, cookiePolicyUrl, cookieConsentExpiryD
       relationshipId: null,
       role: null
     },
-    breadcrumbs: [],
     navigation: [],
     getAssetPath: (asset) => `${assetPath}/${asset}`
   }
@@ -180,6 +184,7 @@ const buildFallbackContext = (serviceName, cookiePolicyUrl, cookieConsentExpiryD
 
 /**
  * @param {ExtendedRequest | null} request
+ * @returns {Promise<object>} Complete context object for rendering views
  */
 export async function context(request) {
   const { serviceName, cookiePolicyUrl, cookieConsentExpiryDays } = extractCookieConsentConfig(request)
