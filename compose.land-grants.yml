@@ -27,6 +27,7 @@ services:
 
   land-grants-backend:
     image: defradigital/land-grants-api:latest
+    pull_policy: always
     environment:
       <<: *common-postgres
       PORT: 3009

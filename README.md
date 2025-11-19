@@ -888,6 +888,35 @@ npm run docker:migrate:ext:up
 npm run docker:migrate:ext:down
 ```
 
+#### Land Grants changelog checker
+
+When you bring up the Land Grants stack using either of these commands:
+
+- `npm run docker:landgrants:up`
+- `npm run docker:landgrants:ha:up`
+
+a small post-hook script (`tools/check-landgrants-changelog.js`) runs automatically.
+It:
+
+- Detects whether the Land Grants Postgres database has been seeded at least once
+  (by checking for the `public.actions` table).
+- Derives a baseline timestamp from the Postgres data volume (preferably the mtime of
+  `/var/lib/postgresql/data/global`, falling back to the volume creation time).
+- Calls the GitHub API to look for commits in `DEFRA/land-grants-api` under `changelog/`
+  that are newer than that baseline.
+
+Depending on what it finds:
+
+- If the DB has never been seeded, it prints a boxed notice telling you to run the
+  migration/seed scripts.
+- If the DB has been seeded and newer changelog commits exist, it prints a boxed
+  notice recommending that you re-seed.
+- Otherwise, it logs a short "no changes" message.
+
+This check is advisory only and never fails the Docker command. To skip it entirely
+set `LANDGRANTS_CHANGELOG_CHECK=false` in the environment before running the
+`docker:landgrants:*` scripts.
+
 #### High-availability (HA) local proxy
 
 For local testing behind HTTPS and to simulate an HA entry point, there is an optional Nginx reverse proxy defined in `compose.ha.yml`.
