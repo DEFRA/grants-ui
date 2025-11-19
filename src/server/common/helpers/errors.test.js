@@ -109,14 +109,9 @@ describe('#catchAll', () => {
 
   const testCases = [
     {
-      name: 'Not found',
-      statusCode: statusCodes.notFound,
-      expectedView: 'errors/404'
-    },
-    {
-      name: 'Forbidden',
-      statusCode: statusCodes.forbidden,
-      expectedView: 'errors/500'
+      name: 'Bad Request',
+      statusCode: statusCodes.badRequest,
+      expectedView: 'errors/400'
     },
     {
       name: 'Unauthorized',
@@ -124,9 +119,19 @@ describe('#catchAll', () => {
       expectedView: 'errors/401'
     },
     {
-      name: 'Bad Request',
-      statusCode: statusCodes.badRequest,
-      expectedView: 'errors/400'
+      name: 'Forbidden',
+      statusCode: statusCodes.forbidden,
+      expectedView: 'errors/403'
+    },
+    {
+      name: 'Not found',
+      statusCode: statusCodes.notFound,
+      expectedView: 'errors/404'
+    },
+    {
+      name: `I'm a teapot`,
+      statusCode: statusCodes.imATeapot,
+      expectedView: 'errors/500'
     }
   ]
 
