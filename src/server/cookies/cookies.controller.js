@@ -26,7 +26,7 @@ export const cookiesController = {
     request.logger.info(`Cookies page: returnUrl = ${returnUrl}, referer = ${request.headers.referer}`)
     const ctx = await context(request)
 
-    return h.view('cookies/views/cookies', {
+    return h.view('cookies', {
       ...ctx,
       pageTitle: 'Cookies',
       heading: 'Cookies',

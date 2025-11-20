@@ -32,7 +32,7 @@ describe('cookies.controller', () => {
 
       const result = await cookiesController.handler(mockRequest, mockH)
 
-      expect(result.template).toBe('cookies/views/cookies')
+      expect(result.template).toBe('cookies')
       expect(result.context.pageTitle).toBe('Cookies')
       expect(result.context.heading).toBe('Cookies')
       expect(result.context.referrer).toBe(expectedReferrer)

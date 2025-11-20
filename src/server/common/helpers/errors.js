@@ -78,11 +78,9 @@ export function catchAll(request, h) {
     return h.redirect(response.output.headers.location)
   }
 
-  const errorMessage = statusCodeMessage(statusCode)
-
   handleErrorLogging(request, response, statusCode)
 
-  return renderErrorView(h, errorMessage, statusCode)
+  return renderErrorView(h, statusCode)
 }
 
 function handleErrorLogging(request, response, statusCode) {
@@ -375,22 +373,28 @@ function handle404WithContext(request, response) {
   }
 }
 
-function renderErrorView(h, errorMessage, statusCode) {
-  if (statusCode === statusCodes.notFound) {
-    return h
-      .view('page-not-found', {
-        pageTitle: errorMessage
-      })
-      .code(statusCode)
+function renderErrorView(h, statusCode) {
+  // SonarQube does not like this being set as the default for the switch, it's apparently a critical issue.
+  let errorView
+
+  switch (statusCode) {
+    case 400:
+      errorView = 'errors/400'
+      break
+    case 401:
+      errorView = 'errors/401'
+      break
+    case 403:
+      errorView = 'errors/403'
+      break
+    case 404:
+      errorView = 'errors/404'
+      break
+    default:
+      errorView = 'errors/500'
   }
 
-  return h
-    .view('error/index', {
-      pageTitle: errorMessage,
-      heading: statusCode,
-      message: errorMessage
-    })
-    .code(statusCode)
+  return h.view(errorView, {}).code(statusCode)
 }
 
 /**
