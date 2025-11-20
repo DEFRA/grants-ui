@@ -11,6 +11,42 @@ metadata:
   grantRedirectRules:
     preSubmission:
       - toPath: /check-selected-land-actions
+    postSubmission:
+      # Cleared
+      - fromGrantsStatus: SUBMITTED,REOPENED
+        gasStatus: APPLICATION_WITHDRAWN
+        toGrantsStatus: CLEARED
+        toPath: /confirm-farm-details
+
+      # Awaiting amendments
+      - fromGrantsStatus: SUBMITTED
+        gasStatus: AWAITING_AMENDMENTS
+        toGrantsStatus: REOPENED
+        toPath: /check-selected-land-actions
+
+      # Offer sent, withdrawn, accepted -> agreements service
+      - fromGrantsStatus: SUBMITTED
+        gasStatus: OFFER_SENT,OFFER_WITHDRAWN,OFFER_ACCEPTED
+        toGrantsStatus: SUBMITTED
+        toPath: /agreement
+
+      # Reopened
+      - fromGrantsStatus: REOPENED
+        gasStatus: default
+        toGrantsStatus: REOPENED
+        toPath: /check-selected-land-actions
+
+      # Submitted -> confirmation (default for most GAS statuses)
+      - fromGrantsStatus: SUBMITTED
+        gasStatus: default
+        toGrantsStatus: SUBMITTED
+        toPath: /confirmation
+
+      # Default fallback
+      - fromGrantsStatus: default
+        gasStatus: default
+        toGrantsStatus: SUBMITTED
+        toPath: /confirmation
   confirmationContent:
     html: |
       <p class="govuk-body">It may be useful to write down your application number, so you have it ready if you need to contact us.</p>
