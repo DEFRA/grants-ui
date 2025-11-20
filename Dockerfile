@@ -56,6 +56,7 @@ COPY --from=production_build /home/node/src/server/common/templates ./src/server
 COPY --from=production_build /home/node/src/server/common/components ./src/server/common/components
 COPY --from=production_build /home/node/src/server/views ./src/server/views
 COPY --from=production_build /home/node/src/server/land-grants/views ./src/server/land-grants/views
+COPY --from=production_build /home/node/src/server/land-grants/components ./src/server/land-grants/components
 COPY --from=production_build /home/node/src/server/non-land-grants ./src/server/non-land-grants
 COPY --from=production_build /home/node/src/server/home ./src/server/home
 COPY --from=production_build /home/node/src/server/confirmation/views ./src/server/confirmation/views
