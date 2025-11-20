@@ -7,28 +7,23 @@
         "parcels": [
           {
             "parcelId": "2469",
-            "sheetId": "SD8558",
-            "area": 13.6145
+            "sheetId": "SD8558"
           },
           {
             "parcelId": "2484",
-            "sheetId": "SD5148",
-            "area": 6.4805
+            "sheetId": "SD5148"
           },
           {
             "parcelId": "2489",
-            "sheetId": "SD8542",
-            "area": 1.7073
+            "sheetId": "SD8542"
           },
           {
             "parcelId": "2520",
-            "sheetId": "SD8667",
-            "area": 8.9489
+            "sheetId": "SD8667"
           },
           {
             "parcelId": "2526",
-            "sheetId": "SD6348",
-            "area": 31.1806
+            "sheetId": "SD6348"
           }
         ]
       },
