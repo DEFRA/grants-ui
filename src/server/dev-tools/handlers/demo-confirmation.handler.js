@@ -84,7 +84,7 @@ export async function demoConfirmationHandler(request, h) {
     const demoData = buildDemoData()
     const viewModel = buildViewModel(demoData, confirmationContent, form, slug)
 
-    return h.view('confirmation/views/config-confirmation-page', viewModel)
+    return h.view('config-confirmation-page', viewModel)
   } catch (error) {
     log(LogCodes.CONFIRMATION.CONFIRMATION_ERROR, {
       userId: 'demo',
@@ -92,6 +92,6 @@ export async function demoConfirmationHandler(request, h) {
     })
 
     const fallbackViewModel = generateFallbackViewModel(error)
-    return h.view('confirmation/views/config-confirmation-page', fallbackViewModel)
+    return h.view('config-confirmation-page', fallbackViewModel)
   }
 }

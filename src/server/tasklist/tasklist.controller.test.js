@@ -113,7 +113,7 @@ describe('generic-tasklist-controller', () => {
         expect(mockServer.app.cacheTemp.get).toHaveBeenCalledWith('test-session-id')
         expect(mockRequest.yar.get).toHaveBeenCalledWith('visitedSubSections')
         expect(TasklistGenerator).toHaveBeenCalledWith(mockConfig)
-        expect(mockH.view).toHaveBeenCalledWith('tasklist/views/generic-tasklist-page', {
+        expect(mockH.view).toHaveBeenCalledWith('generic-tasklist-page', {
           ...mockTasklistModel,
           tasklistId: 'test-tasklist'
         })
@@ -275,7 +275,7 @@ describe('generic-tasklist-controller', () => {
 
         expect(complexMockGenerateTasklist).toHaveBeenCalledWith(complexData, ['sub1'])
 
-        expect(mockH.view).toHaveBeenCalledWith('tasklist/views/generic-tasklist-page', {
+        expect(mockH.view).toHaveBeenCalledWith('generic-tasklist-page', {
           ...complexTasklistModel,
           tasklistId: 'example'
         })
