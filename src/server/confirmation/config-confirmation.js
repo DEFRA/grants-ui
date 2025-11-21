@@ -40,6 +40,7 @@ function validateRequestAndFindForm(request, h) {
       },
       request
     )
+    // @todo - should maybe use the `error/404` view here?
     return { error: h.response('Form not found').code(HTTP_STATUS.NOT_FOUND) }
   }
 
@@ -99,7 +100,7 @@ function buildConfirmationResponse(confirmationContent, sessionData, form, slug,
     slug
   })
 
-  return h.view('confirmation/views/config-confirmation-page', viewModel)
+  return h.view('config-confirmation-page', viewModel)
 }
 
 /**

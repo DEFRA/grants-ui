@@ -46,14 +46,13 @@ export function createTasklistRoute(tasklistId) {
                   },
                   'Cache retrieval failed, using empty data'
                 )
-                data = {}
               }
               const visitedSubSections = request.yar.get('visitedSubSections') || []
 
               const generator = new TasklistGenerator(config)
               const tasklistModel = generator.generateTasklist(data, visitedSubSections)
 
-              return h.view('tasklist/views/generic-tasklist-page', {
+              return h.view('generic-tasklist-page', {
                 ...tasklistModel,
                 tasklistId
               })

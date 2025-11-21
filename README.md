@@ -888,6 +888,35 @@ npm run docker:migrate:ext:up
 npm run docker:migrate:ext:down
 ```
 
+#### Land Grants changelog checker
+
+When you bring up the Land Grants stack using either of these commands:
+
+- `npm run docker:landgrants:up`
+- `npm run docker:landgrants:ha:up`
+
+a small post-hook script (`tools/check-landgrants-changelog.js`) runs automatically.
+It:
+
+- Detects whether the Land Grants Postgres database has been seeded at least once
+  (by checking for the `public.actions` table).
+- Derives a baseline timestamp from the Postgres data volume (preferably the mtime of
+  `/var/lib/postgresql/data/global`, falling back to the volume creation time).
+- Calls the GitHub API to look for commits in `DEFRA/land-grants-api` under `changelog/`
+  that are newer than that baseline.
+
+Depending on what it finds:
+
+- If the DB has never been seeded, it prints a boxed notice telling you to run the
+  migration/seed scripts.
+- If the DB has been seeded and newer changelog commits exist, it prints a boxed
+  notice recommending that you re-seed.
+- Otherwise, it logs a short "no changes" message.
+
+This check is advisory only and never fails the Docker command. To skip it entirely
+set `LANDGRANTS_CHANGELOG_CHECK=false` in the environment before running the
+`docker:landgrants:*` scripts.
+
 #### High-availability (HA) local proxy
 
 For local testing behind HTTPS and to simulate an HA entry point, there is an optional Nginx reverse proxy defined in `compose.ha.yml`.
@@ -1155,6 +1184,33 @@ It is possible to run acceptance tests at individual feature file level by passi
 ```bash
 ./tools/run-acceptance-tests.sh ./test/features/example-whitelist/whitelist.feature
 ```
+
+#### Parallel Test Execution
+
+The acceptance tests support parallel execution through the `SE_NODE_MAX_SESSIONS` environment variable, which controls the Selenium node's maximum concurrent sessions. The default value is 1 session.
+
+**Configuration:**
+
+The `SE_NODE_MAX_SESSIONS` variable can be set in your `.env` file:
+
+```bash
+# Default value is 1
+SE_NODE_MAX_SESSIONS=1
+
+# To run with more parallelization
+SE_NODE_MAX_SESSIONS=2
+```
+
+**Running Tests with SE_NODE_MAX_SESSIONS:**
+
+You can also set the `SE_NODE_MAX_SESSIONS` environment variable directly when running acceptance tests:
+
+```bash
+# Run all acceptance tests with 2 parallel sessions
+SE_NODE_MAX_SESSIONS=2 ./tools/run-acceptance-tests.sh
+```
+
+**Note:** A higher value may not reduce test execution time beyond a certain point and can introduce more instability into your Selenium node. Beyond this approach a Selenium grid of hub and multiple nodes becomes necessary, but which testing shows uses much more resource for only small gains in our usage.
 
 #### CI
 

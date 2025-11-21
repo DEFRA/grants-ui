@@ -29,12 +29,12 @@ const controllerParcelsResponse = [
   {
     value: 'SD7946-0155',
     text: 'SD7946 0155',
-    hint: { text: 'Total size: 4.0383 ha' }
+    hint: { text: 'Total size: 4.0383 hectares' }
   },
   {
     value: 'SD7846-4509',
     text: 'SD7846 4509',
-    hint: { text: 'Total size: 0.0633 sqm' }
+    hint: { text: 'Total size: 0.0633 square metres' }
   }
 ]
 
@@ -113,7 +113,7 @@ describe('SelectLandParcelPageController', () => {
       expect(result).toEqual({
         text: 'SD7946 0155',
         value: 'SD7946-0155',
-        hint: { text: 'Total size: 4.0383 ha' }
+        hint: { text: 'Total size: 4.0383 hectares' }
       })
     })
 
@@ -129,7 +129,7 @@ describe('SelectLandParcelPageController', () => {
       expect(result).toEqual({
         text: 'SD7946 0155',
         value: 'SD7946-0155',
-        hint: { text: 'Total size 4.0383 ha, 2 actions added' }
+        hint: { text: 'Total size 4.0383 hectares, 2 actions added' }
       })
     })
 
@@ -145,7 +145,7 @@ describe('SelectLandParcelPageController', () => {
       expect(result).toEqual({
         text: 'SD7946 0155',
         value: 'SD7946-0155',
-        hint: { text: 'Total size 4.0383 ha, 1 action added' }
+        hint: { text: 'Total size 4.0383 hectares, 1 action added' }
       })
     })
 
@@ -269,7 +269,7 @@ describe('SelectLandParcelPageController', () => {
         'select-land-parcel',
         expect.objectContaining({
           pageTitle: 'Select Land Parcel',
-          errorMessage: 'Please select a land parcel from the list'
+          errors: 'Select a land parcel'
         })
       )
       expect(result).toBe('mock-rendered-view')
@@ -297,7 +297,7 @@ describe('SelectLandParcelPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'select-land-parcel',
         expect.objectContaining({
-          errorMessage: 'Please select a land parcel from the list'
+          errors: 'Select a land parcel'
         })
       )
       expect(result).toBe('mock-rendered-view')
@@ -312,7 +312,7 @@ describe('SelectLandParcelPageController', () => {
       expect(mockH.view).not.toHaveBeenCalledWith(
         'select-land-parcel',
         expect.objectContaining({
-          errorMessage: 'Please select a land parcel from the list'
+          errors: 'Select a land parcel'
         })
       )
       expect(controller.proceed).toHaveBeenCalled()
@@ -339,7 +339,7 @@ describe('SelectLandParcelPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'select-land-parcel',
         expect.objectContaining({
-          errorMessage: 'Please select a land parcel from the list'
+          errors: 'Select a land parcel'
         })
       )
     })
@@ -354,7 +354,7 @@ describe('SelectLandParcelPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'select-land-parcel',
         expect.objectContaining({
-          errorMessage: 'Please select a land parcel from the list',
+          errors: 'Select a land parcel',
           parcels: []
         })
       )
@@ -390,7 +390,7 @@ describe('SelectLandParcelPageController', () => {
         expect.objectContaining({
           parcels: expect.arrayContaining([
             expect.objectContaining({
-              hint: { text: 'Total size 4.0383 ha, 2 actions added' }
+              hint: { text: 'Total size 4.0383 hectares, 2 actions added' }
             })
           ])
         })
@@ -412,7 +412,7 @@ describe('SelectLandParcelPageController', () => {
         expect.objectContaining({
           parcels: expect.arrayContaining([
             expect.objectContaining({
-              hint: { text: 'Total size: 4.0383 ha' }
+              hint: { text: 'Total size: 4.0383 hectares' }
             })
           ])
         })

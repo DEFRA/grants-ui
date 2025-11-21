@@ -11,6 +11,7 @@ import {
   parcelsWithSize,
   validate
 } from '~/src/server/land-grants/services/land-grants.client.js'
+import { formatAreaUnit } from '~/src/server/land-grants/utils/format-area-unit.js'
 
 const LAND_GRANTS_API_URL = config.get('landGrants.grantsServiceApiEndpoint')
 
@@ -55,6 +56,7 @@ export async function calculateGrantPayment(state) {
 const createGroup = (name, groupActions) => ({
   name,
   totalAvailableArea: {
+    unitFullName: formatAreaUnit(groupActions[0]?.availableArea.unit),
     unit: groupActions[0]?.availableArea.unit,
     value: Math.max(...groupActions.map((item) => item.availableArea.value))
   },
@@ -95,6 +97,7 @@ export async function fetchAvailableActionsForParcel({ parcelId = '', sheetId = 
       sheetId,
       parcelId,
       size: {
+        unitFullName: formatAreaUnit(foundParcel?.size?.unit ?? ''),
         unit: foundParcel?.size?.unit ?? '',
         value: foundParcel?.size?.value ?? 0
       }

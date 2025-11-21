@@ -21,7 +21,7 @@
       </h1>
 
         {{ govukSummaryList(farmDetails) }}
-    
+
       {% if not error %}
         <form method="post" novalidate>
           <input type="hidden" name="crumb" value="{{ crumb }}">

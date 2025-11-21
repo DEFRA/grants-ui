@@ -50,7 +50,7 @@ describe('#homeController', () => {
     const mockRequest = mockSimpleRequest()
     const mockH = mockHapiResponseToolkit({
       view: (template, context) => {
-        expect(template).toBe('home/views/home')
+        expect(template).toBe('home')
         expect(context).toEqual({
           pageTitle: 'Home',
           heading: 'Home'
@@ -142,7 +142,7 @@ describe('#indexController', () => {
     const mockRequest = mockSimpleRequest()
     const mockH = mockHapiResponseToolkit({
       view: (template, context) => {
-        expect(template).toBe('home/views/index')
+        expect(template).toBe('root')
         expect(context).toEqual({
           pageTitle: 'Index',
           heading: 'Index'

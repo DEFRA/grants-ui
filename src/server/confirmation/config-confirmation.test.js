@@ -108,7 +108,7 @@ describe('config-confirmation', () => {
         form: mockForm,
         slug: 'test-slug'
       })
-      expect(mockH.view).toHaveBeenCalledWith('confirmation/views/config-confirmation-page', { test: 'viewModel' })
+      expect(mockH.view).toHaveBeenCalledWith('config-confirmation-page', { test: 'viewModel' })
     })
 
     test('should return 404 when form not found', async () => {
@@ -149,7 +149,7 @@ describe('config-confirmation', () => {
         form: mockForm,
         slug: 'test-slug'
       })
-      expect(mockH.view).toHaveBeenCalledWith('confirmation/views/config-confirmation-page', { test: 'viewModel' })
+      expect(mockH.view).toHaveBeenCalledWith('config-confirmation-page', { test: 'viewModel' })
     })
 
     test('should handle reference number from confirmation state', async () => {

@@ -24,10 +24,11 @@
           text: info
         }) }}
         {% endif %}
-        {% if errorMessages %}
+
+        {% if errors %}
           {{ govukErrorSummary({
           titleText: "There is a problem",
-          errorList: errorMessages
+          errorList: errors
         }) }}
         {% endif %}
 
@@ -117,7 +118,7 @@
                     text: "No"
                   }
                 ],
-                errorMessage: errorMessages and errorMessages[0] and errorMessages[0].href and { text: errorMessages[0].text, href: errorMessages[0].href }
+                errorMessage: errors and errors[0] and errors[0].href and { text: errors[0].text, href: errors[0].href }
               })
             }}
             <div class="govuk-button-group">
@@ -130,7 +131,7 @@
               {% endblock %}
             </div>
           </form>
-        {{ defraSupportDetails() }}
+          {{ defraSupportDetails({typeOfSupport: 'question'}) }}
       </div>
     </div>
   </div>
