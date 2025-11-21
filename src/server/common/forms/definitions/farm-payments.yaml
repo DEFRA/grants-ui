@@ -105,6 +105,11 @@ pages:
     controller: SubmissionPageController
     next: []
     id: 5a1535ca-0c2a-4d34-80d7-385f17dfbf5e
+  - title: Terms and conditions
+    path: /terms-and-conditions
+    controller: TermsAndConditionsPageController
+    next: []
+    id: 25a01ad6-b993-4ba2-8eaf-d52c285d6ff9
 lists: []
 sections: []
 conditions: []
