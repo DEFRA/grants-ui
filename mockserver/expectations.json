@@ -34,7 +34,7 @@
     "httpResponse": {
       "statusCode": 200,
       "body": {
-        "status": "OFFER_SENT"
+        "status": "RECEIVED"
       }
     }
   },
