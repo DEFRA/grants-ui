@@ -153,6 +153,53 @@ describe('RemoveActionPageController', () => {
 
       expect(result.landParcels).toEqual(mockLandParcels)
     })
+
+    test('should remove landParcels key if it becomes empty', () => {
+      const state = {
+        landParcels: JSON.parse(
+          JSON.stringify({
+            'SD6944-0085': {
+              actionsObj: {
+                CMOR1: {
+                  description: 'Assess moorland and produce a written record: CMOR1',
+                  value: '1.0',
+                  unit: 'ha'
+                }
+              }
+            }
+          })
+        )
+      }
+
+      const result = controller.deleteParcelFromState(state, 'SD6944-0085')
+
+      expect(result.landParcels).toBeUndefined()
+    })
+
+    test('should remove payment keys from state if there are no land parcels', () => {
+      const state = {
+        landParcels: JSON.parse(
+          JSON.stringify({
+            'SD6944-0085': {
+              actionsObj: {
+                CMOR1: {
+                  description: 'Assess moorland and produce a written record: CMOR1',
+                  value: '1.0',
+                  unit: 'ha'
+                }
+              }
+            }
+          })
+        ),
+        payment: { details: 'payment details' },
+        draftApplicationAnnualTotalPence: 100
+      }
+
+      const result = controller.deleteParcelFromState(state, 'SD6944-0085')
+
+      expect(result.payment).toBeUndefined()
+      expect(result.draftApplicationAnnualTotalPence).toBeUndefined()
+    })
   })
 
   describe('deleteActionFromState', () => {
@@ -189,7 +236,7 @@ describe('RemoveActionPageController', () => {
 
       const result = controller.deleteActionFromState(state, 'SD6944-0085', 'CMOR1')
 
-      expect(result.landParcels['SD6944-0085']).toBeUndefined()
+      expect(result.landParcels?.['SD6944-0085']).toBeUndefined()
     })
 
     test('should not modify original state object', () => {
@@ -221,6 +268,53 @@ describe('RemoveActionPageController', () => {
       const result = controller.deleteActionFromState(state, 'SD6743-8083', 'NONEXISTENT')
 
       expect(result.landParcels).toEqual(mockLandParcels)
+    })
+
+    test('should remove landParcels key if it becomes empty', () => {
+      const state = {
+        landParcels: JSON.parse(
+          JSON.stringify({
+            'SD6944-0085': {
+              actionsObj: {
+                CMOR1: {
+                  description: 'Assess moorland and produce a written record: CMOR1',
+                  value: '1.0',
+                  unit: 'ha'
+                }
+              }
+            }
+          })
+        )
+      }
+
+      const result = controller.deleteActionFromState(state, 'SD6944-0085', 'CMOR1')
+
+      expect(result.landParcels).toBeUndefined()
+    })
+
+    test('should remove payment keys from state if there are no land parcels', () => {
+      const state = {
+        landParcels: JSON.parse(
+          JSON.stringify({
+            'SD6944-0085': {
+              actionsObj: {
+                CMOR1: {
+                  description: 'Assess moorland and produce a written record: CMOR1',
+                  value: '1.0',
+                  unit: 'ha'
+                }
+              }
+            }
+          })
+        ),
+        payment: { details: 'payment details' },
+        draftApplicationAnnualTotalPence: 100
+      }
+
+      const result = controller.deleteActionFromState(state, 'SD6944-0085', 'CMOR1')
+
+      expect(result.payment).toBeUndefined()
+      expect(result.draftApplicationAnnualTotalPence).toBeUndefined()
     })
   })
 
@@ -387,14 +481,7 @@ describe('RemoveActionPageController', () => {
 
       const result = await controller.processRemoval(mockRequest, state, mockH, parcel, action)
 
-      expect(controller.setState).toHaveBeenCalledWith(
-        mockRequest,
-        expect.objectContaining({
-          landParcels: expect.not.objectContaining({
-            'SD6944-0085': expect.anything()
-          })
-        })
-      )
+      expect(controller.setState).toHaveBeenCalledWith(mockRequest, {})
       expect(controller.proceed).toHaveBeenCalledWith(
         mockRequest,
         mockH,
