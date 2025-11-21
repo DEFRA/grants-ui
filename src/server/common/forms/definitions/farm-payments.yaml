@@ -110,6 +110,11 @@ pages:
     controller: TermsAndConditionsPageController
     next: []
     id: 25a01ad6-b993-4ba2-8eaf-d52c285d6ff9
+  - title: Technical test information
+    path: /technical-test-information
+    controller: TechnicalTestInformationPageController
+    next: []
+    id: 5c1e5d51-6e9b-4ea9-9a78-eecedc97a3e6
 lists: []
 sections: []
 conditions: []
