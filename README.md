@@ -741,6 +741,75 @@ This map is used at runtime to validate payloads prior to submission using:
 
 This ensures each grant submission matches the expected schema defined in GAS and prevents invalid data from being submitted.
 
+#### Using the `gas.http` helper and HTTP client environments
+
+For local development and manual testing of grant definitions and submissions against GAS, this repository includes:
+
+- `gas.http` – an HTTP client collection with example requests for:
+  - creating grant definitions in GAS for `example-grant-with-auth` and `adding-value`
+  - submitting example applications for those grants
+- `http-client.env.json` – shared, non‑secret environment configuration (base URLs)
+- `http-client.private.env.json` – per‑environment secrets (service tokens and API keys)
+
+Most IDEs (including JetBrains IDEs and VS Code with the REST Client extension) can execute the requests in `gas.http` using these environment files.
+
+##### `http-client.env.json` (public envs)
+
+The `http-client.env.json` file defines the non‑secret per‑environment configuration used by `gas.http`:
+
+```json
+{
+  "local": {
+    "base": "http://localhost:3000"
+  },
+  "dev": {
+    "base": "https://ephemeral-protected.api.dev.cdp-int.defra.cloud/fg-gas-backend"
+  },
+  "test": {
+    "base": "https://ephemeral-protected.api.test.cdp-int.defra.cloud/fg-gas-backend"
+  },
+  "perf-test": {
+    "base": "https://ephemeral-protected.api.perf-test.cdp-int.defra.cloud/fg-gas-backend"
+  }
+}
+```
+
+You can safely commit this file to version control as it contains no secrets.
+
+##### `http-client.private.env.json` (secrets – do not commit)
+
+The `http-client.private.env.json` file contains per‑environment secrets required by the `gas.http` requests and **must not** be committed. Ensure it is listed in `.gitignore`.
+
+Create this file locally using the following template:
+
+```json
+{
+  "local": {
+    "serviceToken": "<local-service-token>",
+    "x-api-key": "local"
+  },
+  "dev": {
+    "serviceToken": "<dev-service-token>",
+    "x-api-key": "<dev-x-api-key>"
+  }
+}
+```
+
+Populate the placeholders as follows (do **not** paste real secrets into the repo):
+
+- `x-api-key` – obtain this per‑environment value from the CDP portal user profile page:
+  - `https://portal.cdp-int.defra.cloud/user-profile`
+- `serviceToken` – a GAS service token which must be minted and configured in GAS for each environment:
+  - generate the token using the GAS tooling
+  - register it in GAS (for example by adding it to the appropriate collection in GAS MongoDB)
+  - use the raw token value here
+
+Once `http-client.private.env.json` is created and populated, you can:
+
+1. Select the desired environment (e.g. `local` or `dev`, etc) in your HTTP client.
+2. Use the `Create ...` requests in `gas.http` to define grants in GAS.
+3. Use the corresponding `Submit application ...` requests to send example application payloads and verify end‑to‑end integration.
+
 #### Grant Schema Updates
 
 In order to update a grant schema, visit:

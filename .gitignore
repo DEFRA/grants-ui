@@ -16,3 +16,4 @@ src/contracts/pacts
 compose.override.yml
 reports/mutation/mutation.html
 .stryker-tmp
+/http-client.private.env.json
