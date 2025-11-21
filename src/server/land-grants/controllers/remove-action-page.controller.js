@@ -28,6 +28,13 @@ export default class RemoveActionPageController extends LandGrantsQuestionWithAu
   deleteParcelFromState(state, parcel) {
     const newState = JSON.parse(JSON.stringify(state))
     delete newState.landParcels[parcel]
+
+    // remove the land parcels key if it is empty
+    if (Object.keys(newState.landParcels || {}).length === 0) {
+      delete newState.landParcels
+      delete newState.payment
+      delete newState.draftApplicationAnnualTotalPence
+    }
     return newState
   }
 
@@ -46,6 +53,13 @@ export default class RemoveActionPageController extends LandGrantsQuestionWithAu
       if (Object.keys(newState.landParcels[parcel].actionsObj).length === 0) {
         delete newState.landParcels[parcel]
       }
+
+      // remove the land parcels key if it is empty
+      if (Object.keys(newState.landParcels || {}).length === 0) {
+        delete newState.landParcels
+        delete newState.payment
+        delete newState.draftApplicationAnnualTotalPence
+      }
     }
 
     return newState
@@ -59,8 +73,8 @@ export default class RemoveActionPageController extends LandGrantsQuestionWithAu
    * @returns {string} - Next path to navigate to
    */
   getNextPathAfterRemoval(newState, parcel, action) {
-    const hasRemainingActions = newState.landParcels[parcel]?.actionsObj
-    const hasRemainingParcels = Object.keys(newState.landParcels).length > 0
+    const hasRemainingActions = newState.landParcels?.[parcel]?.actionsObj
+    const hasRemainingParcels = Object.keys(newState.landParcels || {}).length > 0
 
     // remove the only action
     if (!hasRemainingActions && action) {
