@@ -3,8 +3,8 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { config } from '~/src/config/config.js'
 import { getValidToken } from '~/src/server/common/helpers/entra/token-manager.js'
-import { logger } from '~/src/server/common/helpers/logging/log.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
+import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
 /**
  * @typedef {object} LandParcel
@@ -120,9 +120,7 @@ async function makeConsolidatedViewRequest(request, query) {
 
   return retry(fetchOperation, {
     timeout: 30000,
-    onRetry: (error, attempt) => {
-      logger.warn(`Consolidated View API retry attempt ${attempt}, error: ${error.message}`)
-    }
+    serviceName: 'ConsolidatedView.fetchBusinessData'
   })
 }
 
@@ -148,7 +146,14 @@ async function fetchFromConsolidatedView(request, { query, formatResponse }) {
     const responseJson = await makeConsolidatedViewRequest(request, query)
     return formatResponse(responseJson)
   } catch (error) {
-    logger.error({ err: error }, 'Unexpected error fetching business data from Consolidated View API')
+    log(
+      LogCodes.SYSTEM.CONSOLIDATED_VIEW_API_ERROR,
+      {
+        sbi,
+        errorMessage: error.message
+      },
+      request
+    )
     throw new ConsolidatedViewApiError(error.message, error.status, error.message, sbi)
   }
 }

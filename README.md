@@ -725,21 +725,26 @@ Example response:
 
 #### Submission Schema Validators
 
-Each GAS grant also has an associated schema stored locally in:
+Each GAS grant may define a JSON Schema stored locally in:
 
 `src/server/common/forms/schemas/`
 
-Each file should be named with the grant code (e.g., adding-value-v4.json) and contain the JSON Schema that validates the application payload for that grant.
+Each schema file is named after the grant code
+(e.g. adding-value-v4.json) and describes the shape of the expected application payload for that grant.
 
-At application startup, the app scans the schemas directory and compiles each schema into a JSON Schema validator using Ajv. These validators are cached in memory in a map of the form:
+At application startup, the app scans the schemas directory and compiles each schema into a JSON Schema validator using Ajv. These compiled validators are stored in-memory in a map of the form:
 
 `Map<string, ValidateFunction>`
 
-This map is used at runtime to validate payloads prior to submission using:
+##### ❗ Current Runtime Behaviour
+
+Although the validators are compiled at startup, they are not currently used at runtime to validate submissions within the grants-ui submission pipeline.
+
+The helper:
 
 `validateSubmissionAnswers(payload, grantCode)`
 
-This ensures each grant submission matches the expected schema defined in GAS and prevents invalid data from being submitted.
+is currently used only in tests to ensure that the mapping logic produces payloads that conform to the expected schema format.
 
 #### Using the `gas.http` helper and HTTP client environments
 
@@ -1113,7 +1118,7 @@ log(LogCodes.SUBMISSION.SUBMISSION_SUCCESS, {
 // Log validation error
 log(LogCodes.FORMS.FORM_VALIDATION_ERROR, {
   formName: 'declaration',
-  error: 'Required field missing'
+  errorMessage: 'Required field missing'
 })
 ```
 

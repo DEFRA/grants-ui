@@ -12,14 +12,16 @@ import { mockSimpleRequest } from '~/src/__mocks__/hapi-mocks.js'
 const mockFetch = vi.hoisted(() => vi.fn())
 global.fetch = mockFetch
 
-const mockLogger = {
-  debug: vi.fn(),
-  warn: vi.fn(),
-  error: vi.fn()
-}
+const mockLog = vi.fn()
 
 vi.mock('../logging/log.js', () => ({
-  logger: () => mockLogger
+  log: mockLog,
+  LogCodes: {
+    SYSTEM: {
+      EXTERNAL_API_CALL_DEBUG: { level: 'debug', messageFunc: vi.fn() },
+      EXTERNAL_API_ERROR: { level: 'error', messageFunc: vi.fn() }
+    }
+  }
 }))
 
 // Mock parseSessionKey
@@ -63,15 +65,6 @@ describe('State API helpers', () => {
     describe('With backend configured correctly', () => {
       beforeAll(async () => {
         vi.doMock('~/src/config/config.js', createMockConfig)
-        vi.doMock('../logging/log.js', () => ({
-          log: vi.fn(),
-          LogCodes: {
-            SYSTEM: {
-              EXTERNAL_API_CALL_DEBUG: { level: 'debug', messageFunc: vi.fn() },
-              EXTERNAL_API_ERROR: { level: 'error', messageFunc: vi.fn() }
-            }
-          }
-        }))
         const helper = await import('~/src/server/common/helpers/state/fetch-saved-state-helper.js?t=' + Date.now())
         fetchSavedStateFromApi = helper.fetchSavedStateFromApi
         clearSavedStateFromApi = helper.clearSavedStateFromApi
@@ -189,7 +182,7 @@ describe('State API helpers', () => {
             method: 'GET',
             endpoint: expect.stringContaining('/state/'),
             identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.ORGANISATION_ID}:${TEST_USER_IDS.GRANT_ID}`,
-            error: 'Network error'
+            errorMessage: 'Network error'
           }),
           mockRequest
         )
@@ -226,15 +219,6 @@ describe('State API helpers', () => {
       beforeAll(async () => {
         vi.resetModules()
         vi.doMock('~/src/config/config.js', createMockConfig)
-        vi.doMock('../logging/log.js', () => ({
-          log: vi.fn(),
-          LogCodes: {
-            SYSTEM: {
-              EXTERNAL_API_CALL_DEBUG: { level: 'debug', messageFunc: vi.fn() },
-              EXTERNAL_API_ERROR: { level: 'error', messageFunc: vi.fn() }
-            }
-          }
-        }))
         const helper = await import('~/src/server/common/helpers/state/fetch-saved-state-helper.js?t=' + Date.now())
         clearSavedStateFromApi = helper.clearSavedStateFromApi
         log = (await import('../logging/log.js')).log
@@ -351,7 +335,7 @@ describe('State API helpers', () => {
             method: 'DELETE',
             endpoint: expect.stringContaining('/state/'),
             identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.ORGANISATION_ID}:${TEST_USER_IDS.GRANT_ID}`,
-            error: 'Network error'
+            errorMessage: 'Network error'
           }),
           mockRequest
         )

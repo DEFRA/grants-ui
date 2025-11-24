@@ -2,6 +2,7 @@ import { getCacheKey } from '~/src/server/common/helpers/state/get-cache-key-hel
 import { clearSavedStateFromApi, fetchSavedStateFromApi } from '../../helpers/state/fetch-saved-state-helper.js'
 import { persistStateToApi } from '../../helpers/state/persist-state-helper.js'
 import { ADDITIONAL_IDENTIFIER, CacheService } from '@defra/forms-engine-plugin/cache-service.js'
+import { log, LogCodes } from '../../helpers/logging/log.js'
 
 /**
  * Service responsible for persisting form/session state to the backend API.
@@ -24,9 +25,39 @@ export class StatePersistenceService extends CacheService {
    * @returns {Promise<object>} resolved state or empty object
    */
   async getState(request) {
-    const key = this._Key(request)
-    const state = await fetchSavedStateFromApi(key, request)
-    return state ?? {}
+    const key = (() => {
+      try {
+        return this._Key(request)
+      } catch (err) {
+        log(
+          LogCodes.SYSTEM.SESSION_STATE_KEY_PARSE_FAILED,
+          {
+            errorMessage: err.message,
+            stack: err.stack,
+            requestPath: request.path
+          },
+          request
+        )
+
+        throw err // rethrow — controller will fail cleanly
+      }
+    })()
+    try {
+      const state = await fetchSavedStateFromApi(key, request)
+      return state ?? {}
+    } catch (err) {
+      log(
+        LogCodes.SYSTEM.SESSION_STATE_FETCH_FAILED,
+        {
+          sessionKey: key,
+          errorMessage: err.message,
+          requestPath: request.path
+        },
+        request
+      )
+
+      throw err
+    }
   }
 
   /**
@@ -52,7 +83,7 @@ export class StatePersistenceService extends CacheService {
   async getConfirmationState(request) {
     // NO-OP because you want to keep state even after submission
     const key = this._ConfirmationKey(request)
-    this.logger?.info(`getConfirmationState called for ${key || this.UNKNOWN_SESSION}, but no action taken.`)
+    this.logger?.debug(`getConfirmationState called for ${key || this.UNKNOWN_SESSION}, but no action taken.`)
     return {}
   }
 
@@ -67,7 +98,7 @@ export class StatePersistenceService extends CacheService {
   async setConfirmationState(request, _confirmationState) {
     // NO-OP because you want to keep state even after submission
     const key = this._ConfirmationKey(request)
-    this.logger?.info(`setConfirmationState called for ${key || this.UNKNOWN_SESSION}, but no action taken.`)
+    this.logger?.debug(`setConfirmationState called for ${key || this.UNKNOWN_SESSION}, but no action taken.`)
   }
 
   /**
@@ -77,7 +108,7 @@ export class StatePersistenceService extends CacheService {
   async clearState(request, force = false) {
     // NO-OP because you want to keep state even after submission
     const key = this._Key(request)
-    this.logger?.info(`clearState called for ${key || this.UNKNOWN_SESSION}, but no action taken.`)
+    this.logger?.debug(`clearState called for ${key || this.UNKNOWN_SESSION}, but no action taken.`)
 
     if (force) {
       await clearSavedStateFromApi(key, request)

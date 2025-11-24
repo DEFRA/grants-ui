@@ -23,7 +23,7 @@ function logAuthFailure(request, authErrorMessage, hasCredentials) {
     LogCodes.AUTH.SIGN_IN_FAILURE,
     {
       userId: UNKNOWN_USER,
-      error: `Authentication failed at OIDC sign-in. Auth state: ${JSON.stringify({
+      errorMessage: `Authentication failed at OIDC sign-in. Auth state: ${JSON.stringify({
         isAuthenticated: request.auth.isAuthenticated,
         strategy: request.auth?.strategy,
         mode: request.auth?.mode,
@@ -71,7 +71,8 @@ function logTokenExchangeFailure(request, hasCredentials) {
     LogCodes.AUTH.SIGN_IN_FAILURE,
     {
       userId: UNKNOWN_USER,
-      error: 'Token exchange failure detected - Bell completed OAuth redirect but cannot exchange code for token',
+      errorMessage:
+        'Token exchange failure detected - Bell completed OAuth redirect but cannot exchange code for token',
       step: 'token_exchange_failure_analysis',
       troubleshooting: {
         issue: 'Failed obtaining access token',

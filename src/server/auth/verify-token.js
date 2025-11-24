@@ -24,7 +24,7 @@ async function fetchJwksKeys() {
   if (!keys || keys.length === 0) {
     log(LogCodes.AUTH.TOKEN_VERIFICATION_FAILURE, {
       userId: 'unknown',
-      error: 'No keys found in JWKS response',
+      errorMessage: 'No keys found in JWKS response',
       step: 'jwks_fetch'
     })
     throw new Error('No keys found in JWKS response')
@@ -70,7 +70,7 @@ function handleVerificationError(error, token) {
 
   log(LogCodes.AUTH.TOKEN_VERIFICATION_FAILURE, {
     userId,
-    error: error.message,
+    errorMessage: error.message,
     step,
     tokenPresent: !!token
   })

@@ -1,5 +1,5 @@
 import { config } from '~/src/config/config.js'
-import { logger } from '~/src/server/common/helpers/logging/log.js'
+import { log, LogCodes, logger } from '~/src/server/common/helpers/logging/log.js'
 import { metadata } from '../config.js'
 import { FileFormService } from '@defra/forms-engine-plugin/file-form-service.js'
 import path from 'node:path'
@@ -94,6 +94,12 @@ function validateWhitelistVariableCompleteness(whitelistCrnEnvVar, whitelistSbiE
   if ((whitelistCrnEnvVar && !whitelistSbiEnvVar) || (!whitelistCrnEnvVar && whitelistSbiEnvVar)) {
     const missingVar = whitelistCrnEnvVar ? 'whitelistSbiEnvVar' : 'whitelistCrnEnvVar'
     const presentVar = whitelistCrnEnvVar ? 'whitelistCrnEnvVar' : 'whitelistSbiEnvVar'
+    const formName = definition.name || form.title || 'unnamed'
+    log(LogCodes.SYSTEM.WHITELIST_CONFIG_INCOMPLETE, {
+      formName,
+      missingVar,
+      presentVar
+    })
     const error = `Incomplete whitelist configuration in form ${definition.name || form.title || 'unnamed'}: ${presentVar} is defined but ${missingVar} is missing. Both CRN and SBI whitelist variables must be configured together.`
     throw new Error(error)
   }
@@ -101,6 +107,11 @@ function validateWhitelistVariableCompleteness(whitelistCrnEnvVar, whitelistSbiE
 
 function validateCrnEnvironmentVariable(whitelistCrnEnvVar, form, definition) {
   if (whitelistCrnEnvVar && !process.env[whitelistCrnEnvVar]) {
+    const formName = definition.name || form.title || 'unnamed'
+    log(LogCodes.SYSTEM.CRN_ENV_VAR_MISSING, {
+      envVar: whitelistCrnEnvVar,
+      formName
+    })
     const error = `CRN whitelist environment variable ${whitelistCrnEnvVar} is defined in form ${definition.name || form.title || 'unnamed'} but not configured in environment`
     throw new Error(error)
   }
@@ -108,6 +119,12 @@ function validateCrnEnvironmentVariable(whitelistCrnEnvVar, form, definition) {
 
 function validateSbiEnvironmentVariable(whitelistSbiEnvVar, form, definition) {
   if (whitelistSbiEnvVar && !process.env[whitelistSbiEnvVar]) {
+    const formName = definition.name || form.title || 'unnamed'
+
+    log(LogCodes.SYSTEM.SBI_ENV_VAR_MISSING, {
+      envVar: whitelistSbiEnvVar,
+      formName
+    })
     const error = `SBI whitelist environment variable ${whitelistSbiEnvVar} is defined in form ${definition.name || form.title || 'unnamed'} but not configured in environment`
     throw new Error(error)
   }
@@ -163,6 +180,10 @@ export function validateGrantRedirectRules(form, definition) {
   //
   const { error: preError } = Joi.array().items(preSubmissionRuleSchema).length(1).validate(preSubmission)
   if (preError) {
+    log(LogCodes.SYSTEM.INVALID_REDIRECT_RULES, {
+      formName,
+      reason: `preSubmission: ${preError.message}`
+    })
     throw new Error(
       `Invalid redirect rules in form ${formName}: ${preError.message}. Expected one rule with toPath property.`
     )
@@ -173,10 +194,18 @@ export function validateGrantRedirectRules(form, definition) {
   //
   const { error: postError } = Joi.array().items(postSubmissionRuleSchema).validate(postSubmission)
   if (postError) {
+    log(LogCodes.SYSTEM.INVALID_REDIRECT_RULES, {
+      formName,
+      reason: `postSubmission schema: ${postError.message}`
+    })
     throw new Error(`Invalid redirect rules in form ${formName}: ${postError.message}`)
   }
 
   if (postSubmission.length === 0) {
+    log(LogCodes.SYSTEM.INVALID_REDIRECT_RULES, {
+      formName,
+      reason: 'postSubmission missing completely'
+    })
     throw new Error(`Invalid redirect configuration in form ${formName}: no postSubmission redirect rules defined`)
   }
 
@@ -184,6 +213,10 @@ export function validateGrantRedirectRules(form, definition) {
     (rule) => rule.fromGrantsStatus === 'default' && rule.gasStatus === 'default'
   )
   if (!hasFallbackRule) {
+    log(LogCodes.SYSTEM.INVALID_REDIRECT_RULES, {
+      formName,
+      reason: 'missing default/default fallback rule'
+    })
     throw new Error(
       `Invalid redirect configuration in form ${formName}: missing default/default fallback rule in postSubmission`
     )

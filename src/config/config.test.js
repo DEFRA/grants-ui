@@ -2,6 +2,22 @@ import { vi } from 'vitest'
 import fs from 'fs'
 import path from 'path'
 
+vi.mock('./defra-id.js', () => ({
+  default: { getProperties: () => ({}) }
+}))
+
+vi.mock('./land-grants.js', () => ({
+  default: { getProperties: () => ({}) }
+}))
+
+vi.mock('./agreements.js', () => ({
+  default: { getProperties: () => ({}) }
+}))
+
+vi.mock('./validate-backend-auth.js', () => ({
+  validateBackendAuthConfig: vi.fn()
+}))
+
 const originalEnv = process.env
 const envPath = path.join(process.cwd(), '.env')
 const envBackupPath = path.join(process.cwd(), '.env.backup')

@@ -89,7 +89,7 @@ describe('LogCodes', () => {
       [
         'SIGN_IN_FAILURE',
         'error',
-        { userId: TEST_USER_IDS.DEFAULT, error: TEST_ERRORS.INVALID_CREDENTIALS },
+        { userId: TEST_USER_IDS.DEFAULT, errorMessage: TEST_ERRORS.INVALID_CREDENTIALS },
         `User sign-in failed for user=${TEST_USER_IDS.DEFAULT}. Error: ${TEST_ERRORS.INVALID_CREDENTIALS}`
       ],
       [
@@ -107,7 +107,7 @@ describe('LogCodes', () => {
       [
         'TOKEN_VERIFICATION_FAILURE',
         'error',
-        { userId: TEST_USER_IDS.DEFAULT, error: TEST_ERRORS.INVALID_TOKEN },
+        { userId: TEST_USER_IDS.DEFAULT, errorMessage: TEST_ERRORS.INVALID_TOKEN },
         `Token verification failed for user=${TEST_USER_IDS.DEFAULT}. Error: ${TEST_ERRORS.INVALID_TOKEN}`
       ],
       [
@@ -194,6 +194,14 @@ describe('LogCodes', () => {
           sbi: TEST_SBI.DEFAULT
         },
         `Whitelist access denied to path=${TEST_PATHS.EXAMPLE_GRANT}: SBI ${TEST_SBI.DEFAULT} passed but CRN test123 failed validation`
+      ],
+      ['CREDENTIALS_MISSING', 'error', {}, `No credentials received from Bell OAuth provider`],
+      ['TOKEN_MISSING', 'error', {}, `No token received from Defra Identity`],
+      [
+        'INVALID_STATE',
+        'error',
+        { reason: 'someReason', storedStatePresent: true },
+        `Invalid OAuth state provided | reason=someReason | storedStatePresent=true`
       ]
     ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
       const logCode = LogCodes.AUTH[logCodeName]
@@ -214,7 +222,7 @@ describe('LogCodes', () => {
       [
         'FORM_VALIDATION_ERROR',
         'error',
-        { formName: TEST_FORM_NAMES.DECLARATION, error: TEST_ERRORS.REQUIRED_FIELD },
+        { formName: TEST_FORM_NAMES.DECLARATION, errorMessage: TEST_ERRORS.REQUIRED_FIELD },
         `Form validation error in ${TEST_FORM_NAMES.DECLARATION}: ${TEST_ERRORS.REQUIRED_FIELD}`
       ],
       [
@@ -232,7 +240,7 @@ describe('LogCodes', () => {
       [
         'FORM_PROCESSING_ERROR',
         'error',
-        { formName: TEST_FORM_NAMES.DECLARATION, error: TEST_ERRORS.PROCESSING_FAILED },
+        { formName: TEST_FORM_NAMES.DECLARATION, errorMessage: TEST_ERRORS.PROCESSING_FAILED },
         `Form processing error for ${TEST_FORM_NAMES.DECLARATION}: ${TEST_ERRORS.PROCESSING_FAILED}`
       ],
       [
@@ -270,10 +278,10 @@ describe('LogCodes', () => {
           grantType: TEST_GRANT_TYPES.ADDING_VALUE,
           userCrn: TEST_USER_IDS.DEFAULT,
           userSbi: TEST_SBI.DEFAULT,
-          error: TEST_ERRORS.NETWORK_ERROR,
+          errorMessage: TEST_ERRORS.NETWORK_ERROR,
           stack: 'Error stack trace'
         },
-        `Grant submission failed for grantType=${TEST_GRANT_TYPES.ADDING_VALUE}, userCrn=${TEST_USER_IDS.DEFAULT}, userSbi=${TEST_SBI.DEFAULT}, error=${TEST_ERRORS.NETWORK_ERROR}, stack=Error stack trace`
+        `Grant submission failed for grantType=${TEST_GRANT_TYPES.ADDING_VALUE}, userCrn=${TEST_USER_IDS.DEFAULT}, userSbi=${TEST_SBI.DEFAULT}, error=${TEST_ERRORS.NETWORK_ERROR}`
       ],
       [
         'SUBMISSION_VALIDATION_ERROR',
@@ -284,6 +292,24 @@ describe('LogCodes', () => {
           validationId: 'VAL123'
         },
         `Submission validation error for grantType=${TEST_GRANT_TYPES.ADDING_VALUE}, referenceNumber=${TEST_REFERENCE_NUMBERS.REF_123}, validationId=VAL123`
+      ],
+      [
+        'SUBMISSION_REDIRECT_FAILURE',
+        'error',
+        {
+          grantType: TEST_GRANT_TYPES.ADDING_VALUE,
+          referenceNumber: TEST_REFERENCE_NUMBERS.REF_123,
+          errorMessage: 'Error message'
+        },
+        `Submission redirect failure for grantType=${TEST_GRANT_TYPES.ADDING_VALUE}, referenceNumber=${TEST_REFERENCE_NUMBERS.REF_123}. Error: Error message`
+      ],
+      [
+        'VALIDATOR_NOT_FOUND',
+        'error',
+        {
+          grantType: TEST_GRANT_TYPES.ADDING_VALUE
+        },
+        `No validator found for grantType=${TEST_GRANT_TYPES.ADDING_VALUE}`
       ]
     ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
       const logCode = LogCodes.SUBMISSION[logCodeName]
@@ -320,7 +346,7 @@ describe('LogCodes', () => {
       [
         'DECLARATION_ERROR',
         'error',
-        { userId: TEST_USER_IDS.DEFAULT, error: TEST_ERRORS.PROCESSING_FAILED },
+        { userId: TEST_USER_IDS.DEFAULT, errorMessage: TEST_ERRORS.PROCESSING_FAILED },
         `Declaration processing error for user=${TEST_USER_IDS.DEFAULT}: ${TEST_ERRORS.PROCESSING_FAILED}`
       ]
     ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
@@ -348,7 +374,7 @@ describe('LogCodes', () => {
       [
         'CONFIRMATION_ERROR',
         'error',
-        { userId: TEST_USER_IDS.DEFAULT, error: TEST_ERRORS.PROCESSING_FAILED },
+        { userId: TEST_USER_IDS.DEFAULT, errorMessage: TEST_ERRORS.PROCESSING_FAILED },
         `Confirmation processing error for user=${TEST_USER_IDS.DEFAULT}: ${TEST_ERRORS.PROCESSING_FAILED}`
       ]
     ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
@@ -376,13 +402,13 @@ describe('LogCodes', () => {
       [
         'TASK_ERROR',
         'error',
-        { taskName: TEST_TASK_NAMES.DECLARATION, error: TEST_ERRORS.PROCESSING_FAILED },
+        { taskName: TEST_TASK_NAMES.DECLARATION, errorMessage: TEST_ERRORS.PROCESSING_FAILED },
         `Task processing error for ${TEST_TASK_NAMES.DECLARATION}: ${TEST_ERRORS.PROCESSING_FAILED}`
       ],
       [
         'CONFIG_LOAD_SKIPPED',
         'debug',
-        { tasklistId: 'example', error: TEST_ERRORS.PROCESSING_FAILED },
+        { tasklistId: 'example', errorMessage: TEST_ERRORS.PROCESSING_FAILED },
         `Tasklist config load skipped: tasklistId=example, error=${TEST_ERRORS.PROCESSING_FAILED}`
       ]
     ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
@@ -410,8 +436,38 @@ describe('LogCodes', () => {
       [
         'LAND_GRANT_ERROR',
         'error',
-        { userId: TEST_USER_IDS.DEFAULT, error: TEST_ERRORS.PROCESSING_FAILED },
+        { userId: TEST_USER_IDS.DEFAULT, errorMessage: TEST_ERRORS.PROCESSING_FAILED },
         `Land grant processing error for user=${TEST_USER_IDS.DEFAULT}: ${TEST_ERRORS.PROCESSING_FAILED}`
+      ],
+      ['NO_LAND_PARCELS_FOUND', 'warn', { sbi: TEST_SBI.DEFAULT }, `No land parcels found for sbi=${TEST_SBI.DEFAULT}`],
+      [
+        'NO_ACTIONS_FOUND',
+        'error',
+        { parcelId: 'testParcelId', sheetId: 'testSheetId' },
+        `No actions found | parcelId: testParcelId | sheetId: testSheetId`
+      ],
+      [
+        'VALIDATE_APPLICATION_ERROR',
+        'error',
+        { errorMessage: 'testErrorMessage', parcelId: 'testParcelId', sheetId: 'testSheetId' },
+        `Error validating application: testErrorMessage | parcelId: testParcelId | sheetId: testSheetId`
+      ],
+      [
+        'FETCH_ACTIONS_ERROR',
+        'error',
+        { errorMessage: 'testErrorMessage', sbi: TEST_SBI.DEFAULT, parcelId: 'testParcelId', sheetId: 'testSheetId' },
+        `Error fetching actions: testErrorMessage | sbi: ${TEST_SBI.DEFAULT} | parcelId: testParcelId | sheetId: testSheetId`
+      ],
+      [
+        'UNAUTHORISED_PARCEL',
+        'error',
+        {
+          errorMessage: 'testErrorMessage',
+          sbi: TEST_SBI.DEFAULT,
+          selectedLandParcel: 'A1-123',
+          landParcelsForSbi: ['A1-111', 'A1-222']
+        },
+        `Land parcel doesn't belong to sbi=${TEST_SBI.DEFAULT} | selectedLandParcel: A1-123 | landParcelsForSbi=["A1-111","A1-222"]`
       ]
     ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
       const logCode = LogCodes.LAND_GRANTS[logCodeName]
@@ -438,7 +494,7 @@ describe('LogCodes', () => {
       [
         'AGREEMENT_ERROR',
         'error',
-        { userId: TEST_USER_IDS.DEFAULT, error: TEST_ERRORS.PROCESSING_FAILED },
+        { userId: TEST_USER_IDS.DEFAULT, errorMessage: TEST_ERRORS.PROCESSING_FAILED },
         `Agreement processing error for user=${TEST_USER_IDS.DEFAULT}: ${TEST_ERRORS.PROCESSING_FAILED}`
       ]
     ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
@@ -502,7 +558,7 @@ describe('LogCodes', () => {
       [
         'SERVER_ERROR',
         'error',
-        { error: TEST_ERRORS.DATABASE_ERROR },
+        { errorMessage: TEST_ERRORS.DATABASE_ERROR },
         `Server error occurred: ${TEST_ERRORS.DATABASE_ERROR}`
       ],
       [
@@ -532,8 +588,125 @@ describe('LogCodes', () => {
       [
         'EXTERNAL_API_ERROR',
         'error',
-        { endpoint: TEST_ENDPOINTS.API_GRANTS, error: TEST_ERRORS.CONNECTION_FAILED },
+        { endpoint: TEST_ENDPOINTS.API_GRANTS, errorMessage: TEST_ERRORS.CONNECTION_FAILED },
         `External API error for ${TEST_ENDPOINTS.API_GRANTS}: ${TEST_ERRORS.CONNECTION_FAILED}`
+      ],
+      [
+        'VIEW_PATH_CHECK',
+        'debug',
+        { index: 0, path: '/app/views', exists: true, isAbsolute: true },
+        'View path 0: path=/app/views, exists=true, isAbsolute=true'
+      ],
+      [
+        'ENV_CONFIG_DEBUG',
+        'debug',
+        { configType: 'database', configValues: { host: 'localhost', port: 5432 } },
+        'Environment configuration: database - {"host":"localhost","port":5432}'
+      ],
+      ['STARTUP_PHASE', 'info', { phase: 'plugins', status: 'completed' }, 'Startup phase: plugins - completed'],
+      [
+        'PLUGIN_REGISTRATION',
+        'debug',
+        { pluginName: 'auth-plugin', status: 'registered' },
+        'Plugin registration: auth-plugin - registered'
+      ],
+      [
+        'BACKEND_AUTH_CONFIG_ERROR',
+        'error',
+        { missingKeys: ['GRANTS_UI_BACKEND_AUTH_TOKEN', 'GRANTS_UI_BACKEND_ENCRYPTION_KEY'] },
+        'Backend auth configuration invalid | missingKeys=GRANTS_UI_BACKEND_AUTH_TOKEN, GRANTS_UI_BACKEND_ENCRYPTION_KEY'
+      ],
+      [
+        'RELATIONSHIP_PARSE_ERROR',
+        'error',
+        {
+          relationships: '1100014934:106284736:Test Organisation:default-organisation-id:relationship:relationshipLoa',
+          reason: 'Invalid format: not enough fields'
+        },
+        'extractFarmDetails: Invalid relationship format | relationships="1100014934:106284736:Test Organisation:default-organisation-id:relationship:relationshipLoa" | reason=Invalid format: not enough fields'
+      ],
+      [
+        'CONFIG_MISSING',
+        'error',
+        {
+          missing: ['agreements.uiUrl', 'agreements.uiToken']
+        },
+        'Missing required configuration: agreements.uiUrl, agreements.uiToken'
+      ],
+      [
+        'WHITELIST_CONFIG_INCOMPLETE',
+        'error',
+        {
+          formName: 'testFormName',
+          presentVar: 'whitelistSbiEnvVar',
+          missingVar: 'whitelistCrnEnvVar'
+        },
+        'Incomplete whitelist configuration in form "testFormName" | present=whitelistSbiEnvVar | missing=whitelistCrnEnvVar'
+      ],
+      [
+        'CRN_ENV_VAR_MISSING',
+        'error',
+        {
+          envVar: 'whitelistCrnEnvVar',
+          formName: 'testFormName'
+        },
+        'CRN whitelist environment variable "whitelistCrnEnvVar" missing for form "testFormName"'
+      ],
+      [
+        'SBI_ENV_VAR_MISSING',
+        'error',
+        {
+          envVar: 'whitelistSBIEnvVar',
+          formName: 'testFormName'
+        },
+        'SBI whitelist environment variable "whitelistSBIEnvVar" missing for form "testFormName"'
+      ],
+      [
+        'INVALID_REDIRECT_RULES',
+        'error',
+        {
+          reason: 'preSubmission: missing targetUrl',
+          formName: 'testFormName'
+        },
+        'Invalid redirect rules in form "testFormName" | reason=preSubmission: missing targetUrl'
+      ],
+      [
+        'CONSOLIDATED_VIEW_API_ERROR',
+        'error',
+        {
+          sbi: TEST_SBI.DEFAULT,
+          errorMessage: 'someErrorMessage'
+        },
+        `Unexpected error fetching business data from Consolidated View API | sbi=${TEST_SBI.DEFAULT} | error=someErrorMessage`
+      ],
+      [
+        'SESSION_STATE_CLEAR_FAILED',
+        'error',
+        {
+          slug: 'test-form',
+          sessionKey: 'testSessionKey',
+          errorMessage: 'someErrorMessage'
+        },
+        `Failed to clear application state for slug=test-form, sessionKey=testSessionKey, error=someErrorMessage`
+      ],
+      [
+        'SESSION_STATE_KEY_PARSE_FAILED',
+        'error',
+        {
+          requestPath: '/test-path',
+          errorMessage: 'someErrorMessage'
+        },
+        `Failed to parse session key: error=someErrorMessage, path=/test-path`
+      ],
+      [
+        'SESSION_STATE_FETCH_FAILED',
+        'error',
+        {
+          requestPath: '/test-path',
+          sessionKey: 'testSessionKey',
+          errorMessage: 'someErrorMessage'
+        },
+        `Failed to fetch saved state: sessionKey=testSessionKey, error=someErrorMessage, path=/test-path`
       ]
     ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
       const logCode = LogCodes.SYSTEM[logCodeName]
@@ -568,33 +741,6 @@ describe('LogCodes', () => {
       expect(result).toContain('View path debug: currentFile=/app/src/server/index.js')
       expect(result).toContain('isBuilt=true')
       expect(result).toContain('pathsResolved=2')
-    })
-
-    it.each([
-      [
-        'VIEW_PATH_CHECK',
-        'debug',
-        { index: 0, path: '/app/views', exists: true, isAbsolute: true },
-        'View path 0: path=/app/views, exists=true, isAbsolute=true'
-      ],
-      [
-        'ENV_CONFIG_DEBUG',
-        'debug',
-        { configType: 'database', configValues: { host: 'localhost', port: 5432 } },
-        'Environment configuration: database - {"host":"localhost","port":5432}'
-      ],
-      ['STARTUP_PHASE', 'info', { phase: 'plugins', status: 'completed' }, 'Startup phase: plugins - completed'],
-      [
-        'PLUGIN_REGISTRATION',
-        'debug',
-        { pluginName: 'auth-plugin', status: 'registered' },
-        'Plugin registration: auth-plugin - registered'
-      ]
-    ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
-      const logCode = LogCodes.SYSTEM[logCodeName]
-      expect(logCode.level).toBe(expectedLevel)
-      expect(typeof logCode.messageFunc).toBe('function')
-      expect(logCode.messageFunc(testParams)).toBe(expectedMessage)
     })
   })
 

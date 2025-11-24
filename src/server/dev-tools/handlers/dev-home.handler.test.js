@@ -4,6 +4,7 @@ import { getAllForms } from '../utils/index.js'
 import { mockHapiRequest, mockHapiResponseToolkit } from '~/src/__mocks__/hapi-mocks.js'
 
 vi.mock('../utils/index.js')
+vi.mock('~/src/server/common/helpers/logging/log.js', () => ({}))
 
 describe('dev-home.handler', () => {
   const mockAllForms = [

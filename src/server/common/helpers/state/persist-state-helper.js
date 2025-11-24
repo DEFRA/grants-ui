@@ -42,7 +42,7 @@ export async function persistStateToApi(state, key) {
         method: 'POST',
         endpoint: url.href,
         identity: key,
-        error: `${response.status} - ${response.statusText}`
+        errorMessage: `${response.status} - ${response.statusText}`
       })
     }
   } catch (err) {
@@ -50,7 +50,7 @@ export async function persistStateToApi(state, key) {
       method: 'POST',
       endpoint: url.href,
       identity: key,
-      error: err.message
+      errorMessage: err.message
     })
     // NOSONAR TODO: See TGC-873
     // throw err

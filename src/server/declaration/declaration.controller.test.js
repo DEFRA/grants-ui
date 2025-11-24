@@ -8,8 +8,17 @@ import { vi } from 'vitest'
 import { mockFormsCacheService, mockHapiRequest } from '~/src/__mocks__'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { handleGasApiError } from '~/src/server/common/helpers/gas-error-messages.js'
+import { log, LogCodes } from '../common/helpers/logging/log.js'
 
 vi.mock('~/src/server/common/helpers/gas-error-messages.js')
+vi.mock('../common/helpers/logging/log.js', () => ({
+  log: vi.fn(),
+  LogCodes: {
+    SUBMISSION: {
+      SUBMISSION_FAILURE: { level: 'error', messageFunc: vi.fn() }
+    }
+  }
+}))
 
 const mockCacheService = mockFormsCacheService({
   getState: vi.fn().mockReturnValue({
@@ -265,7 +274,17 @@ describe('DeclarationPageController', () => {
 
       await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow(error)
 
-      expect(mockRequest.logger.error).toHaveBeenCalledWith(error, 'Failed to submit form')
+      expect(log).toHaveBeenCalledWith(
+        LogCodes.SUBMISSION.SUBMISSION_FAILURE,
+        expect.objectContaining({
+          grantType: 'adding-value',
+          referenceNumber: 'REF123',
+          sbi: 'sbi123',
+          crn: '1234567890',
+          errorMessage: 'Submission failed'
+        }),
+        mockRequest
+      )
     })
 
     test('should handle GrantApplicationServiceApiError and show custom error page', async () => {
@@ -283,7 +302,17 @@ describe('DeclarationPageController', () => {
       const handler = controller.makePostRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
 
-      expect(mockRequest.logger.error).toHaveBeenCalledWith(gasError, 'Failed to submit form')
+      expect(log).toHaveBeenCalledWith(
+        LogCodes.SUBMISSION.SUBMISSION_FAILURE,
+        expect.objectContaining({
+          grantType: 'adding-value',
+          referenceNumber: 'REF123',
+          sbi: 'sbi123',
+          crn: '1234567890',
+          errorMessage: 'GAS API Error'
+        }),
+        mockRequest
+      )
       expect(handleGasApiError).toHaveBeenCalledWith(mockH, mockContext, gasError)
       expect(result).toBe(mockErrorView)
     })
@@ -297,7 +326,17 @@ describe('DeclarationPageController', () => {
 
       await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow(error)
 
-      expect(mockRequest.logger.error).toHaveBeenCalledWith(error, 'Failed to submit form')
+      expect(log).toHaveBeenCalledWith(
+        LogCodes.SUBMISSION.SUBMISSION_FAILURE,
+        expect.objectContaining({
+          grantType: 'adding-value',
+          referenceNumber: 'REF123',
+          sbi: 'sbi123',
+          crn: '1234567890',
+          errorMessage: 'Some other error'
+        }),
+        mockRequest
+      )
       expect(handleGasApiError).not.toHaveBeenCalled()
     })
   })

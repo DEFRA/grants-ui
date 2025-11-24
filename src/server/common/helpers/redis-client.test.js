@@ -5,6 +5,12 @@ import { config } from '~/src/config/config.js'
 import { buildRedisClient } from '~/src/server/common/helpers/redis-client.js'
 
 vi.mock('ioredis')
+vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
+  logger: {
+    info: vi.fn(),
+    error: vi.fn()
+  }
+}))
 
 describe('#buildRedisClient', () => {
   describe('When Redis Single InstanceCache is requested', () => {

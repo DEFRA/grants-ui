@@ -3,9 +3,21 @@ import { StatePersistenceService } from './state-persistence.service.js'
 import * as fetchModule from '../../helpers/state/fetch-saved-state-helper.js'
 import * as persistModule from '../../helpers/state/persist-state-helper.js'
 import { getCacheKey } from '~/src/server/common/helpers/state/get-cache-key-helper.js'
+import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+
+vi.mock('../../helpers/logging/log.js', () => ({
+  log: vi.fn(),
+  LogCodes: {
+    SYSTEM: {
+      SESSION_STATE_KEY_PARSE_FAILED: { level: 'error', messageFunc: vi.fn() },
+      SESSION_STATE_FETCH_FAILED: { level: 'error', messageFunc: vi.fn() }
+    }
+  }
+}))
 
 vi.mock('../../helpers/state/fetch-saved-state-helper.js', () => ({
-  fetchSavedStateFromApi: vi.fn()
+  fetchSavedStateFromApi: vi.fn(),
+  clearSavedStateFromApi: vi.fn()
 }))
 vi.mock('../../helpers/state/persist-state-helper.js', () => ({
   persistStateToApi: vi.fn()
@@ -17,7 +29,7 @@ vi.mock('~/src/server/common/helpers/state/get-cache-key-helper.js', () => ({
 describe('StatePersistenceService', () => {
   let service
   const fakeLogger = vi.fn()
-  const server = { log: vi.fn(), logger: { info: fakeLogger }, cache: vi.fn(() => ({ get: vi.fn(), set: vi.fn() })) }
+  const server = { log: vi.fn(), logger: { debug: fakeLogger }, cache: vi.fn(() => ({ get: vi.fn(), set: vi.fn() })) }
 
   const fakeRequest = {
     params: { slug: 'grant-a', state: '123' },
@@ -50,6 +62,43 @@ describe('StatePersistenceService', () => {
     expect(fetchModule.fetchSavedStateFromApi).toHaveBeenCalledWith('biz-1:grant-a', fakeRequest)
   })
 
+  test('getState logs SESSION_STATE_KEY_PARSE_FAILED when key parsing fails', async () => {
+    const parseError = new Error('bad key')
+    getCacheKey.mockImplementation(() => {
+      throw parseError
+    })
+
+    await expect(service.getState(fakeRequest)).rejects.toThrow('bad key')
+
+    expect(log).toHaveBeenCalledWith(
+      LogCodes.SYSTEM.SESSION_STATE_KEY_PARSE_FAILED,
+      expect.objectContaining({
+        errorMessage: 'bad key',
+        requestPath: fakeRequest.path
+      }),
+      fakeRequest
+    )
+  })
+
+  test('getState logs SESSION_STATE_FETCH_FAILED when fetchSavedStateFromApi throws', async () => {
+    getCacheKey.mockReturnValue({ sbi: 'biz-1', grantCode: 'grant-a' })
+
+    const fetchError = new Error('backend down')
+    fetchModule.fetchSavedStateFromApi.mockRejectedValue(fetchError)
+
+    await expect(service.getState(fakeRequest)).rejects.toThrow('backend down')
+
+    expect(log).toHaveBeenCalledWith(
+      LogCodes.SYSTEM.SESSION_STATE_FETCH_FAILED,
+      expect.objectContaining({
+        sessionKey: 'biz-1:grant-a',
+        errorMessage: 'backend down',
+        requestPath: fakeRequest.path
+      }),
+      fakeRequest
+    )
+  })
+
   test('setState calls persistStateToApi and returns state', async () => {
     getCacheKey.mockReturnValue({ sbi: 'biz-1', grantCode: 'grant-a' })
     const state = { foo: 'bar' }
@@ -75,5 +124,32 @@ describe('StatePersistenceService', () => {
     getCacheKey.mockReturnValue({ sbi: 'biz-1', grantCode: 'grant-a' })
     await service.clearState(fakeRequest)
     expect(fakeLogger).toHaveBeenCalledWith(expect.stringContaining('clearState called for biz-1:grant-a'))
+  })
+
+  test('clearState does NOT call clearSavedStateFromApi when force=false', async () => {
+    getCacheKey.mockReturnValue({ sbi: 'biz-1', grantCode: 'grant-a' })
+
+    await service.clearState(fakeRequest)
+
+    expect(persistModule.persistStateToApi).not.toHaveBeenCalled()
+    expect(fetchModule.fetchSavedStateFromApi).not.toHaveBeenCalled()
+    expect(fetchModule.clearSavedStateFromApi).not.toHaveBeenCalled()
+  })
+
+  test('clearState(force=true) calls clearSavedStateFromApi', async () => {
+    getCacheKey.mockReturnValue({ sbi: 'biz-1', grantCode: 'grant-a' })
+
+    await service.clearState(fakeRequest, true)
+
+    expect(fetchModule.clearSavedStateFromApi).toHaveBeenCalledWith('biz-1:grant-a', fakeRequest)
+  })
+
+  test('clearState(force=true) logs and rethrows if clearSavedStateFromApi fails', async () => {
+    getCacheKey.mockReturnValue({ sbi: 'biz-1', grantCode: 'grant-a' })
+
+    const err = new Error('clear failed')
+    fetchModule.clearSavedStateFromApi.mockRejectedValue(err)
+
+    await expect(service.clearState(fakeRequest, true)).rejects.toThrow('clear failed')
   })
 })

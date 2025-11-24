@@ -20,6 +20,10 @@ describe('State Management Functions', () => {
         set: vi.fn(),
         get: vi.fn(),
         clear: vi.fn()
+      },
+      path: '/test/callback', // validateState logs this too
+      info: {
+        remoteAddress: '127.0.0.1' // 💥 THIS FIXES THE ISSUE
       }
     }
 

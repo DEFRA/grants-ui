@@ -59,7 +59,7 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
       LogCodes.SYSTEM.EXTERNAL_API_ERROR,
       {
         endpoint: `fetch farm details for sbi ${sbi}`,
-        error: error.message
+        errorMessage: error.message
       },
       request
     )

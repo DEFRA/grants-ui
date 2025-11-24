@@ -131,7 +131,7 @@ function logAuthError(request, response, errorContext) {
     LogCodes.AUTH.SIGN_IN_FAILURE,
     {
       userId: request.auth?.credentials?.contactId || UNKNOWN_USER,
-      error: response?.message || 'Authentication error',
+      errorMessage: response?.message || 'Authentication error',
       step: 'auth_flow_error',
       authContext: buildAuthContext(request, response, errorContext)
     },
@@ -144,7 +144,7 @@ function logBellError(request, response, errorContext) {
     LogCodes.AUTH.SIGN_IN_FAILURE,
     {
       userId: request.auth?.credentials?.contactId || UNKNOWN_USER,
-      error: response?.message || 'Bell/OAuth error',
+      errorMessage: response?.message || 'Bell/OAuth error',
       step: 'bell_oauth_error',
       authContext: buildAuthContext(request, response, errorContext)
     },
@@ -175,7 +175,7 @@ function logSystemError(request, response, statusCode) {
   log(
     LogCodes.SYSTEM.SERVER_ERROR,
     {
-      error: response?.message || 'Internal server error',
+      errorMessage: response?.message || 'Internal server error',
       statusCode,
       path: request.path,
       method: request.method,
@@ -230,7 +230,7 @@ function handleClientErrors(request, response, statusCode) {
   log(
     LogCodes.SYSTEM.SERVER_ERROR,
     {
-      error: response?.message || errorMessage,
+      errorMessage: response?.message || errorMessage,
       statusCode,
       path: request.path,
       method: request.method

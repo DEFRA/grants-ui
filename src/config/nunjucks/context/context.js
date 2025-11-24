@@ -60,7 +60,7 @@ const loadWebpackManifest = (request) => {
       log(
         LogCodes.SYSTEM.SERVER_ERROR,
         {
-          error: `Webpack ${path.basename(manifestPath)} not found: ${error.message}`
+          errorMessage: `Webpack ${path.basename(manifestPath)} not found: ${error.message}`
         },
         request
       )
@@ -90,7 +90,7 @@ const getSessionData = async (request) => {
       LogCodes.AUTH.SIGN_IN_FAILURE,
       {
         userId: 'unknown',
-        error: `Cache retrieval failed for session ${sessionId}: ${cacheError.message}`,
+        errorMessage: `Cache retrieval failed for session ${sessionId}: ${cacheError.message}`,
         step: 'context_cache_retrieval'
       },
       request
@@ -200,7 +200,7 @@ export async function context(request) {
     log(
       LogCodes.SYSTEM.SERVER_ERROR,
       {
-        error: `Error building context: ${error.message}`
+        errorMessage: `Error building context: ${error.message}`
       },
       request
     )

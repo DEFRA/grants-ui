@@ -12,6 +12,8 @@ import {
   tasklistBackButton
 } from './tasklist-back-button.js'
 
+vi.mock('~/src/server/common/helpers/logging/log.js', () => ({}))
+
 const throwFileError = () => {
   throw new Error('File read error')
 }
@@ -474,7 +476,7 @@ describe('Tasklist Back Button Plugin - Integration Tests', () => {
         expect.objectContaining({ level: 'debug' }),
         expect.objectContaining({
           tasklistId: 'example',
-          error: 'Config load failed'
+          errorMessage: 'Config load failed'
         })
       )
 

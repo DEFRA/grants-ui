@@ -1,7 +1,7 @@
 import { URLSearchParams } from 'node:url'
 
 import { config } from '~/src/config/config.js'
-import { logger, log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
 
 const msInSec = 1000
@@ -90,10 +90,8 @@ export async function refreshToken() {
         }),
       {
         timeout: 15000,
-        onRetry: (error, attempt) => {
-          logger.warn(`Token refresh retry attempt ${attempt}, error: ${error.message}`)
-        },
-        checkFetchResponse: true
+        checkFetchResponse: true,
+        serviceName: 'TokenManager.refreshToken'
       }
     )
 
@@ -121,7 +119,7 @@ export async function refreshToken() {
   } catch (error) {
     log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
       endpoint: `Entra token refresh`,
-      error: error.message
+      errorMessage: error.message
     })
     throw error
   }

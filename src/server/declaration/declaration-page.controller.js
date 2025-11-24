@@ -8,6 +8,7 @@ import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { persistSubmissionToApi } from '~/src/server/common/helpers/state/persist-submission-helper.js'
 import { ApplicationStatus } from '~/src/server/common/constants/application-status.js'
 import { handleGasApiError } from '~/src/server/common/helpers/gas-error-messages.js'
+import { log, LogCodes } from '../common/helpers/logging/log.js'
 
 export default class DeclarationPageController extends SummaryPageController {
   /**
@@ -49,6 +50,7 @@ export default class DeclarationPageController extends SummaryPageController {
 
   makePostRouteHandler() {
     const fn = async (request, context, h) => {
+      const { sbi, crn } = request.auth.credentials
       try {
         // Store the slug in context for later use
         storeSlugInContext(request, context, 'DeclarationController')
@@ -60,7 +62,6 @@ export default class DeclarationPageController extends SummaryPageController {
         request.logger.debug('DeclarationController: Processing form submission')
         request.logger.debug('DeclarationController: Current URL:', request.path)
 
-        const { sbi, crn } = request.auth.credentials
         const grantCode = request.params?.slug
 
         const identifiers = {
@@ -126,7 +127,17 @@ export default class DeclarationPageController extends SummaryPageController {
 
         return h.redirect(redirectPath)
       } catch (error) {
-        request.logger.error(error, 'Failed to submit form')
+        log(
+          LogCodes.SUBMISSION.SUBMISSION_FAILURE,
+          {
+            errorMessage: error.message,
+            referenceNumber: context.referenceNumber,
+            sbi,
+            crn,
+            grantType: this.grantCode
+          },
+          request
+        )
 
         if (error.name === 'GrantApplicationServiceApiError') {
           return handleGasApiError(h, context, error)

@@ -26,7 +26,7 @@ export const LogCodes = {
     SIGN_IN_FAILURE: {
       level: 'error',
       messageFunc: (messageOptions) =>
-        `User sign-in failed for user=${messageOptions.userId || 'unknown'}. Error: ${messageOptions.error}`
+        `User sign-in failed for user=${messageOptions.userId || 'unknown'}. Error: ${messageOptions.errorMessage}`
     },
     SIGN_OUT: {
       level: 'info',
@@ -41,7 +41,7 @@ export const LogCodes = {
     TOKEN_VERIFICATION_FAILURE: {
       level: 'error',
       messageFunc: (messageOptions) =>
-        `Token verification failed for user=${messageOptions.userId || 'unknown'}. Error: ${messageOptions.error}`
+        `Token verification failed for user=${messageOptions.userId || 'unknown'}. Error: ${messageOptions.errorMessage}`
     },
     SESSION_EXPIRED: {
       level: 'info',
@@ -77,6 +77,19 @@ export const LogCodes = {
       level: 'info',
       messageFunc: (messageOptions) =>
         `Whitelist access denied to path=${messageOptions.path}: SBI ${messageOptions.sbi || 'unknown'} passed but CRN ${messageOptions.userId || 'unknown'} failed validation`
+    },
+    CREDENTIALS_MISSING: {
+      level: 'error',
+      messageFunc: () => 'No credentials received from Bell OAuth provider'
+    },
+    TOKEN_MISSING: {
+      level: 'error',
+      messageFunc: () => 'No token received from Defra Identity'
+    },
+    INVALID_STATE: {
+      level: 'error',
+      messageFunc: (messageOptions) =>
+        `Invalid OAuth state provided | reason=${messageOptions.reason} | storedStatePresent=${messageOptions.storedStatePresent}`
     }
   },
   FORMS: {
@@ -92,7 +105,8 @@ export const LogCodes = {
     },
     FORM_VALIDATION_ERROR: {
       level: 'error',
-      messageFunc: (messageOptions) => `Form validation error in ${messageOptions.formName}: ${messageOptions.error}`
+      messageFunc: (messageOptions) =>
+        `Form validation error in ${messageOptions.formName}: ${messageOptions.errorMessage}`
     },
     FORM_VALIDATION_SUCCESS: {
       level: 'info',
@@ -100,7 +114,8 @@ export const LogCodes = {
     },
     FORM_PROCESSING_ERROR: {
       level: 'error',
-      messageFunc: (messageOptions) => `Form processing error for ${messageOptions.formName}: ${messageOptions.error}`
+      messageFunc: (messageOptions) =>
+        `Form processing error for ${messageOptions.formName}: ${messageOptions.errorMessage}`
     },
     FORM_SAVE: {
       level: 'info',
@@ -127,7 +142,7 @@ export const LogCodes = {
     SUBMISSION_FAILURE: {
       level: 'error',
       messageFunc: (messageOptions) =>
-        `Grant submission failed for grantType=${messageOptions.grantType}, userCrn=${messageOptions.userCrn}, userSbi=${messageOptions.userSbi}, error=${messageOptions.error}, stack=${messageOptions.stack || 'N/A'}`
+        `Grant submission failed for grantType=${messageOptions.grantType}, userCrn=${messageOptions.userCrn}, userSbi=${messageOptions.userSbi}, error=${messageOptions.errorMessage}`
     },
     SUBMISSION_VALIDATION_ERROR: {
       level: 'error',
@@ -142,7 +157,11 @@ export const LogCodes = {
     SUBMISSION_REDIRECT_FAILURE: {
       level: 'error',
       messageFunc: (messageOptions) =>
-        `Submission redirect failure for grantType=${messageOptions.grantType}, referenceNumber=${messageOptions.referenceNumber}. Error: ${messageOptions.error}`
+        `Submission redirect failure for grantType=${messageOptions.grantType}, referenceNumber=${messageOptions.referenceNumber}. Error: ${messageOptions.errorMessage}`
+    },
+    VALIDATOR_NOT_FOUND: {
+      level: 'error',
+      messageFunc: (messageOptions) => `No validator found for grantType=${messageOptions.grantType}`
     }
   },
   DECLARATION: {
@@ -159,7 +178,7 @@ export const LogCodes = {
     DECLARATION_ERROR: {
       level: 'error',
       messageFunc: (messageOptions) =>
-        `Declaration processing error for user=${messageOptions.userId}: ${messageOptions.error}`
+        `Declaration processing error for user=${messageOptions.userId}: ${messageOptions.errorMessage}`
     }
   },
   CONFIRMATION: {
@@ -176,7 +195,7 @@ export const LogCodes = {
     CONFIRMATION_ERROR: {
       level: 'error',
       messageFunc: (messageOptions) =>
-        `Confirmation processing error for user=${messageOptions.userId}: ${messageOptions.error}`
+        `Confirmation processing error for user=${messageOptions.userId}: ${messageOptions.errorMessage}`
     }
   },
   TASKLIST: {
@@ -191,12 +210,13 @@ export const LogCodes = {
     },
     TASK_ERROR: {
       level: 'error',
-      messageFunc: (messageOptions) => `Task processing error for ${messageOptions.taskName}: ${messageOptions.error}`
+      messageFunc: (messageOptions) =>
+        `Task processing error for ${messageOptions.taskName}: ${messageOptions.errorMessage}`
     },
     CONFIG_LOAD_SKIPPED: {
       level: 'debug',
       messageFunc: (messageOptions) =>
-        `Tasklist config load skipped: tasklistId=${messageOptions.tasklistId}, error=${messageOptions.error}`
+        `Tasklist config load skipped: tasklistId=${messageOptions.tasklistId}, error=${messageOptions.errorMessage}`
     }
   },
   LAND_GRANTS: {
@@ -212,7 +232,7 @@ export const LogCodes = {
     LAND_GRANT_ERROR: {
       level: 'error',
       messageFunc: (messageOptions) =>
-        `Land grant processing error for user=${messageOptions.userId}: ${messageOptions.error}`
+        `Land grant processing error for user=${messageOptions.userId}: ${messageOptions.errorMessage}`
     },
     NO_LAND_PARCELS_FOUND: {
       level: 'warn',
@@ -226,12 +246,12 @@ export const LogCodes = {
     VALIDATE_APPLICATION_ERROR: {
       level: 'error',
       messageFunc: (messageOptions) =>
-        `Error validating application: ${messageOptions.message} | parcelId: ${messageOptions.parcelId} | sheetId: ${messageOptions.sheetId}`
+        `Error validating application: ${messageOptions.errorMessage} | parcelId: ${messageOptions.parcelId} | sheetId: ${messageOptions.sheetId}`
     },
     FETCH_ACTIONS_ERROR: {
       level: 'error',
       messageFunc: (messageOptions) =>
-        `Error fetching actions: ${messageOptions.message} | ${messageOptions.sbi} | parcelId: ${messageOptions.parcelId} | sheetId: ${messageOptions.sheetId}`
+        `Error fetching actions: ${messageOptions.errorMessage} | sbi: ${messageOptions.sbi} | parcelId: ${messageOptions.parcelId} | sheetId: ${messageOptions.sheetId}`
     },
     UNAUTHORISED_PARCEL: {
       level: 'error',
@@ -253,7 +273,7 @@ export const LogCodes = {
     AGREEMENT_ERROR: {
       level: 'error',
       messageFunc: (messageOptions) =>
-        `Agreement processing error for user=${messageOptions.userId}: ${messageOptions.error}`
+        `Agreement processing error for user=${messageOptions.userId}: ${messageOptions.errorMessage}`
     }
   },
 
@@ -293,7 +313,7 @@ export const LogCodes = {
     },
     SERVER_ERROR: {
       level: 'error',
-      messageFunc: (messageOptions) => `Server error occurred: ${messageOptions.error}`
+      messageFunc: (messageOptions) => `Server error occurred: ${messageOptions.errorMessage}`
     },
     STARTUP_PHASE: {
       level: 'info',
@@ -323,7 +343,63 @@ export const LogCodes = {
     },
     EXTERNAL_API_ERROR: {
       level: 'error',
-      messageFunc: (messageOptions) => `External API error for ${messageOptions.endpoint}: ${messageOptions.error}`
+      messageFunc: (messageOptions) =>
+        `External API error for ${messageOptions.endpoint}: ${messageOptions.errorMessage}`
+    },
+    BACKEND_AUTH_CONFIG_ERROR: {
+      level: 'error',
+      messageFunc: (messageOptions) =>
+        `Backend auth configuration invalid | missingKeys=${messageOptions.missingKeys?.join(', ') || 'unknown'}`
+    },
+    RELATIONSHIP_PARSE_ERROR: {
+      level: 'error',
+      messageFunc: (messageOptions) =>
+        `extractFarmDetails: Invalid relationship format | relationships="${messageOptions.relationships}" | reason=${messageOptions.reason}`
+    },
+    CONFIG_MISSING: {
+      level: 'error',
+      messageFunc: (messageOptions) =>
+        `Missing required configuration: ${messageOptions?.missing?.join(', ') || 'unknown'}`
+    },
+    WHITELIST_CONFIG_INCOMPLETE: {
+      level: 'error',
+      messageFunc: (messageOptions) =>
+        `Incomplete whitelist configuration in form "${messageOptions.formName}" | present=${messageOptions.presentVar} | missing=${messageOptions.missingVar}`
+    },
+    CRN_ENV_VAR_MISSING: {
+      level: 'error',
+      messageFunc: (messageOptions) =>
+        `CRN whitelist environment variable "${messageOptions.envVar}" missing for form "${messageOptions.formName}"`
+    },
+    SBI_ENV_VAR_MISSING: {
+      level: 'error',
+      messageFunc: (messageOptions) =>
+        `SBI whitelist environment variable "${messageOptions.envVar}" missing for form "${messageOptions.formName}"`
+    },
+    INVALID_REDIRECT_RULES: {
+      level: 'error',
+      messageFunc: (messageOptions) =>
+        `Invalid redirect rules in form "${messageOptions.formName}" | reason=${messageOptions.reason}`
+    },
+    CONSOLIDATED_VIEW_API_ERROR: {
+      level: 'error',
+      messageFunc: (messageOptions) =>
+        `Unexpected error fetching business data from Consolidated View API | sbi=${messageOptions.sbi || 'unknown'} | error=${messageOptions.errorMessage}`
+    },
+    SESSION_STATE_CLEAR_FAILED: {
+      level: 'error',
+      messageFunc: (messageOptions) =>
+        `Failed to clear application state for slug=${messageOptions.slug}, sessionKey=${messageOptions.sessionKey}, error=${messageOptions.errorMessage}`
+    },
+    SESSION_STATE_KEY_PARSE_FAILED: {
+      level: 'error',
+      messageFunc: (messageOptions) =>
+        `Failed to parse session key: error=${messageOptions.errorMessage}, path=${messageOptions.requestPath}`
+    },
+    SESSION_STATE_FETCH_FAILED: {
+      level: 'error',
+      messageFunc: (messageOptions) =>
+        `Failed to fetch saved state: sessionKey=${messageOptions.sessionKey}, error=${messageOptions.errorMessage}, path=${messageOptions.requestPath}`
     }
   }
 }

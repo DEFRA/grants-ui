@@ -385,7 +385,7 @@ describe('formsStatusCallback', () => {
       expect.objectContaining({
         grantType: 'grant-a-code',
         referenceNumber: 'REF-001',
-        error: error.message
+        errorMessage: error.message
       }),
       request
     )
@@ -405,7 +405,7 @@ describe('formsStatusCallback', () => {
       expect.objectContaining({
         grantType: 'grant-a-code',
         referenceNumber: 'REF-001',
-        error: error.message
+        errorMessage: error.message
       }),
       request
     )

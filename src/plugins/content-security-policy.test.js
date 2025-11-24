@@ -1,6 +1,8 @@
 import { describe, test, beforeEach, afterEach, expect, vi, it } from 'vitest'
 import { contentSecurityPolicy as plugin } from '~/src/plugins/content-security-policy.js'
 
+vi.mock('~/src/server/common/helpers/logging/log.js', () => ({}))
+
 describe('contentSecurityPolicy plugin', () => {
   const mockHeader = vi.fn()
   const h = { continue: Symbol('continue') }

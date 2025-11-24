@@ -160,7 +160,7 @@ describe('#catchAll', () => {
         messageFunc: expect.any(Function)
       }),
       expect.objectContaining({
-        error: expect.any(String),
+        errorMessage: expect.any(String),
         statusCode: statusCodes.internalServerError,
         path: expect.any(String),
         method: expect.any(String),
@@ -200,7 +200,7 @@ describe('#catchAll', () => {
         messageFunc: expect.any(Function)
       }),
       expect.objectContaining({
-        error: 'Mock error message',
+        errorMessage: 'Mock error message',
         statusCode,
         path: '/not-auth-or-bell',
         method: 'GET',
@@ -227,7 +227,7 @@ describe('#catchAll', () => {
         messageFunc: expect.any(Function)
       }),
       expect.objectContaining({
-        error: 'bell authentication failed',
+        errorMessage: 'bell authentication failed',
         step: 'bell_oauth_error'
       }),
       request
@@ -279,7 +279,7 @@ describe('#catchAll', () => {
       }),
       expect.objectContaining({
         userId: 'user123',
-        error: 'Authentication failed',
+        errorMessage: 'Authentication failed',
         step: 'auth_flow_error',
         authContext: expect.objectContaining({
           path: '/auth/login',
@@ -315,7 +315,7 @@ describe('#catchAll', () => {
       expectLogCall(),
       expect.objectContaining({
         userId: 'unknown',
-        error: 'Authentication error',
+        errorMessage: 'Authentication error',
         step: 'auth_flow_error'
       }),
       request
@@ -336,7 +336,7 @@ describe('#catchAll', () => {
       expectLogCall(),
       expect.objectContaining({
         userId: 'unknown',
-        error: 'OAuth configuration error',
+        errorMessage: 'OAuth configuration error',
         step: 'bell_oauth_error'
       }),
       request
@@ -358,7 +358,7 @@ describe('#catchAll', () => {
       expectLogCall(),
       expect.objectContaining({
         userId: 'user456',
-        error: 'bell',
+        errorMessage: 'bell',
         step: 'bell_oauth_error'
       }),
       request
@@ -379,7 +379,7 @@ describe('#catchAll', () => {
       expectLogCall(),
       expect.objectContaining({
         userId: 'unknown',
-        error: 'Bell',
+        errorMessage: 'Bell',
         step: 'bell_oauth_error'
       }),
       request
@@ -419,7 +419,7 @@ describe('#catchAll', () => {
     expect(log).toHaveBeenCalledWith(
       expectLogCall(),
       expect.objectContaining({
-        error: 'Internal server error',
+        errorMessage: 'Internal server error',
         statusCode: SERVER_ERROR_STATUS,
         path: '/some-system-path',
         method: HTTP_METHOD

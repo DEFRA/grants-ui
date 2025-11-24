@@ -64,7 +64,7 @@ async function callStateApi(key, method, request) {
       headers: createApiHeadersForGrantsUiBackend()
     })
   } catch (err) {
-    logError(request, { method, endpoint, identity: key, error: err.message })
+    logError(request, { method, endpoint, identity: key, errorMessage: err.message })
     throw err
   }
 

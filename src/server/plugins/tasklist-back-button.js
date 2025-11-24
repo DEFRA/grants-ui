@@ -64,7 +64,7 @@ export async function loadAllTasklistConfigs() {
           tasklistIds.add(`${tasklistId}-tasklist`)
         }
       } catch (error) {
-        log(LogCodes.TASKLIST.CONFIG_LOAD_SKIPPED, { tasklistId, error: error.message })
+        log(LogCodes.TASKLIST.CONFIG_LOAD_SKIPPED, { tasklistId, errorMessage: error.message })
       }
     })
   )

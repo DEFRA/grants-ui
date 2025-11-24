@@ -3,6 +3,8 @@ import AjvModule from 'ajv/dist/2020.js'
 import fs from 'node:fs'
 import path from 'node:path'
 import YAML from 'yaml'
+import { log } from '~/src/server/common/helpers/logging/log.js'
+import { LogCodes } from '~/src/server/common/helpers/logging/log-codes.js'
 
 const SCHEMAS_BASE_PATH = './src/server/common/forms/schemas'
 const DEFINITIONS_BASE_PATH = './src/server/common/forms/definitions'
@@ -53,6 +55,7 @@ export function loadSubmissionSchemaValidators() {
 export function validateSubmissionAnswers(payload, grantCode) {
   const validate = validators.get(grantCode)
   if (!validate) {
+    log(LogCodes.SUBMISSION.VALIDATOR_NOT_FOUND, { grantCode })
     throw new Error(`No validator found for grantCode: ${grantCode}`)
   }
   const valid = validate(payload)
