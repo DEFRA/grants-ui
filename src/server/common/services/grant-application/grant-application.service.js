@@ -62,6 +62,9 @@ export async function makeGasApiRequest(url, grantCode, request, options = {}) {
 
     if (!response.ok) {
       const error = await response.json()
+
+      logger.error({ err: error }, `Not ok error response: ${error.message} - ${response.statusText}`)
+
       throw new GrantApplicationServiceApiError(
         `${response.status} ${response.statusText} - ${error.message}`,
         response.status,
