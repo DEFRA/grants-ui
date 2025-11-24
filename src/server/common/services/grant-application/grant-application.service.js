@@ -1,5 +1,5 @@
 import { config } from '~/src/config/config.js'
-import { log, logger } from '~/src/server/common/helpers/logging/log.js'
+import { log } from '~/src/server/common/helpers/logging/log.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
 
 const GAS_API_ENDPOINT = config.get('gas.apiEndpoint')
