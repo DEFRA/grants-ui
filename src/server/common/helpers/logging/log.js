@@ -31,15 +31,13 @@ const log = (logCode, messageOptions, request) => {
  * @returns {(errorContext: object | undefined, message: string) => void} Logger function.
  */
 const getLoggerOfType = (level, request) => {
-  const requestLogger = request?.log
+  // hapi-pino attaches a pino logger instance to request.logger
+  const pinoLogger = request?.logger || logger
 
   return {
-    info: (errorContext, message) =>
-      requestLogger ? request.log(['info'], message) : logger.info(errorContext || {}, message),
-    debug: (errorContext, message) =>
-      requestLogger ? request.log(['debug'], message) : logger.debug(errorContext || {}, message),
-    error: (errorContext, message) =>
-      requestLogger ? request.log(['error'], message) : logger.error(errorContext || {}, message)
+    info: (errorContext, message) => pinoLogger.info(errorContext || {}, message),
+    debug: (errorContext, message) => pinoLogger.debug(errorContext || {}, message),
+    error: (errorContext, message) => pinoLogger.error(errorContext || {}, message)
   }[level]
 }
 
