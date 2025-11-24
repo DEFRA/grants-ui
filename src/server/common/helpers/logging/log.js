@@ -19,22 +19,25 @@ const logger = pino(loggerOptions)
  * @throws {Error} If log parameters are invalid.
  */
 const log = (logCode, messageOptions, request) => {
-  getLoggerOfType(logCode.level, request)(logCode.messageFunc(messageOptions))
+  const message = logCode.messageFunc(messageOptions)
+  const errorContext = logCode.error ? { err: logCode.error } : undefined
+  getLoggerOfType(logCode.level, request)(errorContext, message)
 }
 
 /**
  * Returns the logger function corresponding to the given log level.
  * @param {string} level - The log level.
  * @param {object} [request] - Hapi request object (optional)
- * @returns {(message: string) => void} Logger function.
+ * @returns {(errorContext: object | undefined, message: string) => void} Logger function.
  */
 const getLoggerOfType = (level, request) => {
-  const requestLogger = request?.log
+  // hapi-pino attaches a pino logger instance to request.logger
+  const requestLogger = request?.logger || logger
 
   return {
-    info: (message) => (requestLogger ? request.log(['info'], message) : logger.info(message)),
-    debug: (message) => (requestLogger ? request.log(['debug'], message) : logger.debug(message)),
-    error: (message) => (requestLogger ? request.log(['error'], message) : logger.error(message))
+    info: (errorContext, message) => requestLogger.info(errorContext || {}, message),
+    debug: (errorContext, message) => requestLogger.debug(errorContext || {}, message),
+    error: (errorContext, message) => requestLogger.error(errorContext || {}, message)
   }[level]
 }
 
