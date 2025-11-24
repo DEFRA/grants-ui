@@ -87,16 +87,16 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
      * @returns {Promise<ResponseObject>}
      */
     const fn = async (request, context, h) => {
-      // const { state } = context
-      // const { sbi } = request.auth.credentials
+      const { state } = context
+      const { sbi } = request.auth.credentials
 
-      // if (sbi) {
-      //   const applicant = await fetchBusinessAndCustomerInformation(request)
-      //   await this.setState(request, {
-      //     ...state,
-      //     applicant
-      //   })
-      // }
+      if (sbi) {
+        const applicant = await fetchBusinessAndCustomerInformation(request)
+        await this.setState(request, {
+          ...state,
+          applicant
+        })
+      }
 
       return this.proceed(request, h, this.getNextPath(context))
     }
