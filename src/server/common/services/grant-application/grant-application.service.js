@@ -78,7 +78,7 @@ export async function makeGasApiRequest(url, grantCode, request, options = {}) {
       {
         level: 'error',
         error,
-        messageFunc: () => error.message
+        messageFunc: () => 'Log: ' + error.message
       },
       {},
       request
