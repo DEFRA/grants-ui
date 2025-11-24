@@ -1,5 +1,5 @@
 import { config } from '~/src/config/config.js'
-import { log } from '~/src/server/common/helpers/logging/log.js'
+import { log, logger } from '~/src/server/common/helpers/logging/log.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
 
 const GAS_API_ENDPOINT = config.get('gas.apiEndpoint')
@@ -72,6 +72,8 @@ export async function makeGasApiRequest(url, grantCode, request, options = {}) {
 
     return response
   } catch (error) {
+    logger.error({ err: error }, `Unexpected error in GAS API request: ${error.message}`)
+
     log(
       {
         level: 'error',
