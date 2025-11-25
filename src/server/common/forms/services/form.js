@@ -90,19 +90,24 @@ export async function addAllForms(loader, forms) {
   return addedForms.size
 }
 
-function validateWhitelistVariableCompleteness(whitelistCrnEnvVar, whitelistSbiEnvVar, form, definition) {
-  if ((whitelistCrnEnvVar && !whitelistSbiEnvVar) || (!whitelistCrnEnvVar && whitelistSbiEnvVar)) {
-    const missingVar = whitelistCrnEnvVar ? 'whitelistSbiEnvVar' : 'whitelistCrnEnvVar'
-    const presentVar = whitelistCrnEnvVar ? 'whitelistCrnEnvVar' : 'whitelistSbiEnvVar'
-    const formName = definition.name || form.title || 'unnamed'
-    log(LogCodes.SYSTEM.WHITELIST_CONFIG_INCOMPLETE, {
-      formName,
-      missingVar,
-      presentVar
-    })
-    const error = `Incomplete whitelist configuration in form ${definition.name || form.title || 'unnamed'}: ${presentVar} is defined but ${missingVar} is missing. Both CRN and SBI whitelist variables must be configured together.`
-    throw new Error(error)
+function exactlyOneDefined(a, b) {
+  return Boolean(a) !== Boolean(b) // XOR
+}
+
+export function validateWhitelistVariableCompleteness(whitelistCrnEnvVar, whitelistSbiEnvVar, form, definition) {
+  if (!exactlyOneDefined(whitelistCrnEnvVar, whitelistSbiEnvVar)) {
+    return
   }
+
+  const formName = definition.name || form.title || 'unnamed'
+  const missingVar = whitelistCrnEnvVar ? 'whitelistSbiEnvVar' : 'whitelistCrnEnvVar'
+  const presentVar = whitelistCrnEnvVar ? 'whitelistCrnEnvVar' : 'whitelistSbiEnvVar'
+
+  log(LogCodes.SYSTEM.WHITELIST_CONFIG_INCOMPLETE, { formName, missingVar, presentVar })
+
+  throw new Error(
+    `Incomplete whitelist configuration in form ${formName}: ${presentVar} is defined but ${missingVar} is missing. Both CRN and SBI whitelist variables must be configured together.`
+  )
 }
 
 function validateCrnEnvironmentVariable(whitelistCrnEnvVar, form, definition) {
