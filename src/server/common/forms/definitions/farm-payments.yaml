@@ -12,6 +12,12 @@ metadata:
     preSubmission:
       - toPath: /check-selected-land-actions
     postSubmission:
+      # Received, reviewing and accepted
+      - fromGrantsStatus: SUBMITTED
+        gasStatus: APPLICATION_RECEIVED,IN_REVIEW,AGREEMENT_GENERATING
+        toGrantsStatus: SUBMITTED
+        toPath: /confirmation
+
       # Cleared
       - fromGrantsStatus: SUBMITTED,REOPENED
         gasStatus: APPLICATION_WITHDRAWN
@@ -24,9 +30,9 @@ metadata:
         toGrantsStatus: REOPENED
         toPath: /check-selected-land-actions
 
-      # Offer sent, withdrawn, accepted -> agreements service
+      # Agreement drafted, offered or withdrawal requested -> agreements service
       - fromGrantsStatus: SUBMITTED
-        gasStatus: OFFER_SENT,OFFER_WITHDRAWN,OFFER_ACCEPTED
+        gasStatus: AGREEMENT_DRAFTED,AGREEMENT_OFFERED,WITHDRAWAL_REQUESTED
         toGrantsStatus: SUBMITTED
         toPath: /agreement
 
