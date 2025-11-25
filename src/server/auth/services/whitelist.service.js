@@ -73,9 +73,7 @@ class WhitelistService {
       .map((item) => item.trim())
       .filter((item) => item.length > 0)
 
-    const isWhitelisted = whitelist.includes(String(value))
-
-    return isWhitelisted
+    return whitelist.includes(String(value))
   }
 
   /**
@@ -124,7 +122,7 @@ class WhitelistService {
   /**
    * Helper method to log whitelist events with consistent structure
    * @param {object} logCode - Logging options.
-   * @param {string} logCode.level - The log level.
+   * @param {import('../../common/helpers/logging/log-codes.js').LogTypes.LogLevel} logCode.level - The log level.
    * @param {Function} logCode.messageFunc - A function that creates an interpolated message string
    * @param {string} crn - The user's CRN
    * @param {string} sbi - The SBI number

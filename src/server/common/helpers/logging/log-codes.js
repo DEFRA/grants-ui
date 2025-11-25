@@ -1,5 +1,17 @@
 import { validateLogCode } from './log-code-validator.js'
 
+/**
+ * @namespace LogTypes
+ * @typedef {"info"|"warn"|"error"|"debug"} LogTypes.LogLevel
+ *
+ * @typedef { Object } LogCodesDefinition
+ * @property {LogTypes.LogLevel} level - The log level (e.g., 'info', 'warn', 'error', 'debug').
+ * @property {(messageOptions: Object) => string} messageFunc - A function that takes message options and returns a formatted log message string.
+ */
+
+/**
+ * @type {Object<string, Object<string, LogCodesDefinition>>}
+ */
 export const LogCodes = {
   AUTH: {
     SIGN_IN_ATTEMPT: {
@@ -325,7 +337,7 @@ export const validateLogCodes = (logCodes) => {
       }
 
       // Check if this is a leaf node (has level and messageFunc) or a nested node
-      if (typeof value === 'object' && value !== null) {
+      if (typeof value === 'object') {
         if ('level' in value || 'messageFunc' in value) {
           // This is a leaf node, check that it has both required properties
           if (!('level' in value && 'messageFunc' in value)) {
