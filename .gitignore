@@ -9,6 +9,8 @@ npm-debug.log
 coverage
 .cache
 .env
+.env.*
+!.env.example
 .envrc
 tsconfig.tsbuildinfo
 .eslintcache
