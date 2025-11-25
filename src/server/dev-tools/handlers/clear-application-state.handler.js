@@ -15,13 +15,9 @@ export async function clearApplicationStateHandler(request, h) {
     const cacheService = getFormsCacheService(request.server)
     let sessionKey = 'unknown'
     try {
-      sessionKey = cacheService._Key(request)
-    } catch (_) {
-      // _Key failed — we will still log with sessionKey='unknown'
-    }
-    try {
       await cacheService.clearState(request, true)
     } catch (error) {
+      sessionKey = cacheService._Key(request)
       log(
         LogCodes.SYSTEM.SESSION_STATE_CLEAR_FAILED,
         {
