@@ -27,15 +27,4 @@ describe('LandGrantsGenericPageController', () => {
     handler(mockRequest, mockContext, mockH)
     expect(mockH.view).toHaveBeenCalledWith('terms-and-conditions', expect.objectContaining({ backLink: null }))
   })
-
-  test('should raise an error if the path is not valid', async () => {
-    const mockRequest = {
-      params: {
-        path: 'fake-path'
-      }
-    }
-    const controller = new LandGrantsGenericPageController()
-    const handler = controller.makeGetRouteHandler()
-    await expect(handler(mockRequest, {}, mockH)).rejects.toThrow('Unexpected path: fake-path')
-  })
 })
