@@ -64,6 +64,7 @@ COPY --from=production_build /home/node/src/server/confirmation/views ./src/serv
 COPY --from=production_build /home/node/src/server/cookies/views ./src/server/cookies/views
 COPY --from=production_build /home/node/src/server/declaration/views ./src/server/declaration/views
 COPY --from=production_build /home/node/src/server/score-results/views ./src/server/score-results/views
+COPY --from=production_build /home/node/src/server/section-end/views ./src/server/section-end/views
 COPY --from=production_build /home/node/src/server/tasklist/tasklist.controller.js ./src/server/tasklist/
 COPY --from=production_build /home/node/src/server/tasklist/index.js ./src/server/tasklist/
 COPY --from=production_build /home/node/src/server/tasklist/views ./src/server/tasklist/views
