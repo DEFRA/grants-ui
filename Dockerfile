@@ -36,43 +36,33 @@ FROM defradigital/node:${PARENT_VERSION} AS production
 
 ENV TZ="Europe/London"
 
-# Add curl to template.
-# CDP PLATFORM HEALTHCHECK REQUIREMENT
+# Add curl for CDP platform healthcheck requirement
 USER root
-RUN apk update \
-    && apk add curl \
-    && apk cache clean
+RUN apk update && \
+    apk add --no-cache curl && \
+    rm -rf /var/cache/apk/*
 
 USER node
 
 ARG PARENT_VERSION
 LABEL uk.gov.defra.ffc.parent-image=defradigital/node:${PARENT_VERSION}
 
-COPY --from=production_build /home/node/package*.json ./
-COPY --from=production_build /home/node/.server ./.server/
-COPY --from=production_build /home/node/.public/ ./.public/
-COPY --from=production_build /home/node/src/server/common/forms ./src/server/common/forms
-COPY --from=production_build /home/node/src/server/common/templates ./src/server/common/templates
-COPY --from=production_build /home/node/src/server/common/components ./src/server/common/components
-COPY --from=production_build /home/node/src/server/views ./src/server/views
-COPY --from=production_build /home/node/src/server/land-grants/views ./src/server/land-grants/views
-COPY --from=production_build /home/node/src/server/land-grants/components ./src/server/land-grants/components
-COPY --from=production_build /home/node/src/server/non-land-grants ./src/server/non-land-grants
-COPY --from=production_build /home/node/src/server/home ./src/server/home
-COPY --from=production_build /home/node/src/server/check-responses/views ./src/server/check-responses/views
-COPY --from=production_build /home/node/src/server/confirmation/views ./src/server/confirmation/views
-COPY --from=production_build /home/node/src/server/cookies/views ./src/server/cookies/views
-COPY --from=production_build /home/node/src/server/declaration/views ./src/server/declaration/views
-COPY --from=production_build /home/node/src/server/score-results/views ./src/server/score-results/views
-COPY --from=production_build /home/node/src/server/section-end/views ./src/server/section-end/views
-COPY --from=production_build /home/node/src/server/tasklist/tasklist.controller.js ./src/server/tasklist/
-COPY --from=production_build /home/node/src/server/tasklist/index.js ./src/server/tasklist/
-COPY --from=production_build /home/node/src/server/tasklist/views ./src/server/tasklist/views
-COPY --from=production_build /home/node/src/server/tasklist/services/tasklist-generator.js ./src/server/tasklist/services/
-COPY --from=production_build /home/node/src/server/tasklist/services/config-loader.js ./src/server/tasklist/services/
-COPY --from=production_build /home/node/src/server/tasklist/services/config-driven-condition-evaluator.js ./src/server/tasklist/services/
+# Explicit working directory
+WORKDIR /home/node
 
-RUN npm ci --omit=dev  --ignore-scripts
+# Copy package files
+COPY --from=production_build --chown=node:node /home/node/package*.json ./
+
+# Copy built artifacts
+COPY --from=production_build --chown=node:node /home/node/.server ./.server/
+COPY --from=production_build --chown=node:node /home/node/.public/ ./.public/
+
+# Copy runtime-required source files (templates, forms, configs)
+# The .dockerignore file ensures only production assets are included
+COPY --from=production_build --chown=node:node /home/node/src ./src/
+
+# Install production dependencies
+RUN npm ci --omit=dev --ignore-scripts
 
 ARG PORT
 ENV PORT=${PORT}

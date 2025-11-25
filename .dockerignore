@@ -1,3 +1,85 @@
+# Dependencies
 node_modules
-Dockerfile
+.npm
+npm-debug.log*
+
+# Build artifacts (already built in multi-stage, don't need in context)
+.server
+.public
 coverage
+.cache
+.eslintcache
+
+# Source control
+.git
+.github
+.gitignore
+.husky
+
+# Tests and mocking
+**/*.test.js
+**/*.contract.test.js
+**/__tests__
+**/test-helpers
+**/__mocks__
+acceptance/
+mockserver/
+fcp-defra-id-stub/
+src/contracts/
+reports/
+.stryker-tmp/
+
+# Development configuration files (exclude from build context)
+# Note: .browserslistrc, babel.config.cjs, webpack.config.js, and tsconfig.json
+# are needed for the build, so they are NOT excluded
+eslint.config.js
+nodemon.json
+vitest.config.js
+vitest.unit.config.js
+vitest.stryker.config.js
+stryker.config.mjs
+
+# Environment and secrets
+.env*
+!.env.example
+*.log
+
+# Documentation
+*.md
+!README.md
+docs/
+LICENCE
+CODEOWNERS
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# HTTP client configs (may contain tokens)
+*.http
+http-client.env.json
+http-client.private.env.json
+gas.http
+
+# Docker files (don't copy Dockerfile into itself)
+Dockerfile
+compose*.yml
+.dockerignore
+
+# Misc
+.prettierignore
+.prettierrc.js
+.editorconfig
+.nvmrc
+.npmignore
+.npmrc
+tools/
+
+# Claude and AI assistant files
+.claude/
+CLAUDE.md
+GEMINI.md
+FEATURES.md
