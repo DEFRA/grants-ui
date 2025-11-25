@@ -1,0 +1,976 @@
+{% extends baseLayoutPath %}
+
+{% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
+{% from "govuk/components/summary-list/macro.njk" import govukSummaryList %}
+{% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "support-details/macro.njk" import defraSupportDetails %}
+{% from "govuk/components/notification-banner/macro.njk" import govukNotificationBanner %}
+
+
+{% block content %}
+
+
+{{ govukNotificationBanner({
+  titleText: "Content to be confirmed",
+  html: '<h3 class="govuk-notification-banner__heading">Placeholder content</h3>\n' +
+        '<p class="govuk-body">\n' + 'This page is under development. The content shown is a placeholder and will be replaced with the final content before launch.\n' +
+        '</p>\n'
+}) }}
+<h1 class="govuk-heading-l">
+  {{ pageTitle }}
+</h1>
+
+<div class="govuk-grid-row">
+  <div class="govuk-grid-column-one-quarter-from-desktop contents-list-container">
+    <nav data-module="ga4-link-tracker" aria-label="Contents" class="gem-c-contents-list govuk-!-margin-bottom-4" data-ga4-link-tracker-module-started="true">
+      <h2 class="gem-c-contents-list__title">
+        Contents
+      </h2>
+      <ol class="gem-c-contents-list__list">
+        <li class="gem-c-contents-list__list-item gem-c-contents-list__list-item--numbered">
+          <span class="gem-c-contents-list__list-item-dash" aria-hidden="true"></span>
+          <a class="govuk-link gem-c-contents-list__link govuk-link gem-print-force-link-styles govuk-link--no-underline" href="#introduction">1. Introduction</a>
+        </li>
+        <li class="gem-c-contents-list__list-item gem-c-contents-list__list-item--numbered">
+          <span class="gem-c-contents-list__list-item-dash" aria-hidden="true"></span>
+          <a class="gem-c-contents-list__link govuk-link gem-print-force-link-styles govuk-link--no-underline" href="#about-youragreement">2.  About your Agreement</a>
+        </li>
+        <li class="gem-c-contents-list__list-item gem-c-contents-list__list-item--numbered">
+          <span class="gem-c-contents-list__list-item-dash" aria-hidden="true"></span>
+          <a class="gem-c-contents-list__link govuk-link gem-print-force-link-styles govuk-link--no-underline" href="#management-controlof-theagreement-land">3. Management Control of the Agreement Land</a>
+        </li>
+        <li class="gem-c-contents-list__list-item gem-c-contents-list__list-item--numbered">
+          <span class="gem-c-contents-list__list-item-dash" aria-hidden="true"></span>
+          <a class="gem-c-contents-list__link govuk-link gem-print-force-link-styles govuk-link--no-underline" href="#common-land-and-shared-grazing">4. Common Land and Shared Grazing</a>
+        </li>
+        <li class="gem-c-contents-list__list-item gem-c-contents-list__list-item--numbered">
+          <span class="gem-c-contents-list__list-item-dash" aria-hidden="true"></span>
+          <a class="gem-c-contents-list__link govuk-link gem-print-force-link-styles govuk-link--no-underline" href="#annual-declaration">5. Annual Declaration</a>
+        </li>
+        <li class="gem-c-contents-list__list-item gem-c-contents-list__list-item--numbered">
+          <span class="gem-c-contents-list__list-item-dash" aria-hidden="true"></span>
+          <a class="gem-c-contents-list__link govuk-link gem-print-force-link-styles govuk-link--no-underline" href="#changes-to-youragreement">6. Changes to your Agreement</a>
+        </li>
+        <li class="gem-c-contents-list__list-item gem-c-contents-list__list-item--numbered">
+          <span class="gem-c-contents-list__list-item-dash" aria-hidden="true"></span>
+          <a class="gem-c-contents-list__link govuk-link gem-print-force-link-styles govuk-link--no-underline" href="#change-of-circumstances">7. Change of Circumstances</a>
+        </li>
+        <li class="gem-c-contents-list__list-item gem-c-contents-list__list-item--numbered">
+          <span class="gem-c-contents-list__list-item-dash" aria-hidden="true"></span>
+          <a class="gem-c-contents-list__link govuk-link gem-print-force-link-styles govuk-link--no-underline" href="#transfers-ofagreement-land">8. Transfers of Agreement Land</a>
+        </li>
+        <li class="gem-c-contents-list__list-item gem-c-contents-list__list-item--numbered">
+          <span class="gem-c-contents-list__list-item-dash" aria-hidden="true"></span>
+          <a class="gem-c-contents-list__link govuk-link gem-print-force-link-styles govuk-link--no-underline" href="#payments">9. Payments</a>
+        </li>
+        <li class="gem-c-contents-list__list-item gem-c-contents-list__list-item--numbered">
+          <span class="gem-c-contents-list__list-item-dash" aria-hidden="true"></span>
+          <a class="gem-c-contents-list__link govuk-link gem-print-force-link-styles govuk-link--no-underline" href="#undue-payments-or-overpayments">10. Undue payments or overpayments</a>
+        </li>
+        <li class="gem-c-contents-list__list-item gem-c-contents-list__list-item--numbered">
+          <span class="gem-c-contents-list__list-item-dash" aria-hidden="true"></span>
+          <a class="gem-c-contents-list__link govuk-link gem-print-force-link-styles govuk-link--no-underline" href="#checking-you-are-complying-with-youragreement">11. Checking you are complying with your Agreement</a>
+        </li>
+        <li class="gem-c-contents-list__list-item gem-c-contents-list__list-item--numbered">
+          <span class="gem-c-contents-list__list-item-dash" aria-hidden="true"></span>
+          <a class="gem-c-contents-list__link govuk-link gem-print-force-link-styles govuk-link--no-underline" href="#a-breach-of-youragreement">12. A breach of your Agreement</a>
+        </li>
+        <li class="gem-c-contents-list__list-item gem-c-contents-list__list-item--numbered">
+          <span class="gem-c-contents-list__list-item-dash" aria-hidden="true"></span>
+          <a class="gem-c-contents-list__link govuk-link gem-print-force-link-styles govuk-link--no-underline" href="#good-reasons-for-a-breach">13. Good reasons for a breach</a>
+        </li>
+        <li class="gem-c-contents-list__list-item gem-c-contents-list__list-item--numbered">
+          <span class="gem-c-contents-list__list-item-dash" aria-hidden="true"></span>
+          <a class="gem-c-contents-list__link govuk-link gem-print-force-link-styles govuk-link--no-underline" href="#reconsideration-of-decisions-and-determinations">14. Reconsideration of Decisions and Determinations</a>
+        </li>
+        <li class="gem-c-contents-list__list-item gem-c-contents-list__list-item--numbered">
+          <span class="gem-c-contents-list__list-item-dash" aria-hidden="true"></span>
+          <a class="gem-c-contents-list__link govuk-link gem-print-force-link-styles govuk-link--no-underline" href="#termination-of-anagreement">15. Termination of an Agreement</a>
+        </li>
+        <li class="gem-c-contents-list__list-item gem-c-contents-list__list-item--numbered">
+          <span class="gem-c-contents-list__list-item-dash" aria-hidden="true"></span>
+          <a class="gem-c-contents-list__link govuk-link gem-print-force-link-styles govuk-link--no-underline" href="#consequences-of-expiry-or-termination-of-youragreement">16. Consequences of expiry or termination of your Agreement</a>
+        </li>
+        <li class="gem-c-contents-list__list-item gem-c-contents-list__list-item--numbered">
+          <span class="gem-c-contents-list__list-item-dash" aria-hidden="true"></span>
+          <a class="gem-c-contents-list__link govuk-link gem-print-force-link-styles govuk-link--no-underline" href="#intellectual-property-rights">17. Intellectual property rights</a>
+        </li>
+        <li class="gem-c-contents-list__list-item gem-c-contents-list__list-item--numbered">
+          <span class="gem-c-contents-list__list-item-dash" aria-hidden="true"></span>
+          <a class="gem-c-contents-list__link govuk-link gem-print-force-link-styles govuk-link--no-underline" href="#data-protection">18. Data protection</a>
+        </li>
+        <li class="gem-c-contents-list__list-item gem-c-contents-list__list-item--numbered">
+          <span class="gem-c-contents-list__list-item-dash" aria-hidden="true"></span>
+          <a class="gem-c-contents-list__link govuk-link gem-print-force-link-styles govuk-link--no-underline" href="#freedom-of-informationfoi">19. Freedom of information (FOI)</a>
+        </li>
+        <li class="gem-c-contents-list__list-item gem-c-contents-list__list-item--numbered">
+          <span class="gem-c-contents-list__list-item-dash" aria-hidden="true"></span>
+          <a class="gem-c-contents-list__link govuk-link gem-print-force-link-styles govuk-link--no-underline" href="#what-accounts-and-records-you-must-keep">20. What accounts and records you must keep</a>
+        </li>
+        <li class="gem-c-contents-list__list-item gem-c-contents-list__list-item--numbered">
+          <span class="gem-c-contents-list__list-item-dash" aria-hidden="true"></span>
+          <a class="gem-c-contents-list__link govuk-link gem-print-force-link-styles govuk-link--no-underline" href="#what-information-we-may-publish-about-you">21. What information we may publish about you</a>
+        </li>
+        <li class="gem-c-contents-list__list-item gem-c-contents-list__list-item--numbered">
+          <span class="gem-c-contents-list__list-item-dash" aria-hidden="true"></span>
+          <a class="gem-c-contents-list__link govuk-link gem-print-force-link-styles govuk-link--no-underline" href="#other-terms">22. Other Terms</a>
+        </li>
+        <li class="gem-c-contents-list__list-item gem-c-contents-list__list-item--numbered">
+          <span class="gem-c-contents-list__list-item-dash" aria-hidden="true"></span>
+          <a class="gem-c-contents-list__link govuk-link gem-print-force-link-styles govuk-link--no-underline" href="#definition-of-terms-used-in-the-sfi-agreement-terms-and-conditions">Definition of terms used in the SFI agreement terms and conditions</a>
+        </li>
+      </ol>
+    </nav>
+
+    <div class="gem-c-print-link govuk-!-display-none-print govuk-!-margin-bottom-6">
+      <button class="govuk-link gem-c-print-link__button" data-module="print-link" data-print-link-module-started="true">Print this page</button>
+    </div>
+  </div>
+
+  <div class="print-wrapper">
+    <div class="meta-data meta-data--display-print">
+      <p class="govuk-body">
+        <img alt="license" class="meta-data-licence" src="/assets/government-frontend/open-government-licence-min-93b6a51b518ff99714a1aa2a7d2162735c155ec3cb073c75fb88b2a332fa83d3.png">
+      </p>
+      <p class="govuk-body">
+        © Crown copyright 2025
+      </p>
+      <p class="govuk-body">
+        This publication is licensed under the terms of the Open Government Licence v3.0 except where otherwise stated. To view this licence, visit <a class="govuk-link" href="https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3">nationalarchives.gov.uk/doc/open-government-licence/version/3</a> or write to the Information Policy Team, The National Archives, Kew, London TW9 4DU, or email: <a class="govuk-link"  href="mailto:psi@nationalarchives.gov.uk">psi@nationalarchives.gov.uk</a>.
+      </p>
+      <p class="govuk-body">
+        Where we have identified any third party copyright information you will need to obtain permission from the copyright holders concerned.
+      </p>
+      <p class="govuk-body">
+        This publication is available at https://www.gov.uk/government/publications/sustainable-farming-incentive-scheme-expanded-offer-for-2024/sfi-agreement-terms-and-conditions-expanded-offer-for-2024
+      </p>
+    </div>
+
+    <div class="govuk-grid-column-three-quarters-from-desktop contents-container">
+      <div class="gem-c-govspeak-html-publication">
+        <div data-module="govspeak" class="gem-c-govspeak govuk-govspeak gem-c-govspeak--direction-ltr govuk-!-margin-bottom-0" data-govspeak-module-started="true">
+
+
+          <div class="govspeak">
+            <p class="govuk-body">Re-opened SFI 2024 Terms and Conditions v1.2 June 2025.</p>
+
+            <p class="govuk-body">These SFI agreement terms and conditions set out the rules that you and the RPA must follow for the duration of your agreement. They apply to SFI agreements for the re-opened SFI 2024 offer.&nbsp;&nbsp;&nbsp;</p>
+
+            <h2 id="introduction">1. Introduction&nbsp;</h2>
+
+            <p class="govuk-body">1.1  The Sustainable Farming Incentive&nbsp;</p>
+
+            <p class="govuk-body">The Sustainable Farming Incentive (“SFI”) is a scheme run by the Rural Payments Agency (referred to below as “us”, “we, “our”) on behalf of the Department for Environment, Food and Rural Affairs (“Defra”). It is part of the Environmental Land Management Scheme under section 1 of the Agriculture Act 2020 and in conjunction with the Agriculture (Financial Assistance) Regulations 2021 (“the Regulations”).&nbsp;</p>
+
+            <p class="govuk-body">1.2  About these Terms and Conditions&nbsp;</p>
+
+            <p class="govuk-body">(a) The SFI agreement (the “Agreement”) comprises:&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(i) the “Agreement Document”, which describes the land parcels in the Agreement (the “Agreement Land”) and the sum to be paid to you (the “Grant”) for delivering the action(s) you have selected (the “Actions”) and which will also include a sum to be paid to you for entering and managing your Agreement (the “SFI Management Payment”);&nbsp;&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(ii) these “Terms and Conditions”, which are applicable to the payment of the Grant; and&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(iii) the Actions&nbsp;</p>
+
+            <p class="govuk-body">(b) For the avoidance of doubt, the Grant includes the sum to be paid to you for entering and managing your Agreement (the “SFI Management Payment”). All references to the Grant in these Terms and Conditions include the SFI Management Payment. Details regarding payment of the SFI Management Payment are set out in these Terms and Conditions.&nbsp;&nbsp;&nbsp;</p>
+
+            <p class="govuk-body">(c) If there is any conflict between these Terms and Conditions, the Agreement Document and the Actions, these Terms and Conditions will be given priority.&nbsp;</p>
+
+            <p class="govuk-body">(d) When the agreement holder (“you”) enters the Agreement, you are agreeing to the terms applicable to the payment of the Grant.&nbsp;</p>
+
+            <p class="govuk-body">1.3 Why you should read the Terms and Conditions&nbsp;</p>
+
+            <p class="govuk-body">You should read the Terms and Conditions carefully because they provide information including:&nbsp;</p>
+
+            <p class="govuk-body">(a) how we will pay the Grant to you, as set out in your Agreement Document;&nbsp;</p>
+
+            <p class="govuk-body">(b) how you or we may change or end the Agreement; and&nbsp;</p>
+
+            <p class="govuk-body">(c) what you need to do if you cannot comply with your obligations under the Agreement.</p>
+
+            <p class="govuk-body">1.4 References in the Terms and Conditions</p>
+
+            <p class="govuk-body">(a) Definitions of capitalised terms are defined in this document when they are first referred to and can also be found in the definition of terms at the end of these Terms and Conditions.&nbsp;</p>
+
+            <p class="govuk-body">(b) A reference to the “Law” means any law, statute, subordinate legislation within the meaning of Section 21(1) of the Interpretation Act 1978, byelaw, right within the meaning of Section 4(1) EU Withdrawal Act 2018 as amended by EU (Withdrawal Agreement) Act 2020, regulation, order, regulatory policy, statutory guidance which has the effect of law, judgement of a relevant court of law, or directives or requirements of any regulatory body with which you are required to comply.&nbsp;</p>
+
+            <p class="govuk-body">(c) A reference to a statute or statutory provision is a reference to it as amended, extended or re-enacted from time to time and shall include all subordinate legislation made under that statute or statutory provision.&nbsp;</p>
+
+            <p class="govuk-body">(d) A reference to a public organisation includes a reference to any successor to that public organisation.&nbsp;</p>
+
+            <p class="govuk-body">(e) Any words following the terms ‘including’, ‘include’, ‘in particular’ or ‘for example’ or any similar phrase shall be construed as illustrative and shall not limit the generality of the related general words.&nbsp;</p>
+
+            <p class="govuk-body">(f) Unless the context otherwise requires, words in the singular shall include the plural and in the plural shall include the singular.&nbsp;</p>
+
+            <p class="govuk-body">1.5  The SFI Scheme Information&nbsp;</p>
+
+            <p class="govuk-body">(a) We have published information relating to SFI on GOV.UK (the “<a href="/government/publications/sustainable-farming-incentive-scheme-expanded-offer-for-2024/sfi-scheme-information-expanded-offer-for-2024">Scheme Information</a>”). The Scheme Information includes:&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(i) the Actions;&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(ii) the “Scheme Rules” that further explain the mandatory requirements of your Agreement as established by these Terms and Conditions. The Scheme Rules are contained in the following sections of the Scheme Information on GOV.UK:&nbsp;</p>
+
+            <ul>
+              <li>section 1 ‘About the SFI offer’;&nbsp;</li>
+              <li>section 2 ‘When and how much you’ll get paid’;&nbsp;</li>
+              <li>section 4 ‘Check if you have management control of land’;&nbsp;</li>
+              <li>section 5 ‘Check if your land is eligible for the SFI actions’;&nbsp;</li>
+              <li>section 10 ‘Get all necessary regulatory consents, permissions and licences in place’;&nbsp;</li>
+              <li>section 11 ‘About your SFI agreement’;&nbsp;</li>
+              <li>section 12 ‘Managing your SFI agreement’;&nbsp;</li>
+              <li>section 13 ‘Complying with your SFI agreement’;&nbsp;and</li>
+            </ul>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(iii) other scheme information and guidance that is not listed at condition 1.5(a)(i) or condition 1.5(a)(ii) which is there to help you. This other scheme information and guidance will not be used to introduce or explain mandatory requirements of your Agreement.&nbsp;</p>
+
+            <p class="govuk-body">(b) We may produce new versions of or amend the Scheme Information throughout the lifetime of SFI. However, the version applicable to you shall be the version which was current when the Agreement commences (the “Agreement Start Date’), unless amended in accordance with condition 6 (Changes to your Agreement).</p>
+
+            <h2 id="about-youragreement">2.  About your Agreement&nbsp;</h2>
+
+            <p class="govuk-body">2.1  Your Agreement&nbsp;</p>
+
+            <p class="govuk-body">The Agreement comprises:&nbsp;</p>
+
+            <p class="govuk-body">(a) the Agreement Document, including any documents referenced in the Agreement Document;&nbsp;</p>
+
+            <p class="govuk-body">(b) these Terms and Conditions (which are further explained in the Scheme Rules as explained in condition 1.5(b)); and&nbsp;</p>
+
+            <p class="govuk-body">(c) the Actions you have selected.&nbsp;</p>
+
+            <p class="govuk-body">2.2  What you are declaring&nbsp;</p>
+
+            <p class="govuk-body">By entering the Agreement you confirm that:&nbsp;</p>
+
+            <p class="govuk-body">(a) the declarations you made in your SFI application for the Grant remain true and accurate to the best of your knowledge and belief;&nbsp;</p>
+
+            <p class="govuk-body">(b) you have full capacity and authority to enter into the Agreement;&nbsp;</p>
+
+            <p class="govuk-body">(c) you are not aware of any circumstances which would render you ineligible for the Grant or otherwise prevent you from complying with your obligations under the Agreement;&nbsp;</p>
+
+            <p class="govuk-body">(d) your obligations under the Agreement do not and will not conflict in whole or in part with any other legal or contractual obligations you are subject to; and&nbsp;</p>
+
+            <p class="govuk-body">(e) you will at all times comply with all relevant Law in the performance of your obligations under the Agreement.&nbsp;</p>
+
+            <p class="govuk-body">2.3  What you are agreeing to do&nbsp;</p>
+
+            <p class="govuk-body">In applying for and receiving the Grant, you are agreeing to:&nbsp;</p>
+
+            <p class="govuk-body">(a) use the Grant to complete your selected Actions (and for associated administrative costs), as referenced in your Agreement Document and supplemented by the Scheme Information;&nbsp;</p>
+
+            <p class="govuk-body">(b) comply with these Terms and Conditions; and&nbsp;</p>
+
+            <p class="govuk-body">(c) obtain, maintain and comply with any permits, licences, permissions, consents, approvals, certificates and authorisations (whether statutory or otherwise) which are required:&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(i) to comply with the obligations under the Agreement; and&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(ii)  for the protection of ancient monuments, archaeological sites, heritage sites, trees, historical sites on the Agreement Land and Sites of Special Scientific Interest (SSSIs).&nbsp;</p>
+
+            <p class="govuk-body">2.4 Agreement Period&nbsp;</p>
+
+            <p class="govuk-body">(a) The Agreement is for a period (the “Agreement Period”) from the Agreement Start Date until the latest Action End Date unless terminated earlier under condition 15 (Termination of an Agreement) . The Agreement Start Date and the Agreement End Date are shown in your Agreement Document.&nbsp;</p>
+
+            <p class="govuk-body">(b) Where the Agreement Document specifies Actions of varying lengths, the terms of the Agreement shall apply in respect of the relevant Action from the date the Action starts (the “Action Start Date”) until the date the Action ends (the “Action End Date”). The Action will expire after the Action End Date and the relevant land shall no longer form part of the land described in the Agreement Document (the “Agreement Land”). The Action Start Date and the Action End Date for each selected Action are shown in your Agreement Document.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+
+            <p class="govuk-body">2.5  This Agreement does not replace the need for regulatory consents&nbsp;</p>
+
+            <p class="govuk-body">You understand that the Agreement does not operate as:&nbsp;</p>
+
+            <p class="govuk-body">(a) an  SSSI consent. If such consent is required you must apply separately in accordance with any instructions provided by Natural England;&nbsp;</p>
+
+            <p class="govuk-body">(b) a scheduled monument consent of the Ancient Monuments and Archaeological Areas Act 1979 (or other consent under that Act). If such consent is required you must apply separately in accordance with any instructions provided by Historic England. You will obtain and take account of the SFI HEFER consultation response for all the land and features in connection to this Agreement; or&nbsp;</p>
+
+            <p class="govuk-body">(c) any other regulatory consent required by the Law.&nbsp;</p>
+
+            <h2 id="management-controlof-theagreement-land">3. Management Control of the Agreement Land&nbsp;</h2>
+
+            <p class="govuk-body">3.1 What is Management Control&nbsp;</p>
+
+            <p class="govuk-body">You will have “Management Control” if you have sufficient control over how the Agreement Land is managed to complete the Actions you have selected. This is explained in the section about ‘Check if you have management control of land’ in the Scheme Rules.&nbsp;</p>
+
+            <p class="govuk-body">3.2  Management Control for the duration of the Agreement or until the Action End Date&nbsp;&nbsp;&nbsp;</p>
+
+            <p class="govuk-body">(a) Where the Agreement Document specifies Actions with the same Action Start Date and the same Action End Date, you must have Management Control of the Agreement Land for the entire Agreement Period.&nbsp;</p>
+
+            <p class="govuk-body">(b) Where the Agreement Document specifies Actions of varying lengths, you must have Management Control of the Agreement Land required for each Action respectively from the Action Start Date until the Action End Date. The Action will expire after the Action End Date and the relevant land shall no longer form part of the Agreement Land.&nbsp;</p>
+
+            <p class="govuk-body">3.3 If you lose Management Control&nbsp;</p>
+
+            <p class="govuk-body">(a) If you lose Management Control of all or part of the Agreement Land before the Agreement End Date, or the Action End Date if it is earlier than the Agreement End Date, you must inform us using the procedure in condition 7 (Change of Circumstances).&nbsp;</p>
+
+            <p class="govuk-body">(b) If you lose Management Control of all of the Agreement Land, the Agreement will be terminated, and you may have to repay some or all of the Grant already received as set out in condition 7 (Change of Circumstances).&nbsp;</p>
+
+            <p class="govuk-body">(c) If you lose Management Control of part of the Agreement Land, the affected land will be removed from the Agreement and you may have to repay some or all of the Grant already received as set out in condition 7 (Change of Circumstances).&nbsp;</p>
+
+            <p class="govuk-body">3.4 Tenanted Land&nbsp;</p>
+
+            <p class="govuk-body">If you hold land under a Farm Business Tenancy under the Agricultural Tenancies Act 1995 or an Agricultural Holdings Act 1986 tenancy:&nbsp;</p>
+
+            <p class="govuk-body">(a) you must ensure that by entering the land into the Agreement you do not breach the conditions of your tenancy; and&nbsp;</p>
+
+            <p class="govuk-body">(b) if the tenancy expires before the Agreement End Date, or the Action End Date if it is earlier than the Agreement End Date, you must only include this land in your Agreement Land if you expect to have Management Control of this land for the entire Agreement Period if the Agreement Document specifies Actions of the same length or until the Action End Date if the Agreement Document specifies Actions of varying lengths.</p>
+
+            <h2 id="common-land-and-shared-grazing">4. Common Land and Shared Grazing&nbsp;</h2>
+
+            <p class="govuk-body">4.1  What is Common Land and Shared Grazing &nbsp;</p>
+
+            <p class="govuk-body">Common land (“Common Land”) is:&nbsp;<br></p>
+
+            <ul>
+              <li>land registered as common land in a register of common land kept under Part 1 of the Commons Act 2006;&nbsp;<br>
+              </li>
+              <li>land to which Part 1 of that Act does not apply and which is subject to rights of common within the meaning of that Act; and&nbsp;<br>
+              </li>
+              <li>Shared Grazing.&nbsp;</li>
+            </ul>
+
+            <p class="govuk-body">“Shared Grazing” means communal pasture that is not registered as common land where graziers have a legal entitlement to graze.&nbsp;&nbsp;</p>
+
+            <p class="govuk-body">4.2 What Common Land can be included in the Agreement &nbsp;</p>
+
+            <p class="govuk-body">You cannot include Common Land in the Agreement Land.</p>
+
+            <h2 id="annual-declaration">5. Annual Declaration&nbsp;</h2>
+
+            <p class="govuk-body">5.1  What is the Annual Declaration&nbsp;</p>
+
+            <p class="govuk-body">Your “Annual Declaration” confirms that you have complied, or expect to have complied, with your obligations under the Agreement for the relevant Agreement Year. This is explained in the section about ‘Managing your SFI agreement’ in the Scheme Rules.&nbsp;</p>
+
+            <p class="govuk-body">5.2 When to submit an Annual Declaration&nbsp;</p>
+
+            <p class="govuk-body">You must submit your Annual Declaration to us each “Agreement Year” (each twelve (12) month period following the Agreement Start Date). You must do this by a date that we will specify (the “Due Date”) which will be within the last two (2) months of the relevant Agreement Year.&nbsp;</p>
+
+            <p class="govuk-body">5.3 What happens if you do not submit your Annual Declaration&nbsp;</p>
+
+            <p class="govuk-body">If you do not submit your Annual Declaration by the Due Date, it may affect the Grant paid to you as set out in condition 9 (Payments), and we may also treat this as a breach of your obligations under the Agreement under condition 12.&nbsp;</p>
+
+            <h2 id="changes-to-youragreement">6. Changes to your Agreement&nbsp;</h2>
+
+            <p class="govuk-body">6.1 Adding Actions or land to the Agreement&nbsp;</p>
+
+            <p class="govuk-body">You cannot add Actions and/or land into your Agreement after the Agreement Start Date, except in accordance with condition 6.3(a) below.</p>
+
+            <p class="govuk-body">6.2 Removing Actions or land from the Agreement</p>
+
+            <p class="govuk-body">(a) We will not usually allow you to remove an Action from the Agreement or remove land from the Agreement Land. This is explained in the section about ‘Managing your SFI agreement’ in the Scheme Rules.&nbsp;</p>
+
+            <p class="govuk-body">(b) If you want to remove an Action or remove land forming part of the Agreement Land from the Agreement, you must write to us to request this and explain (providing any supporting evidence) why you wish to do so.&nbsp;</p>
+
+            <p class="govuk-body">(c) We will consider requests under condition 6.2 on a case-by-case basis and may allow the request if there is a Change of Circumstances as defined in condition 7. We will inform you of our decision within a reasonable time period.&nbsp;</p>
+
+            <p class="govuk-body">(d) If we approve a request to remove an Action or remove land forming part of the Agreement Land from the Agreement, then we may reduce, recover or withhold payment of the Grant in whole or in part until that request has been processed and the Agreement amended accordingly.</p>
+
+            <p class="govuk-body">6.3 Adding land to Rotational Actions in the Agreement</p>
+
+            <p class="govuk-body">(a) If your Agreement includes Actions which, after the first Agreement Year, can move location for each subsequent Agreement Year until the relevant Action End Date for the Action (“Rotational Actions”), you can either:</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(i) complete the relevant Rotational Action on the same Agreement Land &nbsp;until the Action End Date for the relevant Rotational Action in accordance with condition 6.3(b) or condition 6.3(c) as relevant; or</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(ii) move the location of the relevant Rotational Action to other existing Agreement Land, or add land to the Agreement Land and move the relevant Rotational Action to that Agreement Land in accordance with condition 6.3(b)(ii) or condition 6.3(c)(ii) below, as relevant.</p>
+
+            <p class="govuk-body">(b) If you were eligible to apply for your Agreement because you were an “Exception Group Applicant”, after the first Agreement Year, for each subsequent Agreement Year until the Action End Date for the relevant Rotational Action you can:</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(i) complete the relevant Rotational Action on the same area of Agreement Land that you entered for the preceding Agreement Year; or</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(ii) increase the area of land you enter into the relevant Rotational Action for the relevant Agreement Year either on existing Agreement Land or by adding land to the Agreement Land with no upper limit on the area of land you can add.</p>
+
+            <p class="govuk-body">(c) If you were eligible to apply for your Agreement because you were a “Restricted Offer Applicant”, after the first Agreement Year, for each subsequent Agreement Year until the Action End Date for the relevant Rotational Action you can:</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(i)  complete the relevant Rotational Action on the same area of Agreement Land that you entered for the preceding Agreement Year; or</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(ii) &nbsp;add land to the Agreement Land for your selected Rotational Action for an Agreement Year provided the total area of Agreement Land you enter into your selected Rotational Actions is not more than the total area of Agreement Land you entered into your selected Rotational Actions for the first Agreement Year.</p>
+
+            <p class="govuk-body">We will explain the process for varying land entered into Rotational Actions in the Scheme Information.</p>
+
+            <p class="govuk-body">6.4 When we may change your Agreement&nbsp;</p>
+
+            <p class="govuk-body">(a) We will not usually seek to vary your Agreement during the Agreement Period (in a way not referred to elsewhere in these Terms and Conditions). This is explained in the section about ‘Managing your SFI agreement’ in the Scheme Rules.&nbsp;</p>
+
+            <p class="govuk-body">(b) However, it is possible we may offer you an Agreement upgrade during the Agreement Period. For example, this may be the case if we make changes to these Terms and Conditions or the Actions.&nbsp;</p>
+
+            <p class="govuk-body">(c) If we offer you an Agreement upgrade under condition 6.4(b), which we consider to be beneficial to you:&nbsp;&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(i) we will notify you by publishing details on GOV.UK and by writing to you setting out the details of the Agreement upgrade, including when the updated Agreement will apply from; and&nbsp;&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(ii) if you wish to reject the Agreement upgrade and continue with your existing Agreement, you must write to tell us within eight (8) weeks of our notification under condition 6.4(c)(i).&nbsp;</p>
+
+            <p class="govuk-body">(d) If we offer you an Agreement upgrade under condition 6.4(b) which is not covered by condition 6.4(c):&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(i) we will notify you in writing setting out the details of the Agreement upgrade; and&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(ii) it will be possible for you either to accept the Agreement upgrade, or continue with your existing Agreement;&nbsp;&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(iii) if you do not accept in the manner set out in our notification under condition 6.4(d)(i), the Agreement upgrade will not be applied to your Agreement.</p>
+
+            <p class="govuk-body">(e) There may also be exceptional circumstances (not referred to elsewhere in these Terms and Conditions) where we have to vary your Agreement during the Agreement Period. We will only do this due to exceptional circumstances, such as:&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(i) changes in Law which must be reflected in the Agreement; and/or&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(ii) the need to respond to wider government emergency measures and/or measures imperative to the national interest, for example, disease outbreaks or food security emergencies.&nbsp;</p>
+
+            <p class="govuk-body">(f) If we vary the Agreement under condition 6.4(e):&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(i) we will notify you in writing and will endeavour to give such notice as is reasonable and proportionate, having regard to the nature of the variation,&nbsp; its consequences for you and any action required from you;&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(ii) any variation to the Agreement will apply from the date we specify in our notice to you, provided you take the action required as set out in the notice; and&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(iii) if the variation to the Agreement under condition 6.4(e) is unacceptable to you, you can terminate your Agreement by notifying us in writing within a reasonable period that we will specify in our notice to you.  If you do not accept the variation in the manner set out in our notification, we may terminate your Agreement in accordance with condition 15.1(b). Condition 15.3(d) will not apply, provided you inform us within the period specified by us.&nbsp;</p>
+
+            <p class="govuk-body">6.5 When we may temporarily adjust your Agreement&nbsp;&nbsp;</p>
+
+            <p class="govuk-body">(a) We may identify factors which may temporarily impact your ability to complete your selected Actions, meaning you are temporarily unable to comply with your obligations under the Agreement. These factors may include, but are not limited to, adverse weather conditions such as flooding or drought. This is explained in the section about ‘Managing your SFI agreement’ in the Scheme Rules.&nbsp;</p>
+
+            <p class="govuk-body">(b) If condition 6.5(a) applies, we may make a temporary adjustment to the Actions in the Agreement, with this temporary adjustment only being effective during a time period specified by us.&nbsp;</p>
+
+            <p class="govuk-body">(c) If we make a temporary adjustment under condition 6.5(b) we will notify you by publishing details on GOV.UK and will endeavour to give such notice as is reasonable and proportionate. Our notice on GOV.UK will set out:&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(i) the details of the temporary adjustment;&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(ii) the time period for when the temporary adjustment applies, including a start date and end date;&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(iii) the evidence you must keep if you choose to comply with the temporary adjustment, as described under condition 6.5(f).&nbsp;</p>
+
+            <p class="govuk-body">(d) The temporary adjustment under condition 6.5(b) will cease to apply after the end date specified in our notice under condition 6.5(c). After that end date, you must complete your selected Actions to comply with your obligations under the Agreement as if no temporary adjustment had been made.&nbsp;</p>
+
+            <p class="govuk-body">(e) There is no obligation for you to comply with the temporary adjustment under condition 6.5(b). You can continue to complete your selected Actions without complying with the temporary adjustment under Condition 6.5(b).&nbsp;</p>
+
+            <p class="govuk-body">(f) If you choose to comply with the temporary adjustment under Condition 6.5(b), you must:&nbsp;&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(i) keep Records as set out in condition 20 (What accounts and records you must keep) to evidence your compliance with condition 6.5; and&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(ii) complete and retain a copy of the prescribed form we publish on GOV.UK under condition 6.5(c)(iii).&nbsp;</p>
+
+            <h2 id="change-of-circumstances">7. Change of Circumstances&nbsp;</h2>
+
+            <p class="govuk-body">7.1 What is a Change of Circumstances&nbsp;</p>
+
+            <p class="govuk-body">A “Change of Circumstances” means something happens within or outside your control that might reasonably be expected to affect:&nbsp;</p>
+
+            <p class="govuk-body">(a) your eligibility for the Grant;&nbsp;</p>
+
+            <p class="govuk-body">(b) the Grant you should receive;&nbsp;</p>
+
+            <p class="govuk-body">(c) your ability to complete the Actions; or&nbsp;</p>
+
+            <p class="govuk-body">(d) your ability to comply with these Terms and Conditions.&nbsp;</p>
+
+            <p class="govuk-body">This is explained in the section about ‘‘Complying with your SFI agreement’ in the Scheme Rules.&nbsp;</p>
+
+            <p class="govuk-body">7.2 Notifying us of a Change of Circumstances&nbsp;</p>
+
+            <p class="govuk-body">If condition 7.1 applies, you must notify us in writing as soon as reasonably practicable.&nbsp;</p>
+
+            <p class="govuk-body">7.3 Action we may take when there is a Change of Circumstances&nbsp;</p>
+
+            <p class="govuk-body">Where you have notified us about a Change of Circumstances, we may take one or more of the following actions:&nbsp;</p>
+
+            <p class="govuk-body">(a) amend, remove or replace a condition subject to which the Grant is given either temporarily or permanently, including by varying the area of Agreement Land;&nbsp;</p>
+
+            <p class="govuk-body">(b) amend, remove or replace the Actions or timescales either temporarily or permanently;&nbsp;</p>
+
+            <p class="govuk-body">(c) reduce the Grant either temporarily or permanently;&nbsp;</p>
+
+            <p class="govuk-body">(d) require you to repay some or all of the Grant already paid to you; and/or&nbsp;</p>
+
+            <p class="govuk-body">(e) terminate the Agreement before the Agreement End Date.&nbsp;</p>
+
+            <p class="govuk-body">7.4 When we will notify you of our decision&nbsp;</p>
+
+            <p class="govuk-body">We will notify you within a reasonable period of our “Decision” to take any of the actions under condition 7.3 and the reasons for it. At the same time, we will remind you of your rights to request a reconsideration under condition 14 (Reconsideration of Decisions and Determinations).&nbsp;</p>
+
+            <h2 id="transfers-ofagreement-land">8. Transfers of Agreement Land&nbsp;</h2>
+
+            <p class="govuk-body">8.1 Transferring Agreement Land to another person or entity&nbsp;</p>
+
+            <p class="govuk-body">(a) If you sell, lease or otherwise transfer all or part of the Agreement Land to another party or entity (the “Transferee”) during the Agreement Period so that you no longer have Management Control over all or part of the Agreement Land we will not usually allow you to transfer your Agreement to the Transferee.&nbsp;</p>
+
+            <p class="govuk-body">(b) You must notify us of your loss of Management Control of all or part of the Agreement Land (as set out in condition 3.3) pursuant to a sale, lease or other transfer using the procedure in condition 7 (Change of Circumstances).&nbsp;</p>
+
+            <p class="govuk-body">(c) Where you notify us that there has been a Change of Circumstances under condition 8.1(b), we may agree, at our absolute discretion and in limited circumstances only, that you may transfer the Agreement to the Transferee provided the conditions laid out in regulation 12 of <a rel="external" href="https://www.legislation.gov.uk/uksi/2021/405/made">the Regulations</a> are met.&nbsp;</p>
+
+            <h2 id="payments">9. Payments&nbsp;</h2>
+
+            <p class="govuk-body">9.1 Frequency of payments&nbsp;</p>
+
+            <p class="govuk-body">The total annual Grant is divided into four (4) quarterly instalments. The first instalment of the Grant will usually be made in the fourth (4th) month after the Agreement Start Date if you have complied with the obligations under the Agreement. This is explained under the section about ‘When and how much you’ll get paid’ in the Scheme Rules.&nbsp;&nbsp;</p>
+
+            <p class="govuk-body">9.2 Where payments will be made&nbsp;</p>
+
+            <p class="govuk-body">We will pay the Grant directly to your bank or building society account that is registered with us via BACS transfer, subject to the necessary funds being available when the payment falls due.&nbsp;</p>
+
+            <p class="govuk-body">9.3 When payments may be delayed, reduced, recovered or withheld&nbsp;</p>
+
+            <p class="govuk-body">We may delay, reduce, recover or withhold the payment of the Grant in whole or in part if you do not submit the Annual Declaration required under condition 5; and/or you breach your Agreement under condition 12.&nbsp;&nbsp;</p>
+
+            <p class="govuk-body">9.4 Variation of payment rates&nbsp;</p>
+
+            <p class="govuk-body">(a) As stated in the Scheme Information we do not expect to vary the Grant during the Agreement Period.&nbsp;</p>
+
+            <p class="govuk-body">(b) However, we reserve the right, under exceptional circumstances not referred to elsewhere in these Terms and Conditions, to vary the Grant during the Agreement Period, in accordance with condition 6.4.&nbsp;</p>
+
+            <p class="govuk-body">9.5 SFI Management Payment&nbsp;</p>
+
+            <p class="govuk-body">(a) The SFI Management Payment will be paid for each hectare of Agreement Land, up to a maximum of fifty (50) hectares in the “Relevant Agreement”, which means:&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(i) if you have entered one (1) Agreement, this will be the Relevant Agreement; or&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(ii) if you have entered more than one (1) Agreement, the Relevant Agreement will be the Agreement with the earliest Agreement Start Date that contains Agreement Land.&nbsp;&nbsp;</p>
+
+            <p class="govuk-body">The section in the Scheme Rules about ‘When and how much you’ll be paid’ explains the value of the SFI Management Payment and how it works.&nbsp;&nbsp;</p>
+
+            <p class="govuk-body">(b) If we take action under condition 7.3 and vary the area of Agreement Land in the Relevant Agreement during the Agreement Period, or if you add land to the Agreement Land under condition 6.3(b) and condition 6.3(c) the SFI Management Payment will be paid on the basis of that varied area of Agreement Land, up to a maximum of fifty (50) hectares.&nbsp;&nbsp;&nbsp;</p>
+
+            <h2 id="undue-payments-or-overpayments">10. Undue payments or overpayments&nbsp;</h2>
+
+            <p class="govuk-body">10.1 Undue payments or overpayments&nbsp;</p>
+
+            <p class="govuk-body">It is your responsibility to check all the payments of the Grant we make to you and to notify us within two (2) weeks of you becoming aware if you have any reason to believe an error has occurred. You must repay any overpayment or payment of the Grant to which you are not entitled (including due to our administrative error).&nbsp;</p>
+
+            <p class="govuk-body">10.2 When a repayment must be made&nbsp;</p>
+
+            <p class="govuk-body">Any sum that becomes repayable under condition 10.1 will be treated as a debt by you to us and if it is not repaid we may issue a recovery order in respect of it.&nbsp;</p>
+
+            <h2 id="checking-you-are-complying-with-youragreement">11. Checking you are complying with your Agreement&nbsp;</h2>
+
+            <p class="govuk-body">11.1 What we may check&nbsp;</p>
+
+            <p class="govuk-body">We may check your compliance with the obligations under the Agreement, including that:&nbsp;</p>
+
+            <p class="govuk-body">(a) you are complying with these Terms and Conditions; and/or&nbsp;</p>
+
+            <p class="govuk-body">(b) you have completed what is required in each of your selected Actions in a way that could reasonably be expected to achieve their aims.&nbsp;</p>
+
+            <p class="govuk-body">11.2 How we will check you are complying with your obligations under the Agreement&nbsp;</p>
+
+            <p class="govuk-body">We will check you are complying with the obligations under the Agreement through a combination of physical and virtual site visits, remote monitoring, and desk-based administrative checks.  To help us do this, you must:&nbsp;</p>
+
+            <p class="govuk-body">(a) for virtual or physical site visits:&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(i) allow a person authorised by us to carry out site visits and exercise powers of entry under the Regulations (‘Authorised Person’) access to any Agreement Land, premises, livestock, trees, crops, plants, machinery, equipment, documents or records (or any related apparatus) covered by the Agreement.  The Authorised Person may be accompanied by such other persons as they consider necessary; and&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(ii) provide any assistance reasonably requested by an Authorised Person.&nbsp;</p>
+
+            <p class="govuk-body">(b) disclose all information or evidence that we may require to verify your continued eligibility for and compliance with the obligations under the Agreement.&nbsp;</p>
+
+            <p class="govuk-body">The section about ‘Complying with your SFI agreement’ in the Scheme Rules explains how we will check delivery of your obligations under the Agreement.&nbsp;</p>
+
+            <p class="govuk-body">11.3 How much notice we will give you of a site visit&nbsp;</p>
+
+            <p class="govuk-body">We will endeavour to agree a suitable date and time for the site visit with you. Where it is not possible to agree a suitable date and time, we will notify you in writing of the purpose of the site visit and the date and time at least forty-eight (48) hours in advance of the site visit.  <a rel="external" href="https://www.legislation.gov.uk/uksi/2021/405">Regulation 17 of the Regulations</a> allows us to access your land at any reasonable hour without notice if, for example, we have a reasonable suspicion that you have committed a serious breach, fraud or any other related offence.&nbsp;</p>
+
+            <p class="govuk-body">11.4 What we may do during a site visit&nbsp;</p>
+
+            <p class="govuk-body"><a rel="external" href="https://www.legislation.gov.uk/uksi/2021/405">Regulation 18 of the Regulations</a> explains what an Authorised Person can do during a site visit.&nbsp;</p>
+
+            <h2 id="a-breach-of-youragreement">12. A breach of your Agreement&nbsp;</h2>
+
+            <p class="govuk-body">12.1 What happens if we suspect there may have been a breach of your Agreement&nbsp;</p>
+
+            <p class="govuk-body">(a) Where we reasonably suspect you have breached the Agreement, we will carry out a proportionate investigation. We explain what happens if we suspect a breach of the Agreement in the section about ‘Complying with your SFI agreement’ in the Scheme Rules.&nbsp;</p>
+
+            <p class="govuk-body">(b) If we reasonably suspect you have breached the Agreement, we may withhold the Grant until such investigation is concluded, however we will not usually do this.&nbsp;</p>
+
+            <p class="govuk-body">(c) We will inform you of the outcome of the investigation carried out under condition 12.1(a) within a reasonable period.&nbsp;</p>
+
+            <p class="govuk-body">12.2 How you could breach your Agreement&nbsp;</p>
+
+            <p class="govuk-body">After we carry out a proportionate investigation, we may make a “Determination” that you have breached the Agreement if any of the following applies:&nbsp;</p>
+
+            <p class="govuk-body">(a) you have not notified us of a Change of Circumstances under condition 7;&nbsp;</p>
+
+            <p class="govuk-body">(b) you have, at any time, given us false or misleading information;&nbsp;</p>
+
+            <p class="govuk-body">(c) you have used the Grant for a purpose that is not in accordance with the Agreement;&nbsp;</p>
+
+            <p class="govuk-body">(d) you have used the Grant for activities that breach any Law with which you are required to comply;&nbsp;</p>
+
+            <p class="govuk-body">(e) you have failed to comply with the terms of your Agreement;&nbsp;</p>
+
+            <p class="govuk-body">(f) you have breached any requirement to which you are subject under the Agriculture (Financial Assistance) Regulations 2021;&nbsp;</p>
+
+            <p class="govuk-body">(g) you have failed to provide information, records or evidence required under condition 20;&nbsp;</p>
+
+            <p class="govuk-body">(h) you have prevented an Authorised Person from carrying out a virtual or physical site visit of the Agreement Land;&nbsp;</p>
+
+            <p class="govuk-body">(i) you have refused to provide assistance reasonably requested by an Authorised Person carrying out a virtual or physical site visit of the Agreement Land;&nbsp;</p>
+
+            <p class="govuk-body">(j) you have otherwise obstructed a virtual or physical site visit of the Agreement Land; or&nbsp;</p>
+
+            <p class="govuk-body">(k) you have failed to prevent or report actual or anticipated fraud or corruption in relation to the Grant.&nbsp;</p>
+
+            <p class="govuk-body">12.3 A breach caused by your employees or agents&nbsp;</p>
+
+            <p class="govuk-body">The circumstances described in condition 12.2(b) to condition 12.2(j) apply, where appropriate, to any action taken by your employees or agents.&nbsp;</p>
+
+            <p class="govuk-body">12.4 What happens if we determine there has been a breach&nbsp;</p>
+
+            <p class="govuk-body">If we make a Determination that you have breached the Agreement, we will write to inform you of this within a reasonable period. We will give you the reasons for this Determination. We will then decide what action needs to be taken, if any. We explain what happens if we determine you have breached the Agreement in the section about ‘Complying with your SFI agreement’ in the Scheme Rules. You may respond to any Determination in accordance with condition 14.&nbsp;</p>
+
+            <p class="govuk-body">12.5 Actions we may take if you breach your Agreement&nbsp;</p>
+
+            <p class="govuk-body">(a) There are no set actions for particular breaches of the Agreement, and we will assess all the circumstances of a breach in a fair and consistent manner, on a case-by-case basis and take the action(s) we think is/are appropriate. This is explained in the section about ‘Complying with your SFI agreement’ in the Scheme Rules.&nbsp;</p>
+
+            <p class="govuk-body">(b) If we make a Determination that you have breached the Agreement, we may take any of the following actions:&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(i) allow you to rectify the breach;</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(ii) issue you with a warning letter;&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(iii) amend, remove or replace a condition subject to which the Grant is given either temporarily or permanently;&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(iv) amend, remove or replace the Actions or timescales either temporarily or permanently;&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(v) delay, reduce, recover or withhold payment or require repayment of all or part of the Grant;&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(vi) terminate the Agreement before the Agreement End Date; and/or&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(vii) prohibit you from receiving financial assistance from other financial assistance schemes under the Agriculture Act 2020 for a period of up to two (2) years from the day after we notify you of the Determination on the breach.&nbsp;</p>
+
+            <p class="govuk-body">12.6 Repayment if there has been a breach&nbsp;&nbsp;&nbsp;</p>
+
+            <p class="govuk-body">If we require you to repay all or part of the Grant under condition 12.5(b)(v), then you must do so within sixty (60) days of the date of our demand for repayment. If you fail to repay the requested amount within sixty (60) days of our demand, then that sum will be recoverable as a civil debt with interest. Our right to recover under condition 12.5(b)(v) extends to the whole of the Grant paid to you in the Agreement Year or Agreement Years to which the Determination relates under condition 12.2.&nbsp;</p>
+
+            <h2 id="good-reasons-for-a-breach">13. Good reasons for a breach&nbsp;</h2>
+
+            <p class="govuk-body">13.1 What are good reasons for a breach&nbsp;</p>
+
+            <p class="govuk-body">We understand that there may be circumstances (a “Good Reason”) where you are in breach of the obligations under the Agreement because of events outside of your control.&nbsp;</p>
+
+            <p class="govuk-body">(a) A Good Reason for a breach of the Agreement includes, but is not limited to:&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(i) natural events, such as prolonged adverse weather conditions, flooding, or animal or plant disease;&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(ii) if you are seriously ill;&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(iii) if you die;&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(iv) if there is unforeseen loss of Management Control of the Agreement Land, for example when a tenancy is terminated, or because of the compulsory purchase of land by a third party;&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(v) financial circumstances, such as bankruptcy;&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(vi) evidenced supply chain problems, such as a lack of soil testing capacity; and&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(vii) criminal damage by a third party, such as arson or vandalism.&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;(b) We explain what good reasons for a breach could include in the section about ‘Complying with your SFI agreement in the Scheme Rules.&nbsp;</p>
+
+            <p class="govuk-body">13.2 Notifying us about a good reason for a breach&nbsp;</p>
+
+            <p class="govuk-body">(a) If condition 13.1 applies, you (or any person authorised to act for you) must notify us in writing to explain the Good Reason.&nbsp;</p>
+
+            <p class="govuk-body">(b) If the Good Reason relates to a breach of the Agreement under condition 12.2(h), condition 12.2(i) or condition 12.2(j), you must notify us in writing immediately.&nbsp;</p>
+
+            <p class="govuk-body">(c) In all other cases, you must notify us in writing within eight (8) weeks from:&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(i) the date you are able to; or&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(ii) the date we notify you of the Determination on the breach of the Agreement.&nbsp;</p>
+
+            <h2 id="reconsideration-of-decisions-and-determinations">14. Reconsideration of Decisions and Determinations&nbsp;</h2>
+
+            <p class="govuk-body">14.1 How to ask us to reconsider a Decision or Determination&nbsp;</p>
+
+            <p class="govuk-body">If you would like us to reconsider any Decision (for a Change of Circumstances under condition 7) or Determination (for a breach of the Agreement under condition 12) that we have made, you should use our <a href="https://www.gov.uk/government/organisations/rural-payments-agency/about/complaints-procedure">complaints procedure</a> to ask for it to be reconsidered.&nbsp;</p>
+
+            <p class="govuk-body">14.2 When to ask us to reconsider a Decision or Determination&nbsp;</p>
+
+            <p class="govuk-body">You must ask us to reconsider any Decision or Determination within sixty (60) calendar days of the date you are notified about our Decision or Determination.&nbsp;</p>
+
+            <p class="govuk-body">14.3 How we will reconsider a Decision or Determination&nbsp;</p>
+
+            <p class="govuk-body">We will consider your request to reconsider our Decision or Determination carefully, including any information or evidence you have provided to us. We will confirm the outcome of our reconsideration, with reasons, in writing within a reasonable period.&nbsp;</p>
+
+            <p class="govuk-body">14.4. How to appeal the outcome of a reconsideration&nbsp;</p>
+
+            <p class="govuk-body">You may appeal the outcome of our reconsideration of our Decision or Determination within sixty (60) calendar days of the date you are notified of that outcome where you believe the outcome of our reconsideration:&nbsp;</p>
+
+            <p class="govuk-body">(a) was based on an error of fact;&nbsp;</p>
+
+            <p class="govuk-body">(b) was wrong in Law; or&nbsp;</p>
+
+            <p class="govuk-body">(c) there has been a material procedural error.&nbsp;</p>
+
+            <p class="govuk-body">14.5 When we will confirm the outcome of your appeal&nbsp;</p>
+
+            <p class="govuk-body">We will confirm the outcome of your appeal under condition 14.4 within a reasonable period in writing explaining the reasons for this outcome, and this will be our final determination.&nbsp;</p>
+
+            <h2 id="termination-of-anagreement">15. Termination of an Agreement&nbsp;</h2>
+
+            <p class="govuk-body">15.1 When we may terminate your Agreement&nbsp;</p>
+
+            <p class="govuk-body">(a) We may terminate the Agreement before the Agreement End Date on written notice to you without compensation and with immediate effect if:&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(i) you were not eligible to enter the Agreement or receive the Grant;&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(ii) there has been a Change of Circumstances under condition 7 meaning you are no longer eligible to receive the Grant;&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(iii) we have made a Determination that a breach has occurred in accordance with condition 12;&nbsp;&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(iv) you have not repaid to us a sum that has become recoverable pursuant to condition 12 or condition 10</p>
+
+            <p class="govuk-body">(b) In addition to our right to terminate under condition 15.1(a), we may terminate the Agreement at any time on giving at least six (6) months’ written notice to you.&nbsp;&nbsp;&nbsp;</p>
+
+            <p class="govuk-body">15.2 What happens if we terminate your Agreement&nbsp;</p>
+
+            <p class="govuk-body">(a) Where we terminate the Agreement under condition 15.1(a), you may be required to repay some or all of the Grant already paid to you.&nbsp;</p>
+
+            <p class="govuk-body">(b) Where we terminate the Agreement under condition 15.1(b), you will be able to keep the Grant already paid to you, provided you are not in breach of the Agreement.&nbsp;</p>
+
+            <p class="govuk-body">15.3 What happens if you want to terminate your Agreement&nbsp;</p>
+
+            <p class="govuk-body">(a) We will not usually allow you to terminate your Agreement before the Agreement End Date.&nbsp;</p>
+
+            <p class="govuk-body">(b) If you want to terminate your Agreement before the Agreement End Date, you must write to us to request this and explain (providing supporting evidence) why you wish to do so.&nbsp;</p>
+
+            <p class="govuk-body">(c) We will consider requests under condition 15.3 on a case-by-case basis and may allow the request if there is a Change of Circumstances (condition 7). We will inform you of our decision within a reasonable time period.&nbsp;</p>
+
+            <p class="govuk-body">(d) If we agree to terminate your Agreement before the Agreement End Date, you may be required to repay all or part of the Grant for the relevant Agreement Year or Agreement Years, and you will remain bound by the relevant obligations under the Agreement until you make this repayment.&nbsp;</p>
+
+            <p class="govuk-body">(e) Condition 15.3(d) does not apply to condition 6.4 except as set out in condition 6.4(f)(iii).&nbsp;</p>
+
+            <p class="govuk-body">15.4 This Agreement will automatically terminate in the event of your death if you have entered this Agreement in your own name as an individual.&nbsp;</p>
+
+            <h2 id="consequences-of-expiry-or-termination-of-youragreement">16. Consequences of expiry or termination of your Agreement&nbsp;</h2>
+
+            <p class="govuk-body">16.1 If we or you terminate the Agreement, or the Agreement expires on the Agreement End Date, this will not affect the rights, remedies, obligations or liabilities that either of us have accrued up to the point of termination or the Agreement End Date.&nbsp;</p>
+
+            <p class="govuk-body">16.2 Termination or expiry of the Agreement will not affect our or your continuing rights and obligations under any condition in the Agreement which is intended to continue beyond the Agreement Period.&nbsp;</p>
+
+            <h2 id="intellectual-property-rights">17. Intellectual property rights&nbsp;</h2>
+
+            <p class="govuk-body">17.1 We do not anticipate that any new intellectual property rights will be created by these arrangements but if any intellectual property rights are created (for example in assessments, plans and data generated in relation to this Agreement) then these will be owned by the party who created it.  We may need to use any intellectual property created by you for the purposes of the Agreement and you hereby grant us a perpetual, non-exclusive, royalty free licence to do so for use in connection with the Agreement.&nbsp;</p>
+
+            <h2 id="data-protection">18. Data protection&nbsp;</h2>
+
+            <p class="govuk-body">18.1 We and you must always comply with our respective obligations under “Data Protection Legislation”. We may be required to provide personal information to Defra. We also are required by law to publish certain information about you, this is described in condition 21. Data Protection Legislation means (a) the UK GDPR, (b) the Data Protection Act 2018 to the extent that it relates to processing of personal data and privacy and (c) all applicable Law about the processing of personal data and privacy.&nbsp;</p>
+
+            <p class="govuk-body">18.2 For information on how we handle personal data search for ‘<a href="https://www.gov.uk/government/organisations/rural-payments-agency/about/personal-information-charter">Rural Payments Agency Personal Information Charter</a>’ and our <a href="https://www.gov.uk/guidance/rpa-privacy-notices">Privacy Policy</a> on GOV.UK.&nbsp;</p>
+
+            <h2 id="freedom-of-informationfoi">19. Freedom of information&nbsp;(FOI)</h2>
+
+            <p class="govuk-body">19.1 You acknowledge that we are subject to the requirements of the Freedom of Information Act 2000 (“FOIA”) and the Environmental Information Regulations 2004 (“EIR”).&nbsp;</p>
+
+            <p class="govuk-body">19.2 We may need to share information we hold about you or the Agreement so we or Defra can comply with any FOIA and EIR request.</p>
+
+            <p class="govuk-body">The extent, content and format of the information we disclose is our decision. In making any disclosure, we will have due regard to Data Protection Legislation.&nbsp;</p>
+
+            <p class="govuk-body">19.3 You will provide all necessary assistance and cooperation which we or Defra reasonably request for the purposes of complying with our obligations under FOIA and EIR within a time period specified by us. You must tell us as soon as reasonably practicable if you receive a FOIA or EIR request intended for us or Defra.&nbsp;</p>
+
+            <h2 id="what-accounts-and-records-you-must-keep">20. What accounts and records you must keep&nbsp;</h2>
+
+            <p class="govuk-body">20.1 You must keep all invoices, receipts, accounts and any other relevant documents relating directly to the expenditure of the Grant and evidence of your compliance with your obligations under the Agreement (“Records”).</p>
+
+            <p class="govuk-body">The Records include evidence you must keep as explained in each Action.&nbsp;</p>
+
+            <p class="govuk-body">20.2 You must keep your Records for a period of at least seven (7) years from termination of the Agreement or the Agreement End Date.&nbsp;</p>
+
+            <p class="govuk-body">20.3 You must prepare and keep your Records in compliance with applicable Law and must provide assistance to us when we are auditing or examining these so as to help us carry out our legal obligations.&nbsp;</p>
+
+            <p class="govuk-body">20.4 We have the right to:&nbsp;</p>
+
+            <p class="govuk-body">(a) request you to provide your Records to us;&nbsp;</p>
+
+            <p class="govuk-body">(b) review your Records; and/or&nbsp;</p>
+
+            <p class="govuk-body">(c) take copies of such Records&nbsp;</p>
+
+            <p class="govuk-body">20.5 You must provide your Records to us upon request. In addition, you shall provide the Records to any other duly authorised public authority (or their authorised representatives or auditors) upon request.&nbsp;</p>
+
+            <h2 id="what-information-we-may-publish-about-you">21. What information we may publish about you&nbsp;</h2>
+
+            <p class="govuk-body">21.1 We are required by Law to publish certain specified information about agreement holders who have received relevant Grant payments.&nbsp;</p>
+
+            <p class="govuk-body">21.2 Condition 21.1 only applies if you have received a total value of relevant payments (as defined in the Regulations) equal to or more than £1,250 in the relevant financial year.&nbsp;</p>
+
+            <p class="govuk-body">21.3 The specified information shall:&nbsp;</p>
+
+            <p class="govuk-body">(a) be published on a searchable database on GOV.UK; and&nbsp;</p>
+
+            <p class="govuk-body">(b) remain on that searchable database for three (3) years from initial publication.&nbsp;</p>
+
+            <p class="govuk-body">21.4 If condition 21.1 applies to your Grant, we will publish the following specified information:&nbsp;</p>
+
+            <p class="govuk-body">(a)  your full name;&nbsp;</p>
+
+            <p class="govuk-body">(b) the post town, and post code area and district where:&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(i) you are resident, if you are a natural person;&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(ii) your registered office is located, if you are incorporated (for example, a company); or&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;&nbsp;&nbsp;(iii) your primary base of business is located, if you are unincorporated (for example, a sole trader);&nbsp;</p>
+
+            <p class="govuk-body">(c) the total Grant payments received by you in the relevant financial year; and&nbsp;</p>
+
+            <p class="govuk-body">(d) a description of the activities financed by the Grant payments.&nbsp;</p>
+
+            <h2 id="other-terms">22. Other Terms&nbsp;</h2>
+
+            <p class="govuk-body">22.1 We may transfer the Agreement to another public organisation&nbsp;</p>
+
+            <p class="govuk-body">We may transfer our rights and obligations to another Government body.  We will tell you in writing if this happens and we will ensure that the transfer will not affect your rights under the Agreement.&nbsp;</p>
+
+            <p class="govuk-body">22.2 Third party rights under this Agreement&nbsp;</p>
+
+            <p class="govuk-body">The Agreement is between you and us. No other person shall have any rights to enforce any of its terms, however, the terms of the Agreement and our rights under it may be enforced by Defra.&nbsp;</p>
+
+            <p class="govuk-body">22.3 If a court finds part of the Agreement illegal, the rest will continue in force&nbsp;</p>
+
+            <p class="govuk-body">Each of the conditions of the Agreement operates separately. If any court or relevant authority decides that any term, condition or provision of the Agreement is unlawful, the remaining terms, conditions and provisions will remain in full force and effect.&nbsp;</p>
+
+            <p class="govuk-body">22.4 Even if we delay in enforcing the Agreement, we can still enforce it later&nbsp;</p>
+
+            <p class="govuk-body">If we do not insist immediately that you do anything you are required to do under the Agreement, or if we delay in taking steps against you in respect of you breaching the Agreement, that will not mean that you do not have to meet your obligations under this Agreement and it will not prevent us taking actions against you, as described in these Terms and Conditions, at a later date.&nbsp;</p>
+
+            <p class="govuk-body">22.5 Notices&nbsp;</p>
+
+            <p class="govuk-body">All notices in relation to the Agreement shall be in writing and shall be deemed to have been duly given if personally delivered, emailed, mailed (first class postage prepaid) or faxed using the contact details set out in the Agreement Document (or any updated address which is subsequently notified by one party to the other). It is the Agreement Holder’s responsibility to notify the Authority of any change to its contact details.&nbsp;</p>
+
+            <p class="govuk-body">22.6 Joint and several liability&nbsp;</p>
+
+            <p class="govuk-body">Where you are not a company nor an incorporated entity with a distinct legal personality of its own, the individuals who enter into the Agreement on behalf of you shall be jointly and severally liable for your obligations and liabilities arising under the Agreement.&nbsp;</p>
+
+            <p class="govuk-body">22.7 Dispute resolution&nbsp;</p>
+
+            <p class="govuk-body">Any dispute arising between the parties or any complaint or appeal by you concerning our actions in connection with the Agreement shall be resolved according to our <a href="https://www.gov.uk/government/organisations/rural-payments-agency/about/complaints-procedure">complaints procedure</a>.</p>
+
+            <p class="govuk-body">22.8 Which laws apply to this Agreement and where you may bring legal proceedings. The Agreement is governed by English law and you can only bring legal proceedings in respect of this Agreement in the English courts.&nbsp;</p>
+
+            <h2 id="definition-of-terms-used-in-the-sfi-agreement-terms-and-conditions">Definition of terms used in the SFI agreement terms and conditions</h2>
+
+            <p class="govuk-body">Capitalised terms used in these Terms and Conditions have specific meanings which are described below:&nbsp;</p>
+
+            <p class="govuk-body"><strong>Actions</strong>: The SFI actions you have selected.&nbsp;</p>
+
+            <p class="govuk-body"><strong>Action End Date</strong>: The date on which the relevant Action comes to an end, as set out in the Agreement Document.&nbsp;</p>
+
+            <p class="govuk-body"><strong>Action Start Date</strong>: The date on which the relevant Action commences, as set out in the Agreement Document.&nbsp;</p>
+
+            <p class="govuk-body"><strong>Agreement</strong>: The SFI agreement consisting of the Agreement Document, these Terms and Conditions, and the Actions you have selected.&nbsp;</p>
+
+            <p class="govuk-body"><strong>Agreement Document</strong>: The document accompanying these Terms and Conditions, which describes the Grant to be paid to you for delivering the selected Action(s) you have selected.&nbsp;</p>
+
+            <p class="govuk-body"><strong>Agreement End Date</strong>: The latest Action End Date, as shown in your Agreement Document.&nbsp;</p>
+
+            <p class="govuk-body"><strong>Agreement Land</strong>: The land parcels described in the Agreement Document.&nbsp;</p>
+
+            <p class="govuk-body"><strong>Agreement Period</strong>: A period from the Agreement Start Date to the Agreement End Date.&nbsp;</p>
+
+            <p class="govuk-body"><strong>Agreement Start Date</strong>: The date the Agreement commences, as shown in your Agreement Document.&nbsp;</p>
+
+            <p class="govuk-body"><strong>Agreement Year</strong>: Each subsequent 12-month period following the Agreement Start Date.&nbsp;</p>
+
+            <p class="govuk-body"><strong>Annual Declaration</strong>: A declaration confirming that you have complied, or expect to have complied, with your obligations under the Agreement for the relevant Agreement Year.&nbsp;</p>
+
+            <p class="govuk-body"><strong>Assisted Digital Exception Group</strong>: applicants who required additional support to submit their application, but who were unable to obtain that support before 11&nbsp;March 2025.</p>
+
+            <p class="govuk-body"><strong>Authorised Person</strong>: A person authorised by us to carry out site visits and exercise powers of entry under the Regulations.&nbsp;</p>
+
+            <p class="govuk-body"><strong>Change of Circumstances</strong>: Means something happens within or outside your control that might reasonably be expected to affect:&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;(a) your eligibility for the Grant;&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;(b) the Grant you should receive;&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;(c) your ability to complete the Actions; or&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;(d) your ability to comply with these Terms and Conditions.&nbsp;</p>
+
+            <p class="govuk-body"><strong>Common Land</strong>: Defined as:<br></p>
+
+            <ul>
+              <li>land registered as common land in a register of common land kept under Part 1 of the Commons Act 2006<br>
+              </li>
+              <li>land to which Part 1 of that Act does not apply and which is subject to rights of common within the meaning of that Act</li>
+            </ul>
+
+            <p class="govuk-body">Any reference to Common Land in these Terms and Conditions applies to Shared Grazing.&nbsp;Shared Grazing means communal pasture that is not registered as common land where graziers have a legal entitlement to graze. For example, a pasture used jointly by tenants</p>
+
+            <p class="govuk-body"><strong>Data Protection Legislation</strong>: This means:&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;(a) the UK GDPR;&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;(b) the Data Protection Act 2018 to the extent that it relates to processing of personal data and privacy;&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;(c) all applicable Law about the processing of personal data and privacy.&nbsp;</p>
+
+            <p class="govuk-body"><strong>Decision</strong>: Our decision following notification to us of a Change of Circumstances.&nbsp;</p>
+
+            <p class="govuk-body"><strong>Defra</strong>: Department for Environment, Food and Rural Affairs.&nbsp;</p>
+
+            <p class="govuk-body"><strong>Determination</strong>: Our determination following a breach by you of the Agreement.&nbsp;</p>
+
+            <p class="govuk-body"><strong>Due Date</strong>: The date by which you must submit your Annual Declaration.&nbsp;</p>
+
+            <p class="govuk-body"><strong>EIR</strong>: Environmental Information Regulations 2004.&nbsp;</p>
+
+            <p class="govuk-body"><strong>Exception Group</strong>: a group consisting of the following sub-groups of applicants that Defra confirmed on 11 March 2025 will be able to apply for an SFI 2024 agreement despite the closure of the scheme to new applicants. The groups are:<br></p>
+
+            <ul>
+              <li>the SFI pilot exception group;<br>
+              </li>
+              <li>the system issues exception group; and<br>
+              </li>
+              <li>the assisted digital exception group.</li>
+            </ul>
+
+            <p class="govuk-body"><strong>Exception Group Applicant</strong>: an applicant belonging to the Exception Group.</p>
+
+            <p class="govuk-body"><strong>FOIA</strong>: Freedom of Information Act 2000.&nbsp;</p>
+
+            <p class="govuk-body"><strong>Grant</strong>: The sum to be paid to you for delivering the Actions, as described in the Agreement Document.&nbsp;</p>
+
+            <p class="govuk-body"><strong>Law</strong>: Any law, statute, subordinate legislation within the meaning of Section 21(1) of the Interpretation Act 1978, bye-law, right within the meaning of Section 4(1) EU Withdrawal Act 2018 as amended by EU (Withdrawal Agreement) Act 2020, regulation, order, regulatory policy, mandatory guidance or code of practice, judgement of a relevant court of law, or directives or requirements of any regulatory body with which you are required to complete comply.&nbsp;</p>
+
+            <p class="govuk-body"><strong>Management Control</strong>: Having sufficient control over how the Agreement Land is managed to complete the Actions you have selected for the duration of the Agreement Period.&nbsp;</p>
+
+            <p class="govuk-body"><strong>Regulations</strong>: The Agriculture (Financial Assistance) Regulations 2021, as amended.&nbsp;</p>
+
+            <p class="govuk-body"><strong>Restricted Offer Applicant</strong>: applicants who (a) started an SFI 2024 application on or after 12 January 2025 (but had not submitted it before SFI applications closed on 11 March 2025); and (b) are not an Exception Group Applicant.</p>
+
+            <p class="govuk-body"><strong>Rotational Actions</strong>: The Actions you have selected which can move location during the Agreement Period.</p>
+
+            <p class="govuk-body"><strong>Scheme Information</strong>: Information we have published on GOV.UK in relation to SFI, which includes:&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;(a) the Actions;&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;(b) the Scheme Rules; and&nbsp;</p>
+
+            <p class="govuk-body">&nbsp;(c) other scheme information and guidance which is there to help you, but you do not have to follow.&nbsp;</p>
+
+            <p class="govuk-body"><strong>Scheme Rules</strong>: Rules in the Scheme Information that further explain the mandatory requirements of your Agreement.&nbsp;</p>
+
+            <p class="govuk-body"><strong>SFI</strong>: Sustainable Farming Incentive.&nbsp;</p>
+
+            <p class="govuk-body"><strong>SFI Pilot Exception Group</strong>: eligible applicants who were participants in the SFI Pilot</p>
+
+            <p class="govuk-body"><strong>SFI Management Payment</strong>: An amount to be paid to you for entering into and implementing your SFI agreement.&nbsp;&nbsp;</p>
+
+            <p class="govuk-body"><strong>System Issues Exception Group</strong>: eligible applicants who were unable to submit their SFI application before SFI applications closed on 11 March 2025 due to issues in the application system.</p>
+
+            <p class="govuk-body"><strong>UK GDPR</strong>: The retained EU law version of the General Data Protection Regulation (Regulation (EU) 2016/679), as transferred into UK Law by the Data Protection, Privacy and Electronic Communications (Amendments etc) (EU Exit (Regulations (SI 419/2019) and any applicable national implementing Laws as amended from time to time.</p>
+
+          </div>
+
+
+        </div>
+      </div>
+
+      <div class="govuk-grid-row">
+
+        <a class="govuk-link gem-c-back-to-top-link govuk-!-display-none-print" href="#contents">
+          <svg class="gem-c-back-to-top-link__icon" xmlns="http://www.w3.org/2000/svg" width="13" height="17" viewBox="0 0 13 17" aria-hidden="true" focusable="false">
+            <path fill="currentColor" d="M6.5 0L0 6.5 1.4 8l4-4v12.7h2V4l4.3 4L13 6.4z"></path>
+          </svg>
+          Back to top
+        </a>
+      </div>
+    </div>
+  </div>
+
+    {{ defraSupportDetails() }}
+</div>
+
+{% if config.cdpEnvironment == 'local' and context | length and not context.isForceAccess %}
+{% include "partials/debug.html" %}
+{% endif %}
+{% endblock %}
