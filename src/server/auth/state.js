@@ -24,8 +24,7 @@ function validateState(request, state) {
       {
         reason: 'State mismatch during OAuth callback',
         storedStatePresent: Boolean(storedState),
-        path: request.path,
-        ip: request.info.remoteAddress
+        path: request.path
       },
       request
     )
