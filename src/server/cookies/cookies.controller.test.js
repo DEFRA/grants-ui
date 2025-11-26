@@ -19,6 +19,8 @@ const createMockH = () => ({
   }
 })
 
+vi.mock('~/src/server/common/helpers/logging/log.js', () => ({}))
+
 describe('cookies.controller', () => {
   describe('cookiesController', () => {
     it.each([

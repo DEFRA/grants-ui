@@ -2,6 +2,13 @@ import { config } from '~/src/config/config.js'
 import { setupProxy } from '~/src/server/common/helpers/proxy/setup-proxy.js'
 import { getGlobalDispatcher, ProxyAgent } from 'undici'
 
+vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
+  log: vi.fn(),
+  logger: {
+    info: vi.fn()
+  }
+}))
+
 describe('setupProxy', () => {
   afterEach(() => {
     config.set('httpProxy', null)

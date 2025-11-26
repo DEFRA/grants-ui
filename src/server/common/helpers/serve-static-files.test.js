@@ -4,6 +4,7 @@ import { startServer } from '~/src/server/common/helpers/start-server.js'
 import Wreck from '@hapi/wreck'
 
 vi.mock('@hapi/wreck')
+vi.mock('~/src/server/common/helpers/logging/log.js', () => ({}))
 
 describe('#serveStaticFiles', () => {
   let server

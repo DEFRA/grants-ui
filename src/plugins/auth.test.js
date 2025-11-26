@@ -18,6 +18,9 @@ vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
     SYSTEM: {
       ENV_CONFIG_DEBUG: { level: 'debug', messageFunc: vi.fn() },
       PLUGIN_REGISTRATION: { level: 'info', messageFunc: vi.fn() }
+    },
+    AUTH: {
+      AUTH_DEBUG: { level: 'info', messageFunc: vi.fn() }
     }
   })
 })
@@ -321,15 +324,15 @@ describe('Auth Plugin', () => {
 
     await expect(AuthPlugin.plugin.register(server)).rejects.toThrow()
 
-    expect(log).toHaveBeenCalledWith(LogCodes.AUTH.AUTH_DEBUG, {
-      ...LOG_MESSAGES.authDebug.base,
-      authError: 'OIDC config fetch failed: Network timeout',
-      errorDetails: {
-        message: 'Network timeout',
-        stack: 'Error: Network timeout\n    at test',
-        wellKnownUrl: DEFAULT_CONFIG['defraId.wellKnownUrl']
-      }
-    })
+    expect(log).toHaveBeenCalledWith(
+      LogCodes.AUTH.AUTH_DEBUG,
+      expect.objectContaining({
+        path: 'auth_plugin_registration',
+        mode: 'oidc_config_failure',
+        authError: expect.stringContaining('OIDC config fetch failed'),
+        errorDetails: expect.any(Object)
+      })
+    )
   })
 
   describe('getBellOptions', () => {
@@ -386,7 +389,7 @@ describe('Auth Plugin', () => {
 
       expect(log).toHaveBeenCalledWith(LogCodes.AUTH.SIGN_IN_FAILURE, {
         ...LOG_MESSAGES.signInFailure.baseFields,
-        error: 'Failed to store redirect parameter: Yar set error',
+        errorMessage: 'Failed to store redirect parameter: Yar set error',
         step: LOG_MESSAGES.signInFailure.steps.REDIRECT_STORE_ERROR,
         redirectError: {
           message: 'Yar set error',
@@ -419,7 +422,7 @@ describe('Auth Plugin', () => {
 
       expect(log).toHaveBeenCalledWith(LogCodes.AUTH.SIGN_IN_FAILURE, {
         ...LOG_MESSAGES.signInFailure.baseFields,
-        error: 'Bell location function failed: Config read error',
+        errorMessage: 'Bell location function failed: Config read error',
         step: LOG_MESSAGES.signInFailure.steps.LOCATION_FUNCTION_ERROR,
         locationError: expect.objectContaining({
           message: 'Config read error',
@@ -481,7 +484,7 @@ describe('Auth Plugin', () => {
 
       expect(log).toHaveBeenCalledWith(LogCodes.AUTH.SIGN_IN_FAILURE, {
         ...LOG_MESSAGES.signInFailure.baseFields,
-        error: 'JWT decode failed: Invalid JWT structure',
+        errorMessage: 'JWT decode failed: Invalid JWT structure',
         step: LOG_MESSAGES.signInFailure.steps.JWT_DECODE_ERROR,
         jwtError: {
           message: 'Invalid JWT structure',
@@ -519,7 +522,7 @@ describe('Auth Plugin', () => {
 
       expect(log).toHaveBeenCalledWith(LogCodes.AUTH.SIGN_IN_FAILURE, {
         ...LOG_MESSAGES.signInFailure.baseFields,
-        error: 'JWT decode failed: Token processing error',
+        errorMessage: 'JWT decode failed: Token processing error',
         step: LOG_MESSAGES.signInFailure.steps.JWT_DECODE_ERROR,
         jwtError: {
           message: 'Token processing error',
@@ -542,7 +545,7 @@ describe('Auth Plugin', () => {
 
       expect(log).toHaveBeenCalledWith(LogCodes.AUTH.SIGN_IN_FAILURE, {
         ...LOG_MESSAGES.signInFailure.baseFields,
-        error: 'JWT payload is empty or invalid',
+        errorMessage: 'JWT payload is empty or invalid',
         step: LOG_MESSAGES.signInFailure.steps.EMPTY_PAYLOAD,
         decodingDetails: {
           decoded: true,
@@ -569,7 +572,7 @@ describe('Auth Plugin', () => {
 
       expect(log).toHaveBeenCalledWith(LogCodes.AUTH.SIGN_IN_FAILURE, {
         ...LOG_MESSAGES.signInFailure.baseFields,
-        error: 'Missing required JWT payload fields: contactId, lastName',
+        errorMessage: 'Missing required JWT payload fields: contactId, lastName',
         step: LOG_MESSAGES.signInFailure.steps.MISSING_FIELDS,
         payloadValidation: {
           requiredFields: ['contactId', 'firstName', 'lastName'],
@@ -605,7 +608,7 @@ describe('Auth Plugin', () => {
 
       expect(log).toHaveBeenCalledWith(LogCodes.AUTH.SIGN_IN_FAILURE, {
         ...LOG_MESSAGES.signInFailure.baseFields,
-        error: 'JWT decode failed: Unexpected processing error',
+        errorMessage: 'JWT decode failed: Unexpected processing error',
         step: LOG_MESSAGES.signInFailure.steps.JWT_DECODE_ERROR,
         jwtError: {
           message: 'Unexpected processing error',
@@ -616,7 +619,7 @@ describe('Auth Plugin', () => {
 
       expect(log).toHaveBeenCalledWith(LogCodes.AUTH.SIGN_IN_FAILURE, {
         ...LOG_MESSAGES.signInFailure.baseFields,
-        error: 'Bell profile processing failed: Unexpected processing error',
+        errorMessage: 'Bell profile processing failed: Unexpected processing error',
         step: LOG_MESSAGES.signInFailure.steps.PROCESSING_ERROR,
         errorDetails: {
           message: 'Unexpected processing error',
@@ -653,7 +656,7 @@ describe('Auth Plugin', () => {
       expect(thrownError.alreadyLogged).toBe(true)
       expect(log).toHaveBeenCalledWith(LogCodes.AUTH.SIGN_IN_FAILURE, {
         ...LOG_MESSAGES.signInFailure.baseFields,
-        error: 'Bell location function failed: Config read error',
+        errorMessage: 'Bell location function failed: Config read error',
         step: LOG_MESSAGES.signInFailure.steps.LOCATION_FUNCTION_ERROR,
         locationError: {
           message: 'Config read error',
@@ -879,7 +882,7 @@ describe('Auth Plugin', () => {
         LogCodes.AUTH.TOKEN_VERIFICATION_FAILURE,
         {
           userId: MOCK_USERS.user456.contactId,
-          error: 'Refresh service unavailable',
+          errorMessage: 'Refresh service unavailable',
           step: LOG_MESSAGES.tokenVerification.steps.REFRESH_FAILED,
           originalTokenError: 'Token expired'
         },

@@ -169,7 +169,7 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
           sbi,
           sheetId,
           parcelId,
-          message: error.message
+          errorMessage: error.message
         },
         request
       )
@@ -324,7 +324,7 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
         })
       }
     } catch (e) {
-      log(LogCodes.LAND_GRANTS.VALIDATE_APPLICATION_ERROR, { parcelId, sheetId, message: e.message }, request)
+      log(LogCodes.LAND_GRANTS.VALIDATE_APPLICATION_ERROR, { parcelId, sheetId, errorMessage: e.message }, request)
       const addedActions = this.getAddedActionsForStateParcel(prevState, selectedLandParcel)
       return this.renderErrorView(h, request, context, {
         errors: [

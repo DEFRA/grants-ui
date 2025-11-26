@@ -32,7 +32,7 @@ export default class LandGrantsQuestionWithAuthCheckController extends QuestionP
         LogCodes.SYSTEM.EXTERNAL_API_ERROR,
         {
           endpoint: `Consolidated view`,
-          error: `fetch parcel data for auth check: ${error.message}`
+          errorMessage: `fetch parcel data for auth check: ${error.message}`
         },
         request
       )

@@ -205,7 +205,7 @@ const mockSessionData = async (request, log, LogCodes) => {
       LogCodes.AUTH.SIGN_IN_FAILURE,
       {
         userId: 'unknown',
-        error: `Failed to create auto-session: ${error.message}`,
+        errorMessage: `Failed to create auto-session: ${error.message}`,
         step: 'auto_session_creation_error',
         errorStack: error.stack
       },

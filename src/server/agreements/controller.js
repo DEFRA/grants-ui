@@ -6,14 +6,24 @@ import { LogCodes } from '~/src/server/common/helpers/logging/log-codes.js'
 
 /**
  * Validates required configuration values
+ * @param {object} request - The request object
  * @throws {Error} If required config is missing
  */
-function validateConfig() {
+function validateConfig(request) {
   const baseUrl = config.get('agreements.uiUrl')
   const token = config.get('agreements.uiToken')
 
-  if (!baseUrl || !token) {
-    throw new Error('Missing required configuration: agreements API settings')
+  const missing = []
+  if (!baseUrl) {
+    missing.push('agreements.uiUrl')
+  }
+  if (!token) {
+    missing.push('agreements.uiToken')
+  }
+
+  if (missing.length > 0) {
+    log(LogCodes.SYSTEM.CONFIG_MISSING, { missing }, request)
+    throw new Error(`Missing required configuration: ${missing.join(', ')}`)
   }
 
   return { baseUrl: String(baseUrl), token: String(token) }
@@ -58,7 +68,7 @@ function buildProxyHeaders(token, request) {
       LogCodes.AGREEMENTS.AGREEMENT_ERROR,
       {
         userId: request.userId,
-        error: `JWT generate failed: ${jwtError.message}`
+        errorMessage: `JWT generate failed: ${jwtError.message}`
       },
       request
     )
@@ -73,7 +83,7 @@ function buildProxyHeaders(token, request) {
 export const getAgreementController = {
   async handler(request, h) {
     try {
-      const { baseUrl, token } = validateConfig()
+      const { baseUrl, token } = validateConfig(request)
       const { path } = request.params
 
       const uri = buildTargetUri(baseUrl, path)

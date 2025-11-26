@@ -15,6 +15,7 @@ describe('clearApplicationStateHandler', () => {
     vi.clearAllMocks()
 
     mockCacheService = {
+      _Key: vi.fn().mockReturnValue('test-session-key'),
       clearState: vi.fn().mockResolvedValue(undefined)
     }
 

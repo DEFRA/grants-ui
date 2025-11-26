@@ -31,7 +31,7 @@ async function refreshTokens(refreshToken, request) {
         LogCodes.AUTH.TOKEN_VERIFICATION_FAILURE,
         {
           userId: 'system',
-          error: 'No access token in refresh response',
+          errorMessage: 'No access token in refresh response',
           step: 'token_refresh_response_validation'
         },
         request
@@ -71,7 +71,7 @@ async function refreshTokens(refreshToken, request) {
       LogCodes.AUTH.TOKEN_VERIFICATION_FAILURE,
       {
         userId: 'system',
-        error: error.message,
+        errorMessage: error.message,
         step,
         statusCode: error.statusCode,
         hasRefreshToken: !!refreshToken

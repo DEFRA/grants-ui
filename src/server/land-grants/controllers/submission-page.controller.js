@@ -181,10 +181,13 @@ export default class SubmissionPageController extends SummaryPageController {
         return await this.handleSuccessfulSubmission(request, context, h, result.status)
       } catch (error) {
         log(
-          LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+          LogCodes.SUBMISSION.SUBMISSION_FAILURE,
           {
-            endpoint: `Land grants submission`,
-            error: `submitting application for sbi: ${sbi} and crn: ${crn} - ${error.message}`
+            grantType: this.grantCode,
+            referenceNumber: context.referenceNumber,
+            sbi,
+            crn,
+            errorMessage: error.message
           },
           request
         )

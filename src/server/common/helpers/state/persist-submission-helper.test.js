@@ -138,7 +138,7 @@ describe('persistSubmissionToApi', () => {
           method: 'POST',
           endpoint: expect.stringContaining('/submissions'),
           referenceNumber: TEST_SUBMISSION.referenceNumber,
-          error: `${failedResponse.status} - ${failedResponse.statusText}`
+          errorMessage: `${failedResponse.status} - ${failedResponse.statusText}`
         }),
         mockRequest
       )
@@ -157,7 +157,7 @@ describe('persistSubmissionToApi', () => {
           method: 'POST',
           endpoint: expect.stringContaining('/submissions'),
           referenceNumber: TEST_SUBMISSION.referenceNumber,
-          error: networkError.message
+          errorMessage: networkError.message
         })
       )
     })

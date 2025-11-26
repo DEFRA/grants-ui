@@ -86,7 +86,7 @@ describe('LandGrantsQuestionWithAuthCheckController', () => {
         'EXTERNAL_API_ERROR',
         {
           endpoint: 'Consolidated view',
-          error: 'fetch parcel data for auth check: API connection failed'
+          errorMessage: 'fetch parcel data for auth check: API connection failed'
         },
         mockRequest
       )

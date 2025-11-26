@@ -4,6 +4,10 @@ import { PactV4, SpecificationVersion } from '@pact-foundation/pact'
 import { describe, expect, it } from 'vitest'
 import { makeGasApiRequest } from '../server/common/services/grant-application/grant-application.service.js'
 
+vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
+  log: vi.fn()
+}))
+
 const provider = new PactV4({
   consumer: 'grants-ui',
   provider: 'fg-gas-backend',

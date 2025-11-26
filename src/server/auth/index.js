@@ -24,7 +24,7 @@ function handleAuthSignIn(request, h) {
         LogCodes.AUTH.SIGN_IN_FAILURE,
         {
           userId: UNKNOWN_USER,
-          error: `Authentication error at /auth/sign-in: ${request.auth.error.message}`,
+          errorMessage: `Authentication error at /auth/sign-in: ${request.auth.error.message}`,
           step: 'auth_sign_in_route_error',
           authState: {
             isAuthenticated: request.auth.isAuthenticated,
@@ -63,7 +63,7 @@ function handleAuthSignIn(request, h) {
       LogCodes.AUTH.SIGN_IN_FAILURE,
       {
         userId: UNKNOWN_USER,
-        error: `Error during /auth/sign-in redirect: ${error.message}`,
+        errorMessage: `Error during /auth/sign-in redirect: ${error.message}`,
         step: 'auth_sign_in_redirect_error',
         errorStack: error.stack,
         authState: {
@@ -92,7 +92,7 @@ function setupBellOAuthErrorHandling(server) {
         LogCodes.AUTH.SIGN_IN_FAILURE,
         {
           userId: UNKNOWN_USER,
-          error: `Bell/OAuth error at ${request.path}: ${String(error.message)}`,
+          errorMessage: `Bell/OAuth error at ${request.path}: ${String(error.message)}`,
           step: 'bell_oauth_error',
           errorDetails: {
             statusCode: error.output?.statusCode,
@@ -111,7 +111,7 @@ function setupBellOAuthErrorHandling(server) {
           LogCodes.AUTH.SIGN_IN_FAILURE,
           {
             userId: UNKNOWN_USER,
-            error: 'OAuth2 token exchange failed - possible configuration issue',
+            errorMessage: 'OAuth2 token exchange failed - possible configuration issue',
             step: 'oauth_token_exchange_failure',
             troubleshooting: {
               checkRedirectUrl: 'Verify DEFRA_ID_REDIRECT_URL matches registration',
@@ -256,7 +256,7 @@ function renderUnauthorisedView(request, h) {
       LogCodes.AUTH.SIGN_IN_FAILURE,
       {
         userId: UNKNOWN_USER,
-        error: `Failed to render unauthorised view: ${viewError.message}`,
+        errorMessage: `Failed to render unauthorised view: ${viewError.message}`,
         step: 'view_render_error',
         errorStack: viewError.stack,
         viewError: 'errors/401.njk',
@@ -304,7 +304,7 @@ function validateProfileData(profile) {
   if (!profile?.sessionId) {
     log(LogCodes.AUTH.SIGN_IN_FAILURE, {
       userId: profile?.contactId || UNKNOWN_USER,
-      error: 'Missing required profile data or sessionId',
+      errorMessage: 'Missing required profile data or sessionId',
       step: 'profile_validation',
       profileData: {
         hasProfile: !!profile,
@@ -323,7 +323,7 @@ function getPermissionsOrDefaults(profile, token) {
   } catch (permissionsError) {
     log(LogCodes.AUTH.SIGN_IN_FAILURE, {
       userId: profile.contactId,
-      error: `Failed to get permissions: ${permissionsError.message}`,
+      errorMessage: `Failed to get permissions: ${permissionsError.message}`,
       step: 'get_permissions_error',
       profileData: {
         crn: profile.crn,
@@ -350,7 +350,7 @@ async function storeSessionData(request, profile, role, scope, token, refreshTok
       LogCodes.AUTH.SIGN_IN_FAILURE,
       {
         userId: profile.contactId,
-        error: `Failed to store session in cache: ${cacheError.message}`,
+        errorMessage: `Failed to store session in cache: ${cacheError.message}`,
         step: 'cache_set_error',
         sessionId: profile.sessionId
       },
@@ -368,7 +368,7 @@ function setCookieAuth(request, profile) {
       LogCodes.AUTH.SIGN_IN_FAILURE,
       {
         userId: profile.contactId,
-        error: `Failed to set cookie auth: ${cookieError.message}`,
+        errorMessage: `Failed to set cookie auth: ${cookieError.message}`,
         step: 'cookie_auth_set_error',
         sessionId: profile.sessionId
       },
@@ -389,7 +389,7 @@ function redirectAfterSignIn(request, h, profile) {
       LogCodes.AUTH.SIGN_IN_FAILURE,
       {
         userId: profile.contactId,
-        error: `Failed to redirect after sign in: ${redirectError.message}`,
+        errorMessage: `Failed to redirect after sign in: ${redirectError.message}`,
         step: 'redirect_error',
         sessionId: profile.sessionId
       },
@@ -413,7 +413,7 @@ async function handleOidcSignIn(request, h) {
       LogCodes.AUTH.SIGN_IN_FAILURE,
       {
         userId: UNKNOWN_USER,
-        error: `Unexpected error in handleOidcSignIn: ${error.message}`,
+        errorMessage: `Unexpected error in handleOidcSignIn: ${error.message}`,
         step: 'unexpected_error',
         errorStack: error.stack
       },

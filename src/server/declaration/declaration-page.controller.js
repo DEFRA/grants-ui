@@ -8,6 +8,7 @@ import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { persistSubmissionToApi } from '~/src/server/common/helpers/state/persist-submission-helper.js'
 import { ApplicationStatus } from '~/src/server/common/constants/application-status.js'
 import { handleGasApiError } from '~/src/server/common/helpers/gas-error-messages.js'
+import { log, LogCodes } from '../common/helpers/logging/log.js'
 
 export default class DeclarationPageController extends SummaryPageController {
   /**
@@ -47,96 +48,112 @@ export default class DeclarationPageController extends SummaryPageController {
     }
   }
 
+  buildApplicationData(request, context) {
+    const stateWithTextAnswers = transformAnswerKeysToText(
+      context.relevantState,
+      this.model.componentDefMap,
+      this.model.listDefIdMap
+    )
+
+    stateWithTextAnswers.referenceNumber = context.referenceNumber
+
+    const identifiers = {
+      clientRef: context.referenceNumber.toLowerCase(),
+      sbi: request.auth?.credentials?.sbi,
+      frn: 'frn',
+      crn: request.auth?.credentials?.crn,
+      defraId: 'defraId'
+    }
+
+    return transformStateObjectToGasApplication(identifiers, stateWithTextAnswers, (s) => s)
+  }
+
+  async handleSuccessfulSubmission({ request, context, cacheService, applicationData, sbi, crn, grantCode }) {
+    request.logger.info({
+      message: 'Form submission completed',
+      referenceNumber: context.referenceNumber,
+      numberOfSubmittedFields: context.relevantState ? Object.keys(context.relevantState).length : 0,
+      timestamp: new Date().toISOString()
+    })
+
+    const currentState = await cacheService.getState(request)
+
+    await cacheService.setState(request, {
+      ...currentState,
+      applicationStatus: ApplicationStatus.SUBMITTED,
+      submittedAt: applicationData.metadata?.submittedAt,
+      submittedBy: crn
+    })
+
+    request.logger.debug('DeclarationController: Set application status to SUBMITTED')
+
+    await persistSubmissionToApi(
+      {
+        crn,
+        sbi,
+        grantCode,
+        grantVersion: context.grantVersion,
+        referenceNumber: context.referenceNumber,
+        submittedAt: applicationData.metadata?.submittedAt
+      },
+      request
+    )
+  }
+
+  handlePostError({ h, error, request, context, sbi, crn }) {
+    log(
+      LogCodes.SUBMISSION.SUBMISSION_FAILURE,
+      {
+        errorMessage: error.message,
+        referenceNumber: context.referenceNumber,
+        sbi,
+        crn,
+        grantType: this.grantCode
+      },
+      request
+    )
+
+    if (error.name === 'GrantApplicationServiceApiError') {
+      return handleGasApiError(h, context, error)
+    }
+
+    throw error
+  }
+
   makePostRouteHandler() {
-    const fn = async (request, context, h) => {
+    return async (request, context, h) => {
+      const { sbi, crn } = request.auth.credentials
+      storeSlugInContext(request, context, 'DeclarationController')
+
+      const cacheService = getFormsCacheService(request.server)
+      request.logger.debug('DeclarationController: Processing form submission')
+      request.logger.debug('DeclarationController: Current URL:', request.path)
+
       try {
-        // Store the slug in context for later use
-        storeSlugInContext(request, context, 'DeclarationController')
-
-        // Get cache service for later use
-        const cacheService = getFormsCacheService(request.server)
-
-        // Log current state for debugging
-        request.logger.debug('DeclarationController: Processing form submission')
-        request.logger.debug('DeclarationController: Current URL:', request.path)
-
-        const { sbi, crn } = request.auth.credentials
+        const applicationData = this.buildApplicationData(request, context)
         const grantCode = request.params?.slug
-
-        const identifiers = {
-          clientRef: context.referenceNumber.toLowerCase(),
-          sbi,
-          frn: 'frn',
-          crn,
-          defraId: 'defraId'
-        }
-
-        const stateWithTextAnswers = transformAnswerKeysToText(
-          context.relevantState,
-          this.model.componentDefMap,
-          this.model.listDefIdMap
-        )
-        stateWithTextAnswers.referenceNumber = context.referenceNumber
-
-        const applicationData = transformStateObjectToGasApplication(
-          identifiers,
-          stateWithTextAnswers,
-          (state) => state
-        )
 
         const result = await submitGrantApplication(this.grantCode, applicationData, request)
 
-        // Log submission details if available
         if (result.status === statusCodes.noContent) {
-          request.logger.info({
-            message: 'Form submission completed',
-            referenceNumber: context.referenceNumber,
-            numberOfSubmittedFields: context.relevantState ? Object.keys(context.relevantState).length : 0,
-            timestamp: new Date().toISOString()
+          await this.handleSuccessfulSubmission({
+            request,
+            context,
+            cacheService,
+            applicationData,
+            sbi,
+            crn,
+            grantCode
           })
-
-          const currentState = await cacheService.getState(request)
-
-          // Update application status so the confirmation page knows a submission happened
-          await cacheService.setState(request, {
-            ...currentState,
-            applicationStatus: ApplicationStatus.SUBMITTED,
-            submittedAt: applicationData.metadata?.submittedAt,
-            submittedBy: crn
-          })
-          request.logger.debug('DeclarationController: Set application status to SUBMITTED')
-
-          // Add to submissions collection
-          await persistSubmissionToApi(
-            {
-              crn,
-              sbi,
-              grantCode,
-              grantVersion: context.grantVersion,
-              referenceNumber: context.referenceNumber,
-              submittedAt: applicationData.metadata?.submittedAt
-            },
-            request
-          )
         }
 
-        // Get the redirect path
         const redirectPath = this.getStatusPath(request, context)
         request.logger.debug('DeclarationController: Redirecting to:', redirectPath)
-
         return h.redirect(redirectPath)
       } catch (error) {
-        request.logger.error(error, 'Failed to submit form')
-
-        if (error.name === 'GrantApplicationServiceApiError') {
-          return handleGasApiError(h, context, error)
-        }
-
-        throw error
+        return this.handlePostError({ h, error, request, context, sbi, crn })
       }
     }
-
-    return fn
   }
 }
 

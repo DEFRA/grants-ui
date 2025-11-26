@@ -1,4 +1,6 @@
 import crypto from 'node:crypto'
+import { log } from '~/src/server/common/helpers/logging/log.js'
+import { LogCodes } from '~/src/server/common/helpers/logging/log-codes.js'
 
 function createState(request) {
   // Generate a unique state value and store it in the session
@@ -17,6 +19,15 @@ function validateState(request, state) {
 
   // If state has been modified, it is likely a potential CSRF attack
   if (storedState !== state) {
+    log(
+      LogCodes.AUTH.INVALID_STATE,
+      {
+        reason: 'State mismatch during OAuth callback',
+        storedStatePresent: Boolean(storedState),
+        path: request.path
+      },
+      request
+    )
     throw new Error('Invalid state, possible CSRF attack')
   }
 }

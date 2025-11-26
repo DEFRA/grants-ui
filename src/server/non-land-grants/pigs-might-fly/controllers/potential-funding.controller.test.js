@@ -4,6 +4,9 @@ import { invokeGasPostAction } from '~/src/server/common/services/grant-applicat
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 
 vi.mock('~/src/server/common/services/grant-application/grant-application.service.js')
+vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
+  log: vi.fn()
+}))
 
 describe('PotentialFundingController', () => {
   let controller

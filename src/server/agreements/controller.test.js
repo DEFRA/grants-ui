@@ -37,6 +37,9 @@ vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
 
 vi.mock('~/src/server/common/helpers/logging/log-codes.js', () => ({
   LogCodes: {
+    SYSTEM: {
+      CONFIG_MISSING: { level: 'error', messageFunc: () => 'CONFIG_MISSING' }
+    },
     AGREEMENTS: {
       AGREEMENT_ERROR: 'AGREEMENTS_AGREEMENT_ERROR'
     }
@@ -358,7 +361,7 @@ describe('Agreements Controller', () => {
         LogCodes.AGREEMENTS.AGREEMENT_ERROR,
         {
           userId: 'test-user-123',
-          error: 'JWT generate failed: JWT secret invalid'
+          errorMessage: 'JWT generate failed: JWT secret invalid'
         },
         mockRequest
       )

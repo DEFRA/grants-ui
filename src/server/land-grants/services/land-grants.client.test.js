@@ -207,7 +207,7 @@ describe('Land Grants client', () => {
         expect.any(Function),
         expect.objectContaining({
           timeout: 30000,
-          onRetry: expect.any(Function)
+          serviceName: 'LandGrantsApi.postTo /test'
         })
       )
     })

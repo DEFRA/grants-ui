@@ -115,7 +115,8 @@ describe('auth-logging', () => {
       expect.any(String),
       expect.objectContaining({
         userId: 'unknown',
-        error: 'Token exchange failure detected - Bell completed OAuth redirect but cannot exchange code for token',
+        errorMessage:
+          'Token exchange failure detected - Bell completed OAuth redirect but cannot exchange code for token',
         step: 'token_exchange_failure_analysis',
         troubleshooting: expect.objectContaining({
           issue: 'Failed obtaining access token',

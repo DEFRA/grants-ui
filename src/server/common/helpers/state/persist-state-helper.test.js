@@ -124,7 +124,7 @@ describe('persistStateToApi', () => {
         expect.objectContaining({
           endpoint: expect.stringContaining('/state/'),
           identity: `${TEST_USER_IDS.BUSINESS_ID}:${TEST_USER_IDS.GRANT_ID}`,
-          error: `${failedResponse.status} - ${failedResponse.statusText}`
+          errorMessage: `${failedResponse.status} - ${failedResponse.statusText}`
         })
       )
     })
@@ -141,7 +141,7 @@ describe('persistStateToApi', () => {
         expect.objectContaining({
           endpoint: expect.stringContaining('/state/'),
           identity: `${TEST_USER_IDS.BUSINESS_ID}:${TEST_USER_IDS.GRANT_ID}`,
-          error: networkError.message
+          errorMessage: networkError.message
         })
       )
     })

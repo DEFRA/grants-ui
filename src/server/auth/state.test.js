@@ -1,12 +1,17 @@
 import { vi } from 'vitest'
 import crypto from 'crypto'
 import { createState, validateState } from './state.js'
+import { log } from '~/src/server/common/helpers/logging/log.js'
+import { LogCodes } from '~/src/server/common/helpers/logging/log-codes.js'
 
 vi.mock('crypto', () => ({
   default: {
     randomUUID: vi.fn()
   },
   randomUUID: vi.fn()
+}))
+vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
+  log: vi.fn()
 }))
 
 describe('State Management Functions', () => {
@@ -20,6 +25,10 @@ describe('State Management Functions', () => {
         set: vi.fn(),
         get: vi.fn(),
         clear: vi.fn()
+      },
+      path: '/test/callback', // validateState logs this too
+      info: {
+        remoteAddress: '127.0.0.1' // 💥 THIS FIXES THE ISSUE
       }
     }
 
@@ -69,6 +78,26 @@ describe('State Management Functions', () => {
       expect(() => {
         validateState(mockRequest, 'different-state')
       }).toThrow('Invalid state, possible CSRF attack')
+    })
+
+    it('logs INVALID_STATE on mismatch', () => {
+      const request = {
+        yar: { get: () => 'stored', set: () => {}, clear: () => {} },
+        path: '/callback',
+        info: { remoteAddress: '1.2.3.4' }
+      }
+
+      expect(() => validateState(request, 'different')).toThrow('Invalid state')
+
+      expect(log).toHaveBeenCalledWith(
+        LogCodes.AUTH.INVALID_STATE,
+        expect.objectContaining({
+          reason: 'State mismatch during OAuth callback',
+          storedStatePresent: true,
+          path: '/callback'
+        }),
+        request
+      )
     })
 
     it('should throw an error when stored state is missing', () => {

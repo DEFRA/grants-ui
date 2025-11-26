@@ -122,7 +122,7 @@ function processCredentialsProfile(credentials) {
   } catch (error) {
     log(LogCodes.AUTH.SIGN_IN_FAILURE, {
       userId: 'unknown',
-      error: `Bell profile processing failed: ${error.message}`,
+      errorMessage: `Bell profile processing failed: ${error.message}`,
       step: 'bell_profile_processing_error',
       errorDetails: {
         message: error.message,
@@ -144,10 +144,12 @@ function processCredentialsProfile(credentials) {
 
 function validateCredentials(credentials) {
   if (!credentials) {
+    log(LogCodes.AUTH.CREDENTIALS_MISSING, {})
     throw new Error('No credentials received from Bell OAuth provider')
   }
 
   if (!credentials.token) {
+    log(LogCodes.AUTH.TOKEN_MISSING, {})
     throw new Error('No token received from Defra Identity')
   }
 }
@@ -160,7 +162,7 @@ function decodeTokenPayload(token) {
     if (!payload) {
       log(LogCodes.AUTH.SIGN_IN_FAILURE, {
         userId: 'unknown',
-        error: 'JWT payload is empty or invalid',
+        errorMessage: 'JWT payload is empty or invalid',
         step: 'bell_profile_empty_payload',
         decodingDetails: {
           decoded: !!decoded,
@@ -176,7 +178,7 @@ function decodeTokenPayload(token) {
   } catch (jwtError) {
     log(LogCodes.AUTH.SIGN_IN_FAILURE, {
       userId: 'unknown',
-      error: `JWT decode failed: ${jwtError.message}`,
+      errorMessage: `JWT decode failed: ${jwtError.message}`,
       step: 'bell_profile_jwt_decode_error',
       jwtError: {
         message: jwtError.message,
@@ -195,7 +197,7 @@ function validatePayload(payload) {
   if (missingFields.length > 0) {
     log(LogCodes.AUTH.SIGN_IN_FAILURE, {
       userId: payload.contactId || 'unknown',
-      error: `Missing required JWT payload fields: ${missingFields.join(', ')}`,
+      errorMessage: `Missing required JWT payload fields: ${missingFields.join(', ')}`,
       step: 'bell_profile_missing_fields',
       payloadValidation: {
         requiredFields,
@@ -235,6 +237,13 @@ function extractFarmDetails(relationships) {
   const RELATIONSHIP_LOA_INDEX = parts.length - 1
 
   if (parts.length < LENGTH_OF_NORMAL_RELATIONSHIP_ENTRY) {
+    const reason = 'Invalid format: not enough fields'
+
+    log(LogCodes.SYSTEM.RELATIONSHIP_PARSE_ERROR, {
+      relationships,
+      reason
+    })
+
     throw new Error(
       'extractFarmDetails: Attempting to extract farm details from relationship: Invalid format: not enough fields'
     )
@@ -313,7 +322,7 @@ function getBellOptions(oidcConfig) {
           } catch (redirectError) {
             log(LogCodes.AUTH.SIGN_IN_FAILURE, {
               userId: 'unknown',
-              error: `Failed to store redirect parameter: ${redirectError.message}`,
+              errorMessage: `Failed to store redirect parameter: ${redirectError.message}`,
               step: 'bell_location_redirect_store_error',
               redirectError: {
                 message: redirectError.message,
@@ -328,7 +337,7 @@ function getBellOptions(oidcConfig) {
       } catch (error) {
         log(LogCodes.AUTH.SIGN_IN_FAILURE, {
           userId: 'unknown',
-          error: `Bell location function failed: ${error.message}`,
+          errorMessage: `Bell location function failed: ${error.message}`,
           step: 'bell_location_function_error',
           locationError: {
             message: error.message,
@@ -417,7 +426,7 @@ async function handleTokenVerificationError(userSession, sessionId, request, tok
       LogCodes.AUTH.TOKEN_VERIFICATION_FAILURE,
       {
         userId: userSession.contactId,
-        error: refreshError.message,
+        errorMessage: refreshError.message,
         step: 'token_refresh_failed',
         originalTokenError: tokenError.message
       },

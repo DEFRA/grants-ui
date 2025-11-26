@@ -247,7 +247,7 @@ function handlePostSubmissionError(err, request, h, context, grantId, grantCode,
     {
       grantType: grantCode,
       referenceNumber: context.referenceNumber,
-      error: err.message
+      errorMessage: err.message
     },
     request
   )

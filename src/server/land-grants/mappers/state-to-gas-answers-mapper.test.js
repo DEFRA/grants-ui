@@ -5,6 +5,10 @@ import {
 } from '~/src/server/common/forms/services/submission.js'
 import { stateToLandGrantsGasAnswers } from '~/src/server/land-grants/mappers/state-to-gas-answers-mapper.js'
 
+vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
+  log: vi.fn()
+}))
+
 const frpsGrantCode = config.get('landGrants.grantCode')
 
 const applicant = {

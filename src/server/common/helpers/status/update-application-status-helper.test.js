@@ -145,7 +145,7 @@ describe('updateApplicationStatus', () => {
           method: 'PATCH',
           endpoint: expect.stringContaining('/state/'),
           identity: KEY,
-          error: `${failedResponse.status} - ${failedResponse.statusText}`
+          errorMessage: `${failedResponse.status} - ${failedResponse.statusText}`
         })
       )
     })
@@ -163,7 +163,7 @@ describe('updateApplicationStatus', () => {
           method: 'PATCH',
           endpoint: expect.stringContaining('/state/'),
           identity: KEY,
-          error: networkError.message
+          errorMessage: networkError.message
         })
       )
     })

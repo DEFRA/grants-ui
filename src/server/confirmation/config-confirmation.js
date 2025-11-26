@@ -23,7 +23,7 @@ function validateRequestAndFindForm(request, h) {
       LogCodes.CONFIRMATION.CONFIRMATION_ERROR,
       {
         userId: request.auth?.credentials?.userId || 'unknown',
-        error: 'No slug provided in confirmation route'
+        errorMessage: 'No slug provided in confirmation route'
       },
       request
     )
@@ -36,7 +36,7 @@ function validateRequestAndFindForm(request, h) {
       LogCodes.CONFIRMATION.CONFIRMATION_ERROR,
       {
         userId: request.auth?.credentials?.userId || 'unknown',
-        error: `Form not found for slug: ${slug}`
+        errorMessage: `Form not found for slug: ${slug}`
       },
       request
     )
@@ -115,7 +115,7 @@ function handleError(error, request, h) {
     LogCodes.CONFIRMATION.CONFIRMATION_ERROR,
     {
       userId: request.auth?.credentials?.userId || 'unknown',
-      error: `Config-driven confirmation route error for slug: ${request.params?.slug || 'unknown'}. ${error.message}`
+      errorMessage: `Config-driven confirmation route error for slug: ${request.params?.slug || 'unknown'}. ${error.message}`
     },
     request
   )

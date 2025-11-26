@@ -24,6 +24,30 @@ vi.mock('@defra/forms-engine-plugin/controllers/SummaryPageController.js', () =>
     getSummaryViewModel() {}
   }
 }))
+vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
+  log: vi.fn(),
+  LogCodes: {},
+  logger: {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn()
+  }
+}))
+vi.mock('~/src/config/config.js', () => ({
+  config: {
+    get: vi.fn((key) => {
+      switch (key) {
+        case 'landGrants.grantCode':
+          return 'TEST-GRANT-CODE'
+        case 'devTools.enabled':
+          return false
+        default:
+          return undefined // safe default
+      }
+    })
+  }
+}))
 
 const code = config.get('landGrants.grantCode')
 
@@ -579,10 +603,13 @@ describe('SubmissionPageController', () => {
       await handler(mockRequest, mockContext, mockH)
 
       expect(log).toHaveBeenCalledWith(
-        LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+        LogCodes.SUBMISSION.SUBMISSION_FAILURE,
         expect.objectContaining({
-          endpoint: 'Land grants submission',
-          error: 'submitting application for sbi: undefined and crn: undefined - Validation failed'
+          grantType: 'TEST-GRANT-CODE',
+          referenceNumber: 'REF123',
+          sbi: undefined,
+          crn: undefined,
+          errorMessage: 'Validation failed'
         }),
         mockRequest
       )

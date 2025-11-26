@@ -67,7 +67,7 @@ describe('Logger Functionality', () => {
 
   it('should work with error log codes', () => {
     const errorOptions = {
-      error: 'Test error message'
+      errorMessage: 'Test error message'
     }
 
     log(LogCodes.SYSTEM.SERVER_ERROR, errorOptions)

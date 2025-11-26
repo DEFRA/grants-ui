@@ -1,4 +1,5 @@
 import { getFormsCacheService } from '../../common/helpers/forms-cache/forms-cache.js'
+import { log, LogCodes } from '../../common/helpers/logging/log.js'
 
 /**
  * Clears the current application state
@@ -12,7 +13,23 @@ export async function clearApplicationStateHandler(request, h) {
   // we need a slug to clear the persisted state
   if (slug) {
     const cacheService = getFormsCacheService(request.server)
-    await cacheService.clearState(request, true)
+    let sessionKey = 'unknown'
+    try {
+      await cacheService.clearState(request, true)
+    } catch (error) {
+      sessionKey = cacheService._Key(request)
+      log(
+        LogCodes.SYSTEM.SESSION_STATE_CLEAR_FAILED,
+        {
+          slug,
+          sessionKey,
+          errorMessage: error.message
+        },
+        request
+      )
+
+      throw error
+    }
   }
 
   return h.redirect(`/${slug}`)

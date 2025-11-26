@@ -42,7 +42,7 @@ export async function persistSubmissionToApi(submission, request) {
           method: 'POST',
           endpoint: url.href,
           referenceNumber: submission.referenceNumber,
-          error: `${response.status} - ${response.statusText}`
+          errorMessage: `${response.status} - ${response.statusText}`
         },
         request
       )
@@ -52,7 +52,7 @@ export async function persistSubmissionToApi(submission, request) {
       method: 'POST',
       endpoint: url.href,
       referenceNumber: submission.referenceNumber,
-      error: err.message
+      errorMessage: err.message
     })
     // NOSONAR TODO: See TGC-873
     // throw err

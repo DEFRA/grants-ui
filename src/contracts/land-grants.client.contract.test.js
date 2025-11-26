@@ -1,5 +1,6 @@
 import { PactV3, MatchersV3, SpecificationVersion } from '@pact-foundation/pact'
 import path from 'path'
+import { vi } from 'vitest'
 import {
   calculate,
   parcelsWithFields,
@@ -7,6 +8,12 @@ import {
   parcelsWithActionsAndSize,
   validate
 } from '~/src/server/land-grants/services/land-grants.client'
+
+vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
+  logger: {
+    debug: vi.fn()
+  }
+}))
 
 const { like, eachLike, integer, arrayContaining } = MatchersV3
 

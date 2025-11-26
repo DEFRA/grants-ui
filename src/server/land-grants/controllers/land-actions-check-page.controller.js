@@ -240,7 +240,7 @@ export default class LandActionsCheckPageController extends QuestionPageControll
           LogCodes.SYSTEM.EXTERNAL_API_ERROR,
           {
             endpoint: `Land grants API`,
-            error: `error fetching payment data for sbi ${sbi} - ${error.message}`
+            errorMessage: `error fetching payment data for sbi ${sbi} - ${error.message}`
           },
           request
         )
@@ -285,7 +285,7 @@ export default class LandActionsCheckPageController extends QuestionPageControll
             LogCodes.SYSTEM.EXTERNAL_API_ERROR,
             {
               endpoint: `Land grants API`,
-              error: `error fetching payment data for validation error - ${error.message}`
+              errorMessage: `error fetching payment data for validation error - ${error.message}`
             },
             request
           )

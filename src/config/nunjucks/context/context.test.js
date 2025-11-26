@@ -177,7 +177,7 @@ describe('context', () => {
       expect(mockLog).toHaveBeenCalledWith(
         'SYSTEM_SERVER_ERROR',
         {
-          error: expect.stringContaining('Webpack assets-manifest.json not found')
+          errorMessage: expect.stringContaining('Webpack assets-manifest.json not found')
         },
         mockRequest
       )
@@ -262,7 +262,7 @@ describe('context', () => {
       expect(mockLog).toHaveBeenCalledWith(
         'SYSTEM_SERVER_ERROR',
         {
-          error: expect.stringContaining('Webpack assets-manifest.json not found')
+          errorMessage: expect.stringContaining('Webpack assets-manifest.json not found')
         },
         mockRequest
       )
@@ -277,7 +277,7 @@ describe('context', () => {
       expect(mockLog).toHaveBeenCalledWith(
         'SYSTEM_SERVER_ERROR',
         {
-          error: expect.stringContaining('Webpack assets-manifest.json not found')
+          errorMessage: expect.stringContaining('Webpack assets-manifest.json not found')
         },
         mockRequest
       )
@@ -294,7 +294,7 @@ describe('context', () => {
       expect(mockLog).toHaveBeenCalledWith(
         'SYSTEM_SERVER_ERROR',
         {
-          error: expect.stringContaining('Error building context: SBI store access failed')
+          errorMessage: expect.stringContaining('Error building context: SBI store access failed')
         },
         mockRequest
       )
@@ -342,7 +342,7 @@ describe('context', () => {
         'AUTH_SIGN_IN_FAILURE',
         {
           userId: 'unknown',
-          error: expect.stringContaining('Cache retrieval failed for session test-session'),
+          errorMessage: expect.stringContaining('Cache retrieval failed for session test-session'),
           step: 'context_cache_retrieval'
         },
         expect.objectContaining({
@@ -431,7 +431,7 @@ describe('context', () => {
         'AUTH_SIGN_IN_FAILURE',
         {
           userId: 'unknown',
-          error: expect.stringContaining('Cache retrieval failed for session unknown'),
+          errorMessage: expect.stringContaining('Cache retrieval failed for session unknown'),
           step: 'context_cache_retrieval'
         },
         expect.objectContaining({

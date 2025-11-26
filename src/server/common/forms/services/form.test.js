@@ -90,6 +90,14 @@ vi.mock('~/src/config/config.js', async () => {
 })
 
 vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
+  log: vi.fn(),
+  LogCodes: {
+    SYSTEM: {
+      WHITELIST_CONFIG_INCOMPLETE: { level: 'error', messageFunc: vi.fn() },
+      CRN_ENV_VAR_MISSING: { level: 'error', messageFunc: vi.fn() },
+      SBI_ENV_VAR_MISSING: { level: 'error', messageFunc: vi.fn() }
+    }
+  },
   logger: {
     warn: vi.fn(),
     error: vi.fn(),

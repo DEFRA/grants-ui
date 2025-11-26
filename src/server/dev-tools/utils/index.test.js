@@ -1,5 +1,18 @@
 import { vi } from 'vitest'
 
+vi.mock('~/src/config/config.js', () => ({
+  config: {
+    get: vi.fn().mockReturnValue('mocked')
+  }
+}))
+
+vi.mock('../../common/forms/services/form.js', () => ({
+  getFormsCache: vi.fn(() => [
+    { slug: 'form-A', title: 'Form A' },
+    { slug: 'form-B', title: 'Form B' }
+  ])
+}))
+
 describe('dev-tools utils index', () => {
   beforeEach(() => {
     vi.clearAllMocks()

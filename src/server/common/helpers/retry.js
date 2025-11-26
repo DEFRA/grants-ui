@@ -11,6 +11,7 @@ import { logger } from '~/src/server/common/helpers/logging/log.js'
  * @param {number} [options.timeout] - Operation timeout in milliseconds
  * @param {boolean} [options.checkFetchResponse] - Whether to check fetch response.ok from operation
  * @param {Function} [options.onRetry] - Called before each retry attempt
+ * @param {string} [options.serviceName] - Name of the service for logging purposes
  * @returns {Promise<any>} - Result of the operation
  * @throws {Error} - Last error encountered after all retry attempts
  */
@@ -23,10 +24,11 @@ export async function retry(operation, options = {}) {
     shouldRetry = () => true,
     timeout,
     checkFetchResponse = false,
-    onRetry = (error, attempt) => {
-      const message = `Retry attempt ${attempt}/${maxAttempts} after error: ${error.message}`
-      logger.error(error, message)
-    }
+    onRetry = (error, attempt, delay) => {
+      const message = `${serviceName} retry attempt ${attempt}/${maxAttempts} after error: ${error.message}; retrying in ${delay}ms`
+      logger.debug(error, message)
+    },
+    serviceName = 'RetryableOperation'
   } = options
 
   let lastError
