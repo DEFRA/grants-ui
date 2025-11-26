@@ -16,18 +16,22 @@ coverage
 .gitignore
 .husky
 
-# Tests and mocking
+# Tests and test files
+src/__mocks__
+src/contracts
 **/*.test.js
 **/*.contract.test.js
 **/__tests__
 **/test-helpers
-**/__mocks__
 acceptance/
 mockserver/
 fcp-defra-id-stub/
-src/contracts/
 reports/
 .stryker-tmp/
+
+# Note: src/shared contains production code (cookie-utils) used by client & server
+# Note: src/client is kept because webpack needs it for the build
+# It will be removed in the production_build stage after building
 
 # Development configuration files (exclude from build context)
 # Note: .browserslistrc, babel.config.cjs, webpack.config.js, and tsconfig.json
