@@ -14,9 +14,12 @@
         </p>
       {% endblock %}
 
-      <p class="govuk-body">
-        Contact the Rural Payments Agency (RPA) by phone or email for support.
-      </p>
+      {% block preContactContent %}
+        <p class="govuk-body">
+          Contact the Rural Payments Agency (RPA) by phone or email for support.
+        </p>
+      {% endblock %}
+
       <p class="govuk-body">
         <span class="govuk-!-display-block">
           Telephone: <a href="tel:02080262395" class="telephone-link" aria-label="Call us on 0208 026 2395">0208 026 2395</a>
