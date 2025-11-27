@@ -46,6 +46,15 @@ export const serveStaticFiles = {
         },
         {
           method: 'GET',
+          path: '/img/{param*}',
+          handler(_request, h) {
+            const emptySvg = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"></svg>'
+            return h.response(emptySvg).code(statusCodes.ok).type('image/svg+xml')
+          },
+          options
+        },
+        {
+          method: 'GET',
           path: `${config.get('assetPath')}/{param*}`,
           handler: {
             directory: {

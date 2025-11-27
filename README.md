@@ -9,6 +9,7 @@ Core delivery platform Node.js Frontend Template.
 - [Requirements](#requirements)
   - [Node.js](#nodejs)
 - [DXT Forms Engine Plugin](#dxt-forms-engine-plugin)
+- [Static File Routes & Accessibility Scanner Support](#static-file-routes--accessibility-scanner-support)
 - [Features](#features)
 - [Development Tools & Configuration](#development-tools--configuration)
   - [Testing Framework](#testing-framework)
@@ -142,6 +143,24 @@ sequenceDiagram
   Ctrl->>GAS: submitGrantApplication
   GAS-->>Ctrl: Submission result
   Ctrl-->>User: Redirect to confirmation
+```
+
+## Static File Routes & Accessibility Scanner Support
+
+The CDP dev environment runs automated accessibility testing using HeadlessChrome. This scanner attempts to load icon resources (e.g., `aria.svg`, `header.svg`, `h1.svg`, etc.) to visualise accessibility features on the page. These icons are not part of the application itself but are used by the scanner's visualisation overlay.
+
+To prevent 400 errors in logs from these scanner requests, a catch-all route was added in `src/server/common/helpers/serve-static-files.js` that:
+
+- Intercepts all `/img/{param*}` requests
+- Returns a valid empty SVG with 200 OK status
+- Satisfies the accessibility scanner without cluttering logs with errors
+
+This ensures clean logs while maintaining compatibility with CDP platform accessibility monitoring tools.
+
+Test locally with:
+
+```bash
+curl -v http://localhost:3000/img/icons/aria.svg`
 ```
 
 ## Development Tools & Configuration
