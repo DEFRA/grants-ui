@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { cookiesController, cookiesPostController } from './cookies.controller.js'
 
 const createMockRequest = (overrides = {}) => ({
@@ -19,7 +19,11 @@ const createMockH = () => ({
   }
 })
 
-vi.mock('~/src/server/common/helpers/logging/log.js', () => ({}))
+vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
+  log: vi.fn(),
+  logger: {},
+  LogCodes: {}
+}))
 
 describe('cookies.controller', () => {
   describe('cookiesController', () => {
