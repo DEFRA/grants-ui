@@ -16,6 +16,10 @@ vi.mock('../common/helpers/logging/log.js', () => ({
   LogCodes: {
     SUBMISSION: {
       SUBMISSION_FAILURE: { level: 'error', messageFunc: vi.fn() }
+    },
+    SYSTEM: {
+      EXTERNAL_API_CALL_DEBUG: { level: 'debug', messageFunc: vi.fn() },
+      EXTERNAL_API_ERROR: { level: 'error', messageFunc: vi.fn() }
     }
   }
 }))
