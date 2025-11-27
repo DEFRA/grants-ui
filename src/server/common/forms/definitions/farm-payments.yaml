@@ -30,11 +30,17 @@ metadata:
         toGrantsStatus: REOPENED
         toPath: /check-selected-land-actions
 
-      # Agreement drafted, offered or withdrawal requested -> agreements service
+      # Agreement drafted, offered or agreement accepted -> agreements service
       - fromGrantsStatus: SUBMITTED
-        gasStatus: AGREEMENT_DRAFTED,AGREEMENT_OFFERED,WITHDRAWAL_REQUESTED
+        gasStatus: AGREEMENT_DRAFTED,AGREEMENT_OFFERED,AGREEMENT_ACCEPTED
         toGrantsStatus: SUBMITTED
         toPath: /agreement
+
+      # Withdrawal requested
+      - fromGrantsStatus: SUBMITTED
+        gasStatus: WITHDRAWAL_REQUESTED
+        toGrantsStatus: SUBMITTED
+        toPath: /confirmation
 
       # Reopened
       - fromGrantsStatus: REOPENED
