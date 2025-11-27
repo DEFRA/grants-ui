@@ -9,6 +9,7 @@ import {
 } from '~/src/config/nunjucks/context/build-cookie-banner-config.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { sbiStore } from '~/src/server/sbi/state.js'
+import { formatTtlToReadable } from '~/src/server/common/utils/format-duration.js'
 
 const assetPath = config.get('assetPath')
 const manifestPath = path.join(config.get('root'), '.public/assets-manifest.json')
@@ -118,6 +119,7 @@ const createAssetPathGetter = (asset) => {
 const buildCommonConfig = (serviceName, cookiePolicyUrl, cookieConsentExpiryDays) => {
   const cookieConsentName = config.get('cookieConsent.cookieName')
   const gaTrackingId = config.get('googleAnalytics.trackingId')
+  const sessionCookieTtl = config.get('session.cookie.ttl')
 
   return {
     assetPath: `${assetPath}/assets/rebrand`,
@@ -129,6 +131,7 @@ const buildCommonConfig = (serviceName, cookiePolicyUrl, cookieConsentExpiryDays
     cookiePolicyUrl,
     cookieConsentName,
     cookieConsentExpiryDays,
+    sessionCookieExpiry: formatTtlToReadable(sessionCookieTtl),
     cookieBannerConfig: buildCookieBannerConfig(
       serviceName,
       cookieConsentName,

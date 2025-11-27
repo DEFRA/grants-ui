@@ -40,7 +40,8 @@ vi.mock('~/src/config/config.js', async () => {
     'cookieConsent.cookiePolicyUrl': '/cookies',
     'cookieConsent.cookieName': 'cookie_consent',
     'cookieConsent.expiryDays': 365,
-    'googleAnalytics.trackingId': undefined
+    'googleAnalytics.trackingId': undefined,
+    'session.cookie.ttl': 14400000 // 4 hours in milliseconds
   })
 })
 
@@ -73,6 +74,7 @@ const getExpectedContext = () => ({
   cookiePolicyUrl: expect.any(String),
   cookieConsentName: expect.any(String),
   cookieConsentExpiryDays: expect.any(Number),
+  sessionCookieExpiry: expect.any(String),
   cookieBannerConfig: expect.any(Object),
   cookieBannerNoscriptConfig: expect.any(Object),
   auth: {
@@ -97,6 +99,7 @@ const getMinimalFallbackContext = () => ({
   cookiePolicyUrl: expect.any(String),
   cookieConsentName: expect.any(String),
   cookieConsentExpiryDays: expect.any(Number),
+  sessionCookieExpiry: expect.any(String),
   cookieBannerConfig: expect.any(Object),
   cookieBannerNoscriptConfig: expect.any(Object),
   auth: {
@@ -529,6 +532,29 @@ describe('context', () => {
 
       expect(contextResult.cookieBannerNoscriptConfig).toBeDefined()
       expect(contextResult.cookieBannerNoscriptConfig.ariaLabel).toBe('Cookies on Manage land-based actions')
+    })
+  })
+
+  describe('Session cookie expiry formatting', () => {
+    test('includes sessionCookieExpiry in context', async () => {
+      setupManifestSuccess()
+
+      const contextImport = await import('~/src/config/nunjucks/context/context.js')
+      const contextResult = await contextImport.context(mockRequest)
+
+      expect(contextResult.sessionCookieExpiry).toBeDefined()
+      expect(contextResult.sessionCookieExpiry).toBe('4 hours')
+    })
+
+    test('includes sessionCookieExpiry in fallback context', async () => {
+      setupSbiStoreError()
+      mockReadFileSync.mockReturnValue('{}')
+
+      const contextImport = await importContext()
+      const contextResult = await contextImport.context(mockRequest)
+
+      expect(contextResult.sessionCookieExpiry).toBeDefined()
+      expect(contextResult.sessionCookieExpiry).toBe('4 hours')
     })
   })
 })
