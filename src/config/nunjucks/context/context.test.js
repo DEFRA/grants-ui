@@ -74,7 +74,7 @@ const getExpectedContext = () => ({
   cookiePolicyUrl: expect.any(String),
   cookieConsentName: expect.any(String),
   cookieConsentExpiryDays: expect.any(Number),
-  sessionCookieExpiry: expect.any(String),
+  sessionCookieTtl: expect.any(Number),
   cookieBannerConfig: expect.any(Object),
   cookieBannerNoscriptConfig: expect.any(Object),
   auth: {
@@ -99,7 +99,7 @@ const getMinimalFallbackContext = () => ({
   cookiePolicyUrl: expect.any(String),
   cookieConsentName: expect.any(String),
   cookieConsentExpiryDays: expect.any(Number),
-  sessionCookieExpiry: expect.any(String),
+  sessionCookieTtl: expect.any(Number),
   cookieBannerConfig: expect.any(Object),
   cookieBannerNoscriptConfig: expect.any(Object),
   auth: {
@@ -535,26 +535,26 @@ describe('context', () => {
     })
   })
 
-  describe('Session cookie expiry formatting', () => {
-    test('includes sessionCookieExpiry in context', async () => {
+  describe('Session cookie TTL', () => {
+    test('includes sessionCookieTtl in context', async () => {
       setupManifestSuccess()
 
       const contextImport = await import('~/src/config/nunjucks/context/context.js')
       const contextResult = await contextImport.context(mockRequest)
 
-      expect(contextResult.sessionCookieExpiry).toBeDefined()
-      expect(contextResult.sessionCookieExpiry).toBe('4 hours')
+      expect(contextResult.sessionCookieTtl).toBeDefined()
+      expect(contextResult.sessionCookieTtl).toBe(14400000)
     })
 
-    test('includes sessionCookieExpiry in fallback context', async () => {
+    test('includes sessionCookieTtl in fallback context', async () => {
       setupSbiStoreError()
       mockReadFileSync.mockReturnValue('{}')
 
       const contextImport = await importContext()
       const contextResult = await contextImport.context(mockRequest)
 
-      expect(contextResult.sessionCookieExpiry).toBeDefined()
-      expect(contextResult.sessionCookieExpiry).toBe('4 hours')
+      expect(contextResult.sessionCookieTtl).toBeDefined()
+      expect(contextResult.sessionCookieTtl).toBe(14400000)
     })
   })
 })

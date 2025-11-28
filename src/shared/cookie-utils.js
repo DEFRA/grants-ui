@@ -95,8 +95,8 @@ export const deleteGoogleAnalyticsCookies = () => {
     const cookieName = cookie.split('=')[0].trim()
     if (cookieName === '_ga' || cookieName.startsWith('_ga_')) {
       document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`
-      document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=${window.location.hostname}`
-      document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=.${window.location.hostname}`
+      document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=${globalThis.location.hostname}`
+      document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=.${globalThis.location.hostname}`
     }
   }
 }
