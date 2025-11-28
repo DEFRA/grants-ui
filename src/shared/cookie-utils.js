@@ -86,24 +86,35 @@ export const loadGoogleAnalytics = (trackingId) => {
 
 /**
  * Deletes Google Analytics cookies
- * Removes _ga and any _ga_* cookies by setting their expiry in the past
- * Tries all parent domain levels to handle cookies set on parent domains (e.g., .defra.cloud)
+ * Removes _ga and any _ga_* cookies by setting their expiry in the past.
+ * Tries parent domains but skips public suffixes (e.g. .com, .cloud, .co.uk).
  */
 export const deleteGoogleAnalyticsCookies = () => {
   const cookies = document.cookie.split(';')
   const hostname = globalThis.location.hostname
-  const domains = [hostname, `.${hostname}`]
+  const domains = new Set()
+
+  // Add direct domains
+  domains.add(hostname)
+  domains.add('.' + hostname)
 
   const parts = hostname.split('.')
+
+  // Generate parent domains but stop before public suffix
+  // e.g., test.env.defra.cloud → .env.defra.cloud, .defra.cloud
   for (let i = 1; i < parts.length - 1; i++) {
-    domains.push('.' + parts.slice(i).join('.'))
+    const domain = '.' + parts.slice(i).join('.')
+    domains.add(domain)
   }
 
+  // Delete all GA cookies
   for (const cookie of cookies) {
     const cookieName = cookie.split('=')[0].trim()
     if (cookieName === '_ga' || cookieName.startsWith('_ga_')) {
+      // Delete no-domain version
       document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`
 
+      // Delete domain versions
       for (const domain of domains) {
         document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=${domain}`
       }
