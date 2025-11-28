@@ -87,16 +87,26 @@ export const loadGoogleAnalytics = (trackingId) => {
 /**
  * Deletes Google Analytics cookies
  * Removes _ga and any _ga_* cookies by setting their expiry in the past
+ * Tries all parent domain levels to handle cookies set on parent domains (e.g., .defra.cloud)
  */
 export const deleteGoogleAnalyticsCookies = () => {
   const cookies = document.cookie.split(';')
+  const hostname = globalThis.location.hostname
+  const domains = [hostname, `.${hostname}`]
+
+  const parts = hostname.split('.')
+  for (let i = 1; i < parts.length - 1; i++) {
+    domains.push('.' + parts.slice(i).join('.'))
+  }
 
   for (const cookie of cookies) {
     const cookieName = cookie.split('=')[0].trim()
     if (cookieName === '_ga' || cookieName.startsWith('_ga_')) {
       document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`
-      document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=${globalThis.location.hostname}`
-      document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=.${globalThis.location.hostname}`
+
+      for (const domain of domains) {
+        document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=${domain}`
+      }
     }
   }
 }
