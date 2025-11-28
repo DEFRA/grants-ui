@@ -64,4 +64,25 @@ describe('deleteGoogleAnalyticsCookies', () => {
 
     expect(() => deleteGoogleAnalyticsCookies()).not.toThrow()
   })
+
+  test('should try parent domains for multi-level hostnames', async () => {
+    vi.resetModules()
+
+    const dom = new JSDOM('<!DOCTYPE html><html><body></body></html>', {
+      url: 'http://grants-ui.dev.cdp-int.defra.cloud'
+    })
+
+    globalThis.document = dom.window.document
+    globalThis.window = dom.window
+    globalThis.location = dom.window.location
+
+    dom.window.document.cookie = '_ga=GA1.2.123456789.1234567890; path=/'
+    dom.window.document.cookie = '_ga_2LGPW4C0HS=GS2.1.s1764340424; path=/'
+
+    const { deleteGoogleAnalyticsCookies } = await import('./cookie-utils.js')
+
+    expect(() => deleteGoogleAnalyticsCookies()).not.toThrow()
+    expect(dom.window.document.cookie).not.toContain('_ga=GA1')
+    expect(dom.window.document.cookie).not.toContain('_ga_2LGPW4C0HS')
+  })
 })

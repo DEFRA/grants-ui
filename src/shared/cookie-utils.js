@@ -85,18 +85,69 @@ export const loadGoogleAnalytics = (trackingId) => {
 }
 
 /**
+ * Builds the list of domain variations to attempt when deleting cookies.
+ *
+ * Google Analytics often sets cookies on a parent domain (e.g. `.defra.cloud`)
+ * rather than the full leaf hostname. To delete GA cookies reliably, we must
+ * attempt deletion on every registrable parent domain level.
+ *
+ * For a hostname such as `grants-ui.dev.cdp-int.defra.cloud`, this function
+ * generates:
+ *
+ *   grants-ui.dev.cdp-int.defra.cloud
+ *   .grants-ui.dev.cdp-int.defra.cloud
+ *   .dev.cdp-int.defra.cloud
+ *   .cdp-int.defra.cloud
+ *   .defra.cloud
+ *
+ * It intentionally stops before the public suffix (e.g. `.cloud`, `.com`,
+ * `.co.uk`), because browsers do not allow cookies to be set or removed at
+ * those levels.
+ *
+ * @param {string} hostname - The full hostname from which to derive parent domains.
+ * @returns {Set<string>} A set of domain strings to use when deleting cookies.
+ */
+function buildDeletableDomains(hostname) {
+  const domains = new Set()
+
+  domains.add(hostname)
+  domains.add('.' + hostname)
+
+  const parts = hostname.split('.')
+
+  for (let i = 1; i < parts.length - 1; i++) {
+    domains.add('.' + parts.slice(i).join('.'))
+  }
+
+  return domains
+}
+
+/**
  * Deletes Google Analytics cookies
- * Removes _ga and any _ga_* cookies by setting their expiry in the past
+ * Removes `_ga` and any `_ga_*` cookies by setting their expiry in the past.
+ * Attempts deletion on all parent domain levels to handle GA cookies that
+ * were set on higher-level domains (e.g. `.defra.cloud`).
+ *
+ * Uses multiple domain variants because browsers only delete a cookie when
+ * the deletion domain matches (or is more specific than) the domain where
+ * the cookie was originally set.
  */
 export const deleteGoogleAnalyticsCookies = () => {
   const cookies = document.cookie.split(';')
+  const hostname = window.location.hostname
+
+  const domains = buildDeletableDomains(hostname)
 
   for (const cookie of cookies) {
     const cookieName = cookie.split('=')[0].trim()
     if (cookieName === '_ga' || cookieName.startsWith('_ga_')) {
+      // Delete no-domain version
       document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`
-      document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=${globalThis.location.hostname}`
-      document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=.${globalThis.location.hostname}`
+
+      // Delete domain versions
+      for (const domain of domains) {
+        document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=${domain}`
+      }
     }
   }
 }
