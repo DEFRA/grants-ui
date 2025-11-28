@@ -85,29 +85,59 @@ export const loadGoogleAnalytics = (trackingId) => {
 }
 
 /**
- * Deletes Google Analytics cookies
- * Removes _ga and any _ga_* cookies by setting their expiry in the past.
- * Tries parent domains but skips public suffixes (e.g. .com, .cloud, .co.uk).
+ * Builds the list of domain variations to attempt when deleting cookies.
+ *
+ * Google Analytics often sets cookies on a parent domain (e.g. `.defra.cloud`)
+ * rather than the full leaf hostname. To delete GA cookies reliably, we must
+ * attempt deletion on every registrable parent domain level.
+ *
+ * For a hostname such as `grants-ui.dev.cdp-int.defra.cloud`, this function
+ * generates:
+ *
+ *   grants-ui.dev.cdp-int.defra.cloud
+ *   .grants-ui.dev.cdp-int.defra.cloud
+ *   .dev.cdp-int.defra.cloud
+ *   .cdp-int.defra.cloud
+ *   .defra.cloud
+ *
+ * It intentionally stops before the public suffix (e.g. `.cloud`, `.com`,
+ * `.co.uk`), because browsers do not allow cookies to be set or removed at
+ * those levels.
+ *
+ * @param {string} hostname - The full hostname from which to derive parent domains.
+ * @returns {Set<string>} A set of domain strings to use when deleting cookies.
  */
-export const deleteGoogleAnalyticsCookies = () => {
-  const cookies = document.cookie.split(';')
-  const hostname = globalThis.location.hostname
+function buildDeletableDomains(hostname) {
   const domains = new Set()
 
-  // Add direct domains
   domains.add(hostname)
   domains.add('.' + hostname)
 
   const parts = hostname.split('.')
 
-  // Generate parent domains but stop before public suffix
-  // e.g., test.env.defra.cloud → .env.defra.cloud, .defra.cloud
   for (let i = 1; i < parts.length - 1; i++) {
-    const domain = '.' + parts.slice(i).join('.')
-    domains.add(domain)
+    domains.add('.' + parts.slice(i).join('.'))
   }
 
-  // Delete all GA cookies
+  return domains
+}
+
+/**
+ * Deletes Google Analytics cookies
+ * Removes `_ga` and any `_ga_*` cookies by setting their expiry in the past.
+ * Attempts deletion on all parent domain levels to handle GA cookies that
+ * were set on higher-level domains (e.g. `.defra.cloud`).
+ *
+ * Uses multiple domain variants because browsers only delete a cookie when
+ * the deletion domain matches (or is more specific than) the domain where
+ * the cookie was originally set.
+ */
+export const deleteGoogleAnalyticsCookies = () => {
+  const cookies = document.cookie.split(';')
+  const hostname = window.location.hostname
+
+  const domains = buildDeletableDomains(hostname)
+
   for (const cookie of cookies) {
     const cookieName = cookie.split('=')[0].trim()
     if (cookieName === '_ga' || cookieName.startsWith('_ga_')) {
