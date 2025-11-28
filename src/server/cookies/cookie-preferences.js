@@ -3,6 +3,7 @@ import {
   getConsent,
   setConsent,
   loadGoogleAnalytics,
+  deleteGoogleAnalyticsCookies,
   DEFAULT_EXPIRY_DAYS
 } from '../../shared/cookie-utils.js'
 
@@ -61,6 +62,8 @@ const handleSaveClick = (event, form, cookieName, expiryDays, gaTrackingId) => {
 
   if (acceptAnalytics && gaTrackingId) {
     loadGoogleAnalytics(gaTrackingId)
+  } else {
+    deleteGoogleAnalyticsCookies()
   }
 
   const referrer = form.dataset.referrer || '/'

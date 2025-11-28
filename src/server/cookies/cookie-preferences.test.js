@@ -283,4 +283,46 @@ describe('cookie-preferences', () => {
 
     expect(() => initCookiePreferences()).not.toThrow()
   })
+
+  it('should delete Google Analytics cookies when rejecting analytics', async () => {
+    const setup = setupDOM(createFormHTML())
+    document = setup.document
+    window = setup.window
+    document.cookie = '_ga=GA1.2.123456789.1234567890; path=/'
+    document.cookie = '_ga_TEST123=GS1.1.1234567890.1; path=/'
+
+    const { initCookiePreferences } = await import('./cookie-preferences.js')
+    initCookiePreferences()
+
+    const noRadio = document.getElementById('analytics-no')
+    const saveButton = document.getElementById('save-cookie-settings')
+
+    noRadio.checked = true
+    clickWithNavigationHandling(saveButton, window)
+
+    const cookies = document.cookie.split(';').map((c) => c.trim())
+    const consentCookie = cookies.find((c) => c.startsWith('cookie_consent='))
+    expect(consentCookie).toContain('cookie_consent=false')
+
+    expect(document.cookie).not.toContain('_ga=GA1')
+    expect(document.cookie).not.toContain('_ga_TEST123')
+  })
+
+  it('should delete Google Analytics cookies when rejecting analytics without tracking ID', async () => {
+    const setup = setupDOM(createFormHTML({ gaTrackingId: '' }))
+    document = setup.document
+    window = setup.window
+    document.cookie = '_ga=GA1.2.123456789.1234567890; path=/'
+
+    const { initCookiePreferences } = await import('./cookie-preferences.js')
+    initCookiePreferences()
+
+    const noRadio = document.getElementById('analytics-no')
+    const saveButton = document.getElementById('save-cookie-settings')
+
+    noRadio.checked = true
+    clickWithNavigationHandling(saveButton, window)
+
+    expect(document.cookie).not.toContain('_ga=GA1')
+  })
 })

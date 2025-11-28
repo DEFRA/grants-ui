@@ -118,6 +118,7 @@ const createAssetPathGetter = (asset) => {
 const buildCommonConfig = (serviceName, cookiePolicyUrl, cookieConsentExpiryDays) => {
   const cookieConsentName = config.get('cookieConsent.cookieName')
   const gaTrackingId = config.get('googleAnalytics.trackingId')
+  const sessionCookieTtl = config.get('session.cookie.ttl')
 
   return {
     assetPath: `${assetPath}/assets/rebrand`,
@@ -129,6 +130,7 @@ const buildCommonConfig = (serviceName, cookiePolicyUrl, cookieConsentExpiryDays
     cookiePolicyUrl,
     cookieConsentName,
     cookieConsentExpiryDays,
+    sessionCookieTtl,
     cookieBannerConfig: buildCookieBannerConfig(
       serviceName,
       cookieConsentName,

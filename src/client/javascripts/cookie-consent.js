@@ -1,4 +1,10 @@
-import { getCookie, getConsent, setConsent, loadGoogleAnalytics } from '../../shared/cookie-utils.js'
+import {
+  getCookie,
+  getConsent,
+  setConsent,
+  loadGoogleAnalytics,
+  deleteGoogleAnalyticsCookies
+} from '../../shared/cookie-utils.js'
 
 export { loadGoogleAnalytics } from '../../shared/cookie-utils.js'
 
@@ -46,6 +52,7 @@ const handleAccept = (config) => {
 
 const handleReject = (config) => {
   setConsent(false, config.cookieName, config.expiryDays)
+  deleteGoogleAnalyticsCookies()
   hideBanner()
 }
 
