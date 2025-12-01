@@ -22,19 +22,10 @@ vi.mock('@defra/forms-engine-plugin/controllers/SummaryPageController.js', () =>
     getSummaryViewModel() {}
   }
 }))
-vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
-  log: vi.fn(),
-  LogCodes: {
-    SUBMISSION: {
-      SUBMISSION_COMPLETED: { level: 'info', messageFunc: vi.fn() },
-      SUBMISSION_REDIRECT: { level: 'debug', messageFunc: vi.fn() }
-    },
-    FORMS: {
-      SLUG_STORED: { level: 'debug', messageFunc: vi.fn() },
-      SLUG_RESOLVED: { level: 'debug', messageFunc: vi.fn() }
-    }
-  }
-}))
+vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
+  const { mockLogHelper } = await import('~/src/__mocks__')
+  return mockLogHelper()
+})
 vi.mock('~/src/config/config.js', () => ({
   config: {
     get: vi.fn((key) => {

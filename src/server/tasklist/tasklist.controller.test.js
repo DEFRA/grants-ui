@@ -14,14 +14,10 @@ import { log, LogCodes } from '../common/helpers/logging/log.js'
 
 vi.mock('./services/tasklist-generator.js')
 vi.mock('./services/config-loader.js')
-vi.mock('../common/helpers/logging/log.js', () => ({
-  log: vi.fn(),
-  LogCodes: {
-    TASKLIST: {
-      CACHE_RETRIEVAL_FAILED: { level: 'warn', messageFunc: vi.fn() }
-    }
-  }
-}))
+vi.mock('../common/helpers/logging/log.js', async () => {
+  const { mockLogHelper } = await import('~/src/__mocks__')
+  return mockLogHelper()
+})
 
 describe('generic-tasklist-controller', () => {
   let mockServer

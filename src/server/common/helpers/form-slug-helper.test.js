@@ -3,15 +3,10 @@ import { mockHapiRequest } from '~/src/__mocks__'
 import { storeSlugInContext, getFormSlug, getConfirmationPath } from './form-slug-helper.js'
 import { log, LogCodes } from './logging/log.js'
 
-vi.mock('./logging/log.js', () => ({
-  log: vi.fn(),
-  LogCodes: {
-    FORMS: {
-      SLUG_STORED: { level: 'debug', messageFunc: vi.fn() },
-      SLUG_RESOLVED: { level: 'debug', messageFunc: vi.fn() }
-    }
-  }
-}))
+vi.mock('./logging/log.js', async () => {
+  const { mockLogHelper } = await import('~/src/__mocks__')
+  return mockLogHelper()
+})
 
 describe('form-slug-helper', () => {
   describe('storeSlugInContext', () => {

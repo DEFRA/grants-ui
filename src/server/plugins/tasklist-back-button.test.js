@@ -12,7 +12,10 @@ import {
   tasklistBackButton
 } from './tasklist-back-button.js'
 
-vi.mock('~/src/server/common/helpers/logging/log.js', () => ({}))
+vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
+  const { mockLogHelper } = await import('~/src/__mocks__')
+  return mockLogHelper()
+})
 
 const throwFileError = () => {
   throw new Error('File read error')

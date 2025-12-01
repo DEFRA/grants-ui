@@ -5,14 +5,10 @@ import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/Q
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
 vi.mock('~/src/server/common/services/grant-application/grant-application.service.js')
-vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
-  log: vi.fn(),
-  LogCodes: {
-    SYSTEM: {
-      GAS_ACTION_ERROR: { level: 'error', messageFunc: vi.fn() }
-    }
-  }
-}))
+vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
+  const { mockLogHelper } = await import('~/src/__mocks__')
+  return mockLogHelper()
+})
 
 describe('PotentialFundingController', () => {
   let controller

@@ -11,21 +11,10 @@ import { handleGasApiError } from '~/src/server/common/helpers/gas-error-message
 import { log, LogCodes } from '../common/helpers/logging/log.js'
 
 vi.mock('~/src/server/common/helpers/gas-error-messages.js')
-vi.mock('../common/helpers/logging/log.js', () => ({
-  log: vi.fn(),
-  LogCodes: {
-    SUBMISSION: {
-      SUBMISSION_FAILURE: { level: 'error', messageFunc: vi.fn() },
-      SUBMISSION_COMPLETED: { level: 'info', messageFunc: vi.fn() },
-      APPLICATION_STATUS_UPDATED: { level: 'debug', messageFunc: vi.fn() },
-      SUBMISSION_PROCESSING: { level: 'debug', messageFunc: vi.fn() },
-      SUBMISSION_REDIRECT: { level: 'debug', messageFunc: vi.fn() }
-    },
-    SYSTEM: {
-      EXTERNAL_API_CALL_DEBUG: { level: 'debug', messageFunc: vi.fn() }
-    }
-  }
-}))
+vi.mock('../common/helpers/logging/log.js', async () => {
+  const { mockLogHelper } = await import('~/src/__mocks__')
+  return mockLogHelper()
+})
 
 const mockCacheService = mockFormsCacheService({
   getState: vi.fn().mockReturnValue({

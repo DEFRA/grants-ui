@@ -121,9 +121,28 @@ describe('LogCodes', () => {
         'error',
         { path: TEST_PATHS.ADMIN, userId: TEST_USER_IDS.DEFAULT },
         `Unauthorized access attempt to path=${TEST_PATHS.ADMIN} from user=${TEST_USER_IDS.DEFAULT}`
+      ],
+      [
+        'UNAUTHORIZED_ACCESS with missing userId',
+        'error',
+        { path: TEST_PATHS.ADMIN },
+        `Unauthorized access attempt to path=${TEST_PATHS.ADMIN} from user=unknown`
+      ],
+      [
+        'SIGN_IN_FAILURE with missing userId',
+        'error',
+        { errorMessage: TEST_ERRORS.INVALID_CREDENTIALS },
+        `User sign-in failed for user=unknown. Error: ${TEST_ERRORS.INVALID_CREDENTIALS}`
+      ],
+      [
+        'TOKEN_VERIFICATION_FAILURE with missing userId',
+        'error',
+        { errorMessage: TEST_ERRORS.INVALID_TOKEN },
+        `Token verification failed for user=unknown. Error: ${TEST_ERRORS.INVALID_TOKEN}`
       ]
     ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
-      const logCode = LogCodes.AUTH[logCodeName]
+      const actualLogCodeName = logCodeName.split(' ')[0]
+      const logCode = LogCodes.AUTH[actualLogCodeName]
       expect(logCode.level).toBe(expectedLevel)
       expect(typeof logCode.messageFunc).toBe('function')
       expect(logCode.messageFunc(testParams)).toBe(expectedMessage)
@@ -202,9 +221,34 @@ describe('LogCodes', () => {
         'error',
         { reason: 'someReason', storedStatePresent: true },
         `Invalid OAuth state provided | reason=someReason | storedStatePresent=true`
+      ],
+      [
+        'WHITELIST_ACCESS_GRANTED with fallbacks',
+        'info',
+        { path: TEST_PATHS.EXAMPLE_GRANT },
+        `Whitelist access granted to path=${TEST_PATHS.EXAMPLE_GRANT} for user=unknown, sbi=N/A: validation passed`
+      ],
+      [
+        'WHITELIST_ACCESS_DENIED_BOTH with fallbacks',
+        'info',
+        { path: TEST_PATHS.EXAMPLE_GRANT },
+        `Whitelist access denied to path=${TEST_PATHS.EXAMPLE_GRANT}: Both CRN unknown and SBI unknown failed validation`
+      ],
+      [
+        'WHITELIST_ACCESS_DENIED_CRN_PASSED with fallbacks',
+        'info',
+        { path: TEST_PATHS.EXAMPLE_GRANT },
+        `Whitelist access denied to path=${TEST_PATHS.EXAMPLE_GRANT}: CRN unknown passed but SBI unknown failed validation`
+      ],
+      [
+        'WHITELIST_ACCESS_DENIED_SBI_PASSED with fallbacks',
+        'info',
+        { path: TEST_PATHS.EXAMPLE_GRANT },
+        `Whitelist access denied to path=${TEST_PATHS.EXAMPLE_GRANT}: SBI unknown passed but CRN unknown failed validation`
       ]
     ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
-      const logCode = LogCodes.AUTH[logCodeName]
+      const actualLogCodeName = logCodeName.split(' ')[0]
+      const logCode = LogCodes.AUTH[actualLogCodeName]
       expect(logCode.level).toBe(expectedLevel)
       expect(typeof logCode.messageFunc).toBe('function')
       expect(logCode.messageFunc(testParams)).toBe(expectedMessage)
@@ -248,9 +292,22 @@ describe('LogCodes', () => {
         'info',
         { formName: TEST_FORM_NAMES.DECLARATION, userId: TEST_USER_IDS.DEFAULT },
         `Form saved: ${TEST_FORM_NAMES.DECLARATION} for user=${TEST_USER_IDS.DEFAULT}`
+      ],
+      [
+        'FORM_SUBMIT with missing userId',
+        'info',
+        { formName: TEST_FORM_NAMES.DECLARATION },
+        `Form submitted: ${TEST_FORM_NAMES.DECLARATION} by user=unknown`
+      ],
+      [
+        'FORM_SAVE with missing userId',
+        'info',
+        { formName: TEST_FORM_NAMES.DECLARATION },
+        `Form saved: ${TEST_FORM_NAMES.DECLARATION} for user=unknown`
       ]
     ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
-      const logCode = LogCodes.FORMS[logCodeName]
+      const actualLogCodeName = logCodeName.split(' ')[0]
+      const logCode = LogCodes.FORMS[actualLogCodeName]
       expect(logCode.level).toBe(expectedLevel)
       expect(typeof logCode.messageFunc).toBe('function')
       expect(logCode.messageFunc(testParams)).toBe(expectedMessage)
@@ -304,9 +361,49 @@ describe('LogCodes', () => {
           grantType: TEST_GRANT_TYPES.ADDING_VALUE
         },
         `No validator found for grantType=${TEST_GRANT_TYPES.ADDING_VALUE}`
+      ],
+      [
+        'SUBMISSION_COMPLETED',
+        'info',
+        {
+          grantType: TEST_GRANT_TYPES.ADDING_VALUE,
+          referenceNumber: TEST_REFERENCE_NUMBERS.REF_123,
+          numberOfFields: 5,
+          status: 'success'
+        },
+        `Form submission completed for grantType=${TEST_GRANT_TYPES.ADDING_VALUE}, referenceNumber=${TEST_REFERENCE_NUMBERS.REF_123}, fields=5, status=success`
+      ],
+      [
+        'SUBMISSION_COMPLETED with missing numberOfFields',
+        'info',
+        {
+          grantType: TEST_GRANT_TYPES.ADDING_VALUE,
+          referenceNumber: TEST_REFERENCE_NUMBERS.REF_123,
+          status: 'success'
+        },
+        `Form submission completed for grantType=${TEST_GRANT_TYPES.ADDING_VALUE}, referenceNumber=${TEST_REFERENCE_NUMBERS.REF_123}, fields=0, status=success`
+      ],
+      [
+        'APPLICATION_STATUS_UPDATED',
+        'debug',
+        { controller: 'DeclarationController', status: 'SUBMITTED' },
+        'DeclarationController: Application status updated to SUBMITTED'
+      ],
+      [
+        'SUBMISSION_PROCESSING',
+        'debug',
+        { controller: 'DeclarationController', path: '/declaration' },
+        'DeclarationController: Processing form submission, path=/declaration'
+      ],
+      [
+        'SUBMISSION_REDIRECT',
+        'debug',
+        { controller: 'DeclarationController', redirectPath: '/confirmation' },
+        'DeclarationController: Redirecting to /confirmation'
       ]
     ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
-      const logCode = LogCodes.SUBMISSION[logCodeName]
+      const actualLogCodeName = logCodeName.split(' ')[0]
+      const logCode = LogCodes.SUBMISSION[actualLogCodeName]
       expect(logCode.level).toBe(expectedLevel)
       expect(typeof logCode.messageFunc).toBe('function')
       expect(logCode.messageFunc(testParams)).toBe(expectedMessage)
@@ -410,6 +507,12 @@ describe('LogCodes', () => {
         'debug',
         { tasklistId: 'example', errorMessage: TEST_ERRORS.PROCESSING_FAILED },
         `Tasklist config load skipped: tasklistId=example, error=${TEST_ERRORS.PROCESSING_FAILED}`
+      ],
+      [
+        'CACHE_RETRIEVAL_FAILED',
+        'warn',
+        { sessionId: TEST_SESSIONS.SESSION_123, errorMessage: 'Redis timeout' },
+        `Cache retrieval failed for sessionId=${TEST_SESSIONS.SESSION_123}, using empty data. Error: Redis timeout`
       ]
     ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
       const logCode = LogCodes.TASKLIST[logCodeName]
@@ -505,6 +608,22 @@ describe('LogCodes', () => {
     })
   })
 
+  describe('COOKIES log codes', () => {
+    it.each([
+      [
+        'PAGE_LOAD',
+        'info',
+        { returnUrl: '/dashboard', referer: 'http://example.com' },
+        'Cookies page loaded: returnUrl=/dashboard, referer=http://example.com'
+      ]
+    ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
+      const logCode = LogCodes.COOKIES[logCodeName]
+      expect(logCode.level).toBe(expectedLevel)
+      expect(typeof logCode.messageFunc).toBe('function')
+      expect(logCode.messageFunc(testParams)).toBe(expectedMessage)
+    })
+  })
+
   describe('RESOURCE_NOT_FOUND log codes', () => {
     it.each([
       [
@@ -544,9 +663,28 @@ describe('LogCodes', () => {
           userAgent: 'Mozilla/5.0'
         },
         `Page not found: path=${TEST_PATHS.TEST_PATH}, userId=${TEST_USER_IDS.DEFAULT}, sbi=${TEST_SBI.DEFAULT}, referer=http://example.com, userAgent=Mozilla/5.0`
+      ],
+      [
+        'FORM_NOT_FOUND with fallbacks',
+        'info',
+        { slug: 'test-form' },
+        'Form not found: slug=test-form, userId=anonymous, sbi=unknown, reason=not_found, environment=unknown, referer=none'
+      ],
+      [
+        'TASKLIST_NOT_FOUND with fallbacks',
+        'info',
+        { tasklistId: 'test-tasklist' },
+        'Tasklist not found: tasklistId=test-tasklist, userId=anonymous, sbi=unknown, reason=not_found, environment=unknown, referer=none'
+      ],
+      [
+        'PAGE_NOT_FOUND with fallbacks',
+        'info',
+        { path: TEST_PATHS.TEST_PATH },
+        `Page not found: path=${TEST_PATHS.TEST_PATH}, userId=anonymous, sbi=unknown, referer=none, userAgent=unknown`
       ]
     ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
-      const logCode = LogCodes.RESOURCE_NOT_FOUND[logCodeName]
+      const actualLogCodeName = logCodeName.split(' ')[0]
+      const logCode = LogCodes.RESOURCE_NOT_FOUND[actualLogCodeName]
       expect(logCode.level).toBe(expectedLevel)
       expect(typeof logCode.messageFunc).toBe('function')
       expect(logCode.messageFunc(testParams)).toBe(expectedMessage)
@@ -590,6 +728,12 @@ describe('LogCodes', () => {
         'error',
         { endpoint: TEST_ENDPOINTS.API_GRANTS, errorMessage: TEST_ERRORS.CONNECTION_FAILED },
         `External API error for ${TEST_ENDPOINTS.API_GRANTS}: ${TEST_ERRORS.CONNECTION_FAILED}`
+      ],
+      [
+        'GAS_ACTION_ERROR',
+        'error',
+        { action: 'submit', grantCode: TEST_GRANT_TYPES.ADDING_VALUE, errorMessage: 'Connection timeout' },
+        `Error invoking GAS action submit for grant ${TEST_GRANT_TYPES.ADDING_VALUE}: Connection timeout`
       ],
       [
         'VIEW_PATH_CHECK',
@@ -707,9 +851,29 @@ describe('LogCodes', () => {
           errorMessage: 'someErrorMessage'
         },
         `Failed to fetch saved state: sessionKey=testSessionKey, error=someErrorMessage, path=/test-path`
+      ],
+      [
+        'VIEW_DEBUG with fallback',
+        'debug',
+        { currentFilePath: '/app', isRunningBuiltCode: true, basePath: '/app', processWorkingDir: '/app' },
+        'View path debug: currentFile=/app, isBuilt=true, basePath=/app, workingDir=/app, pathsResolved=0'
+      ],
+      [
+        'BACKEND_AUTH_CONFIG_ERROR with fallback',
+        'error',
+        {},
+        'Backend auth configuration invalid | missingKeys=unknown'
+      ],
+      ['CONFIG_MISSING with fallback', 'error', {}, 'Missing required configuration: unknown'],
+      [
+        'CONSOLIDATED_VIEW_API_ERROR with fallback',
+        'error',
+        { errorMessage: 'Connection failed' },
+        'Unexpected error fetching business data from Consolidated View API | sbi=unknown | error=Connection failed'
       ]
     ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
-      const logCode = LogCodes.SYSTEM[logCodeName]
+      const actualLogCodeName = logCodeName.split(' ')[0]
+      const logCode = LogCodes.SYSTEM[actualLogCodeName]
       expect(logCode.level).toBe(expectedLevel)
       expect(typeof logCode.messageFunc).toBe('function')
       expect(logCode.messageFunc(testParams)).toBe(expectedMessage)
@@ -817,7 +981,7 @@ describe('LogCodes', () => {
           }
         }
       ]
-    ])('should throw error for %s', (description, invalidLogCodes) => {
+    ])('should throw error for %s', (_description, invalidLogCodes) => {
       expect(() => validateLogCodes(invalidLogCodes)).toThrow()
     })
 
@@ -836,27 +1000,22 @@ describe('LogCodes', () => {
   })
 
   describe('Startup validation error handling', () => {
-    it('should handle validation errors during startup', () => {
-      const mockLogCodes = {
-        TEST: {
-          INVALID: {
-            level: 'invalid-level',
-            messageFunc: 'not a function'
-          }
-        }
-      }
+    it('should throw wrapped error when log code validation fails at startup', async () => {
+      vi.resetModules()
 
-      const mockValidateLogCodes = (logCodes) => {
-        throw new Error('Test validation error')
-      }
-
-      expect(() => {
-        try {
-          mockValidateLogCodes(mockLogCodes)
-        } catch (error) {
-          throw new Error(`Log code validation failed: ${error.message}`)
+      // Mock the validator to throw an error
+      vi.doMock('./log-code-validator.js', () => ({
+        validateLogCode: () => {
+          throw new Error('Invalid level')
         }
-      }).toThrow('Log code validation failed: Test validation error')
+      }))
+
+      await expect(async () => {
+        await import('./log-codes.js')
+      }).rejects.toThrow('Log code validation failed')
+
+      vi.doUnmock('./log-code-validator.js')
+      vi.resetModules()
     })
   })
 
@@ -870,7 +1029,7 @@ describe('LogCodes', () => {
         { endpoint: TEST_ENDPOINTS.API_TEST },
         `External API call to ${TEST_ENDPOINTS.API_TEST} for user=unknown`
       ]
-    ])('should handle unknown users in %s', (description, logCode, testParams, expectedMessage) => {
+    ])('should handle unknown users in %s', (_description, logCode, testParams, expectedMessage) => {
       expect(logCode.messageFunc(testParams)).toBe(expectedMessage)
     })
   })

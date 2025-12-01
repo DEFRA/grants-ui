@@ -17,15 +17,10 @@ vi.mock('./get-cache-key-helper.js', () => ({
 
 global.fetch = vi.fn()
 
-vi.doMock('../logging/log.js', () => ({
-  log: vi.fn(),
-  LogCodes: {
-    SYSTEM: {
-      EXTERNAL_API_CALL_DEBUG: { level: 'debug', messageFunc: vi.fn() },
-      EXTERNAL_API_ERROR: { level: 'error', messageFunc: vi.fn() }
-    }
-  }
-}))
+vi.doMock('../logging/log.js', async () => {
+  const { mockLogHelper } = await import('~/src/__mocks__')
+  return mockLogHelper()
+})
 
 let persistStateToApi
 let log
