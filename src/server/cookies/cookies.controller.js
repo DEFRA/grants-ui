@@ -1,5 +1,6 @@
 import { context } from '~/src/config/nunjucks/context/context.js'
 import { config } from '~/src/config/config.js'
+import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
 /**
  * Validates that a URL is safe for redirection (relative URLs only)
@@ -23,7 +24,7 @@ export const cookiesController = {
     const rawReturnUrl = request.query.returnUrl || request.headers.referer || '/'
     const returnUrl = isValidReturnUrl(rawReturnUrl) ? rawReturnUrl : '/'
     const success = request.query.success === 'true'
-    request.logger.info(`Cookies page: returnUrl = ${returnUrl}, referer = ${request.headers.referer}`)
+    log(LogCodes.COOKIES.PAGE_LOAD, { returnUrl, referer: request.headers.referer }, request)
     const ctx = await context(request)
 
     return h.view('cookies', {

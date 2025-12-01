@@ -121,14 +121,17 @@ export const LogCodes = {
       level: 'info',
       messageFunc: (messageOptions) =>
         `Form saved: ${messageOptions.formName} for user=${messageOptions.userId || 'unknown'}`
+    },
+    SLUG_STORED: {
+      level: 'debug',
+      messageFunc: (messageOptions) => `${messageOptions.controller}: Storing slug in context: ${messageOptions.slug}`
+    },
+    SLUG_RESOLVED: {
+      level: 'debug',
+      messageFunc: (messageOptions) => `${messageOptions.controller}: ${messageOptions.message}`
     }
   },
   SUBMISSION: {
-    SUBMISSION_STARTED: {
-      level: 'info',
-      messageFunc: (messageOptions) =>
-        `Grant submission started for grantType=${messageOptions.grantType}, user=${messageOptions.userId}`
-    },
     SUBMISSION_SUCCESS: {
       level: 'info',
       messageFunc: (messageOptions) =>
@@ -162,6 +165,20 @@ export const LogCodes = {
     VALIDATOR_NOT_FOUND: {
       level: 'error',
       messageFunc: (messageOptions) => `No validator found for grantType=${messageOptions.grantType}`
+    },
+    APPLICATION_STATUS_UPDATED: {
+      level: 'debug',
+      messageFunc: (messageOptions) =>
+        `${messageOptions.controller}: Application status updated to ${messageOptions.status}`
+    },
+    SUBMISSION_PROCESSING: {
+      level: 'debug',
+      messageFunc: (messageOptions) =>
+        `${messageOptions.controller}: Processing form submission, path=${messageOptions.path}`
+    },
+    SUBMISSION_REDIRECT: {
+      level: 'debug',
+      messageFunc: (messageOptions) => `${messageOptions.controller}: Redirecting to ${messageOptions.redirectPath}`
     }
   },
   DECLARATION: {
@@ -196,6 +213,11 @@ export const LogCodes = {
       level: 'error',
       messageFunc: (messageOptions) =>
         `Confirmation processing error for user=${messageOptions.userId}: ${messageOptions.errorMessage}`
+    },
+    SUBMITTED_STATUS_RETRIEVED: {
+      level: 'info',
+      messageFunc: (messageOptions) =>
+        `${messageOptions.controller}: Retrieved submitted status for referenceNumber=${messageOptions.referenceNumber}`
     }
   },
   TASKLIST: {
@@ -217,6 +239,11 @@ export const LogCodes = {
       level: 'debug',
       messageFunc: (messageOptions) =>
         `Tasklist config load skipped: tasklistId=${messageOptions.tasklistId}, error=${messageOptions.errorMessage}`
+    },
+    CACHE_RETRIEVAL_FAILED: {
+      level: 'warn',
+      messageFunc: (messageOptions) =>
+        `Cache retrieval failed for sessionId=${messageOptions.sessionId}, using empty data. Error: ${messageOptions.errorMessage}`
     }
   },
   LAND_GRANTS: {
@@ -274,6 +301,17 @@ export const LogCodes = {
       level: 'error',
       messageFunc: (messageOptions) =>
         `Agreement processing error for user=${messageOptions.userId}: ${messageOptions.errorMessage}`
+    },
+    PROXY_RESPONSE_ERROR: {
+      level: 'error',
+      messageFunc: () => 'Proxy response is undefined. Possible upstream error or misconfiguration.'
+    }
+  },
+  COOKIES: {
+    PAGE_LOAD: {
+      level: 'info',
+      messageFunc: (messageOptions) =>
+        `Cookies page loaded: returnUrl=${messageOptions.returnUrl}, referer=${messageOptions.referer}`
     }
   },
 
@@ -345,6 +383,11 @@ export const LogCodes = {
       level: 'error',
       messageFunc: (messageOptions) =>
         `External API error for ${messageOptions.endpoint}: ${messageOptions.errorMessage}`
+    },
+    GAS_ACTION_ERROR: {
+      level: 'error',
+      messageFunc: (messageOptions) =>
+        `Error invoking GAS action ${messageOptions.action} for grant ${messageOptions.grantCode}: ${messageOptions.errorMessage}`
     },
     BACKEND_AUTH_CONFIG_ERROR: {
       level: 'error',

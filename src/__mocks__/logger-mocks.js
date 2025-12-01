@@ -31,6 +31,9 @@ export const mockLogHelper = () => ({
       FORM_NOT_FOUND: { level: 'info', messageFunc: vi.fn() },
       TASKLIST_NOT_FOUND: { level: 'info', messageFunc: vi.fn() },
       PAGE_NOT_FOUND: { level: 'info', messageFunc: vi.fn() }
+    },
+    COOKIES: {
+      PAGE_LOAD: { level: 'info', messageFunc: vi.fn() }
     }
   }
 })

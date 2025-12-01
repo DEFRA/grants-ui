@@ -7,8 +7,6 @@ import {
   MOCK_STATE_DATA,
   TEST_USER_IDS
 } from './test-helpers/auth-test-helpers.js'
-import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
-import { mockRequestWithIdentity } from './mock-request-with-identity.test-helper.js'
 
 const GRANT_VERSION = 1
 
@@ -154,6 +152,8 @@ describe('persistStateToApi', () => {
       vi.doMock('~/src/config/config.js', createMockConfigWithoutEndpoint)
       const helper = await import('~/src/server/common/helpers/state/persist-state-helper.js')
       persistStateToApi = helper.persistStateToApi
+      const logModule = await import('../logging/log.js')
+      log = logModule.log
       vi.clearAllMocks()
     })
 
@@ -162,15 +162,12 @@ describe('persistStateToApi', () => {
     })
 
     it('should return early when backend endpoint is not configured', async () => {
-      const request = mockRequestWithIdentity({ params: { slug: TEST_USER_IDS.GRANT_ID } })
-      request.logger = mockRequestLogger()
-      const testState = () => MOCK_STATE_DATA.WITH_STEP
+      const testState = MOCK_STATE_DATA.WITH_STEP
 
-      await persistStateToApi(testState, request)
+      await persistStateToApi(testState, key)
 
       expect(fetch).not.toHaveBeenCalled()
-      expect(request.logger.info).not.toHaveBeenCalled()
-      expect(request.logger.error).not.toHaveBeenCalled()
+      expect(log).not.toHaveBeenCalled()
     })
   })
 })

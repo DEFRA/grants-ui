@@ -260,12 +260,6 @@ describe('LogCodes', () => {
   describe('SUBMISSION log codes', () => {
     it.each([
       [
-        'SUBMISSION_STARTED',
-        'info',
-        { grantType: TEST_GRANT_TYPES.ADDING_VALUE, userId: TEST_USER_IDS.DEFAULT },
-        `Grant submission started for grantType=${TEST_GRANT_TYPES.ADDING_VALUE}, user=${TEST_USER_IDS.DEFAULT}`
-      ],
-      [
         'SUBMISSION_SUCCESS',
         'info',
         { grantType: TEST_GRANT_TYPES.ADDING_VALUE, referenceNumber: TEST_REFERENCE_NUMBERS.REF_123 },
@@ -376,6 +370,12 @@ describe('LogCodes', () => {
         'error',
         { userId: TEST_USER_IDS.DEFAULT, errorMessage: TEST_ERRORS.PROCESSING_FAILED },
         `Confirmation processing error for user=${TEST_USER_IDS.DEFAULT}: ${TEST_ERRORS.PROCESSING_FAILED}`
+      ],
+      [
+        'SUBMITTED_STATUS_RETRIEVED',
+        'info',
+        { controller: 'ConfirmationController', referenceNumber: TEST_REFERENCE_NUMBERS.REF_123 },
+        `ConfirmationController: Retrieved submitted status for referenceNumber=${TEST_REFERENCE_NUMBERS.REF_123}`
       ]
     ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
       const logCode = LogCodes.CONFIRMATION[logCodeName]

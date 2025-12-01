@@ -6,7 +6,6 @@ import { transformStateObjectToGasApplication } from '../../common/helpers/grant
 import { stateToLandGrantsGasAnswers } from '../mappers/state-to-gas-answers-mapper.js'
 import { validateApplication } from '../services/land-grants.service.js'
 import SubmissionPageController from './submission-page.controller.js'
-import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
 import { log } from '~/src/server/common/helpers/logging/log.js'
 import { LogCodes } from '../../common/helpers/logging/log-codes.js'
 import { mockSimpleRequest } from '~/src/__mocks__/hapi-mocks.js'
@@ -16,7 +15,6 @@ vi.mock('~/src/server/common/helpers/grant-application-service/state-to-gas-payl
 vi.mock('../mappers/state-to-gas-answers-mapper.js')
 vi.mock('~/src/server/common/helpers/forms-cache/forms-cache.js')
 vi.mock('../services/land-grants.service.js')
-vi.mock('~/src/server/common/helpers/logging/log.js')
 vi.mock('@defra/forms-engine-plugin/controllers/SummaryPageController.js', () => ({
   SummaryPageController: class {
     proceed() {}
@@ -26,12 +24,15 @@ vi.mock('@defra/forms-engine-plugin/controllers/SummaryPageController.js', () =>
 }))
 vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
   log: vi.fn(),
-  LogCodes: {},
-  logger: {
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    debug: vi.fn()
+  LogCodes: {
+    SUBMISSION: {
+      SUBMISSION_COMPLETED: { level: 'info', messageFunc: vi.fn() },
+      SUBMISSION_REDIRECT: { level: 'debug', messageFunc: vi.fn() }
+    },
+    FORMS: {
+      SLUG_STORED: { level: 'debug', messageFunc: vi.fn() },
+      SLUG_RESOLVED: { level: 'debug', messageFunc: vi.fn() }
+    }
   }
 }))
 vi.mock('~/src/config/config.js', () => ({
@@ -218,7 +219,6 @@ describe('SubmissionPageController', () => {
       const mockH = { redirect: vi.fn().mockResolvedValue() }
       const statusCode = 204
       vi.spyOn(controller, 'getNextPath').mockReturnValue('/next-path')
-      mockRequest.logger = mockRequestLogger()
 
       await controller.handleSuccessfulSubmission(mockRequest, mockContext, mockH, statusCode)
 
@@ -325,10 +325,6 @@ describe('SubmissionPageController', () => {
   describe('makePostRouteHandler', () => {
     it('should validate, submit application and redirect on success', async () => {
       const mockRequest = {
-        logger: {
-          info: vi.fn(),
-          error: vi.fn()
-        },
         auth: {
           credentials: {
             sbi: '123456789',
@@ -378,7 +374,6 @@ describe('SubmissionPageController', () => {
 
     it('should handle undefined auth', async () => {
       const mockRequest = {
-        logger: { info: vi.fn(), error: vi.fn() },
         server: {}
       }
       const mockContext = {
@@ -408,7 +403,6 @@ describe('SubmissionPageController', () => {
 
     it('should extract frn from applicant business reference', async () => {
       const mockRequest = {
-        logger: { info: vi.fn(), error: vi.fn() },
         auth: { credentials: { sbi: '123', crn: 'crn123' } },
         server: {}
       }
@@ -440,7 +434,6 @@ describe('SubmissionPageController', () => {
 
     it('should handle missing applicant', async () => {
       const mockRequest = {
-        logger: { info: vi.fn(), error: vi.fn() },
         auth: { credentials: { sbi: '123', crn: 'crn123' } },
         server: {}
       }
@@ -468,7 +461,6 @@ describe('SubmissionPageController', () => {
 
     it('should convert referenceNumber to lowercase for clientRef', async () => {
       const mockRequest = {
-        logger: { info: vi.fn(), error: vi.fn() },
         auth: { credentials: { sbi: '123', crn: 'crn123' } },
         server: {}
       }
@@ -496,10 +488,6 @@ describe('SubmissionPageController', () => {
 
     it('should return error view when validation fails', async () => {
       const mockRequest = {
-        logger: {
-          info: vi.fn(),
-          error: vi.fn()
-        },
         auth: {
           credentials: {
             sbi: '123456789',
@@ -534,10 +522,6 @@ describe('SubmissionPageController', () => {
     it('should handle submission errors', async () => {
       const mockError = new Error('Submission failed')
       const mockRequest = {
-        logger: {
-          info: vi.fn(),
-          error: vi.fn()
-        },
         auth: {
           credentials: {
             sbi: '123456789',
@@ -581,10 +565,6 @@ describe('SubmissionPageController', () => {
     it('should handle validation error gracefully', async () => {
       const mockError = new Error('Validation failed')
       const mockRequest = {
-        logger: {
-          info: vi.fn(),
-          error: vi.fn()
-        },
         auth: undefined,
         server: {}
       }
@@ -618,10 +598,6 @@ describe('SubmissionPageController', () => {
     it('should handle errors from handleSuccessfulSubmission', async () => {
       const mockError = new Error('Cache service failed')
       const mockRequest = {
-        logger: {
-          info: vi.fn(),
-          error: vi.fn()
-        },
         auth: {
           credentials: {
             sbi: '123456789',
@@ -659,10 +635,6 @@ describe('SubmissionPageController', () => {
 
     it('should handle timeout when submitting application gracefully', async () => {
       const mockRequest = {
-        logger: {
-          info: vi.fn(),
-          error: vi.fn()
-        },
         auth: {
           credentials: {
             sbi: '123456789',

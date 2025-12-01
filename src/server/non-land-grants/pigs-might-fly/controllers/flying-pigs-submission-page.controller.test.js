@@ -12,7 +12,17 @@ vi.mock('~/src/server/common/helpers/grant-application-service/state-to-gas-payl
 vi.mock('~/src/server/common/services/grant-application/grant-application.service.js')
 vi.mock('~/src/server/common/helpers/forms-cache/forms-cache.js')
 vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
-  log: vi.fn()
+  log: vi.fn(),
+  LogCodes: {
+    SUBMISSION: {
+      SUBMISSION_COMPLETED: { level: 'info', messageFunc: vi.fn() },
+      SUBMISSION_REDIRECT: { level: 'debug', messageFunc: vi.fn() }
+    },
+    FORMS: {
+      SLUG_STORED: { level: 'debug', messageFunc: vi.fn() },
+      SLUG_RESOLVED: { level: 'debug', messageFunc: vi.fn() }
+    }
+  }
 }))
 
 describe('FlyingPigsSubmissionPageController', () => {
