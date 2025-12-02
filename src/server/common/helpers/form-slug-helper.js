@@ -3,6 +3,7 @@
  */
 
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { getFormsCache } from '~/src/server/common/forms/services/form.js'
 
 /**
  * Stores the form slug in the context state if it's available in request params
@@ -12,7 +13,6 @@ import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
  * @returns {string|null} - The slug that was stored or null if none
  */
 export function storeSlugInContext(request, context, controllerName) {
-  // Ensure context state exists
   if (!context?.state) {
     return null
   }
@@ -69,4 +69,27 @@ export function getFormSlug(request, context, controllerName) {
 export function getConfirmationPath(request, context, controllerName) {
   const slug = getFormSlug(request, context, controllerName)
   return slug ? `/${slug}/confirmation` : '/confirmation'
+}
+
+/**
+ * Extracts the slug from a request path and looks up the form metadata.
+ * @param {object} request - The request object
+ * @returns {object | undefined} Form metadata if found, undefined otherwise
+ */
+export function getFormMetadataFromPath(request) {
+  const requestPath = request?.path
+  if (!requestPath) {
+    return undefined
+  }
+
+  const pathSegments = requestPath.split('/').filter(Boolean)
+  const slug = pathSegments[0]
+
+  if (!slug) {
+    return undefined
+  }
+
+  const forms = getFormsCache()
+  const form = forms.find((f) => f.slug === slug)
+  return form?.metadata
 }

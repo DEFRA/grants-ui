@@ -28,6 +28,11 @@ vi.mock('~/src/server/sbi/state.js', () => ({
   }
 }))
 
+const mockGetFormMetadataFromPath = vi.fn(() => undefined)
+vi.mock('~/src/server/common/helpers/form-slug-helper.js', () => ({
+  getFormMetadataFromPath: (request) => mockGetFormMetadataFromPath(request)
+}))
+
 vi.mock('~/src/config/config.js', async () => {
   const { mockConfig } = await import('~/src/__mocks__')
   return mockConfig({
@@ -157,6 +162,7 @@ describe('context', () => {
   afterEach(() => {
     vi.clearAllMocks()
     mockSbiStoreGet.mockReturnValue(106284736)
+    mockGetFormMetadataFromPath.mockReturnValue(undefined)
   })
 
   describe('Webpack manifest file handling', () => {
@@ -553,6 +559,33 @@ describe('context', () => {
 
       expect(contextResult.sessionCookieTtl).toBeDefined()
       expect(contextResult.sessionCookieTtl).toBe(14400000)
+    })
+  })
+
+  describe('serviceName from URL path fallback', () => {
+    test('uses serviceName from path lookup when request.app.model is not available', async () => {
+      setupManifestSuccess()
+      mockGetFormMetadataFromPath.mockReturnValue({ serviceName: 'Farm Payments Service' })
+
+      const contextImport = await importContext()
+      const contextResult = await contextImport.context(mockSimpleRequest({ path: '/farm-payments/some-page' }))
+
+      expect(contextResult.serviceName).toBe('Farm Payments Service')
+    })
+
+    test('prefers request.app.model.def.metadata over path-based lookup', async () => {
+      setupManifestSuccess()
+      mockGetFormMetadataFromPath.mockReturnValue({ serviceName: 'From Path Lookup' })
+
+      const requestWithModel = {
+        ...mockSimpleRequest({ path: '/farm-payments/page' }),
+        app: { model: { def: { metadata: { serviceName: 'From Model' } } } }
+      }
+
+      const contextImport = await importContext()
+      const contextResult = await contextImport.context(requestWithModel)
+
+      expect(contextResult.serviceName).toBe('From Model')
     })
   })
 })
