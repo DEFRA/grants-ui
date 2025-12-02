@@ -103,12 +103,15 @@ describe('Logger Functionality', () => {
   it('should work with SUBMISSION log codes', () => {
     const submissionOptions = {
       grantType: 'adding-value',
-      userId: 'test-user'
+      referenceNumber: 'REF-123'
     }
 
-    log(LogCodes.SUBMISSION.SUBMISSION_STARTED, submissionOptions)
+    log(LogCodes.SUBMISSION.SUBMISSION_SUCCESS, submissionOptions)
 
-    expect(logger.info).toHaveBeenCalledWith({}, 'Grant submission started for grantType=adding-value, user=test-user')
+    expect(logger.info).toHaveBeenCalledWith(
+      {},
+      'Grant submission successful for grantType=adding-value, referenceNumber=REF-123'
+    )
   })
 
   it('should pass error objects to the logger when provided', () => {

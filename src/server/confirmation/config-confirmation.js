@@ -69,7 +69,11 @@ async function getReferenceNumber(request) {
   const referenceNumber = state.$$__referenceNumber
 
   if (state && state.applicationStatus === ApplicationStatus.SUBMITTED) {
-    request.logger.info('ConfirmationController: Application submitted, showing confirmation page')
+    log(
+      LogCodes.CONFIRMATION.SUBMITTED_STATUS_RETRIEVED,
+      { controller: 'ConfirmationController', referenceNumber: referenceNumber || 'unknown' },
+      request
+    )
   }
 
   return {

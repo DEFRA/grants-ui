@@ -1299,15 +1299,16 @@ The structured logging system supports:
 - **Log Aggregation**: Searchable logs with consistent structure
 - **Alerting**: Structured data enables automated alerting on specific events
 
-### Migration from Manual Logging
+### Standard Logging Approach
 
-When updating existing code:
+All production code uses the `log()` helper from `~/src/server/common/helpers/logging/log.js`. Direct use of `request.logger` is not permitted in production code.
 
-1. Replace `request.logger.info()` with structured log codes
-2. Replace `logger.error()` with appropriate error log codes
-3. Add relevant context parameters (userId, grantType, etc.)
-4. Use appropriate log levels (info, debug, error)
-5. Test that logging works correctly in different environments
+When writing new code:
+
+1. Use structured log codes via `log(LogCodes.CATEGORY.CODE, { ...options }, request)`
+2. Add relevant context parameters (userId, grantType, etc.)
+3. Use appropriate log levels (info, debug, error)
+4. Test that logging works correctly in different environments
 
 ### Adding New Log Codes
 

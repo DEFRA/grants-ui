@@ -89,22 +89,10 @@ vi.mock('~/src/config/config.js', async () => {
   return mockConfig(configData)
 })
 
-vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
-  log: vi.fn(),
-  LogCodes: {
-    SYSTEM: {
-      WHITELIST_CONFIG_INCOMPLETE: { level: 'error', messageFunc: vi.fn() },
-      CRN_ENV_VAR_MISSING: { level: 'error', messageFunc: vi.fn() },
-      SBI_ENV_VAR_MISSING: { level: 'error', messageFunc: vi.fn() }
-    }
-  },
-  logger: {
-    warn: vi.fn(),
-    error: vi.fn(),
-    info: vi.fn(),
-    debug: vi.fn()
-  }
-}))
+vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
+  const { mockLogHelper } = await import('~/src/__mocks__')
+  return mockLogHelper()
+})
 
 vi.mock('../config.js', () => ({
   metadata: {
