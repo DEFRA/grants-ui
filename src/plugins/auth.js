@@ -5,6 +5,10 @@ import { getOidcConfig } from '~/src/server/auth/get-oidc-config.js'
 import { getSafeRedirect } from '~/src/server/auth/get-safe-redirect.js'
 import { refreshTokens } from '~/src/server/auth/refresh-tokens.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { TokenError } from '../server/common/errors/TokenError.js'
+import { OidcConfigError } from '../server/common/errors/OidcConfigError.js'
+import { AuthError } from '../server/common/errors/AuthError.js'
+import { PayloadValidationError } from '../server/common/errors/PayloadValidationError.js'
 
 const defraIdEnabled = config.get('defraId.enabled')
 
@@ -42,7 +46,9 @@ async function setupOidcConfig() {
     })
     // Mark the error as already logged to prevent duplicate logging
     error.alreadyLogged = true
-    throw error
+    throw new OidcConfigError('Failed to fetch OIDC config', {
+      context: { originalError: error }
+    })
   }
 }
 
@@ -145,12 +151,12 @@ function processCredentialsProfile(credentials) {
 function validateCredentials(credentials) {
   if (!credentials) {
     log(LogCodes.AUTH.CREDENTIALS_MISSING, {})
-    throw new Error('No credentials received from Bell OAuth provider')
+    throw new AuthError('No credentials received from Bell OAuth provider')
   }
 
   if (!credentials.token) {
     log(LogCodes.AUTH.TOKEN_MISSING, {})
-    throw new Error('No token received from Defra Identity')
+    throw new AuthError('No token received from Defra Identity')
   }
 }
 
@@ -171,14 +177,18 @@ function decodeTokenPayload(token) {
           payloadType: typeof payload
         }
       })
-      throw new Error('Failed to extract payload from JWT token')
+      throw new TokenError('Failed to extract payload from JWT token', { tokenLength: token.length })
     }
 
     return payload
   } catch (jwtError) {
+    // Log using TokenError for structure
+    const wrapped = new TokenError(`JWT decode failed: ${jwtError.message}`, {
+      originalError: jwtError
+    })
     log(LogCodes.AUTH.SIGN_IN_FAILURE, {
       userId: 'unknown',
-      errorMessage: `JWT decode failed: ${jwtError.message}`,
+      errorMessage: wrapped.message,
       step: 'bell_profile_jwt_decode_error',
       jwtError: {
         message: jwtError.message,
@@ -208,7 +218,9 @@ function validatePayload(payload) {
         lastName: payload.lastName
       }
     })
-    throw new Error(`Missing required fields in JWT payload: ${missingFields.join(', ')}`)
+    throw new PayloadValidationError(`Missing required fields in JWT payload: ${missingFields.join(', ')}`, {
+      context: { missingFields, payload }
+    })
   }
 }
 
@@ -314,7 +326,6 @@ function getBellOptions(oidcConfig) {
     location: function (request) {
       try {
         const redirectParam = request.query.redirect
-
         if (redirectParam) {
           try {
             const safeRedirect = getSafeRedirect(redirectParam)
