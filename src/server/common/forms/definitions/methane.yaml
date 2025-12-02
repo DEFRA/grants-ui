@@ -1,6 +1,7 @@
 name: Methane Grant
 metadata:
   id: 95e92559-968d-44ae-8666-2b1ad3dffd34
+  serviceName: Manage land-based actions
   submission:
     grantCode: methane
   grantRedirectRules: null

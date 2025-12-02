@@ -2,6 +2,7 @@ engine: V2
 name: Example Whitelist
 metadata:
   id: 7bcafdd6-f8a7-4a31-8f98-8cd71e2c0f16
+  serviceName: Manage land-based actions
   referenceNumberPrefix: EW
   whitelistCrnEnvVar: EXAMPLE_WHITELIST_CRNS
   whitelistSbiEnvVar: EXAMPLE_WHITELIST_SBIS

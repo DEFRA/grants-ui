@@ -2,11 +2,11 @@ engine: V2
 name: Example grant with auth
 metadata:
   id: 9f9c5ec4-e237-4e6e-b67c-f232a6377d76
+  serviceName: Manage land-based actions
   enabledInProd: false
   referenceNumberPrefix: EGWA
   cookieConsent:
     enabled: true
-    serviceName: Manage land-based actions
     cookiePolicyUrl: /cookies
     expiryDays: 365
   submission:

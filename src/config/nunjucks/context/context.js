@@ -46,7 +46,7 @@ const extractCookieConsentConfig = (request) => {
   const formMetadata = request?.app?.model?.def?.metadata
   const cookieConsentMetadata = formMetadata?.cookieConsent
   return {
-    serviceName: cookieConsentMetadata?.serviceName || config.get('serviceName'),
+    serviceName: formMetadata?.serviceName || cookieConsentMetadata?.serviceName || config.get('serviceName'),
     cookiePolicyUrl: cookieConsentMetadata?.cookiePolicyUrl || config.get('cookieConsent.cookiePolicyUrl'),
     cookieConsentExpiryDays: cookieConsentMetadata?.expiryDays || config.get('cookieConsent.expiryDays')
   }
