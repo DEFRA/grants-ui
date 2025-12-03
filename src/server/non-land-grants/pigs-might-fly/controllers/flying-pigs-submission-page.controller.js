@@ -5,7 +5,6 @@ import { stateToPigsMightFlyGasAnswers } from '~/src/server/non-land-grants/pigs
 import { submitGrantApplication } from '~/src/server/common/services/grant-application/grant-application.service.js'
 import { getConfirmationPath } from '~/src/server/common/helpers/form-slug-helper.js'
 import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/forms-cache.js'
-import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
 export default class FlyingPigsSubmissionPageController extends SummaryPageController {
   /**
@@ -44,16 +43,7 @@ export default class FlyingPigsSubmissionPageController extends SummaryPageContr
     const fn = async (request, context, h) => {
       const result = await this.submitPigTypesApplication(context, request)
 
-      log(
-        LogCodes.SUBMISSION.SUBMISSION_COMPLETED,
-        {
-          grantType: this.grantCode,
-          referenceNumber: context.referenceNumber,
-          numberOfFields: context.state ? Object.keys(context.state).length : 0,
-          status: result?.status || 'success'
-        },
-        request
-      )
+      request.logger.info('Form submission completed', result)
       const cacheService = getFormsCacheService(request.server)
       await cacheService.setConfirmationState(request, {
         ...context.state,
@@ -62,11 +52,7 @@ export default class FlyingPigsSubmissionPageController extends SummaryPageContr
       })
 
       const redirectPath = this.getStatusPath(request, context)
-      log(
-        LogCodes.SUBMISSION.SUBMISSION_REDIRECT,
-        { controller: 'FlyingPigsSubmissionPageController', redirectPath },
-        request
-      )
+      request.logger.debug('FlyingpigsController: Redirecting to:', redirectPath)
 
       return h.redirect(redirectPath)
     }

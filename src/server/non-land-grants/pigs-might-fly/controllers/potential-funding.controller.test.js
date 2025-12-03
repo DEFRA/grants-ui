@@ -2,13 +2,11 @@ import { vi } from 'vitest'
 import { PotentialFundingController } from './potential-funding.controller.js'
 import { invokeGasPostAction } from '~/src/server/common/services/grant-application/grant-application.service.js'
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
-import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
 vi.mock('~/src/server/common/services/grant-application/grant-application.service.js')
-vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
-  const { mockLogHelper } = await import('~/src/__mocks__')
-  return mockLogHelper()
-})
+vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
+  log: vi.fn()
+}))
 
 describe('PotentialFundingController', () => {
   let controller
@@ -37,7 +35,10 @@ describe('PotentialFundingController', () => {
     )
 
     mockRequest = {
-      method: 'GET'
+      method: 'GET',
+      logger: {
+        error: vi.fn()
+      }
     }
 
     mockContext = {
@@ -148,11 +149,7 @@ describe('PotentialFundingController', () => {
 
       await expect(handler(mockRequest, mockContext, mockResponseToolkit)).rejects.toThrow(mockError)
 
-      expect(log).toHaveBeenCalledWith(
-        LogCodes.SYSTEM.GAS_ACTION_ERROR,
-        { grantCode: 'pigs-might-fly', action: 'calculate-pig-totals', errorMessage: 'Test Error' },
-        mockRequest
-      )
+      expect(mockRequest.logger.error).toHaveBeenCalledWith('Error invoking GAS action:', mockError)
     })
   })
 

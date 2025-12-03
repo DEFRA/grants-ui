@@ -1,7 +1,6 @@
 import { TasklistGenerator } from './services/tasklist-generator.js'
 import { loadTasklistConfig, validateTasklistConfig } from './services/config-loader.js'
 import { statusCodes } from '../common/constants/status-codes.js'
-import { log, LogCodes } from '../common/helpers/logging/log.js'
 
 const HTTP_MOVED_PERMANENTLY = 301
 
@@ -40,10 +39,12 @@ export function createTasklistRoute(tasklistId) {
               try {
                 data = (await server.app.cacheTemp.get(request.yar.id)) || {}
               } catch (error) {
-                log(
-                  LogCodes.TASKLIST.CACHE_RETRIEVAL_FAILED,
-                  { sessionId: request.yar.id, errorMessage: error.message },
-                  request
+                request.logger.warn(
+                  {
+                    error: error.message,
+                    sessionId: request.yar.id
+                  },
+                  'Cache retrieval failed, using empty data'
                 )
               }
               const visitedSubSections = request.yar.get('visitedSubSections') || []
