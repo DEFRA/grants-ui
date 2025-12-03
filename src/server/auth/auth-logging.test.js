@@ -2,24 +2,17 @@ import { vi } from 'vitest'
 import { log } from '~/src/server/common/helpers/logging/log.js'
 import { logAuthFailure, logAuthDebugInfo, logTokenExchangeFailure, logSuccessfulSignIn } from './auth-logging.js'
 
-vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
-  log: vi.fn(),
-  LogCodes: {
-    AUTH: {
-      UNAUTHORIZED_ACCESS: 'AUTH_UNAUTHORIZED_ACCESS',
-      SIGN_IN_FAILURE: 'AUTH_SIGN_IN_FAILURE',
-      AUTH_DEBUG: 'AUTH_DEBUG',
-      SIGN_IN_SUCCESS: 'AUTH_SIGN_IN_SUCCESS'
-    }
-  }
-}))
+vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
+  const { mockLogHelper } = await import('~/src/__mocks__')
+  return mockLogHelper()
+})
 
 describe('auth-logging', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
-  test('logs authentication failure with correct details', () => {
+  test('logs authentication failure with correct details when hasCredentials is false', () => {
     const request = {
       path: '/auth',
       auth: {
@@ -40,7 +33,7 @@ describe('auth-logging', () => {
     logAuthFailure(request, authErrorMessage, hasCredentials)
 
     expect(log).toHaveBeenCalledWith(
-      expect.any(String),
+      expect.objectContaining({ level: expect.any(String), messageFunc: expect.any(Function) }),
       expect.objectContaining({
         path: '/auth',
         userId: 'unknown',
@@ -53,6 +46,34 @@ describe('auth-logging', () => {
         userAgent: 'test-agent',
         referer: 'http://example.com',
         queryParams: { state: 'test' }
+      }),
+      request
+    )
+  })
+
+  test('logs authentication failure with hasCredentials=true for token exchange failure path', () => {
+    const request = {
+      path: '/auth',
+      auth: {
+        isAuthenticated: false,
+        strategy: 'oidc',
+        mode: 'required',
+        artifacts: { token: 'partial' }
+      },
+      headers: {
+        'user-agent': 'test-agent',
+        referer: 'http://example.com'
+      },
+      query: { state: 'test', code: 'auth-code' }
+    }
+
+    logAuthFailure(request, 'Failed obtaining access token', true)
+
+    expect(log).toHaveBeenCalledWith(
+      expect.objectContaining({ level: expect.any(String), messageFunc: expect.any(Function) }),
+      expect.objectContaining({
+        hasCredentials: true,
+        artifacts: 'present'
       }),
       request
     )
@@ -80,7 +101,7 @@ describe('auth-logging', () => {
     logAuthDebugInfo(request)
 
     expect(log).toHaveBeenCalledWith(
-      expect.any(String),
+      expect.objectContaining({ level: expect.any(String), messageFunc: expect.any(Function) }),
       expect.objectContaining({
         path: '/auth',
         isAuthenticated: true,
@@ -112,7 +133,7 @@ describe('auth-logging', () => {
     logTokenExchangeFailure(request, hasCredentials)
 
     expect(log).toHaveBeenCalledWith(
-      expect.any(String),
+      expect.objectContaining({ level: expect.any(String), messageFunc: expect.any(Function) }),
       expect.objectContaining({
         userId: 'unknown',
         errorMessage:
@@ -145,7 +166,7 @@ describe('auth-logging', () => {
     logSuccessfulSignIn(profile, role, scope)
 
     expect(log).toHaveBeenCalledWith(
-      expect.any(String),
+      expect.objectContaining({ level: expect.any(String), messageFunc: expect.any(Function) }),
       expect.objectContaining({
         userId: 'user123',
         organisationId: 'org456',

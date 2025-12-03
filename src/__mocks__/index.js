@@ -2,7 +2,7 @@ export {
   mockLoggerFactory,
   mockLoggerFactoryWithCustomMethods,
   mockLogHelper,
-  mockLogHelperWithCustomCodes,
+  mockLogCodesHelper,
   mockRequestLogger
 } from './logger-mocks.js'
 

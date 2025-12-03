@@ -11,9 +11,10 @@ vi.mock('~/src/server/non-land-grants/pigs-might-fly/mappers/state-to-gas-pigs-m
 vi.mock('~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js')
 vi.mock('~/src/server/common/services/grant-application/grant-application.service.js')
 vi.mock('~/src/server/common/helpers/forms-cache/forms-cache.js')
-vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
-  log: vi.fn()
-}))
+vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
+  const { mockLogHelper } = await import('~/src/__mocks__')
+  return mockLogHelper()
+})
 
 describe('FlyingPigsSubmissionPageController', () => {
   let controller

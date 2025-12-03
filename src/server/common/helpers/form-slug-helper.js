@@ -2,6 +2,8 @@
  * Helper functions for handling form slugs consistently across controllers
  */
 
+import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+
 /**
  * Stores the form slug in the context state if it's available in request params
  * @param {object} request - The request object
@@ -17,7 +19,7 @@ export function storeSlugInContext(request, context, controllerName) {
 
   if (request?.params?.slug && !context.state.formSlug) {
     context.state.formSlug = request.params.slug
-    request.logger.debug(`${controllerName}: Storing slug in context:`, request.params.slug)
+    log(LogCodes.FORMS.SLUG_STORED, { controller: controllerName, slug: request.params.slug }, request)
     return request.params.slug
   }
   return null
@@ -37,15 +39,23 @@ export function getFormSlug(request, context, controllerName) {
   // Next try to get it from context state (available during form submission)
   if (!slug && context?.state?.formSlug) {
     slug = context.state.formSlug
-    request?.logger?.debug(`${controllerName}: Using slug from context.state.formSlug:`, slug)
+    log(
+      LogCodes.FORMS.SLUG_RESOLVED,
+      { controller: controllerName, message: `Using slug from context.state.formSlug: ${slug}` },
+      request
+    )
   }
 
   if (slug) {
-    request?.logger?.debug(`${controllerName}: Using slug:`, slug)
+    log(LogCodes.FORMS.SLUG_RESOLVED, { controller: controllerName, message: `Using slug: ${slug}` }, request)
     return slug
   }
 
-  request?.logger?.debug(`${controllerName}: No slug found, using default path`)
+  log(
+    LogCodes.FORMS.SLUG_RESOLVED,
+    { controller: controllerName, message: 'No slug found, using default path' },
+    request
+  )
   return ''
 }
 

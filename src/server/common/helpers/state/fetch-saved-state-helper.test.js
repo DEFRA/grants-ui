@@ -12,17 +12,10 @@ import { mockSimpleRequest } from '~/src/__mocks__/hapi-mocks.js'
 const mockFetch = vi.hoisted(() => vi.fn())
 global.fetch = mockFetch
 
-const mockLog = vi.fn()
-
-vi.mock('../logging/log.js', () => ({
-  log: mockLog,
-  LogCodes: {
-    SYSTEM: {
-      EXTERNAL_API_CALL_DEBUG: { level: 'debug', messageFunc: vi.fn() },
-      EXTERNAL_API_ERROR: { level: 'error', messageFunc: vi.fn() }
-    }
-  }
-}))
+vi.mock('../logging/log.js', async () => {
+  const { mockLogHelper } = await import('~/src/__mocks__')
+  return mockLogHelper()
+})
 
 // Mock parseSessionKey
 const mockParseSessionKey = vi.fn()
