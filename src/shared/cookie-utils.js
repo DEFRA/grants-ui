@@ -122,10 +122,17 @@ function buildDeletableDomains(hostname) {
   return domains
 }
 
+const GA_COOKIE_PREFIXES = ['_ga', '_gid', '_gat', '_dc_gtm_']
+
 /**
  * Deletes Google Analytics cookies
- * Removes `_ga` and any `_ga_*` cookies by setting their expiry in the past.
- * Attempts deletion on all parent domain levels to handle GA cookies that
+ * Removes GA/GTM cookies by setting their expiry in the past:
+ * - `_ga` and `_ga_*` - Main GA4 cookies
+ * - `_gid` - Session cookie (24 hours)
+ * - `_gat` and `_gat_*` - Throttling cookies
+ * - `_dc_gtm_*` - DoubleClick/GTM rate limiting cookies
+ *
+ * Attempts deletion on all parent domain levels to handle cookies that
  * were set on higher-level domains (e.g. `.defra.cloud`).
  *
  * Uses multiple domain variants because browsers only delete a cookie when
@@ -140,7 +147,8 @@ export const deleteGoogleAnalyticsCookies = () => {
 
   for (const cookie of cookies) {
     const cookieName = cookie.split('=')[0].trim()
-    if (cookieName === '_ga' || cookieName.startsWith('_ga_')) {
+    const isGaCookie = GA_COOKIE_PREFIXES.some((prefix) => cookieName.startsWith(prefix))
+    if (isGaCookie) {
       // Delete no-domain version
       document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`
 
