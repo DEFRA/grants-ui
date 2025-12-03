@@ -10,10 +10,21 @@ import { parseLandParcel, stringifyParcel } from '~/src/server/land-grants/utils
 import SelectLandActionsPageController from './select-land-actions-page.controller.js'
 import { log } from '~/src/server/common/helpers/logging/log.js'
 
-vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
-  const { mockLogHelper } = await import('~/src/__mocks__')
-  return mockLogHelper()
-})
+vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
+  log: vi.fn(),
+  LogCodes: {
+    LAND_GRANTS: {
+      FETCH_ACTIONS_ERROR: { level: 'error', messageFunc: vi.fn() },
+      NO_ACTIONS_FOUND: { level: 'error', messageFunc: vi.fn() }
+    }
+  },
+  logger: {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn()
+  }
+}))
 vi.mock('~/src/config/config.js', () => ({
   config: {
     get: vi.fn((key) => {

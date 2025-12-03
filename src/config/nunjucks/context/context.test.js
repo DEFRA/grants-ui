@@ -1,9 +1,9 @@
 import { vi } from 'vitest'
+import { mockLogHelperWithCustomCodes } from '~/src/__mocks__'
 import { mockSimpleRequest } from '~/src/__mocks__/hapi-mocks.js'
 
 const mockReadFileSync = vi.fn()
 const mockLog = vi.fn()
-let MockLogCodes
 
 vi.mock('node:fs', async (importOriginal) => {
   const actual = await importOriginal()
@@ -12,15 +12,17 @@ vi.mock('node:fs', async (importOriginal) => {
     readFileSync: mockReadFileSync
   }
 })
-vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
-  const { mockLogHelper } = await import('~/src/__mocks__')
-  const helper = mockLogHelper()
-  MockLogCodes = helper.LogCodes
-  return {
-    ...helper,
-    log: (...args) => mockLog(...args)
-  }
-})
+vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
+  ...mockLogHelperWithCustomCodes({
+    SYSTEM: {
+      SERVER_ERROR: 'SYSTEM_SERVER_ERROR'
+    },
+    AUTH: {
+      SIGN_IN_FAILURE: 'AUTH_SIGN_IN_FAILURE'
+    }
+  }),
+  log: (...args) => mockLog(...args)
+}))
 const mockSbiStoreGet = vi.fn(() => 106284736)
 vi.mock('~/src/server/sbi/state.js', () => ({
   sbiStore: {
@@ -176,7 +178,7 @@ describe('context', () => {
       await contextImport.context(mockRequest)
 
       expect(mockLog).toHaveBeenCalledWith(
-        MockLogCodes.SYSTEM.SERVER_ERROR,
+        'SYSTEM_SERVER_ERROR',
         {
           errorMessage: expect.stringContaining('Webpack assets-manifest.json not found')
         },
@@ -261,7 +263,7 @@ describe('context', () => {
       })
 
       expect(mockLog).toHaveBeenCalledWith(
-        MockLogCodes.SYSTEM.SERVER_ERROR,
+        'SYSTEM_SERVER_ERROR',
         {
           errorMessage: expect.stringContaining('Webpack assets-manifest.json not found')
         },
@@ -276,7 +278,7 @@ describe('context', () => {
       const contextResult = await contextImport.context(mockRequest)
 
       expect(mockLog).toHaveBeenCalledWith(
-        MockLogCodes.SYSTEM.SERVER_ERROR,
+        'SYSTEM_SERVER_ERROR',
         {
           errorMessage: expect.stringContaining('Webpack assets-manifest.json not found')
         },
@@ -293,7 +295,7 @@ describe('context', () => {
       const contextResult = await contextImport.context(mockRequest)
 
       expect(mockLog).toHaveBeenCalledWith(
-        MockLogCodes.SYSTEM.SERVER_ERROR,
+        'SYSTEM_SERVER_ERROR',
         {
           errorMessage: expect.stringContaining('Error building context: SBI store access failed')
         },
@@ -340,7 +342,7 @@ describe('context', () => {
       const contextResult = await contextImport.context(requestWithAuth)
 
       expect(mockLog).toHaveBeenCalledWith(
-        MockLogCodes.AUTH.SIGN_IN_FAILURE,
+        'AUTH_SIGN_IN_FAILURE',
         {
           userId: 'unknown',
           errorMessage: expect.stringContaining('Cache retrieval failed for session test-session'),
@@ -429,7 +431,7 @@ describe('context', () => {
       const contextResult = await contextImport.context(requestWithAuth)
 
       expect(mockLog).toHaveBeenCalledWith(
-        MockLogCodes.AUTH.SIGN_IN_FAILURE,
+        'AUTH_SIGN_IN_FAILURE',
         {
           userId: 'unknown',
           errorMessage: expect.stringContaining('Cache retrieval failed for session unknown'),
