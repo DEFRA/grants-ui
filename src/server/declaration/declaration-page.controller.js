@@ -69,16 +69,12 @@ export default class DeclarationPageController extends SummaryPageController {
   }
 
   async handleSuccessfulSubmission({ request, context, cacheService, applicationData, sbi, crn, grantCode }) {
-    log(
-      LogCodes.SUBMISSION.SUBMISSION_COMPLETED,
-      {
-        grantType: this.grantCode,
-        referenceNumber: context.referenceNumber,
-        numberOfFields: context.relevantState ? Object.keys(context.relevantState).length : 0,
-        status: 'success'
-      },
-      request
-    )
+    request.logger.info({
+      message: 'Form submission completed',
+      referenceNumber: context.referenceNumber,
+      numberOfSubmittedFields: context.relevantState ? Object.keys(context.relevantState).length : 0,
+      timestamp: new Date().toISOString()
+    })
 
     const currentState = await cacheService.getState(request)
 
@@ -89,11 +85,7 @@ export default class DeclarationPageController extends SummaryPageController {
       submittedBy: crn
     })
 
-    log(
-      LogCodes.SUBMISSION.APPLICATION_STATUS_UPDATED,
-      { controller: 'DeclarationController', status: 'SUBMITTED' },
-      request
-    )
+    request.logger.debug('DeclarationController: Set application status to SUBMITTED')
 
     await persistSubmissionToApi(
       {
@@ -134,11 +126,8 @@ export default class DeclarationPageController extends SummaryPageController {
       storeSlugInContext(request, context, 'DeclarationController')
 
       const cacheService = getFormsCacheService(request.server)
-      log(
-        LogCodes.SUBMISSION.SUBMISSION_PROCESSING,
-        { controller: 'DeclarationController', path: request.path },
-        request
-      )
+      request.logger.debug('DeclarationController: Processing form submission')
+      request.logger.debug('DeclarationController: Current URL:', request.path)
 
       try {
         const applicationData = this.buildApplicationData(request, context)
@@ -159,7 +148,7 @@ export default class DeclarationPageController extends SummaryPageController {
         }
 
         const redirectPath = this.getStatusPath(request, context)
-        log(LogCodes.SUBMISSION.SUBMISSION_REDIRECT, { controller: 'DeclarationController', redirectPath }, request)
+        request.logger.debug('DeclarationController: Redirecting to:', redirectPath)
         return h.redirect(redirectPath)
       } catch (error) {
         return this.handlePostError({ h, error, request, context, sbi, crn })

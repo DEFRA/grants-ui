@@ -24,10 +24,16 @@ vi.mock('~/src/server/common/helpers/forms-cache/forms-cache.js', () => ({
 vi.mock('~/src/server/common/forms/services/form.js', () => ({
   getFormsCache: vi.fn(() => [MOCK_FORMS.basic])
 }))
-vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
-  const { mockLogHelper } = await import('~/src/__mocks__')
-  return mockLogHelper()
-})
+vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
+  log: vi.fn(),
+  LogCodes: {
+    CONFIRMATION: {
+      CONFIRMATION_ERROR: { level: 'error', messageFunc: vi.fn() },
+      CONFIRMATION_SUCCESS: { level: 'info', messageFunc: vi.fn() },
+      CONFIRMATION_LOAD: { level: 'info', messageFunc: vi.fn() }
+    }
+  }
+}))
 
 describe('config-confirmation', () => {
   let mockRequest
