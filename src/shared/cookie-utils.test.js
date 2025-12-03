@@ -26,22 +26,21 @@ describe('deleteGoogleAnalyticsCookies', () => {
     })
   })
 
-  test('should delete _ga cookie', async () => {
-    document.cookie = '_ga=GA1.2.123456789.1234567890; path=/'
+  test.each([
+    ['_ga', '_ga=GA1.2.123456789.1234567890'],
+    ['_ga_ prefixed', '_ga_ABC123=GS1.1.1234567890.1.0.1234567890.0'],
+    ['_gid', '_gid=GA1.2.123456789'],
+    ['_gat', '_gat=1'],
+    ['_gat_ prefixed', '_gat_UA123456=1'],
+    ['_dc_gtm_ prefixed', '_dc_gtm_UA123456=1']
+  ])('should delete %s cookie', async (_, cookieValue) => {
+    document.cookie = `${cookieValue}; path=/`
 
     const { deleteGoogleAnalyticsCookies } = await import('./cookie-utils.js')
     deleteGoogleAnalyticsCookies()
 
-    expect(document.cookie).not.toContain('_ga=GA1')
-  })
-
-  test('should delete _ga_ prefixed cookies', async () => {
-    document.cookie = '_ga_ABC123=GS1.1.1234567890.1.0.1234567890.0; path=/'
-
-    const { deleteGoogleAnalyticsCookies } = await import('./cookie-utils.js')
-    deleteGoogleAnalyticsCookies()
-
-    expect(document.cookie).not.toContain('_ga_ABC123')
+    const cookieName = cookieValue.split('=')[0]
+    expect(document.cookie).not.toContain(cookieName)
   })
 
   test('should not delete non-Google Analytics cookies', async () => {
