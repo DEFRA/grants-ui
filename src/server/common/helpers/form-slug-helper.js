@@ -82,6 +82,7 @@ export function getFormMetadataFromPath(request) {
     return undefined
   }
 
+  // NOSONAR - filter(Boolean) removes empty strings from split(), not searching for single item
   const pathSegments = requestPath.split('/').filter(Boolean)
   const slug = pathSegments[0]
 
