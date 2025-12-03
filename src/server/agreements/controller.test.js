@@ -2,12 +2,17 @@ import { vi } from 'vitest'
 import { getAgreementController } from './controller.js'
 import { config } from '~/src/config/config.js'
 import Jwt from '@hapi/jwt'
-import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { log } from '~/src/server/common/helpers/logging/log.js'
+import { LogCodes } from '~/src/server/common/helpers/logging/log-codes.js'
 import { mockHapiRequest, mockHapiResponseToolkit } from '~/src/__mocks__/hapi-mocks.js'
 
 vi.mock('~/src/config/config.js', async () => {
   const { mockConfigSimple } = await import('~/src/__mocks__')
   return mockConfigSimple()
+})
+vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
+  const { mockLoggerFactory } = await import('~/src/__mocks__')
+  return mockLoggerFactory
 })
 vi.mock('~/src/server/sbi/state.js', async () => {
   const { mockSbiStateWithValue } = await import('~/src/__mocks__')
@@ -30,10 +35,16 @@ vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
   return mockLogHelper()
 })
 
-vi.mock('~/src/server/common/helpers/logging/log-codes.js', async () => {
-  const { mockLogCodesHelper } = await import('~/src/__mocks__')
-  return mockLogCodesHelper()
-})
+vi.mock('~/src/server/common/helpers/logging/log-codes.js', () => ({
+  LogCodes: {
+    SYSTEM: {
+      CONFIG_MISSING: { level: 'error', messageFunc: () => 'CONFIG_MISSING' }
+    },
+    AGREEMENTS: {
+      AGREEMENT_ERROR: 'AGREEMENTS_AGREEMENT_ERROR'
+    }
+  }
+}))
 
 describe('Agreements Controller', () => {
   let mockRequest

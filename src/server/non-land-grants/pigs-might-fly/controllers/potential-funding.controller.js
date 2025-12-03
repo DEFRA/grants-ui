@@ -1,6 +1,5 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { invokeGasPostAction } from '~/src/server/common/services/grant-application/grant-application.service.js'
-import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
 export class PotentialFundingController extends QuestionPageController {
   viewName = 'potential-funding'
@@ -48,11 +47,7 @@ export class PotentialFundingController extends QuestionPageController {
 
         return h.view(viewName, viewModel)
       } catch (error) {
-        log(
-          LogCodes.SYSTEM.GAS_ACTION_ERROR,
-          { grantCode: 'pigs-might-fly', action: 'calculate-pig-totals', errorMessage: error.message },
-          request
-        )
+        request.logger.error('Error invoking GAS action:', error)
         throw error
       }
     }

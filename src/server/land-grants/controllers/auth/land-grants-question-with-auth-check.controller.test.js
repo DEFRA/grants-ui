@@ -1,16 +1,20 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import LandGrantsQuestionWithAuthCheckController from './land-grants-question-with-auth-check.controller'
 import { fetchParcelsFromDal } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
-import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { log } from '~/src/server/common/helpers/logging/log.js'
 
 vi.mock('~/src/server/common/services/consolidated-view/consolidated-view.service.js', () => ({
   fetchParcelsFromDal: vi.fn()
 }))
 
-vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
-  const { mockLogHelper } = await import('~/src/__mocks__')
-  return mockLogHelper()
-})
+vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
+  log: vi.fn(),
+  LogCodes: {
+    SYSTEM: {
+      EXTERNAL_API_ERROR: 'EXTERNAL_API_ERROR'
+    }
+  }
+}))
 
 describe('LandGrantsQuestionWithAuthCheckController', () => {
   let controller
@@ -79,7 +83,7 @@ describe('LandGrantsQuestionWithAuthCheckController', () => {
 
       expect(fetchParcelsFromDal).toHaveBeenCalledWith(mockRequest)
       expect(log).toHaveBeenCalledWith(
-        LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+        'EXTERNAL_API_ERROR',
         {
           endpoint: 'Consolidated view',
           errorMessage: 'fetch parcel data for auth check: API connection failed'
