@@ -5,10 +5,15 @@ import * as persistModule from '../../helpers/state/persist-state-helper.js'
 import { getCacheKey } from '~/src/server/common/helpers/state/get-cache-key-helper.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
-vi.mock('../../helpers/logging/log.js', async () => {
-  const { mockLogHelper } = await import('~/src/__mocks__')
-  return mockLogHelper()
-})
+vi.mock('../../helpers/logging/log.js', () => ({
+  log: vi.fn(),
+  LogCodes: {
+    SYSTEM: {
+      SESSION_STATE_KEY_PARSE_FAILED: { level: 'error', messageFunc: vi.fn() },
+      SESSION_STATE_FETCH_FAILED: { level: 'error', messageFunc: vi.fn() }
+    }
+  }
+}))
 
 vi.mock('../../helpers/state/fetch-saved-state-helper.js', () => ({
   fetchSavedStateFromApi: vi.fn(),

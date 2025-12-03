@@ -1,16 +1,11 @@
 import { vi } from 'vitest'
 import { mockHapiRequest } from '~/src/__mocks__'
 import { storeSlugInContext, getFormSlug, getConfirmationPath } from './form-slug-helper.js'
-import { log, LogCodes } from './logging/log.js'
-
-vi.mock('./logging/log.js', async () => {
-  const { mockLogHelper } = await import('~/src/__mocks__')
-  return mockLogHelper()
-})
 
 describe('form-slug-helper', () => {
   describe('storeSlugInContext', () => {
     const controllerName = 'TestController'
+    const mockDebug = vi.fn()
 
     afterEach(() => {
       vi.clearAllMocks()
@@ -19,7 +14,8 @@ describe('form-slug-helper', () => {
     test('should store slug in context when available in request.params', () => {
       const mockSlug = 'test-slug'
       const mockRequest = mockHapiRequest({
-        params: { slug: mockSlug }
+        params: { slug: mockSlug },
+        logger: { debug: mockDebug }
       })
       const mockContext = { state: {} }
 
@@ -27,18 +23,15 @@ describe('form-slug-helper', () => {
 
       expect(result).toBe(mockSlug)
       expect(mockContext.state.formSlug).toBe(mockSlug)
-      expect(log).toHaveBeenCalledWith(
-        LogCodes.FORMS.SLUG_STORED,
-        { controller: controllerName, slug: mockSlug },
-        mockRequest
-      )
+      expect(mockDebug).toHaveBeenCalledWith(`${controllerName}: Storing slug in context:`, mockSlug)
     })
 
     test('should not store slug in context when already present', () => {
       const existingSlug = 'existing-slug'
       const newSlug = 'new-slug'
       const mockRequest = mockHapiRequest({
-        params: { slug: newSlug }
+        params: { slug: newSlug },
+        logger: { debug: mockDebug }
       })
       const mockContext = { state: { formSlug: existingSlug } }
 
@@ -46,12 +39,13 @@ describe('form-slug-helper', () => {
 
       expect(result).toBeNull()
       expect(mockContext.state.formSlug).toBe(existingSlug) // Should not change
-      expect(log).not.toHaveBeenCalled()
+      expect(mockDebug).not.toHaveBeenCalled()
     })
 
     test('should return null when slug is not available in request.params', () => {
       const mockRequest = mockHapiRequest({
-        params: {}
+        params: {},
+        logger: { debug: mockDebug }
       })
       const mockContext = { state: {} }
 
@@ -59,7 +53,7 @@ describe('form-slug-helper', () => {
 
       expect(result).toBeNull()
       expect(mockContext.state.formSlug).toBeUndefined()
-      expect(log).not.toHaveBeenCalled()
+      expect(mockDebug).not.toHaveBeenCalled()
     })
 
     test('should handle null or undefined request', () => {
@@ -74,19 +68,21 @@ describe('form-slug-helper', () => {
     test('should handle case when context.state is undefined', () => {
       const mockSlug = 'test-slug'
       const mockRequest = mockHapiRequest({
-        params: { slug: mockSlug }
+        params: { slug: mockSlug },
+        logger: { debug: mockDebug }
       })
       const mockContext = {}
 
       const result = storeSlugInContext(mockRequest, mockContext, controllerName)
 
       expect(result).toBeNull()
-      expect(log).not.toHaveBeenCalled()
+      expect(mockDebug).not.toHaveBeenCalled()
     })
   })
 
   describe('getFormSlug', () => {
     const controllerName = 'TestController'
+    const mockDebug = vi.fn()
 
     afterEach(() => {
       vi.clearAllMocks()
@@ -95,74 +91,62 @@ describe('form-slug-helper', () => {
     test('should get slug from request.params when available', () => {
       const mockSlug = 'test-slug'
       const mockRequest = {
-        params: { slug: mockSlug }
+        params: { slug: mockSlug },
+        logger: { debug: mockDebug }
       }
       const mockContext = { state: {} }
 
       const result = getFormSlug(mockRequest, mockContext, controllerName)
 
       expect(result).toBe(mockSlug)
-      expect(log).toHaveBeenCalledWith(
-        LogCodes.FORMS.SLUG_RESOLVED,
-        { controller: controllerName, message: `Using slug: ${mockSlug}` },
-        mockRequest
-      )
+      expect(mockDebug).toHaveBeenCalledWith(`${controllerName}: Using slug:`, mockSlug)
     })
 
     test('should get slug from context.state when not in request.params', () => {
       const mockSlug = 'context-slug'
       const mockRequest = {
-        params: {}
+        params: {},
+        logger: { debug: mockDebug }
       }
       const mockContext = { state: { formSlug: mockSlug } }
 
       const result = getFormSlug(mockRequest, mockContext, controllerName)
 
       expect(result).toBe(mockSlug)
-      expect(log).toHaveBeenCalledWith(
-        LogCodes.FORMS.SLUG_RESOLVED,
-        { controller: controllerName, message: `Using slug from context.state.formSlug: ${mockSlug}` },
-        mockRequest
-      )
-      expect(log).toHaveBeenCalledWith(
-        LogCodes.FORMS.SLUG_RESOLVED,
-        { controller: controllerName, message: `Using slug: ${mockSlug}` },
-        mockRequest
-      )
+      expect(mockDebug).toHaveBeenCalledWith(`${controllerName}: Using slug from context.state.formSlug:`, mockSlug)
+      expect(mockDebug).toHaveBeenCalledWith(`${controllerName}: Using slug:`, mockSlug)
     })
 
     test('should prioritize request.params over context.state', () => {
       const paramsSlug = 'params-slug'
       const contextSlug = 'context-slug'
       const mockRequest = {
-        params: { slug: paramsSlug }
+        params: { slug: paramsSlug },
+        logger: { debug: mockDebug }
       }
       const mockContext = { state: { formSlug: contextSlug } }
 
       const result = getFormSlug(mockRequest, mockContext, controllerName)
 
       expect(result).toBe(paramsSlug)
-      expect(log).toHaveBeenCalledWith(
-        LogCodes.FORMS.SLUG_RESOLVED,
-        { controller: controllerName, message: `Using slug: ${paramsSlug}` },
-        mockRequest
+      expect(mockDebug).toHaveBeenCalledWith(`${controllerName}: Using slug:`, paramsSlug)
+      expect(mockDebug).not.toHaveBeenCalledWith(
+        `${controllerName}: Using slug from context.state.formSlug:`,
+        expect.anything()
       )
     })
 
     test('should return empty string when no slug is found', () => {
       const mockRequest = {
-        params: {}
+        params: {},
+        logger: { debug: mockDebug }
       }
       const mockContext = { state: {} }
 
       const result = getFormSlug(mockRequest, mockContext, controllerName)
 
       expect(result).toBe('')
-      expect(log).toHaveBeenCalledWith(
-        LogCodes.FORMS.SLUG_RESOLVED,
-        { controller: controllerName, message: 'No slug found, using default path' },
-        mockRequest
-      )
+      expect(mockDebug).toHaveBeenCalledWith(`${controllerName}: No slug found, using default path`)
     })
 
     test('should handle null request or context', () => {
@@ -175,14 +159,11 @@ describe('form-slug-helper', () => {
   describe('getConfirmationPath', () => {
     const controllerName = 'TestController'
 
-    afterEach(() => {
-      vi.clearAllMocks()
-    })
-
     test('should return correct path with slug', () => {
       const mockSlug = 'test-slug'
       const mockRequest = {
-        params: { slug: mockSlug }
+        params: { slug: mockSlug },
+        logger: { debug: vi.fn() }
       }
       const mockContext = { state: {} }
 
@@ -193,7 +174,8 @@ describe('form-slug-helper', () => {
 
     test('should return default path when no slug is found', () => {
       const mockRequest = {
-        params: {}
+        params: {},
+        logger: { debug: vi.fn() }
       }
       const mockContext = { state: {} }
 

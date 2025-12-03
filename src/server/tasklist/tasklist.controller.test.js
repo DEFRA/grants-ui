@@ -10,14 +10,9 @@ import {
 } from './helpers/test-helpers.js'
 import { existsSync } from 'fs'
 import { join } from 'path'
-import { log, LogCodes } from '../common/helpers/logging/log.js'
 
 vi.mock('./services/tasklist-generator.js')
 vi.mock('./services/config-loader.js')
-vi.mock('../common/helpers/logging/log.js', async () => {
-  const { mockLogHelper } = await import('~/src/__mocks__')
-  return mockLogHelper()
-})
 
 describe('generic-tasklist-controller', () => {
   let mockServer
@@ -176,10 +171,12 @@ describe('generic-tasklist-controller', () => {
 
         const result = await routeHandler(mockRequest, mockH)
 
-        expect(log).toHaveBeenCalledWith(
-          LogCodes.TASKLIST.CACHE_RETRIEVAL_FAILED,
-          { sessionId: 'test-session-id', errorMessage: 'Cache error' },
-          mockRequest
+        expect(mockRequest.logger.warn).toHaveBeenCalledWith(
+          {
+            error: 'Cache error',
+            sessionId: 'test-session-id'
+          },
+          'Cache retrieval failed, using empty data'
         )
         expect(mockGenerateTasklist).toHaveBeenCalledWith({}, ['visited1', 'visited2'])
         expect(result).toBe('rendered-view')

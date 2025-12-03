@@ -11,10 +11,17 @@ import { handleGasApiError } from '~/src/server/common/helpers/gas-error-message
 import { log, LogCodes } from '../common/helpers/logging/log.js'
 
 vi.mock('~/src/server/common/helpers/gas-error-messages.js')
-vi.mock('../common/helpers/logging/log.js', async () => {
-  const { mockLogHelper } = await import('~/src/__mocks__')
-  return mockLogHelper()
-})
+vi.mock('../common/helpers/logging/log.js', () => ({
+  log: vi.fn(),
+  LogCodes: {
+    SUBMISSION: {
+      SUBMISSION_FAILURE: { level: 'error', messageFunc: vi.fn() }
+    },
+    SYSTEM: {
+      EXTERNAL_API_CALL_DEBUG: { level: 'debug', messageFunc: vi.fn() }
+    }
+  }
+}))
 
 const mockCacheService = mockFormsCacheService({
   getState: vi.fn().mockReturnValue({
@@ -239,20 +246,14 @@ describe('DeclarationPageController', () => {
       const handler = controller.makePostRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
-      expect(log).toHaveBeenCalledWith(
-        LogCodes.SUBMISSION.SUBMISSION_PROCESSING,
-        { controller: 'DeclarationController', path: mockRequest.path },
-        mockRequest
+      expect(mockRequest.logger.debug).toHaveBeenCalledWith('DeclarationController: Processing form submission')
+      expect(mockRequest.logger.debug).toHaveBeenCalledWith('DeclarationController: Current URL:', mockRequest.path)
+      expect(mockRequest.logger.debug).toHaveBeenCalledWith(
+        'DeclarationController: Set application status to SUBMITTED'
       )
-      expect(log).toHaveBeenCalledWith(
-        LogCodes.SUBMISSION.APPLICATION_STATUS_UPDATED,
-        { controller: 'DeclarationController', status: 'SUBMITTED' },
-        mockRequest
-      )
-      expect(log).toHaveBeenCalledWith(
-        LogCodes.SUBMISSION.SUBMISSION_REDIRECT,
-        { controller: 'DeclarationController', redirectPath: '/adding-value/confirmation' },
-        mockRequest
+      expect(mockRequest.logger.debug).toHaveBeenCalledWith(
+        'DeclarationController: Redirecting to:',
+        '/adding-value/confirmation'
       )
     })
 
@@ -260,16 +261,12 @@ describe('DeclarationPageController', () => {
       const handler = controller.makePostRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
-      expect(log).toHaveBeenCalledWith(
-        LogCodes.SUBMISSION.SUBMISSION_COMPLETED,
-        {
-          grantType: 'adding-value',
-          referenceNumber: 'REF123',
-          numberOfFields: Object.keys(mockContext.relevantState).length,
-          status: 'success'
-        },
-        mockRequest
-      )
+      expect(mockRequest.logger.info).toHaveBeenCalledWith({
+        message: 'Form submission completed',
+        referenceNumber: 'REF123',
+        numberOfSubmittedFields: Object.keys(mockContext.relevantState).length,
+        timestamp: expect.any(String)
+      })
     })
 
     test('should handle submission errors', async () => {

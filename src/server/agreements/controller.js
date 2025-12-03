@@ -97,7 +97,7 @@ export const getAgreementController = {
       )
 
       if (!apiResponse) {
-        log(LogCodes.AGREEMENTS.PROXY_RESPONSE_ERROR, {}, request)
+        request.logger.error('Proxy response is undefined. Possible upstream error or misconfiguration.')
         return h
           .response({
             error: 'No response from upstream service',
@@ -108,7 +108,7 @@ export const getAgreementController = {
 
       return apiResponse
     } catch (error) {
-      log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, { endpoint: 'agreements', errorMessage: error.message }, request)
+      request.logger.error('Request failed: %O', error)
 
       if (error.message.includes('Missing required configuration')) {
         return h

@@ -9,10 +9,15 @@ import { mockSimpleRequest } from '~/src/__mocks__/hapi-mocks.js'
 
 global.fetch = vi.fn()
 
-vi.doMock('../logging/log.js', async () => {
-  const { mockLogHelper } = await import('~/src/__mocks__')
-  return mockLogHelper()
-})
+vi.doMock('../logging/log.js', () => ({
+  log: vi.fn(),
+  LogCodes: {
+    SYSTEM: {
+      EXTERNAL_API_CALL_DEBUG: { level: 'debug', messageFunc: vi.fn() },
+      EXTERNAL_API_ERROR: { level: 'error', messageFunc: vi.fn() }
+    }
+  }
+}))
 
 const mockCreateApiHeaders = vi.fn().mockReturnValue({
   'Content-Type': 'application/json',
@@ -50,10 +55,15 @@ describe('persistSubmissionToApi', () => {
   describe('With backend configured correctly', () => {
     beforeEach(async () => {
       vi.resetModules()
-      vi.doMock('../logging/log.js', async () => {
-        const { mockLogHelper } = await import('~/src/__mocks__')
-        return mockLogHelper()
-      })
+      vi.doMock('../logging/log.js', () => ({
+        log: vi.fn(),
+        LogCodes: {
+          SYSTEM: {
+            EXTERNAL_API_CALL_DEBUG: { level: 'debug', messageFunc: vi.fn() },
+            EXTERNAL_API_ERROR: { level: 'error', messageFunc: vi.fn() }
+          }
+        }
+      }))
       vi.doMock('./backend-auth-helper.js', () => ({
         createApiHeadersForGrantsUiBackend: mockCreateApiHeaders
       }))
@@ -157,10 +167,15 @@ describe('persistSubmissionToApi', () => {
     beforeEach(async () => {
       vi.clearAllMocks()
       vi.resetModules()
-      vi.doMock('../logging/log.js', async () => {
-        const { mockLogHelper } = await import('~/src/__mocks__')
-        return mockLogHelper()
-      })
+      vi.doMock('../logging/log.js', () => ({
+        log: vi.fn(),
+        LogCodes: {
+          SYSTEM: {
+            EXTERNAL_API_CALL_DEBUG: { level: 'debug', messageFunc: vi.fn() },
+            EXTERNAL_API_ERROR: { level: 'error', messageFunc: vi.fn() }
+          }
+        }
+      }))
       vi.doMock('./backend-auth-helper.js', () => ({
         createApiHeadersForGrantsUiBackend: mockCreateApiHeaders
       }))

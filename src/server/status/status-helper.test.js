@@ -6,10 +6,14 @@ import { ApplicationStatus } from '../common/constants/application-status.js'
 import { formsStatusCallback } from './status-helper.js'
 import { log, LogCodes } from '../common/helpers/logging/log.js'
 
-vi.mock('../common/helpers/logging/log.js', async () => {
-  const { mockLogHelper } = await import('~/src/__mocks__')
-  return mockLogHelper()
-})
+vi.mock('../common/helpers/logging/log.js', () => ({
+  log: vi.fn(),
+  LogCodes: {
+    SUBMISSION: {
+      SUBMISSION_REDIRECT_FAILURE: { level: 'error', messageFunc: vi.fn() }
+    }
+  }
+}))
 vi.mock('../common/services/grant-application/grant-application.service.js', () => ({
   getApplicationStatus: vi.fn()
 }))
