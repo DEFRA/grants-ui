@@ -19,14 +19,10 @@ const mockDemoData = {
 
 vi.mock('../../confirmation/services/confirmation.service.js')
 vi.mock('../utils/index.js')
-vi.mock('../../common/helpers/logging/log.js', () => ({
-  log: vi.fn(),
-  LogCodes: {
-    CONFIRMATION: {
-      CONFIRMATION_ERROR: { level: 'error', messageFunc: vi.fn() }
-    }
-  }
-}))
+vi.mock('../../common/helpers/logging/log.js', async () => {
+  const { mockLogHelper } = await import('~/src/__mocks__')
+  return mockLogHelper()
+})
 
 describe('demo-confirmation.handler', () => {
   let mockRequest

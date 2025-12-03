@@ -13,16 +13,8 @@ import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
 vi.mock('@hapi/jwt')
 vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
-  const { mockLogHelperWithCustomCodes } = await import('~/src/__mocks__')
-  return mockLogHelperWithCustomCodes({
-    SYSTEM: {
-      ENV_CONFIG_DEBUG: { level: 'debug', messageFunc: vi.fn() },
-      PLUGIN_REGISTRATION: { level: 'info', messageFunc: vi.fn() }
-    },
-    AUTH: {
-      AUTH_DEBUG: { level: 'info', messageFunc: vi.fn() }
-    }
-  })
+  const { mockLogHelper } = await import('~/src/__mocks__')
+  return mockLogHelper()
 })
 vi.mock('~/src/server/auth/get-oidc-config')
 vi.mock('~/src/server/auth/refresh-tokens')
