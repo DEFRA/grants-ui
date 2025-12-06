@@ -16,14 +16,7 @@ export const testErrorController = {
 
     const message = `Test ${statusCode} error for alerting infrastructure - this is intentional`
 
-    // For 5xx errors, throw an exception to mimic real server errors
-    if (statusCode >= 500) {
-      const error = new Error(message)
-      error.statusCode = statusCode
-      throw error
-    }
-
-    // For 4xx errors, use Boom to return appropriate error response
+    // Use Boom to return appropriate error response
     throw Boom.boomify(new Error(message), { statusCode })
   }
 }
