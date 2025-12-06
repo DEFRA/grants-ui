@@ -11,6 +11,7 @@ import { devTools } from '~/src/server/dev-tools/index.js'
 import { configConfirmation } from '~/src/server/confirmation/config-confirmation.js'
 import { clearApplicationState } from './dev-tools/clear-application-state.js'
 import { cookies } from '~/src/server/cookies/index.js'
+import { testError } from '~/src/server/test-error/index.js'
 
 const defraIdEnabled = config.get('defraId.enabled')
 const cdpEnvironment = config.get('cdpEnvironment')
@@ -49,6 +50,11 @@ export const router = {
 
       if (cdpEnvironment !== 'prod') {
         await server.register([clearApplicationState])
+      }
+
+      // Test error routes for alerting infrastructure testing (non-production only)
+      if (cdpEnvironment !== 'prod') {
+        await server.register([testError])
       }
 
       // Generic tasklist routes
