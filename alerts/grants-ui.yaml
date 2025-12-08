@@ -1,0 +1,1018 @@
+apiVersion: 1
+groups:
+    - orgId: 1
+      name: grants-ui
+      folder: CDP_Tenants
+      interval: 5m
+      rules:
+        - uid: ef10qedyn2whsf
+          title: grants-ui-ecs-desired-running-tasks
+          condition: Threshold
+          data:
+            - refId: DesiredTaskCount
+              relativeTimeRange:
+                from: 900
+                to: 0
+              datasourceUid: cc080e90-24cc-4caf-ab5b-a71159c46702
+              model:
+                alias: ""
+                datasource:
+                    type: cloudwatch
+                    uid: cc080e90-24cc-4caf-ab5b-a71159c46702
+                dimensions:
+                    ClusterName:
+                        - dev-ecs-public
+                    ServiceName:
+                        - grants-ui
+                expression: ""
+                id: ""
+                intervalMs: 1000
+                label: ""
+                logGroups: []
+                matchExact: true
+                maxDataPoints: 43200
+                metricEditorMode: 0
+                metricName: DesiredTaskCount
+                metricQueryType: 0
+                namespace: ECS/ContainerInsights
+                period: ""
+                queryMode: Metrics
+                refId: DesiredTaskCount
+                region: eu-west-2
+                sqlExpression: ""
+                statistic: Maximum
+            - refId: RunningTaskCount
+              relativeTimeRange:
+                from: 900
+                to: 0
+              datasourceUid: cc080e90-24cc-4caf-ab5b-a71159c46702
+              model:
+                alias: ""
+                datasource:
+                    type: cloudwatch
+                    uid: cc080e90-24cc-4caf-ab5b-a71159c46702
+                dimensions:
+                    ClusterName:
+                        - dev-ecs-public
+                    ServiceName:
+                        - grants-ui
+                expression: ""
+                id: ""
+                intervalMs: 1000
+                label: ""
+                logGroups: []
+                matchExact: true
+                maxDataPoints: 43200
+                metricEditorMode: 0
+                metricName: RunningTaskCount
+                metricQueryType: 0
+                namespace: ECS/ContainerInsights
+                period: ""
+                queryMode: Metrics
+                refId: RunningTaskCount
+                region: eu-west-2
+                sqlExpression: ""
+                statistic: Maximum
+            - refId: Desired_tasks
+              relativeTimeRange:
+                from: 900
+                to: 0
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params: []
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - Desired_tasks
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                expression: DesiredTaskCount
+                intervalMs: 1000
+                maxDataPoints: 43200
+                reducer: last
+                refId: Desired_tasks
+                settings:
+                    mode: replaceNN
+                    replaceWithValue: 0
+                type: reduce
+            - refId: Running_tasks
+              relativeTimeRange:
+                from: 900
+                to: 0
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                expression: RunningTaskCount
+                intervalMs: 1000
+                maxDataPoints: 43200
+                reducer: last
+                refId: Running_tasks
+                settings:
+                    mode: replaceNN
+                    replaceWithValue: 0
+                type: reduce
+            - refId: Expression
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                expression: $Desired_tasks-$Running_tasks
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: Expression
+                type: math
+            - refId: Threshold
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                expression: Expression
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: Threshold
+                type: threshold
+          noDataState: NoData
+          execErrState: Error
+          for: 5m
+          annotations:
+            description: ""
+            runbook_url: ""
+            summary: Number of desired ECS tasks is  greater than number of ECS running tasks!!
+          labels:
+            Environment: dev
+            PagerDuty: "false"
+            Service: grants-ui
+            Team: Grants-Enablement-Team
+            environment: dev
+            pagerduty: "false"
+            service: grants-ui
+            subtype: frontend
+            teams: forms,future-grants,future-rps,grants-enablement-team
+            type: microservice
+          isPaused: false
+        - uid: bf10qedypksu8f
+          title: grants-ui-cpu-utilization
+          condition: Threshold
+          data:
+            - refId: Query
+              relativeTimeRange:
+                from: 900
+                to: 0
+              datasourceUid: cc080e90-24cc-4caf-ab5b-a71159c46702
+              model:
+                alias: ""
+                datasource:
+                    type: cloudwatch
+                    uid: ""
+                dimensions:
+                    ClusterName:
+                        - dev-ecs-public
+                    ServiceName:
+                        - grants-ui
+                expression: ""
+                id: ""
+                intervalMs: 1000
+                label: ""
+                logGroups: []
+                matchExact: true
+                maxDataPoints: 43200
+                metricEditorMode: 0
+                metricName: CpuReserved
+                metricQueryType: 0
+                namespace: ECS/ContainerInsights
+                period: ""
+                queryMode: Metrics
+                refId: Query
+                region: eu-west-2
+                sqlExpression: ""
+                statistic: Maximum
+            - refId: CPU_utilization_B
+              relativeTimeRange:
+                from: 900
+                to: 0
+              datasourceUid: cc080e90-24cc-4caf-ab5b-a71159c46702
+              model:
+                alias: ""
+                datasource:
+                    type: cloudwatch
+                    uid: ""
+                dimensions:
+                    ClusterName:
+                        - dev-ecs-public
+                    ServiceName:
+                        - grants-ui
+                expression: ""
+                id: ""
+                intervalMs: 1000
+                label: ""
+                logGroups: []
+                matchExact: true
+                maxDataPoints: 43200
+                metricEditorMode: 0
+                metricName: CpuUtilized
+                metricQueryType: 0
+                namespace: ECS/ContainerInsights
+                period: ""
+                queryMode: Metrics
+                refId: CPU_utilization_B
+                region: eu-west-2
+                sqlExpression: ""
+                statistic: Maximum
+            - refId: CPU_utilization_C
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                expression: CPU_utilization_B
+                intervalMs: 1000
+                maxDataPoints: 43200
+                reducer: mean
+                refId: CPU_utilization_C
+                type: reduce
+            - refId: CPU_utilization_D
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                expression: (100*$CPU_utilization_C)/$Query
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: CPU_utilization_D
+                type: math
+            - refId: CPU_utilization_E
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                expression: CPU_utilization_D
+                intervalMs: 1000
+                maxDataPoints: 43200
+                reducer: max
+                refId: CPU_utilization_E
+                type: reduce
+            - refId: Threshold
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 80
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                expression: CPU_utilization_E
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: Threshold
+                type: threshold
+          noDataState: NoData
+          execErrState: Error
+          for: 10m
+          annotations:
+            runbook_url: ""
+            summary: CPU utilization is above 80%
+          labels:
+            Environment: dev
+            PagerDuty: "false"
+            Service: grants-ui
+            Team: Grants-Enablement-Team
+            environment: dev
+            pagerduty: "false"
+            service: grants-ui
+            subtype: frontend
+            teams: forms,future-grants,future-rps,grants-enablement-team
+            type: microservice
+          isPaused: false
+        - uid: df10qedypksu9c
+          title: grants-ui-mem-utilization
+          condition: Threshold
+          data:
+            - refId: Query
+              relativeTimeRange:
+                from: 900
+                to: 0
+              datasourceUid: cc080e90-24cc-4caf-ab5b-a71159c46702
+              model:
+                alias: ""
+                datasource:
+                    type: cloudwatch
+                    uid: ""
+                dimensions:
+                    ClusterName:
+                        - dev-ecs-public
+                    ServiceName:
+                        - grants-ui
+                expression: ""
+                id: ""
+                intervalMs: 1000
+                label: ""
+                logGroups: []
+                matchExact: true
+                maxDataPoints: 43200
+                metricEditorMode: 0
+                metricName: MemoryReserved
+                metricQueryType: 0
+                namespace: ECS/ContainerInsights
+                period: ""
+                queryMode: Metrics
+                refId: Query
+                region: eu-west-2
+                sqlExpression: ""
+                statistic: Maximum
+            - refId: Memory_utlization_B
+              relativeTimeRange:
+                from: 900
+                to: 0
+              datasourceUid: cc080e90-24cc-4caf-ab5b-a71159c46702
+              model:
+                alias: ""
+                datasource:
+                    type: cloudwatch
+                    uid: ""
+                dimensions:
+                    ClusterName:
+                        - dev-ecs-public
+                    ServiceName:
+                        - grants-ui
+                expression: ""
+                id: ""
+                intervalMs: 1000
+                label: ""
+                logGroups: []
+                matchExact: true
+                maxDataPoints: 43200
+                metricEditorMode: 0
+                metricName: MemoryUtilized
+                metricQueryType: 0
+                namespace: ECS/ContainerInsights
+                period: ""
+                queryMode: Metrics
+                refId: Memory_utlization_B
+                region: eu-west-2
+                sqlExpression: ""
+                statistic: Maximum
+            - refId: Memory_utlization_C
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                expression: Memory_utlization_B
+                intervalMs: 1000
+                maxDataPoints: 43200
+                reducer: mean
+                refId: Memory_utlization_C
+                type: reduce
+            - refId: Memory_utlization_D
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                expression: (100*$Memory_utlization_C)/$Query
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: Memory_utlization_D
+                type: math
+            - refId: Memory_utlization_E
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                expression: Memory_utlization_D
+                intervalMs: 1000
+                maxDataPoints: 43200
+                reducer: max
+                refId: Memory_utlization_E
+                type: reduce
+            - refId: Threshold
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 80
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                expression: Memory_utlization_E
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: Threshold
+                type: threshold
+          noDataState: NoData
+          execErrState: Error
+          for: 10m
+          annotations:
+            runbook_url: ""
+            summary: MEM utilization is above 80%
+          labels:
+            Environment: dev
+            PagerDuty: "false"
+            Service: grants-ui
+            Team: Grants-Enablement-Team
+            environment: dev
+            pagerduty: "false"
+            service: grants-ui
+            subtype: frontend
+            teams: forms,future-grants,future-rps,grants-enablement-team
+            type: microservice
+          isPaused: false
+        - uid: bf10qedys2p6oc
+          title: grants-ui-storage-utilization
+          condition: Threshold
+          data:
+            - refId: Query
+              relativeTimeRange:
+                from: 900
+                to: 0
+              datasourceUid: cc080e90-24cc-4caf-ab5b-a71159c46702
+              model:
+                alias: ""
+                datasource:
+                    type: cloudwatch
+                    uid: ""
+                dimensions:
+                    ClusterName:
+                        - dev-ecs-public
+                    ServiceName:
+                        - grants-ui
+                expression: ""
+                id: ""
+                intervalMs: 1000
+                label: ""
+                logGroups: []
+                matchExact: true
+                maxDataPoints: 43200
+                metricEditorMode: 0
+                metricName: EphemeralStorageReserved
+                metricQueryType: 0
+                namespace: ECS/ContainerInsights
+                period: ""
+                queryMode: Metrics
+                refId: Query
+                region: eu-west-2
+                sqlExpression: ""
+                statistic: Maximum
+            - refId: Storage_utilization_B
+              relativeTimeRange:
+                from: 900
+                to: 0
+              datasourceUid: cc080e90-24cc-4caf-ab5b-a71159c46702
+              model:
+                alias: ""
+                datasource:
+                    type: cloudwatch
+                    uid: ""
+                dimensions:
+                    ClusterName:
+                        - dev-ecs-public
+                    ServiceName:
+                        - grants-ui
+                expression: ""
+                id: ""
+                intervalMs: 1000
+                label: ""
+                logGroups: []
+                matchExact: true
+                maxDataPoints: 43200
+                metricEditorMode: 0
+                metricName: EphemeralStorageUtilized
+                metricQueryType: 0
+                namespace: ECS/ContainerInsights
+                period: ""
+                queryMode: Metrics
+                refId: Storage_utilization_B
+                region: eu-west-2
+                sqlExpression: ""
+                statistic: Maximum
+            - refId: Storage_utilization_C
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                expression: Storage_utilization_B
+                intervalMs: 1000
+                maxDataPoints: 43200
+                reducer: mean
+                refId: Storage_utilization_C
+                type: reduce
+            - refId: Storage_utilization_D
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                expression: (100*$Storage_utilization_C)/$Query
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: Storage_utilization_D
+                type: math
+            - refId: Storage_utilization_E
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                expression: Storage_utilization_D
+                intervalMs: 1000
+                maxDataPoints: 43200
+                reducer: max
+                refId: Storage_utilization_E
+                type: reduce
+            - refId: Threshold
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 80
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                expression: Storage_utilization_E
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: Threshold
+                type: threshold
+          noDataState: NoData
+          execErrState: Error
+          for: 10m
+          annotations:
+            runbook_url: ""
+            summary: Ephemeral storage utilization is above 80%
+          labels:
+            Environment: dev
+            PagerDuty: "false"
+            Service: grants-ui
+            Team: Grants-Enablement-Team
+            environment: dev
+            pagerduty: "false"
+            service: grants-ui
+            subtype: frontend
+            teams: forms,future-grants,future-rps,grants-enablement-team
+            type: microservice
+          isPaused: false
+        - uid: ef10qedyuklj4f
+          title: grants-ui - Average Response Time
+          condition: AVG_RESPONSE_TIME_THRESHOLD
+          data:
+            - refId: AVG_RESPONSE_TIME
+              queryType: lucene
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: f2b470f0-a723-4477-a07f-0f9dfe683bd8
+              model:
+                alias: ""
+                bucketAggs:
+                    - field: '@timestamp'
+                      id: "2"
+                      settings:
+                        interval: 600s
+                      type: date_histogram
+                datasource:
+                    type: grafana-opensearch-datasource
+                    uid: f2b470f0-a723-4477-a07f-0f9dfe683bd8
+                format: table
+                intervalMs: 1000
+                maxDataPoints: 43200
+                metrics:
+                    - field: http.response.response_time
+                      id: "1"
+                      type: avg
+                query: container_name:"grants-ui"
+                queryType: lucene
+                refId: AVG_RESPONSE_TIME
+                timeField: '@timestamp'
+            - refId: AVG_RESPONSE_TIME_LAST
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params: []
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - AVG_RESPONSE_TIME_LAST
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: AVG_RESPONSE_TIME
+                intervalMs: 1000
+                maxDataPoints: 43200
+                reducer: last
+                refId: AVG_RESPONSE_TIME_LAST
+                settings:
+                    mode: dropNN
+                type: reduce
+            - refId: AVG_RESPONSE_TIME_THRESHOLD
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 1000
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - AVG_RESPONSE_TIME_THRESHOLD
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: AVG_RESPONSE_TIME_LAST
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: AVG_RESPONSE_TIME_THRESHOLD
+                type: threshold
+          noDataState: OK
+          execErrState: OK
+          for: 10m
+          annotations:
+            description: Average Response Time Alert
+            summary: Average Response Time Alert in milliseconds of the http.response.response_time value in Opensearch.
+          labels:
+            Environment: dev
+            PagerDuty: "false"
+            Service: grants-ui
+            Team: Grants-Enablement-Team
+            environment: dev
+            pagerduty: "false"
+            service: grants-ui
+            subtype: frontend
+            teams: forms,future-grants,future-rps,grants-enablement-team
+            type: microservice
+          isPaused: false
+        - uid: bf5di34h110xsa
+          title: grants-ui - HTTP Status Code
+          condition: THRESHOLD
+          data:
+            - refId: HTTP_STATUS_CODES
+              queryType: lucene
+              relativeTimeRange:
+                from: 900
+                to: 0
+              datasourceUid: f2b470f0-a723-4477-a07f-0f9dfe683bd8
+              model:
+                alias: ""
+                bucketAggs:
+                    - field: http.response.status_code
+                      id: "3"
+                      settings:
+                        min_doc_count: "0"
+                        order: desc
+                        orderBy: _term
+                        size: "10"
+                      type: terms
+                    - field: '@timestamp'
+                      id: "2"
+                      settings:
+                        interval: auto
+                        min_doc_count: "0"
+                        trimEdges: "0"
+                      type: date_histogram
+                datasource:
+                    type: grafana-opensearch-datasource
+                    uid: f2b470f0-a723-4477-a07f-0f9dfe683bd8
+                format: table
+                intervalMs: 1000
+                luceneQueryType: Metric
+                maxDataPoints: 43200
+                metrics:
+                    - id: "1"
+                      type: count
+                query: container_name:"grants-ui" AND NOT http.user-agent.original:*curl* AND (http.response.status_code:500 OR http.response.status_code:502 OR http.response.status_code:503 OR http.response.status_code:504)
+                queryType: lucene
+                refId: HTTP_STATUS_CODES
+                timeField: '@timestamp'
+            - refId: HTTP_STATUS_CODES_LAST
+              relativeTimeRange:
+                from: 900
+                to: 0
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params: []
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - HTTP_STATUS_CODES_LAST
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: HTTP_STATUS_CODES
+                intervalMs: 1000
+                maxDataPoints: 43200
+                reducer: sum
+                refId: HTTP_STATUS_CODES_LAST
+                type: reduce
+            - refId: THRESHOLD
+              relativeTimeRange:
+                from: 900
+                to: 0
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 5
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - THRESHOLD
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: HTTP_STATUS_CODES_LAST
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+          noDataState: OK
+          execErrState: OK
+          for: 10m
+          annotations:
+            description: HTTP Status code alert
+            runbook_url: ""
+            summary: HTTP status codes alerts based on http.response.status_code in OpenSearch
+          labels:
+            Environment: dev
+            PagerDuty: "false"
+            Service: grants-ui
+            Team: Grants-Enablement-Team
+            environment: dev
+            pagerduty: "false"
+            service: grants-ui
+            subtype: frontend
+            teams: forms,future-grants,future-rps,grants-enablement-team
+            type: microservice
+          isPaused: false

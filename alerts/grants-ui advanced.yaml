@@ -1,0 +1,1516 @@
+
+apiVersion: 1
+groups:
+    - orgId: 1
+      name: grants-ui advanced
+      folder: CDP_Tenants
+      interval: 5m
+      rules:
+        - uid: 127bf79eae-bf3p9aexgkirkd
+          title: grants-ui - p95 Response Time
+          condition: B
+          data:
+            - refId: P95_RESPONSE_TIME
+              queryType: lucene
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: f2b470f0-a723-4477-a07f-0f9dfe683bd8
+              model:
+                alias: Response time
+                bucketAggs:
+                    - field: '@timestamp'
+                      id: "2"
+                      settings:
+                        interval: 1m
+                      type: date_histogram
+                datasource:
+                    type: grafana-opensearch-datasource
+                    uid: f2b470f0-a723-4477-a07f-0f9dfe683bd8
+                format: table
+                intervalMs: 1000
+                maxDataPoints: 43200
+                metrics:
+                    - field: http.response.response_time
+                      id: "1"
+                      settings:
+                        percents:
+                            - "95"
+                      type: percentiles
+                query: container_name:"grants-ui"
+                queryType: lucene
+                refId: P95_RESPONSE_TIME
+                timeField: '@timestamp'
+            - refId: REDUCED_P95_VALUE
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                expression: P95_RESPONSE_TIME
+                intervalMs: 1000
+                maxDataPoints: 43200
+                reducer: max
+                refId: REDUCED_P95_VALUE
+                type: reduce
+            - refId: B
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 1000
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                expression: REDUCED_P95_VALUE
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: B
+                type: threshold
+          noDataState: OK
+          execErrState: OK
+          for: 5m
+          annotations:
+            description: P95 Response Time Alert
+            summary: Percentile (p95) response time of http.response.response_time in milliseconds for grants-ui requests, capturing the slowest 5% of requests to monitor performance outliers.
+          labels:
+            Environment: dev
+            PagerDuty: "false"
+            Service: grants-ui
+            Team: Grants-Enablement-Team
+            environment: dev
+            pagerduty: "false"
+            service: grants-ui
+            subtype: frontend
+            teams: forms,future-grants,future-rps,grants-enablement-team
+            type: microservice
+          isPaused: false
+        - uid: 127bf79eae-cf3pecan6s64gb
+          title: grants-ui - Slow Requests Percentage
+          condition: B
+          data:
+            - refId: TOTAL_REQUESTS
+              queryType: lucene
+              relativeTimeRange:
+                from: 300
+                to: 0
+              datasourceUid: f2b470f0-a723-4477-a07f-0f9dfe683bd8
+              model:
+                alias: Total requests
+                bucketAggs:
+                    - field: '@timestamp'
+                      id: "2"
+                      settings:
+                        interval: 1m
+                      type: date_histogram
+                datasource:
+                    type: grafana-opensearch-datasource
+                    uid: f2b470f0-a723-4477-a07f-0f9dfe683bd8
+                format: table
+                intervalMs: 1000
+                maxDataPoints: 43200
+                metrics:
+                    - id: "1"
+                      type: count
+                    - id: "3"
+                      type: count
+                    - id: "4"
+                      type: count
+                query: container_name:"grants-ui"
+                queryType: lucene
+                refId: TOTAL_REQUESTS
+                timeField: '@timestamp'
+            - refId: SLOW_REQUESTS
+              queryType: lucene
+              relativeTimeRange:
+                from: 300
+                to: 0
+              datasourceUid: f2b470f0-a723-4477-a07f-0f9dfe683bd8
+              model:
+                alias: Slow requests
+                bucketAggs:
+                    - field: '@timestamp'
+                      id: "2"
+                      settings:
+                        interval: 1m
+                      type: date_histogram
+                datasource:
+                    type: grafana-opensearch-datasource
+                    uid: f2b470f0-a723-4477-a07f-0f9dfe683bd8
+                format: table
+                intervalMs: 1000
+                luceneQueryType: Metric
+                maxDataPoints: 43200
+                metrics:
+                    - id: "1"
+                      type: count
+                query: container_name:"grants-ui" AND http.response.response_time:[1001 TO *]
+                queryType: lucene
+                refId: SLOW_REQUESTS
+                timeField: '@timestamp'
+            - refId: SLOW_REQUESTS_PERCENTAGE
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                expression: ($SLOW_REQUESTS / $TOTAL_REQUESTS) * 100
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: SLOW_REQUESTS_PERCENTAGE
+                type: math
+            - refId: SLOW_REQUESTS_PERCENTAGE_MEAN
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                expression: SLOW_REQUESTS_PERCENTAGE
+                intervalMs: 1000
+                maxDataPoints: 43200
+                reducer: mean
+                refId: SLOW_REQUESTS_PERCENTAGE_MEAN
+                type: reduce
+            - refId: B
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 5
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                expression: SLOW_REQUESTS_PERCENTAGE_MEAN
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: B
+                type: threshold
+          noDataState: OK
+          execErrState: OK
+          for: 5m
+          annotations:
+            description: Slow Response Time Alert
+            summary: Percentage of grants-ui requests with response time exceeding the SLA threshold (i.e. 1000 ms) over the last 5 minutes. Alerts when a significant portion of requests are slow, helping monitor service performance beyond average response time.
+          labels:
+            Environment: dev
+            PagerDuty: "false"
+            Service: grants-ui
+            Team: Grants-Enablement-Team
+            environment: dev
+            pagerduty: "false"
+            service: grants-ui
+            subtype: frontend
+            teams: forms,future-grants,future-rps,grants-enablement-team
+            type: microservice
+          isPaused: false
+        - uid: c109b22d6b-df3f9adp3xo8wb
+          title: grants-ui - 4xx error percentage
+          condition: C
+          data:
+            - refId: A
+              queryType: lucene
+              relativeTimeRange:
+                from: 300
+                to: 0
+              datasourceUid: f2b470f0-a723-4477-a07f-0f9dfe683bd8
+              model:
+                alias: Total requests
+                bucketAggs:
+                    - field: '@timestamp'
+                      id: "4"
+                      settings:
+                        interval: auto
+                        min_doc_count: "0"
+                        trimEdges: "0"
+                      type: date_histogram
+                datasource:
+                    type: grafana-opensearch-datasource
+                    uid: f2b470f0-a723-4477-a07f-0f9dfe683bd8
+                format: table
+                intervalMs: 1000
+                luceneQueryType: Metric
+                maxDataPoints: 43200
+                metrics:
+                    - id: "1"
+                      type: count
+                query: container_name:"grants-ui" AND NOT http.user-agent.original:*curl*
+                queryType: lucene
+                refId: A
+                timeField: '@timestamp'
+            - refId: D
+              queryType: lucene
+              relativeTimeRange:
+                from: 300
+                to: 0
+              datasourceUid: f2b470f0-a723-4477-a07f-0f9dfe683bd8
+              model:
+                alias: 4xx requests
+                bucketAggs:
+                    - field: '@timestamp'
+                      id: "2"
+                      settings:
+                        interval: auto
+                      type: date_histogram
+                datasource:
+                    type: grafana-opensearch-datasource
+                    uid: f2b470f0-a723-4477-a07f-0f9dfe683bd8
+                format: table
+                intervalMs: 1000
+                luceneQueryType: Metric
+                maxDataPoints: 43200
+                metrics:
+                    - id: "1"
+                      type: count
+                query: "container_name:\"grants-ui\" AND NOT http.user-agent.original:*curl* \nAND http.response.status_code:[400 TO 499]"
+                queryType: lucene
+                refId: D
+                timeField: '@timestamp'
+            - refId: B
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                expression: ($F / $E) * 100
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: B
+                type: math
+            - refId: C
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 1
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                expression: B
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+            - refId: E
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                reducer: sum
+                refId: E
+                type: reduce
+            - refId: F
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                expression: D
+                intervalMs: 1000
+                maxDataPoints: 43200
+                reducer: sum
+                refId: F
+                type: reduce
+          noDataState: NoData
+          execErrState: Error
+          for: 5m
+          annotations:
+            summary: Percentage of client error (HTTP 4xx) responses over total requests for grants-ui, alerting when too many client requests fail.
+          labels:
+            Environment: dev
+            PagerDuty: "false"
+            Service: grants-ui
+            Team: Grants-Enablement-Team
+            environment: dev
+            pagerduty: "false"
+            service: grants-ui
+            subtype: frontend
+            teams: forms,future-grants,future-rps,grants-enablement-team
+            type: microservice
+          isPaused: false
+        - uid: c109b22d6b-af3p3g55nijuob
+          title: grants-ui - 5xx error percentage
+          condition: C
+          data:
+            - refId: A
+              queryType: lucene
+              relativeTimeRange:
+                from: 300
+                to: 0
+              datasourceUid: f2b470f0-a723-4477-a07f-0f9dfe683bd8
+              model:
+                alias: Total requests
+                bucketAggs:
+                    - field: '@timestamp'
+                      id: "4"
+                      settings:
+                        interval: auto
+                        min_doc_count: "0"
+                        trimEdges: "0"
+                      type: date_histogram
+                datasource:
+                    type: grafana-opensearch-datasource
+                    uid: f2b470f0-a723-4477-a07f-0f9dfe683bd8
+                format: table
+                intervalMs: 1000
+                luceneQueryType: Metric
+                maxDataPoints: 43200
+                metrics:
+                    - id: "1"
+                      type: count
+                query: container_name:"grants-ui" AND NOT http.user-agent.original:*curl*
+                queryType: lucene
+                refId: A
+                timeField: '@timestamp'
+            - refId: D
+              queryType: lucene
+              relativeTimeRange:
+                from: 300
+                to: 0
+              datasourceUid: f2b470f0-a723-4477-a07f-0f9dfe683bd8
+              model:
+                alias: 5xx requests
+                bucketAggs:
+                    - field: '@timestamp'
+                      id: "2"
+                      settings:
+                        interval: auto
+                      type: date_histogram
+                datasource:
+                    type: grafana-opensearch-datasource
+                    uid: f2b470f0-a723-4477-a07f-0f9dfe683bd8
+                format: table
+                intervalMs: 1000
+                luceneQueryType: Metric
+                maxDataPoints: 43200
+                metrics:
+                    - id: "1"
+                      type: count
+                query: "container_name:\"grants-ui\" AND NOT http.user-agent.original:*curl* \nAND http.response.status_code:[500 TO 599]"
+                queryType: lucene
+                refId: D
+                timeField: '@timestamp'
+            - refId: B
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                expression: ($G / $E) * 100
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: B
+                type: math
+            - refId: C
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 1
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                expression: B
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+            - refId: E
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                reducer: sum
+                refId: E
+                type: reduce
+            - refId: G
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                expression: D
+                intervalMs: 1000
+                maxDataPoints: 43200
+                reducer: sum
+                refId: G
+                type: reduce
+          noDataState: NoData
+          execErrState: Error
+          for: 5m
+          annotations:
+            summary: Percentage of client error (HTTP 5xx) responses over total requests for grants-ui, alerting when too many client requests fail.
+          labels:
+            Environment: dev
+            PagerDuty: "false"
+            Service: grants-ui
+            Team: Grants-Enablement-Team
+            environment: dev
+            pagerduty: "false"
+            service: grants-ui
+            subtype: frontend
+            teams: forms,future-grants,future-rps,grants-enablement-team
+            type: microservice
+          isPaused: false
+        - uid: 72662f4d52-cf3elgmppl69sc
+          title: grants-ui - 4xx errors spike detection
+          condition: O
+          data:
+            - refId: A
+              queryType: lucene
+              relativeTimeRange:
+                from: 300
+                to: 0
+              datasourceUid: f2b470f0-a723-4477-a07f-0f9dfe683bd8
+              model:
+                alias: Total requests (current window)
+                bucketAggs:
+                    - field: '@timestamp'
+                      id: "2"
+                      settings:
+                        interval: auto
+                      type: date_histogram
+                datasource:
+                    type: grafana-opensearch-datasource
+                    uid: f2b470f0-a723-4477-a07f-0f9dfe683bd8
+                format: table
+                intervalMs: 1000
+                luceneQueryType: Metric
+                maxDataPoints: 43200
+                metrics:
+                    - id: "1"
+                      type: count
+                query: container_name:"grants-ui" AND NOT http.user-agent.original:*curl*
+                queryType: lucene
+                refId: A
+                timeField: '@timestamp'
+            - refId: F
+              queryType: lucene
+              relativeTimeRange:
+                from: 300
+                to: 0
+              datasourceUid: f2b470f0-a723-4477-a07f-0f9dfe683bd8
+              model:
+                alias: 4xx requests (current window)
+                bucketAggs:
+                    - field: '@timestamp'
+                      id: "2"
+                      settings:
+                        interval: auto
+                      type: date_histogram
+                datasource:
+                    type: grafana-opensearch-datasource
+                    uid: f2b470f0-a723-4477-a07f-0f9dfe683bd8
+                format: table
+                intervalMs: 1000
+                luceneQueryType: Metric
+                maxDataPoints: 43200
+                metrics:
+                    - id: "1"
+                      type: count
+                query: container_name:"grants-ui" AND NOT http.user-agent.original:*curl* AND http.response.status_code:[400 TO 499]
+                queryType: lucene
+                refId: F
+                timeField: '@timestamp'
+            - refId: G
+              queryType: lucene
+              relativeTimeRange:
+                from: 900
+                to: 0
+              datasourceUid: f2b470f0-a723-4477-a07f-0f9dfe683bd8
+              model:
+                alias: Total requests (baseline window)
+                bucketAggs:
+                    - field: '@timestamp'
+                      id: "2"
+                      settings:
+                        interval: auto
+                      type: date_histogram
+                datasource:
+                    type: grafana-opensearch-datasource
+                    uid: f2b470f0-a723-4477-a07f-0f9dfe683bd8
+                format: table
+                intervalMs: 1000
+                luceneQueryType: Metric
+                maxDataPoints: 43200
+                metrics:
+                    - id: "1"
+                      type: count
+                query: container_name:"grants-ui" AND NOT http.user-agent.original:*curl*
+                queryType: lucene
+                refId: G
+                timeField: '@timestamp'
+            - refId: H
+              queryType: lucene
+              relativeTimeRange:
+                from: 900
+                to: 0
+              datasourceUid: f2b470f0-a723-4477-a07f-0f9dfe683bd8
+              model:
+                alias: 4xx requests (baseline window)
+                bucketAggs:
+                    - field: '@timestamp'
+                      id: "2"
+                      settings:
+                        interval: auto
+                      type: date_histogram
+                datasource:
+                    type: grafana-opensearch-datasource
+                    uid: f2b470f0-a723-4477-a07f-0f9dfe683bd8
+                format: table
+                intervalMs: 1000
+                luceneQueryType: Metric
+                maxDataPoints: 43200
+                metrics:
+                    - id: "1"
+                      type: count
+                query: container_name:"grants-ui" AND NOT http.user-agent.original:*curl* AND http.response.status_code:[400 TO 499]
+                queryType: lucene
+                refId: H
+                timeField: '@timestamp'
+            - refId: B
+              relativeTimeRange:
+                from: 900
+                to: 0
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                downsampler: mean
+                expression: G
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: B
+                type: resample
+                upsampler: pad
+                window: 1m
+            - refId: C
+              relativeTimeRange:
+                from: 900
+                to: 0
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                downsampler: mean
+                expression: H
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: resample
+                upsampler: pad
+                window: 1m
+            - refId: D
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                reducer: mean
+                refId: D
+                type: reduce
+            - refId: E
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                expression: F
+                intervalMs: 1000
+                maxDataPoints: 43200
+                reducer: mean
+                refId: E
+                type: reduce
+            - refId: I
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                expression: G
+                intervalMs: 1000
+                maxDataPoints: 43200
+                reducer: mean
+                refId: I
+                type: reduce
+            - refId: J
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                expression: H
+                intervalMs: 1000
+                maxDataPoints: 43200
+                reducer: mean
+                refId: J
+                type: reduce
+            - refId: K
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                expression: ($F / $A) * 100
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: K
+                type: math
+            - refId: L
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                expression: ($H / $G) * 100
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: L
+                type: math
+            - refId: M
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                expression: $K / $L
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: M
+                type: math
+            - refId: "N"
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                expression: M
+                intervalMs: 1000
+                maxDataPoints: 43200
+                reducer: max
+                refId: "N"
+                type: reduce
+            - refId: O
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 2
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                expression: "N"
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: O
+                type: threshold
+          noDataState: NoData
+          execErrState: Error
+          for: 2m
+          annotations:
+            summary: Detects sudden increases in 4xx errors for grants-ui by comparing the recent 5-minute window against a 15-minute baseline, alerting on abnormal surges.
+          labels:
+            Environment: dev
+            PagerDuty: "false"
+            Service: grants-ui
+            Team: Grants-Enablement-Team
+            environment: dev
+            pagerduty: "false"
+            service: grants-ui
+            subtype: frontend
+            teams: forms,future-grants,future-rps,grants-enablement-team
+            type: microservice
+          isPaused: false
+        - uid: 72662f4d52-af3p2e87ggcn4a
+          title: grants-ui - 5xx errors spike detection
+          condition: O
+          data:
+            - refId: A
+              queryType: lucene
+              relativeTimeRange:
+                from: 300
+                to: 0
+              datasourceUid: f2b470f0-a723-4477-a07f-0f9dfe683bd8
+              model:
+                alias: Total requests (current window)
+                bucketAggs:
+                    - field: '@timestamp'
+                      id: "2"
+                      settings:
+                        interval: auto
+                      type: date_histogram
+                datasource:
+                    type: grafana-opensearch-datasource
+                    uid: f2b470f0-a723-4477-a07f-0f9dfe683bd8
+                format: table
+                intervalMs: 1000
+                luceneQueryType: Metric
+                maxDataPoints: 43200
+                metrics:
+                    - id: "1"
+                      type: count
+                query: container_name:"grants-ui" AND NOT http.user-agent.original:*curl*
+                queryType: lucene
+                refId: A
+                timeField: '@timestamp'
+            - refId: F
+              queryType: lucene
+              relativeTimeRange:
+                from: 300
+                to: 0
+              datasourceUid: f2b470f0-a723-4477-a07f-0f9dfe683bd8
+              model:
+                alias: 5xx requests (current window)
+                bucketAggs:
+                    - field: '@timestamp'
+                      id: "2"
+                      settings:
+                        interval: auto
+                      type: date_histogram
+                datasource:
+                    type: grafana-opensearch-datasource
+                    uid: f2b470f0-a723-4477-a07f-0f9dfe683bd8
+                format: table
+                intervalMs: 1000
+                luceneQueryType: Metric
+                maxDataPoints: 43200
+                metrics:
+                    - id: "1"
+                      type: count
+                query: container_name:"grants-ui" AND NOT http.user-agent.original:*curl* AND http.response.status_code:[500 TO 599]
+                queryType: lucene
+                refId: F
+                timeField: '@timestamp'
+            - refId: G
+              queryType: lucene
+              relativeTimeRange:
+                from: 900
+                to: 0
+              datasourceUid: f2b470f0-a723-4477-a07f-0f9dfe683bd8
+              model:
+                alias: Total requests (baseline window)
+                bucketAggs:
+                    - field: '@timestamp'
+                      id: "2"
+                      settings:
+                        interval: auto
+                      type: date_histogram
+                datasource:
+                    type: grafana-opensearch-datasource
+                    uid: f2b470f0-a723-4477-a07f-0f9dfe683bd8
+                format: table
+                intervalMs: 1000
+                luceneQueryType: Metric
+                maxDataPoints: 43200
+                metrics:
+                    - id: "1"
+                      type: count
+                query: container_name:"grants-ui" AND NOT http.user-agent.original:*curl*
+                queryType: lucene
+                refId: G
+                timeField: '@timestamp'
+            - refId: H
+              queryType: lucene
+              relativeTimeRange:
+                from: 900
+                to: 0
+              datasourceUid: f2b470f0-a723-4477-a07f-0f9dfe683bd8
+              model:
+                alias: 5xx requests (baseline window)
+                bucketAggs:
+                    - field: '@timestamp'
+                      id: "2"
+                      settings:
+                        interval: auto
+                      type: date_histogram
+                datasource:
+                    type: grafana-opensearch-datasource
+                    uid: f2b470f0-a723-4477-a07f-0f9dfe683bd8
+                format: table
+                intervalMs: 1000
+                luceneQueryType: Metric
+                maxDataPoints: 43200
+                metrics:
+                    - id: "1"
+                      type: count
+                query: container_name:"grants-ui" AND NOT http.user-agent.original:*curl* AND http.response.status_code:[500 TO 599]
+                queryType: lucene
+                refId: H
+                timeField: '@timestamp'
+            - refId: B
+              relativeTimeRange:
+                from: 900
+                to: 0
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                downsampler: mean
+                expression: G
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: B
+                type: resample
+                upsampler: pad
+                window: 1m
+            - refId: C
+              relativeTimeRange:
+                from: 900
+                to: 0
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                downsampler: mean
+                expression: H
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: resample
+                upsampler: pad
+                window: 1m
+            - refId: D
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                reducer: mean
+                refId: D
+                type: reduce
+            - refId: E
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                expression: F
+                intervalMs: 1000
+                maxDataPoints: 43200
+                reducer: mean
+                refId: E
+                type: reduce
+            - refId: I
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                expression: G
+                intervalMs: 1000
+                maxDataPoints: 43200
+                reducer: mean
+                refId: I
+                type: reduce
+            - refId: J
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                expression: H
+                intervalMs: 1000
+                maxDataPoints: 43200
+                reducer: mean
+                refId: J
+                type: reduce
+            - refId: K
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                expression: ($F / $A) * 100
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: K
+                type: math
+            - refId: L
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                expression: ($H / $G) * 100
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: L
+                type: math
+            - refId: M
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                expression: $K / $L
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: M
+                type: math
+            - refId: "N"
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                expression: M
+                intervalMs: 1000
+                maxDataPoints: 43200
+                reducer: max
+                refId: "N"
+                type: reduce
+            - refId: O
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 2
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                expression: "N"
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: O
+                type: threshold
+          noDataState: NoData
+          execErrState: Error
+          for: 2m
+          annotations:
+            summary: Detects sudden increases in 5xx errors for grants-ui by comparing the recent 5-minute window against a 15-minute baseline, alerting on abnormal surges.
+          labels:
+            Environment: dev
+            PagerDuty: "false"
+            Service: grants-ui
+            Team: Grants-Enablement-Team
+            environment: dev
+            pagerduty: "false"
+            service: grants-ui
+            subtype: frontend
+            teams: forms,future-grants,future-rps,grants-enablement-team
+            type: microservice
+          isPaused: false
