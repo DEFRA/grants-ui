@@ -4,9 +4,10 @@ import { PactV4, SpecificationVersion } from '@pact-foundation/pact'
 import { describe, expect, it } from 'vitest'
 import { makeGasApiRequest } from '../server/common/services/grant-application/grant-application.service.js'
 
-vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
-  log: vi.fn()
-}))
+vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
+  const { mockLogHelper } = await import('~/src/__mocks__')
+  return mockLogHelper()
+})
 
 const provider = new PactV4({
   consumer: 'grants-ui',
@@ -39,14 +40,39 @@ describe('Pact between grants-ui (consumer) and fg-gas-backend (provider)', () =
             {},
             {
               method: 'POST',
-              payload,
-              headers: {
-                Authorization: 'Bearer 00000000-0000-0000-0000-000000000000'
-              }
+              payload
             }
           )
 
           expect(response.status).toBe(204)
+        })
+    })
+  })
+
+  describe('GET /grants/{grantCode}/applications/{clientRef}/status', () => {
+    it('successfully gets the status of example-grant-with-auth application with reference egwa-123-abc', async () => {
+      await provider
+        .addInteraction()
+        .given('example-grant-with-auth-v3 is configured in fg-gas-backend')
+        .uponReceiving(
+          'a request to get the status of an example-grant-with-auth-v3 application with client reference egwa-123-abc'
+        )
+        .withRequest('GET', '/grants/example-grant-with-auth-v3/applications/egwa-123-abc/status', (builder) => {
+          builder.headers({
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer 00000000-0000-0000-0000-000000000000'
+          })
+        })
+        .willRespondWith(200)
+        .executeTest(async (mockServer) => {
+          const response = await makeGasApiRequest(
+            `${mockServer.url}/grants/example-grant-with-auth-v3/applications/egwa-123-abc/status`,
+            'example-grant-with-auth-v3',
+            {},
+            { method: 'GET' }
+          )
+
+          expect(response.status).toBe(200)
         })
     })
   })
