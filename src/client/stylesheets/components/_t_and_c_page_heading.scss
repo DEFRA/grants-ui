@@ -1,0 +1,17 @@
+@use "govuk-frontend" as *;
+
+.defra-terms_and_conditions_page_heading {
+  @include govuk-responsive-padding(6, "left");
+  @include govuk-responsive-padding(5, "top");
+  @include govuk-responsive-padding(5, "bottom");
+  @include govuk-responsive-margin(6, "right");
+  @extend %govuk-heading-l;
+  color: govuk-colour("white");
+  background-color: govuk-colour("blue");
+
+}
+
+.defra-terms_and_conditions_page_heading__caption {
+  @include govuk-font($size: 16);
+  color: govuk-colour("white");
+}

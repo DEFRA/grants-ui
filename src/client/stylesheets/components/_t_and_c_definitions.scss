@@ -1,0 +1,20 @@
+@use "govuk-frontend" as *;
+
+.defra-terms_and_conditions_definitions {
+  div {
+    @include govuk-responsive-margin(5, "bottom");
+  }
+
+  dt {
+    @include govuk-font($size: 19, $weight: bold);
+    margin-right: 5px;     // Space between term and description
+    flex-shrink: 0;        // Prevents the term from shrinking
+    display: inline;
+  }
+
+  dd {
+    @include govuk-font($size: 19, $weight: regular);
+    display: inline;
+    margin-left: 0;        // Reset default browser margin
+  }
+}
