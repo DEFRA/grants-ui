@@ -1,0 +1,28 @@
+@use "govuk-frontend" as *;
+
+.defra-sidebar {
+  max-height: 100vh;
+  overflow-y: auto;
+  margin-bottom: 20px;
+}
+
+@include govuk-media-query($from: tablet) {
+  .defra-sidebar {
+    position: sticky;
+    top: 10px;
+  }
+}
+
+.defra-sidebar__title {
+  @include govuk-font($size: 16, $weight: regular, $line-height: 1.5);
+  margin: 0;
+}
+
+.defra-sidebar__list {
+  @include govuk-font-size(16);
+  list-style: none;
+
+  li {
+    @include govuk-responsive-margin(2, "top");
+  }
+}
