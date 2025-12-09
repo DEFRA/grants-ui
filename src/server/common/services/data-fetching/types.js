@@ -5,7 +5,7 @@
 
 /**
  * @typedef {object} QueryObject
- * @property {string} query
+ * @property {string|object} query
  * @property {function(object): any} formatResponse
  */
 
@@ -23,5 +23,3 @@
  * @property {FetchRequestHeaders} [headers] - HTTP headers
  * @property {object|string} [body] - Request body
  */
-
-export {}
