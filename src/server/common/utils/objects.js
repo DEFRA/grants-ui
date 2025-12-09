@@ -1,8 +1,9 @@
 /**
  * Determines whether the provided value is an object.
  *
- * @param {unknown} value - The value to evaluate.
- * @return {value is Record<string, any>} True if value is an object, false otherwise.
+ * @template T
+ * @param {import('./types.js').AnyObject | T } value - The value to evaluate.
+ * @return {value is T} True if value is an object, false otherwise.
  */
 export function isObject(value) {
   return (

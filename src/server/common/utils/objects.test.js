@@ -17,6 +17,19 @@ describe('isObject', () => {
     expect(isObject(function test() {})).toBe(false)
   })
 
+  it('returns false for null', () => {
+    expect(isObject(null)).toBe(false)
+  })
+
+  it('returns false for undefined', () => {
+    expect(isObject(undefined)).toBe(false)
+  })
+
+  it('should return false for objects with a custom prototype', () => {
+    const customProto = Object.create({ custom: true })
+    expect(isObject(customProto)).toBe(false)
+  })
+
   it('should return false for class instances', () => {
     class Test {}
 
@@ -31,24 +44,12 @@ describe('isObject', () => {
     expect(isObject(null)).toBe(false)
   })
 
-  it('returns false for null', () => {
-    expect(isObject(null)).toBe(false)
-  })
-
   it('returns false for primitive types', () => {
     expect(isObject(42)).toBe(false)
     expect(isObject('string')).toBe(false)
     expect(isObject(true)).toBe(false)
     expect(isObject(undefined)).toBe(false)
     expect(isObject(Symbol('test'))).toBe(false)
-  })
-
-  it('returns false for functions', () => {
-    expect(isObject(() => {})).toBe(false)
-  })
-
-  it('returns false for undefined', () => {
-    expect(isObject(undefined)).toBe(false)
   })
 
   it('returns false for built-in objects', () => {
@@ -74,10 +75,5 @@ describe('isObject', () => {
       date: new Date()
     }
     expect(isObject(complexObj)).toBe(true)
-  })
-
-  it('should return false for objects with a custom prototype', () => {
-    const customProto = Object.create({ custom: true })
-    expect(isObject(customProto)).toBe(false)
   })
 })
