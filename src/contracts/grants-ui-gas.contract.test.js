@@ -53,7 +53,7 @@ describe('Pact between grants-ui (consumer) and fg-gas-backend (provider)', () =
     it('successfully gets the status of example-grant-with-auth application with reference egwa-123-abc', async () => {
       await provider
         .addInteraction()
-        .given('example-grant-with-auth-v3 is configured in fg-gas-backend')
+        .given('example-grant-with-auth-v3 is configured in fg-gas-backend with a client reference egwa-123-abc')
         .uponReceiving(
           'a request to get the status of an example-grant-with-auth-v3 application with client reference egwa-123-abc'
         )
