@@ -1,33 +1,46 @@
-import { isStrictObject } from './isStrictObject.js'
+/**
+ * @typedef {import('./types.js').AnyObject} AnyObject
+ */
+
+import { isObject } from './objects.js'
+import { deepClone } from './deepClone.js'
 
 /**
- * Deeply merges two objects by recursively combining their properties
+ * Deeply merges two plain objects into a new object.
  *
- * @param {object} target - The target object that will receive properties
- * @param {object} source - The source object whose properties will be merged into the target
- * @returns {object }A new object containing the merged properties of both inputs
+ * Behavior:
+ * - If both `target[key]` and `source[key]` are plain objects,
+ *   they are merged recursively.
+ * - `source[key]` takes precedence over `target[key]`, after being deep-cloned.
+ * - Nested arrays / Maps / Sets / plain objects coming from either side
+ *   are cloned.
+ * - Non-plain objects (class instances, functions, DOM nodes, etc.) are
+ *   assigned by reference from `source`.
  *
- * @example
- * const obj1 = { a: 1, b: { c: 2 } };
- * const obj2 = { b: { d: 3 }, e: 4 };
- * const result = deepMerge(obj1, obj2);
- * // result: { a: 1, b: { c: 2, d: 3 }, e: 4 }
+ * @template T
+ * @template S
+ * @param {T & AnyObject} target
+ * @param {S & AnyObject} source
+ * @returns {T & S}
  */
 export function deepMerge(target, source) {
-  const output = { ...target }
+  /** @type {AnyObject} */
+  const output = deepClone(target)
 
-  if (isStrictObject(source)) {
-    Object.keys(source).forEach((key) => {
-      const sourceValue = source[key]
-      const targetValue = target[key]
-
-      if (isStrictObject(sourceValue) && isStrictObject(targetValue)) {
-        output[key] = deepMerge(targetValue, sourceValue)
-      } else {
-        output[key] = sourceValue
-      }
-    })
+  if (!isObject(source)) {
+    return /** @type {T & S} */ (output)
   }
 
-  return output
+  for (const key of Object.keys(source)) {
+    const sourceValue = source[key]
+    const targetValue = output[key]
+
+    if (isObject(sourceValue) && isObject(targetValue)) {
+      output[key] = deepMerge(/** @type {AnyObject} */ (targetValue), /** @type {AnyObject} */ (sourceValue))
+    } else {
+      output[key] = deepClone(sourceValue)
+    }
+  }
+
+  return /** @type {T & S} */ (output)
 }
