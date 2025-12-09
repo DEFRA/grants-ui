@@ -4,6 +4,58 @@ metadata:
   submission:
     grantCode: methane
   grantRedirectRules: null
+  detailsPage:
+    query:
+      name: Business
+      entities:
+        - name: customer
+          variableName: crn
+          variableSource: credentials.crn
+          fields:
+            - path: info
+              fields:
+                - path: name
+                  fields:
+                    - path: title
+                    - path: first
+                    - path: middle
+                    - path: last
+        - name: business
+          variableName: sbi
+          variableSource: credentials.sbi
+          fields:
+            - path: info
+              fields:
+                - path: reference
+                - path: email
+                  fields:
+                    - path: address
+                - path: phone
+                  fields:
+                    - path: mobile
+                - path: name
+                - path: address
+                  fields:
+                    - path: line1
+                    - path: line2
+                    - path: line3
+                    - path: line4
+                    - path: line5
+                    - path: street
+                    - path: city
+                    - path: postalCode
+                - path: vat
+                - path: type
+                  fields:
+                    - path: code
+                    - path: type
+            - path: countyParishHoldings
+              fields:
+                - path: cphNumber
+    responseMapping:
+      business: data.business.info
+      countyParishHoldings: data.business.countyParishHoldings[0].cphNumber
+      customer: data.customer.info
   confirmationContent:
     html: |
       <h2 class="govuk-heading-m">What happens next</h2>
