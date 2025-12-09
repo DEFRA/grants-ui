@@ -22,12 +22,7 @@ export class FetchClient {
    * @type {FetchRequestOptions}
    * @private
    */
-  _fetchOptions = {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    }
-  }
+  _fetchOptions = FetchClient.defaultFetchOptions
 
   /**
    * @param {URL} endpoint
@@ -49,19 +44,14 @@ export class FetchClient {
       }
     }
 
-    return await fetch(this.endpoint, this.fetchOptions)
+    return fetch(this.endpoint, this.fetchOptions)
   }
 
   /**
    * Resets fetch options to default values.
    */
   resetFetchOptions() {
-    this._fetchOptions = {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    }
+    this._fetchOptions = FetchClient.defaultFetchOptions
   }
 
   /**
@@ -76,5 +66,15 @@ export class FetchClient {
    */
   get fetchOptions() {
     return this._fetchOptions
+  }
+}
+
+/**
+ * @type {FetchRequestOptions}
+ */
+FetchClient.defaultFetchOptions = {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
   }
 }
