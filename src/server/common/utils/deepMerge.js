@@ -17,10 +17,10 @@ import { deepClone } from './deepClone.js'
  * - Non-plain objects (class instances, functions, DOM nodes, etc.) are
  *   assigned by reference from `source`.
  *
- * @template T
- * @template S
- * @param {T & AnyObject} target
- * @param {S & AnyObject} source
+ * @template {AnyObject} T
+ * @template {AnyObject} S
+ * @param {T} target
+ * @param {S} source
  * @returns {T & S}
  */
 export function deepMerge(target, source) {
