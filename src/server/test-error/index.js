@@ -1,4 +1,4 @@
-import { testErrorController, testSlowController } from './test-error.controller.js'
+import { testErrorController, testSlowController, testOkController } from './test-error.controller.js'
 
 /**
  * @satisfies {ServerRegisterPluginObject<void>}
@@ -22,6 +22,14 @@ export const testError = {
           auth: { mode: 'optional' }
         },
         ...testSlowController
+      })
+      server.route({
+        method: 'GET',
+        path: '/test-ok',
+        options: {
+          auth: { mode: 'optional' }
+        },
+        ...testOkController
       })
     }
   }

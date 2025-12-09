@@ -54,5 +54,21 @@ export const testSlowController = {
 }
 
 /**
+ * Test OK endpoint for alerting infrastructure testing
+ * Returns a successful HTTP 200 response
+ * @satisfies {Partial<ServerRoute>}
+ */
+export const testOkController = {
+  handler(request, h) {
+    return h
+      .response({
+        message: 'Test OK response - this is intentional',
+        status: 'success'
+      })
+      .code(200)
+  }
+}
+
+/**
  * @import { ServerRoute } from '@hapi/hapi'
  */
