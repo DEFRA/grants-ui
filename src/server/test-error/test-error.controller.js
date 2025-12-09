@@ -22,5 +22,37 @@ export const testErrorController = {
 }
 
 /**
+ * Test slow response endpoint for alerting infrastructure testing
+ * Delays the response by the specified number of milliseconds
+ * @satisfies {Partial<ServerRoute>}
+ */
+export const testSlowController = {
+  async handler(request, h) {
+    const milliseconds = parseInt(request.params.milliseconds, 10)
+
+    // Validate milliseconds is a positive number and not unreasonably large
+    if (isNaN(milliseconds) || milliseconds < 0) {
+      throw Boom.badRequest('Milliseconds must be a positive number')
+    }
+
+    if (milliseconds > 300000) {
+      // 5 minutes max
+      throw Boom.badRequest('Milliseconds must not exceed 300000 (5 minutes)')
+    }
+
+    // Wait for the specified duration
+    await new Promise((resolve) => setTimeout(resolve, milliseconds))
+
+    // Return success response
+    return h
+      .response({
+        message: `Test slow response completed after ${milliseconds}ms - this is intentional`,
+        delay: milliseconds
+      })
+      .code(200)
+  }
+}
+
+/**
  * @import { ServerRoute } from '@hapi/hapi'
  */
