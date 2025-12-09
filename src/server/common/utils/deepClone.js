@@ -35,7 +35,6 @@ export function deepClone(value, seen = new WeakMap()) {
     return /** @type {T} */ (existing)
   }
 
-  // Array
   if (Array.isArray(value)) {
     const arr = []
     seen.set(asObj, arr)
