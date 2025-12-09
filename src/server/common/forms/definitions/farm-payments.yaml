@@ -116,7 +116,7 @@ pages:
     controller: LandGrantsGenericPageController
     next: []
     id: 25a01ad6-b993-4ba2-8eaf-d52c285d6ff9
-  - title: Technical test information
+  - title: Farm payments technical test information
     path: /technical-test-information
     controller: LandGrantsGenericPageController
     next: []
