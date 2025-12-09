@@ -21,7 +21,7 @@ class ExternalDataService {
    * @returns {Promise<*>}
    */
   async fetch(queryObject) {
-    return await this.apiClient.fetch(queryObject)
+    return this.apiClient.fetch(queryObject)
   }
 }
 
