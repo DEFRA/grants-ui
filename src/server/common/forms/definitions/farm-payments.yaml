@@ -111,7 +111,7 @@ pages:
     controller: SubmissionPageController
     next: []
     id: 5a1535ca-0c2a-4d34-80d7-385f17dfbf5e
-  - title: Farm Payments Technical Test - agreement terms and conditions
+  - title: Farm payments technical test terms and conditions
     path: /terms-and-conditions
     controller: LandGrantsGenericPageController
     next: []

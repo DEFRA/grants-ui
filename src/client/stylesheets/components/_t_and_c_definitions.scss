@@ -7,14 +7,13 @@
 
   dt {
     @include govuk-font($size: 19, $weight: bold);
-    margin-right: 5px;     // Space between term and description
-    flex-shrink: 0;        // Prevents the term from shrinking
+    margin-right: 0;
     display: inline;
   }
 
   dd {
     @include govuk-font($size: 19, $weight: regular);
     display: inline;
-    margin-left: 0;        // Reset default browser margin
+    margin-left: 0;
   }
 }
