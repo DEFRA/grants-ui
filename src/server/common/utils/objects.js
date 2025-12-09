@@ -1,8 +1,12 @@
 /**
+ * @typedef {import('./types.js').AnyObject} AnyObject
+ */
+
+/**
  * Determines whether the provided value is an object.
  *
- * @template T
- * @param {import('./types.js').AnyObject | T } value - The value to evaluate.
+ * @template {AnyObject} T
+ * @param {T} value - The value to evaluate.
  * @return {value is T} True if value is an object, false otherwise.
  */
 export function isObject(value) {
@@ -16,7 +20,7 @@ export function isObject(value) {
 
 /**
  * Determines whether the provided object is empty
- * @param {import('./types.js').AnyObject} obj
+ * @param {AnyObject} obj
  * @returns {boolean}
  */
 export function isObjectEmpty(obj) {
