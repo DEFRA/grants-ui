@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'fs'
 import { resolve } from 'path'
 import { parse } from 'yaml'
-import { buildGraphQLQuery, mapResponse } from './index.js'
+import { buildGraphQLQuery, mapResponse, GraphQLQueryBuilderError, validateQueryConfig } from './index.js'
 
 const loadYaml = (filename) => parse(readFileSync(resolve(import.meta.dirname, '__fixtures__', filename), 'utf8'))
 
@@ -103,6 +103,73 @@ describe('Details Page Utilities', () => {
 
       expect(result).toBe(expectedQuery)
     })
+
+    it('should throw GraphQLQueryBuilderError when variableSource is missing', () => {
+      const configWithMissingSource = {
+        name: 'TestQuery',
+        entities: [
+          {
+            name: 'customer',
+            variableName: 'crn',
+            variableSource: undefined,
+            fields: [{ path: 'info' }]
+          }
+        ]
+      }
+
+      expect(() => buildGraphQLQuery(configWithMissingSource, createMockRequest('CRN123', '123456789'))).toThrow(
+        GraphQLQueryBuilderError
+      )
+      expect(() => buildGraphQLQuery(configWithMissingSource, createMockRequest('CRN123', '123456789'))).toThrow(
+        'Variable source is required but was not provided'
+      )
+    })
+
+    it('should throw GraphQLQueryBuilderError when variable path cannot be resolved', () => {
+      const configWithInvalidPath = {
+        name: 'TestQuery',
+        entities: [
+          {
+            name: 'customer',
+            variableName: 'crn',
+            variableSource: 'credentials.nonexistent',
+            fields: [{ path: 'info' }]
+          }
+        ]
+      }
+
+      expect(() => buildGraphQLQuery(configWithInvalidPath, createMockRequest('CRN123', '123456789'))).toThrow(
+        GraphQLQueryBuilderError
+      )
+      expect(() => buildGraphQLQuery(configWithInvalidPath, createMockRequest('CRN123', '123456789'))).toThrow(
+        "Could not resolve variable from source 'credentials.nonexistent'"
+      )
+    })
+
+    it('should throw GraphQLQueryBuilderError when resolved value is null', () => {
+      const configWithNullValue = {
+        name: 'TestQuery',
+        entities: [
+          {
+            name: 'customer',
+            variableName: 'crn',
+            variableSource: 'credentials.crn',
+            fields: [{ path: 'info' }]
+          }
+        ]
+      }
+
+      const requestWithNullCrn = {
+        auth: {
+          credentials: { crn: null, sbi: '123456789' }
+        }
+      }
+
+      expect(() => buildGraphQLQuery(configWithNullValue, requestWithNullCrn)).toThrow(GraphQLQueryBuilderError)
+      expect(() => buildGraphQLQuery(configWithNullValue, requestWithNullCrn)).toThrow(
+        "Could not resolve variable from source 'credentials.crn'"
+      )
+    })
   })
 
   describe('mapResponse', () => {
@@ -194,6 +261,106 @@ describe('Details Page Utilities', () => {
         countyParishHoldings: '50/123/4567',
         customer: apiResponse.data.customer.info
       })
+    })
+  })
+
+  describe('validateQueryConfig', () => {
+    it('should pass validation for valid config', () => {
+      expect(() => validateQueryConfig(simpleConfig.metadata.detailsPage.query)).not.toThrow()
+      expect(() => validateQueryConfig(fullConfig.metadata.detailsPage.query)).not.toThrow()
+    })
+
+    const validEntity = {
+      name: 'customer',
+      variableName: 'crn',
+      variableSource: 'credentials.crn',
+      fields: [{ path: 'id' }]
+    }
+
+    it.each([
+      ['config is null', null, 'Query config must be an object'],
+      ['config is undefined', undefined, 'Query config must be an object'],
+      ['config is a string', 'string', 'Query config must be an object'],
+      ['config.name is missing', { entities: [validEntity] }, 'Query config must have a name'],
+      ['entities array is missing', { name: 'TestQuery' }, 'Query config must have at least one entity'],
+      ['entities array is empty', { name: 'TestQuery', entities: [] }, 'Query config must have at least one entity'],
+      [
+        'entity is missing name',
+        {
+          name: 'TestQuery',
+          entities: [{ variableName: 'crn', variableSource: 'credentials.crn', fields: [{ path: 'id' }] }]
+        },
+        'Entity must have a name'
+      ],
+      [
+        'entity is missing variableName',
+        {
+          name: 'TestQuery',
+          entities: [{ name: 'customer', variableSource: 'credentials.crn', fields: [{ path: 'id' }] }]
+        },
+        "Entity 'customer' must have a variableName"
+      ],
+      [
+        'entity is missing variableSource',
+        { name: 'TestQuery', entities: [{ name: 'customer', variableName: 'crn', fields: [{ path: 'id' }] }] },
+        "Entity 'customer' must have a variableSource"
+      ],
+      [
+        'entity fields is missing',
+        { name: 'TestQuery', entities: [{ name: 'customer', variableName: 'crn', variableSource: 'credentials.crn' }] },
+        "Entity 'customer' must have a non-empty fields array"
+      ],
+      [
+        'entity fields is empty',
+        {
+          name: 'TestQuery',
+          entities: [{ name: 'customer', variableName: 'crn', variableSource: 'credentials.crn', fields: [] }]
+        },
+        "Entity 'customer' must have a non-empty fields array"
+      ],
+      [
+        'field is missing path',
+        {
+          name: 'TestQuery',
+          entities: [
+            { name: 'customer', variableName: 'crn', variableSource: 'credentials.crn', fields: [{ notPath: 'id' }] }
+          ]
+        },
+        "Field at 'customer' must have a path property"
+      ],
+      [
+        'nested fields is not an array',
+        {
+          name: 'TestQuery',
+          entities: [
+            {
+              name: 'customer',
+              variableName: 'crn',
+              variableSource: 'credentials.crn',
+              fields: [{ path: 'info', fields: 'not-array' }]
+            }
+          ]
+        },
+        "Field 'customer.info' has invalid fields property (must be an array)"
+      ],
+      [
+        'deeply nested field is missing path',
+        {
+          name: 'TestQuery',
+          entities: [
+            {
+              name: 'customer',
+              variableName: 'crn',
+              variableSource: 'credentials.crn',
+              fields: [{ path: 'info', fields: [{ path: 'name', fields: [{ notPath: 'first' }] }] }]
+            }
+          ]
+        },
+        "Field at 'customer.info.name' must have a path property"
+      ]
+    ])('should throw when %s', (_description, config, expectedMessage) => {
+      expect(() => validateQueryConfig(config)).toThrow(GraphQLQueryBuilderError)
+      expect(() => validateQueryConfig(config)).toThrow(expectedMessage)
     })
   })
 })

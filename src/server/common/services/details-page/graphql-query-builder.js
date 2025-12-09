@@ -5,6 +5,24 @@
  * GraphQL queries based on configuration defined in YAML metadata.
  */
 
+import { escapeGraphQLString } from '~/src/server/common/helpers/graphql-utils.js'
+import { resolvePath } from '~/src/server/common/helpers/path-utils.js'
+import { statusCodes } from '~/src/server/common/constants/status-codes.js'
+
+export class GraphQLQueryBuilderError extends Error {
+  constructor(message, statusCode, source, reason) {
+    super(message)
+    this.name = 'GraphQLQueryBuilderError'
+    this.status = statusCode
+    this.source = source
+    this.reason = reason
+  }
+}
+
+function throwConfigError(message, reason) {
+  throw new GraphQLQueryBuilderError(message, statusCodes.internalServerError, 'config', reason)
+}
+
 /**
  * @typedef {object} QueryFieldConfig
  * @property {string} path - The GraphQL field path
@@ -24,6 +42,82 @@
  * @property {string} name - Query operation name
  * @property {QueryEntityConfig[]} entities - Entities to query
  */
+
+/**
+ * Validates a field configuration recursively
+ * @param {QueryFieldConfig} field - The field to validate
+ * @param {string} context - Context path for error messages (e.g., 'customer.info')
+ */
+function validateFieldConfig(field, context) {
+  if (!field.path || typeof field.path !== 'string') {
+    throwConfigError(`Field at '${context}' must have a path property`, 'missing_field_path')
+  }
+
+  const fieldContext = context ? `${context}.${field.path}` : field.path
+
+  if (field.fields !== undefined) {
+    if (!Array.isArray(field.fields)) {
+      throwConfigError(
+        `Field '${fieldContext}' has invalid fields property (must be an array)`,
+        'invalid_nested_fields'
+      )
+    }
+
+    for (const nestedField of field.fields) {
+      validateFieldConfig(nestedField, fieldContext)
+    }
+  }
+}
+
+/**
+ * Validates an entity configuration
+ * @param {QueryEntityConfig} entity - The entity to validate
+ */
+function validateEntityConfig(entity) {
+  if (!entity.name || typeof entity.name !== 'string') {
+    throwConfigError('Entity must have a name', 'missing_entity_name')
+  }
+
+  if (!entity.variableName || typeof entity.variableName !== 'string') {
+    throwConfigError(`Entity '${entity.name}' must have a variableName`, 'missing_variable_name')
+  }
+
+  if (!entity.variableSource || typeof entity.variableSource !== 'string') {
+    throwConfigError(`Entity '${entity.name}' must have a variableSource`, 'missing_variable_source')
+  }
+
+  if (!Array.isArray(entity.fields) || entity.fields.length === 0) {
+    throwConfigError(`Entity '${entity.name}' must have a non-empty fields array`, 'missing_entity_fields')
+  }
+
+  for (const field of entity.fields) {
+    validateFieldConfig(field, entity.name)
+  }
+}
+
+/**
+ * Validates a query configuration object
+ * Call this at config load time to catch configuration errors early
+ * @param {QueryConfig} config - The query configuration to validate
+ * @throws {GraphQLQueryBuilderError} If the configuration is invalid
+ */
+export function validateQueryConfig(config) {
+  if (!config || typeof config !== 'object') {
+    throwConfigError('Query config must be an object', 'invalid_config')
+  }
+
+  if (!config.name || typeof config.name !== 'string') {
+    throwConfigError('Query config must have a name', 'missing_query_name')
+  }
+
+  if (!Array.isArray(config.entities) || config.entities.length === 0) {
+    throwConfigError('Query config must have at least one entity', 'missing_entities')
+  }
+
+  for (const entity of config.entities) {
+    validateEntityConfig(entity)
+  }
+}
 
 /**
  * Creates a GraphQL query builder with optional dependencies
@@ -54,30 +148,26 @@ export function createGraphQLQueryBuilder() {
   }
 
   /**
-   * Resolves a variable value from the request context
+   * Resolves a variable value from credentials
    * @param {string|undefined} source - Source path (e.g., 'credentials.sbi')
-   * @param {object} request - Hapi request object
-   * @returns {string}
+   * @param {object} credentials - The credentials object
+   * @returns {string|undefined} The resolved value as string, or undefined
    */
-  function resolveVariable(source, request) {
+  function resolveVariable(source, credentials) {
     if (!source) {
-      return ''
+      return undefined
     }
 
-    const parts = source.split('.')
-    let value = request
+    // Strip 'credentials.' prefix if present
+    const path = source.startsWith('credentials.') ? source.slice('credentials.'.length) : source
 
-    for (const part of parts) {
-      if (value && typeof value === 'object' && part in value) {
-        value = value[part]
-      } else if (part === 'credentials' && request.auth?.credentials) {
-        value = request.auth.credentials
-      } else {
-        return ''
-      }
+    const value = resolvePath(credentials, path)
+
+    if (value === null || value === undefined) {
+      return undefined
     }
 
-    return String(value ?? '')
+    return String(value)
   }
 
   /**
@@ -88,11 +178,25 @@ export function createGraphQLQueryBuilder() {
    * @returns {string} GraphQL query string
    */
   function buildGraphQLQuery(config, request) {
+    const credentials = request.auth?.credentials
     const lines = [`query ${config.name} {`]
 
     for (const entity of config.entities) {
-      const variableValue = resolveVariable(entity.variableSource, request)
-      lines.push(`  ${entity.name}(${entity.variableName}: "${variableValue}") {`)
+      const variableValue = resolveVariable(entity.variableSource, credentials)
+
+      if (variableValue === undefined) {
+        throw new GraphQLQueryBuilderError(
+          entity.variableSource
+            ? `Could not resolve variable from source '${entity.variableSource}'`
+            : 'Variable source is required but was not provided',
+          statusCodes.badRequest,
+          entity.variableSource,
+          entity.variableSource ? 'path_not_found' : 'missing_source'
+        )
+      }
+
+      const escapedVariableValue = escapeGraphQLString(variableValue)
+      lines.push(`  ${entity.name}(${entity.variableName}: "${escapedVariableValue}") {`)
       lines.push(buildFieldSelection(entity.fields, 2))
       lines.push('  }')
     }
