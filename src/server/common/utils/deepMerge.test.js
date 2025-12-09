@@ -87,7 +87,7 @@ describe('deepMerge', () => {
       const result = deepMerge(target, source)
       result.b.c = 3
       expect(result).toHaveProperty('b.c', 3)
-      expect(source).not.toHaveProperty('b.c', 3)
+      expect(source).toHaveProperty('b.c', 2)
     })
 
     it('should create independent copies of nested arrays from source', () => {
