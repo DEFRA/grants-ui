@@ -8,8 +8,8 @@ const LogLevel = {
   DEBUG: 'debug'
 }
 
-const objectNotEmpty = logicalNot(isObjectEmpty)
-const isStrictObject = logicalAnd(isObject, objectNotEmpty)
+const isObjectNotEmpty = logicalNot(isObjectEmpty)
+const isNonEmptyObject = logicalAnd(isObject, isObjectNotEmpty)
 
 Object.freeze(LogLevel)
 
@@ -31,7 +31,7 @@ Object.freeze(LogLevel)
  * @throws {Error} Throws an error if `logCode.messageFunc` is not a function.
  */
 export const validateLogCode = (logCode) => {
-  if (!isStrictObject(logCode)) {
+  if (!isNonEmptyObject(logCode)) {
     throw new Error('logCode must be a non-empty object')
   }
 
