@@ -3,6 +3,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { config } from '~/src/config/config.js'
 import { getValidToken } from '~/src/server/common/helpers/entra/token-manager.js'
+import { escapeGraphQLString } from '~/src/server/common/helpers/graphql-utils.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
@@ -171,9 +172,9 @@ export async function fetchParcelsFromDal(request) {
   const { credentials: { sbi } = {} } = request.auth ?? {}
   const query = `
     query Business {
-      business(sbi: "${sbi}") {
+      business(sbi: "${escapeGraphQLString(sbi)}") {
         land {
-          parcels(date: "${new Date().toISOString()}") {
+          parcels(date: "${escapeGraphQLString(new Date().toISOString())}") {
             parcelId
             sheetId
           }
@@ -196,7 +197,7 @@ export async function fetchBusinessAndCustomerInformation(request) {
   const { credentials: { sbi, crn } = {} } = request.auth ?? {}
   const query = `
     query Business {
-      customer(crn: "${crn}") {
+      customer(crn: "${escapeGraphQLString(crn)}") {
         info {
           name {
             title
@@ -206,7 +207,7 @@ export async function fetchBusinessAndCustomerInformation(request) {
           }
         }
       }
-      business(sbi: "${sbi}") {
+      business(sbi: "${escapeGraphQLString(sbi)}") {
         info {
           reference
           email {
@@ -259,7 +260,7 @@ export async function fetchBusinessAndCPH(request) {
 
   const query = `
     query Business {
-      customer(crn: "${crn}") {
+      customer(crn: "${escapeGraphQLString(crn)}") {
         info {
           name {
             title
@@ -269,7 +270,7 @@ export async function fetchBusinessAndCPH(request) {
           }
         }
       }
-      business(sbi: "${sbi}") {
+      business(sbi: "${escapeGraphQLString(sbi)}") {
         info {
           reference
           email {
