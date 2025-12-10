@@ -50,7 +50,7 @@
     "test:acceptance": "./tools/run-acceptance-tests.sh",
     "test:watch": "vitest --watch",
     "server:watch": "nodemon --ext js,mjs,json,njk,html --exec tsx --enable-source-maps ./src",
-    "server:debug": "nodemon --ext js,mjs,json,njk,html --signal SIGTERM --exec \"sh -c 'sleep 2 && tsx --enable-source-maps --inspect=0.0.0.0:9229 --inspect-wait ./src'\"",
+    "server:debug": "nodemon --ext js,mjs,json,njk,html --signal SIGTERM --exec tsx --enable-source-maps --inspect=0.0.0.0:9229 --inspect-wait ./src",
     "snyk-test": "snyk test",
     "snyk-monitor": "snyk monitor",
     "prestart": "npm run build",
