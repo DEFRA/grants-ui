@@ -10,6 +10,7 @@ Core delivery platform Node.js Frontend Template.
   - [Node.js](#nodejs)
 - [DXT Forms Engine Plugin](#dxt-forms-engine-plugin)
 - [Features](#features)
+- [Tasklist System](#tasklist-system)
 - [Development Tools & Configuration](#development-tools--configuration)
   - [Testing Framework](#testing-framework)
   - [Code Quality & Linting](#code-quality--linting)
@@ -143,6 +144,17 @@ sequenceDiagram
   GAS-->>Ctrl: Submission result
   Ctrl-->>User: Redirect to confirmation
 ```
+
+## Tasklist System
+
+A configurable tasklist system for multi-step workflows:
+
+- **YAML Configuration**: Define workflow structure in YAML files
+- **Conditional Logic**: Show/hide sections based on user data
+- **Dependencies**: Control section availability based on completion status
+- **Status Tracking**: Automatic calculation of completion status
+
+For detailed documentation on the tasklist system, see the [Tasklist Documentation](https://github.com/DEFRA/grants-ui/tree/main/src/server/tasklist).
 
 ## Development Tools & Configuration
 
