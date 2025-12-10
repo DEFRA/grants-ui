@@ -8,29 +8,23 @@
 import { resolvePath } from '~/src/server/common/helpers/path-utils.js'
 
 /**
- * Creates a response mapper with optional dependencies
- * @returns {{ mapResponse: (responseMapping: Record<string, string>, response: object) => object }}
+ * Maps API response to a new structure based on YAML configuration
+ *
+ * @param {Record<string, string>} responseMapping - Key-to-path mapping from YAML
+ * @param {object} response - Raw API response
+ * @returns {object} Mapped response object
+ * @throws {Error} If responseMapping or response are null or undefined
  */
-export function createResponseMapper() {
-  /**
-   * Maps API response to a new structure based on YAML configuration
-   *
-   * @param {Record<string, string>} responseMapping - Key-to-path mapping from YAML
-   * @param {object} response - Raw API response
-   * @returns {object} Mapped response object
-   */
-  function mapResponse(responseMapping, response) {
-    const result = {}
-
-    for (const [key, path] of Object.entries(responseMapping)) {
-      result[key] = resolvePath(response, path)
-    }
-
-    return result
+export function mapResponse(responseMapping, response) {
+  if (!responseMapping || !response) {
+    throw new Error('Response mapping and response object are required')
   }
 
-  return { mapResponse }
-}
+  const result = {}
 
-const { mapResponse } = createResponseMapper()
-export { mapResponse }
+  for (const [key, path] of Object.entries(responseMapping)) {
+    result[key] = resolvePath(response, path)
+  }
+
+  return result
+}
