@@ -301,6 +301,11 @@ export const formsStatusCallback = async (request, h, context) => {
   const previousStatus = context.state.applicationStatus
   const grantRedirectRules = request.app.model?.def?.metadata?.grantRedirectRules
 
+  // Don't redirect if page is listed in the grant config excludedPaths
+  if (grantRedirectRules?.excludedPaths?.includes(request.params?.path)) {
+    return h.continue
+  }
+
   if (shouldHandlePreSubmission(previousStatus)) {
     return preSubmissionRedirect(request, h, context)
   }
