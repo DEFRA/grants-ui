@@ -905,6 +905,19 @@ If you are having issues with formatting of line breaks on Windows update your g
 git config --global core.autocrlf false
 ```
 
+### Authorise Snyk
+
+Run `snyk auth` to authenticate your local machine with Snyk.
+
+### Dependabot
+
+We have added an example dependabot configuration file to the repository. You can enable it by renaming
+the [.github/example.dependabot.yml](.github/example.dependabot.yml) to `.github/dependabot.yml`
+
+### SonarCloud
+
+Instructions for setting up SonarCloud can be found in [sonar-project.properties](./sonar-project.properties).
+
 ## Docker
 
 ### Development image
@@ -1047,18 +1060,56 @@ Notes:
 - Certificates are mounted from `nginx/certs` (`nginx.crt` and `nginx.key`). Your browser may require trusting the cert the first time you visit `https://localhost:4000`.
 - The UI container is configured with `NODE_EXTRA_CA_CERTS=/etc/ssl/certs/nginx.crt` so it trusts the proxy's certificate when calling internal HTTPS endpoints.
 
-**Authorise Snyk**
+### Debugging with Docker
 
-Run `snyk auth` to authenticate your local machine with Snyk.
+You can run the app in a Docker container with the Node.js inspector enabled and attach your IDE debugger.
 
-### Dependabot
+1. Start the stack (Redis, MongoDB, etc.):
 
-We have added an example dependabot configuration file to the repository. You can enable it by renaming
-the [.github/example.dependabot.yml](.github/example.dependabot.yml) to `.github/dependabot.yml`
+```bash
+npm run docker:up
+```
 
-### SonarCloud
+2. Start the UI service in debug mode (exposes inspector on port 9229 and waits for a debugger to attach):
 
-Instructions for setting up SonarCloud can be found in [sonar-project.properties](./sonar-project.properties).
+```bash
+npm run docker:debug
+```
+
+Notes:
+
+- The command above stops any running `grants-ui` container and starts a one-off debug container with `--service-ports` so ports `3000` and `9229` are available on your host.
+- The underlying script runs the server with `--inspect=0.0.0.0:9229 --inspect-wait` so execution will pause until your debugger attaches.
+
+Attach your IDE debugger:
+
+- IntelliJ IDEA / WebStorm (Node.js plugin):
+  - Run | Edit Configurations… → Add New → Attach to Node.js.
+  - Host: `localhost`, Port: `9229` (do not enable “Reconnect automatically”).
+  - Click Debug to attach. Breakpoints in `/src` should bind once the app starts.
+
+- VS Code:
+  - Run and Debug → create or update `.vscode/launch.json` with an Attach config, for example:
+
+    ```json
+    {
+      "version": "0.2.0",
+      "configurations": [
+        {
+          "type": "node",
+          "request": "attach",
+          "name": "Attach to Docker (9229)",
+          "address": "localhost",
+          "port": 9229,
+          "protocol": "inspector",
+          "localRoot": "${workspaceFolder}",
+          "remoteRoot": "/home/node"
+        }
+      ]
+    }
+    ```
+
+  - Start debugging with that configuration; execution will continue once attached.
 
 ## Structured Logging System
 
