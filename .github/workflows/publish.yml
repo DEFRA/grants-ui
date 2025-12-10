@@ -42,9 +42,14 @@ jobs:
   pact:
     needs: build
     runs-on: self-hosted
-    if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name != 'pull_request'
 
     steps:
+        # PACT_USER and PACT_PASS are injected directly into the runner
+      - name: Mask secrets
+        run: |
+          echo "::add-mask::$PACT_USER"
+          echo "::add-mask::$PACT_PASS"
+
       - name: Checkout code
         uses: actions/checkout@v5
 
@@ -63,22 +68,12 @@ jobs:
       - name: Run contract tests
         run: npm run test:contracts
 
-      - name: Mask secrets
-        run: |
-          echo "::add-mask::$PACT_USER"
-          echo "::add-mask::$PACT_PASS"
-
       - name: Publish pacts
         env:
           PACT_BROKER_BASE_URL: https://ffc-pact-broker.azure.defra.cloud
-          PACT_BROKER_USERNAME: $PACT_USER
-          PACT_BROKER_PASSWORD: $PACT_PASS
         shell: bash
         run: |
           # Use bash to upload pacts manually since Azure Application Gateway blocks /contracts/publish
-
-          # Create base64 encoded auth header
-          auth_header=$(echo -n "${PACT_BROKER_USERNAME}:${PACT_BROKER_PASSWORD}" | base64 -w 0)
 
           # Loop through all pact files
           for pact_file in src/contracts/pacts/*.json; do
@@ -96,11 +91,11 @@ jobs:
                   echo "Publishing pact: $consumer -> $provider (version: $version)"
 
                   # Upload the pact using curl
-                  if curl -s -X PUT \
-                      -H "Content-Type: application/json" \
-                      -H "Authorization: Basic ${auth_header}" \
-                      -d "@${pact_file}" \
-                      "$uri" > /dev/null; then
+                  if curl --fail --silent --show-error --request PUT \
+                      --header "Content-Type: application/json" \
+                      --user "${PACT_USER}:${PACT_PASS}" \
+                      --data "@${pact_file}" \
+                      "$uri"; then
                       echo "✓ Successfully published pact for $consumer -> $provider"
                   else
                       echo "❌ Failed to publish pact for $consumer -> $provider"
