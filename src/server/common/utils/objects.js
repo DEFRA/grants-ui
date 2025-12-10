@@ -11,7 +11,7 @@
  */
 export function isObject(value) {
   return (
-    value !== null &&
+    value != null &&
     typeof value === 'object' &&
     !Array.isArray(value) &&
     Object.getPrototypeOf(value) === Object.prototype
