@@ -172,4 +172,67 @@ describe('append-return-url', () => {
     const cookieLink = document.querySelector('a[href^="/cookies"]')
     expect(cookieLink.getAttribute('href')).toBe('/cookies?returnUrl=%2Fsome-page%3Ffoo%3Dbar')
   })
+
+  it('should safely handle anchors with empty href attribute', async () => {
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head></head>
+        <body>
+          <div id="cookie-banner" data-cookie-policy-url="/cookies">
+            <a href="/cookies">Cookie policy</a>
+            <a href="">Empty href link</a>
+          </div>
+        </body>
+      </html>
+    `
+
+    const setup = setupDOM(html, 'http://localhost/some-page?foo=bar')
+    document = setup.document
+    globalThis.window = setup.window
+
+    const { appendReturnUrlToLinks } = await import('./append-return-url.js')
+
+    expect(() => appendReturnUrlToLinks()).not.toThrow()
+
+    const validLink = document.querySelector('#cookie-banner a[href^="/cookies"]')
+    expect(validLink.getAttribute('href')).toBe('/cookies?returnUrl=%2Fsome-page%3Ffoo%3Dbar')
+
+    const emptyHrefLink = Array.from(document.querySelectorAll('#cookie-banner a')).find(
+      (a) => a.textContent === 'Empty href link'
+    )
+    expect(emptyHrefLink.getAttribute('href')).toBe('')
+  })
+
+  it('should ignore anchors with invalid href that throws in URL constructor', async () => {
+    const invalidHref = 'http://{'
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head></head>
+        <body>
+          <div id="cookie-banner" data-cookie-policy-url="/cookies">
+            <a href="/cookies">Cookie policy</a>
+            <a href="${invalidHref}">Invalid URL</a>
+          </div>
+        </body>
+      </html>
+    `
+
+    const setup = setupDOM(html, 'http://localhost/some-page?foo=bar')
+    document = setup.document
+    globalThis.window = setup.window
+
+    const { appendReturnUrlToLinks } = await import('./append-return-url.js')
+
+    expect(() => appendReturnUrlToLinks()).not.toThrow()
+
+    const validLink = document.querySelector('#cookie-banner a[href^="/cookies"]')
+    expect(validLink.getAttribute('href')).toBe('/cookies?returnUrl=%2Fsome-page%3Ffoo%3Dbar')
+
+    const invalidLink = Array.from(document.querySelectorAll('#cookie-banner a')).find(
+      (a) => a.textContent === 'Invalid URL'
+    )
+    expect(invalidLink.getAttribute('href')).toBe(invalidHref)
+  })
 })

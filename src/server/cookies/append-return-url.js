@@ -32,7 +32,7 @@ export const appendReturnUrlToLinks = () => {
   const urlWithoutFragment = hashIndex !== -1 ? cookiePolicyUrl.substring(0, hashIndex) : cookiePolicyUrl
   const fragment = hashIndex !== -1 ? cookiePolicyUrl.substring(hashIndex) : ''
   const queryStart = urlWithoutFragment.indexOf('?')
-  const queryString = queryStart !== -1 ? urlWithoutFragment.substring(queryStart + 1) : ''
+  const queryString = queryStart === -1 ? '' : urlWithoutFragment.substring(queryStart + 1)
   const hasReturnUrl = new URLSearchParams(queryString).has('returnUrl')
 
   if (hasReturnUrl) {
