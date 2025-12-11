@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { setupDOM, createEmptyPage, setupLoadingDocument } from './test-helpers.js'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createEmptyPage, setupDOM, setupLoadingDocument } from './test-helpers.js'
 
 const createPageWithCookieBanner = (cookiePolicyUrl = '/cookies') => `
   <!DOCTYPE html>
@@ -121,7 +121,10 @@ describe('append-return-url', () => {
     appendReturnUrlToLinks()
 
     const urlWithoutFragment = cookiePolicyUrl.split('#')[0]
-    const cookieLinks = document.querySelectorAll(`a[href^="${urlWithoutFragment}"]`)
+    // Use JS filtering on raw attribute to avoid jsdom CSS selector quirks with encoded characters
+    const cookieLinks = Array.from(document.querySelectorAll('#cookie-banner a')).filter((a) =>
+      (a.getAttribute('href') || '').startsWith(urlWithoutFragment)
+    )
     expect(cookieLinks.length).toBeGreaterThan(0)
 
     const cookieLink = cookieLinks[0]
