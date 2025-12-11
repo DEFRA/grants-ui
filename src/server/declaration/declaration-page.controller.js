@@ -61,8 +61,7 @@ export default class DeclarationPageController extends SummaryPageController {
       clientRef: context.referenceNumber.toLowerCase(),
       sbi: request.auth?.credentials?.sbi,
       frn: 'frn',
-      crn: request.auth?.credentials?.crn,
-      defraId: 'defraId'
+      crn: request.auth?.credentials?.crn
     }
 
     return transformStateObjectToGasApplication(identifiers, stateWithTextAnswers, (s) => s)

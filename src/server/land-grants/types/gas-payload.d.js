@@ -3,7 +3,6 @@
  * @property {string} sbi - Single Business Identifier
  * @property {string} frn - Firm Reference Number
  * @property {string} crn - Customer Reference Number
- * @property {string} defraId - DEFRA Identifier
  * @property {string} clientRef - Client Reference
  * @property {string} submittedAt - ISO 8601 timestamp of submission
  */

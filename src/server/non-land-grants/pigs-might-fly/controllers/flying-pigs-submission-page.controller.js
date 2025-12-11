@@ -23,12 +23,11 @@ export default class FlyingPigsSubmissionPageController extends SummaryPageContr
   }
 
   async submitPigTypesApplication(context, request) {
-    const { sbi = 'sbi', crn = 'crn', defraId = 'defraId', frn = 'frn' } = context.state
+    const { sbi = 'sbi', crn = 'crn', frn = 'frn' } = context.state
     const identifiers = {
       sbi,
       frn,
       crn,
-      defraId,
       clientRef: context.referenceNumber?.toLowerCase()
     }
     const applicationData = transformStateObjectToGasApplication(
