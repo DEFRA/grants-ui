@@ -18,12 +18,8 @@ export const appendReturnUrlToLinks = () => {
   const targetAbsoluteHref = new URL(cookiePolicyUrl, globalThis.location.origin).href
   const cookieLinks = allBannerAnchors.filter((link) => {
     const rawHref = link.getAttribute('href') || ''
-    try {
-      const absoluteHref = new URL(rawHref, globalThis.location.origin).href
-      return absoluteHref === targetAbsoluteHref
-    } catch {
-      return false
-    }
+    const absoluteHref = new URL(rawHref, globalThis.location.origin).href
+    return absoluteHref === targetAbsoluteHref
   })
 
   const returnUrl = globalThis.location.pathname + globalThis.location.search + globalThis.location.hash
