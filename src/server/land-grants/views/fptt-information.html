@@ -1,16 +1,10 @@
 {% extends baseLayoutPath %}
 
-{% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
-{% from "govuk/components/summary-list/macro.njk" import govukSummaryList %}
-{% from "govuk/components/button/macro.njk" import govukButton %}
-{% from "support-details/macro.njk" import defraSupportDetails %}
-
-
 {% block content %}
 
 <h1 class="defra-terms_and_conditions_page_heading">
   {{ pageTitle }}
-  <div class="defra-terms_and_conditions_page_heading__caption">Updated 8 December 2025</div>
+  <div class="defra-terms_and_conditions_page_heading__caption">Published 8 December 2025</div>
 </h1>
 
 <div class="govuk-grid-row" id="contents">
@@ -111,6 +105,11 @@
         These actions are static. This means you must do them at the same location for the 12
         month duration of your FPTT agreement.
       </p>
+      <p class="govuk-body">
+        You’ll find the details of these actions in the
+        <a href="/farm-payments/fptt-actions"
+           class="govuk-link" rel="noreferrer noopener" target="_blank">FPTT actions (opens in new tab)</a>.
+      </p>
     </section>
 
     <section id="sec-2-when-and-how-much-you-will-get-paid">
@@ -179,7 +178,12 @@
         <li>the land parcels you want to apply for are wholly located in England</li>
       </ul>
       <h3 class="govuk-heading-m">3.1 If you’ve received a Lump Sum Exit Scheme payment</h3>
-      <p class="govuk-body">If you’ve received a payment under the Lump Sum Exit Scheme to leave or retire from  farming:</p>
+      <p class="govuk-body">
+        If you’ve received a payment under the
+        <a href="https://www.gov.uk/government/collections/lump-sum-exit-scheme"
+           class="govuk-link" rel="noreferrer noopener" target="_blank">
+          Lump Sum Exit Scheme (opens in new tab)
+        </a> to leave or retire from  farming:</p>
       <ul class="govuk-list govuk-list--bullet">
         <li>as an individual – you’re not eligible to apply for an FPTT agreement, unless you repay the lump sum</li>
         <li>
@@ -294,7 +298,7 @@
       </ul>
       <p class="govuk-body">
         In both cases, you may have to repay some or all the payments you’ve already
-        received. Read section 13.2: ‘What you must do if you cannot comply with your agreement’
+        received. Read section 13.2: ‘What you must do if you cannot comply with your agreement’.
       </p>
 
     </section>
@@ -414,7 +418,7 @@
         Moorland includes permanent grassland and certain non-agricultural features, such as
         scrub, scree, bracken and bog, which are above the moorland line. You can find out
         which land is above the moorland line on the
-        <a class="govuk-list" href="https://magic.defra.gov.uk/home.htm" rel="noreferrer noopener" target="_blank">MAGIC website</a>.
+        <a class="govuk-link" href="https://magic.defra.gov.uk/home.htm" rel="noreferrer noopener" target="_blank">MAGIC website (opens in new tab)</a>.
       </p>
       <p class="govuk-body">The vegetation of moorland areas is usually:</p>
       <ul class="govuk-list govuk-list--bullet">
@@ -436,6 +440,8 @@
       </ul>
       <p class="govuk-body">
         There are also non-agricultural land covers, such as woodland and farm buildings.
+      </p>
+      <p class="govuk-body">
         For each land parcel you want to enter into an FPTT action, you need to check that its
         area is registered on your digital maps with a land cover that’s eligible for the action –
         read the guidance on
@@ -651,11 +657,11 @@
       <h3 class="govuk-heading-m">View FPTT actions</h3>
       <p class="govuk-body">
         You can view the actions in the
-        <a href="./fptt-actions" class="govuk-link">FPTT actions</a>.
+        <a href="/farm-payments/fptt-actions" class="govuk-link" rel="noreferrer noopener" target="_blank">FPTT actions (opens in new tab)</a>.
       </p>
       <p class="govuk-body">
         Each FPTT action is identified by an action code, for example ‘CMOR1: Assess
-        moorland and produce a written record’
+        moorland and produce a written record’.
       </p>
       <p class="govuk-body">Each action tells you:</p>
       <ul class="govuk-list govuk-list--bullet">
@@ -699,10 +705,14 @@
       <p class="govuk-body">You can find these rules in:</p>
       <ul class="govuk-list govuk-list--bullet">
         <li>
-          the FPTT actions you select – these are shown in the <a class="govuk-link" href="./fptt-actions">FPTT actions</a>, with the
+          the FPTT actions you select – these are shown in the <a class="govuk-link" href="/farm-payments/fptt-actions" rel="noreferrer noopener" target="_blank">FPTT actions (opens in new tab)</a>, with the
           action’s requirements identified by a ‘must’
         </li>
-        <li>the <a class="govuk-link" href="./terms-and-conditions">FPTT terms and conditions</a></li>
+        <li>
+          the <a class="govuk-link"
+                 href="/farm-payments/terms-and-conditions" rel="noreferrer noopener"
+                 target="_blank">FPTT terms and conditions (opens in new tab)</a>
+        </li>
       </ul>
       <p class="govuk-body">
         You also need to read the sections of this FPTT information which explain the rules set
@@ -732,7 +742,7 @@
       <p class="govuk-body">
         You need the correct permission to apply for a FPTT agreement for your business (SBI).
         Sign in to the <a href="https://www.ruralpayments.service.gov.uk/" class="govuk-link" rel="noreferrer noopener" target="_blank">
-        Rural Payments service</a>:
+        Rural Payments service (opens in new tab)</a>.
       </p>
       <p class="govuk-body">
         From ‘Business overview’ select ‘Give people permission to act for this business.’ You
@@ -766,8 +776,7 @@
         If these land details are not up to date, this may prevent you from applying for the FPTT
         actions you select. Read the guidance on
         <a href="https://www.gov.uk/guidance/digital-maps-in-the-rural-payments-service-check-and-change-mapping-updates"
-           class="govuk-link" rel="noreferrer noopener" target="_blank">how to check your digital maps(opens in new tab)</a>.
-
+           class="govuk-link" rel="noreferrer noopener" target="_blank">how to check your digital maps (opens in new tab)</a>.
       </p>
       <p class="govuk-body">If you need to update your digital maps, read the guidance on:</p>
       <ul class="govuk-list govuk-list--bullet">
@@ -780,7 +789,7 @@
         <li>
           <a href="https://www.gov.uk/government/publications/tell-the-rural-payments-agency-about-land-changes-and-entitlement-transfers"
              class="govuk-link" rel="noreferrer noopener" target="_blank">
-            update your maps using form RLE1 (opens in new tab)
+            updating your maps using form RLE1 (opens in new tab)
           </a> (only if you’re unable to do this online)
         </li>
       </ul>
@@ -815,7 +824,7 @@
         You must comply with all statutory legal requirements that apply to you and your land,
         even if they conflict with your FPTT agreement’s requirements. Read the guidance on
         <a href="https://www.gov.uk/guidance/rules-for-farmers-and-land-managers"
-           class="govuk-link" rel="noreferrer noopener" target="_blank">\
+           class="govuk-link" rel="noreferrer noopener" target="_blank">
           ‘Rules for farmers and land managers’(opens in new tab)</a> for more information.
       </p>
       <p class="govuk-body">
@@ -843,23 +852,20 @@
         a scheduled monument, you must
         <a href="https://www.gov.uk/find-licences/scheduled-monument-consent-england-scotland-wales"
            class="govuk-link" rel="noreferrer noopener" target="_blank">
-          get scheduled monument consent from Historic England (opens in new tab)
-        </a>.
+          get scheduled monument consent from Historic England (opens in new tab)</a>.
         You must do this before you do the affected actions.
       </p>
       <p class="govuk-body">
         If you will be taking soil samples on land with a scheduled monument, you must
         <a href="https://www.gov.uk/government/publications/consent-for-soil-sampling-on-scheduled-monuments-sustainable-farming-incentive"
            class="govuk-link" rel="noreferrer noopener" target="_blank">
-          get consent for soil sampling from Historic England (opens in new tab)
-        </a>. You must do this before you take soil samples.
+          get consent for soil sampling from Historic England (opens in new tab)</a>. You must do this before you take soil samples.
       </p>
       <p class="govuk-body">
         For guidance on activities which may affect scheduled monuments, read Historic
         England’s
         <a href="https://historicengland.org.uk/images-books/publications/scheduled-monuments-guide-for-owners-and-occupiers/"
-           class="govuk-link" rel="noreferrer noopener" target="_blank">‘Scheduled monuments – a guide for owners and occupiers’ (opens in new tab)
-        </a>.
+           class="govuk-link" rel="noreferrer noopener" target="_blank">‘Scheduled monuments – a guide for owners and occupiers’ (opens in new tab)</a>.
       </p>
 
       <h3 class="govuk-heading-m">10.2 Planning permission</h3>
@@ -993,8 +999,7 @@
         agreement duration
         <a href="https://www.gov.uk/guidance/protected-areas-sites-of-special-scientific-interest#check-if-you-need-consent"
            class="govuk-link" rel="noreferrer noopener" target="_blank">
-          check if you need to get additional SSSI consent (opens in new tab)
-        </a>. If SSSI consent is:
+          check if you need to get additional SSSI consent (opens in new tab)</a>. If SSSI consent is:
       </p>
       <ul class="govuk-list govuk-list--bullet">
         <li>required, you must get it from Natural England before you make any changes</li>
@@ -1120,11 +1125,11 @@
       <p class="govuk-body">If the RPA approves your request:</p>
       <ul class="govuk-list govuk-list--bullet">
         <li>your agreement will be amended or ended early</li>
-        <li>
-          you may have to repay some or all of the payments you’ve already received
-          Read section 13.2 on ‘what you must do if you cannot comply with your agreement’.
-        </li>
+        <li>you may have to repay some or all of the payments you’ve already received</li>
       </ul>
+      <p class="govuk-body">
+        Read section 13.2 on ‘what you must do if you cannot comply with your agreement’.
+      </p>
 
       <h3 class="govuk-heading-m">
         12.3 What happens if you transfer land in your agreement to another person
@@ -1314,7 +1319,7 @@
         </li>
       </ul>
       <p class="govuk-body">
-        RPA will look at each change of circumstances on a case-by-case basis. Depending on what’s happened, they may:
+        The RPA will look at each change of circumstances on a case-by-case basis. Depending on what’s happened, they may:
       </p>
       <ul class="govuk-list govuk-list--bullet">
        <li>amend your agreement, for example, by removing land or FPTT actions</li>
@@ -1324,8 +1329,9 @@
       </ul>
       <p class="govuk-body">
         The RPA will tell you what their decision is. If you do not agree with it, you can use
-        the complaints procedure to ask the RPA to reconsider it. You must do this within 60
-        calendar days of the date you’re notified of the decision.
+        the <a href="https://www.gov.uk/government/organisations/rural-payments-agency/about/complaints-procedure"
+               class="govuk-link" rel="noreferrer noopener" target="_blank">complaints procedure (opens in new tab)</a> complaints procedure to ask
+        the RPA to reconsider it. You must do this within 60 calendar days of the date you’re notified of the decision.
       </p>
 
       <h3 class="govuk-heading-m">13.3 How you could breach your agreement</h3>
@@ -1555,14 +1561,7 @@
   </div>
 </div>
 
-<div class="govuk-grid-row">
-  <div class="govuk-grid-column-full">
-    {{ defraSupportDetails() }}
-  </div>
-</div>
-
-
 {% if config.cdpEnvironment == 'local' and context | length and not context.isForceAccess %}
-{% include "partials/debug.html" %}
+  {% include "partials/debug.html" %}
 {% endif %}
 {% endblock %}
