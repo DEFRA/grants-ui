@@ -59,6 +59,7 @@ metadata:
         gasStatus: default
         toGrantsStatus: SUBMITTED
         toPath: /confirmation
+    excludedPaths: ['terms-and-conditions','fptt-information']
   confirmationContent:
     html: |
       <p class="govuk-body">It may be useful to write down your application number, so you have it ready if you need to contact us.</p>

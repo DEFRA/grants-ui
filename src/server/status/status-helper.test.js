@@ -419,6 +419,19 @@ describe('formsStatusCallback', () => {
     expect(result).toEqual(expect.any(Symbol))
   })
 
+  it('continues without redirect when current path is in excludedPaths', async () => {
+    request.app.model.def.metadata.grantRedirectRules.excludedPaths = ['excluded-path', 'other-excluded-path']
+    request.params.path = 'excluded-path'
+
+    context.state = { applicationStatus: 'SUBMITTED', someField: 'someValue' }
+
+    const result = await formsStatusCallback(request, h, context)
+
+    expect(result).toBe(h.continue)
+    expect(h.redirect).not.toHaveBeenCalled()
+    expect(getApplicationStatus).not.toHaveBeenCalled()
+  })
+
   describe('farm-payments agreements service redirect', () => {
     it.each(['OFFER_SENT', 'OFFER_WITHDRAWN', 'OFFER_ACCEPTED'])(
       'redirects farm-payments to /agreement when GAS status is %s',
