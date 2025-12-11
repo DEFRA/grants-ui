@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { setupDOM, createEmptyPage, setupLoadingDocument } from './test-helpers.js'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createEmptyPage, setupDOM, setupLoadingDocument } from './test-helpers.js'
 
 const createPageWithCookieBanner = (cookiePolicyUrl = '/cookies') => `
   <!DOCTYPE html>
@@ -121,7 +121,10 @@ describe('append-return-url', () => {
     appendReturnUrlToLinks()
 
     const urlWithoutFragment = cookiePolicyUrl.split('#')[0]
-    const cookieLinks = document.querySelectorAll(`a[href^="${urlWithoutFragment}"]`)
+    // Use JS filtering on raw attribute to avoid jsdom CSS selector quirks with encoded characters
+    const cookieLinks = Array.from(document.querySelectorAll('#cookie-banner a')).filter((a) =>
+      (a.getAttribute('href') || '').startsWith(urlWithoutFragment)
+    )
     expect(cookieLinks.length).toBeGreaterThan(0)
 
     const cookieLink = cookieLinks[0]
@@ -168,5 +171,36 @@ describe('append-return-url', () => {
 
     const cookieLink = document.querySelector('a[href^="/cookies"]')
     expect(cookieLink.getAttribute('href')).toBe('/cookies?returnUrl=%2Fsome-page%3Ffoo%3Dbar')
+  })
+
+  it('should safely handle anchors with empty href attribute', async () => {
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head></head>
+        <body>
+          <div id="cookie-banner" data-cookie-policy-url="/cookies">
+            <a href="/cookies">Cookie policy</a>
+            <a href="">Empty href link</a>
+          </div>
+        </body>
+      </html>
+    `
+
+    const setup = setupDOM(html, 'http://localhost/some-page?foo=bar')
+    document = setup.document
+    globalThis.window = setup.window
+
+    const { appendReturnUrlToLinks } = await import('./append-return-url.js')
+
+    expect(() => appendReturnUrlToLinks()).not.toThrow()
+
+    const validLink = document.querySelector('#cookie-banner a[href^="/cookies"]')
+    expect(validLink.getAttribute('href')).toBe('/cookies?returnUrl=%2Fsome-page%3Ffoo%3Dbar')
+
+    const emptyHrefLink = Array.from(document.querySelectorAll('#cookie-banner a')).find(
+      (a) => a.textContent === 'Empty href link'
+    )
+    expect(emptyHrefLink.getAttribute('href')).toBe('')
   })
 })

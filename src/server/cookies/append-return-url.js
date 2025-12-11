@@ -14,15 +14,22 @@ export const appendReturnUrlToLinks = () => {
   }
 
   const cookiePolicyUrl = cookieBanner.dataset.cookiePolicyUrl || '/cookies'
-  const cookieLinks = /** @type {HTMLAnchorElement[]} */ (
-    Array.from(document.querySelectorAll(`a[href="${cookiePolicyUrl}"]`))
-  )
+  const allBannerAnchors = /** @type {HTMLAnchorElement[]} */ (Array.from(cookieBanner.querySelectorAll('a[href]')))
+  const targetAbsoluteHref = new URL(cookiePolicyUrl, globalThis.location.origin).href
+  const cookieLinks = allBannerAnchors.filter((link) => {
+    const rawHref = link.getAttribute('href') || ''
+    const absoluteHref = new URL(rawHref, globalThis.location.origin).href
+    return absoluteHref === targetAbsoluteHref
+  })
+
   const returnUrl = globalThis.location.pathname + globalThis.location.search + globalThis.location.hash
 
   const hashIndex = cookiePolicyUrl.indexOf('#')
   const urlWithoutFragment = hashIndex !== -1 ? cookiePolicyUrl.substring(0, hashIndex) : cookiePolicyUrl
   const fragment = hashIndex !== -1 ? cookiePolicyUrl.substring(hashIndex) : ''
-  const hasReturnUrl = /[?&]returnUrl=/.test(urlWithoutFragment)
+  const queryStart = urlWithoutFragment.indexOf('?')
+  const queryString = queryStart === -1 ? '' : urlWithoutFragment.substring(queryStart + 1)
+  const hasReturnUrl = new URLSearchParams(queryString).has('returnUrl')
 
   if (hasReturnUrl) {
     return
@@ -31,7 +38,8 @@ export const appendReturnUrlToLinks = () => {
   const separator = urlWithoutFragment.includes('?') ? '&' : '?'
 
   for (const link of cookieLinks) {
-    link.href = `${urlWithoutFragment}${separator}returnUrl=${encodeURIComponent(returnUrl)}${fragment}`
+    // Use setAttribute to preserve relative URLs in href rather than normalising to absolute
+    link.setAttribute('href', `${urlWithoutFragment}${separator}returnUrl=${encodeURIComponent(returnUrl)}${fragment}`)
   }
 }
 
