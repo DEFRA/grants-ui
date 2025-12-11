@@ -1,11 +1,5 @@
 {% extends baseLayoutPath %}
 
-{% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
-{% from "govuk/components/summary-list/macro.njk" import govukSummaryList %}
-{% from "govuk/components/button/macro.njk" import govukButton %}
-{% from "support-details/macro.njk" import defraSupportDetails %}
-
-
 {% block content %}
 
 <h1 class="defra-terms_and_conditions_page_heading">
@@ -1263,6 +1257,6 @@
 
 
 {% if config.cdpEnvironment == 'local' and context | length and not context.isForceAccess %}
-{% include "partials/debug.html" %}
+  {% include "partials/debug.html" %}
 {% endif %}
 {% endblock %}
