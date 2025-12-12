@@ -56,6 +56,35 @@ metadata:
       business: data.business.info
       countyParishHoldings: data.business.countyParishHoldings[0].cphNumber
       customer: data.customer.info
+    displaySections:
+      - title: Applicant details
+        fields:
+          - label: Applicant name
+            sourcePath: customer.name
+            format: fullName
+      - title: Organisation details
+        description: If your application is successful, the following organisation will receive the MSFP grant.
+        fields:
+          - label: Organisation name
+            sourcePath: business.name
+          - label: Single Business Identifier (SBI) number
+            sourceType: credentials
+            sourcePath: sbi
+          - label: Organisation email
+            sourcePath: business.email.address
+          - label: Mobile phone number
+            sourcePath: business.phone.mobile
+          - label: Landline phone number
+            sourcePath: business.phone.landline
+          - label: Organisation address
+            sourcePath: business.address
+            format: address
+          - label: VAT registration number
+            sourcePath: business.vat
+      - title: County parish holding (CPH) numbers
+        fields:
+          - label: CPH number
+            sourcePath: countyParishHoldings
   confirmationContent:
     html: |
       <h2 class="govuk-heading-m">What happens next</h2>
