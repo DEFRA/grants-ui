@@ -423,6 +423,46 @@ export const config = convict({
         format: String,
         default: 'Demo Test User',
         env: 'DEV_DEMO_CONTACT_NAME'
+      },
+      crn: {
+        doc: 'Demo CRN for dev tools',
+        format: String,
+        default: '1234567890',
+        env: 'DEV_DEMO_CRN'
+      }
+    },
+    mappedData: {
+      doc: 'Demo mapped API response data for dev tools details page preview',
+      format: Object,
+      default: {
+        customer: {
+          name: {
+            first: 'John',
+            middle: 'William',
+            last: 'Smith'
+          }
+        },
+        business: {
+          name: 'Demo Test Farm Ltd',
+          address: {
+            line1: '123 Farm Road',
+            line2: 'Little Village',
+            city: 'Manchester',
+            postalCode: 'M1 1AA'
+          },
+          phone: {
+            mobile: '07123456789',
+            landline: '01234567890'
+          },
+          email: {
+            address: 'demo@testfarm.com'
+          },
+          type: {
+            type: 'Limited Company'
+          },
+          vat: 'GB123456789'
+        },
+        countyParishHoldings: '12/345/6789'
       }
     }
   },

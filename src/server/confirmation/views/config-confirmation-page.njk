@@ -23,7 +23,7 @@
             <p class="govuk-body-s">
               <strong>Environment:</strong> local<br>
               {% if formSlug %}
-                <strong>Demo route:</strong> /dev/demo-confirmation/{{ formSlug }}<br>
+                <strong>Demo route:</strong> /dev/demo-confirmation{{ formSlug }}<br>
                 <strong>Form:</strong> {{ formTitle or formSlug }}<br>
                 <strong>Data source:</strong> {{ 'Session data' if usingSessionData else 'Demo data' }}
               {% else %}
