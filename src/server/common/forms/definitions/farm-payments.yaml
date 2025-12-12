@@ -59,7 +59,7 @@ metadata:
         gasStatus: default
         toGrantsStatus: SUBMITTED
         toPath: /confirmation
-    excludedPaths: ['terms-and-conditions','fptt-information']
+    excludedPaths: ['terms-and-conditions','fptt-information', 'fptt-actions']
   confirmationContent:
     html: |
       <p class="govuk-body">It may be useful to write down your application number, so you have it ready if you need to contact us.</p>
@@ -122,6 +122,11 @@ pages:
     controller: LandGrantsGenericPageController
     next: []
     id: 5c1e5d51-6e9b-4ea9-9a78-eecedc97a3e6
+  - title: Farm payments technical test actions
+    path: /fptt-actions
+    controller: LandGrantsGenericPageController
+    next: [ ]
+    id: 4b7a4340-0a8d-4c8a-b1fd-87858ebf212f
 lists: []
 sections: []
 conditions: []
