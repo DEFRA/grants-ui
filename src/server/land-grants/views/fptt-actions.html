@@ -1,0 +1,1880 @@
+{% extends baseLayoutPath %}
+
+{% from "govuk/components/table/macro.njk" import govukTable %}
+
+{% block content %}
+
+<h1 class="defra-terms_and_conditions_page_heading">
+  {{ pageTitle }}
+  <div class="defra-terms_and_conditions_page_heading__caption">Published 8 December 2025</div>
+</h1>
+
+<div class="govuk-grid-row" id="contents">
+  <div class="govuk-grid-column-one-quarter defra-sidebar">
+    <nav aria-label="Contents" class="gem-c-contents-list govuk-!-margin-bottom-4 ">
+      <h2 class="defra-sidebar__title">
+        Contents
+      </h2>
+      <ol class="govuk-list defra-sidebar__list">
+        <li>
+          <span class="gem-c-contents-list__list-item-dash" aria-hidden="true"></span>
+          <a class="govuk-link govuk-link--no-underline" href="#sec-1-CMOR1">1. CMOR1: Assess moorland and produce a written record</a>
+        </li>
+        <li>
+          <span class="gem-c-contents-list__list-item-dash" aria-hidden="true"></span>
+          <a class="govuk-link govuk-link--no-underline" href="#sec-2-UPL1">2. UPL1: Moderate livestock grazing on moorland</a>
+        </li>
+        <li>
+          <span class="gem-c-contents-list__list-item-dash" aria-hidden="true"></span>
+          <a class="govuk-link govuk-link--no-underline"href="#sec-3-UPL2">3. UPL2: Low livestock grazing on moorland</a>
+        </li>
+        <li>
+          <span class="gem-c-contents-list__list-item-dash" aria-hidden="true"></span>
+          <a class="govuk-link govuk-link--no-underline" href="#sec-4-UPL3">4. UPL3: Limited livestock grazing on moorland</a>
+        </li>
+
+      </ol>
+    </nav>
+  </div>
+
+  <div class="govuk-grid-column-three-quarters-from-desktop">
+    <p class="govuk-body">
+      Information explaining what you must do to get paid for the Farm payments technical test (FPTT) actions.
+    </p>
+
+    <section id="sec-1-CMOR1">
+      <h2 class="govuk-heading-l">1. CMOR1: Assess moorland and produce a written record</h2>
+      <p class="govuk-body">What you must do to get paid for CMOR1 and advice on how to do it.</p>
+
+      <h3 class="govuk-heading-m">Duration</h3>
+      <p class="govuk-body">12 months</p>
+
+      <h3 class="govuk-heading-m">How much you’ll be paid</h3>
+      <p class="govuk-body">£10.60 per hectare per year and an additional payment of £272 per FPTT agreement</p>
+
+      <h3 class="govuk-heading-m">Action’s aim</h3>
+      <p class="govuk-body">
+        This action’s aim is that you understand how your moorland contributes to providing
+        environmental benefits and how it could provide more in the future.
+      </p>
+
+      <h3 class="govuk-heading-m">Where you can do this action</h3>
+      <p class="govuk-body">You can do this action on land located above the moorland line that’s:</p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>
+          an eligible land type (as defined in
+          <a class="govuk-link" href="/farm-payments/fptt-information#section-5.1" rel="noreferrer noopener" target="_blank">
+            section 5.1 ‘Eligible land types for FPTT’ (opens in new tab)</a> in the FPTT information)
+        </li>
+        <li>registered with an eligible land cover on your digital maps</li>
+      </ul>
+      <p class="govuk-body">You cannot enter land above the moorland line into this action if:</p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>it’s a farmyard</li>
+        <li>it’s used for turf or peat production</li>
+        <li>the majority of its area is located below the moorland line</li>
+        <li>it’s permanent grassland below the moorland line</li>
+      </ul>
+
+      {{ govukTable({
+        caption: "Eligible land",
+        captionClasses: "govuk-table__caption--s",
+        head: [
+          {
+            text: "Eligible land type"
+          },
+          {
+            text: "Eligible land cover"
+          }
+        ],
+        rows: [
+          [
+            {
+              text: "Moorland"
+            },
+            {
+              text: "Permanent grassland"
+            }
+          ],
+          [
+            {
+              text: "Non-agricultural areas, such as scrub, scree, bracken and bog"
+            },
+            {
+            text: "Relevant non-agricultural land cover"
+            }
+          ]
+        ]
+      }) }}
+
+      {{ govukTable({
+        caption: "Eligibility of protected land",
+        captionClasses: "govuk-table__caption--s",
+        head: [
+          {
+            text: "Protected land"
+          },
+          {
+            text: "Eligibility"
+          }
+        ],
+        rows: [
+          [
+            {
+              text: "Sites of special scientific interest (SSSIs)"
+            },
+            {
+              text: "Eligible – you do not need to get SSSI consent for this action"
+            }
+          ],
+          [
+            {
+              text: "Historic and archaeological features"
+            },
+            {
+      html: 'Eligible – you must get a SFI HEFER before you do this action (read <a class="govuk-link" href="/farm-payments/fptt-information#section-5.5" rel="noreferrer noopener" target="_blank">section 5.5 ‘Land with historic or archaeological features’ (opens in new tab)</a> in the FPTT information to find out how to do this)'
+            }
+          ]
+        ]
+      }) }}
+
+      <h3 class="govuk-heading-m">Available area you can enter into this action</h3>
+      <p class="govuk-body">Total available area in a land parcel.</p>
+
+      <h3 class="govuk-heading-m">Type of action</h3>
+      <p class="govuk-body">
+        This is a static action. This means you must do it at the same location for the duration of
+        your 12 month FPTT agreement.
+      </p>
+
+      <h3 class="govuk-heading-m">What to do</h3>
+      <p class="govuk-body">
+        You must complete a survey to identify, assess and record the soil, vegetation and
+        historic and archaeological features across the moorland area entered into this action.
+      </p>
+      <p class="govuk-body">To complete the survey, you must:</p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>divide the moorland area you enter into this action into blocks of around 10 hectares</li>
+        <li>
+          select a sample point within each 10 hectare block that’s broadly representative of the block’s main
+          vegetation and soil types
+        </li>
+      </ul>
+      <p class="govuk-body">At each sample point, you must identify, assess and record:</p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>soil types and condition, including the depth and wetness of any peat</li>
+        <li>vegetation types and condition, including their height and structure</li>
+        <li>the extent of bare ground</li>
+        <li>the presence of historic and archaeological features – these will be identified in your SFI HEFER</li>
+      </ul>
+      <p class="govuk-body">
+        You must use the information you’ve collected during your survey of the moorland to identify and record:
+      </p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>environmental benefits the moorland is already providing</li>
+        <li>
+          opportunities to maintain, enhance or restore the moorland to keep providing environmental benefits
+          or provide more
+        </li>
+      </ul>
+      <p class="govuk-body">
+        These environmental benefits include carbon storage, water storage and flow, biodiversity and heritage.
+      </p>
+      <p class="govuk-body">
+        You can use a survey you’ve previously done of your moorland to get paid for this action if it:
+      </p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>meets the requirements explained in this action</li>
+        <li>was done in the last 12 months</li>
+      </ul>
+
+      <h3 class="govuk-heading-m">When to do it</h3>
+      <p class="govuk-body">You must complete this action during your 12 month FPTT agreement.</p>
+
+      <h3 class="govuk-heading-m">How to do it</h3>
+      <p class="govuk-body">It’s up to you how you do this action, as long as you:</p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>follow this action’s requirements – these are identified by a ‘must’</li>
+        <li>do the action in a way that could reasonably be expected to achieve this action’s aim</li>
+      </ul>
+      <p class="govuk-body">
+        You may find it helpful to read the <a href="#cmor1-advice-to-help-you-do-this-action" class="govuk-link">
+        ‘advice to help you do CMOR1</a>, but it’s not part of
+        this action’s requirements.
+      </p>
+
+      <h3 class="govuk-heading-m">Evidence to keep</h3>
+      <p class="govuk-body">You must keep a written record of your:</p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>survey of the moorland</li>
+        <li>assessment of the environmental benefits the moorland is already providing</li>
+        <li>
+          assessment of opportunities to maintain, enhance or restore the moorland to
+          keep providing environmental benefits or provide more
+        </li>
+      </ul>
+      <p class="govuk-body">You must supply this evidence if the RPA asks for it.</p>
+
+      <h3 class="govuk-heading-m">Other actions or options you can do on the same area as this action</h3>
+      <p class="govuk-body">
+        You can do the following actions or options on the same area, in the same land parcel, as this action.
+      </p>
+
+      {{ govukTable({
+        caption: "Other actions or options you can do on the same area as this action",
+        captionClasses: "govuk-visually-hidden",
+        head: [
+          {
+            text: "Scheme"
+          },
+          {
+            text: "Action or option codes"
+          }
+        ],
+        rows: [
+          [
+            {
+              text: "CSHT actions"
+            },
+            {
+              text: "CAGF1, CAGF2, CAGF3, CAGF4, CHS4, CHS5, CUP3, CCT10, CUP8,
+                    CUP9, CUP10, CUP11, CUP12, CUP13, CUP14, CBE4, CBE5, CWD7,
+                    CWD8, CSP13, CSP14, CSP15, CSP20, CSP21, CWS1, CWS3,
+                    CSW25, CWD20, CWD21, CWD22"
+            }
+          ],
+          [
+            {
+              text: "SFI 2024 actions"
+            },
+            {
+              text: "HEF5, HEF6, HEF8, OFM3, UPL1, UPL2, UPL3, UPL7, UPL8, UPL9, UPL10 (if located above the moorland line)"
+            }
+          ],
+          [
+            {
+              text: "SFI 2023 actions"
+            },
+            {
+              text: "None"
+            }
+          ],
+          [
+            {
+              text: "CS options"
+            },
+            {
+              text: "All CS management options (if located above the moorland line)"
+            }
+          ],
+          [
+            {
+              text: "ES options"
+            },
+            {
+              text: "All ES revenue options (if located above the moorland line)"
+            }
+          ]
+        ]
+      }) }}
+
+      <p class="govuk-body">
+        If an action or option cannot be located on the same area, you may be able to do it on a
+        different area in the same land parcel. Read
+        <a class="govuk-link" rel="noreferrer noopener" target="_blank" href="/farm-payments/fptt-information#sec-6-eligible-land-in-other-funding-schemes">
+          section 6 ‘Eligible land in other funding schemes’ (opens in new tab)</a> in the FPTT information for more details.
+      </p>
+      <p class="govuk-body">
+        You can do the following actions or options on the eligible boundaries of a land parcel
+        entered into this action:
+      </p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>SFI 2024 actions: CHRW1, CHRW2, CHRW3, BND1 and BND2</li>
+        <li>SFI 2023 actions: HRW1, HRW2, HRW3</li>
+        <li>CS option BE3 (management of hedgerows)</li>
+        <li>the introductory level of the SFI pilot hedgerows standard</li>
+      </ul>
+
+      <h3 class="govuk-heading-m" id="cmor1-advice-to-help-you-do-this-action">Advice to help you do CMOR1</h3>
+      <p class="govuk-body">
+        The following advice may help you to do this action, but it’s not part of this action’s requirements.
+      </p>
+
+      <h4 class="govuk-heading-s">How to record your moorland survey</h4>
+      <p class="govuk-body">
+        You can record your survey digitally or on paper. You may also want to take
+        photographs of the vegetation you assess and the surrounding area.
+      </p>
+
+      <h4 class="govuk-heading-s">When to do the survey</h4>
+      <p class="govuk-body">
+        The best time to survey moorland is between mid-July and the end of October. This
+        avoids the main bird breeding season (March to mid-July).
+      </p>
+      <p class="govuk-body">
+        <a href="https://www.gov.uk/guidance/wild-birds-protection-surveys-and-licences#what-you-must-not-do"
+           class="govuk-link" rel="noreferrer noopener" target="_blank">
+          Birds, nests and eggs are protected by law (opens in new tab)
+        </a>, so if you see signs of nesting birds, delay the survey until the birds fledge.
+      </p>
+      <p class="govuk-body">Try to avoid doing the survey after periods of heavy or prolonged rainfall.</p>
+
+      <h4 class="govuk-heading-s">How to divide your moorland into blocks</h4>
+      <p class="govuk-body">
+        To divide your moorland into blocks of around 10 hectares, you may find it helpful to use:
+      </p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>
+          a paper or digital Ordnance Survey (OS) map that’s a scale of 1:10,000 or
+          1:25,000 and shows contours – you can overlay the OS map with a grid to
+          divide the moorland into rectangular blocks
+        </li>
+        <li>
+          the
+          <a href="https://magic.defra.gov.uk/MagicMap.aspx?&startTopic=GreyRasters&chosenLayers=moorIndex,sfimoorlandIndex,baseIndex&box=-1146083:-180460:1873978:1306559&useDefaultbackgroundMapping=false"
+            class="govuk-link" rel="noreferrer noopener" target="_blank">
+            MAGIC website (opens in new tab)
+          </a> – you can zoom in to a scale of 1:25000 or 1:10000 to see
+          10 hectare squares covering all land within the moorland line
+        </li>
+      </ul>
+
+      <h4 class="govuk-heading-s">How to select sample points within the blocks</h4>
+      <p class="govuk-body">Before you do your survey, it will help if you:</p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>divide each 10 hectare block into 3 smaller areas</li>
+        <li>
+          select a sample point within each of the 3 smaller areas that broadly
+          represents the main soil types and vegetation within the 10 hectare block – so
+          there are 3 sample points in each 10 hectare block
+        </li>
+        <li>
+          give each sample point a number on the OS map, so you can identify where
+          your observations were taken
+        </li>
+      </ul>
+      <p class="govuk-body">Choose sample points that you can safely access to complete the survey.</p>
+
+      <h4 class="govuk-heading-s">Carrying out your survey</h4>
+      <p class="govuk-body">
+        At each sample point, you can record its number on the OS map and take a short walk
+        around the area to identify, assess and record what’s required by this action.
+      </p>
+
+      <h4 class="govuk-heading-s">How to identify soil types and assess depth of peat</h4>
+      <p class="govuk-body">Soil types include non-peat, shallow peat and deep peat.</p>
+      <p class="govuk-body">
+        To assess the soil type, and depth of any peat, you can use a thin rod or cane to probe
+        the soil. You may find it helpful to mark the rod or cane with measurements from its
+        base. For example, 5 centimetres (cm), 10cm, 25cm, 30cm and 40cm.
+      </p>
+      <p class="govuk-body">
+        You can push the rod or cane into the soil until you feel resistance or to a depth of more
+        than 40cm. If it meets resistance at a depth of:
+      </p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>less than 5cm, record the soil type as non-peat</li>
+        <li>between 5cm and 40cm, record the soil type as shallow peat</li>
+        <li>more than 40cm, record the soil type as deep peat</li>
+      </ul>
+      <p class="govuk-body">
+        If there is existing data available on the presence of peat and its depth, you can use this
+        instead of probing the soil.
+      </p>
+      <p class="govuk-body">
+        Try to avoid probing the soil on areas with historic or archaeological features, as identified on your SFI HEFER.
+      </p>
+
+      <h4 class="govuk-heading-s">How to assess the wetness of peat</h4>
+      <p class="govuk-body">
+        The wetness of peat soils can affect the environmental benefits (such as carbon storage) which your moorland provides.
+      </p>
+      <p class="govuk-body">If you’ve identified the soil type as shallow or deep peat, you can assess its wetness by:</p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>visually looking at the area</li>
+        <li>probing the soil with the same thin rod or cane you used to assess the depth of peat</li>
+      </ul>
+      <p class="govuk-body">You can record it as:</p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>
+          dry or firm peat, if no peat sticks to your thin rod or cane – you can also record
+          it as an opportunity to restore environmental benefits (carbon storage)
+        </li>
+        <li>
+          moist peat, if the area looks damp on the surface and your thin rod or cane is
+          moist when you remove it from the peat – you can also record it as an
+          opportunity to enhance the environmental benefits (carbon storage)
+        </li>
+        <li>
+          wet peat, if there’s standing water, or water appears when you press the peat
+          with your foot – you can also record it as already providing environmental
+          benefits (carbon storage) which you can maintain
+        </li>
+      </ul>
+
+      <h4 class="govuk-heading-s">How to assess the roughness of the ground surface</h4>
+      <p class="govuk-body">
+        The roughness of the ground surface can affect the environmental benefits (such as
+        storage and water flow) which your moorland provides.
+      </p>
+      <p class="govuk-body">A rough ground surface helps to:</p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>allow more water to evaporate or infiltrate the soil</li>
+        <li>slow the flow of water by holding it back from watercourses</li>
+      </ul>
+      <p class="govuk-body">
+        To assess the roughness of the ground surface, you can walk around the sample point
+        and record if there is:
+      </p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>
+          smooth grass, bare ground or carpet moss – you can also record that this is
+          an opportunity to restore environmental benefits (storage and flow of water)
+        </li>
+        <li>
+          no or sparse bare ground, with at least the occasional hummocks of moss –
+          you can also record that this is an opportunity to enhance environmental
+          benefits (storage and flow of water)
+        </li>
+        <li>
+          frequent hummocks of moss or tussocks or grass or bracken – you can also
+          record that this means environmental benefits (storage and flow of water) are
+          already being provided, which you can maintain
+        </li>
+      </ul>
+
+      <h4 class="govuk-heading-s">How to assess the extent of bare ground</h4>
+      <p class="govuk-body">
+        Bare ground is prone to erosion and can emit CO2 to the atmosphere as organic matter
+        decomposes. This can affect the environmental benefits (such as carbon storage) which
+        your moorland provides.
+      </p>
+      <p class="govuk-body">
+        To assess the extent of bare ground, you can look at the overall position across the
+        sample point and record if there are:
+      </p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>
+          mainly large, obvious patches of bare peat or soil – you can also record that
+          this as an opportunity to restore environmental benefits (carbon storage)
+        </li>
+        <li>
+          small patches (less than around 20cm) of bare ground amongst thin or newly
+          established vegetation – you can also record that this as an opportunity to
+          enhance environmental benefits (storage)
+        </li>
+        <li>
+          no obvious patches of bare peat or soil – also record that this means
+          environmental benefits (carbon storage) are already being provided, which
+          you can maintain
+        </li>
+      </ul>
+
+      <h4 class="govuk-heading-s">How to assess the extent of soil erosion</h4>
+      <p class="govuk-body">
+        Soil erosion can affect the environmental benefits (such as clean water) which your moorland provides.
+      </p>
+      <p class="govuk-body">You can identify:</p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>
+          obvious signs of soil erosion, such as rills and gullies on exposed areas,
+          particularly if they’re linked to water bodies
+        </li>
+        <li>
+          erosion features, such as vehicle tracks and footpaths, as they can concentrate water flow on steep slopes
+        </li>
+      </ul>
+      <p class="govuk-body">
+        To assess the extent of erosion, you can look at the overall position around the sample point and record:
+      </p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>
+          large obvious patches of actively eroding bare peat or soil – you can also
+          record that this is an opportunity to restore environmental benefits (clean water)
+        </li>
+        <li>
+          small obvious patches of bare peat or soil – you can also record that this as an
+          opportunity to enhance environmental benefits (clean water)
+        </li>
+        <li>
+          no obvious patches of bare ground or erosion – you can also record that this
+          means environmental benefits (clean water) are already being provided, which
+          you can maintain
+        </li>
+      </ul>
+
+      <h4 class="govuk-heading-s">How to assess vegetation on peat soils</h4>
+      <p class="govuk-body">
+        On peat soils, you can look at the overall position across the sample point and record the presence of:
+      </p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>peat-forming bog mosses, which hold water and are important to the formation of peat</li>
+        <li>other peatland plants</li>
+      </ul>
+      <p class="govuk-body">For bog mosses, you can record if they are:</p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>
+          absent or sparse – you can also record that this is an opportunity to restore
+          environmental benefits (carbon capture, clean water, water storage and flow, biodiversity)
+        </li>
+        <li>
+          present in patches – you can also record that this is an opportunity to enhance
+          environmental benefits (carbon capture, clean water, water storage and flow, biodiversity)
+        </li>
+        <li>
+          abundant – you can also record that this means that environmental benefits
+          (carbon capture, clean water, water storage and flow, biodiversity) are already
+          being provided, which can be maintained
+        </li>
+      </ul>
+      <p class="govuk-body">For other peatland plants, you can record if there is:</p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>
+          vegetation dominated by heather, bilberry, grass, bracken or moss (not bog
+          moss) – you can also record that this is an opportunity to restore
+          environmental benefits (biodiversity)
+        </li>
+        <li>
+          a mix of heather, bilberry, grass and mosses, with no clearly dominant
+          vegetation – you can also record that this is an opportunity to enhance
+          environmental benefits (biodiversity)
+        </li>
+        <li>
+          an abundance of peatland plants, such as cotton-grass, bog moss, cranberry
+          and crowberry – you can also record that this means that environmental
+          benefits (biodiversity) are already being provided, which can be maintained
+        </li>
+      </ul>
+
+      <h4 class="govuk-heading-s">How to assess vegetation on non-peat soils</h4>
+      <p class="govuk-body">
+        On non-peat soils, you can look at the overall position across the sample point and
+        record the presence of:
+      </p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>
+          taller, woody vegetation, such as heather, other dwarf shrubs, gorse, other
+          scrub and scattered trees – these can contribute to carbon storage on your moorland
+        </li>
+        <li>
+          tall or deep-rooted vegetation, such as tall and tussocky grasses, bracken,
+          dwarf shrubs (for example, heather), scrub and scattered trees – these can
+          slow the flow of water over the ground
+        </li>
+        <li>
+          grassy or non-grassy (such as, dwarf shrubs) vegetation – the structure of this
+          can affect how the moorland provides habitat for different species
+        </li>
+      </ul>
+
+      <p class="govuk-body">
+        To estimate the average height of the vegetation, you can use the same thin rod or
+        cane you used to assess the depth of peat.
+      </p>
+
+      <p class="govuk-body">For taller, woody vegetation, you can record if there is:</p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>
+          bare ground or vegetation mostly below around 10cm high – you can also
+          record this as an opportunity to restore environmental benefits (carbon capture)
+        </li>
+        <li>
+          vegetation mostly below around 30cm high – you can also record this as an
+          opportunity to enhance environmental benefits (carbon capture)
+        </li>
+        <li>
+          vegetation mostly over around 30cm high – you can also record that this
+          means environmental benefits (carbon capture) are already being provided,
+          which you can maintain
+        </li>
+      </ul>
+
+      <p class="govuk-body">For tall or deep-rooted vegetation, you can record if there is:</p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>
+          bare ground or vegetation mostly below around 5cm high – you can also
+          record that this is an opportunity to restore environmental benefits (water storage and flow)
+        </li>
+        <li>
+          vegetation most below around 25cm high – you can also record that this is an
+          opportunity to enhance environmental benefits (water storage and flow)
+        </li>
+        <li>
+          vegetation mostly over around 25cm high – you can also record that this
+          means environmental benefits (water storage and flow) are already being
+          provided, which can be maintained
+        </li>
+      </ul>
+      <p class="govuk-body">
+        For grassy vegetation (areas with more than around 75% grass or herb cover), you can
+        record if there is:
+      </p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>
+          uniform short vegetation that’s less than around 5cm high – you can also
+          record this as an opportunity to restore environmental benefits (biodiversity)
+        </li>
+        <li>
+          mostly shorter vegetation that’s less than around 10cm high – you can also
+          record that this is an opportunity to enhance environmental benefits (biodiversity)
+        </li>
+        <li>
+          a mix of heights with a variation of at least around 10cm between tall and short
+          patches – you can also record that this means environmental benefits (biodiversity)
+          are already being provided, you can maintain
+        </li>
+      </ul>
+      <p class="govuk-body">
+        For non-grassy vegetation (areas with more than around 25% cover of dwarf shrubs),
+        you can record if there is:
+      </p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>
+          vegetation of a similar height – you can record this as an opportunity to restore
+          environmental benefits (biodiversity)
+        </li>
+        <li>
+          a mix of vegetation heights, with tussocks or tall vegetation over 30cm – you
+          can record this as an opportunity to enhance environmental benefits (biodiversity)
+        </li>
+        <li>
+          a wide range of vegetation heights including some tall vegetation over 50cm –
+          you can record that this means environmental benefits (biodiversity) are
+          already being provided, which can be maintained
+        </li>
+      </ul>
+
+      <h4 class="govuk-heading-s">How to assess the presence of historic or archaeological features</h4>
+      <p class="govuk-body">
+        You can use your SFI HEFER to identify historic or archaeological features on, under or
+        around the sample point. You can also record any of these features that you know of, or
+        observe, which are not on your SFI HEFER.
+      </p>
+      <p class="govuk-body">
+        You can record any risks to the condition of historic or archaeological features, such as:
+      </p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>the presence of any trees, scrub or bracken on or next to the feature</li>
+        <li>
+          any activity by livestock on or next to the feature that disturbs the soil, causes
+          erosion or compacts the ground
+        </li>
+        <li>
+          land management practices that disturb the soil, cause erosion or compact the
+          ground, such as use of vehicle tracks or heavy machinery
+        </li>
+        <li>burrowing animals, such as badgers or rabbits</li>
+      </ul>
+
+      <h4 class="govuk-heading-s">Additional features you can choose to record</h4>
+      <p class="govuk-body">
+        There may be additional features within or around the sample point (for example within
+        100m), that could affect the environmental benefits the moorland provides. These
+        features could include:
+      </p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>
+          trees and scrub – you can record these as none, scattered trees/saplings
+          and/or scrub, dense scrub, woodland or a mix of trees/scrub/woodland
+        </li>
+        <li>
+          bracken – you can record this as none, more than 50% canopy cover with
+          some litter, more than 50% canopy cover with dense litter
+        </li>
+        <li>
+          drains and gullies – you can record these as none, channels mainly bare
+          along base, channel base more than 50% vegetation, channel is blocked
+        </li>
+        <li>
+          rock and scree – you can record as none, rock outcrops (for example, crags
+          and tors), scree and boulder fields, limestone pavement
+        </li>
+      </ul>
+
+      <h4 class="govuk-heading-s">Identifying environmental benefits provided by your moorland</h4>
+      <p class="govuk-body">The environmental benefits your moorland can provide include:</p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>carbon storage and capture, to offset the effects of climate change</li>
+        <li>clean water, to maintain or enhance water quality</li>
+        <li>water storage and flow, to reduce the effects of flooding and drought</li>
+        <li>biodiversity, to protect plants and wildlife</li>
+        <li>heritage, to protect historic and archaeological features</li>
+      </ul>
+      <p class="govuk-body">
+        You can use the information you’ve collected during your survey to identify and record
+        the environmental benefits your moorland is already providing.
+      </p>
+      <p class="govuk-body">
+        For each element you have surveyed (for example, roughness of ground), you can add
+        up the total number of sample points you’ve recorded as:
+      </p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>already providing the relevant environmental benefit</li>
+        <li>having an opportunity to enhance the relevant environmental benefit</li>
+        <li>having an opportunity to restore the relevant environmental benefit</li>
+      </ul>
+      <p class="govuk-body">
+        If the greatest number of sample points for the environmental benefit and the element
+        surveyed have been recorded as:
+      </p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>already providing it, you can maintain it by continuing with your current management practices</li>
+        <li>
+          having an opportunity to enhance or restore it, you can identify what potential
+          opportunities there are to change your management practices in future
+        </li>
+      </ul>
+      <p class="govuk-body">The table below shows an example of how you could do this.</p>
+
+      {{ govukTable({
+        caption: "Table showing how you can use information collected during a soil sampling survey to assess the environmental benefits your moorland is providing",
+        captionClasses: "govuk-visually-hidden",
+        head: [
+          { text: "Environmental benefit" },
+          { text: "Survey element" },
+          { text: "Sample points - already providing" },
+          { text: "Sample points - opportunity to enhance" },
+          { text: "Sample points - opportunity to restore" },
+          { text: "Overall assessment" }
+        ],
+      rows: [
+        [
+          { text: "Carbon storage" }, { text: "Extent of bare ground"}, { text: "13", format: "numeric" }, { text: "0", format: "numeric" }, { text:"0", format: "numeric" }, { text: "Already providing, maintain" }
+        ],
+        [
+          { text: "Carbon storage" }, { text: "Peat wetness"}, { text: "3", format: "numeric" }, { text: "3", format: "numeric" }, { text:"3", format: "numeric" }, { text: "Enhance" }
+        ],
+        [
+          { text: "Water storage and flow" }, { text: "Roughness of ground surface"}, { text: "11", format: "numeric" }, { text: "1", format: "numeric" }, { text:"1", format: "numeric" }, { text: "Enhance" }
+        ],
+        [
+          { text: "Water storage and flow" }, { text: "Bog mosses"}, { text: "1", format: "numeric" }, { text: "3", format: "numeric" }, { text:"5", format: "numeric" }, { text: "Restore" }
+        ]
+      ]
+      }) }}
+
+      <h4 class="govuk-heading-s">Future management practices you could consider</h4>
+      <p class="govuk-body">
+        This action does not require you to make any changes to your management practices on the moorland.
+      </p>
+      <p class="govuk-body">
+        At this stage, you are just considering what you could do in the future to help enhance
+        or restore the environmental benefits provided by your moorland.
+      </p>
+      <p class="govuk-body">Some examples of what you could consider doing include:</p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>
+          reviewing grazing management to maintain vegetation and allow bare areas to
+          revegetate – this could help to reduce the extent of bare ground and provide carbon storage
+        </li>
+        <li>
+          reviewing livestock management practices or managing water drainage, for
+          example block grips and gullies, to break up waterflow pathways and reduce
+          the amount and energy of flowing water – this could help to reduce the extent
+          of erosion and improve water quality
+        </li>
+        <li>
+          reviewing livestock or vegetation management practices to increase the
+          average height and variation in heights of vegetation – this could help to
+          increase the roughness of the ground surface and improve storage and flow of water
+        </li>
+      </ul>
+
+    </section>
+
+    <section id="sec-2-UPL1">
+      <h2 class="govuk-heading-l">2. UPL1: Moderate livestock grazing on moorland</h2>
+      <p class="govuk-body">What you must do to get paid for UPL1 and advice on how to do it.</p>
+
+      <h3 class="govuk-heading-m">Duration</h3>
+      <p class="govuk-body">12 months</p>
+
+      <h3 class="govuk-heading-m">How much you’ll be paid</h3>
+      <p class="govuk-body">£20 per hectare (ha) per year</p>
+
+      <h3 class="govuk-heading-m">Action’s aim</h3>
+      <p class="govuk-body">
+        This action’s aim is that there’s a moderate livestock density grazing on the moorland,
+        so its habitat is maintained or enhanced alongside farming.
+      </p>
+      <p class="govuk-body">The purpose of this is to:</p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>prevent expansion of areas of bare ground</li>
+        <li>increase surface roughness</li>
+        <li>reduce diffuse pollution</li>
+        <li>improve water quality and flood risk management</li>
+        <li>provide habitats for moorland species</li>
+        <li>protect historic and archaeological features</li>
+      </ul>
+
+      <h3 class="govuk-heading-m">Where you can do this action</h3>
+      <p class="govuk-body">You can do this action on land located above the moorland line that’s:</p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>
+          an eligible land type (as defined in <a class="govuk-link" rel="noreferrer noopener" target="_blank" href="/farm-payments/fptt-information#section-5.1">
+            section 5.1 ‘Eligible land types for FPTT’ (opens in new tab)</a> in the FPTT information)
+        </li>
+        <li>registered with an eligible land cover on your digital maps</li>
+      </ul>
+      <p class="govuk-body">
+        If a land parcel is located above and below the moorland line, you can enter it into this
+        action if:
+      </p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>most of the area is above the moorland line</li>
+        <li>it’s managed as one grazing unit with adjacent land parcels located above the moorland line</li>
+      </ul>
+      <p class="govuk-body">Farmyards or land used for turf or peat production are not eligible for this action.</p>
+
+
+
+      {{ govukTable({
+      caption: "Eligible land",
+      captionClasses: "govuk-table__caption--s",
+      head: [ { text: "Eligible land type" }, { text: "Eligible land cover" } ],
+      rows: [
+        [ { text: "Permanent grassland" }, { text: "Permanent grassland" } ],
+        [ { text: "Non-agricultural areas, such as scrub, scree, bracken and bog" }, { text: "Relevant non-agricultural land cover, such as scrub, scree, bracken or bog" } ] ]
+      }) }}
+
+      {{ govukTable({
+      caption: "Eligibility of protected land",
+      captionClasses: "govuk-table__caption--s",
+      head: [ { text: "Protected land" }, { text: "Eligibility" } ],
+      rows: [
+      [
+        {
+          text: "Sites of special scientific interest (SSSIs)"
+        },
+        {
+          html: "Eligible – you must get SSSI consent before you do this action.
+            Read <a class='govuk-link' href='/farm-payments/fptt-information#section-10.3' rel='noreferrer noopener' target='_blank'>section 10.3 ‘SSSI consent’ (opens in new tab)</a> in the FPTT information to
+            find out:
+            <ul class='govuk-list govuk-list--bullet'>
+              <li>what’s advisable for you to do before you apply for this action on SSSI land</li>
+              <li>how to give notice to Natural England to get SSSI consent</li>
+              <li>what stocking information you need to provide with your SSSI notice</li>
+            </ul>"
+        }
+      ],
+      [
+        {
+          text: "Historic and archaeological features"
+        },
+        {
+          html: 'Eligible – you must get a SFI HEFER before you do this action (read <a class="govuk-link" href="/farm-payments/fptt-information#section-5.5" rel="noreferrer noopener" target="_blank">section 5.5 ‘Land with historic or archaeological features’ (opens in new tab)</a> in the FPTT information to find out how to do this)'
+        }
+      ]
+      ]
+      }) }}
+
+      <h3 class="govuk-heading-m">Available area you can enter into this action</h3>
+      <p class="govuk-body">Total available area in a land parcel.</p>
+
+      <h3 class="govuk-heading-m">Type of action</h3>
+      <p class="govuk-body">
+        This is a static action. This means you must do it at the same location for the duration of
+        your 12 month FPTT agreement.
+      </p>
+
+      <h3 class="govuk-heading-m">What to do</h3>
+      <p class="govuk-body">
+        You must make sure that the livestock density across the land entered into this action
+        does not exceed 0.16 grazing livestock units (GLU) per hectare at any time.
+      </p>
+      <p class="govuk-body">To convert livestock numbers into GLU, you must use the following values:</p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>Cattle over 2 years old at the start of an agreement year – 1.0 GLU</li>
+        <li>Cattle over 6 months to 2 years old at the start of an agreement year – 0.6 GLU</li>
+        <li>Heavy sheep (for example, most lowland sheep, rams and larger hill sheep) – 0.12 GLU</li>
+        <li>Light sheep (for example, store lambs and small hill sheep – 0.08 GLU</li>
+        <li>Goat – 0.12 GLU</li>
+        <li>Pony or donkey – 0.8 GLU</li>
+        <li>Horse – 1.0 GLU</li>
+      </ul>
+      <p class="govuk-body">
+        Read the <a href="#upl1-advice-to-help-you-do-this-action" class="govuk-link">
+        ‘advice to help you do UPL1’</a> to find out how to calculate the livestock density.
+      </p>
+      <p class="govuk-body">
+        You must not carry out supplementary feeding of livestock on land entered into this
+        action, apart from mineral licks.
+      </p>
+      <p class="govuk-body">
+        At the start of your FPTT agreement, you must produce a written stocking calendar for
+        each land parcel entered into this action.
+      </p>
+      <p class="govuk-body">
+        The stocking calendar must show how you plan to meet this action’s requirements. It
+        must include:
+      </p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>land parcel reference number and hectarage</li>
+        <li>dates you plan to graze the land parcel during each calendar month</li>
+        <li>
+          monthly numbers of livestock which will graze the land parcel, including their
+          type and age bracket
+        </li>
+      </ul>
+      <p class="govuk-body">
+        If you manage several adjacent land parcels as one grazing unit, you can keep one
+        stocking calendar for that grazing unit. You must include all the land parcel reference
+        numbers which comprise that grazing unit.
+      </p>
+      <p class="govuk-body">
+        If something happens which means you cannot complete this action, you must tell the
+        Rural Payments Agency about this in writing as soon as possible. For example, if there
+        are fodder supply issues, so you need to increase the stocking level.
+      </p>
+      <p class="govuk-body">
+        Read
+        <a class="govuk-link" href="/farm-payments/fptt-information#section-13.2" rel="noreferrer noopener" target="_blank">
+          section 13.2, ‘What you must do if you cannot comply with your agreement’ (opens in new tab)</a> in
+        the FPTT information to find out how to do this.
+      </p>
+
+      <h3 class="govuk-heading-m">When to do it</h3>
+      <p class="govuk-body">You must do this action from the start date of your FPTT agreement.</p>
+
+      <h3 class="govuk-heading-m">How to do it</h3>
+      <p class="govuk-body">It's up to you how you do this action, as long as you:</p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>follow this action’s requirements – these are identified by a ‘must’</li>
+        <li>do the action in a way that could reasonably be expected to achieve this action’s aim</li>
+      </ul>
+      <p class="govuk-body">
+        You may find it helpful to read the <a href="#upl1-advice-to-help-you-do-this-action" class="govuk-link">
+        ‘advice to help you do UPL1’</a>, but it’s not part of
+        this action’s requirements.
+      </p>
+
+      <h3 class="govuk-heading-m">Evidence to keep</h3>
+      <p class="govuk-body">
+        You must keep the required written stocking calendar and supply this as evidence if the
+        RPA ask for it. It can be recorded on paper or electronically.
+      </p>
+
+      <h3 class="govuk-heading-m">Other actions or options you can do on the same area as this action</h3>
+      <p class="govuk-body">
+        You can do the following actions or options on the same area, in the same land parcel, as this action.
+      </p>
+
+      {{ govukTable({
+      caption: "Other actions or options you can do on the same area as this action",
+      captionClasses: "govuk-visually-hidden",
+      head: [ { text: "Scheme" }, { text: "Action or option codes" } ],
+      rows: [
+        [
+          {
+            text: "CSHT actions"
+          },
+          {
+            text: "CAGF1, CAGF2, CAGF3, CAGF4, CHS4, CSP13, CSP14, CSP15, CSP20, CSP21, CWS1, CWS3, CSW25"
+          }
+        ],
+        [
+          {
+            text: "SFI 2024 actions"
+          },
+          {
+            html: "
+              <p class=\"govuk-body\">
+                HEF5, UPL7, UPL8, UPL9, UPL10, CMOR1
+              </p>
+              <p class=\"govuk-body\">
+                You can do one of the following supplemental actions (unless indicated otherwise) on land entered into this action.
+                UPL4, UPL5, UPL6 (you can also do SPM4 or SPM5 on the same area as UPL4, UPL 5 or UPL6), SPM4, SPM5 (you can
+                also do UPL4 or UPL5 or UPL6 on the same area as SPM4 or SPM5)
+              </p>
+            "
+          }
+        ],
+        [
+          {
+            text: "SFI 2023 actions"
+          },
+          {
+            text: "MOR1"
+          }
+        ],
+        [
+          {
+            text: "CS options"
+          },
+          {
+            text: "HS4"
+          }
+        ],
+        [
+          {
+            text: "ES options"
+          },
+          {
+            text: "No ES revenue options"
+          }
+        ]
+      ]
+      }) }}
+
+      <p class="govuk-body">
+        If an action or option cannot be located on the same area, you may be able to do it on a
+        different area in the same land parcel. Read
+        <a class="govuk-link"
+           href="/farm-payments/fptt-information#sec-6-eligible-land-in-other-funding-schemes" rel="noreferrer noopener"
+           target="_blank">
+          section 6 ‘Eligible land in other funding schemes’ (opens in new tab)</a> in the FPTT information for more details.
+      </p>
+      <p class="govuk-body">
+        You can do the following actions or options on the eligible boundaries of a land parcel
+        entered into this action:
+      </p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>SFI 2024 actions: CHRW1, CHRW2, CHRW3, BND1, BND2 and WBD2</li>
+        <li>SFI 2023 actions: HRW1, HRW2, HRW3</li>
+        <li>CS option BE3 (management of hedgerows)</li>
+        <li>the introductory level of the SFI pilot hedgerows standard</li>
+      </ul>
+
+      <h3 class="govuk-heading-m" id="upl1-advice-to-help-you-do-this-action">Advice to help you do UPL1</h3>
+      <p class="govuk-body">
+        The following advice may help you to do this action, but it’s not part of this action’s requirements.
+      </p>
+
+      <h4 class="govuk-heading-s">How to calculate the livestock density</h4>
+      <p class="govuk-body">
+        Once you’ve converted your livestock numbers into GLU using the values shown under
+        ‘What to do’, you can use the
+        <a class="govuk-link"
+           href="https://assets.publishing.service.gov.uk/media/66a907cffc8e12ac3edb0773/uplands-grazing-calculator.xlsx"
+           rel="noreferrer noopener" target="_blank">
+          Livestock grazing on moorland calculator</a> to calculate the livestock density per ha.
+      </p>
+
+      <h4 class="govuk-heading-s">Grazing on moorland</h4>
+      <p class="govuk-body">Cattle, sheep, and ponies graze in different ways.</p>
+      <p class="govuk-body">You can achieve greater environmental benefits if you graze the moorland with:</p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>a livestock species which has suitable grazing traits for the habitat type</li>
+        <li>a suitable number of livestock for the habitat type, to avoid overgrazing or under grazing it</li>
+      </ul>
+
+      <h4 class="govuk-heading-s">Grazing traits: ponies</h4>
+      <p class="govuk-body">Ponies:</p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>can graze swards very tight, and at low stocking densities can create a good structural mosaic</li>
+        <li>
+          have a strong preference for grasses and will graze long coarse grass, such
+          as purple moor-grass
+        </li>
+        <li>are very adaptable grazers, and can graze bracken (particularly in the autumn) and gorse</li>
+        <li>are less likely to graze heather over the winter months compared with sheep</li>
+      </ul>
+
+      <h4 class="govuk-heading-s">Grazing traits: cattle</h4>
+      <p class="govuk-body">Cattle:</p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>
+          graze on longer swards, and graze less selectively than sheep and on coarser
+          forage, creating a more varied sward structure
+        </li>
+        <li>
+          will graze lower quality forage such as purple moor-grass, particularly in the spring and early summer
+        </li>
+      </ul>
+      <p class="govuk-body">
+        Cattle are more likely to cause poaching due to their size, particularly on wetter areas.
+        You can remove them from the area over the winter months to reduce the risk of poaching.
+      </p>
+
+      <h4 class="govuk-heading-s">Grazing traits: sheep</h4>
+      <p class="govuk-body">Sheep:</p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>can graze swards very tight</li>
+        <li>are highly selective feeders at fine scale, often selecting young flowers and shoots</li>
+        <li>are unlikely to eat long coarse grasses, such as purple moor-grass, if alternative food is available</li>
+      </ul>
+      <p class="govuk-body">
+        Sheep can cause a decline in dwarf shrub cover due to selective browsing, particularly
+        when out over the winter months. You can reduce the risk of this happening by:
+      </p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>removing all the sheep for the entire winter or part of the winter (‘partial off-wintering’)</li>
+        <li>reducing sheep numbers during the winter months</li>
+      </ul>
+
+      <h4 class="govuk-heading-s">Grazing to maintain or enhance moorland habitat</h4>
+      <p class="govuk-body">
+        To help you achieve this action’s aim, you can maintain or enhance the habitat on your
+        moorland by grazing appropriately. This includes trying to avoid grazing on sensitive
+        priority habitats, which may damage the habitat.
+      </p>
+      <p class="govuk-body">You’ll usually need to graze the following moorland habitats, as relevant:</p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>most grasslands</li>
+        <li>fens and flushes</li>
+        <li>most heathlands</li>
+        <li>land with historic and archaeological features, to avoid causing damage from trees, bracken and scrub</li>
+        <li>upland wood pasture</li>
+      </ul>
+      <p class="govuk-body">Sensitive priority habitats which may be damaged by grazing include:</p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>most woodlands</li>
+        <li>blanket bog</li>
+        <li>mountain heath</li>
+        <li>willow scrub</li>
+        <li>fragmented upland heath that needs to be restored</li>
+      </ul>
+
+      <h4 class="govuk-heading-s">Neighbouring livestock</h4>
+      <p class="govuk-body">
+        If the area of moorland you enter into this action is unfenced and adjacent land is
+        grazed by other farmers or land managers, you may need to:
+      </p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>
+          consider the potential impact of neighbouring livestock straying on your ability
+          to meet this action’s requirements, particularly the maximum livestock density
+          threshold
+        </li>
+        <li>
+          talk to neighbouring farmers or land managers about removing stray livestock
+          from your area of moorland
+        </li>
+      </ul>
+    </section>
+
+    <section id="sec-3-UPL2">
+      <h2 class="govuk-heading-l">3. UPL2: Low livestock grazing on moorland</h2>
+      <p class="govuk-body">What you must do to get paid for UPL2 and advice on how to do it.</p>
+
+      <h3 class="govuk-heading-m">Duration</h3>
+      <p class="govuk-body">12 months</p>
+
+      <h3 class="govuk-heading-m">How much you’ll be paid</h3>
+      <p class="govuk-body">£53 per hectare (ha) per year</p>
+
+      <h3 class="govuk-heading-m">Action’s aim</h3>
+      <p class="govuk-body">
+        This action’s aim is that there’s a low livestock density grazing on the moorland, so its
+        habitat is maintained or enhanced alongside farming.
+      </p>
+      <p class="govuk-body">The purpose of this is to:</p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>prevent expansion of areas of bare ground</li>
+        <li>increase surface roughness</li>
+        <li>reduce diffuse pollution</li>
+        <li>improve water quality and flood risk management</li>
+        <li>provide habitats for moorland species</li>
+        <li>protect historic and archaeological features</li>
+      </ul>
+
+      <h3 class="govuk-heading-m">Where you can do this action</h3>
+      <p class="govuk-body">You can do this action on land located above the moorland line that’s:</p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>an eligible land type (as defined in section 5.1 ‘Eligible land types for FPTT’ in the FPTT information)</li>
+        <li>registered with an eligible land cover on your digital maps</li>
+      </ul>
+      <p class="govuk-body">
+        If a land parcel is located above and below the moorland line, you can enter it into this action if:
+      </p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>most of the area is above the moorland line</li>
+        <li>it’s managed as one grazing unit with adjacent land parcels located above the moorland line</li>
+      </ul>
+      <p class="govuk-body">Farmyards or land used for turf or peat production are not eligible for this action.</p>
+
+      {{ govukTable({
+        caption: "Eligible land",
+        captionClasses: "govuk-table__caption--s",
+        head: [ { text: "Eligible land type" }, { text: "Eligible land cover" } ],
+        rows: [
+          [ { text: "Permanent grassland" }, { text: "Permanent grassland" } ],
+          [ { text: "Non-agricultural areas, such as scrub, scree, bracken and bog" }, { text: "Relevant non-agricultural land cover, such as scrub, scree, bracken or bog" } ]
+        ]
+      }) }}
+
+      {{ govukTable({
+        caption: "Eligibility of protected land",
+        captionClasses: "govuk-table__caption--s",
+        head: [ { text: "Protected land" }, { text: "Eligibility" } ],
+        rows: [
+          [
+            {
+              text: "Sites of special scientific interest (SSSIs)"
+            },
+            {
+              html: "Eligible – you must get SSSI consent before you do this action.
+                Read <a class='govuk-link' href='/farm-payments/fptt-information#section-10.3' rel='noreferrer noopener' target='_blank'>section 10.3 ‘SSSI consent’ (opens in new tab)</a> in the FPTT information to
+                find out:
+                <ul class='govuk-list govuk-list--bullet'>
+                  <li>what’s advisable for you to do before you apply for this action on SSSI land</li>
+                  <li>how to give notice to Natural England to get SSSI consent</li>
+                  <li>what stocking information you need to provide with your SSSI notice</li>
+                </ul>"
+            }
+          ],
+          [
+            {
+              text: "Historic and archaeological features"
+            },
+            {
+              html: 'Eligible – you must get a SFI HEFER before you do this action (read <a class="govuk-link" href="/farm-payments/fptt-information#section-5.5" rel="noreferrer noopener" target="_blank">section 5.5 ‘Land with historic or archaeological features’ (opens in new tab)</a> in the FPTT information to find out how to do this)'
+            }
+          ]
+      ]
+      }) }}
+
+      <h3 class="govuk-heading-m">Available area you can enter into this action</h3>
+      <p class="govuk-body">Total available area in a land parcel.</p>
+
+      <h3 class="govuk-heading-m">Type of action</h3>
+      <p class="govuk-body">
+        This is a static action. This means you must do it at the same location for the duration of
+        your 12 month FPTT agreement.
+      </p>
+
+      <h3 class="govuk-heading-m">What to do</h3>
+      <p class="govuk-body">
+        You must make sure that the livestock density across the land entered into this action
+        does not exceed 0.08 grazing livestock units (GLU) per hectare at any time.
+      </p>
+      <p class="govuk-body">To convert livestock numbers into GLU, you must use the following values:</p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>Cattle over 2 years old at the start of an agreement year – 1.0 GLU</li>
+        <li>Cattle over 6 months to 2 years old at the start of an agreement year – 0.6 GLU</li>
+        <li>Heavy sheep (for example, most lowland sheep, rams and larger hill sheep) – 0.12 GLU</li>
+        <li>Light sheep (for example, store lambs and small hill sheep – 0.08 GLU</li>
+        <li>Goat – 0.12 GLU</li>
+        <li>Pony or donkey – 0.8 GLU</li>
+        <li>Horse – 1.0 GLU</li>
+      </ul>
+      <p class="govuk-body">
+        Read the <a href="#upl2-advice-to-help-you-do-this-action" class="govuk-link">
+        ‘advice to help you do UPL2’</a> to find out how to calculate the livestock density.
+      </p>
+      <p class="govuk-body">
+        You must not carry out supplementary feeding of livestock on land entered into this
+        action, apart from mineral licks.
+      </p>
+      <p class="govuk-body">
+        At the start of your FPTT agreement, you must produce a written stocking calendar for
+        each land parcel entered into this action.
+      </p>
+      <p class="govuk-body">
+        The stocking calendar must show how you plan to meet this action’s requirements. It
+        must include:
+      </p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>land parcel reference number and hectarage</li>
+        <li>dates you plan to graze the land parcel during each calendar month</li>
+        <li>
+          monthly numbers of livestock which will graze the land parcel, including their
+          type and age bracket
+        </li>
+      </ul>
+      <p class="govuk-body">
+        If you manage several adjacent land parcels as one grazing unit, you can keep one
+        stocking calendar for that grazing unit. You must include all the land parcel reference
+        numbers which comprise that grazing unit.
+      </p>
+      <p class="govuk-body">
+        If something happens which means you cannot complete this action, you must tell the
+        Rural Payments Agency about this in writing as soon as possible. For example:
+      </p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>if there are fodder supply issues, so you need to increase the stocking level</li>
+        <li>you need to carry out supplementary feeding</li>
+      </ul>
+
+      <p class="govuk-body">
+        Read
+        <a class="govuk-link" href="/farm-payments/fptt-information#section-13.2" rel="noreferrer noopener" target="_blank">
+          section 13.2, ‘What you must do if you cannot comply with your agreement’ (opens in new tab)</a> in
+        the FPTT information to find out how to tell the RPA about this.
+      </p>
+
+      <h3 class="govuk-heading-m">When to do it</h3>
+      <p class="govuk-body">You must do this action from the start date of your FPTT agreement.</p>
+
+      <h3 class="govuk-heading-m">How to do it</h3>
+      <p class="govuk-body">It's up to you how you do this action, as long as you:</p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>follow this action’s requirements – these are identified by a ‘must’</li>
+        <li>do the action in a way that could reasonably be expected to achieve this action’s aim</li>
+      </ul>
+      <p class="govuk-body">
+        You may find it helpful to read the <a href="#upl2-advice-to-help-you-do-this-action" class="govuk-link">
+        ‘advice to help you do UPL2’</a>, but it’s not part of
+        this action’s requirements.
+      </p>
+
+      <h3 class="govuk-heading-m">Evidence to keep</h3>
+      <p class="govuk-body">
+        You must keep the required written stocking calendar and supply this as evidence if the
+        RPA ask for it. It can be recorded on paper or electronically.
+      </p>
+
+      <h3 class="govuk-heading-m">Other actions or options you can do on the same area as this action</h3>
+      <p class="govuk-body">
+        You can do the following actions or options on the same area, in the same land parcel, as this action.
+      </p>
+
+      {{ govukTable({
+        caption: "Other actions or options you can do on the same area as this action",
+        captionClasses: "govuk-visually-hidden",
+        head: [ { text: "Scheme" }, { text: "Action or option codes" } ],
+        rows: [
+          [
+            {
+              text: "CSHT actions"
+            },
+            {
+              text: "CAGF1, CAGF2, CAGF3, CAGF4, CHS4, CSP13, CSP14, CSP15, CSP20, CSP21, CWS1, CWS3, CSW25"
+            }
+          ],
+          [
+            {
+              text: "SFI 2024 actions"
+            },
+            {
+              html: "
+                <p class=\"govuk-body\">
+                  HEF5, UPL7, UPL8, UPL9, UPL10, CMOR1
+                </p>
+                <p class=\"govuk-body\">
+                  You can do one of the following supplemental actions (unless indicated otherwise) on land entered into this action.
+                  UPL4, UPL5, UPL6 (you can also do SPM4 or SPM5 on the same area as UPL4, UPL 5 or UPL6), SPM4, SPM5 (you can
+                  also do UPL4 or UPL5 or UPL6 on the same area as SPM4 or SPM5)
+                </p>
+              "
+            }
+          ],
+          [
+            {
+              text: "SFI 2023 actions"
+            },
+            {
+              text: "MOR1"
+            }
+          ],
+          [
+            {
+              text: "CS options"
+            },
+            {
+              text: "HS4"
+            }
+          ],
+          [
+            {
+              text: "ES options"
+            },
+            {
+              text: "No ES revenue options"
+            }
+          ]
+        ]
+      }) }}
+
+      <p class="govuk-body">
+        If an action or option cannot be located on the same area, you may be able to do it on a
+        different area in the same land parcel. Read
+        <a class="govuk-link"
+           href="/farm-payments/fptt-information#sec-6-eligible-land-in-other-funding-schemes" rel="noreferrer noopener"
+           target="_blank">
+          section 6 ‘Eligible land in other funding schemes’ (opens in new tab)</a> in the FPTT information for more details.
+      </p>
+      <p class="govuk-body">
+        You can do the following actions or options on the eligible boundaries of a land parcel
+        entered into this action:
+      </p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>SFI 2024 actions: CHRW1, CHRW2, CHRW3, BND1, BND2 and WBD2</li>
+        <li>SFI 2023 actions: HRW1, HRW2, HRW3</li>
+        <li>CS option BE3 (management of hedgerows)</li>
+        <li>the introductory level of the SFI pilot hedgerows standard</li>
+      </ul>
+
+      <h3 class="govuk-heading-m" id="upl2-advice-to-help-you-do-this-action">Advice to help you do UPL2</h3>
+      <p class="govuk-body">
+        The following advice may help you to do this action, but it’s not part of this action’s requirements.
+      </p>
+
+      <h4 class="govuk-heading-s">How to calculate the livestock density</h4>
+      <p class="govuk-body">
+        Once you’ve converted your livestock numbers into GLU using the values shown under
+        ‘What to do’, you can use the
+        <a class="govuk-link"
+           href="https://assets.publishing.service.gov.uk/media/66a907cffc8e12ac3edb0773/uplands-grazing-calculator.xlsx"
+           rel="noreferrer noopener" target="_blank">
+          Livestock grazing on moorland calculator</a> to calculate the livestock density per ha.
+      </p>
+
+      <h4 class="govuk-heading-s">Grazing on moorland</h4>
+      <p class="govuk-body">Cattle, sheep, and ponies graze in different ways.</p>
+      <p class="govuk-body">You can achieve greater environmental benefits if you graze the moorland with:</p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>a livestock species which has suitable grazing traits for the habitat type</li>
+        <li>a suitable number of livestock for the habitat type, to avoid overgrazing or under grazing it</li>
+      </ul>
+
+      <h4 class="govuk-heading-s">Grazing traits: ponies</h4>
+      <p class="govuk-body">Ponies:</p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>can graze swards very tight, and at low stocking densities can create a good structural mosaic</li>
+        <li>
+          have a strong preference for grasses and will graze long coarse grass, such
+          as purple moor-grass
+        </li>
+        <li>are very adaptable grazers, and can graze bracken (particularly in the autumn) and gorse</li>
+        <li>are less likely to graze heather over the winter months compared with sheep</li>
+      </ul>
+
+      <h4 class="govuk-heading-s">Grazing traits: cattle</h4>
+      <p class="govuk-body">Cattle:</p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>
+          graze on longer swards, and graze less selectively than sheep and on coarser
+          forage, creating a more varied sward structure
+        </li>
+        <li>
+          will graze lower quality forage such as purple moor-grass, particularly in the spring and early summer
+        </li>
+      </ul>
+      <p class="govuk-body">
+        Cattle are more likely to cause poaching due to their size, particularly on wetter areas.
+        You can remove them from the area over the winter months to reduce the risk of poaching.
+      </p>
+
+      <h4 class="govuk-heading-s">Grazing traits: sheep</h4>
+      <p class="govuk-body">Sheep:</p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>can graze swards very tight</li>
+        <li>are highly selective feeders at fine scale, often selecting young flowers and shoots</li>
+        <li>are unlikely to eat long coarse grasses, such as purple moor-grass, if alternative food is available</li>
+      </ul>
+      <p class="govuk-body">
+        Sheep can cause a decline in dwarf shrub cover due to selective browsing, particularly
+        when out over the winter months. You can reduce the risk of this happening by:
+      </p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>removing all the sheep for the entire winter or part of the winter (‘partial off-wintering’)</li>
+        <li>reducing sheep numbers during the winter months</li>
+      </ul>
+
+      <h4 class="govuk-heading-s">Grazing to maintain or enhance moorland habitat</h4>
+      <p class="govuk-body">
+        To help you achieve this action’s aim, you can maintain or enhance the habitat on your
+        moorland by grazing appropriately. This includes trying to avoid grazing on sensitive
+        priority habitats, which may damage the habitat.
+      </p>
+      <p class="govuk-body">You’ll usually need to graze the following moorland habitats, as relevant:</p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>most grasslands</li>
+        <li>fens and flushes</li>
+        <li>most heathlands</li>
+        <li>land with historic and archaeological features, to avoid causing damage from trees, bracken and scrub</li>
+        <li>upland wood pasture</li>
+      </ul>
+      <p class="govuk-body">Sensitive priority habitats which may be damaged by grazing include:</p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>most woodlands</li>
+        <li>blanket bog</li>
+        <li>mountain heath</li>
+        <li>willow scrub</li>
+        <li>fragmented upland heath that needs to be restored</li>
+      </ul>
+
+      <h4 class="govuk-heading-s">Neighbouring livestock</h4>
+      <p class="govuk-body">
+        If the area of moorland you enter into this action is unfenced and adjacent land is
+        grazed by other farmers or land managers, you may need to:
+      </p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>
+          consider the potential impact of neighbouring livestock straying on your ability
+          to meet this action’s requirements, particularly the maximum livestock density
+          threshold
+        </li>
+        <li>
+          talk to neighbouring farmers or land managers about removing stray livestock
+          from your area of moorland
+        </li>
+      </ul>
+    </section>
+
+    <section id="sec-4-UPL3">
+      <h2 class="govuk-heading-l">4. UPL2: Limited livestock grazing on moorland</h2>
+      <p class="govuk-body">What you must do to get paid for UPL3 and advice on how to do it.</p>
+
+      <h3 class="govuk-heading-m">Duration</h3>
+      <p class="govuk-body">12 months</p>
+
+      <h3 class="govuk-heading-m">How much you’ll be paid</h3>
+      <p class="govuk-body">£66 per hectare (ha) per year</p>
+
+      <h3 class="govuk-heading-m">Action’s aim</h3>
+      <p class="govuk-body">
+        This action’s aim is that there’s a limited livestock density grazing on the moorland, so its
+        habitat is maintained or enhanced alongside farming.
+      </p>
+      <p class="govuk-body">The purpose of this is to:</p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>prevent expansion of areas of bare ground</li>
+        <li>increase surface roughness</li>
+        <li>reduce diffuse pollution</li>
+        <li>improve water quality and flood risk management</li>
+        <li>provide habitats for moorland species</li>
+        <li>protect historic and archaeological features</li>
+      </ul>
+
+      <h3 class="govuk-heading-m">Where you can do this action</h3>
+      <p class="govuk-body">You can do this action on land located above the moorland line that’s:</p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>an eligible land type (as defined in section 5.1 ‘Eligible land types for FPTT’ in the FPTT information)</li>
+        <li>registered with an eligible land cover on your digital maps</li>
+      </ul>
+      <p class="govuk-body">
+        If a land parcel is located above and below the moorland line, you can enter it into this action if:
+      </p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>most of the area is above the moorland line</li>
+        <li>it’s managed as one grazing unit with adjacent land parcels located above the moorland line</li>
+      </ul>
+      <p class="govuk-body">Farmyards or land used for turf or peat production are not eligible for this action.</p>
+
+      {{ govukTable({
+        caption: "Eligible land",
+        captionClasses: "govuk-table__caption--s",
+        head: [ { text: "Eligible land type" }, { text: "Eligible land cover" } ],
+        rows: [
+          [ { text: "Permanent grassland" }, { text: "Permanent grassland" } ],
+          [ { text: "Non-agricultural areas, such as scrub, scree, bracken and bog" }, { text: "Relevant non-agricultural land cover, such as scrub, scree, bracken or bog" } ]
+        ]
+      }) }}
+
+      {{ govukTable({
+        caption: "Eligibility of protected land",
+        captionClasses: "govuk-table__caption--s",
+        head: [ { text: "Protected land" }, { text: "Eligibility" } ],
+        rows: [
+          [
+            {
+              text: "Sites of special scientific interest (SSSIs)"
+            },
+            {
+              html: "Eligible – you must get SSSI consent before you do this action.
+                Read <a class='govuk-link' href='/farm-payments/fptt-information#section-10.3' rel='noreferrer noopener' target='_blank'>section 10.3 ‘SSSI consent’ (opens in new tab)</a> in the FPTT information to
+                find out:
+                <ul class='govuk-list govuk-list--bullet'>
+                  <li>what’s advisable for you to do before you apply for this action on SSSI land</li>
+                  <li>how to give notice to Natural England to get SSSI consent</li>
+                  <li>what stocking information you need to provide with your SSSI notice</li>
+                </ul>"
+            }
+          ],
+          [
+            {
+              text: "Historic and archaeological features"
+            },
+            {
+              html: 'Eligible – you must get a SFI HEFER before you do this action (read <a class="govuk-link" href="/farm-payments/fptt-information#section-5.5" rel="noreferrer noopener" target="_blank">section 5.5 ‘Land with historic or archaeological features’ (opens in new tab)</a> in the FPTT information to find out how to do this)'
+            }
+          ]
+        ]
+      }) }}
+
+      <h3 class="govuk-heading-m">Available area you can enter into this action</h3>
+      <p class="govuk-body">Total available area in a land parcel.</p>
+
+      <h3 class="govuk-heading-m">Type of action</h3>
+      <p class="govuk-body">
+        This is a static action. This means you must do it at the same location for the duration of
+        your 12 month FPTT agreement.
+      </p>
+
+      <h3 class="govuk-heading-m">What to do</h3>
+      <p class="govuk-body">
+        You must make sure that the livestock density across the land entered into this action
+        does not exceed 0.04 grazing livestock units (GLU) per hectare at any time.
+      </p>
+      <p class="govuk-body">To convert livestock numbers into GLU, you must use the following values:</p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>Cattle over 2 years old at the start of an agreement year – 1.0 GLU</li>
+        <li>Cattle over 6 months to 2 years old at the start of an agreement year – 0.6 GLU</li>
+        <li>Heavy sheep (for example, most lowland sheep, rams and larger hill sheep) – 0.12 GLU</li>
+        <li>Light sheep (for example, store lambs and small hill sheep – 0.08 GLU</li>
+        <li>Goat – 0.12 GLU</li>
+        <li>Pony or donkey – 0.8 GLU</li>
+        <li>Horse – 1.0 GLU</li>
+      </ul>
+      <p class="govuk-body">
+        Read the <a href="#upl3-advice-to-help-you-do-this-action" class="govuk-link">
+        ‘advice to help you do UPL3’</a> to find out how to calculate the livestock density.
+      </p>
+      <p class="govuk-body">
+        You must not carry out supplementary feeding of livestock on land entered into this
+        action, apart from mineral licks.
+      </p>
+      <p class="govuk-body">
+        At the start of your FPTT agreement, you must produce a written stocking calendar for
+        each land parcel entered into this action.
+      </p>
+      <p class="govuk-body">
+        The stocking calendar must show how you plan to meet this action’s requirements. It
+        must include:
+      </p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>land parcel reference number and hectarage</li>
+        <li>dates you plan to graze the land parcel during each calendar month</li>
+        <li>
+          monthly numbers of livestock which will graze the land parcel, including their
+          type and age bracket
+        </li>
+      </ul>
+      <p class="govuk-body">
+        If you manage several adjacent land parcels as one grazing unit, you can keep one
+        stocking calendar for that grazing unit. You must include all the land parcel reference
+        numbers which comprise that grazing unit.
+      </p>
+      <p class="govuk-body">
+        If something happens which means you cannot complete this action, you must tell the
+        Rural Payments Agency about this in writing as soon as possible. For example, if
+        there are fodder supply issues, so you need to increase the stocking level.
+      </p>
+
+      <p class="govuk-body">
+        Read
+        <a class="govuk-link" href="/farm-payments/fptt-information#section-13.2" rel="noreferrer noopener" target="_blank">
+          section 13.2, ‘What you must do if you cannot comply with your agreement’ (opens in new tab)</a> in
+        the FPTT information to find out how to tell the RPA about this.
+      </p>
+
+      <h3 class="govuk-heading-m">When to do it</h3>
+      <p class="govuk-body">You must do this action from the start date of your FPTT agreement.</p>
+
+      <h3 class="govuk-heading-m">How to do it</h3>
+      <p class="govuk-body">It's up to you how you do this action, as long as you:</p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>follow this action’s requirements – these are identified by a ‘must’</li>
+        <li>do the action in a way that could reasonably be expected to achieve this action’s aim</li>
+      </ul>
+      <p class="govuk-body">
+        You may find it helpful to read the <a href="#upl3-advice-to-help-you-do-this-action" class="govuk-link">
+        ‘advice to help you do UPL3’</a>, but it’s not part of
+        this action’s requirements.
+      </p>
+
+      <h3 class="govuk-heading-m">Evidence to keep</h3>
+      <p class="govuk-body">
+        You must keep the required written stocking calendar and supply this as evidence if the
+        RPA ask for it. It can be recorded on paper or electronically.
+      </p>
+
+      <h3 class="govuk-heading-m">Other actions or options you can do on the same area as this action</h3>
+      <p class="govuk-body">
+        You can do the following actions or options on the same area, in the same land parcel, as this action.
+      </p>
+
+      {{ govukTable({
+        caption: "Other actions or options you can do on the same area as this action",
+        captionClasses: "govuk-visually-hidden",
+        head: [ { text: "Scheme" }, { text: "Action or option codes" } ],
+        rows: [
+          [
+            {
+              text: "CSHT actions"
+            },
+            {
+              text: "CAGF1, CAGF2, CAGF3, CAGF4, CHS4, CSP13, CSP14, CSP15, CSP20, CSP21, CWS1, CWS3, CSW25"
+            }
+          ],
+          [
+            {
+              text: "SFI 2024 actions"
+            },
+            {
+              html: "
+                <p class=\"govuk-body\">
+                  HEF5, UPL7, UPL8, UPL9, UPL10, CMOR1
+                </p>
+                <p class=\"govuk-body\">
+                  You can do one of the following supplemental actions (unless indicated otherwise) on land entered into this action.
+                  UPL4, UPL5, UPL6 (you can also do SPM4 or SPM5 on the same area as UPL4, UPL 5 or UPL6), SPM4, SPM5 (you can
+                  also do UPL4 or UPL5 or UPL6 on the same area as SPM4 or SPM5)
+                </p>
+              "
+            }
+          ],
+          [
+            {
+              text: "SFI 2023 actions"
+            },
+            {
+              text: "MOR1"
+            }
+          ],
+          [
+            {
+              text: "CS options"
+            },
+            {
+              text: "HS4"
+            }
+          ],
+          [
+            {
+              text: "ES options"
+            },
+            {
+              text: "No ES revenue options"
+            }
+          ]
+        ]
+      }) }}
+
+      <p class="govuk-body">
+        If an action or option cannot be located on the same area, you may be able to do it on a
+        different area in the same land parcel. Read
+        <a class="govuk-link"
+           href="/farm-payments/fptt-information#sec-6-eligible-land-in-other-funding-schemes" rel="noreferrer noopener"
+           target="_blank">
+          section 6 ‘Eligible land in other funding schemes’ (opens in new tab)</a> in the FPTT information for more details.
+      </p>
+      <p class="govuk-body">
+        You can do the following actions or options on the eligible boundaries of a land parcel
+        entered into this action:
+      </p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>SFI 2024 actions: CHRW1, CHRW2, CHRW3, BND1, BND2 and WBD2</li>
+        <li>SFI 2023 actions: HRW1, HRW2, HRW3</li>
+        <li>CS option BE3 (management of hedgerows)</li>
+        <li>the introductory level of the SFI pilot hedgerows standard</li>
+      </ul>
+
+      <h3 class="govuk-heading-m" id="upl3-advice-to-help-you-do-this-action">Advice to help you do UPL3</h3>
+      <p class="govuk-body">
+        The following advice may help you to do this action, but it’s not part of this action’s requirements.
+      </p>
+
+      <h4 class="govuk-heading-s">How to calculate the livestock density</h4>
+      <p class="govuk-body">
+        Once you’ve converted your livestock numbers into GLU using the values shown under
+        ‘What to do’, you can use the
+        <a class="govuk-link"
+           href="https://assets.publishing.service.gov.uk/media/66a907cffc8e12ac3edb0773/uplands-grazing-calculator.xlsx"
+           rel="noreferrer noopener" target="_blank">
+          Livestock grazing on moorland calculator</a> to calculate the livestock density per ha.
+      </p>
+
+      <h4 class="govuk-heading-s">Grazing on moorland</h4>
+      <p class="govuk-body">Cattle, sheep, and ponies graze in different ways.</p>
+      <p class="govuk-body">You can achieve greater environmental benefits if you graze the moorland with:</p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>a livestock species which has suitable grazing traits for the habitat type</li>
+        <li>a suitable number of livestock for the habitat type, to avoid overgrazing or under grazing it</li>
+      </ul>
+
+      <h4 class="govuk-heading-s">Grazing traits: ponies</h4>
+      <p class="govuk-body">Ponies:</p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>can graze swards very tight, and at low stocking densities can create a good structural mosaic</li>
+        <li>
+          have a strong preference for grasses and will graze long coarse grass, such
+          as purple moor-grass
+        </li>
+        <li>are very adaptable grazers, and can graze bracken (particularly in the autumn) and gorse</li>
+        <li>are less likely to graze heather over the winter months compared with sheep</li>
+      </ul>
+
+      <h4 class="govuk-heading-s">Grazing traits: cattle</h4>
+      <p class="govuk-body">Cattle:</p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>
+          graze on longer swards, and graze less selectively than sheep and on coarser
+          forage, creating a more varied sward structure
+        </li>
+        <li>
+          will graze lower quality forage such as purple moor-grass, particularly in the spring and early summer
+        </li>
+      </ul>
+      <p class="govuk-body">
+        Cattle are more likely to cause poaching due to their size, particularly on wetter areas.
+        You can remove them from the area over the winter months to reduce the risk of poaching.
+      </p>
+
+      <h4 class="govuk-heading-s">Grazing traits: sheep</h4>
+      <p class="govuk-body">Sheep:</p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>can graze swards very tight</li>
+        <li>are highly selective feeders at fine scale, often selecting young flowers and shoots</li>
+        <li>are unlikely to eat long coarse grasses, such as purple moor-grass, if alternative food is available</li>
+      </ul>
+      <p class="govuk-body">
+        Sheep can cause a decline in dwarf shrub cover due to selective browsing, particularly
+        when out over the winter months. You can reduce the risk of this happening by:
+      </p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>removing all the sheep for the entire winter or part of the winter (‘partial off-wintering’)</li>
+        <li>reducing sheep numbers during the winter months</li>
+      </ul>
+
+      <h4 class="govuk-heading-s">Grazing to maintain or enhance moorland habitat</h4>
+      <p class="govuk-body">
+        To help you achieve this action’s aim, you can maintain or enhance the habitat on your
+        moorland by grazing appropriately. This includes trying to avoid grazing on sensitive
+        priority habitats, which may damage the habitat.
+      </p>
+      <p class="govuk-body">You’ll usually need to graze the following moorland habitats, as relevant:</p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>most grasslands</li>
+        <li>fens and flushes</li>
+        <li>most heathlands</li>
+        <li>land with historic and archaeological features, to avoid causing damage from trees, bracken and scrub</li>
+        <li>upland wood pasture</li>
+      </ul>
+      <p class="govuk-body">Sensitive priority habitats which may be damaged by grazing include:</p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>most woodlands</li>
+        <li>blanket bog</li>
+        <li>mountain heath</li>
+        <li>willow scrub</li>
+        <li>fragmented upland heath that needs to be restored</li>
+      </ul>
+
+      <h4 class="govuk-heading-s">Neighbouring livestock</h4>
+      <p class="govuk-body">
+        If the area of moorland you enter into this action is unfenced and adjacent land is
+        grazed by other farmers or land managers, you may need to:
+      </p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>
+          consider the potential impact of neighbouring livestock straying on your ability
+          to meet this action’s requirements, particularly the maximum livestock density
+          threshold
+        </li>
+        <li>
+          talk to neighbouring farmers or land managers about removing stray livestock
+          from your area of moorland
+        </li>
+      </ul>
+    </section>
+  </div>
+</div>
+
+<div class="govuk-grid-row">
+  <div class="govuk-grid-column-full govuk-!-margin-bottom-4">
+    <a class="govuk-link gem-c-back-to-top-link govuk-!-display-none-print" href="#contents">
+      <svg class="gem-c-back-to-top-link__icon" xmlns="http://www.w3.org/2000/svg" width="13" height="17" viewBox="0 0 13 17" aria-hidden="true" focusable="false">
+        <path fill="currentColor" d="M6.5 0L0 6.5 1.4 8l4-4v12.7h2V4l4.3 4L13 6.4z"></path>
+      </svg>
+      Back to top
+    </a>
+  </div>
+</div>
+
+
+{% if config.cdpEnvironment == 'local' and context | length and not context.isForceAccess %}
+{% include "partials/debug.html" %}
+{% endif %}
+{% endblock %}
