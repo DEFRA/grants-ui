@@ -1,12 +1,17 @@
 import { vi } from 'vitest'
 import { mockHapiRequest } from '~/src/__mocks__'
-import { storeSlugInContext, getFormSlug, getConfirmationPath } from './form-slug-helper.js'
+import { storeSlugInContext, getFormSlug, getConfirmationPath, getFormMetadataFromPath } from './form-slug-helper.js'
 import { log, LogCodes } from './logging/log.js'
+import { getFormsCache } from '~/src/server/common/forms/services/form.js'
 
 vi.mock('./logging/log.js', async () => {
   const { mockLogHelper } = await import('~/src/__mocks__')
   return mockLogHelper()
 })
+
+vi.mock('~/src/server/common/forms/services/form.js', () => ({
+  getFormsCache: vi.fn(() => [])
+}))
 
 describe('form-slug-helper', () => {
   describe('storeSlugInContext', () => {
@@ -200,6 +205,32 @@ describe('form-slug-helper', () => {
       const result = getConfirmationPath(mockRequest, mockContext, controllerName)
 
       expect(result).toBe('/confirmation')
+    })
+  })
+
+  describe('getFormMetadataFromPath', () => {
+    afterEach(() => {
+      vi.clearAllMocks()
+    })
+
+    test.each([
+      { path: '/farm-payments/some-page', expected: 'found' },
+      { path: '/farm-payments/nested/deep/page', expected: 'found' },
+      { path: '/unknown-form/page', expected: undefined },
+      { path: '/', expected: undefined }
+    ])('should return $expected for path "$path"', ({ path, expected }) => {
+      const mockMetadata = { serviceName: 'Farm Payments Service' }
+      getFormsCache.mockReturnValue([{ slug: 'farm-payments', metadata: mockMetadata }])
+
+      const result = getFormMetadataFromPath({ path })
+
+      expect(result).toEqual(expected === 'found' ? mockMetadata : undefined)
+    })
+
+    test.each([null, undefined, {}])('should return undefined when request is %s or has no path', (request) => {
+      const result = getFormMetadataFromPath(request)
+
+      expect(result).toBeUndefined()
     })
   })
 })
