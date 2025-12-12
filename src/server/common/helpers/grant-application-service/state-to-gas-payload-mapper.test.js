@@ -30,7 +30,6 @@ describe('transformStateObjectToGasApplication', () => {
       sbi: '12345678',
       frn: 'FRN123456',
       crn: 'CRN789012',
-      defraId: 'DEFRA-ID-123',
       clientRef: 'CLIENT-REF-456'
     }
     const state = {}
@@ -47,7 +46,6 @@ describe('transformStateObjectToGasApplication', () => {
         sbi: '12345678',
         frn: 'FRN123456',
         crn: 'CRN789012',
-        defraId: 'DEFRA-ID-123',
         clientRef: 'CLIENT-REF-456',
         submittedAt: mockDate.toISOString()
       },
@@ -76,7 +74,6 @@ describe('transformStateObjectToGasApplication', () => {
     expect(result).toEqual({
       metadata: {
         sbi: '12345678',
-        defraId: 'defraId',
         submittedAt: mockDate.toISOString()
       },
       answers: {
@@ -90,7 +87,6 @@ describe('transformStateObjectToGasApplication', () => {
       sbi: '12345678',
       frn: 'FRN123456',
       crn: 'CRN789012',
-      defraId: 'DEFRA-ID-123',
       clientRef: 'CLIENT-REF-456'
     }
 
@@ -128,7 +124,6 @@ describe('transformStateObjectToGasApplication', () => {
         sbi: '12345678',
         frn: 'FRN123456',
         crn: 'CRN789012',
-        defraId: 'DEFRA-ID-123',
         clientRef: 'CLIENT-REF-456',
         submittedAt: mockDate.toISOString()
       },
@@ -162,7 +157,6 @@ describe('transformStateObjectToGasApplication', () => {
       sbi: '12345678',
       frn: 'FRN123456',
       crn: 'CRN789012',
-      defraId: 'DEFRA-ID-123',
       clientRef: 'CLIENT-REF-456'
     }
 

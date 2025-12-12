@@ -56,8 +56,7 @@ describe('Grant Application service (token present)', () => {
         submittedAt: '2025-04-22T12:00:00Z',
         sbi: '106284736',
         frn: '1234567890',
-        crn: '1234567890',
-        defraId: '1234567890'
+        crn: '1234567890'
       },
       answers: {
         scheme: 'SFI',
