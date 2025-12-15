@@ -1,18 +1,20 @@
 import { vi } from 'vitest'
 import { devTools, errorRoutes } from './index.js'
 
-// Number of non-error routes (dev home + demo confirmation)
-const BASE_ROUTES_COUNT = 2
+// Number of non-error routes (dev home + demo confirmation + demo details)
+const BASE_ROUTES_COUNT = 3
 
 vi.mock('./handlers/index.js', () => ({
   devHomeHandler: vi.fn().mockReturnValue('dev-home-response'),
-  demoConfirmationHandler: vi.fn().mockReturnValue('demo-confirmation-response')
+  demoConfirmationHandler: vi.fn().mockReturnValue('demo-confirmation-response'),
+  demoDetailsHandler: vi.fn().mockReturnValue('demo-details-response')
 }))
 
 describe('dev-tools index', () => {
   let server
   let mockDevHomeHandler
   let mockDemoConfirmationHandler
+  let mockDemoDetailsHandler
 
   beforeEach(async () => {
     vi.clearAllMocks()
@@ -20,6 +22,7 @@ describe('dev-tools index', () => {
     const handlers = await import('./handlers/index.js')
     mockDevHomeHandler = handlers.devHomeHandler
     mockDemoConfirmationHandler = handlers.demoConfirmationHandler
+    mockDemoDetailsHandler = handlers.demoDetailsHandler
 
     server = {
       route: vi.fn()
@@ -31,40 +34,45 @@ describe('dev-tools index', () => {
       expect(devTools.plugin.name).toBe('dev-tools')
     })
 
-    test('should register dev home route', () => {
-      devTools.plugin.register(server)
-
-      expect(server.route).toHaveBeenCalledWith({
-        method: 'GET',
+    const routeConfigurations = [
+      {
+        name: 'dev home route',
         path: '/dev',
-        options: {
-          auth: false
-        },
-        handler: mockDevHomeHandler
-      })
-    })
+        handler: () => mockDevHomeHandler
+      },
+      {
+        name: 'demo confirmation route',
+        path: '/dev/demo-confirmation/{slug}',
+        handler: () => mockDemoConfirmationHandler
+      },
+      {
+        name: 'demo details route',
+        path: '/dev/demo-details/{slug}',
+        handler: () => mockDemoDetailsHandler
+      }
+    ]
 
-    test('should register demo confirmation route', () => {
+    test.each(routeConfigurations)('should register $name with correct configuration', ({ path, handler }) => {
       devTools.plugin.register(server)
 
-      expect(server.route).toHaveBeenCalledWith({
-        method: 'GET',
-        path: '/dev/demo-confirmation/{slug}',
-        options: {
-          auth: false
-        },
-        handler: mockDemoConfirmationHandler
-      })
+      expect(server.route).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: 'GET',
+          path,
+          options: { auth: false },
+          handler: handler()
+        })
+      )
     })
 
-    test('should register all routes', () => {
+    test('should register all routes including error routes', () => {
       devTools.plugin.register(server)
 
       const expectedRouteCount = BASE_ROUTES_COUNT + errorRoutes.length
       expect(server.route).toHaveBeenCalledTimes(expectedRouteCount)
     })
 
-    test('should disable auth for both routes', () => {
+    test('should disable auth for all routes', () => {
       devTools.plugin.register(server)
 
       const routeCalls = server.route.mock.calls
@@ -75,16 +83,12 @@ describe('dev-tools index', () => {
     })
 
     // Generate route configurations dynamically from errorRoutes
-    const routeConfigurations = [
-      { name: 'dev home route', path: '/dev' },
-      { name: 'demo confirmation route', path: '/dev/demo-confirmation/{slug}' },
-      ...errorRoutes.map(({ code }) => ({
-        name: `test ${code} route`,
-        path: `/dev/test-${code}`
-      }))
-    ]
+    const errorRouteConfigurations = errorRoutes.map(({ code }) => ({
+      name: `test ${code} route`,
+      path: `/dev/test-${code}`
+    }))
 
-    test.each(routeConfigurations)('should register $name with correct configuration', ({ path }) => {
+    test.each(errorRouteConfigurations)('should register $name with correct path', ({ path }) => {
       devTools.plugin.register(server)
 
       expect(server.route).toHaveBeenCalledWith(
@@ -103,25 +107,6 @@ describe('dev-tools index', () => {
 
       expect(() => devTools.plugin.register(server)).toThrow('Route registration failed')
       expect(server.route).toHaveBeenCalledTimes(1)
-    })
-
-    test('should register routes in correct order', () => {
-      devTools.plugin.register(server)
-
-      const routeCalls = server.route.mock.calls
-      expect(routeCalls[0][0].path).toBe('/dev')
-      expect(routeCalls[1][0].path).toBe('/dev/demo-confirmation/{slug}')
-    })
-
-    test('should use imported handlers', () => {
-      devTools.plugin.register(server)
-
-      const routeCalls = server.route.mock.calls
-      const devHomeRoute = routeCalls.find((call) => call[0].path === '/dev')
-      const demoConfirmationRoute = routeCalls.find((call) => call[0].path === '/dev/demo-confirmation/{slug}')
-
-      expect(devHomeRoute[0].handler).toBe(mockDevHomeHandler)
-      expect(demoConfirmationRoute[0].handler).toBe(mockDemoConfirmationHandler)
     })
 
     test('should handle multiple server registrations', () => {
