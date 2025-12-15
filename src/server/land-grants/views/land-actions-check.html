@@ -34,7 +34,7 @@
 
         <h1 class="govuk-heading-l">{{ pageTitle }}</h1>
 
-        <p class="govuk-body-l">The total yearly payment is
+        <p class="govuk-body-l">The annual payment is
           <strong>{{ totalYearlyPayment }}</strong>.</p>
 
         {% for item in parcelItems %}
@@ -58,7 +58,7 @@
                 format: "numeric"
               },
               {
-                text: "Yearly payment",
+                text: "Annual payment",
                 format: "numeric"
               },
               {
@@ -74,11 +74,11 @@
         {% for item in additionalYearlyPayments %}
           {% call summaryCard({
             title: {
-              text: "Additional yearly payments"
+              text: "Additional annual payments"
             }
           }) %}
           {{ govukTable({
-            caption: "List of additional yearly payments",
+            caption: "List of additional annual payments",
             captionClasses: "govuk-visually-hidden",
             head: [
               {
