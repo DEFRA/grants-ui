@@ -1,0 +1,5 @@
+<div class="govuk-grid-row">
+  <div class="govuk-grid-column-two-thirds{% if params.classes %} {{ params.classes }}{% endif %}">
+    {% if params.content %}{{ params.content | safe }}{% elif caller %}{{ caller() }}{% endif %}
+  </div>
+</div>

@@ -3,12 +3,12 @@
 {% from "govuk/components/button/macro.njk" import govukButton %}
 {% from "govuk/components/notification-banner/macro.njk" import govukNotificationBanner %}
 {% from "format-duration/macro.njk" import appFormatDuration %}
+{% from "cookie-table/macro.njk" import appCookieTable %}
+{% from "two-thirds-column/macro.njk" import appTwoThirdsColumn %}
 
 {% block content %}
-  <div class="govuk-grid-row">
-    <div class="govuk-grid-column-two-thirds">
-
-      <h1 class="govuk-heading-l">{{ heading }}</h1>
+  {% call appTwoThirdsColumn() %}
+    <h1 class="govuk-heading-l">{{ heading }}</h1>
 
       {% if success %}
         {{ govukNotificationBanner({
@@ -31,38 +31,15 @@
         Essential cookies keep your information secure while you use {{ serviceName }}. We do not need to ask permission to use them.
       </p>
 
-      <table class="govuk-table">
-        <caption class="govuk-table__caption govuk-table__caption--s govuk-visually-hidden">Essential cookies</caption>
-        <thead class="govuk-table__head">
-          <tr class="govuk-table__row">
-            <th scope="col" class="govuk-table__header">Name</th>
-            <th scope="col" class="govuk-table__header">Purpose</th>
-            <th scope="col" class="govuk-table__header">Expires</th>
-          </tr>
-        </thead>
-        <tbody class="govuk-table__body">
-          <tr class="govuk-table__row">
-            <th scope="row" class="govuk-table__header">crumb</th>
-            <td class="govuk-table__cell">Protects our services from bots and automated attacks</td>
-            <td class="govuk-table__cell">When you close your browser</td>
-          </tr>
-          <tr class="govuk-table__row">
-            <th scope="row" class="govuk-table__header">grants-ui-session-auth</th>
-            <td class="govuk-table__cell">Keeps you signed in and maintains your session</td>
-            <td class="govuk-table__cell">{{ appFormatDuration({ ttlMs: sessionCookieTtl }) }}</td>
-          </tr>
-          <tr class="govuk-table__row">
-            <th scope="row" class="govuk-table__header">grants-ui-session-cache</th>
-            <td class="govuk-table__cell">Stores temporary session data while you use the service</td>
-            <td class="govuk-table__cell">{{ appFormatDuration({ ttlMs: sessionCookieTtl }) }}</td>
-          </tr>
-          <tr class="govuk-table__row">
-            <th scope="row" class="govuk-table__header">{{ cookieConsentName }}</th>
-            <td class="govuk-table__cell">Saves your cookie consent settings</td>
-            <td class="govuk-table__cell">{{ cookieConsentExpiryDays }} days</td>
-          </tr>
-        </tbody>
-      </table>
+      {{ appCookieTable({
+        caption: "Essential cookies",
+        cookies: [
+          { name: "crumb", purpose: "Protects our services from bots and automated attacks", expires: "When you close your browser" },
+          { name: "grants-ui-session-auth", purpose: "Keeps you signed in and maintains your session", expires: appFormatDuration({ ttlMs: sessionCookieTtl }) },
+          { name: "grants-ui-session-cache", purpose: "Stores temporary session data while you use the service", expires: appFormatDuration({ ttlMs: sessionCookieTtl }) },
+          { name: cookieConsentName, purpose: "Saves your cookie consent settings", expires: cookieConsentExpiryDays + " days" }
+        ]
+      }) }}
 
       <h2 class="govuk-heading-m">Analytics cookies (optional)</h2>
 
@@ -84,33 +61,14 @@
         <li>any errors you see while using {{ serviceName }}</li>
       </ul>
 
-      <table class="govuk-table">
-        <caption class="govuk-table__caption govuk-table__caption--s govuk-visually-hidden">Analytics cookies</caption>
-        <thead class="govuk-table__head">
-          <tr class="govuk-table__row">
-            <th scope="col" class="govuk-table__header">Name</th>
-            <th scope="col" class="govuk-table__header">Purpose</th>
-            <th scope="col" class="govuk-table__header">Expires</th>
-          </tr>
-        </thead>
-        <tbody class="govuk-table__body">
-          <tr class="govuk-table__row">
-            <th scope="row" class="govuk-table__header">_ga</th>
-            <td class="govuk-table__cell">Checks if you've visited {{ serviceName }} before. This helps us count how many people visit our site.</td>
-            <td class="govuk-table__cell">2 years</td>
-          </tr>
-          <tr class="govuk-table__row">
-            <th scope="row" class="govuk-table__header">_ga_&lt;container-id&gt;</th>
-            <td class="govuk-table__cell">Checks if you've visited {{ serviceName }} before. This helps us count how many people visit our site.</td>
-            <td class="govuk-table__cell">2 years</td>
-          </tr>
-          <tr class="govuk-table__row">
-            <th scope="row" class="govuk-table__header">_gid</th>
-            <td class="govuk-table__cell">Checks if you've visited {{ serviceName }} before. This helps us count how many people visit our site.</td>
-            <td class="govuk-table__cell">24 hours</td>
-          </tr>
-        </tbody>
-      </table>
+      {{ appCookieTable({
+        caption: "Analytics cookies",
+        cookies: [
+          { name: "_ga", purpose: "Checks if you've visited " + serviceName + " before. This helps us count how many people visit our site.", expires: "2 years" },
+          { name: "_ga_<container-id>", purpose: "Checks if you've visited " + serviceName + " before. This helps us count how many people visit our site.", expires: "2 years" },
+          { name: "_gid", purpose: "Checks if you've visited " + serviceName + " before. This helps us count how many people visit our site.", expires: "24 hours" }
+        ]
+      }) }}
 
       <form id="cookie-preferences-form" method="POST" data-cookie-name="{{ cookieConsentName }}" data-expiry-days="{{ cookieConsentExpiryDays }}" data-ga-tracking-id="{{ gaTrackingId }}" data-referrer="{{ referrer }}">
         <input type="hidden" name="returnUrl" value="{{ referrer }}">
@@ -148,7 +106,5 @@
           <p class="govuk-body">You can change your cookie settings. Your settings will be saved when you submit the form.</p>
         </noscript>
       </form>
-
-    </div>
-  </div>
+  {% endcall %}
 {% endblock %}
