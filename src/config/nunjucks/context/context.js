@@ -9,6 +9,7 @@ import {
 } from '~/src/config/nunjucks/context/build-cookie-banner-config.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { sbiStore } from '~/src/server/sbi/state.js'
+import { getFormMetadataFromPath } from '~/src/server/common/helpers/form-slug-helper.js'
 
 const assetPath = config.get('assetPath')
 const manifestPath = path.join(config.get('root'), '.public/assets-manifest.json')
@@ -43,10 +44,10 @@ const usersDetails = (request, tempSbi, role) => {
  * @returns {object} Cookie consent configuration including service name, policy URL, and expiry days
  */
 const extractCookieConsentConfig = (request) => {
-  const formMetadata = request?.app?.model?.def?.metadata
+  const formMetadata = request?.app?.model?.def?.metadata ?? getFormMetadataFromPath(request)
   const cookieConsentMetadata = formMetadata?.cookieConsent
   return {
-    serviceName: cookieConsentMetadata?.serviceName || config.get('serviceName'),
+    serviceName: formMetadata?.serviceName || cookieConsentMetadata?.serviceName || config.get('serviceName'),
     cookiePolicyUrl: cookieConsentMetadata?.cookiePolicyUrl || config.get('cookieConsent.cookiePolicyUrl'),
     cookieConsentExpiryDays: cookieConsentMetadata?.expiryDays || config.get('cookieConsent.expiryDays')
   }
