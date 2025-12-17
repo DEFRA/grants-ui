@@ -1,0 +1,24 @@
+{% if params.isDevelopmentMode %}
+  <div class="govuk-notification-banner govuk-notification-banner--important" role="region" aria-labelledby="govuk-notification-banner-title" data-module="govuk-notification-banner" style="border-color: #f47738; background-color: #ffe6cc;">
+    <div class="govuk-notification-banner__header" style="background-color: #f47738; color: white;">
+      <h2 class="govuk-notification-banner__title" id="govuk-notification-banner-title">
+        ⚠️ Development Mode
+      </h2>
+    </div>
+    <div class="govuk-notification-banner__content">
+      <p class="govuk-notification-banner__heading">
+        This page is for development testing only and is not accessible in production.
+      </p>
+      <p class="govuk-body-s">
+        <strong>Environment:</strong> local<br>
+        {% if params.formSlug %}
+          <strong>Demo route:</strong> {{ params.demoRoute }}<br>
+          <strong>Form:</strong> {{ params.formTitle or params.formSlug }}<br>
+          <strong>Data source:</strong> {{ params.dataSource or 'Demo data' }}
+        {% else %}
+          <strong>Demo route pattern:</strong> {{ params.routePattern }}
+        {% endif %}
+      </p>
+    </div>
+  </div>
+{% endif %}
