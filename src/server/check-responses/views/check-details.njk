@@ -1,38 +1,21 @@
 {% extends "layouts/page.njk" %}
 {% set backLink = false %}
-{% from "govuk/components/summary-list/macro.njk" import govukSummaryList %}
-{% from "govuk/components/button/macro.njk" import govukButton %}
 {% from "govuk/components/radios/macro.njk" import govukRadios %}
 {% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
+{% from "dev-mode-banner/macro.njk" import appDevModeBanner %}
+{% from "section-list/macro.njk" import appSectionList %}
+{% from "demo-aware-button/macro.njk" import appDemoAwareButton %}
+{% from "two-thirds-column/macro.njk" import appTwoThirdsColumn %}
 
 {% block content %}
-  <div class="govuk-grid-row">
-    <div class="govuk-grid-column-two-thirds">
-      {# Development mode warning banner #}
-      {% if isDevelopmentMode %}
-        <div class="govuk-notification-banner govuk-notification-banner--important" role="region" aria-labelledby="govuk-notification-banner-title" data-module="govuk-notification-banner" style="border-color: #f47738; background-color: #ffe6cc;">
-          <div class="govuk-notification-banner__header" style="background-color: #f47738; color: white;">
-            <h2 class="govuk-notification-banner__title" id="govuk-notification-banner-title">
-              ⚠️ Development Mode
-            </h2>
-          </div>
-          <div class="govuk-notification-banner__content">
-            <p class="govuk-notification-banner__heading">
-              This page is for development testing only and is not accessible in production.
-            </p>
-            <p class="govuk-body-s">
-              <strong>Environment:</strong> local<br>
-              {% if formSlug %}
-                <strong>Demo route:</strong> /dev/demo-details/{{ formSlug }}<br>
-                <strong>Form:</strong> {{ formTitle or formSlug }}<br>
-                <strong>Data source:</strong> Demo data
-              {% else %}
-                <strong>Demo route pattern:</strong> /dev/demo-details/{slug}
-              {% endif %}
-            </p>
-          </div>
-        </div>
-      {% endif %}
+  {% call appTwoThirdsColumn() %}
+    {{ appDevModeBanner({
+        isDevelopmentMode: isDevelopmentMode,
+        formSlug: formSlug,
+        formTitle: formTitle,
+        demoRoute: "/dev/demo-details/" + formSlug if formSlug else "",
+        routePattern: "/dev/demo-details/{slug}"
+      }) }}
 
       {% if errors %}
         {{ govukErrorSummary({
@@ -45,15 +28,7 @@
         {{ pageTitle }}
       </h1>
 
-      {% for section in sections %}
-        <h2 class="govuk-heading-m">{{ section.title.text }}</h2>
-
-        {% if section.description %}
-          <p class="govuk-body">{{ section.description }}</p>
-        {% endif %}
-
-        {{ govukSummaryList(section.summaryList) }}
-      {% endfor %}
+      {{ appSectionList({ sections: sections }) }}
 
       <form method="post" novalidate="novalidate">
         {{ govukRadios({
@@ -72,23 +47,11 @@
           errorMessage: errors and errors[0] and { text: errors[0].text }
         }) }}
 
-        {% if isDevelopmentMode %}
-          {{ govukButton({
-            text: "Continue",
-            preventDoubleClick: true,
-            disabled: true
-          }) }}
-          <p class="govuk-body-s govuk-!-margin-top-4" style="color: #666;">
-            Button disabled in demo mode
-          </p>
-        {% else %}
-          <input type="hidden" name="crumb" value="{{ crumb }}">
-          {{ govukButton({
-            text: "Continue",
-            preventDoubleClick: true
-          }) }}
-        {% endif %}
+        {{ appDemoAwareButton({
+          isDevelopmentMode: isDevelopmentMode,
+          crumb: crumb,
+          text: "Continue"
+        }) }}
       </form>
-    </div>
-  </div>
+  {% endcall %}
 {% endblock %}

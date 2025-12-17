@@ -1,38 +1,22 @@
 {% extends "layouts/page.njk" %}
 {% set backLink = false %}
 {% from "govuk/components/panel/macro.njk" import govukPanel %}
-{% from "govuk/components/details/macro.njk" import govukDetails %}
+{% from "dev-mode-banner/macro.njk" import appDevModeBanner %}
+{% from "support-details/macro.njk" import defraSupportDetails %}
+{% from "two-thirds-column/macro.njk" import appTwoThirdsColumn %}
 
 {% set mainClasses = "govuk-main-wrapper--l" %}
 
 {% block content %}
-  <div class="govuk-grid-row">
-    <div class="govuk-grid-column-two-thirds">
-      {# Development mode warning banner #}
-      {% if isDevelopmentMode %}
-        <div class="govuk-notification-banner govuk-notification-banner--important" role="region" aria-labelledby="govuk-notification-banner-title" data-module="govuk-notification-banner" style="border-color: #f47738; background-color: #ffe6cc;">
-          <div class="govuk-notification-banner__header" style="background-color: #f47738; color: white;">
-            <h2 class="govuk-notification-banner__title" id="govuk-notification-banner-title">
-              ⚠️ Development Mode
-            </h2>
-          </div>
-          <div class="govuk-notification-banner__content">
-            <p class="govuk-notification-banner__heading">
-              This page is for development testing only and is not accessible in production.
-            </p>
-            <p class="govuk-body-s">
-              <strong>Environment:</strong> local<br>
-              {% if formSlug %}
-                <strong>Demo route:</strong> /dev/demo-confirmation{{ formSlug }}<br>
-                <strong>Form:</strong> {{ formTitle or formSlug }}<br>
-                <strong>Data source:</strong> {{ 'Session data' if usingSessionData else 'Demo data' }}
-              {% else %}
-                <strong>Demo route pattern:</strong> /dev/demo-confirmation/{slug}
-              {% endif %}
-            </p>
-          </div>
-        </div>
-      {% endif %}
+  {% call appTwoThirdsColumn() %}
+    {{ appDevModeBanner({
+        isDevelopmentMode: isDevelopmentMode,
+        formSlug: formSlug,
+        formTitle: formTitle,
+        demoRoute: "/dev/demo-confirmation/" + formSlug if formSlug else "",
+        routePattern: "/dev/demo-confirmation/{slug}",
+        dataSource: 'Session data' if usingSessionData else 'Demo data'
+      }) }}
 
       {# FIXED SECTION: Always displayed - Application complete message and reference number #}
       {{ govukPanel({
@@ -57,11 +41,7 @@
           <li>the Rural Payments Agency confirms your start date</li>
         </ul>
 
-        {{ govukDetails({
-          summaryText: "If you have a question",
-          html: "<p class='govuk-body'>Contact the Rural Payments Agency.</p>"
-        }) }}
+        {{ defraSupportDetails({ typeOfSupport: 'question' }) }}
       {% endif %}
-    </div>
-  </div>
+  {% endcall %}
 {% endblock %}

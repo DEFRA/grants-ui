@@ -1,0 +1,32 @@
+{% extends "layouts/page.njk" %}
+
+{% block pageTitle %}{{ pageHeading }}{% endblock %}
+{% from "govuk/components/task-list/macro.njk" import govukTaskList %}
+{% from "closing-date-banner/macro.njk" import appClosingDateBanner %}
+{% from "help-panel/macro.njk" import appHelpPanel %}
+{% from "two-thirds-column/macro.njk" import appTwoThirdsColumn %}
+
+{% block content %}
+  {% call appTwoThirdsColumn({ classes: 'govuk-!-margin-top-2' }) %}
+    <h1 class="govuk-heading-xl">{{ pageHeading }}</h1>
+
+    {{ appClosingDateBanner({ closingDate: closingDate }) }}
+
+    {% for section in sections %}
+      <h2 class="govuk-heading-m">{{ section.title }}</h2>
+
+      {{ govukTaskList({
+        idPrefix: "section.title",
+        items: section.subsections
+        })
+      }}
+    {% endfor %}
+
+    {% if helpText %}
+      {{ appHelpPanel({
+        href: "/fetf/change-request/help-triage",
+        linkText: helpText
+      }) }}
+    {% endif %}
+  {% endcall %}
+{% endblock %}
