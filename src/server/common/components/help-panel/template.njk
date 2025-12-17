@@ -1,0 +1,10 @@
+<div class="app-contact-panel">
+  <h2 class="govuk-heading-s">{{ params.heading or "Need help?" }}</h2>
+  <p class="govuk-body app-contact-panel__body">
+    {% if params.href %}
+      <a class="govuk-link" href="{{ params.href }}">{{ params.linkText or params.text }}</a>
+    {% else %}
+      {{ params.text }}
+    {% endif %}
+  </p>
+</div>
