@@ -1,7 +1,6 @@
 {% extends "layouts/page.njk" %}
 
 {% from "govuk/components/back-link/macro.njk" import govukBackLink %}
-{% from "sbi-selector/macro.njk" import sbiSelector %}
 
 {% block pageTitle %}
   {{ "Error: " if errors | length }}{{ pageTitle | evaluate }} | {{ name | default(serviceName) }}
@@ -31,15 +30,6 @@
       organisationId: auth.organisationId | default(""),
       name: auth.name
     }) }}
-
-    {% if not defraIdEnabled and serviceUrl == '/farm-payments' %}
-
-  <div class="govuk-width-container">
-      {{ sbiSelector({
-        sbi: auth.sbi | default("")
-      }) }}
-  </div>
-    {% endif %}
 
   <input type="hidden" id="csrf-token" value="{{ crumb }}">
 {% endblock %}
