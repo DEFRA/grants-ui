@@ -13,7 +13,7 @@
         isDevelopmentMode: isDevelopmentMode,
         formSlug: formSlug,
         formTitle: formTitle,
-        demoRoute: "/dev/demo-confirmation/" + formSlug if formSlug else null,
+        demoRoute: "/dev/demo-confirmation/" + formSlug if formSlug else "",
         routePattern: "/dev/demo-confirmation/{slug}",
         dataSource: 'Session data' if usingSessionData else 'Demo data'
       }) }}
