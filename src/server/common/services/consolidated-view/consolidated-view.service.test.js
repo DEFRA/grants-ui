@@ -125,7 +125,6 @@ describe('Consolidated View Service', () => {
     })
     config.set('consolidatedView', {
       apiEndpoint: 'https://api.example.com/graphql',
-      authEmail: 'test@example.com',
       mockDALEnabled: false
     })
   })
@@ -147,27 +146,6 @@ describe('Consolidated View Service', () => {
       expect(calledOptions.headers['Content-Type']).toBe(`application/json`)
       expect(calledOptions.headers['gateway-type']).toBe(`external`)
       expect(calledOptions.headers['x-forwarded-authorization']).toBe(mockDefraIdToken)
-    })
-
-    it('should set internal headers for non-defraID requests', async () => {
-      config.set('defraId', {
-        enabled: false
-      })
-      mockFetchInstance.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockParcelsResponse)
-      })
-
-      const result = await fetchParcelsFromDal(mockRequest)
-
-      expect(mockFetchInstance).toHaveBeenCalledTimes(1)
-      expect(result).toEqual(mockParcelsResponse.data.business.land.parcels)
-
-      const [[, calledOptions]] = mockFetchInstance.mock.calls
-      expect(calledOptions.headers['email']).toBe('test@example.com')
-      expect(calledOptions.headers['gateway-type']).toBeUndefined()
-      expect(calledOptions.body).toContain(`business(sbi:`)
-      expect(calledOptions.headers['x-forwarded-authorization']).toBeUndefined()
     })
 
     it('should return empty array when parcels data is missing', async () => {
@@ -294,7 +272,6 @@ describe('Consolidated View Service', () => {
       // Enable mock mode
       config.set('consolidatedView', {
         apiEndpoint: 'https://api.example.com/graphql',
-        authEmail: 'test@example.com',
         mockDALEnabled: true
       })
 
@@ -442,7 +419,6 @@ describe('Consolidated View Service', () => {
       // Enable mock mode
       config.set('consolidatedView', {
         apiEndpoint: 'https://api.example.com/graphql',
-        authEmail: 'test@example.com',
         mockDALEnabled: true
       })
     })

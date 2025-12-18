@@ -6,8 +6,6 @@ import { getSafeRedirect } from '~/src/server/auth/get-safe-redirect.js'
 import { refreshTokens } from '~/src/server/auth/refresh-tokens.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
-const defraIdEnabled = config.get('defraId.enabled')
-
 async function setupOidcConfig() {
   try {
     const oidcConfig = await getOidcConfig()
@@ -76,8 +74,8 @@ function setupAuthStrategies(server, oidcConfig) {
   const cookieOptions = getCookieOptions()
   server.auth.strategy('session', 'cookie', cookieOptions)
 
-  // Only register the defra-id strategy if it's enabled in the config and oidcConfig is available
-  if (defraIdEnabled && oidcConfig) {
+  // Only register the defra-id strategy if oidcConfig is available
+  if (oidcConfig) {
     // Bell is a third-party plugin that provides a common interface for OAuth 2.0 authentication
     // Used to authenticate users with Defra Identity and a pre-requisite for the Cookie authentication strategy
     // Also used for changing organisations and signing out
@@ -97,11 +95,7 @@ export default {
         status: 'starting'
       })
 
-      let oidcConfig = null
-      // Only fetch OIDC configuration if defra-id is enabled
-      if (defraIdEnabled) {
-        oidcConfig = await setupOidcConfig()
-      }
+      const oidcConfig = await setupOidcConfig()
 
       setupAuthStrategies(server, oidcConfig)
 
@@ -447,11 +441,7 @@ function getCookieOptions() {
       isSameSite: 'Lax'
     },
     redirectTo: function (request) {
-      // If defra-id is enabled, redirect to sign-in
-      if (defraIdEnabled) {
-        return `/auth/sign-in?redirect=${request.url.pathname}${request.url.search}`
-      }
-      return '/'
+      return `/auth/sign-in?redirect=${request.url.pathname}${request.url.search}`
     },
     validate: async function (request, session) {
       const userSession = await request.server.app.cache.get(session.sessionId)
@@ -461,7 +451,7 @@ function getCookieOptions() {
         return sessionValidation
       }
 
-      if (defraIdEnabled && userSession.token) {
+      if (userSession.token) {
         const tokenValidation = await verifyAndRefreshToken(userSession, session.sessionId, request)
         if (!tokenValidation.isValid) {
           return tokenValidation

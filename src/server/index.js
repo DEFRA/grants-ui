@@ -160,78 +160,6 @@ const registerPlugins = async (server) => {
   await server.register([router])
 }
 
-const mockSessionData = async (request, log, LogCodes) => {
-  try {
-    const landGrantsDefaultSbi = `${config.get('landGrants.defaultSbi')}`
-    const crypto = await import('node:crypto')
-    const sessionId = request.state.sid?.sessionId || crypto.randomUUID()
-
-    const sessionData = {
-      isAuthenticated: true,
-      sessionId,
-      contactId: config.get('landGrants.customerReferenceNumber'),
-      firstName: 'Anonymous',
-      lastName: 'User',
-      name: 'Anonymous User',
-      role: 'user',
-      scope: ['user'],
-      sbi: landGrantsDefaultSbi,
-      organisationId: landGrantsDefaultSbi,
-      crn: String(config.get('landGrants.customerReferenceNumber')),
-      currentRelationshipId: config.get('landGrants.mockSessionCurrentRelationshipId') || `${landGrantsDefaultSbi}1234`,
-      relationships: [
-        config.get('landGrants.mockSessionRelationships') ||
-          `${landGrantsDefaultSbi}1234:${landGrantsDefaultSbi}:Farm ${landGrantsDefaultSbi}:1:External:0`
-      ]
-    }
-
-    await request.server.app.cache.set(sessionId, sessionData)
-
-    request.cookieAuth.set({ sessionId })
-
-    log(
-      LogCodes.AUTH.SIGN_IN_SUCCESS,
-      {
-        userId: 'anonymous-user-id',
-        sessionId,
-        role: 'user',
-        scope: 'user',
-        authMethod: 'auto-session'
-      },
-      request
-    )
-  } catch (error) {
-    log(
-      LogCodes.AUTH.SIGN_IN_FAILURE,
-      {
-        userId: 'unknown',
-        errorMessage: `Failed to create auto-session: ${error.message}`,
-        step: 'auto_session_creation_error',
-        errorStack: error.stack
-      },
-      request
-    )
-  }
-}
-
-const handleMockDefraAuth = async (request, h, log, LogCodes) => {
-  if (!config.get('defraId.enabled')) {
-    if (h.request.path === '/auth/sign-out') {
-      return h.redirect('/home').takeover()
-    }
-
-    await mockSessionData(request, log, LogCodes)
-
-    if (h.request.path === '/auth/sign-in' && h.request.query.redirect) {
-      return h.redirect(h.request.query.redirect).takeover()
-    }
-    if (h.request.path === '/auth/sign-in') {
-      return h.redirect('/home').takeover()
-    }
-  }
-  return h.continue
-}
-
 export async function createServer() {
   const { log, LogCodes } = await import('~/src/server/common/helpers/logging/log.js')
 
@@ -293,11 +221,6 @@ export async function createServer() {
     request.yar.set('visitedSubSections', prev)
 
     return h.continue
-  })
-
-  // Create a server extension to handle session creation when defra-id is disabled
-  server.ext('onPreAuth', async (request, h) => {
-    return handleMockDefraAuth(request, h, log, LogCodes)
   })
 
   server.app['cache'] = server.cache({
