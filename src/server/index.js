@@ -39,7 +39,6 @@ import LandGrantsGenericPageController from '~/src/server/land-grants/controller
 import FlyingPigsSubmissionPageController from '~/src/server/non-land-grants/pigs-might-fly/controllers/flying-pigs-submission-page.controller.js'
 import { PotentialFundingController } from '~/src/server/non-land-grants/pigs-might-fly/controllers/potential-funding.controller.js'
 import { tasklistBackButton } from '~/src/server/plugins/tasklist-back-button.js'
-import { sbiStore } from '~/src/server/sbi/state.js'
 import { formatCurrency } from '../config/nunjucks/filters/format-currency.js'
 import { StatePersistenceService } from './common/services/state-persistence/state-persistence.service.js'
 import RemoveActionPageController from './land-grants/controllers/remove-action-page.controller.js'
@@ -175,13 +174,14 @@ const mockSessionData = async (request, log, LogCodes) => {
       name: 'Anonymous User',
       role: 'user',
       scope: ['user'],
-      sbi: `${sbiStore.get('sbi')}`,
-      organisationId: `${sbiStore.get('sbi')}`,
+      sbi: `${config.get('landGrants.defaultSbi')}`,
+      organisationId: `${config.get('landGrants.defaultSbi')}`,
       crn: String(config.get('landGrants.customerReferenceNumber')),
-      currentRelationshipId: config.get('landGrants.mockSessionCurrentRelationshipId') || `${sbiStore.get('sbi')}1234`,
+      currentRelationshipId:
+        config.get('landGrants.mockSessionCurrentRelationshipId') || `${config.get('landGrants.defaultSbi')}1234`,
       relationships: [
         config.get('landGrants.mockSessionRelationships') ||
-          `${sbiStore.get('sbi')}1234:${sbiStore.get('sbi')}:Farm ${sbiStore.get('sbi')}:1:External:0`
+          `${config.get('landGrants.defaultSbi')}1234:${config.get('landGrants.defaultSbi')}:Farm ${config.get('landGrants.defaultSbi')}:1:External:0`
       ]
     }
 

@@ -21,12 +21,6 @@ vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
     log: (...args) => mockLog(...args)
   }
 })
-const mockSbiStoreGet = vi.fn(() => 106284736)
-vi.mock('~/src/server/sbi/state.js', () => ({
-  sbiStore: {
-    get: mockSbiStoreGet
-  }
-}))
 
 vi.mock('~/src/config/config.js', async () => {
   const { mockConfig } = await import('~/src/__mocks__')
@@ -83,36 +77,8 @@ const getExpectedContext = () => ({
     organisationName: undefined,
     crn: undefined,
     relationshipId: undefined,
-    sbi: 106284736
+    sbi: undefined
   }
-})
-
-const getMinimalFallbackContext = () => ({
-  assetPath: '/public/assets/rebrand',
-  serviceName: 'Manage land-based actions',
-  serviceUrl: '/',
-  defraIdEnabled: expect.any(Boolean),
-  cdpEnvironment: undefined,
-  gaTrackingId: undefined,
-  cookiePolicyUrl: expect.any(String),
-  cookieConsentName: expect.any(String),
-  cookieConsentExpiryDays: expect.any(Number),
-  sessionCookieTtl: expect.any(Number),
-  cookieBannerConfig: expect.any(Object),
-  cookieBannerNoscriptConfig: expect.any(Object),
-  auth: {
-    isAuthenticated: false,
-    sbi: null,
-    crn: null,
-    name: null,
-    organisationId: null,
-    organisationName: null,
-    relationshipId: null,
-    role: null
-  },
-  breadcrumbs: [],
-  navigation: [],
-  getAssetPath: expect.any(Function)
 })
 
 const setupManifestSuccess = () => {
@@ -124,12 +90,6 @@ const setupManifestSuccess = () => {
 
 const setupManifestError = (errorMessage = 'File not found') => {
   mockReadFileSync.mockImplementation(() => {
-    throw new Error(errorMessage)
-  })
-}
-
-const setupSbiStoreError = (errorMessage = 'SBI store access failed') => {
-  mockSbiStoreGet.mockImplementation(() => {
     throw new Error(errorMessage)
   })
 }
@@ -156,7 +116,6 @@ describe('context', () => {
 
   afterEach(() => {
     vi.clearAllMocks()
-    mockSbiStoreGet.mockReturnValue(106284736)
   })
 
   describe('Webpack manifest file handling', () => {
@@ -285,29 +244,10 @@ describe('context', () => {
       expect(contextResult.getAssetPath('test.js')).toBe('/public/test.js')
     })
 
-    test('Should return minimal context and log error when main function throws', async () => {
-      setupSbiStoreError()
-      mockReadFileSync.mockReturnValue('{}')
-
-      const contextImport = await importContext()
-      const contextResult = await contextImport.context(mockRequest)
-
-      expect(mockLog).toHaveBeenCalledWith(
-        MockLogCodes.SYSTEM.SERVER_ERROR,
-        {
-          errorMessage: expect.stringContaining('Error building context: SBI store access failed')
-        },
-        mockRequest
-      )
-      expect(contextResult).toEqual(getMinimalFallbackContext())
-      expect(contextResult).toEqual(getMinimalFallbackContext())
-    })
-
     test.each([
       { asset: 'test-asset.js', expected: '/public/test-asset.js' },
       { asset: 'images/logo.png', expected: '/public/images/logo.png' }
     ])('Should provide working fallback getAssetPath for $asset', async ({ asset, expected }) => {
-      setupSbiStoreError()
       mockReadFileSync.mockReturnValue('{}')
 
       const contextImport = await importContext()
@@ -366,7 +306,7 @@ describe('context', () => {
       )
       expect(contextResult.auth).toEqual({
         isAuthenticated: true,
-        sbi: 106284736,
+        sbi: undefined,
         name: undefined,
         organisationId: undefined,
         role: undefined
@@ -410,7 +350,7 @@ describe('context', () => {
 
       expect(contextResult.auth).toEqual({
         isAuthenticated: true,
-        sbi: 106284736,
+        sbi: undefined,
         name: undefined,
         organisationId: undefined,
         role: undefined
@@ -455,7 +395,7 @@ describe('context', () => {
       )
       expect(contextResult.auth).toEqual({
         isAuthenticated: true,
-        sbi: 106284736,
+        sbi: undefined,
         name: undefined,
         organisationId: undefined,
         role: undefined
@@ -479,7 +419,6 @@ describe('context', () => {
     })
 
     test('includes cookie config in minimal fallback context', async () => {
-      setupSbiStoreError()
       mockReadFileSync.mockReturnValue('{}')
 
       const contextImport = await importContext()
@@ -518,7 +457,6 @@ describe('context', () => {
     })
 
     test('includes cookie banner configs in fallback context', async () => {
-      setupSbiStoreError()
       mockReadFileSync.mockReturnValue('{}')
 
       const contextImport = await importContext()
@@ -545,7 +483,6 @@ describe('context', () => {
     })
 
     test('includes sessionCookieTtl in fallback context', async () => {
-      setupSbiStoreError()
       mockReadFileSync.mockReturnValue('{}')
 
       const contextImport = await importContext()
