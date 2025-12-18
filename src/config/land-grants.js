@@ -9,10 +9,6 @@ import 'dotenv/config'
  * @property {string} grantsServiceApiEndpoint
  * @property {string} authToken
  * @property {string} encryptionKey
- * @property {number} customerReferenceNumber
- * @property {number} defaultSbi
- * @property {string} mockSessionCurrentRelationshipId
- * @property {string} mockSessionRelationships
  */
 
 const landGrants = convict({
@@ -27,12 +23,6 @@ const landGrants = convict({
     default: '',
     env: 'LAND_GRANTS_API_URL'
   },
-  customerReferenceNumber: {
-    doc: 'Customer Reference Number for the land grants forms',
-    format: Number,
-    default: 1100014934,
-    env: 'DEFAULT_CRN'
-  },
   authToken: {
     doc: 'Bearer token for authenticating with Land Grants Api',
     format: String,
@@ -46,24 +36,6 @@ const landGrants = convict({
     default: '',
     env: 'LAND_GRANTS_API_ENCRYPTION_KEY',
     sensitive: true
-  },
-  defaultSbi: {
-    doc: 'Default SBI for land grants forms',
-    format: Number,
-    default: 106284736,
-    env: 'DEFAULT_SBI'
-  },
-  mockSessionCurrentRelationshipId: {
-    doc: 'Default currentRelationshipId for mock session data when DEFRA_ID is disabled',
-    format: String,
-    default: '',
-    env: 'DEFAULT_CRN'
-  },
-  mockSessionRelationships: {
-    doc: 'Default relationships array for mock session data when DEFRA_ID is disabled (colon-separated format)',
-    format: String,
-    default: '',
-    env: 'MOCK_SESSION_RELATIONSHIPS'
   }
 })
 

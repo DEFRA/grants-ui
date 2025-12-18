@@ -120,12 +120,6 @@ export const config = convict({
       format: String,
       default: '',
       env: 'CV_API_ENDPOINT'
-    },
-    authEmail: {
-      doc: 'Consolidated View AuthEmail',
-      format: String,
-      default: '',
-      env: 'CV_API_AUTH_EMAIL'
     }
   },
   feedbackLink: {
