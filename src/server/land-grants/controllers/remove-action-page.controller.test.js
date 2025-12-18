@@ -203,7 +203,7 @@ describe('RemoveActionPageController', () => {
       const parcel = 'SD6743-8083'
 
       const state = {
-        landParcels: JSON.parse(JSON.stringify(mockLandParcels))
+        landParcels: structuredClone(mockLandParcels)
       }
 
       const result = await controller.processRemoval(mockRequest, state, mockH, parcel, action)
@@ -254,7 +254,7 @@ describe('RemoveActionPageController', () => {
       const parcel = 'SD6743-8083'
 
       const state = {
-        landParcels: JSON.parse(JSON.stringify(mockLandParcels))
+        landParcels: structuredClone(mockLandParcels)
       }
 
       const result = await controller.processRemoval(mockRequest, state, mockH, parcel, action)

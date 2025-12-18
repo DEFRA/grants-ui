@@ -89,7 +89,7 @@ export function getAddedActionsForStateParcel(state, selectedLandParcel) {
  * @returns {object} - Updated state
  */
 export function deleteParcelFromState(state, parcel) {
-  const newState = JSON.parse(JSON.stringify(state))
+  const newState = structuredClone(state)
   delete newState.landParcels[parcel]
 
   // Remove the land parcels key if it is empty
@@ -110,7 +110,7 @@ export function deleteParcelFromState(state, parcel) {
  * @returns {object} - Updated state
  */
 export function deleteActionFromState(state, parcel, action) {
-  const newState = JSON.parse(JSON.stringify(state))
+  const newState = structuredClone(state)
 
   if (newState.landParcels[parcel]?.actionsObj) {
     delete newState.landParcels[parcel].actionsObj[action]
