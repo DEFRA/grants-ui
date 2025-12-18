@@ -4,7 +4,6 @@ import { auth } from '~/src/server/auth/index.js'
 import { serveStaticFiles } from '~/src/server/common/helpers/serve-static-files.js'
 import { health } from '~/src/server/health/index.js'
 import { home } from '~/src/server/home/index.js'
-import { sbi } from '~/src/server/sbi/index.js'
 import { createTasklistRoute } from '~/src/server/tasklist/tasklist.controller.js'
 import { agreements } from '~/src/server/agreements/index.js'
 import { devTools } from '~/src/server/dev-tools/index.js'
@@ -12,7 +11,6 @@ import { configConfirmation } from '~/src/server/confirmation/config-confirmatio
 import { clearApplicationState } from './dev-tools/clear-application-state.js'
 import { cookies } from '~/src/server/cookies/index.js'
 
-const defraIdEnabled = config.get('defraId.enabled')
 const cdpEnvironment = config.get('cdpEnvironment')
 
 /**
@@ -26,11 +24,6 @@ export const router = {
 
       // Health-check route. Used by platform to check if service is running, do not remove!
       await server.register([health])
-
-      // Dev specific routes
-      if (!defraIdEnabled) {
-        await server.register([sbi])
-      }
 
       // Auth routes
       await server.register([auth])
