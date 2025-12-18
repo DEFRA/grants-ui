@@ -162,6 +162,7 @@ const registerPlugins = async (server) => {
 
 const mockSessionData = async (request, log, LogCodes) => {
   try {
+    const landGrantsDefaultSbi = `${config.get('landGrants.defaultSbi')}`
     const crypto = await import('node:crypto')
     const sessionId = request.state.sid?.sessionId || crypto.randomUUID()
 
@@ -174,14 +175,13 @@ const mockSessionData = async (request, log, LogCodes) => {
       name: 'Anonymous User',
       role: 'user',
       scope: ['user'],
-      sbi: `${config.get('landGrants.defaultSbi')}`,
-      organisationId: `${config.get('landGrants.defaultSbi')}`,
+      sbi: landGrantsDefaultSbi,
+      organisationId: landGrantsDefaultSbi,
       crn: String(config.get('landGrants.customerReferenceNumber')),
-      currentRelationshipId:
-        config.get('landGrants.mockSessionCurrentRelationshipId') || `${config.get('landGrants.defaultSbi')}1234`,
+      currentRelationshipId: config.get('landGrants.mockSessionCurrentRelationshipId') || `${landGrantsDefaultSbi}1234`,
       relationships: [
         config.get('landGrants.mockSessionRelationships') ||
-          `${config.get('landGrants.defaultSbi')}1234:${config.get('landGrants.defaultSbi')}:Farm ${config.get('landGrants.defaultSbi')}:1:External:0`
+          `${landGrantsDefaultSbi}1234:${landGrantsDefaultSbi}:Farm ${landGrantsDefaultSbi}:1:External:0`
       ]
     }
 
