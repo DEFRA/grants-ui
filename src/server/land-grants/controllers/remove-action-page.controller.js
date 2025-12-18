@@ -1,4 +1,9 @@
 import LandGrantsQuestionWithAuthCheckController from '~/src/server/land-grants/controllers/auth/land-grants-question-with-auth-check.controller.js'
+import {
+  findActionInfoFromState,
+  deleteParcelFromState,
+  deleteActionFromState
+} from '~/src/server/land-grants/state/land-parcel-state.manager.js'
 
 const checkSelectedLandActionsPath = '/check-selected-land-actions'
 const selectActionsForParcelPath = '/select-actions-for-land-parcel'
@@ -6,64 +11,6 @@ const selectLandParcelPath = '/select-land-parcel'
 
 export default class RemoveActionPageController extends LandGrantsQuestionWithAuthCheckController {
   viewName = 'remove-action'
-
-  /**
-   * Find action information from land parcels state
-   * @param {object} landParcels - Land parcels from state
-   * @param {string} parcelKey - Parcel key
-   * @param {string} action - Action code
-   * @returns {object|null} - Action information or null if not found
-   */
-  findActionInfo(landParcels, parcelKey, action) {
-    const landParcel = landParcels[parcelKey]
-    return landParcel?.actionsObj?.[action] || null
-  }
-
-  /**
-   * Delete parcel from state object
-   * @param {object} state - Current state
-   * @param {string} parcel - Parcel key
-   * @returns {object} - Updated state
-   */
-  deleteParcelFromState(state, parcel) {
-    const newState = JSON.parse(JSON.stringify(state))
-    delete newState.landParcels[parcel]
-
-    // remove the land parcels key if it is empty
-    if (Object.keys(newState.landParcels || {}).length === 0) {
-      delete newState.landParcels
-      delete newState.payment
-      delete newState.draftApplicationAnnualTotalPence
-    }
-    return newState
-  }
-
-  /**
-   * Delete action from state and clean up empty parcels
-   * @param {object} state - Current state
-   * @param {string} parcel - Parcel key
-   * @param {string} action - Action code to remove
-   * @returns {object} - Updated state
-   */
-  deleteActionFromState(state, parcel, action) {
-    const newState = JSON.parse(JSON.stringify(state))
-    if (newState.landParcels[parcel]?.actionsObj) {
-      delete newState.landParcels[parcel].actionsObj[action]
-
-      if (Object.keys(newState.landParcels[parcel].actionsObj).length === 0) {
-        delete newState.landParcels[parcel]
-      }
-
-      // remove the land parcels key if it is empty
-      if (Object.keys(newState.landParcels || {}).length === 0) {
-        delete newState.landParcels
-        delete newState.payment
-        delete newState.draftApplicationAnnualTotalPence
-      }
-    }
-
-    return newState
-  }
 
   /**
    * Determine next path after action removal
@@ -138,9 +85,7 @@ export default class RemoveActionPageController extends LandGrantsQuestionWithAu
    * @returns {Promise<object>} - Response object
    */
   async processRemoval(request, state, h, parcel, action) {
-    const newState = action
-      ? this.deleteActionFromState(state, parcel, action)
-      : this.deleteParcelFromState(state, parcel)
+    const newState = action ? deleteActionFromState(state, parcel, action) : deleteParcelFromState(state, parcel)
     const nextPath = this.getNextPathAfterRemoval(newState, parcel, action)
 
     await this.setState(request, newState)
@@ -204,7 +149,7 @@ export default class RemoveActionPageController extends LandGrantsQuestionWithAu
         return authResult
       }
 
-      const actionInfo = this.findActionInfo(landParcels, parcelId, action)
+      const actionInfo = findActionInfoFromState(landParcels, parcelId, action)
       const { pageHeading, hint } = this.buildPageHeadingAndHint(actionInfo, parcelId)
 
       const viewModel = this.buildGetViewModel(request, context, parcelId, pageHeading, hint)
@@ -234,7 +179,7 @@ export default class RemoveActionPageController extends LandGrantsQuestionWithAu
       }
 
       // Get pageheading and hint from state for error messages
-      const actionInfo = this.findActionInfo(state.landParcels, parcelId, action)
+      const actionInfo = findActionInfoFromState(state.landParcels, parcelId, action)
       const pageHeadingAndHint = this.buildPageHeadingAndHint(actionInfo, parcelId)
 
       const validationError = this.validatePostPayload(payload, actionInfo)

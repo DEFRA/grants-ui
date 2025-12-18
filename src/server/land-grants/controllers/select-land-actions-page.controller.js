@@ -3,32 +3,21 @@ import {
   validateApplication
 } from '~/src/server/land-grants/services/land-grants.service.js'
 import LandGrantsQuestionWithAuthCheckController from '~/src/server/land-grants/controllers/auth/land-grants-question-with-auth-check.controller.js'
-import { parseLandParcel, stringifyParcel } from '~/src/server/land-grants/utils/format-parcel.js'
+import { parseLandParcel } from '~/src/server/land-grants/utils/format-parcel.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { mapGroupedActionsToViewModel } from '~/src/server/land-grants/mappers/action-view-model.mapper.js'
+import {
+  addActionsToExistingState,
+  getAddedActionsForStateParcel
+} from '~/src/server/land-grants/state/land-parcel-state.manager.js'
+import {
+  extractLandActionFields,
+  validateLandActionsSelection
+} from '~/src/server/land-grants/validators/land-actions.validator.js'
 
 export default class SelectLandActionsPageController extends LandGrantsQuestionWithAuthCheckController {
   viewName = 'select-actions-for-land-parcel'
   actionFieldPrefix = 'landAction_'
-
-  extractLandActionFieldsFromPayload(payload) {
-    return Object.keys(payload).filter((key) => key.startsWith(this.actionFieldPrefix))
-  }
-
-  mapActionToViewModel(action, addedActions) {
-    const existingActions = addedActions.map((a) => a.code)
-    return {
-      value: action.code,
-      text: action.description,
-      checked: existingActions.includes(action.code),
-      hint: {
-        html:
-          `Payment rate per year: <strong>£${action.ratePerUnitGbp?.toFixed(2)} per hectare</strong>` +
-          (action.ratePerAgreementPerYearGbp
-            ? ` and <strong>£${action.ratePerAgreementPerYearGbp}</strong> per agreement`
-            : '')
-      }
-    }
-  }
 
   /**
    * Get view model for the page with actions
@@ -43,10 +32,7 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
       ...super.getViewModel(request, context),
       actionFieldPrefix: this.actionFieldPrefix,
       addedActions,
-      groupedActions: groupedActions.map((group) => ({
-        ...group,
-        actions: group.actions.map((action) => this.mapActionToViewModel(action, addedActions))
-      }))
+      groupedActions: mapGroupedActionsToViewModel(groupedActions, addedActions)
     }
   }
 
@@ -56,80 +42,7 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
    * @returns {object} - An object containing errors and error summary
    */
   validateUserInput(payload) {
-    const errors = []
-    const landActionFields = this.extractLandActionFieldsFromPayload(payload)
-
-    if (landActionFields.length === 0) {
-      const firstActionInput = this.actionFieldPrefix + '1'
-      errors.push({ text: 'Select an action to do on this land parcel', href: `#${firstActionInput}` })
-    }
-
-    return errors
-  }
-
-  /**
-   * Build new state by adding actions
-   * @param {object} state - The state object
-   * @param {object} actionsObj - The actions object to be added to the state
-   * @param {Parcel} parcel - The selected land parcel ID
-   * @returns {object} - Updated state
-   */
-  buildNewState(state, actionsObj, parcel) {
-    const { parcelId, sheetId } = parcel
-    const selectedLandParcel = stringifyParcel({ parcelId, sheetId })
-
-    return {
-      ...state,
-      landParcels: {
-        ...state.landParcels,
-        [selectedLandParcel]: { size: parcel.size, actionsObj }
-      }
-    }
-  }
-
-  createNewStateFromPayload(state, payload, groupedActions, parcel) {
-    const landActionFields = this.extractLandActionFieldsFromPayload(payload)
-    if (landActionFields.length === 0) {
-      return {}
-    }
-
-    const actionsObj = {}
-    const allActions = groupedActions.flatMap((g) => g.actions)
-    for (const fieldName of landActionFields) {
-      const actionCode = payload[fieldName]
-      const actionInfo = allActions.find((a) => a.code === actionCode)
-      if (actionCode && actionInfo) {
-        actionsObj[actionCode] = {
-          description: actionInfo.description,
-          value: actionInfo?.availableArea?.value ?? '',
-          unit: actionInfo?.availableArea?.unit ?? ''
-        }
-      }
-    }
-
-    return this.buildNewState(state, actionsObj, parcel)
-  }
-
-  /**
-   * Extract added actions from state for the current parcel
-   * @param {object} state - Current state
-   * @param {string} selectedLandParcel - The selected land parcel ID
-   * @returns {Array} - Array of added actions
-   */
-  getAddedActionsForStateParcel(state, selectedLandParcel) {
-    const addedActions = []
-    const parcelData = state.landParcels?.[selectedLandParcel]?.actionsObj
-
-    if (parcelData) {
-      Object.keys(parcelData).forEach((code) => {
-        addedActions.push({
-          code,
-          description: parcelData[code].description
-        })
-      })
-    }
-
-    return addedActions
+    return validateLandActionsSelection(payload, this.actionFieldPrefix)
   }
 
   /**
@@ -184,7 +97,7 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
     const { state } = context
     const result = await this.fetchActions(request, sheetId, parcelId)
     const groupedActions = result?.actions || []
-    const addedActions = this.getAddedActionsForStateParcel(state, selectedLandParcel)
+    const addedActions = getAddedActionsForStateParcel(state, selectedLandParcel)
 
     return { result, groupedActions, addedActions }
   }
@@ -270,7 +183,7 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
     const { h, request, context, errors, selectedLandParcel, sheetId, parcelId, prevState, existingLandParcels } =
       options
     const result = await this.fetchActions(request, sheetId, parcelId)
-    const addedActions = this.getAddedActionsForStateParcel(prevState, selectedLandParcel)
+    const addedActions = getAddedActionsForStateParcel(prevState, selectedLandParcel)
     return this.renderErrorView(h, request, context, {
       errors,
       selectedLandParcel,
@@ -306,7 +219,7 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
       const { valid, errorMessages = [] } = validationResult
 
       if (!valid) {
-        const landActionFields = this.extractLandActionFieldsFromPayload(payload)
+        const landActionFields = extractLandActionFields(payload, this.actionFieldPrefix)
         const validationErrors = errorMessages
           .filter((e) => !e.passed)
           .map((e) => ({
@@ -314,7 +227,7 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
             href: e.code ? `#${landActionFields.find((field) => payload[field] === e.code)}` : undefined
           }))
 
-        const addedActions = this.getAddedActionsForStateParcel(prevState, selectedLandParcel)
+        const addedActions = getAddedActionsForStateParcel(prevState, selectedLandParcel)
         return this.renderErrorView(h, request, context, {
           errors: validationErrors,
           selectedLandParcel,
@@ -325,7 +238,7 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
       }
     } catch (e) {
       log(LogCodes.LAND_GRANTS.VALIDATE_APPLICATION_ERROR, { parcelId, sheetId, errorMessage: e.message }, request)
-      const addedActions = this.getAddedActionsForStateParcel(prevState, selectedLandParcel)
+      const addedActions = getAddedActionsForStateParcel(prevState, selectedLandParcel)
       return this.renderErrorView(h, request, context, {
         errors: [
           {
@@ -394,7 +307,7 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
       }
 
       const { actions, parcel } = result
-      const state = this.createNewStateFromPayload(prevState, payload, actions, parcel)
+      const state = addActionsToExistingState(prevState, payload, this.actionFieldPrefix, actions, parcel)
 
       if (payload.action === 'validate') {
         const validationResult = await this.handleApplicationValidation({
@@ -422,5 +335,4 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
 
 /**
  * @import { FormContext, AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
- * @import { Parcel } from '~/src/server/land-grants/types/land-grants.client.d.js'
  */
