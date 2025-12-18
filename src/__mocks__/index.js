@@ -8,7 +8,7 @@ export {
 
 export { mockConfig, mockConfigSimple, createMockConfig } from './config-mocks.js'
 
-export { mockFormsCacheService, mockSbiState, mockSbiStateWithValue, mockLandParcelData } from './service-mocks.js'
+export { mockFormsCacheService, mockLandParcelData } from './service-mocks.js'
 
 export {
   mockHapiPino,

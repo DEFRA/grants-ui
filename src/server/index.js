@@ -39,7 +39,6 @@ import LandGrantsGenericPageController from '~/src/server/land-grants/controller
 import FlyingPigsSubmissionPageController from '~/src/server/non-land-grants/pigs-might-fly/controllers/flying-pigs-submission-page.controller.js'
 import { PotentialFundingController } from '~/src/server/non-land-grants/pigs-might-fly/controllers/potential-funding.controller.js'
 import { tasklistBackButton } from '~/src/server/plugins/tasklist-back-button.js'
-import { sbiStore } from '~/src/server/sbi/state.js'
 import { formatCurrency } from '../config/nunjucks/filters/format-currency.js'
 import { StatePersistenceService } from './common/services/state-persistence/state-persistence.service.js'
 import RemoveActionPageController from './land-grants/controllers/remove-action-page.controller.js'
@@ -163,6 +162,7 @@ const registerPlugins = async (server) => {
 
 const mockSessionData = async (request, log, LogCodes) => {
   try {
+    const landGrantsDefaultSbi = `${config.get('landGrants.defaultSbi')}`
     const crypto = await import('node:crypto')
     const sessionId = request.state.sid?.sessionId || crypto.randomUUID()
 
@@ -175,13 +175,13 @@ const mockSessionData = async (request, log, LogCodes) => {
       name: 'Anonymous User',
       role: 'user',
       scope: ['user'],
-      sbi: `${sbiStore.get('sbi')}`,
-      organisationId: `${sbiStore.get('sbi')}`,
+      sbi: landGrantsDefaultSbi,
+      organisationId: landGrantsDefaultSbi,
       crn: String(config.get('landGrants.customerReferenceNumber')),
-      currentRelationshipId: config.get('landGrants.mockSessionCurrentRelationshipId') || `${sbiStore.get('sbi')}1234`,
+      currentRelationshipId: config.get('landGrants.mockSessionCurrentRelationshipId') || `${landGrantsDefaultSbi}1234`,
       relationships: [
         config.get('landGrants.mockSessionRelationships') ||
-          `${sbiStore.get('sbi')}1234:${sbiStore.get('sbi')}:Farm ${sbiStore.get('sbi')}:1:External:0`
+          `${landGrantsDefaultSbi}1234:${landGrantsDefaultSbi}:Farm ${landGrantsDefaultSbi}:1:External:0`
       ]
     }
 

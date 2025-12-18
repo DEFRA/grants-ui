@@ -8,7 +8,6 @@ import {
   buildCookieBannerNoscriptConfig
 } from '~/src/config/nunjucks/context/build-cookie-banner-config.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
-import { sbiStore } from '~/src/server/sbi/state.js'
 
 const assetPath = config.get('assetPath')
 const manifestPath = path.join(config.get('root'), '.public/assets-manifest.json')
@@ -18,14 +17,13 @@ let webpackManifest
 
 /**
  * @param {Request | null } request
- * @param {string|null} tempSbi
  * @param {string|null} role
  * @returns {object} User authentication and authorization details
  */
-const usersDetails = (request, tempSbi, role) => {
+const usersDetails = (request, role) => {
   return {
     isAuthenticated: request?.auth?.isAuthenticated ?? false,
-    sbi: request?.auth?.credentials?.sbi || tempSbi, // Use temp SBI if no session SBI
+    sbi: request?.auth?.credentials?.sbi,
     crn: request?.auth?.credentials?.crn,
     name: request?.auth?.credentials?.name,
     organisationId: request?.auth?.credentials?.organisationId,
@@ -192,10 +190,9 @@ export async function context(request) {
   const { serviceName, cookiePolicyUrl, cookieConsentExpiryDays } = extractCookieConsentConfig(request)
 
   try {
-    const tempSbi = sbiStore.get('sbi')
     loadWebpackManifest(request)
     const session = await getSessionData(request)
-    const auth = usersDetails(request, session.sbi || tempSbi, session.role)
+    const auth = usersDetails(request, session.role)
 
     return buildSuccessContext(auth, request, serviceName, cookiePolicyUrl, cookieConsentExpiryDays)
   } catch (error) {

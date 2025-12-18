@@ -1,13 +1,9 @@
 import { vi } from 'vitest'
 import { config } from '~/src/config/config.js'
 import { fetchBusinessAndCustomerInformation } from '../../common/services/consolidated-view/consolidated-view.service.js'
-import { sbiStore } from '~/src/server/sbi/state.js'
 import ConfirmFarmDetailsController from './confirm-farm-details.controller.js'
 vi.mock('~/src/config/config.js')
-vi.mock('~/src/server/sbi/state.js', async () => {
-  const { mockSbiState } = await import('~/src/__mocks__')
-  return mockSbiState()
-})
+
 vi.mock('../../common/services/consolidated-view/consolidated-view.service.js')
 
 // Mock the logging module with both possible exports
@@ -68,7 +64,6 @@ describe('ConfirmFarmDetailsController', () => {
     mockH = {
       view: vi.fn().mockReturnValue('mocked-view')
     }
-    sbiStore.get = vi.fn().mockReturnValue('SBI123456')
     fetchBusinessAndCustomerInformation.mockResolvedValue(mockData)
     config.get.mockReturnValue(true)
   })
@@ -79,7 +74,6 @@ describe('ConfirmFarmDetailsController', () => {
 
   describe('POST route handler', () => {
     test('should not update state and proceed if no sbi', async () => {
-      sbiStore.get = vi.fn().mockReturnValue(null)
       const handler = controller.makePostRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
 
