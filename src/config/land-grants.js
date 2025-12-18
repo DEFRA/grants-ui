@@ -9,7 +9,6 @@ import 'dotenv/config'
  * @property {string} grantsServiceApiEndpoint
  * @property {string} authToken
  * @property {string} encryptionKey
- * @property {string} mockSessionRelationships
  */
 
 const landGrants = convict({
@@ -37,12 +36,6 @@ const landGrants = convict({
     default: '',
     env: 'LAND_GRANTS_API_ENCRYPTION_KEY',
     sensitive: true
-  },
-  mockSessionRelationships: {
-    doc: 'Default relationships array for mock session data when DEFRA_ID is disabled (colon-separated format)',
-    format: String,
-    default: '',
-    env: 'MOCK_SESSION_RELATIONSHIPS'
   }
 })
 
