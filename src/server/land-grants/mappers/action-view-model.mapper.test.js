@@ -50,9 +50,7 @@ describe('action-view-model.mapper', () => {
         description: 'Test Action 1',
         ratePerUnitGbp: 100.5
       }
-      const addedActions = [
-        { code: 'SAM1', description: 'Test Action 1' }
-      ]
+      const addedActions = [{ code: 'SAM1', description: 'Test Action 1' }]
 
       const result = mapActionToViewModel(action, addedActions)
 
@@ -65,9 +63,7 @@ describe('action-view-model.mapper', () => {
         description: 'Test Action 1',
         ratePerUnitGbp: 100.5
       }
-      const addedActions = [
-        { code: 'SAM2', description: 'Test Action 2' }
-      ]
+      const addedActions = [{ code: 'SAM2', description: 'Test Action 2' }]
 
       const result = mapActionToViewModel(action, addedActions)
 
@@ -99,9 +95,7 @@ describe('action-view-model.mapper', () => {
         },
         {
           name: 'Group 2',
-          actions: [
-            { code: 'SAM3', description: 'Action 3', ratePerUnitGbp: 150 }
-          ]
+          actions: [{ code: 'SAM3', description: 'Action 3', ratePerUnitGbp: 150 }]
         }
       ]
       const addedActions = [{ code: 'SAM1', description: 'Action 1' }]
@@ -133,9 +127,7 @@ describe('action-view-model.mapper', () => {
           name: 'Group 1',
           description: 'Group Description',
           extraProp: 'extra',
-          actions: [
-            { code: 'SAM1', description: 'Action 1', ratePerUnitGbp: 100 }
-          ]
+          actions: [{ code: 'SAM1', description: 'Action 1', ratePerUnitGbp: 100 }]
         }
       ]
       const addedActions = []
