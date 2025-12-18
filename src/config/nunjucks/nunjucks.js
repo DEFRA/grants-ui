@@ -13,6 +13,7 @@ export const viewPaths = (() => {
     path.join(serverDir, 'views'),
     path.join(serverDir, 'auth/views'),
     path.join(serverDir, 'check-responses/views'),
+    path.join(serverDir, 'details-page/views'),
     path.join(serverDir, 'common/components'),
     path.join(serverDir, 'common/templates'),
     path.join(serverDir, 'confirmation/views'),
