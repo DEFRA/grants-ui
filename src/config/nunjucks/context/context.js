@@ -122,7 +122,6 @@ const buildCommonConfig = (serviceName, cookiePolicyUrl, cookieConsentExpiryDays
     assetPath: `${assetPath}/assets/rebrand`,
     serviceName,
     serviceUrl: '/',
-    defraIdEnabled: config.get('defraId.enabled'),
     cdpEnvironment: config.get('cdpEnvironment'),
     gaTrackingId,
     cookiePolicyUrl,
