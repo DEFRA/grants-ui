@@ -9,7 +9,6 @@ import 'dotenv/config'
  * @property {string} grantsServiceApiEndpoint
  * @property {string} authToken
  * @property {string} encryptionKey
- * @property {number} customerReferenceNumber
  * @property {string} mockSessionCurrentRelationshipId
  * @property {string} mockSessionRelationships
  */
@@ -25,12 +24,6 @@ const landGrants = convict({
     format: String,
     default: '',
     env: 'LAND_GRANTS_API_URL'
-  },
-  customerReferenceNumber: {
-    doc: 'Customer Reference Number for the land grants forms',
-    format: Number,
-    default: 1100014934,
-    env: 'DEFAULT_CRN'
   },
   authToken: {
     doc: 'Bearer token for authenticating with Land Grants Api',
