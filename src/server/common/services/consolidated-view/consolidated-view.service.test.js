@@ -125,7 +125,6 @@ describe('Consolidated View Service', () => {
     })
     config.set('consolidatedView', {
       apiEndpoint: 'https://api.example.com/graphql',
-      authEmail: 'test@example.com',
       mockDALEnabled: false
     })
   })
@@ -273,7 +272,6 @@ describe('Consolidated View Service', () => {
       // Enable mock mode
       config.set('consolidatedView', {
         apiEndpoint: 'https://api.example.com/graphql',
-        authEmail: 'test@example.com',
         mockDALEnabled: true
       })
 
@@ -421,7 +419,6 @@ describe('Consolidated View Service', () => {
       // Enable mock mode
       config.set('consolidatedView', {
         apiEndpoint: 'https://api.example.com/graphql',
-        authEmail: 'test@example.com',
         mockDALEnabled: true
       })
     })
