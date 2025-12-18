@@ -5,11 +5,11 @@ import {
 import LandGrantsQuestionWithAuthCheckController from '~/src/server/land-grants/controllers/auth/land-grants-question-with-auth-check.controller.js'
 import { parseLandParcel } from '~/src/server/land-grants/utils/format-parcel.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
-import { mapGroupedActionsToViewModel } from '~/src/server/land-grants/mappers/action-view-model.mapper.js'
+import { mapGroupedActionsToViewModel } from '~/src/server/land-grants/view-models/action.view-model.js'
 import {
   addActionsToExistingState,
   getAddedActionsForStateParcel
-} from '~/src/server/land-grants/state/land-parcel-state.manager.js'
+} from '~/src/server/land-grants/view-state/land-parcel.view-state.js'
 import {
   extractLandActionFields,
   validateLandActionsSelection

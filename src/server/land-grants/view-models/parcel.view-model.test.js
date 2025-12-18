@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { formatParcelForView, buildParcelHint, mapParcelsToViewModel } from './parcel-view-model.mapper.js'
+import { formatParcelForView, buildParcelHint, mapParcelsToViewModel } from './parcel.view-model.js'
 
 describe('parcel-view-model.mapper', () => {
   describe('buildParcelHint', () => {

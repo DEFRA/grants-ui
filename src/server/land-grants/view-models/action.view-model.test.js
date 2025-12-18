@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { mapActionToViewModel, mapGroupedActionsToViewModel } from './action-view-model.mapper.js'
+import { mapActionToViewModel, mapGroupedActionsToViewModel } from './action.view-model.js'
 
 describe('action-view-model.mapper', () => {
   describe('mapActionToViewModel', () => {

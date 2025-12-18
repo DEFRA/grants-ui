@@ -5,7 +5,7 @@ import {
   formatPrice,
   mapPaymentInfoToParcelItems,
   mapAdditionalYearlyPayments
-} from '~/src/server/land-grants/mappers/payment-view-model.mapper.js'
+} from '~/src/server/land-grants/view-models/payment.view-model.js'
 
 export default class LandActionsCheckPageController extends QuestionPageController {
   viewName = 'land-actions-check'

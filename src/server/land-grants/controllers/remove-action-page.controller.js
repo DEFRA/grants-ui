@@ -3,7 +3,7 @@ import {
   findActionInfoFromState,
   deleteParcelFromState,
   deleteActionFromState
-} from '~/src/server/land-grants/state/land-parcel-state.manager.js'
+} from '~/src/server/land-grants/view-state/land-parcel.view-state.js'
 
 const checkSelectedLandActionsPath = '/check-selected-land-actions'
 const selectActionsForParcelPath = '/select-actions-for-land-parcel'

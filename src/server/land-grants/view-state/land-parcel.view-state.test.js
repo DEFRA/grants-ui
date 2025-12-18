@@ -7,7 +7,7 @@ import {
   deleteActionFromState,
   hasLandParcels,
   findActionInfoFromState
-} from './land-parcel-state.manager.js'
+} from './land-parcel.view-state.js'
 
 describe('land-parcel-state.manager', () => {
   describe('buildNewState', () => {

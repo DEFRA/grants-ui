@@ -6,7 +6,7 @@ import {
   buildLandParcelFooterActions,
   mapPaymentInfoToParcelItems,
   mapAdditionalYearlyPayments
-} from './payment-view-model.mapper.js'
+} from './payment.view-model.js'
 
 // Mock the action groups import
 vi.mock('../services/land-grants.service.js', () => ({
