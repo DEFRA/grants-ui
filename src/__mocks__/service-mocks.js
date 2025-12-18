@@ -9,21 +9,6 @@ export const mockFormsCacheService = (customMethods = {}) => ({
   })
 })
 
-export const mockSbiState = (customMethods = {}) => ({
-  sbiStore: {
-    get: vi.fn(),
-    set: vi.fn(),
-    ...customMethods
-  }
-})
-
-export const mockSbiStateWithValue = (value = 'test-sbi-value') => ({
-  sbiStore: {
-    get: vi.fn(() => value),
-    set: vi.fn()
-  }
-})
-
 export const mockLandParcelData = (customData = {}) => ({
   'parcel-1': {
     actionsObj: {
