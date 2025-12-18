@@ -637,10 +637,9 @@ which is formatted as a GUID string.
 
 #### Feature Flags & Misc
 
-| Variable           | Description                                          |
-| ------------------ | ---------------------------------------------------- |
-| `DEFRA_ID_ENABLED` | Enables defraId auth, and hides the SBI selector UI. |
-| `FEEDBACK_LINK`    | URL to feedback (e.g., GitHub issue, form).          |
+| Variable        | Description                                 |
+| --------------- | ------------------------------------------- |
+| `FEEDBACK_LINK` | URL to feedback (e.g., GitHub issue, form). |
 
 ### Grant Form Definitions
 
