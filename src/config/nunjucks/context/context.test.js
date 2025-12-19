@@ -355,6 +355,25 @@ describe('context', () => {
       })
     })
 
+    test('Should return empty session when cache is not available', async () => {
+      const requestWithAuth = {
+        ...mockSimpleRequest({ path: '/' }),
+        auth: { isAuthenticated: true, credentials: { sessionId: 'test-session' } },
+        server: { app: {} }
+      }
+
+      const contextImport = await importContext()
+      const contextResult = await contextImport.context(requestWithAuth)
+
+      expect(contextResult.auth).toEqual({
+        isAuthenticated: true,
+        sbi: undefined,
+        name: undefined,
+        organisationId: undefined,
+        role: undefined
+      })
+    })
+
     test('Should handle cache error and log unknown when sessionId becomes falsy', async () => {
       const credentials = { sessionId: 'valid-session' }
       const requestWithAuth = createAuthRequest(credentials, null)

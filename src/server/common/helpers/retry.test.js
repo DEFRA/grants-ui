@@ -68,6 +68,36 @@ describe('retry with exponential backoff', () => {
     expect(mockOperation).toHaveBeenCalledTimes(3)
   }, 2000)
 
+  it('should use fixed delay when exponential is false', async () => {
+    const mockOperation = vi.fn().mockRejectedValue(new Error('Fail'))
+    const delays = []
+    const onRetry = vi.fn((_, __, delay) => delays.push(delay))
+
+    await expect(
+      retry(mockOperation, { maxAttempts: 3, initialDelay: 5, exponential: false, onRetry, shouldRetry: () => true })
+    ).rejects.toThrow('Fail')
+
+    expect(delays).toEqual([5, 5])
+  }, 2000)
+
+  it('should retry on fetch failure when checkFetchResponse is true', async () => {
+    const mockFetch = vi.fn().mockResolvedValue({ ok: false, status: 503, statusText: 'Service Unavailable' })
+    const onRetry = vi.fn()
+
+    const result = await retry(mockFetch, {
+      maxAttempts: 2,
+      checkFetchResponse: true,
+      initialDelay: 1,
+      shouldRetry: () => true,
+      onRetry
+    })
+
+    expect(mockFetch).toHaveBeenCalledTimes(2)
+    expect(onRetry).toHaveBeenCalledTimes(1)
+    expect(onRetry.mock.calls[0][0].message).toContain('503')
+    expect(result).toEqual({ ok: false, status: 503, statusText: 'Service Unavailable' })
+  }, 2000)
+
   it('should call onRetry callback on each retry attempt', async () => {
     const mockOperation = vi.fn().mockRejectedValue(new Error('Retry error'))
     const onRetry = vi.fn()
