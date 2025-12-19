@@ -1,31 +1,10 @@
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { fetchParcels } from '../services/land-grants.service.js'
-import { formatAreaUnit } from '~/src/server/land-grants/utils/format-area-unit.js'
 import LandGrantsQuestionWithAuthCheckController from '~/src/server/land-grants/controllers/auth/land-grants-question-with-auth-check.controller.js'
+import { mapParcelsToViewModel } from '~/src/server/land-grants/view-models/parcel.view-model.js'
 
 export default class SelectLandParcelPageController extends LandGrantsQuestionWithAuthCheckController {
   viewName = 'select-land-parcel'
-
-  formatParcelForView = (parcel, actionsForParcel) => {
-    const hasArea = parcel.area.value && formatAreaUnit(parcel.area.unit)
-    const hasActions = actionsForParcel > 0
-
-    let hint = ''
-    if (hasArea) {
-      hint = `Total size${hasActions ? '' : ':'} ${parcel.area.value} ${formatAreaUnit(parcel.area.unit)}`
-    }
-
-    if (hasActions) {
-      const actionsAddedStr = `${actionsForParcel} action${actionsForParcel > 1 ? 's' : ''} added`
-      hint += hasArea ? `, ${actionsAddedStr}` : `${actionsAddedStr}`
-    }
-
-    return {
-      text: `${parcel.sheetId} ${parcel.parcelId}`,
-      value: `${parcel.sheetId}-${parcel.parcelId}`,
-      hint: hint ? { text: hint } : undefined
-    }
-  }
 
   makePostRouteHandler() {
     /**
@@ -45,12 +24,7 @@ export default class SelectLandParcelPageController extends LandGrantsQuestionWi
         try {
           const fetchedParcels = await fetchParcels(request)
           const { landParcels } = state || {}
-          parcels = fetchedParcels.map((parcel) => {
-            const parcelKey = `${parcel.sheetId}-${parcel.parcelId}`
-            const parcelData = landParcels?.[parcelKey]
-            const actionsForParcel = parcelData?.actionsObj ? Object.keys(parcelData.actionsObj).length : 0
-            return this.formatParcelForView(parcel, actionsForParcel)
-          })
+          parcels = mapParcelsToViewModel(fetchedParcels, landParcels)
         } catch (error) {
           log(
             { level: 'error', error, messageFunc: () => 'Error fetching parcels for validation error rendering' },
@@ -106,12 +80,7 @@ export default class SelectLandParcelPageController extends LandGrantsQuestionWi
 
       try {
         const fetchedParcels = await fetchParcels(request)
-        const parcels = fetchedParcels.map((parcel) => {
-          const parcelKey = `${parcel.sheetId}-${parcel.parcelId}`
-          const parcelData = landParcels?.[parcelKey]
-          const actionsForParcel = parcelData?.actionsObj ? Object.keys(parcelData.actionsObj).length : 0
-          return this.formatParcelForView(parcel, actionsForParcel)
-        })
+        const parcels = mapParcelsToViewModel(fetchedParcels, landParcels)
 
         if (!parcels?.length) {
           log(LogCodes.LAND_GRANTS.NO_LAND_PARCELS_FOUND, { sbi })
