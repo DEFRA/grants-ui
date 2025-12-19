@@ -47,16 +47,6 @@
           "postalCode": "KA13 3FO"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Mr",
-          "first": "Liam",
-          "middle": "John",
-          "last": "Reed"
-        }
-      }
     }
   }
 }

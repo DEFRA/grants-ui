@@ -47,16 +47,6 @@
           "postalCode": "HR5 4BM"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Mr",
-          "first": "Daniel",
-          "middle": "Peter",
-          "last": "Turner"
-        }
-      }
     }
   }
 }

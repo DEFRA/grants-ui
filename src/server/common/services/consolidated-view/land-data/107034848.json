@@ -1,10 +1,5 @@
 {
   "data": {
-    "customer": {
-      "info": {
-        "name": { "title": "Mrs", "first": "Jennifer", "middle": "Edwin", "last": "Bayman" }
-      }
-    },
     "business": {
       "sbi": "107034848",
       "organisationId": "5375642",

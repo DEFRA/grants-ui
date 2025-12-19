@@ -47,16 +47,6 @@
           "postalCode": "SG47 1AA"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Mr",
-          "first": "Una",
-          "middle": "Marie",
-          "last": "Reed"
-        }
-      }
     }
   }
 }

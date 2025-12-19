@@ -47,16 +47,6 @@
           "postalCode": "LN19 9JR"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Mr",
-          "first": "Ruby",
-          "middle": "David",
-          "last": "Reed"
-        }
-      }
     }
   }
 }

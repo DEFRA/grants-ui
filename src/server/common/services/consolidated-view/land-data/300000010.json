@@ -47,16 +47,6 @@
           "postalCode": "YO59 5BA"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Mr",
-          "first": "Jack",
-          "middle": "Rose",
-          "last": "Carter"
-        }
-      }
     }
   }
 }

@@ -47,16 +47,6 @@
           "postalCode": "RG41 4WY"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Mr",
-          "first": "Olivia",
-          "middle": "James",
-          "last": "Reed"
-        }
-      }
     }
   }
 }

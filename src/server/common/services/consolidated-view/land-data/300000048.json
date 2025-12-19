@@ -47,16 +47,6 @@
           "postalCode": "GL97 7YL"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Mr",
-          "first": "Willow",
-          "middle": "Edward",
-          "last": "Turner"
-        }
-      }
     }
   }
 }

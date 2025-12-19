@@ -47,16 +47,6 @@
           "postalCode": "BH67 4FC"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Mr",
-          "first": "Ruby",
-          "middle": "Edward",
-          "last": "Carter"
-        }
-      }
     }
   }
 }

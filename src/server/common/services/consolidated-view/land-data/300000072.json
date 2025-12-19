@@ -47,16 +47,6 @@
           "postalCode": "ME23 4LS"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Mr",
-          "first": "Vincent",
-          "middle": "William",
-          "last": "Reed"
-        }
-      }
     }
   }
 }

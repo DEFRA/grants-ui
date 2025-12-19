@@ -47,16 +47,6 @@
           "postalCode": "CT78 6LF"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Ms",
-          "first": "Daniel",
-          "middle": "Joseph",
-          "last": "Howard"
-        }
-      }
     }
   }
 }

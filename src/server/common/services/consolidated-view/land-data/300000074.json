@@ -47,16 +47,6 @@
           "postalCode": "ML25 6MS"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Mr",
-          "first": "Xavier",
-          "middle": "Michael",
-          "last": "Reed"
-        }
-      }
     }
   }
 }

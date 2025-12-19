@@ -47,16 +47,6 @@
           "postalCode": "NR31 3PU"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Mr",
-          "first": "Emily",
-          "middle": "Henry",
-          "last": "Reed"
-        }
-      }
     }
   }
 }

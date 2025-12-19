@@ -47,16 +47,6 @@
           "postalCode": "EC90 9SJ"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Ms",
-          "first": "Peter",
-          "middle": "Thomas",
-          "last": "Turner"
-        }
-      }
     }
   }
 }

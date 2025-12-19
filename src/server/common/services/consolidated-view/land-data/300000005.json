@@ -47,16 +47,6 @@
           "postalCode": "WF54 9YZ"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Ms",
-          "first": "Emily",
-          "middle": "Lee",
-          "last": "Carter"
-        }
-      }
     }
   }
 }

@@ -47,16 +47,6 @@
           "postalCode": "NN29 1OT"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Mr",
-          "first": "Chloe",
-          "middle": "Edward",
-          "last": "Reed"
-        }
-      }
     }
   }
 }

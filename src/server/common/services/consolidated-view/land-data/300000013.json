@@ -47,16 +47,6 @@
           "postalCode": "AL62 8CB"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Ms",
-          "first": "Mia",
-          "middle": "Kate",
-          "last": "Carter"
-        }
-      }
     }
   }
 }

@@ -47,16 +47,6 @@
           "postalCode": "PA35 7SW"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Mr",
-          "first": "Isla",
-          "middle": "Peter",
-          "last": "Reed"
-        }
-      }
     }
   }
 }

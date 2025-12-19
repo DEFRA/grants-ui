@@ -47,16 +47,6 @@
           "postalCode": "FY95 5WK"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Mr",
-          "first": "Una",
-          "middle": "George",
-          "last": "Turner"
-        }
-      }
     }
   }
 }

@@ -47,16 +47,6 @@
           "postalCode": "RH42 5WY"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Ms",
-          "first": "Peter",
-          "middle": "Louise",
-          "last": "Reed"
-        }
-      }
     }
   }
 }

@@ -47,16 +47,6 @@
           "postalCode": "FK94 4UK"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Ms",
-          "first": "Thomas",
-          "middle": "Paige",
-          "last": "Turner"
-        }
-      }
     }
   }
 }

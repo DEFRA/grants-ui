@@ -47,16 +47,6 @@
           "postalCode": "EN92 2TJ"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Ms",
-          "first": "Ruby",
-          "middle": "Kate",
-          "last": "Turner"
-        }
-      }
     }
   }
 }
