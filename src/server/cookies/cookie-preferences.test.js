@@ -325,4 +325,31 @@ describe('cookie-preferences', () => {
 
     expect(document.cookie).not.toContain('_ga=GA1')
   })
+
+  it('should use empty string for cookie name when data-cookie-name is missing', async () => {
+    const setup = setupDOM(`
+      <!DOCTYPE html>
+      <html>
+        <head></head>
+        <body>
+          <form id="cookie-preferences-form"
+                data-expiry-days="365"
+                data-ga-tracking-id="G-TEST123">
+            <input type="radio" name="analytics" value="yes" id="analytics-yes" />
+            <input type="radio" name="analytics" value="no" id="analytics-no" />
+            <button type="button" id="save-cookie-settings">Save</button>
+          </form>
+        </body>
+      </html>
+    `)
+    document = setup.document
+    window = setup.window
+
+    const { initCookiePreferences } = await import('./cookie-preferences.js')
+
+    expect(() => initCookiePreferences()).not.toThrow()
+
+    const form = document.getElementById('cookie-preferences-form')
+    expect(form.dataset.cookieName).toBeUndefined()
+  })
 })

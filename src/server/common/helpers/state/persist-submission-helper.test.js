@@ -151,6 +151,23 @@ describe('persistSubmissionToApi', () => {
         })
       )
     })
+
+    it('handles null submission and logs keyCount as 0', async () => {
+      fetch.mockResolvedValue({ ok: true, status: HTTP_STATUS.OK })
+
+      await persistSubmissionToApi(null, mockRequest)
+
+      expect(log).toHaveBeenCalledWith(
+        LogCodes.SYSTEM.EXTERNAL_API_CALL_DEBUG,
+        expect.objectContaining({
+          summary: {
+            hasReference: false,
+            keyCount: 0
+          }
+        }),
+        mockRequest
+      )
+    })
   })
 
   describe('With backend not configured', () => {
