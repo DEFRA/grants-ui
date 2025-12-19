@@ -1,13 +1,14 @@
 import { vi } from 'vitest'
 import { devTools, errorRoutes } from './index.js'
 
-// Number of non-error routes (dev home + demo confirmation + demo details)
-const BASE_ROUTES_COUNT = 3
+// Number of non-error routes (dev home + demo confirmation + demo details GET + demo details POST)
+const BASE_ROUTES_COUNT = 4
 
 vi.mock('./handlers/index.js', () => ({
   devHomeHandler: vi.fn().mockReturnValue('dev-home-response'),
   demoConfirmationHandler: vi.fn().mockReturnValue('demo-confirmation-response'),
-  demoDetailsHandler: vi.fn().mockReturnValue('demo-details-response')
+  demoDetailsHandler: vi.fn().mockReturnValue('demo-details-response'),
+  demoDetailsPostHandler: vi.fn().mockReturnValue('demo-details-post-response')
 }))
 
 describe('dev-tools index', () => {
@@ -15,6 +16,7 @@ describe('dev-tools index', () => {
   let mockDevHomeHandler
   let mockDemoConfirmationHandler
   let mockDemoDetailsHandler
+  let mockDemoDetailsPostHandler
 
   beforeEach(async () => {
     vi.clearAllMocks()
@@ -23,6 +25,7 @@ describe('dev-tools index', () => {
     mockDevHomeHandler = handlers.devHomeHandler
     mockDemoConfirmationHandler = handlers.demoConfirmationHandler
     mockDemoDetailsHandler = handlers.demoDetailsHandler
+    mockDemoDetailsPostHandler = handlers.demoDetailsPostHandler
 
     server = {
       route: vi.fn()
@@ -37,27 +40,36 @@ describe('dev-tools index', () => {
     const routeConfigurations = [
       {
         name: 'dev home route',
+        method: 'GET',
         path: '/dev',
         handler: () => mockDevHomeHandler
       },
       {
         name: 'demo confirmation route',
+        method: 'GET',
         path: '/dev/demo-confirmation/{slug}',
         handler: () => mockDemoConfirmationHandler
       },
       {
-        name: 'demo details route',
+        name: 'demo details GET route',
+        method: 'GET',
         path: '/dev/demo-details/{slug}',
         handler: () => mockDemoDetailsHandler
+      },
+      {
+        name: 'demo details POST route',
+        method: 'POST',
+        path: '/dev/demo-details/{slug}',
+        handler: () => mockDemoDetailsPostHandler
       }
     ]
 
-    test.each(routeConfigurations)('should register $name with correct configuration', ({ path, handler }) => {
+    test.each(routeConfigurations)('should register $name with correct configuration', ({ method, path, handler }) => {
       devTools.plugin.register(server)
 
       expect(server.route).toHaveBeenCalledWith(
         expect.objectContaining({
-          method: 'GET',
+          method,
           path,
           options: { auth: false },
           handler: handler()
