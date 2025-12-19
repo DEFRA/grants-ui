@@ -13,8 +13,11 @@ const createMockRequest = (overrides = {}) => ({
 const createMockH = () => ({
   view: (template, context) => ({ template, context }),
   redirect: (url) => {
-    const response = { redirectUrl: url }
-    response.state = () => response
+    const response = { redirectUrl: url, stateCalls: [] }
+    response.state = (name, value, options) => {
+      response.stateCalls.push({ name, value, options })
+      return response
+    }
     return response
   }
 })
@@ -85,5 +88,17 @@ describe('cookies.controller', () => {
 
       expect(result).toHaveProperty('redirectUrl', expected)
     })
+
+    it.each([
+      { analytics: 'yes', expectedConsentValue: 'true' },
+      { analytics: 'no', expectedConsentValue: 'false' }
+    ])(
+      'should set consent cookie to "$expectedConsentValue" when analytics is "$analytics"',
+      ({ analytics, expectedConsentValue }) => {
+        const mockRequest = createMockRequest({ payload: { analytics, returnUrl: '/' } })
+        const result = cookiesPostController.handler(mockRequest, createMockH())
+        expect(result.stateCalls[0].value).toBe(expectedConsentValue)
+      }
+    )
   })
 })
