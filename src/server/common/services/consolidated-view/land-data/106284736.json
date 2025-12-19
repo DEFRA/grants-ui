@@ -217,8 +217,18 @@
           "street": "Bartindale Road",
           "city": "Clitheroe",
           "postalCode": "BB7 3DD"
+        },
+        "vat": "GB123456789",
+        "type": {
+          "code": "1",
+          "type": "Sole Trader"
         }
-      }
+      },
+      "countyParishHoldings": [
+        {
+          "cphNumber": "12/345/6789"
+        }
+      ]
     },
     "customer": {
       "info": {

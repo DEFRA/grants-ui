@@ -92,6 +92,21 @@ export function generateFallbackViewModel(error) {
 }
 
 /**
+ * Build view model for incorrect details page
+ * @param {object} form - Form object
+ * @param {string} slug - Form slug
+ * @returns {object} View model for incorrect details template
+ */
+export function buildIncorrectDetailsViewModel(form, slug) {
+  return {
+    serviceName: form?.title || 'Check your details',
+    serviceUrl: slug ? `/${slug}` : '/',
+    continueUrl: slug ? `/${slug}` : '/',
+    isDevelopmentMode: true
+  }
+}
+
+/**
  * Main demo details handler
  * @param {object} request - Hapi request object
  * @param {object} h - Hapi response toolkit
@@ -148,4 +163,51 @@ export async function demoDetailsHandler(request, h) {
     const fallbackViewModel = generateFallbackViewModel(error)
     return h.view('check-details', fallbackViewModel)
   }
+}
+
+/**
+ * POST handler for demo details form submission
+ * Redirects to confirmation page if details are correct,
+ * or shows incorrect details page if user selects "No"
+ * @param {object} request - Hapi request object
+ * @param {object} h - Hapi response toolkit
+ * @returns {Promise<object>} Hapi response
+ */
+export async function demoDetailsPostHandler(request, h) {
+  const { slug } = request.params
+  const { detailsCorrect } = request.payload || {}
+
+  const form = findFormBySlug(slug)
+
+  if (!form) {
+    return generateFormNotFoundResponse(slug, h)
+  }
+
+  if (detailsCorrect === undefined || detailsCorrect === null) {
+    const { displaySections } = loadDisplaySectionsConfig(form)
+
+    const demoMappedData = buildDemoMappedData()
+    const demoRequest = buildDemoRequest()
+
+    const sections = displaySections ? processSections(displaySections, demoMappedData, demoRequest) : []
+
+    const viewModel = {
+      ...buildViewModel(sections, form, slug),
+      errors: [
+        {
+          text: 'Select yes if your details are correct',
+          href: '#detailsCorrect'
+        }
+      ]
+    }
+
+    return h.view('check-details', viewModel)
+  }
+
+  if (detailsCorrect === 'true') {
+    return h.redirect(`/${slug}`)
+  }
+
+  const viewModel = buildIncorrectDetailsViewModel(form, slug)
+  return h.view('incorrect-details', viewModel)
 }

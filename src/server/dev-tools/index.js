@@ -1,4 +1,9 @@
-import { devHomeHandler, demoConfirmationHandler, demoDetailsHandler } from './handlers/index.js'
+import {
+  devHomeHandler,
+  demoConfirmationHandler,
+  demoDetailsHandler,
+  demoDetailsPostHandler
+} from './handlers/index.js'
 
 /**
  * Development tools plugin - only registers routes when in development mode
@@ -33,6 +38,15 @@ export const devTools = {
           auth: false
         },
         handler: demoDetailsHandler
+      })
+
+      server.route({
+        method: 'POST',
+        path: '/dev/demo-details/{slug}',
+        options: {
+          auth: false
+        },
+        handler: demoDetailsPostHandler
       })
     }
   }

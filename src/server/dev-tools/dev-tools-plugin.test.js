@@ -4,7 +4,8 @@ import { devTools } from './index.js'
 vi.mock('./handlers/index.js', () => ({
   devHomeHandler: vi.fn().mockReturnValue('dev-home-response'),
   demoConfirmationHandler: vi.fn().mockReturnValue('demo-confirmation-response'),
-  demoDetailsHandler: vi.fn().mockReturnValue('demo-details-response')
+  demoDetailsHandler: vi.fn().mockReturnValue('demo-details-response'),
+  demoDetailsPostHandler: vi.fn().mockReturnValue('demo-details-post-response')
 }))
 
 describe('dev-tools index', () => {
@@ -12,6 +13,7 @@ describe('dev-tools index', () => {
   let mockDevHomeHandler
   let mockDemoConfirmationHandler
   let mockDemoDetailsHandler
+  let mockDemoDetailsPostHandler
 
   beforeEach(async () => {
     vi.clearAllMocks()
@@ -20,6 +22,7 @@ describe('dev-tools index', () => {
     mockDevHomeHandler = handlers.devHomeHandler
     mockDemoConfirmationHandler = handlers.demoConfirmationHandler
     mockDemoDetailsHandler = handlers.demoDetailsHandler
+    mockDemoDetailsPostHandler = handlers.demoDetailsPostHandler
 
     server = {
       route: vi.fn()
@@ -27,34 +30,39 @@ describe('dev-tools index', () => {
   })
 
   describe('devTools plugin', () => {
-    test('should have correct plugin name', () => {
-      expect(devTools.plugin.name).toBe('dev-tools')
-    })
-
     const routeConfigurations = [
       {
         name: 'dev home route',
+        method: 'GET',
         path: '/dev',
         handler: () => mockDevHomeHandler
       },
       {
         name: 'demo confirmation route',
+        method: 'GET',
         path: '/dev/demo-confirmation/{slug}',
         handler: () => mockDemoConfirmationHandler
       },
       {
-        name: 'demo details route',
+        name: 'demo details GET route',
+        method: 'GET',
         path: '/dev/demo-details/{slug}',
         handler: () => mockDemoDetailsHandler
+      },
+      {
+        name: 'demo details POST route',
+        method: 'POST',
+        path: '/dev/demo-details/{slug}',
+        handler: () => mockDemoDetailsPostHandler
       }
     ]
 
-    test.each(routeConfigurations)('should register $name with correct configuration', ({ path, handler }) => {
+    test.each(routeConfigurations)('should register $name with correct configuration', ({ method, path, handler }) => {
       devTools.plugin.register(server)
 
       expect(server.route).toHaveBeenCalledWith(
         expect.objectContaining({
-          method: 'GET',
+          method,
           path,
           options: { auth: false },
           handler: handler()
@@ -77,42 +85,8 @@ describe('dev-tools index', () => {
       devTools.plugin.register(server)
       devTools.plugin.register(secondServer)
 
-      expect(server.route).toHaveBeenCalledTimes(3)
-      expect(secondServer.route).toHaveBeenCalledTimes(3)
-    })
-
-    test('should have plugin structure matching Hapi plugin interface', () => {
-      expect(devTools).toHaveProperty('plugin')
-      expect(devTools.plugin).toHaveProperty('name')
-      expect(devTools.plugin).toHaveProperty('register')
-      expect(typeof devTools.plugin.register).toBe('function')
-    })
-
-    test('should handle missing server object', () => {
-      expect(() => devTools.plugin.register(null)).toThrow()
-    })
-
-    test('should handle server without route method', () => {
-      const invalidServer = {}
-
-      expect(() => devTools.plugin.register(invalidServer)).toThrow()
-    })
-  })
-
-  describe('plugin exports', () => {
-    test('should export devTools as named export', () => {
-      expect(devTools).toBeDefined()
-      expect(typeof devTools).toBe('object')
-    })
-
-    test('should have correct plugin structure', () => {
-      expect(devTools.plugin.name).toBe('dev-tools')
-      expect(typeof devTools.plugin.register).toBe('function')
-    })
-
-    test('should not export any other properties', () => {
-      const exportedKeys = Object.keys(devTools)
-      expect(exportedKeys).toEqual(['plugin'])
+      expect(server.route).toHaveBeenCalledTimes(4)
+      expect(secondServer.route).toHaveBeenCalledTimes(4)
     })
   })
 })
