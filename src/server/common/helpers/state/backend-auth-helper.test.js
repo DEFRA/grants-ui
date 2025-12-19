@@ -10,6 +10,8 @@ const HEADER_OBJECTS = {
 
 const CONFIG_SESSION_CACHE_AUTH_TOKEN = 'session.cache.authToken'
 const CONFIG_SESSION_CACHE_ENCRYPTION_KEY = 'session.cache.encryptionKey'
+const CONFIG_LAND_GRANTS_AUTH_TOKEN = 'landGrants.authToken'
+const CONFIG_LAND_GRANTS_ENCRYPTION_KEY = 'landGrants.encryptionKey'
 
 const MOCK_TOKENS = {
   DEFAULT: 'test-token-123',
@@ -32,6 +34,12 @@ const mockConfigGet = vi.fn((key) => {
   if (key === 'session.cache.encryptionKey') {
     return TEST_ENCRYPTION_KEY
   }
+  if (key === 'landGrants.authToken') {
+    return 'land-grants-token'
+  }
+  if (key === 'landGrants.encryptionKey') {
+    return TEST_ENCRYPTION_KEY
+  }
   return null
 })
 
@@ -49,6 +57,15 @@ function setupMockConfig(value, encryptionKey = TEST_ENCRYPTION_KEY) {
   const configValues = {
     [CONFIG_SESSION_CACHE_AUTH_TOKEN]: value,
     [CONFIG_SESSION_CACHE_ENCRYPTION_KEY]: encryptionKey
+  }
+
+  mockConfigGet.mockImplementation((key) => configValues[key] || null)
+}
+
+function setupLandGrantsMockConfig(value, encryptionKey = TEST_ENCRYPTION_KEY) {
+  const configValues = {
+    [CONFIG_LAND_GRANTS_AUTH_TOKEN]: value,
+    [CONFIG_LAND_GRANTS_ENCRYPTION_KEY]: encryptionKey
   }
 
   mockConfigGet.mockImplementation((key) => configValues[key] || null)
@@ -221,6 +238,45 @@ describe('Backend Auth Helper', () => {
       const tokenPart = decoded.substring(1)
 
       expect(tokenPart).toMatch(/^[A-Za-z0-9+/]+=*:[A-Za-z0-9+/]+=*:[A-Za-z0-9+/]+=*$/)
+    })
+  })
+
+  describe('createApiHeadersForLandGrantsBackend', () => {
+    it('should return headers with Content-Type and Authorization when token configured', async () => {
+      setupLandGrantsMockConfig(MOCK_TOKENS.API)
+
+      const { createApiHeadersForLandGrantsBackend } = await importBackendAuthHelper()
+      const headers = createApiHeadersForLandGrantsBackend()
+
+      expect(mockConfigGet).toHaveBeenCalledWith(CONFIG_LAND_GRANTS_AUTH_TOKEN)
+      expect(headers).toHaveProperty('Content-Type', 'application/json')
+      expect(headers).toHaveProperty('Authorization')
+      expect(headers.Authorization).toMatch(/^Bearer [A-Za-z0-9+/]+=*$/)
+
+      const base64Part = headers.Authorization.replace('Bearer ', '')
+      const decoded = Buffer.from(base64Part, 'base64').toString('utf-8')
+      expect(decoded).toMatch(/^([A-Za-z0-9+/]+=*):([A-Za-z0-9+/]+=*):([A-Za-z0-9+/]+=*)$/)
+    })
+
+    it('should return base headers when no token is configured', async () => {
+      setupLandGrantsMockConfig('', TEST_ENCRYPTION_KEY)
+
+      const { createApiHeadersForLandGrantsBackend } = await importBackendAuthHelper()
+      const headers = createApiHeadersForLandGrantsBackend()
+
+      expect(mockConfigGet).toHaveBeenCalledWith(CONFIG_LAND_GRANTS_AUTH_TOKEN)
+      expect(headers).toEqual(HEADER_OBJECTS.CONTENT_TYPE_JSON)
+      expect(headers.Authorization).toBeUndefined()
+    })
+
+    it('should handle null token correctly', async () => {
+      setupLandGrantsMockConfig(null, TEST_ENCRYPTION_KEY)
+
+      const { createApiHeadersForLandGrantsBackend } = await importBackendAuthHelper()
+      const headers = createApiHeadersForLandGrantsBackend()
+
+      expect(headers).toEqual(HEADER_OBJECTS.CONTENT_TYPE_JSON)
+      expect(headers.Authorization).toBeUndefined()
     })
   })
 })

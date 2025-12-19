@@ -71,7 +71,12 @@ describe('cookies.controller', () => {
         expected: '/page?param=value',
         description: 'relative URL with query params'
       },
-      { payload: null, expected: '/', description: 'null payload' }
+      { payload: null, expected: '/', description: 'null payload' },
+      {
+        payload: { returnUrl: '/cookies?returnUrl=/some-page' },
+        expected: '/cookies?success=true',
+        description: 'returnUrl starting with /cookies'
+      }
     ])('should redirect to "$expected" when $description', ({ payload, expected }) => {
       const mockRequest = createMockRequest({ payload })
       const mockH = createMockH()
