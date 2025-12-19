@@ -971,6 +971,68 @@ describe('stateToLandGrantsGasAnswers', () => {
     expect(paymentAgreementCodes).toContain('CSAM2')
   })
 
+  it.each([null, undefined])('should handle %s action data in actionsObj (covers line 81)', (actionValue) => {
+    const input = {
+      payment: {
+        annualTotalPence: 5000,
+        parcelItems: {
+          1: { code: 'CSAM1', sheetId: 'SX0679', parcelId: '9238', durationYears: 3, rateInPence: 1000 }
+        }
+      },
+      landParcels: {
+        'SX0679-9238': { size: { value: 10, unit: 'ha' }, actionsObj: { CSAM1: actionValue } }
+      }
+    }
+
+    const result = stateToLandGrantsGasAnswers(input)
+
+    expect(result.payments.parcel[0].actions[0].eligible).toBeUndefined()
+    expect(result.payments.parcel[0].actions[0].appliedFor).toBeUndefined()
+  })
+
+  it('should handle agreementLevelItems becoming unavailable during lookup (covers line 54)', () => {
+    let accessCount = 0
+    const agreementItems = {
+      1: { code: 'CSAM1', description: 'Test agreement', durationYears: 3, annualPaymentPence: 5000 }
+    }
+
+    const payment = {
+      annualTotalPence: 5000,
+      parcelItems: {},
+      get agreementLevelItems() {
+        accessCount++
+        return accessCount <= 2 ? agreementItems : undefined
+      }
+    }
+
+    const result = stateToLandGrantsGasAnswers({ payment, landParcels: {} })
+
+    expect(result.payments.agreement).toEqual([])
+  })
+
+  it.each([null, undefined])('should handle split returning %s (covers lines 101, 129)', (splitReturnValue) => {
+    const originalSplit = String.prototype.split
+    // eslint-disable-next-line no-extend-native
+    String.prototype.split = function () {
+      return splitReturnValue
+    }
+
+    try {
+      const input = {
+        payment: { annualTotalPence: 5000, parcelItems: {} },
+        landParcels: { 'SX0679-9238': { size: { value: 10, unit: 'ha' }, actionsObj: {} } }
+      }
+
+      const result = stateToLandGrantsGasAnswers(input)
+
+      expect(result.application.parcel[0].sheetId).toBeUndefined()
+      expect(result.application.parcel[0].parcelId).toBeUndefined()
+    } finally {
+      // eslint-disable-next-line no-extend-native
+      String.prototype.split = originalSplit
+    }
+  })
+
   it('should only include actions in agreement arrays that exist in agreementLevelItems', () => {
     const input = {
       payment: {
