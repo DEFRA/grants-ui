@@ -1,0 +1,24 @@
+name: Simple Grant
+metadata:
+  detailsPage:
+    query:
+      name: Business
+      entities:
+        - name: customer
+          variableName: crn
+          variableSource: credentials.crn
+          fields:
+            - path: info
+              fields:
+                - path: name
+                  fields:
+                    - path: first
+                    - path: last
+        - name: business
+          variableName: sbi
+          variableSource: credentials.sbi
+          fields:
+            - path: info
+              fields:
+                - path: name
+                - path: reference

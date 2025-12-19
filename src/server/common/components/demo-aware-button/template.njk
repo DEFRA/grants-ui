@@ -1,0 +1,23 @@
+{% from "govuk/components/button/macro.njk" import govukButton %}
+
+{% if params.isDevelopmentMode and not params.allowSubmit %}
+  {{ govukButton({
+    text: params.text or "Continue",
+    preventDoubleClick: true,
+    disabled: true,
+    classes: params.classes
+  }) }}
+  <p class="govuk-body-s govuk-!-margin-top-4" style="color: #666;">
+    {{ params.disabledMessage or "Button disabled in demo mode" }}
+  </p>
+{% else %}
+  {% if params.crumb %}
+    <input type="hidden" name="crumb" value="{{ params.crumb }}">
+  {% endif %}
+  {{ govukButton({
+    text: params.text or "Continue",
+    preventDoubleClick: true,
+    classes: params.classes,
+    attributes: params.attributes
+  }) }}
+{% endif %}

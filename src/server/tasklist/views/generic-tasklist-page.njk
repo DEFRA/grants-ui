@@ -2,38 +2,31 @@
 
 {% block pageTitle %}{{ pageHeading }}{% endblock %}
 {% from "govuk/components/task-list/macro.njk" import govukTaskList %}
-{% from "govuk/components/inset-text/macro.njk" import govukInsetText %}
+{% from "closing-date-banner/macro.njk" import appClosingDateBanner %}
+{% from "help-panel/macro.njk" import appHelpPanel %}
+{% from "two-thirds-column/macro.njk" import appTwoThirdsColumn %}
 
 {% block content %}
-  <div class="govuk-grid-row">
-    <div class="govuk-grid-column-two-thirds govuk-!-margin-top-2">
-      <h1 class="govuk-heading-xl">{{ pageHeading }}</h1>
+  {% call appTwoThirdsColumn({ classes: 'govuk-!-margin-top-2' }) %}
+    <h1 class="govuk-heading-xl">{{ pageHeading }}</h1>
 
-      {% if closingDate %}
-      {{ govukInsetText({
-        html: "Application closing date is <strong>" + closingDate + "</strong>."
+    {{ appClosingDateBanner({ closingDate: closingDate }) }}
+
+    {% for section in sections %}
+      <h2 class="govuk-heading-m">{{ section.title }}</h2>
+
+      {{ govukTaskList({
+        idPrefix: "section.title",
+        items: section.subsections
+        })
+      }}
+    {% endfor %}
+
+    {% if helpText %}
+      {{ appHelpPanel({
+        href: "/fetf/change-request/help-triage",
+        linkText: helpText
       }) }}
-      {% endif %}
-
-      {% for section in sections %}
-        <h2 class="govuk-heading-m">{{ section.title }}</h2>
-
-        {{ govukTaskList({
-          idPrefix: "section.title",
-          items: section.subsections
-          })
-        }}
-      {% endfor %}
-
-      {% if helpText %}
-      <div class="app-contact-panel">
-        <h2 class="govuk-heading-s">Need help?</h2>
-        <p class="govuk-body app-contact-panel__body">
-          <a class="govuk-link" href="/fetf/change-request/help-triage">{{ helpText }}</a>
-        </p>
-      </div>
-      {% endif %}  
-    </div>  
-  </div>  
-
+    {% endif %}
+  {% endcall %}
 {% endblock %}
