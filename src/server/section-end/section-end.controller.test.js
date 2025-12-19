@@ -83,6 +83,16 @@ describe('SectionEndController', () => {
       result = controller.getSummaryViewModel(mockRequest, mockContext)
       expect(result.checkAnswers).toBeUndefined()
     })
+
+    it('should set source from request query parameter', () => {
+      const mockViewModel = { checkAnswers: [] }
+      parentGetSummaryViewModel.mockReturnValue(mockViewModel)
+      mockRequest.query = { source: 'test-tasklist' }
+
+      const result = controller.getSummaryViewModel(mockRequest, mockContext)
+
+      expect(result.source).toBe('test-tasklist')
+    })
   })
 
   describe('makePostRouteHandler', () => {
