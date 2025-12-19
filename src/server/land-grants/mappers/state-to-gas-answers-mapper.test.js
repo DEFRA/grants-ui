@@ -739,6 +739,17 @@ describe('stateToLandGrantsGasAnswers', () => {
     expect(result.payments.parcel[0].actions[0].annualPaymentPence).toBeUndefined()
   })
 
+  it('should return empty agreement array when agreementLevelItems is missing', () => {
+    const input = {
+      payment: { annualTotalPence: 50000, parcelItems: {} },
+      landParcels: {}
+    }
+
+    const result = stateToLandGrantsGasAnswers(input)
+
+    expect(result.payments.agreement).toEqual([])
+  })
+
   it('should handle parcel with size data', () => {
     const input = {
       payment,
