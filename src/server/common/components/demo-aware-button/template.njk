@@ -1,6 +1,6 @@
 {% from "govuk/components/button/macro.njk" import govukButton %}
 
-{% if params.isDevelopmentMode %}
+{% if params.isDevelopmentMode and not params.allowSubmit %}
   {{ govukButton({
     text: params.text or "Continue",
     preventDoubleClick: true,
