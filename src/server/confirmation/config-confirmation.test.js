@@ -105,6 +105,17 @@ describe('config-confirmation', () => {
       expect(mockH.view).toHaveBeenCalledWith('config-confirmation-page', { test: 'viewModel' })
     })
 
+    test('should return 400 when slug is missing', async () => {
+      mockRequest.params = {}
+      const mockResponse = { code: vi.fn().mockReturnValue('bad-request') }
+      mockH.response.mockReturnValue(mockResponse)
+
+      const result = await handler(mockRequest, mockH)
+
+      expect(mockResponse.code).toHaveBeenCalledWith(400)
+      expect(result).toBe('bad-request')
+    })
+
     test('should return 404 when form not found', async () => {
       ConfirmationService.findFormBySlug.mockReturnValue(null)
       const mockResponse = { code: vi.fn().mockReturnValue('not-found') }
@@ -186,6 +197,28 @@ describe('config-confirmation', () => {
       expect(ConfirmationService.processConfirmationContent).toHaveBeenCalledWith(mockConfirmationContent)
       expect(ConfirmationService.buildViewModel).toHaveBeenCalledWith(
         expect.objectContaining({ referenceNumber: 'Not available' })
+      )
+    })
+
+    test('should log when application status is SUBMITTED', async () => {
+      mockFormsCacheService.getState.mockResolvedValue({
+        $$__referenceNumber: 'REF123',
+        applicationStatus: 'SUBMITTED'
+      })
+
+      ConfirmationService.findFormBySlug.mockReturnValue(mockForm)
+      ConfirmationService.loadConfirmationContent.mockResolvedValue({
+        confirmationContent: null,
+        formDefinition: { metadata: {} }
+      })
+      ConfirmationService.buildViewModel.mockReturnValue({})
+
+      await handler(mockRequest, mockH)
+
+      expect(vi.mocked(log)).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ controller: 'ConfirmationController', referenceNumber: 'REF123' }),
+        mockRequest
       )
     })
 
