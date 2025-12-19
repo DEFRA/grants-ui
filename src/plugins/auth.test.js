@@ -21,7 +21,6 @@ vi.mock('~/src/server/auth/refresh-tokens')
 vi.mock('~/src/server/auth/get-safe-redirect')
 
 const DEFAULT_CONFIG = {
-  'defraId.enabled': true,
   'defraId.clientId': 'test-client-id',
   'defraId.clientSecret': 'test-client-secret',
   'defraId.serviceId': 'test-service-id',
@@ -186,9 +185,6 @@ const createMockError = (message, name = 'Error', stack = null) => {
 vi.mock('~/src/config/config', () => ({
   config: {
     get: vi.fn((key) => {
-      if (key === 'defraId.enabled') {
-        return true
-      }
       return undefined
     })
   }
@@ -783,7 +779,6 @@ describe('Auth Plugin', () => {
         }
 
         const mockConfig = {
-          'defraId.enabled': true,
           'session.cookie.password': DEFAULT_CONFIG['session.cookie.password'],
           isProduction: false
         }
@@ -845,7 +840,6 @@ describe('Auth Plugin', () => {
 
       config.get.mockImplementation((key) => {
         const mockConfig = {
-          'defraId.enabled': true,
           'defraId.refreshTokens': true,
           'session.cookie.password': DEFAULT_CONFIG['session.cookie.password'],
           'session.cookie.secure': false,
@@ -887,7 +881,6 @@ describe('Auth Plugin', () => {
 
       config.get.mockImplementation((key) => {
         const mockConfig = {
-          'defraId.enabled': true,
           'defraId.refreshTokens': true,
           'session.cookie.password': DEFAULT_CONFIG['session.cookie.password'],
           'session.cookie.secure': false,

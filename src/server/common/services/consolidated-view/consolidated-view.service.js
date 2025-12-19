@@ -45,18 +45,13 @@ export class ConsolidatedViewApiError extends Error {
  * @returns {Promise<object>} Request options object
  */
 async function getConsolidatedViewRequestOptions(request, { method = 'POST', query }) {
-  const isDefraIdEnabled = config.get('defraId.enabled')
+  const { credentials: { token } = {} } = request.auth ?? {}
+
   const headers = {
     'Content-Type': 'application/json',
+    'gateway-type': 'external',
+    'x-forwarded-authorization': token,
     Authorization: `Bearer ${await getValidToken()}`
-  }
-
-  if (isDefraIdEnabled) {
-    const { credentials: { token } = {} } = request.auth ?? {}
-    headers['gateway-type'] = 'external'
-    headers['x-forwarded-authorization'] = token
-  } else {
-    headers['email'] = config.get('consolidatedView.authEmail')
   }
 
   return {

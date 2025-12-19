@@ -4,7 +4,6 @@ import { validateState } from '~/src/server/auth/state.js'
 import { verifyToken } from '~/src/server/auth/verify-token.js'
 import { getSignOutUrl } from './get-sign-out-url.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
-import { config } from '~/src/config/config.js'
 import {
   logSuccessfulSignIn,
   logAuthFailure,
@@ -130,47 +129,46 @@ function setupBellOAuthErrorHandling(server) {
 }
 
 function setupAuthRoutes(server) {
-  // Only register defra-id related routes if the feature flag is enabled
-  if (config.get('defraId.enabled')) {
-    server.route({
-      method: 'GET',
-      path: '/auth/sign-in',
-      options: {
-        auth: { strategy: 'defra-id', mode: 'try' }
-      },
-      handler: handleAuthSignIn
-    })
+  // Register defra-id related routes
 
-    server.route({
-      method: ['GET'],
-      path: '/auth/sign-in-oidc',
-      options: {
-        auth: { strategy: 'defra-id', mode: 'try' }
-      },
-      handler: handleOidcSignIn
-    })
+  server.route({
+    method: 'GET',
+    path: '/auth/sign-in',
+    options: {
+      auth: { strategy: 'defra-id', mode: 'try' }
+    },
+    handler: handleAuthSignIn
+  })
 
-    server.route({
-      method: 'GET',
-      path: '/auth/sign-out',
-      handler: handleSignOut
-    })
+  server.route({
+    method: ['GET'],
+    path: '/auth/sign-in-oidc',
+    options: {
+      auth: { strategy: 'defra-id', mode: 'try' }
+    },
+    handler: handleOidcSignIn
+  })
 
-    server.route({
-      method: 'GET',
-      path: '/auth/sign-out-oidc',
-      handler: handleOidcSignOut
-    })
+  server.route({
+    method: 'GET',
+    path: '/auth/sign-out',
+    handler: handleSignOut
+  })
 
-    server.route({
-      method: 'GET',
-      path: '/auth/organisation',
-      options: {
-        auth: 'defra-id'
-      },
-      handler: handleOrganisationRedirect
-    })
-  }
+  server.route({
+    method: 'GET',
+    path: '/auth/sign-out-oidc',
+    handler: handleOidcSignOut
+  })
+
+  server.route({
+    method: 'GET',
+    path: '/auth/organisation',
+    options: {
+      auth: 'defra-id'
+    },
+    handler: handleOrganisationRedirect
+  })
 
   server.route({
     method: 'GET',
@@ -187,10 +185,7 @@ export const auth = {
     name: 'auth-router',
     register(server) {
       setupAuthRoutes(server)
-      // Only setup Bell/OAuth error handling if defra-id is enabled
-      if (config.get('defraId.enabled')) {
-        setupBellOAuthErrorHandling(server)
-      }
+      setupBellOAuthErrorHandling(server)
     }
   }
 }
