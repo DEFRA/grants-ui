@@ -1,7 +1,9 @@
 import { vi } from 'vitest'
 import {
   demoDetailsHandler,
+  demoDetailsPostHandler,
   buildViewModel,
+  buildIncorrectDetailsViewModel,
   generateFallbackViewModel,
   loadDisplaySectionsConfig
 } from './demo-details.handler.js'
@@ -141,23 +143,14 @@ describe('demo-details.handler', () => {
       expect(result).toEqual({ displaySections: mockDisplaySections })
     })
 
-    test('should return null when form has no metadata', () => {
-      const result = loadDisplaySectionsConfig(mockFormWithoutConfig)
+    const nullConfigCases = [
+      { name: 'form has no metadata', form: mockFormWithoutConfig },
+      { name: 'form has no detailsPage config', form: { ...mockFormWithoutConfig, metadata: {} } },
+      { name: 'form is undefined', form: undefined }
+    ]
 
-      expect(result).toEqual({ displaySections: null })
-    })
-
-    test('should return null when form has no detailsPage config', () => {
-      const formWithEmptyMetadata = { ...mockFormWithoutConfig, metadata: {} }
-      const result = loadDisplaySectionsConfig(formWithEmptyMetadata)
-
-      expect(result).toEqual({ displaySections: null })
-    })
-
-    test('should return null when form is undefined', () => {
-      const result = loadDisplaySectionsConfig(undefined)
-
-      expect(result).toEqual({ displaySections: null })
+    test.each(nullConfigCases)('should return null when $name', ({ form }) => {
+      expect(loadDisplaySectionsConfig(form)).toEqual({ displaySections: null })
     })
   })
 
@@ -235,6 +228,139 @@ describe('demo-details.handler', () => {
               })
             })
           ])
+        })
+      )
+    })
+  })
+
+  describe('buildIncorrectDetailsViewModel', () => {
+    test('should build view model with correct structure', () => {
+      const result = buildIncorrectDetailsViewModel(mockForm, 'test-form')
+
+      expect(result).toEqual({
+        serviceName: 'Test Form',
+        serviceUrl: '/test-form',
+        continueUrl: '/test-form',
+        isDevelopmentMode: true
+      })
+    })
+
+    test('should use fallback serviceName when form has no title', () => {
+      const formWithoutTitle = { id: 'test-id', slug: 'test-form' }
+
+      const result = buildIncorrectDetailsViewModel(formWithoutTitle, 'test-form')
+
+      expect(result.serviceName).toBe('Check your details')
+    })
+
+    test('should use fallback serviceUrl and continueUrl when slug is empty', () => {
+      const result = buildIncorrectDetailsViewModel(mockForm, '')
+
+      expect(result.serviceUrl).toBe('/')
+      expect(result.continueUrl).toBe('/')
+    })
+  })
+
+  describe('demoDetailsPostHandler', () => {
+    test('should continue with journey when user selects "Yes"', async () => {
+      mockRequest = mockHapiRequest({
+        params: { slug: 'test-form' },
+        payload: { detailsCorrect: 'true' }
+      })
+
+      await demoDetailsPostHandler(mockRequest, mockH)
+
+      expect(mockH.redirect).toHaveBeenCalledWith('/test-form')
+    })
+
+    test('should show incorrect details page when user selects "No"', async () => {
+      mockRequest = mockHapiRequest({
+        params: { slug: 'test-form' },
+        payload: { detailsCorrect: 'false' }
+      })
+
+      await demoDetailsPostHandler(mockRequest, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'incorrect-details',
+        expect.objectContaining({
+          serviceName: 'Test Form',
+          serviceUrl: '/test-form',
+          continueUrl: '/test-form',
+          isDevelopmentMode: true
+        })
+      )
+    })
+
+    test('should show validation error when no option is selected', async () => {
+      mockRequest = mockHapiRequest({
+        params: { slug: 'test-form' },
+        payload: {}
+      })
+      processSections.mockReturnValue([])
+
+      await demoDetailsPostHandler(mockRequest, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'check-details',
+        expect.objectContaining({
+          errors: [
+            {
+              text: 'Select yes if your details are correct',
+              href: '#detailsCorrect'
+            }
+          ]
+        })
+      )
+    })
+
+    test('should return form not found response when form does not exist', async () => {
+      getAllForms.mockReturnValue([])
+      generateFormNotFoundResponse.mockReturnValue('not-found-response')
+
+      const result = await demoDetailsPostHandler(mockRequest, mockH)
+
+      expect(generateFormNotFoundResponse).toHaveBeenCalledWith('test-form', mockH)
+      expect(result).toBe('not-found-response')
+    })
+
+    test('should handle null payload gracefully', async () => {
+      mockRequest = mockHapiRequest({
+        params: { slug: 'test-form' },
+        payload: null
+      })
+      processSections.mockReturnValue([])
+
+      await demoDetailsPostHandler(mockRequest, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'check-details',
+        expect.objectContaining({
+          errors: [
+            {
+              text: 'Select yes if your details are correct',
+              href: '#detailsCorrect'
+            }
+          ]
+        })
+      )
+    })
+
+    test('should use empty sections array when form has no displaySections config during validation', async () => {
+      getAllForms.mockReturnValue([mockFormWithoutConfig])
+      mockRequest = mockHapiRequest({
+        params: { slug: 'test-form-no-config' },
+        payload: {}
+      })
+
+      await demoDetailsPostHandler(mockRequest, mockH)
+
+      expect(processSections).not.toHaveBeenCalled()
+      expect(mockH.view).toHaveBeenCalledWith(
+        'check-details',
+        expect.objectContaining({
+          sections: [],
+          errors: expect.any(Array)
         })
       )
     })

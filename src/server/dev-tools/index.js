@@ -1,4 +1,9 @@
-import { devHomeHandler, demoConfirmationHandler, demoDetailsHandler } from './handlers/index.js'
+import {
+  devHomeHandler,
+  demoConfirmationHandler,
+  demoDetailsHandler,
+  demoDetailsPostHandler
+} from './handlers/index.js'
 import Boom from '@hapi/boom'
 
 /** @type {Array<{code: number, boomMethod: string, message: string}>} */
@@ -45,6 +50,15 @@ export const devTools = {
           auth: false
         },
         handler: demoDetailsHandler
+      })
+
+      server.route({
+        method: 'POST',
+        path: '/dev/demo-details/{slug}',
+        options: {
+          auth: false
+        },
+        handler: demoDetailsPostHandler
       })
 
       for (const { code, boomMethod, message } of errorRoutes) {

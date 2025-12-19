@@ -1,10 +1,10 @@
 {% extends "layouts/page.njk" %}
 {% set backLink = false %}
 {% from "govuk/components/radios/macro.njk" import govukRadios %}
+{% from "govuk/components/button/macro.njk" import govukButton %}
 {% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
 {% from "dev-mode-banner/macro.njk" import appDevModeBanner %}
 {% from "section-list/macro.njk" import appSectionList %}
-{% from "demo-aware-button/macro.njk" import appDemoAwareButton %}
 {% from "two-thirds-column/macro.njk" import appTwoThirdsColumn %}
 
 {% block content %}
@@ -47,11 +47,51 @@
         errorMessage: errors and errors[0] and { text: errors[0].text }
       }) }}
 
-      {{ appDemoAwareButton({
-        isDevelopmentMode: isDevelopmentMode,
-        crumb: crumb,
-        text: "Continue"
-      }) }}
+      {% if isDevelopmentMode %}
+        {% if crumb %}
+          <input type="hidden" name="crumb" value="{{ crumb }}">
+        {% endif %}
+        <button class="govuk-button" data-module="govuk-button" data-prevent-double-click="true" id="continue-button">
+          Continue
+        </button>
+        <p class="govuk-body-s govuk-!-margin-top-4" style="color: #666; display: none;" id="demo-message"></p>
+      {% else %}
+        {% if crumb %}
+          <input type="hidden" name="crumb" value="{{ crumb }}">
+        {% endif %}
+        {{ govukButton({
+          text: "Continue",
+          preventDoubleClick: true
+        }) }}
+      {% endif %}
     </form>
   {% endcall %}
+{% endblock %}
+
+{% block bodyEnd %}
+  {{ super() }}
+  {% if isDevelopmentMode %}
+    <script nonce="{{ cspNonce }}">
+      (function() {
+        var radios = document.querySelectorAll('input[name="detailsCorrect"]');
+        var button = document.getElementById('continue-button');
+        var message = document.getElementById('demo-message');
+
+        radios.forEach(function(radio) {
+          radio.addEventListener('change', function() {
+            if (this.value === 'true') {
+              button.disabled = true;
+              button.setAttribute('aria-disabled', 'true');
+              message.style.display = 'block';
+              message.textContent = 'Button disabled in demo mode';
+            } else {
+              button.disabled = false;
+              button.removeAttribute('aria-disabled');
+              message.style.display = 'none';
+            }
+          });
+        });
+      })();
+    </script>
+  {% endif %}
 {% endblock %}
