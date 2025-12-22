@@ -47,16 +47,6 @@
           "postalCode": "S44 7YZ"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Ms",
-          "first": "Ruby",
-          "middle": "Anne",
-          "last": "Reed"
-        }
-      }
     }
   }
 }

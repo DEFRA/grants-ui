@@ -47,16 +47,6 @@
           "postalCode": "CH75 3KE"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Mr",
-          "first": "Alice",
-          "middle": "Charlotte",
-          "last": "Howard"
-        }
-      }
     }
   }
 }

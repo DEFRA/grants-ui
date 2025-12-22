@@ -47,16 +47,6 @@
           "postalCode": "DE83 2OG"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Mr",
-          "first": "Isla",
-          "middle": "Grace",
-          "last": "Howard"
-        }
-      }
     }
   }
 }

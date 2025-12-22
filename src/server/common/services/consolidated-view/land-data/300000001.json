@@ -47,16 +47,6 @@
           "postalCode": "W50 5UY"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Ms",
-          "first": "Alice",
-          "middle": "Louise",
-          "last": "Carter"
-        }
-      }
     }
   }
 }

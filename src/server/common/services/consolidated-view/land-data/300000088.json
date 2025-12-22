@@ -47,16 +47,6 @@
           "postalCode": "PO39 2UY"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Mr",
-          "first": "Mia",
-          "middle": "Amy",
-          "last": "Reed"
-        }
-      }
     }
   }
 }

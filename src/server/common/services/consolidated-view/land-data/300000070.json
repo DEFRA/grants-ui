@@ -47,16 +47,6 @@
           "postalCode": "LU21 2KR"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Mr",
-          "first": "Thomas",
-          "middle": "Rose",
-          "last": "Reed"
-        }
-      }
     }
   }
 }

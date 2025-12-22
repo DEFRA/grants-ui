@@ -219,16 +219,6 @@
           "postalCode": "BB7 3DD"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Mr.",
-          "first": "Edward",
-          "middle": "Paul",
-          "last": "Jones"
-        }
-      }
     }
   }
 }

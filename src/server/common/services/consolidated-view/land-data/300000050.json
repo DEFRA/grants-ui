@@ -47,16 +47,6 @@
           "postalCode": "HA1 9ZL"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Mr",
-          "first": "Yasmine",
-          "middle": "Henry",
-          "last": "Turner"
-        }
-      }
     }
   }
 }

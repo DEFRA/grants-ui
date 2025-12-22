@@ -47,16 +47,6 @@
           "postalCode": "CR77 5LF"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Mr",
-          "first": "Chloe",
-          "middle": "Amy",
-          "last": "Howard"
-        }
-      }
     }
   }
 }

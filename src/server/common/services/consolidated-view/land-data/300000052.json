@@ -47,16 +47,6 @@
           "postalCode": "HG3 2AM"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Mr",
-          "first": "Benjamin",
-          "middle": "Alice",
-          "last": "Turner"
-        }
-      }
     }
   }
 }

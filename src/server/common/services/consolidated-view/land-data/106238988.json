@@ -147,16 +147,6 @@
           "postalCode": "BB7 4LQ"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Miss",
-          "first": "Sarah",
-          "middle": "A",
-          "last": "Farmer"
-        }
-      }
     }
   }
 }

@@ -47,16 +47,6 @@
           "postalCode": "WD53 8YZ"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Mr",
-          "first": "Daniel",
-          "middle": "Grace",
-          "last": "Carter"
-        }
-      }
     }
   }
 }

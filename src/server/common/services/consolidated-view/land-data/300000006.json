@@ -47,16 +47,6 @@
           "postalCode": "WN55 1ZZ"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Mr",
-          "first": "Finley",
-          "middle": "Marie",
-          "last": "Carter"
-        }
-      }
     }
   }
 }

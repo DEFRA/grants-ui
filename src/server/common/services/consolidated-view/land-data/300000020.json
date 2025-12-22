@@ -47,16 +47,6 @@
           "postalCode": "BN69 6GD"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Mr",
-          "first": "Thomas",
-          "middle": "Henry",
-          "last": "Carter"
-        }
-      }
     }
   }
 }

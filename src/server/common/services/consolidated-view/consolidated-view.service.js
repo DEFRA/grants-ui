@@ -74,15 +74,22 @@ function getCurrentDirectory() {
 
 /**
  * Fetches mock data from self-hosted static files
- * @param {number} sbi - Standard Business Identifier
+ * @param {number} sbi - Single Business Identifier
+ * @param {number} crn - Customer Reference Number
  * @returns {Promise<object>} - Promise that resolves to the mock data
  * @throws {Error} - For file reading errors
  */
-async function fetchMockDataForBusiness(sbi) {
+async function fetchMockDataForBusiness(sbi, crn) {
   const currentDir = getCurrentDirectory()
-  const mockFile = path.join(currentDir, 'land-data', `${sbi}.json`)
-  const data = await fs.readFile(mockFile, 'utf8')
-  return JSON.parse(data)
+  const mockSBIFile = path.join(currentDir, 'land-data', `${sbi}.json`)
+  const sbiData = await fs.readFile(mockSBIFile, 'utf8')
+  const mockCRNFile = path.join(currentDir, 'crn-data', `${crn}.json`)
+  const crnData = await fs.readFile(mockCRNFile, 'utf8')
+
+  const mockDALResponse = JSON.parse(sbiData)
+  Object.assign(mockDALResponse.data, JSON.parse(crnData))
+
+  return mockDALResponse
 }
 
 /**
@@ -130,11 +137,11 @@ async function makeConsolidatedViewRequest(request, query) {
  */
 async function fetchFromConsolidatedView(request, { query, formatResponse }) {
   const mockDALEnabled = config.get('consolidatedView.mockDALEnabled')
-  const { credentials: { sbi } = {} } = request.auth ?? {}
+  const { credentials: { sbi, crn } = {} } = request.auth ?? {}
 
   try {
     if (mockDALEnabled) {
-      const mockResponse = await fetchMockDataForBusiness(sbi)
+      const mockResponse = await fetchMockDataForBusiness(sbi, crn)
       return formatResponse(mockResponse)
     }
 

@@ -47,16 +47,6 @@
           "postalCode": "IG9 8DN"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Mr",
-          "first": "Harry",
-          "middle": "Amy",
-          "last": "Turner"
-        }
-      }
     }
   }
 }

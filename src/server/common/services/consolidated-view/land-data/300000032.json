@@ -47,16 +47,6 @@
           "postalCode": "DA81 9NG"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Mr",
-          "first": "Grace",
-          "middle": "John",
-          "last": "Howard"
-        }
-      }
     }
   }
 }

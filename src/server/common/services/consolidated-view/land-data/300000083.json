@@ -47,16 +47,6 @@
           "postalCode": "OX34 6RU"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Ms",
-          "first": "Harry",
-          "middle": "Jade",
-          "last": "Reed"
-        }
-      }
     }
   }
 }

@@ -47,16 +47,6 @@
           "postalCode": "HS6 5BM"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Ms",
-          "first": "Emily",
-          "middle": "Mary",
-          "last": "Turner"
-        }
-      }
     }
   }
 }
