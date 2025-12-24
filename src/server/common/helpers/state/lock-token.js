@@ -8,10 +8,6 @@ import jwt from 'jsonwebtoken'
  * - Identify the user/session attempting to own a lock
  * - Prove the token was minted by grants-ui
  *
- * IMPORTANT:
- * - Token expiry is for security hygiene only (anti-replay)
- * - Lock lifetime is enforced exclusively by the backend
- *
  * @param {Object} params
  * @param {string} params.userId - DEFRA ID of the authenticated user
  * @param {string} params.grantCode - Identifier of the grant code being locked
@@ -26,7 +22,6 @@ export function mintLockToken({ userId, grantCode }) {
     },
     config.get('lockToken.secret'),
     {
-      expiresIn: '5m',
       audience: 'grants-backend',
       issuer: 'grants-ui'
     }
