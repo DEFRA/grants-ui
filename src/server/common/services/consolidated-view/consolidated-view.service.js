@@ -53,7 +53,8 @@ async function getConsolidatedViewRequestOptions(request, { method = 'POST', que
     'x-forwarded-authorization': token,
     Authorization: `Bearer ${await getValidToken()}`
   }
-
+  // eslint-disable-next-line no-console
+  console.log({ headers })
   return {
     method,
     headers,
@@ -180,7 +181,8 @@ export async function fetchParcelsFromDal(request) {
         }
       }
     }`
-
+  // eslint-disable-next-line no-console
+  console.log({ query })
   const formatResponse = (r) => r.data?.business?.land?.parcels || []
   return fetchFromConsolidatedView(request, { query, formatResponse })
 }
