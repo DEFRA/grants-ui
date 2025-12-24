@@ -3,7 +3,6 @@ import jwt from 'jsonwebtoken'
 import { config } from '~/src/config/config.js'
 import { mintLockToken } from './lock-token.js'
 
-// Mock config before importing the module under test
 vi.mock('~/src/config/config.js', () => ({
   config: {
     get: vi.fn()
@@ -15,7 +14,6 @@ describe('mintLockToken', () => {
 
   const baseParams = {
     userId: 'contact-123',
-    sessionId: 'session-abc',
     grantCode: 'GRANT_XYZ'
   }
 
@@ -38,7 +36,6 @@ describe('mintLockToken', () => {
 
     expect(decoded).toMatchObject({
       sub: baseParams.userId,
-      sid: baseParams.sessionId,
       grantCode: baseParams.grantCode,
       typ: 'lock',
       iss: 'grants-ui',

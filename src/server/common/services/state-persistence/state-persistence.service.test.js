@@ -33,7 +33,7 @@ describe('StatePersistenceService', () => {
 
   const fakeRequest = {
     params: { slug: 'grant-a', state: '123' },
-    auth: { credentials: { contactId: 'user-1', sessionId: 'sess-1', crn: 'user-1', relationships: ['rel:biz-1'] } }
+    auth: { credentials: { contactId: 'user-1', crn: 'user-1', relationships: ['rel:biz-1'] } }
   }
 
   beforeEach(() => {
@@ -63,8 +63,7 @@ describe('StatePersistenceService', () => {
       lockToken: 'MOCK-LOCK-TOKEN'
     })
     expect(lockModule.mintLockToken).toHaveBeenCalledWith({
-      userId: 'user-1', // assuming you add contactId to fakeRequest
-      sessionId: 'sess-1', // assuming you add sessionId
+      userId: 'user-1',
       grantCode: 'grant-a'
     })
   })
@@ -114,8 +113,7 @@ describe('StatePersistenceService', () => {
       lockToken: 'MOCK-LOCK-TOKEN'
     })
     expect(lockModule.mintLockToken).toHaveBeenCalledWith({
-      userId: 'user-1', // assuming you add contactId to fakeRequest
-      sessionId: 'sess-1', // assuming you add sessionId
+      userId: 'user-1',
       grantCode: 'grant-a'
     })
   })
@@ -159,8 +157,7 @@ describe('StatePersistenceService', () => {
       lockToken: 'MOCK-LOCK-TOKEN'
     })
     expect(lockModule.mintLockToken).toHaveBeenCalledWith({
-      userId: 'user-1', // assuming you add contactId to fakeRequest
-      sessionId: 'sess-1', // assuming you add sessionId
+      userId: 'user-1',
       grantCode: 'grant-a'
     })
   })
