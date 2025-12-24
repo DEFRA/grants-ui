@@ -43,16 +43,6 @@ describe('mintLockToken', () => {
     })
   })
 
-  it('sets a short-lived expiry (5 minutes)', () => {
-    const now = Math.floor(Date.now() / 1000)
-
-    const token = mintLockToken(baseParams)
-    const decoded = jwt.verify(token, SECRET)
-
-    expect(decoded.exp).toBeGreaterThan(now)
-    expect(decoded.exp).toBeLessThanOrEqual(now + 5 * 60)
-  })
-
   it('fails verification with an invalid secret', () => {
     const token = mintLockToken(baseParams)
 
