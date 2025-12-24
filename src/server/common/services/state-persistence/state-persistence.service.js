@@ -3,6 +3,7 @@ import { clearSavedStateFromApi, fetchSavedStateFromApi } from '../../helpers/st
 import { persistStateToApi } from '../../helpers/state/persist-state-helper.js'
 import { ADDITIONAL_IDENTIFIER, CacheService } from '@defra/forms-engine-plugin/cache-service.js'
 import { log, LogCodes } from '../../helpers/logging/log.js'
+import { mintLockToken } from '../../helpers/state/lock-token.js'
 
 /**
  * Service responsible for persisting form/session state to the backend API.
@@ -42,8 +43,13 @@ export class StatePersistenceService extends CacheService {
         throw err // rethrow — controller will fail cleanly
       }
     })()
+    const lockToken = mintLockToken({
+      userId: request.auth?.credentials?.contactId,
+      sessionId: request.auth?.credentials?.sessionId,
+      grantCode: request.params?.slug
+    })
     try {
-      const state = await fetchSavedStateFromApi(key, request)
+      const state = await fetchSavedStateFromApi(key, request, { lockToken })
       return state ?? {}
     } catch (err) {
       log(
@@ -68,7 +74,12 @@ export class StatePersistenceService extends CacheService {
    */
   async setState(request, state) {
     const key = this._Key(request)
-    await persistStateToApi(state, key)
+    const lockToken = mintLockToken({
+      userId: request.auth?.credentials?.contactId,
+      sessionId: request.auth?.credentials?.sessionId,
+      grantCode: request.params?.slug
+    })
+    await persistStateToApi(state, key, { lockToken })
     return state
   }
 
@@ -111,7 +122,12 @@ export class StatePersistenceService extends CacheService {
     this.logger?.debug(`clearState called for ${key || this.UNKNOWN_SESSION}, but no action taken.`)
 
     if (force) {
-      await clearSavedStateFromApi(key, request)
+      const lockToken = mintLockToken({
+        userId: request.auth?.credentials?.contactId,
+        sessionId: request.auth?.credentials?.sessionId,
+        grantCode: request.params?.slug
+      })
+      await clearSavedStateFromApi(key, request, { lockToken })
     }
   }
 
