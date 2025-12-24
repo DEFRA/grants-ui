@@ -42,14 +42,25 @@ describe('transformAnswerKeysToText', () => {
     expect(result.isInEngland).toBe(true)
   })
 
-  it('should handle array fields (checkbox style) into array of text', () => {
+  it.each([
+    {
+      input: ['scheme-1', 'scheme-2'],
+      expected: ['Scheme One', 'Scheme Two'],
+      description: 'all values found in list'
+    },
+    {
+      input: ['scheme-1', 'unknown-value', 'scheme-2'],
+      expected: ['Scheme One', 'unknown-value', 'Scheme Two'],
+      description: 'some values not found in list (fallback to raw)'
+    }
+  ])('should handle array fields (checkbox style) when $description', ({ input, expected }) => {
     const extendedComponentDefMap = new Map(componentDefMap)
     extendedComponentDefMap.set('multiSelectField', { list: 'schemeList' })
 
-    const state = { multiSelectField: ['scheme-1', 'scheme-2'] }
+    const state = { multiSelectField: input }
     const result = transformAnswerKeysToText(state, extendedComponentDefMap, listDefMap)
 
-    expect(result.multiSelectField).toEqual(['Scheme One', 'Scheme Two'])
+    expect(result.multiSelectField).toEqual(expected)
   })
 
   it('should fallback to using raw value if no list entry is found', () => {

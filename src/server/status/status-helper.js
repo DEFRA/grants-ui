@@ -74,23 +74,6 @@ async function persistStatus(request, newStatus, previousStatus, grantId) {
 }
 
 /**
- * Determines if the request should continue without redirecting
- * Handles special cases where status has already been transitioned
- * @param {string} gasStatus - The status from GAS API
- * @param {string} newStatus - The new Grants UI status
- * @param {string} previousStatus - The previous Grants UI status
- * @returns {boolean} True if request should continue without redirect
- */
-function shouldContinueDefault(gasStatus, newStatus, previousStatus) {
-  return (
-    (gasStatus === 'AWAITING_AMENDMENTS' && newStatus === 'REOPENED' && previousStatus !== 'SUBMITTED') ||
-    (gasStatus === 'APPLICATION_WITHDRAWN' &&
-      newStatus === 'CLEARED' &&
-      !['SUBMITTED', 'REOPENED'].includes(previousStatus))
-  )
-}
-
-/**
  * Determines if the state contains any meaningful values other than the base keys.
  * @param state - The state object to check
  * @returns {boolean} - True if state contains meaningful values, otherwise false
@@ -215,10 +198,6 @@ async function handlePostSubmission(request, h, context, previousStatus, grantCo
   const rule = mapStatusToUrl(previousStatus, gasStatus, postSubmissionRules)
 
   await persistStatus(request, rule.toGrantsStatus, previousStatus, grantId)
-
-  if (shouldContinueDefault(gasStatus, rule.toGrantsStatus, previousStatus)) {
-    return h.continue
-  }
 
   const redirectUrl = rule.toPath === agreements.get('baseUrl') ? rule.toPath : buildRedirectUrl(grantId, rule.toPath)
   return request.path === redirectUrl ? h.continue : h.redirect(redirectUrl).takeover()

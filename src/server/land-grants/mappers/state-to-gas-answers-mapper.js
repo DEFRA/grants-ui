@@ -48,14 +48,10 @@ function findParcelPaymentItem(paymentData, actionCode, sheetId, parcelId) {
  * Finds agreement-level payment item from API response
  * @param {object} paymentData - The payment object from API
  * @param {string} actionCode - The action code
- * @returns {object|null} The agreement-level payment item or null
+ * @returns {object|undefined} The agreement-level payment item or undefined
  */
 function findAgreementPaymentItem(paymentData, actionCode) {
-  if (!paymentData?.agreementLevelItems) {
-    return null
-  }
-
-  return Object.values(paymentData.agreementLevelItems).find((item) => item.code === actionCode)
+  return Object.values(paymentData?.agreementLevelItems ?? {}).find((item) => item.code === actionCode)
 }
 
 /**

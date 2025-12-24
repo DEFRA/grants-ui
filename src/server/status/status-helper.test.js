@@ -263,6 +263,16 @@ describe('formsStatusCallback', () => {
     }
   )
 
+  it('continues without GAS call when status is an unknown value', async () => {
+    context.state = {
+      applicationStatus: 'UNKNOWN_STATUS'
+    }
+    const result = await formsStatusCallback(request, h, context)
+
+    expect(result).toBe(h.continue)
+    expect(getApplicationStatus).not.toHaveBeenCalled()
+  })
+
   it('sets CLEARED state when GAS returns APPLICATION_WITHDRAWN from SUBMITTED grant status', async () => {
     getApplicationStatus.mockResolvedValue({
       json: async () => ({ status: 'APPLICATION_WITHDRAWN' })

@@ -548,6 +548,21 @@ tasklist:
       )
     })
 
+    test('throws error if postSubmission array is empty', async () => {
+      const badDefinition = {
+        metadata: {
+          grantRedirectRules: {
+            preSubmission: [{ toPath: '/start' }],
+            postSubmission: []
+          }
+        }
+      }
+
+      expect(() => validateGrantRedirectRules(testForm, badDefinition)).toThrow(
+        'Invalid redirect configuration in form Test Form: no postSubmission redirect rules defined'
+      )
+    })
+
     test('does not throw when all redirect rules are valid', async () => {
       const goodDefinition = {
         metadata: {

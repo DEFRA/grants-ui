@@ -360,6 +360,19 @@ describe('Agreements Controller', () => {
   })
 
   describe('Request Handling', () => {
+    test('should return successful proxy response directly', async () => {
+      const mockProxyResponse = {
+        statusCode: 200,
+        payload: { agreements: [{ id: '123', name: 'Test Agreement' }] }
+      }
+      mockH.proxy.mockResolvedValue(mockProxyResponse)
+
+      const result = await getAgreementController.handler(mockRequest, mockH)
+
+      expect(result).toBe(mockProxyResponse)
+      expect(mockH.response).not.toHaveBeenCalled()
+    })
+
     test('should work correctly when path parameter is missing', async () => {
       mockRequest.params.path = null
 

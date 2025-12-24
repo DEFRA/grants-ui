@@ -13,8 +13,11 @@ const createMockRequest = (overrides = {}) => ({
 const createMockH = () => ({
   view: (template, context) => ({ template, context }),
   redirect: (url) => {
-    const response = { redirectUrl: url }
-    response.state = () => response
+    const response = { redirectUrl: url, stateCalls: [] }
+    response.state = (name, value, options) => {
+      response.stateCalls.push({ name, value, options })
+      return response
+    }
     return response
   }
 })
@@ -71,7 +74,12 @@ describe('cookies.controller', () => {
         expected: '/page?param=value',
         description: 'relative URL with query params'
       },
-      { payload: null, expected: '/', description: 'null payload' }
+      { payload: null, expected: '/', description: 'null payload' },
+      {
+        payload: { returnUrl: '/cookies?returnUrl=/some-page' },
+        expected: '/cookies?success=true',
+        description: 'returnUrl starting with /cookies'
+      }
     ])('should redirect to "$expected" when $description', ({ payload, expected }) => {
       const mockRequest = createMockRequest({ payload })
       const mockH = createMockH()
@@ -80,5 +88,17 @@ describe('cookies.controller', () => {
 
       expect(result).toHaveProperty('redirectUrl', expected)
     })
+
+    it.each([
+      { analytics: 'yes', expectedConsentValue: 'true' },
+      { analytics: 'no', expectedConsentValue: 'false' }
+    ])(
+      'should set consent cookie to "$expectedConsentValue" when analytics is "$analytics"',
+      ({ analytics, expectedConsentValue }) => {
+        const mockRequest = createMockRequest({ payload: { analytics, returnUrl: '/' } })
+        const result = cookiesPostController.handler(mockRequest, createMockH())
+        expect(result.stateCalls[0].value).toBe(expectedConsentValue)
+      }
+    )
   })
 })
