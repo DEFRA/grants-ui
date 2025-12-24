@@ -3,7 +3,6 @@
  * @property {string} [sbi] - Standard Business Identifier
  * @property {string} [frn] - FRN
  * @property {string} [crn] - Customer Reference Number
- * @property {string} [defraId] - Defra ID
  * @property {string} [clientRef] - Client Reference
  * @property {string} [submittedAt] - Submission date
  */
@@ -20,7 +19,6 @@
  * @param {string} identifiers.sbi - Single Business Identifier
  * @param {string} identifiers.crn - Customer Reference Number
  * @param {string} identifiers.frn - Firm Reference Number
- * @param {string} identifiers.defraId - Defra ID
  * @param {string} identifiers.clientRef - Client reference to be sent to GAS to track applications
  * @param {object} state - the DXT state object containing application details
  * @param {Function} transformAnswers - a function to transform the state object into the desired answers format
@@ -29,7 +27,6 @@
 export const transformStateObjectToGasApplication = (identifiers, state, transformAnswers) => ({
   metadata: {
     ...identifiers,
-    defraId: identifiers?.defraId || 'defraId',
     submittedAt: new Date().toISOString()
   },
   answers: transformAnswers(state)
