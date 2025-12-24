@@ -14,15 +14,13 @@ import jwt from 'jsonwebtoken'
  *
  * @param {Object} params
  * @param {string} params.userId - DEFRA ID of the authenticated user
- * @param {string} params.sessionId - Frontend session identifier (browser-level)
  * @param {string} params.grantCode - Identifier of the grant code being locked
  * @returns {string} Signed JWT lock token
  */
-export function mintLockToken({ userId, sessionId, grantCode }) {
+export function mintLockToken({ userId, grantCode }) {
   return jwt.sign(
     {
       sub: userId,
-      sid: sessionId,
       grantCode,
       typ: 'lock'
     },
