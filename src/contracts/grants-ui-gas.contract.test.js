@@ -1,6 +1,6 @@
 import fs from 'fs'
 import path from 'path'
-import { PactV4, SpecificationVersion } from '@pact-foundation/pact'
+import { PactV4, SpecificationVersion, MatchersV3 } from '@pact-foundation/pact'
 import { describe, expect, it } from 'vitest'
 import { makeGasApiRequest } from '../server/common/services/grant-application/grant-application.service.js'
 
@@ -15,6 +15,8 @@ const provider = new PactV4({
   dir: path.join(path.join(__dirname, './pacts')),
   spec: SpecificationVersion.SPECIFICATION_VERSION_V4
 })
+
+const { string, regex } = MatchersV3
 
 describe('Pact between grants-ui (consumer) and fg-gas-backend (provider)', () => {
   describe('POST /applications', () => {
@@ -60,10 +62,18 @@ describe('Pact between grants-ui (consumer) and fg-gas-backend (provider)', () =
         .withRequest('GET', '/grants/example-grant-with-auth-v3/applications/egwa-123-abc/status', (builder) => {
           builder.headers({
             'Content-Type': 'application/json',
-            Authorization: 'Bearer 00000000-0000-0000-0000-000000000000'
+            Authorization: regex(
+              'Bearer [0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}',
+              'Bearer 00000000-0000-0000-0000-000000000000'
+            )
           })
         })
-        .willRespondWith(200)
+        .willRespondWith(200, (builder) => {
+          builder.headers({ 'Content-Type': 'application/json' })
+          builder.jsonBody({
+            status: string('RECEIVED')
+          })
+        })
         .executeTest(async (mockServer) => {
           const response = await makeGasApiRequest(
             `${mockServer.url}/grants/example-grant-with-auth-v3/applications/egwa-123-abc/status`,
@@ -73,6 +83,51 @@ describe('Pact between grants-ui (consumer) and fg-gas-backend (provider)', () =
           )
 
           expect(response.status).toBe(200)
+          const body = await response.json()
+          expect(body).toHaveProperty('status')
+          expect(typeof body.status).toBe('string')
+        })
+    })
+
+    it('returns 404 when application does not exist', async () => {
+      await provider
+        .addInteraction()
+        .given('example-grant-with-auth-v3 is configured in fg-gas-backend')
+        .uponReceiving('a request for a non-existent application status')
+        .withRequest('GET', '/grants/example-grant-with-auth-v3/applications/non-existent-ref/status', (builder) => {
+          builder.headers({
+            'Content-Type': 'application/json',
+            Authorization: regex(
+              'Bearer [0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}',
+              'Bearer 00000000-0000-0000-0000-000000000000'
+            )
+          })
+        })
+        .willRespondWith(404, (builder) => {
+          builder.headers({ 'Content-Type': 'application/json' })
+          builder.jsonBody({
+            statusCode: 404,
+            error: 'Not Found',
+            message: string(
+              'Application with clientRef "non-existent-ref" and code "example-grant-with-auth-v3" not found'
+            )
+          })
+        })
+        .executeTest(async (mockServer) => {
+          let thrownError
+          try {
+            await makeGasApiRequest(
+              `${mockServer.url}/grants/example-grant-with-auth-v3/applications/non-existent-ref/status`,
+              'example-grant-with-auth-v3',
+              {},
+              { method: 'GET' }
+            )
+          } catch (error) {
+            thrownError = error
+          }
+
+          expect(thrownError).toBeDefined()
+          expect(thrownError.status).toBe(404)
         })
     })
   })
