@@ -87,6 +87,8 @@ services:
       MONGO_URI: mongodb://mongodb:27017/
       GRANTS_UI_BACKEND_AUTH_TOKEN: ${GRANTS_UI_BACKEND_AUTH_TOKEN:-auth_token}
       GRANTS_UI_BACKEND_ENCRYPTION_KEY: ${GRANTS_UI_BACKEND_ENCRYPTION_KEY:-encryption_key}
+      LOCK_TOKEN_SECRET: ${LOCK_TOKEN_SECRET:-dev-lock-secret}
+      APPLICATION_LOCK_TTL_MS: ${APPLICATION_LOCK_TTL_MS:-14400000}
     networks:
       - grants-ui-net
     restart: unless-stopped
