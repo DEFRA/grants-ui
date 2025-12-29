@@ -54,6 +54,6 @@ describe('mintLockToken', () => {
   it('uses the configured lockToken secret', () => {
     mintLockToken(baseParams)
 
-    expect(config.get).toHaveBeenCalledWith('lockToken.secret')
+    expect(config.get).toHaveBeenCalledWith('applicationLock.secret')
   })
 })

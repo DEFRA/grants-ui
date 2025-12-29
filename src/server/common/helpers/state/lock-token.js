@@ -20,7 +20,7 @@ export function mintLockToken({ userId, grantCode }) {
       grantCode,
       typ: 'lock'
     },
-    config.get('lockToken.secret'),
+    config.get('applicationLock.secret'),
     {
       audience: 'grants-backend',
       issuer: 'grants-ui'

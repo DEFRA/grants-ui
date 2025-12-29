@@ -420,7 +420,7 @@ export const config = convict({
       }
     }
   },
-  lockToken: {
+  applicationLock: {
     secret: {
       doc: 'Secret used to sign application lock tokens',
       format: String,
