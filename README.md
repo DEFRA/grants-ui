@@ -20,6 +20,7 @@ Core delivery platform Node.js Frontend Template.
   - [Inspecting cookies](#inspecting-cookies)
 - [Server-side Caching](#server-side-caching)
 - [Session Rehydration](#session-rehydration)
+- [Server to Server (S2S) Authentication](#server-to-server-s2s-authentication)
 - [Land Grants API Authentication](#land-grants-api-authentication)
 - [Redis](#redis)
 - [Proxy](#proxy)
@@ -422,6 +423,77 @@ If session rehydration fails (e.g., backend unavailable, network issues), the ap
 - Log the error for debugging
 - Continue normal operation without restored state
 - Allow the user to proceed with a fresh session
+
+## Server-to-Server (S2S) Authentication
+
+When making API requests to backend services, our helpers handle the necessary authentication and headers. This ensures secure communication without requiring manual token management.
+
+### Authorization Headers
+
+The primary helper is:
+
+```js
+import { createApiHeadersForGrantsUiBackend } from '~/src/server/common/helpers/state/backend-auth-helper.js'
+```
+
+It generates headers that include:
+
+- Content-Type: application/json
+- Authorization: Bearer <encrypted-token> (if a token is configured)
+- Optional additional headers
+
+Example Usage
+
+```js
+const headers = createApiHeadersForGrantsUiBackend()
+```
+
+If a token is configured in the environment (`session.cache.authToken`), the helper automatically:
+
+Encrypts the token using AES-256-GCM with the configured encryption key (session.cache.encryptionKey).
+
+- Base64 encodes the encrypted token.
+- Adds the Authorization header:
+
+```js
+Authorization: Bearer <base64-encrypted-token>
+```
+
+The helper preserves any custom base headers you pass:
+
+```js
+const headers = createApiHeadersForGrantsUiBackend({
+  'User-Agent': 'my-service',
+  'X-Custom-Header': 'value'
+})
+```
+
+### Optional Lock Token
+
+For operations that require a concurrency lock, you can pass an optional `lockToken`:
+
+```js
+const headers = createApiHeadersForGrantsUiBackend({ lockToken: 'LOCK-123' })
+```
+
+This adds an additional header:
+
+```js
+X-Application-Lock-Owner: LOCK-123
+```
+
+without affecting the Authorization header or any base headers.
+
+### Base Headers Only
+
+If no token is configured, the helper returns only the base headers:
+
+```js
+{
+  'Content-Type': 'application/json',
+  'User-Agent': 'my-service'
+}
+```
 
 ## Land Grants Api Authentication
 

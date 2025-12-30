@@ -8,6 +8,13 @@ import {
   TEST_USER_IDS
 } from './test-helpers/auth-test-helpers.js'
 import { mockSimpleRequest } from '~/src/__mocks__/hapi-mocks.js'
+import { createApiHeadersForGrantsUiBackend } from './backend-auth-helper.js'
+vi.mock('./backend-auth-helper.js', () => ({
+  createApiHeadersForGrantsUiBackend: vi.fn(({ lockToken }) => ({
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${Buffer.from('test').toString('base64')}`
+  }))
+}))
 
 const mockFetch = vi.hoisted(() => vi.fn())
 global.fetch = mockFetch
@@ -180,6 +187,15 @@ describe('State API helpers', () => {
           mockRequest
         )
       })
+
+      it('passes the lockToken to createApiHeadersForGrantsUiBackend', async () => {
+        const lockToken = 'LOCK-TOKEN-123'
+        mockFetch.mockResolvedValue(createSuccessfulResponse())
+
+        await fetchSavedStateFromApi(key, mockRequest, { lockToken })
+
+        expect(createApiHeadersForGrantsUiBackend).toHaveBeenCalledWith({ lockToken })
+      })
     })
 
     describe('Without backend endpoint configured', () => {
@@ -332,6 +348,15 @@ describe('State API helpers', () => {
           }),
           mockRequest
         )
+      })
+
+      it('passes the lockToken to createApiHeadersForGrantsUiBackend', async () => {
+        const lockToken = 'LOCK-TOKEN-123'
+        mockFetch.mockResolvedValue(createSuccessfulResponse())
+
+        await clearSavedStateFromApi(key, mockRequest, { lockToken })
+
+        expect(createApiHeadersForGrantsUiBackend).toHaveBeenCalledWith({ lockToken })
       })
     })
 
