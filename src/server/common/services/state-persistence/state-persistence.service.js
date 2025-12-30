@@ -45,7 +45,9 @@ export class StatePersistenceService extends CacheService {
     })()
     const lockToken = mintLockToken({
       userId: request.auth?.credentials?.contactId,
-      grantCode: request.params?.slug
+      sbi: request?.auth?.credentials?.sbi,
+      grantCode: request.params?.slug,
+      grantVersion: 1
     })
     try {
       const state = await fetchSavedStateFromApi(key, request, { lockToken })
@@ -75,7 +77,9 @@ export class StatePersistenceService extends CacheService {
     const key = this._Key(request)
     const lockToken = mintLockToken({
       userId: request.auth?.credentials?.contactId,
-      grantCode: request.params?.slug
+      sbi: request?.auth?.credentials?.sbi,
+      grantCode: request.params?.slug,
+      grantVersion: 1
     })
     await persistStateToApi(state, key, { lockToken })
     return state
@@ -122,7 +126,9 @@ export class StatePersistenceService extends CacheService {
     if (force) {
       const lockToken = mintLockToken({
         userId: request.auth?.credentials?.contactId,
-        grantCode: request.params?.slug
+        sbi: request?.auth?.credentials?.sbi,
+        grantCode: request.params?.slug,
+        grantVersion: 1
       })
       await clearSavedStateFromApi(key, request, { lockToken })
     }

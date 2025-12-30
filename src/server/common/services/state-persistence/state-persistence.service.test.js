@@ -33,7 +33,7 @@ describe('StatePersistenceService', () => {
 
   const fakeRequest = {
     params: { slug: 'grant-a', state: '123' },
-    auth: { credentials: { contactId: 'user-1', crn: 'user-1', relationships: ['rel:biz-1'] } }
+    auth: { credentials: { contactId: 'user-1', sbi: 'biz-1', crn: 'user-1', relationships: ['rel:biz-1'] } }
   }
 
   beforeEach(() => {
@@ -64,7 +64,9 @@ describe('StatePersistenceService', () => {
     })
     expect(lockModule.mintLockToken).toHaveBeenCalledWith({
       userId: 'user-1',
-      grantCode: 'grant-a'
+      sbi: 'biz-1',
+      grantCode: 'grant-a',
+      grantVersion: 1
     })
   })
 
@@ -114,7 +116,9 @@ describe('StatePersistenceService', () => {
     })
     expect(lockModule.mintLockToken).toHaveBeenCalledWith({
       userId: 'user-1',
-      grantCode: 'grant-a'
+      sbi: 'biz-1',
+      grantCode: 'grant-a',
+      grantVersion: 1
     })
   })
 
@@ -158,7 +162,9 @@ describe('StatePersistenceService', () => {
     })
     expect(lockModule.mintLockToken).toHaveBeenCalledWith({
       userId: 'user-1',
-      grantCode: 'grant-a'
+      sbi: 'biz-1',
+      grantCode: 'grant-a',
+      grantVersion: 1
     })
   })
 
