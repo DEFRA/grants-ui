@@ -10,14 +10,18 @@ import jwt from 'jsonwebtoken'
  *
  * @param {Object} params
  * @param {string} params.userId - DEFRA ID of the authenticated user
+ * @param {string} params.sbi - Single Business Identifier defining the lock scope
  * @param {string} params.grantCode - Identifier of the grant code being locked
+ * @param {number} params.grantVersion - Version of the grant being locked
  * @returns {string} Signed JWT lock token
  */
-export function mintLockToken({ userId, grantCode }) {
+export function mintLockToken({ userId, sbi, grantCode, grantVersion = 1 }) {
   return jwt.sign(
     {
       sub: userId,
+      sbi,
       grantCode,
+      grantVersion,
       typ: 'lock'
     },
     config.get('applicationLock.secret'),

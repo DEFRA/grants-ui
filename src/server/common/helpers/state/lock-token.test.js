@@ -14,6 +14,7 @@ describe('mintLockToken', () => {
 
   const baseParams = {
     userId: 'contact-123',
+    sbi: 'business-456',
     grantCode: 'GRANT_XYZ'
   }
 
@@ -36,6 +37,7 @@ describe('mintLockToken', () => {
 
     expect(decoded).toMatchObject({
       sub: baseParams.userId,
+      sbi: baseParams.sbi,
       grantCode: baseParams.grantCode,
       typ: 'lock',
       iss: 'grants-ui',
