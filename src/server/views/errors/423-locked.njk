@@ -1,30 +1,17 @@
-{% extends 'layouts/page.njk' %}
+{% extends 'errors/template.njk' %}
 
 {% block pageTitle %}
   Application in use
 {% endblock %}
 
-{% block content %}
-  <div class="govuk-grid-row">
-    <div class="govuk-grid-column-two-thirds">
+{% block errorContent %}
 
-      <h1 class="govuk-heading-l">
-        Another applicant is currently editing this application
-      </h1>
+<h1 class="govuk-heading-l">
+Another applicant is currently editing this application. You cannot access it until their session ends.
+</h1>
 
-      <p class="govuk-body">
-        You cannot access it until their session ends.
-      </p>
+<p class="govuk-body">
+You will be able to use the service from a later time.
+</p>
 
-      <p class="govuk-body">
-        You will be able to use the service from a later time.
-      </p>
-
-      <p class="govuk-body">
-        Contact the Rural Payments Agency (RPA) by phone or email for support.
-      </p>
-
-      <!-- reuse the contact block you already have -->
-    </div>
-  </div>
 {% endblock %}
