@@ -4,6 +4,7 @@ import { config } from '~/src/config/config.js'
 import { parseSessionKey } from './get-cache-key-helper.js'
 import { createApiHeadersForGrantsUiBackend } from './backend-auth-helper.js'
 import { log, LogCodes } from '../logging/log.js'
+import { createBoomError } from '../errors.js'
 
 const GRANTS_UI_BACKEND_ENDPOINT = config.get('session.cache.apiEndpoint')
 
@@ -77,7 +78,7 @@ async function callStateApi(key, method, request, { lockToken } = {}) {
 
     const errorMessage = `Failed to ${method === 'DELETE' ? 'clear' : 'fetch'} saved state: ${response.status}`
     logError(request, { method, endpoint, identity: key, error: errorMessage })
-    throw new Error(errorMessage)
+    throw createBoomError(response.status, errorMessage)
   }
 
   const json = await response.json()

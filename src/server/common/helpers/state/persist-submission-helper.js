@@ -2,6 +2,7 @@ import 'dotenv/config'
 import { config } from '~/src/config/config.js'
 import { createApiHeadersForGrantsUiBackend } from './backend-auth-helper.js'
 import { log, LogCodes } from '../logging/log.js'
+import { mintLockToken } from './lock-token.js'
 
 const GRANTS_UI_BACKEND_ENDPOINT = config.get('session.cache.apiEndpoint')
 
@@ -25,10 +26,17 @@ export async function persistSubmissionToApi(submission, request) {
     request
   )
 
+  const lockToken = mintLockToken({
+    userId: request.auth?.credentials?.contactId,
+    sbi: request?.auth?.credentials?.sbi,
+    grantCode: request.params?.slug,
+    grantVersion: 1
+  })
+
   try {
     const response = await fetch(url.href, {
       method: 'POST',
-      headers: createApiHeadersForGrantsUiBackend(),
+      headers: createApiHeadersForGrantsUiBackend({ lockToken }),
       body: JSON.stringify({
         ...submission,
         grantVersion: 1 // NOSONAR TODO: Update when support for same grant versioning is implemented
