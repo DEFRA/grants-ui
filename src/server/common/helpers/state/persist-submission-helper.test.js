@@ -21,6 +21,16 @@ const mockCreateApiHeaders = vi.fn().mockReturnValue({
 vi.doMock('./backend-auth-helper.js', () => ({
   createApiHeadersForGrantsUiBackend: mockCreateApiHeaders
 }))
+vi.doMock('jsonwebtoken', () => {
+  const sign = vi.fn(() => 'mock-jwt-token')
+  const verify = vi.fn(() => ({ sub: 'user-1' }))
+
+  return {
+    default: { sign, verify }, // for `import jwt from 'jsonwebtoken'`
+    sign, // for `import { sign } from 'jsonwebtoken'`
+    verify
+  }
+})
 
 let persistSubmissionToApi
 let log
@@ -138,7 +148,7 @@ describe('persistSubmissionToApi', () => {
       const networkError = new Error('Network error')
       fetch.mockRejectedValue(networkError)
 
-      await persistSubmissionToApi(TEST_SUBMISSION)
+      await persistSubmissionToApi(TEST_SUBMISSION, mockRequest)
 
       expect(fetch).toHaveBeenCalledTimes(1)
       expect(log).toHaveBeenCalledWith(
