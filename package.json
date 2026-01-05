@@ -80,7 +80,6 @@
     "@hapi/hapi": "21.4.4",
     "@hapi/inert": "7.1.0",
     "@hapi/jwt": "3.2.1",
-    "@hapi/scooter": "7.0.0",
     "@hapi/vision": "7.0.3",
     "@hapi/yar": "11.0.3",
     "accessible-autocomplete": "3.0.1",
