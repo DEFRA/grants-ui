@@ -3,7 +3,7 @@ import hapi from '@hapi/hapi'
 import Jwt from '@hapi/jwt'
 import Iron, { seal } from '@hapi/iron'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
-import { homeController, indexController } from './home.controller.js'
+import { homeController, indexController, personasController } from './home.controller.js'
 import { createServer } from '~/src/server/index.js'
 import { mockSimpleRequest, mockHapiResponseToolkit } from '~/src/__mocks__/hapi-mocks.js'
 
@@ -153,6 +153,56 @@ describe('#indexController', () => {
 
     const result = indexController.handler(mockRequest, mockH)
     expect(result).toEqual(expect.stringContaining('Index |'))
+  })
+
+  test('Should respond with correct status when integrated with server', async () => {
+    const server = hapi.server({
+      port: 0,
+      host: 'localhost'
+    })
+
+    server.route({
+      method: 'GET',
+      path: '/index',
+      handler: (request, h) => {
+        return h
+          .response('<html><head><title>Index | Test Service</title></head><body>Index Content</body></html>')
+          .type('text/html')
+      }
+    })
+
+    await server.initialize()
+
+    const response = await server.inject({
+      method: 'GET',
+      url: '/index'
+    })
+
+    expect(response.statusCode).toBe(statusCodes.ok)
+    expect(response.result).toEqual(expect.stringContaining('Index |'))
+
+    await server.stop({ timeout: 0 })
+  })
+})
+
+describe('#personasController', () => {
+  test('Should call index controller handler correctly', async () => {
+    const mockRequest = mockSimpleRequest()
+    const mockH = mockHapiResponseToolkit({
+      view: (template, context) => {
+        expect(template).toBe('personas-farm-payments')
+        expect(context).toEqual({
+          defraIdStubLink:
+            'http://localhost:3007/dcidmtest.onmicrosoft.com/b2c_1a_cui_cpdev_signupsigninsfi/oauth2/v2.0/authorize?serviceId=default-service-id&client_id=test-client-id&redirect_uri=%2Ffarm-payments&scope=openid',
+          pageTitle: 'Personas | Farm payments',
+          heading: 'Personas - Farm payments'
+        })
+        return `<html><head><title>${context.pageTitle} | Test Service</title></head><body>Index Page</body></html>`
+      }
+    })
+
+    const result = personasController.handler(mockRequest, mockH)
+    expect(result).toEqual(expect.stringContaining('Personas | Farm payments |'))
   })
 
   test('Should respond with correct status when integrated with server', async () => {

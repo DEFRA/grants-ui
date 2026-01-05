@@ -390,7 +390,7 @@ function handle404WithContext(request, response) {
   }
 }
 
-function renderErrorView(h, statusCode) {
+export function renderErrorView(h, statusCode) {
   // SonarQube does not like this being set as the default for the switch, it's apparently a critical issue.
   let errorView
 

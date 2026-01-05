@@ -174,6 +174,10 @@ export default {
         {
           from: path.join(defraFormsPath, '.public/assets'),
           to: 'dxt-assets'
+        },
+        {
+          from: path.resolve(dirname, 'src/client/images'),
+          to: 'assets/images'
         }
       ]
     })
