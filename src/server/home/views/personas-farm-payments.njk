@@ -1,0 +1,194 @@
+{% extends 'layouts/page.njk' %}
+
+{% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/summary-list/macro.njk" import govukSummaryList %}
+{% from "govuk/components/notification-banner/macro.njk" import govukNotificationBanner %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-full">
+        {{ govukNotificationBanner({
+          titleText: "WARNING - For demonstation, development and testing purposes only",
+          html: "<p class='govuk-body'>Factitious farmer accounts setup and do not represent production data</p>"
+        }) }}
+    </div>
+  </div>
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      <h1 class="govuk-heading-l">
+        <span class="govuk-caption-l">Farm payments</span>
+        Personas
+      </h1>
+    </div>
+  </div>
+
+
+
+
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      <h2 class="govuk-heading-m">
+        <span class="govuk-caption-m">Moorland Farmer</span>
+        Bob Sledd
+      </h2>
+
+      {{ govukSummaryList({
+        rows: [
+          {
+            key: {
+              text: "Farm"
+            },
+            value: {
+              text: "High Fell Farm"
+            }
+          },
+          {
+            key: {
+              text: "Farm type"
+            },
+            value: {
+              text: "Upland moorland sheep & rough grazing"
+            }
+          },
+          {
+            key: {
+              text: "Location"
+            },
+            value: {
+              text: "Moorfield, Glossop, Peak District National Park"
+            }
+          },
+          {
+            key: {
+              text: "Notes"
+            },
+            value: {
+              html: "
+                <p class='govuk-body'>Third-generation owner; prioritises heather management and stock welfare.</p>
+                <ul class='govuk-list govuk-list--bullet'>
+                <li>owns a single farm</li>
+                <li>can apply land actions to all 5 land parcels</li></ul>
+                "
+            }
+          }
+        ]
+      }) }}
+    </div>
+    <div class="govuk-grid-column-one-third">
+       <img src="{{ getAssetPath('assets/images/personas/farmer-1.png')}}" style="max-width: 100%; border-radius:100%" alt="Moorland Farmer">
+
+       <p style="text-align: center">
+         <a class="govuk-link" href="http://localhost:3007/dcidmtest.onmicrosoft.com/oauth2/authresp?crn=1200000001&password=doesNotMatter">Login as Bob</a>
+       </p>
+    </div>
+  </div>
+
+  <hr class="govuk-section-break govuk-section-break--l govuk-section-break--visible">
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      <h2 class="govuk-heading-m">
+        <span class="govuk-caption-m">Moorland Farmer</span>
+        Holly Bennett
+      </h2>
+
+      {{ govukSummaryList({
+        rows: [
+          {
+            key: {
+              text: "Farm"
+            },
+            value: {
+              text: "Hope Valley Farm"
+            }
+          },
+          {
+            key: {
+              text: "Farm type"
+            },
+            value: {
+              text: "Mixed sheep with conservation grazing"
+            }
+          },
+          {
+            key: {
+              text: "Location"
+            },
+            value: {
+              text: "Danby, North York Moors"
+            }
+          },
+          {
+            key: {
+              text: "Notes"
+            },
+            value: {
+              html: "<p class='govuk-body'>
+                Holly took over the family farm in her early 20s after working in environmental consultancy.
+                She runs a mixed flock of Swaledales and Exmoors the business into conservation grazing and
+                agri-environment schemes, using GPS mapping and digital records to balance stock levels with biodiversity targets.
+                </p>
+                <ul class='govuk-list govuk-list--bullet'>
+                <li>owns a single farm</li>
+                <li>can apply land actions to all 5 land parcels</li></ul>
+               "
+            }
+          }
+        ]
+      }) }}
+    </div>
+    <div class="govuk-grid-column-one-third">
+      <img src="{{ getAssetPath('assets/images/personas/farmer-4.png')}}" style="max-width: 100%; border-radius:100%" alt="Moorland Farmer">
+      <p style="text-align: center">
+        <a class="govuk-link" href="http://localhost:3007/dcidmtest.onmicrosoft.com/oauth2/authresp?crn=1200000002&password=doesNotMatter">Login as Holly</a>
+      </p>
+    </div>
+  </div>
+  <hr class="govuk-section-break govuk-section-break--l govuk-section-break--visible">
+
+    <div class="govuk-grid-row">
+      <div class="govuk-grid-column-two-thirds">
+        <h2 class="govuk-heading-m">
+          <span class="govuk-caption-m">Land Agent</span>
+          Nadia Khan
+        </h2>
+
+        {{ govukSummaryList({
+          rows: [
+            {
+              key: {
+                text: "Company"
+              },
+              value: {
+                text: "Collins Rural Management Ltd"
+              }
+            },
+            {
+              key: {
+                text: "Managed farms"
+              },
+              value: {
+                html: "<ul class=govuk-list><li>High Fell Farm</li><li>Hope Valley Farm</li></ul>"
+              }
+            },
+            {
+              key: {
+                text: "Notes"
+              },
+              value: {
+                html: "Has access to multiple upland farms"
+              }
+            }
+          ]
+        }) }}
+      </div>
+      <div class="govuk-grid-column-one-third">
+        <img src="{{ getAssetPath('assets/images/personas/land-agent-1.png')}}" style="max-width: 100%; border-radius:100%" alt="Moorland Farmer">
+        <p style="text-align: center">
+          <a class="govuk-link" href="http://localhost:3007/dcidmtest.onmicrosoft.com/oauth2/authresp?crn=1200000003&password=doesNotMatter">Login as Nadia</a>
+        </p>
+      </div>
+    </div>
+{% endblock %}

@@ -1,4 +1,4 @@
-import { homeController, indexController } from './home.controller.js'
+import { homeController, indexController, personasController } from './home.controller.js'
 /**
  * Sets up the routes used in the home page.
  * These routes are registered in src/server/router.js.
@@ -26,6 +26,16 @@ export const home = {
             auth: false
           },
           ...indexController
+        }
+      ])
+      server.route([
+        {
+          method: 'GET',
+          path: '/personas/farm-payments',
+          options: {
+            auth: false
+          },
+          ...personasController
         }
       ])
     }

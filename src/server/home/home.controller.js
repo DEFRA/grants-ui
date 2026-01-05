@@ -1,3 +1,6 @@
+import { config } from '~/src/config/config.js'
+import { renderErrorView } from '~/src/server/common/helpers/errors.js'
+
 /**
  * A GDS styled example home page controller.
  * Provided as an example, remove or modify as required.
@@ -18,6 +21,19 @@ export const indexController = {
       pageTitle: 'Index',
       heading: 'Index'
     })
+  }
+}
+
+export const personasController = {
+  handler(_request, h) {
+    if (config.get('cdpEnvironment') === 'local') {
+      return h.view('personas-farm-payments', {
+        pageTitle: 'Personas | Farm payments',
+        heading: 'Personas - Farm payments'
+      })
+    } else {
+      return renderErrorView(h, 404)
+    }
   }
 }
 
