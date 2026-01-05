@@ -1,0 +1,52 @@
+{
+  "data": {
+    "business": {
+      "sbi": "200000002",
+      "organisationId": "7400099",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "9142",
+            "sheetId": "SD5761"
+          },
+          {
+            "parcelId": "9150",
+            "sheetId": "SD8558"
+          },
+          {
+            "parcelId": "9160",
+            "sheetId": "SD7148"
+          },
+          {
+            "parcelId": "9177",
+            "sheetId": "SD7246"
+          },
+          {
+            "parcelId": "9179",
+            "sheetId": "SD7553"
+          }
+        ]
+      },
+      "info": {
+        "name": "Hope Valley Farm Ltd",
+        "reference": "0300000099",
+        "email": {
+          "address": "contact+300000099@example.test"
+        },
+        "phone": {
+          "mobile": "07300000099"
+        },
+        "address": {
+          "line1": "100 Chapel Street",
+          "line2": "",
+          "line3": "Danby",
+          "line4": "North York Moors",
+          "line5": "",
+          "street": "",
+          "city": "",
+          "postalCode": "SM50 4BA"
+        }
+      }
+    }
+  }
+}
