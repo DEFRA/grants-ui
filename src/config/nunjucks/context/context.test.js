@@ -355,6 +355,25 @@ describe('context', () => {
       })
     })
 
+    test('Should return empty session when cache is not available', async () => {
+      const requestWithAuth = {
+        ...mockSimpleRequest({ path: '/' }),
+        auth: { isAuthenticated: true, credentials: { sessionId: 'test-session' } },
+        server: { app: {} }
+      }
+
+      const contextImport = await importContext()
+      const contextResult = await contextImport.context(requestWithAuth)
+
+      expect(contextResult.auth).toEqual({
+        isAuthenticated: true,
+        sbi: undefined,
+        name: undefined,
+        organisationId: undefined,
+        role: undefined
+      })
+    })
+
     test('Should handle cache error and log unknown when sessionId becomes falsy', async () => {
       const credentials = { sessionId: 'valid-session' }
       const requestWithAuth = createAuthRequest(credentials, null)
@@ -488,6 +507,52 @@ describe('context', () => {
 
       expect(contextResult.sessionCookieTtl).toBeDefined()
       expect(contextResult.sessionCookieTtl).toBe(14400000)
+    })
+  })
+
+  describe('Fallback context on error', () => {
+    test('returns fallback context with correct structure when buildNavigation throws', async () => {
+      setupManifestSuccess()
+
+      vi.doMock('~/src/config/nunjucks/context/build-navigation.js', () => ({
+        buildNavigation: () => {
+          throw new Error('Navigation build failed')
+        }
+      }))
+
+      const contextImport = await importContext()
+      const contextResult = await contextImport.context(mockRequest)
+
+      expect(mockLog).toHaveBeenCalledWith(
+        MockLogCodes.SYSTEM.SERVER_ERROR,
+        { errorMessage: expect.stringContaining('Error building context:') },
+        mockRequest
+      )
+
+      expect(contextResult).toMatchObject({
+        assetPath: '/public/assets/rebrand',
+        serviceName: 'Manage land-based actions',
+        serviceUrl: '/',
+        cookiePolicyUrl: '/cookies',
+        cookieConsentName: 'cookie_consent',
+        cookieConsentExpiryDays: 365,
+        sessionCookieTtl: 14400000,
+        breadcrumbs: [],
+        navigation: [],
+        auth: {
+          isAuthenticated: false,
+          sbi: null,
+          crn: null,
+          name: null,
+          organisationId: null,
+          organisationName: null,
+          relationshipId: null,
+          role: null
+        }
+      })
+      expect(contextResult.cookieBannerConfig).toBeDefined()
+      expect(contextResult.cookieBannerNoscriptConfig).toBeDefined()
+      expect(typeof contextResult.getAssetPath).toBe('function')
     })
   })
 })

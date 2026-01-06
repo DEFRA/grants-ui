@@ -5,6 +5,10 @@ import Wreck from '@hapi/wreck'
 import { log } from '~/src/server/common/helpers/logging/log.js'
 import { createServer } from '~/src/server/index.js'
 
+vi.hoisted(() => {
+  process.env.DEFRA_ID_CLIENT_ID = 'test-client-id'
+})
+
 vi.unmock('~/src/server/index.js')
 
 vi.mock('hapi-pino', async () => {
