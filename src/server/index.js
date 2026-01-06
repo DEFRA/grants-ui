@@ -4,7 +4,6 @@ import Cookie from '@hapi/cookie'
 import crumb from '@hapi/crumb'
 import h2o2 from '@hapi/h2o2'
 import hapi from '@hapi/hapi'
-import inert from '@hapi/inert'
 
 import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
 import path from 'node:path'
@@ -138,7 +137,6 @@ const registerFormsPlugin = async (server, prefix = '') => {
 
 const registerPlugins = async (server) => {
   await server.register([
-    inert,
     crumb,
     Bell,
     Cookie,
