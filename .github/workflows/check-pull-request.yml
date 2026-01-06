@@ -26,7 +26,8 @@ jobs:
           cache: npm
 
       - name: Check lockfile sync
-        run: npm install --package-lock-only && git diff --exit-code package-lock.json
+        run: |
+          npm install --package-lock-only && git diff --exit-code package-lock.json || echo "ERROR: You need to run npm install and commit package-lock.json"
 
   test:
     name: Test and Lint
