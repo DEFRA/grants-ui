@@ -12,6 +12,22 @@ on:
       - ready_for_review
 
 jobs:
+  checkdeps:
+    name: Check lock file
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+          cache: npm
+
+      - name: Check lockfile sync
+        run: npm install --package-lock-only && git diff --exit-code package-lock.json
+
   test:
     name: Test and Lint
     runs-on: ubuntu-latest
