@@ -115,13 +115,14 @@ services:
       start_period: 40s
 
   fcp-defra-id-stub:
-    image: defradigital/fcp-defra-id-stub:0.34.0
+    image: defradigital/fcp-defra-id-stub:0.46.0
     networks:
       - grants-ui-net
     environment:
       WELL_KNOWN_HOST_OVERRIDE: "${WELL_KNOWN_HOST_OVERRIDE:-http://localhost:3007}"
       WELL_KNOWN_API_HOST_OVERRIDE: "${WELL_KNOWN_API_HOST_OVERRIDE:-http://fcp-defra-id-stub:3007}"
       PORT: 3007
+      ALLOW_LOGIN_QUERY_PARAMS: ${ALLOW_LOGIN_QUERY_PARAMS:-true}
       AUTH_MODE: ${AUTH_MODE:-basic}
       AUTH_OVERRIDE: ${AUTH_OVERRIDE:-}
       AUTH_OVERRIDE_FILE: ${AUTH_OVERRIDE_FILE:-users.json}
