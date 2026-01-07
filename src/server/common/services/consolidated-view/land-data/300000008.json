@@ -47,16 +47,6 @@
           "postalCode": "WS57 3AA"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Mr",
-          "first": "Harry",
-          "middle": "David",
-          "last": "Carter"
-        }
-      }
     }
   }
 }

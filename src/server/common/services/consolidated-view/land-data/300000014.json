@@ -47,16 +47,6 @@
           "postalCode": "B63 9DB"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Mr",
-          "first": "Noah",
-          "middle": "Michael",
-          "last": "Carter"
-        }
-      }
     }
   }
 }

@@ -23,7 +23,7 @@ vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
 
 vi.mock('fs/promises')
 
-const getMockFilePath = (sbi) => {
+const getSBIMockFilePath = (sbi) => {
   return path.join(
     process.cwd(),
     'src',
@@ -34,6 +34,10 @@ const getMockFilePath = (sbi) => {
     'land-data',
     `${sbi}.json`
   )
+}
+
+const getCRNMockFilePath = (crn) => {
+  return path.join(process.cwd(), 'src', 'server', 'common', 'services', 'consolidated-view', 'crn-data', `${crn}.json`)
 }
 
 const mockFetchInstance = mockFetch()
@@ -64,13 +68,11 @@ describe('Consolidated View Service', () => {
           parcels: [
             {
               parcelId: '0155',
-              sheetId: 'SD7946',
-              area: 4.0383
+              sheetId: 'SD7946'
             },
             {
               parcelId: '4509',
-              sheetId: 'SD7846',
-              area: 0.0633
+              sheetId: 'SD7846'
             }
           ]
         }
@@ -275,7 +277,7 @@ describe('Consolidated View Service', () => {
         mockDALEnabled: true
       })
 
-      const mockFileData = {
+      const mockSBIFileData = {
         data: {
           business: {
             info: {
@@ -295,30 +297,34 @@ describe('Consolidated View Service', () => {
               }
             },
             countyParishHoldings: [{ cphNumber: 'MOCK-CPH67890' }]
-          },
-          customer: {
-            info: {
-              name: {
-                title: 'Mrs',
-                first: 'Jane',
-                middle: 'Mary',
-                last: 'Smith'
-              }
+          }
+        }
+      }
+
+      const mockCRNFileData = {
+        customer: {
+          info: {
+            name: {
+              title: 'Mrs',
+              first: 'Jane',
+              middle: 'Mary',
+              last: 'Smith'
             }
           }
         }
       }
 
-      fs.readFile.mockResolvedValueOnce(JSON.stringify(mockFileData))
+      fs.readFile.mockResolvedValueOnce(JSON.stringify(mockSBIFileData))
+      fs.readFile.mockResolvedValueOnce(JSON.stringify(mockCRNFileData))
 
       const result = await fetchBusinessAndCPH(mockRequest)
 
       expect(result).toEqual({
-        business: mockFileData.data.business.info,
+        business: mockSBIFileData.data.business.info,
         countyParishHoldings: 'MOCK-CPH67890',
-        customer: mockFileData.data.customer.info
+        customer: mockCRNFileData.customer.info
       })
-      expect(fs.readFile).toHaveBeenCalledTimes(1)
+      expect(fs.readFile).toHaveBeenCalledTimes(2)
       expect(mockFetchInstance).not.toHaveBeenCalled()
     })
   })
@@ -384,7 +390,7 @@ describe('Consolidated View Service', () => {
   })
 
   describe('Mock mode functionality', () => {
-    const mockFileData = {
+    const mockSBIFileData = {
       data: {
         business: {
           sbi: mockSbi,
@@ -402,14 +408,17 @@ describe('Consolidated View Service', () => {
             name: 'Mock Business',
             email: { address: 'mock@business.com' }
           }
-        },
-        customer: {
-          info: {
-            name: {
-              title: 'Mrs',
-              first: 'Jane',
-              last: 'Smith'
-            }
+        }
+      }
+    }
+
+    const mockCRNFileData = {
+      customer: {
+        info: {
+          name: {
+            title: 'Mrs',
+            first: 'Jane',
+            last: 'Smith'
           }
         }
       }
@@ -424,27 +433,30 @@ describe('Consolidated View Service', () => {
     })
 
     it('should read mock data from file for parcels', async () => {
-      fs.readFile.mockResolvedValueOnce(JSON.stringify(mockFileData))
+      fs.readFile.mockResolvedValueOnce(JSON.stringify(mockSBIFileData))
+      fs.readFile.mockResolvedValueOnce(JSON.stringify(mockCRNFileData))
 
       const result = await fetchParcelsFromDal(mockRequest)
 
-      expect(result).toEqual(mockFileData.data.business.land.parcels)
-      expect(fs.readFile).toHaveBeenCalledTimes(1)
-      expect(fs.readFile).toHaveBeenCalledWith(getMockFilePath(mockSbi), 'utf8')
+      expect(result).toEqual(mockSBIFileData.data.business.land.parcels)
+      expect(fs.readFile).toHaveBeenCalledTimes(2)
+      expect(fs.readFile).toHaveBeenCalledWith(getSBIMockFilePath(mockSbi), 'utf8')
+      expect(fs.readFile).toHaveBeenCalledWith(getCRNMockFilePath(mockCrn), 'utf8')
       expect(mockFetchInstance).not.toHaveBeenCalled()
       expect(getValidToken).not.toHaveBeenCalled()
     })
 
     it('should read mock data from file for business and customer info', async () => {
-      fs.readFile.mockResolvedValueOnce(JSON.stringify(mockFileData))
+      fs.readFile.mockResolvedValueOnce(JSON.stringify(mockSBIFileData))
+      fs.readFile.mockResolvedValueOnce(JSON.stringify(mockCRNFileData))
 
       const result = await fetchBusinessAndCustomerInformation(mockRequest)
 
       expect(result).toEqual({
-        business: mockFileData.data.business.info,
-        customer: mockFileData.data.customer.info
+        business: mockSBIFileData.data.business.info,
+        customer: mockCRNFileData.customer.info
       })
-      expect(fs.readFile).toHaveBeenCalledTimes(1)
+      expect(fs.readFile).toHaveBeenCalledTimes(2)
       expect(mockFetchInstance).not.toHaveBeenCalled()
     })
 

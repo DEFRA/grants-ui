@@ -47,16 +47,6 @@
           "postalCode": "EH91 1TJ"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Mr",
-          "first": "Quinn",
-          "middle": "William",
-          "last": "Turner"
-        }
-      }
     }
   }
 }

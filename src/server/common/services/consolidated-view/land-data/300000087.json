@@ -47,16 +47,6 @@
           "postalCode": "PL38 1TW"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Ms",
-          "first": "Liam",
-          "middle": "Daniel",
-          "last": "Reed"
-        }
-      }
     }
   }
 }

@@ -1,5 +1,7 @@
 import { vi } from 'vitest'
 
+process.env.DEFRA_ID_CLIENT_ID = process.env.DEFRA_ID_CLIENT_ID || 'test-client-id'
+
 vi.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js', () => {
   class QuestionPageController {
     constructor(page, model, options = {}) {

@@ -47,16 +47,6 @@
           "postalCode": "HD2 1ZL"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Ms",
-          "first": "Alice",
-          "middle": "Claire",
-          "last": "Turner"
-        }
-      }
     }
   }
 }

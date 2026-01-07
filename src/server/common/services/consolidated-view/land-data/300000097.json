@@ -47,16 +47,6 @@
           "postalCode": "SK48 2AA"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Ms",
-          "first": "Vincent",
-          "middle": "Alan",
-          "last": "Reed"
-        }
-      }
     }
   }
 }

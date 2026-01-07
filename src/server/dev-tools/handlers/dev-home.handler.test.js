@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import { devHomeHandler } from './dev-home.handler.js'
+import { devHomeHandler, generateToolsSection } from './dev-home.handler.js'
 import { getAllForms } from '../utils/index.js'
 import { mockHapiRequest, mockHapiResponseToolkit } from '~/src/__mocks__/hapi-mocks.js'
 
@@ -58,5 +58,13 @@ describe('dev-home.handler', () => {
 
     expect(result).toBe('final-response')
     expect(mockH.response).toHaveBeenCalledWith(expect.stringContaining('Available Tools'))
+  })
+})
+
+describe('generateToolsSection', () => {
+  test('should not render examples section when tool has no examples', () => {
+    const tools = [{ name: 'Tool', description: 'desc' }]
+    const result = generateToolsSection(tools)
+    expect(result).not.toContain('Example forms:')
   })
 })

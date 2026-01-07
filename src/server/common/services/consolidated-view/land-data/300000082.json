@@ -47,16 +47,6 @@
           "postalCode": "OL33 5RU"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Mr",
-          "first": "Grace",
-          "middle": "Alice",
-          "last": "Reed"
-        }
-      }
     }
   }
 }

@@ -47,16 +47,6 @@
           "postalCode": "BB65 2EC"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Mr",
-          "first": "Peter",
-          "middle": "George",
-          "last": "Carter"
-        }
-      }
     }
   }
 }

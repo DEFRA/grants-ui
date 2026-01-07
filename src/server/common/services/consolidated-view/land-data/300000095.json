@@ -47,16 +47,6 @@
           "postalCode": "SE46 9ZZ"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Ms",
-          "first": "Thomas",
-          "middle": "Lee",
-          "last": "Reed"
-        }
-      }
     }
   }
 }

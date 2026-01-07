@@ -47,16 +47,6 @@
           "postalCode": "BS71 8HD"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Mr",
-          "first": "Vincent",
-          "middle": "Alice",
-          "last": "Howard"
-        }
-      }
     }
   }
 }

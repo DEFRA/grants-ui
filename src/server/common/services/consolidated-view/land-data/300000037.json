@@ -47,16 +47,6 @@
           "postalCode": "DN86 5PH"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Ms",
-          "first": "Liam",
-          "middle": "Alan",
-          "last": "Howard"
-        }
-      }
     }
   }
 }

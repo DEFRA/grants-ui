@@ -47,16 +47,6 @@
           "postalCode": "HP4 3AM"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Ms",
-          "first": "Chloe",
-          "middle": "Jade",
-          "last": "Turner"
-        }
-      }
     }
   }
 }

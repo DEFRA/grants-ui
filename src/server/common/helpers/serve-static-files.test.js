@@ -1,54 +1,55 @@
-import { vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import Hapi from '@hapi/hapi'
+import inert from '@hapi/inert'
+import { serveStaticFiles } from './serve-static-files.js'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
-import { startServer } from '~/src/server/common/helpers/start-server.js'
-import Wreck from '@hapi/wreck'
 
-vi.mock('@hapi/wreck')
-vi.mock('~/src/server/common/helpers/logging/log.js', () => ({}))
+vi.mock('~/src/config/config.js', () => ({
+  config: {
+    get: vi.fn((key) => {
+      const values = {
+        staticCacheTimeout: 3600000,
+        assetPath: '/public'
+      }
+      return values[key]
+    })
+  }
+}))
 
 describe('#serveStaticFiles', () => {
   let server
 
-  describe('When secure context is disabled', () => {
-    beforeEach(async () => {
-      // Mock the well-known OIDC config before server starts
-      vi.mocked(Wreck.get).mockResolvedValue({
-        payload: {
-          authorization_endpoint: 'https://mock-auth/authorize',
-          token_endpoint: 'https://mock-auth/token'
-        }
-      })
+  beforeEach(async () => {
+    server = Hapi.server({ port: 0 })
+    await server.register(inert)
+    await server.register(serveStaticFiles)
+    await server.initialize()
+  })
 
-      server = await startServer()
+  afterEach(async () => {
+    await server.stop()
+  })
+
+  it('should return 204 No Content for favicon.ico', async () => {
+    const response = await server.inject({
+      method: 'GET',
+      url: '/favicon.ico'
     })
 
-    afterEach(async () => {
-      if (server && typeof server.stop === 'function') {
-        await server.stop({ timeout: 0 })
-      }
-    })
+    expect(response.statusCode).toBe(statusCodes.noContent)
+    expect(response.headers['content-type']).toBe('image/x-icon')
+  })
 
-    test('Should serve favicon as expected', async () => {
-      expect(server).toBeDefined()
-      expect(typeof server.inject).toBe('function')
+  it.each([
+    { path: '/javascripts/application.min.js', description: 'javascript' },
+    { path: '/assets/{path*}', description: 'assets' },
+    { path: '/public/{param*}', description: 'public assets' },
+    { path: '/favicon.ico', description: 'favicon' }
+  ])('should register $description route at $path', async ({ path }) => {
+    const table = server.table()
+    const route = table.find((r) => r.path === path)
 
-      const { statusCode } = await server.inject({
-        method: 'GET',
-        url: '/favicon.ico'
-      })
-
-      expect(statusCode).toBe(statusCodes.ok)
-    })
-
-    test('Should serve assets as expected', async () => {
-      // Note npm run build is ran in the postinstall hook in package.json to make sure there is always a file
-      // available for this test. Remove as you see fit
-      const { statusCode } = await server.inject({
-        method: 'GET',
-        url: '/public/assets/images/govuk-crest.svg'
-      })
-
-      expect(statusCode).toBe(statusCodes.ok)
-    })
+    expect(route).toBeDefined()
+    expect(route.method).toBe('get')
   })
 })

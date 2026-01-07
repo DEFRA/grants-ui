@@ -47,16 +47,6 @@
           "postalCode": "HU7 6CN"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Mr",
-          "first": "Finley",
-          "middle": "Charlotte",
-          "last": "Turner"
-        }
-      }
     }
   }
 }

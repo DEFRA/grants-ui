@@ -101,14 +101,18 @@ describe('contentSecurityPolicy plugin', () => {
       expect(mockHeader).toHaveBeenNthCalledWith(3, 'X-CSP-Nonce', request.app.cspNonce)
     })
 
-    it('should handle response with view variety', async () => {
+    it.each([
+      { initialContext: {}, description: 'empty context object' },
+      { initialContext: undefined, description: 'undefined context' },
+      { initialContext: { existingProp: 'value' }, description: 'context with existing properties' }
+    ])('should add cspNonce to view response with $description', async ({ initialContext }) => {
       const request = {
         response: {
           isBoom: false,
           header: mockHeader,
           variety: 'view',
           source: {
-            context: {}
+            context: initialContext
           }
         },
         app: {}
@@ -118,6 +122,9 @@ describe('contentSecurityPolicy plugin', () => {
       await onPreResponse(request, h)
 
       expect(request.response.source.context).toHaveProperty('cspNonce', request.app.cspNonce)
+      if (initialContext?.existingProp) {
+        expect(request.response.source.context).toHaveProperty('existingProp', 'value')
+      }
     })
   })
 

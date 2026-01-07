@@ -1,128 +1,14 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
-import { formatCurrency } from '~/src/config/nunjucks/filters/filters.js'
-import { landActionWithCode } from '~/src/server/land-grants/utils/land-action-with-code.js'
-import { actionGroups, calculateGrantPayment } from '../services/land-grants.service.js'
-import { stringifyParcel } from '../utils/format-parcel.js'
+import { calculateGrantPayment } from '../services/land-grants.service.js'
 import { log, LogCodes } from '../../common/helpers/logging/log.js'
-
-const createLinks = (data) => {
-  const parcelParam = stringifyParcel({
-    parcelId: data.parcelId,
-    sheetId: data.sheetId
-  })
-  const parcel = `${data.sheetId} ${data.parcelId}`
-  const links = []
-
-  links.push(
-    `<li class='govuk-summary-list__actions-list-item'><a class='govuk-link' href='select-actions-for-land-parcel?parcelId=${parcelParam}'>Change</a><span class="govuk-visually-hidden"> land action ${data.code} for parcel ${parcel}</span></li>
-    <li class='govuk-summary-list__actions-list-item'><a class='govuk-link' href='remove-action?parcelId=${parcelParam}&action=${data.code}'>Remove</a><span class="govuk-visually-hidden"> land action ${data.code} for parcel ${parcel}</span></li>`
-  )
-
-  return {
-    html: `<ul class='govuk-summary-list__actions-list'>${links.join('')}</ul>`
-  }
-}
+import {
+  formatPrice,
+  mapPaymentInfoToParcelItems,
+  mapAdditionalYearlyPayments
+} from '~/src/server/land-grants/view-models/payment.view-model.js'
 
 export default class LandActionsCheckPageController extends QuestionPageController {
   viewName = 'land-actions-check'
-
-  /**
-   * Get formatted price from pence value
-   * @param {number} value - Value in pence
-   * @returns {string} - Formatted currency string
-   */
-  getPrice(value) {
-    return formatCurrency(value / 100, 'en-GB', 'GBP', 2, 'currency')
-  }
-
-  /**
-   * Build additional yearly payments view data
-   * @param {object} paymentInfo - Payment information from API
-   * @returns {Array} - Array of additional payment items
-   */
-  getAdditionalYearlyPayments(paymentInfo) {
-    return Object.values(paymentInfo?.agreementLevelItems || {}).map((data) => ({
-      items: [
-        [
-          {
-            text: `Additional payment per agreement per year for ${landActionWithCode(data.description, data.code)}`
-          },
-          {
-            html: `<div class="govuk-!-width-one-half">${this.getPrice(data.annualPaymentPence)}</div>`,
-            format: 'numeric',
-            classes: 'govuk-!-padding-right-5'
-          }
-        ]
-      ]
-    }))
-  }
-
-  /**
-   * Create parcel item row for display
-   * @param {object} data - Payment item data
-   * @returns {Array} - Table row data
-   */
-  createParcelItemRow(data) {
-    const linksCell = createLinks(data)
-
-    return [
-      { text: landActionWithCode(data.description, data.code) },
-      { text: data.quantity, format: 'numeric' },
-      { text: this.getPrice(data.annualPaymentPence), format: 'numeric' },
-      linksCell
-    ]
-  }
-
-  buildLandParcelHeaderActions = (sheetId, parcelId) => {
-    return {
-      text: 'Remove',
-      href: `remove-parcel?parcelId=${sheetId}-${parcelId}`,
-      hiddenTextValue: `all actions for Land Parcel ${sheetId} ${parcelId}`
-    }
-  }
-
-  buildLandParcelFooterActions = (selectedActions, sheetId, parcelId) => {
-    const uniqueCodes = [
-      ...new Set(
-        Object.values(selectedActions)
-          .filter((item) => `${item.sheetId} ${item.parcelId}` === `${sheetId} ${parcelId}`)
-          .map((item) => item.code)
-      )
-    ]
-
-    const hasActionFromGroup = actionGroups.map((group) => uniqueCodes.some((code) => group.actions.includes(code)))
-
-    if (hasActionFromGroup.every(Boolean)) {
-      return {}
-    }
-
-    return {
-      text: 'Add another action',
-      href: `select-actions-for-land-parcel?parcelId=${sheetId}-${parcelId}`,
-      hiddenTextValue: `to Land Parcel ${sheetId} ${parcelId}`
-    }
-  }
-
-  getParcelItems = (paymentInfo) => {
-    const groupedByParcel = Object.values(paymentInfo?.parcelItems || {}).reduce((acc, data) => {
-      const parcelKey = `${data.sheetId} ${data.parcelId}`
-
-      if (!acc[parcelKey]) {
-        acc[parcelKey] = {
-          cardTitle: `Land parcel ${parcelKey}`,
-          headerActions: this.buildLandParcelHeaderActions(data.sheetId, data.parcelId),
-          footerActions: this.buildLandParcelFooterActions(paymentInfo?.parcelItems, data.sheetId, data.parcelId),
-          parcelId: parcelKey,
-          items: []
-        }
-      }
-
-      acc[parcelKey].items.push(this.createParcelItemRow(data))
-      return acc
-    }, {})
-
-    return Object.values(groupedByParcel)
-  }
 
   /**
    * Validate POST request payload
@@ -170,7 +56,7 @@ export default class LandActionsCheckPageController extends QuestionPageControll
       ...state,
       parcelItems,
       additionalYearlyPayments,
-      totalYearlyPayment: this.getPrice(annualTotalPence || 0),
+      totalYearlyPayment: formatPrice(annualTotalPence || 0),
       errors: errorMessages
     })
   }
@@ -184,8 +70,8 @@ export default class LandActionsCheckPageController extends QuestionPageControll
     const paymentResult = await calculateGrantPayment(state)
     const { payment } = paymentResult
 
-    const parcelItems = this.getParcelItems(payment)
-    const additionalYearlyPayments = this.getAdditionalYearlyPayments(payment)
+    const parcelItems = mapPaymentInfoToParcelItems(payment)
+    const additionalYearlyPayments = mapAdditionalYearlyPayments(payment)
 
     return { payment, parcelItems, additionalYearlyPayments }
   }
@@ -207,7 +93,7 @@ export default class LandActionsCheckPageController extends QuestionPageControll
       ...state,
       parcelItems,
       additionalYearlyPayments,
-      totalYearlyPayment: this.getPrice(payment?.annualTotalPence || 0)
+      totalYearlyPayment: formatPrice(payment?.annualTotalPence || 0)
     }
   }
 

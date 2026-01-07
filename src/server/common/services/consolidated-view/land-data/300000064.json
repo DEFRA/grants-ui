@@ -47,16 +47,6 @@
           "postalCode": "L15 5GP"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Mr",
-          "first": "Noah",
-          "middle": "Grace",
-          "last": "Reed"
-        }
-      }
     }
   }
 }

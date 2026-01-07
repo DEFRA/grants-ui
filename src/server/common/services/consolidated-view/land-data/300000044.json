@@ -47,16 +47,6 @@
           "postalCode": "EX93 3UK"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Mr",
-          "first": "Sophia",
-          "middle": "Michael",
-          "last": "Turner"
-        }
-      }
     }
   }
 }

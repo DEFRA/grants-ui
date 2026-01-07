@@ -47,16 +47,6 @@
           "postalCode": "WC52 7WY"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Ms",
-          "first": "Chloe",
-          "middle": "Anne",
-          "last": "Carter"
-        }
-      }
     }
   }
 }

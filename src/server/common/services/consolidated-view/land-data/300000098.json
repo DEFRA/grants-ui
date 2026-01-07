@@ -47,16 +47,6 @@
           "postalCode": "SL49 3BA"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Mr",
-          "first": "Willow",
-          "middle": "David",
-          "last": "Reed"
-        }
-      }
     }
   }
 }

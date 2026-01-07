@@ -47,16 +47,6 @@
           "postalCode": "NE27 8NT"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Mr",
-          "first": "Alice",
-          "middle": "George",
-          "last": "Reed"
-        }
-      }
     }
   }
 }

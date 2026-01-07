@@ -47,16 +47,6 @@
           "postalCode": "CB73 1JE"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Mr",
-          "first": "Xavier",
-          "middle": "Peter",
-          "last": "Howard"
-        }
-      }
     }
   }
 }

@@ -47,16 +47,6 @@
           "postalCode": "SA45 8ZZ"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Mr",
-          "first": "Sophia",
-          "middle": "Grace",
-          "last": "Reed"
-        }
-      }
     }
   }
 }

@@ -47,16 +47,6 @@
           "postalCode": "E89 8SJ"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Mr",
-          "first": "Olivia",
-          "middle": "Rose",
-          "last": "Howard"
-        }
-      }
     }
   }
 }

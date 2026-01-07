@@ -47,16 +47,6 @@
           "postalCode": "DT87 6RH"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Mr",
-          "first": "Mia",
-          "middle": "David",
-          "last": "Howard"
-        }
-      }
     }
   }
 }

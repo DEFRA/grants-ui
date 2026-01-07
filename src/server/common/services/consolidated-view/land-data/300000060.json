@@ -47,16 +47,6 @@
           "postalCode": "IV11 1EO"
         }
       }
-    },
-    "customer": {
-      "info": {
-        "name": {
-          "title": "Mr",
-          "first": "Jack",
-          "middle": "James",
-          "last": "Turner"
-        }
-      }
     }
   }
 }

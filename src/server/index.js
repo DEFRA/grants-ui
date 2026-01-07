@@ -5,7 +5,6 @@ import crumb from '@hapi/crumb'
 import h2o2 from '@hapi/h2o2'
 import hapi from '@hapi/hapi'
 import inert from '@hapi/inert'
-import Scooter from '@hapi/scooter'
 
 import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
 import path from 'node:path'
@@ -143,7 +142,6 @@ const registerPlugins = async (server) => {
     crumb,
     Bell,
     Cookie,
-    Scooter,
     h2o2,
     auth,
     requestLogger,
