@@ -1474,6 +1474,12 @@ When running in development mode, the demo confirmation handler:
 - Includes error details when configuration issues occur
 - Uses mock data for testing dynamic content insertion
 
+#### Test Error Pages
+
+Test error page rendering at: `http://localhost:3000/dev/test-503`
+
+This route triggers a 503 Service Unavailable error to verify the error page template renders correctly.
+
 ## Analytics
 
 For more information about analytics, see [Analytics](./docs/ANALYTICS.md).
