@@ -10,7 +10,8 @@ services:
       LAND_GRANTS_API_URL: http://land-grants-backend:3009
 
   land-grants-backend-postgres:
-    image: postgis/postgis:16-3.4
+    image: defradigital/land-grants-postgres-seeded:latest
+    pull_policy: always
     environment:
       <<: *common-postgres
     ports:

@@ -51,7 +51,7 @@ Core delivery platform Node.js Frontend Template.
   - [Integration Points](#integration-points)
   - [Testing](#testing)
   - [Monitoring and Observability](#monitoring-and-observability)
-  - [Migration from Manual Logging](#migration-from-manual-logging)
+  - [Standard Logging Approach](#standard-logging-approach)
   - [Adding New Log Codes](#adding-new-log-codes)
   - [Development Workflow](#development-workflow)
 - [Analytics](#analytics)
@@ -863,25 +863,29 @@ npm run
 
 #### Available Scripts
 
-- **`build`** - Build both frontend and server for production
-- **`build:frontend`** - Build frontend assets with webpack for production
-- **`build:server`** - Transpile server code with Babel for production
-- **`dev`** - Start development environment with frontend and server watch mode
-- **`dev:debug`** - Start development environment with debug mode enabled
-- **`docker:dev`** - Start development environment using Docker Compose
-- **`docker:dev:rebuild`** - Rebuild and restart Docker development environment
-- **`format`** - Format code using Prettier
-- **`format:check`** - Check code formatting without making changes
-- **`lint`** - Run all linting checks (JavaScript, SCSS, TypeScript)
-- **`lint:fix`** - Automatically fix linting issues where possible
-- **`test`** - Run all tests with coverage (includes unit and integration tests)
-- **`test:unit`** - Run unit tests only (fast, excludes slow integration/contract tests)
-- **`test:contracts`** - Run Pact contract tests only
-- **`test:acceptance`** - Run acceptance tests
-- **`test:watch`** - Run tests in watch mode
-- **`start`** - Start production server (requires build first)
-- **`snyk-test`** - Run Snyk security vulnerability tests
-- **`snyk-monitor`** - Monitor project with Snyk
+- **`build`** - Orchestrates the full build process (frontend then server)
+- **`build:frontend`** - Compiles client-side assets using Webpack
+- **`build:server`** - Transpiles server code using Babel to the `.server` directory
+- **`dev`** - Runs both frontend and server in watch mode for local development
+- **`dev:debug`** - Runs development environment with Node inspector enabled
+- **`docker:up`** / **`docker:down`** - Manage the standard Docker Compose stack
+- **`docker:reset`** - Tear down Docker environment including volumes and local images
+- **`docker:rebuild`** - Trigger a fresh build of Docker images
+- **`docker:debug`** - Run the UI in a one-off Docker container with debugger ports exposed
+- **`docker:ha:up`** / **`docker:ha:down`** - Manage a high-availability stack with scaled services and Nginx proxy
+- **`docker:landgrants:up`** / **`docker:landgrants:ha:up`** - Manage stacks that include the Land Grants API and Postgres
+- **`format`** / **`format:check`** - Format code or check formatting using Prettier
+- **`lint`** - Run all linting checks (JavaScript, SCSS, and TypeScript types)
+- **`lint:fix`** - Automatically fix ESLint issues
+- **`test`** - Run all tests with Vitest and generate coverage reports
+- **`test:unit`** - Run unit tests only (isolated from integration/contracts)
+- **`test:contracts`** - Run Pact contract tests
+- **`test:acceptance`** - Execute end-to-end journey tests via shell script
+- **`test:watch`** - Run Vitest in interactive watch mode
+- **`test:stryker`** - Run Vitest specifically for Stryker mutation testing
+- **`start`** - Start the production server (requires `npm run build` first)
+- **`snyk-test`** / **`snyk-monitor`** - Run security vulnerability scans
+- **`unseal:cookie`** - Utility to decrypt and inspect session cookies
 
 ### Update dependencies
 
@@ -970,9 +974,10 @@ And optionally:
 npm run docker:landgrants:up
 ```
 
-Note: Running the Land Grants API and Postgres requires land data to be populated in the Land Grants Postgres database.
-This must be done manually using the compose scripts in the [land-grants-api](http://github.com/DEFRA/land-grants-api) repository
-and only needs to be done once, unless you need to clear and re-seed the database, or if you remove the `postgres_data` volume.
+Note: The Land Grants Postgres image contains preseeded data that enables immediate local development and testing
+and is kept up-to-date automatically with changes to the [land-grants-api](http://github.com/DEFRA/land-grants-api) repo.
+
+If you require local data or newer data not yet merged, you can use the compose scripts in the [land-grants-api](http://github.com/DEFRA/land-grants-api) repository to seed the database.
 
 Once that repository is cloned locally, `compose.migrations.yml` provides `database-up` and `database-down` services to run migrations against the Postgres database.
 
@@ -985,35 +990,6 @@ npm run docker:migrate:ext:up
 # Roll back all migrations to the base tag v0.0.0
 npm run docker:migrate:ext:down
 ```
-
-#### Land Grants changelog checker
-
-When you bring up the Land Grants stack using either of these commands:
-
-- `npm run docker:landgrants:up`
-- `npm run docker:landgrants:ha:up`
-
-a small post-hook script (`tools/check-landgrants-changelog.js`) runs automatically.
-It:
-
-- Detects whether the Land Grants Postgres database has been seeded at least once
-  (by checking for the `public.actions` table).
-- Derives a baseline timestamp from the Postgres data volume (preferably the mtime of
-  `/var/lib/postgresql/data/global`, falling back to the volume creation time).
-- Calls the GitHub API to look for commits in `DEFRA/land-grants-api` under `changelog/`
-  that are newer than that baseline.
-
-Depending on what it finds:
-
-- If the DB has never been seeded, it prints a boxed notice telling you to run the
-  migration/seed scripts.
-- If the DB has been seeded and newer changelog commits exist, it prints a boxed
-  notice recommending that you re-seed.
-- Otherwise, it logs a short "no changes" message.
-
-This check is advisory only and never fails the Docker command. To skip it entirely
-set `LANDGRANTS_CHANGELOG_CHECK=false` in the environment before running the
-`docker:landgrants:*` scripts.
 
 #### High-availability (HA) local proxy
 
