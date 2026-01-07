@@ -54,10 +54,10 @@ describe('dev-tools index', () => {
       })
     })
 
-    test('should register both routes', () => {
+    test('should register all routes', () => {
       devTools.plugin.register(server)
 
-      expect(server.route).toHaveBeenCalledTimes(2)
+      expect(server.route).toHaveBeenCalledTimes(3)
     })
 
     test('should disable auth for both routes', () => {
@@ -127,8 +127,8 @@ describe('dev-tools index', () => {
       devTools.plugin.register(server)
       devTools.plugin.register(secondServer)
 
-      expect(server.route).toHaveBeenCalledTimes(2)
-      expect(secondServer.route).toHaveBeenCalledTimes(2)
+      expect(server.route).toHaveBeenCalledTimes(3)
+      expect(secondServer.route).toHaveBeenCalledTimes(3)
     })
 
     test('should have plugin structure matching Hapi plugin interface', () => {

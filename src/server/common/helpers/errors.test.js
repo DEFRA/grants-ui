@@ -136,6 +136,11 @@ describe('#catchAll', () => {
       name: `I'm a teapot`,
       statusCode: statusCodes.imATeapot,
       expectedView: 'errors/500'
+    },
+    {
+      name: `serviceUnavailable`,
+      statusCode: statusCodes.serviceUnavailable,
+      expectedView: 'errors/503'
     }
   ]
 
