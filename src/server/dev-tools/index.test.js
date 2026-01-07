@@ -57,7 +57,7 @@ describe('dev-tools index', () => {
     test('should register all routes', () => {
       devTools.plugin.register(server)
 
-      expect(server.route).toHaveBeenCalledTimes(3)
+      expect(server.route).toHaveBeenCalledTimes(8)
     })
 
     test('should disable auth for both routes', () => {
@@ -78,6 +78,30 @@ describe('dev-tools index', () => {
       {
         name: 'demo confirmation route',
         path: '/dev/demo-confirmation/{slug}'
+      },
+      {
+        name: 'test 400 route',
+        path: '/dev/test-400'
+      },
+      {
+        name: 'test 401 route',
+        path: '/dev/test-401'
+      },
+      {
+        name: 'test 403 route',
+        path: '/dev/test-403'
+      },
+      {
+        name: 'test 404 route',
+        path: '/dev/test-404'
+      },
+      {
+        name: 'test 500 route',
+        path: '/dev/test-500'
+      },
+      {
+        name: 'test 503 route',
+        path: '/dev/test-503'
       }
     ]
 
@@ -127,8 +151,8 @@ describe('dev-tools index', () => {
       devTools.plugin.register(server)
       devTools.plugin.register(secondServer)
 
-      expect(server.route).toHaveBeenCalledTimes(3)
-      expect(secondServer.route).toHaveBeenCalledTimes(3)
+      expect(server.route).toHaveBeenCalledTimes(8)
+      expect(secondServer.route).toHaveBeenCalledTimes(8)
     })
 
     test('should have plugin structure matching Hapi plugin interface', () => {
@@ -140,7 +164,13 @@ describe('dev-tools index', () => {
 
     const methodVariations = [
       { path: '/dev', expectedMethod: 'GET' },
-      { path: '/dev/demo-confirmation/{slug}', expectedMethod: 'GET' }
+      { path: '/dev/demo-confirmation/{slug}', expectedMethod: 'GET' },
+      { path: '/dev/test-400', expectedMethod: 'GET' },
+      { path: '/dev/test-401', expectedMethod: 'GET' },
+      { path: '/dev/test-403', expectedMethod: 'GET' },
+      { path: '/dev/test-404', expectedMethod: 'GET' },
+      { path: '/dev/test-500', expectedMethod: 'GET' },
+      { path: '/dev/test-503', expectedMethod: 'GET' }
     ]
 
     test.each(methodVariations)('should use GET method for $path', ({ path, expectedMethod }) => {

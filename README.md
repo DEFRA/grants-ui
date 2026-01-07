@@ -1452,9 +1452,18 @@ When running in development mode, the demo confirmation handler:
 
 #### Test Error Pages
 
-Test error page rendering at: `http://localhost:3000/dev/test-503`
+Test error page rendering at the following routes. `http://localhost:3000/dev/` +
 
-This route triggers a 503 Service Unavailable error to verify the error page template renders correctly.
+| Route      | Error Code | Description           |
+| ---------- | ---------- | --------------------- |
+| `test-400` | 400        | Bad Request           |
+| `test-401` | 401        | Unauthorized          |
+| `test-403` | 403        | Forbidden             |
+| `test-404` | 404        | Not Found             |
+| `test-500` | 500        | Internal Server Error |
+| `test-503` | 503        | Service Unavailable   |
+
+These routes trigger the corresponding HTTP errors to verify error page templates render correctly.
 
 ## Analytics
 
