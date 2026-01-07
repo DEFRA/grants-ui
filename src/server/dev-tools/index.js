@@ -1,4 +1,5 @@
 import { devHomeHandler, demoConfirmationHandler } from './handlers/index.js'
+import Boom from '@hapi/boom'
 
 /**
  * Development tools plugin - only registers routes when in development mode
@@ -24,6 +25,17 @@ export const devTools = {
           auth: false
         },
         handler: demoConfirmationHandler
+      })
+
+      server.route({
+        method: 'GET',
+        path: '/dev/test-503',
+        options: {
+          auth: false
+        },
+        handler: () => {
+          throw Boom.serverUnavailable('Service temporarily unavailable')
+        }
       })
     }
   }
