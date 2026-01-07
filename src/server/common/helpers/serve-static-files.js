@@ -16,6 +16,7 @@ const options = {
 export const serveStaticFiles = {
   plugin: {
     name: 'staticFiles',
+    dependencies: ['@hapi/inert'],
     register(server) {
       server.route([
         {
