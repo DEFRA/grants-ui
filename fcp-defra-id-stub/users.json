@@ -1684,6 +1684,48 @@
           "name": "Golden Grange"
         }
       ]
+    },
+
+    {
+      "crn": 1200000001,
+      "firstName": "Bob",
+      "lastName": "Sledd",
+      "organisations": [
+        {
+          "organisationId": "7400100",
+          "sbi": 200000001,
+          "name": "High Fell Farm"
+        }
+      ]
+    },
+    {
+      "crn": 1200000002,
+      "firstName": "Holly",
+      "lastName": "Bennett",
+      "organisations": [
+        {
+          "organisationId": "7400099",
+          "sbi": 200000002,
+          "name": "Hope Valley"
+        }
+      ]
+    },
+    {
+      "crn": 1200000003,
+      "firstName": "Nadia",
+      "lastName": "Khan",
+      "organisations": [
+        {
+          "organisationId": "7400099",
+          "sbi": 200000002,
+          "name": "Hope Valley"
+        },
+        {
+          "organisationId": "7400100",
+          "sbi": 200000001,
+          "name": "High Fell Farm"
+        }
+      ]
     }
   ]
 }
