@@ -23,6 +23,7 @@ import { catchAll } from '~/src/server/common/helpers/errors.js'
 import { requestLogger } from '~/src/server/common/helpers/logging/request-logger.js'
 import { setupProxy } from '~/src/server/common/helpers/proxy/setup-proxy.js'
 import { pulse } from '~/src/server/common/helpers/pulse.js'
+import { updateVisitedSections } from '~/src/server/common/helpers/visited-sections-guard.js'
 import { requestTracing } from '~/src/server/common/helpers/request-tracing.js'
 import { secureContext } from '~/src/server/common/helpers/secure-context/index.js'
 import { getCacheEngine } from '~/src/server/common/helpers/session-cache/cache-engine.js'
@@ -209,14 +210,11 @@ export async function createServer() {
 
   server.ext('onPreHandler', (request, h) => {
     /** @type {string[]} */
-    const prev = request.yar.get('visitedSubSections') || []
-    const entry = request?.paramsArray[0] || null
+    const visitedSections = request.yar.get('visitedSubSections') || []
+    const currentSectionId = request?.paramsArray[0] || null
 
-    if (entry && !prev.includes(entry)) {
-      prev.push(entry)
-    }
-
-    request.yar.set('visitedSubSections', prev)
+    const updatedSections = updateVisitedSections(visitedSections, currentSectionId)
+    request.yar.set('visitedSubSections', updatedSections)
 
     return h.continue
   })
