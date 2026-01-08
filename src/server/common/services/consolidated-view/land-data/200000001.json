@@ -1,0 +1,52 @@
+{
+  "data": {
+    "business": {
+      "sbi": "200000001",
+      "organisationId": "7400100",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "9193",
+            "sheetId": "SD7560"
+          },
+          {
+            "parcelId": "9205",
+            "sheetId": "SD5848"
+          },
+          {
+            "parcelId": "9215",
+            "sheetId": "SD5649"
+          },
+          {
+            "parcelId": "9218",
+            "sheetId": "SD6165"
+          },
+          {
+            "parcelId": "9223",
+            "sheetId": "SD5763"
+          }
+        ]
+      },
+      "info": {
+        "name": "High Fell Farm",
+        "reference": "0300000100",
+        "email": {
+          "address": "contact+300000100@example.test"
+        },
+        "phone": {
+          "mobile": "07300000100"
+        },
+        "address": {
+          "line1": "1 Moorfield",
+          "line2": "Glossop",
+          "line3": "High Peak",
+          "line4": "Derbyshire",
+          "line5": "",
+          "street": "1 Moorfield",
+          "city": "",
+          "postalCode": "SK13 5CB"
+        }
+      }
+    }
+  }
+}

@@ -378,17 +378,20 @@ function renderErrorView(h, statusCode) {
   let errorView
 
   switch (statusCode) {
-    case 400:
+    case statusCodes.badRequest:
       errorView = 'errors/400'
       break
-    case 401:
+    case statusCodes.unauthorized:
       errorView = 'errors/401'
       break
-    case 403:
+    case statusCodes.forbidden:
       errorView = 'errors/403'
       break
-    case 404:
+    case statusCodes.notFound:
       errorView = 'errors/404'
+      break
+    case statusCodes.serviceUnavailable:
+      errorView = 'errors/503'
       break
     default:
       errorView = 'errors/500'

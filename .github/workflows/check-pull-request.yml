@@ -12,6 +12,24 @@ on:
       - ready_for_review
 
 jobs:
+  checkdeps:
+    name: Check lock file
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+          cache: npm
+
+      - name: Check lockfile sync
+        run: |
+          npm install --package-lock-only && git diff --exit-code package-lock.json || \
+          (echo "ERROR: You need to run npm install and commit package-lock.json" && exit 1)
+
   test:
     name: Test and Lint
     runs-on: ubuntu-latest
@@ -93,7 +111,7 @@ jobs:
           path: coverage
 
       - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
+        uses: SonarSource/sonarqube-scan-action@v7
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
