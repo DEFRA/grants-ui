@@ -1,11 +1,13 @@
 import { devHomeHandler, demoConfirmationHandler } from './handlers/index.js'
 import Boom from '@hapi/boom'
 
-const errorRoutes = [
+/** @type {Array<{code: number, boomMethod: string, message: string}>} */
+export const errorRoutes = [
   { code: 400, boomMethod: 'badRequest', message: 'Bad request' },
   { code: 401, boomMethod: 'unauthorized', message: 'Unauthorized' },
   { code: 403, boomMethod: 'forbidden', message: 'Forbidden' },
   { code: 404, boomMethod: 'notFound', message: 'Not found' },
+  { code: 429, boomMethod: 'tooManyRequests', message: 'Too many requests' },
   { code: 500, boomMethod: 'internal', message: 'Internal server error' },
   { code: 503, boomMethod: 'serverUnavailable', message: 'Service temporarily unavailable' }
 ]

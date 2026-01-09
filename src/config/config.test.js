@@ -173,4 +173,51 @@ describe('config', () => {
       expect(config.get('cookieConsent.expiryDays')).toBe(90)
     })
   })
+
+  describe('rate limit configuration', () => {
+    test('has correct default values in non-production', async () => {
+      process.env.NODE_ENV = 'development'
+
+      const { config } = await import('./config.js')
+
+      expect(config.get('rateLimit.enabled')).toBe(false)
+      expect(config.get('rateLimit.trustProxy')).toBe(true)
+      expect(config.get('rateLimit.userLimit')).toBe(100)
+      expect(config.get('rateLimit.userLimitPeriod')).toBe(60000)
+      expect(config.get('rateLimit.pathLimit')).toBe(2000)
+      expect(config.get('rateLimit.authLimit')).toBe(5)
+      expect(config.get('rateLimit.authEndpointUserLimit')).toBe(10)
+      expect(config.get('rateLimit.authEndpointPathLimit')).toBe(500)
+    })
+
+    test('enables rate limiting by default in production', async () => {
+      process.env.NODE_ENV = 'production'
+
+      const { config } = await import('./config.js')
+
+      expect(config.get('rateLimit.enabled')).toBe(true)
+    })
+
+    test('allows rate limit settings to be overridden via environment variables', async () => {
+      process.env.RATE_LIMIT_ENABLED = 'true'
+      process.env.RATE_LIMIT_TRUST_PROXY = 'false'
+      process.env.RATE_LIMIT_USER_LIMIT = '500'
+      process.env.RATE_LIMIT_USER_LIMIT_PERIOD = '120000'
+      process.env.RATE_LIMIT_PATH_LIMIT = '10000'
+      process.env.RATE_LIMIT_AUTH_LIMIT = '10'
+      process.env.RATE_LIMIT_AUTH_ENDPOINT_USER_LIMIT = '20'
+      process.env.RATE_LIMIT_AUTH_ENDPOINT_PATH_LIMIT = '1000'
+
+      const { config } = await import('./config.js')
+
+      expect(config.get('rateLimit.enabled')).toBe(true)
+      expect(config.get('rateLimit.trustProxy')).toBe(false)
+      expect(config.get('rateLimit.userLimit')).toBe(500)
+      expect(config.get('rateLimit.userLimitPeriod')).toBe(120000)
+      expect(config.get('rateLimit.pathLimit')).toBe(10000)
+      expect(config.get('rateLimit.authLimit')).toBe(10)
+      expect(config.get('rateLimit.authEndpointUserLimit')).toBe(20)
+      expect(config.get('rateLimit.authEndpointPathLimit')).toBe(1000)
+    })
+  })
 })

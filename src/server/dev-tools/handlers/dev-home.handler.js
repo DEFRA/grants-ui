@@ -1,4 +1,5 @@
 import { getAllForms } from '../utils/index.js'
+import { errorRoutes } from '../index.js'
 
 /**
  * Get example forms for demo links
@@ -21,10 +22,21 @@ export function buildToolsConfig(exampleForms) {
     {
       name: 'Demo Confirmation Pages',
       description: 'Test the config-driven confirmation page with different form configurations',
+      pattern: '/dev/demo-confirmation/{slug}',
       examples: exampleForms.map((form) => ({
         name: form.title,
         path: `/dev/demo-confirmation/${form.slug}`,
         slug: form.slug
+      }))
+    },
+    {
+      name: 'Test Error Pages',
+      description: 'Trigger HTTP error responses to test error page templates',
+      pattern: '/dev/test-{code}',
+      examples: errorRoutes.map(({ code, message }) => ({
+        name: `${code} - ${message}`,
+        path: `/dev/test-${code}`,
+        slug: `test-${code}`
       }))
     }
   ]
@@ -61,6 +73,52 @@ export function generateEnvironmentInfo() {
 }
 
 /**
+ * Generate pattern HTML if pattern exists
+ * @param {string|undefined} pattern - URL pattern for the tool
+ * @returns {string} Pattern HTML or empty string
+ */
+function generatePatternHtml(pattern) {
+  if (!pattern) {
+    return ''
+  }
+  return `<p style="margin-top: 10px; font-size: 0.9em; color: #666;">
+            Pattern: <code>${pattern}</code>
+          </p>`
+}
+
+/**
+ * Generate examples HTML if examples exist
+ * @param {Array|undefined} examples - Array of example objects
+ * @param {string|undefined} pattern - URL pattern for the tool
+ * @returns {string} Examples HTML or empty string
+ */
+function generateExamplesHtml(examples, pattern) {
+  if (!examples) {
+    return ''
+  }
+  const exampleItems = examples
+    .map(
+      (example) => `
+              <li style="margin-bottom: 5px;">
+                <a href="${example.path}">${example.name}</a>
+                <code style="background: #f0f0f0; padding: 2px 4px; font-size: 0.9em; margin-left: 8px;">${example.slug}</code>
+              </li>
+            `
+    )
+    .join('')
+
+  return `
+        <div style="margin-top: 15px;">
+          <strong>Example forms:</strong>
+          <ul style="margin-top: 8px;">
+            ${exampleItems}
+          </ul>
+          ${generatePatternHtml(pattern)}
+        </div>
+      `
+}
+
+/**
  * Generate tools section HTML
  * @param {Array} tools - Array of tool configurations
  * @returns {string} Tools section HTML
@@ -72,30 +130,7 @@ export function generateToolsSection(tools) {
     <div class="tool">
       <h3>${tool.name}</h3>
       <p>${tool.description}</p>
-      ${
-        tool.examples
-          ? `
-        <div style="margin-top: 15px;">
-          <strong>Example forms:</strong>
-          <ul style="margin-top: 8px;">
-            ${tool.examples
-              .map(
-                (example) => `
-              <li style="margin-bottom: 5px;">
-                <a href="${example.path}">${example.name}</a>
-                <code style="background: #f0f0f0; padding: 2px 4px; font-size: 0.9em; margin-left: 8px;">${example.slug}</code>
-              </li>
-            `
-              )
-              .join('')}
-          </ul>
-          <p style="margin-top: 10px; font-size: 0.9em; color: #666;">
-            Pattern: <code>/dev/demo-confirmation/{slug}</code>
-          </p>
-        </div>
-      `
-          : ''
-      }
+      ${generateExamplesHtml(tool.examples, tool.pattern)}
     </div>
   `
     )

@@ -1,6 +1,9 @@
 import { getAgreementController } from '~/src/server/agreements/controller.js'
 import { config } from '~/src/config/config.js'
 
+const AUTH_ENDPOINT_USER_LIMIT = config.get('rateLimit.authEndpointUserLimit')
+const AUTH_ENDPOINT_PATH_LIMIT = config.get('rateLimit.authEndpointPathLimit')
+
 /**
  * Sets up the routes used in the /agreements page.
  * @satisfies {ServerRegisterPluginObject<void>}
@@ -30,7 +33,11 @@ export const agreements = {
               strategy: 'session'
             },
             plugins: {
-              crumb: false // Disable CSRF protection for this route
+              crumb: false, // Disable CSRF protection for this route
+              'hapi-rate-limit': {
+                userLimit: AUTH_ENDPOINT_USER_LIMIT,
+                pathLimit: AUTH_ENDPOINT_PATH_LIMIT
+              }
             },
             payload: {
               output: 'stream',

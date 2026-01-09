@@ -16,5 +16,5 @@
     "types": ["vitest", "vitest/globals"]
   },
   "exclude": [".cache", ".public", ".server", "coverage", "node_modules", "src/**/*.test.js"],
-  "include": ["**/*.cjs", "**/*.js", ".eslintrc.*", ".prettierrc.*"]
+  "include": ["**/*.cjs", "**/*.js", ".eslintrc.*", ".prettierrc.*", "types/**/*.d.ts"]
 }

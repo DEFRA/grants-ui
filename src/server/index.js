@@ -11,6 +11,7 @@ import { config } from '~/src/config/config.js'
 import { context } from '~/src/config/nunjucks/context/context.js'
 import { viewPaths, nunjucksConfig } from '~/src/config/nunjucks/nunjucks.js'
 import auth from '~/src/plugins/auth.js'
+import { rateLimitPlugin } from '~/src/plugins/rate-limit.js'
 import sso from '~/src/plugins/sso.js'
 import { contentSecurityPolicy } from '~/src/plugins/content-security-policy.js'
 import { formsStatusCallback } from '~/src/server/status/status-helper.js'
@@ -143,6 +144,7 @@ const registerPlugins = async (server) => {
     Cookie,
     h2o2,
     auth,
+    rateLimitPlugin,
     requestLogger,
     requestTracing,
     secureContext,
