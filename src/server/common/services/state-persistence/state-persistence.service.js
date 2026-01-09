@@ -43,12 +43,7 @@ export class StatePersistenceService extends CacheService {
         throw err // rethrow — controller will fail cleanly
       }
     })()
-    const lockToken = mintLockToken({
-      userId: request.auth?.credentials?.contactId,
-      sbi: request?.auth?.credentials?.sbi,
-      grantCode: request.params?.slug,
-      grantVersion: 1
-    })
+    const lockToken = this._buildLockToken(request)
     try {
       const state = await fetchSavedStateFromApi(key, request, { lockToken })
       return state ?? {}
@@ -75,12 +70,7 @@ export class StatePersistenceService extends CacheService {
    */
   async setState(request, state) {
     const key = this._Key(request)
-    const lockToken = mintLockToken({
-      userId: request.auth?.credentials?.contactId,
-      sbi: request?.auth?.credentials?.sbi,
-      grantCode: request.params?.slug,
-      grantVersion: 1
-    })
+    const lockToken = this._buildLockToken(request)
     await persistStateToApi(state, key, { lockToken })
     return state
   }
@@ -124,12 +114,7 @@ export class StatePersistenceService extends CacheService {
     this.logger?.debug(`clearState called for ${key || this.UNKNOWN_SESSION}, but no action taken.`)
 
     if (force) {
-      const lockToken = mintLockToken({
-        userId: request.auth?.credentials?.contactId,
-        sbi: request?.auth?.credentials?.sbi,
-        grantCode: request.params?.slug,
-        grantVersion: 1
-      })
+      const lockToken = this._buildLockToken(request)
       await clearSavedStateFromApi(key, request, { lockToken })
     }
   }
@@ -152,6 +137,36 @@ export class StatePersistenceService extends CacheService {
   _ConfirmationKey(request) {
     const key = this._Key(request)
     return `${key}${ADDITIONAL_IDENTIFIER.Confirmation}`
+  }
+
+  /**
+   * Builds an application lock token for the current request.
+   *
+   * The lock token is used by the backend API to enforce exclusive
+   * access to application state (read/write/clear operations).
+   *
+   * The token scopes the lock to:
+   * - the authenticated user
+   * - the SBI (organisation)
+   * - the grant (code + version)
+   *
+   * @param {import('@hapi/hapi').Request} request - Hapi request object
+   * @returns {string} A signed JWT lock token
+   */
+  _buildLockToken(request) {
+    const { sbi, grantCode } = getCacheKey(request)
+    const userId = request.auth?.credentials?.contactId
+
+    if (typeof userId !== 'string' || !userId) {
+      throw new Error('Missing user identity for lock token')
+    }
+
+    return mintLockToken({
+      userId,
+      sbi,
+      grantCode,
+      grantVersion: 1
+    })
   }
 }
 
