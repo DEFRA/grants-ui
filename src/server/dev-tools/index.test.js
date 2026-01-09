@@ -1,5 +1,8 @@
 import { vi } from 'vitest'
-import { devTools } from './index.js'
+import { devTools, errorRoutes } from './index.js'
+
+// Number of non-error routes (dev home + demo confirmation)
+const BASE_ROUTES_COUNT = 2
 
 vi.mock('./handlers/index.js', () => ({
   devHomeHandler: vi.fn().mockReturnValue('dev-home-response'),
@@ -57,7 +60,8 @@ describe('dev-tools index', () => {
     test('should register all routes', () => {
       devTools.plugin.register(server)
 
-      expect(server.route).toHaveBeenCalledTimes(8)
+      const expectedRouteCount = BASE_ROUTES_COUNT + errorRoutes.length
+      expect(server.route).toHaveBeenCalledTimes(expectedRouteCount)
     })
 
     test('should disable auth for both routes', () => {
@@ -70,39 +74,14 @@ describe('dev-tools index', () => {
       })
     })
 
+    // Generate route configurations dynamically from errorRoutes
     const routeConfigurations = [
-      {
-        name: 'dev home route',
-        path: '/dev'
-      },
-      {
-        name: 'demo confirmation route',
-        path: '/dev/demo-confirmation/{slug}'
-      },
-      {
-        name: 'test 400 route',
-        path: '/dev/test-400'
-      },
-      {
-        name: 'test 401 route',
-        path: '/dev/test-401'
-      },
-      {
-        name: 'test 403 route',
-        path: '/dev/test-403'
-      },
-      {
-        name: 'test 404 route',
-        path: '/dev/test-404'
-      },
-      {
-        name: 'test 500 route',
-        path: '/dev/test-500'
-      },
-      {
-        name: 'test 503 route',
-        path: '/dev/test-503'
-      }
+      { name: 'dev home route', path: '/dev' },
+      { name: 'demo confirmation route', path: '/dev/demo-confirmation/{slug}' },
+      ...errorRoutes.map(({ code }) => ({
+        name: `test ${code} route`,
+        path: `/dev/test-${code}`
+      }))
     ]
 
     test.each(routeConfigurations)('should register $name with correct configuration', ({ path }) => {
@@ -151,8 +130,9 @@ describe('dev-tools index', () => {
       devTools.plugin.register(server)
       devTools.plugin.register(secondServer)
 
-      expect(server.route).toHaveBeenCalledTimes(8)
-      expect(secondServer.route).toHaveBeenCalledTimes(8)
+      const expectedRouteCount = BASE_ROUTES_COUNT + errorRoutes.length
+      expect(server.route).toHaveBeenCalledTimes(expectedRouteCount)
+      expect(secondServer.route).toHaveBeenCalledTimes(expectedRouteCount)
     })
 
     test('should have plugin structure matching Hapi plugin interface', () => {
@@ -160,24 +140,6 @@ describe('dev-tools index', () => {
       expect(devTools.plugin).toHaveProperty('name')
       expect(devTools.plugin).toHaveProperty('register')
       expect(typeof devTools.plugin.register).toBe('function')
-    })
-
-    const methodVariations = [
-      { path: '/dev', expectedMethod: 'GET' },
-      { path: '/dev/demo-confirmation/{slug}', expectedMethod: 'GET' },
-      { path: '/dev/test-400', expectedMethod: 'GET' },
-      { path: '/dev/test-401', expectedMethod: 'GET' },
-      { path: '/dev/test-403', expectedMethod: 'GET' },
-      { path: '/dev/test-404', expectedMethod: 'GET' },
-      { path: '/dev/test-500', expectedMethod: 'GET' },
-      { path: '/dev/test-503', expectedMethod: 'GET' }
-    ]
-
-    test.each(methodVariations)('should use GET method for $path', ({ path, expectedMethod }) => {
-      devTools.plugin.register(server)
-
-      const routeCall = server.route.mock.calls.find((call) => call[0].path === path)
-      expect(routeCall[0].method).toBe(expectedMethod)
     })
 
     test('should handle missing server object', () => {
@@ -202,9 +164,19 @@ describe('dev-tools index', () => {
       expect(typeof devTools.plugin.register).toBe('function')
     })
 
-    test('should not export any other properties', () => {
+    test('devTools should only export plugin property', () => {
       const exportedKeys = Object.keys(devTools)
       expect(exportedKeys).toEqual(['plugin'])
+    })
+
+    test('should export errorRoutes array', () => {
+      expect(Array.isArray(errorRoutes)).toBe(true)
+      expect(errorRoutes.length).toBeGreaterThan(0)
+      errorRoutes.forEach((route) => {
+        expect(route).toHaveProperty('code')
+        expect(route).toHaveProperty('boomMethod')
+        expect(route).toHaveProperty('message')
+      })
     })
   })
 })
