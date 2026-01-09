@@ -138,6 +138,11 @@ describe('#catchAll', () => {
       expectedView: 'errors/423'
     },
     {
+      name: 'Too Many Requests',
+      statusCode: statusCodes.tooManyRequests,
+      expectedView: 'errors/429'
+    },
+    {
       name: `I'm a teapot`,
       statusCode: statusCodes.imATeapot,
       expectedView: 'errors/500'

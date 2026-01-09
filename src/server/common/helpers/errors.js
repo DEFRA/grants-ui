@@ -410,6 +410,9 @@ function renderErrorView(h, statusCode) {
     case statusCodes.locked:
       errorView = 'errors/423'
       break
+    case statusCodes.tooManyRequests:
+      errorView = 'errors/429'
+      break
     case statusCodes.serviceUnavailable:
       errorView = 'errors/503'
       break
