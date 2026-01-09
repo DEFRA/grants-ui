@@ -215,8 +215,7 @@ describe('DeclarationPageController', () => {
           clientRef: 'ref123',
           sbi: 'sbi123',
           frn: 'frn',
-          crn: '1234567890',
-          defraId: 'defraId'
+          crn: '1234567890'
         },
         { transformedState: true, referenceNumber: 'REF123' },
         expect.any(Function)
