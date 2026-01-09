@@ -28,7 +28,7 @@ else
     exit 1
 fi
 
-COMPOSE_COMMAND='docker compose -f compose.yml -f compose.ha.yml -f compose.ci.yml'
+COMPOSE_COMMAND='docker compose -f compose.yml -f compose.ha.yml -f compose.land-grants.yml -f compose.ci.yml'
 echo "Building docker compose containers..."
 eval "${COMPOSE_COMMAND} build --quiet > /dev/null 2>&1"
 echo "Starting services with docker compose..."
