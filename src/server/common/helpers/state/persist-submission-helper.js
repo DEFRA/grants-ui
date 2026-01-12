@@ -28,7 +28,7 @@ export async function persistSubmissionToApi(submission, request) {
 
   const lockToken = mintLockToken({
     userId: request.auth?.credentials?.contactId,
-    sbi: request?.auth?.credentials?.sbi,
+    sbi: request.auth?.credentials?.sbi,
     grantCode: request.params?.slug,
     grantVersion: 1
   })

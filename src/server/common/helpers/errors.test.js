@@ -816,7 +816,7 @@ describe('#createBoomError', () => {
     expect(error.output.payload.error).toBe('Unprocessable Entity')
   })
 
-  test('Should return locked (423) for status code 422', () => {
+  test('Should return locked (423) for status code 423', () => {
     const error = createBoomError(423, 'Locked message')
 
     expect(error.isBoom).toBe(true)
