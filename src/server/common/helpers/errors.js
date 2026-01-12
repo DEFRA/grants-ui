@@ -409,8 +409,9 @@ function renderErrorView(h, statusCode) {
       break
     case statusCodes.serviceUnavailable:
       errorView = 'errors/503'
-    case 423:
-      errorView = 'errors/423-locked'
+      break
+    case statusCodes.locked:
+      errorView = 'errors/423'
       break
     default:
       errorView = 'errors/500'
