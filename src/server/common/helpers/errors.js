@@ -232,7 +232,7 @@ function logDebugInformation(request, response, statusCode, errorContext) {
 }
 
 function handleClientErrors(request, response, statusCode) {
-  if (statusCode === 423) {
+  if (statusCode === statusCodes.locked) {
     // Expected business condition – no system error log
     return
   }
