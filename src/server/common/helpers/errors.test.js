@@ -133,6 +133,11 @@ describe('#catchAll', () => {
       expectedView: 'errors/404'
     },
     {
+      name: 'Locked',
+      statusCode: statusCodes.locked,
+      expectedView: 'errors/423'
+    },
+    {
       name: `I'm a teapot`,
       statusCode: statusCodes.imATeapot,
       expectedView: 'errors/500'
@@ -259,6 +264,46 @@ describe('#catchAll', () => {
     expect(callArgs).not.toContain('bell_oauth_error')
     expect(mockToolkitView).toHaveBeenCalledWith(errorPage, {})
     expect(mockToolkitCode).toHaveBeenCalledWith(statusCode)
+  })
+
+  test('Should not log auth_flow_error when /auth error alreadyLogged=true', () => {
+    const request = {
+      response: {
+        isBoom: true,
+        alreadyLogged: true,
+        message: 'x',
+        output: { statusCode: statusCodes.internalServerError }
+      },
+      path: '/auth/x',
+      method: 'GET'
+    }
+    const toolkit = { view: vi.fn().mockReturnThis(), code: vi.fn().mockReturnThis() }
+
+    catchAll(request, toolkit)
+
+    const steps = log.mock.calls.map((c) => c[1]?.step)
+    expect(steps).not.toContain('auth_flow_error')
+  })
+
+  test('Should write debug log for server errors', () => {
+    const request = {
+      response: { isBoom: true, message: 'boom', output: { statusCode: statusCodes.internalServerError } },
+      path: '/x',
+      method: 'GET',
+      headers: {}
+    }
+    const toolkit = { view: vi.fn().mockReturnThis(), code: vi.fn().mockReturnThis() }
+
+    catchAll(request, toolkit)
+
+    expect(log).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({
+        mode: 'error_processing',
+        errorDetails: expect.objectContaining({ statusCode: statusCodes.internalServerError })
+      }),
+      request
+    )
   })
 
   test('Should log auth error when path starts with /auth', () => {
@@ -644,6 +689,23 @@ describe('#catchAll 404 Logging', () => {
       request
     )
   })
+
+  test('Should log client errors (e.g. 400) via SYSTEM.SERVER_ERROR', () => {
+    const request = {
+      response: { isBoom: true, message: 'Bad', output: { statusCode: statusCodes.badRequest } },
+      path: '/x',
+      method: 'GET'
+    }
+
+    const toolkit = { view: vi.fn().mockReturnThis(), code: vi.fn().mockReturnThis() }
+    catchAll(request, toolkit)
+
+    expect(log).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({ statusCode: statusCodes.badRequest, path: '/x' }),
+      request
+    )
+  })
 })
 
 describe('#catchAll Redirect Handling', () => {
@@ -666,6 +728,17 @@ describe('#catchAll Redirect Handling', () => {
 
   beforeEach(() => {
     mockToolkitRedirect.mockClear()
+  })
+
+  test('returns non-Boom response with its statusCode', () => {
+    const responseObj = { payload: 'OK', statusCode: 201 }
+    const mockResponse = vi.fn().mockReturnThis()
+    const mockCode = vi.fn().mockReturnThis()
+
+    catchAll({ response: responseObj }, { response: mockResponse, code: mockCode })
+
+    expect(mockResponse).toHaveBeenCalledWith(responseObj)
+    expect(mockCode).toHaveBeenCalledWith(201)
   })
 
   test('should handle redirects when status code is 302 and location header is present', () => {
@@ -741,6 +814,15 @@ describe('#createBoomError', () => {
     expect(error.output.statusCode).toBe(422)
     expect(error.message).toBe('Bad data message')
     expect(error.output.payload.error).toBe('Unprocessable Entity')
+  })
+
+  test('Should return locked (423) for status code 422', () => {
+    const error = createBoomError(423, 'Locked message')
+
+    expect(error.isBoom).toBe(true)
+    expect(error.output.statusCode).toBe(423)
+    expect(error.message).toBe('Locked message')
+    expect(error.output.payload.error).toBe('Locked')
   })
 
   test('Should return tooManyRequests (429) for status code 429', () => {
