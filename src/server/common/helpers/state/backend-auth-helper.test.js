@@ -168,6 +168,17 @@ describe('Backend Auth Helper', () => {
       expect(headers).toEqual(HEADER_OBJECTS.CONTENT_TYPE_JSON)
       expect(headers.Authorization).toBeUndefined()
     })
+
+    it('should add lockToken header when provided', async () => {
+      setupMockConfig(MOCK_TOKENS.DEFAULT)
+      const { createApiHeadersForGrantsUiBackend } = await importBackendAuthHelper()
+
+      const headers = createApiHeadersForGrantsUiBackend({ lockToken: 'LOCK-123' })
+
+      expect(headers).toHaveProperty('X-Application-Lock-Owner', 'LOCK-123')
+      expect(headers.Authorization).toBeDefined()
+      expect(headers['Content-Type']).toBe('application/json')
+    })
   })
 
   describe('createApiHeaders', () => {

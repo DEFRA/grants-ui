@@ -420,6 +420,15 @@ export const config = convict({
       }
     }
   },
+  applicationLock: {
+    secret: {
+      doc: 'Secret used to sign application lock tokens',
+      format: String,
+      default: 'default-lock-token-secret',
+      env: 'LOCK_TOKEN_SECRET',
+      sensitive: true
+    }
+  },
   defraId: /** @type {Schema<DefraIdConfig>} */ (defraId.getProperties()),
   landGrants: /** @type {Schema<LandGrantsConfig>} */ (landGrants.getProperties()),
   agreements: /** @type {Schema<AgreementsConfig>} */ (agreements.getProperties())

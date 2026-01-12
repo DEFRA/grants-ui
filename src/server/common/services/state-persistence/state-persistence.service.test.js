@@ -4,6 +4,11 @@ import * as fetchModule from '../../helpers/state/fetch-saved-state-helper.js'
 import * as persistModule from '../../helpers/state/persist-state-helper.js'
 import { getCacheKey } from '~/src/server/common/helpers/state/get-cache-key-helper.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import * as lockModule from '../../helpers/state/lock-token.js'
+
+vi.mock('../../helpers/state/lock-token.js', () => ({
+  mintLockToken: vi.fn(() => 'MOCK-LOCK-TOKEN')
+}))
 
 vi.mock('../../helpers/logging/log.js', async () => {
   const { mockLogHelper } = await import('~/src/__mocks__')
@@ -28,7 +33,7 @@ describe('StatePersistenceService', () => {
 
   const fakeRequest = {
     params: { slug: 'grant-a', state: '123' },
-    auth: { credentials: { crn: 'user-1', relationships: ['rel:biz-1'] } }
+    auth: { credentials: { contactId: 'user-1', sbi: 'biz-1', crn: 'user-1', relationships: ['rel:biz-1'] } }
   }
 
   beforeEach(() => {
@@ -54,7 +59,15 @@ describe('StatePersistenceService', () => {
 
     const result = await service.getState(fakeRequest)
     expect(result).toEqual({ foo: 'bar' })
-    expect(fetchModule.fetchSavedStateFromApi).toHaveBeenCalledWith('biz-1:grant-a', fakeRequest)
+    expect(fetchModule.fetchSavedStateFromApi).toHaveBeenCalledWith('biz-1:grant-a', fakeRequest, {
+      lockToken: 'MOCK-LOCK-TOKEN'
+    })
+    expect(lockModule.mintLockToken).toHaveBeenCalledWith({
+      userId: 'user-1',
+      sbi: 'biz-1',
+      grantCode: 'grant-a',
+      grantVersion: 1
+    })
   })
 
   test('getState logs SESSION_STATE_KEY_PARSE_FAILED when key parsing fails', async () => {
@@ -98,7 +111,15 @@ describe('StatePersistenceService', () => {
     getCacheKey.mockReturnValue({ sbi: 'biz-1', grantCode: 'grant-a' })
     const state = { foo: 'bar' }
     await service.setState(fakeRequest, state)
-    expect(persistModule.persistStateToApi).toHaveBeenCalledWith(state, 'biz-1:grant-a')
+    expect(persistModule.persistStateToApi).toHaveBeenCalledWith(state, 'biz-1:grant-a', {
+      lockToken: 'MOCK-LOCK-TOKEN'
+    })
+    expect(lockModule.mintLockToken).toHaveBeenCalledWith({
+      userId: 'user-1',
+      sbi: 'biz-1',
+      grantCode: 'grant-a',
+      grantVersion: 1
+    })
   })
 
   test('getConfirmationState calls fetchSavedStateFromApi with confirmation key', async () => {
@@ -136,7 +157,15 @@ describe('StatePersistenceService', () => {
 
     await service.clearState(fakeRequest, true)
 
-    expect(fetchModule.clearSavedStateFromApi).toHaveBeenCalledWith('biz-1:grant-a', fakeRequest)
+    expect(fetchModule.clearSavedStateFromApi).toHaveBeenCalledWith('biz-1:grant-a', fakeRequest, {
+      lockToken: 'MOCK-LOCK-TOKEN'
+    })
+    expect(lockModule.mintLockToken).toHaveBeenCalledWith({
+      userId: 'user-1',
+      sbi: 'biz-1',
+      grantCode: 'grant-a',
+      grantVersion: 1
+    })
   })
 
   test('clearState(force=true) logs and rethrows if clearSavedStateFromApi fails', async () => {

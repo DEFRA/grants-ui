@@ -6,7 +6,15 @@ import { log, LogCodes } from '../logging/log.js'
 
 const GRANTS_UI_BACKEND_ENDPOINT = config.get('session.cache.apiEndpoint')
 
-export async function persistStateToApi(state, key) {
+/**
+ * Persists a given state object to the Grants UI backend API.
+ *
+ * @param {object} state - The state object to persist. Can include form/session data.
+ * @param {string} key - The cache/session key to identify this state.
+ * @param {{lockToken?: string}} [options] - Optional lock token to identify who is locking the state.
+ * @returns {Promise<void>} Resolves once the state is sent to the backend.
+ */
+export async function persistStateToApi(state, key, { lockToken } = {}) {
   if (!GRANTS_UI_BACKEND_ENDPOINT?.length) {
     return
   }
@@ -28,7 +36,7 @@ export async function persistStateToApi(state, key) {
   try {
     const response = await fetch(url.href, {
       method: 'POST',
-      headers: createApiHeadersForGrantsUiBackend(),
+      headers: createApiHeadersForGrantsUiBackend({ lockToken }),
       body: JSON.stringify({
         sbi,
         grantCode,
