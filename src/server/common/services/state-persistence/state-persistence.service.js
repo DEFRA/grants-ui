@@ -155,14 +155,14 @@ export class StatePersistenceService extends CacheService {
    */
   _buildLockToken(request) {
     const { sbi, grantCode } = getCacheKey(request)
-    const userId = request.auth?.credentials?.contactId
+    const contactId = request.auth?.credentials?.contactId
 
-    if (typeof userId !== 'string' || !userId) {
+    if (!contactId) {
       throw new Error('Missing user identity for lock token')
     }
 
     return mintLockToken({
-      userId,
+      userId: String(contactId),
       sbi,
       grantCode,
       grantVersion: 1
