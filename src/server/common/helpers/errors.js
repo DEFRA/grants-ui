@@ -1,6 +1,16 @@
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
-import { badRequest, unauthorized, forbidden, notFound, conflict, badData, tooManyRequests, internal } from '@hapi/boom'
+import {
+  badRequest,
+  unauthorized,
+  forbidden,
+  notFound,
+  conflict,
+  badData,
+  tooManyRequests,
+  internal,
+  locked
+} from '@hapi/boom'
 import { config } from '~/src/config/config.js'
 
 const UNKNOWN_USER = 'unknown'
@@ -13,6 +23,7 @@ export const HTTP_STATUS = {
   REQUEST_TIMEOUT: 408,
   CONFLICT: 409,
   BAD_DATA: 422,
+  LOCKED: 423,
   TOO_MANY_REQUESTS: 429
 }
 
@@ -35,6 +46,8 @@ export function createBoomError(statusCode, message) {
       return conflict(message)
     case HTTP_STATUS.BAD_DATA:
       return badData(message)
+    case HTTP_STATUS.LOCKED:
+      return locked(message)
     case HTTP_STATUS.TOO_MANY_REQUESTS:
       return tooManyRequests(message)
     default:
@@ -219,6 +232,10 @@ function logDebugInformation(request, response, statusCode, errorContext) {
 }
 
 function handleClientErrors(request, response, statusCode) {
+  if (statusCode === statusCodes.locked) {
+    // Expected business condition – no system error log
+    return
+  }
   const errorMessage = statusCodeMessage(statusCode)
 
   // Special handling for 404s with detailed logging
@@ -389,6 +406,9 @@ function renderErrorView(h, statusCode) {
       break
     case statusCodes.notFound:
       errorView = 'errors/404'
+      break
+    case statusCodes.locked:
+      errorView = 'errors/423'
       break
     case statusCodes.serviceUnavailable:
       errorView = 'errors/503'
