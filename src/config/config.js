@@ -425,7 +425,7 @@ export const config = convict({
       doc: 'Secret used to sign application lock tokens',
       format: String,
       default: 'default-lock-token-secret',
-      env: 'LOCK_TOKEN_SECRET',
+      env: 'APPLICATION_LOCK_TOKEN_SECRET',
       sensitive: true
     }
   },
