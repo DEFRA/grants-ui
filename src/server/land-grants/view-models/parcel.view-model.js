@@ -34,7 +34,7 @@ export function buildParcelHint(parcel, actionsForParcel) {
 
   let hint = ''
   if (hasArea) {
-    hint = `Total size${hasActions ? '' : ':'} ${size.value} ${formatAreaUnit(size.unit)}`
+    hint = `Total size ${size.value} ${formatAreaUnit(size.unit)}`
   }
 
   if (hasActions) {

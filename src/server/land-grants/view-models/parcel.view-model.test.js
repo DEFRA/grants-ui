@@ -12,7 +12,7 @@ describe('parcel-view-model.mapper', () => {
 
       const result = buildParcelHint(parcel, 0)
 
-      expect(result).toBe('Total size: 10.5 hectares')
+      expect(result).toBe('Total size 10.5 hectares')
     })
 
     it('should build hint with area and actions', () => {
@@ -72,7 +72,7 @@ describe('parcel-view-model.mapper', () => {
 
       const result = buildParcelHint(parcel, 0)
 
-      expect(result).toBe('Total size: 2.5 square metres')
+      expect(result).toBe('Total size 2.5 square metres')
     })
   })
 
@@ -139,7 +139,7 @@ describe('parcel-view-model.mapper', () => {
       expect(result[0].text).toBe('AB1234 5678')
       expect(result[0].hint.text).toContain('2 actions added')
       expect(result[1].text).toBe('CD5678 1234')
-      expect(result[1].hint.text).toBe('Total size: 5.0 hectares')
+      expect(result[1].hint.text).toBe('Total size 5.0 hectares')
     })
 
     it('should handle empty parcels array', () => {
@@ -160,7 +160,7 @@ describe('parcel-view-model.mapper', () => {
       const result = mapParcelsToViewModel(parcels)
 
       expect(result).toHaveLength(1)
-      expect(result[0].hint.text).toBe('Total size: 10.5 hectares')
+      expect(result[0].hint.text).toBe('Total size 10.5 hectares')
     })
 
     it('should correctly count actions from state', () => {
