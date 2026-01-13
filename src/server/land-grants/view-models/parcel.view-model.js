@@ -31,6 +31,7 @@ export function buildParcelHint(parcel, actionsForParcel) {
   const size = parcel.size || parcel.area
   const hasArea = size?.value && formatAreaUnit(size.unit)
   const hasActions = actionsForParcel > 0
+  const needsSSSIConstent = parcel.SSSIRequired === true
 
   let hint = ''
   if (hasArea) {
@@ -40,6 +41,10 @@ export function buildParcelHint(parcel, actionsForParcel) {
   if (hasActions) {
     const actionsAddedStr = `${actionsForParcel} action${actionsForParcel > 1 ? 's' : ''} added`
     hint += hasArea ? `, ${actionsAddedStr}` : `${actionsAddedStr}`
+  }
+
+  if (needsSSSIConstent) {
+    hint += `, SSSI consent may be needed`
   }
 
   return hint
@@ -70,6 +75,7 @@ export function mapParcelsToViewModel(parcels, landParcels = {}) {
  * @property {object} [area] - Area information (fallback for backwards compatibility)
  * @property {string} [area.value] - Area value
  * @property {string} [area.unit] - Area unit
+ * @property {boolean} [SSSIRequired] - True if SSSI consent is required for the land parcel
  */
 
 /**
