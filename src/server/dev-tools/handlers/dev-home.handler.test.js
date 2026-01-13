@@ -59,6 +59,19 @@ describe('dev-home.handler', () => {
     expect(result).toBe('final-response')
     expect(mockH.response).toHaveBeenCalledWith(expect.stringContaining('Available Tools'))
   })
+
+  test('should include error pages section in the response', () => {
+    const mockHtmlResponse = { type: vi.fn().mockReturnValue('final-response') }
+    mockH.response.mockReturnValue(mockHtmlResponse)
+
+    devHomeHandler(mockRequest, mockH)
+
+    const htmlContent = mockH.response.mock.calls[0][0]
+    expect(htmlContent).toContain('Test Error Pages')
+    expect(htmlContent).toContain('/dev/test-400')
+    expect(htmlContent).toContain('/dev/test-429')
+    expect(htmlContent).toContain('/dev/test-500')
+  })
 })
 
 describe('generateToolsSection', () => {
