@@ -89,11 +89,6 @@ vi.mock('~/src/config/config.js', async () => {
   return mockConfig(configData)
 })
 
-vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
-  const { mockLogHelper } = await import('~/src/__mocks__')
-  return mockLogHelper()
-})
-
 vi.mock('../config.js', () => ({
   metadata: {
     organisation: 'Test Org',

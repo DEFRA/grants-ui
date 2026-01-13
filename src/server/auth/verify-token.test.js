@@ -9,10 +9,6 @@ import { log } from '~/src/server/common/helpers/logging/log.js'
 vi.mock('@hapi/jwt')
 vi.mock('node-jose')
 vi.mock('./get-oidc-config.js')
-vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
-  const { mockLogHelper } = await import('~/src/__mocks__')
-  return mockLogHelper()
-})
 
 describe('verifyToken', () => {
   // Sample test data

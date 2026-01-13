@@ -7,10 +7,6 @@ import { log } from '~/src/server/common/helpers/logging/log.js'
 import { mockSimpleRequest } from '~/src/__mocks__/hapi-mocks.js'
 
 vi.mock('~/src/server/auth/get-oidc-config.js')
-vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
-  const { mockLogHelper } = await import('~/src/__mocks__')
-  return mockLogHelper()
-})
 
 describe('refreshTokens', () => {
   let mockRequest

@@ -22,10 +22,6 @@ vi.mock('@defra/forms-engine-plugin/controllers/SummaryPageController.js', () =>
     getSummaryViewModel() {}
   }
 }))
-vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
-  const { mockLogHelper } = await import('~/src/__mocks__')
-  return mockLogHelper()
-})
 vi.mock('~/src/config/config.js', () => ({
   config: {
     get: vi.fn((key) => {

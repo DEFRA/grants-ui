@@ -5,10 +5,6 @@ import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/Q
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
 vi.mock('~/src/server/common/services/grant-application/grant-application.service.js')
-vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
-  const { mockLogHelper } = await import('~/src/__mocks__')
-  return mockLogHelper()
-})
 
 describe('PotentialFundingController', () => {
   let controller

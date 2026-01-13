@@ -4,11 +4,6 @@ import { PactV4, SpecificationVersion, MatchersV3 } from '@pact-foundation/pact'
 import { describe, expect, it } from 'vitest'
 import { makeGasApiRequest } from '../server/common/services/grant-application/grant-application.service.js'
 
-vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
-  const { mockLogHelper } = await import('~/src/__mocks__')
-  return mockLogHelper()
-})
-
 const provider = new PactV4({
   consumer: 'grants-ui',
   provider: 'fg-gas-backend',
