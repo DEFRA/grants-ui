@@ -163,7 +163,7 @@ describe('ConfirmFarmDetailsController', () => {
             city: 'City',
             postalCode: 'PC1 2CD'
           },
-          phone: { mobile: '07123456789' },
+          phone: '07123456789',
           email: { address: 'test@example.com' }
         },
         customer: {
