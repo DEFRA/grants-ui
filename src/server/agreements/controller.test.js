@@ -21,11 +21,6 @@ vi.mock('@hapi/jwt', () => ({
   }
 }))
 
-vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
-  const { mockLogHelper } = await import('~/src/__mocks__')
-  return mockLogHelper()
-})
-
 vi.mock('~/src/server/common/helpers/logging/log-codes.js', async () => {
   const { mockLogCodesHelper } = await import('~/src/__mocks__')
   return mockLogCodesHelper()

@@ -12,10 +12,6 @@ import { refreshTokens } from '~/src/server/auth/refresh-tokens.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
 vi.mock('@hapi/jwt')
-vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
-  const { mockLogHelper } = await import('~/src/__mocks__')
-  return mockLogHelper()
-})
 vi.mock('~/src/server/auth/get-oidc-config')
 vi.mock('~/src/server/auth/refresh-tokens')
 vi.mock('~/src/server/auth/get-safe-redirect')

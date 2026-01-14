@@ -24,11 +24,6 @@ vi.mock('~/src/server/common/helpers/forms-cache/forms-cache.js', () => ({
 vi.mock('~/src/server/common/forms/services/form.js', () => ({
   getFormsCache: vi.fn(() => [MOCK_FORMS.basic])
 }))
-vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
-  const { mockLogHelper } = await import('~/src/__mocks__')
-  return mockLogHelper()
-})
-
 describe('config-confirmation', () => {
   let mockRequest
   let mockH

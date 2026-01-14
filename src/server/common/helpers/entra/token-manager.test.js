@@ -8,11 +8,6 @@ import {
   refreshToken
 } from '~/src/server/common/helpers/entra/token-manager.js'
 
-vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
-  const { mockLogHelper } = await import('~/src/__mocks__')
-  return mockLogHelper()
-})
-
 const mockFetch = vi.fn()
 global.fetch = mockFetch
 

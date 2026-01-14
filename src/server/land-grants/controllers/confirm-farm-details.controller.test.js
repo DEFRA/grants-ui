@@ -6,11 +6,6 @@ vi.mock('~/src/config/config.js')
 
 vi.mock('../../common/services/consolidated-view/consolidated-view.service.js')
 
-// Mock the logging module with both possible exports
-vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
-  const { mockLogHelper } = await import('~/src/__mocks__')
-  return mockLogHelper()
-})
 vi.mock('~/src/server/land-grants/utils/format-phone.js', () => ({
   formatPhone: vi.fn((phone) => (phone ? `formatted-${phone}` : ''))
 }))
