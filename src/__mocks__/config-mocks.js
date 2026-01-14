@@ -1,5 +1,17 @@
 import { vi } from 'vitest'
 
+export const mockLandGrantsConfig = () => ({
+  config: {
+    get: vi.fn((key) => {
+      const values = {
+        'landGrants.grantCode': 'TEST-GRANT-CODE',
+        'devTools.enabled': false
+      }
+      return values[key]
+    })
+  }
+})
+
 export const mockConfig = (configValues = {}) => ({
   config: {
     get: vi.fn((key) => configValues[key])

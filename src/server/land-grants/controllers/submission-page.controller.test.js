@@ -22,20 +22,10 @@ vi.mock('@defra/forms-engine-plugin/controllers/SummaryPageController.js', () =>
     getSummaryViewModel() {}
   }
 }))
-vi.mock('~/src/config/config.js', () => ({
-  config: {
-    get: vi.fn((key) => {
-      switch (key) {
-        case 'landGrants.grantCode':
-          return 'TEST-GRANT-CODE'
-        case 'devTools.enabled':
-          return false
-        default:
-          return undefined // safe default
-      }
-    })
-  }
-}))
+vi.mock('~/src/config/config.js', async () => {
+  const { mockLandGrantsConfig } = await import('~/src/__mocks__')
+  return mockLandGrantsConfig()
+})
 
 const code = config.get('landGrants.grantCode')
 
