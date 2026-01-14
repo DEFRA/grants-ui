@@ -5,7 +5,7 @@ import {
   HTTP_STATUS,
   TEST_BACKEND_URL
 } from './test-helpers/auth-test-helpers.js'
-import { mockSimpleRequest } from '~/src/__mocks__/hapi-mocks.js'
+import { mockSimpleRequest, createMockFetchResponse } from '~/src/__mocks__/hapi-mocks.js'
 
 global.fetch = vi.fn()
 
@@ -76,15 +76,8 @@ describe('persistSubmissionToApi', () => {
       vi.unmock('~/src/config/config.js')
     })
 
-    const createSuccessfulFetchResponse = () => ({ ok: true, status: HTTP_STATUS.OK })
-    const createFailedFetchResponse = (status = 500, statusText = 'Internal Server Error') => ({
-      ok: false,
-      status,
-      statusText
-    })
-
     it('persists submission successfully when response is ok', async () => {
-      fetch.mockResolvedValue(createSuccessfulFetchResponse())
+      fetch.mockResolvedValue(createMockFetchResponse())
 
       await persistSubmissionToApi(TEST_SUBMISSION, mockRequest)
 
@@ -126,7 +119,7 @@ describe('persistSubmissionToApi', () => {
     })
 
     it('logs error when response is not ok', async () => {
-      const failedResponse = createFailedFetchResponse()
+      const failedResponse = createMockFetchResponse({ ok: false, status: 500, statusText: 'Internal Server Error' })
       fetch.mockResolvedValue(failedResponse)
 
       await persistSubmissionToApi(TEST_SUBMISSION, mockRequest)
