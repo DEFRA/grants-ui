@@ -10,17 +10,6 @@ vi.mock('~/src/config/config.js', async () => {
   return mockConfigSimple()
 })
 
-vi.mock('@hapi/jwt', () => ({
-  default: {
-    token: {
-      generate: vi.fn(() => 'mocked-jwt-token')
-    }
-  },
-  token: {
-    generate: vi.fn(() => 'mocked-jwt-token')
-  }
-}))
-
 vi.mock('~/src/server/common/helpers/logging/log-codes.js', async () => {
   const { mockLogCodesHelper } = await import('~/src/__mocks__')
   return mockLogCodesHelper()

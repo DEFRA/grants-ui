@@ -10,20 +10,10 @@ import { parseLandParcel, stringifyParcel } from '~/src/server/land-grants/utils
 import SelectLandActionsPageController from './select-land-actions-page.controller.js'
 import { log } from '~/src/server/common/helpers/logging/log.js'
 
-vi.mock('~/src/config/config.js', () => ({
-  config: {
-    get: vi.fn((key) => {
-      switch (key) {
-        case 'landGrants.grantCode':
-          return 'TEST-GRANT-CODE'
-        case 'devTools.enabled':
-          return false
-        default:
-          return undefined // safe default
-      }
-    })
-  }
-}))
+vi.mock('~/src/config/config.js', async () => {
+  const { mockLandGrantsConfig } = await import('~/src/__mocks__')
+  return mockLandGrantsConfig()
+})
 vi.mock('~/src/server/land-grants/services/land-grants.service.js')
 vi.mock('~/src/server/land-grants/utils/format-parcel.js')
 
