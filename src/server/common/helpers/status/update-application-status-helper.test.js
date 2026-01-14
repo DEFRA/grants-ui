@@ -117,7 +117,7 @@ describe('updateApplicationStatus', () => {
     })
 
     it('passes lockToken to createApiHeadersForGrantsUiBackend when provided', async () => {
-      fetch.mockResolvedValue(createSuccessfulFetchResponse())
+      fetch.mockResolvedValue(createMockFetchResponse())
       const lockToken = 'test-lock-token-123'
 
       await updateApplicationStatus(APPLICATION_STATUS, KEY, { lockToken })
