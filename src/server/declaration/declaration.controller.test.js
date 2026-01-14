@@ -5,7 +5,7 @@ import { transformStateObjectToGasApplication } from '~/src/server/common/helper
 import DeclarationPageController from './declaration-page.controller.js'
 import { transformAnswerKeysToText } from './state-to-gas-answers-mapper.js'
 import { vi } from 'vitest'
-import { mockFormsCacheService, mockHapiRequest } from '~/src/__mocks__'
+import { mockHapiRequest } from '~/src/__mocks__'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { handleGasApiError } from '~/src/server/common/helpers/gas-error-messages.js'
 import { log, LogCodes } from '../common/helpers/logging/log.js'
@@ -16,12 +16,12 @@ vi.mock('../common/helpers/logging/log.js', async () => {
   return mockLogHelper()
 })
 
-const mockCacheService = mockFormsCacheService({
+const mockCacheService = {
   getState: vi.fn().mockReturnValue({
     $$__referenceNumber: 'REF123'
   }),
   setState: vi.fn()
-}).getFormsCacheService()
+}
 vi.mock('~/src/server/common/helpers/form-slug-helper.js')
 vi.mock('~/src/server/common/helpers/forms-cache/forms-cache.js', () => ({
   getFormsCacheService: () => mockCacheService
