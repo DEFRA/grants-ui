@@ -15,11 +15,13 @@ Core delivery platform Node.js Frontend Template.
   - [Testing Framework](#testing-framework)
   - [Code Quality & Linting](#code-quality--linting)
   - [Authentication & Security](#authentication--security)
+  - [Rate Limiting](#rate-limiting)
   - [Custom NPM Scripts](#custom-npm-scripts)
 - [Cookies](#cookies)
   - [Inspecting cookies](#inspecting-cookies)
 - [Server-side Caching](#server-side-caching)
 - [Session Rehydration](#session-rehydration)
+- [Server to Server (S2S) Authentication](#server-to-server-s2s-authentication)
 - [Land Grants API Authentication](#land-grants-api-authentication)
 - [Redis](#redis)
 - [Proxy](#proxy)
@@ -265,7 +267,75 @@ The mutation score indicates test effectiveness:
 
 ### Whitelist Functionality
 
-Whitelisting restricts access to specific grant journeys based on Customer Reference Numbers (CRNs) and Single Business Identifiers (SBIs). Forms that require whitelisting declare the relevant environment variables in their YAML definition (see [`src/server/common/forms/definitions/example-whitelist.yaml`](./src/server/common/forms/definitions/example-whitelist.yaml)). At runtime, the whitelist service (`src/server/auth/services/whitelist.service.js`) reads the configured environment variables, normalises the values, and validates incoming CRN/SBI credentials. If a user’s identifiers are not present in the configured whitelist, the journey is terminated and the user is shown a terminal page.
+Whitelisting restricts access to specific grant journeys based on Customer Reference Numbers (CRNs) and Single Business Identifiers (SBIs). Forms that require whitelisting declare the relevant environment variables in their YAML definition (see [`src/server/common/forms/definitions/example-whitelist.yaml`](./src/server/common/forms/definitions/example-whitelist.yaml)). At runtime, the whitelist service (`src/server/auth/services/whitelist.service.js`) reads the configured environment variables, normalises the values, and validates incoming CRN/SBI credentials. If a user's identifiers are not present in the configured whitelist, the journey is terminated and the user is shown a terminal page.
+
+### Rate Limiting
+
+The application implements rate limiting to protect against abuse and denial-of-service attacks (CWE-400: Uncontrolled Resource Consumption). Rate limiting is implemented using [hapi-rate-limit](https://github.com/wraithgar/hapi-rate-limit).
+
+#### How It Works
+
+- **Per-user limiting**: Limits requests per IP address within a configurable time window
+- **Per-path limiting**: Limits total requests to specific endpoints
+- **Auth endpoint protection**: Stricter limits on authentication endpoints to prevent brute-force attacks
+- **IP extraction**: Correctly extracts client IP from `X-Forwarded-For` header when behind proxies/load balancers
+- **Monitoring**: Logs rate limit violations with IP, path, user ID, and user agent for security monitoring
+
+#### Configuration
+
+Rate limiting is controlled via environment variables:
+
+| Variable                              | Description                                      | Default                  |
+| ------------------------------------- | ------------------------------------------------ | ------------------------ |
+| `RATE_LIMIT_ENABLED`                  | Enable/disable rate limiting                     | `true` (production only) |
+| `RATE_LIMIT_TRUST_PROXY`              | Trust X-Forwarded-For header                     | `true`                   |
+| `RATE_LIMIT_USER_LIMIT`               | Max requests per user (IP) per period            | `100`                    |
+| `RATE_LIMIT_USER_LIMIT_PERIOD`        | Time window in milliseconds                      | `60000` (1 minute)       |
+| `RATE_LIMIT_PATH_LIMIT`               | Max requests per path per period                 | `2000`                   |
+| `RATE_LIMIT_AUTH_LIMIT`               | Max requests requiring authentication per period | `5`                      |
+| `RATE_LIMIT_AUTH_ENDPOINT_USER_LIMIT` | Max requests per user to auth endpoints          | `10`                     |
+| `RATE_LIMIT_AUTH_ENDPOINT_PATH_LIMIT` | Max requests per auth endpoint path              | `500`                    |
+
+#### Protected Endpoints
+
+The following endpoints have stricter rate limits (`authEndpointUserLimit` / `authEndpointPathLimit`) applied:
+
+| Endpoint              | Method | Purpose                    |
+| --------------------- | ------ | -------------------------- |
+| `/auth/sign-in`       | GET    | Sign-in initiation         |
+| `/auth/sign-in-oidc`  | GET    | OIDC callback              |
+| `/auth/sign-out`      | GET    | Sign-out                   |
+| `/auth/sign-out-oidc` | GET    | OIDC sign-out callback     |
+| `/agreements/{path*}` | POST   | Agreement form submissions |
+
+All other endpoints use the global rate limits (`userLimit` / `pathLimit`).
+
+#### Response Headers
+
+When rate limiting is enabled, responses include headers indicating limit status:
+
+- `X-RateLimit-Limit`: Maximum requests allowed
+- `X-RateLimit-Remaining`: Requests remaining in current window
+- `X-RateLimit-Reset`: Time when the limit resets (Unix timestamp)
+
+#### Rate Limit Exceeded
+
+When a client exceeds the rate limit:
+
+1. A `429 Too Many Requests` response is returned
+2. The event is logged with client details for monitoring:
+   ```
+   [warn] Rate limit exceeded: path=/auth/sign-in, ip=192.168.1.100, userId=user123, userAgent=Mozilla/5.0...
+   ```
+3. A user-friendly error page is displayed
+
+#### Development Mode
+
+Rate limiting is **disabled by default** in non-production environments to avoid friction during local development. To test rate limiting locally, set:
+
+```bash
+RATE_LIMIT_ENABLED=true
+```
 
 ### Development Services Integration (docker compose)
 
@@ -422,6 +492,77 @@ If session rehydration fails (e.g., backend unavailable, network issues), the ap
 - Log the error for debugging
 - Continue normal operation without restored state
 - Allow the user to proceed with a fresh session
+
+## Server-to-Server (S2S) Authentication
+
+When making API requests to backend services, our helpers handle the necessary authentication and headers. This ensures secure communication without requiring manual token management.
+
+### Authorization Headers
+
+The primary helper is:
+
+```js
+import { createApiHeadersForGrantsUiBackend } from '~/src/server/common/helpers/state/backend-auth-helper.js'
+```
+
+It generates headers that include:
+
+- Content-Type: application/json
+- Authorization: Bearer <encrypted-token> (if a token is configured)
+- Optional additional headers
+
+Example Usage
+
+```js
+const headers = createApiHeadersForGrantsUiBackend()
+```
+
+If a token is configured in the environment (`session.cache.authToken`), the helper automatically:
+
+Encrypts the token using AES-256-GCM with the configured encryption key (session.cache.encryptionKey).
+
+- Base64 encodes the encrypted token.
+- Adds the Authorization header:
+
+```js
+Authorization: Bearer <base64-encrypted-token>
+```
+
+The helper preserves any custom base headers you pass:
+
+```js
+const headers = createApiHeadersForGrantsUiBackend({
+  'User-Agent': 'my-service',
+  'X-Custom-Header': 'value'
+})
+```
+
+### Optional Lock Token
+
+For operations that require a concurrency lock, you can pass an optional `lockToken`:
+
+```js
+const headers = createApiHeadersForGrantsUiBackend({ lockToken: 'LOCK-123' })
+```
+
+This adds an additional header:
+
+```js
+X-Application-Lock-Owner: LOCK-123
+```
+
+without affecting the Authorization header or any base headers.
+
+### Base Headers Only
+
+If no token is configured, the helper returns only the base headers:
+
+```js
+{
+  'Content-Type': 'application/json',
+  'User-Agent': 'my-service'
+}
+```
 
 ## Land Grants Api Authentication
 
@@ -1460,6 +1601,7 @@ Test error page rendering at the following routes. `http://localhost:3000/dev/` 
 | `test-401` | 401        | Unauthorized          |
 | `test-403` | 403        | Forbidden             |
 | `test-404` | 404        | Not Found             |
+| `test-429` | 429        | Too Many Requests     |
 | `test-500` | 500        | Internal Server Error |
 | `test-503` | 503        | Service Unavailable   |
 

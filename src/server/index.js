@@ -11,6 +11,7 @@ import { config } from '~/src/config/config.js'
 import { context } from '~/src/config/nunjucks/context/context.js'
 import { viewPaths, nunjucksConfig } from '~/src/config/nunjucks/nunjucks.js'
 import auth from '~/src/plugins/auth.js'
+import { rateLimitPlugin } from '~/src/plugins/rate-limit.js'
 import sso from '~/src/plugins/sso.js'
 import { contentSecurityPolicy } from '~/src/plugins/content-security-policy.js'
 import { formsStatusCallback } from '~/src/server/status/status-helper.js'
@@ -22,6 +23,7 @@ import { catchAll } from '~/src/server/common/helpers/errors.js'
 import { requestLogger } from '~/src/server/common/helpers/logging/request-logger.js'
 import { setupProxy } from '~/src/server/common/helpers/proxy/setup-proxy.js'
 import { pulse } from '~/src/server/common/helpers/pulse.js'
+import { updateVisitedSections } from '~/src/server/common/helpers/visited-sections-guard.js'
 import { requestTracing } from '~/src/server/common/helpers/request-tracing.js'
 import { secureContext } from '~/src/server/common/helpers/secure-context/index.js'
 import { getCacheEngine } from '~/src/server/common/helpers/session-cache/cache-engine.js'
@@ -142,6 +144,7 @@ const registerPlugins = async (server) => {
     Cookie,
     h2o2,
     auth,
+    rateLimitPlugin,
     requestLogger,
     requestTracing,
     secureContext,
@@ -207,14 +210,11 @@ export async function createServer() {
 
   server.ext('onPreHandler', (request, h) => {
     /** @type {string[]} */
-    const prev = request.yar.get('visitedSubSections') || []
-    const entry = request?.paramsArray[0] || null
+    const visitedSections = request.yar.get('visitedSubSections') || []
+    const currentSectionId = request?.paramsArray[0] || null
 
-    if (entry && !prev.includes(entry)) {
-      prev.push(entry)
-    }
-
-    request.yar.set('visitedSubSections', prev)
+    const updatedSections = updateVisitedSections(visitedSections, currentSectionId)
+    request.yar.set('visitedSubSections', updatedSections)
 
     return h.continue
   })

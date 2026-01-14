@@ -10,10 +10,27 @@ services:
       NODE_EXTRA_CA_CERTS: /etc/ssl/certs/nginx.crt
       BASE_URL: https://grants-ui-proxy:4000
       BASE_BACKEND_URL: https://grants-ui-proxy:4001
-      GRANTS_UI_BACKEND_AUTH_TOKEN: auth_token
-      GRANTS_UI_BACKEND_ENCRYPTION_KEY: encryption_key
-      LAND_GRANTS_API_AUTH_TOKEN: auth_token
-      LAND_GRANTS_API_ENCRYPTION_KEY: encryption_key
+      GRANTS_UI_BACKEND_AUTH_TOKEN: ${GRANTS_UI_BACKEND_AUTH_TOKEN:-auth_token}
+      GRANTS_UI_BACKEND_ENCRYPTION_KEY: ${GRANTS_UI_BACKEND_ENCRYPTION_KEY:-encryption_key}
+      APPLICATION_LOCK_TOKEN_SECRET: ${APPLICATION_LOCK_TOKEN_SECRET:-dev-lock-secret}
+      DEFRA_ID_USER_PASSWORD: x
+      MOCKSERVER_HOST: mockserver
+      MOCKSERVER_PORT: 1080
+    volumes:
+      - ../nginx/certs:/etc/ssl/certs:ro
+    command: ['npm', 'run', 'test:ci']
+    networks:
+      - grants-ui-net
+
+  land-grants-journey-tests:
+    image: defradigital/land-grants-journey-tests
+    pull_policy: always
+    depends_on:
+      selenium-chrome:
+        condition: service_healthy
+    environment:
+      NODE_EXTRA_CA_CERTS: /etc/ssl/certs/nginx.crt
+      BASE_URL: https://grants-ui-proxy:4000
       DEFRA_ID_USER_PASSWORD: x
       MOCKSERVER_HOST: mockserver
       MOCKSERVER_PORT: 1080

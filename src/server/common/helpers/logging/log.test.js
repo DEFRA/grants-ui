@@ -1,6 +1,8 @@
 import { vi } from 'vitest'
 import { log, logger, LogCodes } from './log.js'
 
+vi.unmock('~/src/server/common/helpers/logging/log.js')
+
 vi.spyOn(logger, 'info')
 vi.spyOn(logger, 'debug')
 vi.spyOn(logger, 'error')

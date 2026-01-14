@@ -4,6 +4,7 @@ import { config } from '~/src/config/config.js'
 import { parseSessionKey } from './get-cache-key-helper.js'
 import { createApiHeadersForGrantsUiBackend } from './backend-auth-helper.js'
 import { log, LogCodes } from '../logging/log.js'
+import { createBoomError } from '../errors.js'
 
 const GRANTS_UI_BACKEND_ENDPOINT = config.get('session.cache.apiEndpoint')
 
@@ -39,9 +40,10 @@ function getEndpoint(key) {
  * @param {string} key - The session key
  * @param {string} method - HTTP method (GET or DELETE)
  * @param {Request} request - The request object
+ * @param {{lockToken?: string}} [options]
  * @returns {Promise<Object|null>} The response JSON or null
  */
-async function callStateApi(key, method, request) {
+async function callStateApi(key, method, request, { lockToken } = {}) {
   const logDebug = logApiError(LogCodes.SYSTEM.EXTERNAL_API_CALL_DEBUG)
   const logError = logApiError()
 
@@ -61,7 +63,7 @@ async function callStateApi(key, method, request) {
   try {
     response = await fetch(endpoint, {
       method,
-      headers: createApiHeadersForGrantsUiBackend()
+      headers: createApiHeadersForGrantsUiBackend({ lockToken })
     })
   } catch (err) {
     logError(request, { method, endpoint, identity: key, errorMessage: err.message })
@@ -76,7 +78,7 @@ async function callStateApi(key, method, request) {
 
     const errorMessage = `Failed to ${method === 'DELETE' ? 'clear' : 'fetch'} saved state: ${response.status}`
     logError(request, { method, endpoint, identity: key, error: errorMessage })
-    throw new Error(errorMessage)
+    throw createBoomError(response.status, errorMessage)
   }
 
   const json = await response.json()
@@ -90,10 +92,20 @@ async function callStateApi(key, method, request) {
   return json
 }
 
-export async function fetchSavedStateFromApi(key, request) {
-  return callStateApi(key, 'GET', request)
+/**
+ * @param {string} key
+ * @param {object} request
+ * @param {{lockToken?: string}} [options]
+ */
+export async function fetchSavedStateFromApi(key, request, { lockToken } = {}) {
+  return callStateApi(key, 'GET', request, { lockToken })
 }
 
-export async function clearSavedStateFromApi(key, request) {
-  return callStateApi(key, 'DELETE', request)
+/**
+ * @param {string} key
+ * @param {object} request
+ * @param {{lockToken?: string}} [options]
+ */
+export async function clearSavedStateFromApi(key, request, { lockToken } = {}) {
+  return callStateApi(key, 'DELETE', request, { lockToken })
 }

@@ -57,12 +57,19 @@ export function createAuthenticatedHeaders(token, encryptionKey, baseHeaders = {
 
 /**
  * Creates standard headers for API requests to grants-ui-backend
+ * @param {Object} [options]
+ * @param {string} [options.lockToken] - Signed application lock token
  * @returns {object} Headers with Content-Type and authentication
  */
-export function createApiHeadersForGrantsUiBackend() {
-  return createAuthenticatedHeaders(GRANTS_UI_BACKEND_AUTH_TOKEN, ENCRYPTION_KEY, {
+export function createApiHeadersForGrantsUiBackend({ lockToken } = {}) {
+  const headers = createAuthenticatedHeaders(GRANTS_UI_BACKEND_AUTH_TOKEN, ENCRYPTION_KEY, {
     'Content-Type': CONTENT_TYPE_JSON
   })
+
+  if (lockToken) {
+    headers['X-Application-Lock-Owner'] = lockToken
+  }
+  return headers
 }
 
 /**

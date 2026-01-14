@@ -2,11 +2,6 @@ import { vi } from 'vitest'
 import { log } from '~/src/server/common/helpers/logging/log.js'
 import { logAuthFailure, logAuthDebugInfo, logTokenExchangeFailure, logSuccessfulSignIn } from './auth-logging.js'
 
-vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
-  const { mockLogHelper } = await import('~/src/__mocks__')
-  return mockLogHelper()
-})
-
 describe('auth-logging', () => {
   beforeEach(() => {
     vi.clearAllMocks()

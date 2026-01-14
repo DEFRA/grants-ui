@@ -29,12 +29,12 @@ const controllerParcelsResponse = [
   {
     value: 'SD7946-0155',
     text: 'SD7946 0155',
-    hint: { text: 'Total size: 4.0383 hectares' }
+    hint: { text: 'Total size 4.0383 hectares' }
   },
   {
     value: 'SD7846-4509',
     text: 'SD7846 4509',
-    hint: { text: 'Total size: 0.0633 square metres' }
+    hint: { text: 'Total size 0.0633 square metres' }
   }
 ]
 
@@ -330,7 +330,7 @@ describe('SelectLandParcelPageController', () => {
         expect.objectContaining({
           parcels: expect.arrayContaining([
             expect.objectContaining({
-              hint: { text: 'Total size: 4.0383 hectares' }
+              hint: { text: 'Total size 4.0383 hectares' }
             })
           ])
         })
