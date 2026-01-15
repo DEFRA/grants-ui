@@ -63,12 +63,15 @@ async function persistStatus(request, newStatus, previousStatus, grantId) {
   }
 
   const organisationId = request.auth.credentials?.sbi
-  if (newStatus === 'CLEARED') {
+
+  if (newStatus === ApplicationStatus.CLEARED || newStatus === ApplicationStatus.REOPENED) {
     const cacheService = getFormsCacheService(request.server)
     await cacheService.setState(request, {
-      applicationStatus: ApplicationStatus.CLEARED
+      applicationStatus: newStatus
     })
-  } else {
+  }
+
+  if (newStatus !== ApplicationStatus.CLEARED) {
     await updateApplicationStatus(newStatus, `${organisationId}:${grantId}`)
   }
 }
@@ -155,9 +158,7 @@ function preSubmissionRedirect(request, h, context) {
  * @returns {boolean} `true` if the application has no previous status or was cleared/reopened, otherwise `false`.
  */
 function shouldHandlePreSubmission(previousStatus) {
-  return (
-    !previousStatus || previousStatus === ApplicationStatus.CLEARED || previousStatus === ApplicationStatus.REOPENED
-  )
+  return !previousStatus || previousStatus === ApplicationStatus.CLEARED
 }
 
 /**
@@ -289,7 +290,7 @@ export const formsStatusCallback = async (request, h, context) => {
     return preSubmissionRedirect(request, h, context)
   }
 
-  if (previousStatus !== 'SUBMITTED') {
+  if (previousStatus !== 'SUBMITTED' && previousStatus !== 'REOPENED') {
     return h.continue
   }
 

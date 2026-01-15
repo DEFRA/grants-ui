@@ -184,10 +184,6 @@ describe('formsStatusCallback', () => {
     {
       description: 'previous status is CLEARED',
       state: { applicationStatus: ApplicationStatus.CLEARED, someFiled: 'someValue' }
-    },
-    {
-      description: 'previous status is REOPENED',
-      state: { applicationStatus: ApplicationStatus.REOPENED, someFiled: 'someValue' }
     }
   ])(
     'redirects to preSubmission path if $description and has meaningful state and is requesting forms startPage while not being a task list page',
@@ -238,30 +234,24 @@ describe('formsStatusCallback', () => {
     expect(result).toBe(h.continue)
   })
 
-  it.each([undefined, 'REOPENED', 'CLEARED'])(
-    'continues without GAS call when status = %s and no saved state',
-    async (status) => {
-      context.state = {
-        applicationStatus: status
-      }
-      const result = await formsStatusCallback(request, h, context)
-      expect(result).toBe(h.continue)
-      expect(getApplicationStatus).not.toHaveBeenCalled()
+  it.each([undefined, 'CLEARED'])('continues without GAS call when status = %s and no saved state', async (status) => {
+    context.state = {
+      applicationStatus: status
     }
-  )
+    const result = await formsStatusCallback(request, h, context)
+    expect(result).toBe(h.continue)
+    expect(getApplicationStatus).not.toHaveBeenCalled()
+  })
 
-  it.each([undefined, 'REOPENED', 'CLEARED'])(
-    'redirects to "check answers" page if some saved state',
-    async (status) => {
-      context.state = {
-        applicationStatus: status,
-        question: 'answer'
-      }
-      await formsStatusCallback(request, h, context)
-      expect(h.redirect).toBeCalled()
-      expect(getApplicationStatus).not.toHaveBeenCalled()
+  it.each([undefined, 'CLEARED'])('redirects to "check answers" page if some saved state', async (status) => {
+    context.state = {
+      applicationStatus: status,
+      question: 'answer'
     }
-  )
+    await formsStatusCallback(request, h, context)
+    expect(h.redirect).toBeCalled()
+    expect(getApplicationStatus).not.toHaveBeenCalled()
+  })
 
   it('continues without GAS call when status is an unknown value', async () => {
     context.state = {
@@ -298,24 +288,42 @@ describe('formsStatusCallback', () => {
     expect(result).toBe(h.continue)
   })
 
-  it('updates status to REOPENED when awaiting amendments and previous is SUBMITTED', async () => {
+  it('updates status to REOPENED and redirects to summary when awaiting amendments and previous is SUBMITTED', async () => {
+    getApplicationStatus.mockResolvedValue({
+      json: async () => ({ status: 'AWAITING_AMENDMENTS' })
+    })
+
+    const result = await formsStatusCallback(request, h, context)
+
+    expect(updateApplicationStatus).toHaveBeenCalledWith('REOPENED', '12345:grant-a')
+    expect(h.redirect).toHaveBeenCalledWith('/grant-a/summary')
+    expect(result).toEqual(expect.any(Symbol))
+  })
+
+  it('updates session cache when transitioning to REOPENED', async () => {
     getApplicationStatus.mockResolvedValue({
       json: async () => ({ status: 'AWAITING_AMENDMENTS' })
     })
 
     await formsStatusCallback(request, h, context)
 
-    expect(updateApplicationStatus).toHaveBeenCalledWith('REOPENED', '12345:grant-a')
+    expect(mockCacheService.setState).toHaveBeenCalledWith(
+      request,
+      expect.objectContaining({
+        applicationStatus: ApplicationStatus.REOPENED
+      })
+    )
   })
 
-  it('continues when gasStatus is AWAITING_AMENDMENTS and previousStatus is REOPENED', async () => {
+  it('redirects to summary when gasStatus is AWAITING_AMENDMENTS and previousStatus is REOPENED', async () => {
     context.state.applicationStatus = ApplicationStatus.REOPENED
     getApplicationStatus.mockResolvedValue({
       json: async () => ({ status: 'AWAITING_AMENDMENTS' })
     })
 
     const result = await formsStatusCallback(request, h, context)
-    expect(result).toBe(h.continue)
+    expect(h.redirect).toHaveBeenCalledWith('/grant-a/summary')
+    expect(result).toEqual(expect.any(Symbol))
     expect(updateApplicationStatus).not.toHaveBeenCalled()
   })
 
