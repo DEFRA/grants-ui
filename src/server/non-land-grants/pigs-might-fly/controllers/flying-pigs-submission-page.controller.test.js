@@ -32,7 +32,6 @@ describe('FlyingPigsSubmissionPageController', () => {
       state: {
         sbi: 'test-sbi',
         crn: 'test-crn',
-        defraId: 'test-defraId',
         frn: 'test-frn',
         isPigFarmer: true,
         totalPigs: 100,
@@ -62,7 +61,6 @@ describe('FlyingPigsSubmissionPageController', () => {
         sbi: 'test-sbi',
         frn: 'test-frn',
         crn: 'test-crn',
-        defraId: 'test-defraId',
         clientRef: '123456'
       },
       mockContext.state,

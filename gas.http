@@ -279,7 +279,6 @@ Authorization: Bearer {{serviceToken}}
   "metadata": {
     "clientRef": "{{$uuid}}",
     "crn": "1234567890",
-    "defraId": "1234567890",
     "frn": "1234567890",
     "sbi": "1234567890",
     "submittedAt": "{{$isoTimestamp}}"
@@ -639,7 +638,6 @@ Authorization: Bearer {{serviceToken}}
   "metadata": {
     "clientRef": "{{$uuid}}",
     "crn": "1234567890",
-    "defraId": "1234567890",
     "frn": "1234567890",
     "sbi": "1234567890",
     "submittedAt": "{{$isoTimestamp}}"
