@@ -8,8 +8,6 @@ export {
 
 export { mockConfig, mockConfigSimple, createMockConfig, mockLandGrantsConfig } from './config-mocks.js'
 
-export { mockFormsCacheService, mockLandParcelData } from './service-mocks.js'
-
 export {
   mockHapiPino,
   mockFetch,
@@ -20,5 +18,6 @@ export {
   mockSsoRequest,
   mockAuthRequest,
   mockSimpleRequest,
-  mockContext
+  mockContext,
+  createMockFetchResponse
 } from './hapi-mocks.js'

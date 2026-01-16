@@ -1,5 +1,3 @@
-import { vi } from 'vitest'
-
 export const MOCK_FORMS = {
   basic: {
     id: 'test-form-id',
@@ -46,12 +44,3 @@ export const MOCK_FORM_CACHE = [
   { id: 'form2', slug: 'another-form', title: 'Another Form' },
   { id: 'form3', slug: 'example-grant', title: 'Example Grant' }
 ]
-
-export function createMockLogger() {
-  return {
-    warn: vi.fn(),
-    info: vi.fn(),
-    error: vi.fn(),
-    debug: vi.fn()
-  }
-}
