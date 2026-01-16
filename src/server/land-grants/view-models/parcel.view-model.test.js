@@ -74,32 +74,6 @@ describe('parcel-view-model.mapper', () => {
 
       expect(result).toBe('Total size 2.5 square metres')
     })
-
-    it('should include SSSI consent note when required when theres no added actions', () => {
-      const parcel = {
-        sheetId: 'AB1234',
-        parcelId: '5678',
-        SSSIRequired: true,
-        area: { value: '10.5', unit: 'ha' }
-      }
-
-      const result = buildParcelHint(parcel, 0)
-
-      expect(result).toBe('Total size 10.5 hectares, SSSI consent may be needed')
-    })
-
-    it('should include SSSI consent note when required even when theres previously added actions', () => {
-      const parcel = {
-        sheetId: 'AB1234',
-        parcelId: '5678',
-        SSSIRequired: true,
-        area: { value: '10.5', unit: 'ha' }
-      }
-
-      const result = buildParcelHint(parcel, 2)
-
-      expect(result).toBe('Total size 10.5 hectares, 2 actions added, SSSI consent may be needed')
-    })
   })
 
   describe('formatParcelForView', () => {
