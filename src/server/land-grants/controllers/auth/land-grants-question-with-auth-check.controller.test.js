@@ -7,11 +7,6 @@ vi.mock('~/src/server/common/services/consolidated-view/consolidated-view.servic
   fetchParcelsFromDal: vi.fn()
 }))
 
-vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
-  const { mockLogHelper } = await import('~/src/__mocks__')
-  return mockLogHelper()
-})
-
 describe('LandGrantsQuestionWithAuthCheckController', () => {
   let controller
   let mockRequest

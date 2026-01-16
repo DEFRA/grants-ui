@@ -16,11 +16,6 @@ vi.mock('~/src/server/common/helpers/retry.js')
 vi.mock('~/src/server/common/helpers/entra/token-manager.js', () => ({
   getValidToken: vi.fn()
 }))
-vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
-  const { mockLogHelper } = await import('~/src/__mocks__')
-  return mockLogHelper()
-})
-
 vi.mock('fs/promises')
 
 const getSBIMockFilePath = (sbi) => {

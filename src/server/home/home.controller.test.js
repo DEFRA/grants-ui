@@ -14,19 +14,6 @@ const mockCache = {
   drop: vi.fn()
 }
 
-vi.mock('@hapi/jwt', () => ({
-  default: {
-    token: {
-      decode: vi.fn(),
-      verifyTime: vi.fn()
-    }
-  },
-  token: {
-    decode: vi.fn(),
-    verifyTime: vi.fn()
-  }
-}))
-
 describe('#homeController', () => {
   let server
 

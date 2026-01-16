@@ -118,7 +118,7 @@ services:
       start_period: 40s
 
   fcp-defra-id-stub:
-    image: defradigital/fcp-defra-id-stub:0.46.0
+    image: defradigital/fcp-defra-id-stub:0.47.0
     networks:
       - grants-ui-net
     environment:
