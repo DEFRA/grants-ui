@@ -108,7 +108,7 @@ DXT Controllers pass a `context` object into every handler. Grants UI relies on 
 - `context.state`: the full mutable state bag for the current journey. Grants UI stores intermediate answers, lookups, and UI scaffolding here (for example `context.state.applicantContactDetails`). Use the helper methods exposed by the base controllers—primarily `await this.setState(request, newState)` or `await this.mergeState(request, context.state, update)`—to persist changes so they flow through the cache layer (`QuestionPageController.setState`, `QuestionPageController.mergeState` in the forms engine plugin).
 - `context.relevantState`: a projection produced by the forms engine that contains only the answers needed for submission. This is the source of truth used by declaration/confirmation controllers when building payloads for GAS (see `DeclarationPageController`).
 
-StatePersistenceService persists both structures through Grants UI Backend + Redis so that state survives page refreshes and “save and return” flows. When working on new controllers, prefer `context.relevantState` for data you plan to submit, and use `context.state` for auxiliary UI data. Changes to either must be serialisable because the persistence layer stores them as JSON.
+StatePersistenceService persists both structures through the Grants UI Backend API (which stores data in MongoDB) so that state survives page refreshes and "save and return" flows. Redis is used separately for session caching (auth cookies, Yar session data, tasklist temp data) but not for form state persistence. When working on new controllers, prefer `context.relevantState` for data you plan to submit, and use `context.state` for auxiliary UI data. Changes to either must be serialisable because the persistence layer stores them as JSON.
 
 Practical usage tips:
 
@@ -615,7 +615,7 @@ to how services might have a database (or MongoDB). All frontend services are gi
 matches the service name. e.g. `my-service` will have access to everything in Redis that is prefixed with `my-service`.
 
 If your service does not require a session cache to be shared between instances or if you don't require Redis, you can
-disable setting `SESSION_CACHE_ENGINE=false` or changing the default value in `~/src/config/index.js`.
+use the in-memory cache by setting `SESSION_CACHE_ENGINE=memory` or changing the default value in `~/src/config/config.js`.
 
 ## Proxy
 
@@ -769,12 +769,17 @@ which is formatted as a GUID string.
 
 #### Redis Configuration
 
-| Variable           | Description                              |
-| ------------------ | ---------------------------------------- |
-| `REDIS_HOST`       | Redis host (e.g., `localhost` or Docker) |
-| `REDIS_USERNAME`   | Username for Redis, if using ACL.        |
-| `REDIS_PASSWORD`   | Password for Redis connection.           |
-| `REDIS_KEY_PREFIX` | Prefix for all Redis keys used.          |
+| Variable                    | Description                                          | Default                        |
+| --------------------------- | ---------------------------------------------------- | ------------------------------ |
+| `REDIS_HOST`                | Redis host (e.g., `localhost` or Docker)             | `127.0.0.1`                    |
+| `REDIS_USERNAME`            | Username for Redis, if using ACL.                    | (empty)                        |
+| `REDIS_PASSWORD`            | Password for Redis connection.                       | (empty)                        |
+| `REDIS_KEY_PREFIX`          | Prefix for all Redis keys used.                      | `grants-ui:`                   |
+| `USE_SINGLE_INSTANCE_CACHE` | Connect to single Redis instance instead of cluster. | `true` in dev, `false` in prod |
+| `REDIS_TLS`                 | Connect to Redis using TLS.                          | `true` in production           |
+| `REDIS_CONNECT_TIMEOUT`     | Redis connection timeout in milliseconds.            | `30000`                        |
+| `REDIS_RETRY_DELAY`         | Redis retry delay in milliseconds.                   | `1000`                         |
+| `REDIS_MAX_RETRIES`         | Redis max retries per request.                       | `10`                           |
 
 #### Feature Flags & Misc
 
