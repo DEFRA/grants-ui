@@ -81,7 +81,7 @@ describe('Consolidated View Service', () => {
         info: {
           name: 'Test Business Ltd',
           email: { address: 'test@business.com' },
-          phone: { mobile: '07123456789' },
+          phone: { landline: '00000000000', mobile: '11111111111' },
           address: {
             line1: '123 Test Street',
             city: 'Test City',
@@ -166,7 +166,7 @@ describe('Consolidated View Service', () => {
             info: {
               reference: 'REF123',
               email: { address: 'test@business.com' },
-              phone: { mobile: '07123456789' },
+              phone: { landline: '07123456789' },
               name: 'Test Business Ltd',
               address: {
                 line1: '123 Test Street',
@@ -279,7 +279,7 @@ describe('Consolidated View Service', () => {
               reference: 'MOCK-REF123',
               name: 'Mock Business Ltd',
               email: { address: 'mock@business.com' },
-              phone: { mobile: '07987654321' },
+              phone: { landline: '11111111111', mobile: '00000000000' },
               address: {
                 line1: '456 Mock Street',
                 city: 'Mock City',
@@ -335,8 +335,37 @@ describe('Consolidated View Service', () => {
 
       expect(mockFetchInstance).toHaveBeenCalledTimes(1)
       expect(result).toEqual({
-        business: mockBusinessCustomerResponse.data.business.info,
+        business: {
+          ...mockBusinessCustomerResponse.data.business.info,
+          phone: mockBusinessCustomerResponse.data.business.info.phone.landline
+        },
         customer: mockBusinessCustomerResponse.data.customer.info
+      })
+
+      const [[, calledOptions]] = mockFetchInstance.mock.calls
+      const body = JSON.parse(calledOptions.body)
+      expect(body.query).toContain(`business(sbi: "${mockSbi}")`)
+      expect(body.query).toContain(`customer(crn: "${mockCrn}")`)
+    })
+
+    it('should return mobile phone when landline phone is not available', async () => {
+      const businessResponseCopy = structuredClone(mockBusinessCustomerResponse)
+      delete businessResponseCopy.data.business.info.phone.landline
+
+      mockFetchInstance.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(businessResponseCopy)
+      })
+
+      const result = await fetchBusinessAndCustomerInformation(mockRequest)
+
+      expect(mockFetchInstance).toHaveBeenCalledTimes(1)
+      expect(result).toEqual({
+        business: {
+          ...businessResponseCopy.data.business.info,
+          phone: businessResponseCopy.data.business.info.phone.mobile
+        },
+        customer: businessResponseCopy.data.customer.info
       })
 
       const [[, calledOptions]] = mockFetchInstance.mock.calls

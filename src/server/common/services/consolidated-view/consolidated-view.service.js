@@ -230,10 +230,23 @@ export async function fetchBusinessAndCustomerInformation(request) {
       }
     }`
 
-  const formatResponse = (r) => ({
-    business: r.data?.business?.info,
-    customer: r.data?.customer?.info
-  })
+  const formatResponse = (r) => {
+    const formattedResponse = { business: null, customer: null }
+    const { business, customer } = r.data
+
+    if (business?.info) {
+      formattedResponse.business = {
+        ...business.info,
+        phone: business.info.phone?.landline || business.info.phone?.mobile
+      }
+    }
+
+    if (customer?.info) {
+      formattedResponse.customer = customer.info
+    }
+
+    return formattedResponse
+  }
 
   return fetchFromConsolidatedView(request, { query, formatResponse })
 }
@@ -261,6 +274,7 @@ export async function fetchBusinessAndCPH(request) {
           }
           phone {
             mobile
+            landline
           }
           name
           address {
