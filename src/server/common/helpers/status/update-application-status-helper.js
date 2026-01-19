@@ -6,7 +6,11 @@ import { log, LogCodes } from '../logging/log.js'
 
 const GRANTS_UI_BACKEND_ENDPOINT = config.get('session.cache.apiEndpoint')
 
-export async function updateApplicationStatus(applicationStatus, key) {
+export async function updateApplicationStatus(
+  applicationStatus,
+  key,
+  { lockToken } = /** @type {{ lockToken?: string }} */ ({})
+) {
   if (!GRANTS_UI_BACKEND_ENDPOINT?.length) {
     return
   }
@@ -27,7 +31,7 @@ export async function updateApplicationStatus(applicationStatus, key) {
   try {
     const response = await fetch(url.href, {
       method: 'PATCH',
-      headers: createApiHeadersForGrantsUiBackend(),
+      headers: createApiHeadersForGrantsUiBackend({ lockToken }),
       body: JSON.stringify({
         state: {
           applicationStatus

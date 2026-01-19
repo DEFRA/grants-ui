@@ -4,6 +4,8 @@ import { getFormsCacheService } from '../common/helpers/forms-cache/forms-cache.
 import { updateApplicationStatus } from '../common/helpers/status/update-application-status-helper.js'
 import { getApplicationStatus } from '../common/services/grant-application/grant-application.service.js'
 import { log, LogCodes } from '../common/helpers/logging/log.js'
+import { mintLockToken } from '../common/helpers/state/lock-token.js'
+import { getCacheKey } from '../common/helpers/state/get-cache-key-helper.js'
 import agreements from '~/src/config/agreements.js'
 
 /**
@@ -55,9 +57,10 @@ function mapStatusToUrl(fromGrantsStatus, gasStatus, redirectRules = []) {
  * @param {string} newStatus - The new status to persist
  * @param {string} previousStatus - The previous status for comparison
  * @param {string} grantId - The grant ID
+ * @param {object} existingState - The existing state to preserve when updating session cache
  * @returns {Promise<void>}
  */
-async function persistStatus(request, newStatus, previousStatus, grantId) {
+async function persistStatus(request, newStatus, previousStatus, grantId, existingState = {}) {
   if (newStatus === previousStatus) {
     return
   }
@@ -66,13 +69,29 @@ async function persistStatus(request, newStatus, previousStatus, grantId) {
 
   if (newStatus === ApplicationStatus.CLEARED || newStatus === ApplicationStatus.REOPENED) {
     const cacheService = getFormsCacheService(request.server)
+    const stateToPreserve = newStatus === ApplicationStatus.REOPENED ? existingState : {}
     await cacheService.setState(request, {
+      ...stateToPreserve,
       applicationStatus: newStatus
     })
   }
 
   if (newStatus !== ApplicationStatus.CLEARED) {
-    await updateApplicationStatus(newStatus, `${organisationId}:${grantId}`)
+    const { sbi, grantCode } = getCacheKey(request)
+    const contactId = request.auth?.credentials?.contactId || request.auth?.credentials?.crn
+
+    if (!contactId) {
+      throw new Error('Missing user identity (contactId/crn) for lock token')
+    }
+
+    const lockToken = mintLockToken({
+      userId: String(contactId),
+      sbi,
+      grantCode,
+      grantVersion: 1
+    })
+
+    await updateApplicationStatus(newStatus, `${organisationId}:${grantId}`, { lockToken })
   }
 }
 
@@ -198,9 +217,10 @@ async function handlePostSubmission(request, h, context, previousStatus, grantCo
   const postSubmissionRules = grantRedirectRules?.postSubmission ?? []
   const rule = mapStatusToUrl(previousStatus, gasStatus, postSubmissionRules)
 
-  await persistStatus(request, rule.toGrantsStatus, previousStatus, grantId)
+  await persistStatus(request, rule.toGrantsStatus, previousStatus, grantId, context.state)
 
   const redirectUrl = rule.toPath === agreements.get('baseUrl') ? rule.toPath : buildRedirectUrl(grantId, rule.toPath)
+
   return request.path === redirectUrl ? h.continue : h.redirect(redirectUrl).takeover()
 }
 
@@ -290,7 +310,7 @@ export const formsStatusCallback = async (request, h, context) => {
     return preSubmissionRedirect(request, h, context)
   }
 
-  if (previousStatus !== 'SUBMITTED' && previousStatus !== 'REOPENED') {
+  if (previousStatus !== ApplicationStatus.SUBMITTED && previousStatus !== ApplicationStatus.REOPENED) {
     return h.continue
   }
 
