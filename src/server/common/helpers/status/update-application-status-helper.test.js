@@ -106,6 +106,7 @@ describe('updateApplicationStatus', () => {
       )
 
       expect(mockCreateApiHeaders).toHaveBeenCalledTimes(1)
+      expect(mockCreateApiHeaders).toHaveBeenCalledWith({ lockToken: undefined })
 
       expect(log).toHaveBeenCalledWith(
         LogCodes.SYSTEM.EXTERNAL_API_CALL_DEBUG,
@@ -120,6 +121,16 @@ describe('updateApplicationStatus', () => {
       )
 
       expect(log).not.toHaveBeenCalledWith(LogCodes.SYSTEM.EXTERNAL_API_ERROR, expect.anything())
+    })
+
+    it('passes lockToken to createApiHeadersForGrantsUiBackend when provided', async () => {
+      fetch.mockResolvedValue(createSuccessfulFetchResponse())
+      const lockToken = 'test-lock-token-123'
+
+      await updateApplicationStatus(APPLICATION_STATUS, KEY, { lockToken })
+
+      expect(mockCreateApiHeaders).toHaveBeenCalledTimes(1)
+      expect(mockCreateApiHeaders).toHaveBeenCalledWith({ lockToken })
     })
 
     it('logs error when response is not ok', async () => {
