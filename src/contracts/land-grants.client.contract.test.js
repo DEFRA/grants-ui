@@ -253,7 +253,7 @@ describe('calculate', () => {
         1: {
           code: 'UPL1',
           description: 'Moderate livestock grazing on moorland',
-          version: '1.0.0',
+          version: 1,
           unit: 'ha',
           quantity: 1.4869,
           rateInPence: 2000,
@@ -266,7 +266,7 @@ describe('calculate', () => {
         1: {
           code: 'CMOR1',
           description: 'Assess moorland and produce a written record',
-          version: '1.0.0',
+          version: 1,
           annualPaymentPence: 27200
         }
       }),
@@ -301,7 +301,7 @@ describe('calculate', () => {
         1: {
           code: 'UPL1',
           description: 'Moderate livestock grazing on moorland',
-          version: '1.0.0',
+          version: 1,
           unit: 'ha',
           quantity: 1.4869,
           rateInPence: 2000,
@@ -314,7 +314,7 @@ describe('calculate', () => {
         1: {
           code: 'CMOR1',
           description: 'Assess moorland and produce a written record',
-          version: '1.0.0',
+          version: 1,
           annualPaymentPence: 27200
         }
       },
