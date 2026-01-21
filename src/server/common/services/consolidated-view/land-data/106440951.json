@@ -154,7 +154,7 @@
       "info": {
         "reference": "1101251204",
         "email": { "address": "alportfarmi@mraftroplax.com.test" },
-        "phone": { "mobile": "01234442277" },
+        "phone": { "landline": "01234442277" },
         "name": "Alport Farm",
         "address": {
           "line1": "Top Farm",
