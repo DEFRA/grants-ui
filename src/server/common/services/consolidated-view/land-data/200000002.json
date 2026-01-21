@@ -34,7 +34,8 @@
           "address": "contact+300000099@example.test"
         },
         "phone": {
-          "mobile": "07300000099"
+          "mobile": "07300000099",
+          "landline": "02011223344"
         },
         "address": {
           "line1": "100 Chapel Street",
