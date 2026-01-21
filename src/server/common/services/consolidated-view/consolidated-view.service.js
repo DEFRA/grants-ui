@@ -214,6 +214,7 @@ export async function fetchBusinessAndCustomerInformation(request) {
           }
           phone {
             mobile
+            landline
           }
           name
           address {
