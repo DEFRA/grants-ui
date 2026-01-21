@@ -14,7 +14,7 @@ vi.mock('~/src/server/common/helpers/retry.js')
 /** @type {import('vitest').MockedFunction<any>} */
 const mockFetch = vi.fn()
 
-vi.mock('~/src/server/common/helpers/state/backend-auth-helper.js', () => ({
+vi.mock('~/src/server/common/helpers/auth/backend-auth-helper.js', () => ({
   createApiHeadersForLandGrantsBackend: () => ({
     Authorization: 'Bearer token',
     'Content-Type': 'application/json'

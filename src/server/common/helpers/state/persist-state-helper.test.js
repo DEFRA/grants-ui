@@ -7,8 +7,9 @@ import {
   MOCK_STATE_DATA,
   TEST_USER_IDS
 } from './test-helpers/auth-test-helpers.js'
-import { createApiHeadersForGrantsUiBackend } from './backend-auth-helper.js'
-vi.mock('./backend-auth-helper.js', () => ({
+import { createApiHeadersForGrantsUiBackend } from '../auth/backend-auth-helper.js'
+
+vi.mock('../auth/backend-auth-helper.js', () => ({
   createApiHeadersForGrantsUiBackend: vi.fn(({ lockToken }) => ({
     'Content-Type': 'application/json',
     Authorization: `Bearer ${Buffer.from('test').toString('base64')}`

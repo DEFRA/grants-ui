@@ -3,7 +3,7 @@ import { clearSavedStateFromApi, fetchSavedStateFromApi } from '../../helpers/st
 import { persistStateToApi } from '../../helpers/state/persist-state-helper.js'
 import { ADDITIONAL_IDENTIFIER, CacheService } from '@defra/forms-engine-plugin/cache-service.js'
 import { log, LogCodes } from '../../helpers/logging/log.js'
-import { mintLockToken } from '../../helpers/state/lock-token.js'
+import { mintLockToken } from '../../helpers/lock/lock-token.js'
 
 /**
  * Service responsible for persisting form/session state to the backend API.

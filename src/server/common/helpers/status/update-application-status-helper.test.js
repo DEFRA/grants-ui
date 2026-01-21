@@ -18,7 +18,7 @@ const mockCreateApiHeaders = vi.fn().mockReturnValue({
   'Content-Type': 'application/json',
   Authorization: 'Bearer test-token'
 })
-vi.doMock('../state/backend-auth-helper.js', () => ({
+vi.doMock('../auth/backend-auth-helper.js', () => ({
   createApiHeadersForGrantsUiBackend: mockCreateApiHeaders
 }))
 

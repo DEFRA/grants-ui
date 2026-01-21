@@ -4,9 +4,9 @@ import * as fetchModule from '../../helpers/state/fetch-saved-state-helper.js'
 import * as persistModule from '../../helpers/state/persist-state-helper.js'
 import { getCacheKey } from '~/src/server/common/helpers/state/get-cache-key-helper.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
-import * as lockModule from '../../helpers/state/lock-token.js'
+import * as lockModule from '../../helpers/lock/lock-token.js'
 
-vi.mock('../../helpers/state/lock-token.js', () => ({
+vi.mock('../../helpers/lock/lock-token.js', () => ({
   mintLockToken: vi.fn(() => 'MOCK-LOCK-TOKEN')
 }))
 

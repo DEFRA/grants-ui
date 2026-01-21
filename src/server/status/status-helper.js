@@ -4,7 +4,7 @@ import { getFormsCacheService } from '../common/helpers/forms-cache/forms-cache.
 import { updateApplicationStatus } from '../common/helpers/status/update-application-status-helper.js'
 import { getApplicationStatus } from '../common/services/grant-application/grant-application.service.js'
 import { log, LogCodes } from '../common/helpers/logging/log.js'
-import { mintLockToken } from '../common/helpers/state/lock-token.js'
+import { mintLockToken } from '../common/helpers/lock/lock-token.js'
 import { getCacheKey } from '../common/helpers/state/get-cache-key-helper.js'
 import agreements from '~/src/config/agreements.js'
 
