@@ -45,8 +45,7 @@ export async function postToLandGrantsApi(endpoint, body, baseUrl) {
  * @throws {Error}
  */
 export async function calculate(payload, baseUrl) {
-  const endpoint = config.get('landGrants.enableSSSIFeature') ? '/api/v2/payments/calculate' : '/payments/calculate'
-  return postToLandGrantsApi(endpoint, payload, baseUrl)
+  return postToLandGrantsApi('/payments/calculate', payload, baseUrl)
 }
 
 /**

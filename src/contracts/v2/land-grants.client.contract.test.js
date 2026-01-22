@@ -1,18 +1,11 @@
 import { PactV3, MatchersV3, SpecificationVersion } from '@pact-foundation/pact'
 import path from 'path'
 import { vi } from 'vitest'
-import { calculate } from '~/src/server/land-grants/services/land-grants.client'
-import { config } from '~/src/config/config.js'
+import { postToLandGrantsApi } from '~/src/server/land-grants/services/land-grants.client'
 
 vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
   logger: {
     debug: vi.fn()
-  }
-}))
-
-vi.mock('~/src/config/config.js', () => ({
-  config: {
-    get: vi.fn()
   }
 }))
 
@@ -26,18 +19,6 @@ const provider = new PactV3({
 })
 
 describe('calculate', () => {
-  beforeEach(() => {
-    vi.mocked(config.get).mockImplementation((key) => {
-      if (key === 'landGrants.enableSSSIFeature') {
-        return true
-      }
-      return false
-    })
-  })
-
-  afterEach(() => {
-    vi.clearAllMocks()
-  })
 
   it('returns HTTP 200 and payment information for the requested parcels', async () => {
     const calculateResponseContract = {
@@ -189,7 +170,7 @@ describe('calculate', () => {
         body: EXPECTED_BODY
       })
       .executeTest(async (mockserver) => {
-        const response = await calculate(payload, mockserver.url)
+        const response = await postToLandGrantsApi('/api/v2/payments/calculate', payload, mockserver.url)
         expect(response.payment).toEqual(expectedPaymentResponse)
       })
   })
@@ -231,7 +212,7 @@ describe('calculate', () => {
       })
       .executeTest(async (mockserver) => {
         try {
-          await calculate(badRequestPayload, mockserver.url)
+          await postToLandGrantsApi('/api/v2/payments/calculate', badRequestPayload, mockserver.url)
         } catch (error) {
           expect(error.code).toBe(400)
           expect(error.message).toBe('Bad Request')
@@ -276,7 +257,7 @@ describe('calculate', () => {
       })
       .executeTest(async (mockserver) => {
         try {
-          await calculate(badRequestPayload, mockserver.url)
+          await postToLandGrantsApi('/api/v2/payments/calculate', badRequestPayload, mockserver.url)
         } catch (error) {
           expect(error.code).toBe(400)
           expect(error.message).toBe('Bad Request')
@@ -321,7 +302,7 @@ describe('calculate', () => {
       })
       .executeTest(async (mockserver) => {
         try {
-          await calculate(invalidQuantityPayload, mockserver.url)
+          await postToLandGrantsApi('/api/v2/payments/calculate', invalidQuantityPayload, mockserver.url)
         } catch (error) {
           expect(error.code).toBe(422)
           expect(error.message).toBe('Unprocessable Entity')
@@ -366,7 +347,7 @@ describe('calculate', () => {
       })
       .executeTest(async (mockserver) => {
         try {
-          await calculate(invalidQuantityPayload, mockserver.url)
+          await postToLandGrantsApi('/api/v2/payments/calculate', invalidQuantityPayload, mockserver.url)
         } catch (error) {
           expect(error.code).toBe(422)
           expect(error.message).toBe('Unprocessable Entity')
