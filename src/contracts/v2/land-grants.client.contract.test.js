@@ -19,7 +19,6 @@ const provider = new PactV3({
 })
 
 describe('calculate', () => {
-
   it('returns HTTP 200 and payment information for the requested parcels', async () => {
     const calculateResponseContract = {
       explanations: eachLike({
