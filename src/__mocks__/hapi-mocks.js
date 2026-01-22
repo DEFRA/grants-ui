@@ -123,6 +123,22 @@ export const mockContext = (customProps = {}) => ({
 })
 
 /**
+ * Creates a mock fetch response object for testing.
+ * @param {object} options - Response options
+ * @param {boolean} [options.ok=true] - Whether the response is successful
+ * @param {number} [options.status=200] - HTTP status code
+ * @param {string} [options.statusText='OK'] - HTTP status text
+ * @param {*} [options.data=null] - Data to return from json()
+ * @returns {object} Mock response object
+ */
+export const createMockFetchResponse = ({ ok = true, status = 200, statusText = 'OK', data = null } = {}) => ({
+  ok,
+  status,
+  statusText,
+  json: () => data
+})
+
+/**
  * Mocks the global fetch function.
  * @returns {import('vitest').Mock} The mocked fetch function.
  */

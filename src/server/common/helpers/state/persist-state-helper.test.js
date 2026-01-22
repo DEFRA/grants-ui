@@ -7,8 +7,8 @@ import {
   MOCK_STATE_DATA,
   TEST_USER_IDS
 } from './test-helpers/auth-test-helpers.js'
+import { createMockFetchResponse } from '~/src/__mocks__/hapi-mocks.js'
 import { createApiHeadersForGrantsUiBackend } from '../auth/backend-auth-helper.js'
-
 vi.mock('../auth/backend-auth-helper.js', () => ({
   createApiHeadersForGrantsUiBackend: vi.fn(({ lockToken }) => ({
     'Content-Type': 'application/json',
@@ -61,22 +61,8 @@ describe('persistStateToApi', () => {
       vi.unmock('~/src/config/config.js')
     })
 
-    const createSuccessfulFetchResponse = () => ({
-      ok: true,
-      status: HTTP_STATUS.OK
-    })
-
-    const createFailedFetchResponse = (
-      status = HTTP_STATUS.INTERNAL_SERVER_ERROR,
-      statusText = 'Internal Server Error'
-    ) => ({
-      ok: false,
-      status,
-      statusText
-    })
-
     it('persists state successfully when response is ok', async () => {
-      fetch.mockResolvedValue(createSuccessfulFetchResponse())
+      fetch.mockResolvedValue(createMockFetchResponse())
 
       await persistStateToApi(testState, key)
 
@@ -114,7 +100,7 @@ describe('persistStateToApi', () => {
     })
 
     it('logs error when response is not ok', async () => {
-      const failedResponse = createFailedFetchResponse()
+      const failedResponse = createMockFetchResponse({ ok: false, status: 500, statusText: 'Internal Server Error' })
       fetch.mockResolvedValue(failedResponse)
 
       await persistStateToApi(testState, key)

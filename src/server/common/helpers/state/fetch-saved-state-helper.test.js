@@ -7,7 +7,7 @@ import {
   MOCK_STATE_DATA,
   TEST_USER_IDS
 } from './test-helpers/auth-test-helpers.js'
-import { mockSimpleRequest } from '~/src/__mocks__/hapi-mocks.js'
+import { mockSimpleRequest, createMockFetchResponse } from '~/src/__mocks__/hapi-mocks.js'
 import { createApiHeadersForGrantsUiBackend } from '../auth/backend-auth-helper.js'
 vi.mock('../auth/backend-auth-helper.js', () => ({
   createApiHeadersForGrantsUiBackend: vi.fn(({ lockToken }) => ({
@@ -39,19 +39,6 @@ let mockRequest
 describe('State API helpers', () => {
   const key = `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.ORGANISATION_ID}:${TEST_USER_IDS.GRANT_ID}`
 
-  const createSuccessfulResponse = (data = MOCK_STATE_DATA.DEFAULT) => ({
-    ok: true,
-    json: () => data
-  })
-  const createFailedResponse = (status, statusText = 'Error') => ({
-    ok: false,
-    status,
-    statusText,
-    json: () => {
-      throw new Error(ERROR_MESSAGES.NO_CONTENT)
-    }
-  })
-
   beforeEach(() => {
     mockRequest = mockSimpleRequest()
 
@@ -81,7 +68,7 @@ describe('State API helpers', () => {
       })
 
       it('returns state when response is valid', async () => {
-        mockFetch.mockResolvedValue(createSuccessfulResponse())
+        mockFetch.mockResolvedValue(createMockFetchResponse({ data: MOCK_STATE_DATA.DEFAULT }))
 
         const result = await fetchSavedStateFromApi(key, mockRequest)
 
@@ -99,7 +86,7 @@ describe('State API helpers', () => {
       })
 
       it('includes authorization header in fetch request', async () => {
-        mockFetch.mockResolvedValue(createSuccessfulResponse())
+        mockFetch.mockResolvedValue(createMockFetchResponse({ data: MOCK_STATE_DATA.DEFAULT }))
 
         await fetchSavedStateFromApi(key)
 
@@ -119,7 +106,7 @@ describe('State API helpers', () => {
       })
 
       it('returns null on 404', async () => {
-        mockFetch.mockResolvedValue(createFailedResponse(HTTP_STATUS.NOT_FOUND))
+        mockFetch.mockResolvedValue(createMockFetchResponse({ ok: false, status: HTTP_STATUS.NOT_FOUND }))
 
         const result = await fetchSavedStateFromApi(key, mockRequest)
 
@@ -137,7 +124,7 @@ describe('State API helpers', () => {
       })
 
       it('throws error on non-200 (not 404)', async () => {
-        mockFetch.mockResolvedValue(createFailedResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR))
+        mockFetch.mockResolvedValue(createMockFetchResponse({ ok: false, status: HTTP_STATUS.INTERNAL_SERVER_ERROR }))
 
         await expect(fetchSavedStateFromApi(key, mockRequest)).rejects.toThrow()
 
@@ -154,7 +141,7 @@ describe('State API helpers', () => {
       })
 
       it('throws error when response JSON is invalid or missing state', async () => {
-        mockFetch.mockResolvedValue(createSuccessfulResponse(123))
+        mockFetch.mockResolvedValue(createMockFetchResponse({ data: 123 }))
 
         await expect(fetchSavedStateFromApi(key, mockRequest)).rejects.toThrow()
 
@@ -190,7 +177,7 @@ describe('State API helpers', () => {
 
       it('passes the lockToken to createApiHeadersForGrantsUiBackend', async () => {
         const lockToken = 'LOCK-TOKEN-123'
-        mockFetch.mockResolvedValue(createSuccessfulResponse())
+        mockFetch.mockResolvedValue(createMockFetchResponse({ data: MOCK_STATE_DATA.DEFAULT }))
 
         await fetchSavedStateFromApi(key, mockRequest, { lockToken })
 
@@ -243,7 +230,7 @@ describe('State API helpers', () => {
       })
 
       it('returns state when response is valid', async () => {
-        mockFetch.mockResolvedValue(createSuccessfulResponse())
+        mockFetch.mockResolvedValue(createMockFetchResponse({ data: MOCK_STATE_DATA.DEFAULT }))
 
         const result = await clearSavedStateFromApi(key, mockRequest)
 
@@ -261,7 +248,7 @@ describe('State API helpers', () => {
       })
 
       it('includes authorization header in fetch request', async () => {
-        mockFetch.mockResolvedValue(createSuccessfulResponse())
+        mockFetch.mockResolvedValue(createMockFetchResponse({ data: MOCK_STATE_DATA.DEFAULT }))
 
         await clearSavedStateFromApi(key)
 
@@ -281,7 +268,7 @@ describe('State API helpers', () => {
       })
 
       it('returns null on 404', async () => {
-        mockFetch.mockResolvedValue(createFailedResponse(HTTP_STATUS.NOT_FOUND))
+        mockFetch.mockResolvedValue(createMockFetchResponse({ ok: false, status: HTTP_STATUS.NOT_FOUND }))
 
         const result = await clearSavedStateFromApi(key, mockRequest)
 
@@ -299,7 +286,7 @@ describe('State API helpers', () => {
       })
 
       it('throws error on non-200 response (not 404)', async () => {
-        mockFetch.mockResolvedValue(createFailedResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR))
+        mockFetch.mockResolvedValue(createMockFetchResponse({ ok: false, status: HTTP_STATUS.INTERNAL_SERVER_ERROR }))
 
         await expect(clearSavedStateFromApi(key, mockRequest)).rejects.toThrow()
 
@@ -316,7 +303,7 @@ describe('State API helpers', () => {
       })
 
       it('throws error when response JSON is invalid or missing state', async () => {
-        mockFetch.mockResolvedValue(createSuccessfulResponse(123))
+        mockFetch.mockResolvedValue(createMockFetchResponse({ data: 123 }))
 
         await expect(clearSavedStateFromApi(key, mockRequest)).rejects.toThrow()
 
@@ -352,7 +339,7 @@ describe('State API helpers', () => {
 
       it('passes the lockToken to createApiHeadersForGrantsUiBackend', async () => {
         const lockToken = 'LOCK-TOKEN-123'
-        mockFetch.mockResolvedValue(createSuccessfulResponse())
+        mockFetch.mockResolvedValue(createMockFetchResponse({ data: MOCK_STATE_DATA.DEFAULT }))
 
         await clearSavedStateFromApi(key, mockRequest, { lockToken })
 
