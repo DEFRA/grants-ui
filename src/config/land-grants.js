@@ -9,6 +9,7 @@ import 'dotenv/config'
  * @property {string} grantsServiceApiEndpoint
  * @property {string} authToken
  * @property {string} encryptionKey
+ * @property {boolean} enableSSSIFeature
  */
 
 const landGrants = convict({
@@ -36,6 +37,12 @@ const landGrants = convict({
     default: '',
     env: 'LAND_GRANTS_API_ENCRYPTION_KEY',
     sensitive: true
+  },
+  enableSSSIFeature: {
+    doc: 'Enable SSSI feature from 22/01/2026',
+    format: Boolean,
+    default: false,
+    env: 'ENABLE_LAND_GRANT_SSSI_20260122'
   }
 })
 
