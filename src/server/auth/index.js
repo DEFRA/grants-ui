@@ -468,19 +468,25 @@ async function handleSignOut(request, h) {
 
   const ownerId = request.auth.credentials.contactId
 
-  try {
-    log(LogCodes.APPLICATION_LOCKS.RELEASE_ATTEMPTED, {
-      ownerId
+  log(LogCodes.APPLICATION_LOCKS.RELEASE_ATTEMPTED, {
+    ownerId
+  })
+  releaseAllApplicationLocksForOwnerFromApi({ ownerId })
+    .then((result) => {
+      if (!result.ok) {
+        log(LogCodes.APPLICATION_LOCKS.RELEASE_FAILED, {
+          ownerId,
+          releasedCount: result.releasedCount
+        })
+      }
     })
-    await releaseAllApplicationLocksForOwnerFromApi({ ownerId })
-  } catch (err) {
-    // Don’t block sign-out if lock release fails, but do log
-    log(LogCodes.APPLICATION_LOCKS.RELEASE_FAILED, {
-      ownerId,
-      errorName: err.name,
-      errorMessage: err.message
+    .catch((err) => {
+      log(LogCodes.APPLICATION_LOCKS.RELEASE_FAILED, {
+        ownerId,
+        errorName: err.name,
+        errorMessage: err.message
+      })
     })
-  }
 
   log(
     LogCodes.AUTH.SIGN_OUT,
