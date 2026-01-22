@@ -11,6 +11,7 @@ import {
   logAuthDebugInfo,
   logTokenExchangeFailure
 } from '~/src/server/auth/auth-logging.js'
+import { releaseAllApplicationLocksForOwnerFromApi } from '../common/helpers/lock/application-lock.js'
 
 const UNKNOWN_USER = 'unknown'
 const USER_AGENT = 'user-agent'
@@ -464,6 +465,28 @@ async function handleSignOut(request, h) {
     )
     return h.redirect('/')
   }
+
+  const ownerId = request.auth.credentials.contactId
+
+  log(LogCodes.APPLICATION_LOCKS.RELEASE_ATTEMPTED, {
+    ownerId
+  })
+  releaseAllApplicationLocksForOwnerFromApi({ ownerId })
+    .then((result) => {
+      if (!result.ok) {
+        log(LogCodes.APPLICATION_LOCKS.RELEASE_FAILED, {
+          ownerId,
+          releasedCount: result.releasedCount
+        })
+      }
+    })
+    .catch((err) => {
+      log(LogCodes.APPLICATION_LOCKS.RELEASE_FAILED, {
+        ownerId,
+        errorName: err.name,
+        errorMessage: err.message
+      })
+    })
 
   log(
     LogCodes.AUTH.SIGN_OUT,

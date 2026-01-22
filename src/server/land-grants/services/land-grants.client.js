@@ -1,4 +1,4 @@
-import { createApiHeadersForLandGrantsBackend } from '~/src/server/common/helpers/state/backend-auth-helper.js'
+import { createApiHeadersForLandGrantsBackend } from '~/src/server/common/helpers/auth/backend-auth-helper.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
 
 /**

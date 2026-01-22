@@ -5,7 +5,7 @@ import { getFormsCacheService } from '../common/helpers/forms-cache/forms-cache.
 import { ApplicationStatus } from '../common/constants/application-status.js'
 import { formsStatusCallback } from './status-helper.js'
 import { log, LogCodes } from '../common/helpers/logging/log.js'
-import { mintLockToken } from '../common/helpers/state/lock-token.js'
+import { mintLockToken } from '../common/helpers/lock/lock-token.js'
 import { getCacheKey } from '../common/helpers/state/get-cache-key-helper.js'
 
 vi.mock('../common/helpers/logging/log.js', async () => {
@@ -21,7 +21,7 @@ vi.mock('../common/helpers/status/update-application-status-helper.js', () => ({
 vi.mock('../common/helpers/forms-cache/forms-cache.js', () => ({
   getFormsCacheService: vi.fn()
 }))
-vi.mock('../common/helpers/state/lock-token.js', () => ({
+vi.mock('../common/helpers/lock/lock-token.js', () => ({
   mintLockToken: vi.fn().mockReturnValue('mock-lock-token')
 }))
 vi.mock('../common/helpers/state/get-cache-key-helper.js', () => ({

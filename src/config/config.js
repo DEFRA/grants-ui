@@ -477,6 +477,12 @@ export const config = convict({
       default: 'default-lock-token-secret',
       env: 'APPLICATION_LOCK_TOKEN_SECRET',
       sensitive: true
+    },
+    releaseTimeoutMs: {
+      doc: 'Timeout in ms for releasing application locks during sign-out (best-effort)',
+      format: 'nat',
+      default: 2000,
+      env: 'APPLICATION_LOCK_RELEASE_TIMEOUT_MS'
     }
   },
   defraId: /** @type {Schema<DefraIdConfig>} */ (defraId.getProperties()),

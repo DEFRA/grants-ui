@@ -1,8 +1,8 @@
 import 'dotenv/config'
 import { config } from '~/src/config/config.js'
-import { createApiHeadersForGrantsUiBackend } from './backend-auth-helper.js'
+import { createApiHeadersForGrantsUiBackend } from '../auth/backend-auth-helper.js'
 import { log, LogCodes } from '../logging/log.js'
-import { mintLockToken } from './lock-token.js'
+import { mintLockToken } from '../lock/lock-token.js'
 
 const GRANTS_UI_BACKEND_ENDPOINT = config.get('session.cache.apiEndpoint')
 

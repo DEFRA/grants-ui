@@ -2,7 +2,7 @@ import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import 'dotenv/config'
 import { config } from '~/src/config/config.js'
 import { parseSessionKey } from './get-cache-key-helper.js'
-import { createApiHeadersForGrantsUiBackend } from './backend-auth-helper.js'
+import { createApiHeadersForGrantsUiBackend } from '../auth/backend-auth-helper.js'
 import { log, LogCodes } from '../logging/log.js'
 import { createBoomError } from '../errors.js'
 
