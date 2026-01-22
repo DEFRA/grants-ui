@@ -26,6 +26,26 @@ export function buildNewState(state, actionsObj, parcel) {
 }
 
 /**
+ * Gets a specific property value from a parcel action in state
+ * @param {object} state - Current state
+ * @param {Parcel} parcel - The selected land parcel
+ * @param {string} actionCode - The selected action code
+ * @param {string} propertyName - The property name to retrieve
+ * @returns {string | object | boolean | number | undefined} - The value of the property, or undefined if not found
+ */
+export function getParcelActionPropertyFromState(state, parcel, actionCode, propertyName) {
+  const { landParcels } = state
+  if (!landParcels) {
+    return undefined
+  }
+
+  const { parcelId, sheetId } = parcel
+  const foundLandParcel = landParcels[stringifyParcel({ parcelId, sheetId })]
+  const foundAction = foundLandParcel?.actionsObj?.[actionCode]
+  return foundAction?.[propertyName]
+}
+
+/**
  * Adds parcel actions to an existing state based on payload
  * @param {object} state - Current state
  * @param {object} payload - Form payload containing action selections
@@ -51,6 +71,7 @@ export function addActionsToExistingState(state, payload, actionFieldPrefix, gro
     if (actionCode && actionInfo) {
       actionsObj[actionCode] = {
         description: actionInfo.description,
+        sssiConsentRequired: actionInfo.sssiConsentRequired,
         value: actionInfo?.availableArea?.value ?? '',
         unit: actionInfo?.availableArea?.unit ?? ''
       }
@@ -171,6 +192,7 @@ export function findActionInfoFromState(landParcels, parcelKey, action) {
  * @typedef {object} Action
  * @property {string} code - Action code
  * @property {string} description - Action description
+ * @property {boolean} [sssiConsentRequired] - Action needs SSSI consent
  * @property {object} [availableArea] - Available area for the action
  * @property {string|number} [availableArea.value] - Area value (number from API, converted to string in state)
  * @property {string} [availableArea.unit] - Area unit

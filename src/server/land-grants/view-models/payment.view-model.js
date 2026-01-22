@@ -1,7 +1,8 @@
 import { formatCurrency } from '~/src/config/nunjucks/filters/filters.js'
-import { landActionWithCode } from '~/src/server/land-grants/utils/land-action-with-code.js'
+import { landActionWithCode, landActionWithConsentData } from '~/src/server/land-grants/utils/land-action-with-code.js'
 import { stringifyParcel } from '../utils/format-parcel.js'
 import { actionGroups } from '../services/land-grants.service.js'
+import { getParcelActionPropertyFromState } from '../view-state/land-parcel.view-state.js'
 
 /**
  * Maps payment information to view models for rendering in check pages.
@@ -43,13 +44,16 @@ function createLinks(data) {
 /**
  * Creates a table row for a parcel item
  * @param {ParcelItemData} data - Payment item data
+ * @param {boolean} [sssiConsentRequired] - Whether the action requires SSSI consent
  * @returns {Array<object>} Table row data
  */
-export function createParcelItemRow(data) {
+export function createParcelItemRow(data, sssiConsentRequired) {
   const linksCell = createLinks(data)
 
   return [
-    { text: landActionWithCode(data.description, data.code) },
+    {
+      text: landActionWithConsentData(data.description, data.code, sssiConsentRequired)
+    },
     { text: data.quantity, format: 'numeric' },
     { text: formatPrice(data.annualPaymentPence), format: 'numeric' },
     linksCell
@@ -102,9 +106,10 @@ export function buildLandParcelFooterActions(selectedActions, sheetId, parcelId)
 /**
  * Maps payment information to parcel items for display
  * @param {PaymentInfo} paymentInfo - Payment information from API
+ * @param {object} state
  * @returns {Array<ParcelCardViewModel>} Array of parcel card view models
  */
-export function mapPaymentInfoToParcelItems(paymentInfo) {
+export function mapPaymentInfoToParcelItems(paymentInfo, state) {
   const groupedByParcel = Object.values(paymentInfo?.parcelItems || {}).reduce((acc, data) => {
     const parcelKey = `${data.sheetId} ${data.parcelId}`
 
@@ -118,7 +123,13 @@ export function mapPaymentInfoToParcelItems(paymentInfo) {
       }
     }
 
-    acc[parcelKey].items.push(createParcelItemRow(data))
+    const sssiConsentRequired = getParcelActionPropertyFromState(
+      state,
+      { parcelId: data.parcelId, sheetId: data.sheetId },
+      data.code,
+      'sssiConsentRequired'
+    )
+    acc[parcelKey].items.push(createParcelItemRow(data, sssiConsentRequired))
     return acc
   }, {})
 
