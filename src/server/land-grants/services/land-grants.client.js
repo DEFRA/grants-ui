@@ -1,5 +1,6 @@
 import { createApiHeadersForLandGrantsBackend } from '~/src/server/common/helpers/auth/backend-auth-helper.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
+import { config } from '~/src/config/config.js'
 
 /**
  * Performs a POST request to the Land Grants API.
@@ -65,7 +66,8 @@ export async function parcelsWithSize(parcelIds, baseUrl) {
  * @returns {Promise<ParcelResponse>}
  */
 export async function parcelsWithFields(fields, parcelIds, baseUrl) {
-  return postToLandGrantsApi('/parcels', { parcelIds, fields }, baseUrl)
+  const endpoint = config.get('landGrants.enableSSSIFeature') ? '/api/v2/parcels' : '/parcels'
+  return postToLandGrantsApi(endpoint, { parcelIds, fields }, baseUrl)
 }
 
 /**

@@ -130,5 +130,25 @@ describe('retry with exponential backoff', () => {
       await expect(retryPromise).rejects.toThrow('Operation timed out')
       expect(mockOperation).toHaveBeenCalledTimes(1)
     })
+
+    it('should use default timeout of 15000ms when timeout is not specified', async () => {
+      const mockOperation = vi.fn(() => new Promise((resolve) => setTimeout(resolve, 20000)))
+      const retryPromise = retry(mockOperation, { maxAttempts: 1 })
+
+      vi.advanceTimersByTime(15000)
+
+      await expect(retryPromise).rejects.toThrow('Operation timed out after 15000ms')
+      expect(mockOperation).toHaveBeenCalledTimes(1)
+    })
+
+    it('should allow explicit timeout to override the default', async () => {
+      const mockOperation = vi.fn(() => new Promise((resolve) => setTimeout(resolve, 20000)))
+      const retryPromise = retry(mockOperation, { timeout: 15000, maxAttempts: 1 })
+
+      vi.advanceTimersByTime(15000)
+
+      await expect(retryPromise).rejects.toThrow('Operation timed out after 15000ms')
+      expect(mockOperation).toHaveBeenCalledTimes(1)
+    })
   })
 })

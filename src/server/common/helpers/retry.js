@@ -8,7 +8,7 @@ import { logger } from '~/src/server/common/helpers/logging/log.js'
  * @param {number} [options.maxDelay=30000] - Maximum delay in milliseconds
  * @param {boolean} [options.exponential=true] - Whether to use exponential backoff
  * @param {Function} [options.shouldRetry] - Function to determine if a retry should be attempted
- * @param {number} [options.timeout] - Operation timeout in milliseconds
+ * @param {number} [options.timeout=15000] - Operation timeout in milliseconds (default: 15 seconds)
  * @param {boolean} [options.checkFetchResponse] - Whether to check fetch response.ok from operation
  * @param {Function} [options.onRetry] - Called before each retry attempt
  * @param {string} [options.serviceName] - Name of the service for logging purposes
@@ -22,7 +22,7 @@ export async function retry(operation, options = {}) {
     maxDelay = 30000,
     exponential = true,
     shouldRetry = () => true,
-    timeout,
+    timeout = 15000,
     checkFetchResponse = false,
     onRetry = (error, attempt, delay) => {
       const message = `${serviceName} retry attempt ${attempt}/${maxAttempts} after error: ${error.message}; retrying in ${delay}ms`
@@ -35,13 +35,7 @@ export async function retry(operation, options = {}) {
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      let result
-
-      if (timeout) {
-        return await race(operation, timeout)
-      } else {
-        result = await operation()
-      }
+      const result = await race(operation, timeout)
 
       if (
         checkFetchResponse &&

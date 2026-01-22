@@ -551,11 +551,11 @@ describe('Grant Application service (token present)', () => {
 
         mockedFetch.mockImplementation(() => new Promise(() => {}))
 
-        retry.mockImplementation(async (operation, options = {}) => {
-          const { timeout = 100 } = options
+        retry.mockImplementation(async (operation) => {
+          const testTimeout = 50
 
           const timeoutPromise = new Promise((_resolve, reject) =>
-            setTimeout(() => reject(new Error(`Operation timed out after ${timeout}ms`)), timeout)
+            setTimeout(() => reject(new Error(`Operation timed out after ${testTimeout}ms`)), testTimeout)
           )
 
           return Promise.race([operation(), timeoutPromise])
@@ -582,18 +582,18 @@ describe('Grant Application service (token present)', () => {
             new Promise((resolve) => setTimeout(() => resolve({ ok: true, json: () => ({ success: true }) }), 10000))
         )
 
-        retry.mockImplementation(async (operation, options = {}) => {
-          const { timeout = 100 } = options
+        retry.mockImplementation(async (operation) => {
+          const testTimeout = 50
 
           const timeoutPromise = new Promise((_resolve, reject) =>
-            setTimeout(() => reject(new Error(`Operation timed out after ${timeout}ms`)), timeout)
+            setTimeout(() => reject(new Error(`Operation timed out after ${testTimeout}ms`)), testTimeout)
           )
 
           return Promise.race([operation(), timeoutPromise])
         })
 
         await expect(submitGrantApplication(code, payload, mockRequest)).rejects.toThrow(
-          'Failed to process GAS API request: Operation timed out after 100ms'
+          'Failed to process GAS API request: Operation timed out after 50ms'
         )
       })
     })
@@ -607,11 +607,11 @@ describe('Grant Application service (token present)', () => {
 
         mockedFetch.mockImplementation(() => new Promise(() => {}))
 
-        retry.mockImplementation(async (operation, options = {}) => {
-          const { timeout = 100 } = options
+        retry.mockImplementation(async (operation) => {
+          const testTimeout = 50
 
           const timeoutPromise = new Promise((_resolve, reject) =>
-            setTimeout(() => reject(new Error(`Operation timed out after ${timeout}ms`)), timeout)
+            setTimeout(() => reject(new Error(`Operation timed out after ${testTimeout}ms`)), testTimeout)
           )
 
           return Promise.race([operation(), timeoutPromise])
@@ -638,11 +638,10 @@ describe('Grant Application service (token present)', () => {
           () => new Promise((resolve) => setTimeout(() => resolve({ ok: true, json: () => ({ success: true }) }), 5000))
         )
 
-        retry.mockImplementation(async (operation, options = {}) => {
-          const { timeout = 50 } = options
-
+        retry.mockImplementation(async (operation) => {
+          const testTimeout = 50
           const timeoutPromise = new Promise((_resolve, reject) =>
-            setTimeout(() => reject(new Error(`Operation timed out after ${timeout}ms`)), timeout)
+            setTimeout(() => reject(new Error(`Operation timed out after ${testTimeout}ms`)), testTimeout)
           )
 
           return Promise.race([operation(), timeoutPromise])
@@ -663,11 +662,11 @@ describe('Grant Application service (token present)', () => {
 
         mockedFetch.mockImplementation(() => new Promise(() => {}))
 
-        retry.mockImplementation(async (operation, options = {}) => {
-          const { timeout = 100 } = options
+        retry.mockImplementation(async (operation) => {
+          const testTimeout = 50
 
           const timeoutPromise = new Promise((_resolve, reject) =>
-            setTimeout(() => reject(new Error(`Operation timed out after ${timeout}ms`)), timeout)
+            setTimeout(() => reject(new Error(`Operation timed out after ${testTimeout}ms`)), testTimeout)
           )
 
           return Promise.race([operation(), timeoutPromise])
@@ -694,18 +693,18 @@ describe('Grant Application service (token present)', () => {
             new Promise((resolve) => setTimeout(() => resolve({ ok: true, json: () => ({ status: 'active' }) }), 3000))
         )
 
-        retry.mockImplementation(async (operation, options = {}) => {
-          const { timeout = 75 } = options
+        retry.mockImplementation(async (operation) => {
+          const testTimeout = 50
 
           const timeoutPromise = new Promise((_resolve, reject) =>
-            setTimeout(() => reject(new Error(`Operation timed out after ${timeout}ms`)), timeout)
+            setTimeout(() => reject(new Error(`Operation timed out after ${testTimeout}ms`)), testTimeout)
           )
 
           return Promise.race([operation(), timeoutPromise])
         })
 
         await expect(invokeGasGetAction(code, actionName, mockRequest, queryParams)).rejects.toThrow(
-          'Failed to process GAS API request: Operation timed out after 75ms'
+          'Failed to process GAS API request: Operation timed out after 50ms'
         )
       })
     })
@@ -719,11 +718,11 @@ describe('Grant Application service (token present)', () => {
 
         mockedFetch.mockImplementation(() => new Promise(() => {}))
 
-        retry.mockImplementation(async (operation, options = {}) => {
-          const { timeout = 100 } = options
+        retry.mockImplementation(async (operation) => {
+          const testTimeout = 50
 
           const timeoutPromise = new Promise((_resolve, reject) =>
-            setTimeout(() => reject(new Error(`Operation timed out after ${timeout}ms`)), timeout)
+            setTimeout(() => reject(new Error(`Operation timed out after ${testTimeout}ms`)), testTimeout)
           )
 
           return Promise.race([operation(), timeoutPromise])
@@ -738,7 +737,7 @@ describe('Grant Application service (token present)', () => {
 
         expect(thrownError).toBeDefined()
         expect(thrownError.name).toBe('GrantApplicationServiceApiError')
-        expect(thrownError.message).toBe('Failed to process GAS API request: Operation timed out after 100ms')
+        expect(thrownError.message).toBe('Failed to process GAS API request: Operation timed out after 50ms')
         expect(thrownError.grantCode).toBe(testGrantCode)
       }, 10000)
 
@@ -783,11 +782,11 @@ describe('Grant Application service (token present)', () => {
 
         mockedFetch.mockImplementation(() => new Promise(() => {}))
 
-        retry.mockImplementation(async (operation, options = {}) => {
-          const { timeout = 100 } = options
+        retry.mockImplementation(async (operation) => {
+          const testTimeout = 50
 
           const timeoutPromise = new Promise((_resolve, reject) =>
-            setTimeout(() => reject(new Error(`Operation timed out after ${timeout}ms`)), timeout)
+            setTimeout(() => reject(new Error(`Operation timed out after ${testTimeout}ms`)), testTimeout)
           )
 
           return Promise.race([operation(), timeoutPromise])
