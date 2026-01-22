@@ -59,6 +59,7 @@ export async function makeGasApiRequest(url, grantCode, request, options = {}) {
     }
 
     const response = await retry(() => fetch(requestUrl, requestOptions), {
+      timeout: 30000,
       ...retryConfig,
       checkFetchResponse: true,
       serviceName: 'GrantApplicationService.makeGasApiRequest'
