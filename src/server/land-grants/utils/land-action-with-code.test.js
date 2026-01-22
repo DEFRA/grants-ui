@@ -22,13 +22,13 @@ describe('landActionWithCode', () => {
   })
 
   it('should handle undefined values gracefully', () => {
-    expect(landActionWithCode(undefined, 'CODE1')).toBe('CODE1')
+    expect(landActionWithCode(undefined, 'CMOR1')).toBe('CMOR1')
     expect(landActionWithCode('Description', undefined)).toBe('Description')
     expect(landActionWithCode(undefined, undefined)).toBe('')
   })
 
   it('should handle empty strings gracefully', () => {
-    expect(landActionWithCode('', 'CODE1')).toBe('CODE1')
+    expect(landActionWithCode('', 'CMOR1')).toBe('CMOR1')
     expect(landActionWithCode('Description', '')).toBe('Description')
     expect(landActionWithCode('', '')).toBe('')
   })

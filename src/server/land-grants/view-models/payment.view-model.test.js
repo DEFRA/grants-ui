@@ -44,7 +44,7 @@ describe('payment-view-model.mapper', () => {
         parcelId: '5678',
         code: 'SAM1',
         description: 'Test Action',
-        quantity: '10 hectares',
+        quantity: '10',
         annualPaymentPence: 10050
       }
 
@@ -52,7 +52,7 @@ describe('payment-view-model.mapper', () => {
 
       expect(result).toHaveLength(4)
       expect(result[0].text).toBe('Test Action: SAM1')
-      expect(result[1].text).toBe('10 hectares')
+      expect(result[1].text).toBe('10')
       expect(result[2].text).toBe('£100.50')
       expect(result[3].html).toContain('select-actions-for-land-parcel?parcelId=AB1234-5678')
       expect(result[3].html).toContain('remove-action?parcelId=AB1234-5678&action=SAM1')
@@ -64,7 +64,7 @@ describe('payment-view-model.mapper', () => {
         parcelId: '5678',
         code: 'CMOR1',
         description: 'Moorland Assessment',
-        quantity: '10 hectares',
+        quantity: '10',
         annualPaymentPence: 10050
       }
 
@@ -80,7 +80,7 @@ describe('payment-view-model.mapper', () => {
         parcelId: '5678',
         code: 'SAM1',
         description: 'Test Action',
-        quantity: '10 hectares',
+        quantity: '10',
         annualPaymentPence: 10050
       }
 
@@ -96,7 +96,7 @@ describe('payment-view-model.mapper', () => {
         parcelId: '5678',
         code: 'SAM1',
         description: 'Test Action',
-        quantity: '10 hectares',
+        quantity: '10',
         annualPaymentPence: 10050
       }
 

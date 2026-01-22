@@ -5,7 +5,6 @@
  * @returns {string} - Formatted action string, or fallback if data is missing
  */
 export const landActionWithCode = (description, code) => {
-  // Handle missing data gracefully rather than throwing
   if (!description && !code) {
     return ''
   }
