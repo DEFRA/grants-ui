@@ -43,13 +43,18 @@ export async function releaseAllApplicationLocksForOwnerFromApi({ ownerId }) {
     ownerId
   })
 
+  const timeoutMs = config.get('applicationLock.releaseTimeoutMs')
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
+
   try {
     const response = await fetch(url.href, {
       method: 'DELETE',
       headers: {
         ...createApiHeadersForGrantsUiBackend(),
         'x-application-lock-release': String(token)
-      }
+      },
+      signal: controller.signal
     })
 
     if (!response.ok) {
@@ -69,12 +74,21 @@ export async function releaseAllApplicationLocksForOwnerFromApi({ ownerId }) {
     })
     return { ok: true, releasedCount: body.releasedCount ?? 0 }
   } catch (err) {
-    log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
-      method: 'DELETE',
-      endpoint: url.href,
-      identity: ownerId,
-      errorMessage: err.message
-    })
+    if (err.name === 'AbortError') {
+      log(LogCodes.APPLICATION_LOCKS.RELEASE_TIMEOUT, {
+        ownerId,
+        timeoutMs
+      })
+    } else {
+      log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
+        method: 'DELETE',
+        endpoint: url.href,
+        identity: ownerId,
+        errorMessage: err.message
+      })
+    }
     return { ok: false, releasedCount: 0 }
+  } finally {
+    clearTimeout(timeoutId)
   }
 }

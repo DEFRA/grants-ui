@@ -112,6 +112,24 @@ describe('releaseAllApplicationLocksForOwnerFromApi', () => {
 
       expect(result).toEqual({ ok: true, releasedCount: 0 })
     })
+
+    it('handles fetch being aborted (timeout)', async () => {
+      const abortError = new Error('The operation was aborted')
+      abortError.name = 'AbortError'
+
+      fetch.mockRejectedValue(abortError)
+
+      const result = await releaseAllApplicationLocksForOwnerFromApi({ ownerId })
+
+      expect(result).toEqual({ ok: false, releasedCount: 0 })
+
+      expect(log).toHaveBeenCalledWith(
+        LogCodes.APPLICATION_LOCKS.RELEASE_TIMEOUT,
+        expect.objectContaining({
+          ownerId
+        })
+      )
+    })
   })
 
   describe('With backend not configured', () => {

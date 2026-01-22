@@ -344,6 +344,11 @@ export const LogCodes = {
       messageFunc: ({ ownerId, releasedCount }) =>
         `Application locks released | ownerId=${ownerId} | releasedCount=${releasedCount}`
     },
+    RELEASE_TIMEOUT: {
+      level: 'warn',
+      messageFunc: ({ ownerId, timeoutMs }) =>
+        `Application locks release timed out | ownerId=${ownerId} | timeoutMs=${timeoutMs}`
+    },
     RELEASE_FAILED: {
       level: 'error',
       messageFunc: ({ ownerId, errorName, errorMessage }) =>
