@@ -1,31 +1,15 @@
 /**
- * Formats land action with code
- * @param {string} description - Action description
- * @param {string} code - Action code
- * @returns {string} - Formatted action string, or fallback if data is missing
+ * @param {string} description
+ * @param {string} code
  */
 export const landActionWithCode = (description, code) => {
-  if (!description && !code) {
-    return ''
-  }
   if (!code) {
-    return description
+    throw new Error(`Missing land action code for "${description}"`)
   }
+
   if (!description) {
-    return code
+    throw new Error(`Missing land action description for "${code}"`)
   }
 
   return `${description}: ${code}`
-}
-
-/**
- * Formats land action with code and optional SSSI consent notice
- * @param {string} description - Action description
- * @param {string} code - Action code
- * @param {boolean} [sssiConsentRequired] - Whether SSSI consent is required
- * @returns {string} - Formatted action string with optional consent notice
- */
-export const landActionWithConsentData = (description, code, sssiConsentRequired) => {
-  const baseText = `${description}: ${code}`
-  return sssiConsentRequired ? `${baseText}. SSSI consent needed.` : baseText
 }

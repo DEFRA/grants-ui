@@ -3,7 +3,6 @@ import {
   buildNewState,
   addActionsToExistingState,
   getAddedActionsForStateParcel,
-  getParcelActionPropertyFromState,
   deleteParcelFromState,
   deleteActionFromState,
   hasLandParcels,
@@ -377,122 +376,6 @@ describe('land-parcel-state.manager', () => {
       const state = {}
 
       expect(hasLandParcels(state)).toBe(false)
-    })
-  })
-
-  describe('getParcelActionPropertyFromState', () => {
-    it('should retrieve sssiConsentRequired property from state', () => {
-      const state = {
-        landParcels: {
-          'AB1234-5678': {
-            actionsObj: {
-              CMOR1: {
-                description: 'Moorland Assessment',
-                sssiConsentRequired: true,
-                value: '10',
-                unit: 'ha'
-              }
-            }
-          }
-        }
-      }
-      const parcel = { parcelId: '5678', sheetId: 'AB1234' }
-
-      const result = getParcelActionPropertyFromState(state, parcel, 'CMOR1', 'sssiConsentRequired')
-
-      expect(result).toBe(true)
-    })
-
-    it('should return false when sssiConsentRequired is false', () => {
-      const state = {
-        landParcels: {
-          'AB1234-5678': {
-            actionsObj: {
-              SAM1: {
-                description: 'Action 1',
-                sssiConsentRequired: false,
-                value: '10',
-                unit: 'ha'
-              }
-            }
-          }
-        }
-      }
-      const parcel = { parcelId: '5678', sheetId: 'AB1234' }
-
-      const result = getParcelActionPropertyFromState(state, parcel, 'SAM1', 'sssiConsentRequired')
-
-      expect(result).toBe(false)
-    })
-
-    it('should return undefined when property does not exist', () => {
-      const state = {
-        landParcels: {
-          'AB1234-5678': {
-            actionsObj: {
-              SAM1: {
-                description: 'Action 1',
-                value: '10',
-                unit: 'ha'
-              }
-            }
-          }
-        }
-      }
-      const parcel = { parcelId: '5678', sheetId: 'AB1234' }
-
-      const result = getParcelActionPropertyFromState(state, parcel, 'SAM1', 'sssiConsentRequired')
-
-      expect(result).toBeUndefined()
-    })
-
-    it('should return undefined when action does not exist', () => {
-      const state = {
-        landParcels: {
-          'AB1234-5678': {
-            actionsObj: {
-              SAM1: { description: 'Action 1' }
-            }
-          }
-        }
-      }
-      const parcel = { parcelId: '5678', sheetId: 'AB1234' }
-
-      const result = getParcelActionPropertyFromState(state, parcel, 'NON_EXISTENT', 'sssiConsentRequired')
-
-      expect(result).toBeUndefined()
-    })
-
-    it('should return undefined when parcel does not exist', () => {
-      const state = {
-        landParcels: {}
-      }
-      const parcel = { parcelId: '5678', sheetId: 'AB1234' }
-
-      const result = getParcelActionPropertyFromState(state, parcel, 'SAM1', 'sssiConsentRequired')
-
-      expect(result).toBeUndefined()
-    })
-
-    it('should retrieve other properties like description', () => {
-      const state = {
-        landParcels: {
-          'AB1234-5678': {
-            actionsObj: {
-              SAM1: {
-                description: 'Test Action',
-                value: '10',
-                unit: 'ha'
-              }
-            }
-          }
-        }
-      }
-      const parcel = { parcelId: '5678', sheetId: 'AB1234' }
-
-      const result = getParcelActionPropertyFromState(state, parcel, 'SAM1', 'description')
-
-      expect(result).toBe('Test Action')
     })
   })
 

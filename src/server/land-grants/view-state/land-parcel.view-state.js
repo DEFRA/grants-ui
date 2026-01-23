@@ -26,26 +26,6 @@ export function buildNewState(state, actionsObj, parcel) {
 }
 
 /**
- * Gets a specific property value from a parcel action in state
- * @param {object} state - Current state
- * @param {Parcel} parcel - The selected land parcel
- * @param {string} actionCode - The selected action code
- * @param {string} propertyName - The property name to retrieve
- * @returns {string | object | boolean | number | undefined} - The value of the property, or undefined if not found
- */
-export function getParcelActionPropertyFromState(state, parcel, actionCode, propertyName) {
-  const { landParcels } = state
-  if (!landParcels) {
-    return undefined
-  }
-
-  const { parcelId, sheetId } = parcel
-  const foundLandParcel = landParcels[stringifyParcel({ parcelId, sheetId })]
-  const foundAction = foundLandParcel?.actionsObj?.[actionCode]
-  return foundAction?.[propertyName]
-}
-
-/**
  * Adds parcel actions to an existing state based on payload
  * @param {object} state - Current state
  * @param {object} payload - Form payload containing action selections

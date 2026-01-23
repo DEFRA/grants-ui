@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import {
   formatPrice,
   createParcelItemRow,
@@ -7,7 +7,6 @@ import {
   mapPaymentInfoToParcelItems,
   mapAdditionalYearlyPayments
 } from './payment.view-model.js'
-import { getParcelActionPropertyFromState } from '../view-state/land-parcel.view-state.js'
 
 // Mock the action groups import
 vi.mock('../services/land-grants.service.js', () => ({
@@ -15,11 +14,6 @@ vi.mock('../services/land-grants.service.js', () => ({
     { name: 'Group 1', actions: ['SAM1', 'SAM2'] },
     { name: 'Group 2', actions: ['SAM3', 'SAM4'] }
   ]
-}))
-
-// Mock the getParcelActionPropertyFromState function
-vi.mock('../view-state/land-parcel.view-state.js', () => ({
-  getParcelActionPropertyFromState: vi.fn()
 }))
 
 describe('payment-view-model.mapper', () => {
@@ -44,50 +38,18 @@ describe('payment-view-model.mapper', () => {
         parcelId: '5678',
         code: 'SAM1',
         description: 'Test Action',
-        quantity: '10',
+        quantity: '10 hectares',
         annualPaymentPence: 10050
       }
 
-      const result = createParcelItemRow(data, false)
+      const result = createParcelItemRow(data)
 
       expect(result).toHaveLength(4)
       expect(result[0].text).toBe('Test Action: SAM1')
-      expect(result[1].text).toBe('10')
+      expect(result[1].text).toBe('10 hectares')
       expect(result[2].text).toBe('£100.50')
       expect(result[3].html).toContain('select-actions-for-land-parcel?parcelId=AB1234-5678')
       expect(result[3].html).toContain('remove-action?parcelId=AB1234-5678&action=SAM1')
-    })
-
-    it('should include SSSI consent message when required', () => {
-      const data = {
-        sheetId: 'AB1234',
-        parcelId: '5678',
-        code: 'CMOR1',
-        description: 'Moorland Assessment',
-        quantity: '10',
-        annualPaymentPence: 10050
-      }
-
-      const result = createParcelItemRow(data, true)
-
-      expect(result).toHaveLength(4)
-      expect(result[0].text).toBe('Moorland Assessment: CMOR1. SSSI consent needed.')
-    })
-
-    it('should not include SSSI consent message when not required', () => {
-      const data = {
-        sheetId: 'AB1234',
-        parcelId: '5678',
-        code: 'SAM1',
-        description: 'Test Action',
-        quantity: '10',
-        annualPaymentPence: 10050
-      }
-
-      const result = createParcelItemRow(data, false)
-
-      expect(result[0].text).toBe('Test Action: SAM1')
-      expect(result[0].text).not.toContain('SSSI consent needed')
     })
 
     it('should include hidden text for accessibility', () => {
@@ -96,11 +58,11 @@ describe('payment-view-model.mapper', () => {
         parcelId: '5678',
         code: 'SAM1',
         description: 'Test Action',
-        quantity: '10',
+        quantity: '10 hectares',
         annualPaymentPence: 10050
       }
 
-      const result = createParcelItemRow(data, false)
+      const result = createParcelItemRow(data)
 
       expect(result[3].html).toContain('govuk-visually-hidden')
       expect(result[3].html).toContain('land action SAM1 for parcel AB1234 5678')
@@ -158,13 +120,7 @@ describe('payment-view-model.mapper', () => {
   })
 
   describe('mapPaymentInfoToParcelItems', () => {
-    beforeEach(() => {
-      vi.clearAllMocks()
-    })
-
     it('should group items by parcel', () => {
-      getParcelActionPropertyFromState.mockReturnValue(false)
-
       const paymentInfo = {
         parcelItems: {
           item1: {
@@ -194,7 +150,7 @@ describe('payment-view-model.mapper', () => {
         }
       }
 
-      const result = mapPaymentInfoToParcelItems(paymentInfo, {})
+      const result = mapPaymentInfoToParcelItems(paymentInfo)
 
       expect(result).toHaveLength(2)
       expect(result[0].cardTitle).toBe('Land parcel AB1234 5678')
@@ -204,14 +160,12 @@ describe('payment-view-model.mapper', () => {
     })
 
     it('should handle empty payment info', () => {
-      const result = mapPaymentInfoToParcelItems({}, {})
+      const result = mapPaymentInfoToParcelItems({})
 
       expect(result).toEqual([])
     })
 
     it('should include header and footer actions', () => {
-      getParcelActionPropertyFromState.mockReturnValue(false)
-
       const paymentInfo = {
         parcelItems: {
           item1: {
@@ -225,78 +179,11 @@ describe('payment-view-model.mapper', () => {
         }
       }
 
-      const result = mapPaymentInfoToParcelItems(paymentInfo, {})
+      const result = mapPaymentInfoToParcelItems(paymentInfo)
 
       expect(result[0].headerActions).toBeDefined()
       expect(result[0].headerActions.text).toBe('Remove')
       expect(result[0].footerActions).toBeDefined()
-    })
-
-    it('should retrieve sssiConsentRequired from state for each action', () => {
-      getParcelActionPropertyFromState.mockReturnValue(true)
-
-      const paymentInfo = {
-        parcelItems: {
-          item1: {
-            sheetId: 'AB1234',
-            parcelId: '5678',
-            code: 'CMOR1',
-            description: 'Moorland Assessment',
-            quantity: '10 ha',
-            annualPaymentPence: 10000
-          }
-        }
-      }
-      const state = {
-        landParcels: {
-          'AB1234-5678': {
-            actionsObj: {
-              CMOR1: { sssiConsentRequired: true }
-            }
-          }
-        }
-      }
-
-      const result = mapPaymentInfoToParcelItems(paymentInfo, state)
-
-      expect(getParcelActionPropertyFromState).toHaveBeenCalledWith(
-        state,
-        { parcelId: '5678', sheetId: 'AB1234' },
-        'CMOR1',
-        'sssiConsentRequired'
-      )
-      expect(result[0].items[0][0].text).toContain('SSSI consent needed')
-    })
-
-    it('should display action without SSSI consent message when not required', () => {
-      getParcelActionPropertyFromState.mockReturnValue(false)
-
-      const paymentInfo = {
-        parcelItems: {
-          item1: {
-            sheetId: 'AB1234',
-            parcelId: '5678',
-            code: 'SAM1',
-            description: 'Action 1',
-            quantity: '10 ha',
-            annualPaymentPence: 10000
-          }
-        }
-      }
-      const state = {
-        landParcels: {
-          'AB1234-5678': {
-            actionsObj: {
-              SAM1: { sssiConsentRequired: false }
-            }
-          }
-        }
-      }
-
-      const result = mapPaymentInfoToParcelItems(paymentInfo, state)
-
-      expect(result[0].items[0][0].text).toBe('Action 1: SAM1')
-      expect(result[0].items[0][0].text).not.toContain('SSSI consent needed')
     })
   })
 

@@ -70,7 +70,7 @@ export default class LandActionsCheckPageController extends QuestionPageControll
     const paymentResult = await calculateGrantPayment(state)
     const { payment } = paymentResult
 
-    const parcelItems = mapPaymentInfoToParcelItems(payment, state)
+    const parcelItems = mapPaymentInfoToParcelItems(payment)
     const additionalYearlyPayments = mapAdditionalYearlyPayments(payment)
 
     return { payment, parcelItems, additionalYearlyPayments }
