@@ -1027,6 +1027,8 @@ npm run
 - **`start`** - Start the production server (requires `npm run build` first)
 - **`snyk-test`** / **`snyk-monitor`** - Run security vulnerability scans
 - **`unseal:cookie`** - Utility to decrypt and inspect session cookies
+- **`gas-status:set`** - Update MockServer to return a specific GAS application status (e.g., `npm run gas-status -- AWAITING_AMENDMENTS`)
+- **`gas-status:get`** - Retrieve the current GAS application status configured in MockServer
 
 ### Update dependencies
 
