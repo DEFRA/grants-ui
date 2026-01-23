@@ -16,12 +16,14 @@ Core delivery platform Node.js Frontend Template.
   - [Code Quality & Linting](#code-quality--linting)
   - [Authentication & Security](#authentication--security)
   - [Rate Limiting](#rate-limiting)
+  - [Agreements System](#agreements-system)
   - [Custom NPM Scripts](#custom-npm-scripts)
 - [Cookies](#cookies)
   - [Inspecting cookies](#inspecting-cookies)
 - [Server-side Caching](#server-side-caching)
 - [Session Rehydration](#session-rehydration)
 - [Server to Server (S2S) Authentication](#server-to-server-s2s-authentication)
+  - [Application Lock System](#application-lock-system)
 - [Land Grants API Authentication](#land-grants-api-authentication)
 - [Redis](#redis)
 - [Proxy](#proxy)
@@ -56,6 +58,7 @@ Core delivery platform Node.js Frontend Template.
   - [Standard Logging Approach](#standard-logging-approach)
   - [Adding New Log Codes](#adding-new-log-codes)
   - [Development Workflow](#development-workflow)
+- [Development Tools](#development-tools)
 - [Analytics](#analytics)
 - [Licence](#licence)
   - [About the licence](#about-the-licence)
@@ -298,15 +301,14 @@ Rate limiting is controlled via environment variables:
 
 #### Protected Endpoints
 
-The following endpoints have stricter rate limits (`authEndpointUserLimit` / `authEndpointPathLimit`) applied:
+The following authentication endpoints have stricter rate limits (`authEndpointUserLimit` / `authEndpointPathLimit`) applied:
 
-| Endpoint              | Method | Purpose                    |
-| --------------------- | ------ | -------------------------- |
-| `/auth/sign-in`       | GET    | Sign-in initiation         |
-| `/auth/sign-in-oidc`  | GET    | OIDC callback              |
-| `/auth/sign-out`      | GET    | Sign-out                   |
-| `/auth/sign-out-oidc` | GET    | OIDC sign-out callback     |
-| `/agreements/{path*}` | POST   | Agreement form submissions |
+| Endpoint              | Method | Purpose                |
+| --------------------- | ------ | ---------------------- |
+| `/auth/sign-in`       | GET    | Sign-in initiation     |
+| `/auth/sign-in-oidc`  | GET    | OIDC callback          |
+| `/auth/sign-out`      | GET    | Sign-out               |
+| `/auth/sign-out-oidc` | GET    | OIDC sign-out callback |
 
 All other endpoints use the global rate limits (`userLimit` / `pathLimit`).
 
@@ -336,6 +338,47 @@ Rate limiting is **disabled by default** in non-production environments to avoid
 ```bash
 RATE_LIMIT_ENABLED=true
 ```
+
+### Agreements System
+
+The application includes a proxy endpoint for handling farming payment agreements, which forwards requests to an external agreements service.
+
+**How It Works:**
+
+The agreements controller acts as an authenticated proxy that:
+
+- Accepts requests at `/agreements/{path*}`
+- Extracts SBI (Single Business Identifier) from Defra ID credentials
+- Generates a JWT token with SBI and source information
+- Forwards requests to the external agreements service with authentication headers
+
+**Configuration:**
+
+| Variable                | Description                                  | Required |
+| ----------------------- | -------------------------------------------- | -------- |
+| `AGREEMENTS_UI_TOKEN`   | Bearer token for authenticating with the API | Yes      |
+| `AGREEMENTS_UI_URL`     | Base URL of the agreements service           | Yes      |
+| `AGREEMENTS_BASE_URL`   | Base path for agreements routes in grants-ui | Yes      |
+| `AGREEMENTS_JWT_SECRET` | Secret key for signing JWT tokens            | Yes      |
+
+**Example Configuration:**
+
+```bash
+AGREEMENTS_UI_TOKEN=your-bearer-token
+AGREEMENTS_UI_URL=https://agreements-service.example.com
+AGREEMENTS_BASE_URL=/agreement
+AGREEMENTS_JWT_SECRET=your-jwt-secret
+```
+
+**Security:**
+
+- Requires authenticated session (Defra ID)
+- Uses JWT encryption for sensitive data transmission
+- Validates configuration at startup
+
+**Implementation:**
+
+See `src/server/agreements/controller.js` for the proxy implementation.
 
 ### Development Services Integration (docker compose)
 
@@ -411,7 +454,7 @@ To use the tool:
 node ./tools/unseal-cookie.js '<cookie-string>' '<cookie-password>'
 
 // With the NPM script
-npm run unseal-cookie -- '<cookie-string>' '<cookie-password>'
+npm run unseal:cookie -- '<cookie-string>' '<cookie-password>'
 ```
 
 ## Server-side Caching
@@ -552,6 +595,38 @@ X-Application-Lock-Owner: LOCK-123
 ```
 
 without affecting the Authorization header or any base headers.
+
+### Application Lock System
+
+The application implements a distributed lock mechanism to prevent concurrent modifications to the same application by multiple users or sessions.
+
+#### How It Works
+
+When a user accesses an application for editing:
+
+1. A lock token is generated using JWT and the configured secret
+2. The token is sent to the backend service with requests
+3. The backend service validates the token and ensures only the lock holder can modify the application
+4. Locks automatically expire after the configured TTL
+
+#### Configuration
+
+| Variable                        | Description                        | Default           |
+| ------------------------------- | ---------------------------------- | ----------------- |
+| `APPLICATION_LOCK_TOKEN_SECRET` | Secret key for signing lock tokens | (required)        |
+| `APPLICATION_LOCK_TTL_MS`       | Lock time-to-live in milliseconds  | `14400000` (4hrs) |
+
+**Note:** The same secret must be configured in both grants-ui and grants-ui-backend services.
+
+#### Lock Headers
+
+When operations require a lock, requests include:
+
+```
+X-Application-Lock-Owner: <JWT-token>
+```
+
+This header is automatically added by the `createApiHeadersForGrantsUiBackend` helper when a `lockToken` parameter is provided.
 
 ### Base Headers Only
 
@@ -787,6 +862,65 @@ which is formatted as a GUID string.
 | --------------- | ------------------------------------------- |
 | `FEEDBACK_LINK` | URL to feedback (e.g., GitHub issue, form). |
 
+#### Additional Configuration
+
+| Variable                     | Description                                    | Default                     |
+| ---------------------------- | ---------------------------------------------- | --------------------------- |
+| `SERVICE_VERSION`            | Service version (injected in CDP environments) | null                        |
+| `ENVIRONMENT`                | CDP environment name                           | `local`                     |
+| `SERVICE_NAME`               | Application service name                       | `Manage land-based actions` |
+| `STATIC_CACHE_TIMEOUT`       | Static asset cache timeout in milliseconds     | `604800000` (1 week)        |
+| `ASSET_PATH`                 | Path to static assets                          | `/public`                   |
+| `TRACING_HEADER`             | HTTP header for distributed tracing            | `x-cdp-request-id`          |
+| `GA_TRACKING_ID`             | Google Analytics tracking ID (optional)        | undefined                   |
+| `COOKIE_POLICY_URL`          | URL for cookie policy page                     | `/cookies`                  |
+| `COOKIE_CONSENT_EXPIRY_DAYS` | Days before cookie consent expires             | `365`                       |
+| `DEV_TOOLS_ENABLED`          | Enable development tools and routes            | `true` (dev only)           |
+
+#### Defra ID Additional Settings
+
+| Variable                  | Description                        | Default |
+| ------------------------- | ---------------------------------- | ------- |
+| `DEFRA_ID_REFRESH_TOKENS` | Enable token refresh functionality | `true`  |
+
+#### Land Grants Configuration
+
+| Variable                         | Description                              |
+| -------------------------------- | ---------------------------------------- |
+| `GAS_FRPS_GRANT_CODE`            | Grant code for Future RPS in GAS         |
+| `LAND_GRANTS_API_URL`            | Land Grants API endpoint                 |
+| `LAND_GRANTS_API_AUTH_TOKEN`     | Auth token for Land Grants API           |
+| `LAND_GRANTS_API_ENCRYPTION_KEY` | Encryption key for Land Grants API token |
+
+**Note:** For detailed Land Grants API authentication, see [Land Grants API Authentication](#land-grants-api-authentication).
+
+#### Consolidated View API (Optional)
+
+| Variable              | Description                           |
+| --------------------- | ------------------------------------- |
+| `CV_API_ENDPOINT`     | Consolidated View API endpoint        |
+| `CV_API_MOCK_ENABLED` | Enable mock DAL for Consolidated View |
+
+#### Microsoft Entra (Internal Use)
+
+| Variable                       | Description                    |
+| ------------------------------ | ------------------------------ |
+| `ENTRA_INTERNAL_TOKEN_URL`     | Microsoft Entra token endpoint |
+| `ENTRA_INTERNAL_TENANT_ID`     | Microsoft tenant ID            |
+| `ENTRA_INTERNAL_CLIENT_ID`     | Microsoft client ID            |
+| `ENTRA_INTERNAL_CLIENT_SECRET` | Microsoft client secret        |
+
+#### Development Tools Configuration
+
+When `DEV_TOOLS_ENABLED=true`, the following demo data can be configured. See [Development Tools](#development-tools) for more details:
+
+| Variable                 | Description           | Default              |
+| ------------------------ | --------------------- | -------------------- |
+| `DEV_DEMO_REF_NUMBER`    | Demo reference number | `DEV2024001`         |
+| `DEV_DEMO_BUSINESS_NAME` | Demo business name    | `Demo Test Farm Ltd` |
+| `DEV_DEMO_SBI`           | Demo SBI number       | `999888777`          |
+| `DEV_DEMO_CONTACT_NAME`  | Demo contact name     | `Demo Test User`     |
+
 ### Grant Form Definitions
 
 Grant form definitions are stored in the `src/server/common/forms/definitions` directory as YAML files and read at startup.
@@ -802,13 +936,11 @@ The Grants Application Service (GAS) is used to store grant definitions that the
 Creating a Grant Definition
 A grant definition is created via the GAS backend by making a POST request to the /grants endpoint (see postman folder in the root of the project). This defines the structure and schema of the grant application payload, which the app will later submit.
 
-You can also create a grant using the swagger link below.
+You can also create a grant using the [GAS API](https://github.com/DEFRA/fg-gas-backend). For API documentation and examples, see the [fg-gas-backend repository](https://github.com/DEFRA/fg-gas-backend).
 
-https://fg-gas-backend.dev.cdp-int.defra.cloud/documentation#/
+Example request (truncated - see [GAS API documentation](https://github.com/DEFRA/fg-gas-backend) for full schema):
 
-Example request:
-
-```
+```bash
 curl --location --request POST 'https://fg-gas-backend.dev.cdp-int.defra.cloud/grants' \
 --header 'Content-Type: application/json' \
 --data-raw '{
@@ -822,51 +954,7 @@ curl --location --request POST 'https://fg-gas-backend.dev.cdp-int.defra.cloud/g
       "businessNature": { "type": "string" },
       "businessLegalStatus": { "type": "string" },
       "isInEngland": { "type": "boolean" },
-      "planningPermissionStatus": { "type": "string" },
-      "projectStartStatus": { "type": "string" },
-      "isLandBusinessOwned": { "type": "boolean" },
-      "hasFiveYearTenancyAgreement": { "type": "boolean" },
-      "isBuildingSmallerAbattoir": { "type": "boolean" },
-      "isBuildingFruitStorage": { "type": "boolean" },
-      "isProvidingServicesToOtherFarmers": { "type": "boolean" },
-      "eligibleItemsNeeded": {
-        "type": "array",
-        "items": { "type": "string" }
-      },
-      "needsStorageFacilities": { "type": "string" },
-      "estimatedCost": { "type": "number" },
-      "canPayRemainingCosts": { "type": "boolean" },
-      "processedProduceType": { "type": "string" },
-      "valueAdditionMethod": { "type": "string" },
-      "impactType": {
-        "type": "array",
-        "items": { "type": "string" }
-      },
-      "hasMechanisationUsage": { "type": "boolean" },
-      "manualLabourEquivalence": { "type": "string" },
-      "grantApplicantType": { "type": "string" },
-      "agentFirstName": { "type": "string" },
-      "agentLastName": { "type": "string" },
-      "agentBusinessName": { "type": "string" },
-      "agentEmail": { "type": "string", "format": "email" },
-      "agentEmailConfirmation": { "type": "string", "format": "email" },
-      "agentMobile": { "type": "string" },
-      "agentLandline": { "type": "string" },
-      "agentBusinessAddress__addressLine1": { "type": "string" },
-      "agentBusinessAddress__addressLine2": { "type": ["string", "null"] },
-      "agentBusinessAddress__town": { "type": "string" },
-      "agentBusinessAddress__county": { "type": ["string", "null"] },
-      "agentBusinessAddress__postcode": { "type": "string" },
-      "applicantFirstName": { "type": "string" },
-      "applicantLastName": { "type": "string" },
-      "applicantEmail": { "type": "string", "format": "email" },
-      "applicantEmailConfirmation": { "type": "string", "format": "email" },
-      "applicantMobile": { "type": "string" },
-      "applicantLandline": { "type": "string" },
-      "applicantBusinessAddress__addressLine1": { "type": "string" },
-      "applicantBusinessAddress__addressLine2": { "type": ["string", "null"] },
-      "applicantBusinessAddress__town": { "type": "string" }
-      // ... more fields if needed
+      // ... additional fields as required
     }
   }
 }'
@@ -974,9 +1062,7 @@ Once `http-client.private.env.json` is created and populated, you can:
 
 #### Grant Schema Updates
 
-In order to update a grant schema, visit:
-
-- https://fg-gas-backend.dev.cdp-int.defra.cloud/documentation#/
+In order to update a grant schema, see the [GAS API repository](https://github.com/DEFRA/fg-gas-backend) for documentation and examples.
 
 Find the endpoint `GET /grants/{code}`, pass in the code, e.g. `frps-private-beta`, will return the grant.
 
@@ -1580,13 +1666,33 @@ ComponentsRegistry.register(
 
 Then use it in your YAML with `{{MYCOMPONENT}}` (uppercase).
 
-### Development Tools for Confirmation Pages
+### Testing Confirmation Pages
 
-The application includes dev tools to help test and preview confirmation pages during development.
+See [Development Tools](#development-tools) for routes to test and preview confirmation pages during development.
 
-#### Demo Confirmation Route
+## Development Tools
 
-Access demo confirmation pages at: `http://localhost:3000/dev/demo-confirmation/{form-slug}`
+The application includes development tools and routes for testing and debugging. These are automatically enabled in development mode and disabled in production.
+
+### Configuration
+
+Development tools are controlled by the `DEV_TOOLS_ENABLED` environment variable (default: `true` in development, `false` in production).
+
+### Available Dev Routes
+
+All development routes are prefixed with `/dev/`:
+
+#### Demo Confirmation Pages
+
+**Route:** `/dev/demo-confirmation/{form-slug}`
+
+Preview confirmation pages with mock data for any form in the system. Useful for:
+
+- Testing confirmation page templates
+- Validating dynamic content insertion
+- Previewing new grant confirmation pages
+
+**Example:** `http://localhost:3000/dev/demo-confirmation/adding-value`
 
 When running in development mode, the demo confirmation handler:
 
@@ -1596,21 +1702,36 @@ When running in development mode, the demo confirmation handler:
 - Includes error details when configuration issues occur
 - Uses mock data for testing dynamic content insertion
 
-#### Test Error Pages
+#### Error Page Testing
 
-Test error page rendering at the following routes. `http://localhost:3000/dev/` +
+Test error page rendering at the following routes:
 
-| Route      | Error Code | Description           |
-| ---------- | ---------- | --------------------- |
-| `test-400` | 400        | Bad Request           |
-| `test-401` | 401        | Unauthorized          |
-| `test-403` | 403        | Forbidden             |
-| `test-404` | 404        | Not Found             |
-| `test-429` | 429        | Too Many Requests     |
-| `test-500` | 500        | Internal Server Error |
-| `test-503` | 503        | Service Unavailable   |
+| Route           | Error Code | Description           |
+| --------------- | ---------- | --------------------- |
+| `/dev/test-400` | 400        | Bad Request           |
+| `/dev/test-401` | 401        | Unauthorized          |
+| `/dev/test-403` | 403        | Forbidden             |
+| `/dev/test-404` | 404        | Not Found             |
+| `/dev/test-429` | 429        | Too Many Requests     |
+| `/dev/test-500` | 500        | Internal Server Error |
+| `/dev/test-503` | 503        | Service Unavailable   |
 
 These routes trigger the corresponding HTTP errors to verify error page templates render correctly.
+
+### Demo Data Configuration
+
+Configure demo data for development tools:
+
+```bash
+DEV_DEMO_REF_NUMBER=DEV2024001
+DEV_DEMO_BUSINESS_NAME=Demo Test Farm Ltd
+DEV_DEMO_SBI=999888777
+DEV_DEMO_CONTACT_NAME=Demo Test User
+```
+
+### Implementation
+
+Development tools are implemented in `src/server/dev-tools/` and are only registered when `DEV_TOOLS_ENABLED=true`.
 
 ## Analytics
 
