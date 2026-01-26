@@ -83,14 +83,14 @@ describe('buildCookieBannerConfig', () => {
     { func: buildCookieBannerConfig, name: 'buildCookieBannerConfig' },
     { func: buildCookieBannerNoscriptConfig, name: 'buildCookieBannerNoscriptConfig' }
   ])('$name should use service name in ariaLabel and heading', ({ func }) => {
-    const serviceName = 'Manage land-based actions'
+    const serviceName = 'Farm and land service'
     const result =
       func === buildCookieBannerConfig
         ? func(serviceName, 'cookie_consent', 365, undefined, '/cookies')
         : func(serviceName)
 
-    expect(result.ariaLabel).toBe('Cookies on Manage land-based actions')
-    expect(result.messages[0].headingText).toBe('Cookies on Manage land-based actions')
+    expect(result.ariaLabel).toBe('Cookies on Farm and land service')
+    expect(result.messages[0].headingText).toBe('Cookies on Farm and land service')
   })
 
   test('should use custom cookie policy URL when provided', () => {

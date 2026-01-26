@@ -65,7 +65,7 @@ export const config = convict({
   serviceName: {
     doc: 'Applications Service Name',
     format: String,
-    default: 'Manage land-based actions',
+    default: 'Farm and land service',
     env: 'SERVICE_NAME'
   },
   root: {
