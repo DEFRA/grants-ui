@@ -214,6 +214,7 @@ export async function fetchBusinessAndCustomerInformation(request) {
           }
           phone {
             mobile
+            landline
           }
           name
           address {
@@ -230,10 +231,25 @@ export async function fetchBusinessAndCustomerInformation(request) {
       }
     }`
 
-  const formatResponse = (r) => ({
-    business: r.data?.business?.info,
-    customer: r.data?.customer?.info
-  })
+  const formatResponse = (r) => {
+    const { business, customer } = r.data
+    const businessInfo = business?.info
+    const customerInfo = customer?.info
+    const formattedResponse = { business: {}, customer: customerInfo }
+
+    if (businessInfo) {
+      formattedResponse.business = {
+        name: businessInfo.name,
+        reference: businessInfo.reference,
+        address: businessInfo.address,
+        landlinePhoneNumber: businessInfo.phone?.landline,
+        mobilePhoneNumber: businessInfo.phone?.mobile,
+        email: businessInfo.email?.address
+      }
+    }
+
+    return formattedResponse
+  }
 
   return fetchFromConsolidatedView(request, { query, formatResponse })
 }

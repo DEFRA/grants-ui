@@ -86,7 +86,8 @@ describe('Consolidated View Service', () => {
         info: {
           name: 'Test Business Ltd',
           email: { address: 'test@business.com' },
-          phone: { mobile: '07123456789' },
+          phone: { mobile: '07123456789', landline: '01234567890' },
+          reference: 'REF123',
           address: {
             line1: '123 Test Street',
             city: 'Test City',
@@ -340,7 +341,18 @@ describe('Consolidated View Service', () => {
 
       expect(mockFetchInstance).toHaveBeenCalledTimes(1)
       expect(result).toEqual({
-        business: mockBusinessCustomerResponse.data.business.info,
+        business: {
+          name: 'Test Business Ltd',
+          reference: 'REF123',
+          address: {
+            line1: '123 Test Street',
+            city: 'Test City',
+            postalCode: 'TC1 2AB'
+          },
+          landlinePhoneNumber: '01234567890',
+          mobilePhoneNumber: '07123456789',
+          email: 'test@business.com'
+        },
         customer: mockBusinessCustomerResponse.data.customer.info
       })
 
@@ -348,6 +360,8 @@ describe('Consolidated View Service', () => {
       const body = JSON.parse(calledOptions.body)
       expect(body.query).toContain(`business(sbi: "${mockSbi}")`)
       expect(body.query).toContain(`customer(crn: "${mockCrn}")`)
+      expect(body.query).toContain('landline')
+      expect(body.query).toContain('mobile')
     })
 
     it('should handle missing business or customer data gracefully', async () => {
@@ -365,8 +379,58 @@ describe('Consolidated View Service', () => {
       const result = await fetchBusinessAndCustomerInformation(mockRequest)
 
       expect(result).toEqual({
-        business: null,
+        business: {},
         customer: null
+      })
+    })
+
+    it('should handle missing phone and email fields', async () => {
+      const responseWithoutContact = {
+        data: {
+          business: {
+            info: {
+              name: 'Test Business Ltd',
+              reference: 'REF123',
+              address: {
+                line1: '123 Test Street',
+                city: 'Test City',
+                postalCode: 'TC1 2AB'
+              }
+              // phone and email are missing
+            }
+          },
+          customer: {
+            info: {
+              name: {
+                title: 'Mr',
+                first: 'John',
+                last: 'Doe'
+              }
+            }
+          }
+        }
+      }
+      mockFetchInstance.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(responseWithoutContact)
+      })
+
+      const result = await fetchBusinessAndCustomerInformation(mockRequest)
+
+      expect(result).toEqual({
+        business: {
+          name: 'Test Business Ltd',
+          reference: 'REF123',
+          address: {
+            line1: '123 Test Street',
+            city: 'Test City',
+            postalCode: 'TC1 2AB'
+          },
+          landlinePhoneNumber: undefined,
+          mobilePhoneNumber: undefined,
+          email: undefined
+        },
+        customer: responseWithoutContact.data.customer.info
       })
     })
 
@@ -406,7 +470,14 @@ describe('Consolidated View Service', () => {
           },
           info: {
             name: 'Mock Business',
-            email: { address: 'mock@business.com' }
+            reference: 'MOCK-REF456',
+            email: { address: 'mock@business.com' },
+            phone: { mobile: '07987654321', landline: '01987654321' },
+            address: {
+              line1: '456 Mock Street',
+              city: 'Mock City',
+              postalCode: 'MC1 2DE'
+            }
           }
         }
       }
@@ -453,7 +524,18 @@ describe('Consolidated View Service', () => {
       const result = await fetchBusinessAndCustomerInformation(mockRequest)
 
       expect(result).toEqual({
-        business: mockSBIFileData.data.business.info,
+        business: {
+          name: 'Mock Business',
+          reference: 'MOCK-REF456',
+          address: {
+            line1: '456 Mock Street',
+            city: 'Mock City',
+            postalCode: 'MC1 2DE'
+          },
+          landlinePhoneNumber: '01987654321',
+          mobilePhoneNumber: '07987654321',
+          email: 'mock@business.com'
+        },
         customer: mockCRNFileData.customer.info
       })
       expect(fs.readFile).toHaveBeenCalledTimes(2)

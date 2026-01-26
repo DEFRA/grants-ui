@@ -189,7 +189,7 @@ describe('ConfirmMethaneDetailsController', () => {
       expect(createCustomerNameRow).toHaveBeenCalledWith(mockData.customer?.name)
       expect(createBusinessNameRow).toHaveBeenCalledWith(mockData.business?.name)
       expect(createSbiRow).toHaveBeenCalledWith('SBI123456')
-      expect(createContactDetailsRow).toHaveBeenCalledWith('07123456789', 'test@methane.com')
+      expect(createContactDetailsRow).toHaveBeenCalledWith(null, '07123456789', 'test@methane.com')
       expect(createAddressRow).toHaveBeenCalledWith(mockData.business?.address)
 
       expect(result).toEqual({
