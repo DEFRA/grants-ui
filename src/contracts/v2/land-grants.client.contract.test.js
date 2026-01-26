@@ -287,7 +287,7 @@ describe('calculate', () => {
     const EXPECTED_BODY = like(unprocessableResponseExample)
     await provider
       .given('has parcels', { parcels: [{ sheetId: 'SD6743', parcelId: '8083' }] })
-      .uponReceiving('a calculate request with a negative quantity')
+      .uponReceiving('a calculate request with invalid quantity')
       .withRequest({
         method: 'POST',
         path: '/api/v2/payments/calculate',
@@ -350,6 +350,292 @@ describe('calculate', () => {
         } catch (error) {
           expect(error.code).toBe(422)
           expect(error.message).toBe('Unprocessable Entity')
+        }
+      })
+  })
+})
+
+describe('parcels', () => {
+  it('returns HTTP 400 when passing a wrong field name', async () => {
+    const badRequestResponseExample = {
+      statusCode: 400,
+      error: 'Bad Request',
+      message: '"fields[0]" must be one of [size, actions, actions.results]'
+    }
+    const EXPECTED_BODY = like(badRequestResponseExample)
+
+    await provider
+      .given('has parcels', { parcels: [{ sheetId: 'SD6743', parcelId: '8083' }] })
+      .uponReceiving('a v2 request for a wrong field name')
+      .withRequest({
+        method: 'POST',
+        path: '/api/v2/parcels',
+        headers: { 'Content-Type': 'application/json' },
+        body: { parcelIds: ['SD6743-8083'], fields: ['WRONG'] }
+      })
+      .willRespondWith({ status: 400, headers: { 'Content-Type': 'application/json' }, body: EXPECTED_BODY })
+      .executeTest(async (mockserver) => {
+        try {
+          await postToLandGrantsApi(
+            '/api/v2/parcels',
+            { parcelIds: ['SD6743-8083'], fields: ['WRONG'] },
+            mockserver.url
+          )
+        } catch (error) {
+          expect(error.code).toBe(400)
+          expect(error.message).toBe('Bad Request')
+        }
+      })
+  })
+
+  it('returns HTTP 200 and a list of parcels with size', async () => {
+    const parcelWithSizeExample = { sheetId: 'SD6743', parcelId: '8083', size: { value: 23.3424, unit: 'ha' } }
+    const EXPECTED_BODY = like({ message: 'success', parcels: eachLike(parcelWithSizeExample) })
+
+    await provider
+      .given('has parcels', { parcels: [{ sheetId: 'SD6743', parcelId: '8083' }] })
+      .uponReceiving('a v2 request for specific parcels with size field')
+      .withRequest({
+        method: 'POST',
+        path: '/api/v2/parcels',
+        headers: { 'Content-Type': 'application/json' },
+        body: { parcelIds: ['SD6743-8083'], fields: ['size'] }
+      })
+      .willRespondWith({ status: 200, headers: { 'Content-Type': 'application/json' }, body: EXPECTED_BODY })
+      .executeTest(async (mockserver) => {
+        const response = await postToLandGrantsApi(
+          '/api/v2/parcels',
+          { parcelIds: ['SD6743-8083'], fields: ['size'] },
+          mockserver.url
+        )
+        expect(response.parcels[0]).toEqual(parcelWithSizeExample)
+      })
+  })
+
+  it('returns HTTP 400 when passing a wrong formatted parcel', async () => {
+    const badRequestResponseExample = {
+      statusCode: 400,
+      error: 'Bad Request',
+      message:
+        '"parcelIds[0]" with value "BADFORMAT-91977" fails to match the required pattern: /^[A-Za-z0-9]{6}-[0-9]{4}$/'
+    }
+    const EXPECTED_BODY = like(badRequestResponseExample)
+
+    await provider
+      .uponReceiving('a v2 request for a malformed parcel with size field')
+      .withRequest({
+        method: 'POST',
+        path: '/api/v2/parcels',
+        headers: { 'Content-Type': 'application/json' },
+        body: { parcelIds: ['BADFORMAT-91977'], fields: ['size'] }
+      })
+      .willRespondWith({ status: 400, headers: { 'Content-Type': 'application/json' }, body: EXPECTED_BODY })
+      .executeTest(async (mockserver) => {
+        try {
+          await postToLandGrantsApi(
+            '/api/v2/parcels',
+            { parcelIds: ['BADFORMAT-91977'], fields: ['size'] },
+            mockserver.url
+          )
+        } catch (error) {
+          expect(error.code).toBe(400)
+          expect(error.message).toBe('Bad Request')
+        }
+      })
+  })
+
+  it('returns HTTP 404 when parcel with size field is not found', async () => {
+    const notFoundParcelExample = {
+      statusCode: 404,
+      error: 'Not Found',
+      message: 'Land parcel not found: SD6843-1234'
+    }
+    const EXPECTED_BODY = like(notFoundParcelExample)
+
+    await provider
+      .given('has parcels', { parcels: [] })
+      .uponReceiving('a v2 request for a not found parcel with size field')
+      .withRequest({
+        method: 'POST',
+        path: '/api/v2/parcels',
+        headers: { 'Content-Type': 'application/json' },
+        body: { parcelIds: ['SD6843-1234'], fields: ['size'] }
+      })
+      .willRespondWith({ status: 404, headers: { 'Content-Type': 'application/json' }, body: EXPECTED_BODY })
+      .executeTest(async (mockserver) => {
+        try {
+          await postToLandGrantsApi('/api/v2/parcels', { parcelIds: ['SD6843-1234'], fields: ['size'] }, mockserver.url)
+        } catch (error) {
+          expect(error.code).toBe(404)
+          expect(error.message).toBe('Not Found')
+        }
+      })
+  })
+
+  it('returns HTTP 200 with SSSI consent information for a single parcel', async () => {
+    const parcelWithSSSIExample = {
+      parcelId: 'SD6743',
+      sheetId: '8083',
+      size: { value: 23.3424, unit: 'ha' },
+      actions: [
+        {
+          code: 'CMOR1',
+          availableArea: { value: 10.5, unit: 'ha' },
+          description: 'Assess moorland and produce a written record',
+          ratePerUnitGbp: 10.6,
+          ratePerAgreementPerYearGbp: 272,
+          sssiConsentRequired: false
+        },
+        {
+          code: 'UPL1',
+          availableArea: { value: 20.75, unit: 'ha' },
+          description: 'Moderate livestock grazing on moorland',
+          ratePerUnitGbp: 20,
+          sssiConsentRequired: true
+        },
+        {
+          code: 'UPL2',
+          availableArea: { value: 15.25, unit: 'ha' },
+          description: 'Moderate livestock grazing on moorland',
+          ratePerUnitGbp: 53,
+          sssiConsentRequired: true
+        }
+      ]
+    }
+    const EXPECTED_BODY = like({ message: 'success', parcels: eachLike(parcelWithSSSIExample) })
+
+    await provider
+      .given('has parcels', { parcels: [{ sheetId: 'SD6743', parcelId: '8083' }] })
+      .uponReceiving('a v2 request for a single parcel with SSSI consent information')
+      .withRequest({
+        method: 'POST',
+        path: '/api/v2/parcels',
+        headers: { 'Content-Type': 'application/json' },
+        body: { parcelIds: ['SD6743-8083'], fields: ['actions', 'size', 'actions.sssiConsentRequired'] }
+      })
+      .willRespondWith({ status: 200, headers: { 'Content-Type': 'application/json' }, body: EXPECTED_BODY })
+      .executeTest(async (mockserver) => {
+        const response = await postToLandGrantsApi(
+          '/api/v2/parcels',
+          { parcelIds: ['SD6743-8083'], fields: ['actions', 'size', 'actions.sssiConsentRequired'] },
+          mockserver.url
+        )
+        expect(response.parcels[0]).toEqual(parcelWithSSSIExample)
+        expect(response.parcels[0].actions[0].sssiConsentRequired).toBe(false)
+        expect(response.parcels[0].actions[1].sssiConsentRequired).toBe(true)
+        expect(response.parcels[0].actions[1].sssiConsentRequired).toBe(true)
+      })
+  })
+
+  it('returns HTTP 200 and a list of parcels with actions and size', async () => {
+    const parcelWithActionsAndSizeExample = {
+      parcelId: 'SD6743',
+      sheetId: '8083',
+      size: { value: 23.3424, unit: 'ha' },
+      actions: [
+        {
+          code: 'CMOR1',
+          availableArea: { value: 10.5, unit: 'ha' },
+          description: 'Assess moorland and produce a written record',
+          ratePerUnitGbp: 10.6,
+          ratePerAgreementPerYearGbp: 272
+        },
+        {
+          code: 'UPL1',
+          availableArea: { value: 20.75, unit: 'ha' },
+          description: 'Moderate livestock grazing on moorland',
+          ratePerUnitGbp: 20
+        },
+        {
+          code: 'UPL2',
+          availableArea: { value: 15.25, unit: 'ha' },
+          description: 'Moderate livestock grazing on moorland',
+          ratePerUnitGbp: 53
+        }
+      ]
+    }
+    const EXPECTED_BODY = like({ message: 'success', parcels: eachLike(parcelWithActionsAndSizeExample) })
+
+    await provider
+      .given('has parcels', { parcels: [{ sheetId: 'SD6743', parcelId: '8083' }] })
+      .uponReceiving('a v2 request for a single parcel with actions and size')
+      .withRequest({
+        method: 'POST',
+        path: '/api/v2/parcels',
+        headers: { 'Content-Type': 'application/json' },
+        body: { parcelIds: ['SD6743-8083'], fields: ['actions', 'size'] }
+      })
+      .willRespondWith({ status: 200, headers: { 'Content-Type': 'application/json' }, body: EXPECTED_BODY })
+      .executeTest(async (mockserver) => {
+        const response = await postToLandGrantsApi(
+          '/api/v2/parcels',
+          { parcelIds: ['SD6743-8083'], fields: ['actions', 'size'] },
+          mockserver.url
+        )
+        expect(response.parcels[0]).toEqual(parcelWithActionsAndSizeExample)
+      })
+  })
+
+  it('returns HTTP 400 when parcel id is malformed', async () => {
+    const badRequestResponseExample = {
+      statusCode: 400,
+      error: 'Bad Request',
+      message:
+        '"parcelIds[0]" with value "MALFORMED-PARCEL" fails to match the required pattern: /^[A-Za-z0-9]{6}-[0-9]{4}$/'
+    }
+    const EXPECTED_BODY = like(badRequestResponseExample)
+
+    await provider
+      .uponReceiving('a v2 request for a malformed parcel with actions and size')
+      .withRequest({
+        method: 'POST',
+        path: '/api/v2/parcels',
+        headers: { 'Content-Type': 'application/json' },
+        body: { parcelIds: ['MALFORMED-PARCEL'], fields: ['actions', 'size'] }
+      })
+      .willRespondWith({ status: 400, headers: { 'Content-Type': 'application/json' }, body: EXPECTED_BODY })
+      .executeTest(async (mockserver) => {
+        try {
+          await postToLandGrantsApi(
+            '/api/v2/parcels',
+            { parcelIds: ['MALFORMED-PARCEL'], fields: ['actions', 'size'] },
+            mockserver.url
+          )
+        } catch (error) {
+          expect(error.code).toBe(400)
+          expect(error.message).toBe('Bad Request')
+        }
+      })
+  })
+
+  it('returns HTTP 404 when parcel with actions and size is not found', async () => {
+    const notFoundParcelExample = {
+      statusCode: 404,
+      error: 'Not Found',
+      message: 'Land parcel not found: SD1234-5678'
+    }
+    const EXPECTED_BODY = like(notFoundParcelExample)
+
+    await provider
+      .given('has parcels', { parcels: [] })
+      .uponReceiving('a v2 request for a not found parcel with actions and size')
+      .withRequest({
+        method: 'POST',
+        path: '/api/v2/parcels',
+        headers: { 'Content-Type': 'application/json' },
+        body: { parcelIds: ['SD1234-5678'], fields: ['actions', 'size'] }
+      })
+      .willRespondWith({ status: 404, headers: { 'Content-Type': 'application/json' }, body: EXPECTED_BODY })
+      .executeTest(async (mockserver) => {
+        try {
+          await postToLandGrantsApi(
+            '/api/v2/parcels',
+            { parcelIds: ['SD1234-5678'], fields: ['actions', 'size'] },
+            mockserver.url
+          )
+        } catch (error) {
+          expect(error.code).toBe(404)
+          expect(error.message).toBe('Not Found')
         }
       })
   })
