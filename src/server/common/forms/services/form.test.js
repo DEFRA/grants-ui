@@ -382,24 +382,6 @@ describe('form', () => {
       readdirSpy.mockRestore()
     })
 
-    test('skips files that contain a tasklist', async () => {
-      const readdirSpy = vi
-        .spyOn(fs, 'readdir')
-        .mockResolvedValueOnce([{ name: 'tasklist.yaml', isDirectory: () => false, isFile: () => true }])
-      const readFileSpy = vi.spyOn(fs, 'readFile').mockResolvedValueOnce(`
-tasklist:
-  id: example
-  title: Example title
-`)
-
-      await expect(formsService()).resolves.toBeDefined()
-
-      expect(mockError).not.toHaveBeenCalled()
-
-      readFileSpy.mockRestore()
-      readdirSpy.mockRestore()
-    })
-
     test('logs error when YAML parsing fails', async () => {
       const readdirSpy = vi
         .spyOn(fs, 'readdir')

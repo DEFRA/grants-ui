@@ -1,0 +1,270 @@
+engine: V2
+name: Example grant with task list
+metadata:
+  id: f298fa47-0ebb-4c92-a0aa-3d0faed71aab
+  enabledInProd: false
+  referenceNumberPrefix: EGWT
+  cookieConsent:
+    enabled: true
+    serviceName: Manage land-based actions
+    cookiePolicyUrl: /cookies
+    expiryDays: 365
+  tasklist:
+    completeInOrder: true # Optional, defaults to true - must complete tasks in order
+    returnAfterSection: true # Optional, defaults to true - returns to task list after each section
+    showCompletionStatus: true # Optional, defaults to true - show "X of Y" completion status
+    statuses: # Optional completion status display overrides (defaults shown below)
+      cannotStart:
+        text: 'Cannot start yet'
+        classes: 'govuk-tag--grey'
+      notStarted:
+        text: 'Not started'
+        classes: 'govuk-tag--blue'
+      completed:
+        text: 'Completed'
+        classes: 'govuk-tag--green'
+  submission:
+    grantCode: example-grant-with-task-list
+    submissionSchemaPath: ./schemas/example-grant-with-auth-submission.schema.json
+  grantRedirectRules:
+    preSubmission:
+      - toPath: '/tasks'
+    postSubmission:
+      # Cleared
+      - fromGrantsStatus: SUBMITTED,REOPENED
+        gasStatus: APPLICATION_WITHDRAWN
+        toGrantsStatus: CLEARED
+        toPath: /start
+
+      # Awaiting amendments
+      - fromGrantsStatus: SUBMITTED
+        gasStatus: AWAITING_AMENDMENTS
+        toGrantsStatus: REOPENED
+        toPath: /tasks
+
+      # Offer sent, withdrawn, accepted -> agreements service
+      - fromGrantsStatus: 'SUBMITTED'
+        gasStatus: 'OFFER_SENT,OFFER_WITHDRAWN,OFFER_ACCEPTED'
+        toGrantsStatus: 'SUBMITTED'
+        toPath: /agreements
+
+      # Reopened
+      - fromGrantsStatus: REOPENED
+        gasStatus: default
+        toGrantsStatus: REOPENED
+        toPath: /tasks
+
+      # Submitted -> confirmation (default for most GAS statuses)
+      - fromGrantsStatus: SUBMITTED
+        gasStatus: default
+        toGrantsStatus: SUBMITTED
+        toPath: /confirmation
+
+      # Default fallback
+      - fromGrantsStatus: default
+        gasStatus: default
+        toGrantsStatus: SUBMITTED
+        toPath: /confirmation
+  confirmationContent:
+    panelTitle: 'Details submitted'
+    panelText: 'Your reference number'
+    html: |
+      <h2 class="govuk-heading-m">What happens next</h2>
+      <p class="govuk-body">Defra will email you when your funding offer is available to review. This will be within 5 working days.</p>
+      <p class="govuk-body">You will need to sign in to the service to accept your funding offer.</p>
+      <p class="govuk-body">You should not start work on the actions you have applied for until:</p>
+      <ul class="govuk-list govuk-list--bullet govuk-!-margin-bottom-6">
+        <li>you have accepted your offer</li>
+        <li>the Rural Payments Agency confirms your start date</li>
+      </ul>
+
+      <details class="govuk-details" data-module="govuk-details">
+        <summary class="govuk-details__summary">
+          <span class="govuk-details__summary-text">
+            If you have a question
+          </span>
+        </summary>
+        <div class="govuk-details__text">
+          <p class="govuk-body">Contact the Rural Payments Agency if you have a query.</p>
+          <p class="govuk-body">
+            Telephone: 03000 200 301<br>
+            Monday to Friday, 8:30am to 5pm (except bank holidays)</p>
+          <p class="govuk-body"><a class="govuk-link" href="https://www.gov.uk/call-charges" target="_blank">Find out about call charges (opens in new tab)</a></p>
+          <p class="govuk-body">Email: <a class="govuk-link" href="mailto:ruralpayments@defra.gov.uk">ruralpayments@defra.gov.uk</a></p>
+        </div>
+      </details>
+
+sections:
+  - name: example-section-one
+    title: Example section one
+  - name: example-section-two
+    title: Example section two
+  - name: example-submit-section
+    title: Example submit section
+
+pages:
+  # Landing page - no section
+  - title: Apply for Example Grant with Task List
+    id: 09a72d78-3684-4cf8-8b11-466d025d4605
+    path: /start
+    controller: StartPageController
+    components:
+      - name: introHtml
+        id: f4d90bc5-d883-48f6-872c-3c18d3044932
+        type: Html
+        content: |
+          <p class="govuk-body">This is an example of a grant application that uses a task list.</p>
+          <p class="govuk-body">There are optional settings within the YAML file under <code>metadata.tasklist</code> that change how the task list behaves.</p>
+
+  # Pre task pages - no section, e.g. eligibility check or confirmation of farm details
+  - title: Example Eligibility Check
+    id: d930504d-fa5d-4374-8dcc-6a6c66660c1a
+    path: /eligibility-check
+    components:
+      - name: eligibilityCheck
+        id: da49f7fa-dc11-418d-bc36-8ae9a3ce9657
+        type: YesNoField
+        title: Are you eligible to apply for this grant?
+        hint: One or more pages can be supplied before the task list and can contain guidance, additional questions or validation.
+        options:
+          required: true
+
+  - title: Terminal Page Example
+    id: 79d7252c-11a4-494d-b824-44f867d75b57
+    path: /terminal-page
+    controller: TerminalPageController
+    components:
+      - name: cannotApplyInfo
+        id: f2cd114b-7803-4f63-9a75-ede4a627ace9
+        title: Html
+        type: Html
+        content: <p class="govuk-body">This is an example of a Terminal page to give
+          details on what conditions have not been met to continue applying for
+          the grant.</p>
+    condition: fe427aee-bb72-4fb6-99a0-8b2092605efd
+
+  # Task list page
+  - title: Example Task List
+    id: aa9333de-c8c2-4644-bc83-ace20a916a13
+    path: /tasks
+    controller: TaskListPageController
+    components:
+      - name: taskListGuidance
+        id: 184a3b28-53a2-4154-a544-f7d641106dc0
+        type: Details
+        title: Task list guidance
+        content: |
+          <p class="govuk-body">This task list helps you track your progress through the application. Each section contains one or more tasks that must be completed.</p>
+          <p class="govuk-body">Tasks will show as 'Completed' as they are populated. You must complete all sections before you can submit your application.</p>
+          <p class="govuk-body">If you need to change any information you have already provided, you can go back to any completed section and update your answers. The status will update automatically as you progress through the application.</p>
+        options:
+          position: above # Renders component above task list
+      - name: helpText
+        id: b3676e35-bc96-49f2-957c-09ead7e610ec
+        type: Html
+        content: |
+          <p class="govuk-body">This is some example help text.</p>
+          <p class="govuk-body">It can include links to guidance or other information.</p>
+        options:
+          position: below # Renders component below task list
+
+  # Task pages - Example section one
+  - title: Example multiple components task
+    id: 523058ea-46f0-44fd-ae79-1a6be652c7f9
+    path: /multiple-components-task-page
+    section: example-section-one
+    controller: TaskPageController
+    components:
+      - name: firstName
+        id: 0c1f6b5e-a8a1-4b3c-b11e-95fcbf86cd92
+        type: TextField
+        title: First name
+        options:
+          required: true
+      - name: middleName
+        id: e3891060-77a8-4e91-89a8-09c1574f6d41
+        type: TextField
+        title: Middle name
+        hint: Optional fields are ignored when determining task completion status
+        options:
+          required: false
+      - name: lastName
+        id: ac0b1543-5d84-49e4-8969-c71342a8de4d
+        type: TextField
+        title: Last name
+        options:
+          required: true
+
+  - title: Example single component task
+    id: 66deb749-1a9b-4793-80b6-4fbfc5a11124
+    path: /single-component-task-page
+    section: example-section-one
+    controller: TaskPageController
+    components:
+      - name: exampleEmailField
+        id: a903e593-4392-43b5-83d1-caa2547e48e4
+        type: EmailAddressField
+        title: Example email address
+        hint: This example uses a custom validation regex to ensure a valid email format - the task cannot be completed until this is correct
+        options:
+          required: true
+          customValidationMessages:
+            string.empty: Enter your email address
+            string.email: Enter an email address in the correct format, like name@example.com
+        schema:
+          regex: ^\w+([.-]\w+)*@[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*(\.[a-zA-Z]{2,})+$
+
+  # Task pages - Example section two
+  - title: Example compound component task
+    id: 8cbdbf5e-7622-48fe-a722-14d271cb05ef
+    path: /compound-component-task-page
+    section: example-section-two
+    controller: TaskPageController
+    components:
+      - name: exampleComponentGuidance
+        id: 566ad4ff-96e4-4b7c-ab72-e2242eea54be
+        type: Html
+        content: |
+          <p class="govuk-body">This is a compound component (UkAddressField), which includes multiple fields for address details.</p>
+          <p class="govuk-body">Optional fields are ignored when determining task completion status.</p>
+      - name: exampleAddressField
+        id: 28e5213c-12c9-4e7f-bbdd-6adc5d561cb0
+        type: UkAddressField
+        title: Example address
+
+  - title: Example task with guidance
+    id: 5da5dc71-0e34-4a8a-811e-eb7595b088b8
+    path: /example-task-with-guidance
+    section: example-section-two
+    controller: TaskPageController
+    components:
+      - name: examplePageGuidance
+        id: 40d355b6-fb00-40cb-96db-8de113a94345
+        type: Html
+        content: |
+          <p class="govuk-body">This task includes some additional guidance to assist the user.</p>
+      - name: exampleNumberField
+        id: 4cde50e0-98c7-4b0f-badb-e9ce6e6dac3f
+        type: NumberField
+        title: Example number field
+        options:
+          required: true
+
+  # Task pages - Example submit section
+  - title: Confirm and send
+    id: 9817cd3a-c9ae-49f1-8a95-076a82504d25
+    path: /declaration
+    section: example-submit-section
+    controller: DeclarationPageController
+
+conditions:
+  - id: fe427aee-bb72-4fb6-99a0-8b2092605efd
+    displayName: continueNo
+    items:
+      - id: 0572f3b3-bfdc-4996-b9ce-137642107ffa
+        componentId: da49f7fa-dc11-418d-bc36-8ae9a3ce9657
+        operator: is
+        type: BooleanValue
+        value: false
+lists: []
+schema: 2

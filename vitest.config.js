@@ -33,8 +33,7 @@ export default {
         '**/*.d.js',
         '**/logger-options.js',
         '**/config.js',
-        '**/config/land-grants.js',
-        '**/plugins/tasklist-back-button.js'
+        '**/config/land-grants.js'
       ],
       reportsDirectory: './coverage'
     }

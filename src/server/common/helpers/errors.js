@@ -1,15 +1,15 @@
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import {
-  badRequest,
-  unauthorized,
-  forbidden,
-  notFound,
-  conflict,
   badData,
-  tooManyRequests,
+  badRequest,
+  conflict,
+  forbidden,
   internal,
-  locked
+  locked,
+  notFound,
+  tooManyRequests,
+  unauthorized
 } from '@hapi/boom'
 import { config } from '~/src/config/config.js'
 
@@ -286,25 +286,6 @@ function tryParseForm(path, errorMsg) {
 }
 
 /**
- * Try to parse path as a tasklist resource
- * @param {string} path - Request path
- * @param {string} errorMsg - Error message
- * @returns {{type: string, identifier: string, reason: string} | null}
- */
-function tryParseTasklist(path, errorMsg) {
-  const tasklistRegex = /^\/tasklist\/([^/]+)/
-  const tasklistMatch = tasklistRegex.exec(path)
-  if (tasklistMatch || errorMsg.includes('Tasklist')) {
-    return {
-      type: 'tasklist',
-      identifier: tasklistMatch?.[1] || 'unknown',
-      reason: errorMsg.includes('not available') ? 'disabled_in_production' : 'not_found'
-    }
-  }
-  return null
-}
-
-/**
  * Parse resource path to determine type and context
  * @param {string} path - Request path
  * @param {object} response - Response object
@@ -316,11 +297,6 @@ function parseResourcePath(path, response) {
   const formResource = tryParseForm(path, errorMsg)
   if (formResource) {
     return formResource
-  }
-
-  const tasklistResource = tryParseTasklist(path, errorMsg)
-  if (tasklistResource) {
-    return tasklistResource
   }
 
   return { type: 'page', identifier: path, reason: 'not_found' }
@@ -348,22 +324,6 @@ function handle404WithContext(request, response) {
         LogCodes.RESOURCE_NOT_FOUND.FORM_NOT_FOUND,
         {
           slug: resourceInfo.identifier,
-          userId,
-          sbi,
-          referer,
-          userAgent,
-          reason: resourceInfo.reason,
-          environment
-        },
-        request
-      )
-      break
-
-    case 'tasklist':
-      log(
-        LogCodes.RESOURCE_NOT_FOUND.TASKLIST_NOT_FOUND,
-        {
-          tasklistId: resourceInfo.identifier,
           userId,
           sbi,
           referer,

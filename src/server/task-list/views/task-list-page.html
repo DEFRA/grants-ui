@@ -1,0 +1,40 @@
+{% extends baseLayoutPath %}
+
+{% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/task-list/macro.njk" import govukTaskList %}
+{% from "partials/components.html" import componentList %}
+
+{% block pageTitle %}
+{{ pageTitle }} | {{ serviceName }}
+{% endblock %}
+
+{% block content %}
+<div class="govuk-grid-row">
+  <div class="govuk-grid-column-two-thirds">
+    <h1 class="govuk-heading-l">{{ pageTitle }}</h1>
+
+    {# Render any components defined on the page (e.g., Html guidance) #}
+    {{ componentList(aboveComponents) }}
+
+    {# Completion status summary #}
+    {% if showCompletionStatus !== false %}
+    <h2 class="govuk-heading-s govuk-!-margin-bottom-2">Application status</h2>
+    <p class="govuk-body govuk-!-margin-bottom-7">
+      You have completed {{ completionStats.completed }} of {{ completionStats.total }} tasks.
+    </p>
+    {% endif %}
+
+    {# Render task list sections #}
+    {% for section in taskListSections %}
+    <h2 class="govuk-heading-m">{{ section.title }}</h2>
+
+    {{ govukTaskList({
+    items: section.items
+    }) }}
+    {% endfor %}
+
+    {# Render any components defined on the page (e.g., Html guidance) #}
+    {{ componentList(belowComponents) }}
+  </div>
+</div>
+{% endblock %}

@@ -39,4 +39,7 @@
   {% if backLink %}
     {{ govukBackLink(backLink) }}
   {% endif %}
+  {% if backToTaskList %}
+    <span class="govuk-!-margin-left-1 govuk-!-border-left govuk-!-padding-left-2"><a href="{{ backToTaskList.href }}" class="govuk-link govuk-link--text-colour">{{ backToTaskList.text }}</a></span>
+  {% endif %}
 {% endblock %}

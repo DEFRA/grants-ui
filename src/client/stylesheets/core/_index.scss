@@ -1,2 +1,7 @@
 @use "header";
 @use "main";
+@use "govuk-frontend" as *;
+
+.govuk-\!-border-left {
+  border-left: 1px solid $govuk-text-colour;
+}
