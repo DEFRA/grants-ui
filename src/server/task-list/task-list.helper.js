@@ -26,7 +26,7 @@ function getPageComponentNames(pageDef) {
   }
 
   // Components that store answers in state (question types)
-  const questionComponentTypes = [
+  const questionComponentTypes = new Set([
     'TextField',
     'EmailAddressField',
     'TelephoneNumberField',
@@ -41,10 +41,10 @@ function getPageComponentNames(pageDef) {
     'YesNoField',
     'UkAddressField',
     'FileUploadField'
-  ]
+  ])
 
   return pageDef.components
-    .filter((component) => questionComponentTypes.includes(component.type) && component.options?.required !== false)
+    .filter((component) => questionComponentTypes.has(component.type) && component.options?.required !== false)
     .map((component) => component.name)
     .filter(Boolean)
 }
@@ -77,56 +77,77 @@ function isTaskCompleted(pageDef, state) {
 }
 
 /**
- * Gets the task status object for a page
+ * Creates a task item base structure with title
+ * @param {string} title - The page title
+ * @returns {object} Base task item structure
+ */
+function createTaskItemBase(title) {
+  return {
+    title: {
+      text: title
+    }
+  }
+}
+
+/**
+ * Creates a status tag with default values
+ * @param {object} statusConfig - Status configuration from metadata
+ * @param {string} defaultText - Default status text
+ * @param {string} defaultClasses - Default CSS classes
+ * @returns {object} Status tag configuration
+ */
+function createStatusTag(statusConfig, defaultText, defaultClasses) {
+  return {
+    tag: {
+      text: statusConfig?.text ?? defaultText,
+      classes: statusConfig?.classes ?? defaultClasses
+    }
+  }
+}
+
+/**
+ * Checks if all previous tasks in the list are completed
+ * @param {object[]} pages - Array of page definitions
+ * @param {object} currentPage - The current page definition
+ * @param {object} state - The current form state
+ * @returns {boolean} True if all previous tasks are completed
+ */
+function areAllPreviousTasksCompleted(pages, currentPage, state) {
+  const currentIndex = pages.indexOf(currentPage)
+  return pages.slice(0, currentIndex).every((prevPage) => isTaskCompleted(prevPage, state))
+}
+
+/**
+ * Create task item object for a page
  * @param {object} pageDef - The page definition
  * @param {object} state - The current form state
  * @param {object[]} pages - Array of page definitions
  * @param {object} metadata - Form metadata
  * @param {string} basePath - Base path for the service, used to build task links
- * @returns {object} Status object for GOV.UK Task List component
+ * @returns {object} Task Item object for GOV.UK Task List component
  */
-function getTaskStatus(pageDef, state, pages, metadata, basePath) {
+function createTaskItem(pageDef, state, pages, metadata, basePath) {
   const completed = isTaskCompleted(pageDef, state)
   const { statuses = {} } = metadata.tasklist ?? {}
+  const href = `${basePath}${pageDef.path}`
   const completeInOrder = true // TODO force to true for now until completeInOrder=false logic implemented
 
+  const taskItem = createTaskItemBase(pageDef.title)
+
   if (completed) {
-    return {
-      href: `${basePath}${pageDef.path}`,
-      status: {
-        tag: {
-          text: statuses.completed?.text ?? 'Completed',
-          classes: statuses.completed?.classes ?? 'govuk-tag--green'
-        }
-      }
-    }
+    taskItem.href = href
+    taskItem.status = createStatusTag(statuses.completed, 'Completed', 'govuk-tag--green')
+    return taskItem
   }
 
-  if (completeInOrder && pages.indexOf(pageDef) > 0) {
-    const currentIndex = pages.indexOf(pageDef)
-    const allPreviousCompleted = pages.slice(0, currentIndex).every((prevPage) => isTaskCompleted(prevPage, state))
-
-    if (!allPreviousCompleted) {
-      return {
-        status: {
-          tag: {
-            text: statuses?.cannotStart?.text ?? 'Cannot start yet',
-            classes: statuses?.cannotStart?.classes ?? 'govuk-tag--grey'
-          }
-        }
-      }
-    }
+  if (completeInOrder && pages.indexOf(pageDef) > 0 && !areAllPreviousTasksCompleted(pages, pageDef, state)) {
+    taskItem.status = createStatusTag(statuses.cannotStart, 'Cannot start yet', 'govuk-tag--grey')
+    return taskItem
   }
 
-  return {
-    href: `${basePath}${pageDef.path}`,
-    status: {
-      tag: {
-        text: statuses.notStarted?.text ?? 'Not started',
-        classes: statuses.notStarted?.classes ?? 'govuk-tag--blue'
-      }
-    }
-  }
+  taskItem.href = href
+  taskItem.status = createStatusTag(statuses.notStarted, 'Not started', 'govuk-tag--blue')
+  return taskItem
 }
 
 /**
@@ -196,10 +217,7 @@ export function buildTaskListData(model, formModel, state) {
     const sectionTitle = sectionsMap.get(sectionName) ?? sectionName
 
     const items = pages.map((page) => ({
-      title: {
-        text: page.title
-      },
-      ...getTaskStatus(page, state, taskPages, metadata, basePath)
+      ...createTaskItem(page, state, taskPages, metadata, basePath)
     }))
 
     taskListSections.push({

@@ -46,7 +46,7 @@ export default class TaskPageController extends QuestionPageController {
     return {
       ...viewModel,
       ...(backLink ? { backLink } : {}),
-      ...(!returnAfterSection ? { backToTaskList } : {})
+      ...(returnAfterSection ? {} : { backToTaskList })
     }
   }
 

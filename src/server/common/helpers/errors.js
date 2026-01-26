@@ -318,35 +318,32 @@ function handle404WithContext(request, response) {
   // Parse the path to determine resource type
   const resourceInfo = parseResourcePath(path, response)
 
-  switch (resourceInfo.type) {
-    case 'form':
-      log(
-        LogCodes.RESOURCE_NOT_FOUND.FORM_NOT_FOUND,
-        {
-          slug: resourceInfo.identifier,
-          userId,
-          sbi,
-          referer,
-          userAgent,
-          reason: resourceInfo.reason,
-          environment
-        },
-        request
-      )
-      break
-
-    default:
-      log(
-        LogCodes.RESOURCE_NOT_FOUND.PAGE_NOT_FOUND,
-        {
-          path,
-          userId,
-          sbi,
-          referer,
-          userAgent
-        },
-        request
-      )
+  if (resourceInfo.type === 'form') {
+    log(
+      LogCodes.RESOURCE_NOT_FOUND.FORM_NOT_FOUND,
+      {
+        slug: resourceInfo.identifier,
+        userId,
+        sbi,
+        referer,
+        userAgent,
+        reason: resourceInfo.reason,
+        environment
+      },
+      request
+    )
+  } else {
+    log(
+      LogCodes.RESOURCE_NOT_FOUND.PAGE_NOT_FOUND,
+      {
+        path,
+        userId,
+        sbi,
+        referer,
+        userAgent
+      },
+      request
+    )
   }
 }
 
