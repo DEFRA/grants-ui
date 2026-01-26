@@ -210,6 +210,14 @@ async function handlePostSubmission(request, h, context, previousStatus, grantCo
 
   const redirectUrl = rule.toPath === agreements.get('baseUrl') ? rule.toPath : buildRedirectUrl(grantId, rule.toPath)
 
+  const isAlreadyReopened = previousStatus === ApplicationStatus.REOPENED
+  const isStillAwaitingAmendments = gasStatus === 'AWAITING_AMENDMENTS'
+  const isWithinGrantPages = request.path.startsWith(`/${grantId}/`)
+
+  if (isAlreadyReopened && isStillAwaitingAmendments && isWithinGrantPages) {
+    return h.continue
+  }
+
   return request.path === redirectUrl ? h.continue : h.redirect(redirectUrl).takeover()
 }
 

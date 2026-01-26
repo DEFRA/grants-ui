@@ -354,16 +354,31 @@ describe('formsStatusCallback', () => {
     })
   })
 
-  it('redirects to summary when gasStatus is AWAITING_AMENDMENTS and previousStatus is REOPENED', async () => {
+  it('allows navigation when gasStatus is AWAITING_AMENDMENTS and previousStatus is REOPENED', async () => {
     context.state.applicationStatus = ApplicationStatus.REOPENED
+    request.path = '/grant-a/some-question-page'
     getApplicationStatus.mockResolvedValue({
       json: async () => ({ status: 'AWAITING_AMENDMENTS' })
     })
 
     const result = await formsStatusCallback(request, h, context)
-    expect(h.redirect).toHaveBeenCalledWith('/grant-a/summary')
-    expect(result).toEqual(expect.any(Symbol))
-    expect(updateApplicationStatus).not.toHaveBeenCalled()
+    expect(h.redirect).not.toHaveBeenCalled()
+    expect(result).toBe(h.continue)
+  })
+
+  it('redirects to start when REOPENED application is withdrawn by GAS', async () => {
+    context.state.applicationStatus = ApplicationStatus.REOPENED
+    request.path = '/grant-a/some-question-page'
+    getApplicationStatus.mockResolvedValue({
+      json: async () => ({ status: 'APPLICATION_WITHDRAWN' })
+    })
+
+    await formsStatusCallback(request, h, context)
+    expect(h.redirect).toHaveBeenCalledWith('/grant-a/start')
+    expect(mockCacheService.setState).toHaveBeenCalledWith(
+      request,
+      expect.objectContaining({ applicationStatus: ApplicationStatus.CLEARED })
+    )
   })
 
   it('converts reference number to lowercase when calling getApplicationStatus', async () => {
