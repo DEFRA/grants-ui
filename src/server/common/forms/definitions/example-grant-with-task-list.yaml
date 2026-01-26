@@ -6,7 +6,7 @@ metadata:
   referenceNumberPrefix: EGWT
   cookieConsent:
     enabled: true
-    serviceName: Manage land-based actions
+    serviceName: Farm and land service
     cookiePolicyUrl: /cookies
     expiryDays: 365
   tasklist:
