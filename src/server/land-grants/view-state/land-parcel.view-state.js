@@ -63,6 +63,45 @@ export function addActionsToExistingState(state, payload, actionFieldPrefix, gro
 /**
  * Extract added actions from state for a specific parcel
  * @param {object} state - Current state
+ * @returns {boolean} - Whether any of the actions in the state need SSSI consent or not
+ **/
+function isSSSIConsentRequired(state) {
+  if (Object.keys(state.landParcels).length === 0) {
+    return false
+  }
+
+  for (const parcelKey in state.landParcels) {
+    const parcelData = state.landParcels[parcelKey]?.actionsObj || {}
+    if (Object.keys(parcelData).some((code) => parcelData[code].sssiConsentRequired === true)) {
+      return true
+    }
+  }
+
+  return false
+}
+
+/**
+ * Determine which consents are required based on state
+ * @param {object} state - Current state
+ * @returns {Array<string>} - Array of required consent types (e.g., ['sssi', 'hefer'])
+ */
+export function getRequiredConsents(state) {
+  const requiredConsents = ['sssi']
+
+  if (!state.landParcels || Object.keys(state.landParcels).length === 0) {
+    return requiredConsents
+  }
+
+  if (isSSSIConsentRequired(state)) {
+    requiredConsents.push('sssi')
+  }
+
+  return requiredConsents
+}
+
+/**
+ * Extract added actions from state for a specific parcel
+ * @param {object} state - Current state
  * @param {string} selectedLandParcel - The selected land parcel ID (format: "sheetId-parcelId")
  * @returns {Array<{code: string, description: string}>} - Array of added actions
  */

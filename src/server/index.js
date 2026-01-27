@@ -37,11 +37,12 @@ import SelectLandActionsPageController from '~/src/server/land-grants/controller
 import SubmissionPageController from '~/src/server/land-grants/controllers/submission-page.controller.js'
 import LandGrantsGenericPageController from '~/src/server/land-grants/controllers/land-grants-generic-page.controller.js'
 import FlyingPigsSubmissionPageController from '~/src/server/non-land-grants/pigs-might-fly/controllers/flying-pigs-submission-page.controller.js'
+import ConsentPageController from '~/src/server/land-grants/controllers/consent-page.controller.js'
+import RemoveActionPageController from '~/src/server/land-grants/controllers/remove-action-page.controller.js'
 import { PotentialFundingController } from '~/src/server/non-land-grants/pigs-might-fly/controllers/potential-funding.controller.js'
 import { tasklistBackButton } from '~/src/server/plugins/tasklist-back-button.js'
 import { formatCurrency } from '../config/nunjucks/filters/format-currency.js'
 import { StatePersistenceService } from './common/services/state-persistence/state-persistence.service.js'
-import RemoveActionPageController from './land-grants/controllers/remove-action-page.controller.js'
 import { router } from './router.js'
 import SectionEndController from './section-end/section-end.controller.js'
 import whitelist from '~/src/server/common/helpers/whitelist/whitelist.js'
@@ -126,6 +127,7 @@ const registerFormsPlugin = async (server, prefix = '') => {
         SelectLandActionsPageController,
         LandActionsCheckPageController,
         RemoveActionPageController,
+        ConsentPageController,
         SectionEndController,
         FlyingPigsSubmissionPageController,
         PotentialFundingController,
