@@ -213,6 +213,15 @@ describe('create-rows utilities', () => {
       })
     })
 
+    it('should create a row with only landline', () => {
+      const result = createContactDetailsRow('02012345678', null, null)
+
+      expect(result).toEqual({
+        key: { text: 'Contact details' },
+        value: { html: 'formatted-02012345678' }
+      })
+    })
+
     it('should create a row with only mobile', () => {
       const result = createContactDetailsRow(null, '07123456789', null)
 
@@ -229,6 +238,12 @@ describe('create-rows utilities', () => {
         key: { text: 'Contact details' },
         value: { html: 'test@example.com' }
       })
+    })
+
+    it('should not create a row if no data is provided', () => {
+      const result = createContactDetailsRow(null, null, null)
+
+      expect(result).toEqual(null)
     })
   })
 })
