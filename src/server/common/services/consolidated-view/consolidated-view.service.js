@@ -242,9 +242,9 @@ export async function fetchBusinessAndCustomerInformation(request) {
         name: businessInfo.name,
         reference: businessInfo.reference,
         address: businessInfo.address,
-        landlinePhoneNumber: businessInfo.phone?.landline,
-        mobilePhoneNumber: businessInfo.phone?.mobile,
-        email: businessInfo.email?.address
+        landlinePhoneNumber: businessInfo.phone?.landline || undefined,
+        mobilePhoneNumber: businessInfo.phone?.mobile || undefined,
+        email: businessInfo.email?.address || undefined
       }
     }
 
