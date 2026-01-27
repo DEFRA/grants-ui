@@ -27,7 +27,7 @@ vi.mock('~/src/config/config.js', async () => {
   return mockConfig({
     assetPath: '/public',
     root: '/test/root',
-    serviceName: 'Manage land-based actions',
+    serviceName: 'Farm and land service',
     'cookieConsent.cookiePolicyUrl': '/cookies',
     'cookieConsent.cookieName': 'cookie_consent',
     'cookieConsent.expiryDays': 365,
@@ -57,7 +57,7 @@ const getExpectedContext = () => ({
       url: '/'
     }
   ],
-  serviceName: 'Manage land-based actions',
+  serviceName: 'Farm and land service',
   serviceUrl: '/',
   cdpEnvironment: undefined,
   gaTrackingId: undefined,
@@ -211,7 +211,7 @@ describe('context', () => {
 
       expect(contextResult).toMatchObject({
         assetPath: '/public/assets/rebrand',
-        serviceName: 'Manage land-based actions',
+        serviceName: 'Farm and land service',
         cookiePolicyUrl: '/cookies',
         cookieConsentName: 'cookie_consent',
         cookieConsentExpiryDays: 365
@@ -453,7 +453,7 @@ describe('context', () => {
       const contextResult = await contextImport.context(mockRequest)
 
       expect(contextResult.cookieBannerConfig).toBeDefined()
-      expect(contextResult.cookieBannerConfig.ariaLabel).toBe('Cookies on Manage land-based actions')
+      expect(contextResult.cookieBannerConfig.ariaLabel).toBe('Cookies on Farm and land service')
       expect(contextResult.cookieBannerConfig.hidden).toBe(true)
       expect(contextResult.cookieBannerConfig.attributes['data-cookie-name']).toBe('cookie_consent')
       expect(contextResult.cookieBannerConfig.attributes['data-cookie-policy-url']).toBe('/cookies')
@@ -468,7 +468,7 @@ describe('context', () => {
       const contextResult = await contextImport.context(mockRequest)
 
       expect(contextResult.cookieBannerNoscriptConfig).toBeDefined()
-      expect(contextResult.cookieBannerNoscriptConfig.ariaLabel).toBe('Cookies on Manage land-based actions')
+      expect(contextResult.cookieBannerNoscriptConfig.ariaLabel).toBe('Cookies on Farm and land service')
       expect(contextResult.cookieBannerNoscriptConfig.attributes['data-nosnippet']).toBe('')
       expect(contextResult.cookieBannerNoscriptConfig.messages).toHaveLength(1)
     })
@@ -480,11 +480,11 @@ describe('context', () => {
       const contextResult = await contextImport.context(mockRequest)
 
       expect(contextResult.cookieBannerConfig).toBeDefined()
-      expect(contextResult.cookieBannerConfig.ariaLabel).toBe('Cookies on Manage land-based actions')
+      expect(contextResult.cookieBannerConfig.ariaLabel).toBe('Cookies on Farm and land service')
       expect(contextResult.cookieBannerConfig.attributes['data-cookie-name']).toBe('cookie_consent')
 
       expect(contextResult.cookieBannerNoscriptConfig).toBeDefined()
-      expect(contextResult.cookieBannerNoscriptConfig.ariaLabel).toBe('Cookies on Manage land-based actions')
+      expect(contextResult.cookieBannerNoscriptConfig.ariaLabel).toBe('Cookies on Farm and land service')
     })
   })
 
@@ -531,7 +531,7 @@ describe('context', () => {
 
       expect(contextResult).toMatchObject({
         assetPath: '/public/assets/rebrand',
-        serviceName: 'Manage land-based actions',
+        serviceName: 'Farm and land service',
         serviceUrl: '/',
         cookiePolicyUrl: '/cookies',
         cookieConsentName: 'cookie_consent',
