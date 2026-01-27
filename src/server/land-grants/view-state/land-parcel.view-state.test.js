@@ -360,20 +360,20 @@ describe('land-parcel-state.manager', () => {
   })
 
   describe('getRequiredConsents', () => {
-    it('should return sssi in array when state has no land parcels', () => {
+    it('should return empty in array when state has no land parcels', () => {
       const state = {}
 
       const result = getRequiredConsents(state)
 
-      expect(result).toEqual(['sssi'])
+      expect(result).toEqual([])
     })
 
-    it('should return sssi in array when landParcels is empty', () => {
+    it('should return empty in array when landParcels is empty', () => {
       const state = { landParcels: {} }
 
       const result = getRequiredConsents(state)
 
-      expect(result).toEqual(['sssi'])
+      expect(result).toEqual([])
     })
 
     it('should return array with sssi when SSSI consent is required', () => {
@@ -393,7 +393,7 @@ describe('land-parcel-state.manager', () => {
       expect(result.length).toBeGreaterThanOrEqual(1)
     })
 
-    it('should return sssi array when no consent checks pass', () => {
+    it('should return empty array when no consent checks pass', () => {
       const state = {
         landParcels: {
           'AB1234-5678': {
@@ -406,7 +406,7 @@ describe('land-parcel-state.manager', () => {
 
       const result = getRequiredConsents(state)
 
-      expect(result).toEqual(['sssi'])
+      expect(result).toEqual([])
     })
 
     it('should support multiple consent types in the future', () => {

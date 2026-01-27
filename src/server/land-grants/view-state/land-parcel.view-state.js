@@ -88,7 +88,7 @@ function isSSSIConsentRequired(state) {
  * @returns {Array<string>} - Array of required consent types (e.g., ['sssi', 'hefer'])
  */
 export function getRequiredConsents(state) {
-  const requiredConsents = ['sssi']
+  const requiredConsents = []
 
   if (!state.landParcels || Object.keys(state.landParcels).length === 0) {
     return requiredConsents
