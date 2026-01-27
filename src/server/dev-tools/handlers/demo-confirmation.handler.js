@@ -1,4 +1,5 @@
-import { buildDemoData, generateFormNotFoundResponse } from '../utils/index.js'
+import { buildDemoData } from '../helpers/index.js'
+import { generateFormNotFoundResponse } from '../utils/index.js'
 import { ConfirmationService } from '../../confirmation/services/confirmation.service.js'
 import { log, LogCodes } from '../../common/helpers/logging/log.js'
 

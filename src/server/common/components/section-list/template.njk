@@ -1,0 +1,11 @@
+{% from "govuk/components/summary-list/macro.njk" import govukSummaryList %}
+
+{% for section in params.sections %}
+  <h2 class="govuk-heading-m">{{ section.title.text }}</h2>
+
+  {% if section.description %}
+    <p class="govuk-body">{{ section.description }}</p>
+  {% endif %}
+
+  {{ govukSummaryList(section.summaryList) }}
+{% endfor %}
