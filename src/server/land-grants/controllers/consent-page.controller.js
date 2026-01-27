@@ -32,11 +32,11 @@ export default class ConsentPageController extends LandGrantsQuestionWithAuthChe
     /**
      * Handle POST requests to the consent page.
      * @param {AnyFormRequest} request
-     * @param {FormContext} context
+     * @param {FormContext} _context
      * @param {Pick<ResponseToolkit, 'redirect' | 'view'>} h
      * @returns {Promise<ResponseObject>}
      */
-    const fn = async (request, context, h) => {
+    const fn = async (request, _context, h) => {
       return this.proceed(request, h, '/submit-your-application')
     }
 
