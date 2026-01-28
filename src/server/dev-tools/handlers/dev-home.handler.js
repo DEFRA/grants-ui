@@ -3,11 +3,11 @@ import { errorRoutes } from '../index.js'
 
 /**
  * Get example forms for demo links
- * @param {Array<string>} [slugs=['example-grant-with-auth', 'adding-value', 'flying-pigs']] - Form slugs to include
+ * @param {Array<string>} [slugs=['example-grant-with-auth', 'flying-pigs']] - Form slugs to include
  * @param {number} [limit=3] - Maximum number of forms to return
  * @returns {Array} Array of example form objects
  */
-export function getExampleForms(slugs = ['example-grant-with-auth', 'adding-value', 'flying-pigs'], limit = 3) {
+export function getExampleForms(slugs = ['example-grant-with-auth', 'flying-pigs'], limit = 2) {
   const allForms = getAllForms()
   return allForms.filter((f) => slugs.includes(f.slug)).slice(0, limit)
 }
