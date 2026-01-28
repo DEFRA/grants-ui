@@ -1,27 +1,21 @@
 @use 'govuk-frontend' as *;
 
-.govuk-panel-card {
+.defra-panel-card {
   background: govuk-colour('blue');
   text-align: left;
   margin-bottom: govuk-spacing(6);
 
-  .govuk-panel__title {
+  h1 {
     @include govuk-font-size($size: 36);
-    color: govuk-colour('white');
   }
 
   h1,
   p,
-  li,
-  a {
+  li {
     color: govuk-colour('white');
   }
 
   p:last-of-type {
     margin-bottom: 0;
-  }
-
-  a:hover {
-    color: govuk-colour('black');
   }
 }
