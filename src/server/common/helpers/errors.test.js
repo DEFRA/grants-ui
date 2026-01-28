@@ -552,8 +552,8 @@ describe('#catchAll 404 Logging', () => {
 
   test('Should log form not found with context', () => {
     const request = create404Request(
-      "Form 'adding-value' not found",
-      '/adding-value/start',
+      "Form 'example-grant-with-auth' not found",
+      '/example-grant-with-auth/start',
       'user123',
       '105001234',
       'Mozilla/5.0',
@@ -565,7 +565,7 @@ describe('#catchAll 404 Logging', () => {
     expect(log).toHaveBeenCalledWith(
       expectInfoLogCall(),
       expect.objectContaining({
-        slug: 'adding-value',
+        slug: 'example-grant-with-auth',
         userId: 'user123',
         sbi: '105001234',
         reason: 'not_found',

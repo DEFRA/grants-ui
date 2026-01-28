@@ -9,7 +9,6 @@ vi.mock('~/src/server/common/helpers/logging/log.js', () => ({}))
 describe('dev-home.handler', () => {
   const mockAllForms = [
     { slug: 'example-grant-with-auth', title: 'Example Grant with Auth' },
-    { slug: 'adding-value', title: 'Adding Value Grant' },
     { slug: 'flying-pigs', title: 'Flying Pigs Grant' }
   ]
 
@@ -44,7 +43,6 @@ describe('dev-home.handler', () => {
 
     const htmlContent = mockH.response.mock.calls[0][0]
     expect(htmlContent).toContain('Example Grant with Auth')
-    expect(htmlContent).toContain('Adding Value Grant')
     expect(htmlContent).toContain('Flying Pigs Grant')
   })
 

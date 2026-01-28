@@ -34,7 +34,7 @@ const TEST_ORGANIZATIONS = {
 }
 
 const TEST_GRANT_TYPES = {
-  ADDING_VALUE: 'adding-value'
+  EXAMPLE_GRANT_WITH_AUTH: 'example-grant-with-auth'
 }
 
 const TEST_FORM_NAMES = {
@@ -315,69 +315,69 @@ describe('LogCodes', () => {
       [
         'SUBMISSION_SUCCESS',
         'info',
-        { grantType: TEST_GRANT_TYPES.ADDING_VALUE, referenceNumber: TEST_REFERENCE_NUMBERS.REF_123 },
-        `Grant submission successful for grantType=${TEST_GRANT_TYPES.ADDING_VALUE}, referenceNumber=${TEST_REFERENCE_NUMBERS.REF_123}`
+        { grantType: TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH, referenceNumber: TEST_REFERENCE_NUMBERS.REF_123 },
+        `Grant submission successful for grantType=${TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH}, referenceNumber=${TEST_REFERENCE_NUMBERS.REF_123}`
       ],
       [
         'SUBMISSION_FAILURE',
         'error',
         {
-          grantType: TEST_GRANT_TYPES.ADDING_VALUE,
+          grantType: TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH,
           userCrn: TEST_USER_IDS.DEFAULT,
           userSbi: TEST_SBI.DEFAULT,
           errorMessage: TEST_ERRORS.NETWORK_ERROR,
           stack: 'Error stack trace'
         },
-        `Grant submission failed for grantType=${TEST_GRANT_TYPES.ADDING_VALUE}, userCrn=${TEST_USER_IDS.DEFAULT}, userSbi=${TEST_SBI.DEFAULT}, error=${TEST_ERRORS.NETWORK_ERROR}`
+        `Grant submission failed for grantType=${TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH}, userCrn=${TEST_USER_IDS.DEFAULT}, userSbi=${TEST_SBI.DEFAULT}, error=${TEST_ERRORS.NETWORK_ERROR}`
       ],
       [
         'SUBMISSION_VALIDATION_ERROR',
         'error',
         {
-          grantType: TEST_GRANT_TYPES.ADDING_VALUE,
+          grantType: TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH,
           referenceNumber: TEST_REFERENCE_NUMBERS.REF_123,
           validationId: 'VAL123'
         },
-        `Submission validation error for grantType=${TEST_GRANT_TYPES.ADDING_VALUE}, referenceNumber=${TEST_REFERENCE_NUMBERS.REF_123}, validationId=VAL123`
+        `Submission validation error for grantType=${TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH}, referenceNumber=${TEST_REFERENCE_NUMBERS.REF_123}, validationId=VAL123`
       ],
       [
         'SUBMISSION_REDIRECT_FAILURE',
         'error',
         {
-          grantType: TEST_GRANT_TYPES.ADDING_VALUE,
+          grantType: TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH,
           referenceNumber: TEST_REFERENCE_NUMBERS.REF_123,
           errorMessage: 'Error message'
         },
-        `Submission redirect failure for grantType=${TEST_GRANT_TYPES.ADDING_VALUE}, referenceNumber=${TEST_REFERENCE_NUMBERS.REF_123}. Error: Error message`
+        `Submission redirect failure for grantType=${TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH}, referenceNumber=${TEST_REFERENCE_NUMBERS.REF_123}. Error: Error message`
       ],
       [
         'VALIDATOR_NOT_FOUND',
         'error',
         {
-          grantType: TEST_GRANT_TYPES.ADDING_VALUE
+          grantType: TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH
         },
-        `No validator found for grantType=${TEST_GRANT_TYPES.ADDING_VALUE}`
+        `No validator found for grantType=${TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH}`
       ],
       [
         'SUBMISSION_COMPLETED',
         'info',
         {
-          grantType: TEST_GRANT_TYPES.ADDING_VALUE,
+          grantType: TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH,
           referenceNumber: TEST_REFERENCE_NUMBERS.REF_123,
           numberOfFields: 5,
           status: 'success'
         },
-        `Form submission completed for grantType=${TEST_GRANT_TYPES.ADDING_VALUE}, referenceNumber=${TEST_REFERENCE_NUMBERS.REF_123}, fields=5, status=success`
+        `Form submission completed for grantType=${TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH}, referenceNumber=${TEST_REFERENCE_NUMBERS.REF_123}, fields=5, status=success`
       ],
       [
         'SUBMISSION_COMPLETED with missing numberOfFields',
         'info',
         {
-          grantType: TEST_GRANT_TYPES.ADDING_VALUE,
+          grantType: TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH,
           referenceNumber: TEST_REFERENCE_NUMBERS.REF_123,
           status: 'success'
         },
-        `Form submission completed for grantType=${TEST_GRANT_TYPES.ADDING_VALUE}, referenceNumber=${TEST_REFERENCE_NUMBERS.REF_123}, fields=0, status=success`
+        `Form submission completed for grantType=${TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH}, referenceNumber=${TEST_REFERENCE_NUMBERS.REF_123}, fields=0, status=success`
       ],
       [
         'APPLICATION_STATUS_UPDATED',
@@ -410,8 +410,8 @@ describe('LogCodes', () => {
       expect(logCode.level).toBe('debug')
       expect(typeof logCode.messageFunc).toBe('function')
       const payload = { test: 'data' }
-      const result = logCode.messageFunc({ grantType: TEST_GRANT_TYPES.ADDING_VALUE, payload })
-      expect(result).toContain(`Submission payload for grantType=${TEST_GRANT_TYPES.ADDING_VALUE}:`)
+      const result = logCode.messageFunc({ grantType: TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH, payload })
+      expect(result).toContain(`Submission payload for grantType=${TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH}:`)
       expect(result).toContain('"test": "data"')
     })
   })
@@ -421,14 +421,14 @@ describe('LogCodes', () => {
       [
         'DECLARATION_LOAD',
         'info',
-        { userId: TEST_USER_IDS.DEFAULT, grantType: TEST_GRANT_TYPES.ADDING_VALUE },
-        `Declaration page loaded for user=${TEST_USER_IDS.DEFAULT}, grantType=${TEST_GRANT_TYPES.ADDING_VALUE}`
+        { userId: TEST_USER_IDS.DEFAULT, grantType: TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH },
+        `Declaration page loaded for user=${TEST_USER_IDS.DEFAULT}, grantType=${TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH}`
       ],
       [
         'DECLARATION_ACCEPTED',
         'info',
-        { userId: TEST_USER_IDS.DEFAULT, grantType: TEST_GRANT_TYPES.ADDING_VALUE },
-        `Declaration accepted by user=${TEST_USER_IDS.DEFAULT}, grantType=${TEST_GRANT_TYPES.ADDING_VALUE}`
+        { userId: TEST_USER_IDS.DEFAULT, grantType: TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH },
+        `Declaration accepted by user=${TEST_USER_IDS.DEFAULT}, grantType=${TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH}`
       ],
       [
         'DECLARATION_ERROR',
@@ -449,8 +449,8 @@ describe('LogCodes', () => {
       [
         'CONFIRMATION_LOAD',
         'info',
-        { userId: TEST_USER_IDS.DEFAULT, grantType: TEST_GRANT_TYPES.ADDING_VALUE },
-        `Confirmation page loaded for user=${TEST_USER_IDS.DEFAULT}, grantType=${TEST_GRANT_TYPES.ADDING_VALUE}`
+        { userId: TEST_USER_IDS.DEFAULT, grantType: TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH },
+        `Confirmation page loaded for user=${TEST_USER_IDS.DEFAULT}, grantType=${TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH}`
       ],
       [
         'CONFIRMATION_SUCCESS',
@@ -669,8 +669,8 @@ describe('LogCodes', () => {
       [
         'GAS_ACTION_ERROR',
         'error',
-        { action: 'submit', grantCode: TEST_GRANT_TYPES.ADDING_VALUE, errorMessage: 'Connection timeout' },
-        `Error invoking GAS action submit for grant ${TEST_GRANT_TYPES.ADDING_VALUE}: Connection timeout`
+        { action: 'submit', grantCode: TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH, errorMessage: 'Connection timeout' },
+        `Error invoking GAS action submit for grant ${TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH}: Connection timeout`
       ],
       [
         'VIEW_PATH_CHECK',

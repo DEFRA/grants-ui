@@ -54,7 +54,7 @@ describe('DeclarationPageController', () => {
       def: {
         metadata: {
           submission: {
-            grantCode: 'adding-value'
+            grantCode: 'example-grant-with-auth'
           }
         }
       },
@@ -76,9 +76,9 @@ describe('DeclarationPageController', () => {
         declaration: true
       },
       params: {
-        slug: 'adding-value'
+        slug: 'example-grant-with-auth'
       },
-      path: '/adding-value/declaration',
+      path: '/example-grant-with-auth/declaration',
       server: {},
       auth: {
         credentials: {
@@ -114,7 +114,7 @@ describe('DeclarationPageController', () => {
 
     // Mock the form-slug-helper functions
     formSlugHelper.storeSlugInContext.mockImplementation(() => null)
-    formSlugHelper.getConfirmationPath.mockImplementation(() => '/adding-value/confirmation')
+    formSlugHelper.getConfirmationPath.mockImplementation(() => '/example-grant-with-auth/confirmation')
   })
 
   afterEach(() => {
@@ -222,7 +222,7 @@ describe('DeclarationPageController', () => {
       )
 
       expect(submitGrantApplication).toHaveBeenCalledWith(
-        'adding-value',
+        'example-grant-with-auth',
         {
           transformedApp: true,
           metadata: {
@@ -231,7 +231,7 @@ describe('DeclarationPageController', () => {
         },
         mockRequest
       )
-      expect(mockH.redirect).toHaveBeenCalledWith('/adding-value/confirmation')
+      expect(mockH.redirect).toHaveBeenCalledWith('/example-grant-with-auth/confirmation')
     })
 
     test('should log debug information during processing', async () => {
@@ -250,7 +250,7 @@ describe('DeclarationPageController', () => {
       )
       expect(log).toHaveBeenCalledWith(
         LogCodes.SUBMISSION.SUBMISSION_REDIRECT,
-        { controller: 'DeclarationController', redirectPath: '/adding-value/confirmation' },
+        { controller: 'DeclarationController', redirectPath: '/example-grant-with-auth/confirmation' },
         mockRequest
       )
     })
@@ -262,7 +262,7 @@ describe('DeclarationPageController', () => {
       expect(log).toHaveBeenCalledWith(
         LogCodes.SUBMISSION.SUBMISSION_COMPLETED,
         {
-          grantType: 'adding-value',
+          grantType: 'example-grant-with-auth',
           referenceNumber: 'REF123',
           numberOfFields: Object.keys(mockContext.relevantState).length,
           status: 'success'
@@ -282,7 +282,7 @@ describe('DeclarationPageController', () => {
       expect(log).toHaveBeenCalledWith(
         LogCodes.SUBMISSION.SUBMISSION_FAILURE,
         expect.objectContaining({
-          grantType: 'adding-value',
+          grantType: 'example-grant-with-auth',
           referenceNumber: 'REF123',
           sbi: 'sbi123',
           crn: '1234567890',
@@ -310,7 +310,7 @@ describe('DeclarationPageController', () => {
       expect(log).toHaveBeenCalledWith(
         LogCodes.SUBMISSION.SUBMISSION_FAILURE,
         expect.objectContaining({
-          grantType: 'adding-value',
+          grantType: 'example-grant-with-auth',
           referenceNumber: 'REF123',
           sbi: 'sbi123',
           crn: '1234567890',
@@ -334,7 +334,7 @@ describe('DeclarationPageController', () => {
       expect(log).toHaveBeenCalledWith(
         LogCodes.SUBMISSION.SUBMISSION_FAILURE,
         expect.objectContaining({
-          grantType: 'adding-value',
+          grantType: 'example-grant-with-auth',
           referenceNumber: 'REF123',
           sbi: 'sbi123',
           crn: '1234567890',

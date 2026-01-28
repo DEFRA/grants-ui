@@ -162,12 +162,6 @@ describe('form', () => {
       await expect(result).resolves.toBeDefined()
     })
 
-    test('returns addingValueDefinition for matching id', async () => {
-      const service = await formsService()
-      const result = service.getFormDefinition('95e92559-968d-44ae-8666-2b1ad3dffd31')
-      await expect(result).resolves.toBeDefined()
-    })
-
     test('throws error for unknown id', async () => {
       const service = await formsService()
       await expect(service.getFormDefinition('unknown-id')).rejects.toThrow()
@@ -191,15 +185,8 @@ describe('form', () => {
   })
 
   describe('configureFormDefinition', () => {
-    it.each([
-      [
-        'local environment',
-        'local',
-        'http://ffc-grants-scoring:3002/scoring/api/v1/adding-value/score?allowPartialScoring=true'
-      ],
-      ['non-local environment', 'dev', 'http://dev.example.com']
-    ])('configures URLs correctly for %s', (_description, environment, expectedUrl) => {
-      config.get.mockImplementation((key) => (key === 'cdpEnvironment' ? environment : DEFAULT_CONFIG_MOCK[key]))
+    test('configures URLs correctly for non-local environment', () => {
+      config.get.mockImplementation((key) => (key === 'cdpEnvironment' ? 'dev' : DEFAULT_CONFIG_MOCK[key]))
 
       const definition = {
         pages: [
@@ -216,7 +203,29 @@ describe('form', () => {
       }
 
       const result = configureFormDefinition(definition)
-      expect(result.pages[0].events.onLoad.options.url).toBe(expectedUrl)
+      expect(result.pages[0].events.onLoad.options.url).toBe('http://dev.example.com')
+    })
+
+    test('logs warning for local environment with onLoad URL', () => {
+      config.get.mockImplementation((key) => (key === 'cdpEnvironment' ? 'local' : DEFAULT_CONFIG_MOCK[key]))
+
+      const definition = {
+        pages: [
+          {
+            events: {
+              onLoad: {
+                options: {
+                  url: 'http://cdpEnvironment.example.com'
+                }
+              }
+            }
+          }
+        ]
+      }
+
+      const result = configureFormDefinition(definition)
+      expect(mockWarn).toHaveBeenCalledWith('Unexpected environment value: local')
+      expect(result.pages[0].events.onLoad.options.url).toBe('http://cdpEnvironment.example.com')
     })
 
     test('handles form definition without events', () => {
@@ -237,7 +246,9 @@ describe('form', () => {
       expect(result).toEqual(definition)
     })
 
-    test('handles form definition with multiple pages', () => {
+    test('handles form definition with multiple pages in non-local environment', () => {
+      config.get.mockImplementation((key) => (key === 'cdpEnvironment' ? 'dev' : DEFAULT_CONFIG_MOCK[key]))
+
       const definition = {
         pages: [
           {
@@ -264,13 +275,11 @@ describe('form', () => {
       const result = configureFormDefinition(definition)
       expect(result.pages).toHaveLength(2)
       result.pages.forEach((page) => {
-        expect(page.events.onLoad.options.url).toBe(
-          'http://ffc-grants-scoring:3002/scoring/api/v1/adding-value/score?allowPartialScoring=true'
-        )
+        expect(page.events.onLoad.options.url).toBe('http://dev.example.com')
       })
     })
 
-    test('logs warning when events exist but no onLoad URL is present', () => {
+    test('does not log warning when events exist but no onLoad URL is present', () => {
       const definition = {
         pages: [
           {
@@ -287,8 +296,7 @@ describe('form', () => {
 
       const result = configureFormDefinition(definition)
 
-      expect(mockWarn).toHaveBeenCalledWith(`Unexpected environment value: ${DEFAULT_CONFIG_MOCK.cdpEnvironment}`)
-
+      expect(mockWarn).not.toHaveBeenCalled()
       expect(result).toEqual(definition)
     })
   })
