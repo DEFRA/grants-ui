@@ -60,7 +60,8 @@ const createGroup = (name, groupActions) => ({
     unit: groupActions[0]?.availableArea.unit,
     value: Math.max(...groupActions.map((item) => item.availableArea.value))
   },
-  actions: groupActions
+  actions: groupActions,
+  ...(config.get('landGrants.enableSSSIFeature') ? { sssiConsentRequired: groupActions[0]?.sssiConsentRequired } : {})
 })
 
 /**
