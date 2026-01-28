@@ -49,10 +49,6 @@ const TEST_SBI = {
   DEFAULT: '106284736'
 }
 
-const TEST_TASK_NAMES = {
-  DECLARATION: 'declaration'
-}
-
 const TEST_AGREEMENT_TYPES = {
   TERMS: 'terms'
 }
@@ -482,46 +478,6 @@ describe('LogCodes', () => {
     })
   })
 
-  describe('TASKLIST log codes', () => {
-    it.each([
-      [
-        'TASKLIST_LOAD',
-        'info',
-        { userId: TEST_USER_IDS.DEFAULT, grantType: TEST_GRANT_TYPES.ADDING_VALUE },
-        `Task list loaded for user=${TEST_USER_IDS.DEFAULT}, grantType=${TEST_GRANT_TYPES.ADDING_VALUE}`
-      ],
-      [
-        'TASK_COMPLETED',
-        'info',
-        { taskName: TEST_TASK_NAMES.DECLARATION, userId: TEST_USER_IDS.DEFAULT },
-        `Task completed: ${TEST_TASK_NAMES.DECLARATION} for user=${TEST_USER_IDS.DEFAULT}`
-      ],
-      [
-        'TASK_ERROR',
-        'error',
-        { taskName: TEST_TASK_NAMES.DECLARATION, errorMessage: TEST_ERRORS.PROCESSING_FAILED },
-        `Task processing error for ${TEST_TASK_NAMES.DECLARATION}: ${TEST_ERRORS.PROCESSING_FAILED}`
-      ],
-      [
-        'CONFIG_LOAD_SKIPPED',
-        'debug',
-        { tasklistId: 'example', errorMessage: TEST_ERRORS.PROCESSING_FAILED },
-        `Tasklist config load skipped: tasklistId=example, error=${TEST_ERRORS.PROCESSING_FAILED}`
-      ],
-      [
-        'CACHE_RETRIEVAL_FAILED',
-        'warn',
-        { sessionId: TEST_SESSIONS.SESSION_123, errorMessage: 'Redis timeout' },
-        `Cache retrieval failed for sessionId=${TEST_SESSIONS.SESSION_123}, using empty data. Error: Redis timeout`
-      ]
-    ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
-      const logCode = LogCodes.TASKLIST[logCodeName]
-      expect(logCode.level).toBe(expectedLevel)
-      expect(typeof logCode.messageFunc).toBe('function')
-      expect(logCode.messageFunc(testParams)).toBe(expectedMessage)
-    })
-  })
-
   describe('LAND_GRANTS log codes', () => {
     it.each([
       [
@@ -640,19 +596,6 @@ describe('LogCodes', () => {
         `Form not found: slug=test-form, userId=${TEST_USER_IDS.DEFAULT}, sbi=${TEST_SBI.DEFAULT}, reason=not_found, environment=production, referer=http://example.com`
       ],
       [
-        'TASKLIST_NOT_FOUND',
-        'info',
-        {
-          tasklistId: 'test-tasklist',
-          userId: TEST_USER_IDS.DEFAULT,
-          sbi: TEST_SBI.DEFAULT,
-          reason: 'not_found',
-          environment: 'production',
-          referer: 'http://example.com'
-        },
-        `Tasklist not found: tasklistId=test-tasklist, userId=${TEST_USER_IDS.DEFAULT}, sbi=${TEST_SBI.DEFAULT}, reason=not_found, environment=production, referer=http://example.com`
-      ],
-      [
         'PAGE_NOT_FOUND',
         'info',
         {
@@ -669,12 +612,6 @@ describe('LogCodes', () => {
         'info',
         { slug: 'test-form' },
         'Form not found: slug=test-form, userId=anonymous, sbi=unknown, reason=not_found, environment=unknown, referer=none'
-      ],
-      [
-        'TASKLIST_NOT_FOUND with fallbacks',
-        'info',
-        { tasklistId: 'test-tasklist' },
-        'Tasklist not found: tasklistId=test-tasklist, userId=anonymous, sbi=unknown, reason=not_found, environment=unknown, referer=none'
       ],
       [
         'PAGE_NOT_FOUND with fallbacks',

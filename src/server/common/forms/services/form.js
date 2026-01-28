@@ -242,12 +242,7 @@ async function discoverFormsFromYaml(baseDir = path.resolve(process.cwd(), 'src/
   for (const filePath of files) {
     try {
       const raw = await fs.readFile(filePath, 'utf8')
-      const { name: title, metadata: formMetadata, tasklist } = parseYaml(raw)
-
-      // Skip parsing if tasklist
-      if (tasklist) {
-        continue
-      }
+      const { name: title, metadata: formMetadata } = parseYaml(raw)
 
       // Use file name as slug
       const fileName = path.basename(filePath, path.extname(filePath))

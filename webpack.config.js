@@ -48,6 +48,7 @@ export default {
   },
   resolve: {
     alias: {
+      '~': dirname,
       '/public/assets': path.join(govukFrontendPath, 'dist/govuk/assets')
     }
   },
