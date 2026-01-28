@@ -221,19 +221,6 @@ describe('formsStatusCallback', () => {
     expect(h.redirect).not.toHaveBeenCalled()
   })
 
-  it('continues when tasklist page is detected', async () => {
-    request.app.model.def.metadata.tasklistId = 'tasklist-1'
-    const preSubmissionContext = {
-      referenceNumber: 'REF-004',
-      state: { someField: 'someValue' },
-      paths: ['/start']
-    }
-
-    const result = await formsStatusCallback(request, h, preSubmissionContext)
-    expect(result).toBe(h.continue)
-    expect(h.redirect).not.toHaveBeenCalled()
-  })
-
   it('continues when previousStatus is SUBMITTED and no redirect needed', async () => {
     getApplicationStatus.mockResolvedValue({ json: async () => ({ status: 'RECEIVED' }) })
     request.path = '/grant-a/confirmation'

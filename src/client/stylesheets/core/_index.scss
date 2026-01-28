@@ -1,2 +1,7 @@
 @use "header";
 @use "main";
+@use "govuk-frontend" as *;
+
+.defra-\!-border-left {
+  border-left: 1px solid $govuk-text-colour;
+}

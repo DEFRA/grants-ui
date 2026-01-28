@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const originalNodeEnv = process.env.NODE_ENV
 const originalEnvironment = process.env.ENVIRONMENT
@@ -10,9 +10,6 @@ vi.mock('~/src/server/common/helpers/serve-static-files.js', () => ({
 }))
 vi.mock('~/src/server/health/index.js', () => ({ health: { plugin: { name: 'health', register: vi.fn() } } }))
 vi.mock('~/src/server/home/index.js', () => ({ home: { plugin: { name: 'home', register: vi.fn() } } }))
-vi.mock('~/src/server/tasklist/tasklist.controller.js', () => ({
-  createTasklistRoute: vi.fn(() => ({ plugin: { name: 'tasklist', register: vi.fn() } }))
-}))
 vi.mock('~/src/server/agreements/index.js', () => ({
   agreements: { plugin: { name: 'agreements', register: vi.fn() } }
 }))
