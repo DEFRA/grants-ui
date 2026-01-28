@@ -104,7 +104,7 @@ describe('Logger Functionality', () => {
 
   it('should work with SUBMISSION log codes', () => {
     const submissionOptions = {
-      grantType: 'adding-value',
+      grantType: 'example-grant-with-auth',
       referenceNumber: 'REF-123'
     }
 
@@ -112,7 +112,7 @@ describe('Logger Functionality', () => {
 
     expect(logger.info).toHaveBeenCalledWith(
       {},
-      'Grant submission successful for grantType=adding-value, referenceNumber=REF-123'
+      'Grant submission successful for grantType=example-grant-with-auth, referenceNumber=REF-123'
     )
   })
 

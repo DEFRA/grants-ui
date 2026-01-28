@@ -1102,16 +1102,17 @@ Example request (truncated - see [GAS API documentation](https://github.com/DEFR
 curl --location --request POST 'https://fg-gas-backend.dev.cdp-int.defra.cloud/grants' \
 --header 'Content-Type: application/json' \
 --data-raw '{
-  "code": "adding-value-v4",
+  "code": "example-grant-with-auth-v3",
   "questions": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "title": "GrantApplicationPayload",
     "type": "object",
     "properties": {
-      "referenceNumber": { "type": "string" },
-      "businessNature": { "type": "string" },
-      "businessLegalStatus": { "type": "string" },
-      "isInEngland": { "type": "boolean" },
+      "yesNoField": { "type": "boolean" },
+      "autocompleteField": { "type": "string" },
+      "radiosField": { "type": "string" },
+      "applicantName": { "type": "string" },
+      "applicantEmail": { "type": "string", "format": "email" }
       // ... additional fields as required
     }
   }
@@ -1122,7 +1123,7 @@ Example response:
 
 ```
 {
-    "code": "adding-value-v4"
+    "code": "example-grant-with-auth-v3"
 }
 ```
 
@@ -1133,7 +1134,7 @@ Each GAS grant may define a JSON Schema stored locally in:
 `src/server/common/forms/schemas/`
 
 Each schema file is named after the grant code
-(e.g. adding-value-v4.json) and describes the shape of the expected application payload for that grant.
+(e.g. example-grant-with-auth.json) and describes the shape of the expected application payload for that grant.
 
 At application startup, the app scans the schemas directory and compiles each schema into a JSON Schema validator using Ajv. These compiled validators are stored in-memory in a map of the form:
 
@@ -1154,7 +1155,7 @@ is currently used only in tests to ensure that the mapping logic produces payloa
 For local development and manual testing of grant definitions and submissions against GAS, this repository includes:
 
 - `gas.http` – an HTTP client collection with example requests for:
-  - creating grant definitions in GAS for `example-grant-with-auth` and `adding-value`
+  - creating grant definitions in GAS for `example-grant-with-auth`
   - submitting example applications for those grants
 - `http-client.env.json` – shared, non‑secret environment configuration (base URLs)
 - `http-client.private.env.json` – per‑environment secrets (service tokens and API keys)
@@ -1541,7 +1542,7 @@ log(LogCodes.AUTH.SIGN_IN_SUCCESS, {
 
 // Log form submission
 log(LogCodes.SUBMISSION.SUBMISSION_SUCCESS, {
-  grantType: 'adding-value',
+  grantType: 'example-grant-with-auth',
   referenceNumber: 'REF123456'
 })
 
@@ -1602,7 +1603,7 @@ The application automatically adjusts log verbosity based on the `LOG_LEVEL` set
 - Simplified, readable request/response logs
 - Excludes verbose details like headers, cookies, and query parameters
 - Shows essential information: method, URL, status code, and response time
-- Example: `[response] GET /adding-value/start 200 (384ms)`
+- Example: `[response] GET /example-grant-with-auth/start 200 (384ms)`
 
 **DEBUG Level (Development)**
 
@@ -1852,7 +1853,7 @@ Preview confirmation pages with mock data for any form in the system. Useful for
 - Validating dynamic content insertion
 - Previewing new grant confirmation pages
 
-**Example:** `http://localhost:3000/dev/demo-confirmation/adding-value`
+**Example:** `http://localhost:3000/dev/demo-confirmation/example-grant-with-auth`
 
 When running in development mode, the demo confirmation handler:
 
