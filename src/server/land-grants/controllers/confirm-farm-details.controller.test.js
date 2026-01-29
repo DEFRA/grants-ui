@@ -2,6 +2,7 @@ import { vi } from 'vitest'
 import { config } from '~/src/config/config.js'
 import { fetchBusinessAndCustomerInformation } from '../../common/services/consolidated-view/consolidated-view.service.js'
 import ConfirmFarmDetailsController from './confirm-farm-details.controller.js'
+import { setupControllerMocks } from '~/src/__mocks__/controller-mocks.js'
 vi.mock('~/src/config/config.js')
 
 vi.mock('../../common/services/consolidated-view/consolidated-view.service.js')
@@ -35,9 +36,7 @@ describe('ConfirmFarmDetailsController', () => {
 
   beforeEach(() => {
     controller = new ConfirmFarmDetailsController()
-    controller.proceed = vi.fn().mockResolvedValue('redirected')
-    controller.getNextPath = vi.fn().mockReturnValue('/next-path')
-    controller.setState = vi.fn()
+    setupControllerMocks(controller)
     mockRequest = {
       auth: {
         isAuthenticated: true,
