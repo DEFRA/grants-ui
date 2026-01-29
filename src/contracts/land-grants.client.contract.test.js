@@ -506,7 +506,7 @@ describe('calculate', () => {
     const EXPECTED_BODY = like(unprocessableResponseExample)
     await provider
       .given('has parcels', { parcels: [{ sheetId: 'SD6743', parcelId: '8083' }] })
-      .uponReceiving('a calculate request with a negative quantity')
+      .uponReceiving('a calculate request with invalid quantity')
       .withRequest({
         method: 'POST',
         path: '/payments/calculate',
@@ -645,7 +645,7 @@ describe('validate', () => {
 
     await provider
       .given('has parcels', { parcels: [{ sheetId: 'SD6743', parcelId: '8083' }] })
-      .uponReceiving('a validation request for negative quantity')
+      .uponReceiving('a validation request for invalid quantity')
       .withRequest({
         method: 'POST',
         path: '/application/validate',
