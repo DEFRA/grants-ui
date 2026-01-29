@@ -21,3 +21,5 @@ export {
   mockContext,
   createMockFetchResponse
 } from './hapi-mocks.js'
+
+export { setupControllerMocks } from './controller-mocks.js'
