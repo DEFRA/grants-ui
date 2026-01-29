@@ -7,6 +7,7 @@
 {% from "govuk/components/button/macro.njk" import govukButton %}
 {% from "govuk/components/details/macro.njk" import govukDetails %}
 {% from "summaryCard/macro.njk" import summaryCard %}
+{% from "govuk/components/inset-text/macro.njk" import govukInsetText %}
 
 {% block content %}
   <div class="govuk-body">
@@ -72,6 +73,17 @@
             <input type="hidden" name="crumb" value="{{ crumb }}">
 
             {% for group in groupedActions %}
+              {% set hintHTML %}
+                {% if group.sssiConsentRequired == true %}
+                  {{ govukInsetText({
+                    classes: "govuk-!-margin-top-1 govuk-!-margin-bottom-4",
+                    html: '<p class="govuk-body">You must have <a class="govuk-link" rel="noreferrer noopener" target="_blank"
+                                                                  href="./fptt-information#sec-10-get-all-necessary-regulatory-consents-permissions-and-licences-in-place">SSSI consent (opens in new tab)</a> to do these actions on this land parcel.</p>'
+                  }) }}
+                {% endif %}
+                <p class="govuk-body">Total available area: {{ group.totalAvailableArea.value }} {{ group.totalAvailableArea.unitFullName }}</p>
+              {% endset %}
+
               {% if group.actions.length == 1 %}
                 {{ govukCheckboxes({
                     name: actionFieldPrefix + loop.index,
@@ -96,7 +108,7 @@
                       }
                     },
                     hint: {
-                      text: "Total available area: " + group.totalAvailableArea.value + " " + group.totalAvailableArea.unitFullName
+                      html: hintHTML
                     },
                     items: group.actions
                   }) }}
@@ -106,22 +118,22 @@
             <div class="govuk-button-group">
               {% block form %}
                 {{ govukButton({
-                text: "Continue",
-                preventDoubleClick: true
-              }) }}
+                  text: "Continue",
+                  preventDoubleClick: true
+                }) }}
               {% endblock %}
             </div>
           </form>
         {% elif ((not errors) or (errors.length == 0)) %}
           {{ govukWarningText({
-          text: "No actions available to select.",
-          iconFallbackText: "Warning"
-        }) }}
+            text: "No actions available to select.",
+            iconFallbackText: "Warning"
+          }) }}
         {% endif %}
       </div>
     </div>
   </div>
-      {% if existingLandParcels %}
+  {% if existingLandParcels %}
     <p class="govuk-body govuk-!-margin-bottom-5">
       <a href="check-selected-land-actions" class="govuk-link govuk-link--no-visited-state">Back to review selected actions</a>
     </p>

@@ -492,6 +492,12 @@ describe('Land Grants client', () => {
   })
 
   describe('parcelsWithActionsAndSize', () => {
+    beforeEach(() => {
+      vi.mocked(config.get).mockImplementation((key) => {
+        return false
+      })
+    })
+
     it('should trigger a POST request to /parcels with actions and size filtering', async () => {
       const mockResponse = { id: 1, status: 'success' }
       const fields = ['actions', 'size']
@@ -513,6 +519,37 @@ describe('Land Grants client', () => {
         body: JSON.stringify({ parcelIds, fields })
       })
       expect(result).toEqual(mockResponse)
+    })
+
+    describe('v2 - SSSI enabled', () => {
+      beforeEach(() => {
+        vi.mocked(config.get).mockImplementation((key) => {
+          return key === 'landGrants.enableSSSIFeature'
+        })
+      })
+
+      it('should trigger a POST request to /parcels with actions and size filtering', async () => {
+        const mockResponse = { id: 1, status: 'success' }
+        const fields = ['actions', 'size', 'actions.sssiConsentRequired']
+        const parcelIds = ['parcel1']
+
+        mockFetch.mockResolvedValueOnce({
+          ok: true,
+          json: () => mockResponse
+        })
+
+        const result = await parcelsWithActionsAndSize(parcelIds, mockApiEndpoint)
+
+        expect(mockFetch).toHaveBeenCalledWith(`${mockApiEndpoint}/api/v2/parcels`, {
+          method: 'POST',
+          headers: {
+            Authorization: expect.any(String),
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ parcelIds, fields })
+        })
+        expect(result).toEqual(mockResponse)
+      })
     })
   })
 })
