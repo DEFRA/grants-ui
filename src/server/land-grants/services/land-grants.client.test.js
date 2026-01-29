@@ -494,11 +494,7 @@ describe('Land Grants client', () => {
   describe('parcelsWithActionsAndSize', () => {
     beforeEach(() => {
       vi.mocked(config.get).mockImplementation((key) => {
-        if (key === 'landGrants.enableSSSIFeature') {
-          return false
-        } else {
-          return false
-        }
+        return false
       })
     })
 
@@ -528,11 +524,7 @@ describe('Land Grants client', () => {
     describe('v2 - SSSI enabled', () => {
       beforeEach(() => {
         vi.mocked(config.get).mockImplementation((key) => {
-          if (key === 'landGrants.enableSSSIFeature') {
-            return true
-          } else {
-            return false
-          }
+          return key === 'landGrants.enableSSSIFeature'
         })
       })
 

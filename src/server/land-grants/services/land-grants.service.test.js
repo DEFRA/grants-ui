@@ -490,7 +490,7 @@ describe('land-grants service', () => {
                   code: 'UPL1',
                   availableArea: { value: 20.75, unit: 'ha' },
                   description: 'Moderate livestock grazing on moorland',
-                  sssiConsentRequired: true
+                  sssiConsentRequired: false
                 },
                 {
                   code: 'UPL2',
@@ -548,7 +548,7 @@ describe('land-grants service', () => {
                   code: 'UPL1',
                   availableArea: { value: 20.75, unit: 'ha' },
                   description: 'Moderate livestock grazing on moorland: UPL1',
-                  sssiConsentRequired: true
+                  sssiConsentRequired: false
                 },
                 {
                   code: 'UPL2',
