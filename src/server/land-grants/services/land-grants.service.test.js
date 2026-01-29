@@ -24,12 +24,33 @@ vi.mock('~/src/server/land-grants/services/land-grants.client.js', () => ({
 }))
 
 vi.mock('~/src/config/nunjucks/filters/format-currency.js')
-vi.mock('~/src/config/config', async () => {
-  const { mockConfig } = await import('~/src/__mocks__')
-  return mockConfig({
-    'landGrants.grantsServiceApiEndpoint': 'https://land-grants-api'
-  })
+
+// Hoisted shared state + helpers that the mock will use
+const configState = vi.hoisted(() => {
+  const values = new Map([
+    ['landGrants.grantsServiceApiEndpoint', 'https://land-grants-api'] // set once
+  ])
+
+  return {
+    set(key, value) {
+      values.set(key, value)
+    },
+    reset() {
+      values.clear()
+      values.set('landGrants.grantsServiceApiEndpoint', 'https://land-grants-api')
+    },
+    get(key) {
+      return values.get(key)
+    }
+  }
 })
+
+vi.mock('~/src/config/config.js', () => ({
+  config: {
+    get: vi.fn((key) => configState.get(key))
+  }
+}))
+
 vi.mock('~/src/server/common/services/consolidated-view/consolidated-view.service.js', () => ({
   fetchParcelsFromDal: vi.fn()
 }))
@@ -128,6 +149,11 @@ describe('land-grants service', () => {
   })
 
   describe('fetchAvailableActionsForParcel', () => {
+    beforeEach(() => {
+      configState.reset()
+      configState.set('landGrants.enableSSSIFeature', false)
+    })
+
     it('should fetch and group available actions for a parcel successfully', async () => {
       const mockApiResponse = {
         parcels: [
@@ -438,6 +464,103 @@ describe('land-grants service', () => {
           sheetId: 'SHEET123'
         })
       ).rejects.toThrow('API error')
+    })
+
+    describe('V2 - SSSI Consent required flag is enabled', () => {
+      beforeEach(() => {
+        configState.reset()
+        configState.set('landGrants.enableSSSIFeature', true)
+      })
+
+      it('should fetch and group available actions for a parcel successfully', async () => {
+        const mockApiResponse = {
+          parcels: [
+            {
+              parcelId: 'PARCEL456',
+              sheetId: 'SHEET123',
+              size: { value: 50.5, unit: 'ha' },
+              actions: [
+                {
+                  code: 'CMOR1',
+                  availableArea: { value: 10.5, unit: 'ha' },
+                  description: 'Assess moorland and produce a written record',
+                  sssiConsentRequired: false
+                },
+                {
+                  code: 'UPL1',
+                  availableArea: { value: 20.75, unit: 'ha' },
+                  description: 'Moderate livestock grazing on moorland',
+                  sssiConsentRequired: false
+                },
+                {
+                  code: 'UPL2',
+                  availableArea: { value: 15.25, unit: 'ha' },
+                  description: 'Moderate livestock grazing on moorland',
+                  sssiConsentRequired: true
+                }
+              ]
+            }
+          ]
+        }
+        parcelsWithActionsAndSize.mockResolvedValueOnce(mockApiResponse)
+
+        const result = await fetchAvailableActionsForParcel({
+          parcelId: 'PARCEL456',
+          sheetId: 'SHEET123'
+        })
+
+        expect(parcelsWithActionsAndSize).toHaveBeenCalledWith(['SHEET123-PARCEL456'], mockApiEndpoint)
+
+        expect(result).toEqual({
+          parcel: {
+            parcelId: 'PARCEL456',
+            sheetId: 'SHEET123',
+            size: { value: 50.5, unit: 'ha', unitFullName: 'hectares' }
+          },
+          actions: [
+            {
+              name: 'Assess moorland',
+              totalAvailableArea: {
+                unit: 'ha',
+                unitFullName: 'hectares',
+                value: 10.5
+              },
+              sssiConsentRequired: false,
+              actions: [
+                {
+                  code: 'CMOR1',
+                  availableArea: { value: 10.5, unit: 'ha' },
+                  description: 'Assess moorland and produce a written record: CMOR1',
+                  sssiConsentRequired: false
+                }
+              ]
+            },
+            {
+              name: 'Livestock grazing on moorland',
+              totalAvailableArea: {
+                unit: 'ha',
+                unitFullName: 'hectares',
+                value: 20.75
+              },
+              sssiConsentRequired: true,
+              actions: [
+                {
+                  code: 'UPL1',
+                  availableArea: { value: 20.75, unit: 'ha' },
+                  description: 'Moderate livestock grazing on moorland: UPL1',
+                  sssiConsentRequired: false
+                },
+                {
+                  code: 'UPL2',
+                  availableArea: { value: 15.25, unit: 'ha' },
+                  description: 'Moderate livestock grazing on moorland: UPL2',
+                  sssiConsentRequired: true
+                }
+              ]
+            }
+          ]
+        })
+      })
     })
   })
 

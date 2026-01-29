@@ -51,6 +51,7 @@ export function addActionsToExistingState(state, payload, actionFieldPrefix, gro
     if (actionCode && actionInfo) {
       actionsObj[actionCode] = {
         description: actionInfo.description,
+        sssiConsentRequired: actionInfo.sssiConsentRequired,
         value: actionInfo?.availableArea?.value ?? '',
         unit: actionInfo?.availableArea?.unit ?? ''
       }
@@ -212,6 +213,7 @@ export function findActionInfoFromState(landParcels, parcelKey, action) {
  * @typedef {object} Action
  * @property {string} code - Action code
  * @property {string} description - Action description
+ * @property {boolean} [sssiConsentRequired] - Action needs SSSI consent
  * @property {object} [availableArea] - Available area for the action
  * @property {string|number} [availableArea.value] - Area value (number from API, converted to string in state)
  * @property {string} [availableArea.unit] - Area unit
