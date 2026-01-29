@@ -1,0 +1,60 @@
+{
+  "data": {
+    "business": {
+      "sbi": "107593059",
+      "organisationId": "12",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "1234",
+            "sheetId": "TQ1234"
+          },
+          {
+            "parcelId": "5678",
+            "sheetId": "TQ1235"
+          }
+        ]
+      },
+      "info": {
+        "name": "Taylor Equestrian Yards",
+        "reference": "1076543210",
+        "email": {
+          "address": "oliver.taylor@taylorequestrian.test"
+        },
+        "phone": {
+          "mobile": "07700900123"
+        },
+        "address": {
+          "line1": "Taylor Equestrian Yards",
+          "line2": "Riding Lane",
+          "line3": null,
+          "line4": null,
+          "line5": null,
+          "street": "Riding Lane",
+          "city": "Cambridge",
+          "postalCode": "CB1 2AB"
+        },
+        "vat": "GB987654321",
+        "type": {
+          "code": "1",
+          "type": "Sole Trader"
+        }
+      },
+      "countyParishHoldings": [
+        {
+          "cphNumber": "23/456/7890"
+        }
+      ]
+    },
+    "customer": {
+      "info": {
+        "name": {
+          "title": "Mr",
+          "first": "Oliver",
+          "middle": "J",
+          "last": "Taylor"
+        }
+      }
+    }
+  }
+}

@@ -272,8 +272,8 @@ pages:
     id: e102ac90-990a-443b-b70a-d43ba2e5a424
     condition: 914c4364-1a6c-4475-a41d-58d30f684d1c
   - title: Check your details are correct
-    path: /confirm-methane-details
-    controller: ConfirmMethaneDetailsController
+    path: /check-details
+    controller: CheckDetailsController
     next: []
     id: a24cb35f-a359-4934-b8c8-56ff92cb3df1
   - title: How many dairy cows will you feed MSFP?

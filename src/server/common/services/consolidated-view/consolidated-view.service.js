@@ -255,6 +255,20 @@ export async function fetchBusinessAndCustomerInformation(request) {
   return fetchFromConsolidatedView(request, { query, formatResponse })
 }
 
+/**
+ * Executes a config-driven GraphQL query and returns the raw response
+ * @param {AnyFormRequest} request
+ * @param {string} query - GraphQL query string
+ * @returns {Promise<object>} Raw API response
+ * @throws {ConsolidatedViewApiError} - If the API request fails
+ */
+export async function executeConfigDrivenQuery(request, query) {
+  return fetchFromConsolidatedView(request, {
+    query,
+    formatResponse: (r) => r
+  })
+}
+
 export async function fetchBusinessAndCPH(request) {
   const { credentials: { sbi, crn } = {} } = request.auth ?? {}
 
