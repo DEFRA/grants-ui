@@ -3,6 +3,8 @@ import { generateFormNotFoundResponse, getAllForms } from '../utils/index.js'
 import { processSections } from '../../common/services/details-page/index.js'
 import { log, LogCodes } from '../../common/helpers/logging/log.js'
 
+const CHECK_DETAILS_VIEW = 'check-details'
+
 /**
  * Load display sections config from form
  * @param {object} form - Form object
@@ -144,7 +146,7 @@ export async function demoDetailsHandler(request, h) {
         form,
         slug
       })
-      return h.view('check-details', noConfigViewModel)
+      return h.view(CHECK_DETAILS_VIEW, noConfigViewModel)
     }
 
     const demoMappedData = buildDemoMappedData()
@@ -153,7 +155,7 @@ export async function demoDetailsHandler(request, h) {
     const sections = processSections(displaySections, demoMappedData, demoRequest)
     const viewModel = buildViewModel(sections, form, slug)
 
-    return h.view('check-details', viewModel)
+    return h.view(CHECK_DETAILS_VIEW, viewModel)
   } catch (error) {
     log(LogCodes.CONFIRMATION.CONFIRMATION_ERROR, {
       userId: 'demo',
@@ -161,7 +163,7 @@ export async function demoDetailsHandler(request, h) {
     })
 
     const fallbackViewModel = generateFallbackViewModel(error)
-    return h.view('check-details', fallbackViewModel)
+    return h.view(CHECK_DETAILS_VIEW, fallbackViewModel)
   }
 }
 
@@ -201,13 +203,13 @@ export async function demoDetailsPostHandler(request, h) {
       ]
     }
 
-    return h.view('check-details', viewModel)
+    return h.view(CHECK_DETAILS_VIEW, viewModel)
   }
 
   if (detailsCorrect === 'true') {
     return h.redirect(`/${slug}`)
   }
 
-  const viewModel = buildIncorrectDetailsViewModel(form, slug)
-  return h.view('incorrect-details', viewModel)
+  const incorrectDetailsViewModel = buildIncorrectDetailsViewModel(form, slug)
+  return h.view('incorrect-details', incorrectDetailsViewModel)
 }
