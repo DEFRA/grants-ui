@@ -15,7 +15,11 @@ vi.mock('~/src/server/common/helpers/logging/log.js', () => ({}))
 describe('dev-home.handler', () => {
   const mockAllForms = [
     { slug: 'form-with-both', title: 'Form With Both', metadata: { confirmationContent: {}, detailsPage: {} } },
-    { slug: 'form-with-confirmation-only', title: 'Form With Confirmation Only', metadata: { confirmationContent: {} } },
+    {
+      slug: 'form-with-confirmation-only',
+      title: 'Form With Confirmation Only',
+      metadata: { confirmationContent: {} }
+    },
     { slug: 'form-with-details-only', title: 'Form With Details Only', metadata: { detailsPage: {} } },
     { slug: 'form-with-neither', title: 'Form With Neither', metadata: {} }
   ]

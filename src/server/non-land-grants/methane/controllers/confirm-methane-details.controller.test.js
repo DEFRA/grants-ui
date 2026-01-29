@@ -9,6 +9,7 @@ import {
   createCustomerNameRow,
   createSbiRow
 } from '~/src/server/common/helpers/create-rows.js'
+import { setupControllerMocks } from '~/src/__mocks__/controller-mocks.js'
 
 // Mock dependencies
 vi.mock('~/src/server/common/services/consolidated-view/consolidated-view.service.js')
@@ -51,9 +52,7 @@ describe('ConfirmMethaneDetailsController', () => {
 
   beforeEach(() => {
     controller = new ConfirmMethaneDetailsController()
-    controller.proceed = vi.fn().mockResolvedValue('redirected')
-    controller.getNextPath = vi.fn().mockReturnValue('/next-path')
-    controller.setState = vi.fn()
+    setupControllerMocks(controller)
 
     mockRequest = {
       auth: {
