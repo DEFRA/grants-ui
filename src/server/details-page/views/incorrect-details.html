@@ -1,0 +1,35 @@
+{% extends baseLayoutPath %}
+
+{% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "support-details/macro.njk" import defraSupportDetails %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds-from-desktop">
+      {% if previewMode %}
+        {% include "partials/preview-banner.html" %}
+      {% endif %}
+
+      <h1 class="govuk-heading-l">Contact the RPA to update your details</h1>
+
+      <p class="govuk-body">
+        You have indicated that your details are not correct.
+      </p>
+
+      <p class="govuk-body">
+        You will need to contact the Rural Payments Agency (RPA) to let them know of any changes to your details before you can continue with your application.
+      </p>
+
+      {{ defraSupportDetails({ typeOfSupport: 'update' }) }}
+
+      <p class="govuk-body govuk-!-margin-top-6">
+        Once your details have been updated, you can return to this service and continue with your application.
+      </p>
+
+      {{ govukButton({
+        text: "Continue",
+        href: continueUrl
+      }) }}
+    </div>
+  </div>
+{% endblock %}

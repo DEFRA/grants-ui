@@ -1,0 +1,7 @@
+{% from "govuk/components/inset-text/macro.njk" import govukInsetText %}
+
+{% if params.closingDate %}
+  {{ govukInsetText({
+    html: (params.prefixText or "Application closing date is") + " <strong>" + params.closingDate + "</strong>." + (params.suffixText or "")
+  }) }}
+{% endif %}

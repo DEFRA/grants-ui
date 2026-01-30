@@ -1,7 +1,8 @@
 import { vi } from 'vitest'
 import { demoConfirmationHandler } from './demo-confirmation.handler.js'
 import { ConfirmationService } from '../../confirmation/services/confirmation.service.js'
-import { buildDemoData, generateFormNotFoundResponse } from '../utils/index.js'
+import { buildDemoData } from '../helpers/index.js'
+import { generateFormNotFoundResponse } from '../utils/index.js'
 import { mockHapiRequest, mockHapiResponseToolkit } from '~/src/__mocks__/hapi-mocks.js'
 import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
 import {
@@ -18,6 +19,7 @@ const mockDemoData = {
 }
 
 vi.mock('../../confirmation/services/confirmation.service.js')
+vi.mock('../helpers/index.js')
 vi.mock('../utils/index.js')
 vi.mock('../../common/helpers/logging/log.js', async () => {
   const { mockLogHelper } = await import('~/src/__mocks__')

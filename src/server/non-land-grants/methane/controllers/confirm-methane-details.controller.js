@@ -8,11 +8,12 @@ import {
 } from '~/src/server/common/helpers/create-rows.js'
 import { logger } from '~/src/server/common/helpers/logging/log.js'
 import { fetchBusinessAndCPH } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
+// eslint-disable-next-line no-unused-vars
+import { buildGraphQLQuery, mapResponse } from '~/src/server/common/services/details-page/index.js'
 
 export default class ConfirmMethaneDetailsController extends QuestionPageController {
   viewName = 'confirm-methane-details'
 
-  // Constants
   static ERROR_MESSAGE = 'Unable to find farm information, please try again later.'
 
   /**
