@@ -39,9 +39,9 @@ export class FetchClient {
    */
   async fetch(queryObject) {
     this.fetchOptions = {
-      body: {
-        query: JSON.stringify(queryObject.query)
-      }
+      body: JSON.stringify({
+        query: queryObject.query
+      })
     }
 
     return fetch(this.endpoint, this.fetchOptions)
