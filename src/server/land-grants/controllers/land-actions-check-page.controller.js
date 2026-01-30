@@ -6,6 +6,7 @@ import {
   mapPaymentInfoToParcelItems,
   mapAdditionalYearlyPayments
 } from '~/src/server/land-grants/view-models/payment.view-model.js'
+import { getRequiredConsents } from '../view-state/land-parcel.view-state.js'
 
 export default class LandActionsCheckPageController extends QuestionPageController {
   viewName = 'land-actions-check'
@@ -31,10 +32,24 @@ export default class LandActionsCheckPageController extends QuestionPageControll
   /**
    * Determine next path based on user selection
    * @param {string} addMoreActions - User selection
-   * @returns {string} - Next path
+   * @param {object} state - State object
+   * @returns {object} - Next path and any additional data
    */
-  getNextPathFromSelection(addMoreActions) {
-    return addMoreActions === 'true' ? '/select-land-parcel' : '/submit-your-application'
+  getNextPathFromSelection(addMoreActions, state) {
+    if (addMoreActions !== 'true') {
+      const requiredConsents = getRequiredConsents(state)
+
+      if (requiredConsents.length > 0) {
+        return {
+          path: '/you-must-have-consent',
+          requiredConsents
+        }
+      }
+
+      return { path: '/submit-your-application' }
+    }
+
+    return { path: '/select-land-parcel' }
   }
 
   /**
@@ -180,7 +195,13 @@ export default class LandActionsCheckPageController extends QuestionPageControll
       }
 
       const { addMoreActions } = payload
-      const nextPath = this.getNextPathFromSelection(addMoreActions)
+      const { path: nextPath, requiredConsents = [] } = this.getNextPathFromSelection(addMoreActions, state)
+
+      await this.setState(request, {
+        ...state,
+        requiredConsents
+      })
+
       return this.proceed(request, h, nextPath)
     }
 

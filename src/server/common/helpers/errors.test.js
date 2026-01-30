@@ -552,8 +552,8 @@ describe('#catchAll 404 Logging', () => {
 
   test('Should log form not found with context', () => {
     const request = create404Request(
-      "Form 'adding-value' not found",
-      '/adding-value/start',
+      "Form 'example-grant-with-auth' not found",
+      '/example-grant-with-auth/start',
       'user123',
       '105001234',
       'Mozilla/5.0',
@@ -565,7 +565,7 @@ describe('#catchAll 404 Logging', () => {
     expect(log).toHaveBeenCalledWith(
       expectInfoLogCall(),
       expect.objectContaining({
-        slug: 'adding-value',
+        slug: 'example-grant-with-auth',
         userId: 'user123',
         sbi: '105001234',
         reason: 'not_found',
@@ -593,78 +593,6 @@ describe('#catchAll 404 Logging', () => {
         slug: 'test-grant',
         userId: 'user456',
         sbi: '105009999',
-        reason: 'disabled_in_production',
-        environment: expect.any(String)
-      }),
-      request
-    )
-  })
-
-  test('Should log tasklist not found with context', () => {
-    const request = create404Request(
-      "Tasklist 'frps-beta' not found",
-      '/tasklist/frps-beta',
-      'user789',
-      '106001111',
-      'Safari'
-    )
-
-    catchAll(request, mockToolkit)
-
-    expect(log).toHaveBeenCalledWith(
-      expectInfoLogCall(),
-      expect.objectContaining({
-        tasklistId: 'frps-beta',
-        userId: 'user789',
-        sbi: '106001111',
-        reason: 'not_found',
-        environment: expect.any(String)
-      }),
-      request
-    )
-  })
-
-  test('Should log tasklist not found with unknown identifier when path does not match pattern', () => {
-    const request = create404Request(
-      'Tasklist configuration error',
-      '/some-other-path',
-      'user999',
-      '107002222',
-      'Firefox'
-    )
-
-    catchAll(request, mockToolkit)
-
-    expect(log).toHaveBeenCalledWith(
-      expectInfoLogCall(),
-      expect.objectContaining({
-        tasklistId: 'unknown',
-        userId: 'user999',
-        sbi: '107002222',
-        reason: 'not_found',
-        environment: expect.any(String)
-      }),
-      request
-    )
-  })
-
-  test('Should log tasklist disabled in production', () => {
-    const request = create404Request(
-      "Tasklist 'beta-feature' is not available in production",
-      '/tasklist/beta-feature',
-      'user888',
-      '108003333',
-      'Edge'
-    )
-
-    catchAll(request, mockToolkit)
-
-    expect(log).toHaveBeenCalledWith(
-      expectInfoLogCall(),
-      expect.objectContaining({
-        tasklistId: 'beta-feature',
-        userId: 'user888',
-        sbi: '108003333',
         reason: 'disabled_in_production',
         environment: expect.any(String)
       }),

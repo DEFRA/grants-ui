@@ -9,7 +9,7 @@ import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/Su
 import path from 'node:path'
 import { config } from '~/src/config/config.js'
 import { context } from '~/src/config/nunjucks/context/context.js'
-import { viewPaths, nunjucksConfig } from '~/src/config/nunjucks/nunjucks.js'
+import { nunjucksConfig, viewPaths } from '~/src/config/nunjucks/nunjucks.js'
 import auth from '~/src/plugins/auth.js'
 import { rateLimitPlugin } from '~/src/plugins/rate-limit.js'
 import sso from '~/src/plugins/sso.js'
@@ -37,15 +37,16 @@ import SelectLandActionsPageController from '~/src/server/land-grants/controller
 import SubmissionPageController from '~/src/server/land-grants/controllers/submission-page.controller.js'
 import LandGrantsGenericPageController from '~/src/server/land-grants/controllers/land-grants-generic-page.controller.js'
 import FlyingPigsSubmissionPageController from '~/src/server/non-land-grants/pigs-might-fly/controllers/flying-pigs-submission-page.controller.js'
+import ConsentPageController from '~/src/server/land-grants/controllers/consent-page.controller.js'
+import RemoveActionPageController from '~/src/server/land-grants/controllers/remove-action-page.controller.js'
 import { PotentialFundingController } from '~/src/server/non-land-grants/pigs-might-fly/controllers/potential-funding.controller.js'
-import { tasklistBackButton } from '~/src/server/plugins/tasklist-back-button.js'
 import { formatCurrency } from '../config/nunjucks/filters/format-currency.js'
 import { StatePersistenceService } from './common/services/state-persistence/state-persistence.service.js'
-import RemoveActionPageController from './land-grants/controllers/remove-action-page.controller.js'
 import { router } from './router.js'
-import SectionEndController from './section-end/section-end.controller.js'
 import whitelist from '~/src/server/common/helpers/whitelist/whitelist.js'
 import ConfirmMethaneDetailsController from '~/src/server/non-land-grants/methane/controllers/confirm-methane-details.controller.js'
+import TaskListPageController from '~/src/server/task-list/task-list-page.controller.js'
+import TaskPageController from '~/src/server/task-list/task-page.controller.js'
 
 const SESSION_CACHE_NAME = 'session.cache.name'
 
@@ -126,12 +127,14 @@ const registerFormsPlugin = async (server, prefix = '') => {
         SelectLandActionsPageController,
         LandActionsCheckPageController,
         RemoveActionPageController,
-        SectionEndController,
+        ConsentPageController,
         FlyingPigsSubmissionPageController,
         PotentialFundingController,
         SummaryPageController,
         CheckResponsesPageController,
-        ConfirmMethaneDetailsController
+        ConfirmMethaneDetailsController,
+        TaskListPageController,
+        TaskPageController
       }
     }
   })
@@ -195,7 +198,6 @@ export async function createServer() {
   })
 
   await registerFormsPlugin(server)
-  await server.register(tasklistBackButton)
 
   log(LogCodes.SYSTEM.STARTUP_PHASE, {
     phase: 'forms_plugin',
@@ -223,12 +225,6 @@ export async function createServer() {
     cache: config.get(SESSION_CACHE_NAME),
     segment: config.get('session.cookie.cache.segment'),
     expiresIn: config.get('session.cookie.cache.ttl')
-  })
-
-  server.app['cacheTemp'] = server.cache({
-    cache: config.get(SESSION_CACHE_NAME),
-    segment: 'tasklist-section-data',
-    expiresIn: config.get('session.cache.ttl')
   })
 
   server.ext('onPreResponse', catchAll)

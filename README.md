@@ -10,7 +10,7 @@ Core delivery platform Node.js Frontend Template.
   - [Node.js](#nodejs)
 - [DXT Forms Engine Plugin](#dxt-forms-engine-plugin)
 - [Features](#features)
-- [Tasklist System](#tasklist-system)
+- [Task Lists](#task-lists)
 - [Development Tools & Configuration](#development-tools--configuration)
   - [Testing Framework](#testing-framework)
   - [Code Quality & Linting](#code-quality--linting)
@@ -150,16 +150,174 @@ sequenceDiagram
   Ctrl-->>User: Redirect to confirmation
 ```
 
-## Tasklist System
+## Task Lists
 
-A configurable tasklist system for multi-step workflows:
+Task lists provides a structured, configurable way to organize grant application forms into multiple sections and tasks, allowing users to track their progress through complex multi-step applications. Task lists automatically determine completion status based on form state and provide flexible navigation between sections.
 
-- **YAML Configuration**: Define workflow structure in YAML files
-- **Conditional Logic**: Show/hide sections based on user data
-- **Dependencies**: Control section availability based on completion status
-- **Status Tracking**: Automatic calculation of completion status
+### What Task Lists Are Used For
 
-For detailed documentation on the tasklist system, see the [Tasklist Documentation](https://github.com/DEFRA/grants-ui/tree/main/src/server/tasklist).
+Task lists are ideal for:
+
+- **Complex multi-section forms**: Breaking down large grant applications into manageable sections
+- **Progress tracking**: Showing users which sections are completed, available, or not yet available
+- **Sequential workflows**: Enforcing that tasks must be completed in order (optional)
+- **Flexible navigation**: Allowing users to return to any section to review or update answers
+- **Save and return journeys**: Providing clear resumption points for users across sessions
+
+### Configuration
+
+Task lists are configured in the form YAML definition under `metadata.tasklist` with the following options:
+
+```yaml
+metadata:
+  tasklist:
+    completeInOrder: true # Optional, defaults to true - must complete tasks in order
+    returnAfterSection: true # Optional, defaults to true - returns to task list after each section
+    showCompletionStatus: true # Optional, defaults to true - show "X of Y" completion status
+    statuses: # Optional status display overrides
+      cannotStart:
+        text: 'Cannot start yet'
+        classes: 'govuk-tag--grey'
+      notStarted:
+        text: 'Not started'
+        classes: 'govuk-tag--blue'
+      completed:
+        text: 'Completed'
+        classes: 'govuk-tag--green'
+```
+
+### Defining Sections and Tasks
+
+#### 1. Define sections
+
+Sections group related tasks together and must be declared at the form level:
+
+```yaml
+sections:
+  - name: applicant-details
+    title: Applicant details
+  - name: business-information
+    title: Business information
+  - name: submission
+    title: Review and submit
+```
+
+#### 2. Create the task list page
+
+Add a task list page using the `TaskListPageController`:
+
+```yaml
+pages:
+  - title: Application tasks
+    path: /tasks
+    controller: TaskListPageController
+    components:
+      - name: guidance
+        type: Details
+        title: How to use this task list
+        content: |
+          <p class="govuk-body">Complete all sections before submitting.</p>
+        options:
+          position: above # Renders above the task list
+```
+
+Components can be positioned `above` or `below` the task list to provide guidance.
+
+#### 3. Add task pages to sections
+
+Task pages are regular form pages with a `section` property and must use `TaskPageController`:
+
+```yaml
+pages:
+  - title: Your name
+    path: /your-name
+    section: applicant-details
+    controller: TaskPageController
+    components:
+      - name: firstName
+        type: TextField
+        title: First name
+        options:
+          required: true
+      - name: lastName
+        type: TextField
+        title: Last name
+        options:
+          required: true
+```
+
+### How Task Completion Works
+
+Tasks are automatically marked as completed when all required fields on the page have values in the form state:
+
+- **Question components** (TextField, EmailAddressField, RadiosField, etc.) are tracked for completion
+- **Guidance components** (Html, Details, etc.) are ignored
+- **Optional fields** (`required: false`) are ignored
+- **Compound components** (e.g. UkAddressField) are completed when any subfield exists in state
+
+### Task Statuses
+
+The system provides three standard statuses:
+
+| Status           | Default Text       | Default Class      | When Shown                                                  |
+| ---------------- | ------------------ | ------------------ | ----------------------------------------------------------- |
+| Completed        | "Completed"        | `govuk-tag--green` | All required fields on the page have values                 |
+| Not started      | "Not started"      | `govuk-tag--blue`  | No required fields completed, and prerequisites met         |
+| Cannot start yet | "Cannot start yet" | `govuk-tag--grey`  | Previous tasks not completed (when `completeInOrder: true`) |
+
+Customise these in the YAML configuration under `metadata.tasklist.statuses`.
+
+### Navigation Behaviour
+
+#### Sequential completion (`completeInOrder: true`)
+
+- Tasks must be completed in the order they appear in sections
+- Tasks show "Cannot start yet" until previous tasks are completed
+
+#### Free navigation (`completeInOrder: false`) **(TODO)**
+
+- Users can complete tasks in any order
+- All tasks show as "Not started" or "Completed"
+- Useful for forms with independent sections
+
+#### Section by section flow (`returnAfterSection: true`)
+
+- After completing all pages in a section, users return to the task list
+- Back links on first page of each section return to task list
+- Allows users to track progress and choose next section
+
+#### Continuous flow (`returnAfterSection: false`)
+
+- Users flow directly from one section to the next
+- Back links use standard DXT behavior
+- Useful for linear workflows that happen to use sections
+
+### Integration with Grant Redirect Rules
+
+Task lists integrate with the grant redirect rules system:
+
+```yaml
+metadata:
+  grantRedirectRules:
+    preSubmission:
+      - toPath: '/tasks' # Redirect to task list before submission
+    postSubmission:
+      - fromGrantsStatus: SUBMITTED
+        gasStatus: AWAITING_AMENDMENTS
+        toGrantsStatus: REOPENED
+        toPath: /tasks # Return to task list when amendments needed
+```
+
+### Example Complete Configuration
+
+See `src/server/common/forms/definitions/example-grant-with-task-list.yaml` for a complete working example that demonstrates:
+
+- Multiple sections with different types of tasks
+- Above and below positioned guidance components
+- Required and optional fields
+- Compound components (UkAddressField)
+- Custom validation messages
+- Integration with declaration and confirmation pages
 
 ## Development Tools & Configuration
 
@@ -864,18 +1022,18 @@ which is formatted as a GUID string.
 
 #### Additional Configuration
 
-| Variable                     | Description                                    | Default                     |
-| ---------------------------- | ---------------------------------------------- | --------------------------- |
-| `SERVICE_VERSION`            | Service version (injected in CDP environments) | null                        |
-| `ENVIRONMENT`                | CDP environment name                           | `local`                     |
-| `SERVICE_NAME`               | Application service name                       | `Manage land-based actions` |
-| `STATIC_CACHE_TIMEOUT`       | Static asset cache timeout in milliseconds     | `604800000` (1 week)        |
-| `ASSET_PATH`                 | Path to static assets                          | `/public`                   |
-| `TRACING_HEADER`             | HTTP header for distributed tracing            | `x-cdp-request-id`          |
-| `GA_TRACKING_ID`             | Google Analytics tracking ID (optional)        | undefined                   |
-| `COOKIE_POLICY_URL`          | URL for cookie policy page                     | `/cookies`                  |
-| `COOKIE_CONSENT_EXPIRY_DAYS` | Days before cookie consent expires             | `365`                       |
-| `DEV_TOOLS_ENABLED`          | Enable development tools and routes            | `true` (dev only)           |
+| Variable                     | Description                                    | Default                 |
+| ---------------------------- | ---------------------------------------------- | ----------------------- |
+| `SERVICE_VERSION`            | Service version (injected in CDP environments) | null                    |
+| `ENVIRONMENT`                | CDP environment name                           | `local`                 |
+| `SERVICE_NAME`               | Application service name                       | `Farm and land service` |
+| `STATIC_CACHE_TIMEOUT`       | Static asset cache timeout in milliseconds     | `604800000` (1 week)    |
+| `ASSET_PATH`                 | Path to static assets                          | `/public`               |
+| `TRACING_HEADER`             | HTTP header for distributed tracing            | `x-cdp-request-id`      |
+| `GA_TRACKING_ID`             | Google Analytics tracking ID (optional)        | undefined               |
+| `COOKIE_POLICY_URL`          | URL for cookie policy page                     | `/cookies`              |
+| `COOKIE_CONSENT_EXPIRY_DAYS` | Days before cookie consent expires             | `365`                   |
+| `DEV_TOOLS_ENABLED`          | Enable development tools and routes            | `true` (dev only)       |
 
 #### Defra ID Additional Settings
 
@@ -944,16 +1102,17 @@ Example request (truncated - see [GAS API documentation](https://github.com/DEFR
 curl --location --request POST 'https://fg-gas-backend.dev.cdp-int.defra.cloud/grants' \
 --header 'Content-Type: application/json' \
 --data-raw '{
-  "code": "adding-value-v4",
+  "code": "example-grant-with-auth-v3",
   "questions": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "title": "GrantApplicationPayload",
     "type": "object",
     "properties": {
-      "referenceNumber": { "type": "string" },
-      "businessNature": { "type": "string" },
-      "businessLegalStatus": { "type": "string" },
-      "isInEngland": { "type": "boolean" },
+      "yesNoField": { "type": "boolean" },
+      "autocompleteField": { "type": "string" },
+      "radiosField": { "type": "string" },
+      "applicantName": { "type": "string" },
+      "applicantEmail": { "type": "string", "format": "email" }
       // ... additional fields as required
     }
   }
@@ -964,7 +1123,7 @@ Example response:
 
 ```
 {
-    "code": "adding-value-v4"
+    "code": "example-grant-with-auth-v3"
 }
 ```
 
@@ -975,7 +1134,7 @@ Each GAS grant may define a JSON Schema stored locally in:
 `src/server/common/forms/schemas/`
 
 Each schema file is named after the grant code
-(e.g. adding-value-v4.json) and describes the shape of the expected application payload for that grant.
+(e.g. example-grant-with-auth.json) and describes the shape of the expected application payload for that grant.
 
 At application startup, the app scans the schemas directory and compiles each schema into a JSON Schema validator using Ajv. These compiled validators are stored in-memory in a map of the form:
 
@@ -996,7 +1155,7 @@ is currently used only in tests to ensure that the mapping logic produces payloa
 For local development and manual testing of grant definitions and submissions against GAS, this repository includes:
 
 - `gas.http` – an HTTP client collection with example requests for:
-  - creating grant definitions in GAS for `example-grant-with-auth` and `adding-value`
+  - creating grant definitions in GAS for `example-grant-with-auth`
   - submitting example applications for those grants
 - `http-client.env.json` – shared, non‑secret environment configuration (base URLs)
 - `http-client.private.env.json` – per‑environment secrets (service tokens and API keys)
@@ -1383,7 +1542,7 @@ log(LogCodes.AUTH.SIGN_IN_SUCCESS, {
 
 // Log form submission
 log(LogCodes.SUBMISSION.SUBMISSION_SUCCESS, {
-  grantType: 'adding-value',
+  grantType: 'example-grant-with-auth',
   referenceNumber: 'REF123456'
 })
 
@@ -1444,7 +1603,7 @@ The application automatically adjusts log verbosity based on the `LOG_LEVEL` set
 - Simplified, readable request/response logs
 - Excludes verbose details like headers, cookies, and query parameters
 - Shows essential information: method, URL, status code, and response time
-- Example: `[response] GET /adding-value/start 200 (384ms)`
+- Example: `[response] GET /example-grant-with-auth/start 200 (384ms)`
 
 **DEBUG Level (Development)**
 
@@ -1694,7 +1853,7 @@ Preview confirmation pages with mock data for any form in the system. Useful for
 - Validating dynamic content insertion
 - Previewing new grant confirmation pages
 
-**Example:** `http://localhost:3000/dev/demo-confirmation/adding-value`
+**Example:** `http://localhost:3000/dev/demo-confirmation/example-grant-with-auth`
 
 When running in development mode, the demo confirmation handler:
 

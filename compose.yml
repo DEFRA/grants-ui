@@ -8,8 +8,6 @@ services:
         condition: service_healthy
       grants-ui-backend:
         condition: service_started
-      ffc-grants-scoring:
-        condition: service_started
       fcp-defra-id-stub:
         condition: service_healthy
     ports:
@@ -34,7 +32,7 @@ services:
       SESSION_COOKIE_TTL: ${SESSION_COOKIE_TTL:-2419200000}
       SESSION_CACHE_TTL: 14400000
       FEEDBACK_LINK: "${FEEDBACK_LINK:-mailto:defraforms@defra.gov.uk}"
-      SERVICE_NAME: ${SERVICE_NAME:-Manage land-based actions}
+      SERVICE_NAME: ${SERVICE_NAME:-Farm and land service}
       COOKIE_POLICY_URL: ${COOKIE_POLICY_URL:-/cookies}
       COOKIE_CONSENT_EXPIRY_DAYS: ${COOKIE_CONSENT_EXPIRY_DAYS:-365}
       CV_API_MOCK_ENABLED: ${CV_API_MOCK_ENABLED:-true}
@@ -95,24 +93,6 @@ services:
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
-  ffc-grants-scoring:
-    image: defradigital/ffc-grants-scoring
-    pull_policy: always
-    ports:
-      - "3002:3002"
-    environment:
-      PORT: 3002
-      NODE_ENV: development
-    networks:
-      - grants-ui-net
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3002/health"]
       interval: 30s
       timeout: 10s
       retries: 3

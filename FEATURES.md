@@ -345,7 +345,6 @@ Guidance components provide contextual help and information without requiring us
 
 - **Purpose**: Support journeys that need to populate options from external services
 - **Approach**: Implement custom controllers or plugin extensions to fetch data before rendering form components
-- **Example**: [Adding Value – Score results page fetches scoring data on load](./src/server/common/forms/definitions/adding-value.yaml#L862-L870)
 
 ## Validation & Error Handling
 

@@ -218,32 +218,6 @@ export const LogCodes = {
         `${messageOptions.controller}: Retrieved submitted status for referenceNumber=${messageOptions.referenceNumber}`
     }
   },
-  TASKLIST: {
-    TASKLIST_LOAD: {
-      level: 'info',
-      messageFunc: (messageOptions) =>
-        `Task list loaded for user=${messageOptions.userId}, grantType=${messageOptions.grantType}`
-    },
-    TASK_COMPLETED: {
-      level: 'info',
-      messageFunc: (messageOptions) => `Task completed: ${messageOptions.taskName} for user=${messageOptions.userId}`
-    },
-    TASK_ERROR: {
-      level: 'error',
-      messageFunc: (messageOptions) =>
-        `Task processing error for ${messageOptions.taskName}: ${messageOptions.errorMessage}`
-    },
-    CONFIG_LOAD_SKIPPED: {
-      level: 'debug',
-      messageFunc: (messageOptions) =>
-        `Tasklist config load skipped: tasklistId=${messageOptions.tasklistId}, error=${messageOptions.errorMessage}`
-    },
-    CACHE_RETRIEVAL_FAILED: {
-      level: 'warn',
-      messageFunc: (messageOptions) =>
-        `Cache retrieval failed for sessionId=${messageOptions.sessionId}, using empty data. Error: ${messageOptions.errorMessage}`
-    }
-  },
   LAND_GRANTS: {
     LAND_GRANT_APPLICATION_STARTED: {
       level: 'info',
@@ -318,11 +292,6 @@ export const LogCodes = {
       level: 'info',
       messageFunc: (messageOptions) =>
         `Form not found: slug=${messageOptions.slug}, userId=${messageOptions.userId || 'anonymous'}, sbi=${messageOptions.sbi || 'unknown'}, reason=${messageOptions.reason || 'not_found'}, environment=${messageOptions.environment || 'unknown'}, referer=${messageOptions.referer || 'none'}`
-    },
-    TASKLIST_NOT_FOUND: {
-      level: 'info',
-      messageFunc: (messageOptions) =>
-        `Tasklist not found: tasklistId=${messageOptions.tasklistId}, userId=${messageOptions.userId || 'anonymous'}, sbi=${messageOptions.sbi || 'unknown'}, reason=${messageOptions.reason || 'not_found'}, environment=${messageOptions.environment || 'unknown'}, referer=${messageOptions.referer || 'none'}`
     },
     PAGE_NOT_FOUND: {
       level: 'info',

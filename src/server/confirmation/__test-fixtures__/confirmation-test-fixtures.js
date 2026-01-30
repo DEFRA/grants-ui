@@ -13,11 +13,6 @@ export const MOCK_FORMS = {
     id: 'flying-pigs-id',
     slug: 'flying-pigs',
     title: 'Flying Pigs Grant'
-  },
-  addingValue: {
-    id: 'adding-value-id',
-    slug: 'adding-value',
-    title: 'Adding Value Grant'
   }
 }
 

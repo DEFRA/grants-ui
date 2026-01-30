@@ -77,7 +77,12 @@ export async function parcelsWithFields(fields, parcelIds, baseUrl) {
  * @returns {Promise<ParcelResponse>}
  */
 export async function parcelsWithActionsAndSize(parcelIds, baseUrl) {
-  return parcelsWithFields(['actions', 'size'], parcelIds, baseUrl)
+  const fields = [
+    'actions',
+    'size',
+    ...(config.get('landGrants.enableSSSIFeature') ? ['actions.sssiConsentRequired'] : [])
+  ]
+  return parcelsWithFields(fields, parcelIds, baseUrl)
 }
 
 /**

@@ -1,4 +1,6 @@
 import { logger } from '~/src/server/common/helpers/logging/log.js'
+import { HTTP_STATUS } from '~/src/server/common/helpers/errors.js'
+
 /**
  * Retry an asynchronous operation with configurable options
  * @param {Function} operation - Async function to retry
@@ -41,6 +43,7 @@ export async function retry(operation, options = {}) {
         checkFetchResponse &&
         isFetchFailure(result) &&
         attempt < maxAttempts &&
+        result.status !== HTTP_STATUS.NOT_FOUND &&
         shouldRetry(new Error(`HTTP ${result.status}`))
       ) {
         const errorMessage = `Request failed with status ${result.status}: ${result.statusText}`

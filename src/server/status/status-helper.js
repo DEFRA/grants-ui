@@ -135,21 +135,10 @@ function isFormsStartPage(request, context) {
 }
 
 /**
- * Determines if the current request is for a tasklist page.
- * @param request - The Hapi request object
- * @returns {boolean} - True if the current request is for a tasklist page, otherwise false
- */
-function isTasklistPage(request) {
-  return request.app.model?.def?.metadata?.tasklistId != null
-}
-
-/**
  * Determines if a pre-submission request should redirect to the "check answers" page.
  *
  * If there is any meaningful state and the user has navigated to the "start" page, redirect to the "check answers" page
  * Otherwise just continue
- *
- * Tasklist journeys are not supported currently
  *
  * @param request - Hapi request object
  * @param h - Hapi response toolkit
@@ -164,7 +153,7 @@ function preSubmissionRedirect(request, h, context) {
     ? `/${grantId}${preSubmissionRedirectRule.toPath}`
     : `/${grantId}/${preSubmissionRedirectRule.toPath}`
 
-  if (hasMeaningfulState(context.state) && isFormsStartPage(request, context) && !isTasklistPage(request)) {
+  if (hasMeaningfulState(context.state) && isFormsStartPage(request, context)) {
     return h.redirect(preSubmissionRedirectUrl).takeover()
   }
   return h.continue
