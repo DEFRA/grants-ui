@@ -29,7 +29,7 @@ describe('FetchClient', () => {
     expect(fetch).toHaveBeenCalledWith(mockEndpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: { query: JSON.stringify(mockQuery.query) }
+      body: JSON.stringify({ query: mockQuery.query })
     })
     expect(result).toEqual({
       json: expect.any(Function),
