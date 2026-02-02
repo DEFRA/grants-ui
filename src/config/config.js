@@ -65,7 +65,7 @@ export const config = convict({
   serviceName: {
     doc: 'Applications Service Name',
     format: String,
-    default: 'Manage land-based actions',
+    default: 'Farm and land service',
     env: 'SERVICE_NAME'
   },
   root: {
@@ -282,6 +282,56 @@ export const config = convict({
       }
     }
   },
+  rateLimit: {
+    enabled: {
+      doc: 'Enable rate limiting',
+      format: Boolean,
+      default: isProduction,
+      env: 'RATE_LIMIT_ENABLED'
+    },
+    trustProxy: {
+      doc: 'Trust X-Forwarded-For header',
+      format: Boolean,
+      default: true,
+      env: 'RATE_LIMIT_TRUST_PROXY'
+    },
+    userLimit: {
+      doc: 'Default requests per user/IP per period',
+      format: Number,
+      default: 100,
+      env: 'RATE_LIMIT_USER_LIMIT'
+    },
+    userLimitPeriod: {
+      doc: 'Rate limit period in milliseconds',
+      format: Number,
+      default: 60000,
+      env: 'RATE_LIMIT_USER_LIMIT_PERIOD'
+    },
+    pathLimit: {
+      doc: 'Total requests per path per period',
+      format: Number,
+      default: 2000,
+      env: 'RATE_LIMIT_PATH_LIMIT'
+    },
+    authLimit: {
+      doc: 'Max invalid auth attempts before blocking',
+      format: Number,
+      default: 5,
+      env: 'RATE_LIMIT_AUTH_LIMIT'
+    },
+    authEndpointUserLimit: {
+      doc: 'Requests per IP for auth endpoints per minute',
+      format: Number,
+      default: 10,
+      env: 'RATE_LIMIT_AUTH_ENDPOINT_USER_LIMIT'
+    },
+    authEndpointPathLimit: {
+      doc: 'Total requests per auth endpoint path per period',
+      format: Number,
+      default: 500,
+      env: 'RATE_LIMIT_AUTH_ENDPOINT_PATH_LIMIT'
+    }
+  },
   redis: /** @type {Schema<RedisConfig>} */ ({
     host: {
       doc: 'Redis cache host',
@@ -418,6 +468,21 @@ export const config = convict({
         default: 'Demo Test User',
         env: 'DEV_DEMO_CONTACT_NAME'
       }
+    }
+  },
+  applicationLock: {
+    secret: {
+      doc: 'Secret used to sign application lock tokens',
+      format: String,
+      default: 'default-lock-token-secret',
+      env: 'APPLICATION_LOCK_TOKEN_SECRET',
+      sensitive: true
+    },
+    releaseTimeoutMs: {
+      doc: 'Timeout in ms for releasing application locks during sign-out (best-effort)',
+      format: 'nat',
+      default: 2000,
+      env: 'APPLICATION_LOCK_RELEASE_TIMEOUT_MS'
     }
   },
   defraId: /** @type {Schema<DefraIdConfig>} */ (defraId.getProperties()),

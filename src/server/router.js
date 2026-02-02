@@ -4,7 +4,6 @@ import { auth } from '~/src/server/auth/index.js'
 import { serveStaticFiles } from '~/src/server/common/helpers/serve-static-files.js'
 import { health } from '~/src/server/health/index.js'
 import { home } from '~/src/server/home/index.js'
-import { createTasklistRoute } from '~/src/server/tasklist/tasklist.controller.js'
 import { agreements } from '~/src/server/agreements/index.js'
 import { devTools } from '~/src/server/dev-tools/index.js'
 import { configConfirmation } from '~/src/server/confirmation/config-confirmation.js'
@@ -42,11 +41,6 @@ export const router = {
 
       if (cdpEnvironment !== 'prod') {
         await server.register([clearApplicationState])
-      }
-
-      // Generic tasklist routes
-      if (cdpEnvironment !== 'prod') {
-        await server.register([createTasklistRoute('example')])
       }
 
       // Static assets

@@ -3,8 +3,8 @@ import { demoConfirmationHandler } from './demo-confirmation.handler.js'
 import { ConfirmationService } from '../../confirmation/services/confirmation.service.js'
 import { buildDemoData, generateFormNotFoundResponse } from '../utils/index.js'
 import { mockHapiRequest, mockHapiResponseToolkit } from '~/src/__mocks__/hapi-mocks.js'
+import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
 import {
-  createMockLogger,
   MOCK_CONFIRMATION_CONTENT,
   MOCK_FORMS
 } from '../../confirmation/__test-fixtures__/confirmation-test-fixtures.js'
@@ -35,7 +35,7 @@ describe('demo-confirmation.handler', () => {
   beforeEach(() => {
     vi.clearAllMocks()
 
-    mockLogger = createMockLogger()
+    mockLogger = mockRequestLogger()
     mockRequest = mockHapiRequest({
       params: { slug: 'test-form' },
       logger: mockLogger

@@ -5,6 +5,8 @@ import { getFormsCacheService } from '../common/helpers/forms-cache/forms-cache.
 import { ApplicationStatus } from '../common/constants/application-status.js'
 import { formsStatusCallback } from './status-helper.js'
 import { log, LogCodes } from '../common/helpers/logging/log.js'
+import { mintLockToken } from '../common/helpers/lock/lock-token.js'
+import { getCacheKey } from '../common/helpers/state/get-cache-key-helper.js'
 
 vi.mock('../common/helpers/logging/log.js', async () => {
   const { mockLogHelper } = await import('~/src/__mocks__')
@@ -18,6 +20,12 @@ vi.mock('../common/helpers/status/update-application-status-helper.js', () => ({
 }))
 vi.mock('../common/helpers/forms-cache/forms-cache.js', () => ({
   getFormsCacheService: vi.fn()
+}))
+vi.mock('../common/helpers/lock/lock-token.js', () => ({
+  mintLockToken: vi.fn().mockReturnValue('mock-lock-token')
+}))
+vi.mock('../common/helpers/state/get-cache-key-helper.js', () => ({
+  getCacheKey: vi.fn().mockReturnValue({ sbi: '12345', grantCode: 'grant-a' })
 }))
 vi.mock('../../config/agreements.js', () => ({
   default: {
@@ -108,7 +116,7 @@ describe('formsStatusCallback', () => {
         }
       },
       path: '/grant-a/start',
-      auth: { credentials: { sbi: '12345', crn: 'CRN123' } },
+      auth: { credentials: { sbi: '12345', crn: 'CRN123', contactId: 'contact-123' } },
       server: { logger: { error: vi.fn() } }
     }
 
@@ -184,10 +192,6 @@ describe('formsStatusCallback', () => {
     {
       description: 'previous status is CLEARED',
       state: { applicationStatus: ApplicationStatus.CLEARED, someFiled: 'someValue' }
-    },
-    {
-      description: 'previous status is REOPENED',
-      state: { applicationStatus: ApplicationStatus.REOPENED, someFiled: 'someValue' }
     }
   ])(
     'redirects to preSubmission path if $description and has meaningful state and is requesting forms startPage while not being a task list page',
@@ -217,19 +221,6 @@ describe('formsStatusCallback', () => {
     expect(h.redirect).not.toHaveBeenCalled()
   })
 
-  it('continues when tasklist page is detected', async () => {
-    request.app.model.def.metadata.tasklistId = 'tasklist-1'
-    const preSubmissionContext = {
-      referenceNumber: 'REF-004',
-      state: { someField: 'someValue' },
-      paths: ['/start']
-    }
-
-    const result = await formsStatusCallback(request, h, preSubmissionContext)
-    expect(result).toBe(h.continue)
-    expect(h.redirect).not.toHaveBeenCalled()
-  })
-
   it('continues when previousStatus is SUBMITTED and no redirect needed', async () => {
     getApplicationStatus.mockResolvedValue({ json: async () => ({ status: 'RECEIVED' }) })
     request.path = '/grant-a/confirmation'
@@ -238,30 +229,24 @@ describe('formsStatusCallback', () => {
     expect(result).toBe(h.continue)
   })
 
-  it.each([undefined, 'REOPENED', 'CLEARED'])(
-    'continues without GAS call when status = %s and no saved state',
-    async (status) => {
-      context.state = {
-        applicationStatus: status
-      }
-      const result = await formsStatusCallback(request, h, context)
-      expect(result).toBe(h.continue)
-      expect(getApplicationStatus).not.toHaveBeenCalled()
+  it.each([undefined, 'CLEARED'])('continues without GAS call when status = %s and no saved state', async (status) => {
+    context.state = {
+      applicationStatus: status
     }
-  )
+    const result = await formsStatusCallback(request, h, context)
+    expect(result).toBe(h.continue)
+    expect(getApplicationStatus).not.toHaveBeenCalled()
+  })
 
-  it.each([undefined, 'REOPENED', 'CLEARED'])(
-    'redirects to "check answers" page if some saved state',
-    async (status) => {
-      context.state = {
-        applicationStatus: status,
-        question: 'answer'
-      }
-      await formsStatusCallback(request, h, context)
-      expect(h.redirect).toBeCalled()
-      expect(getApplicationStatus).not.toHaveBeenCalled()
+  it.each([undefined, 'CLEARED'])('redirects to "check answers" page if some saved state', async (status) => {
+    context.state = {
+      applicationStatus: status,
+      question: 'answer'
     }
-  )
+    await formsStatusCallback(request, h, context)
+    expect(h.redirect).toBeCalled()
+    expect(getApplicationStatus).not.toHaveBeenCalled()
+  })
 
   it('continues without GAS call when status is an unknown value', async () => {
     context.state = {
@@ -298,25 +283,102 @@ describe('formsStatusCallback', () => {
     expect(result).toBe(h.continue)
   })
 
-  it('updates status to REOPENED when awaiting amendments and previous is SUBMITTED', async () => {
+  it('updates status to REOPENED and redirects to summary when awaiting amendments and previous is SUBMITTED', async () => {
+    getApplicationStatus.mockResolvedValue({
+      json: async () => ({ status: 'AWAITING_AMENDMENTS' })
+    })
+
+    const result = await formsStatusCallback(request, h, context)
+
+    expect(getCacheKey).toHaveBeenCalledWith(request)
+    expect(mintLockToken).toHaveBeenCalledWith({
+      userId: 'contact-123',
+      sbi: '12345',
+      grantCode: 'grant-a',
+      grantVersion: 1
+    })
+    expect(updateApplicationStatus).toHaveBeenCalledWith('REOPENED', '12345:grant-a', { lockToken: 'mock-lock-token' })
+    expect(h.redirect).toHaveBeenCalledWith('/grant-a/summary')
+    expect(result).toEqual(expect.any(Symbol))
+  })
+
+  it('updates session cache when transitioning to REOPENED', async () => {
     getApplicationStatus.mockResolvedValue({
       json: async () => ({ status: 'AWAITING_AMENDMENTS' })
     })
 
     await formsStatusCallback(request, h, context)
 
-    expect(updateApplicationStatus).toHaveBeenCalledWith('REOPENED', '12345:grant-a')
+    expect(mockCacheService.setState).toHaveBeenCalledWith(
+      request,
+      expect.objectContaining({
+        applicationStatus: ApplicationStatus.REOPENED
+      })
+    )
   })
 
-  it('continues when gasStatus is AWAITING_AMENDMENTS and previousStatus is REOPENED', async () => {
+  it('preserves existing form state when transitioning to REOPENED', async () => {
+    // Add form data to existing state
+    context.state = {
+      applicationStatus: 'SUBMITTED',
+      someFormField: 'form-value',
+      anotherField: { nested: 'data' }
+    }
+    getApplicationStatus.mockResolvedValue({
+      json: async () => ({ status: 'AWAITING_AMENDMENTS' })
+    })
+
+    await formsStatusCallback(request, h, context)
+
+    expect(mockCacheService.setState).toHaveBeenCalledWith(request, {
+      applicationStatus: ApplicationStatus.REOPENED,
+      someFormField: 'form-value',
+      anotherField: { nested: 'data' }
+    })
+  })
+
+  it('does not preserve existing form state when transitioning to CLEARED (withdrawal)', async () => {
+    context.state = {
+      applicationStatus: 'SUBMITTED',
+      someFormField: 'form-value',
+      anotherField: { nested: 'data' }
+    }
+    getApplicationStatus.mockResolvedValue({
+      json: async () => ({ status: 'APPLICATION_WITHDRAWN' })
+    })
+
+    await formsStatusCallback(request, h, context)
+
+    expect(mockCacheService.setState).toHaveBeenCalledWith(request, {
+      applicationStatus: ApplicationStatus.CLEARED
+    })
+  })
+
+  it('allows navigation when gasStatus is AWAITING_AMENDMENTS and previousStatus is REOPENED', async () => {
     context.state.applicationStatus = ApplicationStatus.REOPENED
+    request.path = '/grant-a/some-question-page'
     getApplicationStatus.mockResolvedValue({
       json: async () => ({ status: 'AWAITING_AMENDMENTS' })
     })
 
     const result = await formsStatusCallback(request, h, context)
+    expect(h.redirect).not.toHaveBeenCalled()
     expect(result).toBe(h.continue)
-    expect(updateApplicationStatus).not.toHaveBeenCalled()
+  })
+
+  it('redirects to start when REOPENED application is withdrawn by GAS', async () => {
+    context.state.applicationStatus = ApplicationStatus.REOPENED
+    request.path = '/grant-a/some-question-page'
+    getApplicationStatus.mockResolvedValue({
+      json: async () => ({ status: 'APPLICATION_WITHDRAWN' })
+    })
+
+    await formsStatusCallback(request, h, context)
+    expect(h.redirect).toHaveBeenCalledWith('/grant-a/start')
+    expect(mockCacheService.setState).toHaveBeenCalledWith(
+      request,
+      expect.objectContaining({ applicationStatus: ApplicationStatus.CLEARED })
+    )
   })
 
   it('converts reference number to lowercase when calling getApplicationStatus', async () => {

@@ -9,6 +9,7 @@ import { persistSubmissionToApi } from '~/src/server/common/helpers/state/persis
 import { ApplicationStatus } from '~/src/server/common/constants/application-status.js'
 import { handleGasApiError } from '~/src/server/common/helpers/gas-error-messages.js'
 import { log, LogCodes } from '../common/helpers/logging/log.js'
+import { getTaskPageBackLink } from '~/src/server/task-list/task-list.helper.js'
 
 export default class DeclarationPageController extends SummaryPageController {
   /**
@@ -20,6 +21,25 @@ export default class DeclarationPageController extends SummaryPageController {
     this.model = model
     this.viewName = 'declaration-page.html'
     this.grantCode = model.def.metadata.submission.grantCode
+  }
+
+  /**
+   * Builds the view model for the declaration page
+   * @param {AnyFormRequest} request
+   * @param {FormContext} context
+   * @returns {object} The view model
+   */
+  getSummaryViewModel(request, context) {
+    const viewModel = super.getSummaryViewModel(request, context)
+
+    const { pageDef } = this
+
+    const backLink = getTaskPageBackLink(viewModel, pageDef)
+
+    return {
+      ...viewModel,
+      ...(backLink ? { backLink } : {})
+    }
   }
 
   /**
@@ -61,8 +81,7 @@ export default class DeclarationPageController extends SummaryPageController {
       clientRef: context.referenceNumber.toLowerCase(),
       sbi: request.auth?.credentials?.sbi,
       frn: 'frn',
-      crn: request.auth?.credentials?.crn,
-      defraId: 'defraId'
+      crn: request.auth?.credentials?.crn
     }
 
     return transformStateObjectToGasApplication(identifiers, stateWithTextAnswers, (s) => s)
@@ -170,5 +189,6 @@ export default class DeclarationPageController extends SummaryPageController {
 
 /**
  * @import { FormModel } from '@defra/forms-engine-plugin/engine/models/index.js'
+ * @import { AnyFormRequest, FormContext } from '@defra/forms-engine-plugin/engine/types.js'
  * @import { PageSummary } from '@defra/forms-model'
  */

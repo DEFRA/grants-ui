@@ -1,6 +1,9 @@
 import { vi } from 'vitest'
+import { mockLogHelper } from '../src/__mocks__/logger-mocks.js'
 
 process.env.DEFRA_ID_CLIENT_ID = process.env.DEFRA_ID_CLIENT_ID || 'test-client-id'
+
+vi.mock('~/src/server/common/helpers/logging/log.js', () => mockLogHelper())
 
 vi.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js', () => {
   class QuestionPageController {

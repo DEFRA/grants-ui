@@ -10,16 +10,20 @@ Core delivery platform Node.js Frontend Template.
   - [Node.js](#nodejs)
 - [DXT Forms Engine Plugin](#dxt-forms-engine-plugin)
 - [Features](#features)
-- [Tasklist System](#tasklist-system)
+- [Task Lists](#task-lists)
 - [Development Tools & Configuration](#development-tools--configuration)
   - [Testing Framework](#testing-framework)
   - [Code Quality & Linting](#code-quality--linting)
   - [Authentication & Security](#authentication--security)
+  - [Rate Limiting](#rate-limiting)
+  - [Agreements System](#agreements-system)
   - [Custom NPM Scripts](#custom-npm-scripts)
 - [Cookies](#cookies)
   - [Inspecting cookies](#inspecting-cookies)
 - [Server-side Caching](#server-side-caching)
 - [Session Rehydration](#session-rehydration)
+- [Server to Server (S2S) Authentication](#server-to-server-s2s-authentication)
+  - [Application Lock System](#application-lock-system)
 - [Land Grants API Authentication](#land-grants-api-authentication)
 - [Redis](#redis)
 - [Proxy](#proxy)
@@ -54,6 +58,7 @@ Core delivery platform Node.js Frontend Template.
   - [Standard Logging Approach](#standard-logging-approach)
   - [Adding New Log Codes](#adding-new-log-codes)
   - [Development Workflow](#development-workflow)
+- [Development Tools](#development-tools)
 - [Analytics](#analytics)
 - [Licence](#licence)
   - [About the licence](#about-the-licence)
@@ -106,7 +111,7 @@ DXT Controllers pass a `context` object into every handler. Grants UI relies on 
 - `context.state`: the full mutable state bag for the current journey. Grants UI stores intermediate answers, lookups, and UI scaffolding here (for example `context.state.applicantContactDetails`). Use the helper methods exposed by the base controllers—primarily `await this.setState(request, newState)` or `await this.mergeState(request, context.state, update)`—to persist changes so they flow through the cache layer (`QuestionPageController.setState`, `QuestionPageController.mergeState` in the forms engine plugin).
 - `context.relevantState`: a projection produced by the forms engine that contains only the answers needed for submission. This is the source of truth used by declaration/confirmation controllers when building payloads for GAS (see `DeclarationPageController`).
 
-StatePersistenceService persists both structures through Grants UI Backend + Redis so that state survives page refreshes and “save and return” flows. When working on new controllers, prefer `context.relevantState` for data you plan to submit, and use `context.state` for auxiliary UI data. Changes to either must be serialisable because the persistence layer stores them as JSON.
+StatePersistenceService persists both structures through the Grants UI Backend API (which stores data in MongoDB) so that state survives page refreshes and "save and return" flows. Redis is used separately for session caching (auth cookies, Yar session data, tasklist temp data) but not for form state persistence. When working on new controllers, prefer `context.relevantState` for data you plan to submit, and use `context.state` for auxiliary UI data. Changes to either must be serialisable because the persistence layer stores them as JSON.
 
 Practical usage tips:
 
@@ -145,16 +150,174 @@ sequenceDiagram
   Ctrl-->>User: Redirect to confirmation
 ```
 
-## Tasklist System
+## Task Lists
 
-A configurable tasklist system for multi-step workflows:
+Task lists provides a structured, configurable way to organize grant application forms into multiple sections and tasks, allowing users to track their progress through complex multi-step applications. Task lists automatically determine completion status based on form state and provide flexible navigation between sections.
 
-- **YAML Configuration**: Define workflow structure in YAML files
-- **Conditional Logic**: Show/hide sections based on user data
-- **Dependencies**: Control section availability based on completion status
-- **Status Tracking**: Automatic calculation of completion status
+### What Task Lists Are Used For
 
-For detailed documentation on the tasklist system, see the [Tasklist Documentation](https://github.com/DEFRA/grants-ui/tree/main/src/server/tasklist).
+Task lists are ideal for:
+
+- **Complex multi-section forms**: Breaking down large grant applications into manageable sections
+- **Progress tracking**: Showing users which sections are completed, available, or not yet available
+- **Sequential workflows**: Enforcing that tasks must be completed in order (optional)
+- **Flexible navigation**: Allowing users to return to any section to review or update answers
+- **Save and return journeys**: Providing clear resumption points for users across sessions
+
+### Configuration
+
+Task lists are configured in the form YAML definition under `metadata.tasklist` with the following options:
+
+```yaml
+metadata:
+  tasklist:
+    completeInOrder: true # Optional, defaults to true - must complete tasks in order
+    returnAfterSection: true # Optional, defaults to true - returns to task list after each section
+    showCompletionStatus: true # Optional, defaults to true - show "X of Y" completion status
+    statuses: # Optional status display overrides
+      cannotStart:
+        text: 'Cannot start yet'
+        classes: 'govuk-tag--grey'
+      notStarted:
+        text: 'Not started'
+        classes: 'govuk-tag--blue'
+      completed:
+        text: 'Completed'
+        classes: 'govuk-tag--green'
+```
+
+### Defining Sections and Tasks
+
+#### 1. Define sections
+
+Sections group related tasks together and must be declared at the form level:
+
+```yaml
+sections:
+  - name: applicant-details
+    title: Applicant details
+  - name: business-information
+    title: Business information
+  - name: submission
+    title: Review and submit
+```
+
+#### 2. Create the task list page
+
+Add a task list page using the `TaskListPageController`:
+
+```yaml
+pages:
+  - title: Application tasks
+    path: /tasks
+    controller: TaskListPageController
+    components:
+      - name: guidance
+        type: Details
+        title: How to use this task list
+        content: |
+          <p class="govuk-body">Complete all sections before submitting.</p>
+        options:
+          position: above # Renders above the task list
+```
+
+Components can be positioned `above` or `below` the task list to provide guidance.
+
+#### 3. Add task pages to sections
+
+Task pages are regular form pages with a `section` property and must use `TaskPageController`:
+
+```yaml
+pages:
+  - title: Your name
+    path: /your-name
+    section: applicant-details
+    controller: TaskPageController
+    components:
+      - name: firstName
+        type: TextField
+        title: First name
+        options:
+          required: true
+      - name: lastName
+        type: TextField
+        title: Last name
+        options:
+          required: true
+```
+
+### How Task Completion Works
+
+Tasks are automatically marked as completed when all required fields on the page have values in the form state:
+
+- **Question components** (TextField, EmailAddressField, RadiosField, etc.) are tracked for completion
+- **Guidance components** (Html, Details, etc.) are ignored
+- **Optional fields** (`required: false`) are ignored
+- **Compound components** (e.g. UkAddressField) are completed when any subfield exists in state
+
+### Task Statuses
+
+The system provides three standard statuses:
+
+| Status           | Default Text       | Default Class      | When Shown                                                  |
+| ---------------- | ------------------ | ------------------ | ----------------------------------------------------------- |
+| Completed        | "Completed"        | `govuk-tag--green` | All required fields on the page have values                 |
+| Not started      | "Not started"      | `govuk-tag--blue`  | No required fields completed, and prerequisites met         |
+| Cannot start yet | "Cannot start yet" | `govuk-tag--grey`  | Previous tasks not completed (when `completeInOrder: true`) |
+
+Customise these in the YAML configuration under `metadata.tasklist.statuses`.
+
+### Navigation Behaviour
+
+#### Sequential completion (`completeInOrder: true`)
+
+- Tasks must be completed in the order they appear in sections
+- Tasks show "Cannot start yet" until previous tasks are completed
+
+#### Free navigation (`completeInOrder: false`) **(TODO)**
+
+- Users can complete tasks in any order
+- All tasks show as "Not started" or "Completed"
+- Useful for forms with independent sections
+
+#### Section by section flow (`returnAfterSection: true`)
+
+- After completing all pages in a section, users return to the task list
+- Back links on first page of each section return to task list
+- Allows users to track progress and choose next section
+
+#### Continuous flow (`returnAfterSection: false`)
+
+- Users flow directly from one section to the next
+- Back links use standard DXT behavior
+- Useful for linear workflows that happen to use sections
+
+### Integration with Grant Redirect Rules
+
+Task lists integrate with the grant redirect rules system:
+
+```yaml
+metadata:
+  grantRedirectRules:
+    preSubmission:
+      - toPath: '/tasks' # Redirect to task list before submission
+    postSubmission:
+      - fromGrantsStatus: SUBMITTED
+        gasStatus: AWAITING_AMENDMENTS
+        toGrantsStatus: REOPENED
+        toPath: /tasks # Return to task list when amendments needed
+```
+
+### Example Complete Configuration
+
+See `src/server/common/forms/definitions/example-grant-with-task-list.yaml` for a complete working example that demonstrates:
+
+- Multiple sections with different types of tasks
+- Above and below positioned guidance components
+- Required and optional fields
+- Compound components (UkAddressField)
+- Custom validation messages
+- Integration with declaration and confirmation pages
 
 ## Development Tools & Configuration
 
@@ -265,7 +428,115 @@ The mutation score indicates test effectiveness:
 
 ### Whitelist Functionality
 
-Whitelisting restricts access to specific grant journeys based on Customer Reference Numbers (CRNs) and Single Business Identifiers (SBIs). Forms that require whitelisting declare the relevant environment variables in their YAML definition (see [`src/server/common/forms/definitions/example-whitelist.yaml`](./src/server/common/forms/definitions/example-whitelist.yaml)). At runtime, the whitelist service (`src/server/auth/services/whitelist.service.js`) reads the configured environment variables, normalises the values, and validates incoming CRN/SBI credentials. If a user’s identifiers are not present in the configured whitelist, the journey is terminated and the user is shown a terminal page.
+Whitelisting restricts access to specific grant journeys based on Customer Reference Numbers (CRNs) and Single Business Identifiers (SBIs). Forms that require whitelisting declare the relevant environment variables in their YAML definition (see [`src/server/common/forms/definitions/example-whitelist.yaml`](./src/server/common/forms/definitions/example-whitelist.yaml)). At runtime, the whitelist service (`src/server/auth/services/whitelist.service.js`) reads the configured environment variables, normalises the values, and validates incoming CRN/SBI credentials. If a user's identifiers are not present in the configured whitelist, the journey is terminated and the user is shown a terminal page.
+
+### Rate Limiting
+
+The application implements rate limiting to protect against abuse and denial-of-service attacks (CWE-400: Uncontrolled Resource Consumption). Rate limiting is implemented using [hapi-rate-limit](https://github.com/wraithgar/hapi-rate-limit).
+
+#### How It Works
+
+- **Per-user limiting**: Limits requests per IP address within a configurable time window
+- **Per-path limiting**: Limits total requests to specific endpoints
+- **Auth endpoint protection**: Stricter limits on authentication endpoints to prevent brute-force attacks
+- **IP extraction**: Correctly extracts client IP from `X-Forwarded-For` header when behind proxies/load balancers
+- **Monitoring**: Logs rate limit violations with IP, path, user ID, and user agent for security monitoring
+
+#### Configuration
+
+Rate limiting is controlled via environment variables:
+
+| Variable                              | Description                                      | Default                  |
+| ------------------------------------- | ------------------------------------------------ | ------------------------ |
+| `RATE_LIMIT_ENABLED`                  | Enable/disable rate limiting                     | `true` (production only) |
+| `RATE_LIMIT_TRUST_PROXY`              | Trust X-Forwarded-For header                     | `true`                   |
+| `RATE_LIMIT_USER_LIMIT`               | Max requests per user (IP) per period            | `100`                    |
+| `RATE_LIMIT_USER_LIMIT_PERIOD`        | Time window in milliseconds                      | `60000` (1 minute)       |
+| `RATE_LIMIT_PATH_LIMIT`               | Max requests per path per period                 | `2000`                   |
+| `RATE_LIMIT_AUTH_LIMIT`               | Max requests requiring authentication per period | `5`                      |
+| `RATE_LIMIT_AUTH_ENDPOINT_USER_LIMIT` | Max requests per user to auth endpoints          | `10`                     |
+| `RATE_LIMIT_AUTH_ENDPOINT_PATH_LIMIT` | Max requests per auth endpoint path              | `500`                    |
+
+#### Protected Endpoints
+
+The following authentication endpoints have stricter rate limits (`authEndpointUserLimit` / `authEndpointPathLimit`) applied:
+
+| Endpoint              | Method | Purpose                |
+| --------------------- | ------ | ---------------------- |
+| `/auth/sign-in`       | GET    | Sign-in initiation     |
+| `/auth/sign-in-oidc`  | GET    | OIDC callback          |
+| `/auth/sign-out`      | GET    | Sign-out               |
+| `/auth/sign-out-oidc` | GET    | OIDC sign-out callback |
+
+All other endpoints use the global rate limits (`userLimit` / `pathLimit`).
+
+#### Response Headers
+
+When rate limiting is enabled, responses include headers indicating limit status:
+
+- `X-RateLimit-Limit`: Maximum requests allowed
+- `X-RateLimit-Remaining`: Requests remaining in current window
+- `X-RateLimit-Reset`: Time when the limit resets (Unix timestamp)
+
+#### Rate Limit Exceeded
+
+When a client exceeds the rate limit:
+
+1. A `429 Too Many Requests` response is returned
+2. The event is logged with client details for monitoring:
+   ```
+   [warn] Rate limit exceeded: path=/auth/sign-in, ip=192.168.1.100, userId=user123, userAgent=Mozilla/5.0...
+   ```
+3. A user-friendly error page is displayed
+
+#### Development Mode
+
+Rate limiting is **disabled by default** in non-production environments to avoid friction during local development. To test rate limiting locally, set:
+
+```bash
+RATE_LIMIT_ENABLED=true
+```
+
+### Agreements System
+
+The application includes a proxy endpoint for handling farming payment agreements, which forwards requests to an external agreements service.
+
+**How It Works:**
+
+The agreements controller acts as an authenticated proxy that:
+
+- Accepts requests at `/agreements/{path*}`
+- Extracts SBI (Single Business Identifier) from Defra ID credentials
+- Generates a JWT token with SBI and source information
+- Forwards requests to the external agreements service with authentication headers
+
+**Configuration:**
+
+| Variable                | Description                                  | Required |
+| ----------------------- | -------------------------------------------- | -------- |
+| `AGREEMENTS_UI_TOKEN`   | Bearer token for authenticating with the API | Yes      |
+| `AGREEMENTS_UI_URL`     | Base URL of the agreements service           | Yes      |
+| `AGREEMENTS_BASE_URL`   | Base path for agreements routes in grants-ui | Yes      |
+| `AGREEMENTS_JWT_SECRET` | Secret key for signing JWT tokens            | Yes      |
+
+**Example Configuration:**
+
+```bash
+AGREEMENTS_UI_TOKEN=your-bearer-token
+AGREEMENTS_UI_URL=https://agreements-service.example.com
+AGREEMENTS_BASE_URL=/agreement
+AGREEMENTS_JWT_SECRET=your-jwt-secret
+```
+
+**Security:**
+
+- Requires authenticated session (Defra ID)
+- Uses JWT encryption for sensitive data transmission
+- Validates configuration at startup
+
+**Implementation:**
+
+See `src/server/agreements/controller.js` for the proxy implementation.
 
 ### Development Services Integration (docker compose)
 
@@ -341,7 +612,7 @@ To use the tool:
 node ./tools/unseal-cookie.js '<cookie-string>' '<cookie-password>'
 
 // With the NPM script
-npm run unseal-cookie -- '<cookie-string>' '<cookie-password>'
+npm run unseal:cookie -- '<cookie-string>' '<cookie-password>'
 ```
 
 ## Server-side Caching
@@ -423,6 +694,109 @@ If session rehydration fails (e.g., backend unavailable, network issues), the ap
 - Continue normal operation without restored state
 - Allow the user to proceed with a fresh session
 
+## Server-to-Server (S2S) Authentication
+
+When making API requests to backend services, our helpers handle the necessary authentication and headers. This ensures secure communication without requiring manual token management.
+
+### Authorization Headers
+
+The primary helper is:
+
+```js
+import { createApiHeadersForGrantsUiBackend } from '~/src/server/common/helpers/state/backend-auth-helper.js'
+```
+
+It generates headers that include:
+
+- Content-Type: application/json
+- Authorization: Bearer <encrypted-token> (if a token is configured)
+- Optional additional headers
+
+Example Usage
+
+```js
+const headers = createApiHeadersForGrantsUiBackend()
+```
+
+If a token is configured in the environment (`session.cache.authToken`), the helper automatically:
+
+Encrypts the token using AES-256-GCM with the configured encryption key (session.cache.encryptionKey).
+
+- Base64 encodes the encrypted token.
+- Adds the Authorization header:
+
+```js
+Authorization: Bearer <base64-encrypted-token>
+```
+
+The helper preserves any custom base headers you pass:
+
+```js
+const headers = createApiHeadersForGrantsUiBackend({
+  'User-Agent': 'my-service',
+  'X-Custom-Header': 'value'
+})
+```
+
+### Optional Lock Token
+
+For operations that require a concurrency lock, you can pass an optional `lockToken`:
+
+```js
+const headers = createApiHeadersForGrantsUiBackend({ lockToken: 'LOCK-123' })
+```
+
+This adds an additional header:
+
+```js
+X-Application-Lock-Owner: LOCK-123
+```
+
+without affecting the Authorization header or any base headers.
+
+### Application Lock System
+
+The application implements a distributed lock mechanism to prevent concurrent modifications to the same application by multiple users or sessions.
+
+#### How It Works
+
+When a user accesses an application for editing:
+
+1. A lock token is generated using JWT and the configured secret
+2. The token is sent to the backend service with requests
+3. The backend service validates the token and ensures only the lock holder can modify the application
+4. Locks automatically expire after the configured TTL
+
+#### Configuration
+
+| Variable                        | Description                        | Default           |
+| ------------------------------- | ---------------------------------- | ----------------- |
+| `APPLICATION_LOCK_TOKEN_SECRET` | Secret key for signing lock tokens | (required)        |
+| `APPLICATION_LOCK_TTL_MS`       | Lock time-to-live in milliseconds  | `14400000` (4hrs) |
+
+**Note:** The same secret must be configured in both grants-ui and grants-ui-backend services.
+
+#### Lock Headers
+
+When operations require a lock, requests include:
+
+```
+X-Application-Lock-Owner: <JWT-token>
+```
+
+This header is automatically added by the `createApiHeadersForGrantsUiBackend` helper when a `lockToken` parameter is provided.
+
+### Base Headers Only
+
+If no token is configured, the helper returns only the base headers:
+
+```js
+{
+  'Content-Type': 'application/json',
+  'User-Agent': 'my-service'
+}
+```
+
 ## Land Grants Api Authentication
 
 The application now supports **server-to-server (S2S) authentication** when communicating with the **Land Grants API**.
@@ -474,7 +848,7 @@ to how services might have a database (or MongoDB). All frontend services are gi
 matches the service name. e.g. `my-service` will have access to everything in Redis that is prefixed with `my-service`.
 
 If your service does not require a session cache to be shared between instances or if you don't require Redis, you can
-disable setting `SESSION_CACHE_ENGINE=false` or changing the default value in `~/src/config/index.js`.
+use the in-memory cache by setting `SESSION_CACHE_ENGINE=memory` or changing the default value in `~/src/config/config.js`.
 
 ## Proxy
 
@@ -628,18 +1002,82 @@ which is formatted as a GUID string.
 
 #### Redis Configuration
 
-| Variable           | Description                              |
-| ------------------ | ---------------------------------------- |
-| `REDIS_HOST`       | Redis host (e.g., `localhost` or Docker) |
-| `REDIS_USERNAME`   | Username for Redis, if using ACL.        |
-| `REDIS_PASSWORD`   | Password for Redis connection.           |
-| `REDIS_KEY_PREFIX` | Prefix for all Redis keys used.          |
+| Variable                    | Description                                          | Default                        |
+| --------------------------- | ---------------------------------------------------- | ------------------------------ |
+| `REDIS_HOST`                | Redis host (e.g., `localhost` or Docker)             | `127.0.0.1`                    |
+| `REDIS_USERNAME`            | Username for Redis, if using ACL.                    | (empty)                        |
+| `REDIS_PASSWORD`            | Password for Redis connection.                       | (empty)                        |
+| `REDIS_KEY_PREFIX`          | Prefix for all Redis keys used.                      | `grants-ui:`                   |
+| `USE_SINGLE_INSTANCE_CACHE` | Connect to single Redis instance instead of cluster. | `true` in dev, `false` in prod |
+| `REDIS_TLS`                 | Connect to Redis using TLS.                          | `true` in production           |
+| `REDIS_CONNECT_TIMEOUT`     | Redis connection timeout in milliseconds.            | `30000`                        |
+| `REDIS_RETRY_DELAY`         | Redis retry delay in milliseconds.                   | `1000`                         |
+| `REDIS_MAX_RETRIES`         | Redis max retries per request.                       | `10`                           |
 
 #### Feature Flags & Misc
 
 | Variable        | Description                                 |
 | --------------- | ------------------------------------------- |
 | `FEEDBACK_LINK` | URL to feedback (e.g., GitHub issue, form). |
+
+#### Additional Configuration
+
+| Variable                     | Description                                    | Default                 |
+| ---------------------------- | ---------------------------------------------- | ----------------------- |
+| `SERVICE_VERSION`            | Service version (injected in CDP environments) | null                    |
+| `ENVIRONMENT`                | CDP environment name                           | `local`                 |
+| `SERVICE_NAME`               | Application service name                       | `Farm and land service` |
+| `STATIC_CACHE_TIMEOUT`       | Static asset cache timeout in milliseconds     | `604800000` (1 week)    |
+| `ASSET_PATH`                 | Path to static assets                          | `/public`               |
+| `TRACING_HEADER`             | HTTP header for distributed tracing            | `x-cdp-request-id`      |
+| `GA_TRACKING_ID`             | Google Analytics tracking ID (optional)        | undefined               |
+| `COOKIE_POLICY_URL`          | URL for cookie policy page                     | `/cookies`              |
+| `COOKIE_CONSENT_EXPIRY_DAYS` | Days before cookie consent expires             | `365`                   |
+| `DEV_TOOLS_ENABLED`          | Enable development tools and routes            | `true` (dev only)       |
+
+#### Defra ID Additional Settings
+
+| Variable                  | Description                        | Default |
+| ------------------------- | ---------------------------------- | ------- |
+| `DEFRA_ID_REFRESH_TOKENS` | Enable token refresh functionality | `true`  |
+
+#### Land Grants Configuration
+
+| Variable                         | Description                              |
+| -------------------------------- | ---------------------------------------- |
+| `GAS_FRPS_GRANT_CODE`            | Grant code for Future RPS in GAS         |
+| `LAND_GRANTS_API_URL`            | Land Grants API endpoint                 |
+| `LAND_GRANTS_API_AUTH_TOKEN`     | Auth token for Land Grants API           |
+| `LAND_GRANTS_API_ENCRYPTION_KEY` | Encryption key for Land Grants API token |
+
+**Note:** For detailed Land Grants API authentication, see [Land Grants API Authentication](#land-grants-api-authentication).
+
+#### Consolidated View API (Optional)
+
+| Variable              | Description                           |
+| --------------------- | ------------------------------------- |
+| `CV_API_ENDPOINT`     | Consolidated View API endpoint        |
+| `CV_API_MOCK_ENABLED` | Enable mock DAL for Consolidated View |
+
+#### Microsoft Entra (Internal Use)
+
+| Variable                       | Description                    |
+| ------------------------------ | ------------------------------ |
+| `ENTRA_INTERNAL_TOKEN_URL`     | Microsoft Entra token endpoint |
+| `ENTRA_INTERNAL_TENANT_ID`     | Microsoft tenant ID            |
+| `ENTRA_INTERNAL_CLIENT_ID`     | Microsoft client ID            |
+| `ENTRA_INTERNAL_CLIENT_SECRET` | Microsoft client secret        |
+
+#### Development Tools Configuration
+
+When `DEV_TOOLS_ENABLED=true`, the following demo data can be configured. See [Development Tools](#development-tools) for more details:
+
+| Variable                 | Description           | Default              |
+| ------------------------ | --------------------- | -------------------- |
+| `DEV_DEMO_REF_NUMBER`    | Demo reference number | `DEV2024001`         |
+| `DEV_DEMO_BUSINESS_NAME` | Demo business name    | `Demo Test Farm Ltd` |
+| `DEV_DEMO_SBI`           | Demo SBI number       | `999888777`          |
+| `DEV_DEMO_CONTACT_NAME`  | Demo contact name     | `Demo Test User`     |
 
 ### Grant Form Definitions
 
@@ -656,71 +1094,26 @@ The Grants Application Service (GAS) is used to store grant definitions that the
 Creating a Grant Definition
 A grant definition is created via the GAS backend by making a POST request to the /grants endpoint (see postman folder in the root of the project). This defines the structure and schema of the grant application payload, which the app will later submit.
 
-You can also create a grant using the swagger link below.
+You can also create a grant using the [GAS API](https://github.com/DEFRA/fg-gas-backend). For API documentation and examples, see the [fg-gas-backend repository](https://github.com/DEFRA/fg-gas-backend).
 
-https://fg-gas-backend.dev.cdp-int.defra.cloud/documentation#/
+Example request (truncated - see [GAS API documentation](https://github.com/DEFRA/fg-gas-backend) for full schema):
 
-Example request:
-
-```
+```bash
 curl --location --request POST 'https://fg-gas-backend.dev.cdp-int.defra.cloud/grants' \
 --header 'Content-Type: application/json' \
 --data-raw '{
-  "code": "adding-value-v4",
+  "code": "example-grant-with-auth-v3",
   "questions": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "title": "GrantApplicationPayload",
     "type": "object",
     "properties": {
-      "referenceNumber": { "type": "string" },
-      "businessNature": { "type": "string" },
-      "businessLegalStatus": { "type": "string" },
-      "isInEngland": { "type": "boolean" },
-      "planningPermissionStatus": { "type": "string" },
-      "projectStartStatus": { "type": "string" },
-      "isLandBusinessOwned": { "type": "boolean" },
-      "hasFiveYearTenancyAgreement": { "type": "boolean" },
-      "isBuildingSmallerAbattoir": { "type": "boolean" },
-      "isBuildingFruitStorage": { "type": "boolean" },
-      "isProvidingServicesToOtherFarmers": { "type": "boolean" },
-      "eligibleItemsNeeded": {
-        "type": "array",
-        "items": { "type": "string" }
-      },
-      "needsStorageFacilities": { "type": "string" },
-      "estimatedCost": { "type": "number" },
-      "canPayRemainingCosts": { "type": "boolean" },
-      "processedProduceType": { "type": "string" },
-      "valueAdditionMethod": { "type": "string" },
-      "impactType": {
-        "type": "array",
-        "items": { "type": "string" }
-      },
-      "hasMechanisationUsage": { "type": "boolean" },
-      "manualLabourEquivalence": { "type": "string" },
-      "grantApplicantType": { "type": "string" },
-      "agentFirstName": { "type": "string" },
-      "agentLastName": { "type": "string" },
-      "agentBusinessName": { "type": "string" },
-      "agentEmail": { "type": "string", "format": "email" },
-      "agentEmailConfirmation": { "type": "string", "format": "email" },
-      "agentMobile": { "type": "string" },
-      "agentLandline": { "type": "string" },
-      "agentBusinessAddress__addressLine1": { "type": "string" },
-      "agentBusinessAddress__addressLine2": { "type": ["string", "null"] },
-      "agentBusinessAddress__town": { "type": "string" },
-      "agentBusinessAddress__county": { "type": ["string", "null"] },
-      "agentBusinessAddress__postcode": { "type": "string" },
-      "applicantFirstName": { "type": "string" },
-      "applicantLastName": { "type": "string" },
-      "applicantEmail": { "type": "string", "format": "email" },
-      "applicantEmailConfirmation": { "type": "string", "format": "email" },
-      "applicantMobile": { "type": "string" },
-      "applicantLandline": { "type": "string" },
-      "applicantBusinessAddress__addressLine1": { "type": "string" },
-      "applicantBusinessAddress__addressLine2": { "type": ["string", "null"] },
-      "applicantBusinessAddress__town": { "type": "string" }
-      // ... more fields if needed
+      "yesNoField": { "type": "boolean" },
+      "autocompleteField": { "type": "string" },
+      "radiosField": { "type": "string" },
+      "applicantName": { "type": "string" },
+      "applicantEmail": { "type": "string", "format": "email" }
+      // ... additional fields as required
     }
   }
 }'
@@ -730,7 +1123,7 @@ Example response:
 
 ```
 {
-    "code": "adding-value-v4"
+    "code": "example-grant-with-auth-v3"
 }
 ```
 
@@ -741,7 +1134,7 @@ Each GAS grant may define a JSON Schema stored locally in:
 `src/server/common/forms/schemas/`
 
 Each schema file is named after the grant code
-(e.g. adding-value-v4.json) and describes the shape of the expected application payload for that grant.
+(e.g. example-grant-with-auth.json) and describes the shape of the expected application payload for that grant.
 
 At application startup, the app scans the schemas directory and compiles each schema into a JSON Schema validator using Ajv. These compiled validators are stored in-memory in a map of the form:
 
@@ -762,7 +1155,7 @@ is currently used only in tests to ensure that the mapping logic produces payloa
 For local development and manual testing of grant definitions and submissions against GAS, this repository includes:
 
 - `gas.http` – an HTTP client collection with example requests for:
-  - creating grant definitions in GAS for `example-grant-with-auth` and `adding-value`
+  - creating grant definitions in GAS for `example-grant-with-auth`
   - submitting example applications for those grants
 - `http-client.env.json` – shared, non‑secret environment configuration (base URLs)
 - `http-client.private.env.json` – per‑environment secrets (service tokens and API keys)
@@ -828,9 +1221,7 @@ Once `http-client.private.env.json` is created and populated, you can:
 
 #### Grant Schema Updates
 
-In order to update a grant schema, visit:
-
-- https://fg-gas-backend.dev.cdp-int.defra.cloud/documentation#/
+In order to update a grant schema, see the [GAS API repository](https://github.com/DEFRA/fg-gas-backend) for documentation and examples.
 
 Find the endpoint `GET /grants/{code}`, pass in the code, e.g. `frps-private-beta`, will return the grant.
 
@@ -886,6 +1277,8 @@ npm run
 - **`start`** - Start the production server (requires `npm run build` first)
 - **`snyk-test`** / **`snyk-monitor`** - Run security vulnerability scans
 - **`unseal:cookie`** - Utility to decrypt and inspect session cookies
+- **`gas-status:set`** - Update MockServer to return a specific GAS application status (e.g., `npm run gas-status -- AWAITING_AMENDMENTS`)
+- **`gas-status:get`** - Retrieve the current GAS application status configured in MockServer
 
 ### Update dependencies
 
@@ -1149,7 +1542,7 @@ log(LogCodes.AUTH.SIGN_IN_SUCCESS, {
 
 // Log form submission
 log(LogCodes.SUBMISSION.SUBMISSION_SUCCESS, {
-  grantType: 'adding-value',
+  grantType: 'example-grant-with-auth',
   referenceNumber: 'REF123456'
 })
 
@@ -1210,7 +1603,7 @@ The application automatically adjusts log verbosity based on the `LOG_LEVEL` set
 - Simplified, readable request/response logs
 - Excludes verbose details like headers, cookies, and query parameters
 - Shows essential information: method, URL, status code, and response time
-- Example: `[response] GET /adding-value/start 200 (384ms)`
+- Example: `[response] GET /example-grant-with-auth/start 200 (384ms)`
 
 **DEBUG Level (Development)**
 
@@ -1434,13 +1827,33 @@ ComponentsRegistry.register(
 
 Then use it in your YAML with `{{MYCOMPONENT}}` (uppercase).
 
-### Development Tools for Confirmation Pages
+### Testing Confirmation Pages
 
-The application includes dev tools to help test and preview confirmation pages during development.
+See [Development Tools](#development-tools) for routes to test and preview confirmation pages during development.
 
-#### Demo Confirmation Route
+## Development Tools
 
-Access demo confirmation pages at: `http://localhost:3000/dev/demo-confirmation/{form-slug}`
+The application includes development tools and routes for testing and debugging. These are automatically enabled in development mode and disabled in production.
+
+### Configuration
+
+Development tools are controlled by the `DEV_TOOLS_ENABLED` environment variable (default: `true` in development, `false` in production).
+
+### Available Dev Routes
+
+All development routes are prefixed with `/dev/`:
+
+#### Demo Confirmation Pages
+
+**Route:** `/dev/demo-confirmation/{form-slug}`
+
+Preview confirmation pages with mock data for any form in the system. Useful for:
+
+- Testing confirmation page templates
+- Validating dynamic content insertion
+- Previewing new grant confirmation pages
+
+**Example:** `http://localhost:3000/dev/demo-confirmation/example-grant-with-auth`
 
 When running in development mode, the demo confirmation handler:
 
@@ -1450,11 +1863,36 @@ When running in development mode, the demo confirmation handler:
 - Includes error details when configuration issues occur
 - Uses mock data for testing dynamic content insertion
 
-#### Test Error Pages
+#### Error Page Testing
 
-Test error page rendering at: `http://localhost:3000/dev/test-503`
+Test error page rendering at the following routes:
 
-This route triggers a 503 Service Unavailable error to verify the error page template renders correctly.
+| Route           | Error Code | Description           |
+| --------------- | ---------- | --------------------- |
+| `/dev/test-400` | 400        | Bad Request           |
+| `/dev/test-401` | 401        | Unauthorized          |
+| `/dev/test-403` | 403        | Forbidden             |
+| `/dev/test-404` | 404        | Not Found             |
+| `/dev/test-429` | 429        | Too Many Requests     |
+| `/dev/test-500` | 500        | Internal Server Error |
+| `/dev/test-503` | 503        | Service Unavailable   |
+
+These routes trigger the corresponding HTTP errors to verify error page templates render correctly.
+
+### Demo Data Configuration
+
+Configure demo data for development tools:
+
+```bash
+DEV_DEMO_REF_NUMBER=DEV2024001
+DEV_DEMO_BUSINESS_NAME=Demo Test Farm Ltd
+DEV_DEMO_SBI=999888777
+DEV_DEMO_CONTACT_NAME=Demo Test User
+```
+
+### Implementation
+
+Development tools are implemented in `src/server/dev-tools/` and are only registered when `DEV_TOOLS_ENABLED=true`.
 
 ## Analytics
 

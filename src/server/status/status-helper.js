@@ -4,6 +4,8 @@ import { getFormsCacheService } from '../common/helpers/forms-cache/forms-cache.
 import { updateApplicationStatus } from '../common/helpers/status/update-application-status-helper.js'
 import { getApplicationStatus } from '../common/services/grant-application/grant-application.service.js'
 import { log, LogCodes } from '../common/helpers/logging/log.js'
+import { mintLockToken } from '../common/helpers/lock/lock-token.js'
+import { getCacheKey } from '../common/helpers/state/get-cache-key-helper.js'
 import agreements from '~/src/config/agreements.js'
 
 /**
@@ -55,21 +57,41 @@ function mapStatusToUrl(fromGrantsStatus, gasStatus, redirectRules = []) {
  * @param {string} newStatus - The new status to persist
  * @param {string} previousStatus - The previous status for comparison
  * @param {string} grantId - The grant ID
+ * @param {object} existingState - The existing state to preserve when updating session cache
  * @returns {Promise<void>}
  */
-async function persistStatus(request, newStatus, previousStatus, grantId) {
+async function persistStatus(request, newStatus, previousStatus, grantId, existingState = {}) {
   if (newStatus === previousStatus) {
     return
   }
 
   const organisationId = request.auth.credentials?.sbi
-  if (newStatus === 'CLEARED') {
+
+  if (newStatus === ApplicationStatus.CLEARED || newStatus === ApplicationStatus.REOPENED) {
     const cacheService = getFormsCacheService(request.server)
+    const stateToPreserve = newStatus === ApplicationStatus.REOPENED ? existingState : {}
     await cacheService.setState(request, {
-      applicationStatus: ApplicationStatus.CLEARED
+      ...stateToPreserve,
+      applicationStatus: newStatus
     })
-  } else {
-    await updateApplicationStatus(newStatus, `${organisationId}:${grantId}`)
+  }
+
+  if (newStatus !== ApplicationStatus.CLEARED) {
+    const { sbi, grantCode } = getCacheKey(request)
+    const contactId = request.auth?.credentials?.contactId || request.auth?.credentials?.crn
+
+    if (!contactId) {
+      throw new Error('Missing user identity (contactId/crn) for lock token')
+    }
+
+    const lockToken = mintLockToken({
+      userId: String(contactId),
+      sbi,
+      grantCode,
+      grantVersion: 1
+    })
+
+    await updateApplicationStatus(newStatus, `${organisationId}:${grantId}`, { lockToken })
   }
 }
 
@@ -113,21 +135,10 @@ function isFormsStartPage(request, context) {
 }
 
 /**
- * Determines if the current request is for a tasklist page.
- * @param request - The Hapi request object
- * @returns {boolean} - True if the current request is for a tasklist page, otherwise false
- */
-function isTasklistPage(request) {
-  return request.app.model?.def?.metadata?.tasklistId != null
-}
-
-/**
  * Determines if a pre-submission request should redirect to the "check answers" page.
  *
  * If there is any meaningful state and the user has navigated to the "start" page, redirect to the "check answers" page
  * Otherwise just continue
- *
- * Tasklist journeys are not supported currently
  *
  * @param request - Hapi request object
  * @param h - Hapi response toolkit
@@ -142,7 +153,7 @@ function preSubmissionRedirect(request, h, context) {
     ? `/${grantId}${preSubmissionRedirectRule.toPath}`
     : `/${grantId}/${preSubmissionRedirectRule.toPath}`
 
-  if (hasMeaningfulState(context.state) && isFormsStartPage(request, context) && !isTasklistPage(request)) {
+  if (hasMeaningfulState(context.state) && isFormsStartPage(request, context)) {
     return h.redirect(preSubmissionRedirectUrl).takeover()
   }
   return h.continue
@@ -155,9 +166,7 @@ function preSubmissionRedirect(request, h, context) {
  * @returns {boolean} `true` if the application has no previous status or was cleared/reopened, otherwise `false`.
  */
 function shouldHandlePreSubmission(previousStatus) {
-  return (
-    !previousStatus || previousStatus === ApplicationStatus.CLEARED || previousStatus === ApplicationStatus.REOPENED
-  )
+  return !previousStatus || previousStatus === ApplicationStatus.CLEARED
 }
 
 /**
@@ -197,9 +206,18 @@ async function handlePostSubmission(request, h, context, previousStatus, grantCo
   const postSubmissionRules = grantRedirectRules?.postSubmission ?? []
   const rule = mapStatusToUrl(previousStatus, gasStatus, postSubmissionRules)
 
-  await persistStatus(request, rule.toGrantsStatus, previousStatus, grantId)
+  await persistStatus(request, rule.toGrantsStatus, previousStatus, grantId, context.state)
 
   const redirectUrl = rule.toPath === agreements.get('baseUrl') ? rule.toPath : buildRedirectUrl(grantId, rule.toPath)
+
+  const isAlreadyReopened = previousStatus === ApplicationStatus.REOPENED
+  const isStillAwaitingAmendments = gasStatus === 'AWAITING_AMENDMENTS'
+  const isWithinGrantPages = request.path.startsWith(`/${grantId}/`)
+
+  if (isAlreadyReopened && isStillAwaitingAmendments && isWithinGrantPages) {
+    return h.continue
+  }
+
   return request.path === redirectUrl ? h.continue : h.redirect(redirectUrl).takeover()
 }
 
@@ -289,7 +307,7 @@ export const formsStatusCallback = async (request, h, context) => {
     return preSubmissionRedirect(request, h, context)
   }
 
-  if (previousStatus !== 'SUBMITTED') {
+  if (previousStatus !== ApplicationStatus.SUBMITTED && previousStatus !== ApplicationStatus.REOPENED) {
     return h.continue
   }
 

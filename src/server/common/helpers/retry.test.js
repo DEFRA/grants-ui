@@ -98,6 +98,44 @@ describe('retry with exponential backoff', () => {
     expect(result).toEqual({ ok: false, status: 503, statusText: 'Service Unavailable' })
   }, 2000)
 
+  it('should not retry on 404 errors when checkFetchResponse is true', async () => {
+    const mockFetch = vi.fn().mockResolvedValue({ ok: false, status: 404, statusText: 'Not Found' })
+    const onRetry = vi.fn()
+
+    const result = await retry(mockFetch, {
+      maxAttempts: 3,
+      checkFetchResponse: true,
+      initialDelay: 1,
+      shouldRetry: () => true,
+      onRetry
+    })
+
+    expect(mockFetch).toHaveBeenCalledTimes(1)
+    expect(onRetry).not.toHaveBeenCalled()
+    expect(result).toEqual({ ok: false, status: 404, statusText: 'Not Found' })
+  })
+
+  it('should retry on other error status codes but not on 404', async () => {
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: false, status: 500, statusText: 'Internal Server Error' })
+      .mockResolvedValueOnce({ ok: false, status: 404, statusText: 'Not Found' })
+    const onRetry = vi.fn()
+
+    const result = await retry(mockFetch, {
+      maxAttempts: 3,
+      checkFetchResponse: true,
+      initialDelay: 1,
+      shouldRetry: () => true,
+      onRetry
+    })
+
+    expect(mockFetch).toHaveBeenCalledTimes(2)
+    expect(onRetry).toHaveBeenCalledTimes(1)
+    expect(onRetry.mock.calls[0][0].message).toContain('500')
+    expect(result).toEqual({ ok: false, status: 404, statusText: 'Not Found' })
+  }, 2000)
+
   it('should call onRetry callback on each retry attempt', async () => {
     const mockOperation = vi.fn().mockRejectedValue(new Error('Retry error'))
     const onRetry = vi.fn()
@@ -128,6 +166,26 @@ describe('retry with exponential backoff', () => {
       vi.advanceTimersByTime(1000)
 
       await expect(retryPromise).rejects.toThrow('Operation timed out')
+      expect(mockOperation).toHaveBeenCalledTimes(1)
+    })
+
+    it('should use default timeout of 15000ms when timeout is not specified', async () => {
+      const mockOperation = vi.fn(() => new Promise((resolve) => setTimeout(resolve, 20000)))
+      const retryPromise = retry(mockOperation, { maxAttempts: 1 })
+
+      vi.advanceTimersByTime(15000)
+
+      await expect(retryPromise).rejects.toThrow('Operation timed out after 15000ms')
+      expect(mockOperation).toHaveBeenCalledTimes(1)
+    })
+
+    it('should allow explicit timeout to override the default', async () => {
+      const mockOperation = vi.fn(() => new Promise((resolve) => setTimeout(resolve, 20000)))
+      const retryPromise = retry(mockOperation, { timeout: 15000, maxAttempts: 1 })
+
+      vi.advanceTimersByTime(15000)
+
+      await expect(retryPromise).rejects.toThrow('Operation timed out after 15000ms')
       expect(mockOperation).toHaveBeenCalledTimes(1)
     })
   })

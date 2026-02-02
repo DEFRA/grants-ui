@@ -51,6 +51,7 @@ export function addActionsToExistingState(state, payload, actionFieldPrefix, gro
     if (actionCode && actionInfo) {
       actionsObj[actionCode] = {
         description: actionInfo.description,
+        sssiConsentRequired: actionInfo.sssiConsentRequired,
         value: actionInfo?.availableArea?.value ?? '',
         unit: actionInfo?.availableArea?.unit ?? ''
       }
@@ -58,6 +59,47 @@ export function addActionsToExistingState(state, payload, actionFieldPrefix, gro
   }
 
   return buildNewState(state, actionsObj, parcel)
+}
+
+/**
+ * Extract added actions from state for a specific parcel
+ * @param {object} state - Current state
+ * @returns {boolean} - Whether any of the actions in the state need SSSI consent or not
+ **/
+function isSSSIConsentRequired(state) {
+  const parcelKeys = Object.keys(state.landParcels)
+
+  if (parcelKeys.length === 0) {
+    return false
+  }
+
+  for (const parcelKey of parcelKeys) {
+    const parcelData = state.landParcels[parcelKey]?.actionsObj || {}
+    if (Object.keys(parcelData).some((code) => parcelData[code].sssiConsentRequired === true)) {
+      return true
+    }
+  }
+
+  return false
+}
+
+/**
+ * Determine which consents are required based on state
+ * @param {object} state - Current state
+ * @returns {Array<string>} - Array of required consent types (e.g., ['sssi', 'hefer'])
+ */
+export function getRequiredConsents(state) {
+  const requiredConsents = []
+
+  if (!state.landParcels || Object.keys(state.landParcels).length === 0) {
+    return requiredConsents
+  }
+
+  if (isSSSIConsentRequired(state)) {
+    requiredConsents.push('sssi')
+  }
+
+  return requiredConsents
 }
 
 /**
@@ -171,6 +213,7 @@ export function findActionInfoFromState(landParcels, parcelKey, action) {
  * @typedef {object} Action
  * @property {string} code - Action code
  * @property {string} description - Action description
+ * @property {boolean} [sssiConsentRequired] - Action needs SSSI consent
  * @property {object} [availableArea] - Available area for the action
  * @property {string|number} [availableArea.value] - Area value (number from API, converted to string in state)
  * @property {string} [availableArea.unit] - Area unit

@@ -16,11 +16,6 @@ vi.mock('~/src/server/common/helpers/retry.js')
 vi.mock('~/src/server/common/helpers/entra/token-manager.js', () => ({
   getValidToken: vi.fn()
 }))
-vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
-  const { mockLogHelper } = await import('~/src/__mocks__')
-  return mockLogHelper()
-})
-
 vi.mock('fs/promises')
 
 const getSBIMockFilePath = (sbi) => {
@@ -172,7 +167,7 @@ describe('Consolidated View Service', () => {
             info: {
               reference: 'REF123',
               email: { address: 'test@business.com' },
-              phone: { mobile: '07123456789' },
+              phone: { landline: '07123456789' },
               name: 'Test Business Ltd',
               address: {
                 line1: '123 Test Street',
@@ -285,7 +280,7 @@ describe('Consolidated View Service', () => {
               reference: 'MOCK-REF123',
               name: 'Mock Business Ltd',
               email: { address: 'mock@business.com' },
-              phone: { mobile: '07987654321' },
+              phone: { landline: '11111111111', mobile: '00000000000' },
               address: {
                 line1: '456 Mock Street',
                 city: 'Mock City',

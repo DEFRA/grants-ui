@@ -5,7 +5,7 @@ import { transformStateObjectToGasApplication } from '~/src/server/common/helper
 import DeclarationPageController from './declaration-page.controller.js'
 import { transformAnswerKeysToText } from './state-to-gas-answers-mapper.js'
 import { vi } from 'vitest'
-import { mockFormsCacheService, mockHapiRequest } from '~/src/__mocks__'
+import { mockHapiRequest } from '~/src/__mocks__'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { handleGasApiError } from '~/src/server/common/helpers/gas-error-messages.js'
 import { log, LogCodes } from '../common/helpers/logging/log.js'
@@ -16,12 +16,12 @@ vi.mock('../common/helpers/logging/log.js', async () => {
   return mockLogHelper()
 })
 
-const mockCacheService = mockFormsCacheService({
+const mockCacheService = {
   getState: vi.fn().mockReturnValue({
     $$__referenceNumber: 'REF123'
   }),
   setState: vi.fn()
-}).getFormsCacheService()
+}
 vi.mock('~/src/server/common/helpers/form-slug-helper.js')
 vi.mock('~/src/server/common/helpers/forms-cache/forms-cache.js', () => ({
   getFormsCacheService: () => mockCacheService
@@ -54,7 +54,7 @@ describe('DeclarationPageController', () => {
       def: {
         metadata: {
           submission: {
-            grantCode: 'adding-value'
+            grantCode: 'example-grant-with-auth'
           }
         }
       },
@@ -76,9 +76,9 @@ describe('DeclarationPageController', () => {
         declaration: true
       },
       params: {
-        slug: 'adding-value'
+        slug: 'example-grant-with-auth'
       },
-      path: '/adding-value/declaration',
+      path: '/example-grant-with-auth/declaration',
       server: {},
       auth: {
         credentials: {
@@ -114,7 +114,7 @@ describe('DeclarationPageController', () => {
 
     // Mock the form-slug-helper functions
     formSlugHelper.storeSlugInContext.mockImplementation(() => null)
-    formSlugHelper.getConfirmationPath.mockImplementation(() => '/adding-value/confirmation')
+    formSlugHelper.getConfirmationPath.mockImplementation(() => '/example-grant-with-auth/confirmation')
   })
 
   afterEach(() => {
@@ -215,15 +215,14 @@ describe('DeclarationPageController', () => {
           clientRef: 'ref123',
           sbi: 'sbi123',
           frn: 'frn',
-          crn: '1234567890',
-          defraId: 'defraId'
+          crn: '1234567890'
         },
         { transformedState: true, referenceNumber: 'REF123' },
         expect.any(Function)
       )
 
       expect(submitGrantApplication).toHaveBeenCalledWith(
-        'adding-value',
+        'example-grant-with-auth',
         {
           transformedApp: true,
           metadata: {
@@ -232,7 +231,7 @@ describe('DeclarationPageController', () => {
         },
         mockRequest
       )
-      expect(mockH.redirect).toHaveBeenCalledWith('/adding-value/confirmation')
+      expect(mockH.redirect).toHaveBeenCalledWith('/example-grant-with-auth/confirmation')
     })
 
     test('should log debug information during processing', async () => {
@@ -251,7 +250,7 @@ describe('DeclarationPageController', () => {
       )
       expect(log).toHaveBeenCalledWith(
         LogCodes.SUBMISSION.SUBMISSION_REDIRECT,
-        { controller: 'DeclarationController', redirectPath: '/adding-value/confirmation' },
+        { controller: 'DeclarationController', redirectPath: '/example-grant-with-auth/confirmation' },
         mockRequest
       )
     })
@@ -263,7 +262,7 @@ describe('DeclarationPageController', () => {
       expect(log).toHaveBeenCalledWith(
         LogCodes.SUBMISSION.SUBMISSION_COMPLETED,
         {
-          grantType: 'adding-value',
+          grantType: 'example-grant-with-auth',
           referenceNumber: 'REF123',
           numberOfFields: Object.keys(mockContext.relevantState).length,
           status: 'success'
@@ -283,7 +282,7 @@ describe('DeclarationPageController', () => {
       expect(log).toHaveBeenCalledWith(
         LogCodes.SUBMISSION.SUBMISSION_FAILURE,
         expect.objectContaining({
-          grantType: 'adding-value',
+          grantType: 'example-grant-with-auth',
           referenceNumber: 'REF123',
           sbi: 'sbi123',
           crn: '1234567890',
@@ -311,7 +310,7 @@ describe('DeclarationPageController', () => {
       expect(log).toHaveBeenCalledWith(
         LogCodes.SUBMISSION.SUBMISSION_FAILURE,
         expect.objectContaining({
-          grantType: 'adding-value',
+          grantType: 'example-grant-with-auth',
           referenceNumber: 'REF123',
           sbi: 'sbi123',
           crn: '1234567890',
@@ -335,7 +334,7 @@ describe('DeclarationPageController', () => {
       expect(log).toHaveBeenCalledWith(
         LogCodes.SUBMISSION.SUBMISSION_FAILURE,
         expect.objectContaining({
-          grantType: 'adding-value',
+          grantType: 'example-grant-with-auth',
           referenceNumber: 'REF123',
           sbi: 'sbi123',
           crn: '1234567890',

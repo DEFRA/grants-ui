@@ -6,9 +6,7 @@ export {
   mockRequestLogger
 } from './logger-mocks.js'
 
-export { mockConfig, mockConfigSimple, createMockConfig } from './config-mocks.js'
-
-export { mockFormsCacheService, mockLandParcelData } from './service-mocks.js'
+export { mockConfig, mockConfigSimple, createMockConfig, mockLandGrantsConfig } from './config-mocks.js'
 
 export {
   mockHapiPino,
@@ -20,5 +18,6 @@ export {
   mockSsoRequest,
   mockAuthRequest,
   mockSimpleRequest,
-  mockContext
+  mockContext,
+  createMockFetchResponse
 } from './hapi-mocks.js'

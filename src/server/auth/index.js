@@ -1,3 +1,4 @@
+import { config } from '~/src/config/config.js'
 import { getPermissions } from '~/src/server/auth/get-permissions.js'
 import { getSafeRedirect } from '~/src/server/auth/get-safe-redirect.js'
 import { validateState } from '~/src/server/auth/state.js'
@@ -10,10 +11,14 @@ import {
   logAuthDebugInfo,
   logTokenExchangeFailure
 } from '~/src/server/auth/auth-logging.js'
+import { releaseAllApplicationLocksForOwnerFromApi } from '../common/helpers/lock/application-lock.js'
 
 const UNKNOWN_USER = 'unknown'
 const USER_AGENT = 'user-agent'
 const HTTP_FOUND = 302
+
+const AUTH_ENDPOINT_USER_LIMIT = config.get('rateLimit.authEndpointUserLimit')
+const AUTH_ENDPOINT_PATH_LIMIT = config.get('rateLimit.authEndpointPathLimit')
 
 function handleAuthSignIn(request, h) {
   try {
@@ -135,7 +140,13 @@ function setupAuthRoutes(server) {
     method: 'GET',
     path: '/auth/sign-in',
     options: {
-      auth: { strategy: 'defra-id', mode: 'try' }
+      auth: { strategy: 'defra-id', mode: 'try' },
+      plugins: {
+        'hapi-rate-limit': {
+          userLimit: AUTH_ENDPOINT_USER_LIMIT,
+          pathLimit: AUTH_ENDPOINT_PATH_LIMIT
+        }
+      }
     },
     handler: handleAuthSignIn
   })
@@ -144,7 +155,13 @@ function setupAuthRoutes(server) {
     method: ['GET'],
     path: '/auth/sign-in-oidc',
     options: {
-      auth: { strategy: 'defra-id', mode: 'try' }
+      auth: { strategy: 'defra-id', mode: 'try' },
+      plugins: {
+        'hapi-rate-limit': {
+          userLimit: AUTH_ENDPOINT_USER_LIMIT,
+          pathLimit: AUTH_ENDPOINT_PATH_LIMIT
+        }
+      }
     },
     handler: handleOidcSignIn
   })
@@ -152,12 +169,28 @@ function setupAuthRoutes(server) {
   server.route({
     method: 'GET',
     path: '/auth/sign-out',
+    options: {
+      plugins: {
+        'hapi-rate-limit': {
+          userLimit: AUTH_ENDPOINT_USER_LIMIT,
+          pathLimit: AUTH_ENDPOINT_PATH_LIMIT
+        }
+      }
+    },
     handler: handleSignOut
   })
 
   server.route({
     method: 'GET',
     path: '/auth/sign-out-oidc',
+    options: {
+      plugins: {
+        'hapi-rate-limit': {
+          userLimit: AUTH_ENDPOINT_USER_LIMIT,
+          pathLimit: AUTH_ENDPOINT_PATH_LIMIT
+        }
+      }
+    },
     handler: handleOidcSignOut
   })
 
@@ -432,6 +465,28 @@ async function handleSignOut(request, h) {
     )
     return h.redirect('/')
   }
+
+  const ownerId = request.auth.credentials.contactId
+
+  log(LogCodes.APPLICATION_LOCKS.RELEASE_ATTEMPTED, {
+    ownerId
+  })
+  releaseAllApplicationLocksForOwnerFromApi({ ownerId })
+    .then((result) => {
+      if (!result.ok) {
+        log(LogCodes.APPLICATION_LOCKS.RELEASE_FAILED, {
+          ownerId,
+          releasedCount: result.releasedCount
+        })
+      }
+    })
+    .catch((err) => {
+      log(LogCodes.APPLICATION_LOCKS.RELEASE_FAILED, {
+        ownerId,
+        errorName: err.name,
+        errorMessage: err.message
+      })
+    })
 
   log(
     LogCodes.AUTH.SIGN_OUT,

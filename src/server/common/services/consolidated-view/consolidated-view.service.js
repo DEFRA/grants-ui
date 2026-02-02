@@ -277,6 +277,7 @@ export async function fetchBusinessAndCPH(request) {
           }
           phone {
             mobile
+            landline
           }
           name
           address {

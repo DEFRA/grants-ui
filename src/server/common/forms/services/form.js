@@ -36,16 +36,11 @@ export function configureFormDefinition(definition) {
   const environment = config.get('cdpEnvironment')
 
   for (const page of definition.pages ?? []) {
-    const events = page.events
-    if (events) {
-      if (events.onLoad?.options.url && environment !== 'local') {
-        events.onLoad.options.url = events.onLoad.options.url.replace('cdpEnvironment', environment)
-      } else if (events.onLoad?.options.url && environment === 'local') {
-        events.onLoad.options.url =
-          'http://ffc-grants-scoring:3002/scoring/api/v1/adding-value/score?allowPartialScoring=true' // NOSONAR - used in local testing and CI
+    const url = page.events?.onLoad?.options?.url
+    if (url) {
+      if (environment !== 'local') {
+        page.events.onLoad.options.url = url.replace('cdpEnvironment', environment)
       } else {
-        // If we have a URL but environment is neither 'local' nor a non-local environment,
-        // we should log this unexpected case but not modify the URL
         logger.warn(`Unexpected environment value: ${environment}`)
       }
     }
@@ -242,12 +237,7 @@ async function discoverFormsFromYaml(baseDir = path.resolve(process.cwd(), 'src/
   for (const filePath of files) {
     try {
       const raw = await fs.readFile(filePath, 'utf8')
-      const { name: title, metadata: formMetadata, tasklist } = parseYaml(raw)
-
-      // Skip parsing if tasklist
-      if (tasklist) {
-        continue
-      }
+      const { name: title, metadata: formMetadata } = parseYaml(raw)
 
       // Use file name as slug
       const fileName = path.basename(filePath, path.extname(filePath))

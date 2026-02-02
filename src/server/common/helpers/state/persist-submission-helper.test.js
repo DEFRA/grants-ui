@@ -5,7 +5,7 @@ import {
   HTTP_STATUS,
   TEST_BACKEND_URL
 } from './test-helpers/auth-test-helpers.js'
-import { mockSimpleRequest } from '~/src/__mocks__/hapi-mocks.js'
+import { mockSimpleRequest, createMockFetchResponse } from '~/src/__mocks__/hapi-mocks.js'
 
 global.fetch = vi.fn()
 
@@ -18,9 +18,19 @@ const mockCreateApiHeaders = vi.fn().mockReturnValue({
   'Content-Type': 'application/json',
   Authorization: 'Bearer test-token'
 })
-vi.doMock('./backend-auth-helper.js', () => ({
+vi.doMock('../auth/backend-auth-helper.js', () => ({
   createApiHeadersForGrantsUiBackend: mockCreateApiHeaders
 }))
+vi.doMock('jsonwebtoken', () => {
+  const sign = vi.fn(() => 'mock-jwt-token')
+  const verify = vi.fn(() => ({ sub: 'user-1' }))
+
+  return {
+    default: { sign, verify }, // for `import jwt from 'jsonwebtoken'`
+    sign, // for `import { sign } from 'jsonwebtoken'`
+    verify
+  }
+})
 
 let persistSubmissionToApi
 let log
@@ -66,15 +76,8 @@ describe('persistSubmissionToApi', () => {
       vi.unmock('~/src/config/config.js')
     })
 
-    const createSuccessfulFetchResponse = () => ({ ok: true, status: HTTP_STATUS.OK })
-    const createFailedFetchResponse = (status = 500, statusText = 'Internal Server Error') => ({
-      ok: false,
-      status,
-      statusText
-    })
-
     it('persists submission successfully when response is ok', async () => {
-      fetch.mockResolvedValue(createSuccessfulFetchResponse())
+      fetch.mockResolvedValue(createMockFetchResponse())
 
       await persistSubmissionToApi(TEST_SUBMISSION, mockRequest)
 
@@ -116,7 +119,7 @@ describe('persistSubmissionToApi', () => {
     })
 
     it('logs error when response is not ok', async () => {
-      const failedResponse = createFailedFetchResponse()
+      const failedResponse = createMockFetchResponse({ ok: false, status: 500, statusText: 'Internal Server Error' })
       fetch.mockResolvedValue(failedResponse)
 
       await persistSubmissionToApi(TEST_SUBMISSION, mockRequest)
@@ -138,7 +141,7 @@ describe('persistSubmissionToApi', () => {
       const networkError = new Error('Network error')
       fetch.mockRejectedValue(networkError)
 
-      await persistSubmissionToApi(TEST_SUBMISSION)
+      await persistSubmissionToApi(TEST_SUBMISSION, mockRequest)
 
       expect(fetch).toHaveBeenCalledTimes(1)
       expect(log).toHaveBeenCalledWith(

@@ -218,32 +218,6 @@ export const LogCodes = {
         `${messageOptions.controller}: Retrieved submitted status for referenceNumber=${messageOptions.referenceNumber}`
     }
   },
-  TASKLIST: {
-    TASKLIST_LOAD: {
-      level: 'info',
-      messageFunc: (messageOptions) =>
-        `Task list loaded for user=${messageOptions.userId}, grantType=${messageOptions.grantType}`
-    },
-    TASK_COMPLETED: {
-      level: 'info',
-      messageFunc: (messageOptions) => `Task completed: ${messageOptions.taskName} for user=${messageOptions.userId}`
-    },
-    TASK_ERROR: {
-      level: 'error',
-      messageFunc: (messageOptions) =>
-        `Task processing error for ${messageOptions.taskName}: ${messageOptions.errorMessage}`
-    },
-    CONFIG_LOAD_SKIPPED: {
-      level: 'debug',
-      messageFunc: (messageOptions) =>
-        `Tasklist config load skipped: tasklistId=${messageOptions.tasklistId}, error=${messageOptions.errorMessage}`
-    },
-    CACHE_RETRIEVAL_FAILED: {
-      level: 'warn',
-      messageFunc: (messageOptions) =>
-        `Cache retrieval failed for sessionId=${messageOptions.sessionId}, using empty data. Error: ${messageOptions.errorMessage}`
-    }
-  },
   LAND_GRANTS: {
     LAND_GRANT_APPLICATION_STARTED: {
       level: 'info',
@@ -319,18 +293,37 @@ export const LogCodes = {
       messageFunc: (messageOptions) =>
         `Form not found: slug=${messageOptions.slug}, userId=${messageOptions.userId || 'anonymous'}, sbi=${messageOptions.sbi || 'unknown'}, reason=${messageOptions.reason || 'not_found'}, environment=${messageOptions.environment || 'unknown'}, referer=${messageOptions.referer || 'none'}`
     },
-    TASKLIST_NOT_FOUND: {
-      level: 'info',
-      messageFunc: (messageOptions) =>
-        `Tasklist not found: tasklistId=${messageOptions.tasklistId}, userId=${messageOptions.userId || 'anonymous'}, sbi=${messageOptions.sbi || 'unknown'}, reason=${messageOptions.reason || 'not_found'}, environment=${messageOptions.environment || 'unknown'}, referer=${messageOptions.referer || 'none'}`
-    },
     PAGE_NOT_FOUND: {
       level: 'info',
       messageFunc: (messageOptions) =>
         `Page not found: path=${messageOptions.path}, userId=${messageOptions.userId || 'anonymous'}, sbi=${messageOptions.sbi || 'unknown'}, referer=${messageOptions.referer || 'none'}, userAgent=${messageOptions.userAgent || 'unknown'}`
     }
   },
-
+  APPLICATION_LOCKS: {
+    RELEASE_SKIPPED: {
+      level: 'debug',
+      messageFunc: ({ ownerId, reason }) => `Application locks release skipped | ownerId=${ownerId} | reason=${reason}`
+    },
+    RELEASE_ATTEMPTED: {
+      level: 'debug',
+      messageFunc: ({ ownerId }) => `Attempting application locks release | ownerId=${ownerId}`
+    },
+    RELEASE_SUCCEEDED: {
+      level: 'debug',
+      messageFunc: ({ ownerId, releasedCount }) =>
+        `Application locks released | ownerId=${ownerId} | releasedCount=${releasedCount}`
+    },
+    RELEASE_TIMEOUT: {
+      level: 'warn',
+      messageFunc: ({ ownerId, timeoutMs }) =>
+        `Application locks release timed out | ownerId=${ownerId} | timeoutMs=${timeoutMs}`
+    },
+    RELEASE_FAILED: {
+      level: 'error',
+      messageFunc: ({ ownerId, errorName, errorMessage }) =>
+        `Failed to release application locks | ownerId=${ownerId} | errorName=${errorName} | errorMessage=${errorMessage}`
+    }
+  },
   SYSTEM: {
     VIEW_DEBUG: {
       level: 'debug',
@@ -441,6 +434,11 @@ export const LogCodes = {
       level: 'error',
       messageFunc: (messageOptions) =>
         `Failed to fetch saved state: sessionKey=${messageOptions.sessionKey}, error=${messageOptions.errorMessage}, path=${messageOptions.requestPath}`
+    },
+    RATE_LIMIT_EXCEEDED: {
+      level: 'warn',
+      messageFunc: (messageOptions) =>
+        `Rate limit exceeded: path=${messageOptions.path}, ip=${messageOptions.ip || 'unknown'}, userId=${messageOptions.userId || 'anonymous'}, userAgent=${messageOptions.userAgent || 'unknown'}`
     }
   }
 }

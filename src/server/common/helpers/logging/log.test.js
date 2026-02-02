@@ -1,6 +1,8 @@
 import { vi } from 'vitest'
 import { log, logger, LogCodes } from './log.js'
 
+vi.unmock('~/src/server/common/helpers/logging/log.js')
+
 vi.spyOn(logger, 'info')
 vi.spyOn(logger, 'debug')
 vi.spyOn(logger, 'error')
@@ -102,7 +104,7 @@ describe('Logger Functionality', () => {
 
   it('should work with SUBMISSION log codes', () => {
     const submissionOptions = {
-      grantType: 'adding-value',
+      grantType: 'example-grant-with-auth',
       referenceNumber: 'REF-123'
     }
 
@@ -110,7 +112,7 @@ describe('Logger Functionality', () => {
 
     expect(logger.info).toHaveBeenCalledWith(
       {},
-      'Grant submission successful for grantType=adding-value, referenceNumber=REF-123'
+      'Grant submission successful for grantType=example-grant-with-auth, referenceNumber=REF-123'
     )
   })
 

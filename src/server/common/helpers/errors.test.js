@@ -29,11 +29,6 @@ vi.mock('@defra/forms-engine-plugin', () => ({
   }
 }))
 
-vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
-  const { mockLogHelper } = await import('~/src/__mocks__')
-  return mockLogHelper()
-})
-
 process.env.EXAMPLE_WHITELIST_CRNS = '1104734543,1103521484'
 process.env.EXAMPLE_WHITELIST_SBIS = '123456789,987654321'
 process.env.FARMING_PAYMENTS_WHITELIST_CRNS = '1102838829, 1102760349, 1100495932'
@@ -131,6 +126,16 @@ describe('#catchAll', () => {
       name: 'Not found',
       statusCode: statusCodes.notFound,
       expectedView: 'errors/404'
+    },
+    {
+      name: 'Locked',
+      statusCode: statusCodes.locked,
+      expectedView: 'errors/423'
+    },
+    {
+      name: 'Too Many Requests',
+      statusCode: statusCodes.tooManyRequests,
+      expectedView: 'errors/429'
     },
     {
       name: `I'm a teapot`,
@@ -259,6 +264,46 @@ describe('#catchAll', () => {
     expect(callArgs).not.toContain('bell_oauth_error')
     expect(mockToolkitView).toHaveBeenCalledWith(errorPage, {})
     expect(mockToolkitCode).toHaveBeenCalledWith(statusCode)
+  })
+
+  test('Should not log auth_flow_error when /auth error alreadyLogged=true', () => {
+    const request = {
+      response: {
+        isBoom: true,
+        alreadyLogged: true,
+        message: 'x',
+        output: { statusCode: statusCodes.internalServerError }
+      },
+      path: '/auth/x',
+      method: 'GET'
+    }
+    const toolkit = { view: vi.fn().mockReturnThis(), code: vi.fn().mockReturnThis() }
+
+    catchAll(request, toolkit)
+
+    const steps = log.mock.calls.map((c) => c[1]?.step)
+    expect(steps).not.toContain('auth_flow_error')
+  })
+
+  test('Should write debug log for server errors', () => {
+    const request = {
+      response: { isBoom: true, message: 'boom', output: { statusCode: statusCodes.internalServerError } },
+      path: '/x',
+      method: 'GET',
+      headers: {}
+    }
+    const toolkit = { view: vi.fn().mockReturnThis(), code: vi.fn().mockReturnThis() }
+
+    catchAll(request, toolkit)
+
+    expect(log).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({
+        mode: 'error_processing',
+        errorDetails: expect.objectContaining({ statusCode: statusCodes.internalServerError })
+      }),
+      request
+    )
   })
 
   test('Should log auth error when path starts with /auth', () => {
@@ -507,8 +552,8 @@ describe('#catchAll 404 Logging', () => {
 
   test('Should log form not found with context', () => {
     const request = create404Request(
-      "Form 'adding-value' not found",
-      '/adding-value/start',
+      "Form 'example-grant-with-auth' not found",
+      '/example-grant-with-auth/start',
       'user123',
       '105001234',
       'Mozilla/5.0',
@@ -520,7 +565,7 @@ describe('#catchAll 404 Logging', () => {
     expect(log).toHaveBeenCalledWith(
       expectInfoLogCall(),
       expect.objectContaining({
-        slug: 'adding-value',
+        slug: 'example-grant-with-auth',
         userId: 'user123',
         sbi: '105001234',
         reason: 'not_found',
@@ -555,78 +600,6 @@ describe('#catchAll 404 Logging', () => {
     )
   })
 
-  test('Should log tasklist not found with context', () => {
-    const request = create404Request(
-      "Tasklist 'frps-beta' not found",
-      '/tasklist/frps-beta',
-      'user789',
-      '106001111',
-      'Safari'
-    )
-
-    catchAll(request, mockToolkit)
-
-    expect(log).toHaveBeenCalledWith(
-      expectInfoLogCall(),
-      expect.objectContaining({
-        tasklistId: 'frps-beta',
-        userId: 'user789',
-        sbi: '106001111',
-        reason: 'not_found',
-        environment: expect.any(String)
-      }),
-      request
-    )
-  })
-
-  test('Should log tasklist not found with unknown identifier when path does not match pattern', () => {
-    const request = create404Request(
-      'Tasklist configuration error',
-      '/some-other-path',
-      'user999',
-      '107002222',
-      'Firefox'
-    )
-
-    catchAll(request, mockToolkit)
-
-    expect(log).toHaveBeenCalledWith(
-      expectInfoLogCall(),
-      expect.objectContaining({
-        tasklistId: 'unknown',
-        userId: 'user999',
-        sbi: '107002222',
-        reason: 'not_found',
-        environment: expect.any(String)
-      }),
-      request
-    )
-  })
-
-  test('Should log tasklist disabled in production', () => {
-    const request = create404Request(
-      "Tasklist 'beta-feature' is not available in production",
-      '/tasklist/beta-feature',
-      'user888',
-      '108003333',
-      'Edge'
-    )
-
-    catchAll(request, mockToolkit)
-
-    expect(log).toHaveBeenCalledWith(
-      expectInfoLogCall(),
-      expect.objectContaining({
-        tasklistId: 'beta-feature',
-        userId: 'user888',
-        sbi: '108003333',
-        reason: 'disabled_in_production',
-        environment: expect.any(String)
-      }),
-      request
-    )
-  })
-
   test('Should log generic page not found for anonymous user', () => {
     const request = create404Request('Not Found', '/unknown-path', null, null, 'curl/7.68.0')
 
@@ -641,6 +614,23 @@ describe('#catchAll 404 Logging', () => {
         referer: 'none',
         userAgent: 'curl/7.68.0'
       }),
+      request
+    )
+  })
+
+  test('Should log client errors (e.g. 400) via SYSTEM.SERVER_ERROR', () => {
+    const request = {
+      response: { isBoom: true, message: 'Bad', output: { statusCode: statusCodes.badRequest } },
+      path: '/x',
+      method: 'GET'
+    }
+
+    const toolkit = { view: vi.fn().mockReturnThis(), code: vi.fn().mockReturnThis() }
+    catchAll(request, toolkit)
+
+    expect(log).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({ statusCode: statusCodes.badRequest, path: '/x' }),
       request
     )
   })
@@ -666,6 +656,17 @@ describe('#catchAll Redirect Handling', () => {
 
   beforeEach(() => {
     mockToolkitRedirect.mockClear()
+  })
+
+  test('returns non-Boom response with its statusCode', () => {
+    const responseObj = { payload: 'OK', statusCode: 201 }
+    const mockResponse = vi.fn().mockReturnThis()
+    const mockCode = vi.fn().mockReturnThis()
+
+    catchAll({ response: responseObj }, { response: mockResponse, code: mockCode })
+
+    expect(mockResponse).toHaveBeenCalledWith(responseObj)
+    expect(mockCode).toHaveBeenCalledWith(201)
   })
 
   test('should handle redirects when status code is 302 and location header is present', () => {
@@ -741,6 +742,15 @@ describe('#createBoomError', () => {
     expect(error.output.statusCode).toBe(422)
     expect(error.message).toBe('Bad data message')
     expect(error.output.payload.error).toBe('Unprocessable Entity')
+  })
+
+  test('Should return locked (423) for status code 423', () => {
+    const error = createBoomError(423, 'Locked message')
+
+    expect(error.isBoom).toBe(true)
+    expect(error.output.statusCode).toBe(423)
+    expect(error.message).toBe('Locked message')
+    expect(error.output.payload.error).toBe('Locked')
   })
 
   test('Should return tooManyRequests (429) for status code 429', () => {

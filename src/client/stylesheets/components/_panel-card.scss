@@ -1,0 +1,21 @@
+@use 'govuk-frontend' as *;
+
+.defra-panel-card {
+  background: govuk-colour('blue');
+  text-align: left;
+  margin-bottom: govuk-spacing(6);
+
+  h1 {
+    @include govuk-font-size($size: 36);
+  }
+
+  h1,
+  p,
+  li {
+    color: govuk-colour('white');
+  }
+
+  p:last-of-type {
+    margin-bottom: 0;
+  }
+}

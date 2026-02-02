@@ -2,10 +2,10 @@ import { vi } from 'vitest'
 import {
   createMockConfig,
   createMockConfigWithoutEndpoint,
-  HTTP_STATUS,
   TEST_BACKEND_URL,
   TEST_USER_IDS
 } from '../state/test-helpers/auth-test-helpers.js'
+import { createMockFetchResponse } from '~/src/__mocks__/hapi-mocks.js'
 
 global.fetch = vi.fn()
 
@@ -18,7 +18,7 @@ const mockCreateApiHeaders = vi.fn().mockReturnValue({
   'Content-Type': 'application/json',
   Authorization: 'Bearer test-token'
 })
-vi.doMock('../state/backend-auth-helper.js', () => ({
+vi.doMock('../auth/backend-auth-helper.js', () => ({
   createApiHeadersForGrantsUiBackend: mockCreateApiHeaders
 }))
 
@@ -71,15 +71,8 @@ describe('updateApplicationStatus', () => {
       vi.unmock('~/src/config/config.js')
     })
 
-    const createSuccessfulFetchResponse = () => ({ ok: true, status: HTTP_STATUS.OK })
-    const createFailedFetchResponse = (status = 500, statusText = 'Internal Server Error') => ({
-      ok: false,
-      status,
-      statusText
-    })
-
     it('updates application status successfully when response is ok', async () => {
-      fetch.mockResolvedValue(createSuccessfulFetchResponse())
+      fetch.mockResolvedValue(createMockFetchResponse())
 
       await updateApplicationStatus(APPLICATION_STATUS, KEY)
 
@@ -106,6 +99,7 @@ describe('updateApplicationStatus', () => {
       )
 
       expect(mockCreateApiHeaders).toHaveBeenCalledTimes(1)
+      expect(mockCreateApiHeaders).toHaveBeenCalledWith({ lockToken: undefined })
 
       expect(log).toHaveBeenCalledWith(
         LogCodes.SYSTEM.EXTERNAL_API_CALL_DEBUG,
@@ -122,8 +116,18 @@ describe('updateApplicationStatus', () => {
       expect(log).not.toHaveBeenCalledWith(LogCodes.SYSTEM.EXTERNAL_API_ERROR, expect.anything())
     })
 
+    it('passes lockToken to createApiHeadersForGrantsUiBackend when provided', async () => {
+      fetch.mockResolvedValue(createMockFetchResponse())
+      const lockToken = 'test-lock-token-123'
+
+      await updateApplicationStatus(APPLICATION_STATUS, KEY, { lockToken })
+
+      expect(mockCreateApiHeaders).toHaveBeenCalledTimes(1)
+      expect(mockCreateApiHeaders).toHaveBeenCalledWith({ lockToken })
+    })
+
     it('logs error when response is not ok', async () => {
-      const failedResponse = createFailedFetchResponse()
+      const failedResponse = createMockFetchResponse({ ok: false, status: 500, statusText: 'Internal Server Error' })
       fetch.mockResolvedValue(failedResponse)
 
       await updateApplicationStatus(APPLICATION_STATUS, KEY)

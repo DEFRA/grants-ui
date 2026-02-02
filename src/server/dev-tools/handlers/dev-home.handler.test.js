@@ -9,7 +9,6 @@ vi.mock('~/src/server/common/helpers/logging/log.js', () => ({}))
 describe('dev-home.handler', () => {
   const mockAllForms = [
     { slug: 'example-grant-with-auth', title: 'Example Grant with Auth' },
-    { slug: 'adding-value', title: 'Adding Value Grant' },
     { slug: 'flying-pigs', title: 'Flying Pigs Grant' }
   ]
 
@@ -44,7 +43,6 @@ describe('dev-home.handler', () => {
 
     const htmlContent = mockH.response.mock.calls[0][0]
     expect(htmlContent).toContain('Example Grant with Auth')
-    expect(htmlContent).toContain('Adding Value Grant')
     expect(htmlContent).toContain('Flying Pigs Grant')
   })
 
@@ -58,6 +56,19 @@ describe('dev-home.handler', () => {
 
     expect(result).toBe('final-response')
     expect(mockH.response).toHaveBeenCalledWith(expect.stringContaining('Available Tools'))
+  })
+
+  test('should include error pages section in the response', () => {
+    const mockHtmlResponse = { type: vi.fn().mockReturnValue('final-response') }
+    mockH.response.mockReturnValue(mockHtmlResponse)
+
+    devHomeHandler(mockRequest, mockH)
+
+    const htmlContent = mockH.response.mock.calls[0][0]
+    expect(htmlContent).toContain('Test Error Pages')
+    expect(htmlContent).toContain('/dev/test-400')
+    expect(htmlContent).toContain('/dev/test-429')
+    expect(htmlContent).toContain('/dev/test-500')
   })
 })
 

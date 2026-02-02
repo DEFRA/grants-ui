@@ -4,7 +4,6 @@ import { mockHapiResponseToolkit } from '~/src/__mocks__/hapi-mocks.js'
 
 const mockFormCache = [
   { slug: 'example-grant', title: 'Example Grant' },
-  { slug: 'adding-value', title: 'Adding Value Grant' },
   { slug: 'flying-pigs', title: 'Flying Pigs Grant' }
 ]
 
@@ -44,7 +43,6 @@ describe('generate-form-not-found-response', () => {
 
     const htmlContent = mockH.response.mock.calls[0][0]
     expect(htmlContent).toContain('• example-grant (Example Grant)')
-    expect(htmlContent).toContain('• adding-value (Adding Value Grant)')
     expect(htmlContent).toContain('• flying-pigs (Flying Pigs Grant)')
   })
 

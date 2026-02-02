@@ -2,6 +2,7 @@ import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/Q
 import { vi } from 'vitest'
 import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
 import { calculateGrantPayment } from '../services/land-grants.service.js'
+import { getRequiredConsents } from '../view-state/land-parcel.view-state.js'
 import LandActionsCheckPageController from './land-actions-check-page.controller.js'
 
 vi.mock('~/src/server/land-grants/services/land-grants.service.js', () => ({
@@ -11,6 +12,10 @@ vi.mock('~/src/server/land-grants/services/land-grants.service.js', () => ({
 
 vi.mock('~/src/server/land-grants/utils/format-parcel.js', () => ({
   stringifyParcel: ({ parcelId, sheetId }) => `${sheetId}-${parcelId}`
+}))
+
+vi.mock('~/src/server/land-grants/view-state/land-parcel.view-state.js', () => ({
+  getRequiredConsents: vi.fn()
 }))
 
 describe('LandActionsCheckPageController', () => {
@@ -59,6 +64,7 @@ describe('LandActionsCheckPageController', () => {
 
     // actionGroups.mockReturnValue([{ actions: ['CMOR1'] }, { actions: ['UPL1', 'UPL2', 'UPL3'] }])
     calculateGrantPayment.mockResolvedValue(mockPaymentResponse)
+    getRequiredConsents.mockReturnValue([])
 
     mockRequest = {
       payload: {},
@@ -285,6 +291,108 @@ describe('LandActionsCheckPageController', () => {
       const paymentWithoutTotal = {}
       const viewModel = controller.buildGetViewModel(mockRequest, mockContext, paymentWithoutTotal, [], [])
       expect(viewModel.totalYearlyPayment).toBe('£0.00')
+    })
+  })
+
+  describe('POST Handler - Consent Handling', () => {
+    test('should redirect to consent page when consents are required', async () => {
+      mockRequest.payload = { addMoreActions: 'false' }
+      getRequiredConsents.mockReturnValue(['sssi'])
+
+      const handler = controller.makePostRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(controller.setState).toHaveBeenCalledWith(
+        mockRequest,
+        expect.objectContaining({
+          requiredConsents: ['sssi']
+        })
+      )
+      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/you-must-have-consent')
+    })
+
+    test('should redirect to submit application when no consents required', async () => {
+      mockRequest.payload = { addMoreActions: 'false' }
+      getRequiredConsents.mockReturnValue([])
+
+      const handler = controller.makePostRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(controller.setState).toHaveBeenCalledWith(
+        mockRequest,
+        expect.objectContaining({
+          requiredConsents: []
+        })
+      )
+      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/submit-your-application')
+    })
+
+    test('should handle multiple consent types', async () => {
+      mockRequest.payload = { addMoreActions: 'false' }
+      getRequiredConsents.mockReturnValue(['sssi', 'hefer'])
+
+      const handler = controller.makePostRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(controller.setState).toHaveBeenCalledWith(
+        mockRequest,
+        expect.objectContaining({
+          requiredConsents: ['sssi', 'hefer']
+        })
+      )
+      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/you-must-have-consent')
+    })
+
+    test('should call getRequiredConsents with state when user chooses not to add more actions', async () => {
+      mockRequest.payload = { addMoreActions: 'false' }
+      getRequiredConsents.mockReturnValue([])
+
+      const handler = controller.makePostRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(getRequiredConsents).toHaveBeenCalledWith(mockContext.state)
+    })
+
+    test('should not call getRequiredConsents when user chooses to add more actions', async () => {
+      mockRequest.payload = { addMoreActions: 'true' }
+
+      const handler = controller.makePostRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(getRequiredConsents).not.toHaveBeenCalled()
+      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/select-land-parcel')
+    })
+  })
+
+  describe('getNextPathFromSelection', () => {
+    test('should return consent page path when consents are required', () => {
+      getRequiredConsents.mockReturnValue(['sssi'])
+
+      const result = controller.getNextPathFromSelection('false', mockContext.state)
+
+      expect(result).toEqual({
+        path: '/you-must-have-consent',
+        requiredConsents: ['sssi']
+      })
+    })
+
+    test('should return submit application path when no consents required', () => {
+      getRequiredConsents.mockReturnValue([])
+
+      const result = controller.getNextPathFromSelection('false', mockContext.state)
+
+      expect(result).toEqual({
+        path: '/submit-your-application'
+      })
+    })
+
+    test('should return select parcel path when adding more actions', () => {
+      const result = controller.getNextPathFromSelection('true', mockContext.state)
+
+      expect(result).toEqual({
+        path: '/select-land-parcel'
+      })
+      expect(getRequiredConsents).not.toHaveBeenCalled()
     })
   })
 })

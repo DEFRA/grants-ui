@@ -1,5 +1,6 @@
 import { vi } from 'vitest'
 import { config } from '~/src/config/config.js'
+import { retry } from '~/src/server/common/helpers/retry.js'
 import {
   clearTokenState,
   createTokenRequestParams,
@@ -8,10 +9,7 @@ import {
   refreshToken
 } from '~/src/server/common/helpers/entra/token-manager.js'
 
-vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
-  const { mockLogHelper } = await import('~/src/__mocks__')
-  return mockLogHelper()
-})
+vi.mock('~/src/server/common/helpers/retry.js')
 
 const mockFetch = vi.fn()
 global.fetch = mockFetch
@@ -26,6 +24,8 @@ describe('Token Manager', () => {
     })
     clearTokenState()
     vi.clearAllMocks()
+
+    retry.mockImplementation((operation) => operation())
   })
 
   describe('isTokenExpired', () => {

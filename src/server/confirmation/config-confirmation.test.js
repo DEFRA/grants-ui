@@ -2,11 +2,8 @@ import { vi } from 'vitest'
 import { configConfirmation } from './config-confirmation.js'
 import { ConfirmationService } from './services/confirmation.service.js'
 import { mockHapiRequest, mockHapiResponseToolkit } from '~/src/__mocks__/hapi-mocks.js'
-import {
-  createMockLogger,
-  MOCK_CONFIRMATION_CONTENT,
-  MOCK_FORMS
-} from './__test-fixtures__/confirmation-test-fixtures.js'
+import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
+import { MOCK_CONFIRMATION_CONTENT, MOCK_FORMS } from './__test-fixtures__/confirmation-test-fixtures.js'
 import { log } from '~/src/server/common/helpers/logging/log.js'
 
 const mockFormsCacheService = {
@@ -24,11 +21,6 @@ vi.mock('~/src/server/common/helpers/forms-cache/forms-cache.js', () => ({
 vi.mock('~/src/server/common/forms/services/form.js', () => ({
   getFormsCache: vi.fn(() => [MOCK_FORMS.basic])
 }))
-vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
-  const { mockLogHelper } = await import('~/src/__mocks__')
-  return mockLogHelper()
-})
-
 describe('config-confirmation', () => {
   let mockRequest
   let mockH
@@ -41,7 +33,7 @@ describe('config-confirmation', () => {
   beforeEach(async () => {
     vi.clearAllMocks()
 
-    mockLogger = createMockLogger()
+    mockLogger = mockRequestLogger()
     mockRequest = mockHapiRequest({
       params: { slug: 'test-slug' },
       logger: mockLogger,

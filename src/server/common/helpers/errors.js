@@ -1,6 +1,16 @@
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
-import { badRequest, unauthorized, forbidden, notFound, conflict, badData, tooManyRequests, internal } from '@hapi/boom'
+import {
+  badData,
+  badRequest,
+  conflict,
+  forbidden,
+  internal,
+  locked,
+  notFound,
+  tooManyRequests,
+  unauthorized
+} from '@hapi/boom'
 import { config } from '~/src/config/config.js'
 
 const UNKNOWN_USER = 'unknown'
@@ -13,6 +23,7 @@ export const HTTP_STATUS = {
   REQUEST_TIMEOUT: 408,
   CONFLICT: 409,
   BAD_DATA: 422,
+  LOCKED: 423,
   TOO_MANY_REQUESTS: 429
 }
 
@@ -35,6 +46,8 @@ export function createBoomError(statusCode, message) {
       return conflict(message)
     case HTTP_STATUS.BAD_DATA:
       return badData(message)
+    case HTTP_STATUS.LOCKED:
+      return locked(message)
     case HTTP_STATUS.TOO_MANY_REQUESTS:
       return tooManyRequests(message)
     default:
@@ -219,6 +232,10 @@ function logDebugInformation(request, response, statusCode, errorContext) {
 }
 
 function handleClientErrors(request, response, statusCode) {
+  if (statusCode === statusCodes.locked) {
+    // Expected business condition – no system error log
+    return
+  }
   const errorMessage = statusCodeMessage(statusCode)
 
   // Special handling for 404s with detailed logging
@@ -269,25 +286,6 @@ function tryParseForm(path, errorMsg) {
 }
 
 /**
- * Try to parse path as a tasklist resource
- * @param {string} path - Request path
- * @param {string} errorMsg - Error message
- * @returns {{type: string, identifier: string, reason: string} | null}
- */
-function tryParseTasklist(path, errorMsg) {
-  const tasklistRegex = /^\/tasklist\/([^/]+)/
-  const tasklistMatch = tasklistRegex.exec(path)
-  if (tasklistMatch || errorMsg.includes('Tasklist')) {
-    return {
-      type: 'tasklist',
-      identifier: tasklistMatch?.[1] || 'unknown',
-      reason: errorMsg.includes('not available') ? 'disabled_in_production' : 'not_found'
-    }
-  }
-  return null
-}
-
-/**
  * Parse resource path to determine type and context
  * @param {string} path - Request path
  * @param {object} response - Response object
@@ -299,11 +297,6 @@ function parseResourcePath(path, response) {
   const formResource = tryParseForm(path, errorMsg)
   if (formResource) {
     return formResource
-  }
-
-  const tasklistResource = tryParseTasklist(path, errorMsg)
-  if (tasklistResource) {
-    return tasklistResource
   }
 
   return { type: 'page', identifier: path, reason: 'not_found' }
@@ -325,51 +318,32 @@ function handle404WithContext(request, response) {
   // Parse the path to determine resource type
   const resourceInfo = parseResourcePath(path, response)
 
-  switch (resourceInfo.type) {
-    case 'form':
-      log(
-        LogCodes.RESOURCE_NOT_FOUND.FORM_NOT_FOUND,
-        {
-          slug: resourceInfo.identifier,
-          userId,
-          sbi,
-          referer,
-          userAgent,
-          reason: resourceInfo.reason,
-          environment
-        },
-        request
-      )
-      break
-
-    case 'tasklist':
-      log(
-        LogCodes.RESOURCE_NOT_FOUND.TASKLIST_NOT_FOUND,
-        {
-          tasklistId: resourceInfo.identifier,
-          userId,
-          sbi,
-          referer,
-          userAgent,
-          reason: resourceInfo.reason,
-          environment
-        },
-        request
-      )
-      break
-
-    default:
-      log(
-        LogCodes.RESOURCE_NOT_FOUND.PAGE_NOT_FOUND,
-        {
-          path,
-          userId,
-          sbi,
-          referer,
-          userAgent
-        },
-        request
-      )
+  if (resourceInfo.type === 'form') {
+    log(
+      LogCodes.RESOURCE_NOT_FOUND.FORM_NOT_FOUND,
+      {
+        slug: resourceInfo.identifier,
+        userId,
+        sbi,
+        referer,
+        userAgent,
+        reason: resourceInfo.reason,
+        environment
+      },
+      request
+    )
+  } else {
+    log(
+      LogCodes.RESOURCE_NOT_FOUND.PAGE_NOT_FOUND,
+      {
+        path,
+        userId,
+        sbi,
+        referer,
+        userAgent
+      },
+      request
+    )
   }
 }
 
@@ -389,6 +363,12 @@ function renderErrorView(h, statusCode) {
       break
     case statusCodes.notFound:
       errorView = 'errors/404'
+      break
+    case statusCodes.locked:
+      errorView = 'errors/423'
+      break
+    case statusCodes.tooManyRequests:
+      errorView = 'errors/429'
       break
     case statusCodes.serviceUnavailable:
       errorView = 'errors/503'
