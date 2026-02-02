@@ -158,8 +158,9 @@ describe('ConfirmFarmDetailsController', () => {
             city: 'City',
             postalCode: 'PC1 2CD'
           },
-          phone: '07123456789',
-          email: { address: 'test@example.com' }
+          landlinePhoneNumber: '01234567890',
+          mobilePhoneNumber: '07123456789',
+          email: 'test@example.com'
         },
         customer: {
           name: { first: 'Sarah', last: 'Farmer' }
@@ -190,7 +191,7 @@ describe('ConfirmFarmDetailsController', () => {
           },
           {
             key: { text: 'Contact details' },
-            value: { html: 'formatted-07123456789<br/>test@example.com' }
+            value: { html: 'formatted-01234567890<br/>formatted-07123456789<br/>test@example.com' }
           }
         ]
       })

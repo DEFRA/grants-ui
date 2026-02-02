@@ -81,12 +81,17 @@ export function createSbiRow(sbi) {
 
 /**
  * Create contact details row if available
- * @param {string} mobile - Mobile phone number
- * @param {string} emailAddress - Email address
+ * @param {string | null} landline - Landline phone number
+ * @param {string | null} mobile - Mobile phone number
+ * @param {string | null} emailAddress - Email address
  * @returns {object|null} Row object or null if no contact details
  */
-export function createContactDetailsRow(mobile, emailAddress) {
+export function createContactDetailsRow(landline, mobile, emailAddress) {
   const contactParts = []
+
+  if (landline) {
+    contactParts.push(formatPhone(landline))
+  }
 
   if (mobile) {
     contactParts.push(formatPhone(mobile))

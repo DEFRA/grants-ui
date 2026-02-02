@@ -45,7 +45,11 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
       createBusinessNameRow(data.business?.name),
       createAddressRow(data.business?.address),
       createSbiRow(request.auth?.credentials?.sbi),
-      createContactDetailsRow(data.business?.phone, data.business?.email?.address)
+      createContactDetailsRow(
+        data.business?.landlinePhoneNumber,
+        data.business?.mobilePhoneNumber,
+        data.business?.email
+      )
     ].filter(Boolean)
 
     return { rows }

@@ -195,8 +195,17 @@ describe('create-rows utilities', () => {
       vi.clearAllMocks()
     })
 
-    it('should create a row with both mobile and email', () => {
-      const result = createContactDetailsRow('07123456789', 'test@example.com')
+    it('should create a row with landline, mobile and email', () => {
+      const result = createContactDetailsRow('02012345678', '07123456789', 'test@example.com')
+
+      expect(result).toEqual({
+        key: { text: 'Contact details' },
+        value: { html: 'formatted-02012345678<br/>formatted-07123456789<br/>test@example.com' }
+      })
+    })
+
+    it('should create a row with mobile and email', () => {
+      const result = createContactDetailsRow(null, '07123456789', 'test@example.com')
 
       expect(result).toEqual({
         key: { text: 'Contact details' },
@@ -204,8 +213,17 @@ describe('create-rows utilities', () => {
       })
     })
 
+    it('should create a row with only landline', () => {
+      const result = createContactDetailsRow('02012345678', null, null)
+
+      expect(result).toEqual({
+        key: { text: 'Contact details' },
+        value: { html: 'formatted-02012345678' }
+      })
+    })
+
     it('should create a row with only mobile', () => {
-      const result = createContactDetailsRow('07123456789', null)
+      const result = createContactDetailsRow(null, '07123456789', null)
 
       expect(result).toEqual({
         key: { text: 'Contact details' },
@@ -214,12 +232,18 @@ describe('create-rows utilities', () => {
     })
 
     it('should create a row with only email', () => {
-      const result = createContactDetailsRow(null, 'test@example.com')
+      const result = createContactDetailsRow(null, null, 'test@example.com')
 
       expect(result).toEqual({
         key: { text: 'Contact details' },
         value: { html: 'test@example.com' }
       })
+    })
+
+    it('should not create a row if no data is provided', () => {
+      const result = createContactDetailsRow(null, null, null)
+
+      expect(result).toEqual(null)
     })
   })
 })

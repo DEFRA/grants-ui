@@ -232,18 +232,20 @@ export async function fetchBusinessAndCustomerInformation(request) {
     }`
 
   const formatResponse = (r) => {
-    const formattedResponse = { business: null, customer: null }
     const { business, customer } = r.data
+    const businessInfo = business?.info
+    const customerInfo = customer?.info
+    const formattedResponse = { business: {}, customer: customerInfo }
 
-    if (business?.info) {
+    if (businessInfo) {
       formattedResponse.business = {
-        ...business.info,
-        phone: business.info.phone?.landline || business.info.phone?.mobile
+        name: businessInfo.name,
+        reference: businessInfo.reference,
+        address: businessInfo.address,
+        landlinePhoneNumber: businessInfo.phone?.landline || undefined,
+        mobilePhoneNumber: businessInfo.phone?.mobile || undefined,
+        email: businessInfo.email?.address || undefined
       }
-    }
-
-    if (customer?.info) {
-      formattedResponse.customer = customer.info
     }
 
     return formattedResponse
