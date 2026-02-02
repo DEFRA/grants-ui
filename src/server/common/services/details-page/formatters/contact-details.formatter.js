@@ -1,4 +1,5 @@
 import { formatPhone } from '~/src/server/land-grants/utils/format-phone.js'
+import { escapeHtml } from '~/src/server/common/utils/escape-html.js'
 
 /**
  * Contact details formatter - formats phone and email as HTML with line breaks
@@ -14,11 +15,11 @@ export function contactDetailsFormatter(values) {
   const [phone, email] = values
 
   if (phone) {
-    contactParts.push(formatPhone(phone))
+    contactParts.push(escapeHtml(formatPhone(phone)))
   }
 
   if (email) {
-    contactParts.push(email)
+    contactParts.push(escapeHtml(email))
   }
 
   if (contactParts.length === 0) {
