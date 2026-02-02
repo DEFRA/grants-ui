@@ -3,7 +3,7 @@ import { getConfirmationPath, storeSlugInContext } from '~/src/server/common/hel
 import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/forms-cache.js'
 
 export default class ConfirmationPageController extends StatusPageController {
-  viewName = 'confirmation-page.html'
+  viewName = 'confirmation-page.html' // this page does not exist so marking this for future removal
 
   /**
    * @param {FormModel} model

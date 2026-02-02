@@ -28,6 +28,7 @@ metadata:
 
       <details class="govuk-details" data-module="govuk-details">
         <summary class="govuk-details__summary">
+          <p class="govuk-body"><a class="govuk-link" href="example-grant-with-auth/print-submitted-application" target="_blank">View / Print submitted application</a></p>
           <span class="govuk-details__summary-text">
             If you have a question
           </span>
