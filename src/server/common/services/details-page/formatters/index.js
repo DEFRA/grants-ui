@@ -22,4 +22,7 @@ export function getFormatter(name) {
   return formatters[name] || formatters.text
 }
 
-export { textFormatter, fullNameFormatter, addressFormatter, contactDetailsFormatter }
+export { textFormatter } from './text.formatter.js'
+export { fullNameFormatter } from './full-name.formatter.js'
+export { addressFormatter } from './address.formatter.js'
+export { contactDetailsFormatter } from './contact-details.formatter.js'

@@ -109,9 +109,7 @@ function buildFieldSelection(fields, indent = 0) {
 
   for (const field of fields) {
     if (field.fields && field.fields.length > 0) {
-      lines.push(`${indentation}${field.path} {`)
-      lines.push(buildFieldSelection(field.fields, indent + 1))
-      lines.push(`${indentation}}`)
+      lines.push(`${indentation}${field.path} {`, buildFieldSelection(field.fields, indent + 1), `${indentation}}`)
     } else {
       lines.push(`${indentation}${field.path}`)
     }
@@ -169,9 +167,11 @@ export function buildGraphQLQuery(config, request) {
     }
 
     const escapedVariableValue = escapeGraphQLString(variableValue)
-    lines.push(`  ${entity.name}(${entity.variableName}: "${escapedVariableValue}") {`)
-    lines.push(buildFieldSelection(entity.fields, 2))
-    lines.push('  }')
+    lines.push(
+      `  ${entity.name}(${entity.variableName}: "${escapedVariableValue}") {`,
+      buildFieldSelection(entity.fields, 2),
+      '  }'
+    )
   }
 
   lines.push('}')
