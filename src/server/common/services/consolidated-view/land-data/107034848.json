@@ -33,8 +33,8 @@
       },
       "info": {
         "reference": "1100281541",
-        "email": { "address": "mascottsonx@nosttocsamt.com.test" },
-        "phone": { "mobile": "01234979079", "landline": "+44 1908 15072" },
+        "email": null,
+        "phone": null,
         "name": "MA SCOTT & SON",
         "address": {
           "line1": "Meadowsbank",

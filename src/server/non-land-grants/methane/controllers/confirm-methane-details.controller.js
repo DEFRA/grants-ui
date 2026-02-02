@@ -44,7 +44,7 @@ export default class ConfirmMethaneDetailsController extends QuestionPageControl
       createCustomerNameRow(data.customer?.name),
       createBusinessNameRow(data.business?.name),
       createSbiRow(request.auth?.credentials?.sbi),
-      createContactDetailsRow(data.business?.phone?.mobile, data.business?.email?.address),
+      createContactDetailsRow(null, data.business?.phone?.mobile, data.business?.email?.address),
       createAddressRow(data.business?.address),
       this.createTypeRow(data.business?.type),
       this.createCPHRow(data.countyParishHoldings),
