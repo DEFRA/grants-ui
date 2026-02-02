@@ -255,13 +255,10 @@ describe('CheckDetailsController', () => {
     })
 
     describe('detailsCorrect = true with API error', () => {
-      it('should log error and store only detailsConfirmedAt when API fails', async () => {
+      it('should log error and show error view when API fails', async () => {
         mockRequest.payload = { detailsCorrect: 'true' }
         const error = new Error('Data fetch failed')
         vi.mocked(executeConfigDrivenQuery).mockRejectedValue(error)
-
-        const mockDate = new Date('2024-01-15T10:00:00.000Z')
-        vi.setSystemTime(mockDate)
 
         const handler = controller.makePostRouteHandler()
         const result = await handler(mockRequest, mockContext, mockH)
@@ -271,14 +268,17 @@ describe('CheckDetailsController', () => {
           { errorMessage: 'Data fetch failed' },
           mockRequest
         )
-        expect(controller.setState).toHaveBeenCalledWith(mockRequest, {
-          someState: 'value',
-          detailsConfirmedAt: '2024-01-15T10:00:00.000Z'
+        expect(controller.setState).not.toHaveBeenCalled()
+        expect(controller.proceed).not.toHaveBeenCalled()
+        expect(mockH.view).toHaveBeenCalledWith('check-details', {
+          serviceName: 'Test Service',
+          serviceUrl: '/test-form',
+          error: {
+            titleText: 'There is a problem',
+            errorList: [{ text: 'Unable to save your details. Please try again later.', href: '' }]
+          }
         })
-        expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-path')
-        expect(result).toBe('redirected')
-
-        vi.useRealTimers()
+        expect(result).toBe('mocked-view')
       })
     })
   })

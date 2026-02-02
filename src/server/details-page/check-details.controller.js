@@ -82,6 +82,8 @@ export default class CheckDetailsController extends QuestionPageController {
    * @returns {Promise<ResponseObject>}
    */
   async handleDetailsConfirmed(request, context, config, h) {
+    const baseViewModel = super.getViewModel(request, context)
+
     try {
       const { mappedData } = await this.fetchAndProcessData(request, config)
       await this.setState(request, {
@@ -89,15 +91,17 @@ export default class CheckDetailsController extends QuestionPageController {
         applicant: mappedData,
         detailsConfirmedAt: new Date().toISOString()
       })
+      return this.proceed(request, h, this.getNextPath(context))
     } catch (error) {
       log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, { errorMessage: error.message }, request)
-      await this.setState(request, {
-        ...context.state,
-        detailsConfirmedAt: new Date().toISOString()
+      return h.view(this.viewName, {
+        ...baseViewModel,
+        error: {
+          titleText: 'There is a problem',
+          errorList: [{ text: 'Unable to save your details. Please try again later.', href: '' }]
+        }
       })
     }
-
-    return this.proceed(request, h, this.getNextPath(context))
   }
 
   /**
