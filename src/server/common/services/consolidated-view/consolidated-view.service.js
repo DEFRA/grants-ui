@@ -215,17 +215,10 @@ const UPRN_ADDRESS_PATTERNS = [
     })
   },
   {
-    condition: ({ flat, num, name }) => flat && num && name,
-    format: ({ flat, num, name }) => ({
-      line1: flat,
-      line2: joinAddressParts(num, name)
-    })
-  },
-  {
     condition: ({ paf, flat, name }) => paf && flat && name,
     format: ({ paf, flat, name }) => ({
-      line1: paf,
-      line2: joinAddressParts(flat, name)
+      line1: joinAddressParts(paf, flat),
+      line2: joinAddressParts(name)
     })
   },
   {
@@ -236,17 +229,18 @@ const UPRN_ADDRESS_PATTERNS = [
     })
   },
   {
+    condition: ({ flat, num, name }) => flat && num && name,
+    format: ({ flat, num, name }) => ({
+      line1: flat,
+      line2: joinAddressParts(num, name)
+    })
+  },
+
+  {
     condition: ({ paf, flat }) => paf && flat,
     format: ({ paf, flat }) => ({
       line1: paf,
       line2: flat
-    })
-  },
-  {
-    condition: ({ num, name }) => num && name,
-    format: ({ num, name }) => ({
-      line1: num,
-      line2: name
     })
   },
   {
@@ -277,6 +271,14 @@ const UPRN_ADDRESS_PATTERNS = [
       line2: name
     })
   },
+  {
+    condition: ({ num, name }) => num && name,
+    format: ({ num, name }) => ({
+      line1: num,
+      line2: name
+    })
+  },
+
   {
     condition: ({ paf }) => paf,
     format: ({ paf }) => ({
