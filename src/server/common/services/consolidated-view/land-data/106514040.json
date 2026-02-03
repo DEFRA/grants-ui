@@ -220,7 +220,15 @@
           "line5": null,
           "street": "BRIDGE ROAD",
           "city": "GRIMSBY",
-          "postalCode": "DY13 0UY"
+          "postalCode": "DY13 0UY",
+          "uprn": null,
+          "buildingName": null,
+          "buildingNumberRange": null,
+          "county": null,
+          "dependentLocality": null,
+          "doubleDependentLocality": null,
+          "flatName": null,
+          "pafOrganisationName": null
         }
       }
     }

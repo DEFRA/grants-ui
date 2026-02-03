@@ -157,14 +157,22 @@
         "phone": null,
         "name": "Alport Farm",
         "address": {
-          "line1": "Top Farm",
-          "line2": "Saxby-All-Saints",
+          "line1": null,
+          "line2": null,
           "line3": null,
           "line4": null,
           "line5": null,
           "street": "ORFORD ROAD",
           "city": "YEOVIL",
-          "postalCode": "YO25 3PF"
+          "postalCode": "YO25 3PF",
+          "uprn": "981124619099",
+          "buildingName": "Holloway",
+          "buildingNumberRange": "Saxby-All-Saints",
+          "county": "Essex",
+          "dependentLocality": "Havering",
+          "doubleDependentLocality": "Redbridge",
+          "flatName": "04",
+          "pafOrganisationName": "Top Farm"
         }
       }
     }

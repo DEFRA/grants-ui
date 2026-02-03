@@ -359,13 +359,21 @@
         },
         "address": {
           "line1": "Catlow Road",
-          "line2": "",
+          "line2": "Groovy Park",
           "line3": null,
           "line4": null,
           "line5": null,
           "street": "Catlow Road",
           "city": "Clitheroe",
-          "postalCode": "BB7 4LQ"
+          "postalCode": "BB7 4LQ",
+          "uprn": "",
+          "buildingName": null,
+          "buildingNumberRange": "Exotica Broom Estate",
+          "county": "Middlesex",
+          "dependentLocality": "Hillingdon",
+          "doubleDependentLocality": "Greenwich",
+          "flatName": "999",
+          "pafOrganisationName": "Duck Pond Farm"
         }
       }
     }
