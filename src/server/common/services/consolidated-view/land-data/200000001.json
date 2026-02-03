@@ -43,8 +43,16 @@
           "line4": "Derbyshire",
           "line5": "",
           "street": "1 Moorfield",
-          "city": "",
-          "postalCode": "SK13 5CB"
+          "city": "Chesham",
+          "postalCode": "SK13 5CB",
+          "uprn": "681124619099",
+          "buildingName": "Holloway",
+          "buildingNumberRange": null,
+          "county": null,
+          "dependentLocality": null,
+          "doubleDependentLocality": null,
+          "flatName": "04",
+          "pafOrganisationName": null
         }
       }
     }

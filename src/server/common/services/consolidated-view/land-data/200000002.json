@@ -43,9 +43,17 @@
           "line3": "Danby",
           "line4": "North York Moors",
           "line5": "",
-          "street": "",
-          "city": "",
-          "postalCode": "SM50 4BA"
+          "street": "Cuckoo Hill",
+          "city": "Gabba",
+          "postalCode": "SM50 4BA",
+          "uprn": "581124619099",
+          "buildingName": null,
+          "buildingNumberRange": "York House",
+          "county": null,
+          "dependentLocality": null,
+          "doubleDependentLocality": null,
+          "flatName": null,
+          "pafOrganisationName": null
         }
       }
     }

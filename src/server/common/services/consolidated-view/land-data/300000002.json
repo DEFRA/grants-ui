@@ -44,7 +44,15 @@
           "line5": "",
           "street": "Church Street",
           "city": "Norwich",
-          "postalCode": "WA51 6WY"
+          "postalCode": "WA51 6WY",
+          "uprn": "381124619099",
+          "buildingName": null,
+          "buildingNumberRange": "York Park House",
+          "county": null,
+          "dependentLocality": null,
+          "doubleDependentLocality": null,
+          "flatName": "25",
+          "pafOrganisationName": "Fabulous Farms"
         }
       }
     }

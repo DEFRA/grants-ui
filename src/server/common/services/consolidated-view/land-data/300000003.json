@@ -44,7 +44,15 @@
           "line5": "",
           "street": "Main Street",
           "city": "Oxford",
-          "postalCode": "WC52 7WY"
+          "postalCode": "WC52 7WY",
+          "uprn": "381124619099",
+          "buildingName": "Building No. 2",
+          "buildingNumberRange": "York Park",
+          "county": null,
+          "dependentLocality": null,
+          "doubleDependentLocality": null,
+          "flatName": "25",
+          "pafOrganisationName": null
         }
       }
     }
