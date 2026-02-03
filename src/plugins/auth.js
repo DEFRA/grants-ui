@@ -4,10 +4,12 @@ import { config } from '~/src/config/config.js'
 import { getOidcConfig } from '~/src/server/auth/get-oidc-config.js'
 import { getSafeRedirect } from '~/src/server/auth/get-safe-redirect.js'
 import { refreshTokens } from '~/src/server/auth/refresh-tokens.js'
-import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { log, LogCodes, logger } from '~/src/server/common/helpers/logging/log.js'
 
 async function setupOidcConfig() {
+  const startTime = Date.now()
   try {
+    logger.debug('Starting OIDC configuration fetch from well-known endpoint')
     const oidcConfig = await getOidcConfig()
 
     // Log full OIDC configuration from well-known endpoint
@@ -16,6 +18,7 @@ async function setupOidcConfig() {
       configType: 'OIDC_WellKnown_Response',
       configValues: getLoggingDetails(oidcConfig)
     })
+    logger.debug(`Completed OIDC configuration fetch from well-known endpoint ${Date.now() - startTime}ms`)
 
     return oidcConfig
   } catch (error) {
@@ -38,6 +41,7 @@ async function setupOidcConfig() {
         wellKnownUrl: config.get('defraId.wellKnownUrl')
       }
     })
+    logger.debug(`OIDC configuration fetch from well-known endpoint failed ${Date.now() - startTime}ms`)
     // Mark the error as already logged to prevent duplicate logging
     error.alreadyLogged = true
     throw error
@@ -108,11 +112,15 @@ export default {
 }
 
 function processCredentialsProfile(credentials) {
+  const startTime = Date.now()
   try {
+    logger.debug('Starting Bell credentials profile processing')
     validateCredentials(credentials)
     const payload = decodeTokenPayload(credentials.token)
     validatePayload(payload)
-    return createCredentialsProfile(credentials, payload)
+    const result = createCredentialsProfile(credentials, payload)
+    logger.debug(`Completed Bell credentials profile processing ${Date.now() - startTime}ms`)
+    return result
   } catch (error) {
     log(LogCodes.AUTH.SIGN_IN_FAILURE, {
       userId: 'unknown',
@@ -130,6 +138,7 @@ function processCredentialsProfile(credentials) {
         tokenLength: credentials?.token?.length || 0
       }
     })
+    logger.debug(`Bell credentials profile processing failed ${Date.now() - startTime}ms`)
 
     error.alreadyLogged = true
     throw error
@@ -306,6 +315,7 @@ function getBellOptions(oidcConfig) {
     clientSecret: config.get('defraId.clientSecret'),
     isSecure: config.get('session.cookie.secure'),
     location: function (request) {
+      const startTime = Date.now()
       try {
         const redirectParam = request.query.redirect
 
@@ -326,7 +336,7 @@ function getBellOptions(oidcConfig) {
             })
           }
         }
-
+        logger.debug(`Bell location function completed ${Date.now() - startTime}ms`)
         return config.get('defraId.redirectUrl')
       } catch (error) {
         log(LogCodes.AUTH.SIGN_IN_FAILURE, {
@@ -341,7 +351,7 @@ function getBellOptions(oidcConfig) {
             requestMethod: request.method
           }
         })
-
+        logger.debug(`Bell location function failed ${Date.now() - startTime}ms`)
         error.alreadyLogged = true
         throw error
       }
@@ -372,9 +382,11 @@ function validateUserSession(userSession, sessionId, request) {
 }
 
 async function verifyAndRefreshToken(userSession, sessionId, request) {
+  const startTime = Date.now()
   try {
     const decoded = Jwt.token.decode(userSession.token)
     Jwt.token.verifyTime(decoded)
+    logger.debug(`Token verification succeeded ${Date.now() - startTime}ms`)
     return { isValid: true }
   } catch (tokenError) {
     return await handleTokenVerificationError(userSession, sessionId, request, tokenError) // NOSONAR - await is necessary here
@@ -382,6 +394,7 @@ async function verifyAndRefreshToken(userSession, sessionId, request) {
 }
 
 async function handleTokenVerificationError(userSession, sessionId, request, tokenError) {
+  const startTime = Date.now()
   if (!config.get('defraId.refreshTokens')) {
     log(
       LogCodes.AUTH.SESSION_EXPIRED,
@@ -414,6 +427,7 @@ async function handleTokenVerificationError(userSession, sessionId, request, tok
       },
       request
     )
+    logger.debug(`Token refresh succeeded ${Date.now() - startTime}ms`)
     return { isValid: true }
   } catch (refreshError) {
     log(
@@ -426,6 +440,7 @@ async function handleTokenVerificationError(userSession, sessionId, request, tok
       },
       request
     )
+    logger.debug(`Token refresh failed ${Date.now() - startTime}ms`)
     return { isValid: false }
   }
 }
