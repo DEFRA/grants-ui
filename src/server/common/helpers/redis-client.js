@@ -13,7 +13,23 @@ import { logger } from '~/src/server/common/helpers/logging/log.js'
  * @property {number} [connectTimeout]
  * @property {number} [retryDelay]
  * @property {number} [maxRetries]
+ * @property {boolean} [enableOfflineQueue]
+ * @property {number} [commandTimeout]
  */
+
+/**
+ * Assigns properties from source to target only when they are defined
+ * @param {object} target - The object to assign properties to
+ * @param {object} source - The object to read properties from
+ * @param {Record<string, string>} mappings - Map of source keys to target keys
+ */
+function assignIfDefined(target, source, mappings) {
+  for (const [sourceKey, targetKey] of Object.entries(mappings)) {
+    if (source[sourceKey] !== undefined) {
+      target[targetKey] = source[sourceKey]
+    }
+  }
+}
 
 /**
  * Setup Redis and provide a redis client
@@ -50,16 +66,13 @@ export function buildRedisClient(redisConfig) {
       ...tls
     }
 
-    if (redisConfig.connectTimeout !== undefined) {
-      redisOptions.connectTimeout = redisConfig.connectTimeout
-    }
-    if (redisConfig.retryDelay !== undefined) {
-      // @ts-ignore - retryDelayOnFailover exists but may not be in type definitions
-      redisOptions.retryDelayOnFailover = redisConfig.retryDelay
-    }
-    if (redisConfig.maxRetries !== undefined) {
-      redisOptions.maxRetriesPerRequest = redisConfig.maxRetries
-    }
+    assignIfDefined(redisOptions, redisConfig, {
+      connectTimeout: 'connectTimeout',
+      retryDelay: 'retryDelayOnFailover',
+      maxRetries: 'maxRetriesPerRequest',
+      enableOfflineQueue: 'enableOfflineQueue',
+      commandTimeout: 'commandTimeout'
+    })
 
     redisClient = new Redis(redisOptions)
   } else {
@@ -74,10 +87,13 @@ export function buildRedisClient(redisConfig) {
         keyPrefix,
         slotsRefreshTimeout: 10000,
         dnsLookup: (address, callback) => callback(null, address),
+        enableOfflineQueue: redisConfig.enableOfflineQueue,
         redisOptions: {
           db,
           ...credentials,
-          ...tls
+          ...tls,
+          commandTimeout: redisConfig.commandTimeout,
+          maxRetriesPerRequest: redisConfig.maxRetries
         }
       }
     )
