@@ -201,106 +201,106 @@ function joinAddressParts(...parts) {
  */
 const UPRN_ADDRESS_PATTERNS = [
   {
-    condition: (paf, flat, num, name) => paf && flat && num && name,
-    format: (paf, flat, num, name) => ({
+    condition: ({ paf, flat, num, name }) => paf && flat && num && name,
+    format: ({ paf, flat, num, name }) => ({
       line1: joinAddressParts(paf, flat),
       line2: joinAddressParts(num, name)
     })
   },
   {
-    condition: (paf, flat, num) => paf && flat && num,
-    format: (paf, flat, num) => ({
+    condition: ({ paf, flat, num }) => paf && flat && num,
+    format: ({ paf, flat, num }) => ({
       line1: joinAddressParts(paf, flat),
       line2: num
     })
   },
   {
-    condition: (paf, flat, num, name) => flat && num && name,
-    format: (paf, flat, num, name) => ({
+    condition: ({ flat, num, name }) => flat && num && name,
+    format: ({ flat, num, name }) => ({
       line1: flat,
       line2: joinAddressParts(num, name)
     })
   },
   {
-    condition: (paf, flat, num, name) => paf && flat && name,
-    format: (paf, flat, num, name) => ({
+    condition: ({ paf, flat, name }) => paf && flat && name,
+    format: ({ paf, flat, name }) => ({
       line1: paf,
       line2: joinAddressParts(flat, name)
     })
   },
   {
-    condition: (paf, flat, num, name) => paf && num && name,
-    format: (paf, flat, num, name) => ({
+    condition: ({ paf, num, name }) => paf && num && name,
+    format: ({ paf, num, name }) => ({
       line1: paf,
       line2: joinAddressParts(num, name)
     })
   },
   {
-    condition: (paf, flat) => paf && flat,
-    format: (paf, flat) => ({
+    condition: ({ paf, flat }) => paf && flat,
+    format: ({ paf, flat }) => ({
       line1: paf,
       line2: flat
     })
   },
   {
-    condition: (paf, flat, num, name) => num && name,
-    format: (paf, flat, num, name) => ({
+    condition: ({ num, name }) => num && name,
+    format: ({ num, name }) => ({
       line1: num,
       line2: name
     })
   },
   {
-    condition: (paf, flat, num) => paf && num,
-    format: (paf, flat, num) => ({
+    condition: ({ paf, num }) => paf && num,
+    format: ({ paf, num }) => ({
       line1: paf,
       line2: num
     })
   },
   {
-    condition: (paf, flat, num, name) => paf && name,
-    format: (paf, flat, num, name) => ({
+    condition: ({ paf, name }) => paf && name,
+    format: ({ paf, name }) => ({
       line1: paf,
       line2: name
     })
   },
   {
-    condition: (paf, flat, num) => flat && num,
-    format: (paf, flat, num) => ({
+    condition: ({ flat, num }) => flat && num,
+    format: ({ flat, num }) => ({
       line1: flat,
       line2: num
     })
   },
   {
-    condition: (paf, flat, num, name) => flat && name,
-    format: (paf, flat, num, name) => ({
+    condition: ({ flat, name }) => flat && name,
+    format: ({ flat, name }) => ({
       line1: flat,
       line2: name
     })
   },
   {
-    condition: (paf) => paf,
-    format: (paf) => ({
+    condition: ({ paf }) => paf,
+    format: ({ paf }) => ({
       line1: paf,
       line2: ' '
     })
   },
   {
-    condition: (paf, flat) => flat,
-    format: (paf, flat) => ({
+    condition: ({ flat }) => flat,
+    format: ({ flat }) => ({
       line1: flat,
       line2: ' '
     })
   },
   {
-    condition: (paf, flat, num) => num,
-    format: (paf, flat, num) => ({
+    condition: ({ num }) => num,
+    format: ({ num }) => ({
       line1: num,
       line2: ' '
     })
   },
   {
-    condition: (paf, flat, num, name) => name,
-    format: (paf, flat, num, name) => ({
+    condition: ({ name }) => name,
+    format: ({ name }) => ({
       line1: name,
       line2: ' '
     })
@@ -316,9 +316,16 @@ const UPRN_ADDRESS_PATTERNS = [
  * @returns {object} - Object with line1 and line2
  */
 function formatUprnAddressLines(pafOrganisationName, flatName, buildingNumberRange, buildingName) {
+  const addressParts = {
+    paf: pafOrganisationName,
+    flat: flatName,
+    num: buildingNumberRange,
+    name: buildingName
+  }
+
   for (const pattern of UPRN_ADDRESS_PATTERNS) {
-    if (pattern.condition(pafOrganisationName, flatName, buildingNumberRange, buildingName)) {
-      return pattern.format(pafOrganisationName, flatName, buildingNumberRange, buildingName)
+    if (pattern.condition(addressParts)) {
+      return pattern.format(addressParts)
     }
   }
 
