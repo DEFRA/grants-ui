@@ -145,7 +145,15 @@
           "line5": null,
           "street": "Gisburn Road",
           "city": "Clitheroe",
-          "postalCode": "BB7 4LQ"
+          "postalCode": "BB7 4LQ",
+          "uprn": "111124619099",
+          "buildingName": null,
+          "buildingNumberRange": null,
+          "county": null,
+          "dependentLocality": null,
+          "doubleDependentLocality": null,
+          "flatName": null,
+          "pafOrganisationName": "Top Farm One"
         },
         "vat": "345456782",
         "type": {

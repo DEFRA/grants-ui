@@ -44,7 +44,15 @@
           "line5": "",
           "street": "Station Road",
           "city": "Maidstone",
-          "postalCode": "W50 5UY"
+          "postalCode": "W50 5UY",
+          "uprn": "481124619099",
+          "buildingName": "York Park House",
+          "buildingNumberRange": null,
+          "county": null,
+          "dependentLocality": null,
+          "doubleDependentLocality": null,
+          "flatName": null,
+          "pafOrganisationName": null
         }
       }
     }

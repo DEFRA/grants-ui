@@ -200,7 +200,15 @@
           "line5": null,
           "street": "SOUTH ROAD",
           "city": "MORPETH",
-          "postalCode": "GU5 9EQ"
+          "postalCode": "GU5 9EQ",
+          "uprn": "981124619099",
+          "buildingName": null,
+          "buildingNumberRange": "Saxby-All-Saints",
+          "county": null,
+          "dependentLocality": null,
+          "doubleDependentLocality": null,
+          "flatName": "04",
+          "pafOrganisationName": null
         }
       }
     }
