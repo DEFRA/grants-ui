@@ -33,7 +33,15 @@
           "line5": null,
           "street": "FAIRVIEW CRESCENT",
           "city": "SELBY",
-          "postalCode": "TR12 7AZ"
+          "postalCode": "TR12 7AZ",
+          "uprn": 981124619260,
+          "buildingName": null,
+          "buildingNumberRange": "Exotic Estate",
+          "county": null,
+          "dependentLocality": null,
+          "doubleDependentLocality": null,
+          "flatName": "29",
+          "pafOrganisationName": "Cuckoo Hill Farm"
         }
       }
     }
