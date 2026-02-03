@@ -200,7 +200,6 @@ function joinAddressParts(...parts) {
  * Patterns are checked in order, first match wins
  */
 const UPRN_ADDRESS_PATTERNS = [
-  // 4 fields: all present
   {
     condition: (paf, flat, num, name) => paf && flat && num && name,
     format: (paf, flat, num, name) => ({
@@ -208,7 +207,6 @@ const UPRN_ADDRESS_PATTERNS = [
       line2: joinAddressParts(num, name)
     })
   },
-  // 3 fields combinations
   {
     condition: (paf, flat, num) => paf && flat && num,
     format: (paf, flat, num) => ({
@@ -237,7 +235,6 @@ const UPRN_ADDRESS_PATTERNS = [
       line2: joinAddressParts(num, name)
     })
   },
-  // 2 fields combinations
   {
     condition: (paf, flat) => paf && flat,
     format: (paf, flat) => ({
@@ -280,7 +277,6 @@ const UPRN_ADDRESS_PATTERNS = [
       line2: name
     })
   },
-  // 1 field - any single field
   {
     condition: (paf) => paf,
     format: (paf) => ({
