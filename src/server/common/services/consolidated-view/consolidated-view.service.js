@@ -226,10 +226,59 @@ export async function fetchBusinessAndCustomerInformation(request) {
             street
             city
             postalCode
+            uprn
+            buildingName
+            buildingNumberRange
+            dependentLocality
+            doubleDependentLocality
+            flatName
+            pafOrganisationName
           }
         }
       }
     }`
+
+  const formatAddress = (address) => {
+    const {
+      uprn,
+      street,
+      city,
+      postalCode,
+      pafOrganisationName,
+      buildingNumberRange,
+      dependentLocality,
+      doubleDependentLocality,
+      flatName,
+      buildingName
+    } = address
+
+    const commonFields = {
+      street,
+      city,
+      postalCode
+    }
+
+    if (uprn) {
+      const joinParts = (...parts) => parts.filter(Boolean).join(' ').trim() || undefined
+
+      return {
+        ...commonFields,
+        line1: joinParts(pafOrganisationName, flatName),
+        line2: joinParts(buildingNumberRange, buildingName),
+        line3: dependentLocality,
+        line4: doubleDependentLocality
+      }
+    }
+
+    return {
+      ...commonFields,
+      line1: address.line1,
+      line2: address.line2,
+      line3: address.line3,
+      line4: address.line4,
+      line5: address.line5
+    }
+  }
 
   const formatResponse = (r) => {
     const { business, customer } = r.data
@@ -241,7 +290,7 @@ export async function fetchBusinessAndCustomerInformation(request) {
       formattedResponse.business = {
         name: businessInfo.name,
         reference: businessInfo.reference,
-        address: businessInfo.address,
+        address: formatAddress(businessInfo.address),
         landlinePhoneNumber: businessInfo.phone?.landline || undefined,
         mobilePhoneNumber: businessInfo.phone?.mobile || undefined,
         email: businessInfo.email?.address || undefined

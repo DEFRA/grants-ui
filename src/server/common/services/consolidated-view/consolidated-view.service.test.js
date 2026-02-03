@@ -342,7 +342,8 @@ describe('Consolidated View Service', () => {
           address: {
             line1: '123 Test Street',
             city: 'Test City',
-            postalCode: 'TC1 2AB'
+            postalCode: 'TC1 2AB',
+            street: undefined
           },
           landlinePhoneNumber: '01234567890',
           mobilePhoneNumber: '07123456789',
@@ -357,6 +358,222 @@ describe('Consolidated View Service', () => {
       expect(body.query).toContain(`customer(crn: "${mockCrn}")`)
       expect(body.query).toContain('landline')
       expect(body.query).toContain('mobile')
+    })
+
+    it('should format structured addresses correctly when uprn is set', async () => {
+      const uprnResponse = {
+        data: {
+          business: {
+            info: {
+              name: 'Test Business Ltd',
+              reference: 'REF123',
+              email: { address: 'test@business.com' },
+              phone: { mobile: '07123456789', landline: '01234567890' },
+              address: {
+                line1: 'Line 1',
+                line2: 'Line 2',
+                line3: 'Line 3',
+                line4: 'Line 4',
+                line5: 'Line 5',
+                uprn: '12345678',
+                pafOrganisationName: 'Acme Farm',
+                flatName: 'Flat 2B',
+                buildingNumberRange: '123-125',
+                buildingName: 'Enterprise House',
+                dependentLocality: 'Industrial Estate',
+                doubleDependentLocality: 'North District',
+                street: 'Main Road',
+                city: 'Test City',
+                postalCode: 'TC1 2AB'
+              }
+            }
+          },
+          customer: {
+            info: {
+              name: {
+                title: 'Mr',
+                first: 'John',
+                last: 'Doe'
+              }
+            }
+          }
+        }
+      }
+
+      mockFetchInstance.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(uprnResponse)
+      })
+
+      const result = await fetchBusinessAndCustomerInformation(mockRequest)
+
+      expect(result.business.address).toEqual({
+        line1: 'Acme Farm Flat 2B',
+        line2: '123-125 Enterprise House',
+        line3: 'Industrial Estate',
+        line4: 'North District',
+        street: 'Main Road',
+        city: 'Test City',
+        postalCode: 'TC1 2AB'
+      })
+    })
+
+    it('should handle structured addresses with missing fields when uprn is set', async () => {
+      const uprnResponsePartial = {
+        data: {
+          business: {
+            info: {
+              name: 'Test Business Ltd',
+              reference: 'REF123',
+              email: { address: 'test@business.com' },
+              phone: { mobile: '07123456789', landline: '01234567890' },
+              address: {
+                uprn: '12345678',
+                pafOrganisationName: 'Acme Farm',
+                flatName: undefined,
+                buildingNumberRange: '123',
+                buildingName: '',
+                dependentLocality: undefined,
+                doubleDependentLocality: undefined,
+                street: 'Main Road',
+                city: 'Test City',
+                postalCode: 'TC1 2AB'
+              }
+            }
+          },
+          customer: {
+            info: {
+              name: {
+                title: 'Mr',
+                first: 'John',
+                last: 'Doe'
+              }
+            }
+          }
+        }
+      }
+
+      mockFetchInstance.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(uprnResponsePartial)
+      })
+
+      const result = await fetchBusinessAndCustomerInformation(mockRequest)
+
+      expect(result.business.address).toEqual({
+        line1: 'Acme Farm',
+        line2: '123',
+        line3: undefined,
+        line4: undefined,
+        street: 'Main Road',
+        city: 'Test City',
+        postalCode: 'TC1 2AB'
+      })
+    })
+
+    it('should handle structured addresses with all empty fields when uprn is set', async () => {
+      const uprnResponseEmpty = {
+        data: {
+          business: {
+            info: {
+              name: 'Test Business Ltd',
+              reference: 'REF123',
+              email: { address: 'test@business.com' },
+              phone: { mobile: '07123456789', landline: '01234567890' },
+              address: {
+                uprn: '12345678',
+                pafOrganisationName: '',
+                flatName: '',
+                buildingNumberRange: '',
+                buildingName: '',
+                dependentLocality: undefined,
+                doubleDependentLocality: undefined,
+                street: 'Main Road',
+                city: 'Test City',
+                postalCode: 'TC1 2AB'
+              }
+            }
+          },
+          customer: {
+            info: {
+              name: {
+                title: 'Mr',
+                first: 'John',
+                last: 'Doe'
+              }
+            }
+          }
+        }
+      }
+
+      mockFetchInstance.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(uprnResponseEmpty)
+      })
+
+      const result = await fetchBusinessAndCustomerInformation(mockRequest)
+
+      expect(result.business.address).toEqual({
+        line1: undefined,
+        line2: undefined,
+        line3: undefined,
+        line4: undefined,
+        street: 'Main Road',
+        city: 'Test City',
+        postalCode: 'TC1 2AB'
+      })
+    })
+
+    it('should return unformatted address fields when uprn is not set', async () => {
+      const nonUprnResponse = {
+        data: {
+          business: {
+            info: {
+              name: 'Test Business Ltd',
+              reference: 'REF123',
+              email: { address: 'test@business.com' },
+              phone: { mobile: '07123456789', landline: '01234567890' },
+              address: {
+                line1: 'Flat 5',
+                line2: '123 Main Street',
+                line3: 'Business Park',
+                line4: 'North Quarter',
+                line5: 'Additional Info',
+                street: 'Main Street',
+                city: 'Test City',
+                postalCode: 'TC1 2AB'
+              }
+            }
+          },
+          customer: {
+            info: {
+              name: {
+                title: 'Mr',
+                first: 'John',
+                last: 'Doe'
+              }
+            }
+          }
+        }
+      }
+
+      mockFetchInstance.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(nonUprnResponse)
+      })
+
+      const result = await fetchBusinessAndCustomerInformation(mockRequest)
+
+      expect(result.business.address).toEqual({
+        line1: 'Flat 5',
+        line2: '123 Main Street',
+        line3: 'Business Park',
+        line4: 'North Quarter',
+        line5: 'Additional Info',
+        street: 'Main Street',
+        city: 'Test City',
+        postalCode: 'TC1 2AB'
+      })
     })
 
     it('should handle missing business or customer data gracefully', async () => {
@@ -419,7 +636,8 @@ describe('Consolidated View Service', () => {
           address: {
             line1: '123 Test Street',
             city: 'Test City',
-            postalCode: 'TC1 2AB'
+            postalCode: 'TC1 2AB',
+            street: undefined
           },
           landlinePhoneNumber: undefined,
           mobilePhoneNumber: undefined,
@@ -525,7 +743,8 @@ describe('Consolidated View Service', () => {
           address: {
             line1: '456 Mock Street',
             city: 'Mock City',
-            postalCode: 'MC1 2DE'
+            postalCode: 'MC1 2DE',
+            street: undefined
           },
           landlinePhoneNumber: '01987654321',
           mobilePhoneNumber: '07987654321',
