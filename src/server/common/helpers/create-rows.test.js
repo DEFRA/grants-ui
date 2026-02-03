@@ -165,6 +165,118 @@ describe('create-rows utilities', () => {
       expect(createAddressRow(address)).toBeNull()
       expect(createAddressRow({})).toBeNull()
     })
+
+    it('should handle UPRN addresses with correct field order', () => {
+      const address = {
+        uprn: '12345678',
+        line1: 'Flat 2B',
+        line2: '123-125 Enterprise House',
+        line3: 'Industrial Estate',
+        line4: 'North District',
+        street: 'Main Road',
+        city: 'Test City',
+        postalCode: 'TC1 2AB'
+      }
+      const result = createAddressRow(address)
+
+      expect(result).toEqual({
+        key: { text: 'Address' },
+        value: {
+          html: 'Flat 2B<br/>123-125 Enterprise House<br/>Main Road<br/>Industrial Estate<br/>North District<br/>Test City<br/>TC1 2AB'
+        }
+      })
+    })
+
+    it('should handle UPRN addresses with missing optional fields', () => {
+      const address = {
+        uprn: '12345678',
+        line1: 'Acme Farm',
+        line2: '123',
+        street: 'Main Road',
+        city: 'Test City',
+        postalCode: 'TC1 2AB'
+      }
+      const result = createAddressRow(address)
+
+      expect(result).toEqual({
+        key: { text: 'Address' },
+        value: { html: 'Acme Farm<br/>123<br/>Main Road<br/>Test City<br/>TC1 2AB' }
+      })
+    })
+
+    it('should handle UPRN addresses with all fields empty except street, city, postcode', () => {
+      const address = {
+        uprn: '12345678',
+        line1: '',
+        line2: '',
+        line3: '',
+        line4: '',
+        street: 'Main Road',
+        city: 'Test City',
+        postalCode: 'TC1 2AB'
+      }
+      const result = createAddressRow(address)
+
+      expect(result).toEqual({
+        key: { text: 'Address' },
+        value: { html: 'Main Road<br/>Test City<br/>TC1 2AB' }
+      })
+    })
+
+    it('should handle non-UPRN addresses with all line fields', () => {
+      const address = {
+        line1: 'Flat 5',
+        line2: '123 Main Street',
+        line3: 'Business Park',
+        street: 'Main Street',
+        city: 'Test City',
+        postalCode: 'TC1 2AB'
+      }
+      const result = createAddressRow(address)
+
+      expect(result).toEqual({
+        key: { text: 'Address' },
+        value: { html: 'Flat 5<br/>123 Main Street<br/>Business Park<br/>Main Street<br/>Test City<br/>TC1 2AB' }
+      })
+    })
+
+    it('should differentiate field order between UPRN and non-UPRN addresses', () => {
+      // UPRN address: line1, line2, street, line3, line4, city, postalCode
+      const uprnAddress = {
+        uprn: '12345678',
+        line1: 'Line 1',
+        line2: 'Line 2',
+        line3: 'Line 3',
+        line4: 'Line 4',
+        street: 'Street',
+        city: 'City',
+        postalCode: 'PC1 2AB'
+      }
+      const uprnResult = createAddressRow(uprnAddress)
+
+      // Non-UPRN address: line1, line2, line3, street, city, postalCode
+      const nonUprnAddress = {
+        line1: 'Line 1',
+        line2: 'Line 2',
+        line3: 'Line 3',
+        street: 'Street',
+        city: 'City',
+        postalCode: 'PC1 2AB'
+      }
+      const nonUprnResult = createAddressRow(nonUprnAddress)
+
+      // UPRN should include line4 and have street between line2 and line3
+      expect(uprnResult).toEqual({
+        key: { text: 'Address' },
+        value: { html: 'Line 1<br/>Line 2<br/>Street<br/>Line 3<br/>Line 4<br/>City<br/>PC1 2AB' }
+      })
+
+      // Non-UPRN should not have line4 and street comes after line3
+      expect(nonUprnResult).toEqual({
+        key: { text: 'Address' },
+        value: { html: 'Line 1<br/>Line 2<br/>Line 3<br/>Street<br/>City<br/>PC1 2AB' }
+      })
+    })
   })
 
   describe('createSbiRow', () => {

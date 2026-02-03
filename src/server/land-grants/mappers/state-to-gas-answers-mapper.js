@@ -223,10 +223,13 @@ export function stateToLandGrantsGasAnswers(state) {
   const applicationAgreements = createApplicationAgreementActions()
   const paymentAgreements = createPaymentAgreementActions(agreementCodes, payment)
 
+  const applicantData = structuredClone(applicant)
+  delete applicantData?.business?.address.uprn
+
   return {
     rulesCalculations,
     scheme: 'SFI',
-    applicant,
+    applicant: applicantData,
     totalAnnualPaymentPence: payment?.annualTotalPence,
     application: {
       parcel: applicationParcels,

@@ -195,6 +195,60 @@ function joinAddressParts(...parts) {
 }
 
 /**
+ * Formats UPRN address lines based on available address parts
+ * @param {string} pafOrganisationName - PAF organisation name
+ * @param {string} flatName - Flat name
+ * @param {string} buildingNumberRange - Building number range
+ * @param {string} buildingName - Building name
+ * @returns {object} - Object with line1 and line2
+ */
+function formatUprnAddressLines(pafOrganisationName, flatName, buildingNumberRange, buildingName) {
+  const parts = [pafOrganisationName, flatName, buildingNumberRange, buildingName].filter(Boolean)
+
+  if (pafOrganisationName && flatName && buildingNumberRange && buildingName) {
+    return {
+      line1: joinAddressParts(pafOrganisationName, flatName),
+      line2: joinAddressParts(buildingNumberRange, buildingName)
+    }
+  }
+
+  if (parts.length === 3) {
+    if (pafOrganisationName && flatName && buildingNumberRange) {
+      return {
+        line1: joinAddressParts(pafOrganisationName, flatName),
+        line2: buildingNumberRange
+      }
+    }
+    if (flatName && buildingNumberRange && buildingName) {
+      return {
+        line1: flatName,
+        line2: joinAddressParts(buildingNumberRange, buildingName)
+      }
+    }
+    return {
+      line1: parts[0],
+      line2: joinAddressParts(parts[1], parts[2])
+    }
+  }
+
+  if (parts.length === 2) {
+    if (pafOrganisationName && flatName) {
+      return { line1: pafOrganisationName, line2: flatName }
+    }
+    if (buildingNumberRange && buildingName) {
+      return { line1: buildingNumberRange, line2: buildingName }
+    }
+    return { line1: parts[0], line2: parts[1] }
+  }
+
+  if (parts.length === 1) {
+    return { line1: parts[0], line2: ' ' }
+  }
+
+  return {}
+}
+
+/**
  * Formats an address object, handling both UPRN and standard addresses
  * @param {object} address - The address object to format
  * @returns {object} - Formatted address
@@ -216,10 +270,12 @@ function formatAddress(address) {
   const commonFields = { street, city, postalCode }
 
   if (uprn) {
+    const { line1, line2 } = formatUprnAddressLines(pafOrganisationName, flatName, buildingNumberRange, buildingName)
+
     return {
       ...commonFields,
-      line1: joinAddressParts(pafOrganisationName, flatName),
-      line2: joinAddressParts(buildingNumberRange, buildingName),
+      line1,
+      line2,
       line3: dependentLocality,
       line4: doubleDependentLocality
     }
