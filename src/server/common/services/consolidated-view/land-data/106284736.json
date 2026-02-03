@@ -216,7 +216,15 @@
           "line5": null,
           "street": "Bartindale Road",
           "city": "Clitheroe",
-          "postalCode": "BB7 3DD"
+          "postalCode": "BB7 3DD",
+          "uprn": "781124619099",
+          "buildingName": null,
+          "buildingNumberRange": null,
+          "county": null,
+          "dependentLocality": null,
+          "doubleDependentLocality": null,
+          "flatName": "04",
+          "pafOrganisationName": "Top Shop Farm"
         }
       }
     }
