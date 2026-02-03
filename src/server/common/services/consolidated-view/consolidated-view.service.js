@@ -195,6 +195,123 @@ function joinAddressParts(...parts) {
 }
 
 /**
+ * Configuration for UPRN address line distribution patterns
+ * Each pattern defines how to distribute address parts into line1 and line2
+ * Patterns are checked in order, first match wins
+ */
+const UPRN_ADDRESS_PATTERNS = [
+  // 4 fields: all present
+  {
+    condition: (paf, flat, num, name) => paf && flat && num && name,
+    format: (paf, flat, num, name) => ({
+      line1: joinAddressParts(paf, flat),
+      line2: joinAddressParts(num, name)
+    })
+  },
+  // 3 fields combinations
+  {
+    condition: (paf, flat, num) => paf && flat && num,
+    format: (paf, flat, num) => ({
+      line1: joinAddressParts(paf, flat),
+      line2: num
+    })
+  },
+  {
+    condition: (paf, flat, num, name) => flat && num && name,
+    format: (paf, flat, num, name) => ({
+      line1: flat,
+      line2: joinAddressParts(num, name)
+    })
+  },
+  {
+    condition: (paf, flat, num, name) => paf && flat && name,
+    format: (paf, flat, num, name) => ({
+      line1: paf,
+      line2: joinAddressParts(flat, name)
+    })
+  },
+  {
+    condition: (paf, flat, num, name) => paf && num && name,
+    format: (paf, flat, num, name) => ({
+      line1: paf,
+      line2: joinAddressParts(num, name)
+    })
+  },
+  // 2 fields combinations
+  {
+    condition: (paf, flat) => paf && flat,
+    format: (paf, flat) => ({
+      line1: paf,
+      line2: flat
+    })
+  },
+  {
+    condition: (paf, flat, num, name) => num && name,
+    format: (paf, flat, num, name) => ({
+      line1: num,
+      line2: name
+    })
+  },
+  {
+    condition: (paf, flat, num) => paf && num,
+    format: (paf, flat, num) => ({
+      line1: paf,
+      line2: num
+    })
+  },
+  {
+    condition: (paf, flat, num, name) => paf && name,
+    format: (paf, flat, num, name) => ({
+      line1: paf,
+      line2: name
+    })
+  },
+  {
+    condition: (paf, flat, num) => flat && num,
+    format: (paf, flat, num) => ({
+      line1: flat,
+      line2: num
+    })
+  },
+  {
+    condition: (paf, flat, num, name) => flat && name,
+    format: (paf, flat, num, name) => ({
+      line1: flat,
+      line2: name
+    })
+  },
+  // 1 field - any single field
+  {
+    condition: (paf) => paf,
+    format: (paf) => ({
+      line1: paf,
+      line2: ' '
+    })
+  },
+  {
+    condition: (paf, flat) => flat,
+    format: (paf, flat) => ({
+      line1: flat,
+      line2: ' '
+    })
+  },
+  {
+    condition: (paf, flat, num) => num,
+    format: (paf, flat, num) => ({
+      line1: num,
+      line2: ' '
+    })
+  },
+  {
+    condition: (paf, flat, num, name) => name,
+    format: (paf, flat, num, name) => ({
+      line1: name,
+      line2: ' '
+    })
+  }
+]
+
+/**
  * Formats UPRN address lines based on available address parts
  * @param {string} pafOrganisationName - PAF organisation name
  * @param {string} flatName - Flat name
@@ -203,46 +320,10 @@ function joinAddressParts(...parts) {
  * @returns {object} - Object with line1 and line2
  */
 function formatUprnAddressLines(pafOrganisationName, flatName, buildingNumberRange, buildingName) {
-  const parts = [pafOrganisationName, flatName, buildingNumberRange, buildingName].filter(Boolean)
-
-  if (pafOrganisationName && flatName && buildingNumberRange && buildingName) {
-    return {
-      line1: joinAddressParts(pafOrganisationName, flatName),
-      line2: joinAddressParts(buildingNumberRange, buildingName)
+  for (const pattern of UPRN_ADDRESS_PATTERNS) {
+    if (pattern.condition(pafOrganisationName, flatName, buildingNumberRange, buildingName)) {
+      return pattern.format(pafOrganisationName, flatName, buildingNumberRange, buildingName)
     }
-  }
-
-  if (parts.length === 3) {
-    if (pafOrganisationName && flatName && buildingNumberRange) {
-      return {
-        line1: joinAddressParts(pafOrganisationName, flatName),
-        line2: buildingNumberRange
-      }
-    }
-    if (flatName && buildingNumberRange && buildingName) {
-      return {
-        line1: flatName,
-        line2: joinAddressParts(buildingNumberRange, buildingName)
-      }
-    }
-    return {
-      line1: parts[0],
-      line2: joinAddressParts(parts[1], parts[2])
-    }
-  }
-
-  if (parts.length === 2) {
-    if (pafOrganisationName && flatName) {
-      return { line1: pafOrganisationName, line2: flatName }
-    }
-    if (buildingNumberRange && buildingName) {
-      return { line1: buildingNumberRange, line2: buildingName }
-    }
-    return { line1: parts[0], line2: parts[1] }
-  }
-
-  if (parts.length === 1) {
-    return { line1: parts[0], line2: ' ' }
   }
 
   return {}
