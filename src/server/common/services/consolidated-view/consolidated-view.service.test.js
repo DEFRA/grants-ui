@@ -360,7 +360,7 @@ describe('Consolidated View Service', () => {
       expect(body.query).toContain('mobile')
     })
 
-    it('should format UPRN addresses with all 4 fields set (paf, flat, buildingNumber, buildingName)', async () => {
+    it('should format structured UPRN addresses with all 4 fields set (paf, flat, buildingNumber, buildingName)', async () => {
       const uprnResponse = {
         data: {
           business: {
@@ -413,7 +413,7 @@ describe('Consolidated View Service', () => {
       })
     })
 
-    it('should format UPRN addresses with paf, flat, buildingNumber (3 fields)', async () => {
+    it('should format structured UPRN addresses with paf, flat, buildingNumber (3 fields)', async () => {
       const uprnResponse = {
         data: {
           business: {
@@ -455,7 +455,7 @@ describe('Consolidated View Service', () => {
       })
     })
 
-    it('should format UPRN addresses with flat, buildingNumber, buildingName (3 fields)', async () => {
+    it('should format structured UPRN addresses with flat, buildingNumber, buildingName (3 fields)', async () => {
       const uprnResponse = {
         data: {
           business: {
@@ -497,7 +497,7 @@ describe('Consolidated View Service', () => {
       })
     })
 
-    it('should format UPRN addresses with paf and flat (2 fields)', async () => {
+    it('should format structured UPRN addresses with paf and flat (2 fields)', async () => {
       const uprnResponse = {
         data: {
           business: {
@@ -538,7 +538,7 @@ describe('Consolidated View Service', () => {
       })
     })
 
-    it('should format UPRN addresses with buildingNumber and buildingName (2 fields)', async () => {
+    it('should format structured UPRN addresses with buildingNumber and buildingName (2 fields)', async () => {
       const uprnResponse = {
         data: {
           business: {
@@ -579,7 +579,7 @@ describe('Consolidated View Service', () => {
       })
     })
 
-    it('should format UPRN addresses with paf and buildingNumber (2 fields)', async () => {
+    it('should format structured UPRN addresses with paf and buildingNumber (2 fields)', async () => {
       const uprnResponse = {
         data: {
           business: {
@@ -620,7 +620,7 @@ describe('Consolidated View Service', () => {
       })
     })
 
-    it('should format UPRN addresses with paf and buildingName (2 fields)', async () => {
+    it('should format structured UPRN addresses with paf and buildingName (2 fields)', async () => {
       const uprnResponse = {
         data: {
           business: {
@@ -661,7 +661,7 @@ describe('Consolidated View Service', () => {
       })
     })
 
-    it('should format UPRN addresses with flat and buildingNumber (2 fields)', async () => {
+    it('should format structured UPRN addresses with flat and buildingNumber (2 fields)', async () => {
       const uprnResponse = {
         data: {
           business: {
@@ -702,7 +702,7 @@ describe('Consolidated View Service', () => {
       })
     })
 
-    it('should format UPRN addresses with flat and buildingName (2 fields)', async () => {
+    it('should format structured UPRN addresses with flat and buildingName (2 fields)', async () => {
       const uprnResponse = {
         data: {
           business: {
@@ -743,7 +743,7 @@ describe('Consolidated View Service', () => {
       })
     })
 
-    it('should format UPRN addresses with only one field (paf)', async () => {
+    it('should format structured UPRN addresses with only one field (paf)', async () => {
       const uprnResponse = {
         data: {
           business: {
@@ -783,7 +783,7 @@ describe('Consolidated View Service', () => {
       })
     })
 
-    it('should format UPRN addresses with only one field (flat)', async () => {
+    it('should format structured UPRN addresses with only one field (flat)', async () => {
       const uprnResponse = {
         data: {
           business: {
@@ -823,7 +823,7 @@ describe('Consolidated View Service', () => {
       })
     })
 
-    it('should format UPRN addresses with only buildingNumber (Scenario 6)', async () => {
+    it('should format structured UPRN addresses with only buildingNumber (Scenario 6)', async () => {
       const uprnResponse = {
         data: {
           business: {
@@ -863,7 +863,7 @@ describe('Consolidated View Service', () => {
       })
     })
 
-    it('should format UPRN addresses with only buildingName (Scenario 7)', async () => {
+    it('should format structured UPRN addresses with only buildingName (Scenario 7)', async () => {
       const uprnResponse = {
         data: {
           business: {
@@ -903,7 +903,7 @@ describe('Consolidated View Service', () => {
       })
     })
 
-    it('should format UPRN addresses with no address parts (no line1 and line2 when empty)', async () => {
+    it('should format structured UPRN addresses with no address parts (no line1 and line2 when empty)', async () => {
       const uprnResponse = {
         data: {
           business: {
