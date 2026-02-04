@@ -185,6 +185,52 @@ export async function fetchParcelsFromDal(request) {
   return fetchFromConsolidatedView(request, { query, formatResponse })
 }
 
+function formatAddress(address) {
+  const commonFields = {
+    city: address.city,
+    postalCode: address.postalCode
+  }
+
+  if (address.uprn) {
+    const { flatName, buildingName, buildingNumberRange, street, dependentLocality, doubleDependentLocality } = address
+    const addressLines = []
+
+    if (address.pafOrganisationName) {
+      addressLines.push(address.pafOrganisationName)
+    }
+
+    const buildingParts = [flatName, buildingName, buildingNumberRange, street].filter(Boolean)
+
+    if (buildingParts.length > 0) {
+      addressLines.push(buildingParts.join(' '))
+    }
+
+    if (dependentLocality) {
+      addressLines.push(dependentLocality)
+    }
+
+    if (doubleDependentLocality) {
+      addressLines.push(doubleDependentLocality)
+    }
+
+    return {
+      ...commonFields,
+      line1: addressLines[0],
+      line2: addressLines[1],
+      line3: addressLines[2],
+      line4: addressLines[3]
+    }
+  }
+
+  return {
+    ...commonFields,
+    line1: address.line1,
+    line2: address.line2,
+    line3: address.line3,
+    line4: address.line4
+  }
+}
+
 /**
  * Fetches business and customer information from Consolidated View
  * @param {AnyFormRequest} request
@@ -226,6 +272,14 @@ export async function fetchBusinessAndCustomerInformation(request) {
             street
             city
             postalCode
+            uprn
+            county
+            buildingName
+            buildingNumberRange
+            dependentLocality
+            doubleDependentLocality
+            flatName
+            pafOrganisationName
           }
         }
       }
@@ -241,7 +295,7 @@ export async function fetchBusinessAndCustomerInformation(request) {
       formattedResponse.business = {
         name: businessInfo.name,
         reference: businessInfo.reference,
-        address: businessInfo.address,
+        address: formatAddress(businessInfo.address),
         landlinePhoneNumber: businessInfo.phone?.landline || undefined,
         mobilePhoneNumber: businessInfo.phone?.mobile || undefined,
         email: businessInfo.email?.address || undefined

@@ -621,4 +621,640 @@ describe('Consolidated View Service', () => {
       }, 10000)
     })
   })
+
+  describe('Address formatting with structured fields (uprn set)', () => {
+    it('should format address with all structured fields present', async () => {
+      const responseWithUPRN = {
+        data: {
+          business: {
+            info: {
+              name: 'Test Business Ltd',
+              reference: 'REF123',
+              address: {
+                uprn: '123456789',
+                pafOrganisationName: 'Test Organisation',
+                flatName: 'Flat 1',
+                buildingName: 'Building A',
+                buildingNumberRange: '123-125',
+                street: 'Main Street',
+                dependentLocality: 'Test Locality',
+                doubleDependentLocality: 'Test Double Locality',
+                city: 'Test City',
+                postalCode: 'TC1 2AB'
+              }
+            }
+          },
+          customer: {
+            info: {
+              name: {
+                title: 'Mr',
+                first: 'John',
+                last: 'Doe'
+              }
+            }
+          }
+        }
+      }
+
+      mockFetchInstance.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(responseWithUPRN)
+      })
+
+      const result = await fetchBusinessAndCustomerInformation(mockRequest)
+
+      expect(result.business.address).toEqual({
+        line1: 'Test Organisation',
+        line2: 'Flat 1 Building A 123-125 Main Street',
+        line3: 'Test Locality',
+        line4: 'Test Double Locality',
+        city: 'Test City',
+        postalCode: 'TC1 2AB'
+      })
+    })
+
+    it('should format address without pafOrganisationName', async () => {
+      const responseWithUPRN = {
+        data: {
+          business: {
+            info: {
+              name: 'Test Business Ltd',
+              reference: 'REF123',
+              address: {
+                uprn: '123456789',
+                flatName: 'Flat 2',
+                buildingName: 'Building B',
+                buildingNumberRange: '45',
+                street: 'High Street',
+                dependentLocality: 'Locality',
+                doubleDependentLocality: 'Double Locality',
+                city: 'City',
+                postalCode: 'AB1 2CD'
+              }
+            }
+          },
+          customer: {
+            info: {
+              name: {
+                first: 'Jane',
+                last: 'Smith'
+              }
+            }
+          }
+        }
+      }
+
+      mockFetchInstance.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(responseWithUPRN)
+      })
+
+      const result = await fetchBusinessAndCustomerInformation(mockRequest)
+
+      expect(result.business.address).toEqual({
+        line1: 'Flat 2 Building B 45 High Street',
+        line2: 'Locality',
+        line3: 'Double Locality',
+        line4: undefined,
+        city: 'City',
+        postalCode: 'AB1 2CD'
+      })
+    })
+
+    it('should format address with only buildingNumberRange and street', async () => {
+      const responseWithUPRN = {
+        data: {
+          business: {
+            info: {
+              name: 'Test Business Ltd',
+              reference: 'REF123',
+              address: {
+                uprn: '123456789',
+                buildingNumberRange: '100',
+                street: 'Main Road',
+                dependentLocality: 'Test Locality',
+                doubleDependentLocality: 'Test Double Locality',
+                city: 'Test City',
+                postalCode: 'TC1 2AB'
+              }
+            }
+          },
+          customer: {
+            info: {
+              name: {
+                first: 'John',
+                last: 'Doe'
+              }
+            }
+          }
+        }
+      }
+
+      mockFetchInstance.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(responseWithUPRN)
+      })
+
+      const result = await fetchBusinessAndCustomerInformation(mockRequest)
+
+      expect(result.business.address).toEqual({
+        line1: '100 Main Road',
+        line2: 'Test Locality',
+        line3: 'Test Double Locality',
+        line4: undefined,
+        city: 'Test City',
+        postalCode: 'TC1 2AB'
+      })
+    })
+
+    it('should format address with only street', async () => {
+      const responseWithUPRN = {
+        data: {
+          business: {
+            info: {
+              name: 'Test Business Ltd',
+              reference: 'REF123',
+              address: {
+                uprn: '123456789',
+                street: 'Church Lane',
+                dependentLocality: 'Locality',
+                city: 'City',
+                postalCode: 'AB1 2CD'
+              }
+            }
+          },
+          customer: {
+            info: {
+              name: {
+                first: 'Jane',
+                last: 'Smith'
+              }
+            }
+          }
+        }
+      }
+
+      mockFetchInstance.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(responseWithUPRN)
+      })
+
+      const result = await fetchBusinessAndCustomerInformation(mockRequest)
+
+      expect(result.business.address).toEqual({
+        city: 'City',
+        postalCode: 'AB1 2CD',
+        line1: 'Church Lane',
+        line2: 'Locality',
+        line3: undefined,
+        line4: undefined
+      })
+    })
+
+    it('should format address with flatName and buildingName only', async () => {
+      const responseWithUPRN = {
+        data: {
+          business: {
+            info: {
+              name: 'Test Business Ltd',
+              reference: 'REF123',
+              address: {
+                uprn: '123456789',
+                pafOrganisationName: 'Company Ltd',
+                flatName: 'Flat 5',
+                buildingName: 'Tower Block',
+                dependentLocality: 'Area',
+                city: 'City',
+                postalCode: 'XY1 2ZZ'
+              }
+            }
+          },
+          customer: {
+            info: {
+              name: {
+                first: 'Bob',
+                last: 'Jones'
+              }
+            }
+          }
+        }
+      }
+
+      mockFetchInstance.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(responseWithUPRN)
+      })
+
+      const result = await fetchBusinessAndCustomerInformation(mockRequest)
+
+      expect(result.business.address).toEqual({
+        line1: 'Company Ltd',
+        line2: 'Flat 5 Tower Block',
+        line3: 'Area',
+        line4: undefined,
+        city: 'City',
+        postalCode: 'XY1 2ZZ'
+      })
+    })
+
+    it('should format address with only dependentLocality', async () => {
+      const responseWithUPRN = {
+        data: {
+          business: {
+            info: {
+              name: 'Test Business Ltd',
+              reference: 'REF123',
+              address: {
+                uprn: '123456789',
+                dependentLocality: 'Locality Name',
+                city: 'Town',
+                postalCode: 'PO1 2ST'
+              }
+            }
+          },
+          customer: {
+            info: {
+              name: {
+                first: 'Alice',
+                last: 'Brown'
+              }
+            }
+          }
+        }
+      }
+
+      mockFetchInstance.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(responseWithUPRN)
+      })
+
+      const result = await fetchBusinessAndCustomerInformation(mockRequest)
+
+      expect(result.business.address).toEqual({
+        line1: 'Locality Name',
+        line2: undefined,
+        line3: undefined,
+        line4: undefined,
+        city: 'Town',
+        postalCode: 'PO1 2ST'
+      })
+    })
+
+    it('should format address with only doubleDependentLocality', async () => {
+      const responseWithUPRN = {
+        data: {
+          business: {
+            info: {
+              name: 'Test Business Ltd',
+              reference: 'REF123',
+              address: {
+                uprn: '123456789',
+                doubleDependentLocality: 'District Name',
+                city: 'City',
+                postalCode: 'CD1 2EF'
+              }
+            }
+          },
+          customer: {
+            info: {
+              name: {
+                first: 'Charlie',
+                last: 'Test'
+              }
+            }
+          }
+        }
+      }
+
+      mockFetchInstance.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(responseWithUPRN)
+      })
+
+      const result = await fetchBusinessAndCustomerInformation(mockRequest)
+
+      expect(result.business.address).toEqual({
+        line1: 'District Name',
+        line2: undefined,
+        line3: undefined,
+        line4: undefined,
+        city: 'City',
+        postalCode: 'CD1 2EF'
+      })
+    })
+
+    it('should format address with partial building fields', async () => {
+      const responseWithUPRN = {
+        data: {
+          business: {
+            info: {
+              name: 'Test Business Ltd',
+              reference: 'REF123',
+              address: {
+                uprn: '123456789',
+                buildingName: 'The Old Mill',
+                street: 'Mill Lane',
+                city: 'Locality',
+                postalCode: 'ML1 2NO'
+              }
+            }
+          },
+          customer: {
+            info: {
+              name: {
+                first: 'David',
+                last: 'Green'
+              }
+            }
+          }
+        }
+      }
+
+      mockFetchInstance.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(responseWithUPRN)
+      })
+
+      const result = await fetchBusinessAndCustomerInformation(mockRequest)
+
+      expect(result.business.address).toEqual({
+        line1: 'The Old Mill Mill Lane',
+        line2: undefined,
+        line3: undefined,
+        line4: undefined,
+        city: 'Locality',
+        postalCode: 'ML1 2NO'
+      })
+    })
+
+    it('should format address with pafOrganisationName and minimal other fields', async () => {
+      const responseWithUPRN = {
+        data: {
+          business: {
+            info: {
+              name: 'Test Business Ltd',
+              reference: 'REF123',
+              address: {
+                uprn: '123456789',
+                pafOrganisationName: 'Big Corp Ltd',
+                street: 'Commerce Road',
+                city: 'Business Park',
+                postalCode: 'BP1 2CP'
+              }
+            }
+          },
+          customer: {
+            info: {
+              name: {
+                first: 'Eve',
+                last: 'Black'
+              }
+            }
+          }
+        }
+      }
+
+      mockFetchInstance.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(responseWithUPRN)
+      })
+
+      const result = await fetchBusinessAndCustomerInformation(mockRequest)
+
+      expect(result.business.address).toEqual({
+        line1: 'Big Corp Ltd',
+        line2: 'Commerce Road',
+        line3: undefined,
+        line4: undefined,
+        city: 'Business Park',
+        postalCode: 'BP1 2CP'
+      })
+    })
+
+    it('should format address with all building fields but no localities', async () => {
+      const responseWithUPRN = {
+        data: {
+          business: {
+            info: {
+              name: 'Test Business Ltd',
+              reference: 'REF123',
+              address: {
+                uprn: '123456789',
+                flatName: 'Unit A',
+                buildingName: 'Industrial Estate',
+                buildingNumberRange: '1-5',
+                street: 'Factory Road',
+                city: 'Town',
+                postalCode: 'FR1 2IE'
+              }
+            }
+          },
+          customer: {
+            info: {
+              name: {
+                first: 'Frank',
+                last: 'Yellow'
+              }
+            }
+          }
+        }
+      }
+
+      mockFetchInstance.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(responseWithUPRN)
+      })
+
+      const result = await fetchBusinessAndCustomerInformation(mockRequest)
+
+      expect(result.business.address).toEqual({
+        line1: 'Unit A Industrial Estate 1-5 Factory Road',
+        line2: undefined,
+        line3: undefined,
+        line4: undefined,
+        city: 'Town',
+        postalCode: 'FR1 2IE'
+      })
+    })
+
+    it('should handle UPRN with empty string fields', async () => {
+      const responseWithUPRN = {
+        data: {
+          business: {
+            info: {
+              name: 'Test Business Ltd',
+              reference: 'REF123',
+              address: {
+                uprn: '123456789',
+                pafOrganisationName: '',
+                flatName: '',
+                buildingName: '',
+                buildingNumberRange: '42',
+                street: 'Oak Street',
+                dependentLocality: '',
+                doubleDependentLocality: '',
+                city: 'City',
+                postalCode: 'OA1 2KS'
+              }
+            }
+          },
+          customer: {
+            info: {
+              name: {
+                first: 'George',
+                last: 'Purple'
+              }
+            }
+          }
+        }
+      }
+
+      mockFetchInstance.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(responseWithUPRN)
+      })
+
+      const result = await fetchBusinessAndCustomerInformation(mockRequest)
+
+      expect(result.business.address).toEqual({
+        line1: '42 Oak Street',
+        line2: undefined,
+        line3: undefined,
+        line4: undefined,
+        city: 'City',
+        postalCode: 'OA1 2KS'
+      })
+    })
+
+    it('should handle UPRN with only city and postalCode', async () => {
+      const responseWithUPRN = {
+        data: {
+          business: {
+            info: {
+              name: 'Test Business Ltd',
+              reference: 'REF123',
+              address: {
+                uprn: '123456789',
+                city: 'London',
+                postalCode: 'SW1A 1AA'
+              }
+            }
+          },
+          customer: {
+            info: {
+              name: {
+                first: 'Henry',
+                last: 'Orange'
+              }
+            }
+          }
+        }
+      }
+
+      mockFetchInstance.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(responseWithUPRN)
+      })
+
+      const result = await fetchBusinessAndCustomerInformation(mockRequest)
+
+      expect(result.business.address).toEqual({
+        line1: undefined,
+        line2: undefined,
+        line3: undefined,
+        line4: undefined,
+        city: 'London',
+        postalCode: 'SW1A 1AA'
+      })
+    })
+  })
+
+  describe('Address formatting with unstructured fields (uprn not set)', () => {
+    it('should return original address fields unchanged', async () => {
+      const responseWithoutUPRN = {
+        data: {
+          business: {
+            info: {
+              name: 'Test Business Ltd',
+              reference: 'REF123',
+              address: {
+                city: 'Test City',
+                postalCode: 'PC1 2IG',
+                line1: '123 Test street',
+                line2: 'Flat 100',
+                line3: 'Building T',
+                line4: 'District D'
+              }
+            }
+          },
+          customer: {
+            info: {
+              name: {
+                first: 'John',
+                last: 'Test'
+              }
+            }
+          }
+        }
+      }
+
+      mockFetchInstance.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(responseWithoutUPRN)
+      })
+
+      const result = await fetchBusinessAndCustomerInformation(mockRequest)
+
+      expect(result.business.address).toEqual({
+        city: 'Test City',
+        postalCode: 'PC1 2IG',
+        line1: '123 Test street',
+        line2: 'Flat 100',
+        line3: 'Building T',
+        line4: 'District D'
+      })
+    })
+
+    it('should handle missing address lines', async () => {
+      const responseWithoutUPRN = {
+        data: {
+          business: {
+            info: {
+              name: 'Test Business Ltd',
+              reference: 'REF123',
+              address: {
+                line1: '456 Short Address',
+                city: 'City',
+                postalCode: 'SH1 2RT'
+              }
+            }
+          },
+          customer: {
+            info: {
+              name: {
+                first: 'Julia',
+                last: 'Grey'
+              }
+            }
+          }
+        }
+      }
+
+      mockFetchInstance.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(responseWithoutUPRN)
+      })
+
+      const result = await fetchBusinessAndCustomerInformation(mockRequest)
+
+      expect(result.business.address).toEqual({
+        city: 'City',
+        postalCode: 'SH1 2RT',
+        line1: '456 Short Address',
+        line2: undefined,
+        line3: undefined,
+        line4: undefined
+      })
+    })
+  })
 })
