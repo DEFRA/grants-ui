@@ -212,7 +212,7 @@ async function handlePostSubmission(request, h, context, previousStatus, grantCo
 
   const isAlreadyReopened = previousStatus === ApplicationStatus.REOPENED
   const isStillAwaitingAmendments = gasStatus === 'AWAITING_AMENDMENTS'
-  const isWithinGrantPages = request.path.startsWith(`/${grantId}/`)
+  const isWithinGrantPages = request.headers['sec-fetch-site'] === 'same-origin' // request initiated from within grant pages
 
   if (isAlreadyReopened && isStillAwaitingAmendments && isWithinGrantPages) {
     return h.continue

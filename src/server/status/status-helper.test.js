@@ -116,6 +116,7 @@ describe('formsStatusCallback', () => {
         }
       },
       path: '/grant-a/start',
+      headers: {},
       auth: { credentials: { sbi: '12345', crn: 'CRN123', contactId: 'contact-123' } },
       server: { logger: { error: vi.fn() } }
     }
@@ -354,9 +355,10 @@ describe('formsStatusCallback', () => {
     })
   })
 
-  it('allows navigation when gasStatus is AWAITING_AMENDMENTS and previousStatus is REOPENED', async () => {
+  it('allows normal navigation when gasStatus is AWAITING_AMENDMENTS and previousStatus is REOPENED and request is same-origin', async () => {
     context.state.applicationStatus = ApplicationStatus.REOPENED
     request.path = '/grant-a/some-question-page'
+    request.headers = { 'sec-fetch-site': 'same-origin' }
     getApplicationStatus.mockResolvedValue({
       json: async () => ({ status: 'AWAITING_AMENDMENTS' })
     })
@@ -364,6 +366,19 @@ describe('formsStatusCallback', () => {
     const result = await formsStatusCallback(request, h, context)
     expect(h.redirect).not.toHaveBeenCalled()
     expect(result).toBe(h.continue)
+  })
+
+  it('redirects to summary when gasStatus is AWAITING_AMENDMENTS and previousStatus is REOPENED and request is not same-origin', async () => {
+    context.state.applicationStatus = ApplicationStatus.REOPENED
+    request.path = '/grant-a/some-question-page'
+    request.headers = { 'sec-fetch-site': 'none' }
+    getApplicationStatus.mockResolvedValue({
+      json: async () => ({ status: 'AWAITING_AMENDMENTS' })
+    })
+
+    const result = await formsStatusCallback(request, h, context)
+    expect(h.redirect).toHaveBeenCalledWith('/grant-a/summary')
+    expect(result).toEqual(expect.any(Symbol))
   })
 
   it('redirects to start when REOPENED application is withdrawn by GAS', async () => {
