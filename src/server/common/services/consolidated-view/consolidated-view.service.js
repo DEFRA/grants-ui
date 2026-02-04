@@ -186,81 +186,6 @@ export async function fetchParcelsFromDal(request) {
 }
 
 /**
- * Joins address parts, filtering out empty values
- * @param {...string} parts - Address parts to join
- * @returns {string|undefined} - Joined string or undefined if all parts are empty
- */
-function joinAddressParts(...parts) {
-  return parts.filter(Boolean).join(' ').trim() || undefined
-}
-
-/**
- * Formats an address object, handling both UPRN and standard addresses
- * @param {object} address - The address object to format
- * @returns {object} - Formatted address
- */
-function formatAddress(address) {
-  const {
-    uprn,
-    street,
-    city,
-    postalCode,
-    pafOrganisationName,
-    buildingNumberRange,
-    dependentLocality,
-    doubleDependentLocality,
-    flatName,
-    buildingName
-  } = address
-
-  const commonFields = { street, city, postalCode }
-
-  if (uprn) {
-    return {
-      ...commonFields,
-      line1: joinAddressParts(pafOrganisationName, flatName),
-      line2: joinAddressParts(buildingNumberRange, buildingName),
-      line3: dependentLocality,
-      line4: doubleDependentLocality
-    }
-  }
-
-  return {
-    ...commonFields,
-    line1: address.line1,
-    line2: address.line2,
-    line3: address.line3,
-    line4: address.line4,
-    line5: address.line5
-  }
-}
-
-/**
- * Formats the business and customer response
- * @param {object} response - The API response
- * @returns {object} - Formatted business and customer data
- */
-function formatBusinessAndCustomerResponse(response) {
-  const { business, customer } = response.data
-  const businessInfo = business?.info
-  const customerInfo = customer?.info
-  const formattedResponse = { business: {}, customer: customerInfo }
-
-  if (businessInfo) {
-    formattedResponse.business = {
-      name: businessInfo.name,
-      reference: businessInfo.reference,
-      address: formatAddress(businessInfo.address),
-      landlinePhoneNumber: businessInfo.phone?.landline || undefined,
-      mobilePhoneNumber: businessInfo.phone?.mobile || undefined,
-      email: businessInfo.email?.address || undefined
-    }
-  }
-
-  return formattedResponse
-}
-
-/**
  * Fetches business and customer information from Consolidated View
  * @param {AnyFormRequest} request
  * @returns {Promise<object>} - Promise that resolves to business and customer info
@@ -301,19 +226,32 @@ export async function fetchBusinessAndCustomerInformation(request) {
             street
             city
             postalCode
-            uprn
-            buildingName
-            buildingNumberRange
-            dependentLocality
-            doubleDependentLocality
-            flatName
-            pafOrganisationName
           }
         }
       }
     }`
 
-  return fetchFromConsolidatedView(request, { query, formatResponse: formatBusinessAndCustomerResponse })
+  const formatResponse = (r) => {
+    const { business, customer } = r.data
+    const businessInfo = business?.info
+    const customerInfo = customer?.info
+    const formattedResponse = { business: {}, customer: customerInfo }
+
+    if (businessInfo) {
+      formattedResponse.business = {
+        name: businessInfo.name,
+        reference: businessInfo.reference,
+        address: businessInfo.address,
+        landlinePhoneNumber: businessInfo.phone?.landline || undefined,
+        mobilePhoneNumber: businessInfo.phone?.mobile || undefined,
+        email: businessInfo.email?.address || undefined
+      }
+    }
+
+    return formattedResponse
+  }
+
+  return fetchFromConsolidatedView(request, { query, formatResponse })
 }
 
 export async function fetchBusinessAndCPH(request) {
