@@ -193,27 +193,15 @@ function formatAddress(address) {
 
   if (address.uprn) {
     const { flatName, buildingName, buildingNumberRange, street, dependentLocality, doubleDependentLocality } = address
-    const addressLines = []
-
-    if (address.pafOrganisationName) {
-      addressLines.push(address.pafOrganisationName)
-    }
-
     const buildingParts = [flatName, buildingName, buildingNumberRange, street].filter(Boolean)
+    const buildingLine = buildingParts.length > 0 ? buildingParts.join(' ') : null
 
-    if (buildingParts.length > 0) {
-      addressLines.push(buildingParts.join(' '))
-    }
-
-    if (dependentLocality) {
-      addressLines.push(dependentLocality)
-    }
-
-    if (doubleDependentLocality) {
-      addressLines.push(doubleDependentLocality)
-    }
-
-    const [line1, line2, line3, line4] = addressLines
+    const [line1, line2, line3, line4] = [
+      address.pafOrganisationName,
+      buildingLine,
+      dependentLocality,
+      doubleDependentLocality
+    ].filter(Boolean)
 
     return {
       ...commonFields,
