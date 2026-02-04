@@ -213,12 +213,14 @@ function formatAddress(address) {
       addressLines.push(doubleDependentLocality)
     }
 
+    const [line1, line2, line3, line4] = addressLines
+
     return {
       ...commonFields,
-      line1: addressLines[0],
-      line2: addressLines[1],
-      line3: addressLines[2],
-      line4: addressLines[3]
+      line1,
+      line2,
+      line3,
+      line4
     }
   }
 
