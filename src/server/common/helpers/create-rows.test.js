@@ -92,7 +92,7 @@ describe('create-rows utilities', () => {
         line1: '123 Main St',
         line2: 'Apt 4B',
         line3: 'Building C',
-        street: 'Main Street',
+        line4: 'Main Street',
         city: 'Springfield',
         postalCode: 'SP1 2AB'
       }
@@ -100,7 +100,9 @@ describe('create-rows utilities', () => {
 
       expect(result).toEqual({
         key: { text: 'Address' },
-        value: { html: '123 Main St<br/>Apt 4B<br/>Building C<br/>Main Street<br/>Springfield<br/>SP1 2AB' }
+        value: {
+          html: '123 Main St<br/>Apt 4B<br/>Building C<br/>Main Street<br/>Springfield<br/>SP1 2AB'
+        }
       })
     })
 
@@ -158,7 +160,7 @@ describe('create-rows utilities', () => {
         line1: '',
         line2: '',
         line3: '',
-        street: '',
+        line4: '',
         city: '',
         postalCode: ''
       }
