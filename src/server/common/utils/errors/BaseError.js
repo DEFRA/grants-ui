@@ -56,44 +56,25 @@ export class BaseError extends Error {
 
     logger(this._logCode, Object.assign({}, messageOptions, ...additionalDetail), request)
 
-    /** @type {BaseError|Error} **/
-    let currentError = this
-    let previousError = currentError instanceof BaseError ? currentError.lastError : null
+    const lastError = this.lastError
 
-    while (previousError) {
-      // Log the previous error
-      if (previousError instanceof BaseError) {
-        const prevOptions = {
-          errorName: previousError.name,
-          message: previousError.message,
-          status: previousError.status,
-          source: previousError.source,
-          reason: previousError.reason,
+    if (lastError instanceof BaseError) {
+      lastError.log(request, { isChainedError: true })
+    } else if (lastError !== null) {
+      logger(
+        this._logCode,
+        {
+          errorName: lastError?.name || 'UnknownError',
+          message: lastError?.message || 'No additional error information available',
           isChainedError: true
-        }
-        logger(previousError._logCode, Object.assign({}, prevOptions, ...additionalDetail), request)
-      } else {
-        logger(
-          this._logCode,
-          Object.assign(
-            {},
-            {
-              errorName: previousError.name,
-              message: previousError.message,
-              isChainedError: true
-            },
-            ...additionalDetail
-          ),
-          request
-        )
-      }
-
-      currentError = previousError
-      previousError = previousError instanceof BaseError ? previousError.lastError : null
+        },
+        request
+      )
     }
   }
 
   /**
+   * Chain this error from another error, indicating that the previous error led to this error
    * @param {BaseError|Error} error - The error to chain from
    */
   from(error) {
