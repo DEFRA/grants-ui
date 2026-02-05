@@ -304,6 +304,19 @@ describe('CheckDetailsController', () => {
 
       await expect(controller.fetchAndProcessData(mockRequest, mockConfig)).rejects.toThrow('Query execution failed')
     })
+
+    it('should log and throw when response contains GraphQL errors', async () => {
+      vi.mocked(executeConfigDrivenQuery).mockResolvedValue({
+        errors: [{ message: 'Field not found' }]
+      })
+
+      await expect(controller.fetchAndProcessData(mockRequest, mockConfig)).rejects.toThrow('Field not found')
+      expect(log).toHaveBeenCalledWith(
+        LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+        { errorMessage: 'Field not found' },
+        mockRequest
+      )
+    })
   })
 
   describe('handleError', () => {
@@ -363,20 +376,47 @@ describe('CheckDetailsController', () => {
       )
     })
 
-    it('should handle missing metadata gracefully in GET by showing error', async () => {
+    it('should handle missing metadata gracefully in GET by showing config error', async () => {
       mockModel.def.metadata = undefined
 
       const handler = controller.makeGetRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
-      expect(mockH.view).toHaveBeenCalledWith(
-        'check-details',
-        expect.objectContaining({
-          error: expect.objectContaining({
-            titleText: 'There is a problem'
-          })
-        })
+      expect(log).toHaveBeenCalledWith(
+        LogCodes.SYSTEM.CONFIG_MISSING,
+        { missing: ['metadata.detailsPage'] },
+        mockRequest
       )
+      expect(mockH.view).toHaveBeenCalledWith('check-details', {
+        serviceName: 'Test Service',
+        serviceUrl: '/test-form',
+        error: {
+          titleText: 'There is a problem',
+          errorList: [{ text: 'This page is not configured correctly. Please contact support.', href: '' }]
+        }
+      })
+    })
+
+    it('should handle missing metadata gracefully in POST by showing config error', async () => {
+      mockModel.def.metadata = undefined
+      mockRequest.payload = { detailsCorrect: 'true' }
+
+      const handler = controller.makePostRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(log).toHaveBeenCalledWith(
+        LogCodes.SYSTEM.CONFIG_MISSING,
+        { missing: ['metadata.detailsPage'] },
+        mockRequest
+      )
+      expect(mockH.view).toHaveBeenCalledWith('check-details', {
+        serviceName: 'Test Service',
+        serviceUrl: '/test-form',
+        error: {
+          titleText: 'There is a problem',
+          errorList: [{ text: 'This page is not configured correctly. Please contact support.', href: '' }]
+        }
+      })
     })
 
     it('should handle null context state', async () => {

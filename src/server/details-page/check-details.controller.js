@@ -3,6 +3,8 @@ import { buildGraphQLQuery, mapResponse, processSections } from '../common/servi
 import { executeConfigDrivenQuery } from '../common/services/consolidated-view/consolidated-view.service.js'
 import { log, LogCodes } from '../common/helpers/logging/log.js'
 
+const ERROR_TITLE = 'There is a problem'
+
 /**
  * Controller for config-driven details pages.
  * Uses metadata.detailsPage configuration to dynamically build
@@ -25,6 +27,10 @@ export default class CheckDetailsController extends QuestionPageController {
       const baseViewModel = super.getViewModel(request, context)
       const config = this.model.def.metadata?.detailsPage
 
+      if (!config) {
+        return this.handleConfigError(baseViewModel, h, request)
+      }
+
       try {
         const { sections, mappedData } = await this.fetchAndProcessData(request, config)
         request.app.detailsPageData = mappedData
@@ -40,6 +46,10 @@ export default class CheckDetailsController extends QuestionPageController {
       const { detailsCorrect } = request.payload || {}
       const baseViewModel = super.getViewModel(request, context)
       const config = this.model.def.metadata?.detailsPage
+
+      if (!config) {
+        return this.handleConfigError(baseViewModel, h, request)
+      }
 
       if (!detailsCorrect) {
         return this.handleMissingSelection(request, config, baseViewModel, h)
@@ -97,7 +107,7 @@ export default class CheckDetailsController extends QuestionPageController {
       return h.view(this.viewName, {
         ...baseViewModel,
         error: {
-          titleText: 'There is a problem',
+          titleText: ERROR_TITLE,
           errorList: [{ text: 'Unable to save your details. Please try again later.', href: '' }]
         }
       })
@@ -113,6 +123,12 @@ export default class CheckDetailsController extends QuestionPageController {
   async fetchAndProcessData(request, config) {
     const query = buildGraphQLQuery(config.query, request)
     const response = await executeConfigDrivenQuery(request, query)
+
+    if (response?.errors?.length > 0) {
+      log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, { errorMessage: response.errors[0].message }, request)
+      throw new Error(response.errors[0].message)
+    }
+
     const mappedData = mapResponse(config.responseMapping, response)
     const sections = processSections(config.displaySections, mappedData, request)
     return { sections, mappedData }
@@ -131,8 +147,26 @@ export default class CheckDetailsController extends QuestionPageController {
     return h.view(this.viewName, {
       ...baseViewModel,
       error: {
-        titleText: 'There is a problem',
+        titleText: ERROR_TITLE,
         errorList: [{ text: 'Unable to retrieve your details. Please try again later.', href: '' }]
+      }
+    })
+  }
+
+  /**
+   * Handle missing configuration error
+   * @param {object} baseViewModel
+   * @param {ResponseToolkit} h
+   * @param {AnyFormRequest} request
+   * @returns {ResponseObject}
+   */
+  handleConfigError(baseViewModel, h, request) {
+    log(LogCodes.SYSTEM.CONFIG_MISSING, { missing: ['metadata.detailsPage'] }, request)
+    return h.view(this.viewName, {
+      ...baseViewModel,
+      error: {
+        titleText: ERROR_TITLE,
+        errorList: [{ text: 'This page is not configured correctly. Please contact support.', href: '' }]
       }
     })
   }

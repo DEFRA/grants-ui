@@ -23,7 +23,9 @@ describe('fullNameFormatter', () => {
   it.each([
     [{ first: 'John', middle: 'William', last: 'Smith' }, { text: 'John William Smith' }],
     [{ first: 'John', last: 'Smith' }, { text: 'John Smith' }],
-    [{ first: 'John' }, { text: 'John' }]
+    [{ first: 'John' }, { text: 'John' }],
+    [{ title: 'Mr', first: 'John', last: 'Smith' }, { text: 'Mr John Smith' }],
+    [{ title: 'Dr', first: 'Jane', middle: 'Anne', last: 'Doe' }, { text: 'Dr Jane Anne Doe' }]
   ])('should format name parts correctly for %j', (input, expected) => {
     expect(fullNameFormatter(input)).toEqual(expected)
   })
