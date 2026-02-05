@@ -15,6 +15,19 @@ export class BaseError extends Error {
   _logCode = LogCodes.SYSTEM.SERVER_ERROR
 
   /**
+   * An array to store previous errors for error chaining
+   * @type {(BaseError|Error)[]}
+   * @private
+   */
+  _previousErrors = []
+
+  /**
+   * @type {(BaseError|Error)[]}
+   * @private
+   */
+  _nextErrors = []
+
+  /**
    * @param {string} message
    * @param {StatusCode} statusCode
    * @param {string|undefined} source
@@ -42,6 +55,63 @@ export class BaseError extends Error {
     }
 
     logger(this._logCode, Object.assign({}, messageOptions, ...additionalDetail), request)
+
+    /** @type {BaseError|Error} **/
+    let currentError = this
+    let previousError = currentError instanceof BaseError ? currentError.lastError : null
+
+    while (previousError) {
+      // Log the previous error
+      if (previousError instanceof BaseError) {
+        const prevOptions = {
+          errorName: previousError.name,
+          message: previousError.message,
+          status: previousError.status,
+          source: previousError.source,
+          reason: previousError.reason,
+          isChainedError: true
+        }
+        logger(previousError._logCode, Object.assign({}, prevOptions, ...additionalDetail), request)
+      } else {
+        logger(
+          this._logCode,
+          Object.assign(
+            {},
+            {
+              errorName: previousError.name,
+              message: previousError.message,
+              isChainedError: true
+            },
+            ...additionalDetail
+          ),
+          request
+        )
+      }
+
+      currentError = previousError
+      previousError = previousError instanceof BaseError ? previousError.lastError : null
+    }
+  }
+
+  /**
+   * @param {BaseError|Error} error - The error to chain from
+   */
+  from(error) {
+    this._previousErrors.push(error)
+    if (error instanceof BaseError && !error._nextErrors.includes(this)) {
+      error.chain(this)
+    }
+  }
+
+  /**
+   * Chain another error to this error, indicating that this error led to the next error
+   * @param error
+   */
+  chain(error) {
+    this._nextErrors.push(error)
+    if (error instanceof BaseError && !error._previousErrors.includes(this)) {
+      error.from(this)
+    }
   }
 
   /**
@@ -64,5 +134,19 @@ export class BaseError extends Error {
    */
   get logCode() {
     return this._logCode
+  }
+
+  /**
+   * @returns {BaseError|Error|null}
+   */
+  get lastError() {
+    return this._previousErrors.length > 0 ? this._previousErrors[this._previousErrors.length - 1] : null
+  }
+
+  /**
+   * @returns {BaseError|Error|null}
+   */
+  get nextError() {
+    return this._nextErrors.length > 0 ? this._nextErrors[this._nextErrors.length - 1] : null
   }
 }

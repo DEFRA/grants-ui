@@ -1479,6 +1479,73 @@ Attach your IDE debugger:
 
   - Start debugging with that configuration; execution will continue once attached.
 
+## Structured Error Handling
+
+The application implements a structured error handling approach to ensure consistent error responses and logging across all components.
+
+Starting with a `BaseError` class, specific error types are defined for different contexts (e.g., `ValidationError`, `ExternalApiError`, etc.). Each error includes structured properties such as `code`, `message`, `details`, and `statusCode`.
+Errors are thrown with relevant context and caught by a global error handler that formats the response and logs the error in a structured format.
+There should be no need to log errors manually as long as the `BaseError` class is used consistently.
+
+### Throwing errors
+
+When throwing errors, only use specific error classes that extend `BaseError` and provide relevant context:
+
+```javascript
+class ValidationError extends BaseError {
+  constructor() {
+    super('Validation failed', 401, 'source', 'reason')
+  }
+}
+
+throw new ValidationError()
+```
+
+There is a `preResponse` hook in the Hapi server that checks if the response is an error and if it is an instance of `BaseError`. If so, it logs the error using `BaseError::log` and formats the response with the appropriate status code and message. So there is never a need to log errors directly in `try {} catch {}` blocks.
+
+### Chaining errors
+
+When catching and re-throwing errors, the original error should be attached using the `from` method (`Baseclass::from`) to preserve a detailed error chain. Many errors can be chained in this way, and logging the most recent error using `BaseError::log` will include the full chain of errors in the log output, each with their own log entry but with a `{ isChainedError: true }` added as additional data.
+
+It is possible to chain an error to it, for example, you have a `BaseError` instance and want to wrap it in a more specific error type. In this case, you can use the `BaseError::chain` method with a new error instance.
+
+```javascript
+class FieldInputError extends BaseError {}
+
+const validationError = new ValidationError()
+const fieldInputError = new FieldInputError('Invalid input for field X')
+
+// `chain` allows you to place an error ahead of the current error
+validationError.chain(fieldInputError)
+
+// whereas `from` places the new error behind the current error in the chain
+fieldInputError.from(validationError)
+
+throw fieldInputError
+```
+
+Note: that calling `chain` will also call `from` on the other error allowing both errors to reference one another. The reverse is true for `from` calls.
+
+The difference is mostly semantic, but the `chain` method is useful when you want to create a new error that wraps an existing error (e.g. when catching and re-throwing), whereas `from` is useful when you want to attach additional context to an existing error.
+
+### Managing `Error` instances
+
+When errors are thrown by third party libraries or built-in Node.js modules, they can be referenced by a `BaseError` instance using the `from` method to preserve the original error message and stack trace while adding structured context and ensuring it is logged correctly.
+
+```javascript
+import fs from 'node:fs'
+
+try {
+  const file = fs.readFile('abc.csv')
+} catch (err) {
+  const newError = new BaseError('Failed to read file', 500, 'node:fs', 'read-error')
+  newError.from(err)
+  throw newError
+}
+```
+
+Note: instances of `Error` in the chain will always terminate logging calls and no further information will be logged about the error chain once an `Error` is encountered.
+
 ## Structured Logging System
 
 The application implements a comprehensive structured logging system providing consistent, searchable, and maintainable logging across all components.
