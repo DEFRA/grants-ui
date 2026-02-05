@@ -6,7 +6,8 @@ import { mockFetch } from '~/src/__mocks__'
 import { getValidToken } from '~/src/server/common/helpers/entra/token-manager.js'
 import {
   fetchBusinessAndCustomerInformation,
-  fetchParcelsFromDal
+  fetchParcelsFromDal,
+  executeConfigDrivenQuery
 } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
 import { ConsolidatedViewApiError, fetchBusinessAndCPH } from './consolidated-view.service.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
@@ -450,6 +451,71 @@ describe('Consolidated View Service', () => {
           mockSbi
         )
       )
+    })
+  })
+
+  describe('executeConfigDrivenQuery', () => {
+    it('should execute query and return raw response', async () => {
+      const mockResponse = {
+        data: {
+          business: { name: 'Test Business' },
+          customer: { name: 'John Doe' }
+        }
+      }
+      mockFetchInstance.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockResponse)
+      })
+
+      const query = 'query { business { name } customer { name } }'
+      const result = await executeConfigDrivenQuery(mockRequest, query)
+
+      expect(result).toEqual(mockResponse)
+      expect(mockFetchInstance).toHaveBeenCalledTimes(1)
+
+      const [[, calledOptions]] = mockFetchInstance.mock.calls
+      const body = JSON.parse(calledOptions.body)
+      expect(body.query).toBe(query)
+    })
+
+    it('should throw error when API call fails', async () => {
+      mockFetchInstance.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        statusText: 'Internal Server Error',
+        text: () => Promise.resolve('Server error')
+      })
+
+      const query = 'query { business { name } }'
+
+      await expect(executeConfigDrivenQuery(mockRequest, query)).rejects.toThrow(
+        'Failed to fetch business data: 500 Internal Server Error'
+      )
+    })
+
+    it('should work correctly in mock mode', async () => {
+      config.set('consolidatedView', {
+        apiEndpoint: 'https://api.example.com/graphql',
+        mockDALEnabled: true
+      })
+
+      const mockSBIFileData = {
+        data: {
+          business: { info: { name: 'Mock Business' } }
+        }
+      }
+      const mockCRNFileData = {
+        customer: { info: { name: { first: 'Jane' } } }
+      }
+
+      fs.readFile.mockResolvedValueOnce(JSON.stringify(mockSBIFileData))
+      fs.readFile.mockResolvedValueOnce(JSON.stringify(mockCRNFileData))
+
+      const query = 'query { business { info { name } } }'
+      const result = await executeConfigDrivenQuery(mockRequest, query)
+
+      expect(result.data.business.info.name).toBe('Mock Business')
+      expect(mockFetchInstance).not.toHaveBeenCalled()
     })
   })
 

@@ -2,30 +2,49 @@ import { getAllForms } from '../utils/index.js'
 import { errorRoutes } from '../index.js'
 
 /**
- * Get example forms for demo links
- * @param {Array<string>} [slugs=['example-grant-with-auth', 'flying-pigs']] - Form slugs to include
- * @param {number} [limit=3] - Maximum number of forms to return
- * @returns {Array} Array of example form objects
+ * Get forms that have confirmationContent configured
+ * @returns {Array} Array of form objects with confirmationContent
  */
-export function getExampleForms(slugs = ['example-grant-with-auth', 'flying-pigs'], limit = 2) {
+export function getFormsWithConfirmationContent() {
   const allForms = getAllForms()
-  return allForms.filter((f) => slugs.includes(f.slug)).slice(0, limit)
+  return allForms.filter((form) => form.metadata?.confirmationContent)
+}
+
+/**
+ * Get forms that have detailsPage configured
+ * @returns {Array} Array of form objects with detailsPage
+ */
+export function getFormsWithDetailsPage() {
+  const allForms = getAllForms()
+  return allForms.filter((form) => form.metadata?.detailsPage)
 }
 
 /**
  * Build tools configuration for the dev home page
- * @param {Array} exampleForms - Array of example forms
+ * @param {object} options - Configuration options
+ * @param {Array} options.confirmationForms - Forms with confirmationContent configured
+ * @param {Array} options.detailsForms - Forms with detailsPage configured
  * @returns {Array} Array of tool configurations
  */
-export function buildToolsConfig(exampleForms) {
+export function buildToolsConfig({ confirmationForms, detailsForms }) {
   return [
     {
       name: 'Demo Confirmation Pages',
       description: 'Test the config-driven confirmation page with different form configurations',
       pattern: '/dev/demo-confirmation/{slug}',
-      examples: exampleForms.map((form) => ({
+      examples: confirmationForms.map((form) => ({
         name: form.title,
         path: `/dev/demo-confirmation/${form.slug}`,
+        slug: form.slug
+      }))
+    },
+    {
+      name: 'Demo Details Pages',
+      description: 'Test the config-driven details page (check-details) with different form configurations',
+      pattern: '/dev/demo-details/{slug}',
+      examples: detailsForms.map((form) => ({
+        name: form.title,
+        path: `/dev/demo-details/${form.slug}`,
         slug: form.slug
       }))
     },
@@ -176,8 +195,9 @@ export function generateDevHomePage(tools) {
  * @returns {object} Hapi response
  */
 export function devHomeHandler(_request, h) {
-  const exampleForms = getExampleForms()
-  const tools = buildToolsConfig(exampleForms)
+  const confirmationForms = getFormsWithConfirmationContent()
+  const detailsForms = getFormsWithDetailsPage()
+  const tools = buildToolsConfig({ confirmationForms, detailsForms })
   const htmlContent = generateDevHomePage(tools)
 
   return h.response(htmlContent).type('text/html')

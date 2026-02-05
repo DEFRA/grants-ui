@@ -1,6 +1,7 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { vi } from 'vitest'
 import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
+import { setupControllerMocks } from '~/src/__mocks__/controller-mocks.js'
 import { fetchParcels } from '~/src/server/land-grants/services/land-grants.service.js'
 import SelectLandParcelPageController from './select-land-parcel-page.controller.js'
 
@@ -78,9 +79,7 @@ describe('SelectLandParcelPageController', () => {
     })
 
     controller = new SelectLandParcelPageController()
-    controller.proceed = vi.fn().mockResolvedValue('next')
-    controller.getNextPath = vi.fn().mockReturnValue('/next-page')
-    controller.setState = vi.fn()
+    setupControllerMocks(controller, { proceed: 'next', nextPath: '/next-page' })
     controller.performAuthCheck = vi.fn().mockResolvedValue(null)
 
     fetchParcels.mockResolvedValue(mockParcelsResponse)

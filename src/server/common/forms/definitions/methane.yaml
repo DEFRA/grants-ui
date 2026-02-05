@@ -4,6 +4,87 @@ metadata:
   submission:
     grantCode: methane
   grantRedirectRules: null
+  detailsPage:
+    query:
+      name: Business
+      entities:
+        - name: customer
+          variableName: crn
+          variableSource: credentials.crn
+          fields:
+            - path: info
+              fields:
+                - path: name
+                  fields:
+                    - path: title
+                    - path: first
+                    - path: middle
+                    - path: last
+        - name: business
+          variableName: sbi
+          variableSource: credentials.sbi
+          fields:
+            - path: info
+              fields:
+                - path: reference
+                - path: email
+                  fields:
+                    - path: address
+                - path: phone
+                  fields:
+                    - path: mobile
+                - path: name
+                - path: address
+                  fields:
+                    - path: line1
+                    - path: line2
+                    - path: line3
+                    - path: line4
+                    - path: line5
+                    - path: street
+                    - path: city
+                    - path: postalCode
+                - path: vat
+                - path: type
+                  fields:
+                    - path: code
+                    - path: type
+            - path: countyParishHoldings
+              fields:
+                - path: cphNumber
+    responseMapping:
+      business: data.business.info
+      countyParishHoldings: data.business.countyParishHoldings[0].cphNumber
+      customer: data.customer.info
+    displaySections:
+      - title: Applicant details
+        fields:
+          - label: Applicant name
+            sourcePath: customer.name
+            format: fullName
+      - title: Organisation details
+        description: If your application is successful, the following organisation will receive the MSFP grant.
+        fields:
+          - label: Organisation name
+            sourcePath: business.name
+          - label: Single Business Identifier (SBI) number
+            sourceType: credentials
+            sourcePath: sbi
+          - label: Organisation email
+            sourcePath: business.email.address
+          - label: Mobile phone number
+            sourcePath: business.phone.mobile
+          - label: Landline phone number
+            sourcePath: business.phone.landline
+          - label: Organisation address
+            sourcePath: business.address
+            format: address
+          - label: VAT registration number
+            sourcePath: business.vat
+      - title: County parish holding (CPH) numbers
+        fields:
+          - label: CPH number
+            sourcePath: countyParishHoldings
   confirmationContent:
     html: |
       <h2 class="govuk-heading-m">What happens next</h2>
@@ -191,8 +272,8 @@ pages:
     id: e102ac90-990a-443b-b70a-d43ba2e5a424
     condition: 914c4364-1a6c-4475-a41d-58d30f684d1c
   - title: Check your details are correct
-    path: /confirm-methane-details
-    controller: ConfirmMethaneDetailsController
+    path: /check-details
+    controller: CheckDetailsController
     next: []
     id: a24cb35f-a359-4934-b8c8-56ff92cb3df1
   - title: How many dairy cows will you feed MSFP?

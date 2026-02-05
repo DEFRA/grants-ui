@@ -3,6 +3,7 @@ import { ecsFormat } from '@elastic/ecs-pino-format'
 import { config } from '~/src/config/config.js'
 import { getTraceId } from '@defra/hapi-tracing'
 
+// @ts-ignore - TS2589: Type instantiation excessively deep (convict type complexity)
 const logConfig = config.get('log')
 const serviceName = config.get('gitRepositoryName')
 const serviceVersion = config.get('serviceVersion')

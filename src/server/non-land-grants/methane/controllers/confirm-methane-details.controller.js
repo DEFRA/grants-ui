@@ -12,7 +12,6 @@ import { fetchBusinessAndCPH } from '~/src/server/common/services/consolidated-v
 export default class ConfirmMethaneDetailsController extends QuestionPageController {
   viewName = 'confirm-methane-details'
 
-  // Constants
   static ERROR_MESSAGE = 'Unable to find farm information, please try again later.'
 
   /**

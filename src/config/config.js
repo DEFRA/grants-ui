@@ -7,6 +7,10 @@ import { fileURLToPath } from 'node:url'
 import defraId from './defra-id.js'
 import landGrants from './land-grants.js'
 import agreements from './agreements.js'
+import { sessionSchema } from './session.js'
+import { redisSchema } from './redis.js'
+import { rateLimitSchema } from './rate-limit.js'
+import { devToolsSchema } from './dev-tools.js'
 import { validateBackendAuthConfig } from './validate-backend-auth.js'
 
 const dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -203,192 +207,9 @@ export const config = convict({
     default: fourHoursMs,
     env: 'SESSION_TIMEOUT'
   },
-  session: {
-    cache: {
-      engine: {
-        doc: 'backend cache is written to',
-        format: ['redis', 'memory'],
-        default: isProduction ? 'redis' : 'memory',
-        env: 'SESSION_CACHE_ENGINE'
-      },
-      name: {
-        doc: 'server side session cache name',
-        format: String,
-        default: 'grants-ui-session-cache'
-      },
-      ttl: {
-        doc: 'server side session cache ttl',
-        format: Number,
-        default: fourHoursMs,
-        env: 'SESSION_CACHE_TTL'
-      },
-      apiEndpoint: {
-        doc: 'Grants UI Backend API endpoint',
-        format: String,
-        default: '',
-        env: 'GRANTS_UI_BACKEND_URL'
-      },
-      authToken: {
-        doc: 'Bearer token for authenticating with Grants UI Backend',
-        format: String,
-        default: '',
-        env: 'GRANTS_UI_BACKEND_AUTH_TOKEN',
-        sensitive: true
-      },
-      encryptionKey: {
-        doc: 'Encryption key for securing bearer token transmission',
-        format: String,
-        default: '',
-        env: 'GRANTS_UI_BACKEND_ENCRYPTION_KEY',
-        sensitive: true
-      }
-    },
-    cookie: {
-      name: {
-        doc: 'Session cookie name',
-        format: String,
-        default: 'grants-ui-session-auth'
-      },
-      cache: {
-        segment: {
-          doc: 'Session cookie cache segment name',
-          format: String,
-          default: 'auth'
-        },
-        ttl: {
-          doc: 'Session cookie cache ttl',
-          format: Number,
-          default: fourHoursMs
-        }
-      },
-      ttl: {
-        doc: 'Session cookie ttl',
-        format: Number,
-        default: fourHoursMs,
-        env: 'SESSION_COOKIE_TTL'
-      },
-      password: {
-        doc: 'session cookie password',
-        format: String,
-        default: 'the-password-must-be-at-least-32-characters-long',
-        env: 'SESSION_COOKIE_PASSWORD',
-        sensitive: true
-      },
-      secure: {
-        doc: 'set secure flag on cookie',
-        format: Boolean,
-        default: isProduction,
-        env: 'SESSION_COOKIE_SECURE'
-      }
-    }
-  },
-  rateLimit: {
-    enabled: {
-      doc: 'Enable rate limiting',
-      format: Boolean,
-      default: isProduction,
-      env: 'RATE_LIMIT_ENABLED'
-    },
-    trustProxy: {
-      doc: 'Trust X-Forwarded-For header',
-      format: Boolean,
-      default: true,
-      env: 'RATE_LIMIT_TRUST_PROXY'
-    },
-    userLimit: {
-      doc: 'Default requests per user/IP per period',
-      format: Number,
-      default: 100,
-      env: 'RATE_LIMIT_USER_LIMIT'
-    },
-    userLimitPeriod: {
-      doc: 'Rate limit period in milliseconds',
-      format: Number,
-      default: 60000,
-      env: 'RATE_LIMIT_USER_LIMIT_PERIOD'
-    },
-    pathLimit: {
-      doc: 'Total requests per path per period',
-      format: Number,
-      default: 2000,
-      env: 'RATE_LIMIT_PATH_LIMIT'
-    },
-    authLimit: {
-      doc: 'Max invalid auth attempts before blocking',
-      format: Number,
-      default: 5,
-      env: 'RATE_LIMIT_AUTH_LIMIT'
-    },
-    authEndpointUserLimit: {
-      doc: 'Requests per IP for auth endpoints per minute',
-      format: Number,
-      default: 10,
-      env: 'RATE_LIMIT_AUTH_ENDPOINT_USER_LIMIT'
-    },
-    authEndpointPathLimit: {
-      doc: 'Total requests per auth endpoint path per period',
-      format: Number,
-      default: 500,
-      env: 'RATE_LIMIT_AUTH_ENDPOINT_PATH_LIMIT'
-    }
-  },
-  redis: /** @type {Schema<RedisConfig>} */ ({
-    host: {
-      doc: 'Redis cache host',
-      format: String,
-      default: '127.0.0.1',
-      env: 'REDIS_HOST'
-    },
-    username: {
-      doc: 'Redis cache username',
-      format: String,
-      default: '',
-      env: 'REDIS_USERNAME'
-    },
-    password: {
-      doc: 'Redis cache password',
-      format: '*',
-      default: '',
-      sensitive: true,
-      env: 'REDIS_PASSWORD'
-    },
-    keyPrefix: {
-      doc: 'Redis cache key prefix name used to isolate the cached results across multiple clients',
-      format: String,
-      default: 'grants-ui:',
-      env: 'REDIS_KEY_PREFIX'
-    },
-    useSingleInstanceCache: {
-      doc: 'Connect to a single instance of redis instead of a cluster.',
-      format: Boolean,
-      default: !isProduction,
-      env: 'USE_SINGLE_INSTANCE_CACHE'
-    },
-    useTLS: {
-      doc: 'Connect to redis using TLS',
-      format: Boolean,
-      default: isProduction,
-      env: 'REDIS_TLS'
-    },
-    connectTimeout: {
-      doc: 'Redis connection timeout in milliseconds',
-      format: Number,
-      default: 30000,
-      env: 'REDIS_CONNECT_TIMEOUT'
-    },
-    retryDelay: {
-      doc: 'Redis retry delay in milliseconds',
-      format: Number,
-      default: 1000,
-      env: 'REDIS_RETRY_DELAY'
-    },
-    maxRetries: {
-      doc: 'Redis max retries per request',
-      format: Number,
-      default: 10,
-      env: 'REDIS_MAX_RETRIES'
-    }
-  }),
+  session: sessionSchema,
+  rateLimit: rateLimitSchema,
+  redis: redisSchema,
   nunjucks: {
     watch: {
       doc: 'Reload templates when they are changed.',
@@ -436,40 +257,7 @@ export const config = convict({
       env: 'COOKIE_CONSENT_EXPIRY_DAYS'
     }
   },
-  devTools: {
-    enabled: {
-      doc: 'Enable development tools and routes',
-      format: Boolean,
-      default: isDevelopment,
-      env: 'DEV_TOOLS_ENABLED'
-    },
-    demoData: {
-      referenceNumber: {
-        doc: 'Demo reference number for dev tools',
-        format: String,
-        default: 'DEV2024001',
-        env: 'DEV_DEMO_REF_NUMBER'
-      },
-      businessName: {
-        doc: 'Demo business name for dev tools',
-        format: String,
-        default: 'Demo Test Farm Ltd',
-        env: 'DEV_DEMO_BUSINESS_NAME'
-      },
-      sbi: {
-        doc: 'Demo SBI number for dev tools',
-        format: String,
-        default: '999888777',
-        env: 'DEV_DEMO_SBI'
-      },
-      contactName: {
-        doc: 'Demo contact name for dev tools',
-        format: String,
-        default: 'Demo Test User',
-        env: 'DEV_DEMO_CONTACT_NAME'
-      }
-    }
-  },
+  devTools: devToolsSchema,
   applicationLock: {
     secret: {
       doc: 'Secret used to sign application lock tokens',
@@ -496,7 +284,6 @@ validateBackendAuthConfig(config)
 
 /**
  * @import { Schema, SchemaObj } from 'convict'
- * @import { RedisConfig } from '~/src/server/common/helpers/redis-client.js'
  * @import { LandGrantsConfig } from '~/src/config/land-grants.js'
  * @import { AgreementsConfig } from '~/src/config/agreements.js'
  * @import { DefraIdConfig } from '~/src/config/defra-id.js'

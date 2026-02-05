@@ -47,6 +47,7 @@ import whitelist from '~/src/server/common/helpers/whitelist/whitelist.js'
 import ConfirmMethaneDetailsController from '~/src/server/non-land-grants/methane/controllers/confirm-methane-details.controller.js'
 import TaskListPageController from '~/src/server/task-list/task-list-page.controller.js'
 import TaskPageController from '~/src/server/task-list/task-page.controller.js'
+import CheckDetailsController from '~/src/server/details-page/check-details.controller.js'
 
 const SESSION_CACHE_NAME = 'session.cache.name'
 
@@ -134,7 +135,8 @@ const registerFormsPlugin = async (server, prefix = '') => {
         CheckResponsesPageController,
         ConfirmMethaneDetailsController,
         TaskListPageController,
-        TaskPageController
+        TaskPageController,
+        CheckDetailsController
       }
     }
   })

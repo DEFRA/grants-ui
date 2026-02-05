@@ -1,0 +1,62 @@
+{% extends baseLayoutPath %}
+
+{% from "govuk/components/radios/macro.njk" import govukRadios %}
+{% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
+{% from "section-list/macro.njk" import appSectionList %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds-from-desktop">
+      {% if previewMode %}
+        {% include "partials/preview-banner.html" %}
+      {% endif %}
+
+      {% if errors %}
+        {{ govukErrorSummary({
+          titleText: "There is a problem",
+          errorList: errors
+        }) }}
+      {% endif %}
+
+      {% if error %}
+        {{ govukErrorSummary(error) }}
+      {% endif %}
+
+      <h1 class="govuk-heading-l">
+        {{ pageTitle }}
+      </h1>
+
+      {{ appSectionList({ sections: sections }) }}
+
+      <form method="post" novalidate>
+        <input type="hidden" name="crumb" value="{{ crumb }}">
+
+        {{ govukRadios({
+          classes: "govuk-radios--inline",
+          name: "detailsCorrect",
+          fieldset: {
+            legend: {
+              text: "Are these details correct?",
+              classes: "govuk-fieldset__legend--m"
+            }
+          },
+          items: [
+            { value: "true", text: "Yes" },
+            { value: "false", text: "No" }
+          ],
+          errorMessage: errors[0].text if errors else null
+        }) }}
+
+        {{ govukButton({
+          text: "Continue",
+          preventDoubleClick: true
+        }) }}
+      </form>
+    </div>
+  </div>
+
+  {% if config.cdpEnvironment == 'local' and context | length and not context.isForceAccess %}
+    {% include "partials/debug.html" %}
+  {% endif %}
+{% endblock %}
