@@ -15,6 +15,19 @@ export class BaseError extends Error {
   _logCode = LogCodes.SYSTEM.SERVER_ERROR
 
   /**
+   * An array to store previous errors for error chaining
+   * @type {(BaseError|Error)[]}
+   * @private
+   */
+  _previousErrors = []
+
+  /**
+   * @type {(BaseError|Error)[]}
+   * @private
+   */
+  _nextErrors = []
+
+  /**
    * @param {string} message
    * @param {StatusCode} statusCode
    * @param {string|undefined} source
@@ -42,6 +55,44 @@ export class BaseError extends Error {
     }
 
     logger(this._logCode, Object.assign({}, messageOptions, ...additionalDetail), request)
+
+    const lastError = this.lastError
+
+    if (lastError instanceof BaseError) {
+      lastError.log(request, { isChainedError: true })
+    } else if (lastError !== null) {
+      logger(
+        this._logCode,
+        {
+          errorName: lastError?.name || 'UnknownError',
+          message: lastError?.message || 'No additional error information available',
+          isChainedError: true
+        },
+        request
+      )
+    }
+  }
+
+  /**
+   * Chain this error from another error, indicating that the previous error led to this error
+   * @param {BaseError|Error} error - The error to chain from
+   */
+  from(error) {
+    this._previousErrors.push(error)
+    if (error instanceof BaseError && !error._nextErrors.includes(this)) {
+      error.chain(this)
+    }
+  }
+
+  /**
+   * Chain another error to this error, indicating that this error led to the next error
+   * @param error
+   */
+  chain(error) {
+    this._nextErrors.push(error)
+    if (error instanceof BaseError && !error._previousErrors.includes(this)) {
+      error.from(this)
+    }
   }
 
   /**
@@ -64,5 +115,19 @@ export class BaseError extends Error {
    */
   get logCode() {
     return this._logCode
+  }
+
+  /**
+   * @returns {BaseError|Error|null}
+   */
+  get lastError() {
+    return this._previousErrors.length > 0 ? this._previousErrors[this._previousErrors.length - 1] : null
+  }
+
+  /**
+   * @returns {BaseError|Error|null}
+   */
+  get nextError() {
+    return this._nextErrors.length > 0 ? this._nextErrors[this._nextErrors.length - 1] : null
   }
 }
