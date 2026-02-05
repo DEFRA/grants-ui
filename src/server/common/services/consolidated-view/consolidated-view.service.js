@@ -186,6 +186,42 @@ export async function fetchParcelsFromDal(request) {
   return fetchFromConsolidatedView(request, { query, formatResponse })
 }
 
+function formatAddress(address) {
+  const commonFields = {
+    city: address.city,
+    postalCode: address.postalCode
+  }
+
+  if (address.uprn) {
+    const { flatName, buildingName, buildingNumberRange, street, dependentLocality, doubleDependentLocality } = address
+    const buildingParts = [flatName, buildingName, buildingNumberRange, street].filter(Boolean)
+    const buildingLine = buildingParts.length > 0 ? buildingParts.join(' ') : null
+
+    const [line1, line2, line3, line4] = [
+      address.pafOrganisationName,
+      buildingLine,
+      dependentLocality,
+      doubleDependentLocality
+    ].filter(Boolean)
+
+    return {
+      ...commonFields,
+      line1,
+      line2,
+      line3,
+      line4
+    }
+  }
+
+  return {
+    ...commonFields,
+    line1: address.line1,
+    line2: address.line2,
+    line3: address.line3,
+    line4: address.line4
+  }
+}
+
 /**
  * Fetches business and customer information from Consolidated View
  * @param {AnyFormRequest} request
@@ -227,6 +263,14 @@ export async function fetchBusinessAndCustomerInformation(request) {
             street
             city
             postalCode
+            uprn
+            county
+            buildingName
+            buildingNumberRange
+            dependentLocality
+            doubleDependentLocality
+            flatName
+            pafOrganisationName
           }
         }
       }
@@ -242,7 +286,7 @@ export async function fetchBusinessAndCustomerInformation(request) {
       formattedResponse.business = {
         name: businessInfo.name,
         reference: businessInfo.reference,
-        address: businessInfo.address,
+        address: formatAddress(businessInfo.address),
         landlinePhoneNumber: businessInfo.phone?.landline || undefined,
         mobilePhoneNumber: businessInfo.phone?.mobile || undefined,
         email: businessInfo.email?.address || undefined
