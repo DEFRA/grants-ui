@@ -57,8 +57,20 @@ export const redisSchema = {
   maxRetries: {
     doc: 'Redis max retries per request',
     format: Number,
-    default: 10,
+    default: 3,
     env: 'REDIS_MAX_RETRIES'
+  },
+  enableOfflineQueue: {
+    doc: 'Enable offline queue for Redis commands when disconnected. Set to false to fail fast.',
+    format: Boolean,
+    default: false,
+    env: 'REDIS_ENABLE_OFFLINE_QUEUE'
+  },
+  commandTimeout: {
+    doc: 'Redis command timeout in milliseconds',
+    format: Number,
+    default: 5000,
+    env: 'REDIS_COMMAND_TIMEOUT'
   }
 }
 
@@ -73,4 +85,6 @@ export const redisSchema = {
  * @property {number} connectTimeout
  * @property {number} retryDelay
  * @property {number} maxRetries
+ * @property {boolean} enableOfflineQueue
+ * @property {number} commandTimeout
  */
