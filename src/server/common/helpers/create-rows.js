@@ -52,7 +52,7 @@ export function createAddressRow(address) {
     return null
   }
 
-  const addressParts = [address.line1, address.line2, address.line3, address.street, address.city, address.postalCode]
+  const addressParts = [address.line1, address.line2, address.line3, address.line4, address.city, address.postalCode]
     .filter(Boolean)
     .map((part) => part.trim())
     .filter((part) => part.length > 0)

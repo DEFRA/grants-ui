@@ -34,7 +34,8 @@ export default class CheckDetailsController extends QuestionPageController {
       try {
         const { sections, mappedData } = await this.fetchAndProcessData(request, config)
         request.app.detailsPageData = mappedData
-        return h.view(this.viewName, { ...baseViewModel, sections })
+        const detailsCorrect = context.state?.detailsCorrect
+        return h.view(this.viewName, { ...baseViewModel, sections, detailsCorrect })
       } catch (error) {
         return this.handleError(error, baseViewModel, h, request)
       }
@@ -56,6 +57,10 @@ export default class CheckDetailsController extends QuestionPageController {
       }
 
       if (detailsCorrect === 'false') {
+        await this.setState(request, {
+          ...context.state,
+          detailsCorrect: 'false'
+        })
         return h.view('incorrect-details', this.buildIncorrectDetailsViewModel(baseViewModel))
       }
 
@@ -99,6 +104,7 @@ export default class CheckDetailsController extends QuestionPageController {
       await this.setState(request, {
         ...context.state,
         applicant: mappedData,
+        detailsCorrect: 'true',
         detailsConfirmedAt: new Date().toISOString()
       })
       return this.proceed(request, h, this.getNextPath(context))

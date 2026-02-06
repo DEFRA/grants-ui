@@ -42,8 +42,8 @@
             }
           },
           items: [
-            { value: "true", text: "Yes" },
-            { value: "false", text: "No" }
+            { value: "true", text: "Yes", checked: detailsCorrect === "true" },
+            { value: "false", text: "No", checked: detailsCorrect === "false" }
           ],
           errorMessage: errors[0].text if errors else null
         }) }}

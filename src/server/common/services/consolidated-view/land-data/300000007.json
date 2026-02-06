@@ -42,9 +42,17 @@
           "line3": "Leeds",
           "line4": "Nottinghamshire",
           "line5": "",
-          "street": "Manor Road",
+          "street": null,
           "city": "Leeds",
-          "postalCode": "WR56 2ZZ"
+          "postalCode": "WR56 2ZZ",
+          "uprn": "381124619099",
+          "buildingName": null,
+          "buildingNumberRange": null,
+          "county": null,
+          "dependentLocality": null,
+          "doubleDependentLocality": null,
+          "flatName": null,
+          "pafOrganisationName": "Nirvana Farms"
         }
       }
     }

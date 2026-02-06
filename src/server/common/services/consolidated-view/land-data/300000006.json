@@ -42,9 +42,17 @@
           "line3": "Bristol",
           "line4": "Derbyshire",
           "line5": "",
-          "street": "Victoria Road",
+          "street": null,
           "city": "Bristol",
-          "postalCode": "WN55 1ZZ"
+          "postalCode": "WN55 1ZZ",
+          "uprn": "381124619099",
+          "buildingName": "Building No. 2",
+          "buildingNumberRange": "York Park",
+          "county": "Essex",
+          "dependentLocality": "Havering",
+          "doubleDependentLocality": "Redbridge",
+          "flatName": "25",
+          "pafOrganisationName": "Nirvana Farms"
         }
       }
     }

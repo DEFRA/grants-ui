@@ -13,6 +13,8 @@ vi.mock('../common/helpers/logging/log.js', async () => {
   return mockLogHelper()
 })
 
+const TEST_FORM_ENDPOINT = '/test-form'
+
 const mockApiResponse = {
   data: {
     business: { name: 'Test Business' },
@@ -58,7 +60,7 @@ describe('CheckDetailsController', () => {
 
   beforeEach(() => {
     mockModel = {
-      basePath: '/test-form',
+      basePath: TEST_FORM_ENDPOINT,
       def: {
         metadata: {
           detailsPage: mockConfig
@@ -97,7 +99,7 @@ describe('CheckDetailsController', () => {
     // Mock the parent class method
     vi.spyOn(QuestionPageController.prototype, 'getViewModel').mockReturnValue({
       serviceName: 'Test Service',
-      serviceUrl: '/test-form'
+      serviceUrl: TEST_FORM_ENDPOINT
     })
 
     // Reset all mocks
@@ -138,8 +140,24 @@ describe('CheckDetailsController', () => {
       expect(mockRequest.app.detailsPageData).toEqual(mockMappedData)
       expect(mockH.view).toHaveBeenCalledWith('check-details', {
         serviceName: 'Test Service',
-        serviceUrl: '/test-form',
-        sections: mockSections
+        serviceUrl: TEST_FORM_ENDPOINT,
+        sections: mockSections,
+        detailsCorrect: undefined
+      })
+      expect(result).toBe('mocked-view')
+    })
+
+    it('should pass detailsCorrect from state to the view', async () => {
+      mockContext.state = { someState: 'value', detailsCorrect: 'true' }
+
+      const handler = controller.makeGetRouteHandler()
+      const result = await handler(mockRequest, mockContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith('check-details', {
+        serviceName: 'Test Service',
+        serviceUrl: TEST_FORM_ENDPOINT,
+        sections: mockSections,
+        detailsCorrect: 'true'
       })
       expect(result).toBe('mocked-view')
     })
@@ -159,7 +177,7 @@ describe('CheckDetailsController', () => {
       )
       expect(mockH.view).toHaveBeenCalledWith('check-details', {
         serviceName: 'Test Service',
-        serviceUrl: '/test-form',
+        serviceUrl: TEST_FORM_ENDPOINT,
         error: {
           titleText: 'There is a problem',
           errorList: [{ text: 'Unable to retrieve your details. Please try again later.', href: '' }]
@@ -186,7 +204,7 @@ describe('CheckDetailsController', () => {
 
         expect(mockH.view).toHaveBeenCalledWith('check-details', {
           serviceName: 'Test Service',
-          serviceUrl: '/test-form',
+          serviceUrl: TEST_FORM_ENDPOINT,
           sections: mockSections,
           errors: [{ text: 'Select yes if your details are correct', href: '#detailsCorrect' }]
         })
@@ -202,7 +220,7 @@ describe('CheckDetailsController', () => {
         expect(log).toHaveBeenCalledWith(LogCodes.SYSTEM.EXTERNAL_API_ERROR, { errorMessage: 'API Error' }, mockRequest)
         expect(mockH.view).toHaveBeenCalledWith('check-details', {
           serviceName: 'Test Service',
-          serviceUrl: '/test-form',
+          serviceUrl: TEST_FORM_ENDPOINT,
           errors: [{ text: 'Select yes if your details are correct', href: '#detailsCorrect' }]
         })
       })
@@ -217,18 +235,21 @@ describe('CheckDetailsController', () => {
 
         expect(mockH.view).toHaveBeenCalledWith('incorrect-details', {
           serviceName: 'Test Service',
-          serviceUrl: '/test-form',
-          continueUrl: '/test-form'
+          serviceUrl: TEST_FORM_ENDPOINT,
+          continueUrl: TEST_FORM_ENDPOINT
         })
       })
 
-      it('should not call setState or proceed', async () => {
+      it('should save detailsCorrect to state and not call proceed', async () => {
         mockRequest.payload = { detailsCorrect: 'false' }
 
         const handler = controller.makePostRouteHandler()
         await handler(mockRequest, mockContext, mockH)
 
-        expect(controller.setState).not.toHaveBeenCalled()
+        expect(controller.setState).toHaveBeenCalledWith(mockRequest, {
+          someState: 'value',
+          detailsCorrect: 'false'
+        })
         expect(controller.proceed).not.toHaveBeenCalled()
       })
     })
@@ -245,6 +266,7 @@ describe('CheckDetailsController', () => {
         expect(controller.setState).toHaveBeenCalledWith(mockRequest, {
           someState: 'value',
           applicant: mockMappedData,
+          detailsCorrect: 'true',
           detailsConfirmedAt: '2024-01-15T10:00:00.000Z'
         })
         expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-path')
@@ -272,7 +294,7 @@ describe('CheckDetailsController', () => {
         expect(controller.proceed).not.toHaveBeenCalled()
         expect(mockH.view).toHaveBeenCalledWith('check-details', {
           serviceName: 'Test Service',
-          serviceUrl: '/test-form',
+          serviceUrl: TEST_FORM_ENDPOINT,
           error: {
             titleText: 'There is a problem',
             errorList: [{ text: 'Unable to save your details. Please try again later.', href: '' }]
@@ -389,7 +411,7 @@ describe('CheckDetailsController', () => {
       )
       expect(mockH.view).toHaveBeenCalledWith('check-details', {
         serviceName: 'Test Service',
-        serviceUrl: '/test-form',
+        serviceUrl: TEST_FORM_ENDPOINT,
         error: {
           titleText: 'There is a problem',
           errorList: [{ text: 'This page is not configured correctly. Please contact support.', href: '' }]
@@ -411,7 +433,7 @@ describe('CheckDetailsController', () => {
       )
       expect(mockH.view).toHaveBeenCalledWith('check-details', {
         serviceName: 'Test Service',
-        serviceUrl: '/test-form',
+        serviceUrl: TEST_FORM_ENDPOINT,
         error: {
           titleText: 'There is a problem',
           errorList: [{ text: 'This page is not configured correctly. Please contact support.', href: '' }]
@@ -429,7 +451,8 @@ describe('CheckDetailsController', () => {
       expect(controller.setState).toHaveBeenCalledWith(
         mockRequest,
         expect.objectContaining({
-          applicant: mockMappedData
+          applicant: mockMappedData,
+          detailsCorrect: 'true'
         })
       )
     })

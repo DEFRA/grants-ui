@@ -42,9 +42,17 @@
           "line3": "Reading",
           "line4": "Lancashire",
           "line5": "",
-          "street": "Park Road",
+          "street": null,
           "city": "Reading",
-          "postalCode": "WD53 8YZ"
+          "postalCode": "WD53 8YZ",
+          "uprn": "381124619099",
+          "buildingName": "Building No. 2",
+          "buildingNumberRange": "York Park",
+          "county": null,
+          "dependentLocality": null,
+          "doubleDependentLocality": null,
+          "flatName": "25",
+          "pafOrganisationName": null
         }
       }
     }
