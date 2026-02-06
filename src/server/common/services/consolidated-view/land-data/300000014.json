@@ -38,11 +38,11 @@
         },
         "address": {
           "line1": "15 Grange Road",
-          "line2": "Works",
+          "line2": null,
           "line3": "Coventry",
-          "line4": "Norfolk",
-          "line5": "",
-          "street": "Grange Road",
+          "line4": null,
+          "line5": null,
+          "street": null,
           "city": "Coventry",
           "postalCode": "B63 9DB"
         }

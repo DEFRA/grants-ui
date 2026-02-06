@@ -42,7 +42,7 @@
           "line3": "York",
           "line4": "Yorkshire",
           "line5": "",
-          "street": null,
+          "street": "Rochester Drive",
           "city": "York",
           "postalCode": "WF54 9YZ",
           "uprn": "381124619099",
@@ -51,7 +51,7 @@
           "county": null,
           "dependentLocality": null,
           "doubleDependentLocality": null,
-          "flatName": "25",
+          "flatName": null,
           "pafOrganisationName": null
         }
       }
