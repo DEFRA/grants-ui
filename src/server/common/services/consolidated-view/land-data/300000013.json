@@ -41,8 +41,8 @@
           "line2": "Yard",
           "line3": "Leicester",
           "line4": "Staffordshire",
-          "line5": "",
-          "street": "New Road",
+          "line5": null,
+          "street": null,
           "city": "Leicester",
           "postalCode": "AL62 8CB"
         }

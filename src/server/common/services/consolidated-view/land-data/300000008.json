@@ -44,7 +44,15 @@
           "line5": "",
           "street": "Church Lane",
           "city": "Nottingham",
-          "postalCode": "WS57 3AA"
+          "postalCode": "WS57 3AA",
+          "uprn": "381124619099",
+          "buildingName": null,
+          "buildingNumberRange": "The Drive",
+          "county": null,
+          "dependentLocality": "Redbridge",
+          "doubleDependentLocality": "Ilford",
+          "flatName": "101",
+          "pafOrganisationName": null
         }
       }
     }

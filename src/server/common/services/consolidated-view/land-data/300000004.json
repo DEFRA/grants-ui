@@ -46,12 +46,12 @@
           "city": "Reading",
           "postalCode": "WD53 8YZ",
           "uprn": "381124619099",
-          "buildingName": "Building No. 2",
+          "buildingName": null,
           "buildingNumberRange": "York Park",
           "county": null,
           "dependentLocality": null,
           "doubleDependentLocality": null,
-          "flatName": "25",
+          "flatName": null,
           "pafOrganisationName": null
         }
       }

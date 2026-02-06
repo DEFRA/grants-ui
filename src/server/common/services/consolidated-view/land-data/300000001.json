@@ -42,17 +42,17 @@
           "line3": "Maidstone",
           "line4": "Somerset",
           "line5": "",
-          "street": "Station Road",
+          "street": null,
           "city": "Maidstone",
           "postalCode": "W50 5UY",
           "uprn": "481124619099",
-          "buildingName": "York Park House",
+          "buildingName": null,
           "buildingNumberRange": null,
           "county": null,
           "dependentLocality": null,
           "doubleDependentLocality": null,
           "flatName": null,
-          "pafOrganisationName": null
+          "pafOrganisationName": "York Park House"
         }
       }
     }

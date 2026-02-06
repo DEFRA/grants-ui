@@ -38,11 +38,11 @@
         },
         "address": {
           "line1": "16 Kingsway",
-          "line2": "Depot",
-          "line3": "Bradford",
-          "line4": "Suffolk",
-          "line5": "",
-          "street": "Kingsway",
+          "line2": null,
+          "line3": null,
+          "line4": "Kingsway",
+          "line5": null,
+          "street": null,
           "city": "Bradford",
           "postalCode": "BA64 1DB"
         }

@@ -38,11 +38,11 @@
         },
         "address": {
           "line1": "11 London Road",
-          "line2": "Industrial Estate",
-          "line3": "Manchester",
-          "line4": "Gloucestershire",
-          "line5": "",
-          "street": "London Road",
+          "line2": null,
+          "line3": null,
+          "line4": null,
+          "line5": null,
+          "street": null,
           "city": "Manchester",
           "postalCode": "YO59 5BA"
         }
