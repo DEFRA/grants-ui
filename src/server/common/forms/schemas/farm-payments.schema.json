@@ -2,8 +2,33 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "additionalProperties": false,
-  "required": ["scheme", "totalAnnualPaymentPence", "application", "payments", "applicant"],
+  "required": ["rulesCalculations", "scheme", "applicant", "application", "payments"],
   "properties": {
+    "rulesCalculations": {
+      "type": "object",
+      "title": "Rules and calculations validation results",
+      "additionalProperties": false,
+      "required": ["id", "message", "valid", "date"],
+      "properties": {
+        "id": {
+          "type": "integer",
+          "title": "Validation run ID"
+        },
+        "message": {
+          "type": "string",
+          "title": "Validation message"
+        },
+        "valid": {
+          "type": "boolean",
+          "title": "Validation status"
+        },
+        "date": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Validation date and time"
+        }
+      }
+    },
     "scheme": {
       "type": "string",
       "title": "Defra scheme name"
@@ -13,38 +38,16 @@
       "minimum": 0,
       "title": "Total annual payment in pence"
     },
-    "rulesCalculations": {
-      "type": "object",
-      "title": "Rules calculations with validation details",
-      "properties": {
-        "id": {
-          "type": "string",
-          "title": "Validation run ID"
-        },
-        "message": {
-          "type": "string",
-          "title": "Validation response message"
-        },
-        "valid": {
-          "type": "boolean",
-          "title": "Validation result"
-        },
-        "date": {
-          "type": "string",
-          "title": "Validation date"
-        }
-      }
-    },
     "application": {
       "type": "object",
-      "title": "Application section with parcels and agreements",
+      "title": "Application data",
       "additionalProperties": false,
       "required": ["parcel", "agreement"],
       "properties": {
         "parcel": {
           "type": "array",
-          "title": "Land parcels with their application actions",
-          "minItems": 1,
+          "title": "Application parcels",
+          "minItems": 0,
           "items": {
             "$ref": "#/$defs/ApplicationParcel"
           }
@@ -52,6 +55,7 @@
         "agreement": {
           "type": "array",
           "title": "Agreement-level actions",
+          "minItems": 0,
           "items": {
             "$ref": "#/$defs/ApplicationAgreement"
           }
@@ -60,21 +64,22 @@
     },
     "payments": {
       "type": "object",
-      "title": "Payments section with parcels and agreements",
+      "title": "Payment data",
       "additionalProperties": false,
       "required": ["parcel", "agreement"],
       "properties": {
         "parcel": {
           "type": "array",
-          "title": "Land parcels with their payment actions",
-          "minItems": 1,
+          "title": "Payment parcels",
+          "minItems": 0,
           "items": {
             "$ref": "#/$defs/PaymentParcel"
           }
         },
         "agreement": {
           "type": "array",
-          "title": "Agreement-level payment actions",
+          "title": "Agreement-level payments",
+          "minItems": 0,
           "items": {
             "$ref": "#/$defs/PaymentAgreement"
           }
@@ -121,11 +126,69 @@
         },
         "actions": {
           "type": "array",
-          "title": "Application actions for this parcel",
+          "title": "Actions applied to this parcel",
           "minItems": 0,
           "items": {
             "$ref": "#/$defs/ApplicationAction"
           }
+        }
+      }
+    },
+    "ApplicationAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "durationYears", "version"],
+      "properties": {
+        "code": {
+          "type": "string",
+          "title": "Action code"
+        },
+        "durationYears": {
+          "type": "integer",
+          "minimum": 1,
+          "title": "Duration in years"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "title": "Action version"
+        },
+        "appliedFor": {
+          "type": "object",
+          "title": "Applied for area or quantity",
+          "additionalProperties": false,
+          "properties": {
+            "unit": {
+              "type": "string",
+              "title": "Unit of measurement",
+              "enum": ["kg", "m", "100m", "count", "ha", "m2", "sqm"]
+            },
+            "quantity": {
+              "type": "number",
+              "title": "Quantity applied for"
+            }
+          }
+        }
+      }
+    },
+    "ApplicationAgreement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "durationYears", "version"],
+      "properties": {
+        "code": {
+          "type": "string",
+          "title": "Action code"
+        },
+        "durationYears": {
+          "type": "integer",
+          "minimum": 1,
+          "title": "Duration in years"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "title": "Action version"
         }
       }
     },
@@ -170,43 +233,6 @@
         }
       }
     },
-    "ApplicationAction": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["code", "version"],
-      "properties": {
-        "code": {
-          "type": "string",
-          "title": "Code for the action to be taken on the land parcel"
-        },
-        "version": {
-          "type": "integer",
-          "minimum": 1,
-          "title": "Action version"
-        },
-        "durationYears": {
-          "type": "integer",
-          "minimum": 1,
-          "title": "Duration in years"
-        },
-        "appliedFor": {
-          "type": "object",
-          "title": "Applied for area or quantity",
-          "additionalProperties": false,
-          "properties": {
-            "unit": {
-              "type": "string",
-              "title": "Unit of measurement",
-              "enum": ["kg", "m", "100m", "count", "ha", "m2", "sqm"]
-            },
-            "quantity": {
-              "type": "number",
-              "title": "Quantity applied for"
-            }
-          }
-        }
-      }
-    },
     "PaymentAction": {
       "type": "object",
       "additionalProperties": false,
@@ -214,7 +240,7 @@
       "properties": {
         "code": {
           "type": "string",
-          "title": "Code for the action to be taken on the land parcel"
+          "title": "Action code"
         },
         "description": {
           "type": "string",
@@ -224,6 +250,16 @@
           "type": "integer",
           "minimum": 1,
           "title": "Duration in years"
+        },
+        "paymentRates": {
+          "type": "integer",
+          "minimum": 0,
+          "title": "Payment rate in pence"
+        },
+        "annualPaymentPence": {
+          "type": "integer",
+          "minimum": 0,
+          "title": "Annual payment in pence"
         },
         "eligible": {
           "type": "object",
@@ -256,37 +292,6 @@
               "title": "Quantity applied for"
             }
           }
-        },
-        "paymentRates": {
-          "type": "integer",
-          "minimum": 0,
-          "title": "Payment rate in pence"
-        },
-        "annualPaymentPence": {
-          "type": "integer",
-          "minimum": 0,
-          "title": "Annual payment in pence"
-        }
-      }
-    },
-    "ApplicationAgreement": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["code", "version"],
-      "properties": {
-        "code": {
-          "type": "string",
-          "title": "Agreement action code"
-        },
-        "version": {
-          "type": "integer",
-          "minimum": 1,
-          "title": "Agreement version"
-        },
-        "durationYears": {
-          "type": "integer",
-          "minimum": 1,
-          "title": "Duration in years"
         }
       }
     },
@@ -297,11 +302,11 @@
       "properties": {
         "code": {
           "type": "string",
-          "title": "Agreement action code"
+          "title": "Action code"
         },
         "description": {
           "type": "string",
-          "title": "Agreement description"
+          "title": "Action description"
         },
         "durationYears": {
           "type": "integer",
@@ -332,27 +337,14 @@
               "type": "string",
               "description": "Business name"
             },
-            "email": {
-              "type": "object",
-              "properties": {
-                "address": {
-                  "type": "string",
-                  "format": "email",
-                  "description": "Business email address"
-                }
-              },
-              "required": ["address"]
+            "reference": {
+              "type": "string",
+              "description": "Business reference number"
             },
-            "phone": {
-              "type": "object",
-              "properties": {
-                "mobile": {
-                  "type": "string",
-                  "pattern": "^[0-9]+$",
-                  "description": "Mobile phone number"
-                }
-              },
-              "required": ["mobile"]
+            "email": {
+              "type": "string",
+              "format": "email",
+              "description": "Business email address"
             },
             "address": {
               "type": "object",
@@ -379,7 +371,7 @@
                   "description": "Address line 5"
                 },
                 "street": {
-                  "type": "string",
+                  "type": ["string", "null"],
                   "description": "Street name"
                 },
                 "city": {
@@ -392,10 +384,18 @@
                   "description": "UK postal code"
                 }
               },
-              "required": ["line1", "line2", "street", "city", "postalCode"]
+              "required": ["line1", "line2", "city", "postalCode"]
+            },
+            "landlinePhoneNumber": {
+              "type": "string",
+              "description": "Landline phone number"
+            },
+            "mobilePhoneNumber": {
+              "type": "string",
+              "description": "Mobile phone number"
             }
           },
-          "required": ["name", "email", "phone", "address"]
+          "required": ["name", "address"]
         },
         "customer": {
           "type": "object",
@@ -414,7 +414,7 @@
                   "description": "First name"
                 },
                 "middle": {
-                  "type": "string",
+                  "type": ["string", "null"],
                   "description": "Middle name"
                 },
                 "last": {

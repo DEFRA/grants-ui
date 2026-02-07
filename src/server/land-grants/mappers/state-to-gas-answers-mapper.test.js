@@ -14,12 +14,8 @@ const frpsGrantCode = config.get('landGrants.grantCode')
 const applicant = {
   business: {
     name: 'Test Business',
-    email: {
-      address: 'test@test.com.test'
-    },
-    phone: {
-      mobile: '01234567890'
-    },
+    email: 'test@test.com',
+    mobilePhoneNumber: '01234567890',
     address: {
       line1: 'A place',
       line2: '',
@@ -1170,7 +1166,7 @@ describe('schema validation', () => {
           }
         },
         rulesCalculations: {
-          id: '355',
+          id: 355,
           message: 'success',
           valid: true,
           date: new Date().toISOString()
@@ -1190,7 +1186,7 @@ describe('schema validation', () => {
           }
         },
         rulesCalculations: {
-          id: '355',
+          id: 355,
           message: 'success',
           valid: true,
           date: new Date().toISOString()
