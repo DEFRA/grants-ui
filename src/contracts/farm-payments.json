@@ -1,0 +1,103 @@
+{
+  "metadata": {
+    "sbi": "107365747",
+    "crn": "1103623923",
+    "frn": "1101313269",
+    "clientRef": "710-877-8fd",
+    "submittedAt": "2026-02-06T11:39:17.299Z"
+  },
+  "answers": {
+    "rulesCalculations": {
+      "id": 10,
+      "message": "Application validated successfully",
+      "valid": true,
+      "date": "2026-02-06T11:39:17.299Z"
+    },
+    "scheme": "SFI",
+    "applicant": {
+      "business": {
+        "name": "Griffin, M R",
+        "reference": "1101313269",
+        "address": {
+          "city": "SELBY",
+          "postalCode": "TR12 7AZ",
+          "line1": "Cuckoo Hill Farm",
+          "line2": "29 Exotic Estate FAIRVIEW CRESCENT"
+        },
+        "landlinePhoneNumber": "+44 1604 852698",
+        "email": "griffinmrm@rmniffirgr.com.test"
+      },
+      "customer": {
+        "name": {
+          "title": "Mrs",
+          "first": "Bernard",
+          "middle": null,
+          "last": "Tarrant"
+        }
+      }
+    },
+    "totalAnnualPaymentPence": 28709,
+    "application": {
+      "parcel": [
+        {
+          "sheetId": "SD7858",
+          "parcelId": "1059",
+          "area": {
+            "unit": "ha",
+            "quantity": 1.4236
+          },
+          "actions": [
+            {
+              "code": "CMOR1",
+              "version": 1,
+              "durationYears": 1,
+              "appliedFor": {
+                "unit": "ha",
+                "quantity": 1.4236
+              }
+            }
+          ]
+        }
+      ],
+      "agreement": []
+    },
+    "payments": {
+      "parcel": [
+        {
+          "sheetId": "SD7858",
+          "parcelId": "1059",
+          "area": {
+            "unit": "ha",
+            "quantity": 1.4236
+          },
+          "actions": [
+            {
+              "code": "CMOR1",
+              "description": "Assess moorland and produce a written record",
+              "durationYears": 1,
+              "paymentRates": 1060,
+              "annualPaymentPence": 1509,
+              "eligible": {
+                "unit": "ha",
+                "quantity": 1.4236
+              },
+              "appliedFor": {
+                "unit": "ha",
+                "quantity": 1.4236
+              }
+            }
+          ]
+        }
+      ],
+      "agreement": [
+        {
+          "code": "CMOR1",
+          "description": "Assess moorland and produce a written record",
+          "durationYears": 1,
+          "paymentRates": 27200,
+          "annualPaymentPence": 27200
+        }
+      ]
+    }
+  }
+}
