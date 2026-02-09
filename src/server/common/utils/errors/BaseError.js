@@ -15,6 +15,13 @@ export class BaseError extends Error {
   _logCode = LogCodes.SYSTEM.SERVER_ERROR
 
   /**
+   * Additional details used for logging
+   * @type {Object}
+   * @private
+   */
+  _details = {}
+
+  /**
    * An array to store previous errors for error chaining
    * @type {(BaseError|Error)[]}
    * @private
@@ -54,7 +61,7 @@ export class BaseError extends Error {
       reason: this.reason
     }
 
-    logger(this._logCode, Object.assign({}, messageOptions, ...additionalDetail), request)
+    logger(this._logCode, Object.assign({}, messageOptions, this._details, ...additionalDetail), request)
 
     const lastError = this.lastError
 
@@ -115,6 +122,22 @@ export class BaseError extends Error {
    */
   get logCode() {
     return this._logCode
+  }
+
+  /**
+   * Set additional details for this error, which can be used when logging the error
+   * @param {Object} details
+   */
+  set details(details) {
+    this._details = { ...this._details, ...details }
+  }
+
+  /**
+   *
+   * @returns {Object}
+   */
+  get details() {
+    return this._details
   }
 
   /**

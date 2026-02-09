@@ -12,6 +12,7 @@ import {
   unauthorized
 } from '@hapi/boom'
 import { config } from '~/src/config/config.js'
+import { BaseError } from '~/src/server/common/utils/errors/BaseError.js'
 
 const UNKNOWN_USER = 'unknown'
 
@@ -91,7 +92,11 @@ export function catchAll(request, h) {
     return h.redirect(response.output.headers.location)
   }
 
-  handleErrorLogging(request, response, statusCode)
+  if (response.output instanceof BaseError) {
+    response.output.log(request)
+  } else {
+    handleErrorLogging(request, response, statusCode)
+  }
 
   return renderErrorView(h, statusCode)
 }

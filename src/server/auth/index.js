@@ -12,6 +12,7 @@ import {
   logTokenExchangeFailure
 } from '~/src/server/auth/auth-logging.js'
 import { releaseAllApplicationLocksForOwnerFromApi } from '../common/helpers/lock/application-lock.js'
+import { ViewError } from '~/src/server/common/utils/errors/ViewError.js'
 
 const UNKNOWN_USER = 'unknown'
 const USER_AGENT = 'user-agent'
@@ -279,19 +280,16 @@ function renderUnauthorisedView(request, h) {
       request
     )
     return result
-  } catch (viewError) {
-    log(
-      LogCodes.AUTH.SIGN_IN_FAILURE,
-      {
-        userId: UNKNOWN_USER,
-        errorMessage: `Failed to render unauthorised view: ${viewError.message}`,
-        step: 'view_render_error',
-        errorStack: viewError.stack,
-        viewError: 'errors/401.njk',
-        serverWorkingDir: process.cwd()
-      },
-      request
-    )
+  } catch (error) {
+    const viewError = new ViewError(`Failed to render unauthorised view`, 200, 'auth-handler', 'view_render_failure')
+    viewError.from(error)
+    viewError.details = {
+      userId: UNKNOWN_USER,
+      step: 'view_render_error',
+      errorStack: viewError.stack,
+      viewError: 'errors/401.njk',
+      serverWorkingDir: process.cwd()
+    }
     throw viewError
   }
 }
