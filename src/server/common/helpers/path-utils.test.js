@@ -72,4 +72,27 @@ describe('resolvePath', () => {
     expect(resolvePath(obj, 'boolean')).toBe(true)
     expect(resolvePath(obj, 'array')).toEqual([1, 2, 3])
   })
+
+  describe('Prototype pollution protection', () => {
+    it.each(['__proto__', 'constructor', 'prototype'])('should return undefined for %s in path', (dangerousKey) => {
+      const obj = { [dangerousKey]: 'compromised' }
+      expect(resolvePath(obj, dangerousKey)).toBeUndefined()
+    })
+
+    it.each(['__proto__', 'constructor', 'prototype'])(
+      'should return undefined for %s in nested path',
+      (dangerousKey) => {
+        const obj = { foo: { [dangerousKey]: 'compromised' } }
+        expect(resolvePath(obj, `foo.${dangerousKey}`)).toBeUndefined()
+      }
+    )
+
+    it.each(['__proto__', 'constructor', 'prototype'])(
+      'should return undefined for %s in array notation',
+      (dangerousKey) => {
+        const obj = { [dangerousKey]: ['compromised'] }
+        expect(resolvePath(obj, `${dangerousKey}[0]`)).toBeUndefined()
+      }
+    )
+  })
 })
