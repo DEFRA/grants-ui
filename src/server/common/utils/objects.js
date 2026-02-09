@@ -26,3 +26,26 @@ export function isObject(value) {
 export function isObjectEmpty(obj) {
   return Object.keys(obj).length === 0
 }
+
+/**
+ * Keys that should never be assigned to prevent prototype pollution
+ */
+export const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype'])
+
+/**
+ * Assigns properties from source to target only when they are defined.
+ * Includes protection against prototype pollution attacks.
+ * @param {object} target - The object to assign properties to
+ * @param {object} source - The object to read properties from
+ * @param {Record<string, string>} mappings - Map of source keys to target keys
+ */
+export function assignIfDefined(target, source, mappings) {
+  for (const [sourceKey, targetKey] of Object.entries(mappings)) {
+    if (DANGEROUS_KEYS.has(targetKey)) {
+      continue
+    }
+    if (source[sourceKey] !== undefined) {
+      target[targetKey] = source[sourceKey]
+    }
+  }
+}

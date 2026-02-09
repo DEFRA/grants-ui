@@ -1,6 +1,7 @@
 import { Cluster, Redis } from 'ioredis'
 
 import { logger } from '~/src/server/common/helpers/logging/log.js'
+import { assignIfDefined } from '~/src/server/common/utils/objects.js'
 
 /**
  * @typedef {object} RedisConfig
@@ -16,20 +17,6 @@ import { logger } from '~/src/server/common/helpers/logging/log.js'
  * @property {boolean} [enableOfflineQueue]
  * @property {number} [commandTimeout]
  */
-
-/**
- * Assigns properties from source to target only when they are defined
- * @param {object} target - The object to assign properties to
- * @param {object} source - The object to read properties from
- * @param {Record<string, string>} mappings - Map of source keys to target keys
- */
-function assignIfDefined(target, source, mappings) {
-  for (const [sourceKey, targetKey] of Object.entries(mappings)) {
-    if (source[sourceKey] !== undefined) {
-      target[targetKey] = source[sourceKey]
-    }
-  }
-}
 
 /**
  * Setup Redis and provide a redis client
