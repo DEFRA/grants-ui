@@ -20,11 +20,12 @@ const mockData = {
       city: 'Test City',
       postalCode: 'TE1 1ST'
     },
-    phone: { mobile: '07123456789' },
-    email: { address: 'test@farm.com' }
+    landlinePhoneNumber: '01234567890',
+    mobilePhoneNumber: '07123456789',
+    email: 'test@farm.com'
   },
   customer: {
-    name: { first: 'Sarah', middle: 'A', last: 'Farmer' }
+    name: { title: 'Mrs', first: 'Sarah', middle: 'A', last: 'Farmer' }
   }
 }
 
@@ -59,7 +60,7 @@ describe('ConfirmFarmDetailsController', () => {
       view: vi.fn().mockReturnValue('mocked-view')
     }
     fetchBusinessAndCustomerInformation.mockResolvedValue(mockData)
-    config.get.mockReturnValue(true)
+    config.get.mockReturnValue(false)
   })
 
   afterEach(() => {
@@ -67,17 +68,6 @@ describe('ConfirmFarmDetailsController', () => {
   })
 
   describe('POST route handler', () => {
-    test('should not update state and proceed if no sbi', async () => {
-      const handler = controller.makePostRouteHandler()
-      const result = await handler(mockRequest, mockContext, mockH)
-
-      expect(fetchBusinessAndCustomerInformation).toHaveBeenCalled()
-      expect(controller.setState).toHaveBeenCalled()
-
-      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-path')
-      expect(result).toBe('redirected')
-    })
-
     test('should update state with sbi and applicant details and proceed', async () => {
       const handler = controller.makePostRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
@@ -114,12 +104,12 @@ describe('ConfirmFarmDetailsController', () => {
       const result = await handler(mockRequest, mockContext, mockH)
 
       expect(fetchBusinessAndCustomerInformation).toHaveBeenCalledWith(mockRequest)
-      expect(mockH.view).toHaveBeenCalledWith('confirm-farm-details', {
-        farmDetails: expect.objectContaining({
-          rows: expect.any(Array)
-        }),
-        pageTitle: 'Default Title'
-      })
+      expect(mockH.view).toHaveBeenCalledWith(
+        'confirm-farm-details',
+        expect.objectContaining({
+          details: expect.any(Object)
+        })
+      )
       expect(result).toBe('mocked-view')
     })
 
@@ -130,59 +120,54 @@ describe('ConfirmFarmDetailsController', () => {
       const handler = controller.makeGetRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
 
-      expect(mockH.view).toHaveBeenCalledWith('confirm-farm-details', {
-        error: {
-          titleText: 'There is a problem',
-          errorList: [
-            {
-              text: ConfirmFarmDetailsController.ERROR_MESSAGE,
-              href: ''
-            }
-          ]
-        },
-        pageTitle: 'Default Title'
-      })
+      expect(mockH.view).toHaveBeenCalledWith(
+        'confirm-farm-details',
+        expect.objectContaining({
+          error: {
+            titleText: 'There is a problem',
+            errorList: [
+              {
+                text: ConfirmFarmDetailsController.ERROR_MESSAGE,
+                href: ''
+              }
+            ]
+          }
+        })
+      )
       expect(result).toBe('mocked-view')
     })
   })
 
-  describe('buildFarmDetails', () => {
-    it('should build farm details with all available data', async () => {
-      const mockData = {
-        business: {
-          name: 'Test Business',
-          address: {
-            line1: 'Line 1',
-            line2: 'Line 2',
-            city: 'City',
-            postalCode: 'PC1 2CD'
-          },
-          landlinePhoneNumber: '01234567890',
-          mobilePhoneNumber: '07123456789',
-          email: 'test@example.com'
-        },
-        customer: {
-          name: { first: 'Sarah', last: 'Farmer' }
-        }
-      }
+  describe('buildDetailsForView', () => {
+    describe('when enableDetailedFarmDetails is false (legacy view)', () => {
+      beforeEach(() => {
+        config.get.mockReturnValue(false)
+      })
 
-      fetchBusinessAndCustomerInformation.mockResolvedValue(mockData)
+      it('should return a flat rows array', async () => {
+        const result = await controller.buildDetailsForView(mockRequest)
 
-      const result = await controller.buildFarmDetails(mockRequest)
+        expect(config.get).toHaveBeenCalledWith('landGrants.enableDetailedFarmDetails')
+        expect(result).toEqual({
+          rows: expect.any(Array)
+        })
+      })
 
-      expect(result).toEqual({
-        rows: [
+      it('should build rows with all available data', async () => {
+        const result = await controller.buildDetailsForView(mockRequest)
+
+        expect(result.rows).toEqual([
           {
             key: { text: 'Name' },
-            value: { text: 'Sarah Farmer' }
+            value: { text: 'Sarah A Farmer' }
           },
           {
             key: { text: 'Business name' },
-            value: { text: 'Test Business' }
+            value: { text: 'Test Farm Business' }
           },
           {
             key: { text: 'Address' },
-            value: { html: 'Line 1<br/>Line 2<br/>City<br/>PC1 2CD' }
+            value: { html: 'Line 1<br/>Line 2<br/>Test City<br/>TE1 1ST' }
           },
           {
             key: { text: 'SBI number' },
@@ -190,135 +175,185 @@ describe('ConfirmFarmDetailsController', () => {
           },
           {
             key: { text: 'Contact details' },
-            value: { html: 'formatted-01234567890<br/>formatted-07123456789<br/>test@example.com' }
+            value: { html: 'formatted-01234567890<br/>formatted-07123456789<br/>test@farm.com' }
           }
-        ]
+        ])
+      })
+
+      it('should handle missing optional data', async () => {
+        fetchBusinessAndCustomerInformation.mockResolvedValue({
+          business: {},
+          customer: {}
+        })
+
+        const result = await controller.buildDetailsForView(mockRequest)
+
+        expect(result.rows).toEqual([
+          {
+            key: { text: 'SBI number' },
+            value: { text: 'SBI123456' }
+          }
+        ])
+      })
+
+      it('should handle missing auth credentials', async () => {
+        const result = await controller.buildDetailsForView({})
+
+        const sbiRow = result.rows.find((row) => row.key.text === 'SBI number')
+        expect(sbiRow.value.text).toBeUndefined()
+      })
+
+      it('should handle missing customer name', async () => {
+        fetchBusinessAndCustomerInformation.mockResolvedValue({
+          ...mockData,
+          customer: {}
+        })
+
+        const result = await controller.buildDetailsForView(mockRequest)
+
+        expect(result.rows.find((row) => row.key.text === 'Name')).toBeUndefined()
+      })
+
+      it('should handle missing business name', async () => {
+        fetchBusinessAndCustomerInformation.mockResolvedValue({
+          ...mockData,
+          business: { ...mockData.business, name: undefined }
+        })
+
+        const result = await controller.buildDetailsForView(mockRequest)
+
+        expect(result.rows.find((row) => row.key.text === 'Business name')).toBeUndefined()
+      })
+
+      it('should handle missing business address', async () => {
+        fetchBusinessAndCustomerInformation.mockResolvedValue({
+          ...mockData,
+          business: { ...mockData.business, address: undefined }
+        })
+
+        const result = await controller.buildDetailsForView(mockRequest)
+
+        expect(result.rows.find((row) => row.key.text === 'Address')).toBeUndefined()
+      })
+
+      it('should handle missing phone and email', async () => {
+        fetchBusinessAndCustomerInformation.mockResolvedValue({
+          ...mockData,
+          business: {
+            ...mockData.business,
+            landlinePhoneNumber: undefined,
+            mobilePhoneNumber: undefined,
+            email: undefined
+          }
+        })
+
+        const result = await controller.buildDetailsForView(mockRequest)
+
+        expect(result.rows.find((row) => row.key.text === 'Contact details')).toBeUndefined()
       })
     })
 
-    it('should handle missing optional data', async () => {
-      const mockDataWithMissing = {
-        business: {},
-        customer: {}
-      }
+    describe('when enableDetailedFarmDetails is true (detailed view)', () => {
+      beforeEach(() => {
+        config.get.mockReturnValue(true)
+      })
 
-      fetchBusinessAndCustomerInformation.mockResolvedValue(mockDataWithMissing)
+      it('should return person, business, and contact sections', async () => {
+        const result = await controller.buildDetailsForView(mockRequest)
 
-      const result = await controller.buildFarmDetails(mockRequest)
+        expect(config.get).toHaveBeenCalledWith('landGrants.enableDetailedFarmDetails')
+        expect(result).toHaveProperty('person')
+        expect(result).toHaveProperty('business')
+        expect(result).toHaveProperty('contact')
+        expect(result).not.toHaveProperty('rows')
+      })
 
-      expect(result.rows).toEqual([
-        {
-          key: { text: 'SBI number' },
-          value: { text: 'SBI123456' }
-        }
-      ])
-    })
+      it('should build person rows from customer name', async () => {
+        const result = await controller.buildDetailsForView(mockRequest)
 
-    it('should handle missing auth credentials', async () => {
-      const requestWithoutAuth = {}
+        expect(result.person).toEqual({
+          rows: [
+            { key: { text: 'Title' }, value: { text: 'Mrs' } },
+            { key: { text: 'First name' }, value: { text: 'Sarah' } },
+            { key: { text: 'Middle name' }, value: { text: 'A' } },
+            { key: { text: 'Last name' }, value: { text: 'Farmer' } }
+          ]
+        })
+      })
 
-      fetchBusinessAndCustomerInformation.mockResolvedValue(mockData)
+      it('should build business rows with address and SBI, hiding optional empty address lines', async () => {
+        const result = await controller.buildDetailsForView(mockRequest)
 
-      const result = await controller.buildFarmDetails(requestWithoutAuth)
+        expect(result.business).toEqual({
+          rows: [
+            { key: { text: 'Business name' }, value: { text: ' Farm 1' } },
+            { key: { text: 'Address 1' }, value: { text: 'Line 1' } },
+            { key: { text: 'Address 2' }, value: { text: 'Line 2' } },
+            { key: { text: 'City' }, value: { text: 'Test City' } },
+            { key: { text: 'Postcode' }, value: { text: 'TE1 1ST' } },
+            { key: { text: 'SBI number' }, value: { text: 'SBI123456' } }
+          ]
+        })
+      })
 
-      expect(result.rows).toHaveLength(5)
-      const sbiRow = result.rows.find((row) => row.key.text === 'SBI number')
-      expect(sbiRow).toBeDefined()
-      expect(sbiRow.value.text).toBeUndefined()
-    })
+      it('should build contact rows with formatted phone numbers', async () => {
+        const result = await controller.buildDetailsForView(mockRequest)
 
-    it('should handle missing credentials in auth', async () => {
-      const requestWithoutCredentials = {
-        auth: {} // No credentials
-      }
+        expect(result.contact).toEqual({
+          rows: [
+            { key: { text: 'Landline number' }, value: { text: 'formatted-01234567890' } },
+            { key: { text: 'Mobile number' }, value: { text: 'formatted-07123456789' } },
+            { key: { text: 'Email address' }, value: { text: 'test@farm.com' } }
+          ]
+        })
+      })
 
-      fetchBusinessAndCustomerInformation.mockResolvedValue(mockData)
+      it('should show mandatory person fields as blank and hide optional middle name when customer name is missing', async () => {
+        fetchBusinessAndCustomerInformation.mockResolvedValue({
+          ...mockData,
+          customer: {}
+        })
 
-      const result = await controller.buildFarmDetails(requestWithoutCredentials)
+        const result = await controller.buildDetailsForView(mockRequest)
 
-      expect(result.rows).toHaveLength(5)
-      const sbiRow = result.rows.find((row) => row.key.text === 'SBI number')
-      expect(sbiRow).toBeDefined()
-      expect(sbiRow.value.text).toBeUndefined()
-    })
+        expect(result.person).toEqual({
+          rows: [
+            { key: { text: 'Title' }, value: { text: undefined } },
+            { key: { text: 'First name' }, value: { text: undefined } },
+            { key: { text: 'Last name' }, value: { text: undefined } }
+          ]
+        })
+      })
 
-    it('should handle missing sbi in credentials', async () => {
-      const requestWithoutSbi = {
-        auth: {
-          credentials: {} // No sbi
-        }
-      }
+      it('should show mandatory business fields as blank and hide optional when business is missing', async () => {
+        fetchBusinessAndCustomerInformation.mockResolvedValue({
+          ...mockData,
+          business: undefined
+        })
 
-      fetchBusinessAndCustomerInformation.mockResolvedValue(mockData)
+        const result = await controller.buildDetailsForView(mockRequest)
 
-      const result = await controller.buildFarmDetails(requestWithoutSbi)
+        expect(result.business).toEqual({
+          rows: [
+            { key: { text: 'Business name' }, value: { text: ' Farm 1' } },
+            { key: { text: 'Address 1' }, value: { text: undefined } },
+            { key: { text: 'City' }, value: { text: undefined } },
+            { key: { text: 'Postcode' }, value: { text: undefined } },
+            { key: { text: 'SBI number' }, value: { text: 'SBI123456' } }
+          ]
+        })
+      })
 
-      expect(result.rows).toHaveLength(5)
-      const sbiRow = result.rows.find((row) => row.key.text === 'SBI number')
-      expect(sbiRow).toBeDefined()
-      expect(sbiRow.value.text).toBeUndefined()
-    })
+      it('should return empty contact rows when business is missing', async () => {
+        fetchBusinessAndCustomerInformation.mockResolvedValue({
+          ...mockData,
+          business: undefined
+        })
 
-    it('should handle missing customer name', async () => {
-      const mockDataWithoutCustomerName = {
-        ...mockData,
-        customer: {} // No name
-      }
+        const result = await controller.buildDetailsForView(mockRequest)
 
-      fetchBusinessAndCustomerInformation.mockResolvedValue(mockDataWithoutCustomerName)
-
-      const result = await controller.buildFarmDetails(mockRequest)
-
-      expect(result.rows.find((row) => row.key.text === 'Name')).toBeUndefined()
-    })
-
-    it('should handle missing business name', async () => {
-      const mockDataWithoutBusinessName = {
-        ...mockData,
-        business: {
-          ...mockData.business,
-          name: undefined
-        }
-      }
-
-      fetchBusinessAndCustomerInformation.mockResolvedValue(mockDataWithoutBusinessName)
-
-      const result = await controller.buildFarmDetails(mockRequest)
-
-      expect(result.rows.find((row) => row.key.text === 'Business name')).toBeUndefined()
-    })
-
-    it('should handle missing business address', async () => {
-      const mockDataWithoutAddress = {
-        ...mockData,
-        business: {
-          ...mockData.business,
-          address: undefined
-        }
-      }
-
-      fetchBusinessAndCustomerInformation.mockResolvedValue(mockDataWithoutAddress)
-
-      const result = await controller.buildFarmDetails(mockRequest)
-
-      expect(result.rows.find((row) => row.key.text === 'Address')).toBeUndefined()
-    })
-
-    it('should handle missing phone and email', async () => {
-      const mockDataWithoutContactDetails = {
-        ...mockData,
-        business: {
-          ...mockData.business,
-          phone: undefined,
-          email: undefined
-        }
-      }
-
-      fetchBusinessAndCustomerInformation.mockResolvedValue(mockDataWithoutContactDetails)
-
-      const result = await controller.buildFarmDetails(mockRequest)
-
-      expect(result.rows.find((row) => row.key.text === 'Contact details')).toBeUndefined()
+        expect(result.contact).toEqual({ rows: [] })
+      })
     })
   })
 

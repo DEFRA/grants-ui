@@ -20,8 +20,31 @@
         {{ pageTitle }}
       </h1>
 
-        {{ govukSummaryList(farmDetails) }}
+      {% if details.person and details.person.rows.length %}
+        <h2 class="govuk-heading-m">
+          Your details
+        </h2>
+        {{ govukSummaryList(details.person) }}
+      {% endif %}
 
+      {% if details.business and details.business.rows.length %}
+        <h2 class="govuk-heading-m">
+          Business details
+        </h2>
+        {{ govukSummaryList(details.business) }}
+      {% endif %}
+
+      {% if details.contact and details.contact.rows.length %}
+        <h2 class="govuk-heading-m">
+          Contact details
+        </h2>
+        {{ govukSummaryList(details.contact) }}
+      {% endif %}
+
+      {% if details.rows %}
+        {{ govukSummaryList(details) }}
+      {% endif %}
+     
       {% if not error %}
         <form method="post" novalidate>
           <input type="hidden" name="crumb" value="{{ crumb }}">

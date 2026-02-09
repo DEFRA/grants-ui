@@ -27,6 +27,71 @@ export function createCustomerNameRow(name) {
 }
 
 /**
+ * Build summary list rows from field definitions.
+ * Mandatory fields are always included. Optional fields are hidden when their value is empty.
+ * @param {{ label: string, value: any, mandatory?: boolean }[]} fields
+ * @returns {{ rows: object[] }}
+ */
+export function buildRows(fields) {
+  return {
+    rows: fields
+      .filter(({ value, mandatory }) => mandatory || Boolean(value))
+      .map(({ label, value }) => ({
+        key: { text: label },
+        value: { text: value }
+      }))
+  }
+}
+
+/**
+ * Create person detail rows for detailed view.
+ * @param {object} name - Name object with title, first, middle, last properties
+ * @returns {{ rows: object[] }} Rows object
+ */
+export function createPersonRows(name) {
+  return buildRows([
+    { label: 'Title', value: name?.title, mandatory: true },
+    { label: 'First name', value: name?.first, mandatory: true },
+    { label: 'Middle name', value: name?.middle },
+    { label: 'Last name', value: name?.last, mandatory: true }
+  ])
+}
+
+/**
+ * Create contact detail rows for detailed view.
+ * @param {object} business - Business data with phone numbers and email
+ * @returns {{ rows: object[] }} Rows object
+ */
+export function createContactRows(business) {
+  return buildRows([
+    { label: 'Landline number', value: formatPhone(business?.landlinePhoneNumber) },
+    { label: 'Mobile number', value: formatPhone(business?.mobilePhoneNumber) },
+    { label: 'Email address', value: business?.email }
+  ])
+}
+
+/**
+ * Create business detail rows for detailed view.
+ * @param {string} sbi - SBI number
+ * @param {string} organisationName - Business name
+ * @param {object} business - Business data
+ * @returns {{ rows: object[] }} Rows object
+ */
+export function createBusinessRows(sbi, organisationName, business) {
+  const address = business?.address
+  return buildRows([
+    { label: 'Business name', value: organisationName, mandatory: true },
+    { label: 'Address 1', value: address?.line1, mandatory: true },
+    { label: 'Address 2', value: address?.line2 },
+    { label: 'Address 3', value: address?.line3 },
+    { label: 'Address 4', value: address?.line4 },
+    { label: 'City', value: address?.city, mandatory: true },
+    { label: 'Postcode', value: address?.postalCode, mandatory: true },
+    { label: 'SBI number', value: sbi, mandatory: true }
+  ])
+}
+
+/**
  * Create business name row if available
  * @param {string} businessName - Business name
  * @returns {object|null} Row object or null if no business name

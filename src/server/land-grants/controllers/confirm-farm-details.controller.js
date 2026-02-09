@@ -3,11 +3,15 @@ import { fetchBusinessAndCustomerInformation } from '../../common/services/conso
 import {
   createAddressRow,
   createBusinessNameRow,
+  createBusinessRows,
   createContactDetailsRow,
+  createContactRows,
   createCustomerNameRow,
+  createPersonRows,
   createSbiRow
 } from '../../common/helpers/create-rows.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { config } from '~/src/config/config.js'
 
 export default class ConfirmFarmDetailsController extends QuestionPageController {
   viewName = 'confirm-farm-details'
@@ -24,8 +28,8 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
       const { sbi } = request.auth.credentials
 
       try {
-        const farmDetails = await this.buildFarmDetails(request)
-        return h.view(this.viewName, { ...baseViewModel, farmDetails })
+        const details = await this.buildDetailsForView(request)
+        return h.view(this.viewName, { ...baseViewModel, details })
       } catch (error) {
         return this.handleError(sbi, error, baseViewModel, h, request)
       }
@@ -37,22 +41,35 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
    * @param {AnyFormRequest} request
    * @returns {Promise<object>} Farm details object with rows array
    */
-  async buildFarmDetails(request) {
+  async buildDetailsForView(request) {
     const data = await fetchBusinessAndCustomerInformation(request)
+    const enableDetailedFarmDetails = /** @type {object} */ (config).get('landGrants.enableDetailedFarmDetails')
 
-    const rows = [
-      createCustomerNameRow(data.customer?.name),
-      createBusinessNameRow(data.business?.name),
-      createAddressRow(data.business?.address),
-      createSbiRow(request.auth?.credentials?.sbi),
-      createContactDetailsRow(
-        data.business?.landlinePhoneNumber,
-        data.business?.mobilePhoneNumber,
-        data.business?.email
-      )
-    ].filter(Boolean)
+    if (enableDetailedFarmDetails) {
+      return {
+        person: createPersonRows(data.customer?.name),
+        business: createBusinessRows(
+          request.auth?.credentials?.sbi,
+          request.auth?.credentials.organisationName,
+          data.business
+        ),
+        contact: createContactRows(data.business)
+      }
+    }
 
-    return { rows }
+    return {
+      rows: [
+        createCustomerNameRow(data.customer?.name),
+        createBusinessNameRow(data.business?.name),
+        createAddressRow(data.business?.address),
+        createSbiRow(request.auth?.credentials?.sbi),
+        createContactDetailsRow(
+          data.business?.landlinePhoneNumber,
+          data.business?.mobilePhoneNumber,
+          data.business?.email
+        )
+      ].filter(Boolean)
+    }
   }
 
   /**
