@@ -50,14 +50,16 @@ describe('Token Manager', () => {
   })
 
   describe('createTokenRequestParams', () => {
-    test('creates correct FormData params', () => {
+    test('creates correct URL search params', () => {
       const params = createTokenRequestParams('client-id', 'test-scope', 'secret')
+      const paramsObject = Object.fromEntries(params)
 
-      expect(params).toBeInstanceOf(FormData)
-      expect(params.get('client_id')).toBe('client-id')
-      expect(params.get('scope')).toBe('test-scope')
-      expect(params.get('client_secret')).toBe('secret')
-      expect(params.get('grant_type')).toBe('client_credentials')
+      expect(paramsObject).toEqual({
+        client_id: 'client-id',
+        scope: 'test-scope',
+        client_secret: 'secret',
+        grant_type: 'client_credentials'
+      })
     })
   })
 
@@ -79,15 +81,17 @@ describe('Token Manager', () => {
 
       const [[calledUrl, calledOptions]] = mockFetch.mock.calls
 
-      expect(calledUrl).toBe('https://login.microsoftonline.com/mock-tenant-id/oauth2/v2.0/token')
+      expect(calledUrl).toBe('https://francecentral.login.microsoftonline.com/mock-tenant-id/oauth2/v2.0/token')
       expect(calledOptions.method).toBe('POST')
+      expect(calledOptions.headers['Content-Type']).toBe('application/x-www-form-urlencoded')
 
-      const body = calledOptions.body
-      expect(body).toBeInstanceOf(FormData)
-      expect(body.get('client_id')).toBe('mock-client-id')
-      expect(body.get('scope')).toBe('mock-client-id/.default')
-      expect(body.get('client_secret')).toBe('mock-client-secret')
-      expect(body.get('grant_type')).toBe('client_credentials')
+      const bodyParams = new URLSearchParams(calledOptions.body)
+      expect(Object.fromEntries(bodyParams)).toEqual({
+        client_id: 'mock-client-id',
+        scope: 'mock-client-id/.default',
+        client_secret: 'mock-client-secret',
+        grant_type: 'client_credentials'
+      })
     })
 
     test('throws error when token refresh fails', async () => {

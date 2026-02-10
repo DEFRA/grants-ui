@@ -1,3 +1,5 @@
+import { URLSearchParams } from 'node:url'
+
 import { config } from '~/src/config/config.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
@@ -47,15 +49,15 @@ export function isTokenExpired(expiryTime) {
  * @param {string} clientId - Client ID
  * @param {string} scope - Scope of the token
  * @param {string} clientSecret - Client Secret
- * @returns {FormData} - FormData object with the request parameters
+ * @returns {URLSearchParams} - URLSearchParams object with the request parameters
  */
 export function createTokenRequestParams(clientId, scope, clientSecret) {
-  const formData = new FormData()
-  formData.append('client_id', clientId)
-  formData.append('scope', scope)
-  formData.append('client_secret', clientSecret)
-  formData.append('grant_type', 'client_credentials')
-  return formData
+  return new URLSearchParams({
+    client_id: clientId,
+    scope,
+    client_secret: clientSecret,
+    grant_type: 'client_credentials'
+  })
 }
 
 /**
@@ -72,7 +74,7 @@ export function createTokenRequestParams(clientId, scope, clientSecret) {
  * @throws {Error} If the request fails or the response is not ok.
  */
 export async function refreshToken() {
-  const tokenEndpoint = config.get('entra.tokenEndpoint')
+  const tokenEndpoint = 'https://francecentral.login.microsoftonline.com'
   const tenantId = config.get('entra.tenantId')
   const clientId = config.get('entra.clientId')
   const clientSecret = config.get('entra.clientSecret')
@@ -85,6 +87,9 @@ export async function refreshToken() {
       () =>
         fetch(`${tokenEndpoint}/${tenantId}/oauth2/v2.0/token`, {
           method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
           body: params
         }),
       {
