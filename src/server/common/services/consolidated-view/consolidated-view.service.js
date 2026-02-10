@@ -5,7 +5,7 @@ import { config } from '~/src/config/config.js'
 import { getValidToken } from '~/src/server/common/helpers/entra/token-manager.js'
 import { escapeGraphQLString } from '~/src/server/common/helpers/graphql-utils.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
-import { log, LogCodes, logger } from '~/src/server/common/helpers/logging/log.js'
+import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
 /**
  * @typedef {object} LandParcel
