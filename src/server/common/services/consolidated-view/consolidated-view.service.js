@@ -50,7 +50,7 @@ async function getConsolidatedViewRequestOptions(request, { method = 'POST', que
 
   const bearerToken = await getValidToken()
 
-  logger.info(`getConsolidatedViewRequestOptions: ${bearerToken}`)
+  logger.info(`getConsolidatedViewRequestOptions: ${bearerToken} - ${token}`)
   const headers = {
     'Content-Type': 'application/json',
     'gateway-type': 'external',
