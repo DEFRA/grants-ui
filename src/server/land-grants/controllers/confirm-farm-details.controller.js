@@ -8,6 +8,7 @@ import {
   createSbiRow
 } from '../../common/helpers/create-rows.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { config } from '~/src/config/config.js'
 
 export default class ConfirmFarmDetailsController extends QuestionPageController {
   viewName = 'confirm-farm-details'
@@ -47,6 +48,10 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
 
     const missingFields = []
 
+    if (config.get('landGrants.enableBlockingInvalidContactDetails') === false) {
+      return []
+    }
+
     const isMissing = (value) => value === undefined || value === null || value === ''
 
     requiredCustomerNameFields.forEach((field) => {
@@ -67,7 +72,7 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
       }
     })
 
-    return missingFields || null
+    return missingFields
   }
 
   /**

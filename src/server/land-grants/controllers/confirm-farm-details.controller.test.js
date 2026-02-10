@@ -325,6 +325,8 @@ describe('ConfirmFarmDetailsController', () => {
 
   describe('validateBusinessAndCustomerInformation', () => {
     it('should return an empty array when all required fields are present', () => {
+      config.get.mockReturnValue(true)
+
       const data = {
         customer: {
           name: {
@@ -380,6 +382,8 @@ describe('ConfirmFarmDetailsController', () => {
     })
 
     it('should return all required fields when data is missing', () => {
+      config.get.mockReturnValue(true)
+
       const result = controller.validateBusinessAndCustomerInformation(undefined)
 
       expect(result).toEqual([
@@ -392,6 +396,14 @@ describe('ConfirmFarmDetailsController', () => {
         'business.name',
         'business.address'
       ])
+    })
+
+    it('should return an empty array when feature flag to block invalid contact details is disabled', () => {
+      config.get.mockReturnValue(false)
+
+      const result = controller.validateBusinessAndCustomerInformation(undefined)
+
+      expect(result).toEqual([])
     })
   })
 
