@@ -162,7 +162,7 @@ describe('ConfirmFarmDetailsController', () => {
           email: 'test@example.com'
         },
         customer: {
-          name: { first: 'Sarah', last: 'Farmer' }
+          name: { title: 'Mrs', first: 'Sarah', last: 'Farmer' }
         }
       }
 
@@ -171,6 +171,7 @@ describe('ConfirmFarmDetailsController', () => {
       const result = await controller.buildFarmDetails(mockRequest)
 
       expect(result).toEqual({
+        missingFields: [],
         rows: [
           {
             key: { text: 'Name' },
@@ -319,6 +320,78 @@ describe('ConfirmFarmDetailsController', () => {
       const result = await controller.buildFarmDetails(mockRequest)
 
       expect(result.rows.find((row) => row.key.text === 'Contact details')).toBeUndefined()
+    })
+  })
+
+  describe('validateBusinessAndCustomerInformation', () => {
+    it('should return an empty array when all required fields are present', () => {
+      const data = {
+        customer: {
+          name: {
+            title: 'Ms',
+            first: 'Jane',
+            last: 'Doe'
+          }
+        },
+        business: {
+          address: {
+            line1: 'Line 1',
+            line2: 'Line 2',
+            street: 'High Street',
+            city: 'Townsville',
+            postalCode: 'TS1 1ST'
+          },
+          name: 'Test Business',
+          reference: 'SBI123456',
+          landlinePhoneNumber: '01234567890',
+          mobilePhoneNumber: '07123456789',
+          email: 'test@example.com'
+        }
+      }
+
+      const result = controller.validateBusinessAndCustomerInformation(data)
+
+      expect(result).toEqual([])
+    })
+
+    it('should return missing customer name fields when they are empty or missing', () => {
+      const data = {
+        customer: {
+          name: {
+            // title missing
+            first: '',
+            last: null
+          }
+        },
+        business: {
+          address: {
+            line1: 'Line 1',
+            city: 'Townsville',
+            postalCode: 'TS1 1ST'
+          },
+          name: 'Test Business',
+          reference: 'SBI123456'
+        }
+      }
+
+      const result = controller.validateBusinessAndCustomerInformation(data)
+
+      expect(result).toEqual(['customer.name.title', 'customer.name.first', 'customer.name.last'])
+    })
+
+    it('should return all required fields when data is missing', () => {
+      const result = controller.validateBusinessAndCustomerInformation(undefined)
+
+      expect(result).toEqual([
+        'customer.name.title',
+        'customer.name.first',
+        'customer.name.last',
+        'business.address.line1',
+        'business.address.city',
+        'business.address.postalCode',
+        'business.name',
+        'business.address'
+      ])
     })
   })
 
