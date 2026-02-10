@@ -4,7 +4,10 @@ import { parseSessionKey } from './get-cache-key-helper.js'
 import { createApiHeadersForGrantsUiBackend } from '../auth/backend-auth-helper.js'
 import { log, LogCodes } from '../logging/log.js'
 
+// @ts-ignore - TS2589: Type instantiation excessively deep (convict type complexity)
 const GRANTS_UI_BACKEND_ENDPOINT = config.get('session.cache.apiEndpoint')
+// @ts-ignore - TS2589: Type instantiation excessively deep (convict type complexity)
+const MAX_DB_STATE_SIZE_BYTES = config.get('session.cache.maxDbStateSizeBytes')
 
 /**
  * Persists a given state object to the Grants UI backend API.
@@ -33,16 +36,28 @@ export async function persistStateToApi(state, key, { lockToken } = {}) {
     }
   })
 
+  const body = JSON.stringify({
+    sbi,
+    grantCode,
+    grantVersion: 1, // NOSONAR TODO: Update when support for same grant versioning is implemented
+    state
+  })
+
+  const bodySize = Buffer.byteLength(body)
+  if (bodySize > MAX_DB_STATE_SIZE_BYTES) {
+    log(LogCodes.SYSTEM.STATE_SIZE_EXCEEDED, {
+      size: bodySize,
+      limit: MAX_DB_STATE_SIZE_BYTES,
+      sessionKey: key
+    })
+    throw new Error(`State payload size (${bodySize} bytes) exceeds limit (${MAX_DB_STATE_SIZE_BYTES} bytes)`)
+  }
+
   try {
     const response = await fetch(url.href, {
       method: 'POST',
       headers: createApiHeadersForGrantsUiBackend({ lockToken }),
-      body: JSON.stringify({
-        sbi,
-        grantCode,
-        grantVersion: 1, // NOSONAR TODO: Update when support for same grant versioning is implemented
-        state
-      })
+      body
     })
 
     if (!response.ok) {
