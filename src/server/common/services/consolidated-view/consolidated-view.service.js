@@ -5,7 +5,7 @@ import { config } from '~/src/config/config.js'
 import { getValidToken } from '~/src/server/common/helpers/entra/token-manager.js'
 import { escapeGraphQLString } from '~/src/server/common/helpers/graphql-utils.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
-import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { log, LogCodes, logger } from '~/src/server/common/helpers/logging/log.js'
 
 /**
  * @typedef {object} LandParcel
@@ -47,8 +47,10 @@ export class ConsolidatedViewApiError extends Error {
  */
 async function getConsolidatedViewRequestOptions(request, { method = 'POST', query }) {
   const { credentials: { token } = {} } = request.auth ?? {}
+
   const bearerToken = await getValidToken()
 
+  logger.info(`getConsolidatedViewRequestOptions: ${bearerToken}`)
   const headers = {
     'Content-Type': 'application/json',
     'gateway-type': 'external',

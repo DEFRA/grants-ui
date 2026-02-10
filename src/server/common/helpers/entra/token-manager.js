@@ -74,7 +74,7 @@ export function createTokenRequestParams(clientId, scope, clientSecret) {
  * @throws {Error} If the request fails or the response is not ok.
  */
 export async function refreshToken() {
-  const tokenEndpoint = 'https://francecentral.login.microsoftonline.com'
+  const tokenEndpoint = config.get('entra.tokenEndpoint')
   const tenantId = config.get('entra.tenantId')
   const clientId = config.get('entra.clientId')
   const clientSecret = config.get('entra.clientSecret')

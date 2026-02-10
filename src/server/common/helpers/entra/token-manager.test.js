@@ -81,7 +81,7 @@ describe('Token Manager', () => {
 
       const [[calledUrl, calledOptions]] = mockFetch.mock.calls
 
-      expect(calledUrl).toBe('https://francecentral.login.microsoftonline.com/mock-tenant-id/oauth2/v2.0/token')
+      expect(calledUrl).toBe('https://login.microsoftonline.com/mock-tenant-id/oauth2/v2.0/token')
       expect(calledOptions.method).toBe('POST')
       expect(calledOptions.headers['Content-Type']).toBe('application/x-www-form-urlencoded')
 
