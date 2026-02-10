@@ -1,5 +1,3 @@
-import { URLSearchParams } from 'node:url'
-
 import { config } from '~/src/config/config.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
@@ -21,11 +19,15 @@ let tokenState = {
   tokenExpiry: null
 }
 
+/** @type {Promise<string>|null} */
+let refreshPromise = null
+
 export function clearTokenState() {
   tokenState = {
     currentToken: null,
     tokenExpiry: null
   }
+  refreshPromise = null
 }
 
 /**
@@ -45,15 +47,15 @@ export function isTokenExpired(expiryTime) {
  * @param {string} clientId - Client ID
  * @param {string} scope - Scope of the token
  * @param {string} clientSecret - Client Secret
- * @returns {URLSearchParams} - URLSearchParams object with the request parameters
+ * @returns {FormData} - FormData object with the request parameters
  */
 export function createTokenRequestParams(clientId, scope, clientSecret) {
-  return new URLSearchParams({
-    client_id: clientId,
-    scope,
-    client_secret: clientSecret,
-    grant_type: 'client_credentials'
-  })
+  const formData = new FormData()
+  formData.append('client_id', clientId)
+  formData.append('scope', scope)
+  formData.append('client_secret', clientSecret)
+  formData.append('grant_type', 'client_credentials')
+  return formData
 }
 
 /**
@@ -83,9 +85,6 @@ export async function refreshToken() {
       () =>
         fetch(`${tokenEndpoint}/${tenantId}/oauth2/v2.0/token`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-          },
           body: params
         }),
       {
@@ -137,5 +136,11 @@ export async function getValidToken() {
     return tokenState.currentToken
   }
 
-  return refreshToken()
+  if (!refreshPromise) {
+    refreshPromise = refreshToken().finally(() => {
+      refreshPromise = null
+    })
+  }
+
+  return refreshPromise
 }
