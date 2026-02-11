@@ -51,7 +51,7 @@ export class AuthError extends BaseError {
   getAuthLoggingData(request) {
     const authLoggingData = {}
 
-    if (request && request.auth && request.auth.credentials) {
+    if (request?.auth?.credentials) {
       const { profile, refreshToken, token } = request.auth.credentials
 
       Object.assign(authLoggingData, {

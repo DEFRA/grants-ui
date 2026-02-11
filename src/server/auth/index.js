@@ -313,7 +313,7 @@ async function processAuthenticatedSignIn(request, h) {
 
   logSuccessfulSignIn(profile, role, scope)
 
-  return redirectAfterSignIn(request, h, profile)
+  return redirectAfterSignIn(request, h)
 }
 
 function validateProfileData(profile) {
@@ -391,7 +391,7 @@ function setCookieAuth(request, profile) {
   }
 }
 
-function redirectAfterSignIn(request, h, profile) {
+function redirectAfterSignIn(request, h) {
   try {
     const redirect = request.yar.get('redirect') ?? '/home'
     request.yar.clear('redirect')
