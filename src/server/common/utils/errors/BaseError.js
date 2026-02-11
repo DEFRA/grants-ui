@@ -6,7 +6,7 @@
  */
 
 /**
- * Auth profile schema used in request auth credentials.
+ * BaseError profile schema.
  * @typedef {{
  *   message: string,
  *   source: string,
