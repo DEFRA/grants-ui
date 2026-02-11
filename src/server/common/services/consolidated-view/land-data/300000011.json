@@ -39,10 +39,10 @@
         "address": {
           "line1": "12 Green Lane",
           "line2": "Trading Estate",
-          "line3": "Birmingham",
-          "line4": "Cheshire",
-          "line5": "",
-          "street": "Green Lane",
+          "line3": null,
+          "line4": null,
+          "line5": null,
+          "street": null,
           "city": "Birmingham",
           "postalCode": "ZE60 6BA"
         }

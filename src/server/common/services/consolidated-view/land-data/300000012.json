@@ -40,9 +40,9 @@
           "line1": "13 George Street",
           "line2": "Barns",
           "line3": "Liverpool",
-          "line4": "Warwickshire",
-          "line5": "",
-          "street": "George Street",
+          "line4": null,
+          "line5": null,
+          "street": null,
           "city": "Liverpool",
           "postalCode": "AB61 7CB"
         }

@@ -42,9 +42,17 @@
           "line3": "York",
           "line4": "Yorkshire",
           "line5": "",
-          "street": "The Green",
+          "street": "Rochester Drive",
           "city": "York",
-          "postalCode": "WF54 9YZ"
+          "postalCode": "WF54 9YZ",
+          "uprn": "381124619099",
+          "buildingName": null,
+          "buildingNumberRange": null,
+          "county": null,
+          "dependentLocality": null,
+          "doubleDependentLocality": null,
+          "flatName": null,
+          "pafOrganisationName": null
         }
       }
     }

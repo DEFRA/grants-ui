@@ -1,6 +1,7 @@
 import { Cluster, Redis } from 'ioredis'
 
 import { logger } from '~/src/server/common/helpers/logging/log.js'
+import { assignIfDefined } from '~/src/server/common/utils/objects.js'
 
 /**
  * @typedef {object} RedisConfig
@@ -13,6 +14,8 @@ import { logger } from '~/src/server/common/helpers/logging/log.js'
  * @property {number} [connectTimeout]
  * @property {number} [retryDelay]
  * @property {number} [maxRetries]
+ * @property {boolean} [enableOfflineQueue]
+ * @property {number} [commandTimeout]
  */
 
 /**
@@ -50,16 +53,13 @@ export function buildRedisClient(redisConfig) {
       ...tls
     }
 
-    if (redisConfig.connectTimeout !== undefined) {
-      redisOptions.connectTimeout = redisConfig.connectTimeout
-    }
-    if (redisConfig.retryDelay !== undefined) {
-      // @ts-ignore - retryDelayOnFailover exists but may not be in type definitions
-      redisOptions.retryDelayOnFailover = redisConfig.retryDelay
-    }
-    if (redisConfig.maxRetries !== undefined) {
-      redisOptions.maxRetriesPerRequest = redisConfig.maxRetries
-    }
+    assignIfDefined(redisOptions, redisConfig, {
+      connectTimeout: 'connectTimeout',
+      retryDelay: 'retryDelayOnFailover',
+      maxRetries: 'maxRetriesPerRequest',
+      enableOfflineQueue: 'enableOfflineQueue',
+      commandTimeout: 'commandTimeout'
+    })
 
     redisClient = new Redis(redisOptions)
   } else {
@@ -74,10 +74,13 @@ export function buildRedisClient(redisConfig) {
         keyPrefix,
         slotsRefreshTimeout: 10000,
         dnsLookup: (address, callback) => callback(null, address),
+        enableOfflineQueue: redisConfig.enableOfflineQueue,
         redisOptions: {
           db,
           ...credentials,
-          ...tls
+          ...tls,
+          commandTimeout: redisConfig.commandTimeout,
+          maxRetriesPerRequest: redisConfig.maxRetries
         }
       }
     )

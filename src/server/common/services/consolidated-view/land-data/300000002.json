@@ -42,17 +42,17 @@
           "line3": "Norwich",
           "line4": "Kent",
           "line5": "",
-          "street": "Church Street",
+          "street": null,
           "city": "Norwich",
           "postalCode": "WA51 6WY",
           "uprn": "381124619099",
           "buildingName": null,
-          "buildingNumberRange": "York Park House",
+          "buildingNumberRange": null,
           "county": null,
           "dependentLocality": null,
           "doubleDependentLocality": null,
           "flatName": "25",
-          "pafOrganisationName": "Fabulous Farms"
+          "pafOrganisationName": null
         }
       }
     }

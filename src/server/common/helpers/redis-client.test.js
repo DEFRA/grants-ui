@@ -84,7 +84,10 @@ describe('#buildRedisClient', () => {
         useSingleInstanceCache: false,
         useTLS: true,
         username: 'user',
-        password: 'pass'
+        password: 'pass',
+        enableOfflineQueue: false,
+        commandTimeout: 5000,
+        maxRetries: 3
       })
     })
 
@@ -92,7 +95,15 @@ describe('#buildRedisClient', () => {
       expect(vi.mocked(Cluster)).toHaveBeenCalledWith([{ host: '127.0.0.1', port: 6379 }], {
         dnsLookup: expect.any(Function),
         keyPrefix: 'grants-ui:',
-        redisOptions: { db: 0, password: 'pass', tls: {}, username: 'user' },
+        enableOfflineQueue: false,
+        redisOptions: {
+          db: 0,
+          password: 'pass',
+          tls: {},
+          username: 'user',
+          commandTimeout: 5000,
+          maxRetriesPerRequest: 3
+        },
         slotsRefreshTimeout: 10000
       })
     })
