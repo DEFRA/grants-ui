@@ -161,7 +161,7 @@ export function buildGraphQLQuery(config, request) {
           ? `Could not resolve variable from source '${entity.variableSource}'`
           : 'Variable source is required but was not provided',
         status: statusCodes.badRequest,
-        source: entity.variableSource,
+        source: entity.variableSource || 'graphql_query_builder',
         reason: entity.variableSource ? 'path_not_found' : 'missing_source'
       })
     }
