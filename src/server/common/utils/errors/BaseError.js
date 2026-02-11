@@ -18,6 +18,7 @@
 
 import { LogCodes } from '../../helpers/logging/log-codes.js'
 import { log as logger } from '../../helpers/logging/log.js'
+import { deepClone } from '~/src/server/common/utils/objects.js'
 
 /**
  * @abstract
@@ -142,14 +143,14 @@ export class BaseError extends Error {
    * @param {Object} details
    */
   set details(details) {
-    const detailsCopy = { ...details }
-    for (const key in detailsCopy) {
+    const detailsClone = deepClone(details)
+    for (const key in detailsClone) {
       if (this.detailsMap[key]) {
-        detailsCopy[this.detailsMap[key]] = detailsCopy[key]
-        delete detailsCopy[key]
+        detailsClone[this.detailsMap[key]] = detailsClone[key]
+        delete detailsClone[key]
       }
     }
-    this._details = { ...this._details, ...detailsCopy }
+    this._details = { ...this._details, ...detailsClone }
   }
 
   /**
