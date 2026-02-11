@@ -49,37 +49,3 @@ export function assignIfDefined(target, source, mappings) {
     }
   }
 }
-
-/**
- * Performs a deep clone of the provided object, handling nested objects and arrays.
- * @param {object} obj
- * @param {Map} visited - A map to track visited objects for circular reference handling (used internally)
- * @returns {object}
- */
-export function deepClone(obj, visited = new Map()) {
-  if (obj === null || typeof obj !== 'object') {
-    return obj
-  }
-
-  if (visited.has(obj)) {
-    return visited.get(obj)
-  }
-
-  const clonedObj = Array.isArray(obj) ? [] : {}
-
-  visited.set(obj, clonedObj)
-
-  if (Array.isArray(obj)) {
-    for (let i = 0; i < obj.length; i++) {
-      clonedObj[i] = deepClone(obj[i], visited)
-    }
-  } else {
-    for (const key in obj) {
-      if (Object.prototype.hasOwnProperty.call(obj, key)) {
-        clonedObj[key] = deepClone(obj[key], visited)
-      }
-    }
-  }
-
-  return clonedObj
-}

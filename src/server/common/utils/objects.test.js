@@ -1,5 +1,5 @@
 import { describe, expect, it, test } from 'vitest'
-import { assignIfDefined, isObject, deepClone } from './objects.js'
+import { assignIfDefined, isObject } from './objects.js'
 
 describe('isObject', () => {
   it('should return true for plain objects', () => {
@@ -75,47 +75,6 @@ describe('isObject', () => {
       date: new Date()
     }
     expect(isObject(complexObj)).toBe(true)
-  })
-})
-
-describe('deepClone', () => {
-  it('should clone a plain object', () => {
-    const obj = { a: 1, b: 2 }
-    const clone = deepClone(obj)
-    expect(clone).toEqual(obj)
-    expect(clone).not.toBe(obj)
-  })
-
-  it('should clone nested objects', () => {
-    const obj = { nested: { key: 'value' } }
-    const clone = deepClone(obj)
-    expect(clone).toEqual(obj)
-    expect(clone.nested).not.toBe(obj.nested)
-  })
-
-  it('should clone arrays', () => {
-    const arr = [1, 2, 3, [4, 5]]
-    const clone = deepClone(arr)
-    expect(clone).toEqual(arr)
-    expect(clone).not.toBe(arr)
-    expect(clone[3]).not.toBe(arr[3])
-  })
-
-  it('should return null for null value', () => {
-    expect(deepClone(null)).toBeNull()
-  })
-
-  it('should return the same primitive value', () => {
-    expect(deepClone(42)).toBe(42)
-    expect(deepClone('string')).toBe('string')
-    expect(deepClone(true)).toBe(true)
-  })
-
-  it('should handle circular references', () => {
-    const obj = {}
-    obj.self = obj
-    const clone = deepClone(obj)
-    expect(clone).toEqual({ self: clone })
   })
 })
 

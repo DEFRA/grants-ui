@@ -18,7 +18,6 @@
 
 import { LogCodes } from '../../helpers/logging/log-codes.js'
 import { log as logger } from '../../helpers/logging/log.js'
-import { deepClone } from '~/src/server/common/utils/objects.js'
 
 /**
  * @abstract
@@ -143,7 +142,7 @@ export class BaseError extends Error {
    * @param {Object} details
    */
   set details(details) {
-    const detailsClone = deepClone(details)
+    const detailsClone = structuredClone(details)
     for (const key in detailsClone) {
       if (this.detailsMap[key]) {
         detailsClone[this.detailsMap[key]] = detailsClone[key]
