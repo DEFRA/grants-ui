@@ -2,77 +2,100 @@
  * @typedef {typeof import('../../constants/status-codes.js').statusCodes} StatusCodes
  * @typedef {(StatusCodes)[keyof StatusCodes]} StatusCode
  * @typedef {import('../../helpers/logging/log-codes-definition.js').LogCodesDefinition} LogDefinition
+ *
+ */
+
+/**
+ * @typedef {Object} BaseErrorArgs
+ * @property {string} message - The error message
+ * @property {string|undefined} source - The source of the error (e.g., which part of the system it originated from)
+ * @property {StatusCode?} status - The HTTP status code associated with the error, if applicable
+ * @property {string} reason - A more detailed reason for the error, which can be used for debugging and logging purposes
  */
 
 import { LogCodes } from '../../helpers/logging/log-codes.js'
 import { log as logger } from '../../helpers/logging/log.js'
 
+/**
+ * @abstract
+ */
 export class BaseError extends Error {
   /**
    * The log code to use when logging this error
-   * @private
+   * @abstract
+   * @protected
    */
-  _logCode = LogCodes.SYSTEM.SERVER_ERROR
+  logCode = LogCodes.SYSTEM.SERVER_ERROR
 
   /**
    * Additional details used for logging
    * @type {Object}
    * @private
    */
-  _details = {}
+  _details = {
+    errorName: this.name
+  }
 
   /**
-   * An array to store previous errors for error chaining
-   * @type {(BaseError|Error)[]}
-   * @private
+   * The previous error in the chain
+   * @type {BaseError|Error}
    */
-  _previousErrors = []
+  previousError
 
   /**
-   * @type {(BaseError|Error)[]}
-   * @private
+   * The next error in the chain
+   * @type {BaseError|Error}
    */
-  _nextErrors = []
+  nextError
 
   /**
-   * @param {string} message
-   * @param {StatusCode} statusCode
-   * @param {string|undefined} source
-   * @param {string} reason
+   * Map of error details to mutate
+   * @type {Object}
+   * @protected
    */
-  constructor(message, statusCode, source, reason) {
-    super(message)
-    this.status = statusCode
-    this.source = source
-    this.reason = reason
+  detailsMap = {
+    message: 'errorMessage',
+    name: 'errorName'
+  }
+
+  /**
+   * @param {BaseErrorArgs} properties
+   */
+  constructor(properties) {
+    super(properties.message)
+    this.details = properties
   }
 
   /**
    * Sends error details to the logger
    * @param {import('@hapi/hapi').Request|null} request
-   * @param {Record<string, any>[]} additionalDetail
+   * @param {...Record<string, any>} additionalDetail
    */
   log(request = null, ...additionalDetail) {
-    const messageOptions = {
-      errorName: this.name,
-      message: this.message,
-      status: this.status,
-      source: this.source,
-      reason: this.reason
-    }
+    const messageOptions = Object.assign({}, this._details, ...additionalDetail)
 
-    logger(this._logCode, Object.assign({}, messageOptions, this._details, ...additionalDetail), request)
+    logger(this.logCode, messageOptions, request)
 
-    const lastError = this.lastError
+    const lastError = this.previousError
 
     if (lastError instanceof BaseError) {
       lastError.log(request, { isChainedError: true })
-    } else if (lastError !== null) {
+    } else if (lastError instanceof Error) {
       logger(
-        this._logCode,
+        LogCodes.SYSTEM.GENERIC_ERROR,
         {
-          errorName: lastError?.name || 'UnknownError',
-          message: lastError?.message || 'No additional error information available',
+          errorName: lastError.name,
+          errorMessage: lastError.message,
+          isChainedError: true
+        },
+        request
+      )
+    } else if (lastError !== undefined && lastError !== null) {
+      logger(
+        LogCodes.SYSTEM.GENERIC_ERROR,
+        {
+          errorName: 'UnknownError',
+          errorMessage: 'An unknown error was chained but it is not an instance of Error',
           isChainedError: true
         },
         request
@@ -83,21 +106,22 @@ export class BaseError extends Error {
   /**
    * Chain this error from another error, indicating that the previous error led to this error
    * @param {BaseError|Error} error - The error to chain from
+   * @returns {void} - Returns this for method chaining
    */
   from(error) {
-    this._previousErrors.push(error)
-    if (error instanceof BaseError && !error._nextErrors.includes(this)) {
+    this.previousError = error
+    if (error instanceof BaseError && error.nextError !== this) {
       error.chain(this)
     }
   }
 
   /**
    * Chain another error to this error, indicating that this error led to the next error
-   * @param error
+   * @param {BaseError|Error} error
    */
   chain(error) {
-    this._nextErrors.push(error)
-    if (error instanceof BaseError && !error._previousErrors.includes(this)) {
+    this.nextError = error
+    if (error instanceof BaseError && error.previousError !== this) {
       error.from(this)
     }
   }
@@ -111,25 +135,18 @@ export class BaseError extends Error {
   }
 
   /**
-   * @param {LogDefinition} logCode
-   */
-  set logCode(logCode) {
-    this._logCode = logCode
-  }
-
-  /**
-   * @returns {LogDefinition}
-   */
-  get logCode() {
-    return this._logCode
-  }
-
-  /**
    * Set additional details for this error, which can be used when logging the error
    * @param {Object} details
    */
   set details(details) {
-    this._details = { ...this._details, ...details }
+    const detailsCopy = { ...details }
+    for (const key in detailsCopy) {
+      if (this.detailsMap[key]) {
+        detailsCopy[this.detailsMap[key]] = detailsCopy[key]
+        delete detailsCopy[key]
+      }
+    }
+    this._details = { ...this._details, ...detailsCopy }
   }
 
   /**
@@ -138,19 +155,5 @@ export class BaseError extends Error {
    */
   get details() {
     return this._details
-  }
-
-  /**
-   * @returns {BaseError|Error|null}
-   */
-  get lastError() {
-    return this._previousErrors.length > 0 ? this._previousErrors[this._previousErrors.length - 1] : null
-  }
-
-  /**
-   * @returns {BaseError|Error|null}
-   */
-  get nextError() {
-    return this._nextErrors.length > 0 ? this._nextErrors[this._nextErrors.length - 1] : null
   }
 }

@@ -13,6 +13,7 @@ import {
 } from '~/src/server/auth/auth-logging.js'
 import { releaseAllApplicationLocksForOwnerFromApi } from '../common/helpers/lock/application-lock.js'
 import { ViewError } from '~/src/server/common/utils/errors/ViewError.js'
+import { AuthError } from '~/src/server/common/utils/errors/AuthError.js'
 
 const UNKNOWN_USER = 'unknown'
 const USER_AGENT = 'user-agent'
@@ -281,7 +282,12 @@ function renderUnauthorisedView(request, h) {
     )
     return result
   } catch (error) {
-    const viewError = new ViewError(`Failed to render unauthorised view`, 200, 'auth-handler', 'view_render_failure')
+    const viewError = new ViewError({
+      message: `Failed to render unauthorised view`,
+      status: 200,
+      source: 'auth-handler',
+      reason: 'view_render_failure'
+    })
     viewError.from(error)
     viewError.details = {
       userId: UNKNOWN_USER,
@@ -298,22 +304,6 @@ async function processAuthenticatedSignIn(request, h) {
   const { profile, token, refreshToken } = request.auth.credentials
 
   validateProfileData(profile)
-
-  log(
-    LogCodes.AUTH.SIGN_IN_ATTEMPT,
-    {
-      userId: profile.contactId,
-      organisationId: profile.currentRelationshipId,
-      profileData: JSON.stringify({
-        hasToken: !!token,
-        hasRefreshToken: !!refreshToken,
-        hasProfile: !!profile,
-        profileKeys: Object.keys(profile || {}),
-        tokenLength: token ? token.length : 0
-      })
-    },
-    request
-  )
 
   await verifyToken(token)
 
@@ -372,17 +362,14 @@ async function storeSessionData(request, profile, role, scope, token, refreshTok
       refreshToken
     })
   } catch (cacheError) {
-    log(
-      LogCodes.AUTH.SIGN_IN_FAILURE,
-      {
-        userId: profile.contactId,
-        errorMessage: `Failed to store session in cache: ${cacheError.message}`,
-        step: 'cache_set_error',
-        sessionId: profile.sessionId
-      },
-      request
-    )
-    throw cacheError
+    const authError = new AuthError({
+      message: 'Failed to store session data in cache',
+      status: 500,
+      source: 'auth-handler',
+      reason: 'cache_set_failure'
+    })
+    authError.from(cacheError)
+    throw authError
   }
 }
 
@@ -411,17 +398,15 @@ function redirectAfterSignIn(request, h, profile) {
     const safeRedirect = getSafeRedirect(redirect)
     return h.redirect(safeRedirect)
   } catch (redirectError) {
-    log(
-      LogCodes.AUTH.SIGN_IN_FAILURE,
-      {
-        userId: profile.contactId,
-        errorMessage: `Failed to redirect after sign in: ${redirectError.message}`,
-        step: 'redirect_error',
-        sessionId: profile.sessionId
-      },
-      request
-    )
-    throw redirectError
+    const authError = new AuthError({
+      message: 'Failed to redirect after sign in',
+      status: 500,
+      source: 'redirect-after-signin',
+      reason: 'redirect_failure'
+    })
+    authError.logCode = LogCodes.AUTH.SIGN_IN_FAILURE
+    authError.from(redirectError)
+    throw authError
   }
 }
 
@@ -435,19 +420,15 @@ async function handleOidcSignIn(request, h) {
 
     return await processAuthenticatedSignIn(request, h)
   } catch (error) {
-    log(
-      LogCodes.AUTH.SIGN_IN_FAILURE,
-      {
-        userId: UNKNOWN_USER,
-        errorMessage: `Unexpected error in handleOidcSignIn: ${error.message}`,
-        step: 'unexpected_error',
-        errorStack: error.stack
-      },
-      request
-    )
-
-    error.alreadyLogged = true
-    throw error
+    const authError = new AuthError({
+      message: 'Unexpected error during OIDC sign in',
+      status: 500,
+      source: 'oidc-sign-in',
+      reason: 'unexpected_error'
+    })
+    authError.logCode = LogCodes.AUTH.SIGN_IN_FAILURE
+    authError.from(error)
+    throw authError
   }
 }
 

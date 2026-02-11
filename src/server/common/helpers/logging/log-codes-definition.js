@@ -12,6 +12,11 @@
  */
 export const LogCodes = {
   AUTH: {
+    GENERIC_ERROR: {
+      level: 'error',
+      messageFunc: (messageOptions) =>
+        `Authentication error for user=${messageOptions.userId}: ${messageOptions.errorMessage}`
+    },
     SIGN_IN_ATTEMPT: {
       level: 'info',
       messageFunc: (messageOptions) => `User sign-in attempt for user=${messageOptions.userId || 'unknown'}`
@@ -325,6 +330,10 @@ export const LogCodes = {
     }
   },
   SYSTEM: {
+    GENERIC_ERROR: {
+      level: 'error',
+      messageFunc: (messageOptions) => `An error occurred: ${messageOptions.errorMessage}`
+    },
     VIEW_DEBUG: {
       level: 'debug',
       messageFunc: (messageOptions) =>

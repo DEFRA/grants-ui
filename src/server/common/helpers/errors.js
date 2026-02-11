@@ -85,17 +85,19 @@ export function catchAll(request, h) {
     return h.response(response).code(response?.statusCode ?? statusCodes.ok)
   }
 
-  const statusCode = response.output.statusCode
+  let statusCode
+
+  if (response instanceof BaseError) {
+    response.log(request)
+    statusCode = response.details.status || statusCodes.internalServerError
+  } else {
+    statusCode = response.output.statusCode || statusCodes.internalServerError
+    handleErrorLogging(request, response, statusCode)
+  }
 
   // Handle redirects properly
   if (statusCode === statusCodes.redirect && response.output.headers.location) {
     return h.redirect(response.output.headers.location)
-  }
-
-  if (response.output instanceof BaseError) {
-    response.output.log(request)
-  } else {
-    handleErrorLogging(request, response, statusCode)
   }
 
   return renderErrorView(h, statusCode)
