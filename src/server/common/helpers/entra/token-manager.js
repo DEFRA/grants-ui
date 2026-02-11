@@ -137,9 +137,9 @@ export async function refreshToken() {
  * @throws {Error} If unable to get a valid token
  */
 export async function getValidToken() {
-  if (!isTokenExpired(tokenState.tokenExpiry) && tokenState.currentToken) {
-    return tokenState.currentToken
-  }
+  // if (!isTokenExpired(tokenState.tokenExpiry) && tokenState.currentToken) {
+  //   return tokenState.currentToken
+  // }
 
   if (!refreshPromise) {
     refreshPromise = refreshToken().finally(() => {
