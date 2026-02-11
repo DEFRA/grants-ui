@@ -1583,7 +1583,7 @@ When throwing errors, only use specific error classes that extend `BaseError` an
 ```javascript
 class ValidationError extends BaseError {
   constructor() {
-    super('Validation failed', 401, 'source', 'reason')
+    super({ message: 'Validation failed', status: 401, source: 'source', reason: 'reason' })
   }
 }
 
@@ -1605,7 +1605,12 @@ to preserve a detailed error chain. Many errors can be chained in this way, and 
 class FieldInputError extends BaseError {}
 
 const validationError = new ValidationError()
-const fieldInputError = new FieldInputError('Invalid input for field X')
+const fieldInputError = new FieldInputError({
+  message: 'Invalid input for field X',
+  status: 400,
+  source: 'fieldInput',
+  reason: 'invalid-format'
+})
 fieldInputError.from(validationError)
 
 throw fieldInputError
