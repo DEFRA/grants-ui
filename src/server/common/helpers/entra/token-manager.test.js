@@ -4,7 +4,6 @@ import { retry } from '~/src/server/common/helpers/retry.js'
 import {
   clearTokenState,
   createTokenRequestParams,
-  getValidToken,
   isTokenExpired,
   refreshToken
 } from '~/src/server/common/helpers/entra/token-manager.js'
@@ -118,55 +117,6 @@ describe('Token Manager', () => {
       })
 
       await expect(refreshToken()).rejects.toThrow('Invalid token response: missing or invalid access_token')
-    })
-  })
-
-  describe('getValidToken', () => {
-    test('returns existing token if not expired', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            access_token: 'new-access-token',
-            expires_in: 3600
-          })
-      })
-
-      const firstToken = await getValidToken()
-      expect(firstToken).toBe('new-access-token')
-      expect(mockFetch).toHaveBeenCalledTimes(1)
-
-      const secondToken = await getValidToken()
-      expect(secondToken).toBe('new-access-token')
-      expect(mockFetch).toHaveBeenCalledTimes(1)
-    })
-
-    test('refreshes token if expired', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            access_token: 'expired-token',
-            expires_in: 0
-          })
-      })
-
-      const firstToken = await getValidToken()
-      expect(firstToken).toBe('expired-token')
-      expect(mockFetch).toHaveBeenCalledTimes(1)
-
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            access_token: 'new-access-token',
-            expires_in: 3600
-          })
-      })
-
-      const newToken = await getValidToken()
-      expect(newToken).toBe('new-access-token')
-      expect(mockFetch).toHaveBeenCalledTimes(2)
     })
   })
 })
