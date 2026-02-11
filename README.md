@@ -1576,6 +1576,22 @@ Errors are thrown with relevant context and caught by a global error handler tha
 error in a structured format.
 There should be no need to log errors manually as long as the `BaseError` class is used consistently.
 
+### Constructing error classes
+
+The abstract `BaseError` class provides a consistent structure for all errors in the application. When defining specific error types, they should extend `BaseError` and decorate any behaviours such as logging. `AuthError` is a good example of this in action. The base class has a number of different properties that can be modified to change behaviour.
+
+The constructor takes an object as its only argument. This object can include the following properties:
+
+| Property             | Description                                                                                                                                                           |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `message`            | A human-readable message describing the error. This should be concise and informative                                                                                 |
+| `status`             | The HTTP status code to return in the response when this error is thrown. This allows for consistent error responses across the application.                          |
+| `source`             | A string indicating the source or context of the error (e.g.,`'validation'`, `'external-api'`, etc.). This can be used for categorizing errors in logs and responses. |
+| `reason`             | A string providing a more specific reason for the error, which can be used for debugging and analytics.                                                               |
+| `[key: string]: any` | Any additional properties relevant to the error context can be added as needed. These will be included in the structured logs when the error is thrown.               |
+
+Additionally the class has a property `logCode` that can be overridden with a custom log code (from log code definitions) to modify how the error is logged.
+
 ### Throwing errors
 
 When throwing errors, only use specific error classes that extend `BaseError` and provide relevant context:
@@ -1628,10 +1644,17 @@ and ensuring it is logged correctly.
 ```javascript
 import fs from 'node:fs'
 
+class FileReadError extends BaseError {}
+
 try {
   const file = fs.readFile('abc.csv')
 } catch (err) {
-  const newError = new BaseError('Failed to read file', 500, 'node:fs', 'read-error')
+  const newError = new FileReadError({
+    message: 'Failed to read file',
+    status: 500,
+    source: 'node:fs',
+    reason: 'read-error'
+  })
   newError.from(err)
   throw newError
 }

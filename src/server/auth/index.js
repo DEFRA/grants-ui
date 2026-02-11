@@ -286,16 +286,14 @@ function renderUnauthorisedView(request, h) {
       message: `Failed to render unauthorised view`,
       status: 200,
       source: 'auth-handler',
-      reason: 'view_render_failure'
-    })
-    viewError.from(error)
-    viewError.details = {
+      reason: 'view_render_failure',
       userId: UNKNOWN_USER,
       step: 'view_render_error',
       errorStack: error.stack,
       viewError: 'errors/401.njk',
       serverWorkingDir: process.cwd()
-    }
+    })
+    viewError.from(error)
     throw viewError
   }
 }

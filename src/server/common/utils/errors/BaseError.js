@@ -6,11 +6,14 @@
  */
 
 /**
- * @typedef {Object} BaseErrorArgs
- * @property {string} message - The error message
- * @property {string|undefined} source - The source of the error (e.g., which part of the system it originated from)
- * @property {StatusCode|undefined} status - The HTTP status code associated with the error, if applicable
- * @property {string} reason - A more detailed reason for the error, which can be used for debugging and logging purposes
+ * Auth profile schema used in request auth credentials.
+ * @typedef {{
+ *   message: string,
+ *   source: string,
+ *   reason: string,
+ *   status?: StatusCode,
+ *   [key: string]: any
+ * }} BaseErrorArgs
  */
 
 import { LogCodes } from '../../helpers/logging/log-codes.js'
