@@ -429,6 +429,11 @@ export const LogCodes = {
       messageFunc: (messageOptions) =>
         `Unexpected error fetching business data from Consolidated View API | sbi=${messageOptions.sbi || 'unknown'} | error=${messageOptions.errorMessage}`
     },
+    CONSOLIDATED_VIEW_ADDRESS_FORMAT: {
+      level: 'info',
+      messageFunc: (messageOptions) =>
+        `Address format for sbi=${messageOptions.sbi} is ${messageOptions.uprn ? 'structured' : 'unstructured'}, uprn=${messageOptions.uprn || 'not set'}`
+    },
     SESSION_STATE_CLEAR_FAILED: {
       level: 'error',
       messageFunc: (messageOptions) =>

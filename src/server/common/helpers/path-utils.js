@@ -1,18 +1,18 @@
-const FORBIDDEN_KEYS = new Set(['__proto__', 'constructor', 'prototype'])
+import { DANGEROUS_KEYS } from '~/src/server/common/utils/objects.js'
 
 function resolvePathPart(current, part) {
   const arrayMatch = /^(\w+)\[(\d+)\]$/.exec(part)
 
   if (arrayMatch) {
     const [, arrayName, indexStr] = arrayMatch
-    if (FORBIDDEN_KEYS.has(arrayName)) {
+    if (DANGEROUS_KEYS.has(arrayName)) {
       return undefined
     }
     const index = Number.parseInt(indexStr, 10)
     return current?.[arrayName]?.[index]
   }
 
-  if (FORBIDDEN_KEYS.has(part)) {
+  if (DANGEROUS_KEYS.has(part)) {
     return undefined
   }
   if (typeof current === 'object' && part in current) {

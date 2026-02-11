@@ -8,6 +8,7 @@ import {
   createSbiRow
 } from '../../common/helpers/create-rows.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { config } from '~/src/config/config.js'
 
 export default class ConfirmFarmDetailsController extends QuestionPageController {
   viewName = 'confirm-farm-details'
@@ -33,12 +34,56 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
   }
 
   /**
+   * Validate business and users details
+   * @param {object} data
+   * @returns {Array<string>} Array of field names that are missing data
+   */
+
+  validateBusinessAndCustomerInformation(data) {
+    const { customer = {}, business = {} } = data || {}
+
+    const requiredCustomerNameFields = ['title', 'first', 'last']
+    const requiredBusinessAddressFields = ['line1', 'city', 'postalCode']
+    const requiredBusinessInfoFields = ['name', 'address']
+
+    const missingFields = []
+
+    if (config.get('landGrants.enableBlockingInvalidContactDetails') === false) {
+      return []
+    }
+
+    const isMissing = (value) => value === undefined || value === null || value === ''
+
+    requiredCustomerNameFields.forEach((field) => {
+      if (isMissing(customer?.name?.[field])) {
+        missingFields.push(`customer.name.${field}`)
+      }
+    })
+
+    requiredBusinessAddressFields.forEach((field) => {
+      if (isMissing(business?.address?.[field])) {
+        missingFields.push(`business.address.${field}`)
+      }
+    })
+
+    requiredBusinessInfoFields.forEach((field) => {
+      if (isMissing(business?.[field])) {
+        missingFields.push(`business.${field}`)
+      }
+    })
+
+    return missingFields
+  }
+
+  /**
    * Build farm details view model
    * @param {AnyFormRequest} request
    * @returns {Promise<object>} Farm details object with rows array
    */
   async buildFarmDetails(request) {
     const data = await fetchBusinessAndCustomerInformation(request)
+
+    const missingFields = this.validateBusinessAndCustomerInformation(data)
 
     const rows = [
       createCustomerNameRow(data.customer?.name),
@@ -52,7 +97,7 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
       )
     ].filter(Boolean)
 
-    return { rows }
+    return { rows, missingFields }
   }
 
   /**
