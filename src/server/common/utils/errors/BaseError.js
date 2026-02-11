@@ -9,7 +9,7 @@
  * @typedef {Object} BaseErrorArgs
  * @property {string} message - The error message
  * @property {string|undefined} source - The source of the error (e.g., which part of the system it originated from)
- * @property {StatusCode?} status - The HTTP status code associated with the error, if applicable
+ * @property {StatusCode|undefined} status - The HTTP status code associated with the error, if applicable
  * @property {string} reason - A more detailed reason for the error, which can be used for debugging and logging purposes
  */
 
