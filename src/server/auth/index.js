@@ -292,7 +292,7 @@ function renderUnauthorisedView(request, h) {
     viewError.details = {
       userId: UNKNOWN_USER,
       step: 'view_render_error',
-      errorStack: viewError.stack,
+      errorStack: error.stack,
       viewError: 'errors/401.njk',
       serverWorkingDir: process.cwd()
     }
