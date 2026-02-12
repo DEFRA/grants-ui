@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { BaseError } from './BaseError'
+import { BaseError, GenericError } from './BaseError'
 import { LogCodes } from '../../helpers/logging/log-codes.js'
 import { log as logger } from '../../helpers/logging/log.js'
 
@@ -110,7 +110,7 @@ describe('TestError', () => {
 
       error2.from(error1)
 
-      expect(error2.previousError).toBe(error1)
+      expect(error2.causeErrors.has(error1)).toBe(true)
     })
 
     it('should chain errors allowing navigation from error to error bidirectionally', () => {
@@ -121,8 +121,8 @@ describe('TestError', () => {
       error2.from(error1)
       error3.from(error2)
 
-      expect(error1.nextError).toBe(error2)
-      expect(error2.nextError).toBe(error3)
+      expect(error1.effectErrors.has(error2)).toBe(true)
+      expect(error2.effectErrors.has(error3)).toBe(true)
     })
 
     it('should chain non TestError instances without creating circular references', () => {
@@ -131,8 +131,20 @@ describe('TestError', () => {
 
       error1.from(standardError)
 
-      expect(error1.previousError).toBe(standardError)
-      expect(error1.nextError).not.toBeDefined()
+      expect(error1.causeErrors.size).toBe(1)
+      expect(error1.effectErrors.size).toBe(0)
+    })
+
+    it('should wrap non TestError (BaseError) instances in a GenericError when chaining', () => {
+      const error1 = new TestError({ message: 'First error', status: 500, source: 'Source1', reason: 'Reason1' })
+      const error2 = new Error('Standard error')
+
+      error1.from(error2)
+
+      const causeError = Array.from(error1.causeErrors).pop()
+
+      expect(causeError.details.originalError).toStrictEqual(error2)
+      expect(causeError).toBeInstanceOf(GenericError)
     })
 
     it('should log all chained errors when log method is called', () => {
@@ -213,12 +225,44 @@ describe('TestError', () => {
         2,
         LogCodes.SYSTEM.GENERIC_ERROR,
         {
-          errorName: 'Error',
+          errorName: 'GenericError',
           errorMessage: 'Standard error',
-          isChainedError: true
+          isChainedError: true,
+          originalError: standardError,
+          reason: 'wrappedError',
+          source: 'unknown'
         },
         requestMock
       )
+    })
+  })
+
+  describe('findRootError', () => {
+    it('should find the root error in a chain of errors', () => {
+      const error1 = new TestError({ message: 'First error', status: 500, source: 'Source1', reason: 'Reason1' })
+      const error2 = new TestError({ message: 'Second error', status: 500, source: 'Source2', reason: 'Reason2' })
+      const error3 = new TestError({ message: 'Third error', status: 500, source: 'Source3', reason: 'Reason3' })
+
+      error1.from(error2)
+      error2.from(error3)
+
+      expect(TestError.findRootErrors(error3)).toEqual(expect.arrayContaining([error1]))
+    })
+
+    it('should return multiple root errors if there are multiple independent chains', () => {
+      const error1 = new TestError({ message: 'First error', status: 500, source: 'Source1', reason: 'Reason1' })
+      const error2 = new TestError({ message: 'Second error', status: 500, source: 'Source2', reason: 'Reason2' })
+      const error3 = new TestError({ message: 'Third error', status: 500, source: 'Source3', reason: 'Reason3' })
+
+      error1.from(error2)
+      error3.from(error2)
+
+      expect(TestError.findRootErrors(error2)).toEqual(expect.arrayContaining([error1, error3]))
+    })
+
+    it('should return the error itself if it has no causes', () => {
+      const error = new TestError({ message: 'Only error', status: 500, source: 'Source1', reason: 'Reason1' })
+      expect(TestError.findRootErrors(error)).toEqual(expect.arrayContaining([error]))
     })
   })
 })

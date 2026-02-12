@@ -88,7 +88,10 @@ export function catchAll(request, h) {
   let statusCode
 
   if (response instanceof BaseError) {
-    response.log(request)
+    const rootErrors = BaseError.findRootErrors(response)
+    for (const error of rootErrors) {
+      error.log(request)
+    }
     statusCode = response.details.status || statusCodes.internalServerError
   } else {
     statusCode = response.output.statusCode || statusCodes.internalServerError

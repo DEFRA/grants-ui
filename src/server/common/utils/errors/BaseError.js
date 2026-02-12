@@ -40,16 +40,16 @@ export class BaseError extends Error {
   }
 
   /**
-   * The previous error in the chain
-   * @type {BaseError|Error}
+   * Collection of errors that caused this error.
+   * @type {Set<BaseError>}
    */
-  previousError
+  causeErrors = new Set()
 
   /**
-   * The next error in the chain
-   * @type {BaseError|Error}
+   * Collection of errors that were caused by this error.
+   * @type {Set<BaseError>}
    */
-  nextError
+  effectErrors = new Set()
 
   /**
    * Map of error details to mutate
@@ -79,43 +79,32 @@ export class BaseError extends Error {
 
     logger(this.logCode, messageOptions, request)
 
-    const lastError = this.previousError
+    const lastErrors = this.causeErrors
 
-    if (lastError instanceof BaseError) {
+    for (const lastError of lastErrors) {
       lastError.log(request, { isChainedError: true })
-    } else if (lastError instanceof Error) {
-      logger(
-        LogCodes.SYSTEM.GENERIC_ERROR,
-        {
-          errorName: lastError.name,
-          errorMessage: lastError.message,
-          isChainedError: true
-        },
-        request
-      )
-    } else if (lastError !== undefined && lastError !== null) {
-      logger(
-        LogCodes.SYSTEM.GENERIC_ERROR,
-        {
-          errorName: 'UnknownError',
-          errorMessage: 'An unknown error was chained but it is not an instance of Error',
-          isChainedError: true
-        },
-        request
-      )
     }
   }
 
   /**
    * Chain this error from another error, indicating that the previous error led to this error
    * @param {BaseError|Error} error - The error to chain from
-   * @returns {void} - Returns this for method chaining
+   * @returns {this} - Returns this for method chaining
    */
   from(error) {
-    this.previousError = error
-    if (error instanceof BaseError && error.nextError !== this) {
-      error.chain(this)
+    if (!error) {
+      return this
     }
+
+    const causeError = this._parseError(error)
+
+    this.causeErrors.add(causeError)
+
+    if (!causeError.effectErrors.has(this)) {
+      causeError.effectErrors.add(this)
+    }
+
+    return this
   }
 
   /**
@@ -123,10 +112,38 @@ export class BaseError extends Error {
    * @param {BaseError|Error} error
    */
   chain(error) {
-    this.nextError = error
-    if (error instanceof BaseError && error.previousError !== this) {
-      error.from(this)
+    if (!error) {
+      return this
     }
+
+    const effectError = this._parseError(error)
+
+    this.effectErrors.add(effectError)
+
+    if (!effectError.causeErrors.has(this)) {
+      effectError.causeErrors.add(this)
+    }
+
+    return this
+  }
+
+  /**
+   * Parse an error into a BaseError instance, wrapping it if necessary
+   * @param {BaseError|Error} error
+   * @return {BaseError}
+   * @private
+   */
+  _parseError(error) {
+    /** @type {BaseError} */
+    let baseError
+
+    if (error instanceof Error && !(error instanceof BaseError)) {
+      baseError = BaseError.wrap(error)
+    } else {
+      baseError = error
+    }
+
+    return baseError
   }
 
   /**
@@ -159,4 +176,60 @@ export class BaseError extends Error {
   get details() {
     return this._details
   }
+}
+
+/**
+ * Wraps an error in an instance of this error class
+ * @param {Error} error
+ * @return {GenericError}
+ */
+BaseError.wrap = function (error) {
+  const errorProperties = {
+    message: error.message || 'An unknown error occurred',
+    source: 'unknown',
+    reason: error instanceof Error ? 'wrappedError' : 'emptyError',
+    originalError: error
+  }
+
+  return new GenericError(errorProperties)
+}
+
+/**
+ * Finds the root error (the error at the top of the chain)
+ * @param {BaseError} error
+ * @returns {BaseError[]} The root error with no more effect errors
+ */
+BaseError.findRootErrors = function (error) {
+  const rootErrors = new Set()
+  const visited = new Set()
+  const queue = [error]
+
+  while (queue.length > 0) {
+    const current = queue.shift()
+
+    if (!current || visited.has(current)) {
+      continue
+    }
+
+    visited.add(current)
+
+    if (current && current.effectErrors.size === 0) {
+      rootErrors.add(current)
+    } else if (current) {
+      for (const effect of current.effectErrors) {
+        if (!visited.has(effect) && !queue.includes(effect)) {
+          queue.push(effect)
+        }
+      }
+    }
+  }
+
+  return Array.from(rootErrors)
+}
+
+/**
+ * A generic error class to use when the error does not fit into any other specific error class
+ */
+export class GenericError extends BaseError {
+  logCode = LogCodes.SYSTEM.GENERIC_ERROR
 }
