@@ -1,0 +1,150 @@
+{
+  "metadata": {
+    "sbi": "121428499",
+    "crn": "1102760349",
+    "frn": "2396577132",
+    "clientRef": "44e-85c-692",
+    "submittedAt": "2026-02-12T09:29:00.297Z"
+  },
+  "answers": {
+    "rulesCalculations": {
+      "id": 3,
+      "message": "Application validated successfully",
+      "valid": true,
+      "date": "2026-02-12T09:29:00.297Z"
+    },
+    "scheme": "SFI",
+    "applicant": {
+      "business": {
+        "name": "John Woodcock",
+        "reference": "2396577132",
+        "address": {
+          "city": "Clitheroe",
+          "postalCode": "BB7 4LQ",
+          "line1": "Catlow Road",
+          "line2": "Groovy Park",
+          "line3": null,
+          "line4": null
+        },
+        "landlinePhoneNumber": "01697 751072",
+        "mobilePhoneNumber": "+44 7900 123456",
+        "email": "cliffspencetasabbeyfarmf@mrafyebbasatecnepsffilcm.com.test"
+      },
+      "customer": {
+        "name": {
+          "title": "Mr.",
+          "first": "Antony",
+          "middle": null,
+          "last": "Williams"
+        }
+      }
+    },
+    "totalAnnualPaymentPence": 822438,
+    "application": {
+      "parcel": [
+        {
+          "sheetId": "SD5949",
+          "parcelId": "6060",
+          "area": {
+            "unit": "ha",
+            "quantity": 681.6199
+          },
+          "actions": [
+            {
+              "code": "CMOR1",
+              "version": 1,
+              "durationYears": 1,
+              "appliedFor": {
+                "unit": "ha",
+                "quantity": 681.6133
+              }
+            }
+          ]
+        },
+        {
+          "sheetId": "SD6352",
+          "parcelId": "1073",
+          "area": {
+            "unit": "ha",
+            "quantity": 13.7223
+          },
+          "actions": [
+            {
+              "code": "UPL2",
+              "version": 2,
+              "durationYears": 1,
+              "appliedFor": {
+                "unit": "ha",
+                "quantity": 13.7223
+              }
+            }
+          ]
+        }
+      ],
+      "agreement": []
+    },
+    "payments": {
+      "parcel": [
+        {
+          "sheetId": "SD5949",
+          "parcelId": "6060",
+          "area": {
+            "unit": "ha",
+            "quantity": 681.6199
+          },
+          "actions": [
+            {
+              "code": "CMOR1",
+              "description": "Assess moorland and produce a written record",
+              "durationYears": 1,
+              "paymentRates": 1060,
+              "annualPaymentPence": 722510,
+              "eligible": {
+                "unit": "ha",
+                "quantity": 681.6133
+              },
+              "appliedFor": {
+                "unit": "ha",
+                "quantity": 681.6133
+              }
+            }
+          ]
+        },
+        {
+          "sheetId": "SD6352",
+          "parcelId": "1073",
+          "area": {
+            "unit": "ha",
+            "quantity": 13.7223
+          },
+          "actions": [
+            {
+              "code": "UPL2",
+              "description": "Low livestock grazing on moorland",
+              "durationYears": 1,
+              "paymentRates": 5300,
+              "annualPaymentPence": 72728,
+              "eligible": {
+                "unit": "ha",
+                "quantity": 13.7223
+              },
+              "appliedFor": {
+                "unit": "ha",
+                "quantity": 13.7223
+              }
+            }
+          ]
+        }
+      ],
+      "agreement": [
+        {
+          "code": "CMOR1",
+          "description": "Assess moorland and produce a written record",
+          "durationYears": 1,
+          "paymentRates": 27200,
+          "annualPaymentPence": 27200
+        }
+      ]
+    }
+  }
+}
