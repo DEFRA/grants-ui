@@ -1504,8 +1504,6 @@ error in a structured format.
 > [!IMPORTANT]
 > There is no need to log errors manually as long as the `BaseError` class is used consistently for propagation of all errors.
 
-
-
 ### Constructing error classes
 
 The abstract `BaseError` class provides a consistent structure for all errors in the application. When defining specific
