@@ -186,11 +186,16 @@ export async function fetchParcelsFromDal(request) {
   return fetchFromConsolidatedView(request, { query, formatResponse })
 }
 
-function formatAddress(address) {
+function formatAddress(sbi, address) {
   const commonFields = {
     city: address.city,
     postalCode: address.postalCode
   }
+
+  log(LogCodes.SYSTEM.CONSOLIDATED_VIEW_ADDRESS_FORMAT, {
+    sbi,
+    uprn: address.uprn
+  })
 
   if (address.uprn) {
     const { flatName, buildingName, buildingNumberRange, street, dependentLocality, doubleDependentLocality } = address
@@ -286,7 +291,7 @@ export async function fetchBusinessAndCustomerInformation(request) {
       formattedResponse.business = {
         name: businessInfo.name,
         reference: businessInfo.reference,
-        address: formatAddress(businessInfo.address),
+        address: formatAddress(sbi, businessInfo.address),
         landlinePhoneNumber: businessInfo.phone?.landline || undefined,
         mobilePhoneNumber: businessInfo.phone?.mobile || undefined,
         email: businessInfo.email?.address || undefined
