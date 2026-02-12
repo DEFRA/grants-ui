@@ -298,7 +298,7 @@ BaseError.findRootErrors = function (error) {
 
     visited.add(current)
 
-    if (current && current.effectErrors.size === 0) {
+    if (current.effectErrors.size === 0) {
       rootErrors.add(current)
     } else if (current) {
       for (const effect of current.effectErrors) {
