@@ -92,16 +92,11 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
 
     const hasMissingFields = enableBlockingInvalidContactDetails ? missingFields.length > 0 : false
 
-    if (enableDetailedFarmDetails) {
-      return {
-        hasMissingFields,
-        ...this.buildDetailedFarmDetails(request, data)
-      }
-    }
-
     return {
       hasMissingFields,
-      ...this.buildLegacyFarmDetails(request, data)
+      ...(enableDetailedFarmDetails
+        ? this.buildDetailedFarmDetails(request, data)
+        : this.buildLegacyFarmDetails(request, data))
     }
   }
 
