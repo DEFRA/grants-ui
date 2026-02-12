@@ -18,7 +18,7 @@ export class GraphQLQueryBuilderError extends BaseError {}
  * @throws {GraphQLQueryBuilderError}
  */
 function throwConfigError(message, reason) {
-  throw new GraphQLQueryBuilderError(message, statusCodes.internalServerError, 'config', reason)
+  throw new GraphQLQueryBuilderError({ message, status: statusCodes.internalServerError, source: 'config', reason })
 }
 
 /**
@@ -156,14 +156,14 @@ export function buildGraphQLQuery(config, request) {
     const variableValue = resolveVariable(entity.variableSource, credentials)
 
     if (variableValue === undefined) {
-      throw new GraphQLQueryBuilderError(
-        entity.variableSource
+      throw new GraphQLQueryBuilderError({
+        message: entity.variableSource
           ? `Could not resolve variable from source '${entity.variableSource}'`
           : 'Variable source is required but was not provided',
-        statusCodes.badRequest,
-        entity.variableSource,
-        entity.variableSource ? 'path_not_found' : 'missing_source'
-      )
+        status: statusCodes.badRequest,
+        source: entity.variableSource || 'graphql_query_builder',
+        reason: entity.variableSource ? 'path_not_found' : 'missing_source'
+      })
     }
 
     const escapedVariableValue = escapeGraphQLString(variableValue)

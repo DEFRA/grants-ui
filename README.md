@@ -1479,6 +1479,135 @@ Attach your IDE debugger:
 
   - Start debugging with that configuration; execution will continue once attached.
 
+## Structured Error Handling
+
+This is a work in progress (as of 12/02/2026)
+
+### Tasks remaining
+
+- [x] BaseError class with structured properties and logging
+- [x] Example error classes extending BaseError (`AuthError` and `ViewError` currently)
+- [x] Global error handler to format responses and log errors
+- [ ] Update existing code to throw specific error classes instead of generic `Error`
+- [ ] Update existing code to remove any manual logging of errors in `try {} catch {}` blocks
+- [ ] Create ESLint rule to forbid logging in `try {} catch {}` blocks.
+
+### Introduction to structured errors
+
+The application implements a structured error handling approach to ensure consistent error responses and logging across
+all components.
+
+Starting with a `BaseError` class, specific error types are defined for different contexts (e.g., `ValidationError`,
+`ExternalApiError`, etc.). Each error includes structured properties such as `code`, `message`, `details`, and
+`statusCode`.
+Errors are thrown with relevant context and caught by a global error handler that formats the response and logs the
+error in a structured format.
+
+> [!IMPORTANT]
+> There is no need to log errors manually as long as the `BaseError` class is used consistently for propagation of all errors.
+
+### Constructing error classes
+
+The abstract `BaseError` class provides a consistent structure for all errors in the application. When defining specific
+error types, they should extend `BaseError` and decorate any behaviours such as logging. `AuthError` is a good example
+of this in action. The base class has a number of different properties that can be modified to change behaviour.
+
+The constructor takes an object as its only argument. This object can include the following properties:
+
+| Property             | Description                                                                                                                                                           |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `message`            | A human-readable message describing the error. This should be concise and informative                                                                                 |
+| `status`             | The HTTP status code to return in the response when this error is thrown. This allows for consistent error responses across the application.                          |
+| `source`             | A string indicating the source or context of the error (e.g.,`'validation'`, `'external-api'`, etc.). This can be used for categorizing errors in logs and responses. |
+| `reason`             | A string providing a more specific reason for the error, which can be used for debugging and analytics.                                                               |
+| `[key: string]: any` | Any additional properties relevant to the error context can be added as needed. These will be included in the structured logs when the error is thrown.               |
+
+Additionally the class has a property `logCode` that can be overridden with a custom log code (from log code
+definitions) to modify how the error is logged.
+
+### Throwing errors
+
+When throwing errors, only use specific error classes that extend `BaseError` and provide relevant context:
+
+```javascript
+class ValidationError extends BaseError {
+  constructor() {
+    super({ message: 'Validation failed', status: 401, source: 'source', reason: 'reason' })
+  }
+}
+
+throw new ValidationError()
+```
+
+There is a `preResponse` hook in the Hapi server that checks if the response is an error and if it is an instance of
+`BaseError`. If so, it logs the error using `BaseError::log` and formats the response with the appropriate status code
+and message. So there is never a need to log errors directly in `try {} catch {}` blocks.
+
+### Chaining errors
+
+When catching and re-throwing errors, the original error should be attached using the `from` method (`Baseclass::from`)
+to preserve a detailed error chain. Many errors can be chained in this way, and logging the most recent error using
+`BaseError::log` will include the full chain of errors in the log output, each with their own log entry but with a
+`{ isChainedError: true }` added as additional data.
+
+```javascript
+class FieldInputError extends BaseError {}
+
+const validationError = new ValidationError()
+const fieldInputError = new FieldInputError({
+  message: 'Invalid input for field X',
+  status: 400,
+  source: 'fieldInput',
+  reason: 'invalid-format'
+})
+fieldInputError.from(validationError)
+
+throw fieldInputError
+```
+
+Both of these errors will now be logged when `fieldInputError` is thrown, and the log output will include the full chain
+of errors with their respective messages, stack traces, and any additional context provided.
+
+### Managing `Error` instances
+
+When errors are thrown by third party libraries or built-in Node.js modules, they can be referenced by a `BaseError`
+instance using the `from` method to preserve the original error message and stack trace while adding structured context
+and ensuring it is logged correctly.
+
+```javascript
+import fs from 'node:fs'
+
+class FileReadError extends BaseError {}
+
+try {
+  const file = fs.readFile('abc.csv')
+} catch (err) {
+  const newError = new FileReadError({
+    message: 'Failed to read file',
+    status: 500,
+    source: 'node:fs',
+    reason: 'read-error'
+  })
+  newError.from(err)
+  throw newError
+}
+```
+
+> [!IMPORTANT]
+> Instances of `Error` in the chain will always be wrapped in a `GenericError` class that extends `BaseError` to ensure they are logged with a consistent structure allowing them to be chained to and from other errors.
+
+If you would prefer to manually wrap the error you can use the static method `BaseError::wrap`.
+
+```javascript
+try {
+  const file = fs.readFile('abc.csv')
+} catch (err) {
+  throw BaseError.wrap(err)
+}
+```
+
+For logging purposes we always want to find the root errors in the chain before starting to log. While there are no use cases to find the root errors outside of logging today, if needs be the root errors can be found using `BaseError.findRootErrors(error)` which will return an array of all root errors in the chain (i.e. all errors that do not have any parent errors attached to them).
+
 ## Structured Logging System
 
 The application implements a comprehensive structured logging system providing consistent, searchable, and maintainable logging across all components.

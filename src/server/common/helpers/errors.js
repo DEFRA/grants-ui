@@ -12,6 +12,7 @@ import {
   unauthorized
 } from '@hapi/boom'
 import { config } from '~/src/config/config.js'
+import { BaseError } from '~/src/server/common/utils/errors/BaseError.js'
 
 const UNKNOWN_USER = 'unknown'
 
@@ -80,18 +81,27 @@ function statusCodeMessage(statusCode) {
 export function catchAll(request, h) {
   const { response } = request
 
-  if (!response?.isBoom) {
+  if (!response?.isBoom && !(response instanceof BaseError)) {
     return h.response(response).code(response?.statusCode ?? statusCodes.ok)
   }
 
-  const statusCode = response.output.statusCode
+  let statusCode
+
+  if (response instanceof BaseError) {
+    const rootErrors = BaseError.findRootErrors(response)
+    for (const error of rootErrors) {
+      error.log(request)
+    }
+    statusCode = response.details.status || statusCodes.internalServerError
+  } else {
+    statusCode = response.output.statusCode || statusCodes.internalServerError
+    handleErrorLogging(request, response, statusCode)
+  }
 
   // Handle redirects properly
   if (statusCode === statusCodes.redirect && response.output.headers.location) {
     return h.redirect(response.output.headers.location)
   }
-
-  handleErrorLogging(request, response, statusCode)
 
   return renderErrorView(h, statusCode)
 }

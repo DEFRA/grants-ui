@@ -23,7 +23,7 @@ const isProduction = process.env.NODE_ENV === 'production'
 const isTest = process.env.NODE_ENV === 'test'
 const isDevelopment = process.env.NODE_ENV === 'development'
 
-export const config = convict({
+const convictConfig = {
   serviceVersion: {
     doc: 'The service version, this variable is injected into your docker container in CDP environments',
     format: String,
@@ -272,10 +272,16 @@ export const config = convict({
       default: 2000,
       env: 'APPLICATION_LOCK_RELEASE_TIMEOUT_MS'
     }
-  },
-  defraId: /** @type {Schema<DefraIdConfig>} */ (defraId.getProperties()),
-  landGrants: /** @type {Schema<LandGrantsConfig>} */ (landGrants.getProperties()),
-  agreements: /** @type {Schema<AgreementsConfig>} */ (agreements.getProperties())
+  }
+}
+
+export const config = convict({
+  ...convictConfig /** @type {SchemaObj<typeof convictConfig>} */,
+  ...{
+    defraId: /** @type {Schema<DefraIdConfig>} */ (defraId.getProperties()),
+    landGrants: /** @type {Schema<LandGrantsConfig>} */ (landGrants.getProperties()),
+    agreements: /** @type {Schema<AgreementsConfig>} */ (agreements.getProperties())
+  }
 })
 
 config.validate({ allowed: 'strict' })
