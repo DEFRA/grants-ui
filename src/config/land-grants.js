@@ -11,6 +11,7 @@ import 'dotenv/config'
  * @property {string} encryptionKey
  * @property {boolean} enableSSSIFeature
  * @property {boolean} enableDetailedFarmDetails
+ * @property {boolean} enableBlockingInvalidContactDetails
  */
 
 const landGrants = convict({
@@ -48,8 +49,14 @@ const landGrants = convict({
   enableDetailedFarmDetails: {
     doc: 'Enable detailed farm details feature from 09/02/2026',
     format: Boolean,
-    default: false,
+    default: true,
     env: 'ENABLE_DETAILED_FARM_DETAILS_20260209'
+  },
+  enableBlockingInvalidContactDetails: {
+    doc: 'Enable blocking invalid contact details. User will not longer be able to proceed with the application if contact details are invalid.',
+    format: Boolean,
+    default: false,
+    env: 'ENABLE_LAND_GRANT_BLOCK_INVALID_CONTACT_DETAIL_20260210'
   }
 })
 

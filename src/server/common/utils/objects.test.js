@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
-import { isObject } from './objects.js'
+import { describe, expect, it, test } from 'vitest'
+import { assignIfDefined, isObject } from './objects.js'
 
 describe('isObject', () => {
   it('should return true for plain objects', () => {
@@ -75,5 +75,68 @@ describe('isObject', () => {
       date: new Date()
     }
     expect(isObject(complexObj)).toBe(true)
+  })
+})
+
+describe('#assignIfDefined', () => {
+  test('Should assign defined properties using the mapped keys', () => {
+    const target = {}
+    const source = { retryDelay: 'retryDelayOnFailover', maxRetries: 3 }
+
+    assignIfDefined(target, source, {
+      retryDelay: 'retryDelayOnFailover',
+      maxRetries: 'maxRetriesPerRequest'
+    })
+
+    expect(target).toEqual({
+      retryDelayOnFailover: 'retryDelayOnFailover',
+      maxRetriesPerRequest: 3
+    })
+  })
+
+  test('Should preserve existing target properties', () => {
+    const target = { connectTimeout: 5000 }
+    const source = { maxRetries: 3 }
+
+    assignIfDefined(target, source, {
+      maxRetries: 'maxRetriesPerRequest'
+    })
+
+    expect(target).toEqual({
+      connectTimeout: 5000,
+      maxRetriesPerRequest: 3
+    })
+  })
+
+  test.each([
+    {
+      scenario: 'value is explicitly undefined',
+      source: { connectTimeout: 5000, commandTimeout: undefined },
+      mappings: { connectTimeout: 'connectTimeout', commandTimeout: 'commandTimeout' }
+    },
+    {
+      scenario: 'key is not present in source',
+      source: { connectTimeout: 5000 },
+      mappings: { connectTimeout: 'connectTimeout', enableOfflineQueue: 'enableOfflineQueue' }
+    }
+  ])('Should not assign when $scenario', ({ source, mappings }) => {
+    const target = {}
+
+    assignIfDefined(target, source, mappings)
+
+    expect(target).toEqual({ connectTimeout: 5000 })
+  })
+
+  describe('Prototype pollution protection', () => {
+    test.each(['__proto__', 'constructor', 'prototype'])('Should not assign %s key', (dangerousKey) => {
+      const target = {}
+      const source = { malicious: { polluted: true } }
+
+      assignIfDefined(target, source, {
+        malicious: dangerousKey
+      })
+
+      expect(Object.hasOwn(target, dangerousKey)).toBe(false)
+    })
   })
 })

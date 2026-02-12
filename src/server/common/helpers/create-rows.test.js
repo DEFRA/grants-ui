@@ -282,11 +282,14 @@ describe('create-rows utilities', () => {
     })
 
     it('should show mandatory fields as blank when name is null or undefined', () => {
+      const missingValue = {
+        html: '<span class="govuk-visually-hidden" aria-describedby="missing-fields-warning">This information is missing</span>'
+      }
       const expected = {
         rows: [
-          { key: { text: 'Title' }, value: { text: undefined } },
-          { key: { text: 'First name' }, value: { text: undefined } },
-          { key: { text: 'Last name' }, value: { text: undefined } }
+          { key: { text: 'Title' }, value: missingValue },
+          { key: { text: 'First name' }, value: missingValue },
+          { key: { text: 'Last name' }, value: missingValue }
         ]
       }
       expect(createPersonRows(null)).toEqual(expected)
@@ -342,26 +345,32 @@ describe('create-rows utilities', () => {
     })
 
     it('should show mandatory fields as blank when business has no address', () => {
+      const missingValue = {
+        html: '<span class="govuk-visually-hidden" aria-describedby="missing-fields-warning">This information is missing</span>'
+      }
       const result = createBusinessRows('123456789', 'Acme Corp', {})
 
       expect(result).toEqual({
         rows: [
           { key: { text: 'Business name' }, value: { text: 'Acme Corp' } },
-          { key: { text: 'Address 1' }, value: { text: undefined } },
-          { key: { text: 'City' }, value: { text: undefined } },
-          { key: { text: 'Postcode' }, value: { text: undefined } },
+          { key: { text: 'Address 1' }, value: missingValue },
+          { key: { text: 'City' }, value: missingValue },
+          { key: { text: 'Postcode' }, value: missingValue },
           { key: { text: 'SBI number' }, value: { text: '123456789' } }
         ]
       })
     })
 
     it('should show mandatory fields as blank when business and organisationName are missing', () => {
+      const missingValue = {
+        html: '<span class="govuk-visually-hidden" aria-describedby="missing-fields-warning">This information is missing</span>'
+      }
       const expected = {
         rows: [
-          { key: { text: 'Business name' }, value: { text: undefined } },
-          { key: { text: 'Address 1' }, value: { text: undefined } },
-          { key: { text: 'City' }, value: { text: undefined } },
-          { key: { text: 'Postcode' }, value: { text: undefined } },
+          { key: { text: 'Business name' }, value: missingValue },
+          { key: { text: 'Address 1' }, value: missingValue },
+          { key: { text: 'City' }, value: missingValue },
+          { key: { text: 'Postcode' }, value: missingValue },
           { key: { text: 'SBI number' }, value: { text: '123456789' } }
         ]
       }
@@ -379,7 +388,14 @@ describe('create-rows utilities', () => {
       const result = buildRows(fields)
 
       expect(result).toEqual({
-        rows: [{ key: { text: 'Required' }, value: { text: undefined } }]
+        rows: [
+          {
+            key: { text: 'Required' },
+            value: {
+              html: '<span class="govuk-visually-hidden" aria-describedby="missing-fields-warning">This information is missing</span>'
+            }
+          }
+        ]
       })
     })
 

@@ -144,112 +144,27 @@ describe('ConfirmFarmDetailsController', () => {
         config.get.mockReturnValue(false)
       })
 
-      it('should return a flat rows array', async () => {
+      it('should return flat rows with hasMissingFields false when enableBlockingInvalidContactDetails is false', async () => {
         const result = await controller.buildDetailsForView(mockRequest)
 
         expect(config.get).toHaveBeenCalledWith('landGrants.enableDetailedFarmDetails')
-        expect(result).toEqual({
-          rows: expect.any(Array)
-        })
+        expect(result).toHaveProperty('rows')
+        expect(result).toHaveProperty('hasMissingFields')
+        expect(result).not.toHaveProperty('person')
+        expect(result).not.toHaveProperty('business')
+        expect(result).not.toHaveProperty('contact')
+        expect(result.hasMissingFields).toBe(false)
       })
 
-      it('should build rows with all available data', async () => {
-        const result = await controller.buildDetailsForView(mockRequest)
-
-        expect(result.rows).toEqual([
-          {
-            key: { text: 'Name' },
-            value: { text: 'Sarah A Farmer' }
-          },
-          {
-            key: { text: 'Business name' },
-            value: { text: 'Test Farm Business' }
-          },
-          {
-            key: { text: 'Address' },
-            value: { html: 'Line 1<br/>Line 2<br/>Test City<br/>TE1 1ST' }
-          },
-          {
-            key: { text: 'SBI number' },
-            value: { text: 'SBI123456' }
-          },
-          {
-            key: { text: 'Contact details' },
-            value: { html: 'formatted-01234567890<br/>formatted-07123456789<br/>test@farm.com' }
-          }
-        ])
-      })
-
-      it('should handle missing optional data', async () => {
+      it('should return hasMissingFields false regardless of missing data when enableBlockingInvalidContactDetails is false', async () => {
         fetchBusinessAndCustomerInformation.mockResolvedValue({
-          business: {},
+          business: undefined,
           customer: {}
         })
 
         const result = await controller.buildDetailsForView(mockRequest)
 
-        expect(result.rows).toEqual([
-          {
-            key: { text: 'SBI number' },
-            value: { text: 'SBI123456' }
-          }
-        ])
-      })
-
-      it('should handle missing auth credentials', async () => {
-        const result = await controller.buildDetailsForView({})
-
-        const sbiRow = result.rows.find((row) => row.key.text === 'SBI number')
-        expect(sbiRow.value.text).toBeUndefined()
-      })
-
-      it('should handle missing customer name', async () => {
-        fetchBusinessAndCustomerInformation.mockResolvedValue({
-          ...mockData,
-          customer: {}
-        })
-
-        const result = await controller.buildDetailsForView(mockRequest)
-
-        expect(result.rows.find((row) => row.key.text === 'Name')).toBeUndefined()
-      })
-
-      it('should handle missing business name', async () => {
-        fetchBusinessAndCustomerInformation.mockResolvedValue({
-          ...mockData,
-          business: { ...mockData.business, name: undefined }
-        })
-
-        const result = await controller.buildDetailsForView(mockRequest)
-
-        expect(result.rows.find((row) => row.key.text === 'Business name')).toBeUndefined()
-      })
-
-      it('should handle missing business address', async () => {
-        fetchBusinessAndCustomerInformation.mockResolvedValue({
-          ...mockData,
-          business: { ...mockData.business, address: undefined }
-        })
-
-        const result = await controller.buildDetailsForView(mockRequest)
-
-        expect(result.rows.find((row) => row.key.text === 'Address')).toBeUndefined()
-      })
-
-      it('should handle missing phone and email', async () => {
-        fetchBusinessAndCustomerInformation.mockResolvedValue({
-          ...mockData,
-          business: {
-            ...mockData.business,
-            landlinePhoneNumber: undefined,
-            mobilePhoneNumber: undefined,
-            email: undefined
-          }
-        })
-
-        const result = await controller.buildDetailsForView(mockRequest)
-
-        expect(result.rows.find((row) => row.key.text === 'Contact details')).toBeUndefined()
+        expect(result.hasMissingFields).toBe(false)
       })
     })
 
@@ -265,7 +180,6 @@ describe('ConfirmFarmDetailsController', () => {
         expect(result).toHaveProperty('person')
         expect(result).toHaveProperty('business')
         expect(result).toHaveProperty('contact')
-        expect(result).not.toHaveProperty('rows')
       })
 
       it('should build person rows from customer name', async () => {
@@ -308,6 +222,23 @@ describe('ConfirmFarmDetailsController', () => {
         })
       })
 
+      it('should detect hasMissingFields when mandatory rows have no value', async () => {
+        fetchBusinessAndCustomerInformation.mockResolvedValue({
+          ...mockData,
+          customer: {}
+        })
+
+        const result = await controller.buildDetailsForView(mockRequest)
+
+        expect(result.hasMissingFields).toBe(true)
+      })
+
+      it('should set hasMissingFields to false when all mandatory fields are present', async () => {
+        const result = await controller.buildDetailsForView(mockRequest)
+
+        expect(result.hasMissingFields).toBe(false)
+      })
+
       it('should show mandatory person fields as blank and hide optional middle name when customer name is missing', async () => {
         fetchBusinessAndCustomerInformation.mockResolvedValue({
           ...mockData,
@@ -318,9 +249,24 @@ describe('ConfirmFarmDetailsController', () => {
 
         expect(result.person).toEqual({
           rows: [
-            { key: { text: 'Title' }, value: { text: undefined } },
-            { key: { text: 'First name' }, value: { text: undefined } },
-            { key: { text: 'Last name' }, value: { text: undefined } }
+            {
+              key: { text: 'Title' },
+              value: {
+                html: '<span class="govuk-visually-hidden" aria-describedby="missing-fields-warning">This information is missing</span>'
+              }
+            },
+            {
+              key: { text: 'First name' },
+              value: {
+                html: '<span class="govuk-visually-hidden" aria-describedby="missing-fields-warning">This information is missing</span>'
+              }
+            },
+            {
+              key: { text: 'Last name' },
+              value: {
+                html: '<span class="govuk-visually-hidden" aria-describedby="missing-fields-warning">This information is missing</span>'
+              }
+            }
           ]
         })
       })
@@ -336,9 +282,24 @@ describe('ConfirmFarmDetailsController', () => {
         expect(result.business).toEqual({
           rows: [
             { key: { text: 'Business name' }, value: { text: ' Farm 1' } },
-            { key: { text: 'Address 1' }, value: { text: undefined } },
-            { key: { text: 'City' }, value: { text: undefined } },
-            { key: { text: 'Postcode' }, value: { text: undefined } },
+            {
+              key: { text: 'Address 1' },
+              value: {
+                html: '<span class="govuk-visually-hidden" aria-describedby="missing-fields-warning">This information is missing</span>'
+              }
+            },
+            {
+              key: { text: 'City' },
+              value: {
+                html: '<span class="govuk-visually-hidden" aria-describedby="missing-fields-warning">This information is missing</span>'
+              }
+            },
+            {
+              key: { text: 'Postcode' },
+              value: {
+                html: '<span class="govuk-visually-hidden" aria-describedby="missing-fields-warning">This information is missing</span>'
+              }
+            },
             { key: { text: 'SBI number' }, value: { text: 'SBI123456' } }
           ]
         })

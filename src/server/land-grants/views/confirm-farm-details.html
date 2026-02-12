@@ -8,6 +8,7 @@
 {% block content %}
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds-from-desktop">
+
       {% if previewMode %}
         {% include "partials/preview-banner.html" %}
       {% endif %}
@@ -19,6 +20,20 @@
       <h1 class="govuk-heading-l">
         {{ pageTitle }}
       </h1>
+
+
+      {% if details.hasMissingFields %}
+
+        {% from "govuk/components/warning-text/macro.njk" import govukWarningText %}
+
+        {{ govukWarningText({
+          text: " You have some missing details. The missing information must be completed before you can continue. To update your details, phone the Rural Payments Agency (RPA) on 020 8026 2395. ",
+          iconFallbackText: "Warning",
+          attributes: {
+            id: "missing-fields-warning"
+          }
+        }) }}
+      {% endif %}
 
       {% if details.person and details.person.rows.length %}
         <h2 class="govuk-heading-m">
@@ -50,6 +65,7 @@
           <input type="hidden" name="crumb" value="{{ crumb }}">
           {{ govukButton({
               text: "Continue",
+              disabled: details.hasMissingFields,
               preventDoubleClick: true
             })
           }}

@@ -38,7 +38,11 @@ export function buildRows(fields) {
       .filter(({ value, mandatory }) => mandatory || Boolean(value))
       .map(({ label, value }) => ({
         key: { text: label },
-        value: { text: value }
+        value: value
+          ? { text: value }
+          : {
+              html: '<span class="govuk-visually-hidden" aria-describedby="missing-fields-warning">This information is missing</span>'
+            }
       }))
   }
 }
