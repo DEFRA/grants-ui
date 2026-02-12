@@ -97,7 +97,7 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
    */
   buildDetailedFarmDetails(request, data) {
     const enableBlockingInvalidContactDetails = /** @type {object} */ (config).get(
-      'landGrants.enableDetailedFarmDetails'
+      'landGrants.enableBlockingInvalidContactDetails'
     )
 
     const person = createPersonRows(data.customer?.name)
