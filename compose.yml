@@ -150,20 +150,41 @@ services:
       - grants-ui-net
 
   mongodb:
-    image: mongo:6.0.13
+    image: mongo:7.0
     networks:
       - grants-ui-net
     ports:
-      - "27017:27017"
+      - "${MONGO_PORT:-27017}:27017"
     volumes:
       - mongodb-data:/data/db
       - mongodb-config:/data/configdb
-    restart: always
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 10s
       timeout: 5s
       retries: 3
+    command:
+      ["mongod", "--replSet", "mongoRepl", "--bind_ip", "localhost,mongodb"]
+    restart: always
+
+  mongo-ready:
+    image: mongo:7.0
+    networks: [grants-ui-net]
+    environment:
+      PRIMARY: "mongodb:27017"
+      REPLSET: "mongoRepl"
+    volumes:
+      - ./scripts/wait-for-replicaset.sh:/wait-for-replicaset.sh:ro
+    entrypoint: ["/bin/bash", "/wait-for-replicaset.sh"]
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "mongosh 'mongodb://mongodb:27017/?directConnection=true' --quiet --eval 'db.hello().isWritablePrimary' | grep -q true || exit 1",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
 
 volumes:
   redis-data:
