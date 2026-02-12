@@ -147,6 +147,14 @@ describe('TestError', () => {
       expect(causeError).toBeInstanceOf(GenericError)
     })
 
+    it('should not allow circular references when chaining errors', () => {
+      const error1 = new TestError({ message: 'First error', status: 500, source: 'Source1', reason: 'Reason1' })
+      const error2 = new TestError({ message: 'Second error', status: 500, source: 'Source2', reason: 'Reason2' })
+
+      error1.from(error2)
+      expect(() => error2.from(error1)).toThrow('Circular error reference detected in error chain')
+    })
+
     it('should log all chained errors when log method is called', () => {
       const error1 = new TestError({ message: 'First error', status: 500, source: 'Source1', reason: 'Reason1' })
       const error2 = new TestError({ message: 'Second error', status: 500, source: 'Source2', reason: 'Reason2' })

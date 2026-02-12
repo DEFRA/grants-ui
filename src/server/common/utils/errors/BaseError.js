@@ -88,15 +88,37 @@ export class BaseError extends Error {
 
   /**
    * Chain this error from another error, indicating that the previous error led to this error
-   * @param {BaseError|Error} error - The error to chain from
-   * @returns {this} - Returns this for method chaining
+   * @param {BaseError|Error} error
+   * @returns {this}
+   * @throws {GenericError} If adding this relationship would create a circular reference
    */
+
   from(error) {
     if (!error) {
       return this
     }
 
     const causeError = this._parseError(error)
+
+    if (this === causeError) {
+      throw new GenericError({
+        message: 'Circular error reference detected: Cannot chain an error to itself',
+        source: `${this.name}.from`,
+        reason: 'circularReference'
+      })
+    }
+
+    if (this._wouldCreateCircularReference(causeError, 'cause')) {
+      throw new GenericError({
+        message: 'Circular error reference detected in error chain',
+        source: `${this.name}.from`,
+        reason: 'circularReference',
+        errorDetails: {
+          currentError: this.constructor.name,
+          causeError: causeError.constructor.name
+        }
+      })
+    }
 
     this.causeErrors.add(causeError)
 
@@ -110,6 +132,8 @@ export class BaseError extends Error {
   /**
    * Chain another error to this error, indicating that this error led to the next error
    * @param {BaseError|Error} error
+   * @returns {this}
+   * @throws {GenericError} If adding this relationship would create a circular reference
    */
   chain(error) {
     if (!error) {
@@ -118,6 +142,27 @@ export class BaseError extends Error {
 
     const effectError = this._parseError(error)
 
+    if (this === effectError) {
+      throw new GenericError({
+        message: 'Circular error reference detected: Cannot chain an error to itself',
+        source: `${this.name}.chain`,
+        reason: 'circularReference'
+      })
+    }
+
+    // Check if adding this effect would create a circular reference in the chain
+    if (this._wouldCreateCircularReference(effectError, 'effect')) {
+      throw new GenericError({
+        message: 'Circular error reference detected in error chain',
+        source: `${this.name}.chain`,
+        reason: 'circularReference',
+        errorDetails: {
+          currentError: this.constructor.name,
+          effectError: effectError.constructor.name
+        }
+      })
+    }
+
     this.effectErrors.add(effectError)
 
     if (!effectError.causeErrors.has(this)) {
@@ -125,6 +170,46 @@ export class BaseError extends Error {
     }
 
     return this
+  }
+
+  /**
+   * Checks if adding the specified error would create a circular reference
+   * @param {BaseError} error
+   * @param {'cause'|'effect'} type
+   * @returns {boolean}
+   * @private
+   */
+  _wouldCreateCircularReference(error, type) {
+    const visited = new Set()
+    visited.add(this)
+
+    const queue = [error]
+
+    while (queue.length > 0) {
+      const current = queue.shift()
+
+      if (!current) {
+        continue
+      }
+
+      if (visited.has(current)) {
+        return true
+      }
+
+      visited.add(current)
+
+      if (type === 'cause') {
+        for (const causeError of current.causeErrors) {
+          queue.push(causeError)
+        }
+      } else {
+        for (const effectError of current.effectErrors) {
+          queue.push(effectError)
+        }
+      }
+    }
+
+    return false
   }
 
   /**
