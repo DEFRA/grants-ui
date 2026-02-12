@@ -24,4 +24,5 @@ ruleTester.run('try-catch-allowed-functions', tryCatchAllowedFunctions, {
   ]
 })
 
+// eslint-disable-next-line no-console
 console.log('All tests passed!')

@@ -1484,6 +1484,7 @@ Attach your IDE debugger:
 This is a work in progress (as of 12/02/2026)
 
 ### Tasks remaining
+
 - [x] BaseError class with structured properties and logging
 - [x] Example error classes extending BaseError (`AuthError` and `ViewError` currently)
 - [x] Global error handler to format responses and log errors
@@ -1492,6 +1493,7 @@ This is a work in progress (as of 12/02/2026)
 - [ ] Create ESLint rule to forbid logging in `try {} catch {}` blocks.
 
 ### Introduction to structured errors
+
 The application implements a structured error handling approach to ensure consistent error responses and logging across
 all components.
 
@@ -1513,7 +1515,7 @@ of this in action. The base class has a number of different properties that can 
 The constructor takes an object as its only argument. This object can include the following properties:
 
 | Property             | Description                                                                                                                                                           |
-|----------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `message`            | A human-readable message describing the error. This should be concise and informative                                                                                 |
 | `status`             | The HTTP status code to return in the response when this error is thrown. This allows for consistent error responses across the application.                          |
 | `source`             | A string indicating the source or context of the error (e.g.,`'validation'`, `'external-api'`, etc.). This can be used for categorizing errors in logs and responses. |
@@ -1530,7 +1532,7 @@ When throwing errors, only use specific error classes that extend `BaseError` an
 ```javascript
 class ValidationError extends BaseError {
   constructor() {
-    super({message: 'Validation failed', status: 401, source: 'source', reason: 'reason'})
+    super({ message: 'Validation failed', status: 401, source: 'source', reason: 'reason' })
   }
 }
 
@@ -1549,8 +1551,7 @@ to preserve a detailed error chain. Many errors can be chained in this way, and 
 `{ isChainedError: true }` added as additional data.
 
 ```javascript
-class FieldInputError extends BaseError {
-}
+class FieldInputError extends BaseError {}
 
 const validationError = new ValidationError()
 const fieldInputError = new FieldInputError({
@@ -1576,8 +1577,7 @@ and ensuring it is logged correctly.
 ```javascript
 import fs from 'node:fs'
 
-class FileReadError extends BaseError {
-}
+class FileReadError extends BaseError {}
 
 try {
   const file = fs.readFile('abc.csv')
