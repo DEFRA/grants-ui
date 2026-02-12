@@ -790,6 +790,12 @@ describe('LogCodes', () => {
         `Failed to fetch saved state: sessionKey=testSessionKey, error=someErrorMessage, path=/test-path`
       ],
       [
+        'STATE_SIZE_EXCEEDED',
+        'warn',
+        { size: 102400, limit: 51200, sessionKey: 'test-key' },
+        'State payload size 102400 bytes exceeds limit of 51200 bytes for sessionKey=test-key'
+      ],
+      [
         'VIEW_DEBUG with fallback',
         'debug',
         { currentFilePath: '/app', isRunningBuiltCode: true, basePath: '/app', processWorkingDir: '/app' },

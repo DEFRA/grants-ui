@@ -2,6 +2,7 @@ import { vi } from 'vitest'
 import {
   createMockConfig,
   createMockConfigWithoutEndpoint,
+  createCustomMockConfig,
   ERROR_MESSAGES,
   HTTP_STATUS,
   MOCK_STATE_DATA,
@@ -156,6 +157,54 @@ describe('persistStateToApi', () => {
       await persistStateToApi(testState, key, { lockToken })
 
       expect(createApiHeadersForGrantsUiBackend).toHaveBeenCalledWith({ lockToken })
+    })
+  })
+
+  describe('State size validation', () => {
+    const smallLimit = 100
+
+    beforeEach(async () => {
+      vi.resetModules()
+      vi.doMock('~/src/config/config.js', () =>
+        createCustomMockConfig({ 'session.cache.maxDbStateSizeBytes': smallLimit })
+      )
+      const helper = await import('~/src/server/common/helpers/state/persist-state-helper.js')
+      persistStateToApi = helper.persistStateToApi
+      const logModule = await import('../logging/log.js')
+      log = logModule.log
+      LogCodes = logModule.LogCodes
+      vi.clearAllMocks()
+    })
+
+    afterEach(() => {
+      vi.unmock('~/src/config/config.js')
+    })
+
+    it('throws an error and does not call fetch when state exceeds size limit', async () => {
+      const largeState = { data: 'x'.repeat(200) }
+
+      await expect(persistStateToApi(largeState, key)).rejects.toThrow(
+        /State payload size \(\d+ bytes\) exceeds limit \(\d+ bytes\)/
+      )
+
+      expect(fetch).not.toHaveBeenCalled()
+      expect(log).toHaveBeenCalledWith(
+        LogCodes.SYSTEM.STATE_SIZE_EXCEEDED,
+        expect.objectContaining({
+          size: expect.any(Number),
+          limit: smallLimit,
+          sessionKey: key
+        })
+      )
+    })
+
+    it('persists state normally when within size limit', async () => {
+      fetch.mockResolvedValue(createMockFetchResponse())
+      const smallState = { a: 1 }
+
+      await persistStateToApi(smallState, key)
+
+      expect(fetch).toHaveBeenCalledTimes(1)
     })
   })
 
