@@ -1,6 +1,7 @@
 import neostandard from 'neostandard'
 import prettier from 'eslint-config-prettier'
 import vitestPlugin from '@vitest/eslint-plugin'
+import grantsUiPlugin from './.eslint/index.js'
 
 export default [
   ...neostandard({
@@ -12,6 +13,9 @@ export default [
   }),
   prettier,
   {
+    plugins: {
+      'grants-ui': grantsUiPlugin
+    },
     rules: {
       'no-console': 'error',
       curly: ['error', 'all'],
@@ -19,7 +23,8 @@ export default [
       '@stylistic/quotes': 'off',
       '@stylistic/eol-last': 'off',
       '@stylistic/no-trailing-spaces': 'off',
-      '@stylistic/indent': 'off'
+      '@stylistic/indent': 'off',
+      'grants-ui/try-catch-allowed-functions': ['off', { exclude: ['log', 'logger'] }]
     }
   },
   {
