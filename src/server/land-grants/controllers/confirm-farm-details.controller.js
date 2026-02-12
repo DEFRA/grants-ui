@@ -37,16 +37,11 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
   }
 
   /**
-   * Validate business and users details
+   * Get list of missing required farm data fields
    * @param {object} data
-   * @returns {Boolean} whether data is valid or not
+   * @returns {string[]} list of missing field paths
    */
-
-  farmDataHasMissingFields(data) {
-    if (config.get('landGrants.enableBlockingInvalidContactDetails') === false) {
-      return false
-    }
-
+  getMissingFarmDataFields(data) {
     const { customer = {}, business = {} } = data || {}
     const isMissing = (value) => value === undefined || value === null || value === ''
 
@@ -62,15 +57,16 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
       'business.address': business?.address
     }
 
+    const missingFields = []
     for (const [key, fields] of Object.entries(requiredFields)) {
       for (const field of fields) {
         if (isMissing(resolvers[key]?.[field])) {
-          return true
+          missingFields.push(`${key}.${field}`)
         }
       }
     }
 
-    return false
+    return missingFields
   }
 
   /**
@@ -80,13 +76,33 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
    */
   async buildDetailsForView(request) {
     const data = await fetchBusinessAndCustomerInformation(request)
+    const sbi = request.auth?.credentials?.sbi
     const enableDetailedFarmDetails = /** @type {object} */ (config).get('landGrants.enableDetailedFarmDetails')
+    const enableBlockingInvalidContactDetails = /** @type {object} */ (config).get(
+      'landGrants.enableBlockingInvalidContactDetails'
+    )
 
-    if (enableDetailedFarmDetails) {
-      return this.buildDetailedFarmDetails(request, data)
+    const missingFields = this.getMissingFarmDataFields(data)
+    if (missingFields.length > 0) {
+      log(LogCodes.LAND_GRANTS.FARM_DETAILS_MISSING_FIELDS, {
+        sbi,
+        missingFields
+      })
     }
 
-    return this.buildLegacyFarmDetails(request, data)
+    const hasMissingFields = enableBlockingInvalidContactDetails ? missingFields.length > 0 : false
+
+    if (enableDetailedFarmDetails) {
+      return {
+        hasMissingFields,
+        ...this.buildDetailedFarmDetails(request, data)
+      }
+    }
+
+    return {
+      hasMissingFields,
+      ...this.buildLegacyFarmDetails(request, data)
+    }
   }
 
   /**
@@ -96,25 +112,17 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
    * @returns {object}
    */
   buildDetailedFarmDetails(request, data) {
-    const enableBlockingInvalidContactDetails = /** @type {object} */ (config).get(
-      'landGrants.enableBlockingInvalidContactDetails'
-    )
+    const sbi = request.auth?.credentials?.sbi
+    const organisationName = request.auth?.credentials?.organisationName
 
     const person = createPersonRows(data.customer?.name)
-    const business = createBusinessRows(
-      request.auth?.credentials?.sbi,
-      request.auth?.credentials.organisationName,
-      data.business
-    )
+    const business = createBusinessRows(sbi, organisationName, data.business)
     const contact = createContactRows(data.business)
-    const hasMissingFields = enableBlockingInvalidContactDetails
-      ? [...person.rows, ...business.rows, ...contact.rows].some((row) => !row.value?.text)
-      : false
+
     return {
       person,
       business,
-      contact,
-      hasMissingFields
+      contact
     }
   }
 
@@ -125,8 +133,6 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
    * @returns {object}
    */
   buildLegacyFarmDetails(request, data) {
-    const hasMissingFields = this.farmDataHasMissingFields(data)
-
     const rows = [
       createCustomerNameRow(data.customer?.name),
       createBusinessNameRow(data.business?.name),
@@ -139,7 +145,7 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
       )
     ].filter(Boolean)
 
-    return { rows, hasMissingFields }
+    return { rows }
   }
 
   /**
