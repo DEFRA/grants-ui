@@ -4,6 +4,7 @@ import { catchAll, createBoomError } from '~/src/server/common/helpers/errors.js
 import Wreck from '@hapi/wreck'
 import { log } from '~/src/server/common/helpers/logging/log.js'
 import { createServer } from '~/src/server/index.js'
+import { BaseError } from '~/src/server/common/utils/errors/BaseError.js'
 
 vi.hoisted(() => {
   process.env.DEFRA_ID_CLIENT_ID = 'test-client-id'
@@ -631,6 +632,29 @@ describe('#catchAll 404 Logging', () => {
     expect(log).toHaveBeenCalledWith(
       expect.any(Object),
       expect.objectContaining({ statusCode: statusCodes.badRequest, path: '/x' }),
+      request
+    )
+  })
+
+  test('Should log BaseError instances', () => {
+    class TestError extends BaseError {}
+    const request = {
+      response: new TestError({
+        message: 'Test error',
+        statusCode: 400,
+        source: 'test',
+        reason: 'testing'
+      }),
+      path: '/x',
+      method: 'GET'
+    }
+
+    const toolkit = { view: vi.fn().mockReturnThis(), code: vi.fn().mockReturnThis() }
+    catchAll(request, toolkit)
+
+    expect(log).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({ statusCode: statusCodes.badRequest, reason: 'testing' }),
       request
     )
   })

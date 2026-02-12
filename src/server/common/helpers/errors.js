@@ -81,7 +81,7 @@ function statusCodeMessage(statusCode) {
 export function catchAll(request, h) {
   const { response } = request
 
-  if (!response?.isBoom) {
+  if (!response?.isBoom && !(response instanceof BaseError)) {
     return h.response(response).code(response?.statusCode ?? statusCodes.ok)
   }
 

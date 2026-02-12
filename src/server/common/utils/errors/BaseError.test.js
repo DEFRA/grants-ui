@@ -8,7 +8,7 @@ vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
   return mockLogHelper()
 })
 
-describe('TestError', () => {
+describe('BaseError', () => {
   class TestError extends BaseError {}
 
   const message = 'Test message'
@@ -103,7 +103,7 @@ describe('TestError', () => {
     })
   })
 
-  describe('chaining errors', () => {
+  describe('chaining errors with the from method', () => {
     it('should store previous errors when from method is called', () => {
       const error1 = new TestError({ message: 'First error', source: 'Source1', reason: 'Reason1' })
       const error2 = new TestError({ message: 'Second error', status: 500, source: 'Source2', reason: 'Reason2' })
@@ -150,9 +150,30 @@ describe('TestError', () => {
     it('should not allow circular references when chaining errors', () => {
       const error1 = new TestError({ message: 'First error', status: 500, source: 'Source1', reason: 'Reason1' })
       const error2 = new TestError({ message: 'Second error', status: 500, source: 'Source2', reason: 'Reason2' })
+      const error3 = new TestError({ message: 'Third error', status: 500, source: 'Source3', reason: 'Reason3' })
 
       error1.from(error2)
-      expect(() => error2.from(error1)).toThrow('Circular error reference detected in error chain')
+      expect(error1.causeErrors.has(error2)).toBe(true)
+      expect(error2.effectErrors.has(error1)).toBe(true)
+
+      error2.from(error3)
+      expect(error2.causeErrors.has(error3)).toBe(true)
+      expect(error3.effectErrors.has(error2)).toBe(true)
+
+      // Direct circular reference
+      expect(() => {
+        error2.from(error1)
+      }).toThrow(/Circular error reference detected/i)
+
+      // Indirect circular reference
+      expect(() => {
+        error3.from(error1)
+      }).toThrow(/Circular error reference detected/i)
+
+      // Self-reference
+      expect(() => {
+        error1.from(error1)
+      }).toThrow(/Circular error reference detected/i)
     })
 
     it('should log all chained errors when log method is called', () => {
@@ -242,6 +263,124 @@ describe('TestError', () => {
         },
         requestMock
       )
+    })
+  })
+
+  describe('chaining errors with the chain method', () => {
+    it('should store effect errors when chain method is called', () => {
+      const error1 = new TestError({ message: 'First error', source: 'Source1', reason: 'Reason1' })
+      const error2 = new TestError({ message: 'Second error', status: 500, source: 'Source2', reason: 'Reason2' })
+
+      error1.chain(error2)
+
+      expect(error1.effectErrors.has(error2)).toBe(true)
+    })
+
+    it('should chain errors allowing navigation from error to error bidirectionally', () => {
+      const error1 = new TestError({ message: 'First error', status: 500, source: 'Source1', reason: 'Reason1' })
+      const error2 = new TestError({ message: 'Second error', status: 500, source: 'Source2', reason: 'Reason2' })
+      const error3 = new TestError({ message: 'Third error', status: 500, source: 'Source3', reason: 'Reason3' })
+
+      error1.chain(error2)
+      error2.chain(error3)
+
+      expect(error2.causeErrors.has(error1)).toBe(true)
+      expect(error3.causeErrors.has(error2)).toBe(true)
+    })
+
+    it('should chain non TestError instances without creating circular references', () => {
+      const error1 = new TestError({ message: 'First error', status: 500, source: 'Source1', reason: 'Reason1' })
+      const standardError = new Error('Standard error')
+
+      error1.chain(standardError)
+
+      expect(error1.effectErrors.size).toBe(1)
+      expect(error1.causeErrors.size).toBe(0)
+    })
+
+    it('should wrap non TestError (BaseError) instances in a GenericError when chaining', () => {
+      const error1 = new TestError({ message: 'First error', status: 500, source: 'Source1', reason: 'Reason1' })
+      const error2 = new Error('Standard error')
+
+      error1.chain(error2)
+
+      const effectError = Array.from(error1.effectErrors).pop()
+
+      expect(effectError.details.originalError).toStrictEqual(error2)
+      expect(effectError).toBeInstanceOf(GenericError)
+    })
+
+    it('should not allow circular references when chaining errors', () => {
+      const error1 = new TestError({ message: 'First error', status: 500, source: 'Source1', reason: 'Reason1' })
+      const error2 = new TestError({ message: 'Second error', status: 500, source: 'Source2', reason: 'Reason2' })
+      const error3 = new TestError({ message: 'Third error', status: 500, source: 'Source3', reason: 'Reason3' })
+
+      error3.chain(error2)
+      expect(error3.effectErrors.has(error2)).toBe(true)
+      expect(error2.causeErrors.has(error3)).toBe(true)
+
+      error2.chain(error1)
+      expect(error2.effectErrors.has(error1)).toBe(true)
+      expect(error1.causeErrors.has(error2)).toBe(true)
+
+      // Direct circular reference
+      expect(() => {
+        error1.chain(error2)
+      }).toThrow(/Circular error reference detected/i)
+
+      // Indirect circular reference
+      expect(() => {
+        error1.chain(error3)
+      }).toThrow(/Circular error reference detected/i)
+
+      // Self-reference
+      expect(() => {
+        error1.chain(error1)
+      }).toThrow(/Circular error reference detected/i)
+    })
+
+    it('should log related errors when log method is called', () => {
+      const error1 = new TestError({ message: 'First error', status: 500, source: 'Source1', reason: 'Reason1' })
+      const error2 = new TestError({ message: 'Second error', status: 500, source: 'Source2', reason: 'Reason2' })
+      const error3 = new TestError({ message: 'Third error', status: 500, source: 'Source3', reason: 'Reason3' })
+
+      error1.chain(error2)
+      error2.chain(error3)
+
+      const requestMock = { id: 'req123' }
+      error1.log(requestMock)
+
+      // Verify that the error itself is logged
+      expect(logger).toHaveBeenCalledWith(
+        LogCodes.SYSTEM.SERVER_ERROR,
+        {
+          errorName: 'TestError',
+          errorMessage: 'First error',
+          status: 500,
+          source: 'Source1',
+          reason: 'Reason1'
+        },
+        requestMock
+      )
+
+      // Note: Unlike the 'from' tests, we're not checking all causes are logged here
+      // because the log() method only logs the causeErrors, not the effectErrors
+      // This is expected behavior based on the implementation
+    })
+
+    it('should support mixed chaining with both from and chain methods', () => {
+      const error1 = new TestError({ message: 'First error', status: 500, source: 'Source1', reason: 'Reason1' })
+      const error2 = new TestError({ message: 'Second error', status: 500, source: 'Source2', reason: 'Reason2' })
+      const error3 = new TestError({ message: 'Third error', status: 500, source: 'Source3', reason: 'Reason3' })
+      const error4 = new TestError({ message: 'Fourth error', status: 500, source: 'Source4', reason: 'Reason4' })
+
+      error1.from(error2) // error2 is a cause of error1
+      error2.chain(error3) // error3 is an effect of error2
+      error3.from(error4) // error4 is a cause of error3
+
+      expect(error1.causeErrors.has(error2)).toBe(true)
+      expect(error2.effectErrors.has(error3)).toBe(true)
+      expect(error3.causeErrors.has(error4)).toBe(true)
     })
   })
 
