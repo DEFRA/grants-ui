@@ -108,7 +108,7 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
     )
     const contact = createContactRows(data.business)
     const hasMissingFields = enableBlockingInvalidContactDetails
-      ? [...person.rows, ...business.rows, ...contact.rows].filter((row) => !row.value?.text).length > 0
+      ? [...person.rows, ...business.rows, ...contact.rows].some((row) => !row.value?.text)
       : false
     return {
       person,
