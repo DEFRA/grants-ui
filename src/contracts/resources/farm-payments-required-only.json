@@ -1,0 +1,90 @@
+{
+  "metadata": {
+    "sbi": "121428499",
+    "crn": "1102760349",
+    "frn": "2396577132",
+    "clientRef": "c0c-e5c-017",
+    "submittedAt": "2026-02-12T09:29:00.297Z"
+  },
+  "answers": {
+    "rulesCalculations": {
+      "id": 3,
+      "message": "Application validated successfully",
+      "valid": true,
+      "date": "2026-02-12T09:29:00.297Z"
+    },
+    "scheme": "SFI",
+    "applicant": {
+      "business": {
+        "name": "John Woodcock",
+        "address": {
+          "city": "Clitheroe",
+          "postalCode": "BB7 4LQ",
+          "line1": "Catlow Road",
+          "line2": "Groovy Park"
+        }
+      },
+      "customer": {
+        "name": {
+          "title": "Mr.",
+          "first": "Antony",
+          "last": "Williams"
+        }
+      }
+    },
+    "application": {
+      "parcel": [
+        {
+          "sheetId": "SD5949",
+          "parcelId": "6060",
+          "actions": [
+            {
+              "code": "CMOR1",
+              "version": 1,
+              "durationYears": 1
+            }
+          ]
+        },
+        {
+          "sheetId": "SD6352",
+          "parcelId": "1073",
+          "actions": [
+            {
+              "code": "UPL2",
+              "version": 2,
+              "durationYears": 1
+            }
+          ]
+        }
+      ],
+      "agreement": []
+    },
+    "payments": {
+      "parcel": [
+        {
+          "sheetId": "SD5949",
+          "parcelId": "6060",
+          "actions": [
+            {
+              "code": "CMOR1"
+            }
+          ]
+        },
+        {
+          "sheetId": "SD6352",
+          "parcelId": "1073",
+          "actions": [
+            {
+              "code": "UPL2"
+            }
+          ]
+        }
+      ],
+      "agreement": [
+        {
+          "code": "CMOR1"
+        }
+      ]
+    }
+  }
+}

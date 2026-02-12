@@ -16,12 +16,44 @@ const { string, regex } = MatchersV3
 describe('Pact between grants-ui (consumer) and fg-gas-backend (provider)', () => {
   describe('POST /applications', () => {
     it('successfully submits farm-payments application', async () => {
-      const payload = JSON.parse(fs.readFileSync(path.join(__dirname, 'farm-payments.json'), 'utf-8'))
+      const payload = JSON.parse(fs.readFileSync(path.join(__dirname, 'resources/farm-payments.json'), 'utf-8'))
 
       await provider
         .addInteraction()
         .given('frps-private-beta is configured in fg-gas-backend')
         .uponReceiving('an frps-private-beta application')
+        .withRequest('POST', '/grants/frps-private-beta/applications', (builder) => {
+          builder.headers({
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer 00000000-0000-0000-0000-000000000000'
+          })
+          builder.jsonBody(payload)
+        })
+        .willRespondWith(204)
+        .executeTest(async (mockServer) => {
+          const response = await makeGasApiRequest(
+            `${mockServer.url}/grants/frps-private-beta/applications`,
+            'frps-private-beta',
+            {},
+            {
+              method: 'POST',
+              payload
+            }
+          )
+
+          expect(response.status).toBe(204)
+        })
+    })
+
+    it('successfully submits farm-payments application with only required properties', async () => {
+      const payload = JSON.parse(
+        fs.readFileSync(path.join(__dirname, 'resources/farm-payments-required-only.json'), 'utf-8')
+      )
+
+      await provider
+        .addInteraction()
+        .given('frps-private-beta is configured in fg-gas-backend')
+        .uponReceiving('an frps-private-beta application with only required properties')
         .withRequest('POST', '/grants/frps-private-beta/applications', (builder) => {
           builder.headers({
             'Content-Type': 'application/json',
