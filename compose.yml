@@ -11,8 +11,8 @@ services:
       fcp-defra-id-stub:
         condition: service_healthy
     ports:
-      - "3000:3000"
-      - "9229:9229"
+      - '3000:3000'
+      - '9229:9229'
     environment:
       PORT: 3000
       NODE_ENV: ${NODE_ENV:-development}
@@ -20,36 +20,36 @@ services:
       REDIS_HOST: redis
       USE_SINGLE_INSTANCE_CACHE: true
       SESSION_CACHE_ENGINE: redis
-      REDIS_KEY_PREFIX: "grants-ui:"
+      REDIS_KEY_PREFIX: 'grants-ui:'
       SESSION_CACHE_NAME: session
       REDIS_CONNECT_TIMEOUT: 30000
       REDIS_RETRY_DELAY: 1000
       REDIS_MAX_RETRIES: 10
-      REDIS_USERNAME: ""
-      REDIS_PASSWORD: ""
+      REDIS_USERNAME: ''
+      REDIS_PASSWORD: ''
       LOG_LEVEL: ${LOG_LEVEL:-info}
       SESSION_COOKIE_PASSWORD: ${SESSION_COOKIE_PASSWORD:-53409gjhfcdiklgjidfglkgjidfglkelrku634}
       SESSION_COOKIE_TTL: ${SESSION_COOKIE_TTL:-2419200000}
       SESSION_CACHE_TTL: 14400000
-      FEEDBACK_LINK: "${FEEDBACK_LINK:-mailto:defraforms@defra.gov.uk}"
+      FEEDBACK_LINK: '${FEEDBACK_LINK:-mailto:defraforms@defra.gov.uk}'
       SERVICE_NAME: ${SERVICE_NAME:-Farm and land service}
       COOKIE_POLICY_URL: ${COOKIE_POLICY_URL:-/cookies}
       COOKIE_CONSENT_EXPIRY_DAYS: ${COOKIE_CONSENT_EXPIRY_DAYS:-365}
       CV_API_MOCK_ENABLED: ${CV_API_MOCK_ENABLED:-true}
-      DEFRA_ID_WELL_KNOWN_URL: "${DEFRA_ID_WELL_KNOWN_URL:-http://fcp-defra-id-stub:3007/idphub/b2c/b2c_1a_cui_cpdev_signupsigninsfi/.well-known/openid-configuration}"
+      DEFRA_ID_WELL_KNOWN_URL: '${DEFRA_ID_WELL_KNOWN_URL:-http://fcp-defra-id-stub:3007/idphub/b2c/b2c_1a_cui_cpdev_signupsigninsfi/.well-known/openid-configuration}'
       DEFRA_ID_CLIENT_ID: ${DEFRA_ID_CLIENT_ID:-client_id}
       DEFRA_ID_CLIENT_SECRET: ${DEFRA_ID_CLIENT_SECRET:-client_secret}
       DEFRA_ID_SERVICE_ID: ${DEFRA_ID_SERVICE_ID:-service_id}
-      DEFRA_ID_REDIRECT_URL: "${DEFRA_ID_REDIRECT_URL:-http://localhost:3000/auth/sign-in-oidc}"
-      DEFRA_ID_SIGN_OUT_REDIRECT_URL: "${DEFRA_ID_SIGN_OUT_REDIRECT_URL:-http://localhost:3000/auth/sign-out-oidc}"
-      GRANTS_UI_BACKEND_URL: "${GRANTS_UI_BACKEND_URL:-http://grants-ui-backend:3001}"
+      DEFRA_ID_REDIRECT_URL: '${DEFRA_ID_REDIRECT_URL:-http://localhost:3000/auth/sign-in-oidc}'
+      DEFRA_ID_SIGN_OUT_REDIRECT_URL: '${DEFRA_ID_SIGN_OUT_REDIRECT_URL:-http://localhost:3000/auth/sign-out-oidc}'
+      GRANTS_UI_BACKEND_URL: '${GRANTS_UI_BACKEND_URL:-http://grants-ui-backend:3001}'
       GRANTS_UI_BACKEND_AUTH_TOKEN: ${GRANTS_UI_BACKEND_AUTH_TOKEN:-auth_token}
       GRANTS_UI_BACKEND_ENCRYPTION_KEY: ${GRANTS_UI_BACKEND_ENCRYPTION_KEY:-encryption_key}
-      APP_BASE_URL: "${APP_BASE_URL:-http://localhost:3000}"
+      APP_BASE_URL: '${APP_BASE_URL:-http://localhost:3000}'
       HOST: 0.0.0.0
-      GAS_API_URL: "${GAS_API_URL:-http://mockserver:1080}"
-      GAS_API_AUTH_TOKEN: "${GAS_API_AUTH_TOKEN}"
-      LAND_GRANTS_API_URL: "${LAND_GRANTS_API_URL:-http://mockserver:1080}"
+      GAS_API_URL: '${GAS_API_URL:-http://mockserver:1080}'
+      GAS_API_AUTH_TOKEN: '${GAS_API_AUTH_TOKEN}'
+      LAND_GRANTS_API_URL: '${LAND_GRANTS_API_URL:-http://mockserver:1080}'
       LAND_GRANTS_API_AUTH_TOKEN: ${LAND_GRANTS_API_AUTH_TOKEN:-auth_token}
       LAND_GRANTS_API_ENCRYPTION_KEY: ${LAND_GRANTS_API_ENCRYPTION_KEY:-encryption_key}
       EXAMPLE_WHITELIST_CRNS: ${EXAMPLE_WHITELIST_CRNS:-1100957269,1100953760}
@@ -58,6 +58,7 @@ services:
       FARMING_PAYMENTS_WHITELIST_SBIS: ${FARMING_PAYMENTS_WHITELIST_SBIS:-300000099, 106284736, 121428499, 106238988, 107365747, 106514040, 107034848, 106440951, 107214733, 300000001, 300000002, 300000003, 300000004, 300000005, 300000006, 300000007, 300000008, 300000009, 300000010, 300000011, 300000012, 300000013, 300000014, 300000015, 300000016, 300000017, 300000018, 300000019, 300000020, 300000021, 300000022, 300000023, 300000024, 300000025, 300000026, 300000027, 300000028, 300000029, 300000030, 300000031, 300000032, 300000033, 300000034, 300000035, 300000036, 300000037, 300000038, 300000039, 300000040, 300000041, 300000042, 300000043, 300000044, 300000045, 300000046, 300000047, 300000048, 300000049, 300000050, 300000051, 300000052, 300000053, 300000054, 300000055, 300000056, 300000057, 300000058, 300000059, 300000060, 300000061, 300000062, 300000063, 300000064, 300000065, 300000066, 300000067, 300000068, 300000069, 300000070, 300000071, 300000072, 300000073, 300000074, 300000075, 300000076, 300000077, 300000078, 300000079, 300000080, 300000081, 300000082, 300000083, 300000084, 300000085, 300000086, 300000087, 300000088, 300000089, 300000090, 300000091, 300000092, 300000093, 300000094, 300000095, 300000096, 300000097, 300000098, 300000100, 200000001, 200000002}
       APPLICATION_LOCK_TOKEN_SECRET: ${APPLICATION_LOCK_TOKEN_SECRET:-dev-lock-secret}
       ENABLE_LAND_GRANT_SSSI_20260122: ${ENABLE_LAND_GRANT_SSSI_20260122:-false}
+      ENABLE_DETAILED_FARM_DETAILS_20260209: ${ENABLE_DETAILED_FARM_DETAILS_20260209:-true}
       ENABLE_LAND_GRANT_BLOCK_INVALID_CONTACT_DETAIL_20260210: ${ENABLE_LAND_GRANT_BLOCK_INVALID_CONTACT_DETAIL_20260210:-false}
     volumes:
       - ./src:/home/node/src
@@ -66,7 +67,7 @@ services:
       - grants-ui-net
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "ps aux | grep 'node .' | grep -v grep || exit 1"]
+      test: ['CMD-SHELL', "ps aux | grep 'node .' | grep -v grep || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 6
@@ -79,7 +80,7 @@ services:
       mongodb:
         condition: service_healthy
     ports:
-      - "3001:3001"
+      - '3001:3001'
     environment:
       PORT: 3001
       HOST: 0.0.0.0
@@ -93,7 +94,7 @@ services:
       - grants-ui-net
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      test: ['CMD', 'curl', '-f', 'http://localhost:3001/health']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -104,8 +105,8 @@ services:
     networks:
       - grants-ui-net
     environment:
-      WELL_KNOWN_HOST_OVERRIDE: "${WELL_KNOWN_HOST_OVERRIDE:-http://localhost:3007}"
-      WELL_KNOWN_API_HOST_OVERRIDE: "${WELL_KNOWN_API_HOST_OVERRIDE:-http://fcp-defra-id-stub:3007}"
+      WELL_KNOWN_HOST_OVERRIDE: '${WELL_KNOWN_HOST_OVERRIDE:-http://localhost:3007}'
+      WELL_KNOWN_API_HOST_OVERRIDE: '${WELL_KNOWN_API_HOST_OVERRIDE:-http://fcp-defra-id-stub:3007}'
       PORT: 3007
       ALLOW_LOGIN_QUERY_PARAMS: ${ALLOW_LOGIN_QUERY_PARAMS:-true}
       AUTH_MODE: ${AUTH_MODE:-basic}
@@ -114,9 +115,9 @@ services:
     volumes:
       - ./fcp-defra-id-stub/users.json:/data/users.json
     ports:
-      - "3007:3007"
+      - '3007:3007'
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3007/health"]
+      test: ['CMD', 'curl', '-f', 'http://localhost:3007/health']
       interval: 15s
       timeout: 10s
       retries: 5
@@ -129,7 +130,7 @@ services:
     environment:
       MOCKSERVER_INITIALIZATION_JSON_PATH: /config/expectations.json
     ports:
-      - "1080:1080"
+      - '1080:1080'
     volumes:
       - ./mockserver/expectations.json:/config/expectations.json
     command:
@@ -138,12 +139,12 @@ services:
   redis:
     image: redis:7.2.3-alpine3.18
     ports:
-      - "6379:6379"
+      - '6379:6379'
     volumes:
       - redis-data:/data
     restart: always
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 10s
       timeout: 5s
       retries: 3
@@ -155,33 +156,32 @@ services:
     networks:
       - grants-ui-net
     ports:
-      - "${MONGO_PORT:-27017}:27017"
+      - '${MONGO_PORT:-27017}:27017'
     volumes:
       - mongodb-data:/data/db
       - mongodb-config:/data/configdb
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      test: ['CMD', 'mongosh', '--eval', "db.adminCommand('ping')"]
       interval: 10s
       timeout: 5s
       retries: 3
-    command:
-      ["mongod", "--replSet", "mongoRepl", "--bind_ip", "localhost,mongodb"]
+    command: ['mongod', '--replSet', 'mongoRepl', '--bind_ip', 'localhost,mongodb']
     restart: always
 
   mongo-ready:
     image: mongo:7.0
     networks: [grants-ui-net]
     environment:
-      PRIMARY: "mongodb:27017"
-      REPLSET: "mongoRepl"
+      PRIMARY: 'mongodb:27017'
+      REPLSET: 'mongoRepl'
     volumes:
       - ./scripts/wait-for-replicaset.sh:/wait-for-replicaset.sh:ro
-    entrypoint: ["/bin/bash", "/wait-for-replicaset.sh"]
+    entrypoint: ['/bin/bash', '/wait-for-replicaset.sh']
     healthcheck:
       test:
         [
-          "CMD-SHELL",
-          "mongosh 'mongodb://mongodb:27017/?directConnection=true' --quiet --eval 'db.hello().isWritablePrimary' | grep -q true || exit 1",
+          'CMD-SHELL',
+          "mongosh 'mongodb://mongodb:27017/?directConnection=true' --quiet --eval 'db.hello().isWritablePrimary' | grep -q true || exit 1"
         ]
       interval: 5s
       timeout: 3s
