@@ -49,7 +49,7 @@ const landGrants = convict({
   enableDetailedFarmDetails: {
     doc: 'Enable detailed farm details feature from 09/02/2026',
     format: Boolean,
-    default: true,
+    default: false,
     env: 'ENABLE_DETAILED_FARM_DETAILS_20260209'
   },
   enableBlockingInvalidContactDetails: {
