@@ -1,0 +1,61 @@
+{
+  "data": {
+    "business": {
+      "sbi": "400000004",
+      "organisationId": "7400100",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "9193",
+            "sheetId": "SD7560"
+          },
+          {
+            "parcelId": "9205",
+            "sheetId": "SD5848"
+          },
+          {
+            "parcelId": "9215",
+            "sheetId": "SD5649"
+          },
+          {
+            "parcelId": "9218",
+            "sheetId": "SD6165"
+          },
+          {
+            "parcelId": "9223",
+            "sheetId": "SD5763"
+          }
+        ]
+      },
+      "info": {
+        "name": "Golden Grange LTD",
+        "reference": "0400000004",
+        "email": {
+          "address": "contact+400000004@example.test"
+        },
+        "phone": {
+          "mobile": "+4407300000100",
+          "landline": "020 334 45904"
+        },
+        "address": {
+          "line1": "Silver Trees",
+          "line2": null,
+          "line3": null,
+          "line4": null,
+          "line5": "",
+          "street": null,
+          "city": "Birmingham",
+          "postalCode": "HA5 6PL",
+          "uprn": "981124611111",
+          "buildingName": null,
+          "buildingNumberRange": null,
+          "county": null,
+          "dependentLocality": null,
+          "doubleDependentLocality": null,
+          "flatName": null,
+          "pafOrganisationName": null
+        }
+      }
+    }
+  }
+}
