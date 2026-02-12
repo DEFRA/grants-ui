@@ -1593,8 +1593,20 @@ try {
 }
 ```
 
-Note: instances of `Error` in the chain will always terminate logging calls and no further information will be logged
-about the error chain once an `Error` is encountered.
+> [!IMPORTANT]
+> Instances of `Error` in the chain will always be wrapped in a `GenericError` class that extends `BaseError` to ensure they are logged with a consistent structure allowing them to be chained to and from other errors.
+
+If you would prefer to manually wrap the error you can use the static method `BaseError::wrap`.
+
+```javascript
+try {
+  const file = fs.readFile('abc.csv')
+} catch (err) {
+  throw BaseError.wrap(err)
+}
+```
+
+For logging purposes we always want to find the root errors in the chain before starting to log. While there are no use cases to find the root errors outside of logging today, if needs be the root errors can be found using `BaseError.findRootErrors(error)` which will return an array of all root errors in the chain (i.e. all errors that do not have any parent errors attached to them).
 
 ## Structured Logging System
 
