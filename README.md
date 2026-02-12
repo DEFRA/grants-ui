@@ -79,8 +79,7 @@ nvm use
 
 ## Features
 
-The Grants UI service provides a comprehensive set of features for building grant application forms. These features are
-demonstrated in the Example Grant with Auth journey and documented in detail in [FEATURES.md](./FEATURES.md).
+The Grants UI service provides a comprehensive set of features for building grant application forms. These features are demonstrated in the Example Grant with Auth journey and documented in detail in [FEATURES.md](./FEATURES.md).
 
 Key features include:
 
@@ -98,43 +97,27 @@ For complete documentation of all available features, see [FEATURES.md](./FEATUR
 
 Grants UI uses the [DXT Forms Engine](https://github.com/DEFRA/dxt-forms-engine) to render forms.
 
-We override the default DXT SummaryPageController which is used as a combined "check answers" and "submit" page, to
-provide these as separate pages.
+We override the default DXT SummaryPageController which is used as a combined "check answers" and "submit" page, to provide these as separate pages.
 
-CheckResponsesPageController renders a page showing the questions and answers the user has completed, and allows the
-user to change their answers.
+CheckResponsesPageController renders a page showing the questions and answers the user has completed, and allows the user to change their answers.
 
-DeclarationPageController renders a declaration page and submits the form to GAS. It does not use the
-`confirmationState` used by DXT and does not clear the state.
+DeclarationPageController renders a declaration page and submits the form to GAS. It does not use the `confirmationState` used by DXT and does not clear the state.
 Instead it sets `applicationStatus` to `SUBMITTED` along with `submittedAt` and `submittedBy` fields.
 
 ### Forms Engine State Model
 
 DXT Controllers pass a `context` object into every handler. Grants UI relies on two key properties:
 
-- `context.state`: the full mutable state bag for the current journey. Grants UI stores intermediate answers, lookups,
-  and UI scaffolding here (for example `context.state.applicantContactDetails`). Use the helper methods exposed by the
-  base controllers—primarily `await this.setState(request, newState)` or
-  `await this.mergeState(request, context.state, update)`—to persist changes so they flow through the cache layer (
-  `QuestionPageController.setState`, `QuestionPageController.mergeState` in the forms engine plugin).
-- `context.relevantState`: a projection produced by the forms engine that contains only the answers needed for
-  submission. This is the source of truth used by declaration/confirmation controllers when building payloads for GAS (
-  see `DeclarationPageController`).
+- `context.state`: the full mutable state bag for the current journey. Grants UI stores intermediate answers, lookups, and UI scaffolding here (for example `context.state.applicantContactDetails`). Use the helper methods exposed by the base controllers—primarily `await this.setState(request, newState)` or `await this.mergeState(request, context.state, update)`—to persist changes so they flow through the cache layer (`QuestionPageController.setState`, `QuestionPageController.mergeState` in the forms engine plugin).
+- `context.relevantState`: a projection produced by the forms engine that contains only the answers needed for submission. This is the source of truth used by declaration/confirmation controllers when building payloads for GAS (see `DeclarationPageController`).
 
-StatePersistenceService persists both structures through the Grants UI Backend API (which stores data in MongoDB) so
-that state survives page refreshes and "save and return" flows. Redis is used separately for session caching (auth
-cookies, Yar session data, tasklist temp data) but not for form state persistence. When working on new controllers,
-prefer `context.relevantState` for data you plan to submit, and use `context.state` for auxiliary UI data. Changes to
-either must be serialisable because the persistence layer stores them as JSON.
+StatePersistenceService persists both structures through the Grants UI Backend API (which stores data in MongoDB) so that state survives page refreshes and "save and return" flows. Redis is used separately for session caching (auth cookies, Yar session data, tasklist temp data) but not for form state persistence. When working on new controllers, prefer `context.relevantState` for data you plan to submit, and use `context.state` for auxiliary UI data. Changes to either must be serialisable because the persistence layer stores them as JSON.
 
 Practical usage tips:
 
-- `await this.setState(request, { ...context.state, applicantContactDetails: updated })` completely replaces the stored
-  state for the current journey.
-- `await this.mergeState(request, context.state, { applicantContactDetails: updated })` applies a shallow merge when you
-  only need to tweak a subset of keys.
-- Never mutate `context.state` in place; always go through the helpers so that the new state is flushed through the
-  cache service and persisted for save-and-return flows.
+- `await this.setState(request, { ...context.state, applicantContactDetails: updated })` completely replaces the stored state for the current journey.
+- `await this.mergeState(request, context.state, { applicantContactDetails: updated })` applies a shallow merge when you only need to tweak a subset of keys.
+- Never mutate `context.state` in place; always go through the helpers so that the new state is flushed through the cache service and persisted for save-and-return flows.
 
 ```mermaid
 sequenceDiagram
@@ -169,9 +152,7 @@ sequenceDiagram
 
 ## Task Lists
 
-Task lists provides a structured, configurable way to organize grant application forms into multiple sections and tasks,
-allowing users to track their progress through complex multi-step applications. Task lists automatically determine
-completion status based on form state and provide flexible navigation between sections.
+Task lists provides a structured, configurable way to organize grant application forms into multiple sections and tasks, allowing users to track their progress through complex multi-step applications. Task lists automatically determine completion status based on form state and provide flexible navigation between sections.
 
 ### What Task Lists Are Used For
 
@@ -329,8 +310,7 @@ metadata:
 
 ### Example Complete Configuration
 
-See `src/server/common/forms/definitions/example-grant-with-task-list.yaml` for a complete working example that
-demonstrates:
+See `src/server/common/forms/definitions/example-grant-with-task-list.yaml` for a complete working example that demonstrates:
 
 - Multiple sections with different types of tasks
 - Above and below positioned guidance components
@@ -343,18 +323,15 @@ demonstrates:
 
 ### Testing Framework
 
-The application uses **Vitest** as its test framework with custom module aliases for mocking external dependencies like
-`@defra/forms-engine-plugin`.
+The application uses **Vitest** as its test framework with custom module aliases for mocking external dependencies like `@defra/forms-engine-plugin`.
 
 #### Test Types
 
 The test suite is organized into different categories:
 
 - **Unit Tests**: Fast, isolated tests for individual functions and components (run with `npm run test:unit`)
-- **Integration Tests**: Slower tests that verify interactions between components, external services, or the full server
-  stack
-- **Contract Tests**: Pact-based contract tests that verify API contracts with external services (run with
-  `npm run test:contracts`)
+- **Integration Tests**: Slower tests that verify interactions between components, external services, or the full server stack
+- **Contract Tests**: Pact-based contract tests that verify API contracts with external services (run with `npm run test:contracts`)
 - **Acceptance Tests**: End-to-end browser tests for complete user journeys (run with `npm run test:acceptance`)
 
 #### Running Tests
@@ -389,8 +366,7 @@ Integration tests are identified by:
 
 #### Mutation Testing
 
-The project uses **Stryker Mutator** to assess test quality by introducing mutations (small code changes) and verifying
-that tests catch them.
+The project uses **Stryker Mutator** to assess test quality by introducing mutations (small code changes) and verifying that tests catch them.
 
 **Running Mutation Tests:**
 
@@ -418,8 +394,7 @@ Stryker creates modified versions of your code (mutants) by:
 - Removing optional chaining (`?.`)
 - Altering return values
 
-Each mutant is tested against your test suite. If tests fail, the mutant is "killed" (good). If tests pass, the mutant "
-survived" (indicates weak test coverage).
+Each mutant is tested against your test suite. If tests fail, the mutant is "killed" (good). If tests pass, the mutant "survived" (indicates weak test coverage).
 
 **Mutation Score:**
 
@@ -446,27 +421,18 @@ The mutation score indicates test effectiveness:
 
 - **Defra ID Integration**: Primary authentication service using OpenID Connect (OIDC) protocol
   - For detailed environment variable configuration, see [DEFRA ID Integration](#defra-id-integration)
-- **Whitelist System**: CRN (Customer Reference Number) and SBI (Single Business Identifier) whitelisting for specific
-  grants:
+- **Whitelist System**: CRN (Customer Reference Number) and SBI (Single Business Identifier) whitelisting for specific grants:
   - `EXAMPLE_WHITELIST_CRNS`: Authorized CRNs for Example Grant journeys (used by the Example Whitelist form definition)
   - `EXAMPLE_WHITELIST_SBIS`: Authorized SBIs for Example Grant journeys (used by the Example Whitelist form definition)
   - For complete whitelist configuration, see [Feature Flags & Misc](#feature-flags--misc)
 
 ### Whitelist Functionality
 
-Whitelisting restricts access to specific grant journeys based on Customer Reference Numbers (CRNs) and Single Business
-Identifiers (SBIs). Forms that require whitelisting declare the relevant environment variables in their YAML
-definition (see [
-`src/server/common/forms/definitions/example-whitelist.yaml`](./src/server/common/forms/definitions/example-whitelist.yaml)).
-At runtime, the whitelist service (`src/server/auth/services/whitelist.service.js`) reads the configured environment
-variables, normalises the values, and validates incoming CRN/SBI credentials. If a user's identifiers are not present in
-the configured whitelist, the journey is terminated and the user is shown a terminal page.
+Whitelisting restricts access to specific grant journeys based on Customer Reference Numbers (CRNs) and Single Business Identifiers (SBIs). Forms that require whitelisting declare the relevant environment variables in their YAML definition (see [`src/server/common/forms/definitions/example-whitelist.yaml`](./src/server/common/forms/definitions/example-whitelist.yaml)). At runtime, the whitelist service (`src/server/auth/services/whitelist.service.js`) reads the configured environment variables, normalises the values, and validates incoming CRN/SBI credentials. If a user's identifiers are not present in the configured whitelist, the journey is terminated and the user is shown a terminal page.
 
 ### Rate Limiting
 
-The application implements rate limiting to protect against abuse and denial-of-service attacks (CWE-400: Uncontrolled
-Resource Consumption). Rate limiting is implemented
-using [hapi-rate-limit](https://github.com/wraithgar/hapi-rate-limit).
+The application implements rate limiting to protect against abuse and denial-of-service attacks (CWE-400: Uncontrolled Resource Consumption). Rate limiting is implemented using [hapi-rate-limit](https://github.com/wraithgar/hapi-rate-limit).
 
 #### How It Works
 
@@ -493,8 +459,7 @@ Rate limiting is controlled via environment variables:
 
 #### Protected Endpoints
 
-The following authentication endpoints have stricter rate limits (`authEndpointUserLimit` / `authEndpointPathLimit`)
-applied:
+The following authentication endpoints have stricter rate limits (`authEndpointUserLimit` / `authEndpointPathLimit`) applied:
 
 | Endpoint              | Method | Purpose                |
 | --------------------- | ------ | ---------------------- |
@@ -526,8 +491,7 @@ When a client exceeds the rate limit:
 
 #### Development Mode
 
-Rate limiting is **disabled by default** in non-production environments to avoid friction during local development. To
-test rate limiting locally, set:
+Rate limiting is **disabled by default** in non-production environments to avoid friction during local development. To test rate limiting locally, set:
 
 ```bash
 RATE_LIMIT_ENABLED=true
@@ -535,8 +499,7 @@ RATE_LIMIT_ENABLED=true
 
 ### Agreements System
 
-The application includes a proxy endpoint for handling farming payment agreements, which forwards requests to an
-external agreements service.
+The application includes a proxy endpoint for handling farming payment agreements, which forwards requests to an external agreements service.
 
 **How It Works:**
 
@@ -603,8 +566,7 @@ Beyond the standard scripts, the application includes contract testing via `npm 
 
 ## Cookies
 
-We use the `@hapi/cookie` plugin to manage user sessions and `@hapi/yar` to manage cache. The session cookie is
-encrypted and signed using a high-entropy password set via the `SESSION_COOKIE_PASSWORD` environment variable.
+We use the `@hapi/cookie` plugin to manage user sessions and `@hapi/yar` to manage cache. The session cookie is encrypted and signed using a high-entropy password set via the `SESSION_COOKIE_PASSWORD` environment variable.
 
 The table below outlines the data the cookies control.
 
@@ -642,8 +604,7 @@ The table below outlines the data the cookies control.
 
 ### Inspecting cookies
 
-There is a tool provided `tools/unseal-cookie.js` that will decode and decrypt the cookies for inspection on the command
-line. You will need the appropriate cookie password.
+There is a tool provided `tools/unseal-cookie.js` that will decode and decrypt the cookies for inspection on the command line. You will need the appropriate cookie password.
 To use the tool:
 
 ```bash
@@ -688,8 +649,7 @@ sequenceDiagram
 
 ## Session Rehydration
 
-The application includes session rehydration functionality that allows user sessions to be restored from a backend API.
-This is particularly useful for maintaining user state across different services.
+The application includes session rehydration functionality that allows user sessions to be restored from a backend API. This is particularly useful for maintaining user state across different services.
 
 ### How Session Rehydration Works
 
@@ -736,8 +696,7 @@ If session rehydration fails (e.g., backend unavailable, network issues), the ap
 
 ## Server-to-Server (S2S) Authentication
 
-When making API requests to backend services, our helpers handle the necessary authentication and headers. This ensures
-secure communication without requiring manual token management.
+When making API requests to backend services, our helpers handle the necessary authentication and headers. This ensures secure communication without requiring manual token management.
 
 ### Authorization Headers
 
@@ -767,7 +726,7 @@ Encrypts the token using AES-256-GCM with the configured encryption key (session
 - Adds the Authorization header:
 
 ```js
-Authorization: Bearer < base64 - encrypted - token >
+Authorization: Bearer <base64-encrypted-token>
 ```
 
 The helper preserves any custom base headers you pass:
@@ -790,17 +749,14 @@ const headers = createApiHeadersForGrantsUiBackend({ lockToken: 'LOCK-123' })
 This adds an additional header:
 
 ```js
-X - Application - Lock - Owner
-:
-LOCK - 123
+X-Application-Lock-Owner: LOCK-123
 ```
 
 without affecting the Authorization header or any base headers.
 
 ### Application Lock System
 
-The application implements a distributed lock mechanism to prevent concurrent modifications to the same application by
-multiple users or sessions.
+The application implements a distributed lock mechanism to prevent concurrent modifications to the same application by multiple users or sessions.
 
 #### How It Works
 
@@ -828,8 +784,7 @@ When operations require a lock, requests include:
 X-Application-Lock-Owner: <JWT-token>
 ```
 
-This header is automatically added by the `createApiHeadersForGrantsUiBackend` helper when a `lockToken` parameter is
-provided.
+This header is automatically added by the `createApiHeadersForGrantsUiBackend` helper when a `lockToken` parameter is provided.
 
 ### Base Headers Only
 
@@ -837,12 +792,8 @@ If no token is configured, the helper returns only the base headers:
 
 ```js
 {
-  'Content-Type'
-:
-  'application/json',
-    'User-Agent'
-:
-  'my-service'
+  'Content-Type': 'application/json',
+  'User-Agent': 'my-service'
 }
 ```
 
@@ -850,16 +801,13 @@ If no token is configured, the helper returns only the base headers:
 
 The application now supports **server-to-server (S2S) authentication** when communicating with the **Land Grants API**.
 
-When any request is made to the Land Grants API (e.g., `/payments/calculate`, `/parcels`), the system automatically
-includes an encrypted Bearer token in the `Authorization` header. This ensures secure, authenticated communication
-between services.
+When any request is made to the Land Grants API (e.g., `/payments/calculate`, `/parcels`), the system automatically includes an encrypted Bearer token in the `Authorization` header. This ensures secure, authenticated communication between services.
 
 ### How it works
 
 1. The helper reads the following environment variables:
-
-- `LAND_GRANTS_API_AUTH_TOKEN` — static bearer token used for authentication.
-- `LAND_GRANTS_API_ENCRYPTION_KEY` — symmetric key used to encrypt the token.
+   - `LAND_GRANTS_API_AUTH_TOKEN` — static bearer token used for authentication.
+   - `LAND_GRANTS_API_ENCRYPTION_KEY` — symmetric key used to encrypt the token.
 
 2. The token is encrypted using **AES-256-GCM** before transmission.
 
@@ -891,8 +839,7 @@ Content-Type: application/json
 | `LAND_GRANTS_API_AUTH_TOKEN`     | Bearer token used to authenticate to the Land Grants API. |
 | `LAND_GRANTS_API_ENCRYPTION_KEY` | Key used to encrypt the auth token before transmission.   |
 
-This mechanism provides a secure, environment-driven way to authenticate backend-to-backend requests without exposing
-plain-text tokens in configuration or logs.
+This mechanism provides a secure, environment-driven way to authenticate backend-to-backend requests without exposing plain-text tokens in configuration or logs.
 
 ## Redis
 
@@ -901,17 +848,13 @@ to how services might have a database (or MongoDB). All frontend services are gi
 matches the service name. e.g. `my-service` will have access to everything in Redis that is prefixed with `my-service`.
 
 If your service does not require a session cache to be shared between instances or if you don't require Redis, you can
-use the in-memory cache by setting `SESSION_CACHE_ENGINE=memory` or changing the default value in
-`~/src/config/config.js`.
+use the in-memory cache by setting `SESSION_CACHE_ENGINE=memory` or changing the default value in `~/src/config/config.js`.
 
 ## Proxy
 
-A forward-proxy can be enabled by setting the `HTTP_PROXY` environment variable. When present,
-`setGlobalDispatcher(new ProxyAgent(proxyUrl))` is invoked automatically so calls made with `fetch` from `undici` use
-the proxy.
+A forward-proxy can be enabled by setting the `HTTP_PROXY` environment variable. When present, `setGlobalDispatcher(new ProxyAgent(proxyUrl))` is invoked automatically so calls made with `fetch` from `undici` use the proxy.
 
-If you are not using Wreck, Axios or Undici or a similar http that uses `Request`. Then you may have to provide the
-proxy dispatcher:
+If you are not using Wreck, Axios or Undici or a similar http that uses `Request`. Then you may have to provide the proxy dispatcher:
 
 To add the dispatcher to your own client:
 
@@ -929,8 +872,7 @@ return await fetch(url, {
 
 ## Feature Structure
 
-The repository has been structured to follow a feature-based structure, where each feature is organized into its own
-directory with all related components (controllers, views, tests, and utilities).
+The repository has been structured to follow a feature-based structure, where each feature is organized into its own directory with all related components (controllers, views, tests, and utilities).
 
 ### Feature Organization
 
@@ -971,8 +913,7 @@ src/server/{feature-name}/
 └── index.js                              # Feature entry point
 ```
 
-This subfolder approach is particularly useful for features with multiple pages, complex business logic, or extensive
-data transformation requirements.
+This subfolder approach is particularly useful for features with multiple pages, complex business logic, or extensive data transformation requirements.
 
 ### Benefits of Feature-Based Structure
 
@@ -1004,13 +945,11 @@ Or see the [docker compose setup](#docker-compose) below.
 
 ### Environment variables
 
-Below is a list of required environment variables to configure and run the Grants UI application locally or in an
-environment (e.g., Dev, Test, Perf Test, Prod).
+Below is a list of required environment variables to configure and run the Grants UI application locally or in an environment (e.g., Dev, Test, Perf Test, Prod).
 
 #### DEFRA ID Integration
 
-These are required only if DEFRA ID authentication is enabled, and you are using either the FCP Defra ID Stub or
-connecting to Defra ID in the `development` environment:
+These are required only if DEFRA ID authentication is enabled, and you are using either the FCP Defra ID Stub or connecting to Defra ID in the `development` environment:
 
 | Variable                         | Description                                                                              |
 | -------------------------------- | ---------------------------------------------------------------------------------------- |
@@ -1111,8 +1050,7 @@ which is formatted as a GUID string.
 | `LAND_GRANTS_API_AUTH_TOKEN`     | Auth token for Land Grants API           |
 | `LAND_GRANTS_API_ENCRYPTION_KEY` | Encryption key for Land Grants API token |
 
-**Note:** For detailed Land Grants API authentication,
-see [Land Grants API Authentication](#land-grants-api-authentication).
+**Note:** For detailed Land Grants API authentication, see [Land Grants API Authentication](#land-grants-api-authentication).
 
 #### Consolidated View API (Optional)
 
@@ -1132,8 +1070,7 @@ see [Land Grants API Authentication](#land-grants-api-authentication).
 
 #### Development Tools Configuration
 
-When `DEV_TOOLS_ENABLED=true`, the following demo data can be configured. See [Development Tools](#development-tools)
-for more details:
+When `DEV_TOOLS_ENABLED=true`, the following demo data can be configured. See [Development Tools](#development-tools) for more details:
 
 | Variable                 | Description           | Default              |
 | ------------------------ | --------------------- | -------------------- |
@@ -1144,8 +1081,7 @@ for more details:
 
 ### Grant Form Definitions
 
-Grant form definitions are stored in the `src/server/common/forms/definitions` directory as YAML files and read at
-startup.
+Grant form definitions are stored in the `src/server/common/forms/definitions` directory as YAML files and read at startup.
 
 Forms will not be enabled in production unless the YAML file contains the `enabledInProd: true` property.
 
@@ -1156,12 +1092,9 @@ Any changes to these files will require a restart of the application.
 The Grants Application Service (GAS) is used to store grant definitions that the app submits data against.
 
 Creating a Grant Definition
-A grant definition is created via the GAS backend by making a POST request to the /grants endpoint (see postman folder
-in the root of the project). This defines the structure and schema of the grant application payload, which the app will
-later submit.
+A grant definition is created via the GAS backend by making a POST request to the /grants endpoint (see postman folder in the root of the project). This defines the structure and schema of the grant application payload, which the app will later submit.
 
-You can also create a grant using the [GAS API](https://github.com/DEFRA/fg-gas-backend). For API documentation and
-examples, see the [fg-gas-backend repository](https://github.com/DEFRA/fg-gas-backend).
+You can also create a grant using the [GAS API](https://github.com/DEFRA/fg-gas-backend). For API documentation and examples, see the [fg-gas-backend repository](https://github.com/DEFRA/fg-gas-backend).
 
 Example request (truncated - see [GAS API documentation](https://github.com/DEFRA/fg-gas-backend) for full schema):
 
@@ -1203,22 +1136,19 @@ Each GAS grant may define a JSON Schema stored locally in:
 Each schema file is named after the grant code
 (e.g. example-grant-with-auth.json) and describes the shape of the expected application payload for that grant.
 
-At application startup, the app scans the schemas directory and compiles each schema into a JSON Schema validator using
-Ajv. These compiled validators are stored in-memory in a map of the form:
+At application startup, the app scans the schemas directory and compiles each schema into a JSON Schema validator using Ajv. These compiled validators are stored in-memory in a map of the form:
 
 `Map<string, ValidateFunction>`
 
 ##### ❗ Current Runtime Behaviour
 
-Although the validators are compiled at startup, they are not currently used at runtime to validate submissions within
-the grants-ui submission pipeline.
+Although the validators are compiled at startup, they are not currently used at runtime to validate submissions within the grants-ui submission pipeline.
 
 The helper:
 
 `validateSubmissionAnswers(payload, grantCode)`
 
-is currently used only in tests to ensure that the mapping logic produces payloads that conform to the expected schema
-format.
+is currently used only in tests to ensure that the mapping logic produces payloads that conform to the expected schema format.
 
 #### Using the `gas.http` helper and HTTP client environments
 
@@ -1230,8 +1160,7 @@ For local development and manual testing of grant definitions and submissions ag
 - `http-client.env.json` – shared, non‑secret environment configuration (base URLs)
 - `http-client.private.env.json` – per‑environment secrets (service tokens and API keys)
 
-Most IDEs (including JetBrains IDEs and VS Code with the REST Client extension) can execute the requests in `gas.http`
-using these environment files.
+Most IDEs (including JetBrains IDEs and VS Code with the REST Client extension) can execute the requests in `gas.http` using these environment files.
 
 ##### `http-client.env.json` (public envs)
 
@@ -1258,8 +1187,7 @@ You can safely commit this file to version control as it contains no secrets.
 
 ##### `http-client.private.env.json` (secrets – do not commit)
 
-The `http-client.private.env.json` file contains per‑environment secrets required by the `gas.http` requests and **must
-not** be committed. Ensure it is listed in `.gitignore`.
+The `http-client.private.env.json` file contains per‑environment secrets required by the `gas.http` requests and **must not** be committed. Ensure it is listed in `.gitignore`.
 
 Create this file locally using the following template:
 
@@ -1289,20 +1217,17 @@ Once `http-client.private.env.json` is created and populated, you can:
 
 1. Select the desired environment (e.g. `local` or `dev`, etc) in your HTTP client.
 2. Use the `Create ...` requests in `gas.http` to define grants in GAS.
-3. Use the corresponding `Submit application ...` requests to send example application payloads and verify end‑to‑end
-   integration.
+3. Use the corresponding `Submit application ...` requests to send example application payloads and verify end‑to‑end integration.
 
 #### Grant Schema Updates
 
-In order to update a grant schema, see the [GAS API repository](https://github.com/DEFRA/fg-gas-backend) for
-documentation and examples.
+In order to update a grant schema, see the [GAS API repository](https://github.com/DEFRA/fg-gas-backend) for documentation and examples.
 
 Find the endpoint `GET /grants/{code}`, pass in the code, e.g. `frps-private-beta`, will return the grant.
 
 When changes have been made to the schema, use the endpoint `PUT /tmp/grants/{code}` to update the grant schema.
 
-In order to test if your schema change has worked, send through an application, and view the case tool, to see if your
-new data exists in the case:
+In order to test if your schema change has worked, send through an application, and view the case tool, to see if your new data exists in the case:
 
 https://fg-cw-frontend.dev.cdp-int.defra.cloud/cases
 
@@ -1339,8 +1264,7 @@ npm run
 - **`docker:rebuild`** - Trigger a fresh build of Docker images
 - **`docker:debug`** - Run the UI in a one-off Docker container with debugger ports exposed
 - **`docker:ha:up`** / **`docker:ha:down`** - Manage a high-availability stack with scaled services and Nginx proxy
-- **`docker:landgrants:up`** / **`docker:landgrants:ha:up`** - Manage stacks that include the Land Grants API and
-  Postgres
+- **`docker:landgrants:up`** / **`docker:landgrants:ha:up`** - Manage stacks that include the Land Grants API and Postgres
 - **`format`** / **`format:check`** - Format code or check formatting using Prettier
 - **`lint`** - Run all linting checks (JavaScript, SCSS, and TypeScript types)
 - **`lint:fix`** - Automatically fix ESLint issues
@@ -1353,8 +1277,7 @@ npm run
 - **`start`** - Start the production server (requires `npm run build` first)
 - **`snyk-test`** / **`snyk-monitor`** - Run security vulnerability scans
 - **`unseal:cookie`** - Utility to decrypt and inspect session cookies
-- **`gas-status:set`** - Update MockServer to return a specific GAS application status (e.g.,
-  `npm run gas-status -- AWAITING_AMENDMENTS`)
+- **`gas-status:set`** - Update MockServer to return a specific GAS application status (e.g., `npm run gas-status -- AWAITING_AMENDMENTS`)
 - **`gas-status:get`** - Retrieve the current GAS application status configured in MockServer
 
 ### Update dependencies
@@ -1445,14 +1368,11 @@ npm run docker:landgrants:up
 ```
 
 Note: The Land Grants Postgres image contains preseeded data that enables immediate local development and testing
-and is kept up-to-date automatically with changes to the [land-grants-api](http://github.com/DEFRA/land-grants-api)
-repo.
+and is kept up-to-date automatically with changes to the [land-grants-api](http://github.com/DEFRA/land-grants-api) repo.
 
-If you require local data or newer data not yet merged, you can use the compose scripts in
-the [land-grants-api](http://github.com/DEFRA/land-grants-api) repository to seed the database.
+If you require local data or newer data not yet merged, you can use the compose scripts in the [land-grants-api](http://github.com/DEFRA/land-grants-api) repository to seed the database.
 
-Once that repository is cloned locally, `compose.migrations.yml` provides `database-up` and `database-down` services to
-run migrations against the Postgres database.
+Once that repository is cloned locally, `compose.migrations.yml` provides `database-up` and `database-down` services to run migrations against the Postgres database.
 
 Convenient npm scripts have been added in that repository for this workflow:
 
@@ -1466,8 +1386,7 @@ npm run docker:migrate:ext:down
 
 #### High-availability (HA) local proxy
 
-For local testing behind HTTPS and to simulate an HA entry point, there is an optional Nginx reverse proxy defined in
-`compose.ha.yml`.
+For local testing behind HTTPS and to simulate an HA entry point, there is an optional Nginx reverse proxy defined in `compose.ha.yml`.
 
 What it provides:
 
@@ -1506,10 +1425,8 @@ npm run docker:landgrants:ha:down
 Notes:
 
 - The proxy container is `grants-ui-proxy` and uses `nginx/nginx.conf`.
-- Certificates are mounted from `nginx/certs` (`nginx.crt` and `nginx.key`). Your browser may require trusting the cert
-  the first time you visit `https://localhost:4000`.
-- The UI container is configured with `NODE_EXTRA_CA_CERTS=/etc/ssl/certs/nginx.crt` so it trusts the proxy's
-  certificate when calling internal HTTPS endpoints.
+- Certificates are mounted from `nginx/certs` (`nginx.crt` and `nginx.key`). Your browser may require trusting the cert the first time you visit `https://localhost:4000`.
+- The UI container is configured with `NODE_EXTRA_CA_CERTS=/etc/ssl/certs/nginx.crt` so it trusts the proxy's certificate when calling internal HTTPS endpoints.
 
 ### Debugging with Docker
 
@@ -1529,10 +1446,8 @@ npm run docker:debug
 
 Notes:
 
-- The command above stops any running `grants-ui` container and starts a one-off debug container with `--service-ports`
-  so ports `3000` and `9229` are available on your host.
-- The underlying script runs the server with `--inspect=0.0.0.0:9229 --inspect-wait` so execution will pause until your
-  debugger attaches.
+- The command above stops any running `grants-ui` container and starts a one-off debug container with `--service-ports` so ports `3000` and `9229` are available on your host.
+- The underlying script runs the server with `--inspect=0.0.0.0:9229 --inspect-wait` so execution will pause until your debugger attaches.
 
 Attach your IDE debugger:
 
@@ -1566,6 +1481,17 @@ Attach your IDE debugger:
 
 ## Structured Error Handling
 
+This is a work in progress (as of 12/02/2026)
+
+### Tasks remaining
+- [x] BaseError class with structured properties and logging
+- [x] Example error classes extending BaseError (`AuthError` and `ViewError` currently)
+- [x] Global error handler to format responses and log errors
+- [ ] Update existing code to throw specific error classes instead of generic `Error`
+- [ ] Update existing code to remove any manual logging of errors in `try {} catch {}` blocks
+- [ ] Create ESLint rule to forbid logging in `try {} catch {}` blocks.
+
+### Introduction to structured errors
 The application implements a structured error handling approach to ensure consistent error responses and logging across
 all components.
 
@@ -1574,23 +1500,30 @@ Starting with a `BaseError` class, specific error types are defined for differen
 `statusCode`.
 Errors are thrown with relevant context and caught by a global error handler that formats the response and logs the
 error in a structured format.
-There should be no need to log errors manually as long as the `BaseError` class is used consistently.
+
+> [!IMPORTANT]
+> There is no need to log errors manually as long as the `BaseError` class is used consistently for propagation of all errors.
+
+
 
 ### Constructing error classes
 
-The abstract `BaseError` class provides a consistent structure for all errors in the application. When defining specific error types, they should extend `BaseError` and decorate any behaviours such as logging. `AuthError` is a good example of this in action. The base class has a number of different properties that can be modified to change behaviour.
+The abstract `BaseError` class provides a consistent structure for all errors in the application. When defining specific
+error types, they should extend `BaseError` and decorate any behaviours such as logging. `AuthError` is a good example
+of this in action. The base class has a number of different properties that can be modified to change behaviour.
 
 The constructor takes an object as its only argument. This object can include the following properties:
 
 | Property             | Description                                                                                                                                                           |
-| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|----------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `message`            | A human-readable message describing the error. This should be concise and informative                                                                                 |
 | `status`             | The HTTP status code to return in the response when this error is thrown. This allows for consistent error responses across the application.                          |
 | `source`             | A string indicating the source or context of the error (e.g.,`'validation'`, `'external-api'`, etc.). This can be used for categorizing errors in logs and responses. |
 | `reason`             | A string providing a more specific reason for the error, which can be used for debugging and analytics.                                                               |
 | `[key: string]: any` | Any additional properties relevant to the error context can be added as needed. These will be included in the structured logs when the error is thrown.               |
 
-Additionally the class has a property `logCode` that can be overridden with a custom log code (from log code definitions) to modify how the error is logged.
+Additionally the class has a property `logCode` that can be overridden with a custom log code (from log code
+definitions) to modify how the error is logged.
 
 ### Throwing errors
 
@@ -1599,7 +1532,7 @@ When throwing errors, only use specific error classes that extend `BaseError` an
 ```javascript
 class ValidationError extends BaseError {
   constructor() {
-    super({ message: 'Validation failed', status: 401, source: 'source', reason: 'reason' })
+    super({message: 'Validation failed', status: 401, source: 'source', reason: 'reason'})
   }
 }
 
@@ -1618,7 +1551,8 @@ to preserve a detailed error chain. Many errors can be chained in this way, and 
 `{ isChainedError: true }` added as additional data.
 
 ```javascript
-class FieldInputError extends BaseError {}
+class FieldInputError extends BaseError {
+}
 
 const validationError = new ValidationError()
 const fieldInputError = new FieldInputError({
@@ -1644,7 +1578,8 @@ and ensuring it is logged correctly.
 ```javascript
 import fs from 'node:fs'
 
-class FileReadError extends BaseError {}
+class FileReadError extends BaseError {
+}
 
 try {
   const file = fs.readFile('abc.csv')
@@ -1665,8 +1600,7 @@ about the error chain once an `Error` is encountered.
 
 ## Structured Logging System
 
-The application implements a comprehensive structured logging system providing consistent, searchable, and maintainable
-logging across all components.
+The application implements a comprehensive structured logging system providing consistent, searchable, and maintainable logging across all components.
 
 ### Core Components
 
@@ -1755,9 +1689,7 @@ Each log code must have two required properties:
 ```javascript
 {
   level: 'info' | 'debug' | 'error',
-    messageFunc
-:
-  (messageOptions) => string
+  messageFunc: (messageOptions) => string
 }
 ```
 
@@ -1767,9 +1699,7 @@ Example log code definition:
 AUTH: {
   SIGN_IN_SUCCESS: {
     level: 'info',
-      messageFunc
-  :
-    (messageOptions) =>
+    messageFunc: (messageOptions) =>
       `User sign-in successful for user=${messageOptions.userId}, organisation=${messageOptions.organisationId}`
   }
 }
@@ -1851,15 +1781,11 @@ All logging components include comprehensive test coverage:
 
 ### Acceptance Testing
 
-Acceptance Tests for the grants-ui platform will be developed by multiple teams for their own grant journeys, each
-creating their own journey test suite in CDP. These test suites are run as images in the grants-ui CI against a
-containerised system which includes the frontend, backend, scoring service, Redis and Mongo, with stubs for Defra ID and
-GAS.
+Acceptance Tests for the grants-ui platform will be developed by multiple teams for their own grant journeys, each creating their own journey test suite in CDP. These test suites are run as images in the grants-ui CI against a containerised system which includes the frontend, backend, scoring service, Redis and Mongo, with stubs for Defra ID and GAS.
 
 #### Compose files
 
-There is an override file `compose.ci.yml` which is used when running acceptance tests. This stands the system up at
-`https://grants-ui-proxy:4000` and the tests are then run in their own containers on the same Docker network.
+There is an override file `compose.ci.yml` which is used when running acceptance tests. This stands the system up at `https://grants-ui-proxy:4000` and the tests are then run in their own containers on the same Docker network.
 
 #### Changes to Journey Test Repositories
 
@@ -1873,14 +1799,11 @@ See `grants-ui-acceptance-tests` for an example.
 
 #### Running Acceptance Tests locally
 
-To run the full set of acceptance tests locally the developer can run script `./tools/run-acceptance-tests.sh`. Each
-acceptance test suite will have a compose file in `/acceptance` and a call in `run-acceptance-tests.sh`, and will be run
-sequentially against the containerised system.
+To run the full set of acceptance tests locally the developer can run script `./tools/run-acceptance-tests.sh`. Each acceptance test suite will have a compose file in `/acceptance` and a call in `run-acceptance-tests.sh`, and will be run sequentially against the containerised system.
 
 #### Running individual Acceptance Tests
 
-It is possible to run acceptance tests at individual feature file level by passing the path to the feature file in the
-test container to `run-acceptance-tests.sh`. For example:
+It is possible to run acceptance tests at individual feature file level by passing the path to the feature file in the test container to `run-acceptance-tests.sh`. For example:
 
 ```bash
 ./tools/run-acceptance-tests.sh ./test/features/example-whitelist/whitelist.feature
@@ -1888,8 +1811,7 @@ test container to `run-acceptance-tests.sh`. For example:
 
 #### Parallel Test Execution
 
-The acceptance tests support parallel execution through the `SE_NODE_MAX_SESSIONS` environment variable, which controls
-the Selenium node's maximum concurrent sessions. The default value is 1 session.
+The acceptance tests support parallel execution through the `SE_NODE_MAX_SESSIONS` environment variable, which controls the Selenium node's maximum concurrent sessions. The default value is 1 session.
 
 **Configuration:**
 
@@ -1912,9 +1834,7 @@ You can also set the `SE_NODE_MAX_SESSIONS` environment variable directly when r
 SE_NODE_MAX_SESSIONS=2 ./tools/run-acceptance-tests.sh
 ```
 
-**Note:** A higher value may not reduce test execution time beyond a certain point and can introduce more instability
-into your Selenium node. Beyond this approach a Selenium grid of hub and multiple nodes becomes necessary, but which
-testing shows uses much more resource for only small gains in our usage.
+**Note:** A higher value may not reduce test execution time beyond a certain point and can introduce more instability into your Selenium node. Beyond this approach a Selenium grid of hub and multiple nodes becomes necessary, but which testing shows uses much more resource for only small gains in our usage.
 
 #### CI
 
@@ -1931,8 +1851,7 @@ The structured logging system supports:
 
 ### Standard Logging Approach
 
-All production code uses the `log()` helper from `~/src/server/common/helpers/logging/log.js`. Direct use of
-`request.logger` is not permitted in production code.
+All production code uses the `log()` helper from `~/src/server/common/helpers/logging/log.js`. Direct use of `request.logger` is not permitted in production code.
 
 When writing new code:
 
@@ -1957,9 +1876,7 @@ Example:
 FORMS: {
   FORM_CACHE_ERROR: {
     level: 'error',
-      messageFunc
-  :
-    (messageOptions) =>
+    messageFunc: (messageOptions) =>
       `Form cache error for ${messageOptions.formName}: ${messageOptions.error}`
   }
 }
@@ -1973,14 +1890,11 @@ FORMS: {
 4. **Document changes** in code comments and this guide
 5. **Review logs** in development to ensure proper formatting
 
-This structured logging system provides a robust foundation for monitoring, debugging, and maintaining the Grants UI
-application with consistent, searchable, and actionable logging throughout the system.
+This structured logging system provides a robust foundation for monitoring, debugging, and maintaining the Grants UI application with consistent, searchable, and actionable logging throughout the system.
 
 ## Config-Driven Confirmation Pages
 
-The application supports config-driven confirmation pages that allow forms to define custom confirmation content through
-YAML configuration. This provides a flexible way to create tailored confirmation experiences for different grants
-without code changes.
+The application supports config-driven confirmation pages that allow forms to define custom confirmation content through YAML configuration. This provides a flexible way to create tailored confirmation experiences for different grants without code changes.
 
 ### What you can add
 
@@ -1996,13 +1910,11 @@ Please see journeys for examples
 
 #### Route Configuration
 
-The config confirmation system automatically handles routes matching `/{slug}/confirmation` for any form that has
-`confirmationContent` defined in its YAML configuration.
+The config confirmation system automatically handles routes matching `/{slug}/confirmation` for any form that has `confirmationContent` defined in its YAML configuration.
 
 ### Reusable Template Components
 
-The system includes a components registry that allows you to define reusable HTML snippets that can be inserted into
-confirmation content using placeholders.
+The system includes a components registry that allows you to define reusable HTML snippets that can be inserted into confirmation content using placeholders.
 
 #### Available Components
 
@@ -2040,13 +1952,11 @@ See [Development Tools](#development-tools) for routes to test and preview confi
 
 ## Development Tools
 
-The application includes development tools and routes for testing and debugging. These are automatically enabled in
-development mode and disabled in production.
+The application includes development tools and routes for testing and debugging. These are automatically enabled in development mode and disabled in production.
 
 ### Configuration
 
-Development tools are controlled by the `DEV_TOOLS_ENABLED` environment variable (default: `true` in development,
-`false` in production).
+Development tools are controlled by the `DEV_TOOLS_ENABLED` environment variable (default: `true` in development, `false` in production).
 
 ### Available Dev Routes
 
