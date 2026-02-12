@@ -444,6 +444,11 @@ export const LogCodes = {
       level: 'warn',
       messageFunc: (messageOptions) =>
         `Rate limit exceeded: path=${messageOptions.path}, ip=${messageOptions.ip || 'unknown'}, userId=${messageOptions.userId || 'anonymous'}, userAgent=${messageOptions.userAgent || 'unknown'}`
+    },
+    STATE_SIZE_EXCEEDED: {
+      level: 'warn',
+      messageFunc: (messageOptions) =>
+        `State payload size ${messageOptions.size} bytes exceeds limit of ${messageOptions.limit} bytes for sessionKey=${messageOptions.sessionKey}`
     }
   }
 }

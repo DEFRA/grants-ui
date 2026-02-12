@@ -45,6 +45,12 @@ export const sessionSchema = {
       default: '',
       env: 'GRANTS_UI_BACKEND_ENCRYPTION_KEY',
       sensitive: true
+    },
+    maxDbStateSizeBytes: {
+      doc: 'Maximum allowed size in bytes for serialised state payloads persisted to the backend API',
+      format: 'nat',
+      default: 51200,
+      env: 'MAX_DB_STATE_SIZE_BYTES'
     }
   },
   cookie: {
@@ -96,6 +102,7 @@ export const sessionSchema = {
  * @property {string} cache.apiEndpoint
  * @property {string} cache.authToken
  * @property {string} cache.encryptionKey
+ * @property {number} cache.maxDbStateSizeBytes
  * @property {object} cookie
  * @property {string} cookie.name
  * @property {object} cookie.cache
