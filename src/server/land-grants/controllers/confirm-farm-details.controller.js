@@ -3,8 +3,11 @@ import { fetchBusinessAndCustomerInformation } from '../../common/services/conso
 import {
   createAddressRow,
   createBusinessNameRow,
+  createBusinessRows,
   createContactDetailsRow,
+  createContactRows,
   createCustomerNameRow,
+  createPersonRows,
   createSbiRow
 } from '../../common/helpers/create-rows.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
@@ -25,8 +28,8 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
       const { sbi } = request.auth.credentials
 
       try {
-        const farmDetails = await this.buildFarmDetails(request)
-        return h.view(this.viewName, { ...baseViewModel, farmDetails })
+        const details = await this.buildDetailsForView(request)
+        return h.view(this.viewName, { ...baseViewModel, details })
       } catch (error) {
         return this.handleError(sbi, error, baseViewModel, h, request)
       }
@@ -34,43 +37,34 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
   }
 
   /**
-   * Validate business and users details
+   * Get list of missing required farm data fields
    * @param {object} data
-   * @returns {Array<string>} Array of field names that are missing data
+   * @returns {string[]} list of missing field paths
    */
-
-  validateBusinessAndCustomerInformation(data) {
+  getMissingFarmDataFields(data) {
     const { customer = {}, business = {} } = data || {}
-
-    const requiredCustomerNameFields = ['title', 'first', 'last']
-    const requiredBusinessAddressFields = ['line1', 'city', 'postalCode']
-    const requiredBusinessInfoFields = ['name', 'address']
-
-    const missingFields = []
-
-    if (config.get('landGrants.enableBlockingInvalidContactDetails') === false) {
-      return []
-    }
-
     const isMissing = (value) => value === undefined || value === null || value === ''
 
-    requiredCustomerNameFields.forEach((field) => {
-      if (isMissing(customer?.name?.[field])) {
-        missingFields.push(`customer.name.${field}`)
-      }
-    })
+    const requiredFields = {
+      'customer.name': ['title', 'first', 'last'],
+      business: ['name', 'address'],
+      'business.address': ['line1', 'city', 'postalCode']
+    }
 
-    requiredBusinessAddressFields.forEach((field) => {
-      if (isMissing(business?.address?.[field])) {
-        missingFields.push(`business.address.${field}`)
-      }
-    })
+    const resolvers = {
+      'customer.name': customer?.name,
+      business,
+      'business.address': business?.address
+    }
 
-    requiredBusinessInfoFields.forEach((field) => {
-      if (isMissing(business?.[field])) {
-        missingFields.push(`business.${field}`)
+    const missingFields = []
+    for (const [key, fields] of Object.entries(requiredFields)) {
+      for (const field of fields) {
+        if (isMissing(resolvers[key]?.[field])) {
+          missingFields.push(`${key}.${field}`)
+        }
       }
-    })
+    }
 
     return missingFields
   }
@@ -80,11 +74,60 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
    * @param {AnyFormRequest} request
    * @returns {Promise<object>} Farm details object with rows array
    */
-  async buildFarmDetails(request) {
+  async buildDetailsForView(request) {
     const data = await fetchBusinessAndCustomerInformation(request)
+    const sbi = request.auth?.credentials?.sbi
+    const enableDetailedFarmDetails = /** @type {object} */ (config).get('landGrants.enableDetailedFarmDetails')
+    const enableBlockingInvalidContactDetails = /** @type {object} */ (config).get(
+      'landGrants.enableBlockingInvalidContactDetails'
+    )
 
-    const missingFields = this.validateBusinessAndCustomerInformation(data)
+    const missingFields = this.getMissingFarmDataFields(data)
+    if (missingFields.length > 0) {
+      log(LogCodes.LAND_GRANTS.FARM_DETAILS_MISSING_FIELDS, {
+        sbi,
+        missingFields
+      })
+    }
 
+    const hasMissingFields = enableBlockingInvalidContactDetails ? missingFields.length > 0 : false
+
+    return {
+      hasMissingFields,
+      ...(enableDetailedFarmDetails
+        ? this.buildDetailedFarmDetails(request, data)
+        : this.buildLegacyFarmDetails(request, data))
+    }
+  }
+
+  /**
+   * Build detailed farm details with person, business, and contact sections
+   * @param {AnyFormRequest} request
+   * @param {object} data
+   * @returns {object}
+   */
+  buildDetailedFarmDetails(request, data) {
+    const sbi = request.auth?.credentials?.sbi
+    const organisationName = request.auth?.credentials?.organisationName
+
+    const person = createPersonRows(data.customer?.name)
+    const business = createBusinessRows(sbi, organisationName, data.business)
+    const contact = createContactRows(data.business)
+
+    return {
+      person,
+      business,
+      contact
+    }
+  }
+
+  /**
+   * Build legacy farm details with flat rows
+   * @param {AnyFormRequest} request
+   * @param {object} data
+   * @returns {object}
+   */
+  buildLegacyFarmDetails(request, data) {
     const rows = [
       createCustomerNameRow(data.customer?.name),
       createBusinessNameRow(data.business?.name),
@@ -97,7 +140,7 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
       )
     ].filter(Boolean)
 
-    return { rows, missingFields }
+    return { rows }
   }
 
   /**

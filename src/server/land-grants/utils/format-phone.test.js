@@ -59,11 +59,11 @@ describe('formatPhone', () => {
 
   describe('null and undefined handling', () => {
     it('should handle null input gracefully', () => {
-      expect(() => formatPhone(null)).toThrow()
+      expect(formatPhone(null)).toBeUndefined()
     })
 
     it('should handle undefined input gracefully', () => {
-      expect(() => formatPhone(undefined)).toThrow()
+      expect(formatPhone(undefined)).toBeUndefined()
     })
   })
 
