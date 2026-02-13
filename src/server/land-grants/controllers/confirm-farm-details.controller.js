@@ -61,7 +61,7 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
     for (const [key, fields] of Object.entries(requiredFields)) {
       for (const field of fields) {
         if (isMissing(resolvers[key]?.[field])) {
-          missingFields.push(`${key}.${field}`)
+          missingFields.push(`${key}/${field}`)
         }
       }
     }

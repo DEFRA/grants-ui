@@ -260,7 +260,7 @@ export const LogCodes = {
     FARM_DETAILS_MISSING_FIELDS: {
       level: 'warn',
       messageFunc: (messageOptions) =>
-        `Missing farm contact details for sbi: ${messageOptions.sbi} | fields: ${JSON.stringify(messageOptions.missingFields)}`
+        `Missing farm contact details for sbi: ${messageOptions.sbi} | fields: ${messageOptions.missingFields.join(', ')}`
     },
     UNAUTHORISED_PARCEL: {
       level: 'error',
