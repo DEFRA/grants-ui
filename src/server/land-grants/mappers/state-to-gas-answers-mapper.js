@@ -1,3 +1,5 @@
+import { config } from '~/src/config/config.js'
+
 /**
  * Creates an object with unit and quantity if they exist
  * @param {object} data - The data object
@@ -204,12 +206,40 @@ function createPaymentAgreementActions(agreementCodes, paymentData) {
 }
 
 /**
+ * Extracts caveats from a validation result's actions.
+ * @param {object} validationResult - The validation result from the rules engine
+ * @returns {object[]} Array of caveat objects
+ */
+function mapCaveatsForValidationResult(validationResult) {
+  const { actions = [] } = validationResult
+  return actions.flatMap((action) => action.rules?.filter((r) => r.caveat).map((r) => r.caveat) ?? [])
+}
+
+/**
+ * Builds the rulesCalculations object from a validation result.
+ * @param {object} validationResult - The validation result from the rules engine
+ * @returns {object} The rulesCalculations object
+ */
+function buildRulesCalculations(validationResult) {
+  const { id, message, valid } = validationResult
+  const enableSSSIFeature = config.get('landGrants.enableSSSIFeature')
+  return {
+    id,
+    message,
+    valid,
+    date: new Date().toISOString(),
+    caveats: enableSSSIFeature ? mapCaveatsForValidationResult(validationResult) : undefined
+  }
+}
+
+/**
  * Transforms FormContext object into a GAS Application answers object for Land Grants.
  * @param {object} state
  * @returns {Application}
  */
 export function stateToLandGrantsGasAnswers(state) {
-  const { landParcels = {}, payment, applicant, rulesCalculations } = state
+  const { landParcels = {}, payment, applicant, validationResult } = state
+  const rulesCalculations = validationResult ? buildRulesCalculations(validationResult) : undefined
 
   const applicationParcels = []
   const paymentParcels = []

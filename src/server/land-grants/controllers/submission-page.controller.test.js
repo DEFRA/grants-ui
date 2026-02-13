@@ -89,12 +89,7 @@ describe('SubmissionPageController', () => {
         mockIdentifiers,
         expect.objectContaining({
           ...mockState,
-          rulesCalculations: expect.objectContaining({
-            id: 'validation-123',
-            message: 'success',
-            valid: true,
-            date: expect.any(String)
-          })
+          validationResult: mockValidationResult
         }),
         stateToLandGrantsGasAnswers
       )
