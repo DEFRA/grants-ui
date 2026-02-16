@@ -93,7 +93,8 @@ export async function parcelsWithActionsAndSize(parcelIds, baseUrl) {
  * @throws {Error}
  */
 export async function validate(request, baseUrl) {
-  return postToLandGrantsApi('/application/validate', request, baseUrl)
+  const endpoint = config.get('landGrants.enableSSSIFeature') ? '/api/v2/application/validate' : '/application/validate'
+  return postToLandGrantsApi(endpoint, request, baseUrl)
 }
 
 /**

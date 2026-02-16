@@ -223,13 +223,19 @@ function mapCaveatsForValidationResult(validationResult) {
 function buildRulesCalculations(validationResult) {
   const { id, message, valid } = validationResult
   const enableSSSIFeature = config.get('landGrants.enableSSSIFeature')
-  return {
+
+  const rulesCalculations = {
     id,
     message,
     valid,
-    date: new Date().toISOString(),
-    caveats: enableSSSIFeature ? mapCaveatsForValidationResult(validationResult) : undefined
+    date: new Date().toISOString()
   }
+
+  if (enableSSSIFeature) {
+    rulesCalculations.caveats = mapCaveatsForValidationResult(validationResult)
+  }
+
+  return rulesCalculations
 }
 
 /**
