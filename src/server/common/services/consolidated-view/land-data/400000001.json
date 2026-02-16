@@ -37,11 +37,11 @@
           "mobile": "+4407300000100"
         },
         "address": {
-          "line1": null,
-          "line2": "Barns",
+          "line1": "Golden Grange",
+          "line2": null,
           "line3": "Manchester",
-          "line4": "Lancashire",
-          "line5": "",
+          "line4": null,
+          "line5": null,
           "street": "High Street",
           "city": "Manchester",
           "postalCode": "SN51 5CB"
