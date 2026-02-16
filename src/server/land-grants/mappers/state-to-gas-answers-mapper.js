@@ -220,7 +220,7 @@ function mapCaveatsForValidationResult(validationResult) {
  * @param {object} validationResult - The validation result from the rules engine
  * @returns {object} The rulesCalculations object
  */
-function buildRulesCalculations(validationResult) {
+function mapRulesCalculations(validationResult) {
   const { id, message, valid } = validationResult
   const enableSSSIFeature = config.get('landGrants.enableSSSIFeature')
 
@@ -245,7 +245,7 @@ function buildRulesCalculations(validationResult) {
  */
 export function stateToLandGrantsGasAnswers(state) {
   const { landParcels = {}, payment, applicant, validationResult } = state
-  const rulesCalculations = validationResult ? buildRulesCalculations(validationResult) : undefined
+  const rulesCalculations = validationResult ? mapRulesCalculations(validationResult) : undefined
 
   const applicationParcels = []
   const paymentParcels = []
