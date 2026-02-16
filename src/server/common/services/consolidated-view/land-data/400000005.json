@@ -37,22 +37,21 @@
           "landline": "020 334 45904"
         },
         "address": {
-          "line1": "Silver Trees",
+          "line1": null,
           "line2": null,
           "line3": null,
           "line4": null,
-          "line5": "",
-          "street": null,
+          "line5": null,
           "city": "Birmingham",
-          "postalCode": null,
+          "postalCode": "B1 1AA",
           "uprn": "981124611111",
-          "buildingName": "Silver Trees",
-          "buildingNumberRange": null,
-          "county": null,
-          "dependentLocality": null,
-          "doubleDependentLocality": null,
+          "pafOrganisationName": "Silver Grange LTD",
           "flatName": null,
-          "pafOrganisationName": null
+          "buildingName": null,
+          "buildingNumberRange": null,
+          "street": null,
+          "dependentLocality": "Board",
+          "doubleDependentLocality": null
         }
       }
     }
