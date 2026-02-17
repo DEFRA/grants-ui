@@ -27,18 +27,11 @@ export default class SubmissionPageController extends SummaryPageController {
    */
   async submitGasApplication(request, data) {
     const { identifiers, state, validationResult } = data
-    const { id, message, valid } = validationResult
-    const rulesCalculations = {
-      id,
-      message,
-      valid,
-      date: new Date().toISOString()
-    }
     const applicationData = transformStateObjectToGasApplication(
       identifiers,
       {
         ...state,
-        rulesCalculations
+        validationResult
       },
       stateToLandGrantsGasAnswers
     )
