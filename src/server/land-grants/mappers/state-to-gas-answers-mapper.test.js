@@ -1165,10 +1165,10 @@ describe('stateToLandGrantsGasAnswers - rulesCalculations from validationResult'
         id: 123,
         message: 'Application validated successfully',
         valid: true,
-        date: expect.any(String),
-        caveats: undefined
+        date: expect.any(String)
       })
     )
+    expect(result.rulesCalculations.caveats).toBeUndefined()
   })
 
   it('should extract caveats with metadata when enableSSSIFeature is true', () => {

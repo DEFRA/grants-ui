@@ -232,7 +232,10 @@ function mapRulesCalculations(validationResult) {
   }
 
   if (enableSSSIFeature) {
-    rulesCalculations.caveats = mapCaveatsForValidationResult(validationResult)
+    const caveats = mapCaveatsForValidationResult(validationResult)
+    if (caveats.length > 0) {
+      rulesCalculations.caveats = caveats
+    }
   }
 
   return rulesCalculations
