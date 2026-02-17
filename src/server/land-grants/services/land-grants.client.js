@@ -2,6 +2,10 @@ import { createApiHeadersForLandGrantsBackend } from '~/src/server/common/helper
 import { retry } from '~/src/server/common/helpers/retry.js'
 import { config } from '~/src/config/config.js'
 
+function isSSSIFeatureEnabled() {
+  return config.get('landGrants.enableSSSIFeature')
+}
+
 /**
  * Performs a POST request to the Land Grants API.
  * @param {string} endpoint
@@ -66,7 +70,7 @@ export async function parcelsWithSize(parcelIds, baseUrl) {
  * @returns {Promise<ParcelResponse>}
  */
 export async function parcelsWithFields(fields, parcelIds, baseUrl) {
-  const endpoint = config.get('landGrants.enableSSSIFeature') ? '/api/v2/parcels' : '/parcels'
+  const endpoint = isSSSIFeatureEnabled() ? '/api/v2/parcels' : '/parcels'
   return postToLandGrantsApi(endpoint, { parcelIds, fields }, baseUrl)
 }
 
@@ -80,7 +84,7 @@ export async function parcelsWithActionsAndSize(parcelIds, baseUrl) {
   const fields = [
     'actions',
     'size',
-    ...(config.get('landGrants.enableSSSIFeature') ? ['actions.sssiConsentRequired'] : [])
+    ...(isSSSIFeatureEnabled() ? ['actions.sssiConsentRequired'] : [])
   ]
   return parcelsWithFields(fields, parcelIds, baseUrl)
 }
@@ -93,7 +97,7 @@ export async function parcelsWithActionsAndSize(parcelIds, baseUrl) {
  * @throws {Error}
  */
 export async function validate(request, baseUrl) {
-  const endpoint = config.get('landGrants.enableSSSIFeature') ? '/api/v2/application/validate' : '/application/validate'
+  const endpoint = isSSSIFeatureEnabled() ? '/api/v2/application/validate' : '/application/validate'
   return postToLandGrantsApi(endpoint, request, baseUrl)
 }
 
