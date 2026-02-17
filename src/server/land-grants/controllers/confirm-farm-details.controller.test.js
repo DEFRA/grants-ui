@@ -188,7 +188,7 @@ describe('ConfirmFarmDetailsController', () => {
 
         expect(result.business).toEqual({
           rows: [
-            { key: { text: 'Business name' }, value: { text: ' Farm 1' } },
+            { key: { text: 'Business name' }, value: { text: 'Test Farm Business' } },
             { key: { text: 'Address 1' }, value: { text: 'Line 1' } },
             { key: { text: 'Address 2' }, value: { text: 'Line 2' } },
             { key: { text: 'City' }, value: { text: 'Test City' } },
@@ -267,27 +267,15 @@ describe('ConfirmFarmDetailsController', () => {
 
         const result = await controller.buildDetailsForView(mockRequest)
 
+        const missingValue = {
+          html: '<span class="govuk-visually-hidden" aria-describedby="missing-fields-warning">This information is missing</span>'
+        }
         expect(result.business).toEqual({
           rows: [
-            { key: { text: 'Business name' }, value: { text: ' Farm 1' } },
-            {
-              key: { text: 'Address 1' },
-              value: {
-                html: '<span class="govuk-visually-hidden" aria-describedby="missing-fields-warning">This information is missing</span>'
-              }
-            },
-            {
-              key: { text: 'City' },
-              value: {
-                html: '<span class="govuk-visually-hidden" aria-describedby="missing-fields-warning">This information is missing</span>'
-              }
-            },
-            {
-              key: { text: 'Postcode' },
-              value: {
-                html: '<span class="govuk-visually-hidden" aria-describedby="missing-fields-warning">This information is missing</span>'
-              }
-            },
+            { key: { text: 'Business name' }, value: missingValue },
+            { key: { text: 'Address 1' }, value: missingValue },
+            { key: { text: 'City' }, value: missingValue },
+            { key: { text: 'Postcode' }, value: missingValue },
             { key: { text: 'SBI number' }, value: { text: 'SBI123456' } }
           ]
         })
