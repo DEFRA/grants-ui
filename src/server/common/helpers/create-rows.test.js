@@ -311,7 +311,7 @@ describe('create-rows utilities', () => {
     }
 
     it('should create rows with all business data', () => {
-      const result = createBusinessRows('123456789', 'Acme Corp', fullBusiness)
+      const result = createBusinessRows('123456789', fullBusiness)
 
       expect(result).toEqual({
         rows: [
@@ -329,9 +329,10 @@ describe('create-rows utilities', () => {
 
     it('should hide optional address lines when missing', () => {
       const business = {
+        name: 'Acme Corp',
         address: { line1: '123 Main St', city: 'Springfield', postalCode: 'SP1 2AB' }
       }
-      const result = createBusinessRows('123456789', 'Acme Corp', business)
+      const result = createBusinessRows('123456789', business)
 
       expect(result).toEqual({
         rows: [
@@ -348,7 +349,7 @@ describe('create-rows utilities', () => {
       const missingValue = {
         html: '<span class="govuk-visually-hidden" aria-describedby="missing-fields-warning">This information is missing</span>'
       }
-      const result = createBusinessRows('123456789', 'Acme Corp', {})
+      const result = createBusinessRows('123456789', { name: 'Acme Corp' })
 
       expect(result).toEqual({
         rows: [
@@ -361,7 +362,7 @@ describe('create-rows utilities', () => {
       })
     })
 
-    it('should show mandatory fields as blank when business and organisationName are missing', () => {
+    it('should show mandatory fields as blank when business is missing', () => {
       const missingValue = {
         html: '<span class="govuk-visually-hidden" aria-describedby="missing-fields-warning">This information is missing</span>'
       }
@@ -374,8 +375,8 @@ describe('create-rows utilities', () => {
           { key: { text: 'SBI number' }, value: { text: '123456789' } }
         ]
       }
-      expect(createBusinessRows('123456789', undefined, null)).toEqual(expected)
-      expect(createBusinessRows('123456789', undefined, undefined)).toEqual(expected)
+      expect(createBusinessRows('123456789', null)).toEqual(expected)
+      expect(createBusinessRows('123456789', undefined)).toEqual(expected)
     })
   })
 

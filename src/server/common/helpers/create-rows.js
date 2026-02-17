@@ -77,14 +77,13 @@ export function createContactRows(business) {
 /**
  * Create business detail rows for detailed view.
  * @param {string} sbi - SBI number
- * @param {string} organisationName - Business name
  * @param {object} business - Business data
  * @returns {{ rows: object[] }} Rows object
  */
-export function createBusinessRows(sbi, organisationName, business) {
+export function createBusinessRows(sbi, business) {
   const address = business?.address
   return buildRows([
-    { label: 'Business name', value: organisationName, mandatory: true },
+    { label: 'Business name', value: business?.name, mandatory: true },
     { label: 'Address 1', value: address?.line1, mandatory: true },
     { label: 'Address 2', value: address?.line2 },
     { label: 'Address 3', value: address?.line3 },
