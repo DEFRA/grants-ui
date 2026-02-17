@@ -81,11 +81,7 @@ export async function parcelsWithFields(fields, parcelIds, baseUrl) {
  * @returns {Promise<ParcelResponse>}
  */
 export async function parcelsWithActionsAndSize(parcelIds, baseUrl) {
-  const fields = [
-    'actions',
-    'size',
-    ...(isSSSIFeatureEnabled() ? ['actions.sssiConsentRequired'] : [])
-  ]
+  const fields = ['actions', 'size', ...(isSSSIFeatureEnabled() ? ['actions.sssiConsentRequired'] : [])]
   return parcelsWithFields(fields, parcelIds, baseUrl)
 }
 
