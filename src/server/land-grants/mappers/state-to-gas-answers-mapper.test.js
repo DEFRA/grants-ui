@@ -1267,9 +1267,7 @@ describe('stateToLandGrantsGasAnswers - rulesCalculations from validationResult'
         valid: true,
         actions: [
           {
-            rules: [
-              { name: 'rule-1', caveat: { code: 'caveat-1' } }
-            ]
+            rules: [{ name: 'rule-1', caveat: { code: 'caveat-1' } }]
           }
         ]
       }
