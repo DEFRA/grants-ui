@@ -144,19 +144,7 @@ describe('ConfirmFarmDetailsController', () => {
         config.get.mockReturnValue(false)
       })
 
-      it('should return flat rows with hasMissingFields false when enableBlockingInvalidContactDetails is false', async () => {
-        const result = await controller.buildDetailsForView(mockRequest)
-
-        expect(config.get).toHaveBeenCalledWith('landGrants.enableDetailedFarmDetails')
-        expect(result).toHaveProperty('rows')
-        expect(result).toHaveProperty('hasMissingFields')
-        expect(result).not.toHaveProperty('person')
-        expect(result).not.toHaveProperty('business')
-        expect(result).not.toHaveProperty('contact')
-        expect(result.hasMissingFields).toBe(false)
-      })
-
-      it('should return hasMissingFields false regardless of missing data when enableBlockingInvalidContactDetails is false', async () => {
+      it('should return hasMissingFields when we have missing data', async () => {
         fetchBusinessAndCustomerInformation.mockResolvedValue({
           business: undefined,
           customer: {}
@@ -164,7 +152,7 @@ describe('ConfirmFarmDetailsController', () => {
 
         const result = await controller.buildDetailsForView(mockRequest)
 
-        expect(result.hasMissingFields).toBe(false)
+        expect(result.hasMissingFields).toBe(true)
       })
     })
 

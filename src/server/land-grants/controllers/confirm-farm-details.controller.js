@@ -78,9 +78,6 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
     const data = await fetchBusinessAndCustomerInformation(request)
     const sbi = request.auth?.credentials?.sbi
     const enableDetailedFarmDetails = /** @type {object} */ (config).get('landGrants.enableDetailedFarmDetails')
-    const enableBlockingInvalidContactDetails = /** @type {object} */ (config).get(
-      'landGrants.enableBlockingInvalidContactDetails'
-    )
 
     const missingFields = this.getMissingFarmDataFields(data)
     if (missingFields.length > 0) {
@@ -90,7 +87,7 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
       })
     }
 
-    const hasMissingFields = enableBlockingInvalidContactDetails ? missingFields.length > 0 : false
+    const hasMissingFields = missingFields.length > 0
 
     return {
       hasMissingFields,

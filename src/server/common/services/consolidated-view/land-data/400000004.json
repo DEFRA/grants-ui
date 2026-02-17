@@ -41,19 +41,11 @@
           "line1": "Silver Trees",
           "line2": null,
           "line3": null,
-          "line4": null,
-          "line5": "",
+          "line4": "Norfolk Street",
+          "line5": null,
           "street": null,
           "city": "Birmingham",
-          "postalCode": "HA5 6PL",
-          "uprn": "981124611111",
-          "buildingName": null,
-          "buildingNumberRange": null,
-          "county": null,
-          "dependentLocality": null,
-          "doubleDependentLocality": null,
-          "flatName": null,
-          "pafOrganisationName": null
+          "postalCode": "HA5 6PL"
         }
       }
     }
