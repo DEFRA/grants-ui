@@ -1141,6 +1141,155 @@ describe('stateToLandGrantsGasAnswers', () => {
   })
 })
 
+describe('stateToLandGrantsGasAnswers - rulesCalculations from validationResult', () => {
+  afterEach(() => {
+    config.set('landGrants.enableSSSIFeature', false)
+  })
+
+  it('should build rulesCalculations from validationResult', () => {
+    const input = {
+      payment,
+      landParcels: {},
+      validationResult: {
+        id: 123,
+        message: 'Application validated successfully',
+        valid: true,
+        actions: []
+      }
+    }
+
+    const result = stateToLandGrantsGasAnswers(input)
+
+    expect(result.rulesCalculations).toEqual(
+      expect.objectContaining({
+        id: 123,
+        message: 'Application validated successfully',
+        valid: true,
+        date: expect.any(String)
+      })
+    )
+    expect(result.rulesCalculations.caveats).toBeUndefined()
+  })
+
+  it('should extract caveats with metadata when enableSSSIFeature is true', () => {
+    config.set('landGrants.enableSSSIFeature', true)
+
+    const input = {
+      payment,
+      landParcels: {},
+      validationResult: {
+        id: 11453,
+        message: 'Application validated successfully',
+        valid: true,
+        actions: [
+          {
+            actionCode: 'UPL2',
+            sheetId: 'SD5649',
+            parcelId: '9215',
+            hasPassed: true,
+            rules: [
+              {
+                name: 'parcel-has-intersection-with-data-layer-moorland',
+                passed: true,
+                reason: 'This parcel is majority on the moorland',
+                description: 'Is this parcel on the moorland?',
+                explanations: [
+                  {
+                    title: 'moorland check',
+                    lines: ['This parcel has a 100% intersection with the moorland layer. The target is 51%.']
+                  }
+                ]
+              },
+              {
+                name: 'applied-for-total-available-area',
+                passed: true,
+                reason: 'There is sufficient available area (762.8977 ha) for the applied figure (762.8977 ha)',
+                description: 'Has the total available area been applied for?',
+                explanations: [
+                  {
+                    title: 'Total valid land cover',
+                    lines: ['The available area was (762.8977 ha) the applicant applied for (762.8977 ha)']
+                  }
+                ]
+              },
+              {
+                name: 'sssi-consent-required',
+                passed: true,
+                reason: 'A consent is required from Natural England',
+                description: 'Is the site of special scientific interest?',
+                explanations: [
+                  {
+                    title: 'sssi check',
+                    lines: ['This parcel has a 99.99% intersection with the sssi layer. The tolerance is 1%.']
+                  }
+                ],
+                caveat: {
+                  code: 'ne-consent-required',
+                  description: 'A consent is required from Natural England',
+                  metadata: {
+                    actionCode: 'UPL2',
+                    parcelId: '9215',
+                    sheetId: 'SD5649',
+                    percentageOverlap: 99.99,
+                    overlapAreaHectares: 764.1672
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+
+    const result = stateToLandGrantsGasAnswers(input)
+
+    expect(result.rulesCalculations.caveats).toHaveLength(1)
+    expect(result.rulesCalculations.caveats[0]).toEqual({
+      code: 'ne-consent-required',
+      description: 'A consent is required from Natural England',
+      metadata: {
+        actionCode: 'UPL2',
+        parcelId: '9215',
+        sheetId: 'SD5649',
+        percentageOverlap: 99.99,
+        overlapAreaHectares: 764.1672
+      }
+    })
+  })
+
+  it('should not extract caveats when enableSSSIFeature is false', () => {
+    const input = {
+      payment,
+      landParcels: {},
+      validationResult: {
+        id: 123,
+        message: 'success',
+        valid: true,
+        actions: [
+          {
+            rules: [{ name: 'rule-1', caveat: { code: 'caveat-1' } }]
+          }
+        ]
+      }
+    }
+
+    const result = stateToLandGrantsGasAnswers(input)
+
+    expect(result.rulesCalculations.caveats).toBeUndefined()
+  })
+
+  it('should return undefined rulesCalculations when no validationResult is provided', () => {
+    const input = {
+      payment,
+      landParcels: {}
+    }
+
+    const result = stateToLandGrantsGasAnswers(input)
+
+    expect(result.rulesCalculations).toBeUndefined()
+  })
+})
+
 describe('schema validation', () => {
   beforeAll(() => {
     loadSubmissionSchemaValidators()
@@ -1165,11 +1314,10 @@ describe('schema validation', () => {
             }
           }
         },
-        rulesCalculations: {
+        validationResult: {
           id: 355,
           message: 'success',
-          valid: true,
-          date: new Date().toISOString()
+          valid: true
         }
       },
       {
@@ -1185,11 +1333,10 @@ describe('schema validation', () => {
             }
           }
         },
-        rulesCalculations: {
+        validationResult: {
           id: 355,
           message: 'success',
-          valid: true,
-          date: new Date().toISOString()
+          valid: true
         }
       }
     ]

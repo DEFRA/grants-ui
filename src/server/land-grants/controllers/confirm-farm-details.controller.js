@@ -105,10 +105,8 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
    */
   buildDetailedFarmDetails(request, data) {
     const sbi = request.auth?.credentials?.sbi
-    const organisationName = request.auth?.credentials?.organisationName
-
     const person = createPersonRows(data.customer?.name)
-    const business = createBusinessRows(sbi, organisationName, data.business)
+    const business = createBusinessRows(sbi, data.business)
     const contact = createContactRows(data.business)
 
     return {
