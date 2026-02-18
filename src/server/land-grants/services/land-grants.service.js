@@ -185,8 +185,8 @@ export async function validateApplication(data) {
 /**
  * Builds v1-format errorMessages from a v2 validation response.
  * v2 returns actions[] with rules[], whereas v1 returned errorMessages[].
- * @param {Array} actions - The actions array from v2 validation response
- * @returns {Array} - errorMessages in v1 format
+ * @param {ValidationAction[]} actions - The actions array from v2 validation response
+ * @returns {ErrorItem[]} - errorMessages in v1 format
  */
 function buildErrorMessagesFromV2Response(actions = []) {
   const errorMessages = []
@@ -210,6 +210,6 @@ function buildErrorMessagesFromV2Response(actions = []) {
 }
 
 /**
- * @import { ActionOption, LandActions, ActionGroup, Parcel, ValidateApplicationResponse, Size } from '~/src/server/land-grants/types/land-grants.client.d.js'
+ * @import { ActionOption, LandActions, ActionGroup, Parcel, ValidateApplicationResponse, ValidationAction, ErrorItem, Size } from '~/src/server/land-grants/types/land-grants.client.d.js'
  * @import { PaymentCalculation } from '~/src/server/land-grants/types/payment.d.js'
  */
