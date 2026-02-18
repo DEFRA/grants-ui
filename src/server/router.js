@@ -21,7 +21,7 @@ export const router = {
     async register(server) {
       await server.register([inert])
 
-      // Health-check route. Used by platform to check if service is running, do not remove!
+      // Health-check
       await server.register([health])
 
       // Auth routes

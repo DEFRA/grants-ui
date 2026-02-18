@@ -71,10 +71,10 @@ export class BaseError extends Error {
 
   /**
    * Sends error details to the logger
-   * @param {import('@hapi/hapi').Request|null} request
+   * @param {import('@hapi/hapi').Request|undefined} request
    * @param {...Record<string, any>} additionalDetail
    */
-  log(request = null, ...additionalDetail) {
+  log(request = undefined, ...additionalDetail) {
     const messageOptions = Object.assign({}, this._details, ...additionalDetail)
 
     logger(this.logCode, messageOptions, request)
