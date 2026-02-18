@@ -67,6 +67,14 @@ const TEST_METHODS = {
   POST: 'POST'
 }
 
+function assertLogCode(category, logCodeName, expectedLevel, testParams, expectedMessage) {
+  const actualName = logCodeName.split(' ')[0]
+  const logCode = LogCodes[category][actualName]
+  expect(logCode.level).toBe(expectedLevel)
+  expect(typeof logCode.messageFunc).toBe('function')
+  expect(logCode.messageFunc(testParams)).toBe(expectedMessage)
+}
+
 describe('LogCodes', () => {
   describe('AUTH log codes', () => {
     it.each([
@@ -137,11 +145,7 @@ describe('LogCodes', () => {
         `Token verification failed for user=unknown. Error: ${TEST_ERRORS.INVALID_TOKEN}`
       ]
     ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
-      const actualLogCodeName = logCodeName.split(' ')[0]
-      const logCode = LogCodes.AUTH[actualLogCodeName]
-      expect(logCode.level).toBe(expectedLevel)
-      expect(typeof logCode.messageFunc).toBe('function')
-      expect(logCode.messageFunc(testParams)).toBe(expectedMessage)
+      assertLogCode('AUTH', logCodeName, expectedLevel, testParams, expectedMessage)
     })
 
     it('should have valid AUTH_DEBUG log code', () => {
@@ -243,11 +247,7 @@ describe('LogCodes', () => {
         `Whitelist access denied to path=${TEST_PATHS.EXAMPLE_GRANT}: SBI unknown passed but CRN unknown failed validation`
       ]
     ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
-      const actualLogCodeName = logCodeName.split(' ')[0]
-      const logCode = LogCodes.AUTH[actualLogCodeName]
-      expect(logCode.level).toBe(expectedLevel)
-      expect(typeof logCode.messageFunc).toBe('function')
-      expect(logCode.messageFunc(testParams)).toBe(expectedMessage)
+      assertLogCode('AUTH', logCodeName, expectedLevel, testParams, expectedMessage)
     })
   })
 
@@ -302,11 +302,7 @@ describe('LogCodes', () => {
         `Form saved: ${TEST_FORM_NAMES.DECLARATION} for user=unknown`
       ]
     ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
-      const actualLogCodeName = logCodeName.split(' ')[0]
-      const logCode = LogCodes.FORMS[actualLogCodeName]
-      expect(logCode.level).toBe(expectedLevel)
-      expect(typeof logCode.messageFunc).toBe('function')
-      expect(logCode.messageFunc(testParams)).toBe(expectedMessage)
+      assertLogCode('FORMS', logCodeName, expectedLevel, testParams, expectedMessage)
     })
   })
 
@@ -398,11 +394,7 @@ describe('LogCodes', () => {
         'DeclarationController: Redirecting to /confirmation'
       ]
     ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
-      const actualLogCodeName = logCodeName.split(' ')[0]
-      const logCode = LogCodes.SUBMISSION[actualLogCodeName]
-      expect(logCode.level).toBe(expectedLevel)
-      expect(typeof logCode.messageFunc).toBe('function')
-      expect(logCode.messageFunc(testParams)).toBe(expectedMessage)
+      assertLogCode('SUBMISSION', logCodeName, expectedLevel, testParams, expectedMessage)
     })
 
     it('should have valid SUBMISSION_PAYLOAD_LOG log code', () => {
@@ -437,10 +429,7 @@ describe('LogCodes', () => {
         `Declaration processing error for user=${TEST_USER_IDS.DEFAULT}: ${TEST_ERRORS.PROCESSING_FAILED}`
       ]
     ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
-      const logCode = LogCodes.DECLARATION[logCodeName]
-      expect(logCode.level).toBe(expectedLevel)
-      expect(typeof logCode.messageFunc).toBe('function')
-      expect(logCode.messageFunc(testParams)).toBe(expectedMessage)
+      assertLogCode('DECLARATION', logCodeName, expectedLevel, testParams, expectedMessage)
     })
   })
 
@@ -471,10 +460,7 @@ describe('LogCodes', () => {
         `ConfirmationController: Retrieved submitted status for referenceNumber=${TEST_REFERENCE_NUMBERS.REF_123}`
       ]
     ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
-      const logCode = LogCodes.CONFIRMATION[logCodeName]
-      expect(logCode.level).toBe(expectedLevel)
-      expect(typeof logCode.messageFunc).toBe('function')
-      expect(logCode.messageFunc(testParams)).toBe(expectedMessage)
+      assertLogCode('CONFIRMATION', logCodeName, expectedLevel, testParams, expectedMessage)
     })
   })
 
@@ -529,10 +515,7 @@ describe('LogCodes', () => {
         `Land parcel doesn't belong to sbi=${TEST_SBI.DEFAULT} | selectedLandParcel: A1-123 | landParcelsForSbi=["A1-111","A1-222"]`
       ]
     ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
-      const logCode = LogCodes.LAND_GRANTS[logCodeName]
-      expect(logCode.level).toBe(expectedLevel)
-      expect(typeof logCode.messageFunc).toBe('function')
-      expect(logCode.messageFunc(testParams)).toBe(expectedMessage)
+      assertLogCode('LAND_GRANTS', logCodeName, expectedLevel, testParams, expectedMessage)
     })
   })
 
@@ -557,10 +540,7 @@ describe('LogCodes', () => {
         `Agreement processing error for user=${TEST_USER_IDS.DEFAULT}: ${TEST_ERRORS.PROCESSING_FAILED}`
       ]
     ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
-      const logCode = LogCodes.AGREEMENTS[logCodeName]
-      expect(logCode.level).toBe(expectedLevel)
-      expect(typeof logCode.messageFunc).toBe('function')
-      expect(logCode.messageFunc(testParams)).toBe(expectedMessage)
+      assertLogCode('AGREEMENTS', logCodeName, expectedLevel, testParams, expectedMessage)
     })
   })
 
@@ -573,10 +553,7 @@ describe('LogCodes', () => {
         'Cookies page loaded: returnUrl=/dashboard, referer=http://example.com'
       ]
     ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
-      const logCode = LogCodes.COOKIES[logCodeName]
-      expect(logCode.level).toBe(expectedLevel)
-      expect(typeof logCode.messageFunc).toBe('function')
-      expect(logCode.messageFunc(testParams)).toBe(expectedMessage)
+      assertLogCode('COOKIES', logCodeName, expectedLevel, testParams, expectedMessage)
     })
   })
 
@@ -620,11 +597,7 @@ describe('LogCodes', () => {
         `Page not found: path=${TEST_PATHS.TEST_PATH}, userId=anonymous, sbi=unknown, referer=none, userAgent=unknown`
       ]
     ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
-      const actualLogCodeName = logCodeName.split(' ')[0]
-      const logCode = LogCodes.RESOURCE_NOT_FOUND[actualLogCodeName]
-      expect(logCode.level).toBe(expectedLevel)
-      expect(typeof logCode.messageFunc).toBe('function')
-      expect(logCode.messageFunc(testParams)).toBe(expectedMessage)
+      assertLogCode('RESOURCE_NOT_FOUND', logCodeName, expectedLevel, testParams, expectedMessage)
     })
   })
 
@@ -815,11 +788,7 @@ describe('LogCodes', () => {
         'Unexpected error fetching business data from Consolidated View API | sbi=unknown | error=Connection failed'
       ]
     ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
-      const actualLogCodeName = logCodeName.split(' ')[0]
-      const logCode = LogCodes.SYSTEM[actualLogCodeName]
-      expect(logCode.level).toBe(expectedLevel)
-      expect(typeof logCode.messageFunc).toBe('function')
-      expect(logCode.messageFunc(testParams)).toBe(expectedMessage)
+      assertLogCode('SYSTEM', logCodeName, expectedLevel, testParams, expectedMessage)
     })
 
     it('should handle EXTERNAL_API_CALL_DEBUG with unknown identity', () => {

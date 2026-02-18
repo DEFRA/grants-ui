@@ -2,12 +2,7 @@ import { ConfirmationService } from './services/confirmation.service.js'
 import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/forms-cache.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { ApplicationStatus } from '~/src/server/common/constants/application-status.js'
-
-const HTTP_STATUS = {
-  BAD_REQUEST: 400,
-  NOT_FOUND: 404,
-  INTERNAL_SERVER_ERROR: 500
-}
+import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 
 /**
  * Validates request parameters and finds form by slug
@@ -27,7 +22,7 @@ function validateRequestAndFindForm(request, h) {
       },
       request
     )
-    return { error: h.response('Bad request - missing slug').code(HTTP_STATUS.BAD_REQUEST) }
+    return { error: h.response('Bad request - missing slug').code(statusCodes.badRequest) }
   }
 
   const form = ConfirmationService.findFormBySlug(slug)
@@ -41,7 +36,7 @@ function validateRequestAndFindForm(request, h) {
       request
     )
     // @todo - should maybe use the `error/404` view here?
-    return { error: h.response('Form not found').code(HTTP_STATUS.NOT_FOUND) }
+    return { error: h.response('Form not found').code(statusCodes.notFound) }
   }
 
   return { form, slug }
@@ -123,7 +118,7 @@ function handleError(error, request, h) {
     },
     request
   )
-  return h.response('Server error').code(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+  return h.response('Server error').code(statusCodes.internalServerError)
 }
 
 /**

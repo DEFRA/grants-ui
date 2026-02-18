@@ -34,6 +34,7 @@ const nunjucksEnvironment = nunjucks.configure(['node_modules/govuk-frontend/dis
   throwOnUndefined: false,
   trimBlocks: true,
   lstripBlocks: true,
+  // @ts-expect-error convict config type is excessively deep for TS
   watch: config.get('nunjucks.watch'),
   noCache: config.get('nunjucks.noCache')
 })
