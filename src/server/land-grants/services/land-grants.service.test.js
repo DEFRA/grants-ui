@@ -762,18 +762,14 @@ describe('land-grants service', () => {
               sheetId: 'SD7861',
               parcelId: '5677',
               hasPassed: true,
-              rules: [
-                { name: 'rule1', passed: true, reason: 'Passed', description: 'Check' }
-              ]
+              rules: [{ name: 'rule1', passed: true, reason: 'Passed', description: 'Check' }]
             },
             {
               actionCode: 'UPL1',
               sheetId: 'SD6843',
               parcelId: '7039',
               hasPassed: false,
-              rules: [
-                { name: 'rule2', passed: false, reason: 'Not sufficient area', description: 'Area check' }
-              ]
+              rules: [{ name: 'rule2', passed: false, reason: 'Not sufficient area', description: 'Area check' }]
             }
           ]
         })
@@ -830,9 +826,7 @@ describe('land-grants service', () => {
               sheetId: 'SD7861',
               parcelId: '5677',
               hasPassed: true,
-              rules: [
-                { name: 'rule1', passed: true, reason: 'Passed', description: 'Check' }
-              ]
+              rules: [{ name: 'rule1', passed: true, reason: 'Passed', description: 'Check' }]
             }
           ]
         })
@@ -858,17 +852,13 @@ describe('land-grants service', () => {
       it('should return the response unchanged with original errorMessages', async () => {
         const mockApiResponse = {
           valid: false,
-          errorMessages: [
-            { code: 'CMOR1', description: 'Invalid area', passed: false }
-          ]
+          errorMessages: [{ code: 'CMOR1', description: 'Invalid area', passed: false }]
         }
         validate.mockResolvedValueOnce(mockApiResponse)
 
         const result = await validateApplication(validationInput)
 
-        expect(result.errorMessages).toEqual([
-          { code: 'CMOR1', description: 'Invalid area', passed: false }
-        ])
+        expect(result.errorMessages).toEqual([{ code: 'CMOR1', description: 'Invalid area', passed: false }])
       })
     })
   })
