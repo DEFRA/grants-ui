@@ -173,10 +173,43 @@ export async function validateApplication(data) {
     landActions: stateToLandActionsMapper(state)
   }
 
-  return validate(payload, LAND_GRANTS_API_URL)
+  const result = await validate(payload, LAND_GRANTS_API_URL)
+
+  if (config.get('landGrants.enableSSSIFeature')) {
+    result.errorMessages = buildErrorMessagesFromV2Response(result.actions)
+  }
+
+  return result
 }
 
 /**
- * @import { ActionOption, LandActions, ActionGroup, Parcel, ValidateApplicationResponse, Size } from '~/src/server/land-grants/types/land-grants.client.d.js'
+ * Builds v1-format errorMessages from a v2 validation response.
+ * v2 returns actions[] with rules[], whereas v1 returned errorMessages[].
+ * @param {ValidationAction[]} actions - The actions array from v2 validation response
+ * @returns {ErrorItem[]} - errorMessages in v1 format
+ */
+function buildErrorMessagesFromV2Response(actions = []) {
+  const errorMessages = []
+  for (const action of actions) {
+    if (action.hasPassed) {
+      continue
+    }
+    for (const rule of action.rules || []) {
+      if (!rule.passed) {
+        errorMessages.push({
+          code: action.actionCode,
+          description: rule.reason,
+          sheetId: action.sheetId,
+          parcelId: action.parcelId,
+          passed: false
+        })
+      }
+    }
+  }
+  return errorMessages
+}
+
+/**
+ * @import { ActionOption, LandActions, ActionGroup, Parcel, ValidateApplicationResponse, ValidationAction, ErrorItem, Size } from '~/src/server/land-grants/types/land-grants.client.d.js'
  * @import { PaymentCalculation } from '~/src/server/land-grants/types/payment.d.js'
  */

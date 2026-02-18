@@ -68,9 +68,27 @@
  */
 
 /**
+ * @typedef {object} ValidationRule
+ * @property {string} name
+ * @property {boolean} passed
+ * @property {string} reason
+ * @property {string} description
+ */
+
+/**
+ * @typedef {object} ValidationAction
+ * @property {string} actionCode
+ * @property {string} sheetId
+ * @property {string} parcelId
+ * @property {boolean} hasPassed
+ * @property {ValidationRule[]} rules
+ */
+
+/**
  * @typedef {object} ValidateApplicationResponse
  * @property {string} id
  * @property {string} message
  * @property {boolean} valid
- * @property {ErrorItem[]} errorMessages
+ * @property {ErrorItem[]} [errorMessages]
+ * @property {ValidationAction[]} [actions]
  */

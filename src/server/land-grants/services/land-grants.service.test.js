@@ -669,18 +669,20 @@ describe('land-grants service', () => {
   })
 
   describe('validateApplication', () => {
+    const validationInput = {
+      applicationId: '123456',
+      crn: '123456',
+      state: {
+        landParcels: { 'SHEET1-PARCEL1': { actionsObj: { CMOR1: { value: 10 } } } }
+      },
+      sbi: '106284736'
+    }
+
     it('should call the validation application API', async () => {
       const mockApiResponse = { id: '123456' }
       validate.mockResolvedValueOnce(mockApiResponse)
 
-      const result = await validateApplication({
-        applicationId: '123456',
-        crn: '123456',
-        state: {
-          landParcels: { 'SHEET1-PARCEL1': { actionsObj: { CMOR1: { value: 10 } } } }
-        },
-        sbi: '106284736'
-      })
+      const result = await validateApplication(validationInput)
 
       expect(validate).toHaveBeenCalledWith(
         {
@@ -693,6 +695,171 @@ describe('land-grants service', () => {
         mockApiEndpoint
       )
       expect(result).toEqual(mockApiResponse)
+    })
+
+    describe('when enableSSSIFeature is true (v2 API response)', () => {
+      beforeEach(() => {
+        configState.set('landGrants.enableSSSIFeature', true)
+      })
+
+      afterEach(() => {
+        configState.set('landGrants.enableSSSIFeature', false)
+      })
+
+      it('should build errorMessages from v2 actions with failed rules', async () => {
+        validate.mockResolvedValueOnce({
+          valid: false,
+          actions: [
+            {
+              actionCode: 'CMOR1',
+              sheetId: 'SD6843',
+              parcelId: '7039',
+              hasPassed: false,
+              rules: [
+                {
+                  name: 'parcel-has-intersection-with-data-layer-moorland',
+                  passed: false,
+                  reason: 'This parcel is not majority on the moorland',
+                  description: 'Is this parcel on the moorland?'
+                },
+                {
+                  name: 'applied-for-total-available-area',
+                  passed: false,
+                  reason: 'There is not sufficient available area (1.3308 ha) for the applied figure (12.4034 ha)',
+                  description: 'Has the total available area been applied for?'
+                }
+              ]
+            }
+          ]
+        })
+
+        const result = await validateApplication(validationInput)
+
+        expect(result.errorMessages).toEqual([
+          {
+            code: 'CMOR1',
+            description: 'This parcel is not majority on the moorland',
+            sheetId: 'SD6843',
+            parcelId: '7039',
+            passed: false
+          },
+          {
+            code: 'CMOR1',
+            description: 'There is not sufficient available area (1.3308 ha) for the applied figure (12.4034 ha)',
+            sheetId: 'SD6843',
+            parcelId: '7039',
+            passed: false
+          }
+        ])
+      })
+
+      it('should skip actions that have passed', async () => {
+        validate.mockResolvedValueOnce({
+          valid: false,
+          actions: [
+            {
+              actionCode: 'CMOR1',
+              sheetId: 'SD7861',
+              parcelId: '5677',
+              hasPassed: true,
+              rules: [{ name: 'rule1', passed: true, reason: 'Passed', description: 'Check' }]
+            },
+            {
+              actionCode: 'UPL1',
+              sheetId: 'SD6843',
+              parcelId: '7039',
+              hasPassed: false,
+              rules: [{ name: 'rule2', passed: false, reason: 'Not sufficient area', description: 'Area check' }]
+            }
+          ]
+        })
+
+        const result = await validateApplication(validationInput)
+
+        expect(result.errorMessages).toEqual([
+          {
+            code: 'UPL1',
+            description: 'Not sufficient area',
+            sheetId: 'SD6843',
+            parcelId: '7039',
+            passed: false
+          }
+        ])
+      })
+
+      it('should skip passed rules within a failed action', async () => {
+        validate.mockResolvedValueOnce({
+          valid: false,
+          actions: [
+            {
+              actionCode: 'CMOR1',
+              sheetId: 'SD6843',
+              parcelId: '7039',
+              hasPassed: false,
+              rules: [
+                { name: 'rule1', passed: true, reason: 'Passed check', description: 'Check 1' },
+                { name: 'rule2', passed: false, reason: 'Failed check', description: 'Check 2' }
+              ]
+            }
+          ]
+        })
+
+        const result = await validateApplication(validationInput)
+
+        expect(result.errorMessages).toEqual([
+          {
+            code: 'CMOR1',
+            description: 'Failed check',
+            sheetId: 'SD6843',
+            parcelId: '7039',
+            passed: false
+          }
+        ])
+      })
+
+      it('should return empty errorMessages when all actions pass', async () => {
+        validate.mockResolvedValueOnce({
+          valid: true,
+          actions: [
+            {
+              actionCode: 'CMOR1',
+              sheetId: 'SD7861',
+              parcelId: '5677',
+              hasPassed: true,
+              rules: [{ name: 'rule1', passed: true, reason: 'Passed', description: 'Check' }]
+            }
+          ]
+        })
+
+        const result = await validateApplication(validationInput)
+
+        expect(result.errorMessages).toEqual([])
+      })
+
+      it('should handle v2 response with empty actions array', async () => {
+        validate.mockResolvedValueOnce({
+          valid: false,
+          actions: []
+        })
+
+        const result = await validateApplication(validationInput)
+
+        expect(result.errorMessages).toEqual([])
+      })
+    })
+
+    describe('when enableSSSIFeature is false (v1 API response)', () => {
+      it('should return the response unchanged with original errorMessages', async () => {
+        const mockApiResponse = {
+          valid: false,
+          errorMessages: [{ code: 'CMOR1', description: 'Invalid area', passed: false }]
+        }
+        validate.mockResolvedValueOnce(mockApiResponse)
+
+        const result = await validateApplication(validationInput)
+
+        expect(result.errorMessages).toEqual([{ code: 'CMOR1', description: 'Invalid area', passed: false }])
+      })
     })
   })
 })
