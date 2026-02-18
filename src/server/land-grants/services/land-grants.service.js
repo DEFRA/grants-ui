@@ -173,7 +173,40 @@ export async function validateApplication(data) {
     landActions: stateToLandActionsMapper(state)
   }
 
-  return validate(payload, LAND_GRANTS_API_URL)
+  const result = await validate(payload, LAND_GRANTS_API_URL)
+
+  if (config.get('landGrants.enableSSSIFeature')) {
+    result.errorMessages = buildErrorMessagesFromV2Response(result.actions)
+  }
+
+  return result
+}
+
+/**
+ * Builds v1-format errorMessages from a v2 validation response.
+ * v2 returns actions[] with rules[], whereas v1 returned errorMessages[].
+ * @param {Array} actions - The actions array from v2 validation response
+ * @returns {Array} - errorMessages in v1 format
+ */
+function buildErrorMessagesFromV2Response(actions = []) {
+  const errorMessages = []
+  for (const action of actions) {
+    if (action.hasPassed) {
+      continue
+    }
+    for (const rule of action.rules || []) {
+      if (!rule.passed) {
+        errorMessages.push({
+          code: action.actionCode,
+          description: rule.reason,
+          sheetId: action.sheetId,
+          parcelId: action.parcelId,
+          passed: false
+        })
+      }
+    }
+  }
+  return errorMessages
 }
 
 /**
