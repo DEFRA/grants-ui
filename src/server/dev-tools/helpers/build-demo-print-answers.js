@@ -48,11 +48,11 @@ const DEMO_VALUES = {
 }
 
 function getDemoPrintValue(component) {
-  const entry = DEMO_VALUES[component.type]
-
-  if (entry === undefined) {
+  if (!(component.type in DEMO_VALUES)) {
     return 'Demo value'
   }
+
+  const entry = DEMO_VALUES[component.type]
 
   if (typeof entry === 'function') {
     const firstItem = (component.items || [])[0]
@@ -60,33 +60,4 @@ function getDemoPrintValue(component) {
   }
 
   return entry
-}
-
-/**
- * Resolves list UUID references on components to actual items arrays.
- * Form definitions reference lists by UUID in a `list` property, with the
- * actual list data stored in `definition.lists`. This function copies the
- * items onto the component so `formatAnswer`'s `lookupItemLabel` can
- * display proper labels instead of raw values.
- * @param {object} definition - Parsed YAML form definition
- * @returns {object} The same definition, with list items resolved on components
- */
-export function enrichDefinitionWithListItems(definition) {
-  const listsById = new Map()
-
-  for (const list of definition.lists || []) {
-    if (list.id) {
-      listsById.set(list.id, list.items || [])
-    }
-  }
-
-  for (const page of definition.pages || []) {
-    for (const component of page.components || []) {
-      if (component.list && typeof component.list === 'string' && listsById.has(component.list)) {
-        component.items = listsById.get(component.list)
-      }
-    }
-  }
-
-  return definition
 }

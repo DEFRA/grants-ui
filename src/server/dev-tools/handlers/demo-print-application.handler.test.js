@@ -3,9 +3,10 @@ import { mockReadFile } from '~/src/__mocks__/fs-yaml-mocks.js'
 import { demoPrintApplicationHandler } from './demo-print-application.handler.js'
 import {
   findFormBySlug,
-  buildPrintViewModel
+  buildPrintViewModel,
+  enrichDefinitionWithListItems
 } from '../../common/helpers/print-application-service/print-application-service.js'
-import { buildDemoData, buildDemoPrintAnswers, enrichDefinitionWithListItems } from '../helpers/index.js'
+import { buildDemoData, buildDemoPrintAnswers } from '../helpers/index.js'
 import { generateFormNotFoundResponse } from '../utils/index.js'
 import { mockHapiRequest, mockHapiResponseToolkit } from '~/src/__mocks__/hapi-mocks.js'
 import { log, LogCodes } from '../../common/helpers/logging/log.js'

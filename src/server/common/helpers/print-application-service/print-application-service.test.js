@@ -1,4 +1,4 @@
-import { findFormBySlug, buildPrintViewModel } from './print-application-service.js'
+import { findFormBySlug, buildPrintViewModel, enrichDefinitionWithListItems } from './print-application-service.js'
 import {
   MOCK_FORM_CACHE,
   MOCK_FORM_ENTRIES,
@@ -194,6 +194,107 @@ describe('print-application-service', () => {
       })
 
       expect(result.sections).toEqual([])
+    })
+  })
+
+  describe('enrichDefinitionWithListItems', () => {
+    test('should resolve list UUID references to items on components', () => {
+      const definition = {
+        pages: [
+          {
+            components: [
+              { name: 'radios', type: 'RadiosField', list: 'list-uuid-1' },
+              { name: 'text', type: 'TextField' }
+            ]
+          }
+        ],
+        lists: [
+          {
+            id: 'list-uuid-1',
+            items: [
+              { text: 'Option A', value: 'a' },
+              { text: 'Option B', value: 'b' }
+            ]
+          }
+        ]
+      }
+
+      enrichDefinitionWithListItems(definition)
+
+      expect(definition.pages[0].components[0].items).toEqual([
+        { text: 'Option A', value: 'a' },
+        { text: 'Option B', value: 'b' }
+      ])
+      expect(definition.pages[0].components[1].items).toBeUndefined()
+    })
+
+    test('should overwrite existing items when list UUID is present', () => {
+      const existingItems = [{ text: 'Existing', value: 'existing' }]
+      const definition = {
+        pages: [
+          {
+            components: [{ name: 'radios', type: 'RadiosField', list: 'list-uuid-1', items: existingItems }]
+          }
+        ],
+        lists: [{ id: 'list-uuid-1', items: [{ text: 'New', value: 'new' }] }]
+      }
+
+      enrichDefinitionWithListItems(definition)
+
+      expect(definition.pages[0].components[0].items).toEqual([{ text: 'New', value: 'new' }])
+    })
+
+    test('should handle definition with no lists', () => {
+      const definition = {
+        pages: [{ components: [{ name: 'field', type: 'RadiosField', list: 'missing-uuid' }] }]
+      }
+
+      enrichDefinitionWithListItems(definition)
+
+      expect(definition.pages[0].components[0].items).toBeUndefined()
+    })
+
+    test('should handle empty definition', () => {
+      const definition = {}
+      const result = enrichDefinitionWithListItems(definition)
+      expect(result).toBe(definition)
+    })
+
+    test('should resolve list with no items to an empty array', () => {
+      const definition = {
+        pages: [
+          {
+            components: [{ name: 'radios', type: 'RadiosField', list: 'list-uuid-1' }]
+          }
+        ],
+        lists: [{ id: 'list-uuid-1' }]
+      }
+
+      enrichDefinitionWithListItems(definition)
+
+      expect(definition.pages[0].components[0].items).toEqual([])
+    })
+
+    test('should handle pages with no components property', () => {
+      const definition = {
+        pages: [{ title: 'Empty page' }],
+        lists: [{ id: 'list-uuid-1', items: [{ text: 'A', value: 'a' }] }]
+      }
+
+      const result = enrichDefinitionWithListItems(definition)
+
+      expect(result).toBe(definition)
+    })
+
+    test('should ignore non-string list references', () => {
+      const definition = {
+        pages: [{ components: [{ name: 'field', type: 'RadiosField', list: { nested: true } }] }],
+        lists: [{ id: 'some-id', items: [{ text: 'A', value: 'a' }] }]
+      }
+
+      enrichDefinitionWithListItems(definition)
+
+      expect(definition.pages[0].components[0].items).toBeUndefined()
     })
   })
 })

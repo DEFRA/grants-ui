@@ -6,7 +6,8 @@ import { ApplicationStatus } from '~/src/server/common/constants/application-sta
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import {
   findFormBySlug,
-  buildPrintViewModel
+  buildPrintViewModel,
+  enrichDefinitionWithListItems
 } from '../common/helpers/print-application-service/print-application-service.js'
 
 /**
@@ -53,6 +54,8 @@ async function loadSubmittedApplication(request) {
 async function buildPrintResponse({ form, state, slug }, request, h) {
   const raw = await readFile(form.path, 'utf8')
   const definition = parseYaml(raw)
+
+  enrichDefinitionWithListItems(definition)
 
   const sessionData = {
     businessName: /** @type {string | undefined} */ (request.yar?.get('businessName')),

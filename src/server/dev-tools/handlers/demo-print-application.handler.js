@@ -1,11 +1,12 @@
 import { readFile } from 'node:fs/promises'
 import { parse as parseYaml } from 'yaml'
-import { buildDemoData, buildDemoPrintAnswers, enrichDefinitionWithListItems } from '../helpers/index.js'
-import { generateFormNotFoundResponse } from '../utils/index.js'
+import { buildDemoData, buildDemoPrintAnswers } from '../helpers/index.js'
 import {
   findFormBySlug,
-  buildPrintViewModel
+  buildPrintViewModel,
+  enrichDefinitionWithListItems
 } from '../../common/helpers/print-application-service/print-application-service.js'
+import { generateFormNotFoundResponse } from '../utils/index.js'
 import { log, LogCodes } from '../../common/helpers/logging/log.js'
 
 /**

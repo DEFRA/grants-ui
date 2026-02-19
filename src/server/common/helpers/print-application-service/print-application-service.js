@@ -3,7 +3,7 @@ import { formatAnswer } from './utils/format-answer.js'
 import { DISPLAY_ONLY_TYPES } from './constants.js'
 
 /**
- * @typedef {{ type: string, name: string, title: string }} FormComponent
+ * @typedef {{ type: string, name: string, title: string, list?: string, items?: Array<{text: string, value: string | number | boolean}> }} FormComponent
  * @typedef {{ title: string, components?: FormComponent[] }} FormPage
  * @typedef {{ pages?: FormPage[] }} FormDefinition
  * @typedef {{ title: string, path: string, slug: string, id: string }} FormMeta
@@ -63,6 +63,31 @@ function buildSections(pages, answers) {
       questions: extractQuestions(page.components, answers)
     }))
     .filter((section) => section.questions.length > 0)
+}
+
+/**
+ * Resolves list UUID references on components to actual items arrays.
+ * @param {FormDefinition & { lists?: { id?: string, items?: object[] }[] }} definition - Parsed YAML form definition
+ * @returns {FormDefinition} The same definition, with list items resolved on components
+ */
+export function enrichDefinitionWithListItems(definition) {
+  const listsById = new Map()
+
+  for (const list of definition.lists || []) {
+    if (list.id) {
+      listsById.set(list.id, list.items || [])
+    }
+  }
+
+  for (const page of definition.pages || []) {
+    for (const component of page.components || []) {
+      if (component.list && typeof component.list === 'string' && listsById.has(component.list)) {
+        component.items = listsById.get(component.list)
+      }
+    }
+  }
+
+  return definition
 }
 
 /**
