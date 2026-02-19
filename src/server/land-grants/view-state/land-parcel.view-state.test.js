@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import {
   buildNewState,
   addActionsToExistingState,
@@ -9,6 +9,27 @@ import {
   findActionInfoFromState,
   getRequiredConsents
 } from './land-parcel.view-state.js'
+
+const configState = vi.hoisted(() => {
+  const values = new Map()
+  return {
+    set(key, value) {
+      values.set(key, value)
+    },
+    reset() {
+      values.clear()
+    },
+    get(key) {
+      return values.get(key) ?? false
+    }
+  }
+})
+
+vi.mock('~/src/config/config.js', () => ({
+  config: {
+    get: (key) => configState.get(key)
+  }
+}))
 
 describe('land-parcel-state.manager', () => {
   describe('buildNewState', () => {
@@ -100,6 +121,8 @@ describe('land-parcel-state.manager', () => {
     })
 
     it('should populate consents array when action has SSSI consent requirement', () => {
+      configState.set('landGrants.enableSSSIFeature', true)
+
       const actionsWithSSSI = [
         {
           name: 'Moorland Group',
@@ -125,6 +148,8 @@ describe('land-parcel-state.manager', () => {
         value: '10',
         unit: 'ha'
       })
+
+      configState.reset()
     })
 
     it('should have empty consents array when action does not require any consent', () => {
