@@ -5,6 +5,7 @@ import { stringifyParcel } from '../utils/format-parcel.js'
 import { stateToLandActionsMapper } from '../mappers/state-to-land-grants-mapper.js'
 
 import { config } from '~/src/config/config.js'
+import { getConsentTypes } from '~/src/server/land-grants/constants/consent-types.js'
 import {
   calculate,
   parcelsWithActionsAndSize,
@@ -61,9 +62,9 @@ const createGroup = (name, groupActions) => ({
     value: Math.max(...groupActions.map((item) => item.availableArea.value))
   },
   actions: groupActions,
-  ...(config.get('landGrants.enableSSSIFeature')
-    ? { sssiConsentRequired: groupActions.some((a) => a.sssiConsentRequired) }
-    : {})
+  consents: getConsentTypes()
+    .filter((ct) => groupActions.some((a) => a[ct.apiField]))
+    .map((ct) => ct.key)
 })
 
 /**

@@ -199,6 +199,7 @@ describe('land-grants service', () => {
         actions: [
           {
             name: 'Assess moorland',
+            consents: [],
             totalAvailableArea: {
               unit: 'ha',
               unitFullName: 'hectares',
@@ -214,6 +215,7 @@ describe('land-grants service', () => {
           },
           {
             name: 'Livestock grazing on moorland',
+            consents: [],
             totalAvailableArea: {
               unit: 'ha',
               unitFullName: 'hectares',
@@ -280,6 +282,7 @@ describe('land-grants service', () => {
         actions: [
           {
             name: 'Assess moorland',
+            consents: [],
             totalAvailableArea: {
               unit: 'ha',
               unitFullName: 'hectares',
@@ -295,6 +298,7 @@ describe('land-grants service', () => {
           },
           {
             name: '',
+            consents: [],
             totalAvailableArea: {
               unit: 'ha',
               unitFullName: 'hectares',
@@ -428,6 +432,7 @@ describe('land-grants service', () => {
         actions: [
           {
             name: 'Livestock grazing on moorland',
+            consents: [],
             totalAvailableArea: {
               unit: 'ha',
               unitFullName: 'hectares',
@@ -525,7 +530,7 @@ describe('land-grants service', () => {
                 unitFullName: 'hectares',
                 value: 10.5
               },
-              sssiConsentRequired: false,
+              consents: [],
               actions: [
                 {
                   code: 'CMOR1',
@@ -542,7 +547,7 @@ describe('land-grants service', () => {
                 unitFullName: 'hectares',
                 value: 20.75
               },
-              sssiConsentRequired: true,
+              consents: ['sssi'],
               actions: [
                 {
                   code: 'UPL1',

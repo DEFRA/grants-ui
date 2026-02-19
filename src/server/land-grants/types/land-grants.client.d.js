@@ -16,6 +16,7 @@
  * @property {string} name
  * @property {Size} totalAvailableArea
  * @property {ActionOption[]} actions
+ * @property {string[]} consents - Array of consent type keys required for this group (e.g., ['sssi', 'hefer'])
  */
 
 /**
@@ -30,6 +31,7 @@
  * @property {string} code - The action code
  * @property {string} description - The action description
  * @property {boolean} [sssiConsentRequired] - If action needs SSSI consent
+ * @property {boolean} [heferRequired] - If action needs HEFER report
  * @property {Size} availableArea - The available area for the action
  * @property {number} ratePerUnitGbp - The rate per unit in GBP
  * @property {number} ratePerAgreementPerYearGbp - The rate per agreement per year in GBP

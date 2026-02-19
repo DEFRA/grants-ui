@@ -1,9 +1,10 @@
 import { createApiHeadersForLandGrantsBackend } from '~/src/server/common/helpers/auth/backend-auth-helper.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
 import { config } from '~/src/config/config.js'
+import { getConsentTypes } from '~/src/server/land-grants/constants/consent-types.js'
 
-function isSSSIFeatureEnabled() {
-  return config.get('landGrants.enableSSSIFeature')
+function shouldUseV2Endpoint() {
+  return config.get('landGrants.enableSSSIFeature') || config.get('landGrants.enableHeferFeature')
 }
 
 /**
@@ -70,7 +71,7 @@ export async function parcelsWithSize(parcelIds, baseUrl) {
  * @returns {Promise<ParcelResponse>}
  */
 export async function parcelsWithFields(fields, parcelIds, baseUrl) {
-  const endpoint = isSSSIFeatureEnabled() ? '/api/v2/parcels' : '/parcels'
+  const endpoint = shouldUseV2Endpoint() ? '/api/v2/parcels' : '/parcels'
   return postToLandGrantsApi(endpoint, { parcelIds, fields }, baseUrl)
 }
 
@@ -81,7 +82,9 @@ export async function parcelsWithFields(fields, parcelIds, baseUrl) {
  * @returns {Promise<ParcelResponse>}
  */
 export async function parcelsWithActionsAndSize(parcelIds, baseUrl) {
-  const fields = ['actions', 'size', ...(isSSSIFeatureEnabled() ? ['actions.sssiConsentRequired'] : [])]
+  const consentTypes = getConsentTypes()
+  const fields = ['actions', 'size', ...consentTypes.map((ct) => `actions.${ct.apiField}`)]
+
   return parcelsWithFields(fields, parcelIds, baseUrl)
 }
 
@@ -93,7 +96,7 @@ export async function parcelsWithActionsAndSize(parcelIds, baseUrl) {
  * @throws {Error}
  */
 export async function validate(request, baseUrl) {
-  const endpoint = isSSSIFeatureEnabled() ? '/api/v2/application/validate' : '/application/validate'
+  const endpoint = shouldUseV2Endpoint() ? '/api/v2/application/validate' : '/application/validate'
   return postToLandGrantsApi(endpoint, request, baseUrl)
 }
 
