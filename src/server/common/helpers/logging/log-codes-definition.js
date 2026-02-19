@@ -334,6 +334,17 @@ export const LogCodes = {
         `Failed to release application locks | ownerId=${ownerId} | errorName=${errorName} | errorMessage=${errorMessage}`
     }
   },
+  PRINT_APPLICATION: {
+    SUCCESS: {
+      level: 'info',
+      messageFunc: (messageOptions) => `Print application viewed for referenceNumber=${messageOptions.referenceNumber}`
+    },
+    ERROR: {
+      level: 'error',
+      messageFunc: (messageOptions) =>
+        `Print application error for user=${messageOptions.userId}, slug=${messageOptions.slug}: ${messageOptions.errorMessage}`
+    }
+  },
   SYSTEM: {
     GENERIC_ERROR: {
       level: 'error',

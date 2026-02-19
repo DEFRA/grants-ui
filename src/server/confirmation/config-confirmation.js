@@ -47,10 +47,10 @@ function validateRequestAndFindForm(request, h) {
  * @param {object} form - Form configuration object
  * @returns {Promise<object|null>} Content result with confirmationContent and formDefinition
  */
-async function loadConfirmationContent(form) {
+async function loadConfirmationContent(form, slug) {
   const { confirmationContent: rawConfirmationContent } = await ConfirmationService.loadConfirmationContent(form)
 
-  return rawConfirmationContent ? ConfirmationService.processConfirmationContent(rawConfirmationContent) : null
+  return rawConfirmationContent ? ConfirmationService.processConfirmationContent(rawConfirmationContent, slug) : null
 }
 
 /**
@@ -140,7 +140,7 @@ export const configConfirmation = {
 
             const { form, slug } = validationResult
 
-            const confirmationContent = await loadConfirmationContent(form)
+            const confirmationContent = await loadConfirmationContent(form, slug)
             const sessionData = await getReferenceNumber(request)
 
             log(

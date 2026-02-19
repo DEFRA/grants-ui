@@ -601,6 +601,25 @@ describe('LogCodes', () => {
     })
   })
 
+  describe('PRINT_APPLICATION log codes', () => {
+    it.each([
+      [
+        'SUCCESS',
+        'info',
+        { referenceNumber: TEST_REFERENCE_NUMBERS.REF_123 },
+        `Print application viewed for referenceNumber=${TEST_REFERENCE_NUMBERS.REF_123}`
+      ],
+      [
+        'ERROR',
+        'error',
+        { userId: TEST_USER_IDS.DEFAULT, slug: 'test-slug', errorMessage: TEST_ERRORS.PROCESSING_FAILED },
+        `Print application error for user=${TEST_USER_IDS.DEFAULT}, slug=test-slug: ${TEST_ERRORS.PROCESSING_FAILED}`
+      ]
+    ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
+      assertLogCode('PRINT_APPLICATION', logCodeName, expectedLevel, testParams, expectedMessage)
+    })
+  })
+
   describe('SYSTEM log codes', () => {
     it.each([
       [

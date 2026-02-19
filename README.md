@@ -58,6 +58,7 @@ Core delivery platform Node.js Frontend Template.
   - [Standard Logging Approach](#standard-logging-approach)
   - [Adding New Log Codes](#adding-new-log-codes)
   - [Development Workflow](#development-workflow)
+- [Print Submitted Application](#print-submitted-application)
 - [Development Tools](#development-tools)
 - [Analytics](#analytics)
 - [Licence](#licence)
@@ -1960,6 +1961,37 @@ Then use it in your YAML with `{{MYCOMPONENT}}` (uppercase).
 
 See [Development Tools](#development-tools) for routes to test and preview confirmation pages during development.
 
+## Print Submitted Application
+
+The application provides a print/download view for submitted grant applications. After a user submits their application, they can access a printer-friendly page that displays all their submitted answers in a clean, printable format.
+
+### Route
+
+**`GET /{slug}/print-submitted-application`**
+
+This route is only accessible when the application has been submitted (i.e. `applicationStatus === SUBMITTED` in the session state). If the application has not been submitted, a `403 Forbidden` response is returned.
+
+### What It Displays
+
+The print view includes:
+
+- **Application reference number** from the submitted state
+- **Applicant details** (contact name, business name, SBI) from the session
+- **All submitted answers** grouped by page, with display-only components (Html, Details, InsetText, etc.) filtered out
+- **A print button** that triggers the browser's print dialog
+- **Contact details** for the Rural Payments Agency
+
+### Print Styles
+
+Print-specific CSS (`src/client/stylesheets/components/_print-application.scss`) hides the header, footer, navigation, phase banner, print button, and contact details when printing, and expands the content to full width.
+
+### Implementation
+
+The feature is implemented across:
+
+- `src/server/print-submitted-application/` - Controller and Nunjucks view
+- `src/server/common/helpers/print-application-service/` - Shared service for building the print view model, answer formatting, and constants
+
 ## Development Tools
 
 The application includes development tools and routes for testing and debugging. These are automatically enabled in development mode and disabled in production.
@@ -1991,6 +2023,14 @@ When running in development mode, the demo confirmation handler:
 - Displays form metadata (title, slug, ID) for debugging
 - Includes error details when configuration issues occur
 - Uses mock data for testing dynamic content insertion
+
+#### Demo Print Application Pages
+
+**Route:** `/dev/demo-print-application/{form-slug}`
+
+Preview the print submitted application page with auto-generated mock answers for any form in the system.
+
+**Example:** `http://localhost:3000/dev/demo-print-application/example-grant-with-auth`
 
 #### Error Page Testing
 
