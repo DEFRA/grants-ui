@@ -63,6 +63,7 @@
   "license": "OGL-UK-3.0",
   "overrides": {
     "tmp": "0.2.4",
+    "minimatch": "^10.2.1",
     "node-jose": {
       "node-forge": "1.3.2"
     }
