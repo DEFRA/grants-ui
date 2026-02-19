@@ -1,7 +1,7 @@
 import { createApiHeadersForLandGrantsBackend } from '~/src/server/common/helpers/auth/backend-auth-helper.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
 import { config } from '~/src/config/config.js'
-import { getConsentTypes } from '~/src/server/land-grants/constants/consent-types.js'
+import { getConsentTypes } from '~/src/server/land-grants/utils/consent-types.js'
 
 function shouldUseV2Endpoint() {
   return config.get('landGrants.enableSSSIFeature') || config.get('landGrants.enableHeferFeature')

@@ -5,7 +5,7 @@ import { stringifyParcel } from '../utils/format-parcel.js'
 import { stateToLandActionsMapper } from '../mappers/state-to-land-grants-mapper.js'
 
 import { config } from '~/src/config/config.js'
-import { getConsentTypes } from '~/src/server/land-grants/constants/consent-types.js'
+import { getConsentTypes } from '~/src/server/land-grants/utils/consent-types.js'
 import {
   calculate,
   parcelsWithActionsAndSize,

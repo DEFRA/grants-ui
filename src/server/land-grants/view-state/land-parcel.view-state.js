@@ -1,5 +1,5 @@
 import { stringifyParcel } from '~/src/server/land-grants/utils/format-parcel.js'
-import { getConsentTypes } from '../constants/consent-types.js'
+import { getConsentTypes } from '../utils/consent-types.js'
 
 /**
  * Manages state operations for land parcels and their actions.
