@@ -24,9 +24,10 @@ export function getFormsWithDetailsPage() {
  * @param {object} options - Configuration options
  * @param {Array} options.confirmationForms - Forms with confirmationContent configured
  * @param {Array} options.detailsForms - Forms with detailsPage configured
+ * @param {Array} options.printApplicationForms - All forms for print application demo
  * @returns {Array} Array of tool configurations
  */
-export function buildToolsConfig({ confirmationForms, detailsForms }) {
+export function buildToolsConfig({ confirmationForms, detailsForms, printApplicationForms }) {
   return [
     {
       name: 'Demo Confirmation Pages',
@@ -45,6 +46,16 @@ export function buildToolsConfig({ confirmationForms, detailsForms }) {
       examples: detailsForms.map((form) => ({
         name: form.title,
         path: `/dev/demo-details/${form.slug}`,
+        slug: form.slug
+      }))
+    },
+    {
+      name: 'Demo Print Application',
+      description: 'Preview the print submitted application page with demo data',
+      pattern: '/dev/demo-print-application/{slug}',
+      examples: printApplicationForms.map((form) => ({
+        name: form.title,
+        path: `/dev/demo-print-application/${form.slug}`,
         slug: form.slug
       }))
     },
@@ -197,7 +208,8 @@ export function generateDevHomePage(tools) {
 export function devHomeHandler(_request, h) {
   const confirmationForms = getFormsWithConfirmationContent()
   const detailsForms = getFormsWithDetailsPage()
-  const tools = buildToolsConfig({ confirmationForms, detailsForms })
+  const printApplicationForms = getAllForms()
+  const tools = buildToolsConfig({ confirmationForms, detailsForms, printApplicationForms })
   const htmlContent = generateDevHomePage(tools)
 
   return h.response(htmlContent).type('text/html')

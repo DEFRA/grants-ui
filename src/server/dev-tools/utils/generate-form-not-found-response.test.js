@@ -1,14 +1,10 @@
 import { vi } from 'vitest'
 import { generateFormNotFoundResponse } from './generate-form-not-found-response.js'
 import { mockHapiResponseToolkit } from '~/src/__mocks__/hapi-mocks.js'
-
-const mockFormCache = [
-  { slug: 'example-grant', title: 'Example Grant' },
-  { slug: 'flying-pigs', title: 'Flying Pigs Grant' }
-]
+import { MOCK_FORM_CACHE_SUBSET } from '~/src/__test-fixtures__/mock-forms-cache.js'
 
 vi.mock('../../common/forms/services/form.js', () => ({
-  getFormsCache: vi.fn(() => mockFormCache)
+  getFormsCache: vi.fn(() => MOCK_FORM_CACHE_SUBSET)
 }))
 
 describe('generate-form-not-found-response', () => {
@@ -20,25 +16,14 @@ describe('generate-form-not-found-response', () => {
   })
 
   test('should generate error response with form list', () => {
-    const mockResponse = {
-      type: vi.fn().mockReturnValue({ code: vi.fn().mockReturnValue('final-response') })
-    }
-    mockH.response.mockReturnValue(mockResponse)
-
-    const result = generateFormNotFoundResponse('invalid-slug', mockH)
+    generateFormNotFoundResponse('invalid-slug', mockH)
 
     expect(mockH.response).toHaveBeenCalledWith(expect.stringContaining('Form slug "invalid-slug" not found'))
-    expect(mockResponse.type).toHaveBeenCalledWith('text/html')
-    expect(mockResponse.type().code).toHaveBeenCalledWith(404)
-    expect(result).toBe('final-response')
+    expect(mockH.type).toHaveBeenCalledWith('text/html')
+    expect(mockH.code).toHaveBeenCalledWith(404)
   })
 
   test('should include list of available forms', () => {
-    const mockResponse = {
-      type: vi.fn().mockReturnValue({ code: vi.fn().mockReturnValue('final-response') })
-    }
-    mockH.response.mockReturnValue(mockResponse)
-
     generateFormNotFoundResponse('invalid-slug', mockH)
 
     const htmlContent = mockH.response.mock.calls[0][0]
@@ -52,11 +37,6 @@ describe('generate-form-not-found-response', () => {
       title: 'Custom Title',
       errorMessage: 'Custom Error'
     }
-
-    const mockResponse = {
-      type: vi.fn().mockReturnValue({ code: vi.fn().mockReturnValue('final-response') })
-    }
-    mockH.response.mockReturnValue(mockResponse)
 
     generateFormNotFoundResponse('invalid-slug', mockH, options)
 

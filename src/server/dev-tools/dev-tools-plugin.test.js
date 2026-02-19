@@ -5,7 +5,8 @@ vi.mock('./handlers/index.js', () => ({
   devHomeHandler: vi.fn().mockReturnValue('dev-home-response'),
   demoConfirmationHandler: vi.fn().mockReturnValue('demo-confirmation-response'),
   demoDetailsHandler: vi.fn().mockReturnValue('demo-details-response'),
-  demoDetailsPostHandler: vi.fn().mockReturnValue('demo-details-post-response')
+  demoDetailsPostHandler: vi.fn().mockReturnValue('demo-details-post-response'),
+  demoPrintApplicationHandler: vi.fn().mockReturnValue('demo-print-application-response')
 }))
 
 describe('dev-tools index', () => {
@@ -14,6 +15,7 @@ describe('dev-tools index', () => {
   let mockDemoConfirmationHandler
   let mockDemoDetailsHandler
   let mockDemoDetailsPostHandler
+  let mockDemoPrintApplicationHandler
 
   beforeEach(async () => {
     vi.clearAllMocks()
@@ -23,6 +25,7 @@ describe('dev-tools index', () => {
     mockDemoConfirmationHandler = handlers.demoConfirmationHandler
     mockDemoDetailsHandler = handlers.demoDetailsHandler
     mockDemoDetailsPostHandler = handlers.demoDetailsPostHandler
+    mockDemoPrintApplicationHandler = handlers.demoPrintApplicationHandler
 
     server = {
       route: vi.fn()
@@ -54,6 +57,12 @@ describe('dev-tools index', () => {
         method: 'POST',
         path: '/dev/demo-details/{slug}',
         handler: () => mockDemoDetailsPostHandler
+      },
+      {
+        name: 'demo print application route',
+        method: 'GET',
+        path: '/dev/demo-print-application/{slug}',
+        handler: () => mockDemoPrintApplicationHandler
       }
     ]
 
