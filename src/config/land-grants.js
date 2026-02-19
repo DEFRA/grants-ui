@@ -10,7 +10,6 @@ import 'dotenv/config'
  * @property {string} authToken
  * @property {string} encryptionKey
  * @property {boolean} enableSSSIFeature
- * @property {boolean} enableDetailedFarmDetails
  */
 
 const landGrants = convict({
@@ -44,12 +43,6 @@ const landGrants = convict({
     format: Boolean,
     default: false,
     env: 'ENABLE_LAND_GRANT_SSSI_20260122'
-  },
-  enableDetailedFarmDetails: {
-    doc: 'Enable detailed farm details feature from 09/02/2026',
-    format: Boolean,
-    default: false,
-    env: 'ENABLE_DETAILED_FARM_DETAILS_20260209'
   }
 })
 
