@@ -377,6 +377,10 @@ describe('Land Grants client', () => {
   })
 
   describe('validate', () => {
+    beforeEach(() => {
+      vi.mocked(config.get).mockReturnValue(false)
+    })
+
     it('should trigger a POST request to /application/validate', async () => {
       const mockResponse = { id: 1, status: 'success' }
       mockFetch.mockResolvedValueOnce({
@@ -399,6 +403,10 @@ describe('Land Grants client', () => {
   })
 
   describe('parcelsWithFields', () => {
+    beforeEach(() => {
+      vi.mocked(config.get).mockReturnValue(false)
+    })
+
     it('should trigger a POST request to /parcels with specific fields', async () => {
       const mockResponse = { id: 1, status: 'success' }
       const fields = ['specific-field']

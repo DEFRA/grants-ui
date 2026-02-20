@@ -10,7 +10,7 @@ import 'dotenv/config'
  * @property {string} authToken
  * @property {string} encryptionKey
  * @property {boolean} enableSSSIFeature
- * @property {boolean} enableDetailedFarmDetails
+ * @property {boolean} enableHeferFeature
  */
 
 const landGrants = convict({
@@ -45,11 +45,11 @@ const landGrants = convict({
     default: false,
     env: 'ENABLE_LAND_GRANT_SSSI_20260122'
   },
-  enableDetailedFarmDetails: {
-    doc: 'Enable detailed farm details feature from 09/02/2026',
+  enableHeferFeature: {
+    doc: 'Enable Hefer feature from 19/02/2026',
     format: Boolean,
     default: false,
-    env: 'ENABLE_DETAILED_FARM_DETAILS_20260209'
+    env: 'ENABLE_LAND_GRANT_HEFER_20260219'
   }
 })
 

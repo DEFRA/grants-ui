@@ -10,6 +10,7 @@ services:
       LAND_GRANTS_API_URL: http://land-grants-backend:3009
 
   land-grants-backend-postgres:
+    platform: linux/amd64
     image: defradigital/land-grants-postgres-seeded:latest
     pull_policy: always
     environment:
@@ -17,7 +18,7 @@ services:
     ports:
       - 5432:5432
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}" ]
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
       interval: 5s
       timeout: 3s
       retries: 10
@@ -27,6 +28,7 @@ services:
       - grants-ui-net
 
   land-grants-backend:
+    platform: linux/amd64
     image: defradigital/land-grants-api:latest
     pull_policy: always
     environment:
