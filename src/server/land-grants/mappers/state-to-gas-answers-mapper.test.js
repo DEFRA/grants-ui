@@ -4,6 +4,11 @@ import {
   validateSubmissionAnswers
 } from '~/src/server/common/forms/services/submission.js'
 import { stateToLandGrantsGasAnswers } from '~/src/server/land-grants/mappers/state-to-gas-answers-mapper.js'
+import { shouldUseV2Endpoint } from '~/src/server/land-grants/services/land-grants.client.js'
+
+vi.mock('~/src/server/land-grants/services/land-grants.client.js', () => ({
+  shouldUseV2Endpoint: vi.fn()
+}))
 
 vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
   log: vi.fn()
@@ -1144,6 +1149,7 @@ describe('stateToLandGrantsGasAnswers', () => {
 describe('stateToLandGrantsGasAnswers - rulesCalculations from validationResult', () => {
   afterEach(() => {
     config.set('landGrants.enableSSSIFeature', false)
+    shouldUseV2Endpoint.mockReturnValue(false)
   })
 
   it('should build rulesCalculations from validationResult', () => {
@@ -1173,6 +1179,7 @@ describe('stateToLandGrantsGasAnswers - rulesCalculations from validationResult'
 
   it('should extract caveats with metadata when enableSSSIFeature is true', () => {
     config.set('landGrants.enableSSSIFeature', true)
+    shouldUseV2Endpoint.mockReturnValue(true)
 
     const input = {
       payment,

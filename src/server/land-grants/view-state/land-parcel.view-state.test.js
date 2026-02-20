@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import {
   buildNewState,
   addActionsToExistingState,
@@ -9,6 +9,27 @@ import {
   findActionInfoFromState,
   getRequiredConsents
 } from './land-parcel.view-state.js'
+
+const configState = vi.hoisted(() => {
+  const values = new Map()
+  return {
+    set(key, value) {
+      values.set(key, value)
+    },
+    reset() {
+      values.clear()
+    },
+    get(key) {
+      return values.get(key) ?? false
+    }
+  }
+})
+
+vi.mock('~/src/config/config.js', () => ({
+  config: {
+    get: (key) => configState.get(key)
+  }
+}))
 
 describe('land-parcel-state.manager', () => {
   describe('buildNewState', () => {
@@ -94,12 +115,14 @@ describe('land-parcel-state.manager', () => {
       const result = addActionsToExistingState(state, payload, 'landAction_', groupedActions, parcel)
 
       expect(result.landParcels['AB1234-5678'].actionsObj).toEqual({
-        SAM1: { description: 'Action 1', sssiConsentRequired: undefined, value: '10', unit: 'ha' },
-        SAM2: { description: 'Action 2', sssiConsentRequired: undefined, value: '5', unit: 'ha' }
+        SAM1: { description: 'Action 1', consents: [], value: '10', unit: 'ha' },
+        SAM2: { description: 'Action 2', consents: [], value: '5', unit: 'ha' }
       })
     })
 
-    it('should store sssiConsentRequired when action has SSSI consent requirement', () => {
+    it('should populate consents array when action has SSSI consent requirement', () => {
+      configState.set('landGrants.enableSSSIFeature', true)
+
       const actionsWithSSSI = [
         {
           name: 'Moorland Group',
@@ -121,13 +144,15 @@ describe('land-parcel-state.manager', () => {
 
       expect(result.landParcels['AB1234-5678'].actionsObj.CMOR1).toEqual({
         description: 'Moorland Assessment',
-        sssiConsentRequired: true,
+        consents: ['sssi'],
         value: '10',
         unit: 'ha'
       })
+
+      configState.reset()
     })
 
-    it('should store sssiConsentRequired as false when action does not require SSSI consent', () => {
+    it('should have empty consents array when action does not require any consent', () => {
       const actionsWithoutSSSI = [
         {
           name: 'Group 1',
@@ -149,7 +174,7 @@ describe('land-parcel-state.manager', () => {
 
       expect(result.landParcels['AB1234-5678'].actionsObj.SAM1).toEqual({
         description: 'Action 1',
-        sssiConsentRequired: false,
+        consents: [],
         value: '10',
         unit: 'ha'
       })
@@ -180,7 +205,7 @@ describe('land-parcel-state.manager', () => {
 
       expect(result.landParcels['AB1234-5678'].actionsObj.SAM3).toEqual({
         description: 'Action 3',
-        sssiConsentRequired: undefined,
+        consents: [],
         value: '',
         unit: ''
       })
@@ -438,7 +463,7 @@ describe('land-parcel-state.manager', () => {
         landParcels: {
           'AB1234-5678': {
             actionsObj: {
-              SAM1: { description: 'Action 1', sssiConsentRequired: true }
+              SAM1: { description: 'Action 1', consents: ['sssi'] }
             }
           }
         }
@@ -450,12 +475,28 @@ describe('land-parcel-state.manager', () => {
       expect(result.length).toBeGreaterThanOrEqual(1)
     })
 
+    it('should return array with hefer when HEFER is required', () => {
+      const state = {
+        landParcels: {
+          'AB1234-5678': {
+            actionsObj: {
+              SAM1: { description: 'Action 1', consents: ['hefer'] }
+            }
+          }
+        }
+      }
+
+      const result = getRequiredConsents(state)
+
+      expect(result).toContain('hefer')
+    })
+
     it('should return empty array when no consent checks pass', () => {
       const state = {
         landParcels: {
           'AB1234-5678': {
             actionsObj: {
-              SAM1: { description: 'Action 1', sssiConsentRequired: false }
+              SAM1: { description: 'Action 1', consents: [] }
             }
           }
         }
@@ -466,12 +507,13 @@ describe('land-parcel-state.manager', () => {
       expect(result).toEqual([])
     })
 
-    it('should support multiple consent types in the future', () => {
+    it('should return multiple consent types when both are required', () => {
       const state = {
         landParcels: {
           'AB1234-5678': {
             actionsObj: {
-              SAM1: { description: 'Action 1', sssiConsentRequired: true }
+              SAM1: { description: 'Action 1', consents: ['sssi'] },
+              SAM2: { description: 'Action 2', consents: ['hefer'] }
             }
           }
         }
@@ -479,8 +521,7 @@ describe('land-parcel-state.manager', () => {
 
       const result = getRequiredConsents(state)
 
-      expect(Array.isArray(result)).toBe(true)
-      expect(result).toContain('sssi')
+      expect(result).toEqual(['sssi', 'hefer'])
     })
   })
 })

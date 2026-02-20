@@ -5,10 +5,12 @@ import { stringifyParcel } from '../utils/format-parcel.js'
 import { stateToLandActionsMapper } from '../mappers/state-to-land-grants-mapper.js'
 
 import { config } from '~/src/config/config.js'
+import { getConsentTypes } from '~/src/server/land-grants/utils/consent-types.js'
 import {
   calculate,
   parcelsWithActionsAndSize,
   parcelsWithSize,
+  shouldUseV2Endpoint,
   validate
 } from '~/src/server/land-grants/services/land-grants.client.js'
 import { formatAreaUnit } from '~/src/server/land-grants/utils/format-area-unit.js'
@@ -61,9 +63,9 @@ const createGroup = (name, groupActions) => ({
     value: Math.max(...groupActions.map((item) => item.availableArea.value))
   },
   actions: groupActions,
-  ...(config.get('landGrants.enableSSSIFeature')
-    ? { sssiConsentRequired: groupActions.some((a) => a.sssiConsentRequired) }
-    : {})
+  consents: getConsentTypes()
+    .filter((ct) => groupActions.some((a) => a[ct.apiField]))
+    .map((ct) => ct.key)
 })
 
 /**
@@ -175,7 +177,7 @@ export async function validateApplication(data) {
 
   const result = await validate(payload, LAND_GRANTS_API_URL)
 
-  if (config.get('landGrants.enableSSSIFeature')) {
+  if (shouldUseV2Endpoint()) {
     result.errorMessages = buildErrorMessagesFromV2Response(result.actions)
   }
 
@@ -210,6 +212,6 @@ function buildErrorMessagesFromV2Response(actions = []) {
 }
 
 /**
- * @import { ActionOption, LandActions, ActionGroup, Parcel, ValidateApplicationResponse, ValidationAction, ErrorItem, Size } from '~/src/server/land-grants/types/land-grants.client.d.js'
+ * @import { ActionOption, ActionGroup, Parcel, ValidateApplicationResponse, ValidationAction, ErrorItem, Size } from '~/src/server/land-grants/types/land-grants.client.d.js'
  * @import { PaymentCalculation } from '~/src/server/land-grants/types/payment.d.js'
  */
