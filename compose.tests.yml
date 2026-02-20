@@ -17,7 +17,7 @@ services:
       MOCKSERVER_HOST: mockserver
       MOCKSERVER_PORT: 1080
     volumes:
-      - ../nginx/certs:/etc/ssl/certs:ro
+      - ./nginx/certs:/etc/ssl/certs:ro
     command: ['npm', 'run', 'test:ci']
     networks:
       - grants-ui-net
@@ -31,11 +31,32 @@ services:
     environment:
       NODE_EXTRA_CA_CERTS: /etc/ssl/certs/nginx.crt
       BASE_URL: https://grants-ui-proxy:4000
+      BASE_BACKEND_URL: https://grants-ui-proxy:4001
+      GRANTS_UI_BACKEND_AUTH_TOKEN: ${GRANTS_UI_BACKEND_AUTH_TOKEN:-auth_token}
+      GRANTS_UI_BACKEND_ENCRYPTION_KEY: ${GRANTS_UI_BACKEND_ENCRYPTION_KEY:-encryption_key}
+      APPLICATION_LOCK_TOKEN_SECRET: ${APPLICATION_LOCK_TOKEN_SECRET:-dev-lock-secret}
       DEFRA_ID_USER_PASSWORD: x
       MOCKSERVER_HOST: mockserver
       MOCKSERVER_PORT: 1080
     volumes:
-      - ../nginx/certs:/etc/ssl/certs:ro
+      - ./nginx/certs:/etc/ssl/certs:ro
+    command: ['npm', 'run', 'test:ci']
+    networks:
+      - grants-ui-net
+
+  grants-ui-performance-tests:
+    image: defradigital/grants-ui-performance-tests
+    pull_policy: always
+    environment:
+      NODE_EXTRA_CA_CERTS: /etc/ssl/certs/nginx.crt
+      HOST_URL: https://grants-ui-proxy:4000
+      DURATION_SECONDS: 60
+      RAMPUP_SECONDS: 15
+      VU_COUNT: 10
+      P95_THRESHOLD_MS: ${P95_THRESHOLD_MS:-400}
+    volumes:
+      - ./nginx/certs:/etc/ssl/certs:ro
+      - ./performance-test-users.csv:/home/k6/scenarios/users.csv:ro
     command: ['npm', 'run', 'test:ci']
     networks:
       - grants-ui-net

@@ -71,23 +71,43 @@ function buildSections(pages, answers) {
  * @returns {FormDefinition} The same definition, with list items resolved on components
  */
 export function enrichDefinitionWithListItems(definition) {
+  const listsById = buildListsMap(definition.lists || [])
+
+  for (const page of definition.pages || []) {
+    resolveComponentLists(page.components || [], listsById)
+  }
+
+  return definition
+}
+
+/**
+ * Builds a Map of list ID → items from the definition's lists array.
+ * @param {{ id?: string, items?: object[] }[]} lists
+ * @returns {Map<string, object[]>}
+ */
+function buildListsMap(lists) {
   const listsById = new Map()
 
-  for (const list of definition.lists || []) {
+  for (const list of lists) {
     if (list.id) {
       listsById.set(list.id, list.items || [])
     }
   }
 
-  for (const page of definition.pages || []) {
-    for (const component of page.components || []) {
-      if (component.list && typeof component.list === 'string' && listsById.has(component.list)) {
-        component.items = listsById.get(component.list)
-      }
+  return listsById
+}
+
+/**
+ * Resolves list UUID references on components to actual items arrays.
+ * @param {FormComponent[]} components
+ * @param {Map<string, object[]>} listsById
+ */
+function resolveComponentLists(components, listsById) {
+  for (const component of components) {
+    if (typeof component.list === 'string' && listsById.has(component.list)) {
+      component.items = listsById.get(component.list)
     }
   }
-
-  return definition
 }
 
 /**

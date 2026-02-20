@@ -1273,6 +1273,8 @@ npm run
 - **`test:unit`** - Run unit tests only (isolated from integration/contracts)
 - **`test:contracts`** - Run Pact contract tests
 - **`test:acceptance`** - Execute end-to-end journey tests via shell script
+- **`test:performance`** - Execute performance tests via shell script
+- **`test:all`** - Execute both acceptance and performance tests via shell script
 - **`test:watch`** - Run Vitest in interactive watch mode
 - **`test:stryker`** - Run Vitest specifically for Stryker mutation testing
 - **`start`** - Start the production server (requires `npm run build` first)
@@ -1790,27 +1792,31 @@ All logging components include comprehensive test coverage:
 - **Integration Tests**: Test logging in request/response cycles
 - **Mock Testing**: Mock logger for testing without actual log output
 
-### Acceptance Testing
+### Acceptance and Performance Testing
 
-Acceptance Tests for the grants-ui platform will be developed by multiple teams for their own grant journeys, each creating their own journey test suite in CDP. These test suites are run as images in the grants-ui CI against a containerised system which includes the frontend, backend, scoring service, Redis and Mongo, with stubs for Defra ID and GAS.
+Acceptance and performance tests are run against a containerised system with stubs for Defra ID and GAS. The system is stood up by `docker-compose-smoke-test.sh`, which accepts test hooks to run after the system is healthy.
 
 #### Compose files
 
-There is an override file `compose.ci.yml` which is used when running acceptance tests. This stands the system up at `https://grants-ui-proxy:4000` and the tests are then run in their own containers on the same Docker network.
+There is an override file `compose.ci.yml` which stands the system up at `https://grants-ui-proxy:4000`. Test suites are run in their own containers on the same Docker network.
 
-#### Changes to Journey Test Repositories
+All test suite services (acceptance tests, journey tests, performance tests) are defined in `compose.tests.yml` at the root of the repository.
 
-To support this concept journey test repositories must:
+#### Running tests locally
 
-- Publish an image to Docker Hub as per the services
-- Allow a command to be passed to the entrypoint script
-- Support an npm `run test:ci` option
+| Command                            | What it runs                            |
+| ---------------------------------- | --------------------------------------- |
+| `./tools/run-acceptance-tests.sh`  | Acceptance tests only                   |
+| `./tools/run-performance-tests.sh` | Performance tests only                  |
+| `./tools/run-all-tests.sh`         | Acceptance tests then performance tests |
 
-See `grants-ui-acceptance-tests` for an example.
+Or via npm:
 
-#### Running Acceptance Tests locally
-
-To run the full set of acceptance tests locally the developer can run script `./tools/run-acceptance-tests.sh`. Each acceptance test suite will have a compose file in `/acceptance` and a call in `run-acceptance-tests.sh`, and will be run sequentially against the containerised system.
+```bash
+npm run test:acceptance
+npm run test:performance
+npm run test:all
+```
 
 #### Running individual Acceptance Tests
 
@@ -1824,32 +1830,39 @@ It is possible to run acceptance tests at individual feature file level by passi
 
 The acceptance tests support parallel execution through the `SE_NODE_MAX_SESSIONS` environment variable, which controls the Selenium node's maximum concurrent sessions. The default value is 1 session.
 
-**Configuration:**
-
-The `SE_NODE_MAX_SESSIONS` variable can be set in your `.env` file:
+The `SE_NODE_MAX_SESSIONS` variable can be set in your `.env` file or passed directly:
 
 ```bash
-# Default value is 1
-SE_NODE_MAX_SESSIONS=1
-
-# To run with more parallelization
-SE_NODE_MAX_SESSIONS=2
-```
-
-**Running Tests with SE_NODE_MAX_SESSIONS:**
-
-You can also set the `SE_NODE_MAX_SESSIONS` environment variable directly when running acceptance tests:
-
-```bash
-# Run all acceptance tests with 2 parallel sessions
-SE_NODE_MAX_SESSIONS=2 ./tools/run-acceptance-tests.sh
+SE_NODE_MAX_SESSIONS=4 ./tools/run-acceptance-tests.sh
 ```
 
 **Note:** A higher value may not reduce test execution time beyond a certain point and can introduce more instability into your Selenium node. Beyond this approach a Selenium grid of hub and multiple nodes becomes necessary, but which testing shows uses much more resource for only small gains in our usage.
 
+#### Changes to Journey Test Repositories
+
+To support this concept journey test repositories must:
+
+- Publish an image to Docker Hub as per the services
+- Allow a command to be passed to the entrypoint script
+- Support an npm `run test:ci` option
+
+See `grants-ui-acceptance-tests` for an example.
+
 #### CI
 
 The `run-acceptance-tests.sh` script is run as part of the GitHub PR workflow for grants-ui.
+
+### Performance Testing
+
+After the acceptance tests complete in CI, a short k6 performance test runs for 1 minute against the same warm, dockerised system. Its purpose is to catch response time regressions introduced by code changes.
+
+The test checks the **95th percentile response time** (`p(95)`) across all journey pages. If the threshold is breached, the CI step fails.
+
+The threshold can be adjusted via the `P95_THRESHOLD_MS` environment variable (default: `400`ms). To experiment locally with a different threshold:
+
+```bash
+P95_THRESHOLD_MS=500 ./tools/run-performance-tests.sh
+```
 
 ### Monitoring and Observability
 
