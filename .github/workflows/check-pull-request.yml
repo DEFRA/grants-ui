@@ -59,7 +59,7 @@ jobs:
           path: coverage
 
   docker:
-    name: Docker Build and Acceptance Tests
+    name: Docker Build and Tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -67,8 +67,8 @@ jobs:
 
       - name: Build grants-ui and run Acceptance Tests
         run: |
-          chmod +x ./tools/run-acceptance-tests.sh
-          ./tools/run-acceptance-tests.sh
+          chmod +x ./tools/run-all-tests.sh
+          ./tools/run-all-tests.sh
 
   security:
     name: Snyk Security Scan

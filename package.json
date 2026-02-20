@@ -49,6 +49,8 @@
     "test:stryker": "vitest run --config vitest.stryker.config.js",
     "test:contracts": "vitest run src/contracts",
     "test:acceptance": "./tools/run-acceptance-tests.sh",
+    "test:performance": "./tools/run-performance-tests.sh",
+    "test:all": "./tools/run-all-tests.sh",
     "test:watch": "vitest --watch",
     "server:watch": "nodemon --ext js,mjs,json,njk,html --exec tsx --enable-source-maps ./src",
     "server:debug": "nodemon --ext js,mjs,json,njk,html,yaml --exec tsx --enable-source-maps --inspect=0.0.0.0:9229 ./src",

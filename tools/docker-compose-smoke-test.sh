@@ -78,9 +78,12 @@ docker compose ps
 
 if [ -n "${ACCEPTANCE_TESTS_HOOK:-}" ]; then
   echo "Running Acceptance Tests..."
-  cd acceptance
   eval "${ACCEPTANCE_TESTS_HOOK}"
-  cd ..
+fi
+
+if [ -n "${PERFORMANCE_TESTS_HOOK:-}" ]; then
+  echo "Running Performance Tests..."
+  eval "${PERFORMANCE_TESTS_HOOK}"
 fi
 
 eval "${COMPOSE_COMMAND} down"
