@@ -11,13 +11,28 @@ const logger = pino(loggerOptions)
  * @param {Function} logCode.messageFunc - A function that creates an interpolated message string
  * @param {object} [logCode.error] - An error object (optional)
  * @param {object} messageOptions - Values for message interpolation
- * @param {object} [request] - Hapi request object (optional)
- * @throws {Error} If log parameters are invalid.
+ * @param {import('@hapi/hapi').Request} [request] - Hapi request object (optional)
  */
 const log = (logCode, messageOptions, request) => {
   const message = logCode.messageFunc(messageOptions)
   const errorContext = logCode.error ? { err: logCode.error } : undefined
   getLoggerOfType(logCode.level, request)(errorContext, message)
+}
+
+/**
+ * Logs an event with the specified level and context.
+ * @param {object} logCode - Logging options.
+ * @param {import('./log-codes-definition.js').LogTypes.LogLevel} logCode.level - The log level.
+ * @param {Function} logCode.messageFunc - A function that creates an interpolated message string
+ * @param {object} [logCode.error] - An error object (optional)
+ * @param {object} messageOptions - Values for message interpolation
+ * @param {import('@hapi/hapi').Request} [request] - Hapi request object (optional)
+ */
+const debug = (logCode, messageOptions, request) => {
+  const message = logCode.messageFunc(messageOptions)
+  const err = logCode.error
+  const errorContext = err ? { err } : undefined
+  getLoggerOfType('debug', request)(errorContext, message)
 }
 
 /**
@@ -27,9 +42,8 @@ const log = (logCode, messageOptions, request) => {
  * @returns {(errorContext: object | undefined, message: string) => void} Logger function.
  */
 const getLoggerOfType = (level, request) => {
-  // hapi-pino attaches a pino logger instance to request.logger
   const requestLogger = request?.logger || logger
   return (errorContext, message) => requestLogger[level](errorContext || {}, message)
 }
 
-export { log, logger, LogCodes }
+export { log, debug, logger, LogCodes }

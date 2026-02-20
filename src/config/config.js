@@ -275,12 +275,13 @@ const convictConfig = {
   }
 }
 
+/** @type {SchemaObj<any>} */
 export const config = convict({
-  ...convictConfig /** @type {SchemaObj<typeof convictConfig>} */,
+  ...convictConfig,
   ...{
-    defraId: /** @type {Schema<DefraIdConfig>} */ (defraId.getProperties()),
-    landGrants: /** @type {Schema<LandGrantsConfig>} */ (landGrants.getProperties()),
-    agreements: /** @type {Schema<AgreementsConfig>} */ (agreements.getProperties())
+    defraId: defraId.getProperties(),
+    landGrants: landGrants.getProperties(),
+    agreements: agreements.getProperties()
   }
 })
 
@@ -289,8 +290,5 @@ config.validate({ allowed: 'strict' })
 validateBackendAuthConfig(config)
 
 /**
- * @import { Schema, SchemaObj } from 'convict'
- * @import { LandGrantsConfig } from '~/src/config/land-grants.js'
- * @import { AgreementsConfig } from '~/src/config/agreements.js'
- * @import { DefraIdConfig } from '~/src/config/defra-id.js'
+ * @import { SchemaObj } from 'convict'
  */
