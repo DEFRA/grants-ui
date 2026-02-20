@@ -1,4 +1,4 @@
-import { config } from '~/src/config/config.js'
+import { shouldUseV2Endpoint } from '../services/land-grants.client.js'
 
 /**
  * Creates an object with unit and quantity if they exist
@@ -222,7 +222,6 @@ function mapCaveatsForValidationResult(validationResult) {
  */
 function mapRulesCalculations(validationResult) {
   const { id, message, valid } = validationResult
-  const enableSSSIFeature = config.get('landGrants.enableSSSIFeature')
 
   const rulesCalculations = {
     id,
@@ -231,7 +230,7 @@ function mapRulesCalculations(validationResult) {
     date: new Date().toISOString()
   }
 
-  if (enableSSSIFeature) {
+  if (shouldUseV2Endpoint()) {
     const caveats = mapCaveatsForValidationResult(validationResult)
     if (caveats.length > 0) {
       rulesCalculations.caveats = caveats
