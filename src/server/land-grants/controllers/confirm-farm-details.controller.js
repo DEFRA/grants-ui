@@ -1,17 +1,7 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { fetchBusinessAndCustomerInformation } from '../../common/services/consolidated-view/consolidated-view.service.js'
-import {
-  createAddressRow,
-  createBusinessNameRow,
-  createBusinessRows,
-  createContactDetailsRow,
-  createContactRows,
-  createCustomerNameRow,
-  createPersonRows,
-  createSbiRow
-} from '../../common/helpers/create-rows.js'
+import { createBusinessRows, createContactRows, createPersonRows } from '../../common/helpers/create-rows.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
-import { config } from '~/src/config/config.js'
 
 export default class ConfirmFarmDetailsController extends QuestionPageController {
   viewName = 'confirm-farm-details'
@@ -77,7 +67,6 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
   async buildDetailsForView(request) {
     const data = await fetchBusinessAndCustomerInformation(request)
     const sbi = request.auth?.credentials?.sbi
-    const enableDetailedFarmDetails = /** @type {object} */ (config).get('landGrants.enableDetailedFarmDetails')
 
     const missingFields = this.getMissingFarmDataFields(data)
     if (missingFields.length > 0) {
@@ -91,9 +80,7 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
 
     return {
       hasMissingFields,
-      ...(enableDetailedFarmDetails
-        ? this.buildDetailedFarmDetails(request, data)
-        : this.buildLegacyFarmDetails(request, data))
+      ...this.buildDetailedFarmDetails(request, data)
     }
   }
 
@@ -114,28 +101,6 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
       business,
       contact
     }
-  }
-
-  /**
-   * Build legacy farm details with flat rows
-   * @param {AnyFormRequest} request
-   * @param {object} data
-   * @returns {object}
-   */
-  buildLegacyFarmDetails(request, data) {
-    const rows = [
-      createCustomerNameRow(data.customer?.name),
-      createBusinessNameRow(data.business?.name),
-      createAddressRow(data.business?.address),
-      createSbiRow(request.auth?.credentials?.sbi),
-      createContactDetailsRow(
-        data.business?.landlinePhoneNumber,
-        data.business?.mobilePhoneNumber,
-        data.business?.email
-      )
-    ].filter(Boolean)
-
-    return { rows }
   }
 
   /**
