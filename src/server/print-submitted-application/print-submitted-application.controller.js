@@ -57,10 +57,15 @@ async function buildPrintResponse({ form, state, slug }, request, h) {
 
   enrichDefinitionWithListItems(definition)
 
+  const applicant = state.applicant || {}
+  const customerName = applicant.customer?.name
   const sessionData = {
-    businessName: /** @type {string | undefined} */ (request.yar?.get('businessName')),
-    sbi: /** @type {string | undefined} */ (request.yar?.get('sbi')),
-    contactName: /** @type {string | undefined} */ (request.yar?.get('contactName'))
+    contactName: customerName
+      ? [customerName.title, customerName.first, customerName.middle, customerName.last].filter(Boolean).join(' ') ||
+        undefined
+      : undefined,
+    businessName: applicant.business?.name,
+    sbi: /** @type {string | undefined} */ (request.auth?.credentials?.sbi)
   }
 
   const viewModel = buildPrintViewModel({

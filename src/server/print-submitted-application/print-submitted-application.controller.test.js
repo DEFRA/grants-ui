@@ -25,7 +25,11 @@ const mockState = {
   applicationStatus: ApplicationStatus.SUBMITTED,
   field1: 'Some answer',
   $$__referenceNumber: 'REF-123',
-  submittedAt: '2025-01-15T10:00:00.000Z'
+  submittedAt: '2025-01-15T10:00:00.000Z',
+  applicant: {
+    business: { name: 'Test Business' },
+    customer: { name: { first: 'Test', last: 'User' } }
+  }
 }
 
 describe('print-submitted-application.controller', () => {
@@ -46,16 +50,7 @@ describe('print-submitted-application.controller', () => {
 
     mockRequest = mockHapiRequest({
       params: { slug: 'test-form' },
-      yar: {
-        get: vi.fn((key) => {
-          const data = {
-            businessName: 'Test Business',
-            sbi: '123456789',
-            contactName: 'Test User'
-          }
-          return data[key]
-        })
-      }
+      auth: { credentials: { sbi: '123456789' } }
     })
     mockH = mockHapiResponseToolkit()
 
@@ -121,9 +116,9 @@ describe('print-submitted-application.controller', () => {
       submittedAt: '2025-01-15T10:00:00.000Z',
       slug: 'test-form',
       sessionData: {
+        contactName: 'Test User',
         businessName: 'Test Business',
-        sbi: '123456789',
-        contactName: 'Test User'
+        sbi: '123456789'
       }
     })
     expect(mockH.view).toHaveBeenCalledWith('print-submitted-application', { test: 'viewModel' })
@@ -176,17 +171,18 @@ describe('print-submitted-application.controller', () => {
     )
   })
 
-  test('should handle missing yar session gracefully', async () => {
-    mockRequest.yar = undefined
+  test('should handle missing applicant in state gracefully', async () => {
+    const { applicant, ...stateWithoutApplicant } = mockState
+    mockGetState.mockResolvedValue(stateWithoutApplicant)
 
     await handler(mockRequest, mockH)
 
     expect(buildPrintViewModel).toHaveBeenCalledWith(
       expect.objectContaining({
         sessionData: {
+          contactName: undefined,
           businessName: undefined,
-          sbi: undefined,
-          contactName: undefined
+          sbi: '123456789'
         }
       })
     )
