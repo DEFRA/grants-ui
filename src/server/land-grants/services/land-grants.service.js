@@ -212,6 +212,6 @@ function buildErrorMessagesFromV2Response(actions = []) {
 }
 
 /**
- * @import { ActionOption, LandActions, ActionGroup, Parcel, ValidateApplicationResponse, ValidationAction, ErrorItem, Size } from '~/src/server/land-grants/types/land-grants.client.d.js'
+ * @import { ActionOption, ActionGroup, Parcel, ValidateApplicationResponse, ValidationAction, ErrorItem, Size } from '~/src/server/land-grants/types/land-grants.client.d.js'
  * @import { PaymentCalculation } from '~/src/server/land-grants/types/payment.d.js'
  */
