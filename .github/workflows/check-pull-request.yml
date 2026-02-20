@@ -59,13 +59,13 @@ jobs:
           path: coverage
 
   docker:
-    name: Docker Build and Tests
+    name: Docker Build and Acceptance and Performance Tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
 
-      - name: Build grants-ui and run Acceptance Tests
+      - name: Build grants-ui and run acceptance and performance tests
         run: |
           chmod +x ./tools/run-all-tests.sh
           ./tools/run-all-tests.sh

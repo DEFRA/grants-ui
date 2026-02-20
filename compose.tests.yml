@@ -1,5 +1,5 @@
 services:
-  gae-acceptance-tests:
+  grants-ui-acceptance-tests:
     image: defradigital/grants-ui-acceptance-tests
     pull_policy: always
     depends_on:
