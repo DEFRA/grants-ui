@@ -1,0 +1,75 @@
+{% extends "layouts/page.njk" %}
+{% set backLink = false %}
+{% from "govuk/components/summary-list/macro.njk" import govukSummaryList %}
+{% from "two-thirds-column/macro.njk" import appTwoThirdsColumn %}
+
+{% set mainClasses = "govuk-main-wrapper--l" %}
+
+{% block content %}
+  {% call appTwoThirdsColumn() %}
+    <h1 class="govuk-heading-l">{{ pageTitle }}</h1>
+    <p class="govuk-body">Application number: <strong>{{ referenceNumber }}</strong></p>
+
+    <h2 class="govuk-heading-m">Application details</h2>
+    {% set detailsRows = [] %}
+    {% if applicantDetails.contactName %}
+      {% set detailsRows = detailsRows.concat([{
+        key: { text: "Name" },
+        value: { text: applicantDetails.contactName }
+      }]) %}
+    {% endif %}
+    {% if applicantDetails.businessName %}
+      {% set detailsRows = detailsRows.concat([{
+        key: { text: "Business name" },
+        value: { text: applicantDetails.businessName }
+      }]) %}
+    {% endif %}
+    {% if applicantDetails.sbi %}
+      {% set detailsRows = detailsRows.concat([{
+        key: { text: "SBI number" },
+        value: { text: applicantDetails.sbi }
+      }]) %}
+    {% endif %}
+
+    {% if detailsRows | length %}
+      {{ govukSummaryList({ rows: detailsRows }) }}
+    {% endif %}
+
+    <h2 class="govuk-heading-m">Submitted answers</h2>
+    {% set sectionRows = [] %}
+    {% for section in sections %}
+      {% for question in section.questions %}
+        {% set sectionRows = sectionRows.concat([{
+          key: { text: question.label, classes: "govuk-!-width-one-half" },
+          value: { text: question.answer, classes: "govuk-!-width-one-half" }
+        }]) %}
+      {% endfor %}
+    {% endfor %}
+    {{ govukSummaryList({ rows: sectionRows }) }}
+
+    <button type="button" class="govuk-button govuk-button--secondary app-print-button" id="print-button">
+      Print this page
+    </button>
+    <script nonce="{{ cspNonce }}">
+      document.getElementById('print-button').addEventListener('click', function() {
+        window.print();
+      });
+    </script>
+
+    <details class="govuk-details" data-module="govuk-details">
+      <summary class="govuk-details__summary">
+        <span class="govuk-details__summary-text">
+          If you have a question
+        </span>
+      </summary>
+      <div class="govuk-details__text">
+        <p class="govuk-body">Contact the Rural Payments Agency if you have a query.</p>
+        <p class="govuk-body">
+          Telephone: 03000 200 301<br>
+          Monday to Friday, 8:30am to 5pm (except bank holidays)</p>
+        <p class="govuk-body"><a class="govuk-link" href="https://www.gov.uk/call-charges" target="_blank">Find out about call charges (opens in new tab)</a></p>
+        <p class="govuk-body">Email: <a class="govuk-link" href="mailto:ruralpayments@defra.gov.uk">ruralpayments@defra.gov.uk</a></p>
+      </div>
+    </details>
+  {% endcall %}
+{% endblock %}

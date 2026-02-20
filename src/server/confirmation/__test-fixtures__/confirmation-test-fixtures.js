@@ -1,3 +1,5 @@
+import { MOCK_FORM_ENTRIES } from '~/src/__test-fixtures__/mock-forms-cache.js'
+
 export const MOCK_FORMS = {
   basic: {
     id: 'test-form-id',
@@ -30,12 +32,7 @@ export const MOCK_CONFIRMATION_CONTENT = {
 }
 
 export const MOCK_FORM_CACHE = [
-  {
-    id: 'form1',
-    slug: 'test-form',
-    title: 'Test Form',
-    metadata: { confirmationContent: MOCK_CONFIRMATION_CONTENT.basic }
-  },
-  { id: 'form2', slug: 'another-form', title: 'Another Form' },
-  { id: 'form3', slug: 'example-grant', title: 'Example Grant' }
+  { ...MOCK_FORM_ENTRIES.testForm, metadata: { confirmationContent: MOCK_CONFIRMATION_CONTENT.basic } },
+  MOCK_FORM_ENTRIES.anotherForm,
+  MOCK_FORM_ENTRIES.exampleGrant
 ]

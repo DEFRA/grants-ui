@@ -38,7 +38,8 @@ export default [
       }
     },
     rules: {
-      ...vitestPlugin.configs.recommended.rules
+      ...vitestPlugin.configs.recommended.rules,
+      'vitest/expect-expect': ['error', { assertFunctionNames: ['expect', 'assertLogCode'] }]
     }
   }
 ]

@@ -1,13 +1,9 @@
 import { vi } from 'vitest'
 import { getAvailableFormSlugs } from './get-available-form-slugs.js'
-
-const mockFormCache = [
-  { id: 'form1', slug: 'example-grant', title: 'Example Grant' },
-  { id: 'form3', slug: 'flying-pigs', title: 'Flying Pigs Grant' }
-]
+import { MOCK_FORM_CACHE_SUBSET } from '~/src/__test-fixtures__/mock-forms-cache.js'
 
 vi.mock('../../common/forms/services/form.js', () => ({
-  getFormsCache: vi.fn(() => mockFormCache)
+  getFormsCache: vi.fn(() => MOCK_FORM_CACHE_SUBSET)
 }))
 
 describe('getAvailableFormSlugs', () => {
