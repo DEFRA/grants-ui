@@ -3,6 +3,40 @@
  * Handles transformation of action objects into checkbox/form items with hints.
  */
 
+const SSSI_CONSENT_LINK =
+  './fptt-information#sec-10-get-all-necessary-regulatory-consents-permissions-and-licences-in-place'
+const HEFER_LINK = './fptt-information#section-5.5'
+
+/**
+ * Returns the consent hint HTML for an action group on the select-actions page.
+ * @param {string[]} consents
+ * @param {number} actionCount - Number of actions in the group
+ * @returns {string|null}
+ */
+function getGroupConsentHint(consents, actionCount) {
+  if (!consents || consents.length === 0) {
+    return null
+  }
+
+  const hasSssi = consents.includes('sssi')
+  const hasHefer = consents.includes('hefer')
+  const actionText = actionCount === 1 ? 'this action' : 'these actions'
+
+  if (hasSssi && hasHefer) {
+    return `<p class="govuk-body">You must have <a class="govuk-link" rel="noreferrer noopener" target="_blank" href="${SSSI_CONSENT_LINK}">SSSI consent (opens in new tab)</a> and get a <a class="govuk-link" rel="noreferrer noopener" target="_blank" href="${HEFER_LINK}">HEFER (opens in new tab)</a> to do ${actionText} on this land parcel.</p>`
+  }
+
+  if (hasSssi) {
+    return `<p class="govuk-body">You must have <a class="govuk-link" rel="noreferrer noopener" target="_blank" href="${SSSI_CONSENT_LINK}">SSSI consent (opens in new tab)</a> to do ${actionText} on this land parcel.</p>`
+  }
+
+  if (hasHefer) {
+    return `<p class="govuk-body">You must get a <a class="govuk-link" rel="noreferrer noopener" target="_blank" href="${HEFER_LINK}">HEFER (opens in new tab)</a> to do ${actionText} on this land parcel.</p>`
+  }
+
+  return null
+}
+
 /**
  * Maps a single action to a checkbox item view model
  * @param {Action} action - The action to map
@@ -34,6 +68,7 @@ export function mapActionToViewModel(action, addedActions) {
 export function mapGroupedActionsToViewModel(groupedActions, addedActions) {
   return groupedActions.map((group) => ({
     ...group,
+    consentHint: getGroupConsentHint(group.consents, group.actions.length),
     actions: group.actions.map((action) => mapActionToViewModel(action, addedActions))
   }))
 }
@@ -52,6 +87,7 @@ export function mapGroupedActionsToViewModel(groupedActions, addedActions) {
 /**
  * @typedef {object} ActionGroup
  * @property {string} name - Group name
+ * @property {Array<string>} consents - Array of consents for the group
  * @property {Array<Action>} actions - Actions in the group
  */
 

@@ -74,11 +74,10 @@
 
             {% for group in groupedActions %}
               {% set hintHTML %}
-                {% if group.sssiConsentRequired == true %}
+                {% if group.consentHint %}
                   {{ govukInsetText({
                     classes: "govuk-!-margin-top-1 govuk-!-margin-bottom-4",
-                    html: '<p class="govuk-body">You must have <a class="govuk-link" rel="noreferrer noopener" target="_blank"
-                                                                  href="./fptt-information#sec-10-get-all-necessary-regulatory-consents-permissions-and-licences-in-place">SSSI consent (opens in new tab)</a> to do these actions on this land parcel.</p>'
+                    html: group.consentHint
                   }) }}
                 {% endif %}
                 <p class="govuk-body">Total available area: {{ group.totalAvailableArea.value }} {{ group.totalAvailableArea.unitFullName }}</p>

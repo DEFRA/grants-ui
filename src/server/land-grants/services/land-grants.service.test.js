@@ -12,6 +12,7 @@ import {
   calculate,
   parcelsWithSize,
   parcelsWithActionsAndSize,
+  shouldUseV2Endpoint,
   validate
 } from '~/src/server/land-grants/services/land-grants.client.js'
 const mockApiEndpoint = 'https://land-grants-api'
@@ -20,6 +21,7 @@ vi.mock('~/src/server/land-grants/services/land-grants.client.js', () => ({
   calculate: vi.fn(),
   parcelsWithSize: vi.fn(),
   parcelsWithActionsAndSize: vi.fn(),
+  shouldUseV2Endpoint: vi.fn(),
   validate: vi.fn()
 }))
 
@@ -199,6 +201,7 @@ describe('land-grants service', () => {
         actions: [
           {
             name: 'Assess moorland',
+            consents: [],
             totalAvailableArea: {
               unit: 'ha',
               unitFullName: 'hectares',
@@ -214,6 +217,7 @@ describe('land-grants service', () => {
           },
           {
             name: 'Livestock grazing on moorland',
+            consents: [],
             totalAvailableArea: {
               unit: 'ha',
               unitFullName: 'hectares',
@@ -280,6 +284,7 @@ describe('land-grants service', () => {
         actions: [
           {
             name: 'Assess moorland',
+            consents: [],
             totalAvailableArea: {
               unit: 'ha',
               unitFullName: 'hectares',
@@ -295,6 +300,7 @@ describe('land-grants service', () => {
           },
           {
             name: '',
+            consents: [],
             totalAvailableArea: {
               unit: 'ha',
               unitFullName: 'hectares',
@@ -428,6 +434,7 @@ describe('land-grants service', () => {
         actions: [
           {
             name: 'Livestock grazing on moorland',
+            consents: [],
             totalAvailableArea: {
               unit: 'ha',
               unitFullName: 'hectares',
@@ -525,7 +532,7 @@ describe('land-grants service', () => {
                 unitFullName: 'hectares',
                 value: 10.5
               },
-              sssiConsentRequired: false,
+              consents: [],
               actions: [
                 {
                   code: 'CMOR1',
@@ -542,7 +549,7 @@ describe('land-grants service', () => {
                 unitFullName: 'hectares',
                 value: 20.75
               },
-              sssiConsentRequired: true,
+              consents: ['sssi'],
               actions: [
                 {
                   code: 'UPL1',
@@ -700,10 +707,12 @@ describe('land-grants service', () => {
     describe('when enableSSSIFeature is true (v2 API response)', () => {
       beforeEach(() => {
         configState.set('landGrants.enableSSSIFeature', true)
+        shouldUseV2Endpoint.mockReturnValue(true)
       })
 
       afterEach(() => {
         configState.set('landGrants.enableSSSIFeature', false)
+        shouldUseV2Endpoint.mockReturnValue(false)
       })
 
       it('should build errorMessages from v2 actions with failed rules', async () => {
