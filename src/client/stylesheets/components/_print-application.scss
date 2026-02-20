@@ -1,27 +1,25 @@
 @media print {
   // stylelint-disable declaration-no-important
-  body:has(.defra-print-application) {
-    .govuk-header,
-    .govuk-service-navigation,
-    .govuk-phase-banner,
-    .defra-account-bar,
-    .govuk-footer,
-    .app-print-button,
-    .govuk-details {
-      display: none !important;
-    }
+  .govuk-header,
+  .govuk-service-navigation,
+  .govuk-phase-banner,
+  .defra-account-bar,
+  .govuk-footer,
+  .app-print-button,
+  .govuk-details {
+    display: none !important;
+  }
 
-    .govuk-width-container {
-      max-width: 100% !important;
-      margin: 0 !important;
-      padding: 0 !important;
-    }
+  .govuk-width-container {
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
 
-    .govuk-grid-column-two-thirds {
-      float: none !important;
-      max-width: 100% !important;
-      width: 100% !important;
-    }
+  .govuk-grid-column-two-thirds {
+    float: none !important;
+    max-width: 100% !important;
+    width: 100% !important;
   }
   // stylelint-enable declaration-no-important
 }
