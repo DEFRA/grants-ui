@@ -3,7 +3,7 @@ import { retry } from '~/src/server/common/helpers/retry.js'
 import { config } from '~/src/config/config.js'
 import { getConsentTypes } from '~/src/server/land-grants/utils/consent-types.js'
 
-function shouldUseV2Endpoint() {
+export function shouldUseV2Endpoint() {
   return config.get('landGrants.enableSSSIFeature') || config.get('landGrants.enableHeferFeature')
 }
 
