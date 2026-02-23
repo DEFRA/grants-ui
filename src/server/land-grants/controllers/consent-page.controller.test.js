@@ -65,7 +65,8 @@ describe('ConsentPageController', () => {
         'consent-required',
         expect.objectContaining({
           consentPanel: expect.objectContaining({
-            titleText: 'You must get an SFI Historic Environment Farm Environment Record (SFI HEFER) from Historic England',
+            titleText:
+              'You must get an SFI Historic Environment Farm Environment Record (SFI HEFER) from Historic England',
             html: expect.stringContaining('HEFER')
           })
         })

@@ -12,7 +12,7 @@ const HEFER_LINK = './fptt-information#section-5.5'
  * @returns {string}
  */
 function panelLink(href, text) {
-  return `<a class="govuk-link govuk-link--inverse" href="${href}" rel="noreferrer nofollow" target="_blank">${text} (opens in new tab)</a>`
+  return `<a class="govuk-link govuk-link--inverse" href="${href}" rel="noreferrer noopener" target="_blank">${text} (opens in new tab)</a>`
 }
 
 /**
