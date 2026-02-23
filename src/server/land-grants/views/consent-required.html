@@ -10,16 +10,13 @@
       <form method="post" novalidate="novalidate">
         <input type="hidden" name="crumb" value="{{ crumb }}">
 
-        {% for consentType in requiredConsents %}
-          {% if consentType == 'sssi' %}
-            {{ govukPanel({
-              classes: "defra-panel-card",
-              titleText: "You must have SSSI consent",
-              html: '<p class="govuk-body">You are applying for actions on land that\'s a site of special scientific interest (SSSI). You must get SSSI consent from Natural England.</p>
-                     <p class="govuk-body">Read the <a class="govuk-link govuk-link--inverse" href="./fptt-information#sec-10-get-all-necessary-regulatory-consents-permissions-and-licences-in-place" rel="noreferrer nofollow" target="_blank">guidance on SSSI consent (opens in new tab)</a>.</p>'
-            }) }}
-          {% endif %}
-        {% endfor %}
+        {% if consentPanel %}
+          {{ govukPanel({
+            classes: "defra-panel-card",
+            titleText: consentPanel.titleText,
+            html: consentPanel.html
+          }) }}
+        {% endif %}
 
         {{ govukButton({
             text: "Continue",

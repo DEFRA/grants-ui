@@ -1,4 +1,5 @@
 import LandGrantsQuestionWithAuthCheckController from '~/src/server/land-grants/controllers/auth/land-grants-question-with-auth-check.controller.js'
+import { mapConsentPanelToViewModel } from '~/src/server/land-grants/view-models/consent.view-model.js'
 
 export default class ConsentPageController extends LandGrantsQuestionWithAuthCheckController {
   viewName = 'consent-required'
@@ -18,9 +19,11 @@ export default class ConsentPageController extends LandGrantsQuestionWithAuthChe
         return this.proceed(request, h, '/check-selected-land-actions')
       }
 
+      const consentPanel = mapConsentPanelToViewModel(requiredConsents)
+
       return h.view(viewName, {
         ...baseViewModel,
-        requiredConsents
+        consentPanel
       })
     }
   }

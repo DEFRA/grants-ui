@@ -34,7 +34,7 @@ describe('ConsentPageController', () => {
   })
 
   describe('GET Handler', () => {
-    test('should display consent page when requiredConsents exist', async () => {
+    test('should display consent page with SSSI panel when only SSSI consent required', async () => {
       mockContext.state = {
         requiredConsents: ['sssi']
       }
@@ -45,12 +45,34 @@ describe('ConsentPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'consent-required',
         expect.objectContaining({
-          requiredConsents: ['sssi']
+          consentPanel: expect.objectContaining({
+            titleText: 'You must have SSSI consent',
+            html: expect.stringContaining('SSSI')
+          })
         })
       )
     })
 
-    test('should display consent page with multiple consent types', async () => {
+    test('should display consent page with HEFER panel when only HEFER consent required', async () => {
+      mockContext.state = {
+        requiredConsents: ['hefer']
+      }
+
+      const handler = controller.makeGetRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'consent-required',
+        expect.objectContaining({
+          consentPanel: expect.objectContaining({
+            titleText: 'You must get consent to do your actions',
+            html: expect.stringContaining('HEFER')
+          })
+        })
+      )
+    })
+
+    test('should display consent page with combined panel when both consent types required', async () => {
       mockContext.state = {
         requiredConsents: ['sssi', 'hefer']
       }
@@ -61,9 +83,14 @@ describe('ConsentPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'consent-required',
         expect.objectContaining({
-          requiredConsents: ['sssi', 'hefer']
+          consentPanel: expect.objectContaining({
+            titleText: 'You must get consent to do your actions',
+            html: expect.stringContaining('SSSI')
+          })
         })
       )
+      const viewArgs = mockH.view.mock.calls[0][1]
+      expect(viewArgs.consentPanel.html).toContain('HEFER')
     })
 
     test('should redirect to check-selected-land-actions when no consents required', async () => {
