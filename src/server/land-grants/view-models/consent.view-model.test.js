@@ -19,10 +19,9 @@ describe('consent.view-model', () => {
     it('should return HEFER panel when only HEFER consent required', () => {
       const result = mapConsentPanelToViewModel(['hefer'])
 
-      expect(result.titleText).toBe('You must get consent to do your actions')
+      expect(result.titleText).toBe('You must get an SFI Historic Environment Farm Environment Record (SFI HEFER) from Historic England')
       expect(result.html).toContain('historic or archaeological features')
       expect(result.html).toContain('HEFER')
-      expect(result.html).toContain('Historic England')
     })
 
     it('should return combined panel with bullet list when both consents required', () => {
