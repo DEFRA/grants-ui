@@ -11,10 +11,30 @@
         <input type="hidden" name="crumb" value="{{ crumb }}">
 
         {% if consentPanel %}
+          {% if consentPanel.consentType === 'all' %}
+            {% set panelHtml %}
+              <p class="govuk-body">You are applying for actions on land that's a site of special scientific interest (SSSI) and land with historic or archaeological features. Before starting your actions, you must get:</p>
+              <ul class="govuk-list govuk-list--bullet govuk-!-margin-top-4 govuk-!-margin-bottom-0">
+                <li class="govuk-!-margin-top-10">an <a class="govuk-link govuk-link--inverse" href="{{ consentPanel.heferLink }}" rel="noreferrer noopener" target="_blank">SFI Historic Environment Farm Environment Record (SFI HEFER) (opens in new tab)</a> from Historic England</li>
+                <li><a class="govuk-link govuk-link--inverse" href="{{ consentPanel.sssiConsentLink }}" rel="noreferrer noopener" target="_blank">SSSI consent (opens in new tab)</a> from Natural England</li>
+              </ul>
+            {% endset %}
+          {% elif consentPanel.consentType === 'hefer' %}
+            {% set panelHtml %}
+              <p class="govuk-body">This is because you are applying for actions on land with historic or archaeological features. You must do this before you do your selected SFI actions on this land.</p>
+              <p class="govuk-body">Read the guidance on <a class="govuk-link govuk-link--inverse" href="{{ consentPanel.heferLink }}" rel="noreferrer noopener" target="_blank">land with historic or archaeological features (opens in new tab)</a> to find out what a HEFER is and how to request one.</p>
+            {% endset %}
+          {% elif consentPanel.consentType === 'sssi' %}
+            {% set panelHtml %}
+              <p class="govuk-body">You are applying for actions on land that's a site of special scientific interest (SSSI). You must get SSSI consent from Natural England.</p>
+              <p class="govuk-body">Read the <a class="govuk-link govuk-link--inverse" href="{{ consentPanel.sssiConsentLink }}" rel="noreferrer noopener" target="_blank">guidance on SSSI consent (opens in new tab)</a>.</p>
+            {% endset %}
+          {% endif %}
+
           {{ govukPanel({
             classes: "defra-panel-card",
             titleText: consentPanel.titleText,
-            html: consentPanel.html
+            html: panelHtml
           }) }}
         {% endif %}
 

@@ -7,35 +7,33 @@ describe('consent.view-model', () => {
       expect(mapConsentPanelToViewModel([])).toBeNull()
     })
 
-    it('should return SSSI panel with original text when only SSSI consent required', () => {
+    it('should return SSSI panel when only SSSI consent required', () => {
       const result = mapConsentPanelToViewModel(['sssi'])
 
+      expect(result.consentType).toBe('sssi')
       expect(result.titleText).toBe('You must have SSSI consent')
-      expect(result.html).toContain('site of special scientific interest (SSSI)')
-      expect(result.html).toContain('SSSI consent from Natural England')
-      expect(result.html).toContain('guidance on SSSI consent')
+      expect(result.sssiConsentLink).toBeDefined()
+      expect(result.heferLink).toBeUndefined()
     })
 
     it('should return HEFER panel when only HEFER consent required', () => {
       const result = mapConsentPanelToViewModel(['hefer'])
 
+      expect(result.consentType).toBe('hefer')
       expect(result.titleText).toBe(
         'You must get an SFI Historic Environment Farm Environment Record (SFI HEFER) from Historic England'
       )
-      expect(result.html).toContain('historic or archaeological features')
-      expect(result.html).toContain('HEFER')
+      expect(result.heferLink).toBeDefined()
+      expect(result.sssiConsentLink).toBeUndefined()
     })
 
-    it('should return combined panel with bullet list when both consents required', () => {
+    it('should return combined panel when all consents required', () => {
       const result = mapConsentPanelToViewModel(['sssi', 'hefer'])
 
+      expect(result.consentType).toBe('all')
       expect(result.titleText).toBe('You must get consent to do your actions')
-      expect(result.html).toContain('SSSI')
-      expect(result.html).toContain('HEFER')
-      expect(result.html).toContain('Natural England')
-      expect(result.html).toContain('Historic England')
-      expect(result.html).toContain('<ul')
-      expect(result.html).toContain('<li')
+      expect(result.sssiConsentLink).toBeDefined()
+      expect(result.heferLink).toBeDefined()
     })
 
     it('should return null when consents array has unknown types only', () => {

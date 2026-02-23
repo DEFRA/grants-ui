@@ -46,8 +46,8 @@ describe('ConsentPageController', () => {
         'consent-required',
         expect.objectContaining({
           consentPanel: expect.objectContaining({
-            titleText: 'You must have SSSI consent',
-            html: expect.stringContaining('SSSI')
+            consentType: 'sssi',
+            titleText: 'You must have SSSI consent'
           })
         })
       )
@@ -65,15 +65,15 @@ describe('ConsentPageController', () => {
         'consent-required',
         expect.objectContaining({
           consentPanel: expect.objectContaining({
+            consentType: 'hefer',
             titleText:
-              'You must get an SFI Historic Environment Farm Environment Record (SFI HEFER) from Historic England',
-            html: expect.stringContaining('HEFER')
+              'You must get an SFI Historic Environment Farm Environment Record (SFI HEFER) from Historic England'
           })
         })
       )
     })
 
-    test('should display consent page with combined panel when both consent types required', async () => {
+    test('should display consent page with combined panel when all consent types required', async () => {
       mockContext.state = {
         requiredConsents: ['sssi', 'hefer']
       }
@@ -85,13 +85,11 @@ describe('ConsentPageController', () => {
         'consent-required',
         expect.objectContaining({
           consentPanel: expect.objectContaining({
-            titleText: 'You must get consent to do your actions',
-            html: expect.stringContaining('SSSI')
+            consentType: 'all',
+            titleText: 'You must get consent to do your actions'
           })
         })
       )
-      const viewArgs = mockH.view.mock.calls[0][1]
-      expect(viewArgs.consentPanel.html).toContain('HEFER')
     })
 
     test('should redirect to check-selected-land-actions when no consents required', async () => {
