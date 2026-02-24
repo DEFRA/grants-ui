@@ -550,6 +550,39 @@ describe('Consolidated View Service', () => {
       const [url] = mockFetchInstance.mock.calls[0]
       expect(url).toBe('http://stub/graphql')
     })
+
+    it('should throw ConsolidatedViewApiError when stub returns non-OK response', async () => {
+      config.set('consolidatedView', {
+        apiEndpoint: 'https://api.example.com/graphql',
+        mockDALEnabled: true,
+        stubUrl: 'http://stub/graphql'
+      })
+
+      mockFetchInstance.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        text: async () => 'Stub failure'
+      })
+
+      await expect(fetchParcelsFromDal(mockRequest)).rejects.toThrow('Stub request failed')
+    })
+
+    it('should throw ConsolidatedViewApiError when stub returns GraphQL errors', async () => {
+      config.set('consolidatedView', {
+        apiEndpoint: 'https://api.example.com/graphql',
+        mockDALEnabled: true,
+        stubUrl: 'http://stub/graphql'
+      })
+
+      mockFetchInstance.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          errors: [{ message: 'GraphQL error occurred' }]
+        })
+      })
+
+      await expect(fetchParcelsFromDal(mockRequest)).rejects.toThrow('GraphQL error occurred')
+    })
   })
 
   describe('Error handling', () => {
