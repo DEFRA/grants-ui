@@ -124,7 +124,7 @@ services:
       start_period: 3s
 
   grants-ui-dal-stub:
-    image: defradigital/grants-ui-dal-stub:0.3.0
+    image: defradigital/grants-ui-dal-stub:latest
     ports:
       - '3008:3008'
     environment:
