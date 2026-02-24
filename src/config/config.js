@@ -119,6 +119,12 @@ const convictConfig = {
       default: false,
       env: 'CV_API_MOCK_ENABLED'
     },
+    stubUrl: {
+      doc: 'Consolidate View API stub endpoint',
+      format: String,
+      default: '',
+      env: 'CV_API_STUB_URL'
+    },
     apiEndpoint: {
       doc: 'Consolidated View API endpoint',
       format: String,

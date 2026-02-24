@@ -5,6 +5,7 @@ services:
       DEFRA_ID_REDIRECT_URL: https://grants-ui-proxy:4000/auth/sign-in-oidc
       DEFRA_ID_SIGN_OUT_REDIRECT_URL: https://grants-ui-proxy:4000/auth/sign-out-oidc
       APP_BASE_URL: https://grants-ui-proxy:4000
+      CV_API_STUB_URL: https://grants-ui-proxy:4008/graphql
 
   fcp-defra-id-stub:
     environment:

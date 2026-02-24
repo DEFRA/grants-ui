@@ -65,35 +65,6 @@ async function getConsolidatedViewRequestOptions(request, { method = 'POST', que
 }
 
 /**
- * Get the directory name for the current module
- * @returns {string} Directory path
- */
-function getCurrentDirectory() {
-  const currentFilePath = fileURLToPath(import.meta.url)
-  return path.dirname(currentFilePath)
-}
-
-/**
- * Fetches mock data from self-hosted static files
- * @param {number} sbi - Single Business Identifier
- * @param {number} crn - Customer Reference Number
- * @returns {Promise<object>} - Promise that resolves to the mock data
- * @throws {Error} - For file reading errors
- */
-async function fetchMockDataForBusiness(sbi, crn) {
-  const currentDir = getCurrentDirectory()
-  const mockSBIFile = path.join(currentDir, 'land-data', `${sbi}.json`)
-  const sbiData = await fs.readFile(mockSBIFile, 'utf8')
-  const mockCRNFile = path.join(currentDir, 'crn-data', `${crn}.json`)
-  const crnData = await fs.readFile(mockCRNFile, 'utf8')
-
-  const mockDALResponse = JSON.parse(sbiData)
-  Object.assign(mockDALResponse.data, JSON.parse(crnData))
-
-  return mockDALResponse
-}
-
-/**
  * Makes a request to the Consolidated View API
  * @param {AnyFormRequest} request
  * @param {string} query - GraphQL query
@@ -141,12 +112,10 @@ async function fetchFromConsolidatedView(request, { query, formatResponse }) {
   const { credentials: { sbi, crn } = {} } = request.auth ?? {}
 
   try {
-    if (mockDALEnabled) {
-      const mockResponse = await fetchMockDataForBusiness(sbi, crn)
-      return formatResponse(mockResponse)
-    }
+    const responseJson = mockDALEnabled
+      ? await makeStubRequest({ query, sbi, crn })
+      : await makeConsolidatedViewRequest(request, query)
 
-    const responseJson = await makeConsolidatedViewRequest(request, query)
     return formatResponse(responseJson)
   } catch (error) {
     log(
@@ -159,6 +128,37 @@ async function fetchFromConsolidatedView(request, { query, formatResponse }) {
     )
     throw new ConsolidatedViewApiError(error.message, error.status, error.message, sbi)
   }
+}
+
+async function makeStubRequest({ query, sbi, crn }) {
+  const stubUrl = config.get('consolidatedView.stubUrl')
+
+  const response = await fetch(stubUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      query,
+      variables: {
+        sbi,
+        crn
+      }
+    })
+  })
+
+  if (!response.ok) {
+    throw new ConsolidatedViewApiError('Stub request failed', response.status, await response.text(), sbi)
+  }
+
+  const json = await response.json()
+
+  // Optional: surface GraphQL errors properly
+  if (json.errors?.length) {
+    throw new ConsolidatedViewApiError(json.errors[0].message, 502, json.errors[0].message, sbi)
+  }
+
+  return json
 }
 
 /**
