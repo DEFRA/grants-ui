@@ -33,6 +33,7 @@ vi.doMock('../logging/log.js', async () => {
 
 let persistStateToApi
 let log
+let debug
 let LogCodes
 
 describe('persistStateToApi', () => {
@@ -54,6 +55,7 @@ describe('persistStateToApi', () => {
       persistStateToApi = helper.persistStateToApi
       const logModule = await import('../logging/log.js')
       log = logModule.log
+      debug = logModule.debug
       LogCodes = logModule.LogCodes
       vi.clearAllMocks()
     })
@@ -124,7 +126,7 @@ describe('persistStateToApi', () => {
       await persistStateToApi(testState, key)
 
       expect(fetch).toHaveBeenCalledTimes(1)
-      expect(log).toHaveBeenCalledWith(
+      expect(debug).toHaveBeenCalledWith(
         LogCodes.SYSTEM.EXTERNAL_API_ERROR,
         expect.objectContaining({
           endpoint: expect.stringContaining('/state/'),

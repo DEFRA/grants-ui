@@ -3,7 +3,11 @@ import { WhitelistService, whitelistService, WhitelistServiceFactory } from './w
 import { log } from '~/src/server/common/helpers/logging/log.js'
 import { LogCodes } from '~/src/server/common/helpers/logging/log-codes.js'
 
-vi.mock('~/src/server/common/helpers/logging/log.js')
+vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
+  log: vi.fn(),
+  debug: vi.fn(),
+  LogCodes: {}
+}))
 
 const TEST_VALUES = {
   CRN_1: '1101009926',

@@ -1,6 +1,7 @@
 import Wreck from '@hapi/wreck'
 import { config } from '~/src/config/config.js'
 import { getOidcConfig } from '~/src/server/auth/get-oidc-config.js'
+import { AuthError } from '~/src/server/common/utils/errors/AuthError.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
 async function refreshTokens(refreshToken, request) {
@@ -67,21 +68,15 @@ async function refreshTokens(refreshToken, request) {
       step = 'unknown'
     }
 
-    log(
-      LogCodes.AUTH.TOKEN_VERIFICATION_FAILURE,
-      {
-        userId: 'system',
-        errorMessage: error.message,
-        step,
-        statusCode: error.statusCode,
-        hasRefreshToken: !!refreshToken
-      },
-      request
-    )
-
-    // Mark error as already logged to prevent duplicate logging in global handler
-    error.alreadyLogged = true
-    throw error
+    const authError = new AuthError({
+      message: 'Token refresh failed',
+      source: 'refreshTokens',
+      reason: step,
+      statusCode: error.statusCode,
+      hasRefreshToken: !!refreshToken
+    })
+    authError.logCode = LogCodes.AUTH.TOKEN_VERIFICATION_FAILURE
+    throw authError.from(error)
   }
 }
 

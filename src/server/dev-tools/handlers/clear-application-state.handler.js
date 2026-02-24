@@ -1,5 +1,5 @@
 import { getFormsCacheService } from '../../common/helpers/forms-cache/forms-cache.js'
-import { log, LogCodes } from '../../common/helpers/logging/log.js'
+import { SessionError } from '~/src/server/common/utils/errors/SessionError.js'
 
 /**
  * Clears the current application state
@@ -18,17 +18,14 @@ export async function clearApplicationStateHandler(request, h) {
       await cacheService.clearState(request, true)
     } catch (error) {
       sessionKey = cacheService._Key(request)
-      log(
-        LogCodes.SYSTEM.SESSION_STATE_CLEAR_FAILED,
-        {
-          slug,
-          sessionKey,
-          errorMessage: error.message
-        },
-        request
-      )
-
-      throw error
+      const sessionError = new SessionError({
+        message: 'Session state clear failed',
+        source: 'clearApplicationStateHandler',
+        reason: 'session_state_clear_failure',
+        slug,
+        sessionKey
+      })
+      throw sessionError.from(error)
     }
   }
 

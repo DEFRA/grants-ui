@@ -5,7 +5,8 @@ import { config } from '~/src/config/config.js'
 import { getValidToken } from '~/src/server/common/helpers/entra/token-manager.js'
 import { escapeGraphQLString } from '~/src/server/common/helpers/graphql-utils.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
-import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { log, debug, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { ConsolidatedViewError } from '~/src/server/common/utils/errors/ConsolidatedViewError.js'
 
 /**
  * @typedef {object} LandParcel
@@ -26,16 +27,6 @@ import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
  * @property {string} [data.business.customer.lastName] - Customer's last name
  * @property {string} [data.business.customer.role] - Customer's role
  */
-
-export class ConsolidatedViewApiError extends Error {
-  constructor(message, statusCode, responseBody, sbi) {
-    super(message)
-    this.name = 'ConsolidatedViewApiError'
-    this.status = statusCode
-    this.responseBody = responseBody
-    this.sbi = sbi
-  }
-}
 
 /**
  * Creates request options for Consolidated View API calls
@@ -110,12 +101,14 @@ async function makeConsolidatedViewRequest(request, query) {
     if (!response.ok) {
       const errorText = await response.text()
 
-      throw new ConsolidatedViewApiError(
-        `Failed to fetch business data: ${response.status} ${response.statusText}`,
-        response.status,
-        errorText,
-        sbi
-      )
+      throw new ConsolidatedViewError({
+        message: `Failed to fetch business data: ${response.status} ${response.statusText}`,
+        status: response.status,
+        responseBody: errorText,
+        sbi,
+        source: 'makeConsolidatedViewRequest',
+        reason: 'api_response_not_ok'
+      })
     }
 
     return response.json()
@@ -149,7 +142,7 @@ async function fetchFromConsolidatedView(request, { query, formatResponse }) {
     const responseJson = await makeConsolidatedViewRequest(request, query)
     return formatResponse(responseJson)
   } catch (error) {
-    log(
+    debug(
       LogCodes.SYSTEM.CONSOLIDATED_VIEW_API_ERROR,
       {
         sbi,
@@ -157,7 +150,14 @@ async function fetchFromConsolidatedView(request, { query, formatResponse }) {
       },
       request
     )
-    throw new ConsolidatedViewApiError(error.message, error.status, error.message, sbi)
+    throw new ConsolidatedViewError({
+      message: error.message,
+      status: error.status,
+      responseBody: error.message,
+      sbi,
+      source: 'fetchFromConsolidatedView',
+      reason: 'api_error'
+    }).from(error)
   }
 }
 

@@ -3,7 +3,7 @@ import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/Q
 import CheckDetailsController from './check-details.controller.js'
 import { buildGraphQLQuery, mapResponse, processSections } from '../common/services/details-page/index.js'
 import { executeConfigDrivenQuery } from '../common/services/consolidated-view/consolidated-view.service.js'
-import { log, LogCodes } from '../common/helpers/logging/log.js'
+import { log, debug, LogCodes } from '../common/helpers/logging/log.js'
 import { setupControllerMocks } from '~/src/__mocks__/controller-mocks.js'
 
 vi.mock('../common/services/details-page/index.js')
@@ -170,7 +170,7 @@ describe('CheckDetailsController', () => {
 
       await handler(mockRequest, mockContext, mockH)
 
-      expect(log).toHaveBeenCalledWith(
+      expect(debug).toHaveBeenCalledWith(
         LogCodes.SYSTEM.EXTERNAL_API_ERROR,
         { errorMessage: 'API unavailable' },
         mockRequest
@@ -217,7 +217,11 @@ describe('CheckDetailsController', () => {
         const handler = controller.makePostRouteHandler()
         await handler(mockRequest, mockContext, mockH)
 
-        expect(log).toHaveBeenCalledWith(LogCodes.SYSTEM.EXTERNAL_API_ERROR, { errorMessage: 'API Error' }, mockRequest)
+        expect(debug).toHaveBeenCalledWith(
+          LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+          { errorMessage: 'API Error' },
+          mockRequest
+        )
         expect(mockH.view).toHaveBeenCalledWith('check-details', {
           serviceName: 'Test Service',
           serviceUrl: TEST_FORM_ENDPOINT,
@@ -285,7 +289,7 @@ describe('CheckDetailsController', () => {
         const handler = controller.makePostRouteHandler()
         const result = await handler(mockRequest, mockContext, mockH)
 
-        expect(log).toHaveBeenCalledWith(
+        expect(debug).toHaveBeenCalledWith(
           LogCodes.SYSTEM.EXTERNAL_API_ERROR,
           { errorMessage: 'Data fetch failed' },
           mockRequest
@@ -348,7 +352,7 @@ describe('CheckDetailsController', () => {
 
       const result = controller.handleError(error, baseViewModel, mockH, mockRequest)
 
-      expect(log).toHaveBeenCalledWith(
+      expect(debug).toHaveBeenCalledWith(
         LogCodes.SYSTEM.EXTERNAL_API_ERROR,
         { errorMessage: 'Test error message' },
         mockRequest

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import LandGrantsQuestionWithAuthCheckController from './land-grants-question-with-auth-check.controller'
 import { fetchParcelsFromDal } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
-import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { debug, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
 vi.mock('~/src/server/common/services/consolidated-view/consolidated-view.service.js', () => ({
   fetchParcelsFromDal: vi.fn()
@@ -73,7 +73,7 @@ describe('LandGrantsQuestionWithAuthCheckController', () => {
       await controller.performAuthCheck(mockRequest, mockH, 'sheet1-parcel1')
 
       expect(fetchParcelsFromDal).toHaveBeenCalledWith(mockRequest)
-      expect(log).toHaveBeenCalledWith(
+      expect(debug).toHaveBeenCalledWith(
         LogCodes.SYSTEM.EXTERNAL_API_ERROR,
         {
           endpoint: 'Consolidated view',

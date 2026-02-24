@@ -98,14 +98,11 @@ describe('Token Manager', () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
         text: () => Promise.resolve('Invalid credentials'),
-        json: () =>
-          Promise.resolve({
-            error: 'invalid_request',
-            error_description: 'Invalid credentials'
-          })
+        status: 401,
+        statusText: 'Unauthorized'
       })
 
-      await expect(refreshToken()).rejects.toThrow('Invalid credentials')
+      await expect(refreshToken()).rejects.toThrow('Entra token refresh failed')
     })
 
     test('throws error for a malformed token response', async () => {
@@ -117,7 +114,7 @@ describe('Token Manager', () => {
           })
       })
 
-      await expect(refreshToken()).rejects.toThrow('Invalid token response: missing or invalid access_token')
+      await expect(refreshToken()).rejects.toThrow('Entra token refresh failed')
     })
   })
 

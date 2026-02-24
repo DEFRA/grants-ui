@@ -24,7 +24,7 @@ export default [
       '@stylistic/eol-last': 'off',
       '@stylistic/no-trailing-spaces': 'off',
       '@stylistic/indent': 'off',
-      'grants-ui/try-catch-allowed-functions': ['off', { exclude: ['log', 'logger'] }]
+      'grants-ui/try-catch-allowed-functions': ['error', { exclude: ['log', 'logger'] }]
     }
   },
   {

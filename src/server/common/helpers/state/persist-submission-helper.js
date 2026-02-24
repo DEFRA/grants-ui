@@ -1,7 +1,7 @@
 import 'dotenv/config'
 import { config } from '~/src/config/config.js'
 import { createApiHeadersForGrantsUiBackend } from '../auth/backend-auth-helper.js'
-import { log, LogCodes } from '../logging/log.js'
+import { log, debug, LogCodes } from '../logging/log.js'
 import { mintLockToken } from '../lock/lock-token.js'
 
 const GRANTS_UI_BACKEND_ENDPOINT = config.get('session.cache.apiEndpoint')
@@ -56,7 +56,7 @@ export async function persistSubmissionToApi(submission, request) {
       )
     }
   } catch (err) {
-    log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
+    debug(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
       method: 'POST',
       endpoint: url.href,
       referenceNumber: submission.referenceNumber,
