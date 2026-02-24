@@ -96,6 +96,8 @@ metadata:
       <h2 class="govuk-heading-m">Track and manage your application</h2>
       <p class="govuk-body">Sign in to your application to track progress and manage it. </p>
 
+      <p class="govuk-body"><a class="govuk-link" href="/{{SLUG}}/print-submitted-application" target="_blank">View / Print submitted application (opens in new tab)</a></p>
+
       <details class="govuk-details" data-module="govuk-details">
         <summary class="govuk-details__summary">
           <span class="govuk-details__summary-text">

@@ -2,7 +2,8 @@ import {
   devHomeHandler,
   demoConfirmationHandler,
   demoDetailsHandler,
-  demoDetailsPostHandler
+  demoDetailsPostHandler,
+  demoPrintApplicationHandler
 } from './handlers/index.js'
 import Boom from '@hapi/boom'
 
@@ -59,6 +60,15 @@ export const devTools = {
           auth: false
         },
         handler: demoDetailsPostHandler
+      })
+
+      server.route({
+        method: 'GET',
+        path: '/dev/demo-print-application/{slug}',
+        options: {
+          auth: false
+        },
+        handler: demoPrintApplicationHandler
       })
 
       for (const { code, boomMethod, message } of errorRoutes) {
