@@ -1,0 +1,52 @@
+{
+  "data": {
+    "business": {
+      "sbi": "106450896",
+      "organisationId": "7400100",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "5221",
+            "sheetId": "NU0114"
+          },
+          {
+            "parcelId": "5223",
+            "sheetId": "NU0116"
+          },
+          {
+            "parcelId": "4130",
+            "sheetId": "NU0114"
+          },
+          {
+            "parcelId": "9410",
+            "sheetId": "NU0116"
+          },
+          {
+            "parcelId": "1686",
+            "sheetId": "NU0115"
+          }
+        ]
+      },
+      "info": {
+        "name": "Silver Grange",
+        "reference": "106450896",
+        "email": {
+          "address": "contact+106450896@example.test"
+        },
+        "phone": {
+          "mobile": "+447300000100"
+        },
+        "address": {
+          "line1": "102 High Street",
+          "line2": "Amazon Wharehouse",
+          "line3": "Robo Roundabout",
+          "line4": "Lancashire",
+          "line5": "Near Bus Depot",
+          "street": "High Street Road",
+          "city": "Manchester",
+          "postalCode": "SN51 5CB"
+        }
+      }
+    }
+  }
+}

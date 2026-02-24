@@ -1,0 +1,52 @@
+{
+  "data": {
+    "business": {
+      "sbi": "200432108",
+      "organisationId": "7400100",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "2607",
+            "sheetId": "NU1514"
+          },
+          {
+            "parcelId": "4974",
+            "sheetId": "NU1516"
+          },
+          {
+            "parcelId": "4767",
+            "sheetId": "NU1415"
+          },
+          {
+            "parcelId": "6194",
+            "sheetId": "NU1913"
+          },
+          {
+            "parcelId": "6482",
+            "sheetId": "NU1813"
+          }
+        ]
+      },
+      "info": {
+        "name": "Bronze Grange",
+        "reference": "200432108",
+        "email": {
+          "address": "contact+200432108@example.test"
+        },
+        "phone": {
+          "mobile": "+447300000100"
+        },
+        "address": {
+          "line1": "103 High Street",
+          "line2": null,
+          "line3": null,
+          "line4": null,
+          "line5": null,
+          "street": "High Street Road",
+          "city": "Manchester",
+          "postalCode": "SN51 5CB"
+        }
+      }
+    }
+  }
+}
