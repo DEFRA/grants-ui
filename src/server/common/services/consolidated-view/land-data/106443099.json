@@ -1,0 +1,52 @@
+{
+  "data": {
+    "business": {
+      "sbi": "106443099",
+      "organisationId": "7400100",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "0556",
+            "sheetId": "NT9728"
+          },
+          {
+            "parcelId": "6627",
+            "sheetId": "NT9728"
+          },
+          {
+            "parcelId": "5642",
+            "sheetId": "NT9728"
+          },
+          {
+            "parcelId": "5940",
+            "sheetId": "NT9728"
+          },
+          {
+            "parcelId": "5583",
+            "sheetId": "NT9727"
+          }
+        ]
+      },
+      "info": {
+        "name": "Golden Grange",
+        "reference": "106443099",
+        "email": {
+          "address": "contact+106443099@example.test"
+        },
+        "phone": {
+          "mobile": "+447300000100"
+        },
+        "address": {
+          "line1": "101 High Street",
+          "line2": "Amazon Wharehouse",
+          "line3": "Robo Roundabout",
+          "line4": "Lancashire",
+          "line5": "Near Bus Depot",
+          "street": "High Street Road",
+          "city": "Manchester",
+          "postalCode": "SN51 5CB"
+        }
+      }
+    }
+  }
+}

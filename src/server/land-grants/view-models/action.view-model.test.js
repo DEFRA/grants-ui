@@ -153,7 +153,7 @@ describe('action-view-model.mapper', () => {
       expect(result[0].consentHint).toBeNull()
     })
 
-    it('should set consentHint with SSSI text and singular action text for single action', () => {
+    it('should set consentHint with SSSI type and singular action text for single action', () => {
       const groupedActions = [
         {
           name: 'Group 1',
@@ -164,12 +164,13 @@ describe('action-view-model.mapper', () => {
 
       const result = mapGroupedActionsToViewModel(groupedActions, [])
 
-      expect(result[0].consentHint).toContain('SSSI consent')
-      expect(result[0].consentHint).toContain('this action')
-      expect(result[0].consentHint).not.toContain('these actions')
+      expect(result[0].consentHint.consentType).toBe('sssi')
+      expect(result[0].consentHint.actionText).toBe('this action')
+      expect(result[0].consentHint.sssiConsentLink).toBeDefined()
+      expect(result[0].consentHint.heferLink).toBeUndefined()
     })
 
-    it('should set consentHint with HEFER text and singular action text for single action', () => {
+    it('should set consentHint with HEFER type and singular action text for single action', () => {
       const groupedActions = [
         {
           name: 'Group 1',
@@ -180,12 +181,13 @@ describe('action-view-model.mapper', () => {
 
       const result = mapGroupedActionsToViewModel(groupedActions, [])
 
-      expect(result[0].consentHint).toContain('HEFER')
-      expect(result[0].consentHint).toContain('this action')
-      expect(result[0].consentHint).not.toContain('these actions')
+      expect(result[0].consentHint.consentType).toBe('hefer')
+      expect(result[0].consentHint.actionText).toBe('this action')
+      expect(result[0].consentHint.heferLink).toBeDefined()
+      expect(result[0].consentHint.sssiConsentLink).toBeUndefined()
     })
 
-    it('should set consentHint with both texts and singular action text for single action', () => {
+    it('should set consentHint with all type and singular action text for single action', () => {
       const groupedActions = [
         {
           name: 'Group 1',
@@ -196,10 +198,10 @@ describe('action-view-model.mapper', () => {
 
       const result = mapGroupedActionsToViewModel(groupedActions, [])
 
-      expect(result[0].consentHint).toContain('SSSI consent')
-      expect(result[0].consentHint).toContain('HEFER')
-      expect(result[0].consentHint).toContain('this action')
-      expect(result[0].consentHint).not.toContain('these actions')
+      expect(result[0].consentHint.consentType).toBe('all')
+      expect(result[0].consentHint.actionText).toBe('this action')
+      expect(result[0].consentHint.sssiConsentLink).toBeDefined()
+      expect(result[0].consentHint.heferLink).toBeDefined()
     })
 
     it('should use plural action text when group has multiple actions with SSSI consent', () => {
@@ -216,9 +218,8 @@ describe('action-view-model.mapper', () => {
 
       const result = mapGroupedActionsToViewModel(groupedActions, [])
 
-      expect(result[0].consentHint).toContain('SSSI consent')
-      expect(result[0].consentHint).toContain('these actions')
-      expect(result[0].consentHint).not.toContain('this action')
+      expect(result[0].consentHint.consentType).toBe('sssi')
+      expect(result[0].consentHint.actionText).toBe('these actions')
     })
 
     it('should use plural action text when group has multiple actions with HEFER consent', () => {
@@ -235,9 +236,8 @@ describe('action-view-model.mapper', () => {
 
       const result = mapGroupedActionsToViewModel(groupedActions, [])
 
-      expect(result[0].consentHint).toContain('HEFER')
-      expect(result[0].consentHint).toContain('these actions')
-      expect(result[0].consentHint).not.toContain('this action')
+      expect(result[0].consentHint.consentType).toBe('hefer')
+      expect(result[0].consentHint.actionText).toBe('these actions')
     })
 
     it('should use plural action text when group has multiple actions with both consents', () => {
@@ -254,10 +254,8 @@ describe('action-view-model.mapper', () => {
 
       const result = mapGroupedActionsToViewModel(groupedActions, [])
 
-      expect(result[0].consentHint).toContain('SSSI consent')
-      expect(result[0].consentHint).toContain('HEFER')
-      expect(result[0].consentHint).toContain('these actions')
-      expect(result[0].consentHint).not.toContain('this action')
+      expect(result[0].consentHint.consentType).toBe('all')
+      expect(result[0].consentHint.actionText).toBe('these actions')
     })
   })
 })

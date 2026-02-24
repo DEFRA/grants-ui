@@ -1,0 +1,52 @@
+{
+  "data": {
+    "business": {
+      "sbi": "106327021",
+      "organisationId": "7400100",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "7827",
+            "sheetId": "SJ9581"
+          },
+          {
+            "parcelId": "3763",
+            "sheetId": "TQ2668"
+          },
+          {
+            "parcelId": "3447",
+            "sheetId": "SX1751"
+          },
+          {
+            "parcelId": "0295",
+            "sheetId": "SK6273"
+          },
+          {
+            "parcelId": "9806",
+            "sheetId": "SO9273"
+          }
+        ]
+      },
+      "info": {
+        "name": "Cuckoo Hill Grange",
+        "reference": "106327021",
+        "email": {
+          "address": "contact+106327021@example.test"
+        },
+        "phone": {
+          "mobile": "+447300000100"
+        },
+        "address": {
+          "line1": "120",
+          "line2": null,
+          "line3": null,
+          "line4": null,
+          "line5": "Near Bus Depot",
+          "street": "High Street Road",
+          "city": "Manchester",
+          "postalCode": "SN51 5CB"
+        }
+      }
+    }
+  }
+}
