@@ -9,7 +9,7 @@ import {
   fetchParcelsFromDal,
   executeConfigDrivenQuery
 } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
-import { ConsolidatedViewApiError, fetchBusinessAndCPH } from './consolidated-view.service.js'
+import { ConsolidatedViewError, fetchBusinessAndCPH } from './consolidated-view.service.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
 
 vi.mock('~/src/server/common/helpers/retry.js')
@@ -443,14 +443,7 @@ describe('Consolidated View Service', () => {
         text: () => Promise.resolve('Server error')
       })
 
-      await expect(fetchBusinessAndCustomerInformation(mockRequest)).rejects.toThrow(
-        new ConsolidatedViewApiError(
-          'Failed to fetch business data: 500 Internal Server Error',
-          500,
-          'Failed to fetch business data: 500 Internal Server Error',
-          mockSbi
-        )
-      )
+      await expect(fetchBusinessAndCustomerInformation(mockRequest)).rejects.toThrow(ConsolidatedViewError)
     })
   })
 
@@ -624,7 +617,7 @@ describe('Consolidated View Service', () => {
   })
 
   describe('Error handling', () => {
-    it('should preserve ConsolidatedViewApiError properties', async () => {
+    it('should preserve ConsolidatedViewError properties', async () => {
       mockFetchInstance.mockResolvedValueOnce({
         ok: false,
         status: 403,
@@ -635,7 +628,7 @@ describe('Consolidated View Service', () => {
       await expect(fetchParcelsFromDal(mockRequest)).rejects.toThrow('Failed to fetch business data: 403 Forbidden')
     })
 
-    it('should wrap non-API errors in ConsolidatedViewApiError', async () => {
+    it('should wrap non-API errors in ConsolidatedViewError', async () => {
       mockFetchInstance.mockImplementation(() => {
         throw new Error('Cannot read property of undefined')
       })

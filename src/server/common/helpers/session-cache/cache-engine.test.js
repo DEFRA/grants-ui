@@ -17,6 +17,8 @@ vi.mock('@hapi/catbox-memory')
 vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
   const { mockLoggerFactoryWithCustomMethods } = await import('~/src/__mocks__')
   return {
+    log: vi.fn(),
+    debug: vi.fn(),
     logger: mockLoggerFactoryWithCustomMethods({
       info: (...args) => mockLoggerInfo(...args),
       error: (...args) => mockLoggerError(...args)

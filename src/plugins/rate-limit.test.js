@@ -13,6 +13,7 @@ vi.mock('~/src/config/config.js', () => ({
 
 vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
   log: vi.fn(),
+  debug: vi.fn(),
   LogCodes: {
     SYSTEM: {
       RATE_LIMIT_EXCEEDED: { level: 'warn', messageFunc: vi.fn() }

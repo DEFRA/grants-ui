@@ -19,6 +19,7 @@ vi.mock('./lock-token.js', () => ({
 
 let releaseAllApplicationLocksForOwnerFromApi
 let log
+let debug
 let LogCodes
 
 describe('releaseAllApplicationLocksForOwnerFromApi', () => {
@@ -36,6 +37,7 @@ describe('releaseAllApplicationLocksForOwnerFromApi', () => {
       releaseAllApplicationLocksForOwnerFromApi = helper.releaseAllApplicationLocksForOwnerFromApi
       const logModule = await import('~/src/server/common/helpers/logging/log.js')
       log = logModule.log
+      debug = logModule.debug
       LogCodes = logModule.LogCodes
       vi.clearAllMocks()
       createApiHeadersForGrantsUiBackend.mockReturnValue({ Authorization: 'Bearer token' })
@@ -94,7 +96,7 @@ describe('releaseAllApplicationLocksForOwnerFromApi', () => {
       const result = await releaseAllApplicationLocksForOwnerFromApi({ ownerId })
 
       expect(result).toEqual({ ok: false, releasedCount: 0 })
-      expect(log).toHaveBeenCalledWith(
+      expect(debug).toHaveBeenCalledWith(
         LogCodes.SYSTEM.EXTERNAL_API_ERROR,
         expect.objectContaining({
           errorMessage: 'Network failure'
@@ -123,7 +125,7 @@ describe('releaseAllApplicationLocksForOwnerFromApi', () => {
 
       expect(result).toEqual({ ok: false, releasedCount: 0 })
 
-      expect(log).toHaveBeenCalledWith(
+      expect(debug).toHaveBeenCalledWith(
         LogCodes.APPLICATION_LOCKS.RELEASE_TIMEOUT,
         expect.objectContaining({
           ownerId
@@ -147,6 +149,7 @@ describe('releaseAllApplicationLocksForOwnerFromApi', () => {
 
       const logModule = await import('~/src/server/common/helpers/logging/log.js')
       log = logModule.log
+      debug = logModule.debug
 
       vi.clearAllMocks()
     })

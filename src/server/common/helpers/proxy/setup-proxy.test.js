@@ -4,8 +4,10 @@ import { getGlobalDispatcher, ProxyAgent } from 'undici'
 
 vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
   log: vi.fn(),
+  debug: vi.fn(),
   logger: {
-    info: vi.fn()
+    info: vi.fn(),
+    debug: vi.fn()
   }
 }))
 

@@ -4,7 +4,8 @@ import { config } from '~/src/config/config.js'
 import { getOidcConfig } from '~/src/server/auth/get-oidc-config.js'
 import { getSafeRedirect } from '~/src/server/auth/get-safe-redirect.js'
 import { refreshTokens } from '~/src/server/auth/refresh-tokens.js'
-import { log, LogCodes, logger } from '~/src/server/common/helpers/logging/log.js'
+import { AuthError } from '~/src/server/common/utils/errors/AuthError.js'
+import { log, debug, LogCodes, logger } from '~/src/server/common/helpers/logging/log.js'
 
 async function setupOidcConfig() {
   const startTime = Date.now()
@@ -22,29 +23,14 @@ async function setupOidcConfig() {
 
     return oidcConfig
   } catch (error) {
-    // Keep for when we deploy to higher environments, won't be needed beyond that
-    log(LogCodes.AUTH.AUTH_DEBUG, {
-      path: 'auth_plugin_registration',
-      isAuthenticated: 'system',
-      strategy: 'system',
-      mode: 'oidc_config_failure',
-      hasCredentials: false,
-      hasToken: false,
-      hasProfile: false,
-      userAgent: 'server',
-      referer: 'none',
-      queryParams: {},
-      authError: `OIDC config fetch failed: ${error.message}`,
-      errorDetails: {
-        message: error.message,
-        stack: error.stack,
-        wellKnownUrl: config.get('defraId.wellKnownUrl')
-      }
+    const authError = new AuthError({
+      message: 'OIDC config fetch failed',
+      source: 'setupOidcConfig',
+      reason: 'oidc_config_failure',
+      wellKnownUrl: config.get('defraId.wellKnownUrl')
     })
-    logger.debug(`OIDC configuration fetch from well-known endpoint failed ${Date.now() - startTime}ms`)
-    // Mark the error as already logged to prevent duplicate logging
-    error.alreadyLogged = true
-    throw error
+    authError.logCode = LogCodes.AUTH.SIGN_IN_FAILURE
+    throw authError.from(error)
   }
 }
 
@@ -122,26 +108,18 @@ function processCredentialsProfile(credentials) {
     logger.debug(`Completed Bell credentials profile processing ${Date.now() - startTime}ms`)
     return result
   } catch (error) {
-    log(LogCodes.AUTH.SIGN_IN_FAILURE, {
-      userId: 'unknown',
-      errorMessage: `Bell profile processing failed: ${error.message}`,
-      step: 'bell_profile_processing_error',
-      errorDetails: {
-        message: error.message,
-        stack: error.stack,
-        name: error.name,
-        alreadyLogged: error.alreadyLogged
-      },
+    const authError = new AuthError({
+      message: 'Bell profile processing failed',
+      source: 'processCredentialsProfile',
+      reason: 'bell_profile_processing_error',
       credentialsState: {
         received: !!credentials,
         hasToken: !!credentials?.token,
         tokenLength: credentials?.token?.length || 0
       }
     })
-    logger.debug(`Bell credentials profile processing failed ${Date.now() - startTime}ms`)
-
-    error.alreadyLogged = true
-    throw error
+    authError.logCode = LogCodes.AUTH.SIGN_IN_FAILURE
+    throw authError.from(error)
   }
 }
 
@@ -179,17 +157,16 @@ function decodeTokenPayload(token) {
 
     return payload
   } catch (jwtError) {
-    log(LogCodes.AUTH.SIGN_IN_FAILURE, {
-      userId: 'unknown',
-      errorMessage: `JWT decode failed: ${jwtError.message}`,
-      step: 'bell_profile_jwt_decode_error',
+    const authError = new AuthError({
+      message: 'JWT decode failed',
+      source: 'decodeTokenPayload',
+      reason: 'bell_profile_jwt_decode_error',
       jwtError: {
-        message: jwtError.message,
-        stack: jwtError.stack,
         tokenLength: token ? token.length : 0
       }
     })
-    throw jwtError
+    authError.logCode = LogCodes.AUTH.SIGN_IN_FAILURE
+    throw authError.from(jwtError)
   }
 }
 
@@ -324,7 +301,7 @@ function getBellOptions(oidcConfig) {
             const safeRedirect = getSafeRedirect(redirectParam)
             request.yar.set('redirect', safeRedirect)
           } catch (redirectError) {
-            log(LogCodes.AUTH.SIGN_IN_FAILURE, {
+            debug(LogCodes.AUTH.SIGN_IN_FAILURE, {
               userId: 'unknown',
               errorMessage: `Failed to store redirect parameter: ${redirectError.message}`,
               step: 'bell_location_redirect_store_error',
@@ -339,21 +316,17 @@ function getBellOptions(oidcConfig) {
         logger.debug(`Bell location function completed ${Date.now() - startTime}ms`)
         return config.get('defraId.redirectUrl')
       } catch (error) {
-        log(LogCodes.AUTH.SIGN_IN_FAILURE, {
-          userId: 'unknown',
-          errorMessage: `Bell location function failed: ${error.message}`,
-          step: 'bell_location_function_error',
+        const authError = new AuthError({
+          message: 'Bell location function failed',
+          source: 'bell_location_function',
+          reason: 'bell_location_function_error',
           locationError: {
-            message: error.message,
-            stack: error.stack,
-            name: error.name,
             requestPath: request.path,
             requestMethod: request.method
           }
         })
-        logger.debug(`Bell location function failed ${Date.now() - startTime}ms`)
-        error.alreadyLogged = true
-        throw error
+        authError.logCode = LogCodes.AUTH.SIGN_IN_FAILURE
+        throw authError.from(error)
       }
     },
     providerParams: function () {
@@ -430,9 +403,10 @@ async function handleTokenVerificationError(userSession, sessionId, request, tok
     logger.debug(`Token refresh succeeded ${Date.now() - startTime}ms`)
     return { isValid: true }
   } catch (refreshError) {
-    log(
+    debug(
       LogCodes.AUTH.TOKEN_VERIFICATION_FAILURE,
       {
+        message: `Token refresh failed ${Date.now() - startTime}ms`,
         userId: userSession.contactId,
         errorMessage: refreshError.message,
         step: 'token_refresh_failed',
@@ -440,7 +414,6 @@ async function handleTokenVerificationError(userSession, sessionId, request, tok
       },
       request
     )
-    logger.debug(`Token refresh failed ${Date.now() - startTime}ms`)
     return { isValid: false }
   }
 }

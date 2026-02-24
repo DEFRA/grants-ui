@@ -7,7 +7,7 @@ import {
   buildCookieBannerConfig,
   buildCookieBannerNoscriptConfig
 } from '~/src/config/nunjucks/context/build-cookie-banner-config.js'
-import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { debug, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
 const assetPath = config.get('assetPath')
 const manifestPath = path.join(config.get('root'), '.public/assets-manifest.json')
@@ -55,7 +55,7 @@ const loadWebpackManifest = (request) => {
     try {
       webpackManifest = JSON.parse(readFileSync(manifestPath, 'utf-8'))
     } catch (error) {
-      log(
+      debug(
         LogCodes.SYSTEM.SERVER_ERROR,
         {
           errorMessage: `Webpack ${path.basename(manifestPath)} not found: ${error.message}`
@@ -84,7 +84,7 @@ const getSessionData = async (request) => {
     return (await cache.get(request.auth.credentials.sessionId)) || {}
   } catch (cacheError) {
     const sessionId = String(request.auth.credentials.sessionId || 'unknown')
-    log(
+    debug(
       LogCodes.AUTH.SIGN_IN_FAILURE,
       {
         userId: 'unknown',
@@ -195,7 +195,7 @@ export async function context(request) {
 
     return buildSuccessContext(auth, request, serviceName, cookiePolicyUrl, cookieConsentExpiryDays)
   } catch (error) {
-    log(
+    debug(
       LogCodes.SYSTEM.SERVER_ERROR,
       {
         errorMessage: `Error building context: ${error.message}`

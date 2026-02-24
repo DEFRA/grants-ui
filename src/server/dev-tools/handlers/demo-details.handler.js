@@ -1,7 +1,7 @@
 import { buildDemoMappedData, buildDemoRequest } from '../helpers/index.js'
 import { generateFormNotFoundResponse, getAllForms } from '../utils/index.js'
 import { processSections } from '../../common/services/details-page/index.js'
-import { log, LogCodes } from '../../common/helpers/logging/log.js'
+import { debug, LogCodes } from '../../common/helpers/logging/log.js'
 
 const CHECK_DETAILS_VIEW = 'check-details'
 
@@ -173,7 +173,7 @@ export async function demoDetailsHandler(request, h) {
 
     return h.view(CHECK_DETAILS_VIEW, viewModel)
   } catch (error) {
-    log(LogCodes.CONFIRMATION.CONFIRMATION_ERROR, {
+    debug(LogCodes.CONFIRMATION.CONFIRMATION_ERROR, {
       userId: 'demo',
       errorMessage: `Demo details route error: ${error.message}`
     })

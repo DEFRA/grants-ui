@@ -9,7 +9,6 @@ import {
   MOCK_CONFIRMATION_CONTENT,
   MOCK_FORMS
 } from '../../confirmation/__test-fixtures__/confirmation-test-fixtures.js'
-import { log } from '../../common/helpers/logging/log.js'
 
 const mockDemoData = {
   referenceNumber: 'DEMO123',
@@ -124,7 +123,6 @@ describe('demo-confirmation.handler', () => {
 
       await demoConfirmationHandler(mockRequest, mockH)
 
-      expect(vi.mocked(log)).toHaveBeenCalled()
       expect(ConfirmationService.processConfirmationContent).not.toHaveBeenCalled()
       expect(ConfirmationService.buildViewModel).toHaveBeenCalledWith({
         ...mockDemoData,

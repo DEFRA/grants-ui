@@ -34,6 +34,7 @@ vi.doMock('jsonwebtoken', () => {
 
 let persistSubmissionToApi
 let log
+let debug
 let LogCodes
 let mockRequest
 
@@ -48,6 +49,7 @@ const importHelperAndDeps = async () => {
   persistSubmissionToApi = helper.persistSubmissionToApi
   const logModule = await import('../logging/log.js')
   log = logModule.log
+  debug = logModule.debug
   LogCodes = logModule.LogCodes
 }
 
@@ -144,7 +146,7 @@ describe('persistSubmissionToApi', () => {
       await persistSubmissionToApi(TEST_SUBMISSION, mockRequest)
 
       expect(fetch).toHaveBeenCalledTimes(1)
-      expect(log).toHaveBeenCalledWith(
+      expect(debug).toHaveBeenCalledWith(
         LogCodes.SYSTEM.EXTERNAL_API_ERROR,
         expect.objectContaining({
           method: 'POST',

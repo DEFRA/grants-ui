@@ -1,6 +1,6 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
-import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { log, debug, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { fetchParcelsFromDal } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
 import { stringifyParcel } from '~/src/server/land-grants/utils/format-parcel.js'
 
@@ -28,7 +28,7 @@ export default class LandGrantsQuestionWithAuthCheckController extends QuestionP
         return this.renderUnauthorisedView(h)
       }
     } catch (error) {
-      log(
+      debug(
         LogCodes.SYSTEM.EXTERNAL_API_ERROR,
         {
           endpoint: `Consolidated view`,

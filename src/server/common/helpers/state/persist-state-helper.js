@@ -2,7 +2,7 @@ import 'dotenv/config'
 import { config } from '~/src/config/config.js'
 import { parseSessionKey } from './get-cache-key-helper.js'
 import { createApiHeadersForGrantsUiBackend } from '../auth/backend-auth-helper.js'
-import { log, LogCodes } from '../logging/log.js'
+import { log, debug, LogCodes } from '../logging/log.js'
 
 // @ts-ignore - TS2589: Type instantiation excessively deep (convict type complexity)
 const GRANTS_UI_BACKEND_ENDPOINT = config.get('session.cache.apiEndpoint')
@@ -69,7 +69,7 @@ export async function persistStateToApi(state, key, { lockToken } = {}) {
       })
     }
   } catch (err) {
-    log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
+    debug(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
       method: 'POST',
       endpoint: url.href,
       identity: key,

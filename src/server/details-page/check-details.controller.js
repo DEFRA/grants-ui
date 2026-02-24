@@ -1,7 +1,7 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { buildGraphQLQuery, mapResponse, processSections } from '../common/services/details-page/index.js'
 import { executeConfigDrivenQuery } from '../common/services/consolidated-view/consolidated-view.service.js'
-import { log, LogCodes } from '../common/helpers/logging/log.js'
+import { log, debug, LogCodes } from '../common/helpers/logging/log.js'
 
 const ERROR_TITLE = 'There is a problem'
 
@@ -83,7 +83,7 @@ export default class CheckDetailsController extends QuestionPageController {
       const { sections } = await this.fetchAndProcessData(request, config)
       return h.view(this.viewName, { ...baseViewModel, sections, errors: [validationError] })
     } catch (error) {
-      log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, { errorMessage: error.message }, request)
+      debug(LogCodes.SYSTEM.EXTERNAL_API_ERROR, { errorMessage: error.message }, request)
       return h.view(this.viewName, { ...baseViewModel, errors: [validationError] })
     }
   }
@@ -109,7 +109,7 @@ export default class CheckDetailsController extends QuestionPageController {
       })
       return this.proceed(request, h, this.getNextPath(context))
     } catch (error) {
-      log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, { errorMessage: error.message }, request)
+      debug(LogCodes.SYSTEM.EXTERNAL_API_ERROR, { errorMessage: error.message }, request)
       return h.view(this.viewName, {
         ...baseViewModel,
         error: {
@@ -149,7 +149,7 @@ export default class CheckDetailsController extends QuestionPageController {
    * @returns {ResponseObject}
    */
   handleError(error, baseViewModel, h, request) {
-    log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, { errorMessage: error.message }, request)
+    debug(LogCodes.SYSTEM.EXTERNAL_API_ERROR, { errorMessage: error.message }, request)
     return h.view(this.viewName, {
       ...baseViewModel,
       error: {
