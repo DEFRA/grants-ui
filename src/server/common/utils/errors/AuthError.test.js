@@ -19,7 +19,7 @@ describe('AuthError', () => {
 
     authError.log()
 
-    expect(mockBaseErrorLog).toHaveBeenCalledWith(null, {})
+    expect(mockBaseErrorLog).toHaveBeenCalledWith(undefined, {})
   })
 
   it('should log user and organisation details when request contains auth credentials with profile', () => {

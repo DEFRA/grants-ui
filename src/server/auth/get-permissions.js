@@ -1,5 +1,11 @@
 const DEFAULT_SCOPE = 'user'
 
+/**
+ * @param {string} crn
+ * @param {string} organisationId
+ * @param {string} token
+ * @returns {{role: string, scope: string[]}}
+ */
 function getPermissions(crn, organisationId, token) {
   // Cannot be retrieved in a single call so need to make multiple calls to different APIs
   // These calls are authenticated using the token returned from Defra Identity
@@ -8,10 +14,15 @@ function getPermissions(crn, organisationId, token) {
   // 1. Get personId from RPS API
   const personId = getPersonId({ crn, token })
   // 2. Get roles and privileges from Siti Agri API
-  const { role, privileges } = getRolesAndPrivileges(personId, organisationId)
+  let { role, privileges } = getRolesAndPrivileges(personId, organisationId)
   // 3. Map roles and privileges to scope
   // An application specific permission is added to demonstrate how to add local, non-Siti Agri permissions
   const scope = [DEFAULT_SCOPE, ...privileges]
+
+  if (!role) {
+    role = ['user']
+  }
+
   // Hapi.js assumes permissions are added in a `scope` array
   return { role, scope }
 }
@@ -54,6 +65,11 @@ function getPersonId(_headers) {
   return mockResponse._data.id
 }
 
+/**
+ * @param {string} _personId
+ * @param {string} _organisationId
+ * @returns {{role: *, privileges: *[]}}
+ */
 function getRolesAndPrivileges(_personId, _organisationId) {
   // simulate call to Siti Agri API
   // returns all roles and privileges for so need to filter for logged in user

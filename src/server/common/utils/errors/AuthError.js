@@ -35,17 +35,17 @@ export class AuthError extends BaseError {
 
   /**
    * Sends error details to the logger with additional details for Auth Errors
-   * @param {AuthRequest|null} request
+   * @param {AuthRequest|undefined} request
    * @param {...Record<string, any>} additionalDetail
    */
-  log(request = null, ...additionalDetail) {
+  log(request = undefined, ...additionalDetail) {
     const authLoggingData = this.getAuthLoggingData(request)
     super.log(request, Object.assign({}, ...additionalDetail, authLoggingData))
   }
 
   /**
    * Extracts authentication details from the request and adds them to the authLoggingData object for logging purposes
-   * @param {AuthRequest|null} request
+   * @param {AuthRequest|undefined} request
    * @return {Object}
    */
   getAuthLoggingData(request) {

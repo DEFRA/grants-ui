@@ -1,5 +1,5 @@
 /**
- * @param {Partial<Request> | null} request
+ * @param {Partial<Request> | null | undefined} request
  */
 export function buildNavigation(request) {
   return [

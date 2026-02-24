@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import { log, logger, LogCodes } from './log.js'
+import { log, logger, LogCodes, debug } from './log.js'
 
 vi.unmock('~/src/server/common/helpers/logging/log.js')
 
@@ -138,5 +138,14 @@ describe('Logger Functionality', () => {
     log(logCodeWithoutError, {})
 
     expect(logger.info).toHaveBeenCalledWith({}, 'Info message')
+  })
+
+  it('should bypass logcodes defined level when using the dedicated debug logger', () => {
+    const logCode = LogCodes.AUTH.GENERIC_ERROR
+    debug(logCode, {
+      userId: '123',
+      error: undefined
+    })
+    expect(logger.debug).toHaveBeenCalledWith({}, 'Authentication error for user=123: undefined')
   })
 })

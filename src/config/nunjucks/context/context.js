@@ -16,7 +16,7 @@ const manifestPath = path.join(config.get('root'), '.public/assets-manifest.json
 let webpackManifest
 
 /**
- * @param {Request | null } request
+ * @param {Request | undefined } request
  * @param {string|null} role
  * @returns {object} User authentication and authorization details
  */
@@ -37,7 +37,7 @@ const usersDetails = (request, role) => {
  */
 
 /**
- * @param {ExtendedRequest | null} request
+ * @param {ExtendedRequest | undefined} request
  * @returns {object} Cookie consent configuration including service name, policy URL, and expiry days
  */
 const extractCookieConsentConfig = (request) => {
@@ -67,7 +67,7 @@ const loadWebpackManifest = (request) => {
 }
 
 /**
- * @param {ExtendedRequest | null} request
+ * @param {ExtendedRequest | undefined} request
  * @returns {Promise<object>} Session data object or empty object if unavailable
  */
 const getSessionData = async (request) => {
@@ -142,7 +142,7 @@ const buildCommonConfig = (serviceName, cookiePolicyUrl, cookieConsentExpiryDays
 
 /**
  * @param {any} auth
- * @param {ExtendedRequest | null} request
+ * @param {ExtendedRequest | undefined} request
  * @param {string} serviceName
  * @param {string} cookiePolicyUrl
  * @param {number} cookieConsentExpiryDays
@@ -182,7 +182,7 @@ const buildFallbackContext = (serviceName, cookiePolicyUrl, cookieConsentExpiryD
 }
 
 /**
- * @param {ExtendedRequest | null} request
+ * @param {ExtendedRequest | undefined} request
  * @returns {Promise<object>} Complete context object for rendering views
  */
 export async function context(request) {

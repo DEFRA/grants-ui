@@ -4,7 +4,7 @@ import { getSafeRedirect } from '~/src/server/auth/get-safe-redirect.js'
 import { validateState } from '~/src/server/auth/state.js'
 import { verifyToken } from '~/src/server/auth/verify-token.js'
 import { getSignOutUrl } from './get-sign-out-url.js'
-import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { debug, log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import {
   logSuccessfulSignIn,
   logAuthFailure,
@@ -22,6 +22,10 @@ const HTTP_FOUND = 302
 const AUTH_ENDPOINT_USER_LIMIT = config.get('rateLimit.authEndpointUserLimit')
 const AUTH_ENDPOINT_PATH_LIMIT = config.get('rateLimit.authEndpointPathLimit')
 
+/**
+ * @param {RequestWithCookieAuth} request
+ * @param {ResponseToolkit} h
+ */
 function handleAuthSignIn(request, h) {
   try {
     // If there's an auth error, log it specifically
@@ -42,7 +46,6 @@ function handleAuthSignIn(request, h) {
       )
     }
 
-    // Log that we're about to redirect
     log(
       LogCodes.AUTH.AUTH_DEBUG,
       {
@@ -64,8 +67,7 @@ function handleAuthSignIn(request, h) {
 
     return h.redirect('/home')
   } catch (error) {
-    // Log any errors that occur during the redirect
-    log(
+    debug(
       LogCodes.AUTH.SIGN_IN_FAILURE,
       {
         userId: UNKNOWN_USER,
@@ -81,8 +83,6 @@ function handleAuthSignIn(request, h) {
       request
     )
 
-    // Instead of throwing the error, redirect to an error page or home page
-    // This prevents the 500 error from being shown to the user
     return h.redirect('/home').code(HTTP_FOUND)
   }
 }
@@ -213,7 +213,7 @@ function setupAuthRoutes(server) {
 }
 
 /**
- * @satisfies {ServerRegisterPluginObject<void>}
+ * @satisfies {ServerRegisterPluginObject}
  */
 export const auth = {
   plugin: {
@@ -225,6 +225,10 @@ export const auth = {
   }
 }
 
+/**
+ * @param {RequestWithCookieAuth} request
+ * @param {ResponseToolkit} h
+ */
 function handleUnauthenticatedRequest(request, h) {
   const authErrorMessage = request.auth?.error?.message || 'Not authenticated'
   const hasCredentials = !!request.auth?.credentials
@@ -238,6 +242,10 @@ function handleUnauthenticatedRequest(request, h) {
   return renderUnauthorisedView(request, h)
 }
 
+/**
+ * @param {RequestWithCookieAuth} request
+ * @param {ResponseToolkit} h
+ */
 function renderUnauthorisedView(request, h) {
   log(
     LogCodes.AUTH.AUTH_DEBUG,
@@ -298,6 +306,10 @@ function renderUnauthorisedView(request, h) {
   }
 }
 
+/**
+ * @param {RequestWithCookieAuth} request
+ * @param {ResponseToolkit} h
+ */
 async function processAuthenticatedSignIn(request, h) {
   const { profile, token, refreshToken } = request.auth.credentials
 
@@ -316,17 +328,14 @@ async function processAuthenticatedSignIn(request, h) {
 
 function validateProfileData(profile) {
   if (!profile?.sessionId) {
-    log(LogCodes.AUTH.SIGN_IN_FAILURE, {
-      userId: profile?.contactId || UNKNOWN_USER,
-      errorMessage: 'Missing required profile data or sessionId',
-      step: 'profile_validation',
-      profileData: {
-        hasProfile: !!profile,
-        hasSessionId: !!profile?.sessionId,
-        profileKeys: Object.keys(profile || {})
-      }
+    const authError = new AuthError({
+      message: 'Missing required profile data or sessionId',
+      status: 500,
+      source: 'validate-profile-data',
+      reason: 'profile_validation_failure'
     })
-    throw new Error('Authentication failed: Missing required profile data')
+    authError.logCode = LogCodes.AUTH.SIGN_IN_FAILURE
+    throw authError
   }
 }
 
@@ -335,7 +344,7 @@ function getPermissionsOrDefaults(profile, token) {
     const permissions = getPermissions(profile.crn, profile.organisationId, token)
     return { role: permissions.role, scope: permissions.scope }
   } catch (permissionsError) {
-    log(LogCodes.AUTH.SIGN_IN_FAILURE, {
+    debug(LogCodes.AUTH.SIGN_IN_FAILURE, {
       userId: profile.contactId,
       errorMessage: `Failed to get permissions: ${permissionsError.message}`,
       step: 'get_permissions_error',
@@ -349,6 +358,14 @@ function getPermissionsOrDefaults(profile, token) {
   }
 }
 
+/**
+ * @param {RequestWithCookieAuth} request
+ * @param {any} profile
+ * @param {string} role
+ * @param {string[]} scope
+ * @param {string} token
+ * @param {string} refreshToken
+ */
 async function storeSessionData(request, profile, role, scope, token, refreshToken) {
   try {
     await request.server.app.cache.set(profile.sessionId, {
@@ -371,24 +388,32 @@ async function storeSessionData(request, profile, role, scope, token, refreshTok
   }
 }
 
+/**
+ * @param {RequestWithCookieAuth} request
+ * @param profile
+ */
 function setCookieAuth(request, profile) {
   try {
     request.cookieAuth.set({ sessionId: profile.sessionId })
   } catch (cookieError) {
-    log(
-      LogCodes.AUTH.SIGN_IN_FAILURE,
-      {
-        userId: profile.contactId,
-        errorMessage: `Failed to set cookie auth: ${cookieError.message}`,
-        step: 'cookie_auth_set_error',
-        sessionId: profile.sessionId
-      },
-      request
-    )
-    throw cookieError
+    const authError = new AuthError({
+      message: 'Failed to set cookie auth',
+      step: 'cookie_auth_set_error',
+      source: 'auth-handler',
+      reason: 'cookie_set_failure'
+    })
+    authError.from(cookieError)
+    throw authError
   }
 }
 
+/**
+ *
+ * @param {RequestWithCookieAuth} request
+ * @param {ResponseToolkit} h
+ * @throws {AuthError}
+ * @returns {*}
+ */
 function redirectAfterSignIn(request, h) {
   try {
     const redirect = request.yar.get('redirect') ?? '/home'
@@ -408,6 +433,10 @@ function redirectAfterSignIn(request, h) {
   }
 }
 
+/**
+ * @param {RequestWithCookieAuth} request
+ * @param {ResponseToolkit} h
+ */
 async function handleOidcSignIn(request, h) {
   try {
     logAuthDebugInfo(request)
@@ -430,6 +459,10 @@ async function handleOidcSignIn(request, h) {
   }
 }
 
+/**
+ * @param {RequestWithCookieAuth} request
+ * @param {ResponseToolkit} h
+ */
 async function handleSignOut(request, h) {
   if (!request.auth.isAuthenticated) {
     log(
@@ -478,6 +511,10 @@ async function handleSignOut(request, h) {
   return h.redirect(signOutUrl)
 }
 
+/**
+ * @param {RequestWithCookieAuth} request
+ * @param {ResponseToolkit} h
+ */
 async function handleOidcSignOut(request, h) {
   if (request.auth.isAuthenticated) {
     validateState(request, request.query.state)
@@ -496,21 +533,30 @@ async function handleOidcSignOut(request, h) {
   return h.redirect('/')
 }
 
+/**
+ * @param {RequestWithCookieAuth} request
+ * @param {ResponseToolkit} h
+ */
 function handleOrganisationRedirect(request, h) {
-  // Should never be called as the user should no longer be authenticated with `defra-id` after initial sign in
-  // The strategy should redirect the user to the sign in page and they will rejoin the service at the /auth/sign-in-oidc route
-  // Adding as safeguard
   const redirect = request.yar.get('redirect') ?? '/home'
   request.yar.clear('redirect')
-  // Ensure redirect is a relative path to prevent redirect attacks
   const safeRedirect = getSafeRedirect(redirect)
   return h.redirect(safeRedirect)
 }
 
+/**
+ * @param {RequestWithCookieAuth} _request
+ * @param {ResponseToolkit} h
+ */
 function handleJourneyUnauthorised(_request, h) {
   return h.view('errors/401')
 }
 
 /**
- * @import { ServerRegisterPluginObject } from '@hapi/hapi'
+ * @typedef {import('@hapi/hapi').ServerRegisterPluginObject<void>} ServerRegisterPluginObject
+ * @typedef {import('@hapi/hapi').ResponseToolkit} ResponseToolkit
+ * @typedef {import('@hapi/hapi').Server} Server
+ * @typedef {{ set: (value: any) => void, clear: () => void }} CookieAuth
+ * @typedef {{ get: (id: string) => Promise<any>, set: (id: string, value: any) => Promise<void>, drop: (id: string) => Promise<void> }} SessionCache
+ * @typedef {import('@hapi/hapi').Request & { server: Server & { app: { cache: SessionCache } }, cookieAuth: CookieAuth, yar: any, auth: { credentials: any, isAuthenticated: boolean, error?: any, strategy: string, mode: string } }} RequestWithCookieAuth
  */

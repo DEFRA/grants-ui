@@ -1,5 +1,5 @@
 services:
-  gae-acceptance-tests:
+  grants-ui-acceptance-tests:
     image: defradigital/grants-ui-acceptance-tests
     pull_policy: always
     depends_on:
@@ -54,6 +54,7 @@ services:
       RAMPUP_SECONDS: 15
       VU_COUNT: 10
       P95_THRESHOLD_MS: ${P95_THRESHOLD_MS:-400}
+      GENERATE_REPORT: false
     volumes:
       - ./nginx/certs:/etc/ssl/certs:ro
       - ./performance-test-users.csv:/home/k6/scenarios/users.csv:ro
