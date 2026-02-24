@@ -34,7 +34,7 @@ describe('ConsentPageController', () => {
   })
 
   describe('GET Handler', () => {
-    test('should display consent page when requiredConsents exist', async () => {
+    test('should display consent page with SSSI panel when only SSSI consent required', async () => {
       mockContext.state = {
         requiredConsents: ['sssi']
       }
@@ -45,12 +45,35 @@ describe('ConsentPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'consent-required',
         expect.objectContaining({
-          requiredConsents: ['sssi']
+          consentPanel: expect.objectContaining({
+            consentType: 'sssi',
+            titleText: 'You must have SSSI consent'
+          })
         })
       )
     })
 
-    test('should display consent page with multiple consent types', async () => {
+    test('should display consent page with HEFER panel when only HEFER consent required', async () => {
+      mockContext.state = {
+        requiredConsents: ['hefer']
+      }
+
+      const handler = controller.makeGetRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'consent-required',
+        expect.objectContaining({
+          consentPanel: expect.objectContaining({
+            consentType: 'hefer',
+            titleText:
+              'You must get an SFI Historic Environment Farm Environment Record (SFI HEFER) from Historic England'
+          })
+        })
+      )
+    })
+
+    test('should display consent page with combined panel when all consent types required', async () => {
       mockContext.state = {
         requiredConsents: ['sssi', 'hefer']
       }
@@ -61,7 +84,10 @@ describe('ConsentPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'consent-required',
         expect.objectContaining({
-          requiredConsents: ['sssi', 'hefer']
+          consentPanel: expect.objectContaining({
+            consentType: 'all',
+            titleText: 'You must get consent to do your actions'
+          })
         })
       )
     })
