@@ -30,17 +30,23 @@ export class ConfirmationService {
   }
 
   /**
-   * Process confirmation content - replace component placeholders
+   * Process confirmation content - replace component placeholders and slug tokens
    * @param {object} confirmationContent - Raw confirmation content from YAML
+   * @param {string} [slug] - Form slug for replacing {{SLUG}} placeholders
    * @returns {object} Processed confirmation content
    */
-  static processConfirmationContent(confirmationContent) {
+  static processConfirmationContent(confirmationContent, slug) {
     if (!confirmationContent) {
       return null
     }
 
     if (confirmationContent.html) {
-      const processedHtml = ComponentsRegistry.replaceComponents(confirmationContent.html)
+      let processedHtml = ComponentsRegistry.replaceComponents(confirmationContent.html)
+
+      if (slug) {
+        processedHtml = processedHtml.replaceAll('{{SLUG}}', slug)
+      }
+
       return {
         ...confirmationContent,
         html: processedHtml

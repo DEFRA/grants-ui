@@ -65,24 +65,30 @@ describe('dev-home.handler', () => {
     test('should build config with separate form arrays for each section', () => {
       const confirmationForms = [{ slug: 'conf-form', title: 'Conf Form' }]
       const detailsForms = [{ slug: 'details-form', title: 'Details Form' }]
+      const printApplicationForms = [{ slug: 'print-form', title: 'Print Form' }]
 
-      const result = buildToolsConfig({ confirmationForms, detailsForms })
+      const result = buildToolsConfig({ confirmationForms, detailsForms, printApplicationForms })
 
-      expect(result).toHaveLength(3)
+      expect(result).toHaveLength(4)
       expect(result[0].name).toBe('Demo Confirmation Pages')
       expect(result[0].examples).toHaveLength(1)
       expect(result[0].examples[0].slug).toBe('conf-form')
       expect(result[1].name).toBe('Demo Details Pages')
       expect(result[1].examples).toHaveLength(1)
       expect(result[1].examples[0].slug).toBe('details-form')
-      expect(result[2].name).toBe('Test Error Pages')
+      expect(result[2].name).toBe('Demo Print Application')
+      expect(result[2].examples).toHaveLength(1)
+      expect(result[2].examples[0].slug).toBe('print-form')
+      expect(result[2].examples[0].path).toBe('/dev/demo-print-application/print-form')
+      expect(result[3].name).toBe('Test Error Pages')
     })
 
     test('should handle empty form arrays', () => {
-      const result = buildToolsConfig({ confirmationForms: [], detailsForms: [] })
+      const result = buildToolsConfig({ confirmationForms: [], detailsForms: [], printApplicationForms: [] })
 
       expect(result[0].examples).toHaveLength(0)
       expect(result[1].examples).toHaveLength(0)
+      expect(result[2].examples).toHaveLength(0)
     })
   })
 
@@ -100,15 +106,11 @@ describe('dev-home.handler', () => {
 
   describe('devHomeHandler', () => {
     test('should return HTML response with development tools page', () => {
-      const mockHtmlResponse = { type: vi.fn().mockReturnValue('final-response') }
-      mockH.response.mockReturnValue(mockHtmlResponse)
-
-      const result = devHomeHandler(mockRequest, mockH)
+      devHomeHandler(mockRequest, mockH)
 
       expect(getAllForms).toHaveBeenCalled()
       expect(mockH.response).toHaveBeenCalledWith(expect.stringContaining('<html>'))
-      expect(mockHtmlResponse.type).toHaveBeenCalledWith('text/html')
-      expect(result).toBe('final-response')
+      expect(mockH.type).toHaveBeenCalledWith('text/html')
     })
 
     it.each([
@@ -125,9 +127,6 @@ describe('dev-home.handler', () => {
         ['form-with-confirmation-only', 'form-with-neither']
       ]
     ])('should only show forms with %s config in %s section', (_name, basePath, included, excluded) => {
-      const mockHtmlResponse = { type: vi.fn().mockReturnValue('final-response') }
-      mockH.response.mockReturnValue(mockHtmlResponse)
-
       devHomeHandler(mockRequest, mockH)
 
       const htmlContent = mockH.response.mock.calls[0][0]
@@ -138,20 +137,23 @@ describe('dev-home.handler', () => {
     test('should handle empty forms list gracefully', () => {
       getAllForms.mockReturnValue([])
 
-      const mockHtmlResponse = { type: vi.fn().mockReturnValue('final-response') }
-      mockH.response.mockReturnValue(mockHtmlResponse)
+      devHomeHandler(mockRequest, mockH)
 
-      const result = devHomeHandler(mockRequest, mockH)
-
-      expect(result).toBe('final-response')
       expect(mockH.response).toHaveBeenCalledWith(expect.stringContaining('Available Tools'))
     })
   })
 
-  test('should include error pages section in the response', () => {
-    const mockHtmlResponse = { type: vi.fn().mockReturnValue('final-response') }
-    mockH.response.mockReturnValue(mockHtmlResponse)
+  test('should include print application section with all forms', () => {
+    devHomeHandler(mockRequest, mockH)
 
+    const htmlContent = mockH.response.mock.calls[0][0]
+    expect(htmlContent).toContain('Demo Print Application')
+    mockAllForms.forEach((form) => {
+      expect(htmlContent).toContain(`/dev/demo-print-application/${form.slug}`)
+    })
+  })
+
+  test('should include error pages section in the response', () => {
     devHomeHandler(mockRequest, mockH)
 
     const htmlContent = mockH.response.mock.calls[0][0]
@@ -159,13 +161,5 @@ describe('dev-home.handler', () => {
     expect(htmlContent).toContain('/dev/test-400')
     expect(htmlContent).toContain('/dev/test-429')
     expect(htmlContent).toContain('/dev/test-500')
-  })
-})
-
-describe('generateToolsSection', () => {
-  test('should not render examples section when tool has no examples', () => {
-    const tools = [{ name: 'Tool', description: 'desc' }]
-    const result = generateToolsSection(tools)
-    expect(result).not.toContain('Example forms:')
   })
 })

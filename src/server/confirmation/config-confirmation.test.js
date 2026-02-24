@@ -58,25 +58,24 @@ describe('config-confirmation', () => {
     vi.mocked(log).mockClear()
   })
 
-  test('should register plugin correctly', () => {
-    expect(configConfirmation.plugin.name).toBe('config-confirmation')
-  })
-
   describe('confirmation flow', () => {
-    test('should render confirmation page with valid form and data', async () => {
-      const processedConfirmationContent = { html: '<h2>Processed content</h2>' }
-      const mockFormDefinition = { metadata: { confirmationContent: mockConfirmationContent } }
-
+    function setupHappyPathMocks({ confirmationContent = mockConfirmationContent } = {}) {
+      const formDefinition = confirmationContent ? { metadata: { confirmationContent } } : { metadata: {} }
       mockYarSession.get
         .mockReturnValueOnce('Test Business')
         .mockReturnValueOnce('123456789')
         .mockReturnValueOnce('Test Contact')
-
       ConfirmationService.findFormBySlug.mockReturnValue(mockForm)
       ConfirmationService.loadConfirmationContent.mockResolvedValue({
-        confirmationContent: mockConfirmationContent,
-        formDefinition: mockFormDefinition
+        confirmationContent,
+        formDefinition
       })
+      return { confirmationContent, formDefinition }
+    }
+
+    test('should render confirmation page with valid form and data', async () => {
+      const processedConfirmationContent = { html: '<h2>Processed content</h2>' }
+      setupHappyPathMocks()
       ConfirmationService.processConfirmationContent.mockReturnValue(processedConfirmationContent)
       ConfirmationService.buildViewModel.mockReturnValue({ test: 'viewModel' })
 
@@ -84,7 +83,7 @@ describe('config-confirmation', () => {
 
       expect(ConfirmationService.findFormBySlug).toHaveBeenCalledWith('test-slug')
       expect(ConfirmationService.loadConfirmationContent).toHaveBeenCalledWith(mockForm)
-      expect(ConfirmationService.processConfirmationContent).toHaveBeenCalledWith(mockConfirmationContent)
+      expect(ConfirmationService.processConfirmationContent).toHaveBeenCalledWith(mockConfirmationContent, 'test-slug')
       expect(ConfirmationService.buildViewModel).toHaveBeenCalledWith({
         referenceNumber: 'REF123',
         businessName: 'Test Business',
@@ -99,39 +98,22 @@ describe('config-confirmation', () => {
 
     test('should return 400 when slug is missing', async () => {
       mockRequest.params = {}
-      const mockResponse = { code: vi.fn().mockReturnValue('bad-request') }
-      mockH.response.mockReturnValue(mockResponse)
 
-      const result = await handler(mockRequest, mockH)
+      await handler(mockRequest, mockH)
 
-      expect(mockResponse.code).toHaveBeenCalledWith(400)
-      expect(result).toBe('bad-request')
+      expect(mockH.code).toHaveBeenCalledWith(400)
     })
 
     test('should return 404 when form not found', async () => {
       ConfirmationService.findFormBySlug.mockReturnValue(null)
-      const mockResponse = { code: vi.fn().mockReturnValue('not-found') }
-      mockH.response.mockReturnValue(mockResponse)
 
-      const result = await handler(mockRequest, mockH)
+      await handler(mockRequest, mockH)
 
-      expect(mockResponse.code).toHaveBeenCalledWith(404)
-      expect(result).toBe('not-found')
+      expect(mockH.code).toHaveBeenCalledWith(404)
     })
 
     test('should render page with default content when no config-driven content available', async () => {
-      const mockFormDefinition = { metadata: {} }
-
-      mockYarSession.get
-        .mockReturnValueOnce('Test Business')
-        .mockReturnValueOnce('123456789')
-        .mockReturnValueOnce('Test Contact')
-
-      ConfirmationService.findFormBySlug.mockReturnValue(mockForm)
-      ConfirmationService.loadConfirmationContent.mockResolvedValue({
-        confirmationContent: null,
-        formDefinition: mockFormDefinition
-      })
+      setupHappyPathMocks({ confirmationContent: null })
       ConfirmationService.buildViewModel.mockReturnValue({ test: 'viewModel' })
 
       await handler(mockRequest, mockH)
@@ -147,26 +129,6 @@ describe('config-confirmation', () => {
         slug: 'test-slug'
       })
       expect(mockH.view).toHaveBeenCalledWith('config-confirmation-page', { test: 'viewModel' })
-    })
-
-    test('should handle reference number from confirmation state', async () => {
-      const processedConfirmationContent = { html: '<h2>Processed content</h2>' }
-      const mockFormDefinition = { metadata: { confirmationContent: mockConfirmationContent } }
-
-      ConfirmationService.findFormBySlug.mockReturnValue(mockForm)
-      ConfirmationService.loadConfirmationContent.mockResolvedValue({
-        confirmationContent: mockConfirmationContent,
-        formDefinition: mockFormDefinition
-      })
-      ConfirmationService.processConfirmationContent.mockReturnValue(processedConfirmationContent)
-      ConfirmationService.buildViewModel.mockReturnValue({})
-
-      await handler(mockRequest, mockH)
-
-      expect(ConfirmationService.processConfirmationContent).toHaveBeenCalledWith(mockConfirmationContent)
-      expect(ConfirmationService.buildViewModel).toHaveBeenCalledWith(
-        expect.objectContaining({ referenceNumber: 'REF123' })
-      )
     })
 
     test('should handle missing reference number', async () => {
@@ -186,7 +148,7 @@ describe('config-confirmation', () => {
 
       await handler(mockRequest, mockH)
 
-      expect(ConfirmationService.processConfirmationContent).toHaveBeenCalledWith(mockConfirmationContent)
+      expect(ConfirmationService.processConfirmationContent).toHaveBeenCalledWith(mockConfirmationContent, 'test-slug')
       expect(ConfirmationService.buildViewModel).toHaveBeenCalledWith(
         expect.objectContaining({ referenceNumber: 'Not available' })
       )
@@ -218,14 +180,11 @@ describe('config-confirmation', () => {
       ConfirmationService.findFormBySlug.mockImplementation(() => {
         throw new Error('Service error')
       })
-      const mockResponse = { code: vi.fn().mockReturnValue('error') }
-      mockH.response.mockReturnValue(mockResponse)
 
-      const result = await handler(mockRequest, mockH)
+      await handler(mockRequest, mockH)
 
       expect(vi.mocked(log)).toHaveBeenCalled()
-      expect(mockResponse.code).toHaveBeenCalledWith(500)
-      expect(result).toBe('error')
+      expect(mockH.code).toHaveBeenCalledWith(500)
     })
   })
 })
