@@ -3,6 +3,7 @@ import { getValidToken } from '~/src/server/common/helpers/entra/token-manager.j
 import { escapeGraphQLString } from '~/src/server/common/helpers/graphql-utils.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { statusCodes } from '../../constants/status-codes.js'
 
 /**
  * @typedef {object} LandParcel
@@ -150,9 +151,8 @@ async function makeStubRequest({ query, sbi, crn }) {
 
   const json = await response.json()
 
-  // Optional: surface GraphQL errors properly
   if (json.errors?.length) {
-    throw new ConsolidatedViewApiError(json.errors[0].message, 502, json.errors[0].message, sbi)
+    throw new ConsolidatedViewApiError(json.errors[0].message, statusCodes.badGateway, json.errors[0].message, sbi)
   }
 
   return json
