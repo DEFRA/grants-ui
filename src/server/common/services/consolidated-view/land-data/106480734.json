@@ -1,0 +1,60 @@
+{
+  "data": {
+    "business": {
+      "sbi": "106480734",
+      "organisationId": "5559799",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "6898",
+            "sheetId": "NT8109"
+          },
+          {
+            "parcelId": "1023",
+            "sheetId": "NT9009"
+          },
+          {
+            "parcelId": "9412",
+            "sheetId": "NT8701"
+          },
+          {
+            "parcelId": "1755",
+            "sheetId": "NU0002"
+          },
+          {
+            "parcelId": "8111",
+            "sheetId": "NT8506"
+          }
+        ]
+      },
+      "info": {
+        "name": "T MG MORTIMER AND SON",
+        "reference": "106480734",
+        "email": {
+          "address": "106480734@mrafyebbasatecnepsffilcm.com.test"
+        },
+        "phone": {
+          "mobile": "01234031670"
+        },
+        "address": {
+          "line1": "Higher Greenhead Farm, Gisburn Road",
+          "line2": "",
+          "line3": null,
+          "line4": null,
+          "line5": null,
+          "street": "Gisburn Road",
+          "city": "Clitheroe",
+          "postalCode": "BB7 4LQ",
+          "uprn": "881124619099",
+          "buildingName": null,
+          "buildingNumberRange": "Saxby-All-Saints",
+          "county": null,
+          "dependentLocality": null,
+          "doubleDependentLocality": null,
+          "flatName": null,
+          "pafOrganisationName": "Top Farm Two"
+        }
+      }
+    }
+  }
+}

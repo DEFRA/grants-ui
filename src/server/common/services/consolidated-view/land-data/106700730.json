@@ -1,0 +1,60 @@
+{
+  "data": {
+    "business": {
+      "sbi": "106700730",
+      "organisationId": "5559799",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "8335",
+            "sheetId": "NZ6300"
+          },
+          {
+            "parcelId": "3650",
+            "sheetId": "NZ6300"
+          },
+          {
+            "parcelId": "9573",
+            "sheetId": "NZ6200"
+          },
+          {
+            "parcelId": "9836",
+            "sheetId": "NZ6501"
+          },
+          {
+            "parcelId": "8980",
+            "sheetId": "NZ6501"
+          }
+        ]
+      },
+      "info": {
+        "name": "TM AND SON",
+        "reference": "106700730",
+        "email": {
+          "address": "106700730@mrafyebbasatecnepsffilcm.com.test"
+        },
+        "phone": {
+          "mobile": "01234031670"
+        },
+        "address": {
+          "line1": "Higher Greenhead Farm, Gisburn Road",
+          "line2": "",
+          "line3": null,
+          "line4": null,
+          "line5": null,
+          "street": "Gisburn Road",
+          "city": "Clitheroe",
+          "postalCode": "BB7 4LQ",
+          "uprn": "881124619099",
+          "buildingName": null,
+          "buildingNumberRange": "Saxby-All-Saints",
+          "county": null,
+          "dependentLocality": null,
+          "doubleDependentLocality": null,
+          "flatName": null,
+          "pafOrganisationName": "Top Farm Two"
+        }
+      }
+    }
+  }
+}

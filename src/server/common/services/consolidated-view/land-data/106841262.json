@@ -1,0 +1,56 @@
+{
+  "data": {
+    "business": {
+      "sbi": "106841262",
+      "organisationId": "5559799",
+      "land": {
+        "parcels": [
+          {
+            "parcelId": "7349",
+            "sheetId": "ST1437"
+          },
+          {
+            "parcelId": "0972",
+            "sheetId": "ST1335"
+          },
+          {
+            "parcelId": "5025",
+            "sheetId": "ST1236"
+          },
+          {
+            "parcelId": "9525",
+            "sheetId": "ST1237"
+          }
+        ]
+      },
+      "info": {
+        "name": "MORTIMER AND Co.",
+        "reference": "106841262",
+        "email": {
+          "address": "106841262@mrafyebbasatecnepsffilcm.com.test"
+        },
+        "phone": {
+          "mobile": "01234031670"
+        },
+        "address": {
+          "line1": "Higher Greenhead Farm",
+          "line2": "T Junction",
+          "line3": null,
+          "line4": null,
+          "line5": null,
+          "street": "Gisburn Road",
+          "city": "Clitheroe",
+          "postalCode": "BB7 4LQ",
+          "uprn": "881124619099",
+          "buildingName": null,
+          "buildingNumberRange": "Saxby-All-Saints",
+          "county": null,
+          "dependentLocality": null,
+          "doubleDependentLocality": null,
+          "flatName": null,
+          "pafOrganisationName": "Top Farm Two"
+        }
+      }
+    }
+  }
+}
