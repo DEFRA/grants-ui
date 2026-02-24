@@ -29,6 +29,7 @@ vi.doMock('../state/get-cache-key-helper.js', () => ({
 
 let updateApplicationStatus
 let log
+let debug
 let LogCodes
 
 const APPLICATION_STATUS = 'SUBMITTED'
@@ -39,6 +40,7 @@ const importHelperAndDeps = async () => {
   updateApplicationStatus = helper.updateApplicationStatus
   const logModule = await import('../logging/log.js')
   log = logModule.log
+  debug = logModule.debug
   LogCodes = logModule.LogCodes
 }
 
@@ -151,7 +153,7 @@ describe('updateApplicationStatus', () => {
       await updateApplicationStatus(APPLICATION_STATUS, KEY)
 
       expect(fetch).toHaveBeenCalledTimes(1)
-      expect(log).toHaveBeenCalledWith(
+      expect(debug).toHaveBeenCalledWith(
         LogCodes.SYSTEM.EXTERNAL_API_ERROR,
         expect.objectContaining({
           method: 'PATCH',

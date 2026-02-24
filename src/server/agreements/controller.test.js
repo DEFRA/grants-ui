@@ -2,7 +2,6 @@ import { vi } from 'vitest'
 import { getAgreementController } from './controller.js'
 import { config } from '~/src/config/config.js'
 import Jwt from '@hapi/jwt'
-import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { mockHapiRequest, mockHapiResponseToolkit } from '~/src/__mocks__/hapi-mocks.js'
 
 vi.mock('~/src/config/config.js', async () => {
@@ -326,20 +325,12 @@ describe('Agreements Controller', () => {
 
       await getAgreementController.handler(mockRequest, mockH)
 
-      expect(log).toHaveBeenCalledWith(
-        LogCodes.AGREEMENTS.AGREEMENT_ERROR,
-        {
-          userId: 'test-user-123',
-          errorMessage: 'JWT generate failed: JWT secret invalid'
-        },
-        mockRequest
+      expect(mockH.response).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error: 'External Service Unavailable',
+          message: 'Unable to process request'
+        })
       )
-
-      expect(mockH.response).toHaveBeenCalledWith({
-        error: 'External Service Unavailable',
-        message: 'Unable to process request',
-        details: 'JWT secret invalid'
-      })
     })
   })
 

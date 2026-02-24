@@ -7,7 +7,10 @@ import { createState } from '~/src/server/auth/state.js'
 vi.mock('~/src/config/config.js')
 vi.mock('~/src/server/auth/get-oidc-config.js')
 vi.mock('~/src/server/auth/state.js')
-vi.mock('~/src/server/common/helpers/logging/log.js', () => ({}))
+vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
+  log: vi.fn(),
+  debug: vi.fn()
+}))
 
 describe('getSignOutUrl', () => {
   beforeEach(() => {

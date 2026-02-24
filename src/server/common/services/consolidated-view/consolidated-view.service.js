@@ -2,7 +2,8 @@ import { config } from '~/src/config/config.js'
 import { getValidToken } from '~/src/server/common/helpers/entra/token-manager.js'
 import { escapeGraphQLString } from '~/src/server/common/helpers/graphql-utils.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
-import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { log, debug, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { ConsolidatedViewError } from '~/src/server/common/utils/errors/ConsolidatedViewError.js'
 import { statusCodes } from '../../constants/status-codes.js'
 
 export function hasOnlyToleratedFailures(errors, toleratedPaths) {
@@ -39,7 +40,6 @@ function extractToleratedPartialSuccess(parsed, statusCode, sbi, toleratedPaths)
  * @property {string} [data.business.customer.lastName] - Customer's last name
  * @property {string} [data.business.customer.role] - Customer's role
  */
-
 export class ConsolidatedViewApiError extends Error {
   constructor(message, statusCode, responseBody, sbi) {
     super(message)
@@ -114,12 +114,14 @@ async function makeConsolidatedViewRequest(request, query, { toleratedPaths } = 
         return partialSuccess
       }
 
-      throw new ConsolidatedViewApiError(
-        `Failed to fetch business data: ${response.status} ${response.statusText}`,
-        response.status,
-        responseText,
-        sbi
-      )
+      throw new ConsolidatedViewError({
+        message: `Failed to fetch business data: ${response.status} ${response.statusText}`,
+        status: response.status,
+        responseBody: responseText,
+        sbi,
+        source: 'makeConsolidatedViewRequest',
+        reason: 'api_response_not_ok'
+      })
     }
 
     return response.json()
@@ -156,17 +158,22 @@ async function fetchFromConsolidatedView(request, { query, formatResponse, toler
 
     return formatResponse(responseJson)
   } catch (error) {
-    log(
+    debug(
       LogCodes.SYSTEM.CONSOLIDATED_VIEW_API_ERROR,
       {
         sbi,
-        errorMessage: error.message,
-        statusCode: error.status,
-        responseBody: error.responseBody
+        errorMessage: error.message
       },
       request
     )
-    throw new ConsolidatedViewApiError(error.message, error.status, error.responseBody ?? error.message, sbi)
+    throw new ConsolidatedViewError({
+      message: error.message,
+      status: error.status,
+      responseBody: error.message,
+      sbi,
+      source: 'fetchFromConsolidatedView',
+      reason: 'api_error'
+    }).from(error)
   }
 }
 

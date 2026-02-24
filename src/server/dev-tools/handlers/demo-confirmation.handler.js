@@ -1,7 +1,7 @@
 import { buildDemoData } from '../helpers/index.js'
 import { generateFormNotFoundResponse } from '../utils/index.js'
 import { ConfirmationService } from '../../confirmation/services/confirmation.service.js'
-import { log, LogCodes } from '../../common/helpers/logging/log.js'
+import { debug, LogCodes } from '../../common/helpers/logging/log.js'
 
 /**
  * Load confirmation content with development fallback
@@ -87,7 +87,7 @@ export async function demoConfirmationHandler(request, h) {
 
     return h.view('config-confirmation-page', viewModel)
   } catch (error) {
-    log(LogCodes.CONFIRMATION.CONFIRMATION_ERROR, {
+    debug(LogCodes.CONFIRMATION.CONFIRMATION_ERROR, {
       userId: 'demo',
       errorMessage: `Demo confirmation route error: ${error.message}`
     })

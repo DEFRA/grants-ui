@@ -11,7 +11,8 @@ let getApplicationStatus
 
 vi.mock('~/src/server/common/helpers/retry.js')
 vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
-  log: vi.fn()
+  log: vi.fn(),
+  debug: vi.fn()
 }))
 
 global.fetch = mockFetch
@@ -200,7 +201,7 @@ describe('Grant Application service (token present)', () => {
       })
     })
 
-    test('should throw a GrantApplicationServiceApiError with correct properties', async () => {
+    test('should throw a GrantApplicationServiceError with correct properties', async () => {
       const errorStatus = 422
       const mockedFetch = mockFetch()
 
@@ -219,10 +220,10 @@ describe('Grant Application service (token present)', () => {
       }
 
       expect(thrownError).toBeDefined()
-      expect(thrownError.name).toBe('GrantApplicationServiceApiError')
-      expect(thrownError.status).toBe(errorStatus)
-      expect(thrownError.responseBody).toBe('Gas error')
-      expect(thrownError.grantCode).toBe(code)
+      expect(thrownError.name).toBe('GrantApplicationServiceError')
+      expect(thrownError.details.status).toBe(errorStatus)
+      expect(thrownError.details.responseBody).toBe('Gas error')
+      expect(thrownError.details.grantCode).toBe(code)
 
       expect(mockedFetch).toHaveBeenCalledWith(`${gasApi}/grants/${code}/actions/${actionName}/invoke`, {
         method: 'POST',
@@ -314,7 +315,7 @@ describe('Grant Application service (token present)', () => {
       await expect(invokeGasGetAction(code, actionName, mockRequest, {})).rejects.toThrow('Network error')
     })
 
-    test('should throw a GrantApplicationServiceApiError with correct properties', async () => {
+    test('should throw a GrantApplicationServiceError with correct properties', async () => {
       const mockedFetch = mockFetch()
       const errorStatus = 422
 
@@ -333,10 +334,10 @@ describe('Grant Application service (token present)', () => {
       }
 
       expect(thrownError).toBeDefined()
-      expect(thrownError.name).toBe('GrantApplicationServiceApiError')
-      expect(thrownError.status).toBe(errorStatus)
-      expect(thrownError.grantCode).toBe(code)
+      expect(thrownError.name).toBe('GrantApplicationServiceError')
       expect(thrownError.message).toBe('422 Bad Request - Gas error')
+      expect(thrownError.details.status).toBe(errorStatus)
+      expect(thrownError.details.grantCode).toBe(code)
     })
   })
 
@@ -444,7 +445,7 @@ describe('Grant Application service (token present)', () => {
       })
     })
 
-    test('should throw GrantApplicationServiceApiError on API error', async () => {
+    test('should throw GrantApplicationServiceError on API error', async () => {
       const mockedFetch = mockFetch()
       const errorStatus = 400
       const statusText = 'Bad Request'
@@ -464,14 +465,14 @@ describe('Grant Application service (token present)', () => {
       }
 
       expect(thrownError).toBeDefined()
-      expect(thrownError.name).toBe('GrantApplicationServiceApiError')
+      expect(thrownError.name).toBe('GrantApplicationServiceError')
       expect(thrownError.message).toBe(`${errorStatus} ${statusText} - Gas error`)
-      expect(thrownError.status).toBe(errorStatus)
-      expect(thrownError.responseBody).toBe('Gas error')
-      expect(thrownError.grantCode).toBe(testGrantCode)
+      expect(thrownError.details.status).toBe(errorStatus)
+      expect(thrownError.details.responseBody).toBe('Gas error')
+      expect(thrownError.details.grantCode).toBe(testGrantCode)
     })
 
-    test('should wrap network errors in GrantApplicationServiceApiError', async () => {
+    test('should wrap network errors in GrantApplicationServiceError', async () => {
       const mockedFetch = mockFetch()
       const networkError = new Error('Network connection failed')
       mockedFetch.mockRejectedValue(networkError)
@@ -484,9 +485,9 @@ describe('Grant Application service (token present)', () => {
       }
 
       expect(thrownError).toBeDefined()
-      expect(thrownError.name).toBe('GrantApplicationServiceApiError')
+      expect(thrownError.name).toBe('GrantApplicationServiceError')
       expect(thrownError.message).toBe('Failed to process GAS API request: Network connection failed')
-      expect(thrownError.grantCode).toBe(testGrantCode)
+      expect(thrownError.details.grantCode).toBe(testGrantCode)
     })
   })
 
@@ -569,9 +570,9 @@ describe('Grant Application service (token present)', () => {
         }
 
         expect(thrownError).toBeDefined()
-        expect(thrownError.name).toBe('GrantApplicationServiceApiError')
+        expect(thrownError.name).toBe('GrantApplicationServiceError')
         expect(thrownError.message).toContain('Operation timed out')
-        expect(thrownError.grantCode).toBe(code)
+        expect(thrownError.details.grantCode).toBe(code)
       }, 10000)
 
       test('should handle slow responses with configured timeout', async () => {
@@ -625,10 +626,10 @@ describe('Grant Application service (token present)', () => {
         }
 
         expect(thrownError).toBeDefined()
-        expect(thrownError.name).toBe('GrantApplicationServiceApiError')
+        expect(thrownError.name).toBe('GrantApplicationServiceError')
         expect(thrownError.message).toContain('Failed to process GAS API request')
         expect(thrownError.message).toContain('Operation timed out')
-        expect(thrownError.grantCode).toBe(code)
+        expect(thrownError.details.grantCode).toBe(code)
       }, 10000)
 
       test('should timeout when fetch takes longer than configured timeout', async () => {
@@ -680,9 +681,9 @@ describe('Grant Application service (token present)', () => {
         }
 
         expect(thrownError).toBeDefined()
-        expect(thrownError.name).toBe('GrantApplicationServiceApiError')
+        expect(thrownError.name).toBe('GrantApplicationServiceError')
         expect(thrownError.message).toContain('Operation timed out')
-        expect(thrownError.grantCode).toBe(code)
+        expect(thrownError.details.grantCode).toBe(code)
       }, 10000)
 
       test('should timeout when GET request exceeds timeout threshold', async () => {
@@ -736,9 +737,9 @@ describe('Grant Application service (token present)', () => {
         }
 
         expect(thrownError).toBeDefined()
-        expect(thrownError.name).toBe('GrantApplicationServiceApiError')
+        expect(thrownError.name).toBe('GrantApplicationServiceError')
         expect(thrownError.message).toBe('Failed to process GAS API request: Operation timed out after 50ms')
-        expect(thrownError.grantCode).toBe(testGrantCode)
+        expect(thrownError.details.grantCode).toBe(testGrantCode)
       }, 10000)
 
       test('should preserve timeout error details when configured with custom timeout', async () => {
@@ -770,9 +771,9 @@ describe('Grant Application service (token present)', () => {
         }
 
         expect(thrownError).toBeDefined()
-        expect(thrownError.name).toBe('GrantApplicationServiceApiError')
+        expect(thrownError.name).toBe('GrantApplicationServiceError')
         expect(thrownError.message).toContain('Operation timed out after 150ms')
-        expect(thrownError.grantCode).toBe(testGrantCode)
+        expect(thrownError.details.grantCode).toBe(testGrantCode)
       })
     })
 
@@ -800,9 +801,9 @@ describe('Grant Application service (token present)', () => {
         }
 
         expect(thrownError).toBeDefined()
-        expect(thrownError.name).toBe('GrantApplicationServiceApiError')
+        expect(thrownError.name).toBe('GrantApplicationServiceError')
         expect(thrownError.message).toContain('Operation timed out')
-        expect(thrownError.grantCode).toBe('my-code')
+        expect(thrownError.details.grantCode).toBe('my-code')
       }, 10000)
     })
   })

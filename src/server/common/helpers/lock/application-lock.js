@@ -1,5 +1,5 @@
 import { createApiHeadersForGrantsUiBackend } from '../auth/backend-auth-helper.js'
-import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { log, debug, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { mintLockReleaseToken } from './lock-token.js'
 import { config } from '~/src/config/config.js'
 
@@ -75,12 +75,12 @@ export async function releaseAllApplicationLocksForOwnerFromApi({ ownerId }) {
     return { ok: true, releasedCount: body.releasedCount ?? 0 }
   } catch (err) {
     if (err.name === 'AbortError') {
-      log(LogCodes.APPLICATION_LOCKS.RELEASE_TIMEOUT, {
+      debug(LogCodes.APPLICATION_LOCKS.RELEASE_TIMEOUT, {
         ownerId,
         timeoutMs
       })
     } else {
-      log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
+      debug(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
         method: 'DELETE',
         endpoint: url.href,
         identity: ownerId,

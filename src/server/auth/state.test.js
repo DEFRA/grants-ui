@@ -11,7 +11,8 @@ vi.mock('crypto', () => ({
   randomUUID: vi.fn()
 }))
 vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
-  log: vi.fn()
+  log: vi.fn(),
+  debug: vi.fn()
 }))
 
 describe('State Management Functions', () => {

@@ -33,7 +33,8 @@ vi.mock('node:tls', () => {
 })
 
 vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
-  log: vi.fn()
+  log: vi.fn(),
+  debug: vi.fn()
 }))
 
 describe('#secureContext', () => {

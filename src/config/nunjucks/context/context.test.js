@@ -18,7 +18,8 @@ vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
   MockLogCodes = helper.LogCodes
   return {
     ...helper,
-    log: (...args) => mockLog(...args)
+    log: (...args) => mockLog(...args),
+    debug: (...args) => mockLog(...args)
   }
 })
 
