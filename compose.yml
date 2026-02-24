@@ -36,6 +36,7 @@ services:
       COOKIE_POLICY_URL: ${COOKIE_POLICY_URL:-/cookies}
       COOKIE_CONSENT_EXPIRY_DAYS: ${COOKIE_CONSENT_EXPIRY_DAYS:-365}
       CV_API_MOCK_ENABLED: ${CV_API_MOCK_ENABLED:-true}
+      CV_API_STUB_URL: '${CV_API_STUB_URL:-http://grants-ui-dal-stub:3008/graphql}'
       DEFRA_ID_WELL_KNOWN_URL: '${DEFRA_ID_WELL_KNOWN_URL:-http://fcp-defra-id-stub:3007/idphub/b2c/b2c_1a_cui_cpdev_signupsigninsfi/.well-known/openid-configuration}'
       DEFRA_ID_CLIENT_ID: ${DEFRA_ID_CLIENT_ID:-client_id}
       DEFRA_ID_CLIENT_SECRET: ${DEFRA_ID_CLIENT_SECRET:-client_secret}
@@ -83,7 +84,7 @@ services:
     environment:
       PORT: 3001
       HOST: 0.0.0.0
-      NODE_ENV: development
+      NODE_ENV: ${NODE_ENV:-development}
       MONGO_URI: mongodb://mongodb:27017/
       GRANTS_UI_BACKEND_AUTH_TOKEN: ${GRANTS_UI_BACKEND_AUTH_TOKEN:-auth_token}
       GRANTS_UI_BACKEND_ENCRYPTION_KEY: ${GRANTS_UI_BACKEND_ENCRYPTION_KEY:-encryption_key}
@@ -117,6 +118,22 @@ services:
       - '3007:3007'
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:3007/health']
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 3s
+
+  grants-ui-dal-stub:
+    image: defradigital/grants-ui-dal-stub:latest
+    ports:
+      - '3008:3008'
+    environment:
+      PORT: 3008
+      NODE_ENV: ${NODE_ENV:-development}
+    networks:
+      - grants-ui-net
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:3008/health']
       interval: 15s
       timeout: 10s
       retries: 5
