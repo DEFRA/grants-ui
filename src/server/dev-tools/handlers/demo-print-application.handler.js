@@ -7,7 +7,7 @@ import {
   enrichDefinitionWithListItems
 } from '../../common/helpers/print-application-service/print-application-service.js'
 import { generateFormNotFoundResponse } from '../utils/index.js'
-import { log, LogCodes } from '../../common/helpers/logging/log.js'
+import { debug, LogCodes } from '../../common/helpers/logging/log.js'
 
 /**
  * Main demo print application handler
@@ -49,7 +49,7 @@ export async function demoPrintApplicationHandler(request, h) {
 
     return h.view('print-submitted-application', viewModel)
   } catch (error) {
-    log(LogCodes.PRINT_APPLICATION.ERROR, {
+    debug(LogCodes.PRINT_APPLICATION.ERROR, {
       userId: 'demo',
       errorMessage: `Demo print application route error: ${error.message}`,
       slug: request.params?.slug

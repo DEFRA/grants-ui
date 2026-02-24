@@ -9,7 +9,7 @@ import {
 import { buildDemoData, buildDemoPrintAnswers } from '../helpers/index.js'
 import { generateFormNotFoundResponse } from '../utils/index.js'
 import { mockHapiRequest, mockHapiResponseToolkit } from '~/src/__mocks__/hapi-mocks.js'
-import { log, LogCodes } from '../../common/helpers/logging/log.js'
+import { debug, LogCodes } from '../../common/helpers/logging/log.js'
 import { MOCK_FORM_WITH_PATH, MOCK_SINGLE_PAGE_DEFINITION } from '~/src/__test-fixtures__/mock-forms-cache.js'
 
 vi.mock('../../common/helpers/print-application-service/print-application-service.js')
@@ -90,7 +90,7 @@ describe('demo-print-application.handler', () => {
 
     await demoPrintApplicationHandler(mockRequest, mockH)
 
-    expect(vi.mocked(log)).toHaveBeenCalledWith(
+    expect(vi.mocked(debug)).toHaveBeenCalledWith(
       LogCodes.PRINT_APPLICATION.ERROR,
       expect.objectContaining({ slug: 'test-form', userId: 'demo' })
     )
