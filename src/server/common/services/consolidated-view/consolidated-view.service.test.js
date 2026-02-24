@@ -1,6 +1,4 @@
 import { vi } from 'vitest'
-import fs from 'fs/promises'
-import path from 'path'
 import { config } from '~/src/config/config.js'
 import { mockFetch } from '~/src/__mocks__'
 import { getValidToken } from '~/src/server/common/helpers/entra/token-manager.js'
@@ -23,23 +21,6 @@ vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
 })
 
 vi.mock('fs/promises')
-
-const getSBIMockFilePath = (sbi) => {
-  return path.join(
-    process.cwd(),
-    'src',
-    'server',
-    'common',
-    'services',
-    'consolidated-view',
-    'land-data',
-    `${sbi}.json`
-  )
-}
-
-const getCRNMockFilePath = (crn) => {
-  return path.join(process.cwd(), 'src', 'server', 'common', 'services', 'consolidated-view', 'crn-data', `${crn}.json`)
-}
 
 const mockFetchInstance = mockFetch()
 
@@ -272,62 +253,32 @@ describe('Consolidated View Service', () => {
       )
     })
 
-    it('should work correctly in mock mode', async () => {
-      // Enable mock mode
+    it('should use stub endpoint in mock mode', async () => {
       config.set('consolidatedView', {
         apiEndpoint: 'https://api.example.com/graphql',
-        mockDALEnabled: true
+        mockDALEnabled: true,
+        stubUrl: 'http://stub/graphql'
       })
 
-      const mockSBIFileData = {
-        data: {
-          business: {
-            info: {
-              reference: 'MOCK-REF123',
-              name: 'Mock Business Ltd',
-              email: { address: 'mock@business.com' },
-              phone: { mobile: '07987654321' },
-              address: {
-                line1: '456 Mock Street',
-                city: 'Mock City',
-                postalCode: 'MC1 2DE'
-              },
-              vat: 'GB987654321',
-              type: {
-                code: 'LLP',
-                type: 'Limited Liability Partnership'
-              }
+      mockFetchInstance.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: {
+            business: {
+              info: { reference: 'MOCK-REF123' },
+              countyParishHoldings: [{ cphNumber: 'MOCK-CPH67890' }]
             },
-            countyParishHoldings: [{ cphNumber: 'MOCK-CPH67890' }]
-          }
-        }
-      }
-
-      const mockCRNFileData = {
-        customer: {
-          info: {
-            name: {
-              title: 'Mrs',
-              first: 'Jane',
-              middle: 'Mary',
-              last: 'Smith'
+            customer: {
+              info: { name: { first: 'Jane', last: 'Smith' } }
             }
           }
-        }
-      }
-
-      fs.readFile.mockResolvedValueOnce(JSON.stringify(mockSBIFileData))
-      fs.readFile.mockResolvedValueOnce(JSON.stringify(mockCRNFileData))
-
-      const result = await fetchBusinessAndCPH(mockRequest)
-
-      expect(result).toEqual({
-        business: mockSBIFileData.data.business.info,
-        countyParishHoldings: 'MOCK-CPH67890',
-        customer: mockCRNFileData.customer.info
+        })
       })
-      expect(fs.readFile).toHaveBeenCalledTimes(2)
-      expect(mockFetchInstance).not.toHaveBeenCalled()
+
+      await fetchBusinessAndCPH(mockRequest)
+
+      const [url] = mockFetchInstance.mock.calls[0]
+      expect(url).toBe('http://stub/graphql')
     })
   })
 
@@ -493,74 +444,40 @@ describe('Consolidated View Service', () => {
       )
     })
 
-    it('should work correctly in mock mode', async () => {
+    it('should execute query against stub in mock mode', async () => {
       config.set('consolidatedView', {
         apiEndpoint: 'https://api.example.com/graphql',
-        mockDALEnabled: true
+        mockDALEnabled: true,
+        stubUrl: 'http://stub/graphql'
       })
 
-      const mockSBIFileData = {
+      const stubResponse = {
         data: {
-          business: { info: { name: 'Mock Business' } }
-        }
-      }
-      const mockCRNFileData = {
-        customer: { info: { name: { first: 'Jane' } } }
-      }
-
-      fs.readFile.mockResolvedValueOnce(JSON.stringify(mockSBIFileData))
-      fs.readFile.mockResolvedValueOnce(JSON.stringify(mockCRNFileData))
-
-      const query = 'query { business { info { name } } }'
-      const result = await executeConfigDrivenQuery(mockRequest, query)
-
-      expect(result.data.business.info.name).toBe('Mock Business')
-      expect(mockFetchInstance).not.toHaveBeenCalled()
-    })
-  })
-
-  describe('Mock mode functionality', () => {
-    const mockSBIFileData = {
-      data: {
-        business: {
-          sbi: mockSbi,
-          organisationId: 'MOCK-ORG123',
-          land: {
-            parcels: [
-              {
-                parcelId: 'MOCK-P001',
-                sheetId: 'MOCK-S001',
-                area: 150.5
-              }
-            ]
-          },
-          info: {
-            name: 'Mock Business',
-            reference: 'MOCK-REF456',
-            email: { address: 'mock@business.com' },
-            phone: { mobile: '07987654321', landline: '01987654321' },
-            address: {
-              line1: '456 Mock Street',
-              city: 'Mock City',
-              postalCode: 'MC1 2DE'
+          business: {
+            info: {
+              name: 'Mock Business'
             }
           }
         }
       }
-    }
 
-    const mockCRNFileData = {
-      customer: {
-        info: {
-          name: {
-            title: 'Mrs',
-            first: 'Jane',
-            last: 'Smith'
-          }
-        }
-      }
-    }
+      mockFetchInstance.mockResolvedValueOnce({
+        ok: true,
+        json: async () => stubResponse
+      })
 
+      const query = 'query { business { info { name } } }'
+
+      const result = await executeConfigDrivenQuery(mockRequest, query)
+
+      expect(result.data.business.info.name).toBe('Mock Business')
+
+      const [url] = mockFetchInstance.mock.calls[0]
+      expect(url).toBe('http://stub/graphql')
+    })
+  })
+
+  describe('Mock mode functionality', () => {
     beforeEach(() => {
       // Enable mock mode
       config.set('consolidatedView', {
@@ -569,23 +486,48 @@ describe('Consolidated View Service', () => {
       })
     })
 
-    it('should read mock data from file for parcels', async () => {
-      fs.readFile.mockResolvedValueOnce(JSON.stringify(mockSBIFileData))
-      fs.readFile.mockResolvedValueOnce(JSON.stringify(mockCRNFileData))
+    it('should return formatted business and customer info in stub mode', async () => {
+      config.set('consolidatedView', {
+        apiEndpoint: 'https://api.example.com/graphql',
+        mockDALEnabled: true,
+        stubUrl: 'http://stub/graphql'
+      })
 
-      const result = await fetchParcelsFromDal(mockRequest)
+      const stubResponse = {
+        data: {
+          business: {
+            info: {
+              name: 'Mock Business',
+              reference: 'MOCK-REF456',
+              email: { address: 'mock@business.com' },
+              phone: {
+                mobile: '07987654321',
+                landline: '01987654321'
+              },
+              address: {
+                line1: '456 Mock Street',
+                city: 'Mock City',
+                postalCode: 'MC1 2DE'
+              }
+            }
+          },
+          customer: {
+            info: {
+              name: {
+                title: 'Mrs',
+                first: 'Jane',
+                middle: 'Mary',
+                last: 'Smith'
+              }
+            }
+          }
+        }
+      }
 
-      expect(result).toEqual(mockSBIFileData.data.business.land.parcels)
-      expect(fs.readFile).toHaveBeenCalledTimes(2)
-      expect(fs.readFile).toHaveBeenCalledWith(getSBIMockFilePath(mockSbi), 'utf8')
-      expect(fs.readFile).toHaveBeenCalledWith(getCRNMockFilePath(mockCrn), 'utf8')
-      expect(mockFetchInstance).not.toHaveBeenCalled()
-      expect(getValidToken).not.toHaveBeenCalled()
-    })
-
-    it('should read mock data from file for business and customer info', async () => {
-      fs.readFile.mockResolvedValueOnce(JSON.stringify(mockSBIFileData))
-      fs.readFile.mockResolvedValueOnce(JSON.stringify(mockCRNFileData))
+      mockFetchInstance.mockResolvedValueOnce({
+        ok: true,
+        json: async () => stubResponse
+      })
 
       const result = await fetchBusinessAndCustomerInformation(mockRequest)
 
@@ -602,24 +544,11 @@ describe('Consolidated View Service', () => {
           mobilePhoneNumber: '07987654321',
           email: 'mock@business.com'
         },
-        customer: mockCRNFileData.customer.info
+        customer: stubResponse.data.customer.info
       })
-      expect(fs.readFile).toHaveBeenCalledTimes(2)
-      expect(mockFetchInstance).not.toHaveBeenCalled()
-    })
 
-    it('should handle file not found error', async () => {
-      const fileError = new Error('ENOENT: no such file or directory')
-      fileError.code = 'ENOENT'
-      fs.readFile.mockRejectedValueOnce(fileError)
-
-      await expect(fetchParcelsFromDal(mockRequest)).rejects.toThrow('ENOENT: no such file or directory')
-    })
-
-    it('should handle invalid JSON in mock file', async () => {
-      fs.readFile.mockResolvedValueOnce('invalid json content')
-
-      await expect(fetchParcelsFromDal(mockRequest)).rejects.toThrow()
+      const [url] = mockFetchInstance.mock.calls[0]
+      expect(url).toBe('http://stub/graphql')
     })
   })
 
