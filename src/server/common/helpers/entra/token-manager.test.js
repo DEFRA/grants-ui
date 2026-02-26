@@ -11,9 +11,7 @@ vi.mock('~/src/server/common/helpers/entra/cognito-token.js', () => ({
   getCognitoToken: vi.fn()
 }))
 
-const { clearTokenState, getValidToken } = await import(
-  '~/src/server/common/helpers/entra/token-manager.js'
-)
+const { clearTokenState, getValidToken } = await import('~/src/server/common/helpers/entra/token-manager.js')
 
 describe('Token Manager', () => {
   beforeEach(() => {
@@ -44,11 +42,7 @@ describe('Token Manager', () => {
 
       await getValidToken()
 
-      expect(ClientAssertionCredential).toHaveBeenCalledWith(
-        'mock-tenant-id',
-        'mock-client-id',
-        getCognitoToken
-      )
+      expect(ClientAssertionCredential).toHaveBeenCalledWith('mock-tenant-id', 'mock-client-id', getCognitoToken)
     })
 
     test('throws error when token retrieval fails', async () => {

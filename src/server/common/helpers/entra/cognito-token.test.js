@@ -30,9 +30,7 @@ describe('getCognitoToken', () => {
   })
 
   test('passes correct identity pool ID and logins', async () => {
-    const { GetOpenIdTokenForDeveloperIdentityCommand } = await import(
-      '@aws-sdk/client-cognito-identity'
-    )
+    const { GetOpenIdTokenForDeveloperIdentityCommand } = await import('@aws-sdk/client-cognito-identity')
 
     mockSend.mockResolvedValueOnce({ Token: 'mock-cognito-token' })
 

@@ -1,7 +1,4 @@
-import {
-  CognitoIdentityClient,
-  GetOpenIdTokenForDeveloperIdentityCommand
-} from '@aws-sdk/client-cognito-identity'
+import { CognitoIdentityClient, GetOpenIdTokenForDeveloperIdentityCommand } from '@aws-sdk/client-cognito-identity'
 
 import { config } from '~/src/config/config.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
