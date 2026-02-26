@@ -1063,12 +1063,18 @@ which is formatted as a GUID string.
 
 #### Microsoft Entra (Internal Use)
 
-| Variable                       | Description                    |
-| ------------------------------ | ------------------------------ |
-| `ENTRA_INTERNAL_TOKEN_URL`     | Microsoft Entra token endpoint |
-| `ENTRA_INTERNAL_TENANT_ID`     | Microsoft tenant ID            |
-| `ENTRA_INTERNAL_CLIENT_ID`     | Microsoft client ID            |
-| `ENTRA_INTERNAL_CLIENT_SECRET` | Microsoft client secret        |
+| Variable                   | Description       |
+| -------------------------- | ----------------- |
+| `ENTRA_INTERNAL_TENANT_ID` | Microsoft tenant ID |
+| `ENTRA_INTERNAL_CLIENT_ID` | Microsoft client ID |
+
+#### AWS Cognito (Federated Credentials)
+
+| Variable                  | Description                                             |
+| ------------------------- | ------------------------------------------------------- |
+| `COGNITO_IDENTITY_POOL_ID` | AWS Cognito identity pool ID for federated credentials |
+| `COGNITO_LOGIN_KEY`        | Cognito login key (default: `grants-ui-aad-access`)    |
+| `COGNITO_LOGIN_VALUE`      | Cognito login value (default: `grants-ui`)             |
 
 #### Development Tools Configuration
 

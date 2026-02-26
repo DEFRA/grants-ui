@@ -139,12 +139,6 @@ const convictConfig = {
     env: 'FEEDBACK_LINK'
   },
   entra: {
-    tokenEndpoint: {
-      doc: 'Microsoft entra token endpoint',
-      format: String,
-      default: '',
-      env: 'ENTRA_INTERNAL_TOKEN_URL'
-    },
     tenantId: {
       doc: 'Microsoft tenant ID',
       format: String,
@@ -156,12 +150,26 @@ const convictConfig = {
       format: String,
       default: '',
       env: 'ENTRA_INTERNAL_CLIENT_ID'
-    },
-    clientSecret: {
-      doc: 'Microsoft client secret',
+    }
+  },
+  cognito: {
+    identityPoolId: {
+      doc: 'AWS Cognito identity pool ID for federated credentials',
       format: String,
       default: '',
-      env: 'ENTRA_INTERNAL_CLIENT_SECRET'
+      env: 'COGNITO_IDENTITY_POOL_ID'
+    },
+    loginKey: {
+      doc: 'AWS Cognito login key (e.g. grants-ui-aad-access)',
+      format: String,
+      default: 'grants-ui-aad-access',
+      env: 'COGNITO_LOGIN_KEY'
+    },
+    loginValue: {
+      doc: 'AWS Cognito login value (e.g. grants-ui)',
+      format: String,
+      default: 'grants-ui',
+      env: 'COGNITO_LOGIN_VALUE'
     }
   },
   log: {

@@ -1,172 +1,60 @@
 import { vi } from 'vitest'
 import { config } from '~/src/config/config.js'
-import { retry } from '~/src/server/common/helpers/retry.js'
-import {
-  clearTokenState,
-  createTokenRequestParams,
-  getValidToken,
-  isTokenExpired,
-  refreshToken
-} from '~/src/server/common/helpers/entra/token-manager.js'
 
-vi.mock('~/src/server/common/helpers/retry.js')
+const mockGetToken = vi.fn()
 
-const mockFetch = vi.fn()
-global.fetch = mockFetch
+vi.mock('@azure/identity', () => ({
+  ClientAssertionCredential: vi.fn(() => ({ getToken: mockGetToken }))
+}))
+
+vi.mock('~/src/server/common/helpers/entra/cognito-token.js', () => ({
+  getCognitoToken: vi.fn()
+}))
+
+const { clearTokenState, getValidToken } = await import(
+  '~/src/server/common/helpers/entra/token-manager.js'
+)
 
 describe('Token Manager', () => {
   beforeEach(() => {
     config.set('entra', {
       tokenEndpoint: 'https://login.microsoftonline.com',
       tenantId: 'mock-tenant-id',
-      clientId: 'mock-client-id',
-      clientSecret: 'mock-client-secret'
+      clientId: 'mock-client-id'
     })
     clearTokenState()
     vi.clearAllMocks()
-
-    retry.mockImplementation((operation) => operation())
-  })
-
-  describe('isTokenExpired', () => {
-    test('returns true when no expiry time provided', () => {
-      expect(isTokenExpired(null)).toBe(true)
-    })
-
-    test('returns true when token is expired', () => {
-      const expiredTime = Date.now() - 1000 // 1 second ago
-      expect(isTokenExpired(expiredTime)).toBe(true)
-    })
-
-    test('returns true when token expires within 5 minutes', () => {
-      const almostExpiredTime = Date.now() + 4 * 60 * 1000 // 4 minutes from now
-      expect(isTokenExpired(almostExpiredTime)).toBe(true)
-    })
-
-    test('returns false when token is valid and not near expiry', () => {
-      const validTime = Date.now() + 10 * 60 * 1000 // 10 minutes from now
-      expect(isTokenExpired(validTime)).toBe(false)
-    })
-  })
-
-  describe('createTokenRequestParams', () => {
-    test('creates correct URL search params', () => {
-      const params = createTokenRequestParams('client-id', 'test-scope', 'secret')
-      const paramsObject = Object.fromEntries(params)
-
-      expect(paramsObject).toEqual({
-        client_id: 'client-id',
-        scope: 'test-scope',
-        client_secret: 'secret',
-        grant_type: 'client_credentials'
-      })
-    })
-  })
-
-  describe('refreshToken', () => {
-    test('successfully refreshes token', async () => {
-      const mockToken = 'new-access-token'
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            access_token: mockToken,
-            expires_in: 3600
-          })
-      })
-
-      const token = await refreshToken()
-
-      expect(token).toBe(mockToken)
-
-      const [[calledUrl, calledOptions]] = mockFetch.mock.calls
-
-      expect(calledUrl).toBe('https://login.microsoftonline.com/mock-tenant-id/oauth2/v2.0/token')
-      expect(calledOptions.method).toBe('POST')
-      expect(calledOptions.headers['Content-Type']).toBe('application/x-www-form-urlencoded')
-
-      const bodyParams = new URLSearchParams(calledOptions.body)
-      expect(Object.fromEntries(bodyParams)).toEqual({
-        client_id: 'mock-client-id',
-        scope: 'mock-client-id/.default',
-        client_secret: 'mock-client-secret',
-        grant_type: 'client_credentials'
-      })
-    })
-
-    test('throws error when token refresh fails', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        text: () => Promise.resolve('Invalid credentials'),
-        json: () =>
-          Promise.resolve({
-            error: 'invalid_request',
-            error_description: 'Invalid credentials'
-          })
-      })
-
-      await expect(refreshToken()).rejects.toThrow('Invalid credentials')
-    })
-
-    test('throws error for a malformed token response', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            access_token: null
-          })
-      })
-
-      await expect(refreshToken()).rejects.toThrow('Invalid token response: missing or invalid access_token')
-    })
   })
 
   describe('getValidToken', () => {
-    test('returns existing token if not expired', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            access_token: 'new-access-token',
-            expires_in: 3600
-          })
-      })
+    test('returns access token from ClientAssertionCredential', async () => {
+      mockGetToken.mockResolvedValueOnce({ token: 'mock-access-token' })
 
-      const firstToken = await getValidToken()
-      expect(firstToken).toBe('new-access-token')
-      expect(mockFetch).toHaveBeenCalledTimes(1)
+      const token = await getValidToken()
 
-      const secondToken = await getValidToken()
-      expect(secondToken).toBe('new-access-token')
-      expect(mockFetch).toHaveBeenCalledTimes(1)
+      expect(token).toBe('mock-access-token')
+      expect(mockGetToken).toHaveBeenCalledWith('mock-client-id/.default')
     })
 
-    test('refreshes token if expired', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            access_token: 'expired-token',
-            expires_in: 0
-          })
-      })
+    test('creates ClientAssertionCredential with correct config', async () => {
+      const { ClientAssertionCredential } = await import('@azure/identity')
+      const { getCognitoToken } = await import('~/src/server/common/helpers/entra/cognito-token.js')
 
-      const firstToken = await getValidToken()
-      expect(firstToken).toBe('expired-token')
-      expect(mockFetch).toHaveBeenCalledTimes(1)
+      mockGetToken.mockResolvedValueOnce({ token: 'mock-access-token' })
 
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            access_token: 'new-access-token',
-            expires_in: 3600
-          })
-      })
+      await getValidToken()
 
-      const newToken = await getValidToken()
-      expect(newToken).toBe('new-access-token')
-      expect(mockFetch).toHaveBeenCalledTimes(2)
+      expect(ClientAssertionCredential).toHaveBeenCalledWith(
+        'mock-tenant-id',
+        'mock-client-id',
+        getCognitoToken
+      )
+    })
+
+    test('throws error when token retrieval fails', async () => {
+      mockGetToken.mockRejectedValueOnce(new Error('Authentication failed'))
+
+      await expect(getValidToken()).rejects.toThrow('Authentication failed')
     })
   })
 })
