@@ -13,7 +13,7 @@
         {% if consentPanel %}
           {% if consentPanel.consentType === 'all' %}
             {% set panelHtml %}
-              <p class="govuk-body">You are applying for actions on land that's a site of special scientific interest (SSSI) and land with historic or archaeological features. Before starting your actions, you must get:</p>
+              <p class="govuk-body">You are applying for {{ "an action" if actionCount == 1 else "actions" }} on land that's a site of special scientific interest (SSSI) and land with historic or archaeological features. Before starting your {{ "action" if actionCount == 1 else "actions" }}, you must get:</p>
               <ul class="govuk-list govuk-list--bullet govuk-!-margin-top-4 govuk-!-margin-bottom-0">
                 <li class="govuk-!-margin-top-10">an <a class="govuk-link govuk-link--inverse" href="{{ consentPanel.heferLink }}" rel="noreferrer noopener" target="_blank">SFI Historic Environment Farm Environment Record (SFI HEFER) (opens in new tab)</a> from Historic England</li>
                 <li><a class="govuk-link govuk-link--inverse" href="{{ consentPanel.sssiConsentLink }}" rel="noreferrer noopener" target="_blank">SSSI consent (opens in new tab)</a> from Natural England</li>
@@ -21,19 +21,27 @@
             {% endset %}
           {% elif consentPanel.consentType === 'hefer' %}
             {% set panelHtml %}
-              <p class="govuk-body">This is because you are applying for actions on land with historic or archaeological features. You must do this before you do your selected SFI actions on this land.</p>
-              <p class="govuk-body">Read the guidance on <a class="govuk-link govuk-link--inverse" href="{{ consentPanel.heferLink }}" rel="noreferrer noopener" target="_blank">land with historic or archaeological features (opens in new tab)</a> to find out what a HEFER is and how to request one.</p>
+              <p class="govuk-body">This is because you are applying for {{ "an action" if actionCount == 1 else "actions" }} on land with historic or archaeological features. You must do this before you do your selected SFI {{ "action" if actionCount == 1 else "actions" }} on this land.</p>
+              <p class="govuk-body"><a class="govuk-link govuk-link--inverse" href="{{ consentPanel.heferLink }}" rel="noreferrer noopener" target="_blank">Read the guidance on land with historic or archaeological features (opens in new tab)</a> to find out what a HEFER is and how to request one.</p>
             {% endset %}
           {% elif consentPanel.consentType === 'sssi' %}
             {% set panelHtml %}
-              <p class="govuk-body">You are applying for actions on land that's a site of special scientific interest (SSSI). You must get SSSI consent from Natural England.</p>
+              <p class="govuk-body">You are applying for {{ "an action" if actionCount == 1 else "actions" }} on land that's a site of special scientific interest (SSSI). You must get SSSI consent from Natural England.</p>
               <p class="govuk-body">Read the <a class="govuk-link govuk-link--inverse" href="{{ consentPanel.sssiConsentLink }}" rel="noreferrer noopener" target="_blank">guidance on SSSI consent (opens in new tab)</a>.</p>
             {% endset %}
           {% endif %}
 
+          {% if consentPanel.consentType === 'all' %}
+            {% set titleText = "You must get consent to do your action" if actionCount == 1 else "You must get consent to do your actions" %}
+          {% elif consentPanel.consentType === 'hefer' %}
+            {% set titleText = "You must get an SFI Historic Environment Farm Environment Record (SFI HEFER) from Historic England" %}
+          {% elif consentPanel.consentType === 'sssi' %}
+            {% set titleText = "You must have SSSI consent" %}
+          {% endif %}
+
           {{ govukPanel({
             classes: "defra-panel-card",
-            titleText: consentPanel.titleText,
+            titleText: titleText,
             html: panelHtml
           }) }}
         {% endif %}

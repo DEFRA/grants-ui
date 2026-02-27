@@ -11,7 +11,7 @@ export default class ConsentPageController extends LandGrantsQuestionWithAuthChe
     return async (request, context, h) => {
       const { viewName } = this
       const {
-        state: { requiredConsents }
+        state: { requiredConsents, landParcels }
       } = context
       const baseViewModel = super.getViewModel(request, context)
 
@@ -19,11 +19,17 @@ export default class ConsentPageController extends LandGrantsQuestionWithAuthChe
         return this.proceed(request, h, '/check-selected-land-actions')
       }
 
+      const actionCount = Object.values(landParcels || {}).reduce(
+        (total, parcel) => total + Object.keys(parcel.actionsObj || {}).length,
+        0
+      )
+
       const consentPanel = mapConsentPanelToViewModel(requiredConsents)
 
       return h.view(viewName, {
         ...baseViewModel,
-        consentPanel
+        consentPanel,
+        actionCount
       })
     }
   }

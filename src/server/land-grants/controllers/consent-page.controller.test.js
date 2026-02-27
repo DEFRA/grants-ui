@@ -36,6 +36,73 @@ describe('ConsentPageController', () => {
   describe('GET Handler', () => {
     test('should display consent page with SSSI panel when only SSSI consent required', async () => {
       mockContext.state = {
+        requiredConsents: ['sssi'],
+        landParcels: {
+          'AB1234-5678': { actionsObj: { ACTION1: {}, ACTION2: {} } }
+        }
+      }
+
+      const handler = controller.makeGetRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'consent-required',
+        expect.objectContaining({
+          actionCount: 2,
+          consentPanel: expect.objectContaining({
+            consentType: 'sssi'
+          })
+        })
+      )
+    })
+
+    test('should display consent page with HEFER panel when only HEFER consent required', async () => {
+      mockContext.state = {
+        requiredConsents: ['hefer'],
+        landParcels: {
+          'AB1234-5678': { actionsObj: { ACTION1: {} } }
+        }
+      }
+
+      const handler = controller.makeGetRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'consent-required',
+        expect.objectContaining({
+          actionCount: 1,
+          consentPanel: expect.objectContaining({
+            consentType: 'hefer'
+          })
+        })
+      )
+    })
+
+    test('should display consent page with combined panel when all consent types required', async () => {
+      mockContext.state = {
+        requiredConsents: ['sssi', 'hefer'],
+        landParcels: {
+          'AB1234-5678': { actionsObj: { ACTION1: {}, ACTION2: {} } },
+          'CD5678-9012': { actionsObj: { ACTION3: {} } }
+        }
+      }
+
+      const handler = controller.makeGetRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'consent-required',
+        expect.objectContaining({
+          actionCount: 3,
+          consentPanel: expect.objectContaining({
+            consentType: 'all'
+          })
+        })
+      )
+    })
+
+    test('should handle missing landParcels gracefully', async () => {
+      mockContext.state = {
         requiredConsents: ['sssi']
       }
 
@@ -45,17 +112,21 @@ describe('ConsentPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'consent-required',
         expect.objectContaining({
+          actionCount: 0,
           consentPanel: expect.objectContaining({
-            consentType: 'sssi',
-            titleText: 'You must have SSSI consent'
+            consentType: 'sssi'
           })
         })
       )
     })
 
-    test('should display consent page with HEFER panel when only HEFER consent required', async () => {
+    test('should handle parcels with missing actionsObj', async () => {
       mockContext.state = {
-        requiredConsents: ['hefer']
+        requiredConsents: ['hefer'],
+        landParcels: {
+          'AB1234-5678': {},
+          'CD5678-9012': { actionsObj: { ACTION1: {} } }
+        }
       }
 
       const handler = controller.makeGetRouteHandler()
@@ -64,29 +135,9 @@ describe('ConsentPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'consent-required',
         expect.objectContaining({
+          actionCount: 1,
           consentPanel: expect.objectContaining({
-            consentType: 'hefer',
-            titleText:
-              'You must get an SFI Historic Environment Farm Environment Record (SFI HEFER) from Historic England'
-          })
-        })
-      )
-    })
-
-    test('should display consent page with combined panel when all consent types required', async () => {
-      mockContext.state = {
-        requiredConsents: ['sssi', 'hefer']
-      }
-
-      const handler = controller.makeGetRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
-
-      expect(mockH.view).toHaveBeenCalledWith(
-        'consent-required',
-        expect.objectContaining({
-          consentPanel: expect.objectContaining({
-            consentType: 'all',
-            titleText: 'You must get consent to do your actions'
+            consentType: 'hefer'
           })
         })
       )

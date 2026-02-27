@@ -11,7 +11,6 @@ describe('consent.view-model', () => {
       const result = mapConsentPanelToViewModel(['sssi'])
 
       expect(result.consentType).toBe('sssi')
-      expect(result.titleText).toBe('You must have SSSI consent')
       expect(result.sssiConsentLink).toBeDefined()
       expect(result.heferLink).toBeUndefined()
     })
@@ -20,18 +19,14 @@ describe('consent.view-model', () => {
       const result = mapConsentPanelToViewModel(['hefer'])
 
       expect(result.consentType).toBe('hefer')
-      expect(result.titleText).toBe(
-        'You must get an SFI Historic Environment Farm Environment Record (SFI HEFER) from Historic England'
-      )
       expect(result.heferLink).toBeDefined()
       expect(result.sssiConsentLink).toBeUndefined()
     })
 
-    it('should return combined panel when all consents required', () => {
+    it('should return combined panel when both consent types required', () => {
       const result = mapConsentPanelToViewModel(['sssi', 'hefer'])
 
       expect(result.consentType).toBe('all')
-      expect(result.titleText).toBe('You must get consent to do your actions')
       expect(result.sssiConsentLink).toBeDefined()
       expect(result.heferLink).toBeDefined()
     })
