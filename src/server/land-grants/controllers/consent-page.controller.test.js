@@ -101,6 +101,48 @@ describe('ConsentPageController', () => {
       )
     })
 
+    test('should handle missing landParcels gracefully', async () => {
+      mockContext.state = {
+        requiredConsents: ['sssi']
+      }
+
+      const handler = controller.makeGetRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'consent-required',
+        expect.objectContaining({
+          actionCount: 0,
+          consentPanel: expect.objectContaining({
+            consentType: 'sssi'
+          })
+        })
+      )
+    })
+
+    test('should handle parcels with missing actionsObj', async () => {
+      mockContext.state = {
+        requiredConsents: ['hefer'],
+        landParcels: {
+          'AB1234-5678': {},
+          'CD5678-9012': { actionsObj: { ACTION1: {} } }
+        }
+      }
+
+      const handler = controller.makeGetRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'consent-required',
+        expect.objectContaining({
+          actionCount: 1,
+          consentPanel: expect.objectContaining({
+            consentType: 'hefer'
+          })
+        })
+      )
+    })
+
     test('should redirect to check-selected-land-actions when no consents required', async () => {
       mockContext.state = {
         requiredConsents: []
