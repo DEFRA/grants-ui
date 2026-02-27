@@ -50,8 +50,7 @@ describe('ConsentPageController', () => {
         expect.objectContaining({
           actionCount: 2,
           consentPanel: expect.objectContaining({
-            consentType: 'sssi',
-            titleText: 'You must have SSSI consent'
+            consentType: 'sssi'
           })
         })
       )
@@ -73,9 +72,7 @@ describe('ConsentPageController', () => {
         expect.objectContaining({
           actionCount: 1,
           consentPanel: expect.objectContaining({
-            consentType: 'hefer',
-            titleText:
-              'You must get an SFI Historic Environment Farm Environment Record (SFI HEFER) from Historic England'
+            consentType: 'hefer'
           })
         })
       )
@@ -98,31 +95,7 @@ describe('ConsentPageController', () => {
         expect.objectContaining({
           actionCount: 3,
           consentPanel: expect.objectContaining({
-            consentType: 'all',
-            titleText: 'You must get consent to do your actions'
-          })
-        })
-      )
-    })
-
-    test('should use singular title when only one action', async () => {
-      mockContext.state = {
-        requiredConsents: ['sssi', 'hefer'],
-        landParcels: {
-          'AB1234-5678': { actionsObj: { ACTION1: {} } }
-        }
-      }
-
-      const handler = controller.makeGetRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
-
-      expect(mockH.view).toHaveBeenCalledWith(
-        'consent-required',
-        expect.objectContaining({
-          actionCount: 1,
-          consentPanel: expect.objectContaining({
-            consentType: 'all',
-            titleText: 'You must get consent to do your action'
+            consentType: 'all'
           })
         })
       )

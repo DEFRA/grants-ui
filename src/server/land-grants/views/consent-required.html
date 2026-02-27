@@ -31,9 +31,17 @@
             {% endset %}
           {% endif %}
 
+          {% if consentPanel.consentType === 'all' %}
+            {% set titleText = "You must get consent to do your action" if actionCount == 1 else "You must get consent to do your actions" %}
+          {% elif consentPanel.consentType === 'hefer' %}
+            {% set titleText = "You must get an SFI Historic Environment Farm Environment Record (SFI HEFER) from Historic England" %}
+          {% elif consentPanel.consentType === 'sssi' %}
+            {% set titleText = "You must have SSSI consent" %}
+          {% endif %}
+
           {{ govukPanel({
             classes: "defra-panel-card",
-            titleText: consentPanel.titleText,
+            titleText: titleText,
             html: panelHtml
           }) }}
         {% endif %}

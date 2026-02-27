@@ -24,7 +24,7 @@ export default class ConsentPageController extends LandGrantsQuestionWithAuthChe
         0
       )
 
-      const consentPanel = mapConsentPanelToViewModel(requiredConsents, actionCount)
+      const consentPanel = mapConsentPanelToViewModel(requiredConsents)
 
       return h.view(viewName, {
         ...baseViewModel,

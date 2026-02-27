@@ -9,18 +9,15 @@ const HEFER_LINK = './fptt-information#section-5.5'
 /**
  * Returns the consent panel view model for the consent-required page.
  * @param {string[]} requiredConsents
- * @param {number} actionCount - Total number of actions in the application
- * @returns {{ consentType: string, titleText: string, sssiConsentLink?: string, heferLink?: string } | null}
+ * @returns {{ consentType: string, sssiConsentLink?: string, heferLink?: string } | null}
  */
-export function mapConsentPanelToViewModel(requiredConsents, actionCount) {
+export function mapConsentPanelToViewModel(requiredConsents) {
   const hasSssi = requiredConsents.includes('sssi')
   const hasHefer = requiredConsents.includes('hefer')
 
   if (hasSssi && hasHefer) {
     return {
       consentType: 'all',
-      titleText:
-        actionCount === 1 ? 'You must get consent to do your action' : 'You must get consent to do your actions',
       sssiConsentLink: SSSI_CONSENT_LINK,
       heferLink: HEFER_LINK
     }
@@ -29,7 +26,6 @@ export function mapConsentPanelToViewModel(requiredConsents, actionCount) {
   if (hasHefer) {
     return {
       consentType: 'hefer',
-      titleText: 'You must get an SFI Historic Environment Farm Environment Record (SFI HEFER) from Historic England',
       heferLink: HEFER_LINK
     }
   }
@@ -37,7 +33,6 @@ export function mapConsentPanelToViewModel(requiredConsents, actionCount) {
   if (hasSssi) {
     return {
       consentType: 'sssi',
-      titleText: 'You must have SSSI consent',
       sssiConsentLink: SSSI_CONSENT_LINK
     }
   }
