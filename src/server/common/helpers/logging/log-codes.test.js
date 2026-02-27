@@ -750,7 +750,7 @@ describe('LogCodes', () => {
           sbi: TEST_SBI.DEFAULT,
           errorMessage: 'someErrorMessage'
         },
-        `Unexpected error fetching business data from Consolidated View API | sbi=${TEST_SBI.DEFAULT} | error=someErrorMessage`
+        `Unexpected error fetching business data from Consolidated View API | sbi=${TEST_SBI.DEFAULT} | status=unknown | error=someErrorMessage`
       ],
       [
         'SESSION_STATE_CLEAR_FAILED',
@@ -804,7 +804,7 @@ describe('LogCodes', () => {
         'CONSOLIDATED_VIEW_API_ERROR with fallback',
         'error',
         { errorMessage: 'Connection failed' },
-        'Unexpected error fetching business data from Consolidated View API | sbi=unknown | error=Connection failed'
+        'Unexpected error fetching business data from Consolidated View API | sbi=unknown | status=unknown | error=Connection failed'
       ]
     ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
       assertLogCode('SYSTEM', logCodeName, expectedLevel, testParams, expectedMessage)

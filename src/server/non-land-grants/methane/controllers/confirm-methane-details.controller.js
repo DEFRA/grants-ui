@@ -15,6 +15,15 @@ export default class ConfirmMethaneDetailsController extends QuestionPageControl
   static ERROR_MESSAGE = 'Unable to find farm information, please try again later.'
 
   /**
+   * @param {FormModel} model
+   * @param {PageQuestion} pageDef
+   */
+  constructor(model, pageDef) {
+    super(model, pageDef)
+    this.model = model
+  }
+
+  /**
    * Handle GET requests to the confirm farm details page
    */
   makeGetRouteHandler() {
@@ -37,7 +46,8 @@ export default class ConfirmMethaneDetailsController extends QuestionPageControl
    * @returns {Promise<object>} Farm details object with rows array
    */
   async buildFarmDetails(request) {
-    const data = await fetchBusinessAndCPH(request)
+    const toleratedPaths = this.model?.def?.metadata?.toleratedFailurePaths
+    const data = await fetchBusinessAndCPH(request, { toleratedPaths })
 
     const rows = [
       createCustomerNameRow(data.customer?.name),
@@ -110,7 +120,8 @@ export default class ConfirmMethaneDetailsController extends QuestionPageControl
       const { sbi } = request.auth.credentials
 
       if (sbi) {
-        const applicant = await fetchBusinessAndCPH(request)
+        const toleratedPaths = this.model?.def?.metadata?.toleratedFailurePaths
+        const applicant = await fetchBusinessAndCPH(request, { toleratedPaths })
         await this.setState(request, {
           ...state,
           applicant
@@ -138,6 +149,8 @@ export default class ConfirmMethaneDetailsController extends QuestionPageControl
 }
 
 /**
+ * @import { FormModel } from '@defra/forms-engine-plugin/engine/models/index.js'
+ * @import { PageQuestion } from '@defra/forms-model'
  * @import { FormContext, AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
  * @import { ResponseObject, ResponseToolkit } from '@hapi/hapi'
  */

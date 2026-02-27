@@ -130,6 +130,19 @@ const convictConfig = {
       format: String,
       default: '',
       env: 'CV_API_ENDPOINT'
+    },
+    toleratedFailurePaths: {
+      doc: 'Comma-separated list of GraphQL paths that are tolerated as partial failures from the DAL',
+      format: Array,
+      default: [],
+      env: 'CV_API_TOLERATED_FAILURE_PATHS'
+    },
+    developerKey: {
+      doc: 'Developer API key for the Consolidated View API',
+      format: String,
+      default: '',
+      env: 'CV_API_DEVELOPER_KEY',
+      sensitive: true
     }
   },
   feedbackLink: {

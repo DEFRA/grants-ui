@@ -129,13 +129,21 @@ export const mockContext = (customProps = {}) => ({
  * @param {number} [options.status=200] - HTTP status code
  * @param {string} [options.statusText='OK'] - HTTP status text
  * @param {*} [options.data=null] - Data to return from json()
+ * @param {string} [options.text=''] - Text to return from text()
  * @returns {object} Mock response object
  */
-export const createMockFetchResponse = ({ ok = true, status = 200, statusText = 'OK', data = null } = {}) => ({
+export const createMockFetchResponse = ({
+  ok = true,
+  status = 200,
+  statusText = 'OK',
+  data = null,
+  text = ''
+} = {}) => ({
   ok,
   status,
   statusText,
-  json: () => data
+  json: () => Promise.resolve(data),
+  text: () => Promise.resolve(text)
 })
 
 /**
