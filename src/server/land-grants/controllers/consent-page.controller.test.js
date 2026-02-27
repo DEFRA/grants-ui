@@ -36,7 +36,10 @@ describe('ConsentPageController', () => {
   describe('GET Handler', () => {
     test('should display consent page with SSSI panel when only SSSI consent required', async () => {
       mockContext.state = {
-        requiredConsents: ['sssi']
+        requiredConsents: ['sssi'],
+        landParcels: {
+          'AB1234-5678': { actionsObj: { ACTION1: {}, ACTION2: {} } }
+        }
       }
 
       const handler = controller.makeGetRouteHandler()
@@ -45,6 +48,7 @@ describe('ConsentPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'consent-required',
         expect.objectContaining({
+          actionCount: 2,
           consentPanel: expect.objectContaining({
             consentType: 'sssi',
             titleText: 'You must have SSSI consent'
@@ -55,7 +59,10 @@ describe('ConsentPageController', () => {
 
     test('should display consent page with HEFER panel when only HEFER consent required', async () => {
       mockContext.state = {
-        requiredConsents: ['hefer']
+        requiredConsents: ['hefer'],
+        landParcels: {
+          'AB1234-5678': { actionsObj: { ACTION1: {} } }
+        }
       }
 
       const handler = controller.makeGetRouteHandler()
@@ -64,6 +71,7 @@ describe('ConsentPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'consent-required',
         expect.objectContaining({
+          actionCount: 1,
           consentPanel: expect.objectContaining({
             consentType: 'hefer',
             titleText:
@@ -75,7 +83,11 @@ describe('ConsentPageController', () => {
 
     test('should display consent page with combined panel when all consent types required', async () => {
       mockContext.state = {
-        requiredConsents: ['sssi', 'hefer']
+        requiredConsents: ['sssi', 'hefer'],
+        landParcels: {
+          'AB1234-5678': { actionsObj: { ACTION1: {}, ACTION2: {} } },
+          'CD5678-9012': { actionsObj: { ACTION3: {} } }
+        }
       }
 
       const handler = controller.makeGetRouteHandler()
@@ -84,9 +96,33 @@ describe('ConsentPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'consent-required',
         expect.objectContaining({
+          actionCount: 3,
           consentPanel: expect.objectContaining({
             consentType: 'all',
             titleText: 'You must get consent to do your actions'
+          })
+        })
+      )
+    })
+
+    test('should use singular title when only one action', async () => {
+      mockContext.state = {
+        requiredConsents: ['sssi', 'hefer'],
+        landParcels: {
+          'AB1234-5678': { actionsObj: { ACTION1: {} } }
+        }
+      }
+
+      const handler = controller.makeGetRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'consent-required',
+        expect.objectContaining({
+          actionCount: 1,
+          consentPanel: expect.objectContaining({
+            consentType: 'all',
+            titleText: 'You must get consent to do your action'
           })
         })
       )
