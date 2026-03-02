@@ -1,6 +1,9 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { buildGraphQLQuery, mapResponse, processSections } from '../common/services/details-page/index.js'
-import { executeConfigDrivenQuery } from '../common/services/consolidated-view/consolidated-view.service.js'
+import {
+  executeConfigDrivenQuery,
+  hasOnlyToleratedFailures
+} from '../common/services/consolidated-view/consolidated-view.service.js'
 import { log, LogCodes } from '../common/helpers/logging/log.js'
 
 const ERROR_TITLE = 'There is a problem'
@@ -83,7 +86,7 @@ export default class CheckDetailsController extends QuestionPageController {
       const { sections } = await this.fetchAndProcessData(request, config)
       return h.view(this.viewName, { ...baseViewModel, sections, errors: [validationError] })
     } catch (error) {
-      log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, { errorMessage: error.message }, request)
+      log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, { endpoint: 'ConsolidatedView', errorMessage: error.message }, request)
       return h.view(this.viewName, { ...baseViewModel, errors: [validationError] })
     }
   }
@@ -109,7 +112,7 @@ export default class CheckDetailsController extends QuestionPageController {
       })
       return this.proceed(request, h, this.getNextPath(context))
     } catch (error) {
-      log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, { errorMessage: error.message }, request)
+      log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, { endpoint: 'ConsolidatedView', errorMessage: error.message }, request)
       return h.view(this.viewName, {
         ...baseViewModel,
         error: {
@@ -127,12 +130,29 @@ export default class CheckDetailsController extends QuestionPageController {
    * @returns {Promise<{sections: Array, mappedData: object}>}
    */
   async fetchAndProcessData(request, config) {
+    const toleratedPaths = this.model.def.metadata?.toleratedFailurePaths
     const query = buildGraphQLQuery(config.query, request)
-    const response = await executeConfigDrivenQuery(request, query)
+    const response = await executeConfigDrivenQuery(request, query, { toleratedPaths })
 
     if (response?.errors?.length > 0) {
-      log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, { errorMessage: response.errors[0].message }, request)
-      throw new Error(response.errors[0].message)
+      if (!hasOnlyToleratedFailures(response.errors, toleratedPaths)) {
+        log(
+          LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+          { endpoint: 'ConsolidatedView', errorMessage: response.errors[0].message },
+          request
+        )
+        throw new Error(response.errors[0].message)
+      }
+
+      log(
+        LogCodes.SYSTEM.CONSOLIDATED_VIEW_PARTIAL_SUCCESS,
+        {
+          sbi: request.auth?.credentials?.sbi,
+          failedPaths: response.errors.map((e) => e.path?.join('.')).join(', '),
+          statusCode: 'graphql-errors'
+        },
+        request
+      )
     }
 
     const mappedData = mapResponse(config.responseMapping, response)
@@ -149,7 +169,7 @@ export default class CheckDetailsController extends QuestionPageController {
    * @returns {ResponseObject}
    */
   handleError(error, baseViewModel, h, request) {
-    log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, { errorMessage: error.message }, request)
+    log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, { endpoint: 'ConsolidatedView', errorMessage: error.message }, request)
     return h.view(this.viewName, {
       ...baseViewModel,
       error: {

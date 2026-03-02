@@ -1055,11 +1055,7 @@ which is formatted as a GUID string.
 
 #### Consolidated View API (Optional)
 
-| Variable              | Description                           |
-| --------------------- | ------------------------------------- |
-| `CV_API_ENDPOINT`     | Consolidated View API endpoint        |
-| `CV_API_STUB_URL`     | Consolidated View API stub endpoint   |
-| `CV_API_MOCK_ENABLED` | Enable mock DAL for Consolidated View |
+See [Consolidated View API](docs/CONSOLIDATED-VIEW.md) for configuration and live DAL setup.
 
 #### Microsoft Entra (Internal Use)
 

@@ -13,3 +13,7 @@ ignore:
     - '*':
         reason: 'No fix available, indirect dependency'
         expires: '2025-12-31'
+  'SNYK-JS-BASICFTP-15366428':
+    - '*':
+        reason: 'No direct fix available, transitive dependency of @defra/forms-engine-plugin'
+        expires: '2026-09-01'

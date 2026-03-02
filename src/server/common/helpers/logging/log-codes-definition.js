@@ -442,8 +442,20 @@ export const LogCodes = {
     },
     CONSOLIDATED_VIEW_API_ERROR: {
       level: 'error',
+      messageFunc: (messageOptions) => {
+        const base = `Unexpected error fetching business data from Consolidated View API | sbi=${messageOptions.sbi || 'unknown'} | status=${messageOptions.statusCode || 'unknown'} | error=${messageOptions.errorMessage}`
+        return messageOptions.responseBody ? `${base} | responseBody=${messageOptions.responseBody}` : base
+      }
+    },
+    CONSOLIDATED_VIEW_SUCCESS: {
+      level: 'info',
       messageFunc: (messageOptions) =>
-        `Unexpected error fetching business data from Consolidated View API | sbi=${messageOptions.sbi || 'unknown'} | error=${messageOptions.errorMessage}`
+        `Consolidated View API request successful | sbi=${messageOptions.sbi || 'unknown'}`
+    },
+    CONSOLIDATED_VIEW_PARTIAL_SUCCESS: {
+      level: 'info',
+      messageFunc: (messageOptions) =>
+        `Partial success from Consolidated View API | sbi=${messageOptions.sbi || 'unknown'} | failedPaths=${messageOptions.failedPaths} | status=${messageOptions.statusCode || 'unknown'}`
     },
     CONSOLIDATED_VIEW_ADDRESS_FORMAT: {
       level: 'info',

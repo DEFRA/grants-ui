@@ -2,7 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import CheckDetailsController from './check-details.controller.js'
 import { buildGraphQLQuery, mapResponse, processSections } from '../common/services/details-page/index.js'
-import { executeConfigDrivenQuery } from '../common/services/consolidated-view/consolidated-view.service.js'
+import {
+  executeConfigDrivenQuery,
+  hasOnlyToleratedFailures
+} from '../common/services/consolidated-view/consolidated-view.service.js'
 import { log, LogCodes } from '../common/helpers/logging/log.js'
 import { setupControllerMocks } from '~/src/__mocks__/controller-mocks.js'
 
@@ -63,7 +66,8 @@ describe('CheckDetailsController', () => {
       basePath: TEST_FORM_ENDPOINT,
       def: {
         metadata: {
-          detailsPage: mockConfig
+          detailsPage: mockConfig,
+          toleratedFailurePaths: ['countyParishHoldings']
         }
       }
     }
@@ -108,6 +112,7 @@ describe('CheckDetailsController', () => {
     // Setup default mocks
     vi.mocked(buildGraphQLQuery).mockReturnValue('query { business { name } }')
     vi.mocked(executeConfigDrivenQuery).mockResolvedValue(mockApiResponse)
+    vi.mocked(hasOnlyToleratedFailures).mockReturnValue(false)
     vi.mocked(mapResponse).mockReturnValue(mockMappedData)
     vi.mocked(processSections).mockReturnValue(mockSections)
   })
@@ -133,7 +138,9 @@ describe('CheckDetailsController', () => {
       const result = await handler(mockRequest, mockContext, mockH)
 
       expect(buildGraphQLQuery).toHaveBeenCalledWith(mockConfig.query, mockRequest)
-      expect(executeConfigDrivenQuery).toHaveBeenCalledWith(mockRequest, 'query { business { name } }')
+      expect(executeConfigDrivenQuery).toHaveBeenCalledWith(mockRequest, 'query { business { name } }', {
+        toleratedPaths: ['countyParishHoldings']
+      })
       expect(mapResponse).toHaveBeenCalledWith(mockConfig.responseMapping, mockApiResponse)
       expect(processSections).toHaveBeenCalledWith(mockConfig.displaySections, mockMappedData, mockRequest)
 
@@ -172,7 +179,7 @@ describe('CheckDetailsController', () => {
 
       expect(log).toHaveBeenCalledWith(
         LogCodes.SYSTEM.EXTERNAL_API_ERROR,
-        { errorMessage: 'API unavailable' },
+        { endpoint: 'ConsolidatedView', errorMessage: 'API unavailable' },
         mockRequest
       )
       expect(mockH.view).toHaveBeenCalledWith('check-details', {
@@ -217,7 +224,11 @@ describe('CheckDetailsController', () => {
         const handler = controller.makePostRouteHandler()
         await handler(mockRequest, mockContext, mockH)
 
-        expect(log).toHaveBeenCalledWith(LogCodes.SYSTEM.EXTERNAL_API_ERROR, { errorMessage: 'API Error' }, mockRequest)
+        expect(log).toHaveBeenCalledWith(
+          LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+          { endpoint: 'ConsolidatedView', errorMessage: 'API Error' },
+          mockRequest
+        )
         expect(mockH.view).toHaveBeenCalledWith('check-details', {
           serviceName: 'Test Service',
           serviceUrl: TEST_FORM_ENDPOINT,
@@ -287,7 +298,7 @@ describe('CheckDetailsController', () => {
 
         expect(log).toHaveBeenCalledWith(
           LogCodes.SYSTEM.EXTERNAL_API_ERROR,
-          { errorMessage: 'Data fetch failed' },
+          { endpoint: 'ConsolidatedView', errorMessage: 'Data fetch failed' },
           mockRequest
         )
         expect(controller.setState).not.toHaveBeenCalled()
@@ -310,7 +321,9 @@ describe('CheckDetailsController', () => {
       const result = await controller.fetchAndProcessData(mockRequest, mockConfig)
 
       expect(buildGraphQLQuery).toHaveBeenCalledWith(mockConfig.query, mockRequest)
-      expect(executeConfigDrivenQuery).toHaveBeenCalledWith(mockRequest, 'query { business { name } }')
+      expect(executeConfigDrivenQuery).toHaveBeenCalledWith(mockRequest, 'query { business { name } }', {
+        toleratedPaths: ['countyParishHoldings']
+      })
       expect(mapResponse).toHaveBeenCalledWith(mockConfig.responseMapping, mockApiResponse)
       expect(processSections).toHaveBeenCalledWith(mockConfig.displaySections, mockMappedData, mockRequest)
 
@@ -327,17 +340,45 @@ describe('CheckDetailsController', () => {
       await expect(controller.fetchAndProcessData(mockRequest, mockConfig)).rejects.toThrow('Query execution failed')
     })
 
-    it('should log and throw when response contains GraphQL errors', async () => {
+    it('should log and throw when response contains non-tolerated GraphQL errors', async () => {
       vi.mocked(executeConfigDrivenQuery).mockResolvedValue({
         errors: [{ message: 'Field not found' }]
       })
+      vi.mocked(hasOnlyToleratedFailures).mockReturnValue(false)
 
       await expect(controller.fetchAndProcessData(mockRequest, mockConfig)).rejects.toThrow('Field not found')
+      expect(hasOnlyToleratedFailures).toHaveBeenCalledWith([{ message: 'Field not found' }], ['countyParishHoldings'])
       expect(log).toHaveBeenCalledWith(
         LogCodes.SYSTEM.EXTERNAL_API_ERROR,
-        { errorMessage: 'Field not found' },
+        { endpoint: 'ConsolidatedView', errorMessage: 'Field not found' },
         mockRequest
       )
+    })
+
+    it('should continue processing when response contains only tolerated GraphQL errors', async () => {
+      const partialResponse = {
+        data: {
+          business: { name: 'Test Business' },
+          customer: { name: { first: 'John', last: 'Doe' } }
+        },
+        errors: [{ message: 'Forbidden', path: ['business', 'countyParishHoldings'] }]
+      }
+      vi.mocked(executeConfigDrivenQuery).mockResolvedValue(partialResponse)
+      vi.mocked(hasOnlyToleratedFailures).mockReturnValue(true)
+
+      const result = await controller.fetchAndProcessData(mockRequest, mockConfig)
+
+      expect(hasOnlyToleratedFailures).toHaveBeenCalledWith(partialResponse.errors, ['countyParishHoldings'])
+      expect(log).toHaveBeenCalledWith(
+        LogCodes.SYSTEM.CONSOLIDATED_VIEW_PARTIAL_SUCCESS,
+        expect.objectContaining({
+          sbi: 'SBI123456',
+          failedPaths: 'business.countyParishHoldings'
+        }),
+        mockRequest
+      )
+      expect(mapResponse).toHaveBeenCalledWith(mockConfig.responseMapping, partialResponse)
+      expect(result).toEqual({ sections: mockSections, mappedData: mockMappedData })
     })
   })
 
@@ -350,7 +391,7 @@ describe('CheckDetailsController', () => {
 
       expect(log).toHaveBeenCalledWith(
         LogCodes.SYSTEM.EXTERNAL_API_ERROR,
-        { errorMessage: 'Test error message' },
+        { endpoint: 'ConsolidatedView', errorMessage: 'Test error message' },
         mockRequest
       )
       expect(mockH.view).toHaveBeenCalledWith('check-details', {
