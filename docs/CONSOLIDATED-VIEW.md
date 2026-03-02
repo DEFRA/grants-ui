@@ -6,8 +6,8 @@ The Consolidated View API provides business data via a GraphQL endpoint. By defa
 
 ### Prerequisites
 
-- The ephemeral DAL endpoint URL (not the standard one) — request from the DAL team
-- A valid `CV_API_DEVELOPER_KEY` (request from the DAL team)
+- The DAL endpoint URL
+- A valid `CV_API_DEVELOPER_KEY` (generate from https://portal.cdp-int.defra.cloud/user-profile)
 - Entra ID credentials (`ENTRA_INTERNAL_TENANT_ID`, `ENTRA_INTERNAL_CLIENT_ID`, `ENTRA_INTERNAL_CLIENT_SECRET`)
 
 ### Configuration
@@ -16,7 +16,7 @@ Set the following in your `.env` file:
 
 ```env
 CV_API_MOCK_ENABLED=false
-CV_API_ENDPOINT="<ephemeral-dal-endpoint>"  # Use the ephemeral URL, not the standard endpoint
+CV_API_ENDPOINT="<dal-endpoint>"
 CV_API_DEVELOPER_KEY=<your-api-key>
 
 ENTRA_INTERNAL_TOKEN_URL="https://login.microsoftonline.com"
