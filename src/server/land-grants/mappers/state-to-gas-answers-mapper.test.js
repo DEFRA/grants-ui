@@ -131,7 +131,8 @@ describe('stateToLandGrantsGasAnswers', () => {
           actionsObj: {
             CSAM1: {
               value: '44',
-              unit: 'ha'
+              unit: 'ha',
+              version: '1.0.0'
             }
           }
         }
@@ -155,7 +156,7 @@ describe('stateToLandGrantsGasAnswers', () => {
             actions: [
               {
                 code: 'CSAM1',
-                version: 1,
+                version: '1.0.0',
                 durationYears: 3,
                 appliedFor: {
                   unit: 'ha',
@@ -179,6 +180,7 @@ describe('stateToLandGrantsGasAnswers', () => {
             actions: [
               {
                 code: 'CSAM1',
+                version: '1.0.0',
                 description: 'CSAM1: Assess moorland and produce a written record',
                 durationYears: 3,
                 eligible: {
@@ -286,15 +288,18 @@ describe('stateToLandGrantsGasAnswers', () => {
           actionsObj: {
             CSAM1: {
               value: '44',
-              unit: 'ha'
+              unit: 'ha',
+              version: '1.0.0'
             },
             CSAM2: {
               value: '100',
-              unit: 'm2'
+              unit: 'm2',
+              version: '1.0.0'
             },
             CSAM3: {
               value: '5',
-              unit: 'count'
+              unit: 'count',
+              version: '1.0.0'
             }
           }
         }
@@ -307,17 +312,17 @@ describe('stateToLandGrantsGasAnswers', () => {
     expect(result.application.parcel[0].actions).toHaveLength(3)
     expect(result.application.parcel[0].actions[0]).toMatchObject({
       code: 'CSAM1',
-      version: 1,
+      version: '1.0.0',
       appliedFor: { unit: 'ha', quantity: 44 }
     })
     expect(result.application.parcel[0].actions[1]).toMatchObject({
       code: 'CSAM2',
-      version: 1,
+      version: '1.0.0',
       appliedFor: { unit: 'm2', quantity: 100 }
     })
     expect(result.application.parcel[0].actions[2]).toMatchObject({
       code: 'CSAM3',
-      version: 1,
+      version: '1.0.0',
       appliedFor: { unit: 'count', quantity: 5 }
     })
 
@@ -1316,7 +1321,8 @@ describe('schema validation', () => {
             actionsObj: {
               CSAM1: {
                 value: '44',
-                unit: 'ha'
+                unit: 'ha',
+                version: '1.0.0'
               }
             }
           }
@@ -1335,7 +1341,8 @@ describe('schema validation', () => {
             actionsObj: {
               CSAM1: {
                 value: '44',
-                unit: 'ha'
+                unit: 'ha',
+                version: '1.0.0'
               }
             }
           }

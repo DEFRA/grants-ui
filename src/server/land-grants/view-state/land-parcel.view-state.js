@@ -52,6 +52,7 @@ export function addActionsToExistingState(state, payload, actionFieldPrefix, gro
     if (actionCode && actionInfo) {
       actionsObj[actionCode] = {
         description: actionInfo.description,
+        version: actionInfo.version,
         consents: getConsentTypes()
           .filter((ct) => actionInfo[ct.apiField])
           .map((ct) => ct.key),
@@ -192,6 +193,7 @@ export function findActionInfoFromState(landParcels, parcelKey, action) {
  * @typedef {object} Action
  * @property {string} code - Action code
  * @property {string} description - Action description
+ * @property {string} version - Action version
  * @property {string[]} [consents] - Array of consent type keys required (e.g., ['sssi', 'hefer'])
  * @property {object} [availableArea] - Available area for the action
  * @property {string|number} [availableArea.value] - Area value (number from API, converted to string in state)

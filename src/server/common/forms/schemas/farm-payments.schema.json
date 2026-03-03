@@ -149,8 +149,7 @@
           "title": "Duration in years"
         },
         "version": {
-          "type": "integer",
-          "minimum": 1,
+          "type": "string",
           "title": "Action version"
         },
         "appliedFor": {
@@ -186,8 +185,7 @@
           "title": "Duration in years"
         },
         "version": {
-          "type": "integer",
-          "minimum": 1,
+          "type": "string",
           "title": "Action version"
         }
       }
@@ -241,6 +239,10 @@
         "code": {
           "type": "string",
           "title": "Action code"
+        },
+        "version": {
+          "type": "string",
+          "title": "Action version"
         },
         "description": {
           "type": "string",

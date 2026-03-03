@@ -90,7 +90,10 @@ export function mapGroupedActionsToViewModel(groupedActions, addedActions) {
  * @typedef {object} Action
  * @property {string} code - Action code
  * @property {string} description - Action description
+ * @property {string} version - Action version
  * @property {number} [ratePerUnitGbp] - Payment rate per unit in GBP
+ * @property {boolean} [sssiConsentRequired] - Action requires SSSI consent
+ * @property {boolean} [heferRequired] - Action requires HEFER
  * @property {number} [ratePerAgreementPerYearGbp] - Additional payment per agreement per year
  * @property {object} [availableArea] - Available area for the action
  * @property {string} [availableArea.value] - Area value
