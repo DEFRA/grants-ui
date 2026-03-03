@@ -1,5 +1,6 @@
 @media print {
   // stylelint-disable declaration-no-important
+  .govuk-cookie-banner,
   .govuk-header,
   .govuk-service-navigation,
   .govuk-phase-banner,
@@ -8,6 +9,10 @@
   .app-print-button,
   .govuk-details {
     display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    background: transparent !important;
   }
 
   .govuk-width-container {
