@@ -241,7 +241,8 @@ describe('demo-details.handler', () => {
         serviceName: 'Test Form',
         serviceUrl: '/test-form',
         continueUrl: '/test-form',
-        isDevelopmentMode: true
+        isDevelopmentMode: true,
+        backLink: { text: 'Back', href: '/test-form/check-details' }
       })
     })
 
