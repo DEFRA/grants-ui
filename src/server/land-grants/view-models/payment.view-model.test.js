@@ -10,7 +10,7 @@ import {
 
 // Mock the action groups import
 vi.mock('../services/land-grants.service.js', () => ({
-  actionGroups: [
+  getActionGroups: () => [
     { name: 'Group 1', actions: ['SAM1', 'SAM2'] },
     { name: 'Group 2', actions: ['SAM3', 'SAM4'] }
   ]

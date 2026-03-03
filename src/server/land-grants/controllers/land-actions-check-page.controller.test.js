@@ -6,7 +6,7 @@ import { getRequiredConsents } from '../view-state/land-parcel.view-state.js'
 import LandActionsCheckPageController from './land-actions-check-page.controller.js'
 
 vi.mock('~/src/server/land-grants/services/land-grants.service.js', () => ({
-  actionGroups: [{ actions: ['CMOR1'] }, { actions: ['UPL1', 'UPL2', 'UPL3'] }],
+  getActionGroups: () => [{ actions: ['CMOR1'] }, { actions: ['UPL1', 'UPL2', 'UPL3'] }],
   calculateGrantPayment: vi.fn()
 }))
 
