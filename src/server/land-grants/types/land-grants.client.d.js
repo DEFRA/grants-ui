@@ -30,6 +30,7 @@
  * @typedef {object} ActionOption
  * @property {string} code - The action code
  * @property {string} description - The action description
+ * @property {string} version - The action version
  * @property {boolean} [sssiConsentRequired] - If action needs SSSI consent
  * @property {boolean} [heferRequired] - If action needs HEFER report
  * @property {Size} availableArea - The available area for the action
