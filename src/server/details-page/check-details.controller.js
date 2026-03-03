@@ -64,7 +64,7 @@ export default class CheckDetailsController extends QuestionPageController {
           ...context.state,
           detailsCorrect: 'false'
         })
-        return h.view('incorrect-details', this.buildIncorrectDetailsViewModel(baseViewModel))
+        return h.view('incorrect-details', this.buildIncorrectDetailsViewModel(baseViewModel, request))
       }
 
       return this.handleDetailsConfirmed(request, context, config, h)
@@ -202,11 +202,12 @@ export default class CheckDetailsController extends QuestionPageController {
    * @param {object} baseViewModel
    * @returns {object}
    */
-  buildIncorrectDetailsViewModel(baseViewModel) {
+  buildIncorrectDetailsViewModel(baseViewModel, request) {
     return {
       serviceName: baseViewModel.serviceName,
       serviceUrl: baseViewModel.serviceUrl,
-      continueUrl: baseViewModel.serviceUrl
+      continueUrl: baseViewModel.serviceUrl,
+      backLink: { text: 'Back', href: request.path }
     }
   }
 }
