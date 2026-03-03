@@ -51,7 +51,18 @@ describe('ConfirmMethaneDetailsController', () => {
   let mockH
 
   beforeEach(() => {
-    controller = new ConfirmMethaneDetailsController()
+    const mockModel = {
+      def: {
+        metadata: {
+          toleratedFailurePaths: ['countyParishHoldings']
+        }
+      }
+    }
+    const mockPageDef = {
+      path: '/confirm-methane-details',
+      title: 'Confirm your farm details'
+    }
+    controller = new ConfirmMethaneDetailsController(mockModel, mockPageDef)
     setupControllerMocks(controller)
 
     mockRequest = {
@@ -123,7 +134,7 @@ describe('ConfirmMethaneDetailsController', () => {
 
       await handler(mockRequest, mockContext, mockH)
 
-      expect(fetchBusinessAndCPH).toHaveBeenCalledWith(mockRequest)
+      expect(fetchBusinessAndCPH).toHaveBeenCalledWith(mockRequest, { toleratedPaths: ['countyParishHoldings'] })
       expect(QuestionPageController.prototype.getViewModel).toHaveBeenCalledWith(mockRequest, mockContext)
       expect(mockH.view).toHaveBeenCalledWith('confirm-methane-details', {
         baseModel: 'data',
@@ -184,7 +195,7 @@ describe('ConfirmMethaneDetailsController', () => {
     it('should build farm details with all row types', async () => {
       const result = await controller.buildFarmDetails(mockRequest)
 
-      expect(fetchBusinessAndCPH).toHaveBeenCalledWith(mockRequest)
+      expect(fetchBusinessAndCPH).toHaveBeenCalledWith(mockRequest, { toleratedPaths: ['countyParishHoldings'] })
       expect(createCustomerNameRow).toHaveBeenCalledWith(mockData.customer?.name)
       expect(createBusinessNameRow).toHaveBeenCalledWith(mockData.business?.name)
       expect(createSbiRow).toHaveBeenCalledWith('SBI123456')
@@ -302,7 +313,7 @@ describe('ConfirmMethaneDetailsController', () => {
 
       const result = await handler(mockRequest, mockContext, mockH)
 
-      expect(fetchBusinessAndCPH).toHaveBeenCalledWith(mockRequest)
+      expect(fetchBusinessAndCPH).toHaveBeenCalledWith(mockRequest, { toleratedPaths: ['countyParishHoldings'] })
       expect(controller.setState).toHaveBeenCalledWith(mockRequest, {
         someState: 'value',
         applicant: mockData

@@ -5,6 +5,21 @@ import { retry } from '~/src/server/common/helpers/retry.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { statusCodes } from '../../constants/status-codes.js'
 
+export function hasOnlyToleratedFailures(errors, toleratedPaths) {
+  const paths = toleratedPaths ?? config.get('consolidatedView.toleratedFailurePaths')
+  const allowedPaths = new Set(paths)
+  return errors.every((error) => error.path?.some((segment) => allowedPaths.has(segment)))
+}
+
+function extractToleratedPartialSuccess(parsed, statusCode, sbi, toleratedPaths) {
+  if (parsed?.data && parsed?.errors?.length && hasOnlyToleratedFailures(parsed.errors, toleratedPaths)) {
+    const failedPaths = parsed.errors.map((e) => e.path?.join('.')).join(', ')
+    log(LogCodes.SYSTEM.CONSOLIDATED_VIEW_PARTIAL_SUCCESS, { sbi, failedPaths, statusCode }, undefined)
+    return parsed
+  }
+  return null
+}
+
 /**
  * @typedef {object} LandParcel
  * @property {object} [parcelId] - The parcel identifier
@@ -46,11 +61,17 @@ export class ConsolidatedViewApiError extends Error {
 async function getConsolidatedViewRequestOptions(request, { method = 'POST', query }) {
   const { credentials: { token } = {} } = request.auth ?? {}
 
+  const developerKey = config.get('consolidatedView.developerKey')
+
+  const isLocal = config.get('cdpEnvironment') === 'local'
+
   const headers = {
     'Content-Type': 'application/json',
+    ...(isLocal && { 'Accept-Encoding': 'identity' }),
     'gateway-type': 'external',
     'x-forwarded-authorization': token,
-    Authorization: `Bearer ${await getValidToken()}`
+    Authorization: `Bearer ${await getValidToken()}`,
+    ...(isLocal && developerKey && { 'x-api-key': developerKey })
   }
 
   return {
@@ -66,10 +87,12 @@ async function getConsolidatedViewRequestOptions(request, { method = 'POST', que
  * Makes a request to the Consolidated View API
  * @param {AnyFormRequest} request
  * @param {string} query - GraphQL query
+ * @param {object} [options] - Options
+ * @param {string[]} [options.toleratedPaths] - GraphQL paths tolerated as partial failures
  * @returns {Promise<object>} API response JSON
  * @throws {ConsolidatedViewApiError} - If the API request fails
  */
-async function makeConsolidatedViewRequest(request, query) {
+async function makeConsolidatedViewRequest(request, query, { toleratedPaths } = {}) {
   const sbi = request.auth.credentials.sbi
   const CV_API_ENDPOINT = config.get('consolidatedView.apiEndpoint')
 
@@ -77,12 +100,24 @@ async function makeConsolidatedViewRequest(request, query) {
     const response = await fetch(CV_API_ENDPOINT, await getConsolidatedViewRequestOptions(request, { query }))
 
     if (!response.ok) {
-      const errorText = await response.text()
+      const responseText = await response.text()
+
+      let parsed
+      try {
+        parsed = JSON.parse(responseText)
+      } catch {
+        // not JSON — fall through to throw
+      }
+
+      const partialSuccess = extractToleratedPartialSuccess(parsed, response.status, sbi, toleratedPaths)
+      if (partialSuccess) {
+        return partialSuccess
+      }
 
       throw new ConsolidatedViewApiError(
         `Failed to fetch business data: ${response.status} ${response.statusText}`,
         response.status,
-        errorText,
+        responseText,
         sbi
       )
     }
@@ -102,17 +137,22 @@ async function makeConsolidatedViewRequest(request, query) {
  * @param {object} params - Request parameters
  * @param {string} params.query - GraphQL query
  * @param {Function} params.formatResponse - Function to format the response
+ * @param {string[]} [params.toleratedPaths] - GraphQL paths tolerated as partial failures
  * @returns {Promise<any>} Formatted response data
  * @throws {ConsolidatedViewApiError} - If the API request fails
  */
-async function fetchFromConsolidatedView(request, { query, formatResponse }) {
+async function fetchFromConsolidatedView(request, { query, formatResponse, toleratedPaths }) {
   const mockDALEnabled = config.get('consolidatedView.mockDALEnabled')
   const { credentials: { sbi, crn } = {} } = request.auth ?? {}
 
   try {
     const responseJson = mockDALEnabled
       ? await makeStubRequest({ query, sbi, crn })
-      : await makeConsolidatedViewRequest(request, query)
+      : await makeConsolidatedViewRequest(request, query, { toleratedPaths })
+
+    if (!responseJson.errors?.length) {
+      log(LogCodes.SYSTEM.CONSOLIDATED_VIEW_SUCCESS, { sbi }, request)
+    }
 
     return formatResponse(responseJson)
   } catch (error) {
@@ -120,11 +160,13 @@ async function fetchFromConsolidatedView(request, { query, formatResponse }) {
       LogCodes.SYSTEM.CONSOLIDATED_VIEW_API_ERROR,
       {
         sbi,
-        errorMessage: error.message
+        errorMessage: error.message,
+        statusCode: error.status,
+        responseBody: error.responseBody
       },
       request
     )
-    throw new ConsolidatedViewApiError(error.message, error.status, error.message, sbi)
+    throw new ConsolidatedViewApiError(error.message, error.status, error.responseBody ?? error.message, sbi)
   }
 }
 
@@ -305,17 +347,28 @@ export async function fetchBusinessAndCustomerInformation(request) {
  * Executes a config-driven GraphQL query and returns the raw response
  * @param {AnyFormRequest} request
  * @param {string} query - GraphQL query string
+ * @param {object} [options] - Options
+ * @param {string[]} [options.toleratedPaths] - GraphQL paths tolerated as partial failures
  * @returns {Promise<object>} Raw API response
  * @throws {ConsolidatedViewApiError} - If the API request fails
  */
-export async function executeConfigDrivenQuery(request, query) {
+export async function executeConfigDrivenQuery(request, query, { toleratedPaths } = {}) {
   return fetchFromConsolidatedView(request, {
     query,
-    formatResponse: (r) => r
+    formatResponse: (r) => r,
+    toleratedPaths
   })
 }
 
-export async function fetchBusinessAndCPH(request) {
+/**
+ * Fetches business and county parish holdings from Consolidated View
+ * @param {AnyFormRequest} request
+ * @param {object} [options] - Options
+ * @param {string[]} [options.toleratedPaths] - GraphQL paths tolerated as partial failures
+ * @returns {Promise<object>} Business and CPH data
+ * @throws {ConsolidatedViewApiError} - If the API request fails
+ */
+export async function fetchBusinessAndCPH(request, { toleratedPaths } = {}) {
   const { credentials: { sbi, crn } = {} } = request.auth ?? {}
 
   const query = `
@@ -369,7 +422,7 @@ export async function fetchBusinessAndCPH(request) {
     customer: r.data?.customer?.info
   })
 
-  return fetchFromConsolidatedView(request, { query, formatResponse })
+  return fetchFromConsolidatedView(request, { query, formatResponse, toleratedPaths })
 }
 
 /**
