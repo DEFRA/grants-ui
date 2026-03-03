@@ -59,7 +59,7 @@ export default class SubmissionPageController extends SummaryPageController {
    * @param {string} [validationId] - Validation ID
    * @returns {object} - Error view response
    */
-  handleSubmissionError(h, request, context, validationId) {
+  renderSubmissionError(h, request, context, validationId) {
     log(
       LogCodes.SUBMISSION.SUBMISSION_VALIDATION_ERROR,
       {
@@ -153,7 +153,7 @@ export default class SubmissionPageController extends SummaryPageController {
         const validationResult = await validateApplication({ applicationId: referenceNumber, crn, sbi, state })
         const { valid } = validationResult
         if (!valid) {
-          return this.handleSubmissionError(h, request, context, validationResult.id)
+          return this.renderSubmissionError(h, request, context, validationResult.id)
         }
 
         const result = await this.submitGasApplication(request, {
@@ -184,7 +184,7 @@ export default class SubmissionPageController extends SummaryPageController {
           },
           request
         )
-        return this.handleSubmissionError(h, request, context)
+        return this.renderSubmissionError(h, request, context)
       }
     }
 
