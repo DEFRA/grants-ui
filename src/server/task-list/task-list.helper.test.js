@@ -117,7 +117,7 @@ describe('task-list.helper', () => {
               { title: 'Task 1', section: 's1', path: '/t1', components: [{ type: 'TextField', name: 'q1' }] },
               { title: 'Task 2', section: 's1', path: '/t2', components: [{ type: 'TextField', name: 'q2' }] }
             ],
-            sections: [{ name: 's1', title: 'Section 1' }]
+            sections: [{ id: 's1', title: 'Section 1' }]
           }
         }
       }
@@ -153,7 +153,7 @@ describe('task-list.helper', () => {
               { title: 'Task 1', section: 's1', path: '/t1', components: [{ type: 'TextField', name: 'q1' }] },
               { title: 'Task 2', section: 's1', path: '/t2', components: [{ type: 'TextField', name: 'q2' }] }
             ],
-            sections: [{ name: 's1', title: 'Section 1' }]
+            sections: [{ id: 's1', title: 'Section 1' }]
           }
         }
       }
@@ -170,9 +170,9 @@ describe('task-list.helper', () => {
       page: {
         def: {
           pages: [
-            { path: '/p1', section: { name: 's1' } },
-            { path: '/p2', section: { name: 's1' } },
-            { path: '/p3', section: { name: 's2' } }
+            { path: '/p1', section: { id: 's1' } },
+            { path: '/p2', section: { id: 's1' } },
+            { path: '/p3', section: { id: 's2' } }
           ]
         }
       }
@@ -190,9 +190,9 @@ describe('task-list.helper', () => {
   describe('getNextTaskPath', () => {
     const mockModel = {
       pages: [
-        { path: '/p1', section: { name: 's1' } },
-        { path: '/p2', section: { name: 's1' } },
-        { path: '/p3', section: { name: 's2' } },
+        { path: '/p1', section: { id: 's1' } },
+        { path: '/p2', section: { id: 's1' } },
+        { path: '/p3', section: { id: 's2' } },
         new TaskListPageController({}, { path: '/task-list' })
       ]
     }

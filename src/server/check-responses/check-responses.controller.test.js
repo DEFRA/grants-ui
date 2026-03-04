@@ -3,7 +3,7 @@ import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/Su
 import { existsSync } from 'fs'
 import { join } from 'path'
 import CheckResponsesPageController from '~/src/server/check-responses/check-responses.controller.js'
-import { mockSimpleRequest, mockHapiResponseToolkit, mockContext } from '~/src/__mocks__/hapi-mocks.js'
+import { mockContext, mockHapiResponseToolkit, mockSimpleRequest } from '~/src/__mocks__/hapi-mocks.js'
 
 describe('CheckResponsesPageController', () => {
   let controller
@@ -28,28 +28,6 @@ describe('CheckResponsesPageController', () => {
 
     it('should set viewName to check-responses-page', () => {
       expect(controller.viewName).toBe('check-responses-page')
-    })
-  })
-
-  describe('getSummaryPath', () => {
-    it('returns this.path when set', () => {
-      controller.path = mockPageDef.path
-
-      const result = controller.getSummaryPath()
-
-      expect(result).toBe('/check-answers')
-    })
-
-    it('reflects updates to this.path', () => {
-      controller.path = '/check-answers'
-      expect(controller.getSummaryPath()).toBe('/check-answers')
-
-      controller.path = '/updated-check-answers'
-      expect(controller.getSummaryPath()).toBe('/updated-check-answers')
-    })
-
-    it('returns undefined if this.path is not set - plugin will then use fallback /summary', () => {
-      expect(controller.getSummaryPath()).toBeUndefined()
     })
   })
 
@@ -110,8 +88,8 @@ describe('CheckResponsesPageController', () => {
       expect(controller).toHaveProperty('makePostRouteHandler')
     })
 
-    it('should override getSummaryPath from parent', () => {
-      expect(controller.getSummaryPath).toBeDefined()
+    it('should override getSummaryViewModel from parent', () => {
+      expect(controller.getSummaryViewModel).toBeDefined()
     })
 
     it('should override makePostRouteHandler from parent', () => {

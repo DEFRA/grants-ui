@@ -1,4 +1,5 @@
 import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
+import { getTaskPageBackLink } from '../task-list/task-list.helper.js'
 
 export default class CheckResponsesPageController extends SummaryPageController {
   /**
@@ -8,11 +9,32 @@ export default class CheckResponsesPageController extends SummaryPageController 
   constructor(model, pageDef) {
     super(model, pageDef)
     this.viewName = 'check-responses-page'
+
+    // Resolve section
+    if (pageDef.section) {
+      this.section = model.getSection(pageDef.section)
+    }
   }
 
-  getSummaryPath() {
-    // @ts-ignore - is this even used? It looks wrong
-    return this.path
+  /**
+   * Builds the view model for the page
+   * @param {AnyFormRequest} request
+   * @param {FormContext} context
+   * @returns {object} The view model
+   */
+  getSummaryViewModel(request, context) {
+    const viewModel = super.getSummaryViewModel(request, context)
+
+    const { pageDef } = this
+
+    const backLink = getTaskPageBackLink(viewModel, pageDef)
+    const sectionTitle = this.section?.hideTitle !== true ? this.section?.title : ''
+
+    return {
+      ...viewModel,
+      sectionTitle,
+      ...(backLink ? { backLink } : {})
+    }
   }
 
   /**
