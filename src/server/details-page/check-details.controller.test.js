@@ -82,6 +82,7 @@ describe('CheckDetailsController', () => {
 
     mockRequest = {
       app: {},
+      path: '/test-form/check-details',
       auth: {
         isAuthenticated: true,
         credentials: {
@@ -247,7 +248,8 @@ describe('CheckDetailsController', () => {
         expect(mockH.view).toHaveBeenCalledWith('incorrect-details', {
           serviceName: 'Test Service',
           serviceUrl: TEST_FORM_ENDPOINT,
-          continueUrl: TEST_FORM_ENDPOINT
+          continueUrl: TEST_FORM_ENDPOINT,
+          backLink: { text: 'Back', href: '/test-form/check-details' }
         })
       })
 
@@ -414,12 +416,13 @@ describe('CheckDetailsController', () => {
         otherProperty: 'ignored'
       }
 
-      const result = controller.buildIncorrectDetailsViewModel(baseViewModel)
+      const result = controller.buildIncorrectDetailsViewModel(baseViewModel, { path: '/my-service/check-details' })
 
       expect(result).toEqual({
         serviceName: 'My Service',
         serviceUrl: '/my-service',
-        continueUrl: '/my-service'
+        continueUrl: '/my-service',
+        backLink: { text: 'Back', href: '/my-service/check-details' }
       })
     })
   })

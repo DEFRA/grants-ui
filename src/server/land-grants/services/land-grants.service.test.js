@@ -240,7 +240,7 @@ describe('land-grants service', () => {
       })
     })
 
-    it('should handle actions not in predefined groups', async () => {
+    it('should exclude actions not in any predefined group', async () => {
       const mockApiResponse = {
         parcels: [
           {
@@ -296,19 +296,6 @@ describe('land-grants service', () => {
                 availableArea: { value: 10.5, unit: 'ha' },
                 description: 'Assess moorland and produce a written record: CMOR1'
               }
-            ]
-          },
-          {
-            name: '',
-            consents: [],
-            totalAvailableArea: {
-              unit: 'ha',
-              unitFullName: 'hectares',
-              value: 5.0
-            },
-            actions: [
-              { code: 'UNKNOWN1', availableArea: { value: 5.0, unit: 'ha' }, description: 'description: UNKNOWN1' },
-              { code: 'UNKNOWN2', availableArea: { value: 3.5, unit: 'ha' }, description: 'description: UNKNOWN2' }
             ]
           }
         ]
@@ -471,6 +458,137 @@ describe('land-grants service', () => {
           sheetId: 'SHEET123'
         })
       ).rejects.toThrow('API error')
+    })
+
+    describe('when enableUpl8And10 flag is off', () => {
+      beforeEach(() => {
+        configState.reset()
+        configState.set('landGrants.enableUpl8And10', false)
+      })
+
+      it('should treat UPL8 and UPL10 actions as ungrouped when flag is off', async () => {
+        const mockApiResponse = {
+          parcels: [
+            {
+              parcelId: 'PARCEL456',
+              sheetId: 'SHEET123',
+              size: { value: 50.5, unit: 'ha' },
+              actions: [
+                {
+                  code: 'CMOR1',
+                  availableArea: { value: 10.5, unit: 'ha' },
+                  description: 'Assess moorland and produce a written record'
+                },
+                {
+                  code: 'UPL8',
+                  availableArea: { value: 12.0, unit: 'ha' },
+                  description: 'Shepherding livestock on moorland'
+                },
+                {
+                  code: 'UPL10',
+                  availableArea: { value: 8.0, unit: 'ha' },
+                  description: 'Shepherding livestock on moorland'
+                }
+              ]
+            }
+          ]
+        }
+        parcelsWithActionsAndSize.mockResolvedValueOnce(mockApiResponse)
+
+        const result = await fetchAvailableActionsForParcel({
+          parcelId: 'PARCEL456',
+          sheetId: 'SHEET123'
+        })
+
+        expect(result.actions).toEqual([
+          {
+            name: 'Assess moorland',
+            consents: [],
+            totalAvailableArea: { unit: 'ha', unitFullName: 'hectares', value: 10.5 },
+            actions: [
+              {
+                code: 'CMOR1',
+                availableArea: { value: 10.5, unit: 'ha' },
+                description: 'Assess moorland and produce a written record: CMOR1'
+              }
+            ]
+          }
+        ])
+      })
+    })
+
+    describe('when enableUpl8And10 flag is on', () => {
+      beforeEach(() => {
+        configState.reset()
+        configState.set('landGrants.enableUpl8And10', true)
+      })
+
+      it('should group UPL8 and UPL10 actions under Shepherding livestock on moorland', async () => {
+        const mockApiResponse = {
+          parcels: [
+            {
+              parcelId: 'PARCEL456',
+              sheetId: 'SHEET123',
+              size: { value: 50.5, unit: 'ha' },
+              actions: [
+                {
+                  code: 'CMOR1',
+                  availableArea: { value: 10.5, unit: 'ha' },
+                  description: 'Assess moorland and produce a written record'
+                },
+                {
+                  code: 'UPL8',
+                  availableArea: { value: 12.0, unit: 'ha' },
+                  description: 'Shepherding livestock on moorland'
+                },
+                {
+                  code: 'UPL10',
+                  availableArea: { value: 8.0, unit: 'ha' },
+                  description: 'Shepherding livestock on moorland'
+                }
+              ]
+            }
+          ]
+        }
+        parcelsWithActionsAndSize.mockResolvedValueOnce(mockApiResponse)
+
+        const result = await fetchAvailableActionsForParcel({
+          parcelId: 'PARCEL456',
+          sheetId: 'SHEET123'
+        })
+
+        expect(result.actions).toEqual([
+          {
+            name: 'Assess moorland',
+            consents: [],
+            totalAvailableArea: { unit: 'ha', unitFullName: 'hectares', value: 10.5 },
+            actions: [
+              {
+                code: 'CMOR1',
+                availableArea: { value: 10.5, unit: 'ha' },
+                description: 'Assess moorland and produce a written record: CMOR1'
+              }
+            ]
+          },
+          {
+            name: 'Shepherding livestock on moorland',
+            consents: [],
+            totalAvailableArea: { unit: 'ha', unitFullName: 'hectares', value: 12.0 },
+            actions: [
+              {
+                code: 'UPL8',
+                availableArea: { value: 12.0, unit: 'ha' },
+                description: 'Shepherding livestock on moorland: UPL8'
+              },
+              {
+                code: 'UPL10',
+                availableArea: { value: 8.0, unit: 'ha' },
+                description: 'Shepherding livestock on moorland: UPL10'
+              }
+            ]
+          }
+        ])
+      })
     })
 
     describe('V2 - SSSI Consent required flag is enabled', () => {

@@ -18,16 +18,27 @@ import { formatAreaUnit } from '~/src/server/land-grants/utils/format-area-unit.
 const LAND_GRANTS_API_URL = config.get('landGrants.grantsServiceApiEndpoint')
 
 // NOSONAR TODO: Ideally this needs to come from the backend
-export const actionGroups = [
-  {
-    name: 'Assess moorland',
-    actions: ['CMOR1']
-  },
-  {
-    name: 'Livestock grazing on moorland',
-    actions: ['UPL1', 'UPL2', 'UPL3']
+export function getActionGroups() {
+  const groups = [
+    {
+      name: 'Assess moorland',
+      actions: ['CMOR1']
+    },
+    {
+      name: 'Livestock grazing on moorland',
+      actions: ['UPL1', 'UPL2', 'UPL3']
+    }
+  ]
+
+  if (config.get('landGrants.enableUpl8And10')) {
+    groups.push({
+      name: 'Shepherding livestock on moorland',
+      actions: ['UPL8', 'UPL10']
+    })
   }
-]
+
+  return groups
+}
 
 /**
  * Calculates grant payment for land actions.
@@ -80,22 +91,13 @@ export async function fetchAvailableActionsForParcel({ parcelId = '', sheetId = 
   const { parcels } = await parcelsWithActionsAndSize(parcelIds, LAND_GRANTS_API_URL)
   const foundParcel = parcels?.find((p) => p.parcelId === parcelId && p.sheetId === sheetId)
   const actionsForParcel = foundParcel?.actions?.map(mapAction) || []
-  const usedCodes = new Set()
 
-  actionGroups.forEach((group) => {
+  getActionGroups().forEach((group) => {
     const groupActions = actionsForParcel.filter((a) => group.actions.includes(a.code))
     if (groupActions.length > 0) {
-      for (const action of groupActions) {
-        usedCodes.add(action.code)
-      }
       actions.push(createGroup(group.name, groupActions))
     }
   })
-
-  const ungroupedActions = actionsForParcel.filter((a) => !usedCodes.has(a.code))
-  if (ungroupedActions.length > 0) {
-    actions.push(createGroup('', ungroupedActions))
-  }
 
   return {
     parcel: {
