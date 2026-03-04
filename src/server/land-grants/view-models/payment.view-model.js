@@ -1,7 +1,7 @@
 import { formatCurrency } from '~/src/config/nunjucks/filters/filters.js'
 import { landActionWithCode } from '~/src/server/land-grants/utils/land-action-with-code.js'
 import { stringifyParcel } from '../utils/format-parcel.js'
-import { actionGroups } from '../services/land-grants.service.js'
+import { getActionGroups } from '../services/land-grants.service.js'
 
 /**
  * Maps payment information to view models for rendering in check pages.
@@ -86,7 +86,7 @@ export function buildLandParcelFooterActions(selectedActions, sheetId, parcelId)
     )
   ]
 
-  const hasActionFromGroup = actionGroups.map((group) => uniqueCodes.some((code) => group.actions.includes(code)))
+  const hasActionFromGroup = getActionGroups().map((group) => uniqueCodes.some((code) => group.actions.includes(code)))
 
   if (hasActionFromGroup.every(Boolean)) {
     return {}
