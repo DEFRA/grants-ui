@@ -97,10 +97,13 @@ metadata:
 sections:
   - name: example-section-one
     title: Example section one
+    id: 52757632-60cb-437f-a648-cfbc6acdacd0
   - name: example-section-two
     title: Example section two
+    id: e6cf973b-3ab2-4906-8807-6cdb81f3ea4d
   - name: example-submit-section
     title: Example submit section
+    id: 31370d87-fb56-4fb3-aa2b-f35781073300
 
 pages:
   # Landing page - no section
@@ -172,7 +175,7 @@ pages:
   - title: Example multiple components task
     id: 523058ea-46f0-44fd-ae79-1a6be652c7f9
     path: /multiple-components-task-page
-    section: example-section-one
+    section: 52757632-60cb-437f-a648-cfbc6acdacd0
     controller: TaskPageController
     components:
       - name: firstName
@@ -198,7 +201,7 @@ pages:
   - title: Example single component task
     id: 66deb749-1a9b-4793-80b6-4fbfc5a11124
     path: /single-component-task-page
-    section: example-section-one
+    section: 52757632-60cb-437f-a648-cfbc6acdacd0
     controller: TaskPageController
     components:
       - name: exampleEmailField
@@ -218,7 +221,7 @@ pages:
   - title: Example compound component task
     id: 8cbdbf5e-7622-48fe-a722-14d271cb05ef
     path: /compound-component-task-page
-    section: example-section-two
+    section: e6cf973b-3ab2-4906-8807-6cdb81f3ea4d
     controller: TaskPageController
     components:
       - name: exampleComponentGuidance
@@ -235,7 +238,7 @@ pages:
   - title: Example task with guidance
     id: 5da5dc71-0e34-4a8a-811e-eb7595b088b8
     path: /example-task-with-guidance
-    section: example-section-two
+    section: e6cf973b-3ab2-4906-8807-6cdb81f3ea4d
     controller: TaskPageController
     components:
       - name: examplePageGuidance
@@ -254,7 +257,7 @@ pages:
   - title: Confirm and send
     id: 9817cd3a-c9ae-49f1-8a95-076a82504d25
     path: /declaration
-    section: example-submit-section
+    section: 31370d87-fb56-4fb3-aa2b-f35781073300
     controller: DeclarationPageController
 
 conditions:
