@@ -50,7 +50,7 @@ export async function postToLandGrantsApi(endpoint, body, baseUrl) {
  * @throws {Error}
  */
 export async function calculate(payload, baseUrl) {
-  return postToLandGrantsApi('/payments/calculate', payload, baseUrl)
+  return postToLandGrantsApi('/api/v2/payments/calculate', payload, baseUrl)
 }
 
 /**
