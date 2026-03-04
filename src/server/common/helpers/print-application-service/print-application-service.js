@@ -1,6 +1,12 @@
 import { getFormsCache } from '../../forms/services/form.js'
 import { formatAnswer } from './utils/format-answer.js'
-import { DISPLAY_ONLY_TYPES } from './constants.js'
+import { DISPLAY_ONLY_TYPES, COMPONENT_TYPES } from './constants.js'
+
+const COMPOSITE_FIELD_PARTS = {
+  [COMPONENT_TYPES.DatePartsField]: ['day', 'month', 'year'],
+  [COMPONENT_TYPES.MonthYearField]: ['month', 'year'],
+  [COMPONENT_TYPES.UkAddressField]: ['addressLine1', 'addressLine2', 'town', 'county', 'postcode']
+}
 
 /**
  * @typedef {{ type: string, name: string, title: string, list?: string, items?: Array<{text: string, value: string | number | boolean}> }} FormComponent
@@ -30,6 +36,39 @@ function isAnswerableComponent(component) {
 }
 
 /**
+ * Resolves the answer for a component from the answers object.
+ * Composite fields (DatePartsField, MonthYearField, UkAddressField) store
+ * values as flat keys with __ separators (e.g. name__day, name__month).
+ * This function reassembles them into nested objects for the formatters.
+ * @param {FormComponent} component
+ * @param {Answers} answers
+ * @returns {unknown}
+ */
+function resolveAnswer(component, answers) {
+  if (answers[component.name] !== undefined) {
+    return answers[component.name]
+  }
+
+  const parts = COMPOSITE_FIELD_PARTS[component.type]
+  if (!parts) {
+    return undefined
+  }
+
+  const assembled = {}
+  let hasValue = false
+
+  for (const part of parts) {
+    const key = `${component.name}__${part}`
+    if (answers[key] !== undefined && answers[key] !== null && answers[key] !== '') {
+      assembled[part] = answers[key]
+      hasValue = true
+    }
+  }
+
+  return hasValue ? assembled : undefined
+}
+
+/**
  * Builds question rows from a page's components and the submitted answers.
  * @param {FormComponent[] | undefined} components
  * @param {Answers} answers
@@ -41,12 +80,12 @@ function extractQuestions(components, answers) {
       if (!isAnswerableComponent(component)) {
         return false
       }
-      const rawAnswer = answers[component.name]
+      const rawAnswer = resolveAnswer(component, answers)
       return rawAnswer !== undefined && rawAnswer !== null
     })
     .map((component) => ({
       label: component.title,
-      answer: formatAnswer(component, answers[component.name])
+      answer: formatAnswer(component, resolveAnswer(component, answers))
     }))
 }
 

@@ -169,7 +169,7 @@ describe('formatAnswer', () => {
   describe('UkAddressField', () => {
     const component = { type: 'UkAddressField' }
 
-    test('should join address parts with newlines', () => {
+    test('should join address parts with commas', () => {
       const address = {
         addressLine1: '10 Downing Street',
         addressLine2: '',
@@ -178,7 +178,7 @@ describe('formatAnswer', () => {
         postcode: 'SW1A 2AA'
       }
 
-      expect(formatAnswer(component, address)).toBe('10 Downing Street\nLondon\nSW1A 2AA')
+      expect(formatAnswer(component, address)).toBe('10 Downing Street, London, SW1A 2AA')
     })
 
     test('should include all parts when present', () => {
@@ -190,7 +190,7 @@ describe('formatAnswer', () => {
         postcode: 'EX1 1AA'
       }
 
-      expect(formatAnswer(component, address)).toBe('Unit 5\nBusiness Park\nExeter\nDevon\nEX1 1AA')
+      expect(formatAnswer(component, address)).toBe('Unit 5, Business Park, Exeter, Devon, EX1 1AA')
     })
 
     test('should stringify non-object value', () => {
