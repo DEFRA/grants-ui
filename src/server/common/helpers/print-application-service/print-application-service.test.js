@@ -195,6 +195,71 @@ describe('print-application-service', () => {
 
       expect(result.sections).toEqual([])
     })
+
+    const datePartsDefinition = {
+      pages: [{ title: 'Dates', components: [{ type: 'DatePartsField', name: 'startDate', title: 'Start date' }] }]
+    }
+
+    test.each([
+      {
+        type: 'DatePartsField',
+        name: 'startDate',
+        title: 'Start date',
+        answers: { startDate__day: 15, startDate__month: 1, startDate__year: 2025 },
+        expected: '15 January 2025'
+      },
+      {
+        type: 'MonthYearField',
+        name: 'targetMonth',
+        title: 'Target month',
+        answers: { targetMonth__month: 6, targetMonth__year: 2025 },
+        expected: 'June 2025'
+      },
+      {
+        type: 'UkAddressField',
+        name: 'businessAddress',
+        title: 'Business address',
+        answers: {
+          businessAddress__addressLine1: '10 Downing Street',
+          businessAddress__addressLine2: '',
+          businessAddress__town: 'London',
+          businessAddress__county: '',
+          businessAddress__postcode: 'SW1A 2AA'
+        },
+        expected: '10 Downing Street, London, SW1A 2AA'
+      }
+    ])('should resolve $type from flat __ keys in answers', ({ type, name, title, answers, expected }) => {
+      const result = buildPrintViewModel({
+        ...baseParams,
+        definition: { pages: [{ title: 'Page', components: [{ type, name, title }] }] },
+        answers
+      })
+
+      expect(result.sections).toHaveLength(1)
+      expect(result.sections[0].questions).toEqual([{ label: title, answer: expected }])
+    })
+
+    test('should exclude composite fields when no flat __ keys are present', () => {
+      const result = buildPrintViewModel({
+        ...baseParams,
+        definition: datePartsDefinition,
+        answers: {}
+      })
+
+      expect(result.sections).toEqual([])
+    })
+
+    test('should prefer direct answer key over flat __ keys for composite fields', () => {
+      const result = buildPrintViewModel({
+        ...baseParams,
+        definition: datePartsDefinition,
+        answers: {
+          startDate: { day: 1, month: 3, year: 2026 }
+        }
+      })
+
+      expect(result.sections[0].questions).toEqual([{ label: 'Start date', answer: '1 March 2026' }])
+    })
   })
 
   describe('enrichDefinitionWithListItems', () => {

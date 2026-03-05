@@ -1,5 +1,10 @@
 @media print {
   // stylelint-disable declaration-no-important
+  html,
+  body {
+    background-color: transparent !important;
+  }
+
   .govuk-cookie-banner,
   .govuk-header,
   .govuk-service-navigation,
@@ -26,5 +31,25 @@
     max-width: 100% !important;
     width: 100% !important;
   }
+
+  .defra-panel-card {
+    background: transparent !important;
+
+    h1,
+    p,
+    li {
+      color: govuk-colour('black') !important;
+    }
+  }
+
+  .defra-terms_and_conditions_page_heading {
+    background-color: transparent !important;
+    color: govuk-colour('black') !important;
+  }
+
+  .defra-terms_and_conditions_page_heading__caption {
+    color: govuk-colour('black') !important;
+  }
+
   // stylelint-enable declaration-no-important
 }

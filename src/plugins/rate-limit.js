@@ -7,14 +7,16 @@ const TOO_MANY_REQUESTS = 429
 /**
  * Extract client IP from X-Forwarded-For header
  * Takes the first IP in the chain (original client)
- * @param {string|undefined} xForwardedFor
+ * @param {string|string[]|undefined} xForwardedFor
  * @returns {string|null}
  */
 export const getClientIp = (xForwardedFor) => {
   if (!xForwardedFor) {
     return null
   }
-  return xForwardedFor.split(',')[0].trim()
+  // Handle string[] case - take first element
+  const headerValue = Array.isArray(xForwardedFor) ? xForwardedFor[0] : xForwardedFor
+  return headerValue.split(',')[0].trim()
 }
 
 /**

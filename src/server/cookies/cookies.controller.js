@@ -4,7 +4,7 @@ import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
 /**
  * Validates that a URL is safe for redirection (relative URLs only)
- * @param {string} url - The URL to validate
+ * @param {string|string[]} url - The URL to validate
  * @returns {boolean} True if the URL is a safe relative URL
  */
 const isValidReturnUrl = (url) => {

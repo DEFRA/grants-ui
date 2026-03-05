@@ -45,7 +45,7 @@ function formatItemLookup(component, value) {
 
 function formatUkAddress(_component, value) {
   if (typeof value === 'object') {
-    return [value.addressLine1, value.addressLine2, value.town, value.county, value.postcode].filter(Boolean).join('\n')
+    return [value.addressLine1, value.addressLine2, value.town, value.county, value.postcode].filter(Boolean).join(', ')
   }
   return String(value)
 }

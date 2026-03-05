@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "lib": ["ES2020", "dom"],
+    "lib": ["ES2022", "dom"],
     "allowJs": true,
     "checkJs": true,
     "module": "NodeNext",

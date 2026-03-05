@@ -60,7 +60,7 @@
     "priority": 10,
     "httpRequest": {
       "method": "POST",
-      "path": "/api/v2/payments/calculate",
+      "path": "/payments/calculate",
       "body": {
         "type": "JSON_PATH",
         "jsonPath": "$.parcel[*].actions[1]"
@@ -80,7 +80,7 @@
     "priority": 5,
     "httpRequest": {
       "method": "POST",
-      "path": "/api/v2/payments/calculate",
+      "path": "/payments/calculate",
       "body": {
         "type": "JSON_PATH",
         "jsonPath": "$.parcel[*].actions[?(@.code == 'TEST1')]"
@@ -100,7 +100,7 @@
     "priority": 5,
     "httpRequest": {
       "method": "POST",
-      "path": "/api/v2/payments/calculate",
+      "path": "/payments/calculate",
       "body": {
         "type": "JSON_PATH",
         "jsonPath": "$.parcel[*].actions[?(@.code == 'TEST2')]"
@@ -120,7 +120,7 @@
     "priority": 0,
     "httpRequest": {
       "method": "POST",
-      "path": "/api/v2/payments/calculate"
+      "path": "/payments/calculate"
     },
     "httpResponse": {
       "statusCode": 200,

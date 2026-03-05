@@ -179,7 +179,7 @@ function getSectionsMap(model) {
 
   if (model.page.def.sections) {
     for (const section of model.page.def.sections) {
-      sectionsMap.set(section.name, section.title)
+      sectionsMap.set(section.id, section.title)
     }
   }
 
@@ -203,18 +203,18 @@ export function buildTaskListData(model, formModel, state) {
   const sectionGroups = new Map()
 
   for (const page of taskPages) {
-    const sectionName = page.section
-    if (!sectionGroups.has(sectionName)) {
-      sectionGroups.set(sectionName, [])
+    const sectionId = page.section
+    if (!sectionGroups.has(sectionId)) {
+      sectionGroups.set(sectionId, [])
     }
-    sectionGroups.get(sectionName).push(page)
+    sectionGroups.get(sectionId).push(page)
   }
 
   // Build the task list sections
   const taskListSections = []
 
-  for (const [sectionName, pages] of sectionGroups) {
-    const sectionTitle = sectionsMap.get(sectionName) ?? sectionName
+  for (const [sectionId, pages] of sectionGroups) {
+    const sectionTitle = sectionsMap.get(sectionId) ?? ''
 
     const items = pages.map((page) => ({
       ...createTaskItem(page, state, taskPages, metadata, basePath)
@@ -256,11 +256,11 @@ function findNextPageInSection(pages, startIndex, section) {
   const remainingPages = pages.slice(startIndex + 1)
 
   for (const page of remainingPages) {
-    if (page.section?.name === section) {
+    if (page.section?.id === section) {
       return page
     }
     // Stop if we hit a page with a different section
-    if (page.section?.name && page.section?.name !== section) {
+    if (page.section?.id && page.section?.id !== section) {
       return undefined
     }
   }
