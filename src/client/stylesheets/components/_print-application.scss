@@ -1,5 +1,10 @@
 @media print {
   // stylelint-disable declaration-no-important
+  html,
+  body {
+    background-color: transparent !important;
+  }
+
   .govuk-cookie-banner,
   .govuk-header,
   .govuk-service-navigation,
@@ -45,5 +50,6 @@
   .defra-terms_and_conditions_page_heading__caption {
     color: govuk-colour('black') !important;
   }
+
   // stylelint-enable declaration-no-important
 }
