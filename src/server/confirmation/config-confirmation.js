@@ -1,3 +1,4 @@
+import { findFormBySlug } from '~/src/server/common/forms/services/find-form-by-slug.js'
 import { ConfirmationService } from './services/confirmation.service.js'
 import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/forms-cache.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
@@ -25,7 +26,7 @@ function validateRequestAndFindForm(request, h) {
     return { error: h.response('Bad request - missing slug').code(statusCodes.badRequest) }
   }
 
-  const form = ConfirmationService.findFormBySlug(slug)
+  const form = findFormBySlug(slug)
   if (!form) {
     log(
       LogCodes.CONFIRMATION.CONFIRMATION_ERROR,

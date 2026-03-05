@@ -1,32 +1,13 @@
-import { findFormBySlug, buildPrintViewModel, enrichDefinitionWithListItems } from './print-application-service.js'
-import {
-  MOCK_FORM_CACHE,
-  MOCK_FORM_ENTRIES,
-  MOCK_DISPLAY_ONLY_COMPONENTS
-} from '~/src/__test-fixtures__/mock-forms-cache.js'
+import { buildPrintViewModel, enrichDefinitionWithListItems } from './print-application-service.js'
+import { MOCK_FORM_ENTRIES, MOCK_DISPLAY_ONLY_COMPONENTS } from '~/src/__test-fixtures__/mock-forms-cache.js'
+import { MOCK_PAYMENT } from '~/src/__test-fixtures__/mock-payment.js'
 
-vi.mock('~/src/server/common/forms/services/form.js', () => ({
-  getFormsCache: vi.fn(() => MOCK_FORM_CACHE)
-}))
+vi.mock('~/src/config/nunjucks/filters/filters.js', async () => {
+  const { mockFilters } = await import('~/src/__mocks__')
+  return mockFilters()
+})
 
 describe('print-application-service', () => {
-  describe('findFormBySlug', () => {
-    test('should return the form matching the given slug', () => {
-      const result = findFormBySlug('another-form')
-
-      expect(result).toEqual(MOCK_FORM_ENTRIES.anotherForm)
-    })
-
-    test('should return null when no form matches the slug', () => {
-      expect(findFormBySlug('non-existent')).toBeNull()
-    })
-
-    test('should return the first match when searching', () => {
-      const result = findFormBySlug('test-form')
-      expect(result.id).toBe(MOCK_FORM_ENTRIES.testForm.id)
-    })
-  })
-
   describe('buildPrintViewModel', () => {
     const baseParams = {
       definition: {
@@ -91,6 +72,8 @@ describe('print-application-service', () => {
         { label: 'Do you have planning permission?', answer: 'Yes' },
         { label: 'Total project cost', answer: '50000' }
       ])
+
+      expect(result.paymentInfo).toBeNull()
     })
 
     test('should default referenceNumber to "Not available" when not provided', () => {
@@ -259,6 +242,21 @@ describe('print-application-service', () => {
       })
 
       expect(result.sections[0].questions).toEqual([{ label: 'Start date', answer: '1 March 2026' }])
+    })
+
+    test('should return populated paymentInfo when answers contain payment data', () => {
+      const result = buildPrintViewModel({
+        ...baseParams,
+        answers: {
+          ...baseParams.answers,
+          payment: MOCK_PAYMENT
+        }
+      })
+
+      expect(result.paymentInfo).not.toBeNull()
+      expect(result.paymentInfo.totalAnnualPayment).toBe('£1500.00')
+      expect(result.paymentInfo.parcelItems).toHaveLength(2)
+      expect(result.paymentInfo.parcelItems[0].cardTitle).toBe('Land parcel ID AB1234 0001')
     })
   })
 

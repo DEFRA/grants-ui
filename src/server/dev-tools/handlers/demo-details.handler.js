@@ -1,5 +1,6 @@
 import { buildDemoMappedData, buildDemoRequest } from '../helpers/index.js'
-import { generateFormNotFoundResponse, getAllForms } from '../utils/index.js'
+import { generateFormNotFoundResponse } from '../utils/index.js'
+import { findFormBySlug } from '../../common/forms/services/find-form-by-slug.js'
 import { processSections } from '../../common/services/details-page/index.js'
 import { debug, LogCodes } from '../../common/helpers/logging/log.js'
 
@@ -18,32 +19,6 @@ export function loadDisplaySectionsConfig(form) {
   }
 
   return { displaySections }
-}
-
-/**
- * Validates that slug is a known form slug to prevent open redirect
- * @param {string} slug - Slug to validate
- * @returns {boolean} True if slug is valid
- */
-function isValidFormSlug(slug) {
-  if (!slug || typeof slug !== 'string') {
-    return false
-  }
-  const allForms = getAllForms()
-  return allForms.some((f) => f.slug === slug)
-}
-
-/**
- * Find form by slug
- * @param {string} slug - Form slug to find
- * @returns {object|null} Form object or null
- */
-function findFormBySlug(slug) {
-  if (!isValidFormSlug(slug)) {
-    return null
-  }
-  const allForms = getAllForms()
-  return allForms.find((f) => f.slug === slug) || null
 }
 
 /**
@@ -224,10 +199,6 @@ export async function demoDetailsPostHandler(request, h) {
   }
 
   if (detailsCorrect === 'true') {
-    // Validate slug is a known form slug before redirect to prevent open redirect
-    if (!isValidFormSlug(slug)) {
-      return generateFormNotFoundResponse(slug, h)
-    }
     return h.redirect(`/${slug}`)
   }
 

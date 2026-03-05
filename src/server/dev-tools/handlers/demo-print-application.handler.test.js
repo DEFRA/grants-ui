@@ -1,17 +1,19 @@
 import { vi } from 'vitest'
 import { mockReadFile } from '~/src/__mocks__/fs-yaml-mocks.js'
 import { demoPrintApplicationHandler } from './demo-print-application.handler.js'
+import { findFormBySlug } from '../../common/forms/services/find-form-by-slug.js'
 import {
-  findFormBySlug,
   buildPrintViewModel,
   enrichDefinitionWithListItems
 } from '../../common/helpers/print-application-service/print-application-service.js'
-import { buildDemoData, buildDemoPrintAnswers } from '../helpers/index.js'
+import { buildDemoData, buildDemoPrintAnswers, buildDemoPayment } from '../helpers/index.js'
 import { generateFormNotFoundResponse } from '../utils/index.js'
 import { mockHapiRequest, mockHapiResponseToolkit } from '~/src/__mocks__/hapi-mocks.js'
 import { debug, LogCodes } from '../../common/helpers/logging/log.js'
 import { MOCK_FORM_WITH_PATH, MOCK_SINGLE_PAGE_DEFINITION } from '~/src/__test-fixtures__/mock-forms-cache.js'
+import { MOCK_DEMO_DATA } from '../__test-fixtures__/mock-demo-data.js'
 
+vi.mock('../../common/forms/services/find-form-by-slug.js')
 vi.mock('../../common/helpers/print-application-service/print-application-service.js')
 vi.mock('../helpers/index.js')
 vi.mock('../utils/index.js')
@@ -19,13 +21,6 @@ vi.mock('../../common/helpers/logging/log.js', async () => {
   const { mockLogHelper } = await import('~/src/__mocks__')
   return mockLogHelper()
 })
-
-const mockDemoData = {
-  referenceNumber: 'DEMO123',
-  businessName: 'Demo Business Ltd',
-  sbi: '999888777',
-  contactName: 'Demo User'
-}
 
 const mockDefinition = { ...MOCK_SINGLE_PAGE_DEFINITION, lists: [] }
 const mockForm = MOCK_FORM_WITH_PATH
@@ -40,8 +35,9 @@ describe('demo-print-application.handler', () => {
     mockRequest = mockHapiRequest({ params: { slug: 'test-form' } })
     mockH = mockHapiResponseToolkit()
 
-    buildDemoData.mockReturnValue(mockDemoData)
+    buildDemoData.mockReturnValue(MOCK_DEMO_DATA)
     buildDemoPrintAnswers.mockReturnValue({ field1: 'Demo text' })
+    buildDemoPayment.mockReturnValue({ annualTotalPence: 100000, parcelItems: {} })
     enrichDefinitionWithListItems.mockImplementation((def) => def)
     mockReadFile.mockResolvedValue(JSON.stringify(mockDefinition))
   })
@@ -71,6 +67,33 @@ describe('demo-print-application.handler', () => {
       })
     )
     expect(mockH.view).toHaveBeenCalledWith('print-submitted-application', { test: 'viewModel' })
+  })
+
+  test('should include demo payment data for farm-payments slug', async () => {
+    mockRequest = mockHapiRequest({ params: { slug: 'farm-payments' } })
+    findFormBySlug.mockReturnValue(mockForm)
+    buildPrintViewModel.mockReturnValue({ test: 'viewModel' })
+
+    await demoPrintApplicationHandler(mockRequest, mockH)
+
+    expect(buildPrintViewModel).toHaveBeenCalledWith(
+      expect.objectContaining({
+        answers: { field1: 'Demo text', payment: { annualTotalPence: 100000, parcelItems: {} } }
+      })
+    )
+  })
+
+  test('should not include demo payment data for non-land-grant forms', async () => {
+    findFormBySlug.mockReturnValue(mockForm)
+    buildPrintViewModel.mockReturnValue({ test: 'viewModel' })
+
+    await demoPrintApplicationHandler(mockRequest, mockH)
+
+    expect(buildPrintViewModel).toHaveBeenCalledWith(
+      expect.objectContaining({
+        answers: { field1: 'Demo text' }
+      })
+    )
   })
 
   test('should return form not found response when form does not exist', async () => {
