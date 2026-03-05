@@ -364,7 +364,7 @@ describe('Land Grants client', () => {
 
       const result = await calculate({ data: 'test' }, mockApiEndpoint)
 
-      expect(mockFetch).toHaveBeenCalledWith(`${mockApiEndpoint}/api/v2/payments/calculate`, {
+      expect(mockFetch).toHaveBeenCalledWith(`${mockApiEndpoint}/payments/calculate`, {
         method: 'POST',
         headers: {
           Authorization: expect.any(String),
