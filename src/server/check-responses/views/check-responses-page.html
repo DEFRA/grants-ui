@@ -11,6 +11,11 @@
 <div class="govuk-grid-row">
   <div class="govuk-grid-column-two-thirds">
     {% block table %}
+      {% if sectionTitle and (sectionTitle !== pageTitle) %}
+      <h2 class="govuk-caption-l govuk-!-margin-top-0" id="section-title">
+        {{- sectionTitle -}}
+      </h2>
+      {% endif %}
       <h1 class="govuk-heading-l">{{ pageTitle }}</h1>
 
       {% for section in checkAnswers %}

@@ -21,6 +21,11 @@ export default class DeclarationPageController extends SummaryPageController {
     this.model = model
     this.viewName = 'declaration-page.html'
     this.grantCode = model.def.metadata.submission.grantCode
+
+    // Resolve section
+    if (pageDef.section) {
+      this.section = model.getSection(pageDef.section)
+    }
   }
 
   /**
@@ -35,9 +40,11 @@ export default class DeclarationPageController extends SummaryPageController {
     const { pageDef } = this
 
     const backLink = getTaskPageBackLink(viewModel, pageDef)
+    const sectionTitle = this.section?.hideTitle !== true ? this.section?.title : ''
 
     return {
       ...viewModel,
+      sectionTitle,
       ...(backLink ? { backLink } : {})
     }
   }

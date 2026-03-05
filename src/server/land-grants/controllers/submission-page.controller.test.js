@@ -98,7 +98,7 @@ describe('SubmissionPageController', () => {
     })
   })
 
-  describe('handleSubmissionError', () => {
+  describe('renderSubmissionError', () => {
     it('should return error view with correct data', () => {
       const mockH = {
         view: vi.fn().mockReturnValue('error-view')
@@ -107,7 +107,7 @@ describe('SubmissionPageController', () => {
       const mockContext = {}
       const validationId = 'validation-123'
 
-      controller.handleSubmissionError(mockH, mockRequest, mockContext, validationId)
+      controller.renderSubmissionError(mockH, mockRequest, mockContext, validationId)
 
       expect(mockH.view).toHaveBeenCalledWith('submission-error', {
         backLink: null,
@@ -122,7 +122,7 @@ describe('SubmissionPageController', () => {
       const mockContext = { referenceNumber: 'REF456' }
       const validationId = 'validation-123'
 
-      controller.handleSubmissionError(mockH, mockRequest, mockContext, validationId)
+      controller.renderSubmissionError(mockH, mockRequest, mockContext, validationId)
 
       expect(mockH.view).toHaveBeenCalledWith(
         'submission-error',
@@ -144,7 +144,7 @@ describe('SubmissionPageController', () => {
       const mockRequest = {}
       const mockContext = { referenceNumber: 'REF456' }
 
-      controller.handleSubmissionError(mockH, mockRequest, mockContext)
+      controller.renderSubmissionError(mockH, mockRequest, mockContext)
 
       expect(mockH.view).toHaveBeenCalledWith(
         'submission-error',
@@ -166,7 +166,7 @@ describe('SubmissionPageController', () => {
       const mockRequest = {}
       const mockContext = {}
 
-      controller.handleSubmissionError(mockH, mockRequest, mockContext)
+      controller.renderSubmissionError(mockH, mockRequest, mockContext)
 
       expect(mockH.view).toHaveBeenCalledWith(
         'submission-error',
@@ -480,13 +480,13 @@ describe('SubmissionPageController', () => {
       const mockValidationResult = { id: 'validation-123', valid: false }
 
       validateApplication.mockResolvedValue(mockValidationResult)
-      vi.spyOn(controller, 'handleSubmissionError').mockReturnValue('error-view')
+      vi.spyOn(controller, 'renderSubmissionError').mockReturnValue('error-view')
       vi.spyOn(controller, 'submitGasApplication').mockResolvedValue({ success: true })
 
       const handler = controller.makePostRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
 
-      expect(controller.handleSubmissionError).toHaveBeenCalledWith(mockH, mockRequest, mockContext, 'validation-123')
+      expect(controller.renderSubmissionError).toHaveBeenCalledWith(mockH, mockRequest, mockContext, 'validation-123')
       expect(controller.submitGasApplication).not.toHaveBeenCalled()
       expect(result).toBe('error-view')
     })

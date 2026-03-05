@@ -3,7 +3,32 @@ import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/Su
 import { existsSync } from 'fs'
 import { join } from 'path'
 import CheckResponsesPageController from '~/src/server/check-responses/check-responses.controller.js'
-import { mockSimpleRequest, mockHapiResponseToolkit, mockContext } from '~/src/__mocks__/hapi-mocks.js'
+import { mockContext, mockHapiResponseToolkit, mockSimpleRequest } from '~/src/__mocks__/hapi-mocks.js'
+import { getTaskPageBackLink } from '../task-list/task-list.helper.js'
+
+vi.mock('../task-list/task-list.helper.js', () => ({
+  getTaskPageBackLink: vi.fn()
+}))
+
+vi.mock('@defra/forms-engine-plugin/controllers/SummaryPageController.js', () => {
+  return {
+    SummaryPageController: class {
+      constructor(model, pageDef) {
+        this.model = model
+        this.pageDef = pageDef
+      }
+
+      getSummaryViewModel(request, context) {
+        return {
+          serviceUrl: '/service',
+          page: {
+            title: 'Summary'
+          }
+        }
+      }
+    }
+  }
+})
 
 describe('CheckResponsesPageController', () => {
   let controller
@@ -11,12 +36,15 @@ describe('CheckResponsesPageController', () => {
   let mockPageDef
 
   beforeEach(() => {
+    vi.clearAllMocks()
     mockModel = {
-      basePath: '/test-form'
+      basePath: '/test-form',
+      getSection: vi.fn((id) => ({ id, title: 'Example Section' }))
     }
     mockPageDef = {
       path: '/check-answers',
-      title: 'Check your answers'
+      title: 'Check your answers',
+      section: 'section-id-123'
     }
     controller = new CheckResponsesPageController(mockModel, mockPageDef)
   })
@@ -29,27 +57,124 @@ describe('CheckResponsesPageController', () => {
     it('should set viewName to check-responses-page', () => {
       expect(controller.viewName).toBe('check-responses-page')
     })
+
+    it('should call parent constructor', () => {
+      expect(controller.model).toBe(mockModel)
+      expect(controller.pageDef).toBe(mockPageDef)
+    })
+
+    it('should resolve section when pageDef has section property', () => {
+      const getSectionSpy = vi.spyOn(mockModel, 'getSection')
+      const controllerWithSection = new CheckResponsesPageController(mockModel, mockPageDef)
+
+      expect(controllerWithSection.section).toEqual({
+        id: 'section-id-123',
+        title: 'Example Section'
+      })
+      expect(getSectionSpy).toHaveBeenCalledWith('section-id-123')
+    })
+
+    it('should not resolve section when pageDef has no section property', () => {
+      const pageDefWithoutSection = {
+        path: '/check-answers',
+        title: 'Check your answers'
+      }
+      const controllerWithoutSection = new CheckResponsesPageController(mockModel, pageDefWithoutSection)
+
+      expect(controllerWithoutSection.section).toBeUndefined()
+    })
   })
 
-  describe('getSummaryPath', () => {
-    it('returns this.path when set', () => {
-      controller.path = mockPageDef.path
+  describe('getSummaryViewModel', () => {
+    let mockRequest
+    let mockContextObj
 
-      const result = controller.getSummaryPath()
-
-      expect(result).toBe('/check-answers')
+    beforeEach(() => {
+      mockRequest = mockSimpleRequest()
+      mockContextObj = mockContext()
     })
 
-    it('reflects updates to this.path', () => {
-      controller.path = '/check-answers'
-      expect(controller.getSummaryPath()).toBe('/check-answers')
+    it('should call parent getSummaryViewModel and add section title', () => {
+      const result = controller.getSummaryViewModel(mockRequest, mockContextObj)
 
-      controller.path = '/updated-check-answers'
-      expect(controller.getSummaryPath()).toBe('/updated-check-answers')
+      expect(result.serviceUrl).toBe('/service')
+      expect(result.page.title).toBe('Summary')
+      expect(result.sectionTitle).toBe('Example Section')
     })
 
-    it('returns undefined if this.path is not set - plugin will then use fallback /summary', () => {
-      expect(controller.getSummaryPath()).toBeUndefined()
+    it('should include backLink when getTaskPageBackLink returns a value', () => {
+      getTaskPageBackLink.mockReturnValue({ href: '/task-list', text: 'Back to task list' })
+
+      const result = controller.getSummaryViewModel(mockRequest, mockContextObj)
+
+      expect(getTaskPageBackLink).toHaveBeenCalledWith(
+        {
+          serviceUrl: '/service',
+          page: {
+            title: 'Summary'
+          }
+        },
+        mockPageDef
+      )
+      expect(result.backLink).toEqual({ href: '/task-list', text: 'Back to task list' })
+    })
+
+    it('should not include backLink when getTaskPageBackLink returns null', () => {
+      getTaskPageBackLink.mockReturnValue(null)
+
+      const result = controller.getSummaryViewModel(mockRequest, mockContextObj)
+
+      expect(result.backLink).toBeUndefined()
+    })
+
+    it('should not include backLink when getTaskPageBackLink returns undefined', () => {
+      getTaskPageBackLink.mockReturnValue(undefined)
+
+      const result = controller.getSummaryViewModel(mockRequest, mockContextObj)
+
+      expect(result.backLink).toBeUndefined()
+    })
+
+    it('should set sectionTitle to empty string when section has hideTitle set to true', () => {
+      mockModel.getSection = vi.fn().mockReturnValue({
+        id: 'section-id-123',
+        title: 'Example Section',
+        hideTitle: true
+      })
+      const controllerWithHiddenTitle = new CheckResponsesPageController(mockModel, mockPageDef)
+
+      const result = controllerWithHiddenTitle.getSummaryViewModel(mockRequest, mockContextObj)
+
+      expect(result.sectionTitle).toBe('')
+    })
+
+    it('should set sectionTitle to undefined when section is undefined', () => {
+      const pageDefWithoutSection = {
+        path: '/check-answers',
+        title: 'Check your answers'
+      }
+      const controllerWithoutSection = new CheckResponsesPageController(mockModel, pageDefWithoutSection)
+
+      const result = controllerWithoutSection.getSummaryViewModel(mockRequest, mockContextObj)
+
+      expect(result.sectionTitle).toBeUndefined()
+    })
+
+    it('should preserve all parent view model properties', () => {
+      vi.spyOn(SummaryPageController.prototype, 'getSummaryViewModel').mockReturnValue({
+        serviceUrl: '/service',
+        page: { title: 'Summary' },
+        otherProperty: 'value',
+        anotherProperty: 123
+      })
+
+      const result = controller.getSummaryViewModel(mockRequest, mockContextObj)
+
+      expect(result.serviceUrl).toBe('/service')
+      expect(result.page.title).toBe('Summary')
+      expect(result.otherProperty).toBe('value')
+      expect(result.anotherProperty).toBe(123)
+      expect(result.sectionTitle).toBe('Example Section')
     })
   })
 
@@ -110,8 +235,8 @@ describe('CheckResponsesPageController', () => {
       expect(controller).toHaveProperty('makePostRouteHandler')
     })
 
-    it('should override getSummaryPath from parent', () => {
-      expect(controller.getSummaryPath).toBeDefined()
+    it('should override getSummaryViewModel from parent', () => {
+      expect(controller.getSummaryViewModel).toBeDefined()
     })
 
     it('should override makePostRouteHandler from parent', () => {

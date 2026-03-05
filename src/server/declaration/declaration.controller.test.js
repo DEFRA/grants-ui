@@ -9,6 +9,7 @@ import { mockHapiRequest } from '~/src/__mocks__'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { handleGasApiError } from '~/src/server/common/helpers/gas-error-messages.js'
 import { log, LogCodes } from '../common/helpers/logging/log.js'
+import { getTaskPageBackLink } from '~/src/server/task-list/task-list.helper.js'
 
 vi.mock('~/src/server/common/helpers/gas-error-messages.js')
 vi.mock('../common/helpers/logging/log.js', async () => {
@@ -33,12 +34,24 @@ vi.mock('@defra/forms-engine-plugin/controllers/SummaryPageController.js', () =>
         this.model = model
         this.pageDef = pageDef
       }
+
+      getSummaryViewModel(request, context) {
+        return {
+          serviceUrl: '/service',
+          page: {
+            title: 'Summary'
+          }
+        }
+      }
     }
   }
 })
 vi.mock('~/src/server/common/services/grant-application/grant-application.service.js')
 vi.mock('~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js')
 vi.mock('./state-to-gas-answers-mapper.js')
+vi.mock('~/src/server/task-list/task-list.helper.js', () => ({
+  getTaskPageBackLink: vi.fn()
+}))
 
 describe('DeclarationPageController', () => {
   let controller
@@ -59,9 +72,12 @@ describe('DeclarationPageController', () => {
         }
       },
       componentDefMap: {},
-      listDefIdMap: {}
+      listDefIdMap: {},
+      getSection: (id) => ({ id: '79d03fa4-bf5b-4a78-8f6e-eb94bab7a5c4', title: 'Example Section' })
     }
-    mockPageDef = {}
+    mockPageDef = {
+      section: '79d03fa4-bf5b-4a78-8f6e-eb94bab7a5c4'
+    }
 
     // Mock the parent's GET handler
     parentGetHandler = vi.fn().mockImplementation(() => {
@@ -121,8 +137,121 @@ describe('DeclarationPageController', () => {
     vi.clearAllMocks()
   })
 
-  test('should have the correct viewName', () => {
-    expect(controller.viewName).toBe('declaration-page.html')
+  describe('constructor', () => {
+    test('should set viewName to declaration-page.html', () => {
+      expect(controller.viewName).toBe('declaration-page.html')
+    })
+
+    test('should set grantCode from model metadata', () => {
+      expect(controller.grantCode).toBe('example-grant-with-auth')
+    })
+
+    test('should set model property', () => {
+      expect(controller.model).toBe(mockModel)
+    })
+
+    test('should resolve section when pageDef has section property', () => {
+      const getSectionSpy = vi.spyOn(mockModel, 'getSection')
+      const controllerWithSection = new DeclarationPageController(mockModel, mockPageDef)
+      expect(controllerWithSection.section).toEqual({
+        id: '79d03fa4-bf5b-4a78-8f6e-eb94bab7a5c4',
+        title: 'Example Section'
+      })
+      expect(getSectionSpy).toHaveBeenCalledWith('79d03fa4-bf5b-4a78-8f6e-eb94bab7a5c4')
+    })
+
+    test('should not resolve section when pageDef has no section property', () => {
+      const pageDefWithoutSection = {}
+      const controllerWithoutSection = new DeclarationPageController(mockModel, pageDefWithoutSection)
+      expect(controllerWithoutSection.section).toBeUndefined()
+    })
+
+    test('should call parent constructor', () => {
+      const controllerInstance = new DeclarationPageController(mockModel, mockPageDef)
+      expect(controllerInstance.pageDef).toBe(mockPageDef)
+    })
+  })
+
+  describe('getSummaryViewModel', () => {
+    test('should call parent getSummaryViewModel and add section title', () => {
+      const result = controller.getSummaryViewModel(mockRequest, mockContext)
+
+      expect(result.serviceUrl).toBe('/service')
+      expect(result.page.title).toBe('Summary')
+      expect(result.sectionTitle).toBe('Example Section')
+    })
+
+    test('should include backLink when getTaskPageBackLink returns a value', () => {
+      getTaskPageBackLink.mockReturnValue({ href: '/task-list', text: 'Back to task list' })
+
+      const result = controller.getSummaryViewModel(mockRequest, mockContext)
+
+      expect(getTaskPageBackLink).toHaveBeenCalledWith(
+        {
+          serviceUrl: '/service',
+          page: {
+            title: 'Summary'
+          }
+        },
+        mockPageDef
+      )
+      expect(result.backLink).toEqual({ href: '/task-list', text: 'Back to task list' })
+    })
+
+    test('should not include backLink when getTaskPageBackLink returns null', () => {
+      getTaskPageBackLink.mockReturnValue(null)
+
+      const result = controller.getSummaryViewModel(mockRequest, mockContext)
+
+      expect(result.backLink).toBeUndefined()
+    })
+
+    test('should not include backLink when getTaskPageBackLink returns undefined', () => {
+      getTaskPageBackLink.mockReturnValue(undefined)
+
+      const result = controller.getSummaryViewModel(mockRequest, mockContext)
+
+      expect(result.backLink).toBeUndefined()
+    })
+
+    test('should set sectionTitle to empty string when section has hideTitle set to true', () => {
+      mockModel.getSection = vi.fn().mockReturnValue({
+        id: '79d03fa4-bf5b-4a78-8f6e-eb94bab7a5c4',
+        title: 'Example Section',
+        hideTitle: true
+      })
+      const controllerWithHiddenTitle = new DeclarationPageController(mockModel, mockPageDef)
+
+      const result = controllerWithHiddenTitle.getSummaryViewModel(mockRequest, mockContext)
+
+      expect(result.sectionTitle).toBe('')
+    })
+
+    test('should set sectionTitle to undefined when section is undefined', () => {
+      const pageDefWithoutSection = {}
+      const controllerWithoutSection = new DeclarationPageController(mockModel, pageDefWithoutSection)
+
+      const result = controllerWithoutSection.getSummaryViewModel(mockRequest, mockContext)
+
+      expect(result.sectionTitle).toBeUndefined()
+    })
+
+    test('should preserve all parent view model properties', () => {
+      vi.spyOn(SummaryPageController.prototype, 'getSummaryViewModel').mockReturnValue({
+        serviceUrl: '/service',
+        page: { title: 'Summary' },
+        otherProperty: 'value',
+        anotherProperty: 123
+      })
+
+      const result = controller.getSummaryViewModel(mockRequest, mockContext)
+
+      expect(result.serviceUrl).toBe('/service')
+      expect(result.page.title).toBe('Summary')
+      expect(result.otherProperty).toBe('value')
+      expect(result.anotherProperty).toBe(123)
+      expect(result.sectionTitle).toBe('Example Section')
+    })
   })
 
   describe('getStatusPath', () => {

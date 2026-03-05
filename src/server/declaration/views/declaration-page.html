@@ -20,6 +20,11 @@
 {% block content %}
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
+      {% if sectionTitle and (sectionTitle !== pageTitle) %}
+      <h2 class="govuk-caption-l govuk-!-margin-top-0" id="section-title">
+        {{- sectionTitle -}}
+      </h2>
+      {% endif %}
       <h1 class="govuk-heading-l">Confirm and send</h1>
       <p class="govuk-body">I confirm that, to the best of my knowledge, the details I have provided are correct.</p>
       <p class="govuk-body">I understand the score was based on the answers I provided</p>
