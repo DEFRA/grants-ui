@@ -1,5 +1,6 @@
 import { vi } from 'vitest'
 import { configConfirmation } from './config-confirmation.js'
+import { findFormBySlug } from '~/src/server/common/forms/services/find-form-by-slug.js'
 import { ConfirmationService } from './services/confirmation.service.js'
 import { mockHapiRequest, mockHapiResponseToolkit } from '~/src/__mocks__/hapi-mocks.js'
 import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
@@ -14,12 +15,10 @@ const mockYarSession = {
   get: vi.fn()
 }
 
+vi.mock('~/src/server/common/forms/services/find-form-by-slug.js')
 vi.mock('./services/confirmation.service.js')
 vi.mock('~/src/server/common/helpers/forms-cache/forms-cache.js', () => ({
   getFormsCacheService: () => mockFormsCacheService
-}))
-vi.mock('~/src/server/common/forms/services/form.js', () => ({
-  getFormsCache: vi.fn(() => [MOCK_FORMS.basic])
 }))
 describe('config-confirmation', () => {
   let mockRequest
@@ -41,7 +40,6 @@ describe('config-confirmation', () => {
     })
     mockH = mockHapiResponseToolkit()
 
-    ConfirmationService.findFormBySlug = vi.fn()
     ConfirmationService.loadConfirmationContent = vi.fn()
     ConfirmationService.processConfirmationContent = vi.fn()
     ConfirmationService.buildViewModel = vi.fn()
@@ -65,7 +63,7 @@ describe('config-confirmation', () => {
         .mockReturnValueOnce('Test Business')
         .mockReturnValueOnce('123456789')
         .mockReturnValueOnce('Test Contact')
-      ConfirmationService.findFormBySlug.mockReturnValue(mockForm)
+      findFormBySlug.mockReturnValue(mockForm)
       ConfirmationService.loadConfirmationContent.mockResolvedValue({
         confirmationContent,
         formDefinition
@@ -81,7 +79,7 @@ describe('config-confirmation', () => {
 
       await handler(mockRequest, mockH)
 
-      expect(ConfirmationService.findFormBySlug).toHaveBeenCalledWith('test-slug')
+      expect(findFormBySlug).toHaveBeenCalledWith('test-slug')
       expect(ConfirmationService.loadConfirmationContent).toHaveBeenCalledWith(mockForm)
       expect(ConfirmationService.processConfirmationContent).toHaveBeenCalledWith(mockConfirmationContent, 'test-slug')
       expect(ConfirmationService.buildViewModel).toHaveBeenCalledWith({
@@ -105,7 +103,7 @@ describe('config-confirmation', () => {
     })
 
     test('should return 404 when form not found', async () => {
-      ConfirmationService.findFormBySlug.mockReturnValue(null)
+      findFormBySlug.mockReturnValue(null)
 
       await handler(mockRequest, mockH)
 
@@ -138,7 +136,7 @@ describe('config-confirmation', () => {
       mockFormsCacheService.getState.mockResolvedValue({})
       mockYarSession.get.mockReturnValue(undefined)
 
-      ConfirmationService.findFormBySlug.mockReturnValue(mockForm)
+      findFormBySlug.mockReturnValue(mockForm)
       ConfirmationService.loadConfirmationContent.mockResolvedValue({
         confirmationContent: mockConfirmationContent,
         formDefinition: mockFormDefinition
@@ -160,7 +158,7 @@ describe('config-confirmation', () => {
         applicationStatus: 'SUBMITTED'
       })
 
-      ConfirmationService.findFormBySlug.mockReturnValue(mockForm)
+      findFormBySlug.mockReturnValue(mockForm)
       ConfirmationService.loadConfirmationContent.mockResolvedValue({
         confirmationContent: null,
         formDefinition: { metadata: {} }
@@ -177,7 +175,7 @@ describe('config-confirmation', () => {
     })
 
     test('should handle errors gracefully', async () => {
-      ConfirmationService.findFormBySlug.mockImplementation(() => {
+      findFormBySlug.mockImplementation(() => {
         throw new Error('Service error')
       })
 

@@ -3,10 +3,6 @@ import { ConfirmationService } from './confirmation.service.js'
 import { ComponentsRegistry } from './components.registry.js'
 import { MOCK_FORM_CACHE } from '../__test-fixtures__/confirmation-test-fixtures.js'
 
-vi.mock('~/src/server/common/forms/services/form.js', () => ({
-  getFormsCache: vi.fn(() => MOCK_FORM_CACHE)
-}))
-
 vi.mock('./components.registry.js', () => ({
   ComponentsRegistry: {
     replaceComponents: vi.fn()
@@ -17,29 +13,6 @@ describe('ConfirmationService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     ComponentsRegistry.replaceComponents.mockImplementation((content) => content)
-  })
-
-  describe('findFormBySlug', () => {
-    test('should return form when slug exists', () => {
-      const result = ConfirmationService.findFormBySlug('test-form')
-
-      expect(result).toEqual({
-        id: 'form1',
-        slug: 'test-form',
-        title: 'Test Form',
-        metadata: {
-          confirmationContent: {
-            html: '<h2>Test confirmation content</h2>'
-          }
-        }
-      })
-    })
-
-    test('should return null when slug does not exist', () => {
-      const result = ConfirmationService.findFormBySlug('non-existent-form')
-
-      expect(result).toBeNull()
-    })
   })
 
   describe('loadConfirmationContent', () => {

@@ -4,8 +4,8 @@ import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/fo
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { ApplicationStatus } from '~/src/server/common/constants/application-status.js'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
+import { findFormBySlug } from '../common/forms/services/find-form-by-slug.js'
 import {
-  findFormBySlug,
   buildPrintViewModel,
   enrichDefinitionWithListItems
 } from '../common/helpers/print-application-service/print-application-service.js'

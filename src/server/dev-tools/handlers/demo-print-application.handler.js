@@ -1,8 +1,8 @@
 import { readFile } from 'node:fs/promises'
 import { parse as parseYaml } from 'yaml'
-import { buildDemoData, buildDemoPrintAnswers } from '../helpers/index.js'
+import { buildDemoData, buildDemoPrintAnswers, buildDemoPayment } from '../helpers/index.js'
+import { findFormBySlug } from '../../common/forms/services/find-form-by-slug.js'
 import {
-  findFormBySlug,
   buildPrintViewModel,
   enrichDefinitionWithListItems
 } from '../../common/helpers/print-application-service/print-application-service.js'
@@ -31,6 +31,9 @@ export async function demoPrintApplicationHandler(request, h) {
     enrichDefinitionWithListItems(definition)
 
     const answers = buildDemoPrintAnswers(definition)
+    if (slug === 'farm-payments') {
+      answers.payment = buildDemoPayment()
+    }
     const demoData = buildDemoData()
 
     const viewModel = buildPrintViewModel({

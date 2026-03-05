@@ -5,6 +5,43 @@
  */
 import { COMPONENT_TYPES, DISPLAY_ONLY_TYPES } from '~/src/server/common/helpers/print-application-service/constants.js'
 
+const DEMO_PAYMENT = {
+  annualTotalPence: 822438,
+  parcelItems: {
+    item1: {
+      sheetId: 'SD5949',
+      parcelId: '6060',
+      code: 'CMOR1',
+      description: 'Assess moorland and produce a written record',
+      quantity: '681.6133',
+      annualPaymentPence: 722510
+    },
+    item2: {
+      sheetId: 'SD6352',
+      parcelId: '1073',
+      code: 'UPL2',
+      description: 'Low livestock grazing on moorland',
+      quantity: '13.7223',
+      annualPaymentPence: 72728
+    },
+    item3: {
+      sheetId: 'SD6352',
+      parcelId: '1073',
+      code: 'CMOR1',
+      description: 'Assess moorland and produce a written record',
+      quantity: '13.7223',
+      annualPaymentPence: 0
+    }
+  },
+  agreementLevelItems: {
+    agl1: {
+      code: 'CMOR1',
+      description: 'Assess moorland and produce a written record',
+      annualPaymentPence: 27200
+    }
+  }
+}
+
 const DEMO_DEFAULT = 'Demo value'
 
 const DEMO_VALUES = {
@@ -21,6 +58,14 @@ const DEMO_VALUES = {
   [COMPONENT_TYPES.SelectField]: (c) => c?.value ?? DEMO_DEFAULT,
   [COMPONENT_TYPES.AutocompleteField]: (c) => c?.value ?? DEMO_DEFAULT,
   [COMPONENT_TYPES.CheckboxesField]: (c) => (c ? [c.value] : [DEMO_DEFAULT])
+}
+
+/**
+ * Returns demo payment data for print preview
+ * @returns {object} Demo payment object
+ */
+export function buildDemoPayment() {
+  return DEMO_PAYMENT
 }
 
 export function buildDemoPrintAnswers(definition) {

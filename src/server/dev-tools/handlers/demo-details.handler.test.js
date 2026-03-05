@@ -7,9 +7,10 @@ import {
   generateFallbackViewModel,
   loadDisplaySectionsConfig
 } from './demo-details.handler.js'
+import { findFormBySlug } from '../../common/forms/services/find-form-by-slug.js'
 import { processSections } from '../../common/services/details-page/index.js'
 import { buildDemoMappedData, buildDemoRequest } from '../helpers/index.js'
-import { generateFormNotFoundResponse, getAllForms } from '../utils/index.js'
+import { generateFormNotFoundResponse } from '../utils/index.js'
 import { mockHapiRequest, mockHapiResponseToolkit } from '~/src/__mocks__/hapi-mocks.js'
 import { log } from '../../common/helpers/logging/log.js'
 
@@ -59,6 +60,7 @@ const mockFormWithoutConfig = {
   title: 'Test Form Without Config'
 }
 
+vi.mock('../../common/forms/services/find-form-by-slug.js')
 vi.mock('../../common/services/details-page/index.js')
 vi.mock('../helpers/index.js')
 vi.mock('../utils/index.js')
@@ -81,7 +83,7 @@ describe('demo-details.handler', () => {
 
     buildDemoMappedData.mockReturnValue(mockDemoMappedData)
     buildDemoRequest.mockReturnValue(mockDemoRequest)
-    getAllForms.mockReturnValue([mockForm])
+    findFormBySlug.mockReturnValue(mockForm)
   })
 
   describe('buildViewModel', () => {
@@ -166,7 +168,7 @@ describe('demo-details.handler', () => {
 
       await demoDetailsHandler(mockRequest, mockH)
 
-      expect(getAllForms).toHaveBeenCalled()
+      expect(findFormBySlug).toHaveBeenCalledWith('test-form')
       expect(processSections).toHaveBeenCalledWith(mockDisplaySections, mockDemoMappedData, mockDemoRequest)
       expect(mockH.view).toHaveBeenCalledWith(
         'check-details',
@@ -178,7 +180,7 @@ describe('demo-details.handler', () => {
     })
 
     test('should return no config message when form has no displaySections', async () => {
-      getAllForms.mockReturnValue([mockFormWithoutConfig])
+      findFormBySlug.mockReturnValue(mockFormWithoutConfig)
       mockRequest = mockHapiRequest({
         params: { slug: 'test-form-no-config' }
       })
@@ -200,7 +202,7 @@ describe('demo-details.handler', () => {
     })
 
     test('should return form not found response when form does not exist', async () => {
-      getAllForms.mockReturnValue([])
+      findFormBySlug.mockReturnValue(null)
       generateFormNotFoundResponse.mockReturnValue('not-found-response')
 
       const result = await demoDetailsHandler(mockRequest, mockH)
@@ -210,7 +212,7 @@ describe('demo-details.handler', () => {
     })
 
     test('should handle errors gracefully with fallback content', async () => {
-      getAllForms.mockImplementation(() => {
+      findFormBySlug.mockImplementation(() => {
         throw new Error('Handler error')
       })
 
@@ -293,10 +295,13 @@ describe('demo-details.handler', () => {
       )
     })
 
-    test('should show validation error when no option is selected', async () => {
+    test.each([
+      ['empty payload', {}],
+      ['null payload', null]
+    ])('should show validation error when %s is submitted', async (_desc, payload) => {
       mockRequest = mockHapiRequest({
         params: { slug: 'test-form' },
-        payload: {}
+        payload
       })
       processSections.mockReturnValue([])
 
@@ -316,7 +321,7 @@ describe('demo-details.handler', () => {
     })
 
     test('should return form not found response when form does not exist', async () => {
-      getAllForms.mockReturnValue([])
+      findFormBySlug.mockReturnValue(null)
       generateFormNotFoundResponse.mockReturnValue('not-found-response')
 
       const result = await demoDetailsPostHandler(mockRequest, mockH)
@@ -325,30 +330,8 @@ describe('demo-details.handler', () => {
       expect(result).toBe('not-found-response')
     })
 
-    test('should handle null payload gracefully', async () => {
-      mockRequest = mockHapiRequest({
-        params: { slug: 'test-form' },
-        payload: null
-      })
-      processSections.mockReturnValue([])
-
-      await demoDetailsPostHandler(mockRequest, mockH)
-
-      expect(mockH.view).toHaveBeenCalledWith(
-        'check-details',
-        expect.objectContaining({
-          errors: [
-            {
-              text: 'Select yes if your details are correct',
-              href: '#detailsCorrect'
-            }
-          ]
-        })
-      )
-    })
-
     test('should use empty sections array when form has no displaySections config during validation', async () => {
-      getAllForms.mockReturnValue([mockFormWithoutConfig])
+      findFormBySlug.mockReturnValue(mockFormWithoutConfig)
       mockRequest = mockHapiRequest({
         params: { slug: 'test-form-no-config' },
         payload: {}
