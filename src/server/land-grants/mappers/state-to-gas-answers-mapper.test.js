@@ -4,11 +4,6 @@ import {
   validateSubmissionAnswers
 } from '~/src/server/common/forms/services/submission.js'
 import { stateToLandGrantsGasAnswers } from '~/src/server/land-grants/mappers/state-to-gas-answers-mapper.js'
-import { shouldUseV2Endpoint } from '~/src/server/land-grants/services/land-grants.client.js'
-
-vi.mock('~/src/server/land-grants/services/land-grants.client.js', () => ({
-  shouldUseV2Endpoint: vi.fn()
-}))
 
 vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
   log: vi.fn()
@@ -131,7 +126,8 @@ describe('stateToLandGrantsGasAnswers', () => {
           actionsObj: {
             CSAM1: {
               value: '44',
-              unit: 'ha'
+              unit: 'ha',
+              version: '1.0.0'
             }
           }
         }
@@ -155,7 +151,7 @@ describe('stateToLandGrantsGasAnswers', () => {
             actions: [
               {
                 code: 'CSAM1',
-                version: 1,
+                version: '1.0.0',
                 durationYears: 3,
                 appliedFor: {
                   unit: 'ha',
@@ -179,6 +175,7 @@ describe('stateToLandGrantsGasAnswers', () => {
             actions: [
               {
                 code: 'CSAM1',
+                version: '1.0.0',
                 description: 'CSAM1: Assess moorland and produce a written record',
                 durationYears: 3,
                 eligible: {
@@ -286,15 +283,18 @@ describe('stateToLandGrantsGasAnswers', () => {
           actionsObj: {
             CSAM1: {
               value: '44',
-              unit: 'ha'
+              unit: 'ha',
+              version: '1.0.0'
             },
             CSAM2: {
               value: '100',
-              unit: 'm2'
+              unit: 'm2',
+              version: '1.0.0'
             },
             CSAM3: {
               value: '5',
-              unit: 'count'
+              unit: 'count',
+              version: '1.0.0'
             }
           }
         }
@@ -307,17 +307,17 @@ describe('stateToLandGrantsGasAnswers', () => {
     expect(result.application.parcel[0].actions).toHaveLength(3)
     expect(result.application.parcel[0].actions[0]).toMatchObject({
       code: 'CSAM1',
-      version: 1,
+      version: '1.0.0',
       appliedFor: { unit: 'ha', quantity: 44 }
     })
     expect(result.application.parcel[0].actions[1]).toMatchObject({
       code: 'CSAM2',
-      version: 1,
+      version: '1.0.0',
       appliedFor: { unit: 'm2', quantity: 100 }
     })
     expect(result.application.parcel[0].actions[2]).toMatchObject({
       code: 'CSAM3',
-      version: 1,
+      version: '1.0.0',
       appliedFor: { unit: 'count', quantity: 5 }
     })
 
@@ -1147,11 +1147,6 @@ describe('stateToLandGrantsGasAnswers', () => {
 })
 
 describe('stateToLandGrantsGasAnswers - rulesCalculations from validationResult', () => {
-  afterEach(() => {
-    config.set('landGrants.enableSSSIFeature', false)
-    shouldUseV2Endpoint.mockReturnValue(false)
-  })
-
   it('should build rulesCalculations from validationResult', () => {
     const input = {
       payment,
@@ -1177,10 +1172,7 @@ describe('stateToLandGrantsGasAnswers - rulesCalculations from validationResult'
     expect(result.rulesCalculations.caveats).toBeUndefined()
   })
 
-  it('should extract caveats with metadata when enableSSSIFeature is true', () => {
-    config.set('landGrants.enableSSSIFeature', true)
-    shouldUseV2Endpoint.mockReturnValue(true)
-
+  it('should extract caveats with metadata', () => {
     const input = {
       payment,
       landParcels: {},
@@ -1264,7 +1256,7 @@ describe('stateToLandGrantsGasAnswers - rulesCalculations from validationResult'
     })
   })
 
-  it('should not extract caveats when enableSSSIFeature is false', () => {
+  it('should extract caveats from validationResult actions', () => {
     const input = {
       payment,
       landParcels: {},
@@ -1282,7 +1274,7 @@ describe('stateToLandGrantsGasAnswers - rulesCalculations from validationResult'
 
     const result = stateToLandGrantsGasAnswers(input)
 
-    expect(result.rulesCalculations.caveats).toBeUndefined()
+    expect(result.rulesCalculations.caveats).toEqual([{ code: 'caveat-1' }])
   })
 
   it('should return undefined rulesCalculations when no validationResult is provided', () => {
@@ -1316,7 +1308,8 @@ describe('schema validation', () => {
             actionsObj: {
               CSAM1: {
                 value: '44',
-                unit: 'ha'
+                unit: 'ha',
+                version: '1.0.0'
               }
             }
           }
@@ -1335,7 +1328,8 @@ describe('schema validation', () => {
             actionsObj: {
               CSAM1: {
                 value: '44',
-                unit: 'ha'
+                unit: 'ha',
+                version: '1.0.0'
               }
             }
           }

@@ -338,9 +338,7 @@ describe('land-grants service', () => {
             actions: []
           }
         ],
-        groups: [
-          { name: 'Assess moorland', actions: ['CMOR1'] }
-        ]
+        groups: [{ name: 'Assess moorland', actions: ['CMOR1'] }]
       }
 
       parcelsWithExtendedInfo.mockResolvedValueOnce(mockApiResponse)
@@ -370,9 +368,7 @@ describe('land-grants service', () => {
             actions: []
           }
         ],
-        groups: [
-          { name: 'Assess moorland', actions: ['CMOR1'] }
-        ]
+        groups: [{ name: 'Assess moorland', actions: ['CMOR1'] }]
       }
 
       parcelsWithExtendedInfo.mockResolvedValueOnce(mockApiResponse)
@@ -418,9 +414,7 @@ describe('land-grants service', () => {
             ]
           }
         ],
-        groups: [
-          { name: 'Livestock grazing on moorland', actions: ['UPL1', 'UPL2', 'UPL3'] }
-        ]
+        groups: [{ name: 'Livestock grazing on moorland', actions: ['UPL1', 'UPL2', 'UPL3'] }]
       }
 
       parcelsWithExtendedInfo.mockResolvedValueOnce(mockApiResponse)
@@ -893,8 +887,8 @@ describe('land-grants service', () => {
       expect(result).toEqual(mockApiResponse)
     })
 
-    describe('v2 API response - errorMessages built from actions', () => {
-      it('should build errorMessages from v2 actions with failed rules', async () => {
+    describe('building errorMessages from response', () => {
+      it('should build errorMessages from actions with failed rules', async () => {
         validate.mockResolvedValueOnce({
           valid: false,
           actions: [
@@ -1024,7 +1018,7 @@ describe('land-grants service', () => {
         expect(result.errorMessages).toEqual([])
       })
 
-      it('should handle v2 response with empty actions array', async () => {
+      it('should handle response with empty actions array', async () => {
         validate.mockResolvedValueOnce({
           valid: false,
           actions: []
@@ -1036,7 +1030,7 @@ describe('land-grants service', () => {
       })
     })
 
-    it('should handle response with no actions array', async () => {
+    it('should return empty errorMessages when response has no actions', async () => {
       const mockApiResponse = {
         valid: false
       }

@@ -1,5 +1,3 @@
-import { shouldUseV2Endpoint } from '../services/land-grants.client.js'
-
 /**
  * Creates an object with unit and quantity if they exist
  * @param {object} data - The data object
@@ -66,7 +64,7 @@ function findAgreementPaymentItem(paymentData, actionCode) {
 function createApplicationParcelAction(actionCode, actionData, paymentItem) {
   return {
     code: actionCode,
-    version: paymentItem?.version ?? 1,
+    version: actionData?.version ?? '0.0.0',
     ...(paymentItem?.durationYears != null && { durationYears: paymentItem.durationYears }),
     ...(actionData && { appliedFor: createUnitQuantity(actionData, 'value') })
   }
@@ -84,6 +82,7 @@ function createPaymentParcelAction(actionCode, actionData, paymentItem) {
 
   return {
     code: actionCode,
+    version: actionData?.version ?? '0.0.0',
     ...(paymentItem?.description != null && { description: paymentItem.description }),
     ...(paymentItem?.durationYears != null && { durationYears: paymentItem.durationYears }),
     ...(paymentItem?.rateInPence != null && { paymentRates: paymentItem.rateInPence }),
@@ -230,11 +229,9 @@ function mapRulesCalculations(validationResult) {
     date: new Date().toISOString()
   }
 
-  if (shouldUseV2Endpoint()) {
-    const caveats = mapCaveatsForValidationResult(validationResult)
-    if (caveats.length > 0) {
-      rulesCalculations.caveats = caveats
-    }
+  const caveats = mapCaveatsForValidationResult(validationResult)
+  if (caveats.length > 0) {
+    rulesCalculations.caveats = caveats
   }
 
   return rulesCalculations

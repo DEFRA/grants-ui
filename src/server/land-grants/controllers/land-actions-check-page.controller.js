@@ -1,5 +1,5 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
-import { calculateGrantPayment, fetchParcels, fetchParcelsGroups } from '../services/land-grants.service.js'
+import { calculateGrantPayment, fetchParcelsGroups } from '../services/land-grants.service.js'
 import { log, LogCodes } from '../../common/helpers/logging/log.js'
 import {
   formatPrice,
