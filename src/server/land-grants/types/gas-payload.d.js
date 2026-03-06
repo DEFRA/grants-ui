@@ -16,7 +16,7 @@
 /**
  * @typedef {Object} ApplicationAction
  * @property {string} code - Action code (e.g., "CMOR1", "UPL1")
- * @property {number} version - Action version
+ * @property {string} version - Action version
  * @property {number} [durationYears] - Duration in years
  * @property {UnitQuantity} [appliedFor] - Applied for quantity details
  */
@@ -24,6 +24,7 @@
 /**
  * @typedef {Object} PaymentAction
  * @property {string} code - Action code (e.g., "CMOR1", "UPL1")
+ * @property {string} [version] - Action version
  * @property {string} [description] - Action description
  * @property {number} [durationYears] - Duration in years
  * @property {UnitQuantity} [eligible] - Eligible quantity details
@@ -51,7 +52,7 @@
 /**
  * @typedef {Object} ApplicationAgreement
  * @property {string} code - Agreement action code
- * @property {number} version - Agreement version
+ * @property {string} version - Agreement version
  * @property {number} [durationYears] - Duration in years
  */
 
