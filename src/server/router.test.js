@@ -16,6 +16,9 @@ vi.mock('~/src/server/agreements/index.js', () => ({
 vi.mock('~/src/server/dev-tools/index.js', () => ({
   devTools: { plugin: { name: 'devTools', register: vi.fn() } }
 }))
+vi.mock('~/src/server/dev-tools/journey-runner/journey-runner-plugin.js', () => ({
+  journeyRunnerPlugin: { plugin: { name: 'journey-runner', register: vi.fn() } }
+}))
 vi.mock('~/src/server/confirmation/config-confirmation.js', () => ({
   configConfirmation: { plugin: { name: 'configConfirmation', register: vi.fn() } }
 }))
@@ -25,6 +28,13 @@ vi.mock('./dev-tools/clear-application-state.js', () => ({
 vi.mock('~/src/server/cookies/index.js', () => ({
   cookies: { plugin: { name: 'cookies', register: vi.fn() } }
 }))
+
+function mockConfig(overrides = {}) {
+  const values = { 'devTools.enabled': false, cdpEnvironment: 'dev', ...overrides }
+  vi.doMock('~/src/config/config.js', () => ({
+    config: { get: vi.fn((key) => values[key]) }
+  }))
+}
 
 describe('router', () => {
   let mockServer
@@ -52,61 +62,33 @@ describe('router', () => {
     process.env.NODE_ENV = 'development'
     process.env.ENVIRONMENT = 'local'
 
-    vi.doMock('~/src/config/config.js', () => ({
-      config: {
-        get: vi.fn((key) => {
-          const values = {
-            'devTools.enabled': true,
-            cdpEnvironment: 'dev'
-          }
-          return values[key]
-        })
-      }
-    }))
+    mockConfig({ 'devTools.enabled': true })
 
     const { router } = await import('./router.js')
     await router.plugin.register(mockServer)
 
     expect(registeredPlugins).toContain('devTools')
+    expect(registeredPlugins).toContain('journey-runner')
   })
 
-  it('should not register devTools in production', async () => {
+  it('should not register devTools or journeyRunnerPlugin in production', async () => {
     process.env.NODE_ENV = 'production'
     process.env.ENVIRONMENT = 'local'
 
-    vi.doMock('~/src/config/config.js', () => ({
-      config: {
-        get: vi.fn((key) => {
-          const values = {
-            'devTools.enabled': true,
-            cdpEnvironment: 'prod'
-          }
-          return values[key]
-        })
-      }
-    }))
+    mockConfig({ 'devTools.enabled': true, cdpEnvironment: 'prod' })
 
     const { router } = await import('./router.js')
     await router.plugin.register(mockServer)
 
     expect(registeredPlugins).not.toContain('devTools')
+    expect(registeredPlugins).not.toContain('journey-runner')
   })
 
   it('should not register devTools when ENVIRONMENT is not local', async () => {
     process.env.NODE_ENV = 'development'
     process.env.ENVIRONMENT = 'dev'
 
-    vi.doMock('~/src/config/config.js', () => ({
-      config: {
-        get: vi.fn((key) => {
-          const values = {
-            'devTools.enabled': true,
-            cdpEnvironment: 'dev'
-          }
-          return values[key]
-        })
-      }
-    }))
+    mockConfig({ 'devTools.enabled': true })
 
     const { router } = await import('./router.js')
     await router.plugin.register(mockServer)
@@ -118,17 +100,7 @@ describe('router', () => {
     process.env.NODE_ENV = 'development'
     process.env.ENVIRONMENT = 'local'
 
-    vi.doMock('~/src/config/config.js', () => ({
-      config: {
-        get: vi.fn((key) => {
-          const values = {
-            'devTools.enabled': false,
-            cdpEnvironment: 'dev'
-          }
-          return values[key]
-        })
-      }
-    }))
+    mockConfig()
 
     const { router } = await import('./router.js')
     await router.plugin.register(mockServer)

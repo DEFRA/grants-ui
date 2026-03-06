@@ -69,6 +69,7 @@ services:
       ENABLE_UPL_8_AND_10_20260303: ${ENABLE_UPL_8_AND_10_20260303:-true}
     volumes:
       - ./src:/home/node/src
+      - ./tools:/home/node/tools
       - /home/node/node_modules
     networks:
       - grants-ui-net

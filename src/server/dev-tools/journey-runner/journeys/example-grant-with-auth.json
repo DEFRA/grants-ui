@@ -1,0 +1,52 @@
+[
+  { "slug": "start", "name": "Start", "type": "submitOnly" },
+  { "slug": "yes-no-field", "name": "YesNoField", "type": "yesNo", "fieldName": "yesNoField" },
+  {
+    "slug": "autocomplete-field",
+    "name": "AutocompleteField",
+    "type": "selectField",
+    "fieldName": "autocompleteField"
+  },
+  { "slug": "radios-field", "name": "RadiosField", "type": "radios", "fieldName": "radiosField" },
+  { "slug": "conditional-page", "name": "ConditionalPage", "type": "submitOnly" },
+  { "slug": "checkboxes-field", "name": "CheckboxesField", "type": "checkboxes", "fieldName": "checkboxesField" },
+  {
+    "slug": "number-field",
+    "name": "NumberField",
+    "type": "numberField",
+    "fieldName": "numberField",
+    "value": "50000"
+  },
+  {
+    "slug": "date-parts-field",
+    "name": "DatePartsField",
+    "type": "dateParts",
+    "fieldName": "datePartsField",
+    "offsetDays": 7
+  },
+  { "slug": "month-year-field", "name": "MonthYearField", "type": "monthYear", "fieldName": "monthYearField" },
+  { "slug": "select-field", "name": "SelectField", "type": "selectField", "fieldName": "selectField" },
+  {
+    "slug": "multiline-text-field",
+    "name": "MultilineTextField",
+    "type": "multilineText",
+    "fieldName": "multilineTextField",
+    "value": "Test description for the journey runner."
+  },
+  {
+    "slug": "multi-field-form",
+    "name": "MultiFieldForm",
+    "type": "textFields",
+    "fields": {
+      "applicantName": "Test User",
+      "applicantEmail": "test@example.com",
+      "applicantMobile": "07700900000",
+      "applicantBusinessAddress__addressLine1": "10 Test Street",
+      "applicantBusinessAddress__town": "Test Town",
+      "applicantBusinessAddress__postcode": "TE1 1ST"
+    }
+  },
+  { "slug": "summary", "name": "Summary (Check your answers)", "type": "submitOnly" },
+  { "slug": "declaration", "name": "Declaration (Confirm and send)", "type": "submitOnly" },
+  { "slug": "confirmation", "name": "Confirmation", "type": "submitOnly" }
+]
