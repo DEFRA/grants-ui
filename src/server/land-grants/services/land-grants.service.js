@@ -10,7 +10,6 @@ import {
   calculate,
   parcelsWithActionsAndSize,
   parcelsWithSize,
-  shouldUseV2Endpoint,
   validate
 } from '~/src/server/land-grants/services/land-grants.client.js'
 import { formatAreaUnit } from '~/src/server/land-grants/utils/format-area-unit.js'
@@ -178,21 +177,17 @@ export async function validateApplication(data) {
   }
 
   const result = await validate(payload, LAND_GRANTS_API_URL)
-
-  if (shouldUseV2Endpoint()) {
-    result.errorMessages = buildErrorMessagesFromV2Response(result.actions)
-  }
+  result.errorMessages = buildErrorMessagesFromResponse(result.actions)
 
   return result
 }
 
 /**
- * Builds v1-format errorMessages from a v2 validation response.
- * v2 returns actions[] with rules[], whereas v1 returned errorMessages[].
- * @param {ValidationAction[]} actions - The actions array from v2 validation response
- * @returns {ErrorItem[]} - errorMessages in v1 format
+ * Builds errorMessages from validation response actions.
+ * @param {ValidationAction[]} actions - The actions array from validation response
+ * @returns {ErrorItem[]} - errorMessages array
  */
-function buildErrorMessagesFromV2Response(actions = []) {
+function buildErrorMessagesFromResponse(actions = []) {
   const errorMessages = []
   for (const action of actions) {
     if (action.hasPassed) {

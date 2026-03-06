@@ -12,7 +12,6 @@ import {
   calculate,
   parcelsWithSize,
   parcelsWithActionsAndSize,
-  shouldUseV2Endpoint,
   validate
 } from '~/src/server/land-grants/services/land-grants.client.js'
 const mockApiEndpoint = 'https://land-grants-api'
@@ -21,7 +20,6 @@ vi.mock('~/src/server/land-grants/services/land-grants.client.js', () => ({
   calculate: vi.fn(),
   parcelsWithSize: vi.fn(),
   parcelsWithActionsAndSize: vi.fn(),
-  shouldUseV2Endpoint: vi.fn(),
   validate: vi.fn()
 }))
 
@@ -822,18 +820,8 @@ describe('land-grants service', () => {
       expect(result).toEqual(mockApiResponse)
     })
 
-    describe('when enableSSSIFeature is true (v2 API response)', () => {
-      beforeEach(() => {
-        configState.set('landGrants.enableSSSIFeature', true)
-        shouldUseV2Endpoint.mockReturnValue(true)
-      })
-
-      afterEach(() => {
-        configState.set('landGrants.enableSSSIFeature', false)
-        shouldUseV2Endpoint.mockReturnValue(false)
-      })
-
-      it('should build errorMessages from v2 actions with failed rules', async () => {
+    describe('building errorMessages from response', () => {
+      it('should build errorMessages from actions with failed rules', async () => {
         validate.mockResolvedValueOnce({
           valid: false,
           actions: [
@@ -963,7 +951,7 @@ describe('land-grants service', () => {
         expect(result.errorMessages).toEqual([])
       })
 
-      it('should handle v2 response with empty actions array', async () => {
+      it('should handle response with empty actions array', async () => {
         validate.mockResolvedValueOnce({
           valid: false,
           actions: []
@@ -975,18 +963,15 @@ describe('land-grants service', () => {
       })
     })
 
-    describe('when enableSSSIFeature is false (v1 API response)', () => {
-      it('should return the response unchanged with original errorMessages', async () => {
-        const mockApiResponse = {
-          valid: false,
-          errorMessages: [{ code: 'CMOR1', description: 'Invalid area', passed: false }]
-        }
-        validate.mockResolvedValueOnce(mockApiResponse)
+    it('should return empty errorMessages when response has no actions', async () => {
+      const mockApiResponse = {
+        valid: false
+      }
+      validate.mockResolvedValueOnce(mockApiResponse)
 
-        const result = await validateApplication(validationInput)
+      const result = await validateApplication(validationInput)
 
-        expect(result.errorMessages).toEqual([{ code: 'CMOR1', description: 'Invalid area', passed: false }])
-      })
+      expect(result.errorMessages).toEqual([])
     })
   })
 })
