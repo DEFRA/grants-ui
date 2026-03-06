@@ -1,0 +1,42 @@
+[
+  { "slug": "start", "name": "Start", "type": "submitOnly" },
+  { "slug": "are-you-pig-farmer", "name": "Are you a pig farmer?", "type": "yesNo", "fieldName": "isPigFarmer" },
+  {
+    "slug": "pig-count",
+    "name": "How many pigs do you have?",
+    "type": "numberField",
+    "fieldName": "totalPigs",
+    "value": "100"
+  },
+  { "slug": "what-type-of-pigs", "name": "What type of pigs?", "type": "checkboxes", "fieldName": "pigBreeds" },
+  {
+    "slug": "how-many-white-pigs",
+    "name": "How many White pigs?",
+    "type": "numberField",
+    "fieldName": "whitePigsCount",
+    "value": "25"
+  },
+  {
+    "slug": "how-many-british-landrace",
+    "name": "How many British Landrace pigs?",
+    "type": "numberField",
+    "fieldName": "britishLandracePigsCount",
+    "value": "25"
+  },
+  {
+    "slug": "how-many-berkshire-pigs",
+    "name": "How many Berkshire pigs?",
+    "type": "numberField",
+    "fieldName": "berkshirePigsCount",
+    "value": "25"
+  },
+  {
+    "slug": "how-many-other-pigs",
+    "name": "How many Other pigs?",
+    "type": "numberField",
+    "fieldName": "otherPigsCount",
+    "value": "25"
+  },
+  { "slug": "potential-funding", "name": "Potential grant funding", "type": "submitOnly" },
+  { "slug": "check-answers", "name": "Check your answers", "type": "submitOnly" }
+]

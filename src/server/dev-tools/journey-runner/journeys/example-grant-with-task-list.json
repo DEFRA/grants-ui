@@ -1,0 +1,66 @@
+[
+  { "slug": "start", "name": "Start", "type": "submitOnly" },
+  { "slug": "eligibility-check", "name": "Eligibility check", "type": "yesNo", "fieldName": "eligibilityCheck" },
+  {
+    "slug": "tasks",
+    "name": "Task list — section one task one",
+    "type": "clickLink",
+    "linkSlug": "multiple-components-task-page"
+  },
+  {
+    "slug": "multiple-components-task-page",
+    "name": "Multiple components task",
+    "type": "textFields",
+    "fields": {
+      "firstName": "Test",
+      "middleName": "M",
+      "lastName": "User"
+    }
+  },
+  {
+    "slug": "tasks",
+    "name": "Task list — section one task two",
+    "type": "clickLink",
+    "linkSlug": "single-component-task-page"
+  },
+  {
+    "slug": "single-component-task-page",
+    "name": "Single component task",
+    "type": "textFields",
+    "fields": {
+      "exampleEmailField": "test@example.com"
+    }
+  },
+  {
+    "slug": "tasks",
+    "name": "Task list — section two task one",
+    "type": "clickLink",
+    "linkSlug": "compound-component-task-page"
+  },
+  {
+    "slug": "compound-component-task-page",
+    "name": "Compound component task",
+    "type": "textFields",
+    "fields": {
+      "exampleAddressField__addressLine1": "10 Test Street",
+      "exampleAddressField__town": "Test Town",
+      "exampleAddressField__postcode": "TE1 1ST"
+    }
+  },
+  {
+    "slug": "tasks",
+    "name": "Task list — section two task two",
+    "type": "clickLink",
+    "linkSlug": "example-task-with-guidance"
+  },
+  {
+    "slug": "example-task-with-guidance",
+    "name": "Task with guidance",
+    "type": "numberField",
+    "fieldName": "exampleNumberField",
+    "value": "42"
+  },
+  { "slug": "tasks", "name": "Task list — declaration", "type": "clickLink", "linkSlug": "declaration" },
+  { "slug": "declaration", "name": "Confirm and send", "type": "submitOnly" },
+  { "slug": "confirmation", "name": "Confirmation", "type": "submitOnly" }
+]

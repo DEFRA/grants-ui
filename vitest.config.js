@@ -33,7 +33,8 @@ export default {
         '**/*.d.js',
         '**/logger-options.js',
         '**/config.js',
-        '**/config/land-grants.js'
+        '**/config/land-grants.js',
+        '**/dev-tools/journey-runner/runner-engine.js'
       ],
       reportsDirectory: './coverage'
     }
