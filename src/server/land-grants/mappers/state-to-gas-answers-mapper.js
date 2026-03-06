@@ -66,7 +66,7 @@ function findAgreementPaymentItem(paymentData, actionCode) {
 function createApplicationParcelAction(actionCode, actionData, paymentItem) {
   return {
     code: actionCode,
-    ...(actionData?.version != null && { version: actionData.version }),
+    version: actionData?.version ?? '0.0.0',
     ...(paymentItem?.durationYears != null && { durationYears: paymentItem.durationYears }),
     ...(actionData && { appliedFor: createUnitQuantity(actionData, 'value') })
   }
@@ -84,7 +84,7 @@ function createPaymentParcelAction(actionCode, actionData, paymentItem) {
 
   return {
     code: actionCode,
-    ...(actionData?.version != null && { version: actionData.version }),
+    version: actionData?.version ?? '0.0.0',
     ...(paymentItem?.description != null && { description: paymentItem.description }),
     ...(paymentItem?.durationYears != null && { durationYears: paymentItem.durationYears }),
     ...(paymentItem?.rateInPence != null && { paymentRates: paymentItem.rateInPence }),
