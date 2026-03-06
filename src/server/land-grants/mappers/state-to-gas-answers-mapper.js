@@ -1,5 +1,3 @@
-import { shouldUseV2Endpoint } from '../services/land-grants.client.js'
-
 /**
  * Creates an object with unit and quantity if they exist
  * @param {object} data - The data object
@@ -231,11 +229,9 @@ function mapRulesCalculations(validationResult) {
     date: new Date().toISOString()
   }
 
-  if (shouldUseV2Endpoint()) {
-    const caveats = mapCaveatsForValidationResult(validationResult)
-    if (caveats.length > 0) {
-      rulesCalculations.caveats = caveats
-    }
+  const caveats = mapCaveatsForValidationResult(validationResult)
+  if (caveats.length > 0) {
+    rulesCalculations.caveats = caveats
   }
 
   return rulesCalculations

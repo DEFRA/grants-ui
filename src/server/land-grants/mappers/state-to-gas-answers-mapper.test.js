@@ -4,11 +4,6 @@ import {
   validateSubmissionAnswers
 } from '~/src/server/common/forms/services/submission.js'
 import { stateToLandGrantsGasAnswers } from '~/src/server/land-grants/mappers/state-to-gas-answers-mapper.js'
-import { shouldUseV2Endpoint } from '~/src/server/land-grants/services/land-grants.client.js'
-
-vi.mock('~/src/server/land-grants/services/land-grants.client.js', () => ({
-  shouldUseV2Endpoint: vi.fn()
-}))
 
 vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
   log: vi.fn()
@@ -1152,11 +1147,6 @@ describe('stateToLandGrantsGasAnswers', () => {
 })
 
 describe('stateToLandGrantsGasAnswers - rulesCalculations from validationResult', () => {
-  afterEach(() => {
-    config.set('landGrants.enableSSSIFeature', false)
-    shouldUseV2Endpoint.mockReturnValue(false)
-  })
-
   it('should build rulesCalculations from validationResult', () => {
     const input = {
       payment,
@@ -1182,10 +1172,7 @@ describe('stateToLandGrantsGasAnswers - rulesCalculations from validationResult'
     expect(result.rulesCalculations.caveats).toBeUndefined()
   })
 
-  it('should extract caveats with metadata when enableSSSIFeature is true', () => {
-    config.set('landGrants.enableSSSIFeature', true)
-    shouldUseV2Endpoint.mockReturnValue(true)
-
+  it('should extract caveats with metadata', () => {
     const input = {
       payment,
       landParcels: {},
@@ -1269,7 +1256,7 @@ describe('stateToLandGrantsGasAnswers - rulesCalculations from validationResult'
     })
   })
 
-  it('should not extract caveats when enableSSSIFeature is false', () => {
+  it('should extract caveats from validationResult actions', () => {
     const input = {
       payment,
       landParcels: {},
@@ -1287,7 +1274,7 @@ describe('stateToLandGrantsGasAnswers - rulesCalculations from validationResult'
 
     const result = stateToLandGrantsGasAnswers(input)
 
-    expect(result.rulesCalculations.caveats).toBeUndefined()
+    expect(result.rulesCalculations.caveats).toEqual([{ code: 'caveat-1' }])
   })
 
   it('should return undefined rulesCalculations when no validationResult is provided', () => {
