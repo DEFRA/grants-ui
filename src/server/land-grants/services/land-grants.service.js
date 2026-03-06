@@ -8,37 +8,14 @@ import { config } from '~/src/config/config.js'
 import { getConsentTypes } from '~/src/server/land-grants/utils/consent-types.js'
 import {
   calculate,
-  parcelsWithActionsAndSize,
+  parcelsGroups,
+  parcelsWithExtendedInfo,
   parcelsWithSize,
-  shouldUseV2Endpoint,
   validate
 } from '~/src/server/land-grants/services/land-grants.client.js'
 import { formatAreaUnit } from '~/src/server/land-grants/utils/format-area-unit.js'
 
 const LAND_GRANTS_API_URL = config.get('landGrants.grantsServiceApiEndpoint')
-
-// NOSONAR TODO: Ideally this needs to come from the backend
-export function getActionGroups() {
-  const groups = [
-    {
-      name: 'Assess moorland',
-      actions: ['CMOR1']
-    },
-    {
-      name: 'Livestock grazing on moorland',
-      actions: ['UPL1', 'UPL2', 'UPL3']
-    }
-  ]
-
-  if (config.get('landGrants.enableUpl8And10')) {
-    groups.push({
-      name: 'Shepherding livestock on moorland',
-      actions: ['UPL8', 'UPL10']
-    })
-  }
-
-  return groups
-}
 
 /**
  * Calculates grant payment for land actions.
@@ -88,12 +65,17 @@ const createGroup = (name, groupActions) => ({
 export async function fetchAvailableActionsForParcel({ parcelId = '', sheetId = '' }) {
   const actions = []
   const parcelIds = [stringifyParcel({ sheetId, parcelId })]
-  const { parcels } = await parcelsWithActionsAndSize(parcelIds, LAND_GRANTS_API_URL)
+  const { parcels, groups: groupDefinitions = [] } = await parcelsWithExtendedInfo(parcelIds, LAND_GRANTS_API_URL)
   const foundParcel = parcels?.find((p) => p.parcelId === parcelId && p.sheetId === sheetId)
   const actionsForParcel = foundParcel?.actions?.map(mapAction) || []
 
-  getActionGroups().forEach((group) => {
-    const groupActions = actionsForParcel.filter((a) => group.actions.includes(a.code))
+  groupDefinitions.forEach((group) => {
+    const groupActions = actionsForParcel.filter((a) => {
+      if (['UPL8', 'UPL10'].includes(a.code) && !config.get('landGrants.enableUpl8And10')) {
+        return false
+      }
+      return group.actions.includes(a.code)
+    })
     if (groupActions.length > 0) {
       actions.push(createGroup(group.name, groupActions))
     }
@@ -122,6 +104,22 @@ function mapAction(action) {
     ...action,
     description: landActionWithCode(action.description, action.code)
   }
+}
+
+/**
+ * Fetches parcel groups for a list of parcel IDs.
+ * @param {object} state
+ * @returns {Promise<ActionGroupDefinition[]>}
+ * @throws {Error}
+ */
+export async function fetchParcelsGroups(state) {
+  const parcelIds = Object.keys(state.landParcels) || []
+  if (!parcelIds.length) {
+    return []
+  }
+
+  const { groups = [] } = await parcelsGroups(parcelIds, LAND_GRANTS_API_URL)
+  return groups
 }
 
 /**
@@ -178,11 +176,7 @@ export async function validateApplication(data) {
   }
 
   const result = await validate(payload, LAND_GRANTS_API_URL)
-
-  if (shouldUseV2Endpoint()) {
-    result.errorMessages = buildErrorMessagesFromV2Response(result.actions)
-  }
-
+  result.errorMessages = buildErrorMessagesFromV2Response(result.actions)
   return result
 }
 
@@ -214,6 +208,6 @@ function buildErrorMessagesFromV2Response(actions = []) {
 }
 
 /**
- * @import { ActionOption, ActionGroup, Parcel, ValidateApplicationResponse, ValidationAction, ErrorItem, Size } from '~/src/server/land-grants/types/land-grants.client.d.js'
+ * @import { ActionOption, ActionGroup, ActionGroupDefinition, Parcel, ValidateApplicationResponse, ValidationAction, ErrorItem, Size } from '~/src/server/land-grants/types/land-grants.client.d.js'
  * @import { PaymentCalculation } from '~/src/server/land-grants/types/payment.d.js'
  */

@@ -1,11 +1,6 @@
 import { createApiHeadersForLandGrantsBackend } from '~/src/server/common/helpers/auth/backend-auth-helper.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
-import { config } from '~/src/config/config.js'
 import { getConsentTypes } from '~/src/server/land-grants/utils/consent-types.js'
-
-export function shouldUseV2Endpoint() {
-  return config.get('landGrants.enableSSSIFeature') || config.get('landGrants.enableHeferFeature')
-}
 
 /**
  * Performs a POST request to the Land Grants API.
@@ -65,13 +60,23 @@ export async function parcelsWithSize(parcelIds, baseUrl) {
 
 /**
  *
+ * @param {string[]} parcelIds
+ * @param {string} baseUrl
+ * @returns {Promise<ParcelResponse>}
+ */
+export async function parcelsGroups(parcelIds, baseUrl) {
+  return parcelsWithFields(['groups'], parcelIds, baseUrl)
+}
+
+/**
+ *
  * @param {string[]} fields
  * @param {string[]} parcelIds
  * @param {string} baseUrl
  * @returns {Promise<ParcelResponse>}
  */
 export async function parcelsWithFields(fields, parcelIds, baseUrl) {
-  const endpoint = shouldUseV2Endpoint() ? '/api/v2/parcels' : '/parcels'
+  const endpoint = '/api/v2/parcels'
   return postToLandGrantsApi(endpoint, { parcelIds, fields }, baseUrl)
 }
 
@@ -81,9 +86,9 @@ export async function parcelsWithFields(fields, parcelIds, baseUrl) {
  * @param {string} baseUrl
  * @returns {Promise<ParcelResponse>}
  */
-export async function parcelsWithActionsAndSize(parcelIds, baseUrl) {
+export async function parcelsWithExtendedInfo(parcelIds, baseUrl) {
   const consentTypes = getConsentTypes()
-  const fields = ['actions', 'size', ...consentTypes.map((ct) => `actions.${ct.apiField}`)]
+  const fields = ['actions', 'size', 'groups', ...consentTypes.map((ct) => `actions.${ct.apiField}`)]
 
   return parcelsWithFields(fields, parcelIds, baseUrl)
 }
@@ -96,7 +101,7 @@ export async function parcelsWithActionsAndSize(parcelIds, baseUrl) {
  * @throws {Error}
  */
 export async function validate(request, baseUrl) {
-  const endpoint = shouldUseV2Endpoint() ? '/api/v2/application/validate' : '/application/validate'
+  const endpoint = '/api/v2/application/validate'
   return postToLandGrantsApi(endpoint, request, baseUrl)
 }
 

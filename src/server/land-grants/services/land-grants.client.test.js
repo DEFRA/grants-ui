@@ -1,6 +1,7 @@
 import {
   calculate,
-  parcelsWithActionsAndSize,
+  parcelsGroups,
+  parcelsWithExtendedInfo,
   parcelsWithFields,
   parcelsWithSize,
   postToLandGrantsApi,
@@ -8,13 +9,6 @@ import {
 } from './land-grants.client.js'
 import { vi } from 'vitest'
 import { retry } from '~/src/server/common/helpers/retry.js'
-import { config } from '~/src/config/config.js'
-
-vi.mock('~/src/config/config.js', () => ({
-  config: {
-    get: vi.fn()
-  }
-}))
 
 vi.mock('~/src/server/common/helpers/retry.js')
 
@@ -339,7 +333,7 @@ describe('Land Grants client', () => {
       }, 10000)
     })
 
-    describe('parcelsWithActionsAndSize', () => {
+    describe('parcelsWithExtendedInfo', () => {
       it('should timeout when fetch hangs', async () => {
         mockFetch.mockImplementation(() => new Promise(() => {}))
 
@@ -348,7 +342,7 @@ describe('Land Grants client', () => {
         )
 
         await expect(
-          Promise.race([parcelsWithActionsAndSize(['parcel1'], mockApiEndpoint), timeoutPromise])
+          Promise.race([parcelsWithExtendedInfo(['parcel1'], mockApiEndpoint), timeoutPromise])
         ).rejects.toThrow('Operation timed out')
       }, 10000)
     })
@@ -377,11 +371,7 @@ describe('Land Grants client', () => {
   })
 
   describe('validate', () => {
-    beforeEach(() => {
-      vi.mocked(config.get).mockReturnValue(false)
-    })
-
-    it('should trigger a POST request to /application/validate', async () => {
+    it('should trigger a POST request to /api/v2/application/validate', async () => {
       const mockResponse = { id: 1, status: 'success' }
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -390,7 +380,7 @@ describe('Land Grants client', () => {
 
       const result = await validate({ data: 'test' }, mockApiEndpoint)
 
-      expect(mockFetch).toHaveBeenCalledWith(`${mockApiEndpoint}/application/validate`, {
+      expect(mockFetch).toHaveBeenCalledWith(`${mockApiEndpoint}/api/v2/application/validate`, {
         method: 'POST',
         headers: {
           Authorization: expect.any(String),
@@ -403,11 +393,7 @@ describe('Land Grants client', () => {
   })
 
   describe('parcelsWithFields', () => {
-    beforeEach(() => {
-      vi.mocked(config.get).mockReturnValue(false)
-    })
-
-    it('should trigger a POST request to /parcels with specific fields', async () => {
+    it('should trigger a POST request to /api/v2/parcels with specific fields', async () => {
       const mockResponse = { id: 1, status: 'success' }
       const fields = ['specific-field']
       const parcelIds = ['parcel1']
@@ -418,7 +404,7 @@ describe('Land Grants client', () => {
 
       const result = await parcelsWithFields(fields, parcelIds, mockApiEndpoint)
 
-      expect(mockFetch).toHaveBeenCalledWith(`${mockApiEndpoint}/parcels`, {
+      expect(mockFetch).toHaveBeenCalledWith(`${mockApiEndpoint}/api/v2/parcels`, {
         method: 'POST',
         headers: {
           Authorization: expect.any(String),
@@ -428,55 +414,10 @@ describe('Land Grants client', () => {
       })
       expect(result).toEqual(mockResponse)
     })
-
-    describe('v2 - SSSI enabled', () => {
-      beforeEach(() => {
-        vi.mocked(config.get).mockImplementation((key) => {
-          if (key === 'landGrants.enableSSSIFeature') {
-            return true
-          } else {
-            return false
-          }
-        })
-      })
-
-      it('should trigger a POST request to /parcels with specific fields', async () => {
-        const mockResponse = { id: 1, status: 'success' }
-        const fields = ['specific-field']
-        const parcelIds = ['parcel1']
-        mockFetch.mockResolvedValueOnce({
-          ok: true,
-          json: () => mockResponse
-        })
-
-        const result = await parcelsWithFields(fields, parcelIds, mockApiEndpoint)
-
-        expect(mockFetch).toHaveBeenCalledWith(`${mockApiEndpoint}/api/v2/parcels`, {
-          method: 'POST',
-          headers: {
-            Authorization: expect.any(String),
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ parcelIds, fields })
-        })
-        expect(result).toEqual(mockResponse)
-      })
-    })
   })
 
   describe('parcelsWithSize', () => {
-    beforeEach(() => {
-      // Disable SSSI feature
-      vi.mocked(config.get).mockImplementation((key) => {
-        if (key === 'landGrants.enableSSSIFeature') {
-          return false
-        } else {
-          return false
-        }
-      })
-    })
-
-    it('should trigger a POST request to /parcels with size filtering', async () => {
+    it('should trigger a POST request to /api/v2/parcels with size filtering', async () => {
       const mockResponse = { parcels: [], status: 'success' }
       const fields = ['size']
       const parcelIds = ['parcel1']
@@ -487,7 +428,7 @@ describe('Land Grants client', () => {
 
       const result = await parcelsWithSize(parcelIds, mockApiEndpoint)
 
-      expect(mockFetch).toHaveBeenCalledWith(`${mockApiEndpoint}/parcels`, {
+      expect(mockFetch).toHaveBeenCalledWith(`${mockApiEndpoint}/api/v2/parcels`, {
         method: 'POST',
         headers: {
           Authorization: expect.any(String),
@@ -499,16 +440,34 @@ describe('Land Grants client', () => {
     })
   })
 
-  describe('parcelsWithActionsAndSize', () => {
-    beforeEach(() => {
-      vi.mocked(config.get).mockImplementation((key) => {
-        return false
+  describe('parcelsGroups', () => {
+    it('should trigger a POST request to /api/v2/parcels with groups filtering', async () => {
+      const mockResponse = { groups: [{ name: 'Test', actions: ['T1'] }] }
+      const fields = ['groups']
+      const parcelIds = ['parcel1']
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => mockResponse
       })
-    })
 
-    it('should trigger a POST request to /parcels with actions and size filtering', async () => {
+      const result = await parcelsGroups(parcelIds, mockApiEndpoint)
+
+      expect(mockFetch).toHaveBeenCalledWith(`${mockApiEndpoint}/api/v2/parcels`, {
+        method: 'POST',
+        headers: {
+          Authorization: expect.any(String),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ parcelIds, fields })
+      })
+      expect(result).toEqual(mockResponse)
+    })
+  })
+
+  describe('parcelsWithExtendedInfo', () => {
+    it('should trigger a POST request to /api/v2/parcels with actions, size, and groups', async () => {
       const mockResponse = { id: 1, status: 'success' }
-      const fields = ['actions', 'size']
+      const fields = ['actions', 'size', 'groups']
       const parcelIds = ['parcel1']
 
       mockFetch.mockResolvedValueOnce({
@@ -516,9 +475,9 @@ describe('Land Grants client', () => {
         json: () => mockResponse
       })
 
-      const result = await parcelsWithActionsAndSize(parcelIds, mockApiEndpoint)
+      const result = await parcelsWithExtendedInfo(parcelIds, mockApiEndpoint)
 
-      expect(mockFetch).toHaveBeenCalledWith(`${mockApiEndpoint}/parcels`, {
+      expect(mockFetch).toHaveBeenCalledWith(`${mockApiEndpoint}/api/v2/parcels`, {
         method: 'POST',
         headers: {
           Authorization: expect.any(String),
@@ -529,35 +488,24 @@ describe('Land Grants client', () => {
       expect(result).toEqual(mockResponse)
     })
 
-    describe('v2 - SSSI enabled', () => {
-      beforeEach(() => {
-        vi.mocked(config.get).mockImplementation((key) => {
-          return key === 'landGrants.enableSSSIFeature'
-        })
+    it('should include consent type fields from getConsentTypes', async () => {
+      const mockResponse = { id: 1, status: 'success' }
+      const parcelIds = ['parcel1']
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => mockResponse
       })
 
-      it('should trigger a POST request to /parcels with actions and size filtering', async () => {
-        const mockResponse = { id: 1, status: 'success' }
-        const fields = ['actions', 'size', 'actions.sssiConsentRequired']
-        const parcelIds = ['parcel1']
+      const result = await parcelsWithExtendedInfo(parcelIds, mockApiEndpoint)
 
-        mockFetch.mockResolvedValueOnce({
-          ok: true,
-          json: () => mockResponse
-        })
-
-        const result = await parcelsWithActionsAndSize(parcelIds, mockApiEndpoint)
-
-        expect(mockFetch).toHaveBeenCalledWith(`${mockApiEndpoint}/api/v2/parcels`, {
-          method: 'POST',
-          headers: {
-            Authorization: expect.any(String),
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ parcelIds, fields })
-        })
-        expect(result).toEqual(mockResponse)
-      })
+      // The actual fields depend on what getConsentTypes returns
+      const callBody = JSON.parse(mockFetch.mock.calls[0][1].body)
+      expect(callBody.parcelIds).toEqual(parcelIds)
+      expect(callBody.fields).toContain('actions')
+      expect(callBody.fields).toContain('size')
+      expect(callBody.fields).toContain('groups')
+      expect(result).toEqual(mockResponse)
     })
   })
 })

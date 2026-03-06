@@ -131,7 +131,7 @@ describe('parcelsWithSize', () => {
   })
 })
 
-describe('parcelsWithActionsAndSize', () => {
+describe('parcelsWithExtendedInfo', () => {
   it('returns HTTP 200 and a list of parcels with actions and size', async () => {
     const parcelWithActionsAndSizeExample = {
       parcelId: 'SD6743',

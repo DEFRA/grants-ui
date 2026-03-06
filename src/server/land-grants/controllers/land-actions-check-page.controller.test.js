@@ -1,13 +1,13 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { vi } from 'vitest'
 import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
-import { calculateGrantPayment } from '../services/land-grants.service.js'
+import { calculateGrantPayment, fetchParcelsGroups } from '../services/land-grants.service.js'
 import { getRequiredConsents } from '../view-state/land-parcel.view-state.js'
 import LandActionsCheckPageController from './land-actions-check-page.controller.js'
 
 vi.mock('~/src/server/land-grants/services/land-grants.service.js', () => ({
-  getActionGroups: () => [{ actions: ['CMOR1'] }, { actions: ['UPL1', 'UPL2', 'UPL3'] }],
-  calculateGrantPayment: vi.fn()
+  calculateGrantPayment: vi.fn(),
+  fetchParcelsGroups: vi.fn()
 }))
 
 vi.mock('~/src/server/land-grants/utils/format-parcel.js', () => ({
@@ -62,8 +62,11 @@ describe('LandActionsCheckPageController', () => {
       .fn()
       .mockReturnValue([[{ text: 'sheet1-parcel1' }, { text: 'Test Action' }, { text: '10 hectares' }]])
 
-    // actionGroups.mockReturnValue([{ actions: ['CMOR1'] }, { actions: ['UPL1', 'UPL2', 'UPL3'] }])
     calculateGrantPayment.mockResolvedValue(mockPaymentResponse)
+    fetchParcelsGroups.mockResolvedValue([
+      { name: 'Assess moorland', actions: ['CMOR1'] },
+      { name: 'Livestock grazing on moorland', actions: ['UPL1', 'UPL2', 'UPL3'] }
+    ])
     getRequiredConsents.mockReturnValue([])
 
     mockRequest = {
