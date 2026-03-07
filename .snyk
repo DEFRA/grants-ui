@@ -5,3 +5,7 @@ ignore:
     - '*':
         reason: 'Not exploitable in this repo: Ajv instantiated with $data disabled (default)'
         expires: '2026-05-01'
+  'SNYK-JS-INFLIGHT-6095116':
+    - '*':
+        reason: 'No upgrade or patch available'
+        expires: '2026-05-01'
