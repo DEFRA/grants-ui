@@ -1,6 +1,7 @@
 import {
   calculate,
-  parcelsWithActionsAndSize,
+  parcelsGroups,
+  parcelsWithExtendedInfo,
   parcelsWithFields,
   parcelsWithSize,
   postToLandGrantsApi,
@@ -332,7 +333,7 @@ describe('Land Grants client', () => {
       }, 10000)
     })
 
-    describe('parcelsWithActionsAndSize', () => {
+    describe('parcelsWithExtendedInfo', () => {
       it('should timeout when fetch hangs', async () => {
         mockFetch.mockImplementation(() => new Promise(() => {}))
 
@@ -341,7 +342,7 @@ describe('Land Grants client', () => {
         )
 
         await expect(
-          Promise.race([parcelsWithActionsAndSize(['parcel1'], mockApiEndpoint), timeoutPromise])
+          Promise.race([parcelsWithExtendedInfo(['parcel1'], mockApiEndpoint), timeoutPromise])
         ).rejects.toThrow('Operation timed out')
       }, 10000)
     })
@@ -439,18 +440,17 @@ describe('Land Grants client', () => {
     })
   })
 
-  describe('parcelsWithActionsAndSize', () => {
-    it('should trigger a POST request to /api/v2/parcels with actions and size filtering', async () => {
-      const mockResponse = { id: 1, status: 'success' }
-      const fields = ['actions', 'size']
+  describe('parcelsGroups', () => {
+    it('should trigger a POST request to /api/v2/parcels with groups filtering', async () => {
+      const mockResponse = { groups: [{ name: 'Test', actions: ['T1'] }] }
+      const fields = ['groups']
       const parcelIds = ['parcel1']
-
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: () => mockResponse
       })
 
-      const result = await parcelsWithActionsAndSize(parcelIds, mockApiEndpoint)
+      const result = await parcelsGroups(parcelIds, mockApiEndpoint)
 
       expect(mockFetch).toHaveBeenCalledWith(`${mockApiEndpoint}/api/v2/parcels`, {
         method: 'POST',
@@ -460,6 +460,51 @@ describe('Land Grants client', () => {
         },
         body: JSON.stringify({ parcelIds, fields })
       })
+      expect(result).toEqual(mockResponse)
+    })
+  })
+
+  describe('parcelsWithExtendedInfo', () => {
+    it('should trigger a POST request to /api/v2/parcels with actions, size, and groups', async () => {
+      const mockResponse = { id: 1, status: 'success' }
+      const fields = ['actions', 'size', 'groups']
+      const parcelIds = ['parcel1']
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => mockResponse
+      })
+
+      const result = await parcelsWithExtendedInfo(parcelIds, mockApiEndpoint)
+
+      expect(mockFetch).toHaveBeenCalledWith(`${mockApiEndpoint}/api/v2/parcels`, {
+        method: 'POST',
+        headers: {
+          Authorization: expect.any(String),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ parcelIds, fields })
+      })
+      expect(result).toEqual(mockResponse)
+    })
+
+    it('should include consent type fields from getConsentTypes', async () => {
+      const mockResponse = { id: 1, status: 'success' }
+      const parcelIds = ['parcel1']
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => mockResponse
+      })
+
+      const result = await parcelsWithExtendedInfo(parcelIds, mockApiEndpoint)
+
+      // The actual fields depend on what getConsentTypes returns
+      const callBody = JSON.parse(mockFetch.mock.calls[0][1].body)
+      expect(callBody.parcelIds).toEqual(parcelIds)
+      expect(callBody.fields).toContain('actions')
+      expect(callBody.fields).toContain('size')
+      expect(callBody.fields).toContain('groups')
       expect(result).toEqual(mockResponse)
     })
   })

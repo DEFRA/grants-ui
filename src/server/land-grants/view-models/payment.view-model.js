@@ -1,7 +1,6 @@
 import { formatCurrency } from '~/src/config/nunjucks/filters/filters.js'
 import { landActionWithCode } from '~/src/server/land-grants/utils/land-action-with-code.js'
 import { stringifyParcel } from '../utils/format-parcel.js'
-import { getActionGroups } from '../services/land-grants.service.js'
 
 /**
  * Maps payment information to view models for rendering in check pages.
@@ -72,22 +71,22 @@ export function buildLandParcelHeaderActions(sheetId, parcelId) {
 
 /**
  * Builds footer actions for a land parcel card
- * @param {object} selectedActions - All selected actions
+ * @param {object} paymentItems - All payment items
  * @param {string} sheetId - Sheet ID
  * @param {string} parcelId - Parcel ID
+ * @param {ActionGroupDefinition[]} actionGroups - Action group definitions
  * @returns {object} Footer actions configuration or empty object
  */
-export function buildLandParcelFooterActions(selectedActions, sheetId, parcelId) {
+export function buildLandParcelFooterActions(paymentItems, sheetId, parcelId, actionGroups = []) {
   const uniqueCodes = [
     ...new Set(
-      Object.values(selectedActions)
-        .filter((item) => `${item.sheetId} ${item.parcelId}` === `${sheetId} ${parcelId}`)
+      Object.values(paymentItems)
+        .filter((item) => item.sheetId === sheetId && item.parcelId === parcelId)
         .map((item) => item.code)
     )
   ]
 
-  const hasActionFromGroup = getActionGroups().map((group) => uniqueCodes.some((code) => group.actions.includes(code)))
-
+  const hasActionFromGroup = actionGroups.map((group) => uniqueCodes.some((code) => group.actions.includes(code)))
   if (hasActionFromGroup.every(Boolean)) {
     return {}
   }
@@ -102,9 +101,10 @@ export function buildLandParcelFooterActions(selectedActions, sheetId, parcelId)
 /**
  * Maps payment information to parcel items for display
  * @param {PaymentInfo} paymentInfo - Payment information from API
+ * @param {ActionGroupDefinition[]} actionGroups - Action group definitions
  * @returns {Array<ParcelCardViewModel>} Array of parcel card view models
  */
-export function mapPaymentInfoToParcelItems(paymentInfo) {
+export function mapPaymentInfoToParcelItems(paymentInfo, actionGroups = []) {
   const groupedByParcel = Object.values(paymentInfo?.parcelItems || {}).reduce((acc, data) => {
     const parcelKey = `${data.sheetId} ${data.parcelId}`
 
@@ -112,7 +112,12 @@ export function mapPaymentInfoToParcelItems(paymentInfo) {
       acc[parcelKey] = {
         cardTitle: `Land parcel ${parcelKey}`,
         headerActions: buildLandParcelHeaderActions(data.sheetId, data.parcelId),
-        footerActions: buildLandParcelFooterActions(paymentInfo?.parcelItems, data.sheetId, data.parcelId),
+        footerActions: buildLandParcelFooterActions(
+          paymentInfo?.parcelItems,
+          data.sheetId,
+          data.parcelId,
+          actionGroups
+        ),
         parcelId: parcelKey,
         items: []
       }
@@ -176,4 +181,8 @@ export function mapAdditionalYearlyPayments(paymentInfo) {
 /**
  * @typedef {object} AdditionalPaymentViewModel
  * @property {Array<Array<object>>} items - Payment item rows
+ */
+
+/**
+ * @import { ActionGroupDefinition } from '~/src/server/land-grants/types/land-grants.client.d.js'
  */

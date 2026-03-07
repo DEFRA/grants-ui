@@ -60,6 +60,16 @@ export async function parcelsWithSize(parcelIds, baseUrl) {
 
 /**
  *
+ * @param {string[]} parcelIds
+ * @param {string} baseUrl
+ * @returns {Promise<ParcelResponse>}
+ */
+export async function parcelsGroups(parcelIds, baseUrl) {
+  return parcelsWithFields(['groups'], parcelIds, baseUrl)
+}
+
+/**
+ *
  * @param {string[]} fields
  * @param {string[]} parcelIds
  * @param {string} baseUrl
@@ -76,9 +86,9 @@ export async function parcelsWithFields(fields, parcelIds, baseUrl) {
  * @param {string} baseUrl
  * @returns {Promise<ParcelResponse>}
  */
-export async function parcelsWithActionsAndSize(parcelIds, baseUrl) {
+export async function parcelsWithExtendedInfo(parcelIds, baseUrl) {
   const consentTypes = getConsentTypes()
-  const fields = ['actions', 'size', ...consentTypes.map((ct) => `actions.${ct.apiField}`)]
+  const fields = ['actions', 'size', 'groups', ...consentTypes.map((ct) => `actions.${ct.apiField}`)]
 
   return parcelsWithFields(fields, parcelIds, baseUrl)
 }
