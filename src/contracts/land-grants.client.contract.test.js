@@ -4,6 +4,12 @@ import { vi } from 'vitest'
 import { postToLandGrantsApi } from '~/src/server/land-grants/services/land-grants.client'
 
 vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
+  log: vi.fn(),
+  LogCodes: {
+    LAND_GRANTS: {
+      API_REQUEST: { level: 'info', messageFunc: vi.fn() }
+    }
+  },
   logger: {
     debug: vi.fn()
   }
