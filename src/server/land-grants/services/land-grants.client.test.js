@@ -11,6 +11,18 @@ import { retry } from '~/src/server/common/helpers/retry.js'
 
 vi.mock('~/src/server/common/helpers/retry.js')
 
+vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
+  log: vi.fn(),
+  LogCodes: {
+    LAND_GRANTS: {
+      API_REQUEST: {
+        level: 'info',
+        messageFunc: (opts) => `Land Grants API request | endpoint: ${opts.endpoint} | url: ${opts.url}`
+      }
+    }
+  }
+}))
+
 /** @type {import('vitest').MockedFunction<any>} */
 const mockFetch = vi.fn()
 

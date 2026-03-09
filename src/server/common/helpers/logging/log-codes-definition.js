@@ -266,6 +266,10 @@ export const LogCodes = {
       level: 'error',
       messageFunc: (messageOptions) =>
         `Land parcel doesn't belong to sbi=${messageOptions.sbi} | selectedLandParcel: ${messageOptions.selectedLandParcel} | landParcelsForSbi=${JSON.stringify(messageOptions.landParcelsForSbi)}`
+    },
+    API_REQUEST: {
+      level: 'info',
+      messageFunc: (messageOptions) => `Land Grants API request | endpoint: ${messageOptions.endpoint} | url: ${messageOptions.url}`
     }
   },
   AGREEMENTS: {
