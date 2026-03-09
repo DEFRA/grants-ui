@@ -269,7 +269,8 @@ export const LogCodes = {
     },
     API_REQUEST: {
       level: 'info',
-      messageFunc: (messageOptions) => `Land Grants API request | endpoint: ${messageOptions.endpoint} | url: ${messageOptions.url}`
+      messageFunc: (messageOptions) =>
+        `Land Grants API request | endpoint: ${messageOptions.endpoint} | url: ${messageOptions.url}`
     }
   },
   AGREEMENTS: {
