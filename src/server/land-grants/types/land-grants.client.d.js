@@ -20,6 +20,12 @@
  */
 
 /**
+ * @typedef {object} ActionGroupDefinition
+ * @property {string} name - The group name
+ * @property {string[]} actions - Array of action codes belonging to this group
+ */
+
+/**
  * @typedef {object} Size
  * @property {number} value
  * @property {string} unit - The unit of measurement (e.g., "ha")
@@ -50,6 +56,7 @@
  * @typedef {object} ParcelResponse
  * @property {Parcel[]} parcels - Array of parcel details
  * @property {string} message - Indicates if the retrieval was successful
+ * @property {ActionGroupDefinition[]} [groups] - Action group definitions from backend
  */
 
 /**

@@ -47,6 +47,7 @@ export const MockLogCodes = autoMockLogCodes(LogCodes)
 export const mockLogHelper = () => ({
   logger: mockLoggerFactory(),
   log: vi.fn(),
+  debug: vi.fn(),
   LogCodes: MockLogCodes
 })
 

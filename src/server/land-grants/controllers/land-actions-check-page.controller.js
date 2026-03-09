@@ -1,5 +1,5 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
-import { calculateGrantPayment } from '../services/land-grants.service.js'
+import { calculateGrantPayment, fetchParcelsGroups } from '../services/land-grants.service.js'
 import { log, LogCodes } from '../../common/helpers/logging/log.js'
 import {
   formatPrice,
@@ -82,13 +82,14 @@ export default class LandActionsCheckPageController extends QuestionPageControll
    * @returns {Promise<object>} - Payment information with parcel and payment items
    */
   async processPaymentCalculation(state) {
-    const paymentResult = await calculateGrantPayment(state)
+    const [paymentResult, actionGroups] = await Promise.all([calculateGrantPayment(state), fetchParcelsGroups(state)])
     const { payment } = paymentResult
 
-    const parcelItems = mapPaymentInfoToParcelItems(payment)
-    const additionalYearlyPayments = mapAdditionalYearlyPayments(payment)
-
-    return { payment, parcelItems, additionalYearlyPayments }
+    return {
+      payment,
+      parcelItems: mapPaymentInfoToParcelItems(payment, actionGroups),
+      additionalYearlyPayments: mapAdditionalYearlyPayments(payment)
+    }
   }
 
   /**
