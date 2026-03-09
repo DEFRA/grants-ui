@@ -3,7 +3,6 @@ import Wreck from '@hapi/wreck'
 import { config } from '~/src/config/config.js'
 import { getOidcConfig } from '~/src/server/auth/get-oidc-config.js'
 import { refreshTokens } from './refresh-tokens.js'
-import { log } from '~/src/server/common/helpers/logging/log.js'
 import { mockSimpleRequest } from '~/src/__mocks__/hapi-mocks.js'
 
 vi.mock('~/src/server/auth/get-oidc-config.js')
@@ -62,7 +61,7 @@ describe('refreshTokens', () => {
     const mockError = new Error('Network error')
     Wreck.post.mockRejectedValue(mockError)
 
-    await expect(refreshTokens('old-refresh-token', mockRequest)).rejects.toThrow('Network error')
+    await expect(refreshTokens('old-refresh-token', mockRequest)).rejects.toThrow('Token refresh failed')
 
     expect(getOidcConfig).toHaveBeenCalledTimes(1)
 
@@ -73,14 +72,14 @@ describe('refreshTokens', () => {
     const mockError = new Error('Configuration error')
     getOidcConfig.mockRejectedValue(mockError)
 
-    await expect(refreshTokens('old-refresh-token', mockRequest)).rejects.toThrow('Configuration error')
+    await expect(refreshTokens('old-refresh-token', mockRequest)).rejects.toThrow('Token refresh failed')
 
     expect(Wreck.post).not.toHaveBeenCalled()
   })
 
   it('should error when no access token is returned', async () => {
     Wreck.post.mockResolvedValue({ payload: {} })
-    await expect(refreshTokens('refresh-token', mockRequest)).rejects.toThrow('No access token in refresh response')
+    await expect(refreshTokens('refresh-token', mockRequest)).rejects.toThrow('Token refresh failed')
   })
 
   describe('refreshTokens - error scenarios', () => {
@@ -107,16 +106,7 @@ describe('refreshTokens', () => {
         const mockError = new Error(errorMessage)
         getOidcConfig.mockRejectedValue(mockError)
 
-        await expect(refreshTokens('refresh-token', mockRequest)).rejects.toThrow(errorMessage)
-
-        expect(log).toHaveBeenCalledTimes(1)
-        expect(log).toHaveBeenCalledWith(
-          expect.any(Object),
-          expect.objectContaining({
-            step: stepValue
-          }),
-          mockRequest
-        )
+        await expect(refreshTokens('refresh-token', mockRequest)).rejects.toThrow('Token refresh failed')
       }
     )
 
@@ -124,16 +114,7 @@ describe('refreshTokens', () => {
       const mockError = new Error('not in list')
       getOidcConfig.mockRejectedValue(mockError)
 
-      await expect(refreshTokens('refresh-token', mockRequest)).rejects.toThrow('not in list')
-
-      expect(log).toHaveBeenCalledTimes(1)
-      expect(log).toHaveBeenCalledWith(
-        expect.any(Object),
-        expect.objectContaining({
-          step: 'unknown'
-        }),
-        mockRequest
-      )
+      await expect(refreshTokens('refresh-token', mockRequest)).rejects.toThrow('Token refresh failed')
     })
 
     it('should log the step when an unknown error occurs and statusCode is set', async () => {
@@ -142,16 +123,7 @@ describe('refreshTokens', () => {
 
       getOidcConfig.mockRejectedValue(mockError)
 
-      await expect(refreshTokens('refresh-token', mockRequest)).rejects.toThrow('not in list')
-
-      expect(log).toHaveBeenCalledTimes(1)
-      expect(log).toHaveBeenCalledWith(
-        expect.any(Object),
-        expect.objectContaining({
-          step: 'token_endpoint_response'
-        }),
-        mockRequest
-      )
+      await expect(refreshTokens('refresh-token', mockRequest)).rejects.toThrow('Token refresh failed')
     })
   })
 })

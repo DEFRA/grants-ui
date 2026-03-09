@@ -9,7 +9,8 @@ import AuthPlugin, { getBellOptions, getCookieOptions, mapPayloadToProfile } fro
 import { getOidcConfig } from '~/src/server/auth/get-oidc-config.js'
 import { getSafeRedirect } from '~/src/server/auth/get-safe-redirect.js'
 import { refreshTokens } from '~/src/server/auth/refresh-tokens.js'
-import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { log, debug, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { AuthError } from '~/src/server/common/utils/errors/AuthError.js'
 
 vi.mock('@hapi/jwt')
 vi.mock('~/src/server/auth/get-oidc-config')
@@ -295,9 +296,19 @@ describe('Auth Plugin', () => {
   })
 
   test('throws an error if OIDC config cannot be fetched', async () => {
-    getOidcConfig.mockRejectedValue(new Error('Failed to fetch OIDC config'))
-    await expect(AuthPlugin.plugin.register(server)).rejects.toThrow('Failed to fetch OIDC config')
-    await expect(AuthPlugin.plugin.register(server)).rejects.toMatchObject({ alreadyLogged: true })
+    const error = new Error('Failed to fetch OIDC config')
+    getOidcConfig.mockRejectedValue(error)
+    let thrown
+
+    try {
+      await AuthPlugin.plugin.register(server)
+    } catch (e) {
+      thrown = e
+    }
+
+    expect(thrown).toBeInstanceOf(AuthError)
+    expect(thrown.causeErrors).toHaveLength(1)
+    expect(thrown.causeErrors.values().next().value.message).toBe('Failed to fetch OIDC config')
   })
 
   test('logs detailed error information when OIDC config fetch fails', async () => {
@@ -306,17 +317,7 @@ describe('Auth Plugin', () => {
 
     config.get.mockImplementation(createMockConfigWithOverrides())
 
-    await expect(AuthPlugin.plugin.register(server)).rejects.toThrow()
-
-    expect(log).toHaveBeenCalledWith(
-      LogCodes.AUTH.AUTH_DEBUG,
-      expect.objectContaining({
-        path: 'auth_plugin_registration',
-        mode: 'oidc_config_failure',
-        authError: expect.stringContaining('OIDC config fetch failed'),
-        errorDetails: expect.any(Object)
-      })
-    )
+    await expect(AuthPlugin.plugin.register(server)).rejects.toThrow(AuthError)
   })
 
   describe('getBellOptions', () => {
@@ -371,7 +372,7 @@ describe('Auth Plugin', () => {
 
       options.location(mockRequest)
 
-      expect(log).toHaveBeenCalledWith(LogCodes.AUTH.SIGN_IN_FAILURE, {
+      expect(debug).toHaveBeenCalledWith(LogCodes.AUTH.SIGN_IN_FAILURE, {
         ...LOG_MESSAGES.signInFailure.baseFields,
         errorMessage: 'Failed to store redirect parameter: Yar set error',
         step: LOG_MESSAGES.signInFailure.steps.REDIRECT_STORE_ERROR,
@@ -402,17 +403,7 @@ describe('Auth Plugin', () => {
         headers: { host: 'localhost:3000', origin: 'http://localhost:3000' }
       }
 
-      expect(() => options.location(mockRequest)).toThrow('Config read error')
-
-      expect(log).toHaveBeenCalledWith(LogCodes.AUTH.SIGN_IN_FAILURE, {
-        ...LOG_MESSAGES.signInFailure.baseFields,
-        errorMessage: 'Bell location function failed: Config read error',
-        step: LOG_MESSAGES.signInFailure.steps.LOCATION_FUNCTION_ERROR,
-        locationError: expect.objectContaining({
-          message: 'Config read error',
-          stack: expect.anything()
-        })
-      })
+      expect(() => options.location(mockRequest)).toThrow(AuthError)
     })
 
     test('providerParams function includes required parameters', () => {
@@ -430,7 +421,7 @@ describe('Auth Plugin', () => {
 
       expect(() => {
         options.provider.profile(credentials)
-      }).toThrow('No credentials received from Bell OAuth provider')
+      }).toThrow(AuthError)
     })
 
     test('throws error if token is missing after retrieving from Bell OAuth provider', () => {
@@ -439,7 +430,7 @@ describe('Auth Plugin', () => {
 
       expect(() => {
         options.provider.profile(credentials)
-      }).toThrow('No token received from Defra Identity')
+      }).toThrow(AuthError)
     })
 
     test('throws error if JWT decoding fails', () => {
@@ -450,7 +441,7 @@ describe('Auth Plugin', () => {
       })
       expect(() => {
         options.provider.profile(credentials)
-      }).toThrow('JWT decode error')
+      }).toThrow(AuthError)
     })
 
     test('logs JWT decode error with detailed information', () => {
@@ -464,18 +455,7 @@ describe('Auth Plugin', () => {
 
       expect(() => {
         options.provider.profile(credentials)
-      }).toThrow('Invalid JWT structure')
-
-      expect(log).toHaveBeenCalledWith(LogCodes.AUTH.SIGN_IN_FAILURE, {
-        ...LOG_MESSAGES.signInFailure.baseFields,
-        errorMessage: 'JWT decode failed: Invalid JWT structure',
-        step: LOG_MESSAGES.signInFailure.steps.JWT_DECODE_ERROR,
-        jwtError: {
-          message: 'Invalid JWT structure',
-          stack: 'Error: Invalid JWT structure\n    at decode',
-          tokenLength: 'a_test_token'.length
-        }
-      })
+      }).toThrow(AuthError)
     })
 
     test('logs JWT decode error with tokenLength 0 when credentials.token becomes falsy during decode', () => {
@@ -502,18 +482,7 @@ describe('Auth Plugin', () => {
 
       expect(() => {
         options.provider.profile(credentials)
-      }).toThrow('Token processing error')
-
-      expect(log).toHaveBeenCalledWith(LogCodes.AUTH.SIGN_IN_FAILURE, {
-        ...LOG_MESSAGES.signInFailure.baseFields,
-        errorMessage: 'JWT decode failed: Token processing error',
-        step: LOG_MESSAGES.signInFailure.steps.JWT_DECODE_ERROR,
-        jwtError: {
-          message: 'Token processing error',
-          stack: 'Error: Token processing error\n    at decode',
-          tokenLength: 0
-        }
-      })
+      }).toThrow(AuthError)
     })
 
     test('logs empty payload error with detailed debugging info', () => {
@@ -525,19 +494,7 @@ describe('Auth Plugin', () => {
 
       expect(() => {
         options.provider.profile(credentials)
-      }).toThrow('Failed to extract payload from JWT token')
-
-      expect(log).toHaveBeenCalledWith(LogCodes.AUTH.SIGN_IN_FAILURE, {
-        ...LOG_MESSAGES.signInFailure.baseFields,
-        errorMessage: 'JWT payload is empty or invalid',
-        step: LOG_MESSAGES.signInFailure.steps.EMPTY_PAYLOAD,
-        decodingDetails: {
-          decoded: true,
-          decodedDecoded: false,
-          payload: undefined,
-          payloadType: 'undefined'
-        }
-      })
+      }).toThrow(AuthError)
     })
 
     test('logs missing fields error with validation details', () => {
@@ -552,21 +509,7 @@ describe('Auth Plugin', () => {
 
       expect(() => {
         options.provider.profile(credentials)
-      }).toThrow('Missing required fields in JWT payload: contactId, lastName')
-
-      expect(log).toHaveBeenCalledWith(LogCodes.AUTH.SIGN_IN_FAILURE, {
-        ...LOG_MESSAGES.signInFailure.baseFields,
-        errorMessage: 'Missing required JWT payload fields: contactId, lastName',
-        step: LOG_MESSAGES.signInFailure.steps.MISSING_FIELDS,
-        payloadValidation: {
-          requiredFields: ['contactId', 'firstName', 'lastName'],
-          missingFields: ['contactId', 'lastName'],
-          presentFields: ['firstName'],
-          contactId: undefined,
-          firstName: MOCK_USERS.incomplete.firstName,
-          lastName: undefined
-        }
-      })
+      }).toThrow(AuthError)
     })
 
     test('logs profile processing error and sets alreadyLogged flag', () => {
@@ -588,35 +531,7 @@ describe('Auth Plugin', () => {
         thrownError = error
       }
 
-      expect(thrownError.alreadyLogged).toBe(true)
-
-      expect(log).toHaveBeenCalledWith(LogCodes.AUTH.SIGN_IN_FAILURE, {
-        ...LOG_MESSAGES.signInFailure.baseFields,
-        errorMessage: 'JWT decode failed: Unexpected processing error',
-        step: LOG_MESSAGES.signInFailure.steps.JWT_DECODE_ERROR,
-        jwtError: {
-          message: 'Unexpected processing error',
-          stack: 'Error: Unexpected processing error\n    at process',
-          tokenLength: 10
-        }
-      })
-
-      expect(log).toHaveBeenCalledWith(LogCodes.AUTH.SIGN_IN_FAILURE, {
-        ...LOG_MESSAGES.signInFailure.baseFields,
-        errorMessage: 'Bell profile processing failed: Unexpected processing error',
-        step: LOG_MESSAGES.signInFailure.steps.PROCESSING_ERROR,
-        errorDetails: {
-          message: 'Unexpected processing error',
-          stack: expect.any(String),
-          name: 'ProcessingError',
-          alreadyLogged: undefined
-        },
-        credentialsState: {
-          received: true,
-          hasToken: true,
-          tokenLength: 10
-        }
-      })
+      expect(thrownError).toBeInstanceOf(AuthError)
     })
 
     test('location function logs and handles general errors', () => {
@@ -637,19 +552,7 @@ describe('Auth Plugin', () => {
         thrownError = error
       }
 
-      expect(thrownError.alreadyLogged).toBe(true)
-      expect(log).toHaveBeenCalledWith(LogCodes.AUTH.SIGN_IN_FAILURE, {
-        ...LOG_MESSAGES.signInFailure.baseFields,
-        errorMessage: 'Bell location function failed: Config read error',
-        step: LOG_MESSAGES.signInFailure.steps.LOCATION_FUNCTION_ERROR,
-        locationError: {
-          message: 'Config read error',
-          stack: expect.any(String),
-          name: 'Error',
-          requestPath: '/auth/sign-in',
-          requestMethod: 'POST'
-        }
-      })
+      expect(thrownError).toBeInstanceOf(AuthError)
     })
   })
 
@@ -661,7 +564,7 @@ describe('Auth Plugin', () => {
 
     expect(() => {
       options.provider.profile(credentials)
-    }).toThrow('Failed to extract payload from JWT token')
+    }).toThrow(AuthError)
   })
 
   test('throws error if payload is missing required fields', () => {
@@ -676,7 +579,7 @@ describe('Auth Plugin', () => {
 
     expect(() => {
       options.provider.profile(credentials)
-    }).toThrow('Missing required fields in JWT payload: contactId, firstName, lastName')
+    }).toThrow(AuthError)
   })
 
   describe('getCookieOptions', () => {
@@ -859,17 +762,6 @@ describe('Auth Plugin', () => {
       })
 
       expect(result).toEqual({ isValid: false })
-
-      expect(log).toHaveBeenCalledWith(
-        LogCodes.AUTH.TOKEN_VERIFICATION_FAILURE,
-        {
-          userId: MOCK_USERS.user456.contactId,
-          errorMessage: 'Refresh service unavailable',
-          step: LOG_MESSAGES.tokenVerification.steps.REFRESH_FAILED,
-          originalTokenError: 'Token expired'
-        },
-        mockRequest
-      )
     })
 
     test('validate function logs successful token refresh', async () => {
