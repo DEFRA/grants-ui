@@ -1,3 +1,9 @@
+import { config } from '~/src/config/config.js'
+
+const shouldSendCaveatsToGas = () => {
+  return config.get('landGrants.enableSSSIFeature') || config.get('landGrants.enableHeferFeature')
+}
+
 /**
  * Creates an object with unit and quantity if they exist
  * @param {object} data - The data object
@@ -229,9 +235,11 @@ function mapRulesCalculations(validationResult) {
     date: new Date().toISOString()
   }
 
-  const caveats = mapCaveatsForValidationResult(validationResult)
-  if (caveats.length > 0) {
-    rulesCalculations.caveats = caveats
+  if (shouldSendCaveatsToGas()) {
+    const caveats = mapCaveatsForValidationResult(validationResult)
+    if (caveats.length > 0) {
+      rulesCalculations.caveats = caveats
+    }
   }
 
   return rulesCalculations

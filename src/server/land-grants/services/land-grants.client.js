@@ -1,4 +1,5 @@
 import { createApiHeadersForLandGrantsBackend } from '~/src/server/common/helpers/auth/backend-auth-helper.js'
+import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
 import { getConsentTypes } from '~/src/server/land-grants/utils/consent-types.js'
 
@@ -11,8 +12,11 @@ import { getConsentTypes } from '~/src/server/land-grants/utils/consent-types.js
  * @throws {Error}
  */
 export async function postToLandGrantsApi(endpoint, body, baseUrl) {
+  const url = `${baseUrl}${endpoint}`
+  log(LogCodes.LAND_GRANTS.API_REQUEST, { endpoint, url })
+
   const apiOperation = async () => {
-    const response = await fetch(`${baseUrl}${endpoint}`, {
+    const response = await fetch(url, {
       method: 'POST',
       headers: createApiHeadersForLandGrantsBackend(),
       body: JSON.stringify(body)

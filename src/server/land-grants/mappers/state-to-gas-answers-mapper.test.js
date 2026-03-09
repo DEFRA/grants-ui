@@ -5,6 +5,32 @@ import {
 } from '~/src/server/common/forms/services/submission.js'
 import { stateToLandGrantsGasAnswers } from '~/src/server/land-grants/mappers/state-to-gas-answers-mapper.js'
 
+const configState = vi.hoisted(() => {
+  const defaults = new Map([['landGrants.grantCode', 'frps-private-beta']])
+  const values = new Map(defaults)
+
+  return {
+    set(key, value) {
+      values.set(key, value)
+    },
+    reset() {
+      values.clear()
+      for (const [k, v] of defaults) {
+        values.set(k, v)
+      }
+    },
+    get(key) {
+      return values.get(key)
+    }
+  }
+})
+
+vi.mock('~/src/config/config.js', () => ({
+  config: {
+    get: vi.fn((key) => configState.get(key))
+  }
+}))
+
 vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
   log: vi.fn()
 }))
@@ -1147,6 +1173,14 @@ describe('stateToLandGrantsGasAnswers', () => {
 })
 
 describe('stateToLandGrantsGasAnswers - rulesCalculations from validationResult', () => {
+  beforeEach(() => {
+    configState.set('landGrants.enableSSSIFeature', true)
+  })
+
+  afterEach(() => {
+    configState.reset()
+  })
+
   it('should build rulesCalculations from validationResult', () => {
     const input = {
       payment,

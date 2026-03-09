@@ -513,6 +513,12 @@ describe('LogCodes', () => {
           landParcelsForSbi: ['A1-111', 'A1-222']
         },
         `Land parcel doesn't belong to sbi=${TEST_SBI.DEFAULT} | selectedLandParcel: A1-123 | landParcelsForSbi=["A1-111","A1-222"]`
+      ],
+      [
+        'API_REQUEST',
+        'info',
+        { endpoint: '/api/v2/parcels', url: 'https://land-grants-api/api/v2/parcels' },
+        'Land Grants API request | endpoint: /api/v2/parcels | url: https://land-grants-api/api/v2/parcels'
       ]
     ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
       assertLogCode('LAND_GRANTS', logCodeName, expectedLevel, testParams, expectedMessage)
