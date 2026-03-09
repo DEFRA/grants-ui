@@ -5,6 +5,8 @@
  */
 import { COMPONENT_TYPES, DISPLAY_ONLY_TYPES } from '~/src/server/common/helpers/print-application-service/constants.js'
 
+const ASSESS_MOORLAND_DESC = 'Assess moorland and produce a written record'
+
 const DEMO_PAYMENT = {
   annualTotalPence: 822438,
   parcelItems: {
@@ -12,7 +14,7 @@ const DEMO_PAYMENT = {
       sheetId: 'SD5949',
       parcelId: '6060',
       code: 'CMOR1',
-      description: 'Assess moorland and produce a written record',
+      description: ASSESS_MOORLAND_DESC,
       quantity: '681.6133',
       annualPaymentPence: 722510
     },
@@ -28,7 +30,7 @@ const DEMO_PAYMENT = {
       sheetId: 'SD6352',
       parcelId: '1073',
       code: 'CMOR1',
-      description: 'Assess moorland and produce a written record',
+      description: ASSESS_MOORLAND_DESC,
       quantity: '13.7223',
       annualPaymentPence: 0
     }
@@ -36,7 +38,7 @@ const DEMO_PAYMENT = {
   agreementLevelItems: {
     agl1: {
       code: 'CMOR1',
-      description: 'Assess moorland and produce a written record',
+      description: ASSESS_MOORLAND_DESC,
       annualPaymentPence: 27200
     }
   }

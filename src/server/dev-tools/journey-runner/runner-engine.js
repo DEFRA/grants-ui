@@ -14,6 +14,7 @@
   }
 
   const STORAGE_KEY = '__journeyRunner'
+  const LOG_PREFIX = '[journey-runner]'
 
   function setVal(el, value) {
     const setter = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el), 'value')
@@ -38,57 +39,59 @@
     button.click()
   }
 
+  function inputSelector(name) {
+    return `input[name="${name}"]`
+  }
+
   const typeHandlers = {
     submitOnly: function () {
       submitForm()
     },
 
     yesNo: function (step) {
-      const input = document.querySelector(
-        'input[name="' + step.fieldName + '"][value="' + (step.value || 'true') + '"]'
-      )
+      const input = document.querySelector(`input[name="${step.fieldName}"][value="${step.value || 'true'}"]`)
       if (!input) {
-        throw new Error(step.fieldName + ' radio not found')
+        throw new Error(`${step.fieldName} radio not found`)
       }
       input.click()
       submitForm()
     },
 
     radios: function (step) {
-      const radio = document.querySelector('input[name="' + step.fieldName + '"]')
+      const radio = document.querySelector(inputSelector(step.fieldName))
       if (!radio) {
-        throw new Error(step.fieldName + ' radio not found')
+        throw new Error(`${step.fieldName} radio not found`)
       }
       radio.click()
       submitForm()
     },
 
     checkboxes: function (step) {
-      const checkbox = document.querySelector('input[name="' + step.fieldName + '"]')
+      const checkbox = document.querySelector(inputSelector(step.fieldName))
       if (!checkbox) {
-        throw new Error(step.fieldName + ' checkbox not found')
+        throw new Error(`${step.fieldName} checkbox not found`)
       }
       checkbox.click()
       submitForm()
     },
 
     numberField: function (step) {
-      const input = document.querySelector('input[name="' + step.fieldName + '"]')
+      const input = document.querySelector(inputSelector(step.fieldName))
       if (!input) {
-        throw new Error(step.fieldName + ' input not found')
+        throw new Error(`${step.fieldName} input not found`)
       }
       setVal(input, step.value)
       submitForm()
     },
 
     selectField: function (step) {
-      const select = document.querySelector('select[name="' + step.fieldName + '"]')
+      const select = document.querySelector(`select[name="${step.fieldName}"]`)
       if (!select) {
-        throw new Error(step.fieldName + ' select not found')
+        throw new Error(`${step.fieldName} select not found`)
       }
       const option = select.querySelector('option[value]:not([value=""])')
       if (!option) {
-        throw new Error(step.fieldName + ' has no options')
+        throw new Error(`${step.fieldName} has no options`)
       }
       select.value = option.value
       select.dispatchEvent(new Event('change', { bubbles: true }))
@@ -96,9 +99,9 @@
     },
 
     multilineText: function (step) {
-      const textarea = document.querySelector('textarea[name="' + step.fieldName + '"]')
+      const textarea = document.querySelector(`textarea[name="${step.fieldName}"]`)
       if (!textarea) {
-        throw new Error(step.fieldName + ' textarea not found')
+        throw new Error(`${step.fieldName} textarea not found`)
       }
       setVal(textarea, step.value)
       submitForm()
@@ -109,11 +112,11 @@
       if (step.offsetDays) {
         d.setDate(d.getDate() + step.offsetDays)
       }
-      const day = document.querySelector('input[name="' + step.fieldName + '__day"]')
-      const month = document.querySelector('input[name="' + step.fieldName + '__month"]')
-      const year = document.querySelector('input[name="' + step.fieldName + '__year"]')
+      const day = document.querySelector(inputSelector(`${step.fieldName}__day`))
+      const month = document.querySelector(inputSelector(`${step.fieldName}__month`))
+      const year = document.querySelector(inputSelector(`${step.fieldName}__year`))
       if (!day || !month || !year) {
-        throw new Error(step.fieldName + ' date inputs not found')
+        throw new Error(`${step.fieldName} date inputs not found`)
       }
       setVal(day, String(d.getDate()))
       setVal(month, String(d.getMonth() + 1))
@@ -123,10 +126,10 @@
 
     monthYear: function (step) {
       const d = new Date()
-      const month = document.querySelector('input[name="' + step.fieldName + '__month"]')
-      const year = document.querySelector('input[name="' + step.fieldName + '__year"]')
+      const month = document.querySelector(inputSelector(`${step.fieldName}__month`))
+      const year = document.querySelector(inputSelector(`${step.fieldName}__year`))
       if (!month || !year) {
-        throw new Error(step.fieldName + ' month/year inputs not found')
+        throw new Error(`${step.fieldName} month/year inputs not found`)
       }
       setVal(month, String(d.getMonth() + 1))
       setVal(year, String(d.getFullYear()))
@@ -134,9 +137,9 @@
     },
 
     clickLink: function (step) {
-      const link = document.querySelector('a[href$="/' + step.linkSlug + '"]')
+      const link = document.querySelector(`a[href$="/${step.linkSlug}"]`)
       if (!link) {
-        throw new Error('Link to /' + step.linkSlug + ' not found')
+        throw new Error(`Link to /${step.linkSlug} not found`)
       }
       link.click()
     },
@@ -144,7 +147,7 @@
     textFields: function (step) {
       const fields = step.fields
       Object.keys(fields).forEach(function (name) {
-        const input = document.querySelector('input[name="' + name + '"], textarea[name="' + name + '"]')
+        const input = document.querySelector(`input[name="${name}"], textarea[name="${name}"]`)
         if (input) {
           setVal(input, fields[name])
         }
@@ -156,7 +159,7 @@
   function findCurrentStep() {
     const path = globalThis.location.pathname
     for (let i = 0; i < steps.length; i++) {
-      if (path.endsWith('/' + steps[i].slug)) {
+      if (path.endsWith(`/${steps[i].slug}`)) {
         return i
       }
     }
@@ -174,7 +177,7 @@
 
     if (idx === -1) {
       sessionStorage.removeItem(STORAGE_KEY)
-      console.log('[journey-runner] Reached ' + globalThis.location.pathname + ' — not a known step, journey complete')
+      console.log(`${LOG_PREFIX} Reached ${globalThis.location.pathname} — not a known step, journey complete`)
       return
     }
 
@@ -182,24 +185,24 @@
 
     if (stepNumber >= state.stopAt) {
       sessionStorage.removeItem(STORAGE_KEY)
-      console.log('[journey-runner] Arrived at "' + steps[idx].name + '" (step ' + stepNumber + ') — stopping here')
+      console.log(`${LOG_PREFIX} Arrived at "${steps[idx].name}" (step ${stepNumber}) — stopping here`)
       return
     }
 
     const errorSummary = document.querySelector('.govuk-error-summary')
     if (errorSummary) {
       sessionStorage.removeItem(STORAGE_KEY)
-      console.error('[journey-runner] Page has errors, stopping:\n' + errorSummary.textContent.trim())
+      console.error(`${LOG_PREFIX} Page has errors, stopping:\n${errorSummary.textContent.trim()}`)
       return
     }
 
     const step = steps[idx]
-    console.log('[journey-runner] Step ' + stepNumber + ': ' + step.name)
+    console.log(`${LOG_PREFIX} Step ${stepNumber}: ${step.name}`)
 
     const handler = typeHandlers[step.type]
     if (!handler) {
       sessionStorage.removeItem(STORAGE_KEY)
-      console.error('[journey-runner] Unknown step type: ' + step.type)
+      console.error(`${LOG_PREFIX} Unknown step type: ${step.type}`)
       return
     }
 
@@ -207,20 +210,20 @@
       handler(step)
     } catch (err) {
       sessionStorage.removeItem(STORAGE_KEY)
-      console.error('[journey-runner] Failed on "' + step.name + '":', err.message)
+      console.error(`${LOG_PREFIX} Failed on "${step.name}":`, err.message)
     }
   }
 
   globalThis.runJourney = function (stopAtPage) {
     const totalPages = stopAtPage || steps.length
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ stopAt: totalPages }))
-    console.log('[journey-runner] Starting journey, will stop at step ' + totalPages)
+    console.log(`${LOG_PREFIX} Starting journey, will stop at step ${totalPages}`)
     processCurrentPage()
   }
 
   globalThis.stopJourney = function () {
     sessionStorage.removeItem(STORAGE_KEY)
-    console.log('[journey-runner] Journey stopped')
+    console.log(`${LOG_PREFIX} Journey stopped`)
   }
 
   processCurrentPage()

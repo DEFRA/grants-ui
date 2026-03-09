@@ -7,6 +7,8 @@ const enginePath = resolve(pluginDir, './runner-engine.js')
 const journeysDir = resolve(pluginDir, './journeys')
 
 const SLUG_PATTERN = /^[a-z0-9-]+$/
+const CONTENT_TYPE_JS = 'application/javascript'
+const CACHE_NO_STORE = 'no-store'
 
 /**
  * Dev-only plugin that serves the journey runner script at
@@ -40,33 +42,30 @@ export const journeyRunnerPlugin = {
           if (!existsSync(enginePath)) {
             return h
               .response('// journey-runner engine not found')
-              .type('application/javascript')
-              .header('Cache-Control', 'no-store')
+              .type(CONTENT_TYPE_JS)
+              .header('Cache-Control', CACHE_NO_STORE)
           }
 
           const slug = request.params.journey
           if (!SLUG_PATTERN.test(slug)) {
-            return h
-              .response('// invalid journey slug')
-              .type('application/javascript')
-              .header('Cache-Control', 'no-store')
+            return h.response('// invalid journey slug').type(CONTENT_TYPE_JS).header('Cache-Control', CACHE_NO_STORE)
           }
 
-          const journeyPath = resolve(journeysDir, slug + '.json')
-          if (basename(journeyPath) !== slug + '.json' || !existsSync(journeyPath)) {
+          const journeyPath = resolve(journeysDir, `${slug}.json`)
+          if (basename(journeyPath) !== `${slug}.json` || !existsSync(journeyPath)) {
             return h
-              .response('// no journey config for "' + slug + '"')
-              .type('application/javascript')
-              .header('Cache-Control', 'no-store')
+              .response(`// no journey config for "${slug}"`)
+              .type(CONTENT_TYPE_JS)
+              .header('Cache-Control', CACHE_NO_STORE)
           }
 
           const json = readFileSync(journeyPath, 'utf-8')
           const engine = readFileSync(enginePath, 'utf-8')
 
           return h
-            .response('globalThis.__journeySteps = ' + json + ';\n' + engine)
-            .type('application/javascript')
-            .header('Cache-Control', 'no-store')
+            .response(`globalThis.__journeySteps = ${json};\n${engine}`)
+            .type(CONTENT_TYPE_JS)
+            .header('Cache-Control', CACHE_NO_STORE)
         }
       })
     }
