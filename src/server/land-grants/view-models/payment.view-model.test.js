@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import {
   formatPrice,
   createParcelItemRow,
@@ -7,15 +7,6 @@ import {
   mapPaymentInfoToParcelItems,
   mapAdditionalYearlyPayments
 } from './payment.view-model.js'
-
-// Mock the action groups import
-vi.mock('../services/land-grants.service.js', () => ({
-  getActionGroups: () => [
-    { name: 'Group 1', actions: ['SAM1', 'SAM2'] },
-    { name: 'Group 2', actions: ['SAM3', 'SAM4'] }
-  ]
-}))
-
 describe('payment-view-model.mapper', () => {
   describe('formatPrice', () => {
     it('should format price from pence to currency', () => {
@@ -87,7 +78,10 @@ describe('payment-view-model.mapper', () => {
         item1: { sheetId: 'AB1234', parcelId: '5678', code: 'SAM1' }
       }
 
-      const result = buildLandParcelFooterActions(selectedActions, 'AB1234', '5678')
+      const result = buildLandParcelFooterActions(selectedActions, 'AB1234', '5678', [
+        { name: 'Group 1', actions: ['SAM1', 'SAM2'] },
+        { name: 'Group 2', actions: ['SAM3', 'SAM4'] }
+      ])
 
       expect(result).toEqual({
         text: 'Add another action',
@@ -102,7 +96,10 @@ describe('payment-view-model.mapper', () => {
         item2: { sheetId: 'AB1234', parcelId: '5678', code: 'SAM3' }
       }
 
-      const result = buildLandParcelFooterActions(selectedActions, 'AB1234', '5678')
+      const result = buildLandParcelFooterActions(selectedActions, 'AB1234', '5678', [
+        { name: 'Group 1', actions: ['SAM1', 'SAM2'] },
+        { name: 'Group 2', actions: ['SAM3', 'SAM4'] }
+      ])
 
       expect(result).toEqual({})
     })
@@ -113,7 +110,10 @@ describe('payment-view-model.mapper', () => {
         item2: { sheetId: 'CD9999', parcelId: '1111', code: 'SAM3' }
       }
 
-      const result = buildLandParcelFooterActions(selectedActions, 'AB1234', '5678')
+      const result = buildLandParcelFooterActions(selectedActions, 'AB1234', '5678', [
+        { name: 'Group 1', actions: ['SAM1', 'SAM2'] },
+        { name: 'Group 2', actions: ['SAM3', 'SAM4'] }
+      ])
 
       expect(result.text).toBe('Add another action')
     })
@@ -150,7 +150,10 @@ describe('payment-view-model.mapper', () => {
         }
       }
 
-      const result = mapPaymentInfoToParcelItems(paymentInfo)
+      const result = mapPaymentInfoToParcelItems(paymentInfo, [
+        { name: 'Group 1', actions: ['SAM1', 'SAM2'] },
+        { name: 'Group 2', actions: ['SAM3', 'SAM4'] }
+      ])
 
       expect(result).toHaveLength(2)
       expect(result[0].cardTitle).toBe('Land parcel AB1234 5678')
@@ -160,7 +163,10 @@ describe('payment-view-model.mapper', () => {
     })
 
     it('should handle empty payment info', () => {
-      const result = mapPaymentInfoToParcelItems({})
+      const result = mapPaymentInfoToParcelItems({}, [
+        { name: 'Group 1', actions: ['SAM1', 'SAM2'] },
+        { name: 'Group 2', actions: ['SAM3', 'SAM4'] }
+      ])
 
       expect(result).toEqual([])
     })
@@ -179,7 +185,10 @@ describe('payment-view-model.mapper', () => {
         }
       }
 
-      const result = mapPaymentInfoToParcelItems(paymentInfo)
+      const result = mapPaymentInfoToParcelItems(paymentInfo, [
+        { name: 'Group 1', actions: ['SAM1', 'SAM2'] },
+        { name: 'Group 2', actions: ['SAM3', 'SAM4'] }
+      ])
 
       expect(result[0].headerActions).toBeDefined()
       expect(result[0].headerActions.text).toBe('Remove')
