@@ -1,5 +1,6 @@
 import { log } from '~/src/server/common/helpers/logging/log.js'
 import { LogCodes } from '~/src/server/common/helpers/logging/log-codes.js'
+import { getGrantCode } from '../grant-code.js'
 
 const outputLog = (request, message) => {
   log(LogCodes.AUTH.AUTH_DEBUG, {
@@ -38,10 +39,11 @@ export const getCacheKey = (request) => {
 
   if (!sbi) {
     outputLog(request, 'Missing SBI (organisationId) in credentials')
-    throw new Error(`'Missing SBI (organisationId) in credentials`)
+    throw new Error('Missing SBI (organisationId) in credentials')
   }
 
-  const grantCode = request.params?.slug
+  const grantCode = getGrantCode(request)
+
   if (!grantCode) {
     outputLog(request, 'Missing grantCode')
     throw new Error('Missing grantCode')

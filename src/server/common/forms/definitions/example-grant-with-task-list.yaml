@@ -38,7 +38,7 @@ metadata:
 
       # Awaiting amendments
       - fromGrantsStatus: SUBMITTED
-        gasStatus: AWAITING_AMENDMENTS
+        gasStatus: APPLICATION_AMEND
         toGrantsStatus: REOPENED
         toPath: /tasks
 

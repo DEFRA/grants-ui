@@ -53,10 +53,14 @@ const importHelperAndDeps = async () => {
   LogCodes = logModule.LogCodes
 }
 
+const grantCode = 'TEST-GRANT-CODE'
+
 describe('persistSubmissionToApi', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockRequest = mockSimpleRequest()
+    mockRequest = mockSimpleRequest({
+      params: { slug: grantCode.toLowerCase() }
+    })
   })
 
   describe('With backend configured correctly', () => {

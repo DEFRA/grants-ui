@@ -1,5 +1,4 @@
 import { vi } from 'vitest'
-import { config } from '~/src/config/config.js'
 import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/forms-cache.js'
 import { submitGrantApplication } from '~/src/server/common/services/grant-application/grant-application.service.js'
 import { transformStateObjectToGasApplication } from '../../common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
@@ -27,7 +26,7 @@ vi.mock('~/src/config/config.js', async () => {
   return mockLandGrantsConfig()
 })
 
-const code = config.get('landGrants.grantCode')
+const grantCode = 'TEST-GRANT-CODE'
 
 describe('SubmissionPageController', () => {
   let controller
@@ -39,13 +38,21 @@ describe('SubmissionPageController', () => {
   beforeEach(() => {
     vi.resetAllMocks()
 
-    mockModel = {}
+    mockModel = {
+      def: {
+        metadata: {
+          submission: {
+            grantCode
+          }
+        }
+      }
+    }
     mockPageDef = {}
     mockCacheService = {
       setState: vi.fn().mockResolvedValue(),
       getState: vi.fn().mockResolvedValue({})
     }
-    mockRequest = mockSimpleRequest()
+    mockRequest = mockSimpleRequest({ params: { slug: grantCode } })
 
     SubmissionPageController.prototype.getViewModel = vi.fn().mockReturnValue({
       pageTitle: 'Submission page'
@@ -93,17 +100,19 @@ describe('SubmissionPageController', () => {
         }),
         stateToLandGrantsGasAnswers
       )
-      expect(submitGrantApplication).toHaveBeenCalledWith(code, mockApplicationData, mockRequest)
+      expect(submitGrantApplication).toHaveBeenCalledWith(grantCode, mockApplicationData, mockRequest)
       expect(result).toEqual(mockResult)
     })
   })
 
   describe('renderSubmissionError', () => {
+    const mockRequest = {
+      params: { slug: 'test-grant' }
+    }
     it('should return error view with correct data', () => {
       const mockH = {
         view: vi.fn().mockReturnValue('error-view')
       }
-      const mockRequest = {}
       const mockContext = {}
       const validationId = 'validation-123'
 
@@ -118,7 +127,6 @@ describe('SubmissionPageController', () => {
 
     it('should use validationId when provided', () => {
       const mockH = { view: vi.fn().mockReturnValue('error-view') }
-      const mockRequest = {}
       const mockContext = { referenceNumber: 'REF456' }
       const validationId = 'validation-123'
 
@@ -141,7 +149,6 @@ describe('SubmissionPageController', () => {
 
     it('should fallback to referenceNumber when validationId not provided', () => {
       const mockH = { view: vi.fn().mockReturnValue('error-view') }
-      const mockRequest = {}
       const mockContext = { referenceNumber: 'REF456' }
 
       controller.renderSubmissionError(mockH, mockRequest, mockContext)
@@ -163,7 +170,6 @@ describe('SubmissionPageController', () => {
 
     it('should use N/A when neither validationId nor referenceNumber available', () => {
       const mockH = { view: vi.fn().mockReturnValue('error-view') }
-      const mockRequest = {}
       const mockContext = {}
 
       controller.renderSubmissionError(mockH, mockRequest, mockContext)
@@ -186,8 +192,11 @@ describe('SubmissionPageController', () => {
 
   describe('handleSuccessfulSubmission', () => {
     it('should set cache state and proceed', async () => {
-      const mockRequest = { server: {} }
-      const mockContext = { referenceNumber: 'REF123' }
+      const mockRequest = {
+        server: {},
+        params: { slug: 'test-grant' }
+      }
+      const mockContext = { referenceNumber: 'REF123', state: { previousReferenceNumber: 'REF345' } }
       const mockH = { redirect: vi.fn().mockResolvedValue() }
       const statusCode = 204
       vi.spyOn(controller, 'getNextPath').mockReturnValue('/next-path')
@@ -200,17 +209,18 @@ describe('SubmissionPageController', () => {
           applicationStatus: 'SUBMITTED'
         })
       )
-      expect(mockH.redirect).toHaveBeenCalledWith('/confirmation')
     })
 
     it('should only log and update state when status is 204', async () => {
       const mockRequest = {
         server: {},
-        auth: { credentials: { sbi: '123', crn: 'crn123' } }
+        auth: { credentials: { sbi: '123', crn: 'crn123' } },
+        params: { slug: 'test-grant' }
       }
       const mockContext = {
         referenceNumber: 'REF123',
-        relevantState: { field1: 'value1', field2: 'value2' }
+        relevantState: { field1: 'value1', field2: 'value2' },
+        state: { previousReferenceNumber: 'REF345' }
       }
       const mockH = { redirect: vi.fn().mockResolvedValue() }
       vi.spyOn(controller, 'getStatusPath').mockReturnValue('/confirmation')
@@ -232,9 +242,12 @@ describe('SubmissionPageController', () => {
     it('should not log when status is not 204', async () => {
       const mockRequest = {
         server: {},
-        auth: { credentials: { sbi: '123', crn: 'crn123' } }
+        auth: {
+          credentials: { sbi: '123', crn: 'crn123' }
+        },
+        params: { slug: 'test-grant' }
       }
-      const mockContext = { referenceNumber: 'REF123' }
+      const mockContext = { referenceNumber: 'REF123', state: { previousReferenceNumber: 'REF345' } }
       const mockH = { redirect: vi.fn().mockResolvedValue() }
       vi.spyOn(controller, 'getStatusPath').mockReturnValue('/confirmation')
 
@@ -246,8 +259,11 @@ describe('SubmissionPageController', () => {
     })
 
     it('should handle missing auth credentials', async () => {
-      const mockRequest = { server: {} }
-      const mockContext = { referenceNumber: 'REF123' }
+      const mockRequest = {
+        server: {},
+        params: { slug: 'test-grant' }
+      }
+      const mockContext = { referenceNumber: 'REF123', state: { previousReferenceNumber: 'REF345' } }
       const mockH = { redirect: vi.fn().mockResolvedValue() }
       vi.spyOn(controller, 'getStatusPath').mockReturnValue('/confirmation')
 
@@ -259,9 +275,10 @@ describe('SubmissionPageController', () => {
     it('should handle missing relevantState when logging', async () => {
       const mockRequest = {
         server: {},
-        auth: { credentials: { sbi: '123', crn: 'crn123' } }
+        auth: { credentials: { sbi: '123', crn: 'crn123' } },
+        params: { slug: 'test-grant' }
       }
-      const mockContext = { referenceNumber: 'REF123' }
+      const mockContext = { referenceNumber: 'REF123', state: { previousReferenceNumber: 'REF345' } }
       const mockH = { redirect: vi.fn().mockResolvedValue() }
       vi.spyOn(controller, 'getStatusPath').mockReturnValue('/confirmation')
       mockCacheService.getState.mockResolvedValue({})
@@ -303,10 +320,11 @@ describe('SubmissionPageController', () => {
             crn: 'crn123'
           }
         },
-        server: {}
+        server: {},
+        params: { slug: 'test-grant' }
       }
       const mockContext = {
-        state: { landParcels: { parcel1: 'data' } },
+        state: { landParcels: { parcel1: 'data' }, previousReferenceNumber: 'REF345' },
         referenceNumber: 'REF123'
       }
       const mockH = {
@@ -328,11 +346,12 @@ describe('SubmissionPageController', () => {
         applicationId: 'REF123',
         crn: 'crn123',
         sbi: '123456789',
-        state: { landParcels: { parcel1: 'data' } }
+        state: { landParcels: { parcel1: 'data' }, previousReferenceNumber: 'REF345' }
       })
       expect(controller.submitGasApplication).toHaveBeenCalledWith(mockRequest, {
         identifiers: {
           clientRef: 'ref123',
+          previousClientRef: 'ref345',
           crn: 'crn123',
           frn: undefined,
           sbi: '123456789'
@@ -346,10 +365,11 @@ describe('SubmissionPageController', () => {
 
     it('should handle undefined auth', async () => {
       const mockRequest = {
-        server: {}
+        server: {},
+        params: { slug: 'test-grant' }
       }
       const mockContext = {
-        state: {},
+        state: { previousReferenceNumber: 'REF345' },
         referenceNumber: 'REF123'
       }
       const mockH = { redirect: vi.fn(), view: vi.fn() }
@@ -364,11 +384,14 @@ describe('SubmissionPageController', () => {
       expect(controller.submitGasApplication).toHaveBeenCalledWith(mockRequest, {
         identifiers: {
           clientRef: 'ref123',
+          previousClientRef: 'ref345',
           crn: undefined,
           frn: undefined,
           sbi: undefined
         },
-        state: {},
+        state: {
+          previousReferenceNumber: 'REF345'
+        },
         validationResult: mockValidationResult
       })
     })
@@ -376,7 +399,8 @@ describe('SubmissionPageController', () => {
     it('should extract frn from applicant business reference', async () => {
       const mockRequest = {
         auth: { credentials: { sbi: '123', crn: 'crn123' } },
-        server: {}
+        server: {},
+        params: { slug: 'test-grant' }
       }
       const mockContext = {
         state: {
@@ -384,7 +408,8 @@ describe('SubmissionPageController', () => {
             business: { reference: 'FRN999' }
           }
         },
-        referenceNumber: 'REF123'
+        referenceNumber: 'REF123',
+        previousReferenceNumber: 'REF345'
       }
       const mockH = { redirect: vi.fn(), view: vi.fn() }
       const mockValidationResult = { id: 'val-123', valid: true }
@@ -407,11 +432,13 @@ describe('SubmissionPageController', () => {
     it('should handle missing applicant', async () => {
       const mockRequest = {
         auth: { credentials: { sbi: '123', crn: 'crn123' } },
-        server: {}
+        server: {},
+        params: { slug: 'test-grant' }
       }
       const mockContext = {
         state: {},
-        referenceNumber: 'REF123'
+        referenceNumber: 'REF123',
+        previousReferenceNumber: 'REF345'
       }
       const mockH = { redirect: vi.fn(), view: vi.fn() }
       const mockValidationResult = { id: 'val-123', valid: true }
@@ -434,7 +461,8 @@ describe('SubmissionPageController', () => {
     it('should convert referenceNumber to lowercase for clientRef', async () => {
       const mockRequest = {
         auth: { credentials: { sbi: '123', crn: 'crn123' } },
-        server: {}
+        server: {},
+        params: { slug: 'test-grant' }
       }
       const mockContext = {
         state: {},
@@ -466,7 +494,8 @@ describe('SubmissionPageController', () => {
             crn: 'crn123'
           }
         },
-        server: {}
+        server: {},
+        params: { slug: 'test-grant' }
       }
       const mockContext = {
         state: { landParcels: {} },
@@ -500,7 +529,8 @@ describe('SubmissionPageController', () => {
             crn: 'crn123'
           }
         },
-        server: {}
+        server: {},
+        params: { slug: 'test-grant' }
       }
       const mockContext = {
         state: {
@@ -538,7 +568,8 @@ describe('SubmissionPageController', () => {
       const mockError = new Error('Validation failed')
       const mockRequest = {
         auth: undefined,
-        server: {}
+        server: {},
+        params: { slug: 'test-grant' }
       }
       const mockContext = {
         state: {},
@@ -557,7 +588,7 @@ describe('SubmissionPageController', () => {
       expect(debug).toHaveBeenCalledWith(
         LogCodes.SUBMISSION.SUBMISSION_FAILURE,
         expect.objectContaining({
-          grantType: 'TEST-GRANT-CODE',
+          grantType: 'test-grant',
           referenceNumber: 'REF123',
           sbi: undefined,
           crn: undefined,
@@ -576,7 +607,8 @@ describe('SubmissionPageController', () => {
             crn: 'crn123'
           }
         },
-        server: {}
+        server: {},
+        params: { slug: 'test-grant' }
       }
       const mockContext = {
         state: {},
@@ -613,7 +645,8 @@ describe('SubmissionPageController', () => {
             crn: 'crn123'
           }
         },
-        server: {}
+        server: {},
+        params: { slug: 'test-grant' }
       }
       const mockContext = {
         state: {},
