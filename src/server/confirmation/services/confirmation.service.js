@@ -1,3 +1,5 @@
+import nunjucks from 'nunjucks'
+
 import { getFormsCache } from '~/src/server/common/forms/services/form.js'
 import { ComponentsRegistry } from './components.registry.js'
 import { logger } from '~/src/server/common/helpers/logging/log.js'
@@ -30,12 +32,14 @@ export class ConfirmationService {
   }
 
   /**
-   * Process confirmation content - replace component placeholders and slug tokens
+   * Process confirmation content - replace component placeholders, slug tokens,
+   * and render Nunjucks template syntax with provided context
    * @param {object} confirmationContent - Raw confirmation content from YAML
    * @param {string} [slug] - Form slug for replacing {{SLUG}} placeholders
+   * @param {object} [context] - Context object for Nunjucks template rendering
    * @returns {object} Processed confirmation content
    */
-  static processConfirmationContent(confirmationContent, slug) {
+  static processConfirmationContent(confirmationContent, slug, context = {}) {
     if (!confirmationContent) {
       return null
     }
@@ -46,6 +50,8 @@ export class ConfirmationService {
       if (slug) {
         processedHtml = processedHtml.replaceAll('{{SLUG}}', slug)
       }
+
+      processedHtml = nunjucks.renderString(processedHtml, context)
 
       return {
         ...confirmationContent,
