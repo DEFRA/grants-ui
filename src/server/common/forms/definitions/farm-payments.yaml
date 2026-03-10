@@ -67,9 +67,9 @@ metadata:
       <p class="govuk-body">The Rural Payments Agency (RPA) will email you when your agreement offer is available to review.</p>
 
       {% if 'sssi' in requiredConsents %}
-      <p class="govuk-body">Conditional content A</p>
+      <p class="govuk-body">SSSI is required</p>
       {% else %}
-      <p class="govuk-body">Conditional content B</p>
+      <p class="govuk-body">SSSI is not required</p>
       {% endif %}
 
       {{DEFRASUPPORTDETAILS}}
