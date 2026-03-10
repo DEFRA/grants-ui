@@ -3,6 +3,7 @@ import { StatePersistenceService } from './state-persistence.service.js'
 import * as fetchModule from '../../helpers/state/fetch-saved-state-helper.js'
 import * as persistModule from '../../helpers/state/persist-state-helper.js'
 import { getCacheKey } from '~/src/server/common/helpers/state/get-cache-key-helper.js'
+import { debug, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import * as lockModule from '../../helpers/lock/lock-token.js'
 
 vi.mock('../../helpers/lock/lock-token.js', () => ({
@@ -75,7 +76,16 @@ describe('StatePersistenceService', () => {
       throw parseError
     })
 
-    await expect(service.getState(fakeRequest)).rejects.toThrow('Session state key parse failed')
+    await expect(service.getState(fakeRequest)).rejects.toThrow('bad key')
+
+    expect(debug).toHaveBeenCalledWith(
+      LogCodes.SYSTEM.SESSION_STATE_KEY_PARSE_FAILED,
+      expect.objectContaining({
+        errorMessage: 'bad key',
+        requestPath: fakeRequest.path
+      }),
+      fakeRequest
+    )
   })
 
   test('getState logs SESSION_STATE_FETCH_FAILED when fetchSavedStateFromApi throws', async () => {
@@ -84,7 +94,17 @@ describe('StatePersistenceService', () => {
     const fetchError = new Error('backend down')
     fetchModule.fetchSavedStateFromApi.mockRejectedValue(fetchError)
 
-    await expect(service.getState(fakeRequest)).rejects.toThrow('Session state fetch failed')
+    await expect(service.getState(fakeRequest)).rejects.toThrow('backend down')
+
+    expect(debug).toHaveBeenCalledWith(
+      LogCodes.SYSTEM.SESSION_STATE_FETCH_FAILED,
+      expect.objectContaining({
+        sessionKey: 'biz-1:grant-a',
+        errorMessage: 'backend down',
+        requestPath: fakeRequest.path
+      }),
+      fakeRequest
+    )
   })
 
   test('setState calls persistStateToApi and returns state', async () => {
