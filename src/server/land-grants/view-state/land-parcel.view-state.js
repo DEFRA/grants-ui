@@ -17,17 +17,13 @@ export function buildNewState(state, actionsObj, parcel) {
   const { parcelId, sheetId } = parcel
   const selectedLandParcel = stringifyParcel({ parcelId, sheetId })
 
-  const newState = {
+  return {
     ...state,
     landParcels: {
       ...state.landParcels,
       [selectedLandParcel]: { size: parcel.size, actionsObj }
     }
   }
-
-  newState.sssiRequired = getRequiredConsents(newState).includes('sssi')
-
-  return newState
 }
 
 /**
@@ -125,8 +121,6 @@ export function deleteParcelFromState(state, parcel) {
     delete newState.draftApplicationAnnualTotalPence
   }
 
-  newState.sssiRequired = getRequiredConsents(newState).includes('sssi')
-
   return newState
 }
 
@@ -155,8 +149,6 @@ export function deleteActionFromState(state, parcel, action) {
       delete newState.draftApplicationAnnualTotalPence
     }
   }
-
-  newState.sssiRequired = getRequiredConsents(newState).includes('sssi')
 
   return newState
 }

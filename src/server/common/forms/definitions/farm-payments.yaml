@@ -66,10 +66,10 @@ metadata:
       <h2 class="govuk-heading-m">What happens next</h2>
       <p class="govuk-body">The Rural Payments Agency (RPA) will email you when your agreement offer is available to review.</p>
 
-      {% if sssiRequired %}
-      <p class="govuk-body">You require SSSI for this application</p>
+      {% if 'sssi' in requiredConsents %}
+      <p class="govuk-body">Conditional content A</p>
       {% else %}
-      <p class="govuk-body">You do not require SSSI for this application</p>
+      <p class="govuk-body">Conditional content B</p>
       {% endif %}
 
       {{DEFRASUPPORTDETAILS}}

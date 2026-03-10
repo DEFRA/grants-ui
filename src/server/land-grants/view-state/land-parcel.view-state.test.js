@@ -50,8 +50,7 @@ describe('land-parcel-state.manager', () => {
               SAM1: { description: 'Action 1', value: '10', unit: 'ha' }
             }
           }
-        },
-        sssiRequired: false
+        }
       })
     })
 
