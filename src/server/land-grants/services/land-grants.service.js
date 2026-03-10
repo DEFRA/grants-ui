@@ -14,6 +14,7 @@ import {
   validate
 } from '~/src/server/land-grants/services/land-grants.client.js'
 import { formatAreaUnit } from '~/src/server/land-grants/utils/format-area-unit.js'
+import { getCachedParcel, setCachedParcel, getCachedSbiParcels, setCachedSbiParcels } from '~/src/server/land-grants/services/parcel-cache.js'
 
 const LAND_GRANTS_API_URL = config.get('landGrants.grantsServiceApiEndpoint')
 
@@ -63,8 +64,15 @@ const createGroup = (name, groupActions) => ({
  * @throws {Error}
  */
 export async function fetchAvailableActionsForParcel({ parcelId = '', sheetId = '' }) {
+  const cacheKey = stringifyParcel({ sheetId, parcelId })
+  const cached = getCachedParcel(cacheKey)
+
+  if (cached) {
+    return cached
+  }
+
   const actions = []
-  const parcelIds = [stringifyParcel({ sheetId, parcelId })]
+  const parcelIds = [cacheKey]
   const { parcels, groups: groupDefinitions = [] } = await parcelsWithExtendedInfo(parcelIds, LAND_GRANTS_API_URL)
   const foundParcel = parcels?.find((p) => p.parcelId === parcelId && p.sheetId === sheetId)
   const actionsForParcel = foundParcel?.actions?.map(mapAction) || []
@@ -81,7 +89,7 @@ export async function fetchAvailableActionsForParcel({ parcelId = '', sheetId = 
     }
   })
 
-  return {
+  const result = {
     parcel: {
       sheetId,
       parcelId,
@@ -93,6 +101,9 @@ export async function fetchAvailableActionsForParcel({ parcelId = '', sheetId = 
     },
     actions
   }
+
+  setCachedParcel(cacheKey, result)
+  return result
 }
 
 /**
@@ -139,11 +150,18 @@ async function fetchParcelsSize(parcelIds) {
 
 /**
  * Fetches parcels with area data for a given SBI.
- * @param {Request} request
+ * @param {AnyFormRequest} request
  * @returns {Promise<Parcel[]>}
  * @throws {Error}
  */
 export async function fetchParcels(request) {
+  const sbi = request.auth?.credentials?.sbi
+  const cached = getCachedSbiParcels(sbi)
+
+  if (cached) {
+    return cached
+  }
+
   const parcels = await fetchParcelsFromDal(request)
   const parcelKeys = parcels.map(stringifyParcel)
   const sizes = await fetchParcelsSize(parcelKeys)
@@ -151,6 +169,8 @@ export async function fetchParcels(request) {
     ...p,
     area: sizes[stringifyParcel(p)] || {}
   }))
+
+  setCachedSbiParcels(sbi, hydratedParcels)
   return hydratedParcels
 }
 
@@ -210,4 +230,5 @@ function buildErrorMessagesFromResponse(actions = []) {
 /**
  * @import { ActionOption, ActionGroup, ActionGroupDefinition, Parcel, ValidateApplicationResponse, ValidationAction, ErrorItem, Size } from '~/src/server/land-grants/types/land-grants.client.d.js'
  * @import { PaymentCalculation } from '~/src/server/land-grants/types/payment.d.js'
+ * @import { AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
  */
