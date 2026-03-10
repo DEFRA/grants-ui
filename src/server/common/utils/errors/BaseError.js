@@ -26,7 +26,6 @@ export class BaseError extends Error {
   /**
    * The log code to use when logging this error
    * @abstract
-   * @protected
    */
   logCode = LogCodes.SYSTEM.SERVER_ERROR
 

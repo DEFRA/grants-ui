@@ -1,7 +1,7 @@
 import { URLSearchParams } from 'node:url'
 
 import { config } from '~/src/config/config.js'
-import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { ExternalApiError } from '~/src/server/common/utils/errors/ExternalApiError.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
 
 const msInSec = 1000
@@ -117,11 +117,13 @@ export async function refreshToken() {
 
     return tokenState.currentToken ?? ''
   } catch (error) {
-    log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
-      endpoint: `Entra token refresh`,
-      errorMessage: error.message
+    const externalApiError = new ExternalApiError({
+      message: 'Entra token refresh failed',
+      source: 'refreshToken',
+      reason: 'entra_token_refresh_failure',
+      endpoint: 'Entra token refresh'
     })
-    throw error
+    throw externalApiError.from(error)
   }
 }
 
