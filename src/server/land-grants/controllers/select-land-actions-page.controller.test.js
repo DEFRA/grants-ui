@@ -138,6 +138,16 @@ describe('SelectLandActionsPageController', () => {
       mockContext.state.selectedLandParcel = 'sheet1-parcel1'
     })
 
+    test('should redirect to /select-land-parcel if no selected land parcel is set', async () => {
+      mockContext.state.selectedLandParcel = ''
+
+      const handler = controller.makeGetRouteHandler()
+      const result = await handler(mockRequest, mockContext, mockH)
+
+      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/select-land-parcel')
+      expect(result).toBe('redirected')
+    })
+
     test('should parse valid land parcel and fetch grouped actions', async () => {
       mockRequest.query.parcelId = 'sheet2-parcel2'
       parseLandParcel.mockReturnValue(['sheet2', 'parcel2'])
