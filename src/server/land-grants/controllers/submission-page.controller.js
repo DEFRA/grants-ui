@@ -107,14 +107,9 @@ export default class SubmissionPageController extends SummaryPageController {
 
       const currentState = await cacheService.getState(request)
 
-      const sssiRequired = Object.values(currentState.landParcels ?? {}).some((parcel) =>
-        Object.values(parcel.actionsObj ?? {}).some((action) => action.consents?.includes('sssi'))
-      )
-
       // Update application status so the confirmation page knows a submission happened
       await cacheService.setState(request, {
         ...currentState,
-        sssiRequired,
         applicationStatus: ApplicationStatus.SUBMITTED,
         submittedAt,
         submittedBy: crn
