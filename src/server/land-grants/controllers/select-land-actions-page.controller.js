@@ -129,6 +129,9 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
     return async (request, context, h) => {
       const { state } = context
       const selectedLandParcel = request?.query?.parcelId || (state.selectedLandParcel ?? '')
+      if (!selectedLandParcel) {
+        return this.proceed(request, h, '/select-land-parcel')
+      }
 
       const [sheetId = '', parcelId = ''] = parseLandParcel(selectedLandParcel)
 
