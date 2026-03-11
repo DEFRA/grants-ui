@@ -40,15 +40,6 @@ function extractToleratedPartialSuccess(parsed, statusCode, sbi, toleratedPaths)
  * @property {string} [data.business.customer.lastName] - Customer's last name
  * @property {string} [data.business.customer.role] - Customer's role
  */
-export class ConsolidatedViewApiError extends Error {
-  constructor(message, statusCode, responseBody, sbi) {
-    super(message)
-    this.name = 'ConsolidatedViewApiError'
-    this.status = statusCode
-    this.responseBody = responseBody
-    this.sbi = sbi
-  }
-}
 
 /**
  * Creates request options for Consolidated View API calls
@@ -90,7 +81,7 @@ async function getConsolidatedViewRequestOptions(request, { method = 'POST', que
  * @param {object} [options] - Options
  * @param {string[]} [options.toleratedPaths] - GraphQL paths tolerated as partial failures
  * @returns {Promise<object>} API response JSON
- * @throws {ConsolidatedViewApiError} - If the API request fails
+ * @throws {ConsolidatedViewError} - If the API request fails
  */
 async function makeConsolidatedViewRequest(request, query, { toleratedPaths } = {}) {
   const sbi = request.auth.credentials.sbi
@@ -141,7 +132,7 @@ async function makeConsolidatedViewRequest(request, query, { toleratedPaths } = 
  * @param {Function} params.formatResponse - Function to format the response
  * @param {string[]} [params.toleratedPaths] - GraphQL paths tolerated as partial failures
  * @returns {Promise<any>} Formatted response data
- * @throws {ConsolidatedViewApiError} - If the API request fails
+ * @throws {ConsolidatedViewError} - If the API request fails
  */
 async function fetchFromConsolidatedView(request, { query, formatResponse, toleratedPaths }) {
   const mockDALEnabled = config.get('consolidatedView.mockDALEnabled')
@@ -166,14 +157,19 @@ async function fetchFromConsolidatedView(request, { query, formatResponse, toler
       },
       request
     )
-    throw new ConsolidatedViewError({
-      message: error.message,
-      status: error.status,
-      responseBody: error.message,
-      sbi,
-      source: 'fetchFromConsolidatedView',
-      reason: 'api_error'
-    }).from(error)
+
+    if (error instanceof ConsolidatedViewError) {
+      throw error
+    } else {
+      throw new ConsolidatedViewError({
+        message: error.message,
+        status: statusCodes.internalServerError,
+        responseBody: error.message,
+        sbi,
+        source: 'fetchFromConsolidatedView',
+        reason: 'api_error'
+      }).from(error)
+    }
   }
 }
 
@@ -195,13 +191,27 @@ async function makeStubRequest({ query, sbi, crn }) {
   })
 
   if (!response.ok) {
-    throw new ConsolidatedViewApiError('Stub request failed', response.status, await response.text(), sbi)
+    throw new ConsolidatedViewError({
+      message: 'Stub request failed',
+      status: response.status,
+      responseBody: await response.text(),
+      sbi,
+      source: 'makeStubRequest',
+      reason: 'api_error'
+    })
   }
 
   const json = await response.json()
 
   if (json.errors?.length) {
-    throw new ConsolidatedViewApiError(json.errors[0].message, statusCodes.badGateway, json.errors[0].message, sbi)
+    throw new ConsolidatedViewError({
+      message: json.errors[0].message,
+      status: statusCodes.badGateway,
+      responseBody: json.errors[0].message,
+      sbi,
+      source: 'makeStubRequest',
+      reason: 'api_error'
+    })
   }
 
   return json
@@ -211,7 +221,7 @@ async function makeStubRequest({ query, sbi, crn }) {
  * Fetches business parcels data from Consolidated View
  * @param {AnyFormRequest} request
  * @returns {Promise<Array>} - Promise that resolves to the parcels array
- * @throws {ConsolidatedViewApiError} - If the API request fails
+ * @throws {ConsolidatedViewError} - If the API request fails
  * @throws {Error} - For other unexpected errors
  */
 export async function fetchParcelsFromDal(request) {
@@ -277,7 +287,7 @@ function formatAddress(sbi, address) {
  * Fetches business and customer information from Consolidated View
  * @param {AnyFormRequest} request
  * @returns {Promise<object>} - Promise that resolves to business and customer info
- * @throws {ConsolidatedViewApiError} - If the API request fails
+ * @throws {ConsolidatedViewError} - If the API request fails
  * @throws {Error} - For other unexpected errors
  */
 export async function fetchBusinessAndCustomerInformation(request) {
@@ -357,7 +367,7 @@ export async function fetchBusinessAndCustomerInformation(request) {
  * @param {object} [options] - Options
  * @param {string[]} [options.toleratedPaths] - GraphQL paths tolerated as partial failures
  * @returns {Promise<object>} Raw API response
- * @throws {ConsolidatedViewApiError} - If the API request fails
+ * @throws {ConsolidatedViewError} - If the API request fails
  */
 export async function executeConfigDrivenQuery(request, query, { toleratedPaths } = {}) {
   return fetchFromConsolidatedView(request, {
@@ -373,7 +383,7 @@ export async function executeConfigDrivenQuery(request, query, { toleratedPaths 
  * @param {object} [options] - Options
  * @param {string[]} [options.toleratedPaths] - GraphQL paths tolerated as partial failures
  * @returns {Promise<object>} Business and CPH data
- * @throws {ConsolidatedViewApiError} - If the API request fails
+ * @throws {ConsolidatedViewError} - If the API request fails
  */
 export async function fetchBusinessAndCPH(request, { toleratedPaths } = {}) {
   const { credentials: { sbi, crn } = {} } = request.auth ?? {}
