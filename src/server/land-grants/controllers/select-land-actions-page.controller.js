@@ -134,6 +134,9 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
   makeGetRouteHandler() {
     return async (request, context, h) => {
       const parcel = this.resolveParcelContext(request, context.state)
+      if (!parcel.selectedLandParcel) {
+        return this.proceed(request, h, '/select-land-parcel')
+      }
 
       const authResult = await this.performAuthCheck(request, h, parcel.selectedLandParcel)
       if (authResult) {
