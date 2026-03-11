@@ -1,4 +1,7 @@
-const CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
+const SECONDS_PER_MINUTE = 60
+const MS_PER_SECOND = 1000
+const CACHE_TTL_MINUTES = 5
+const CACHE_TTL_MS = CACHE_TTL_MINUTES * SECONDS_PER_MINUTE * MS_PER_SECOND
 
 const parcelActionsCache = new Map()
 const sbiParcelsCache = new Map()
