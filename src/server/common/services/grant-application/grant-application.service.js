@@ -1,9 +1,19 @@
 import { config } from '~/src/config/config.js'
+import { debug } from '~/src/server/common/helpers/logging/log.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
-import { GrantApplicationServiceError } from '~/src/server/common/utils/errors/GrantApplicationServiceError.js'
 
 const GAS_API_ENDPOINT = config.get('gas.apiEndpoint')
 const GAS_API_AUTH_TOKEN = config.get('gas.authToken')
+
+class GrantApplicationServiceApiError extends Error {
+  constructor(message, statusCode, responseBody, code, cause = null) {
+    super(message, cause ? { cause } : undefined)
+    this.name = 'GrantApplicationServiceApiError'
+    this.status = statusCode
+    this.responseBody = responseBody
+    this.grantCode = code
+  }
+}
 
 /**
  * Makes a request to the Grant Application Service (GAS) API
@@ -58,30 +68,36 @@ export async function makeGasApiRequest(url, grantCode, request, options = {}) {
     if (!response.ok) {
       const error = await response.json()
 
-      throw new GrantApplicationServiceError({
-        message: `${response.status} ${response.statusText} - ${error.message}`,
-        status: response.status,
-        responseBody: error.message,
-        grantCode,
-        source: 'makeGasApiRequest',
-        reason: 'api_response_not_ok'
-      })
+      throw new GrantApplicationServiceApiError(
+        `${response.status} ${response.statusText} - ${error.message}`,
+        response.status,
+        error.message,
+        grantCode
+      )
     }
 
     return response
   } catch (error) {
-    if (error instanceof GrantApplicationServiceError) {
+    debug(
+      {
+        level: 'error',
+        error,
+        messageFunc: () => 'Unexpected error in GAS API request: ' + error.message
+      },
+      {},
+      request
+    )
+    if (error instanceof GrantApplicationServiceApiError) {
       throw error
-    } else {
-      throw new GrantApplicationServiceError({
-        message: 'Failed to process GAS API request: ' + error.message,
-        status: error.status,
-        responseBody: error.message,
-        grantCode,
-        source: 'makeGasApiRequest',
-        reason: 'api_unexpected_error'
-      }).from(error)
     }
+
+    throw new GrantApplicationServiceApiError(
+      'Failed to process GAS API request: ' + error.message,
+      error.status,
+      error.message,
+      grantCode,
+      error
+    )
   }
 }
 
