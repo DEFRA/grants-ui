@@ -2,8 +2,9 @@ import { getCacheKey } from '~/src/server/common/helpers/state/get-cache-key-hel
 import { clearSavedStateFromApi, fetchSavedStateFromApi } from '../../helpers/state/fetch-saved-state-helper.js'
 import { persistStateToApi } from '../../helpers/state/persist-state-helper.js'
 import { ADDITIONAL_IDENTIFIER, CacheService } from '@defra/forms-engine-plugin/cache-service.js'
-import { log, LogCodes } from '../../helpers/logging/log.js'
+import { SessionError } from '../../utils/errors/SessionError.js'
 import { mintLockToken } from '../../helpers/lock/lock-token.js'
+import { LogCodes } from '../../helpers/logging/log-codes.js'
 
 /**
  * Service responsible for persisting form/session state to the backend API.
@@ -30,17 +31,13 @@ export class StatePersistenceService extends CacheService {
       try {
         return this._Key(request)
       } catch (err) {
-        log(
-          LogCodes.SYSTEM.SESSION_STATE_KEY_PARSE_FAILED,
-          {
-            errorMessage: err.message,
-            stack: err.stack,
-            requestPath: request.path
-          },
-          request
-        )
-
-        throw err // rethrow — controller will fail cleanly
+        const sessionError = new SessionError({
+          message: 'Session state key parse failed',
+          source: 'StatePersistenceService._Key',
+          reason: 'session_state_key_parse_failure',
+          requestPath: request.path
+        })
+        throw sessionError.from(err)
       }
     })()
     const lockToken = this._buildLockToken(request)
@@ -48,17 +45,15 @@ export class StatePersistenceService extends CacheService {
       const state = await fetchSavedStateFromApi(key, request, { lockToken })
       return state ?? {}
     } catch (err) {
-      log(
-        LogCodes.SYSTEM.SESSION_STATE_FETCH_FAILED,
-        {
-          sessionKey: key,
-          errorMessage: err.message,
-          requestPath: request.path
-        },
-        request
-      )
-
-      throw err
+      const sessionError = new SessionError({
+        message: 'Session state fetch failed',
+        source: 'StatePersistenceService.getState',
+        reason: 'session_state_fetch_failure',
+        sessionKey: key,
+        requestPath: request.path
+      })
+      sessionError.logCode = LogCodes.SYSTEM.SESSION_STATE_FETCH_FAILED
+      throw sessionError.from(err)
     }
   }
 
