@@ -13,9 +13,9 @@ export default class LandGrantsQuestionWithAuthCheckController extends QuestionP
   makeGetRouteHandler() {
     return async (request, context, h) => {
       const parcelId = this.resolveParcelId(request, context)
-      const authResult = await this.performAuthCheck(request, h, parcelId)
-      if (authResult) {
-        return authResult
+      const unauthorised = await this.performAuthCheck(request, h, parcelId)
+      if (unauthorised) {
+        return unauthorised
       }
       return this.handleGet(request, context, h)
     }
@@ -24,9 +24,9 @@ export default class LandGrantsQuestionWithAuthCheckController extends QuestionP
   makePostRouteHandler() {
     return async (request, context, h) => {
       const parcelId = this.resolveParcelId(request, context)
-      const authResult = await this.performAuthCheck(request, h, parcelId)
-      if (authResult) {
-        return authResult
+      const unauthorised = await this.performAuthCheck(request, h, parcelId)
+      if (unauthorised) {
+        return unauthorised
       }
       return this.handlePost(request, context, h)
     }
