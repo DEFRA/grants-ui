@@ -43,7 +43,7 @@ describe('SubmissionPageController', () => {
     mockPageDef = {}
     mockCacheService = {
       setState: vi.fn().mockResolvedValue(),
-      getState: vi.fn().mockResolvedValue()
+      getState: vi.fn().mockResolvedValue({})
     }
     mockRequest = mockSimpleRequest()
 

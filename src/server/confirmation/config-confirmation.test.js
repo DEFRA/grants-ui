@@ -83,7 +83,13 @@ describe('config-confirmation', () => {
 
       expect(ConfirmationService.findFormBySlug).toHaveBeenCalledWith('test-slug')
       expect(ConfirmationService.loadConfirmationContent).toHaveBeenCalledWith(mockForm)
-      expect(ConfirmationService.processConfirmationContent).toHaveBeenCalledWith(mockConfirmationContent, 'test-slug')
+      expect(ConfirmationService.processConfirmationContent).toHaveBeenCalledWith(
+        mockConfirmationContent,
+        'test-slug',
+        {
+          $$__referenceNumber: 'REF123'
+        }
+      )
       expect(ConfirmationService.buildViewModel).toHaveBeenCalledWith({
         referenceNumber: 'REF123',
         businessName: 'Test Business',
@@ -148,7 +154,11 @@ describe('config-confirmation', () => {
 
       await handler(mockRequest, mockH)
 
-      expect(ConfirmationService.processConfirmationContent).toHaveBeenCalledWith(mockConfirmationContent, 'test-slug')
+      expect(ConfirmationService.processConfirmationContent).toHaveBeenCalledWith(
+        mockConfirmationContent,
+        'test-slug',
+        {}
+      )
       expect(ConfirmationService.buildViewModel).toHaveBeenCalledWith(
         expect.objectContaining({ referenceNumber: 'Not available' })
       )

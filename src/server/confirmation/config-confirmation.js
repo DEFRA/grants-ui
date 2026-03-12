@@ -47,18 +47,20 @@ function validateRequestAndFindForm(request, h) {
  * @param {object} form - Form configuration object
  * @returns {Promise<object|null>} Content result with confirmationContent and formDefinition
  */
-async function loadConfirmationContent(form, slug) {
+async function loadConfirmationContent(form, slug, context = {}) {
   const { confirmationContent: rawConfirmationContent } = await ConfirmationService.loadConfirmationContent(form)
 
-  return rawConfirmationContent ? ConfirmationService.processConfirmationContent(rawConfirmationContent, slug) : null
+  return rawConfirmationContent
+    ? ConfirmationService.processConfirmationContent(rawConfirmationContent, slug, context)
+    : null
 }
 
 /**
- * Retrieves reference number from various sources
+ * Retrieves reference number and state from various sources
  * @param {object} request - Hapi request object
- * @returns {Promise<object>} Reference number result
+ * @returns {Promise<object>} Reference number result and state
  */
-async function getReferenceNumber(request) {
+async function getSessionDataAndState(request) {
   const cacheService = getFormsCacheService(request.server)
   const state = await cacheService.getState(request)
   const referenceNumber = state.$$__referenceNumber
@@ -72,6 +74,7 @@ async function getReferenceNumber(request) {
   }
 
   return {
+    state,
     referenceNumber: referenceNumber || 'Not available',
     businessName: request.yar?.get('businessName'),
     sbi: request.yar?.get('sbi'),
@@ -140,8 +143,8 @@ export const configConfirmation = {
 
             const { form, slug } = validationResult
 
-            const confirmationContent = await loadConfirmationContent(form, slug)
-            const sessionData = await getReferenceNumber(request)
+            const sessionData = await getSessionDataAndState(request)
+            const confirmationContent = await loadConfirmationContent(form, slug, sessionData.state)
 
             log(
               LogCodes.CONFIRMATION.CONFIRMATION_SUCCESS,
