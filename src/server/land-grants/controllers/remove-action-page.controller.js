@@ -134,68 +134,49 @@ export default class RemoveActionPageController extends LandGrantsQuestionWithAu
   /**
    * Handle GET requests to the page
    */
-  makeGetRouteHandler() {
-    return async (request, context, h) => {
-      const { viewName } = this
-      const landParcels = context.state?.landParcels
-      const { action, parcelId } = request.query
+  async handleGet(request, context, h) {
+    const { viewName } = this
+    const landParcels = context.state?.landParcels
+    const { action, parcelId } = request.query
 
-      if (!parcelId || !landParcels[parcelId]) {
-        return this.proceed(request, h, checkSelectedLandActionsPath)
-      }
-
-      const authResult = await this.performAuthCheck(request, h, parcelId)
-      if (authResult) {
-        return authResult
-      }
-
-      const actionInfo = findActionInfoFromState(landParcels, parcelId, action)
-      const { pageHeading, hint } = this.buildPageHeadingAndHint(actionInfo, parcelId)
-
-      const viewModel = this.buildGetViewModel(request, context, parcelId, pageHeading, hint)
-      return h.view(viewName, viewModel)
+    if (!parcelId || !landParcels[parcelId]) {
+      return this.proceed(request, h, checkSelectedLandActionsPath)
     }
+
+    const actionInfo = findActionInfoFromState(landParcels, parcelId, action)
+    const { pageHeading, hint } = this.buildPageHeadingAndHint(actionInfo, parcelId)
+
+    const viewModel = this.buildGetViewModel(request, context, parcelId, pageHeading, hint)
+    return h.view(viewName, viewModel)
   }
 
   /**
    * Handle POST requests to the page
+   * @param {AnyFormRequest} request
+   * @param {FormContext} context
+   * @param {Pick<ResponseToolkit, 'redirect' | 'view'>} h
+   * @returns {Promise<ResponseObject>}
    */
-  makePostRouteHandler() {
-    /**
-     * Handle POST requests to the confirm farm details page.
-     * @param {AnyFormRequest} request
-     * @param {FormContext} context
-     * @param {Pick<ResponseToolkit, 'redirect' | 'view'>} h
-     * @returns {Promise<ResponseObject>}
-     */
-    const fn = async (request, context, h) => {
-      const { state } = context
-      const payload = request.payload ?? {}
-      const { action, parcelId } = request.query
+  async handlePost(request, context, h) {
+    const { state } = context
+    const payload = request.payload ?? {}
+    const { action, parcelId } = request.query
 
-      const authResult = await this.performAuthCheck(request, h, parcelId)
-      if (authResult) {
-        return authResult
-      }
+    // Get pageheading and hint from state for error messages
+    const actionInfo = findActionInfoFromState(state.landParcels, parcelId, action)
+    const pageHeadingAndHint = this.buildPageHeadingAndHint(actionInfo, parcelId)
 
-      // Get pageheading and hint from state for error messages
-      const actionInfo = findActionInfoFromState(state.landParcels, parcelId, action)
-      const pageHeadingAndHint = this.buildPageHeadingAndHint(actionInfo, parcelId)
-
-      const validationError = this.validatePostPayload(payload, actionInfo)
-      if (validationError) {
-        return this.renderPostErrorView(h, request, context, validationError.errorMessage, parcelId, pageHeadingAndHint)
-      }
-
-      const { remove } = payload
-      if (remove === 'true') {
-        return this.processRemoval(request, state, h, parcelId, action)
-      }
-
-      return this.proceed(request, h, checkSelectedLandActionsPath)
+    const validationError = this.validatePostPayload(payload, actionInfo)
+    if (validationError) {
+      return this.renderPostErrorView(h, request, context, validationError.errorMessage, parcelId, pageHeadingAndHint)
     }
 
-    return fn
+    const { remove } = payload
+    if (remove === 'true') {
+      return this.processRemoval(request, state, h, parcelId, action)
+    }
+
+    return this.proceed(request, h, checkSelectedLandActionsPath)
   }
 }
 

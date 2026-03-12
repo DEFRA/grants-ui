@@ -450,7 +450,6 @@ describe('SelectLandActionsPageController', () => {
       const handler = controller.makePostRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
-      expect(controller.performAuthCheck).not.toHaveBeenCalled()
       expect(mockH.view).toHaveBeenCalledWith(
         'select-actions-for-land-parcel',
         expect.objectContaining({
