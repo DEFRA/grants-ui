@@ -17,6 +17,8 @@ vi.mock('hapi-pino', async () => {
 })
 
 vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
+  log: vi.fn(),
+  debug: vi.fn(),
   logger: {
     warn: vi.fn(),
     error: vi.fn(),

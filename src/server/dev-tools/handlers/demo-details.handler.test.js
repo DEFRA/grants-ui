@@ -11,7 +11,7 @@ import { processSections } from '../../common/services/details-page/index.js'
 import { buildDemoMappedData, buildDemoRequest } from '../helpers/index.js'
 import { generateFormNotFoundResponse, getAllForms } from '../utils/index.js'
 import { mockHapiRequest, mockHapiResponseToolkit } from '~/src/__mocks__/hapi-mocks.js'
-import { log } from '../../common/helpers/logging/log.js'
+import { debug } from '../../common/helpers/logging/log.js'
 
 const mockDemoMappedData = {
   customer: {
@@ -216,7 +216,7 @@ describe('demo-details.handler', () => {
 
       await demoDetailsHandler(mockRequest, mockH)
 
-      expect(vi.mocked(log)).toHaveBeenCalled()
+      expect(vi.mocked(debug)).toHaveBeenCalled()
       expect(mockH.view).toHaveBeenCalledWith(
         'check-details',
         expect.objectContaining({

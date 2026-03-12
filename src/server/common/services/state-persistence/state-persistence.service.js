@@ -2,7 +2,7 @@ import { getCacheKey } from '~/src/server/common/helpers/state/get-cache-key-hel
 import { clearSavedStateFromApi, fetchSavedStateFromApi } from '../../helpers/state/fetch-saved-state-helper.js'
 import { persistStateToApi } from '../../helpers/state/persist-state-helper.js'
 import { ADDITIONAL_IDENTIFIER, CacheService } from '@defra/forms-engine-plugin/cache-service.js'
-import { log, LogCodes } from '../../helpers/logging/log.js'
+import { debug, LogCodes } from '../../helpers/logging/log.js'
 import { mintLockToken } from '../../helpers/lock/lock-token.js'
 
 /**
@@ -30,7 +30,7 @@ export class StatePersistenceService extends CacheService {
       try {
         return this._Key(request)
       } catch (err) {
-        log(
+        debug(
           LogCodes.SYSTEM.SESSION_STATE_KEY_PARSE_FAILED,
           {
             errorMessage: err.message,
@@ -48,7 +48,7 @@ export class StatePersistenceService extends CacheService {
       const state = await fetchSavedStateFromApi(key, request, { lockToken })
       return state ?? {}
     } catch (err) {
-      log(
+      debug(
         LogCodes.SYSTEM.SESSION_STATE_FETCH_FAILED,
         {
           sessionKey: key,

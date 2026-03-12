@@ -8,7 +8,7 @@ import {
 } from '~/src/server/land-grants/services/land-grants.service.js'
 import { parseLandParcel, stringifyParcel } from '~/src/server/land-grants/utils/format-parcel.js'
 import SelectLandActionsPageController from './select-land-actions-page.controller.js'
-import { log } from '~/src/server/common/helpers/logging/log.js'
+import { log, debug } from '~/src/server/common/helpers/logging/log.js'
 
 vi.mock('~/src/config/config.js', async () => {
   const { mockLandGrantsConfig } = await import('~/src/__mocks__')
@@ -230,7 +230,7 @@ describe('SelectLandActionsPageController', () => {
         })
       )
 
-      expect(log).toHaveBeenCalledWith(
+      expect(debug).toHaveBeenCalledWith(
         expect.objectContaining({
           level: 'error',
           messageFunc: expect.any(Function)

@@ -1,7 +1,8 @@
 import { config } from '~/src/config/config.js'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import Jwt from '@hapi/jwt'
-import { log } from '~/src/server/common/helpers/logging/log.js'
+import { SystemError } from '~/src/server/common/utils/errors/SystemError.js'
+import { log, debug } from '~/src/server/common/helpers/logging/log.js'
 import { LogCodes } from '~/src/server/common/helpers/logging/log-codes.js'
 
 /**
@@ -64,15 +65,14 @@ function buildProxyHeaders(token, request) {
       'x-csp-nonce': request.app.cspNonce
     }
   } catch (jwtError) {
-    log(
-      LogCodes.AGREEMENTS.AGREEMENT_ERROR,
-      {
-        userId: request.userId,
-        errorMessage: `JWT generate failed: ${jwtError.message}`
-      },
-      request
-    )
-    throw jwtError
+    const systemError = new SystemError({
+      message: 'JWT generate failed',
+      source: 'buildProxyHeaders',
+      reason: 'jwt_generation_failure',
+      userId: request.userId
+    })
+    systemError.logCode = LogCodes.AGREEMENTS.AGREEMENT_ERROR
+    throw systemError.from(jwtError)
   }
 }
 
@@ -108,7 +108,7 @@ export const getAgreementController = {
 
       return apiResponse
     } catch (error) {
-      log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, { endpoint: 'agreements', errorMessage: error.message }, request)
+      debug(LogCodes.SYSTEM.EXTERNAL_API_ERROR, { endpoint: 'agreements', errorMessage: error.message }, request)
 
       if (error.message.includes('Missing required configuration')) {
         return h

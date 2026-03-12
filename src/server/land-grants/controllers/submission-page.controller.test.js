@@ -6,7 +6,7 @@ import { transformStateObjectToGasApplication } from '../../common/helpers/grant
 import { stateToLandGrantsGasAnswers } from '../mappers/state-to-gas-answers-mapper.js'
 import { validateApplication } from '../services/land-grants.service.js'
 import SubmissionPageController from './submission-page.controller.js'
-import { log } from '~/src/server/common/helpers/logging/log.js'
+import { log, debug } from '~/src/server/common/helpers/logging/log.js'
 import { LogCodes } from '../../common/helpers/logging/log-codes.js'
 import { mockSimpleRequest } from '~/src/__mocks__/hapi-mocks.js'
 
@@ -554,7 +554,7 @@ describe('SubmissionPageController', () => {
       const handler = controller.makePostRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
-      expect(log).toHaveBeenCalledWith(
+      expect(debug).toHaveBeenCalledWith(
         LogCodes.SUBMISSION.SUBMISSION_FAILURE,
         expect.objectContaining({
           grantType: 'TEST-GRANT-CODE',

@@ -9,7 +9,7 @@ import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { ApplicationStatus } from '~/src/server/common/constants/application-status.js'
 import { persistSubmissionToApi } from '~/src/server/common/helpers/state/persist-submission-helper.js'
 import { getConfirmationPath } from '~/src/server/common/helpers/form-slug-helper.js'
-import { log } from '~/src/server/common/helpers/logging/log.js'
+import { log, debug } from '~/src/server/common/helpers/logging/log.js'
 import { LogCodes } from '~/src/server/common/helpers/logging/log-codes.js'
 
 export default class SubmissionPageController extends SummaryPageController {
@@ -173,7 +173,7 @@ export default class SubmissionPageController extends SummaryPageController {
 
         return await this.handleSuccessfulSubmission(request, context, h, result.status)
       } catch (error) {
-        log(
+        debug(
           LogCodes.SUBMISSION.SUBMISSION_FAILURE,
           {
             grantType: this.grantCode,

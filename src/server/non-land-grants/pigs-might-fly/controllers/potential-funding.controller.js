@@ -1,6 +1,7 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { invokeGasPostAction } from '~/src/server/common/services/grant-application/grant-application.service.js'
-import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { GrantApplicationServiceError } from '~/src/server/common/utils/errors/GrantApplicationServiceError.js'
+import { LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
 export class PotentialFundingController extends QuestionPageController {
   viewName = 'potential-funding'
@@ -48,12 +49,16 @@ export class PotentialFundingController extends QuestionPageController {
 
         return h.view(viewName, viewModel)
       } catch (error) {
-        log(
-          LogCodes.SYSTEM.GAS_ACTION_ERROR,
-          { grantCode: 'pigs-might-fly', action: 'calculate-pig-totals', errorMessage: error.message },
-          request
-        )
-        throw error
+        const grantApplicationServiceError = new GrantApplicationServiceError({
+          message: 'Failed to calculate pig totals',
+          source: 'PotentialFundingController.makeGetRouteHandler',
+          reason: 'gas_action_failure',
+          grantCode: 'pigs-might-fly',
+          action: 'calculate-pig-totals'
+        }).from(error)
+
+        grantApplicationServiceError.logCode = LogCodes.SYSTEM.GAS_ACTION_ERROR
+        throw grantApplicationServiceError
       }
     }
     return fn

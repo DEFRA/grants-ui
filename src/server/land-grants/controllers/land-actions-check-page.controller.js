@@ -1,6 +1,6 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { calculateGrantPayment, fetchParcelsGroups } from '../services/land-grants.service.js'
-import { log, LogCodes } from '../../common/helpers/logging/log.js'
+import { debug, LogCodes } from '../../common/helpers/logging/log.js'
 import {
   formatPrice,
   mapPaymentInfoToParcelItems,
@@ -138,7 +138,7 @@ export default class LandActionsCheckPageController extends QuestionPageControll
         })
       } catch (error) {
         const sbi = request.auth?.credentials?.sbi
-        log(
+        debug(
           LogCodes.SYSTEM.EXTERNAL_API_ERROR,
           {
             endpoint: `Land grants API`,
@@ -183,7 +183,7 @@ export default class LandActionsCheckPageController extends QuestionPageControll
           parcelItems = result.parcelItems
           additionalYearlyPayments = result.additionalYearlyPayments
         } catch (error) {
-          log(
+          debug(
             LogCodes.SYSTEM.EXTERNAL_API_ERROR,
             {
               endpoint: `Land grants API`,

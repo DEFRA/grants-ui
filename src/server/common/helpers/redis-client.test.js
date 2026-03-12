@@ -6,9 +6,12 @@ import { buildRedisClient } from '~/src/server/common/helpers/redis-client.js'
 
 vi.mock('ioredis')
 vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
+  log: vi.fn(),
+  debug: vi.fn(),
   logger: {
     info: vi.fn(),
-    error: vi.fn()
+    error: vi.fn(),
+    debug: vi.fn()
   }
 }))
 

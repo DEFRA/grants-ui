@@ -7,18 +7,16 @@
 import { escapeGraphQLString } from '~/src/server/common/helpers/graphql-utils.js'
 import { resolvePath } from '~/src/server/common/helpers/path-utils.js'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
-import { BaseError } from '~/src/server/common/utils/errors/BaseError.js'
-
-export class GraphQLQueryBuilderError extends BaseError {}
+import { GraphQLQueryError } from '~/src/server/common/utils/errors/GraphQLQueryError.js'
 
 /**
  * Helper to throw config errors
  * @param {string} message
  * @param {string} reason
- * @throws {GraphQLQueryBuilderError}
+ * @throws {GraphQLQueryError}
  */
 function throwConfigError(message, reason) {
-  throw new GraphQLQueryBuilderError({ message, status: statusCodes.internalServerError, source: 'config', reason })
+  throw new GraphQLQueryError({ message, status: statusCodes.internalServerError, source: 'config', reason })
 }
 
 /**
@@ -77,7 +75,7 @@ function validateEntityConfig(entity) {
  * Validates a query configuration object
  * Call this at config load time to catch configuration errors early
  * @param {QueryConfig} config - The query configuration to validate
- * @throws {GraphQLQueryBuilderError} If the configuration is invalid
+ * @throws {GraphQLQueryError} If the configuration is invalid
  */
 export function validateQueryConfig(config) {
   if (!config || typeof config !== 'object') {
@@ -156,7 +154,7 @@ export function buildGraphQLQuery(config, request) {
     const variableValue = resolveVariable(entity.variableSource, credentials)
 
     if (variableValue === undefined) {
-      throw new GraphQLQueryBuilderError({
+      throw new GraphQLQueryError({
         message: entity.variableSource
           ? `Could not resolve variable from source '${entity.variableSource}'`
           : 'Variable source is required but was not provided',

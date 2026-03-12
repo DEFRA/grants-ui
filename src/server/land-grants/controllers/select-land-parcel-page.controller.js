@@ -1,4 +1,4 @@
-import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { log, debug, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { fetchParcels } from '../services/land-grants.service.js'
 import LandGrantsQuestionWithAuthCheckController from '~/src/server/land-grants/controllers/auth/land-grants-question-with-auth-check.controller.js'
 import { mapParcelsToViewModel } from '~/src/server/land-grants/view-models/parcel.view-model.js'
@@ -26,7 +26,7 @@ export default class SelectLandParcelPageController extends LandGrantsQuestionWi
           const { landParcels } = state || {}
           parcels = mapParcelsToViewModel(fetchedParcels, landParcels)
         } catch (error) {
-          log(
+          debug(
             { level: 'error', error, messageFunc: () => 'Error fetching parcels for validation error rendering' },
             {},
             request
@@ -108,7 +108,7 @@ export default class SelectLandParcelPageController extends LandGrantsQuestionWi
         })
         return h.view(viewName, viewModel)
       } catch (error) {
-        log({ level: 'error', error, messageFunc: () => `Unexpected error when fetching parcel data` }, {}, request)
+        debug({ level: 'error', error, messageFunc: () => `Unexpected error when fetching parcel data` }, {}, request)
         const errorMessage =
           'Unable to find parcel information, please try again later or contact the Rural Payments Agency.'
 

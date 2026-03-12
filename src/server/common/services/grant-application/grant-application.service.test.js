@@ -10,9 +10,6 @@ let submitGrantApplication
 let getApplicationStatus
 
 vi.mock('~/src/server/common/helpers/retry.js')
-vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
-  log: vi.fn()
-}))
 
 global.fetch = mockFetch
 

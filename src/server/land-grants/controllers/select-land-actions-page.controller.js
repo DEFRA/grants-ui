@@ -4,7 +4,7 @@ import {
 } from '~/src/server/land-grants/services/land-grants.service.js'
 import LandGrantsQuestionWithAuthCheckController from '~/src/server/land-grants/controllers/auth/land-grants-question-with-auth-check.controller.js'
 import { parseLandParcel } from '~/src/server/land-grants/utils/format-parcel.js'
-import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { log, debug, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { mapGroupedActionsToViewModel } from '~/src/server/land-grants/view-models/action.view-model.js'
 import {
   addActionsToExistingState,
@@ -88,7 +88,7 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
       return await fetchAvailableActionsForParcel({ parcelId, sheetId })
     } catch (error) {
       const { sbi } = request.auth.credentials
-      log(LogCodes.LAND_GRANTS.FETCH_ACTIONS_ERROR, { sbi, sheetId, parcelId, errorMessage: error.message }, request)
+      debug(LogCodes.LAND_GRANTS.FETCH_ACTIONS_ERROR, { sbi, sheetId, parcelId, errorMessage: error.message }, request)
       return null
     }
   }
@@ -226,7 +226,7 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
         })
       }
     } catch (e) {
-      log(LogCodes.LAND_GRANTS.VALIDATE_APPLICATION_ERROR, { parcelId, sheetId, errorMessage: e.message }, request)
+      debug(LogCodes.LAND_GRANTS.VALIDATE_APPLICATION_ERROR, { parcelId, sheetId, errorMessage: e.message }, request)
       const addedActions = getAddedActionsForStateParcel(prevState, selectedLandParcel)
       return this.renderErrorView(h, request, context, {
         errors: [

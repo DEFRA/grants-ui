@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { clearApplicationStateHandler } from './clear-application-state.handler.js'
 import { getFormsCacheService } from '../../common/helpers/forms-cache/forms-cache.js'
+import { SessionError } from '~/src/server/common/utils/errors/SessionError.js'
 
 vi.mock('../../common/helpers/forms-cache/forms-cache.js', () => ({
   getFormsCacheService: vi.fn()
@@ -71,7 +72,20 @@ describe('clearApplicationStateHandler', () => {
       const error = new Error('Cache clear failed')
       mockCacheService.clearState.mockRejectedValue(error)
 
-      await expect(clearApplicationStateHandler(mockRequest, mockH)).rejects.toThrow('Cache clear failed')
+      let thrown
+
+      try {
+        await clearApplicationStateHandler(mockRequest, mockH)
+      } catch (e) {
+        thrown = e
+      }
+
+      expect(thrown).toBeInstanceOf(SessionError)
+      expect(thrown.message).toBe('Session state clear failed')
+
+      const wrappedError = thrown.causeErrors.values().next().value
+
+      expect(wrappedError.message).toBe('Cache clear failed')
     })
   })
 
