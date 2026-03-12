@@ -16,6 +16,7 @@ import {
   parcelsWithExtendedInfo,
   validate
 } from '~/src/server/land-grants/services/land-grants.client.js'
+import { clearParcelCache } from '~/src/server/land-grants/services/parcel-cache.js'
 const mockApiEndpoint = 'https://land-grants-api'
 
 vi.mock('~/src/server/land-grants/services/land-grants.client.js', () => ({
@@ -153,6 +154,7 @@ describe('land-grants service', () => {
 
   describe('fetchAvailableActionsForParcel', () => {
     beforeEach(() => {
+      clearParcelCache()
       configState.reset()
       configState.set('landGrants.enableSSSIFeature', false)
     })
@@ -713,7 +715,96 @@ describe('land-grants service', () => {
     })
   })
 
+  describe('fetchAvailableActionsForParcel caching', () => {
+    const mockApiResponse = {
+      parcels: [
+        {
+          parcelId: 'PARCEL456',
+          sheetId: 'SHEET123',
+          size: { value: 50.5, unit: 'ha' },
+          actions: [
+            {
+              code: 'CMOR1',
+              availableArea: { value: 10.5, unit: 'ha' },
+              description: 'Assess moorland and produce a written record'
+            }
+          ]
+        }
+      ],
+      groups: [{ name: 'Assess moorland', actions: ['CMOR1'] }]
+    }
+
+    const parcelArgs = { parcelId: 'PARCEL456', sheetId: 'SHEET123' }
+
+    beforeEach(() => {
+      clearParcelCache()
+      configState.reset()
+    })
+
+    it('should return cached result on second call with same parcel', async () => {
+      parcelsWithExtendedInfo.mockResolvedValue(mockApiResponse)
+
+      await fetchAvailableActionsForParcel(parcelArgs)
+      const secondResult = await fetchAvailableActionsForParcel(parcelArgs)
+
+      expect(parcelsWithExtendedInfo).toHaveBeenCalledTimes(1)
+      expect(secondResult.parcel.parcelId).toBe('PARCEL456')
+    })
+
+    it('should fetch separately for different parcels', async () => {
+      const otherResponse = {
+        parcels: [
+          {
+            parcelId: 'OTHER',
+            sheetId: 'OTHER_SHEET',
+            size: { value: 10, unit: 'ha' },
+            actions: []
+          }
+        ],
+        groups: []
+      }
+      parcelsWithExtendedInfo.mockResolvedValueOnce(mockApiResponse).mockResolvedValueOnce(otherResponse)
+
+      await fetchAvailableActionsForParcel(parcelArgs)
+      await fetchAvailableActionsForParcel({ parcelId: 'OTHER', sheetId: 'OTHER_SHEET' })
+
+      expect(parcelsWithExtendedInfo).toHaveBeenCalledTimes(2)
+    })
+
+    it('should re-fetch after cache TTL expires', async () => {
+      vi.useFakeTimers()
+      parcelsWithExtendedInfo.mockResolvedValue(mockApiResponse)
+
+      await fetchAvailableActionsForParcel(parcelArgs)
+      expect(parcelsWithExtendedInfo).toHaveBeenCalledTimes(1)
+
+      vi.advanceTimersByTime(5 * 60 * 1000 + 1) // just past TTL
+
+      await fetchAvailableActionsForParcel(parcelArgs)
+      expect(parcelsWithExtendedInfo).toHaveBeenCalledTimes(2)
+
+      vi.useRealTimers()
+    })
+
+    it('should not cache failed API calls', async () => {
+      parcelsWithExtendedInfo.mockRejectedValueOnce(new Error('API error'))
+      parcelsWithExtendedInfo.mockResolvedValueOnce(mockApiResponse)
+
+      await expect(fetchAvailableActionsForParcel(parcelArgs)).rejects.toThrow('API error')
+
+      const result = await fetchAvailableActionsForParcel(parcelArgs)
+      expect(parcelsWithExtendedInfo).toHaveBeenCalledTimes(2)
+      expect(result.parcel.parcelId).toBe('PARCEL456')
+    })
+  })
+
   describe('fetchParcels', () => {
+    const mockRequest = { auth: { credentials: { sbi: '106284736' } } }
+
+    beforeEach(() => {
+      clearParcelCache()
+    })
+
     it('should fetch parcels with size data successfully', async () => {
       const mockParcels = [
         { parcelId: 'PARCEL1', sheetId: 'SHEET1' },
@@ -737,9 +828,9 @@ describe('land-grants service', () => {
       fetchParcelsFromDal.mockResolvedValueOnce(mockParcels)
       parcelsWithSize.mockResolvedValueOnce(mockSizeResponse)
 
-      const result = await fetchParcels('106284736')
+      const result = await fetchParcels(mockRequest)
 
-      expect(fetchParcelsFromDal).toHaveBeenCalledWith('106284736')
+      expect(fetchParcelsFromDal).toHaveBeenCalledWith(mockRequest)
       expect(parcelsWithSize).toHaveBeenCalledWith(['SHEET1-PARCEL1', 'SHEET2-PARCEL2'], mockApiEndpoint)
       expect(result).toEqual([
         {
@@ -774,7 +865,7 @@ describe('land-grants service', () => {
       fetchParcelsFromDal.mockResolvedValueOnce(mockParcels)
       parcelsWithSize.mockResolvedValueOnce(mockSizeResponse)
 
-      const result = await fetchParcels('106284736')
+      const result = await fetchParcels(mockRequest)
 
       expect(result).toEqual([
         {
@@ -797,7 +888,7 @@ describe('land-grants service', () => {
       fetchParcelsFromDal.mockResolvedValueOnce(mockParcels)
       parcelsWithSize.mockResolvedValueOnce(mockSizeResponse)
 
-      const result = await fetchParcels('106284736')
+      const result = await fetchParcels(mockRequest)
 
       expect(result).toEqual([])
     })
@@ -805,7 +896,7 @@ describe('land-grants service', () => {
     it('should handle fetchParcelsFromDal error', async () => {
       fetchParcelsFromDal.mockRejectedValueOnce(new Error('SBI service error'))
 
-      await expect(fetchParcels('106284736')).rejects.toThrow('SBI service error')
+      await expect(fetchParcels(mockRequest)).rejects.toThrow('SBI service error')
     })
 
     it('should handle size API error', async () => {
@@ -813,7 +904,74 @@ describe('land-grants service', () => {
       fetchParcelsFromDal.mockResolvedValueOnce(mockParcels)
       parcelsWithSize.mockRejectedValueOnce(new Error('Size API error'))
 
-      await expect(fetchParcels('106284736')).rejects.toThrow('Size API error')
+      await expect(fetchParcels(mockRequest)).rejects.toThrow('Size API error')
+    })
+
+    it('should return cached result on second call with same SBI', async () => {
+      const mockParcels = [{ parcelId: 'PARCEL1', sheetId: 'SHEET1' }]
+      const mockSizeResponse = {
+        parcels: [{ parcelId: 'PARCEL1', sheetId: 'SHEET1', size: { total: 15.5, unit: 'ha' } }]
+      }
+      fetchParcelsFromDal.mockResolvedValue(mockParcels)
+      parcelsWithSize.mockResolvedValue(mockSizeResponse)
+
+      await fetchParcels(mockRequest)
+      const secondResult = await fetchParcels(mockRequest)
+
+      expect(fetchParcelsFromDal).toHaveBeenCalledTimes(1)
+      expect(secondResult).toEqual([{ parcelId: 'PARCEL1', sheetId: 'SHEET1', area: { total: 15.5, unit: 'ha' } }])
+    })
+
+    it('should fetch separately for different SBIs', async () => {
+      const mockParcels = [{ parcelId: 'PARCEL1', sheetId: 'SHEET1' }]
+      const mockSizeResponse = {
+        parcels: [{ parcelId: 'PARCEL1', sheetId: 'SHEET1', size: { total: 15.5, unit: 'ha' } }]
+      }
+      fetchParcelsFromDal.mockResolvedValue(mockParcels)
+      parcelsWithSize.mockResolvedValue(mockSizeResponse)
+
+      const otherRequest = { auth: { credentials: { sbi: '999999999' } } }
+
+      await fetchParcels(mockRequest)
+      await fetchParcels(otherRequest)
+
+      expect(fetchParcelsFromDal).toHaveBeenCalledTimes(2)
+    })
+
+    it('should re-fetch after cache TTL expires', async () => {
+      vi.useFakeTimers()
+      const mockParcels = [{ parcelId: 'PARCEL1', sheetId: 'SHEET1' }]
+      const mockSizeResponse = {
+        parcels: [{ parcelId: 'PARCEL1', sheetId: 'SHEET1', size: { total: 15.5, unit: 'ha' } }]
+      }
+      fetchParcelsFromDal.mockResolvedValue(mockParcels)
+      parcelsWithSize.mockResolvedValue(mockSizeResponse)
+
+      await fetchParcels(mockRequest)
+      expect(fetchParcelsFromDal).toHaveBeenCalledTimes(1)
+
+      vi.advanceTimersByTime(5 * 60 * 1000 + 1)
+
+      await fetchParcels(mockRequest)
+      expect(fetchParcelsFromDal).toHaveBeenCalledTimes(2)
+
+      vi.useRealTimers()
+    })
+
+    it('should not cache failed API calls', async () => {
+      const mockParcels = [{ parcelId: 'PARCEL1', sheetId: 'SHEET1' }]
+      const mockSizeResponse = {
+        parcels: [{ parcelId: 'PARCEL1', sheetId: 'SHEET1', size: { total: 15.5, unit: 'ha' } }]
+      }
+      fetchParcelsFromDal.mockRejectedValueOnce(new Error('API error'))
+      fetchParcelsFromDal.mockResolvedValueOnce(mockParcels)
+      parcelsWithSize.mockResolvedValueOnce(mockSizeResponse)
+
+      await expect(fetchParcels(mockRequest)).rejects.toThrow('API error')
+
+      const result = await fetchParcels(mockRequest)
+      expect(fetchParcelsFromDal).toHaveBeenCalledTimes(2)
+      expect(result).toEqual([{ parcelId: 'PARCEL1', sheetId: 'SHEET1', area: { total: 15.5, unit: 'ha' } }])
     })
   })
 
