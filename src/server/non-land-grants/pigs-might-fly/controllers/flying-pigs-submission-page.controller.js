@@ -6,6 +6,7 @@ import { submitGrantApplication } from '~/src/server/common/services/grant-appli
 import { getConfirmationPath } from '~/src/server/common/helpers/form-slug-helper.js'
 import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/forms-cache.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { getGrantCode } from '~/src/server/common/helpers/grant-code.js'
 
 export default class FlyingPigsSubmissionPageController extends SummaryPageController {
   /**
@@ -14,7 +15,6 @@ export default class FlyingPigsSubmissionPageController extends SummaryPageContr
    */
   constructor(model, pageDef) {
     super(model, pageDef)
-    this.grantCode = model.def.metadata.submission.grantCode
     this.viewName = 'submission'
   }
 
@@ -28,6 +28,7 @@ export default class FlyingPigsSubmissionPageController extends SummaryPageContr
       sbi,
       frn,
       crn,
+      previousClientRef: context.previousReferenceNumber ? context.previousReferenceNumber.toLowerCase() : null,
       clientRef: context.referenceNumber?.toLowerCase()
     }
     const applicationData = transformStateObjectToGasApplication(
@@ -35,8 +36,9 @@ export default class FlyingPigsSubmissionPageController extends SummaryPageContr
       context.state,
       stateToPigsMightFlyGasAnswers
     )
+    const grantCode = getGrantCode(request)
 
-    return submitGrantApplication(this.grantCode, applicationData, request)
+    return submitGrantApplication(grantCode, applicationData, request)
   }
 
   makePostRouteHandler() {
@@ -46,7 +48,7 @@ export default class FlyingPigsSubmissionPageController extends SummaryPageContr
       log(
         LogCodes.SUBMISSION.SUBMISSION_COMPLETED,
         {
-          grantType: this.grantCode,
+          grantType: getGrantCode(request),
           referenceNumber: context.referenceNumber,
           numberOfFields: context.state ? Object.keys(context.state).length : 0,
           status: result?.status || 'success'

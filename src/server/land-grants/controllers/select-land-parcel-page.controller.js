@@ -45,11 +45,7 @@ export default class SelectLandParcelPageController extends LandGrantsQuestionWi
       })
     }
 
-    await this.setState(request, {
-      ...state,
-      selectedLandParcel
-    })
-    return this.proceed(request, h, this.getNextPath(context))
+    return this.proceed(request, h, `${this.getNextPath(context)}?parcelId=${selectedLandParcel}`)
   }
 
   /**
@@ -94,10 +90,6 @@ export default class SelectLandParcelPageController extends LandGrantsQuestionWi
         existingLandParcels
       }
 
-      await this.setState(request, {
-        ...state,
-        selectedLandParcel: null
-      })
       return h.view(viewName, viewModel)
     } catch (error) {
       debug({ level: 'error', error, messageFunc: () => `Unexpected error when fetching parcel data` }, {}, request)

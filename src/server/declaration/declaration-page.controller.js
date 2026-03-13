@@ -10,6 +10,7 @@ import { ApplicationStatus } from '~/src/server/common/constants/application-sta
 import { handleGasApiError } from '~/src/server/common/helpers/gas-error-messages.js'
 import { log, LogCodes } from '../common/helpers/logging/log.js'
 import { getTaskPageBackLink } from '~/src/server/task-list/task-list.helper.js'
+import { getGrantCode } from '../common/helpers/grant-code.js'
 
 export default class DeclarationPageController extends SummaryPageController {
   /**
@@ -20,7 +21,6 @@ export default class DeclarationPageController extends SummaryPageController {
     super(model, pageDef)
     this.model = model
     this.viewName = 'declaration-page.html'
-    this.grantCode = model.def.metadata.submission.grantCode
 
     // Resolve section
     if (pageDef.section) {
@@ -86,6 +86,9 @@ export default class DeclarationPageController extends SummaryPageController {
 
     const identifiers = {
       clientRef: context.referenceNumber.toLowerCase(),
+      previousClientRef: context.state.previousReferenceNumber
+        ? context.state.previousReferenceNumber.toLowerCase()
+        : null,
       sbi: request.auth?.credentials?.sbi,
       frn: 'frn',
       crn: request.auth?.credentials?.crn
@@ -98,7 +101,7 @@ export default class DeclarationPageController extends SummaryPageController {
     log(
       LogCodes.SUBMISSION.SUBMISSION_COMPLETED,
       {
-        grantType: this.grantCode,
+        grantType: grantCode,
         referenceNumber: context.referenceNumber,
         numberOfFields: context.relevantState ? Object.keys(context.relevantState).length : 0,
         status: 'success'
@@ -128,6 +131,7 @@ export default class DeclarationPageController extends SummaryPageController {
         grantCode,
         grantVersion: context.grantVersion,
         referenceNumber: context.referenceNumber,
+        previousReferenceNumber: context.state.previousReferenceNumber,
         submittedAt: applicationData.metadata?.submittedAt
       },
       request
@@ -142,7 +146,7 @@ export default class DeclarationPageController extends SummaryPageController {
         referenceNumber: context.referenceNumber,
         sbi,
         crn,
-        grantType: this.grantCode
+        grantType: getGrantCode(request)
       },
       request
     )
@@ -168,9 +172,9 @@ export default class DeclarationPageController extends SummaryPageController {
 
       try {
         const applicationData = this.buildApplicationData(request, context)
-        const grantCode = request.params?.slug
+        const grantCode = getGrantCode(request)
 
-        const result = await submitGrantApplication(this.grantCode, applicationData, request)
+        const result = await submitGrantApplication(grantCode, applicationData, request)
 
         if (result.status === statusCodes.noContent) {
           await this.handleSuccessfulSubmission({
@@ -180,7 +184,7 @@ export default class DeclarationPageController extends SummaryPageController {
             applicationData,
             sbi,
             crn,
-            grantCode
+            grantCode: grantCode
           })
         }
 

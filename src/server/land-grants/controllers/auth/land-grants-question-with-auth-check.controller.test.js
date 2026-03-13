@@ -128,33 +128,22 @@ describe('LandGrantsQuestionWithAuthCheckController', () => {
     test('returns query.parcelId when present', () => {
       mockRequest.query = { parcelId: 'query-parcel' }
       mockRequest.payload = { selectedLandParcel: 'payload-parcel' }
-      const context = { state: { selectedLandParcel: 'state-parcel' } }
 
-      expect(controller.resolveParcelId(mockRequest, context)).toBe('query-parcel')
+      expect(controller.resolveParcelId(mockRequest)).toBe('query-parcel')
     })
 
     test('returns payload.selectedLandParcel when query is absent', () => {
       mockRequest.query = {}
       mockRequest.payload = { selectedLandParcel: 'payload-parcel' }
-      const context = { state: { selectedLandParcel: 'state-parcel' } }
 
-      expect(controller.resolveParcelId(mockRequest, context)).toBe('payload-parcel')
-    })
-
-    test('returns state.selectedLandParcel when query and payload are absent', () => {
-      mockRequest.query = {}
-      mockRequest.payload = {}
-      const context = { state: { selectedLandParcel: 'state-parcel' } }
-
-      expect(controller.resolveParcelId(mockRequest, context)).toBe('state-parcel')
+      expect(controller.resolveParcelId(mockRequest)).toBe('payload-parcel')
     })
 
     test('returns null when no parcel ID found', () => {
       mockRequest.query = {}
       mockRequest.payload = {}
-      const context = { state: {} }
 
-      expect(controller.resolveParcelId(mockRequest, context)).toBeNull()
+      expect(controller.resolveParcelId(mockRequest)).toBeNull()
     })
   })
 

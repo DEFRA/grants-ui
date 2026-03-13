@@ -67,7 +67,7 @@ describe('DeclarationPageController', () => {
       def: {
         metadata: {
           submission: {
-            grantCode: 'example-grant-with-auth'
+            grantCode: 'example-grant-with-auth-v3'
           }
         }
       },
@@ -109,7 +109,10 @@ describe('DeclarationPageController', () => {
         referenceNumber: 'REF123',
         field1: 'value1'
       },
-      referenceNumber: 'REF123'
+      referenceNumber: 'REF123',
+      state: {
+        previousReferenceNumber: 'REF345'
+      }
     }
 
     mockH = {
@@ -140,10 +143,6 @@ describe('DeclarationPageController', () => {
   describe('constructor', () => {
     test('should set viewName to declaration-page.html', () => {
       expect(controller.viewName).toBe('declaration-page.html')
-    })
-
-    test('should set grantCode from model metadata', () => {
-      expect(controller.grantCode).toBe('example-grant-with-auth')
     })
 
     test('should set model property', () => {
@@ -342,6 +341,7 @@ describe('DeclarationPageController', () => {
       expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
         {
           clientRef: 'ref123',
+          previousClientRef: 'ref345',
           sbi: 'sbi123',
           frn: 'frn',
           crn: '1234567890'

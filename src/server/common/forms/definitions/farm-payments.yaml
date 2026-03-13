@@ -26,7 +26,7 @@ metadata:
 
       # Awaiting amendments
       - fromGrantsStatus: SUBMITTED
-        gasStatus: AWAITING_AMENDMENTS
+        gasStatus: APPLICATION_AMEND
         toGrantsStatus: REOPENED
         toPath: /check-selected-land-actions
 
