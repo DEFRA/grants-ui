@@ -3,8 +3,6 @@ import { fetchParcels } from '../services/land-grants.service.js'
 import LandGrantsQuestionWithAuthCheckController from '~/src/server/land-grants/controllers/auth/land-grants-question-with-auth-check.controller.js'
 import { mapParcelsToViewModel } from '~/src/server/land-grants/view-models/parcel.view-model.js'
 
-const selectActionsForParcelPath = '/select-actions-for-land-parcel'
-
 export default class SelectLandParcelPageController extends LandGrantsQuestionWithAuthCheckController {
   viewName = 'select-land-parcel'
 
@@ -47,7 +45,7 @@ export default class SelectLandParcelPageController extends LandGrantsQuestionWi
       })
     }
 
-    return this.proceed(request, h, `${selectActionsForParcelPath}?parcelId=${selectedLandParcel}`)
+    return this.proceed(request, h, `${this.getNextPath(context)}?parcelId=${selectedLandParcel}`)
   }
 
   /**
