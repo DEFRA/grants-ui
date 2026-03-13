@@ -6,121 +6,110 @@ import { mapParcelsToViewModel } from '~/src/server/land-grants/view-models/parc
 export default class SelectLandParcelPageController extends LandGrantsQuestionWithAuthCheckController {
   viewName = 'select-land-parcel'
 
-  makePostRouteHandler() {
-    /**
-     * @param {AnyFormRequest} request
-     * @param {FormContext} context
-     * @param {Pick<ResponseToolkit, 'redirect' | 'view'>} h
-     * @returns {Promise<ResponseObject>}
-     */
-    const fn = async (request, context, h) => {
-      const { state } = context
-      const payload = request.payload ?? {}
-      const { selectedLandParcel, action } = payload
-      const existingLandParcels = Object.keys(state.landParcels || {}).length > 0
+  resolveParcelId(request, _context) {
+    return request.payload?.selectedLandParcel || null
+  }
 
-      if (action === 'validate' && !selectedLandParcel) {
-        let parcels = []
-        try {
-          const fetchedParcels = await fetchParcels(request)
-          const { landParcels } = state || {}
-          parcels = mapParcelsToViewModel(fetchedParcels, landParcels)
-        } catch (error) {
-          debug(
-            { level: 'error', error, messageFunc: () => 'Error fetching parcels for validation error rendering' },
-            {},
-            request
-          )
-        }
+  /**
+   * @param {AnyFormRequest} request
+   * @param {FormContext} context
+   * @param {Pick<ResponseToolkit, 'redirect' | 'view'>} h
+   * @returns {Promise<ResponseObject>}
+   */
+  async handlePost(request, context, h) {
+    const { state } = context
+    const payload = request.payload ?? {}
+    const { selectedLandParcel, action } = payload
+    const existingLandParcels = Object.keys(state.landParcels || {}).length > 0
 
-        return h.view(this.viewName, {
-          ...super.getViewModel(request, context),
-          ...state,
-          parcels,
-          existingLandParcels,
-          errors: 'Select a land parcel'
-        })
+    if (action === 'validate' && !selectedLandParcel) {
+      let parcels = []
+      try {
+        const fetchedParcels = await fetchParcels(request)
+        const { landParcels } = state || {}
+        parcels = mapParcelsToViewModel(fetchedParcels, landParcels)
+      } catch (error) {
+        debug(
+          { level: 'error', error, messageFunc: () => 'Error fetching parcels for validation error rendering' },
+          {},
+          request
+        )
       }
 
-      const authResult = await this.performAuthCheck(request, h, selectedLandParcel)
-      if (authResult) {
-        return authResult
-      }
-
-      await this.setState(request, {
+      return h.view(this.viewName, {
+        ...super.getViewModel(request, context),
         ...state,
-        selectedLandParcel
+        parcels,
+        existingLandParcels,
+        errors: 'Select a land parcel'
       })
-      return this.proceed(request, h, this.getNextPath(context))
     }
 
-    return fn
+    await this.setState(request, {
+      ...state,
+      selectedLandParcel
+    })
+    return this.proceed(request, h, this.getNextPath(context))
   }
 
   /**
    * This method is called when there is a GET request to the select land parcel page.
    * It gets the view model for the page using the `getViewModel` method,
    * and then adds business details to the view model
+   *
+   * @param {AnyFormRequest} request
+   * @param {FormContext} context
+   * @param {Pick<ResponseToolkit, 'redirect' | 'view'>} h
    */
-  makeGetRouteHandler() {
-    /**
-     * Handle GET requests to the land parcel page.
-     * @param {AnyFormRequest} request
-     * @param {FormContext} context
-     * @param {Pick<ResponseToolkit, 'redirect' | 'view'>} h
-     */
-    const fn = async (request, context, h) => {
-      const { state } = context
-      const { landParcels } = state || {}
-      const sbi = request.auth?.credentials?.sbi
+  async handleGet(request, context, h) {
+    const { state } = context
+    const { landParcels } = state || {}
+    const sbi = request.auth?.credentials?.sbi
 
-      const { viewName } = this
-      const baseViewModel = super.getViewModel(request, context)
-      const existingLandParcels = Object.keys(landParcels || {}).length > 0
+    const { viewName } = this
+    const baseViewModel = super.getViewModel(request, context)
+    const existingLandParcels = Object.keys(landParcels || {}).length > 0
 
-      try {
-        const fetchedParcels = await fetchParcels(request)
-        const parcels = mapParcelsToViewModel(fetchedParcels, landParcels)
+    try {
+      const fetchedParcels = await fetchParcels(request)
+      const parcels = mapParcelsToViewModel(fetchedParcels, landParcels)
 
-        if (!parcels?.length) {
-          log(LogCodes.LAND_GRANTS.NO_LAND_PARCELS_FOUND, { sbi })
+      if (!parcels?.length) {
+        log(LogCodes.LAND_GRANTS.NO_LAND_PARCELS_FOUND, { sbi })
 
-          const errorMessage =
-            'Unable to find parcel information, please try again later or contact the Rural Payments Agency.'
-
-          return h.view(viewName, {
-            ...baseViewModel,
-            parcels: [],
-            existingLandParcels,
-            errors: [errorMessage]
-          })
-        }
-
-        const viewModel = {
-          ...baseViewModel,
-          parcels,
-          existingLandParcels
-        }
-
-        await this.setState(request, {
-          ...state,
-          selectedLandParcel: null
-        })
-        return h.view(viewName, viewModel)
-      } catch (error) {
-        debug({ level: 'error', error, messageFunc: () => `Unexpected error when fetching parcel data` }, {}, request)
         const errorMessage =
           'Unable to find parcel information, please try again later or contact the Rural Payments Agency.'
 
         return h.view(viewName, {
           ...baseViewModel,
+          parcels: [],
           existingLandParcels,
           errors: [errorMessage]
         })
       }
-    }
 
-    return fn
+      const viewModel = {
+        ...baseViewModel,
+        parcels,
+        existingLandParcels
+      }
+
+      await this.setState(request, {
+        ...state,
+        selectedLandParcel: null
+      })
+      return h.view(viewName, viewModel)
+    } catch (error) {
+      debug({ level: 'error', error, messageFunc: () => `Unexpected error when fetching parcel data` }, {}, request)
+      const errorMessage =
+        'Unable to find parcel information, please try again later or contact the Rural Payments Agency.'
+
+      return h.view(viewName, {
+        ...baseViewModel,
+        existingLandParcels,
+        errors: [errorMessage]
+      })
+    }
   }
 }
 

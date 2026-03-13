@@ -131,35 +131,28 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
   /**
    * Handle GET requests to the page
    */
-  makeGetRouteHandler() {
-    return async (request, context, h) => {
-      const parcel = this.resolveParcelContext(request, context.state)
-      if (!parcel.selectedLandParcel) {
-        return this.proceed(request, h, '/select-land-parcel')
-      }
-
-      const authResult = await this.performAuthCheck(request, h, parcel.selectedLandParcel)
-      if (authResult) {
-        return authResult
-      }
-
-      const { result, groupedActions, addedActions } = await this.fetchAndPrepareActions(request, context, parcel)
-
-      if (!result) {
-        return this.renderErrorView(h, request, context, {
-          errors: [
-            {
-              text: 'Unable to find actions information for parcel, please try again later or contact the Rural Payments Agency.'
-            }
-          ],
-          selectedLandParcel: parcel.selectedLandParcel,
-          actions: [],
-          addedActions: []
-        })
-      }
-
-      return this.renderSuccessView(h, request, context, groupedActions, addedActions, parcel.sheetId, parcel.parcelId)
+  async handleGet(request, context, h) {
+    const parcel = this.resolveParcelContext(request, context.state)
+    if (!parcel.selectedLandParcel) {
+      return this.proceed(request, h, '/select-land-parcel')
     }
+
+    const { result, groupedActions, addedActions } = await this.fetchAndPrepareActions(request, context, parcel)
+
+    if (!result) {
+      return this.renderErrorView(h, request, context, {
+        errors: [
+          {
+            text: 'Unable to find actions information for parcel, please try again later or contact the Rural Payments Agency.'
+          }
+        ],
+        selectedLandParcel: parcel.selectedLandParcel,
+        actions: [],
+        addedActions: []
+      })
+    }
+
+    return this.renderSuccessView(h, request, context, groupedActions, addedActions, parcel.sheetId, parcel.parcelId)
   }
 
   /**
@@ -247,56 +240,49 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
   /**
    * Handle POST requests to the select land actions page
    */
-  makePostRouteHandler() {
-    return async (request, context, h) => {
-      const { state: prevState } = context
-      const payload = request.payload ?? {}
-      const parcel = this.resolveParcelContext(request, prevState)
+  async handlePost(request, context, h) {
+    const { state: prevState } = context
+    const payload = request.payload ?? {}
+    const parcel = this.resolveParcelContext(request, prevState)
 
-      const errors = this.validateUserInput(payload)
-      if (errors.length > 0) {
-        return this.handleValidationErrors(h, request, context, { errors, parcel, prevState })
-      }
-
-      const authResult = await this.performAuthCheck(request, h, parcel.selectedLandParcel)
-      if (authResult) {
-        return authResult
-      }
-
-      const result = await this.fetchActions(request, parcel.sheetId, parcel.parcelId)
-      if (!result?.actions?.length) {
-        return this.renderErrorView(h, request, context, {
-          errors: [
-            {
-              text: 'Unable to find actions information for parcel, please try again later or contact the Rural Payments Agency.'
-            }
-          ],
-          selectedLandParcel: parcel.selectedLandParcel,
-          actions: [],
-          addedActions: [],
-          additionalState: context.state
-        })
-      }
-
-      const { actions, parcel: fetchedParcel } = result
-      const state = addActionsToExistingState(prevState, payload, this.actionFieldPrefix, actions, fetchedParcel)
-
-      if (payload.action === 'validate') {
-        const validationResult = await this.handleApplicationValidation(h, request, context, {
-          payload,
-          actions,
-          parcel,
-          state,
-          prevState
-        })
-        if (validationResult) {
-          return validationResult
-        }
-      }
-
-      await this.setState(request, state)
-      return this.proceed(request, h, this.getNextPath(context))
+    const errors = this.validateUserInput(payload)
+    if (errors.length > 0) {
+      return this.handleValidationErrors(h, request, context, { errors, parcel, prevState })
     }
+
+    const result = await this.fetchActions(request, parcel.sheetId, parcel.parcelId)
+    if (!result?.actions?.length) {
+      return this.renderErrorView(h, request, context, {
+        errors: [
+          {
+            text: 'Unable to find actions information for parcel, please try again later or contact the Rural Payments Agency.'
+          }
+        ],
+        selectedLandParcel: parcel.selectedLandParcel,
+        actions: [],
+        addedActions: [],
+        additionalState: context.state
+      })
+    }
+
+    const { actions, parcel: fetchedParcel } = result
+    const state = addActionsToExistingState(prevState, payload, this.actionFieldPrefix, actions, fetchedParcel)
+
+    if (payload.action === 'validate') {
+      const validationResult = await this.handleApplicationValidation(h, request, context, {
+        payload,
+        actions,
+        parcel,
+        state,
+        prevState
+      })
+      if (validationResult) {
+        return validationResult
+      }
+    }
+
+    await this.setState(request, state)
+    return this.proceed(request, h, this.getNextPath(context))
   }
 }
 
