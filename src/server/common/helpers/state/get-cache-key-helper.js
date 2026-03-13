@@ -1,6 +1,7 @@
 import { log } from '~/src/server/common/helpers/logging/log.js'
 import { LogCodes } from '~/src/server/common/helpers/logging/log-codes.js'
 import { getGrantCode } from '../grant-code.js'
+import { BaseError } from '../../utils/errors/BaseError.js'
 
 const outputLog = (request, message) => {
   log(LogCodes.AUTH.AUTH_DEBUG, {
@@ -27,26 +28,26 @@ export const getCacheKey = (request) => {
 
   if (!credentials) {
     outputLog(request, 'Missing auth credentials')
-    throw new Error('Missing auth credentials')
+    throw BaseError.wrap(new Error('Missing auth credentials'))
   }
   /** @type {object} */
   const { crn, organisationId: sbi } = credentials
 
   if (!crn) {
     outputLog(request, 'Missing CRN in credentials')
-    throw new Error('Missing CRN in credentials')
+    throw BaseError.wrap(new Error('Missing CRN in credentials'))
   }
 
   if (!sbi) {
     outputLog(request, 'Missing SBI (organisationId) in credentials')
-    throw new Error('Missing SBI (organisationId) in credentials')
+    throw BaseError.wrap(new Error('Missing SBI (organisationId) in credentials'))
   }
 
   const grantCode = getGrantCode(request)
 
   if (!grantCode) {
     outputLog(request, 'Missing grantCode')
-    throw new Error('Missing grantCode')
+    throw BaseError.wrap(new Error('Missing grantCode'))
   }
   return { sbi, grantCode }
 }
@@ -60,13 +61,13 @@ export const getCacheKey = (request) => {
  */
 export function parseSessionKey(sessionKey) {
   if (!sessionKey || typeof sessionKey !== 'string') {
-    throw new Error('Invalid session key: must be a non-empty string')
+    throw BaseError.wrap(new Error('Invalid session key: must be a non-empty string'))
   }
 
   const [sbi, grantCode] = sessionKey.split(':')
 
   if (!sbi || !grantCode) {
-    throw new Error(`Invalid session key format: ${sessionKey}`)
+    throw BaseError.wrap(new Error(`Invalid session key format: ${sessionKey}`))
   }
 
   return { sbi, grantCode }
