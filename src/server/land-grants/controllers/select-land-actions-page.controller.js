@@ -20,13 +20,12 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
   actionFieldPrefix = 'landAction_'
 
   /**
-   * Resolve parcel identifiers from query or state
+   * Resolve parcel identifiers from query param
    * @param {AnyFormRequest} request
-   * @param {object} state
    * @returns {{ selectedLandParcel: string, sheetId: string, parcelId: string }}
    */
-  resolveParcelContext(request, state) {
-    const selectedLandParcel = request?.query?.parcelId || (state.selectedLandParcel ?? '')
+  resolveParcelContext(request) {
+    const selectedLandParcel = request?.query?.parcelId ?? ''
     const [sheetId = '', parcelId = ''] = parseLandParcel(selectedLandParcel)
     return { selectedLandParcel, sheetId, parcelId }
   }
@@ -132,7 +131,7 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
    * Handle GET requests to the page
    */
   async handleGet(request, context, h) {
-    const parcel = this.resolveParcelContext(request, context.state)
+    const parcel = this.resolveParcelContext(request)
     if (!parcel.selectedLandParcel) {
       return this.proceed(request, h, '/select-land-parcel')
     }
@@ -243,7 +242,7 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
   async handlePost(request, context, h) {
     const { state: prevState } = context
     const payload = request.payload ?? {}
-    const parcel = this.resolveParcelContext(request, prevState)
+    const parcel = this.resolveParcelContext(request)
 
     const errors = this.validateUserInput(payload)
     if (errors.length > 0) {

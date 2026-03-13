@@ -146,18 +146,15 @@ describe('SelectLandParcelPageController', () => {
   })
 
   describe('POST route handler', () => {
-    it('saves selectedLandParcel and proceeds', async () => {
+    it('redirects to select actions page with parcelId query param', async () => {
       mockRequest.payload = state
       mockContext = setupContext({ existing: 'value' })
 
       const result = await controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
 
       expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH, state.selectedLandParcel)
-      expect(controller.setState).toHaveBeenCalledWith(mockRequest, {
-        existing: 'value',
-        selectedLandParcel: state.selectedLandParcel
-      })
-      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-page')
+      expect(controller.setState).not.toHaveBeenCalled()
+      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, `/select-actions-for-land-parcel?parcelId=${state.selectedLandParcel}`)
       expect(result).toBe('next')
     })
 
@@ -197,10 +194,8 @@ describe('SelectLandParcelPageController', () => {
 
       const result = await controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
 
-      expect(controller.setState).toHaveBeenCalledWith(mockRequest, {
-        selectedLandParcel: undefined
-      })
-      expect(controller.proceed).toHaveBeenCalled()
+      expect(controller.setState).not.toHaveBeenCalled()
+      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/select-actions-for-land-parcel?parcelId=undefined')
       expect(result).toBe('next')
     })
 
@@ -231,7 +226,7 @@ describe('SelectLandParcelPageController', () => {
           errors: 'Select a land parcel'
         })
       )
-      expect(controller.proceed).toHaveBeenCalled()
+      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/select-actions-for-land-parcel?parcelId=')
     })
 
     it('should handle payload being null', async () => {
@@ -240,8 +235,8 @@ describe('SelectLandParcelPageController', () => {
 
       const result = await controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
 
-      expect(controller.setState).toHaveBeenCalled()
-      expect(controller.proceed).toHaveBeenCalled()
+      expect(controller.setState).not.toHaveBeenCalled()
+      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/select-actions-for-land-parcel?parcelId=undefined')
       expect(result).toBe('next')
     })
 
