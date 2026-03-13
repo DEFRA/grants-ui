@@ -2,6 +2,7 @@ import nunjucks from 'nunjucks'
 
 import { ComponentsRegistry } from './components.registry.js'
 import { logger } from '~/src/server/common/helpers/logging/log.js'
+import { config } from '~/src/config/config.js'
 
 export class ConfirmationService {
   /**
@@ -41,6 +42,12 @@ export class ConfirmationService {
       }
 
       processedHtml = nunjucks.renderString(processedHtml, context)
+      if (slug === 'farm-payments' && !config.get('landGrants.enablePrintApplication')) {
+        processedHtml = processedHtml.replaceAll(
+          /<p[^>]*>[^<]*<a[^>]*print-submitted-application[^>]*>[^<]*<\/a>[^<]*<\/p>/g,
+          ''
+        )
+      }
 
       return {
         ...confirmationContent,

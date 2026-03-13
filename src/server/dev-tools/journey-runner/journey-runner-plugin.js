@@ -8,6 +8,7 @@ const journeysDir = resolve(pluginDir, './journeys')
 
 const SLUG_PATTERN = /^[a-z0-9-]+$/
 const CONTENT_TYPE_JS = 'application/javascript'
+const CACHE_CONTROL = 'Cache-Control'
 const CACHE_NO_STORE = 'no-store'
 
 /**
@@ -43,12 +44,12 @@ export const journeyRunnerPlugin = {
             return h
               .response('// journey-runner engine not found')
               .type(CONTENT_TYPE_JS)
-              .header('Cache-Control', CACHE_NO_STORE)
+              .header(CACHE_CONTROL, CACHE_NO_STORE)
           }
 
           const slug = request.params.journey
           if (!SLUG_PATTERN.test(slug)) {
-            return h.response('// invalid journey slug').type(CONTENT_TYPE_JS).header('Cache-Control', CACHE_NO_STORE)
+            return h.response('// invalid journey slug').type(CONTENT_TYPE_JS).header(CACHE_CONTROL, CACHE_NO_STORE)
           }
 
           const journeyPath = resolve(journeysDir, `${slug}.json`)
@@ -56,7 +57,7 @@ export const journeyRunnerPlugin = {
             return h
               .response(`// no journey config for "${slug}"`)
               .type(CONTENT_TYPE_JS)
-              .header('Cache-Control', CACHE_NO_STORE)
+              .header(CACHE_CONTROL, CACHE_NO_STORE)
           }
 
           const json = readFileSync(journeyPath, 'utf-8')
@@ -65,7 +66,7 @@ export const journeyRunnerPlugin = {
           return h
             .response(`globalThis.__journeySteps = ${json};\n${engine}`)
             .type(CONTENT_TYPE_JS)
-            .header('Cache-Control', CACHE_NO_STORE)
+            .header(CACHE_CONTROL, CACHE_NO_STORE)
         }
       })
     }
