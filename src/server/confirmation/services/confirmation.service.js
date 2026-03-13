@@ -1,20 +1,10 @@
 import nunjucks from 'nunjucks'
 
-import { getFormsCache } from '~/src/server/common/forms/services/form.js'
 import { ComponentsRegistry } from './components.registry.js'
 import { logger } from '~/src/server/common/helpers/logging/log.js'
+import { config } from '~/src/config/config.js'
 
 export class ConfirmationService {
-  /**
-   * Find form by slug from cache
-   * @param {string} slug - Form slug to find
-   * @returns {object|null} Form object or null if not found
-   */
-  static findFormBySlug(slug) {
-    const allForms = getFormsCache()
-    return allForms.find((f) => f.slug === slug) || null
-  }
-
   /**
    * Load confirmation content
    * @param {object} form - Form object
@@ -52,6 +42,12 @@ export class ConfirmationService {
       }
 
       processedHtml = nunjucks.renderString(processedHtml, context)
+      if (slug === 'farm-payments' && !config.get('landGrants.enablePrintApplication')) {
+        processedHtml = processedHtml.replaceAll(
+          /<p[^>]*>[^<]*<a[^>]*print-submitted-application[^>]*>[^<]*<\/a>[^<]*<\/p>/g,
+          ''
+        )
+      }
 
       return {
         ...confirmationContent,

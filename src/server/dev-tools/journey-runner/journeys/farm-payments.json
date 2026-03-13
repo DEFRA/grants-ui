@@ -1,0 +1,22 @@
+[
+  { "slug": "confirm-farm-details", "name": "Confirm your details", "type": "submitOnly" },
+  { "slug": "confirm-you-will-be-eligible", "name": "Confirm eligibility", "type": "submitOnly" },
+  { "slug": "confirm-your-land-details-are-up-to-date", "name": "Confirm land details", "type": "submitOnly" },
+  { "slug": "select-land-parcel", "name": "Select land parcel", "type": "radios", "fieldName": "selectedLandParcel" },
+  {
+    "slug": "select-actions-for-land-parcel",
+    "name": "Select actions",
+    "type": "checkboxes",
+    "fieldName": "landAction_1"
+  },
+  {
+    "slug": "check-selected-land-actions",
+    "name": "Check actions",
+    "type": "yesNo",
+    "fieldName": "addMoreActions",
+    "value": "false"
+  },
+  { "slug": "you-must-have-consent", "name": "Consent", "type": "submitOnly" },
+  { "slug": "submit-your-application", "name": "Submit application", "type": "submitOnly" },
+  { "slug": "confirmation", "name": "Confirmation", "type": "submitOnly" }
+]

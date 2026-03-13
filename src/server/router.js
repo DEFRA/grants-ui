@@ -6,6 +6,7 @@ import { health } from '~/src/server/health/index.js'
 import { home } from '~/src/server/home/index.js'
 import { agreements } from '~/src/server/agreements/index.js'
 import { devTools } from '~/src/server/dev-tools/index.js'
+import { journeyRunnerPlugin } from '~/src/server/dev-tools/journey-runner/journey-runner-plugin.js'
 import { configConfirmation } from '~/src/server/confirmation/config-confirmation.js'
 import { clearApplicationState } from './dev-tools/clear-application-state.js'
 import { cookies } from '~/src/server/cookies/index.js'
@@ -37,7 +38,7 @@ export const router = {
         process.env.NODE_ENV !== 'production' &&
         process.env.ENVIRONMENT === 'local'
       ) {
-        await server.register([devTools])
+        await server.register([devTools, journeyRunnerPlugin])
       }
 
       if (cdpEnvironment !== 'prod') {

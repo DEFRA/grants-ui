@@ -11,6 +11,7 @@ import 'dotenv/config'
  * @property {string} encryptionKey
  * @property {boolean} enableSSSIFeature
  * @property {boolean} enableHeferFeature
+ * @property {boolean} enablePrintApplication
  */
 
 const landGrants = convict({
@@ -56,6 +57,12 @@ const landGrants = convict({
     format: Boolean,
     default: false,
     env: 'ENABLE_UPL_8_AND_10_20260303'
+  },
+  enablePrintApplication: {
+    doc: 'Enable print submitted application feature from 11/03/2026',
+    format: Boolean,
+    default: false,
+    env: 'ENABLE_FARM_PAYMENTS_PRINT_APPLICATION_20260311'
   }
 })
 

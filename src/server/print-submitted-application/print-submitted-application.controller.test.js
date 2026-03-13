@@ -1,16 +1,15 @@
 import { vi } from 'vitest'
 import { mockReadFile } from '~/src/__mocks__/fs-yaml-mocks.js'
 import { printSubmittedApplication } from './print-submitted-application.controller.js'
-import {
-  findFormBySlug,
-  buildPrintViewModel
-} from '../common/helpers/print-application-service/print-application-service.js'
+import { findFormBySlug } from '../common/forms/services/find-form-by-slug.js'
+import { buildPrintViewModel } from '../common/helpers/print-application-service/print-application-service.js'
 import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/forms-cache.js'
 import { ApplicationStatus } from '~/src/server/common/constants/application-status.js'
 import { log, LogCodes } from '../common/helpers/logging/log.js'
 import { mockHapiRequest, mockHapiResponseToolkit, mockHapiServer } from '~/src/__mocks__/hapi-mocks.js'
 import { MOCK_FORM_WITH_PATH, MOCK_SINGLE_PAGE_DEFINITION } from '~/src/__test-fixtures__/mock-forms-cache.js'
 
+vi.mock('../common/forms/services/find-form-by-slug.js')
 vi.mock('../common/helpers/print-application-service/print-application-service.js')
 vi.mock('~/src/server/common/helpers/forms-cache/forms-cache.js')
 vi.mock('../common/helpers/logging/log.js', async () => {
@@ -168,6 +167,34 @@ describe('print-submitted-application.controller', () => {
       LogCodes.PRINT_APPLICATION.ERROR,
       expect.objectContaining({ userId: 'unknown' }),
       mockRequest
+    )
+  })
+
+  test('should pass payment data through to buildPrintViewModel via answers', async () => {
+    const stateWithPayment = {
+      ...mockState,
+      payment: {
+        annualTotalPence: 100000,
+        parcelItems: {
+          item1: {
+            sheetId: 'AB',
+            parcelId: '001',
+            code: 'X1',
+            description: 'Test',
+            quantity: '5',
+            annualPaymentPence: 100000
+          }
+        }
+      }
+    }
+    mockGetState.mockResolvedValue(stateWithPayment)
+
+    await handler(mockRequest, mockH)
+
+    expect(buildPrintViewModel).toHaveBeenCalledWith(
+      expect.objectContaining({
+        answers: stateWithPayment
+      })
     )
   })
 

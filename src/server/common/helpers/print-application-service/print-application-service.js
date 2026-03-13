@@ -1,6 +1,6 @@
-import { getFormsCache } from '../../forms/services/form.js'
 import { formatAnswer } from './utils/format-answer.js'
 import { DISPLAY_ONLY_TYPES, COMPONENT_TYPES } from './constants.js'
+import { buildPrintPaymentViewModel } from './utils/build-print-payment-view-model.js'
 
 const COMPOSITE_FIELD_PARTS = {
   [COMPONENT_TYPES.DatePartsField]: ['day', 'month', 'year'],
@@ -15,16 +15,6 @@ const COMPOSITE_FIELD_PARTS = {
  * @typedef {{ title: string, path: string, slug: string, id: string }} FormMeta
  * @typedef {Record<string, unknown>} Answers
  */
-
-/**
- * Finds a cached form entry by its slug.
- * @param {string} slug
- * @returns {FormMeta | null}
- */
-export function findFormBySlug(slug) {
-  const allForms = getFormsCache()
-  return allForms.find((f) => f.slug === slug) || null
-}
 
 /**
  * Checks whether a component should produce a question row.
@@ -173,6 +163,7 @@ export function buildPrintViewModel({ definition, answers, referenceNumber, subm
       sbi: sessionData.sbi
     },
     sections: buildSections(definition.pages, answers),
+    paymentInfo: buildPrintPaymentViewModel(answers.payment),
     breadcrumbs: []
   }
 }

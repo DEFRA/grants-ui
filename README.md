@@ -2004,74 +2004,7 @@ The feature is implemented across:
 
 ## Development Tools
 
-The application includes development tools and routes for testing and debugging. These are automatically enabled in development mode and disabled in production.
-
-### Configuration
-
-Development tools are controlled by the `DEV_TOOLS_ENABLED` environment variable (default: `true` in development, `false` in production).
-
-### Available Dev Routes
-
-All development routes are prefixed with `/dev/`:
-
-#### Demo Confirmation Pages
-
-**Route:** `/dev/demo-confirmation/{form-slug}`
-
-Preview confirmation pages with mock data for any form in the system. Useful for:
-
-- Testing confirmation page templates
-- Validating dynamic content insertion
-- Previewing new grant confirmation pages
-
-**Example:** `http://localhost:3000/dev/demo-confirmation/example-grant-with-auth`
-
-When running in development mode, the demo confirmation handler:
-
-- Shows warning messages when no confirmation config is found
-- Provides fallback demonstration content
-- Displays form metadata (title, slug, ID) for debugging
-- Includes error details when configuration issues occur
-- Uses mock data for testing dynamic content insertion
-
-#### Demo Print Application Pages
-
-**Route:** `/dev/demo-print-application/{form-slug}`
-
-Preview the print submitted application page with auto-generated mock answers for any form in the system.
-
-**Example:** `http://localhost:3000/dev/demo-print-application/example-grant-with-auth`
-
-#### Error Page Testing
-
-Test error page rendering at the following routes:
-
-| Route           | Error Code | Description           |
-| --------------- | ---------- | --------------------- |
-| `/dev/test-400` | 400        | Bad Request           |
-| `/dev/test-401` | 401        | Unauthorized          |
-| `/dev/test-403` | 403        | Forbidden             |
-| `/dev/test-404` | 404        | Not Found             |
-| `/dev/test-429` | 429        | Too Many Requests     |
-| `/dev/test-500` | 500        | Internal Server Error |
-| `/dev/test-503` | 503        | Service Unavailable   |
-
-These routes trigger the corresponding HTTP errors to verify error page templates render correctly.
-
-### Demo Data Configuration
-
-Configure demo data for development tools:
-
-```bash
-DEV_DEMO_REF_NUMBER=DEV2024001
-DEV_DEMO_BUSINESS_NAME=Demo Test Farm Ltd
-DEV_DEMO_SBI=999888777
-DEV_DEMO_CONTACT_NAME=Demo Test User
-```
-
-### Implementation
-
-Development tools are implemented in `src/server/dev-tools/` and are only registered when `DEV_TOOLS_ENABLED=true`.
+For documentation on dev tools (demo pages, error page testing, journey runner, etc.), see [src/server/dev-tools/README.md](./src/server/dev-tools/README.md).
 
 ## Analytics
 

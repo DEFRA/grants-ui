@@ -1,4 +1,4 @@
-import { buildDemoPrintAnswers } from './build-demo-print-answers.js'
+import { buildDemoPrintAnswers, buildDemoPayment } from './build-demo-print-answers.js'
 import { MOCK_DISPLAY_ONLY_COMPONENTS } from '~/src/__test-fixtures__/mock-forms-cache.js'
 
 describe('build-demo-print-answers', () => {
@@ -36,54 +36,20 @@ describe('build-demo-print-answers', () => {
       expect(answers.address).toEqual({ addressLine1: '10 Downing Street', town: 'London', postcode: 'SW1A 2AA' })
     })
 
-    test('should use first item value for list-based components', () => {
+    test.each([
+      ['RadiosField', [{ text: 'Option A', value: 'opt-a' }], 'opt-a'],
+      ['SelectField', [{ text: 'Option B', value: 'opt-b' }], 'opt-b'],
+      ['AutocompleteField', [{ text: 'Option C', value: 'opt-c' }], 'opt-c'],
+      ['CheckboxesField', [{ text: 'Check A', value: 'chk-a' }], ['chk-a']],
+      ['RadiosField', undefined, 'Demo value'],
+      ['SelectField', undefined, 'Demo value'],
+      ['AutocompleteField', undefined, 'Demo value'],
+      ['CheckboxesField', undefined, ['Demo value']]
+    ])('%s with items=%j should produce %j', (type, items, expected) => {
       const definition = {
-        pages: [
-          {
-            title: 'Page 1',
-            components: [
-              { name: 'radios', type: 'RadiosField', items: [{ text: 'Option A', value: 'opt-a' }] },
-              { name: 'select', type: 'SelectField', items: [{ text: 'Option B', value: 'opt-b' }] },
-              { name: 'autocomplete', type: 'AutocompleteField', items: [{ text: 'Option C', value: 'opt-c' }] },
-              {
-                name: 'checkboxes',
-                type: 'CheckboxesField',
-                items: [{ text: 'Check A', value: 'chk-a' }]
-              }
-            ]
-          }
-        ]
+        pages: [{ title: 'Page 1', components: [{ name: 'field', type, ...(items && { items }) }] }]
       }
-
-      const answers = buildDemoPrintAnswers(definition)
-
-      expect(answers.radios).toBe('opt-a')
-      expect(answers.select).toBe('opt-b')
-      expect(answers.autocomplete).toBe('opt-c')
-      expect(answers.checkboxes).toEqual(['chk-a'])
-    })
-
-    test('should fall back to Demo value for list components with no items', () => {
-      const definition = {
-        pages: [
-          {
-            title: 'Page 1',
-            components: [
-              { name: 'radios', type: 'RadiosField' },
-              { name: 'select', type: 'SelectField' },
-              { name: 'autocomplete', type: 'AutocompleteField' },
-              { name: 'checkboxes', type: 'CheckboxesField' }
-            ]
-          }
-        ]
-      }
-
-      const answers = buildDemoPrintAnswers(definition)
-
-      expect(answers.radios).toBe('Demo value')
-      expect(answers.select).toBe('Demo value')
-      expect(answers.autocomplete).toBe('Demo value')
-      expect(answers.checkboxes).toEqual(['Demo value'])
+      expect(buildDemoPrintAnswers(definition).field).toEqual(expected)
     })
 
     test('should skip display-only component types', () => {
@@ -133,15 +99,32 @@ describe('build-demo-print-answers', () => {
       expect(answers.unknown).toBe('Demo value')
     })
 
-    test('should handle empty definition gracefully', () => {
-      expect(buildDemoPrintAnswers({})).toEqual({})
-      expect(buildDemoPrintAnswers({ pages: [] })).toEqual({})
-    })
-
-    test('should handle pages with no components', () => {
-      const definition = { pages: [{ title: 'Empty page' }] }
-
+    test.each([
+      ['empty object', {}],
+      ['empty pages', { pages: [] }],
+      ['page with no components', { pages: [{ title: 'Empty page' }] }]
+    ])('should return {} for %s', (_desc, definition) => {
       expect(buildDemoPrintAnswers(definition)).toEqual({})
+    })
+  })
+
+  describe('buildDemoPayment', () => {
+    test('should return payment object with correct structure and values', () => {
+      const payment = buildDemoPayment()
+
+      expect(payment.annualTotalPence).toBe(822438)
+      expect(Object.keys(payment.parcelItems)).toHaveLength(3)
+      expect(Object.keys(payment.agreementLevelItems)).toHaveLength(1)
+
+      const firstItem = Object.values(payment.parcelItems)[0]
+      expect(firstItem).toEqual({
+        sheetId: 'SD5949',
+        parcelId: '6060',
+        code: 'CMOR1',
+        description: 'Assess moorland and produce a written record',
+        quantity: '681.6133',
+        annualPaymentPence: 722510
+      })
     })
   })
 })

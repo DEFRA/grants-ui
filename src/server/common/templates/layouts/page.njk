@@ -103,4 +103,7 @@
 
 {% block bodyEnd %}
   <script type="module" nonce="{{ cspNonce }}" src="{{ getAssetPath('application.js') }}"></script>
+  {% if cdpEnvironment == 'local' and journeySlug %}
+    <script nonce="{{ cspNonce }}" src="/dev/journey-runner/{{ journeySlug }}.js"></script>
+  {% endif %}
 {% endblock %}

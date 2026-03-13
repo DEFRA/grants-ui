@@ -1,6 +1,8 @@
 {% extends "layouts/page.njk" %}
 {% set backLink = false %}
 {% from "govuk/components/summary-list/macro.njk" import govukSummaryList %}
+{% from "govuk/components/table/macro.njk" import govukTable %}
+{% from "summaryCard/macro.njk" import summaryCard %}
 {% from "two-thirds-column/macro.njk" import appTwoThirdsColumn %}
 
 {% set mainClasses = "govuk-main-wrapper--l" %}
@@ -46,6 +48,42 @@
       {% endfor %}
     {% endfor %}
     {{ govukSummaryList({ rows: sectionRows }) }}
+
+    {% if paymentInfo %}
+      <h2 class="govuk-heading-m">Parcel based actions</h2>
+      <p class="govuk-body-l">The annual payment is <strong>{{ paymentInfo.totalAnnualPayment }}</strong>.</p>
+
+      {% for item in paymentInfo.parcelItems %}
+        {% call summaryCard({ title: { text: item.cardTitle } }) %}
+          {{ govukTable({
+            caption: "List of parcel actions selected for this application",
+            captionClasses: "govuk-visually-hidden",
+            head: [
+              { text: "Action", classes: "govuk-!-width-one-half" },
+              { text: "Quantity (ha)", format: "numeric" },
+              { text: "Annual payment", format: "numeric" }
+            ],
+            rows: item.items,
+            classes: "govuk-table--no-bottom-border govuk-!-margin-bottom-0"
+          }) }}
+        {% endcall %}
+      {% endfor %}
+
+      {% if paymentInfo.additionalPayments | length %}
+        {% call summaryCard({ title: { text: "Additional annual payments" } }) %}
+          {{ govukTable({
+            caption: "List of additional annual payments",
+            captionClasses: "govuk-visually-hidden",
+            head: [
+              { text: "Action", classes: "govuk-!-width-two-thirds" },
+              { text: "Annual payment", format: "numeric" }
+            ],
+            rows: paymentInfo.additionalPayments,
+            classes: "govuk-table--no-bottom-border govuk-!-margin-bottom-0"
+          }) }}
+        {% endcall %}
+      {% endif %}
+    {% endif %}
 
     <button type="button" class="govuk-button govuk-button--secondary app-print-button" id="print-button">
       Print this page

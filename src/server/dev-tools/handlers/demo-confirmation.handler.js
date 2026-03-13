@@ -1,5 +1,6 @@
 import { buildDemoData } from '../helpers/index.js'
 import { generateFormNotFoundResponse } from '../utils/index.js'
+import { findFormBySlug } from '../../common/forms/services/find-form-by-slug.js'
 import { ConfirmationService } from '../../confirmation/services/confirmation.service.js'
 import { debug, LogCodes } from '../../common/helpers/logging/log.js'
 
@@ -75,7 +76,7 @@ export async function demoConfirmationHandler(request, h) {
   try {
     const { slug } = request.params
 
-    const form = ConfirmationService.findFormBySlug(slug)
+    const form = findFormBySlug(slug)
 
     if (!form) {
       return generateFormNotFoundResponse(slug, h)
