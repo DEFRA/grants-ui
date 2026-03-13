@@ -1,20 +1,5 @@
-import { log } from '~/src/server/common/helpers/logging/log.js'
-import { LogCodes } from '~/src/server/common/helpers/logging/log-codes.js'
 import { getGrantCode } from '../grant-code.js'
 import { BaseError } from '../../utils/errors/BaseError.js'
-
-const outputLog = (request, message) => {
-  log(LogCodes.AUTH.AUTH_DEBUG, {
-    path: 'getCacheKey',
-    isAuthenticated: request.auth?.isAuthenticated,
-    strategy: request.auth?.strategy,
-    mode: request.auth?.mode,
-    hasCredentials: false,
-    queryParams: {},
-    authError: `${message} ${JSON.stringify(request.auth?.credentials) || 'none'}`,
-    errorDetails: {}
-  })
-}
 
 /**
  * Generates a cache key from a Hapi request by extracting user, business, and grant identifiers.
@@ -27,26 +12,22 @@ export const getCacheKey = (request) => {
   const credentials = request.auth?.credentials
 
   if (!credentials) {
-    outputLog(request, 'Missing auth credentials')
     throw BaseError.wrap(new Error('Missing auth credentials'))
   }
   /** @type {object} */
   const { crn, organisationId: sbi } = credentials
 
   if (!crn) {
-    outputLog(request, 'Missing CRN in credentials')
     throw BaseError.wrap(new Error('Missing CRN in credentials'))
   }
 
   if (!sbi) {
-    outputLog(request, 'Missing SBI (organisationId) in credentials')
     throw BaseError.wrap(new Error('Missing SBI (organisationId) in credentials'))
   }
 
   const grantCode = getGrantCode(request)
 
   if (!grantCode) {
-    outputLog(request, 'Missing grantCode')
     throw BaseError.wrap(new Error('Missing grantCode'))
   }
   return { sbi, grantCode }
