@@ -157,7 +157,7 @@ describe('SelectLandParcelPageController', () => {
       expect(controller.proceed).toHaveBeenCalledWith(
         mockRequest,
         mockH,
-        `/select-actions-for-land-parcel?parcelId=${state.selectedLandParcel}`
+        `/next-page?parcelId=${state.selectedLandParcel}`
       )
       expect(result).toBe('next')
     })
@@ -202,7 +202,7 @@ describe('SelectLandParcelPageController', () => {
       expect(controller.proceed).toHaveBeenCalledWith(
         mockRequest,
         mockH,
-        '/select-actions-for-land-parcel?parcelId=undefined'
+        '/next-page?parcelId=undefined'
       )
       expect(result).toBe('next')
     })
@@ -234,7 +234,7 @@ describe('SelectLandParcelPageController', () => {
           errors: 'Select a land parcel'
         })
       )
-      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/select-actions-for-land-parcel?parcelId=')
+      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-page?parcelId=')
     })
 
     it('should handle payload being null', async () => {
@@ -247,7 +247,7 @@ describe('SelectLandParcelPageController', () => {
       expect(controller.proceed).toHaveBeenCalledWith(
         mockRequest,
         mockH,
-        '/select-actions-for-land-parcel?parcelId=undefined'
+        '/next-page?parcelId=undefined'
       )
       expect(result).toBe('next')
     })
