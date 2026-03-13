@@ -199,11 +199,7 @@ describe('SelectLandParcelPageController', () => {
       const result = await controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
 
       expect(controller.setState).not.toHaveBeenCalled()
-      expect(controller.proceed).toHaveBeenCalledWith(
-        mockRequest,
-        mockH,
-        '/next-page?parcelId=undefined'
-      )
+      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-page?parcelId=undefined')
       expect(result).toBe('next')
     })
 
@@ -244,11 +240,7 @@ describe('SelectLandParcelPageController', () => {
       const result = await controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
 
       expect(controller.setState).not.toHaveBeenCalled()
-      expect(controller.proceed).toHaveBeenCalledWith(
-        mockRequest,
-        mockH,
-        '/next-page?parcelId=undefined'
-      )
+      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-page?parcelId=undefined')
       expect(result).toBe('next')
     })
 
