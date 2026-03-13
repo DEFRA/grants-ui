@@ -3,6 +3,7 @@ import { config } from '~/src/config/config.js'
 import { createApiHeadersForGrantsUiBackend } from '../auth/backend-auth-helper.js'
 import { log, debug, LogCodes } from '../logging/log.js'
 import { mintLockToken } from '../lock/lock-token.js'
+import { getGrantCode } from '../grant-code.js'
 
 const GRANTS_UI_BACKEND_ENDPOINT = config.get('session.cache.apiEndpoint')
 
@@ -26,10 +27,11 @@ export async function persistSubmissionToApi(submission, request) {
     request
   )
 
+  const grantCode = getGrantCode(request)
   const lockToken = mintLockToken({
     userId: request.auth?.credentials?.contactId,
     sbi: request.auth?.credentials?.sbi,
-    grantCode: request.params?.slug,
+    grantCode,
     grantVersion: 1
   })
 

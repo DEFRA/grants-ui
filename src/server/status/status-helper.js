@@ -7,6 +7,7 @@ import { log, LogCodes } from '../common/helpers/logging/log.js'
 import { mintLockToken } from '../common/helpers/lock/lock-token.js'
 import { getCacheKey } from '../common/helpers/state/get-cache-key-helper.js'
 import agreements from '~/src/config/agreements.js'
+import { getGrantCode } from '../common/helpers/grant-code.js'
 
 /**
  * @typedef {Object} RedirectRule
@@ -29,7 +30,7 @@ import agreements from '~/src/config/agreements.js'
  * @throws {Error} If no matching rule is found
  *
  * @example
- * const rule = mapStatusToUrl('SUBMITTED', 'AWAITING_AMENDMENTS', redirectRules);
+ * const rule = mapStatusToUrl('SUBMITTED', 'APPLICATION_AMEND', redirectRules);
  * console.log(rule.toPath); // e.g., '/summary'
  */
 function mapStatusToUrl(fromGrantsStatus, gasStatus, redirectRules = []) {
@@ -67,11 +68,22 @@ async function persistStatus(request, newStatus, previousStatus, grantId, existi
 
   const organisationId = request.auth.credentials?.sbi
 
-  if (newStatus === ApplicationStatus.CLEARED || newStatus === ApplicationStatus.REOPENED) {
-    const cacheService = getFormsCacheService(request.server)
-    const stateToPreserve = newStatus === ApplicationStatus.REOPENED ? existingState : {}
+  const cacheService = getFormsCacheService(request.server)
+
+  if (newStatus === ApplicationStatus.CLEARED) {
     await cacheService.setState(request, {
-      ...stateToPreserve,
+      applicationStatus: newStatus
+    })
+  }
+
+  if (newStatus === ApplicationStatus.REOPENED) {
+    // eslint-disable-next-line camelcase
+    const { $$__referenceNumber, applicationStatus, ...rest } = existingState
+
+    await cacheService.setState(request, {
+      ...rest,
+      // eslint-disable-next-line camelcase
+      previousReferenceNumber: $$__referenceNumber,
       applicationStatus: newStatus
     })
   }
@@ -211,7 +223,7 @@ async function handlePostSubmission(request, h, context, previousStatus, grantCo
   const redirectUrl = rule.toPath === agreements.get('baseUrl') ? rule.toPath : buildRedirectUrl(grantId, rule.toPath)
 
   const isAlreadyReopened = previousStatus === ApplicationStatus.REOPENED
-  const isStillAwaitingAmendments = gasStatus === 'AWAITING_AMENDMENTS'
+  const isStillAwaitingAmendments = gasStatus === 'APPLICATION_AMEND'
   const isWithinGrantPages = request.headers['sec-fetch-site'] === 'same-origin' // request initiated from within grant pages
 
   if (isAlreadyReopened && isStillAwaitingAmendments && isWithinGrantPages) {
@@ -263,21 +275,6 @@ function handlePostSubmissionError(err, request, h, context, grantId, grantCode,
 /**
  * @typedef {import('@hapi/hapi').Request & { app: { model?: { def?: GrantModel } } }} ExtendedRequest
  */
-
-/**
- * Retrieves the grantCode from the request metadata.
- * Throws an error if not found.
- * @param {ExtendedRequest} request - Hapi request object
- * @returns {string} - The grantCode
- */
-function getGrantCode(request) {
-  // grantCode should always be available in the configured metadata
-  const grantCode = request.app.model?.def?.metadata?.submission?.grantCode
-  if (!grantCode) {
-    throw new Error('grantCode missing from request.app.model.def.metadata.submission')
-  }
-  return grantCode
-}
 
 /**
  * Main callback for handling form status transitions.

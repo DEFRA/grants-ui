@@ -1,5 +1,4 @@
 import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
-import { config } from '~/src/config/config.js'
 import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/forms-cache.js'
 import { transformStateObjectToGasApplication } from '~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
 import { submitGrantApplication } from '~/src/server/common/services/grant-application/grant-application.service.js'
@@ -11,10 +10,18 @@ import { persistSubmissionToApi } from '~/src/server/common/helpers/state/persis
 import { getConfirmationPath } from '~/src/server/common/helpers/form-slug-helper.js'
 import { log, debug } from '~/src/server/common/helpers/logging/log.js'
 import { LogCodes } from '~/src/server/common/helpers/logging/log-codes.js'
+import { getGrantCode } from '../../common/helpers/grant-code.js'
 
 export default class SubmissionPageController extends SummaryPageController {
-  viewName = 'submit-your-application'
-  grantCode = config.get('landGrants.grantCode')
+  /**
+   * @param {FormModel} model
+   * @param {PageSummary} pageDef
+   */
+  constructor(model, pageDef) {
+    super(model, pageDef)
+    this.model = model
+    this.viewName = 'submit-your-application'
+  }
 
   /**
    * Submits the land grant application
@@ -27,6 +34,7 @@ export default class SubmissionPageController extends SummaryPageController {
    */
   async submitGasApplication(request, data) {
     const { identifiers, state, validationResult } = data
+    const grantCode = getGrantCode(request)
     const applicationData = transformStateObjectToGasApplication(
       identifiers,
       {
@@ -35,8 +43,7 @@ export default class SubmissionPageController extends SummaryPageController {
       },
       stateToLandGrantsGasAnswers
     )
-
-    return submitGrantApplication(this.grantCode, applicationData, request)
+    return submitGrantApplication(grantCode, applicationData, request)
   }
 
   /**
@@ -60,10 +67,11 @@ export default class SubmissionPageController extends SummaryPageController {
    * @returns {object} - Error view response
    */
   renderSubmissionError(h, request, context, validationId) {
+    const grantCode = getGrantCode(request)
     log(
       LogCodes.SUBMISSION.SUBMISSION_VALIDATION_ERROR,
       {
-        grantType: this.grantCode,
+        grantType: grantCode,
         referenceNumber: context.referenceNumber,
         validationId: validationId || context.referenceNumber || 'N/A'
       },
@@ -94,10 +102,11 @@ export default class SubmissionPageController extends SummaryPageController {
 
     // Log submission details if available
     if (submissionStatus === statusCodes.noContent) {
+      const grantCode = getGrantCode(request)
       log(
         LogCodes.SUBMISSION.SUBMISSION_COMPLETED,
         {
-          grantType: this.grantCode,
+          grantType: grantCode,
           referenceNumber: context.referenceNumber,
           numberOfFields: context.relevantState ? Object.keys(context.relevantState).length : 0,
           status: submissionStatus
@@ -120,8 +129,9 @@ export default class SubmissionPageController extends SummaryPageController {
         {
           crn,
           sbi,
-          grantCode: this.grantCode,
+          grantCode: grantCode,
           grantVersion: context.grantVersion,
+          previousReferenceNumber: context.state.previousReferenceNumber,
           referenceNumber: context.referenceNumber,
           submittedAt
         },
@@ -146,8 +156,13 @@ export default class SubmissionPageController extends SummaryPageController {
      */
     const fn = async (request, context, h) => {
       const { credentials: { sbi, crn } = {} } = request.auth ?? {}
+      const grantCode = getGrantCode(request)
       const { state, referenceNumber } = context
       const frn = state.applicant ? state.applicant['business']?.reference : undefined
+
+      const previousReferenceNumber = state.previousReferenceNumber
+        ? String(context.state.previousReferenceNumber).toLowerCase()
+        : null
 
       try {
         const validationResult = await validateApplication({ applicationId: referenceNumber, crn, sbi, state })
@@ -157,7 +172,13 @@ export default class SubmissionPageController extends SummaryPageController {
         }
 
         const result = await this.submitGasApplication(request, {
-          identifiers: { sbi, crn, frn, clientRef: referenceNumber?.toLowerCase() },
+          identifiers: {
+            sbi,
+            crn,
+            frn,
+            clientRef: referenceNumber?.toLowerCase(),
+            previousClientRef: previousReferenceNumber ? previousReferenceNumber?.toLowerCase() : null
+          },
           state,
           validationResult
         })
@@ -165,7 +186,7 @@ export default class SubmissionPageController extends SummaryPageController {
         log(
           LogCodes.SUBMISSION.SUBMISSION_SUCCESS,
           {
-            grantType: this.grantCode,
+            grantType: grantCode,
             referenceNumber: context.referenceNumber
           },
           request
@@ -176,7 +197,7 @@ export default class SubmissionPageController extends SummaryPageController {
         debug(
           LogCodes.SUBMISSION.SUBMISSION_FAILURE,
           {
-            grantType: this.grantCode,
+            grantType: grantCode,
             referenceNumber: context.referenceNumber,
             sbi,
             crn,
@@ -196,4 +217,6 @@ export default class SubmissionPageController extends SummaryPageController {
  * @import { FormContext, AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
  * @import { ResponseObject, type ResponseToolkit } from '@hapi/hapi'
  * @import { ValidateApplicationResponse } from '../types/land-grants.client.d.js'
+ * @import { FormModel } from '@defra/forms-engine-plugin/engine/models/index.js'
+ * @import { PageSummary } from '@defra/forms-model'
  */

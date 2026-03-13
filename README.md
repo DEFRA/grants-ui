@@ -304,7 +304,7 @@ metadata:
       - toPath: '/tasks' # Redirect to task list before submission
     postSubmission:
       - fromGrantsStatus: SUBMITTED
-        gasStatus: AWAITING_AMENDMENTS
+        gasStatus: APPLICATION_AMEND
         toGrantsStatus: REOPENED
         toPath: /tasks # Return to task list when amendments needed
 ```
@@ -1277,7 +1277,7 @@ npm run
 - **`start`** - Start the production server (requires `npm run build` first)
 - **`snyk-test`** / **`snyk-monitor`** - Run security vulnerability scans
 - **`unseal:cookie`** - Utility to decrypt and inspect session cookies
-- **`gas-status:set`** - Update MockServer to return a specific GAS application status (e.g., `npm run gas-status -- AWAITING_AMENDMENTS`)
+- **`gas-status:set`** - Update MockServer to return a specific GAS application status (e.g., `npm run gas-status -- APPLICATION_AMEND`)
 - **`gas-status:get`** - Retrieve the current GAS application status configured in MockServer
 
 ### Update dependencies

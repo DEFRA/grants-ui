@@ -20,15 +20,14 @@ describe('FlyingPigsSubmissionPageController', () => {
   let mockRequest
 
   beforeEach(() => {
-    mockModel = {
-      def: { metadata: { submission: { grantCode: 'pigs-might-fly' } } }
-    }
+    mockModel = {}
 
     mockPageDef = { title: 'Test Page', path: '/test-path' }
     controller = new FlyingPigsSubmissionPageController(mockModel, mockPageDef)
 
     mockContext = {
       referenceNumber: '123456',
+      previousReferenceNumber: '654321',
       state: {
         sbi: 'test-sbi',
         crn: 'test-crn',
@@ -41,11 +40,10 @@ describe('FlyingPigsSubmissionPageController', () => {
       }
     }
 
-    mockRequest = mockSimpleRequest()
+    mockRequest = mockSimpleRequest({ params: { slug: 'pigs-might-fly' } })
   })
 
   it('should initialize with the correct grant code and view name', () => {
-    expect(controller.grantCode).toBe('pigs-might-fly')
     expect(controller.viewName).toBe('submission')
   })
 
@@ -61,7 +59,8 @@ describe('FlyingPigsSubmissionPageController', () => {
         sbi: 'test-sbi',
         frn: 'test-frn',
         crn: 'test-crn',
-        clientRef: '123456'
+        clientRef: '123456',
+        previousClientRef: '654321'
       },
       mockContext.state,
       stateToPigsMightFlyGasAnswers
@@ -72,7 +71,8 @@ describe('FlyingPigsSubmissionPageController', () => {
   it('should handle POST route and redirect to /confirmation', async () => {
     const mockRequest = {
       logger: mockRequestLogger(),
-      server: {}
+      server: {},
+      params: { slug: 'pigs-might-fly' }
     }
     const mockResponseToolkit = { redirect: vi.fn() }
     const mockCacheService = { setConfirmationState: vi.fn() }
@@ -87,6 +87,6 @@ describe('FlyingPigsSubmissionPageController', () => {
       $$__referenceNumber: '123456',
       confirmed: true
     })
-    expect(mockResponseToolkit.redirect).toHaveBeenCalledWith('/confirmation')
+    expect(mockResponseToolkit.redirect).toHaveBeenCalledWith('/pigs-might-fly/confirmation')
   })
 })

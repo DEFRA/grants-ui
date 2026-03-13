@@ -65,7 +65,7 @@ describe('formsStatusCallback', () => {
                   // Awaiting amendments
                   {
                     fromGrantsStatus: 'SUBMITTED',
-                    gasStatus: 'AWAITING_AMENDMENTS',
+                    gasStatus: 'APPLICATION_AMEND',
                     toGrantsStatus: 'REOPENED',
                     toPath: '/summary'
                   },
@@ -148,14 +148,6 @@ describe('formsStatusCallback', () => {
 
     expect(h.redirect).toHaveBeenCalledWith('/grant-a/confirmation')
     expect(result).toEqual(expect.any(Symbol))
-  })
-
-  it('throws an error if grantCode is missing', async () => {
-    delete request.app.model.def.metadata.submission.grantCode
-
-    await expect(formsStatusCallback(request, h, context)).rejects.toThrow(
-      'grantCode missing from request.app.model.def.metadata.submission'
-    )
   })
 
   it('throws when no redirect rule matches the combination', async () => {
@@ -286,7 +278,7 @@ describe('formsStatusCallback', () => {
 
   it('updates status to REOPENED and redirects to summary when awaiting amendments and previous is SUBMITTED', async () => {
     getApplicationStatus.mockResolvedValue({
-      json: async () => ({ status: 'AWAITING_AMENDMENTS' })
+      json: async () => ({ status: 'APPLICATION_AMEND' })
     })
 
     const result = await formsStatusCallback(request, h, context)
@@ -305,7 +297,7 @@ describe('formsStatusCallback', () => {
 
   it('updates session cache when transitioning to REOPENED', async () => {
     getApplicationStatus.mockResolvedValue({
-      json: async () => ({ status: 'AWAITING_AMENDMENTS' })
+      json: async () => ({ status: 'APPLICATION_AMEND' })
     })
 
     await formsStatusCallback(request, h, context)
@@ -326,7 +318,7 @@ describe('formsStatusCallback', () => {
       anotherField: { nested: 'data' }
     }
     getApplicationStatus.mockResolvedValue({
-      json: async () => ({ status: 'AWAITING_AMENDMENTS' })
+      json: async () => ({ status: 'APPLICATION_AMEND' })
     })
 
     await formsStatusCallback(request, h, context)
@@ -355,12 +347,12 @@ describe('formsStatusCallback', () => {
     })
   })
 
-  it('allows normal navigation when gasStatus is AWAITING_AMENDMENTS and previousStatus is REOPENED and request is same-origin', async () => {
+  it('allows normal navigation when gasStatus is APPLICATION_AMEND and previousStatus is REOPENED and request is same-origin', async () => {
     context.state.applicationStatus = ApplicationStatus.REOPENED
     request.path = '/grant-a/some-question-page'
     request.headers = { 'sec-fetch-site': 'same-origin' }
     getApplicationStatus.mockResolvedValue({
-      json: async () => ({ status: 'AWAITING_AMENDMENTS' })
+      json: async () => ({ status: 'APPLICATION_AMEND' })
     })
 
     const result = await formsStatusCallback(request, h, context)
@@ -368,12 +360,12 @@ describe('formsStatusCallback', () => {
     expect(result).toBe(h.continue)
   })
 
-  it('redirects to summary when gasStatus is AWAITING_AMENDMENTS and previousStatus is REOPENED and request is not same-origin', async () => {
+  it('redirects to summary when gasStatus is APPLICATION_AMEND and previousStatus is REOPENED and request is not same-origin', async () => {
     context.state.applicationStatus = ApplicationStatus.REOPENED
     request.path = '/grant-a/some-question-page'
     request.headers = { 'sec-fetch-site': 'none' }
     getApplicationStatus.mockResolvedValue({
-      json: async () => ({ status: 'AWAITING_AMENDMENTS' })
+      json: async () => ({ status: 'APPLICATION_AMEND' })
     })
 
     const result = await formsStatusCallback(request, h, context)
@@ -404,7 +396,7 @@ describe('formsStatusCallback', () => {
 
     await formsStatusCallback(request, h, context)
 
-    expect(getApplicationStatus).toHaveBeenCalledWith('grant-a-code', '89b-aec-5a6', request)
+    expect(getApplicationStatus).toHaveBeenCalledWith('grant-a', '89b-aec-5a6', request)
   })
 
   it('redirects when newStatus path differs from current path', async () => {
@@ -466,7 +458,7 @@ describe('formsStatusCallback', () => {
     expect(log).toHaveBeenCalledWith(
       LogCodes.SUBMISSION.SUBMISSION_REDIRECT_FAILURE,
       expect.objectContaining({
-        grantType: 'grant-a-code',
+        grantType: 'grant-a',
         referenceNumber: 'REF-001',
         errorMessage: error.message
       }),
@@ -486,7 +478,7 @@ describe('formsStatusCallback', () => {
     expect(log).toHaveBeenCalledWith(
       LogCodes.SUBMISSION.SUBMISSION_REDIRECT_FAILURE,
       expect.objectContaining({
-        grantType: 'grant-a-code',
+        grantType: 'grant-a',
         referenceNumber: 'REF-001',
         errorMessage: error.message
       }),
