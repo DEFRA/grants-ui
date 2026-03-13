@@ -6,14 +6,15 @@ import { getCachedAuthParcels, setCachedAuthParcels } from '~/src/server/land-gr
 import { stringifyParcel } from '~/src/server/land-grants/utils/format-parcel.js'
 
 export default class LandGrantsQuestionWithAuthCheckController extends QuestionPageController {
-  resolveParcelId(request, context) {
-    return request.query?.parcelId || request.payload?.selectedLandParcel || context.state?.selectedLandParcel || null
+  resolveParcelId(request) {
+    return request.query?.parcelId || request.payload?.selectedLandParcel || null
   }
 
   makeGetRouteHandler() {
     return async (request, context, h) => {
-      const parcelId = this.resolveParcelId(request, context)
+      const parcelId = this.resolveParcelId(request)
       const unauthorised = await this.performAuthCheck(request, h, parcelId)
+
       if (unauthorised) {
         return unauthorised
       }
@@ -23,7 +24,7 @@ export default class LandGrantsQuestionWithAuthCheckController extends QuestionP
 
   makePostRouteHandler() {
     return async (request, context, h) => {
-      const parcelId = this.resolveParcelId(request, context)
+      const parcelId = this.resolveParcelId(request)
       const unauthorised = await this.performAuthCheck(request, h, parcelId)
       if (unauthorised) {
         return unauthorised

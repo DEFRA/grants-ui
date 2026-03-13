@@ -135,11 +135,11 @@ describe('SelectLandActionsPageController', () => {
 
   describe('GET route handler', () => {
     beforeEach(() => {
-      mockContext.state.selectedLandParcel = 'sheet1-parcel1'
+      mockRequest.query = { parcelId: 'sheet1-parcel1' }
     })
 
     test('should redirect to /select-land-parcel if no selected land parcel is set', async () => {
-      mockContext.state.selectedLandParcel = ''
+      mockRequest.query = {}
 
       const handler = controller.makeGetRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
@@ -164,21 +164,7 @@ describe('SelectLandActionsPageController', () => {
       })
     })
 
-    test('should use state parcel when query not present', async () => {
-      mockContext.state.selectedLandParcel = 'sheet1-parcel1'
-
-      const handler = controller.makeGetRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
-
-      expect(fetchAvailableActionsForParcel).toHaveBeenCalledWith({
-        parcelId: 'parcel1',
-        sheetId: 'sheet1'
-      })
-    })
-
     test('should render view with correct data', async () => {
-      mockContext.state.selectedLandParcel = 'sheet1-parcel1'
-
       const handler = controller.makeGetRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
@@ -192,7 +178,6 @@ describe('SelectLandActionsPageController', () => {
     })
 
     test('should extract added actions from state', async () => {
-      mockContext.state.selectedLandParcel = 'sheet1-parcel1'
       mockContext.state.landParcels = {
         'sheet1-parcel1': {
           actionsObj: {
@@ -214,7 +199,6 @@ describe('SelectLandActionsPageController', () => {
 
     test('should handle fetch errors gracefully', async () => {
       fetchAvailableActionsForParcel.mockRejectedValue(new Error('API Error'))
-      mockContext.state.selectedLandParcel = 'sheet1-parcel1'
 
       const handler = controller.makeGetRouteHandler()
       await handler(mockRequest, mockContext, mockH)
@@ -249,7 +233,6 @@ describe('SelectLandActionsPageController', () => {
         actions: [],
         parcel: { parcelId: 'parcel1', sheetId: 'sheet1', size: 10 }
       })
-      mockContext.state.selectedLandParcel = 'sheet1-parcel1'
 
       const handler = controller.makeGetRouteHandler()
       await handler(mockRequest, mockContext, mockH)
