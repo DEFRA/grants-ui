@@ -154,7 +154,11 @@ describe('SelectLandParcelPageController', () => {
 
       expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH, state.selectedLandParcel)
       expect(controller.setState).not.toHaveBeenCalled()
-      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, `/select-actions-for-land-parcel?parcelId=${state.selectedLandParcel}`)
+      expect(controller.proceed).toHaveBeenCalledWith(
+        mockRequest,
+        mockH,
+        `/select-actions-for-land-parcel?parcelId=${state.selectedLandParcel}`
+      )
       expect(result).toBe('next')
     })
 
@@ -195,7 +199,11 @@ describe('SelectLandParcelPageController', () => {
       const result = await controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
 
       expect(controller.setState).not.toHaveBeenCalled()
-      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/select-actions-for-land-parcel?parcelId=undefined')
+      expect(controller.proceed).toHaveBeenCalledWith(
+        mockRequest,
+        mockH,
+        '/select-actions-for-land-parcel?parcelId=undefined'
+      )
       expect(result).toBe('next')
     })
 
@@ -236,7 +244,11 @@ describe('SelectLandParcelPageController', () => {
       const result = await controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
 
       expect(controller.setState).not.toHaveBeenCalled()
-      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/select-actions-for-land-parcel?parcelId=undefined')
+      expect(controller.proceed).toHaveBeenCalledWith(
+        mockRequest,
+        mockH,
+        '/select-actions-for-land-parcel?parcelId=undefined'
+      )
       expect(result).toBe('next')
     })
 
