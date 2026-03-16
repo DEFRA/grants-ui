@@ -86,12 +86,13 @@ export default class DeclarationPageController extends SummaryPageController {
 
     const identifiers = {
       clientRef: context.referenceNumber.toLowerCase(),
-      previousClientRef: context.state.previousReferenceNumber
-        ? context.state.previousReferenceNumber.toLowerCase()
-        : null,
       sbi: request.auth?.credentials?.sbi,
       frn: 'frn',
       crn: request.auth?.credentials?.crn
+    }
+
+    if (context.state.previousReferenceNumber) {
+      identifiers.previousClientRef = context.state.previousReferenceNumber.toLowerCase()
     }
 
     return transformStateObjectToGasApplication(identifiers, stateWithTextAnswers, (s) => s)

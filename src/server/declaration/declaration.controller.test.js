@@ -363,6 +363,28 @@ describe('DeclarationPageController', () => {
       expect(mockH.redirect).toHaveBeenCalledWith('/example-grant-with-auth/confirmation')
     })
 
+    test('should not include previousClientRef when previousReferenceNumber is absent', async () => {
+      const handler = controller.makePostRouteHandler()
+
+      const contextWithoutPreviousRef = {
+        ...mockContext,
+        state: {}
+      }
+
+      await handler(mockRequest, contextWithoutPreviousRef, mockH)
+
+      expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
+        {
+          clientRef: 'ref123',
+          sbi: 'sbi123',
+          frn: 'frn',
+          crn: '1234567890'
+        },
+        { transformedState: true, referenceNumber: 'REF123' },
+        expect.any(Function)
+      )
+    })
+
     test('should log debug information during processing', async () => {
       const handler = controller.makePostRouteHandler()
       await handler(mockRequest, mockContext, mockH)
