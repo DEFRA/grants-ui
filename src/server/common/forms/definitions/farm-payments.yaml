@@ -66,6 +66,8 @@ metadata:
       <h2 class="govuk-heading-m">What happens next</h2>
       <p class="govuk-body">The Rural Payments Agency (RPA) will email you when your agreement offer is available to review.</p>
 
+      <p class="govuk-body"><a class="govuk-link" href="/{{SLUG}}/print-submitted-application" target="_blank">View / Print submitted application (opens in new tab)</a></p>
+
       {{DEFRASUPPORTDETAILS}}
 pages:
   - title: Confirm your details

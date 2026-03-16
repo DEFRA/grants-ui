@@ -1,0 +1,27 @@
+[
+  { "slug": "start", "name": "Start", "type": "submitOnly" },
+  { "slug": "are-you-dairy-farmer", "name": "Are you a dairy farmer?", "type": "yesNo", "fieldName": "isDairyFarmer" },
+  { "slug": "dairy-cows", "name": "Dairy cows in England?", "type": "yesNo", "fieldName": "isDairyKeptInEngland" },
+  { "slug": "house-dairy-herd", "name": "House dairy herd?", "type": "yesNo", "fieldName": "isDairyHerdForYear" },
+  { "slug": "feed-tmr", "name": "Feed TMR?", "type": "yesNo", "fieldName": "feedTMR" },
+  { "slug": "check-details", "name": "Check your details", "type": "yesNo", "fieldName": "detailsCorrect" },
+  {
+    "slug": "how-many-dairy-cows",
+    "name": "How many dairy cows?",
+    "type": "numberField",
+    "fieldName": "dairyCowsFedCount",
+    "value": "100"
+  },
+  {
+    "slug": "how-many-months",
+    "name": "Months housed?",
+    "type": "numberField",
+    "fieldName": "monthsDairyCowHoused",
+    "value": "6"
+  },
+  { "slug": "msfp", "name": "Which MSFP?", "type": "radios", "fieldName": "msfpOptions" },
+  { "slug": "summary", "name": "Check your answers", "type": "submitOnly" },
+  { "slug": "potential-funding", "name": "Potential funding", "type": "submitOnly" },
+  { "slug": "declaration", "name": "Confirm and send", "type": "submitOnly" },
+  { "slug": "confirmation", "name": "Confirmation", "type": "submitOnly" }
+]

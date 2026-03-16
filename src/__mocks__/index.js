@@ -23,3 +23,5 @@ export {
 } from './hapi-mocks.js'
 
 export { setupControllerMocks } from './controller-mocks.js'
+
+export { mockFilters } from './filters-mocks.js'
