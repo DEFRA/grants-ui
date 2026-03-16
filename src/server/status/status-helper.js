@@ -212,7 +212,10 @@ function buildRedirectUrl(grantId, path) {
  */
 async function handlePostSubmission(request, h, context, previousStatus, grantCode, grantRedirectRules) {
   const grantId = request.params?.slug
-  const response = await getApplicationStatus(grantCode, context.referenceNumber.toLowerCase(), request)
+  const clientRef = resolveClientReference(previousStatus, context)
+
+  const response = await getApplicationStatus(grantCode, clientRef.toLowerCase(), request)
+
   const { status: gasStatus } = await response.json()
 
   const postSubmissionRules = grantRedirectRules?.postSubmission ?? []
@@ -313,4 +316,30 @@ export const formsStatusCallback = async (request, h, context) => {
   } catch (err) {
     return handlePostSubmissionError(err, request, h, context, grantId, grantCode, grantRedirectRules)
   }
+}
+
+/**
+ * Resolves which client reference number should be used when calling GAS.
+ *
+ * When an application has been reopened, Grants UI stores the previous
+ * reference number so GAS can still identify the original submission.
+ * In this case, the previous reference number should be used when querying
+ * GAS until a new submission occurs.
+ *
+ * In all other scenarios the current reference number is used.
+ *
+ * @param {string} previousStatus - The last known Grants UI application status.
+ * @param {object} context - The request context containing reference information.
+ * @param {string} context.referenceNumber - The current reference number for the application.
+ * @param {object} [context.state] - Session state stored in the forms cache.
+ * @param {string} [context.state.previousReferenceNumber] - The previous reference number stored when the application was reopened.
+ *
+ * @returns {string} The client reference number that should be used when calling GAS.
+ */
+export function resolveClientReference(previousStatus, context) {
+  if (previousStatus === ApplicationStatus.REOPENED && context.state?.previousReferenceNumber) {
+    return context.state.previousReferenceNumber
+  }
+
+  return context.referenceNumber
 }

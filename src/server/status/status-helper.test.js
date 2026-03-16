@@ -3,7 +3,7 @@ import { getApplicationStatus } from '../common/services/grant-application/grant
 import { updateApplicationStatus } from '../common/helpers/status/update-application-status-helper.js'
 import { getFormsCacheService } from '../common/helpers/forms-cache/forms-cache.js'
 import { ApplicationStatus } from '../common/constants/application-status.js'
-import { formsStatusCallback } from './status-helper.js'
+import { formsStatusCallback, resolveClientReference } from './status-helper.js'
 import { log, LogCodes } from '../common/helpers/logging/log.js'
 import { mintLockToken } from '../common/helpers/lock/lock-token.js'
 import { getCacheKey } from '../common/helpers/state/get-cache-key-helper.js'
@@ -85,13 +85,6 @@ describe('formsStatusCallback', () => {
                     gasStatus: 'default',
                     toGrantsStatus: 'REOPENED',
                     toPath: '/summary'
-                  },
-
-                  {
-                    fromGrantsStatus: 'SUBMITTED',
-                    gasStatus: 'OFFER_SENT,OFFER_WITHDRAWN,OFFER_ACCEPTED',
-                    toGrantsStatus: 'SUBMITTED',
-                    toPath: '/agreement'
                   },
 
                   // Submitted -> confirmation (default for most GAS statuses)
@@ -386,6 +379,72 @@ describe('formsStatusCallback', () => {
       request,
       expect.objectContaining({ applicationStatus: ApplicationStatus.CLEARED })
     )
+  })
+
+  it('uses previousReferenceNumber when status is REOPENED', async () => {
+    context.state = {
+      applicationStatus: ApplicationStatus.REOPENED,
+      previousReferenceNumber: 'OLD-REF-123'
+    }
+
+    getApplicationStatus.mockResolvedValue({
+      json: async () => ({ status: 'APPLICATION_AMEND' })
+    })
+
+    await formsStatusCallback(request, h, context)
+
+    expect(getApplicationStatus).toHaveBeenCalledWith('grant-a', 'old-ref-123', request)
+  })
+
+  it('falls back to current reference when REOPENED but previousReferenceNumber missing', async () => {
+    context.state = {
+      applicationStatus: ApplicationStatus.REOPENED
+    }
+
+    context.referenceNumber = 'REF-NEW-999'
+
+    getApplicationStatus.mockResolvedValue({
+      json: async () => ({ status: 'APPLICATION_AMEND' })
+    })
+
+    await formsStatusCallback(request, h, context)
+
+    expect(getApplicationStatus).toHaveBeenCalledWith('grant-a', 'ref-new-999', request)
+  })
+
+  describe('resolveClientReference', () => {
+    it('returns previous reference when status is REOPENED', () => {
+      const result = resolveClientReference(ApplicationStatus.REOPENED, {
+        referenceNumber: 'NEW',
+        state: { previousReferenceNumber: 'OLD' }
+      })
+
+      expect(result).toBe('OLD')
+    })
+
+    it('returns current reference when not reopened', () => {
+      const result = resolveClientReference(ApplicationStatus.SUBMITTED, {
+        referenceNumber: 'NEW',
+        state: { previousReferenceNumber: 'OLD' }
+      })
+
+      expect(result).toBe('NEW')
+    })
+  })
+
+  it('calls GAS with previous reference for reopened applications awaiting amendments', async () => {
+    context.state = {
+      applicationStatus: ApplicationStatus.REOPENED,
+      previousReferenceNumber: 'OLD-REF-1'
+    }
+
+    getApplicationStatus.mockResolvedValue({
+      json: async () => ({ status: 'APPLICATION_AMEND' })
+    })
+
+    await formsStatusCallback(request, h, context)
+
+    expect(getApplicationStatus).toHaveBeenCalledWith('grant-a', 'old-ref-1', request)
   })
 
   it('converts reference number to lowercase when calling getApplicationStatus', async () => {
