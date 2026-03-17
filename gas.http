@@ -8,10 +8,10 @@ Authorization: Bearer {{serviceToken}}
 x-api-key: {{x-api-key}}
 
 {
-  "code": "example-grant-with-auth-v3",
+  "code": "example-grant-with-auth",
   "metadata": {
     "description": "Example grant with auth",
-    "startDate": "2025-11-20T11:44:14.999Z"
+    "startDate": "2026-03-16T15:52:14.999Z"
   },
   "actions": [],
   "phases": [
@@ -75,18 +75,19 @@ x-api-key: {{x-api-key}}
           "description": "Review the application for eligibility",
           "statuses": [
             {
-              "code": "APPLICATION_RECEIVED"
+              "code": "APPLICATION_RECEIVED",
+              "validFrom": []
             },
             {
               "code": "IN_REVIEW",
               "validFrom": [
-                "APPLICATION_RECEIVED"
+                { "code": "APPLICATION_RECEIVED", "processes": [] }
               ]
             },
             {
               "code": "AGREEMENT_GENERATING",
               "validFrom": [
-                "IN_REVIEW"
+                { "code": "IN_REVIEW", "processes": [] }
               ],
               "processes": [
                 "GENERATE_OFFER"
@@ -95,7 +96,7 @@ x-api-key: {{x-api-key}}
             {
               "code": "APPLICATION_WITHDRAWN",
               "validFrom": [
-                "IN_REVIEW"
+                { "code": "IN_REVIEW", "processes": [] }
               ]
             }
           ]
@@ -108,7 +109,7 @@ x-api-key: {{x-api-key}}
             {
               "code": "OFFER_SENT",
               "validFrom": [
-                "PRE_AWARD:REVIEW_APPLICATION:AGREEMENT_GENERATING"
+                { "code": "PRE_AWARD:REVIEW_APPLICATION:AGREEMENT_GENERATING", "processes": [] }
               ],
               "processes": [
                 "STORE_AGREEMENT_CASE"
@@ -124,7 +125,7 @@ x-api-key: {{x-api-key}}
             {
               "code": "OFFER_SENT",
               "validFrom": [
-                "PRE_AWARD:REVIEW_OFFER:OFFER_SENT"
+                { "code": "PRE_AWARD:REVIEW_OFFER:OFFER_SENT", "processes": [] }
               ]
             }
           ]
@@ -142,7 +143,7 @@ x-api-key: {{x-api-key}}
             {
               "code": "OFFER_ACCEPTED",
               "validFrom": [
-                "PRE_AWARD:CUSTOMER_AGREEMENT_REVIEW:AGREEMENT_OFFERED"
+                { "code": "PRE_AWARD:CUSTOMER_AGREEMENT_REVIEW:AGREEMENT_OFFERED", "processes": [] }
               ],
               "processes": [
                 "UPDATE_AGREEMENT_CASE"
@@ -151,7 +152,7 @@ x-api-key: {{x-api-key}}
             {
               "code": "COMPLETE_AGREEMENT",
               "validFrom": [
-                "OFFER_ACCEPTED"
+                { "code": "OFFER_ACCEPTED", "processes": [] }
               ]
             }
           ]
@@ -250,7 +251,7 @@ x-api-key: {{x-api-key}}
 
 # @name submitExampleGrantWithAuthApplication
 
-POST {{base}}/grants/example-grant-with-auth-v3/applications HTTP/1.1
+POST {{base}}/grants/example-grant-with-auth/applications HTTP/1.1
 Content-Type: application/json
 Authorization: Bearer {{serviceToken}}
 
