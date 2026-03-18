@@ -87,6 +87,10 @@
       {% endif %}
     {% endif %}
 
+    {% if configurablePrintContent and configurablePrintContent.html %}
+      {{ configurablePrintContent.html | safe }}
+    {% endif %}
+
     <button type="button" class="govuk-button govuk-button--secondary app-print-button" id="print-button">
       Print this page
     </button>

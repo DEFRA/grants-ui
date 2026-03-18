@@ -13,6 +13,11 @@ metadata:
     grantCode: example-grant-with-auth-v3
     submissionSchemaPath: ./schemas/example-grant-with-auth-submission.schema.json
   grantRedirectRules: null
+  configurablePrintContent:
+    html: |
+      <h2 class="govuk-heading-m">Configurable content</h2>
+      <p class="govuk-body">This is an example of configurable content on the print page, defined via the <strong>configurablePrintContent</strong> property in the form YAML metadata.</p>
+      <p class="govuk-body">It supports HTML markup and the <strong>{{SLUG}}</strong> placeholder.</p>
   confirmationContent:
     panelTitle: 'Details submitted'
     panelText: 'Your reference number'
