@@ -23,7 +23,15 @@ export async function loadConfirmationContent(form) {
     }
   }
 
-  const confirmationContent = ConfirmationService.processConfirmationContent(rawConfirmationContent)
+  const confirmationContent = ConfirmationService.processConfirmationContent(rawConfirmationContent, form.slug)
+
+  // Rewrite production print URL to dev tools route
+  if (confirmationContent?.html) {
+    confirmationContent.html = confirmationContent.html.replaceAll(
+      `/${form.slug}/print-submitted-application`,
+      `/dev/demo-print-application/${form.slug}`
+    )
+  }
 
   return { confirmationContent }
 }

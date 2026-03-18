@@ -129,7 +129,7 @@ export default class SubmissionPageController extends SummaryPageController {
         {
           crn,
           sbi,
-          grantCode: grantCode,
+          grantCode,
           grantVersion: context.grantVersion,
           previousReferenceNumber: context.state.previousReferenceNumber,
           referenceNumber: context.referenceNumber,
