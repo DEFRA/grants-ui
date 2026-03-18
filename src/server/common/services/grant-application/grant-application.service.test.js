@@ -92,6 +92,25 @@ describe('Grant Application service (token present)', () => {
       expect(result.ok).toBe(true)
     })
 
+    test('should successfully submit a farm-payments grant application', async () => {
+      const mockFetchInstance = mockFetchWithResponse(mockResponse)
+
+      const slug = 'farm-payments'
+      const grantCode = `frps-private-beta`
+
+      const result = await submitGrantApplication(slug, payload)
+
+      expect(mockFetchInstance).toHaveBeenCalledWith(`${gasApi}/grants/${grantCode}/applications`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer mock-auth-token'
+        },
+        body: JSON.stringify(payload)
+      })
+      expect(result.ok).toBe(true)
+    })
+
     test('should throw an error when the request fails', async () => {
       const mockedFetch = mockFetch()
       const mockMessage = 'Bad Request'
