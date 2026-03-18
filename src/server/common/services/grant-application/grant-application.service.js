@@ -146,7 +146,7 @@ export async function invokeGasGetAction(code, name, request, queryParams = {}) 
  * @throws {GrantApplicationServiceApiError} - If the API request fails
  */
 export async function submitGrantApplication(code, payload, request) {
-  const url = `${GAS_API_ENDPOINT}/grants/${code}/applications`
+  const url = `${GAS_API_ENDPOINT}/grants/${mapFarmPaymentsGrantCode(code)}/applications`
   return makeGasApiRequest(url, code, request, { method: 'POST', payload })
 }
 
@@ -159,6 +159,18 @@ export async function submitGrantApplication(code, payload, request) {
  * @throws {GrantApplicationServiceApiError} - If the API request fails
  */
 export async function getApplicationStatus(code, clientRef, request) {
-  const url = `${GAS_API_ENDPOINT}/grants/${code}/applications/${clientRef}/status`
+  const url = `${GAS_API_ENDPOINT}/grants/${mapFarmPaymentsGrantCode(code)}/applications/${clientRef}/status`
   return makeGasApiRequest(url, code, request, { method: 'GET' })
+}
+
+/**
+ * Temporary function to map `farm-payments` grant code to `frps-private-beta` for GAS API calls
+ * @param grantCode
+ * @returns {*|string}
+ */
+function mapFarmPaymentsGrantCode(grantCode) {
+  if (grantCode === 'farm-payments') {
+    return `frps-private-beta`
+  }
+  return grantCode
 }

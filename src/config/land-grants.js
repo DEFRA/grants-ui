@@ -15,12 +15,6 @@ import 'dotenv/config'
  */
 
 const landGrants = convict({
-  grantCode: {
-    doc: 'GAS Future RPS grant code',
-    format: String,
-    default: 'frps-private-beta',
-    env: 'GAS_FRPS_GRANT_CODE'
-  },
   grantsServiceApiEndpoint: {
     format: String,
     default: '',

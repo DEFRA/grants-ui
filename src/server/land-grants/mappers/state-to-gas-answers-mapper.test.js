@@ -1,4 +1,3 @@
-import { config } from '~/src/config/config.js'
 import {
   loadSubmissionSchemaValidators,
   validateSubmissionAnswers
@@ -6,7 +5,7 @@ import {
 import { stateToLandGrantsGasAnswers } from '~/src/server/land-grants/mappers/state-to-gas-answers-mapper.js'
 
 const configState = vi.hoisted(() => {
-  const defaults = new Map([['landGrants.grantCode', 'frps-private-beta']])
+  const defaults = new Map()
   const values = new Map(defaults)
 
   return {
@@ -34,8 +33,6 @@ vi.mock('~/src/config/config.js', () => ({
 vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
   log: vi.fn()
 }))
-
-const frpsGrantCode = config.get('landGrants.grantCode')
 
 const applicant = {
   business: {
@@ -1378,7 +1375,7 @@ describe('schema validation', () => {
 
     stateObjectTestCases.forEach((testCase) => {
       const result = stateToLandGrantsGasAnswers(testCase)
-      const { valid } = validateSubmissionAnswers(result, frpsGrantCode)
+      const { valid } = validateSubmissionAnswers(result, 'farm-payments')
 
       expect(valid).toBe(true)
     })

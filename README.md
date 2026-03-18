@@ -1046,7 +1046,6 @@ which is formatted as a GUID string.
 
 | Variable                         | Description                              |
 | -------------------------------- | ---------------------------------------- |
-| `GAS_FRPS_GRANT_CODE`            | Grant code for Future RPS in GAS         |
 | `LAND_GRANTS_API_URL`            | Land Grants API endpoint                 |
 | `LAND_GRANTS_API_AUTH_TOKEN`     | Auth token for Land Grants API           |
 | `LAND_GRANTS_API_ENCRYPTION_KEY` | Encryption key for Land Grants API token |
@@ -1100,7 +1099,7 @@ Example request (truncated - see [GAS API documentation](https://github.com/DEFR
 curl --location --request POST 'https://fg-gas-backend.dev.cdp-int.defra.cloud/grants' \
 --header 'Content-Type: application/json' \
 --data-raw '{
-  "code": "example-grant-with-auth-v3",
+  "code": "example-grant-with-auth",
   "questions": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "title": "GrantApplicationPayload",
@@ -1121,7 +1120,7 @@ Example response:
 
 ```
 {
-    "code": "example-grant-with-auth-v3"
+    "code": "example-grant-with-auth"
 }
 ```
 
@@ -1221,7 +1220,7 @@ Once `http-client.private.env.json` is created and populated, you can:
 
 In order to update a grant schema, see the [GAS API repository](https://github.com/DEFRA/fg-gas-backend) for documentation and examples.
 
-Find the endpoint `GET /grants/{code}`, pass in the code, e.g. `frps-private-beta`, will return the grant.
+Find the endpoint `GET /grants/{code}`, pass in the code, e.g. `example-grant-with-auth`, will return the grant.
 
 When changes have been made to the schema, use the endpoint `PUT /tmp/grants/{code}` to update the grant schema.
 

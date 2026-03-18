@@ -24,7 +24,6 @@ metadata:
         text: 'Completed'
         classes: 'govuk-tag--green'
   submission:
-    grantCode: example-grant-with-task-list
     submissionSchemaPath: ./schemas/example-grant-with-auth-submission.schema.json
   grantRedirectRules:
     preSubmission:

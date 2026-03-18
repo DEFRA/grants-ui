@@ -30,7 +30,7 @@ export function loadSubmissionSchemaValidators() {
     const yamlPath = path.join(DEFINITIONS_BASE_PATH, file)
     const data = YAML.parse(fs.readFileSync(yamlPath, 'utf8'))
 
-    const grantCode = data.metadata?.submission?.grantCode
+    const grantCode = file.replace('.yaml', '')
     const schemaPath = data.metadata?.submission?.submissionSchemaPath
 
     if (!grantCode || !schemaPath) {

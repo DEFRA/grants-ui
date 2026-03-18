@@ -14,7 +14,7 @@ vi.mock('~/src/server/common/helpers/retry.js')
 global.fetch = mockFetch
 
 const gasApi = config.get('gas.apiEndpoint')
-const code = config.get('landGrants.grantCode')
+const code = 'example-grant-code'
 
 describe('Grant Application service (token present)', () => {
   let mockRequest

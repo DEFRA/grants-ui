@@ -10,7 +10,6 @@ metadata:
     cookiePolicyUrl: /cookies
     expiryDays: 365
   submission:
-    grantCode: example-grant-with-auth-v3
     submissionSchemaPath: ./schemas/example-grant-with-auth-submission.schema.json
   grantRedirectRules: null
   confirmationContent:
