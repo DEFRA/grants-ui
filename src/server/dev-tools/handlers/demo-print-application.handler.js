@@ -38,7 +38,7 @@ export async function demoPrintApplicationHandler(request, h) {
     const demoData = buildDemoData()
 
     const configurablePrintContent = processConfigurablePrintContent(
-      definition.metadata?.configurablePrintContent,
+      definition.metadata?.printPage?.configurablePrintContent,
       slug
     )
 

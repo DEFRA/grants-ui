@@ -151,6 +151,7 @@ function resolveComponentLists(components, listsById) {
  * @param {{ contactName?: string, businessName?: string, sbi?: string }} params.sessionData
  * @param {FormMeta} params.form
  * @param {{ html: string }} [params.configurablePrintContent]
+ * @param {{ person: { rows: object[] }, business: { rows: object[] }, contact: { rows: object[] } } | null} [params.applicantDetailsSections]
  */
 export function buildPrintViewModel({
   definition,
@@ -160,7 +161,8 @@ export function buildPrintViewModel({
   slug,
   sessionData,
   form,
-  configurablePrintContent
+  configurablePrintContent,
+  applicantDetailsSections
 }) {
   return {
     pageTitle: `${form.title} application`,
@@ -173,6 +175,7 @@ export function buildPrintViewModel({
       businessName: sessionData.businessName,
       sbi: sessionData.sbi
     },
+    applicantDetailsSections,
     sections: buildSections(definition.pages, answers),
     paymentInfo: buildPrintPaymentViewModel(answers.payment),
     configurablePrintContent,

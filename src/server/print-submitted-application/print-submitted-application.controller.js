@@ -10,6 +10,8 @@ import {
   enrichDefinitionWithListItems,
   processConfigurablePrintContent
 } from '../common/helpers/print-application-service/print-application-service.js'
+import { fetchBusinessAndCustomerInformation } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
+import { createPersonRows, createBusinessRows, createContactRows } from '~/src/server/common/helpers/create-rows.js'
 
 /**
  * Validates the request has a slug param and finds the matching form definition.
@@ -47,6 +49,57 @@ async function loadSubmittedApplication(request) {
 }
 
 /**
+ * Logs an applicant details fetch failure.
+ * @param {Error} error
+ * @param {Request} request
+ */
+function logApplicantDetailsFetchError(error, request) {
+  log(
+    LogCodes.PRINT_APPLICATION.ERROR,
+    {
+      userId: request.auth?.credentials?.userId || 'unknown',
+      errorMessage: `Failed to fetch applicant details: ${error.message}`,
+      slug: request.params?.slug
+    },
+    request
+  )
+}
+
+/**
+ * Resolves applicant details sections for forms that have showApplicantDetails enabled.
+ * @param {Request} request
+ * @param {Record<string, any>} state
+ * @param {{ metadata?: { printPage?: { showApplicantDetails?: boolean } } }} definition
+ * @returns {Promise<{ person: { rows: object[] }, business: { rows: object[] }, contact: { rows: object[] } } | null>}
+ */
+async function resolveApplicantDetailsSections(request, state, definition) {
+  if (!definition.metadata?.printPage?.showApplicantDetails) {
+    return null
+  }
+
+  let applicantData = null
+
+  if (state.applicant?.customer || state.applicant?.business?.name) {
+    applicantData = state.applicant
+  } else {
+    try {
+      applicantData = await fetchBusinessAndCustomerInformation(request)
+    } catch (error) {
+      logApplicantDetailsFetchError(error, request)
+      return null
+    }
+  }
+
+  const sbi = /** @type {string} */ (request.auth?.credentials?.sbi ?? '')
+
+  return {
+    person: createPersonRows(applicantData.customer?.name),
+    business: createBusinessRows(sbi, applicantData.business),
+    contact: createContactRows(applicantData.business)
+  }
+}
+
+/**
  * Reads the YAML form definition, builds the print view model and renders the view.
  * @param {{ form: import('../common/helpers/print-application-service/print-application-service.js').FormMeta, state: Record<string, any>, slug: string }} params
  * @param {Request} request
@@ -58,7 +111,10 @@ async function buildPrintResponse({ form, state, slug }, request, h) {
 
   enrichDefinitionWithListItems(definition)
 
-  const configurablePrintContent = processConfigurablePrintContent(definition.metadata?.configurablePrintContent, slug)
+  const configurablePrintContent = processConfigurablePrintContent(
+    definition.metadata?.printPage?.configurablePrintContent,
+    slug
+  )
 
   const applicant = state.applicant || {}
   const customerName = applicant.customer?.name
@@ -71,6 +127,8 @@ async function buildPrintResponse({ form, state, slug }, request, h) {
     sbi: /** @type {string | undefined} */ (request.auth?.credentials?.sbi)
   }
 
+  const applicantDetailsSections = await resolveApplicantDetailsSections(request, state, definition)
+
   const viewModel = buildPrintViewModel({
     definition,
     form,
@@ -79,7 +137,8 @@ async function buildPrintResponse({ form, state, slug }, request, h) {
     submittedAt: state.submittedAt,
     slug,
     sessionData,
-    configurablePrintContent
+    configurablePrintContent,
+    applicantDetailsSections
   })
 
   return h.view('print-submitted-application', viewModel)
