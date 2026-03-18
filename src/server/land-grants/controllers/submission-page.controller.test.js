@@ -363,6 +363,52 @@ describe('SubmissionPageController', () => {
       expect(result).toBe('proceeded')
     })
 
+    it('should not include previousClientRef when previousReferenceNumber is absent', async () => {
+      const mockRequest = {
+        auth: {
+          credentials: {
+            sbi: '123456789',
+            crn: 'crn123'
+          }
+        },
+        server: {},
+        params: { slug: 'test-grant' }
+      }
+
+      const mockContext = {
+        state: { landParcels: { parcel1: 'data' } }, // no previousReferenceNumber
+        referenceNumber: 'REF123'
+      }
+
+      const mockH = {
+        redirect: vi.fn(),
+        view: vi.fn()
+      }
+
+      const mockValidationResult = { id: 'validation-123', valid: true }
+      const statusCode = 204
+      const mockSubmitResult = { success: true, status: statusCode }
+
+      validateApplication.mockResolvedValue(mockValidationResult)
+
+      vi.spyOn(controller, 'submitGasApplication').mockResolvedValue(mockSubmitResult)
+      vi.spyOn(controller, 'handleSuccessfulSubmission').mockResolvedValue('proceeded')
+
+      const handler = controller.makePostRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      const identifiers = controller.submitGasApplication.mock.calls[0][1].identifiers
+
+      expect(identifiers).toEqual({
+        clientRef: 'ref123',
+        crn: 'crn123',
+        frn: undefined,
+        sbi: '123456789'
+      })
+
+      expect(identifiers).not.toHaveProperty('previousClientRef')
+    })
+
     it('should handle undefined auth', async () => {
       const mockRequest = {
         server: {},
@@ -467,6 +513,35 @@ describe('SubmissionPageController', () => {
       const mockContext = {
         state: {},
         referenceNumber: 'REF-UPPER-123'
+      }
+      const mockH = { redirect: vi.fn(), view: vi.fn() }
+      const mockValidationResult = { id: 'val-123', valid: true }
+      validateApplication.mockResolvedValue(mockValidationResult)
+      vi.spyOn(controller, 'submitGasApplication').mockResolvedValue({ status: 204 })
+      vi.spyOn(controller, 'handleSuccessfulSubmission').mockResolvedValue('proceeded')
+
+      const handler = controller.makePostRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(controller.submitGasApplication).toHaveBeenCalledWith(mockRequest, {
+        identifiers: expect.objectContaining({
+          clientRef: 'ref-upper-123'
+        }),
+        state: {},
+        validationResult: mockValidationResult
+      })
+    })
+
+    it('should convert previousReferenceNumber to lowercase for previousClientRef', async () => {
+      const mockRequest = {
+        auth: { credentials: { sbi: '123', crn: 'crn123' } },
+        server: {},
+        params: { slug: 'test-grant' }
+      }
+      const mockContext = {
+        state: {},
+        referenceNumber: 'REF-UPPER-123',
+        previousReferenceNumber: 'PREV-UPPER-456'
       }
       const mockH = { redirect: vi.fn(), view: vi.fn() }
       const mockValidationResult = { id: 'val-123', valid: true }

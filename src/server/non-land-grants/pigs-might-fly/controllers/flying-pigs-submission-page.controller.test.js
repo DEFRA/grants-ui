@@ -68,6 +68,27 @@ describe('FlyingPigsSubmissionPageController', () => {
     expect(submitGrantApplication).toHaveBeenCalledWith('pigs-might-fly', mockApplicationData, mockRequest)
   })
 
+  test('should not include previousClientRef when previousReferenceNumber is absent', async () => {
+    const mockApplicationData = { metadata: {}, answers: {} }
+    mockContext.previousReferenceNumber = undefined
+    stateToPigsMightFlyGasAnswers.mockReturnValue(mockContext.state)
+    transformStateObjectToGasApplication.mockReturnValue(mockApplicationData)
+
+    await controller.submitPigTypesApplication(mockContext, mockRequest)
+
+    expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
+      {
+        sbi: 'test-sbi',
+        frn: 'test-frn',
+        crn: 'test-crn',
+        clientRef: '123456'
+      },
+      mockContext.state,
+      stateToPigsMightFlyGasAnswers
+    )
+    expect(submitGrantApplication).toHaveBeenCalledWith('pigs-might-fly', mockApplicationData, mockRequest)
+  })
+
   it('should handle POST route and redirect to /confirmation', async () => {
     const mockRequest = {
       logger: mockRequestLogger(),

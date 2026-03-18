@@ -58,7 +58,7 @@ describe('demo-confirmation.handler', () => {
 
       expect(findFormBySlug).toHaveBeenCalledWith('test-form')
       expect(ConfirmationService.loadConfirmationContent).toHaveBeenCalledWith(mockForm)
-      expect(ConfirmationService.processConfirmationContent).toHaveBeenCalledWith(mockConfirmationContent)
+      expect(ConfirmationService.processConfirmationContent).toHaveBeenCalledWith(mockConfirmationContent, 'test-slug')
       expect(ConfirmationService.buildViewModel).toHaveBeenCalledWith({
         ...MOCK_DEMO_DATA,
         confirmationContent: processedConfirmationContent,

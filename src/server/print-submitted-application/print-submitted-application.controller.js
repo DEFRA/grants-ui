@@ -7,7 +7,8 @@ import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { findFormBySlug } from '../common/forms/services/find-form-by-slug.js'
 import {
   buildPrintViewModel,
-  enrichDefinitionWithListItems
+  enrichDefinitionWithListItems,
+  processConfigurablePrintContent
 } from '../common/helpers/print-application-service/print-application-service.js'
 
 /**
@@ -57,6 +58,8 @@ async function buildPrintResponse({ form, state, slug }, request, h) {
 
   enrichDefinitionWithListItems(definition)
 
+  const configurablePrintContent = processConfigurablePrintContent(definition.metadata?.configurablePrintContent, slug)
+
   const applicant = state.applicant || {}
   const customerName = applicant.customer?.name
   const sessionData = {
@@ -75,7 +78,8 @@ async function buildPrintResponse({ form, state, slug }, request, h) {
     referenceNumber: state.$$__referenceNumber,
     submittedAt: state.submittedAt,
     slug,
-    sessionData
+    sessionData,
+    configurablePrintContent
   })
 
   return h.view('print-submitted-application', viewModel)

@@ -26,11 +26,15 @@ export default class FlyingPigsSubmissionPageController extends SummaryPageContr
     const { sbi = 'sbi', crn = 'crn', frn = 'frn' } = context.state
     const identifiers = {
       sbi,
-      frn,
       crn,
-      previousClientRef: context.previousReferenceNumber ? context.previousReferenceNumber.toLowerCase() : null,
+      frn,
       clientRef: context.referenceNumber?.toLowerCase()
     }
+
+    if (context.previousReferenceNumber) {
+      identifiers.previousClientRef = String(context.previousReferenceNumber).toLowerCase()
+    }
+
     const applicationData = transformStateObjectToGasApplication(
       identifiers,
       context.state,

@@ -129,7 +129,7 @@ export default class SubmissionPageController extends SummaryPageController {
         {
           crn,
           sbi,
-          grantCode: grantCode,
+          grantCode,
           grantVersion: context.grantVersion,
           previousReferenceNumber: context.state.previousReferenceNumber,
           referenceNumber: context.referenceNumber,
@@ -160,9 +160,16 @@ export default class SubmissionPageController extends SummaryPageController {
       const { state, referenceNumber } = context
       const frn = state.applicant ? state.applicant['business']?.reference : undefined
 
-      const previousReferenceNumber = state.previousReferenceNumber
-        ? String(context.state.previousReferenceNumber).toLowerCase()
-        : null
+      const identifiers = {
+        sbi,
+        crn,
+        frn,
+        clientRef: referenceNumber?.toLowerCase()
+      }
+
+      if (state.previousReferenceNumber) {
+        identifiers.previousClientRef = String(state.previousReferenceNumber).toLowerCase()
+      }
 
       try {
         const validationResult = await validateApplication({ applicationId: referenceNumber, crn, sbi, state })
@@ -172,13 +179,7 @@ export default class SubmissionPageController extends SummaryPageController {
         }
 
         const result = await this.submitGasApplication(request, {
-          identifiers: {
-            sbi,
-            crn,
-            frn,
-            clientRef: referenceNumber?.toLowerCase(),
-            previousClientRef: previousReferenceNumber ? previousReferenceNumber?.toLowerCase() : null
-          },
+          identifiers,
           state,
           validationResult
         })

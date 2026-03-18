@@ -37,7 +37,6 @@
       {{ govukSummaryList({ rows: detailsRows }) }}
     {% endif %}
 
-    <h2 class="govuk-heading-m">Submitted answers</h2>
     {% set sectionRows = [] %}
     {% for section in sections %}
       {% for question in section.questions %}
@@ -47,7 +46,10 @@
         }]) %}
       {% endfor %}
     {% endfor %}
-    {{ govukSummaryList({ rows: sectionRows }) }}
+    {% if sectionRows | length %}
+      <h2 class="govuk-heading-m">Submitted answers</h2>
+      {{ govukSummaryList({ rows: sectionRows }) }}
+    {% endif %}
 
     {% if paymentInfo %}
       <h2 class="govuk-heading-m">Parcel based actions</h2>
@@ -83,6 +85,10 @@
           }) }}
         {% endcall %}
       {% endif %}
+    {% endif %}
+
+    {% if configurablePrintContent and configurablePrintContent.html %}
+      {{ configurablePrintContent.html | safe }}
     {% endif %}
 
     <button type="button" class="govuk-button govuk-button--secondary app-print-button" id="print-button">

@@ -1,6 +1,17 @@
-import { buildPrintViewModel, enrichDefinitionWithListItems } from './print-application-service.js'
+import {
+  buildPrintViewModel,
+  enrichDefinitionWithListItems,
+  processConfigurablePrintContent
+} from './print-application-service.js'
+import { ComponentsRegistry } from '../../../confirmation/services/components.registry.js'
 import { MOCK_FORM_ENTRIES, MOCK_DISPLAY_ONLY_COMPONENTS } from '~/src/__test-fixtures__/mock-forms-cache.js'
 import { MOCK_PAYMENT } from '~/src/__test-fixtures__/mock-payment.js'
+
+vi.mock('../../../confirmation/services/components.registry.js', () => ({
+  ComponentsRegistry: {
+    replaceComponents: vi.fn((html) => html)
+  }
+}))
 
 vi.mock('~/src/config/nunjucks/filters/filters.js', async () => {
   const { mockFilters } = await import('~/src/__mocks__')
@@ -244,6 +255,14 @@ describe('print-application-service', () => {
       expect(result.sections[0].questions).toEqual([{ label: 'Start date', answer: '1 March 2026' }])
     })
 
+    test('should pass through configurablePrintContent to view model', () => {
+      const configurablePrintContent = { html: '<p>Custom print content</p>' }
+      const result = buildPrintViewModel({ ...baseParams, configurablePrintContent })
+
+      expect(result.configurablePrintContent).toEqual(configurablePrintContent)
+      expect(buildPrintViewModel(baseParams).configurablePrintContent).toBeUndefined()
+    })
+
     test('should return populated paymentInfo when answers contain payment data', () => {
       const result = buildPrintViewModel({
         ...baseParams,
@@ -358,6 +377,34 @@ describe('print-application-service', () => {
       enrichDefinitionWithListItems(definition)
 
       expect(definition.pages[0].components[0].items).toBeUndefined()
+    })
+  })
+
+  describe('processConfigurablePrintContent', () => {
+    beforeEach(() => {
+      vi.mocked(ComponentsRegistry.replaceComponents).mockImplementation((html) => html)
+    })
+
+    test.each([
+      ['undefined', undefined],
+      ['has no html', {}]
+    ])('should return undefined when configurablePrintContent is %s', (_desc, input) => {
+      expect(processConfigurablePrintContent(input, 'test-form')).toBeUndefined()
+    })
+
+    test('should replace {{SLUG}} tokens in html', () => {
+      const result = processConfigurablePrintContent({ html: '<a href="/{{SLUG}}/help">Help</a>' }, 'my-form')
+
+      expect(result).toEqual({ html: '<a href="/my-form/help">Help</a>' })
+    })
+
+    test('should call ComponentsRegistry.replaceComponents', () => {
+      ComponentsRegistry.replaceComponents.mockReturnValue('<p>replaced</p>')
+
+      const result = processConfigurablePrintContent({ html: '<p>{{COMPONENT}}</p>' }, 'slug')
+
+      expect(ComponentsRegistry.replaceComponents).toHaveBeenCalledWith('<p>{{COMPONENT}}</p>')
+      expect(result).toEqual({ html: '<p>replaced</p>' })
     })
   })
 })
