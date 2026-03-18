@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { addressFormatter } from './address.formatter.js'
 
-// This test suite validates the behavior of the `addressFormatter` function,
-// which formats an address object as an HTML string with line breaks.
-
 describe('address formatter', () => {
   describe('with no UPRN set', () => {
     it('should return null for non-object input', () => {
