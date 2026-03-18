@@ -14,7 +14,7 @@ vi.mock('~/src/server/common/helpers/retry.js')
 global.fetch = mockFetch
 
 const gasApi = config.get('gas.apiEndpoint')
-const code = config.get('landGrants.grantCode')
+const code = 'example-grant-code'
 
 describe('Grant Application service (token present)', () => {
   let mockRequest
@@ -82,6 +82,25 @@ describe('Grant Application service (token present)', () => {
       const result = await submitGrantApplication(code, payload)
 
       expect(mockFetchInstance).toHaveBeenCalledWith(`${gasApi}/grants/${code}/applications`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer mock-auth-token'
+        },
+        body: JSON.stringify(payload)
+      })
+      expect(result.ok).toBe(true)
+    })
+
+    test('should successfully submit a farm-payments grant application', async () => {
+      const mockFetchInstance = mockFetchWithResponse(mockResponse)
+
+      const slug = 'farm-payments'
+      const grantCode = `frps-private-beta`
+
+      const result = await submitGrantApplication(slug, payload)
+
+      expect(mockFetchInstance).toHaveBeenCalledWith(`${gasApi}/grants/${grantCode}/applications`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

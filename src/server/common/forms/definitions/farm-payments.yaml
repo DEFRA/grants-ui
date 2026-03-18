@@ -6,7 +6,6 @@ metadata:
   whitelistCrnEnvVar: FARMING_PAYMENTS_WHITELIST_CRNS
   whitelistSbiEnvVar: FARMING_PAYMENTS_WHITELIST_SBIS
   submission:
-    grantCode: frps-private-beta
     submissionSchemaPath: ./schemas/farm-payments.schema.json
   grantRedirectRules:
     preSubmission:
