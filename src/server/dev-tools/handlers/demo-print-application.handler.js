@@ -4,7 +4,8 @@ import { buildDemoData, buildDemoPrintAnswers, buildDemoPayment } from '../helpe
 import { findFormBySlug } from '../../common/forms/services/find-form-by-slug.js'
 import {
   buildPrintViewModel,
-  enrichDefinitionWithListItems
+  enrichDefinitionWithListItems,
+  processConfigurablePrintContent
 } from '../../common/helpers/print-application-service/print-application-service.js'
 import { generateFormNotFoundResponse } from '../utils/index.js'
 import { debug, LogCodes } from '../../common/helpers/logging/log.js'
@@ -36,6 +37,11 @@ export async function demoPrintApplicationHandler(request, h) {
     }
     const demoData = buildDemoData()
 
+    const configurablePrintContent = processConfigurablePrintContent(
+      definition.metadata?.configurablePrintContent,
+      slug
+    )
+
     const viewModel = buildPrintViewModel({
       definition,
       form,
@@ -47,7 +53,8 @@ export async function demoPrintApplicationHandler(request, h) {
         businessName: demoData.businessName,
         sbi: demoData.sbi,
         contactName: demoData.contactName
-      }
+      },
+      configurablePrintContent
     })
 
     return h.view('print-submitted-application', viewModel)

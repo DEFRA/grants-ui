@@ -185,7 +185,7 @@ export default class DeclarationPageController extends SummaryPageController {
             applicationData,
             sbi,
             crn,
-            grantCode: grantCode
+            grantCode
           })
         }
 

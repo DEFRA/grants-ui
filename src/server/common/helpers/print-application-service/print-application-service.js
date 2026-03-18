@@ -1,6 +1,7 @@
 import { formatAnswer } from './utils/format-answer.js'
 import { DISPLAY_ONLY_TYPES, COMPONENT_TYPES } from './constants.js'
 import { buildPrintPaymentViewModel } from './utils/build-print-payment-view-model.js'
+import { ComponentsRegistry } from '../../../confirmation/services/components.registry.js'
 
 const COMPOSITE_FIELD_PARTS = {
   [COMPONENT_TYPES.DatePartsField]: ['day', 'month', 'year'],
@@ -149,8 +150,18 @@ function resolveComponentLists(components, listsById) {
  * @param {string} params.slug
  * @param {{ contactName?: string, businessName?: string, sbi?: string }} params.sessionData
  * @param {FormMeta} params.form
+ * @param {{ html: string }} [params.configurablePrintContent]
  */
-export function buildPrintViewModel({ definition, answers, referenceNumber, submittedAt, slug, sessionData, form }) {
+export function buildPrintViewModel({
+  definition,
+  answers,
+  referenceNumber,
+  submittedAt,
+  slug,
+  sessionData,
+  form,
+  configurablePrintContent
+}) {
   return {
     pageTitle: `${form.title} application`,
     serviceName: form.title,
@@ -164,6 +175,28 @@ export function buildPrintViewModel({ definition, answers, referenceNumber, subm
     },
     sections: buildSections(definition.pages, answers),
     paymentInfo: buildPrintPaymentViewModel(answers.payment),
+    configurablePrintContent,
     breadcrumbs: []
   }
+}
+
+/**
+ * Processes configurablePrintContent from YAML metadata — replaces component placeholders
+ * and {{SLUG}} tokens.
+ * @param {object | undefined} configurablePrintContent
+ * @param {string} slug
+ * @returns {object | undefined}
+ */
+export function processConfigurablePrintContent(configurablePrintContent, slug) {
+  if (!configurablePrintContent?.html) {
+    return undefined
+  }
+
+  let processedHtml = ComponentsRegistry.replaceComponents(configurablePrintContent.html)
+
+  if (slug) {
+    processedHtml = processedHtml.replaceAll('{{SLUG}}', slug)
+  }
+
+  return { ...configurablePrintContent, html: processedHtml }
 }
