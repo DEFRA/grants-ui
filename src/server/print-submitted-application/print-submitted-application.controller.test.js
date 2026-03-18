@@ -2,7 +2,10 @@ import { vi } from 'vitest'
 import { mockReadFile } from '~/src/__mocks__/fs-yaml-mocks.js'
 import { printSubmittedApplication } from './print-submitted-application.controller.js'
 import { findFormBySlug } from '../common/forms/services/find-form-by-slug.js'
-import { buildPrintViewModel } from '../common/helpers/print-application-service/print-application-service.js'
+import {
+  buildPrintViewModel,
+  processConfigurablePrintContent
+} from '../common/helpers/print-application-service/print-application-service.js'
 import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/forms-cache.js'
 import { ApplicationStatus } from '~/src/server/common/constants/application-status.js'
 import { log, LogCodes } from '../common/helpers/logging/log.js'
@@ -118,8 +121,10 @@ describe('print-submitted-application.controller', () => {
         contactName: 'Test User',
         businessName: 'Test Business',
         sbi: '123456789'
-      }
+      },
+      configurablePrintContent: undefined
     })
+    expect(processConfigurablePrintContent).toHaveBeenCalledWith(undefined, 'test-form')
     expect(mockH.view).toHaveBeenCalledWith('print-submitted-application', { test: 'viewModel' })
   })
 
@@ -212,6 +217,23 @@ describe('print-submitted-application.controller', () => {
           sbi: '123456789'
         }
       })
+    )
+  })
+
+  test('should process configurablePrintContent when metadata is present', async () => {
+    processConfigurablePrintContent.mockReturnValue({ html: '<p>Processed</p>' })
+    mockReadFile.mockResolvedValue(
+      JSON.stringify({
+        ...mockDefinition,
+        metadata: { configurablePrintContent: { html: '<p>Raw</p>' } }
+      })
+    )
+
+    await handler(mockRequest, mockH)
+
+    expect(processConfigurablePrintContent).toHaveBeenCalledWith({ html: '<p>Raw</p>' }, 'test-form')
+    expect(buildPrintViewModel).toHaveBeenCalledWith(
+      expect.objectContaining({ configurablePrintContent: { html: '<p>Processed</p>' } })
     )
   })
 })
