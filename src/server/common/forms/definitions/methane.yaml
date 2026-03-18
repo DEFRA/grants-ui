@@ -46,6 +46,14 @@ metadata:
                     - path: street
                     - path: city
                     - path: postalCode
+                    - path: uprn
+                    - path: county
+                    - path: buildingName
+                    - path: buildingNumberRange
+                    - path: dependentLocality
+                    - path: doubleDependentLocality
+                    - path: flatName
+                    - path: pafOrganisationName
                 - path: vat
                 - path: type
                   fields:
