@@ -86,9 +86,16 @@ describe('TaskListPageController', () => {
 
     it('should use empty state if context.state is missing', () => {
       const mockRequest = {
-        app: { model: {} }
+        app: {
+          model: {
+            sections: [{ title: 'Section 1' }]
+          }
+        }
       }
       const mockContext = {} // No state
+
+      helper.buildTaskListData.mockReturnValue([{ title: 'Section 1', items: [] }])
+      helper.getCompletionStats.mockReturnValue({ completed: 1, total: 2, isComplete: false })
 
       controller.getViewModel(mockRequest, mockContext)
 

@@ -1,5 +1,5 @@
 import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
-import { getTaskPageBackLink } from '../task-list/task-list.helper.js'
+import { getTaskPageBackLink } from '~/src/server/task-list/task-list.helper.js'
 
 export default class CheckResponsesPageController extends SummaryPageController {
   /**

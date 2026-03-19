@@ -29,6 +29,10 @@ export default class TaskListPageController extends QuestionPageController {
     const taskListSections = buildTaskListData(viewModel, formModel, state)
     const completionStats = getCompletionStats(viewModel, state)
 
+    if (taskListSections.length === 1 && formModel?.sections?.[0]) {
+      formModel.sections[0].hideTitle = true
+    }
+
     // Split viewModel.components into aboveComponents and belowComponents
     const [aboveComponents, belowComponents] = splitComponents(viewModel.page.collection.components)
 

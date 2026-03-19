@@ -20,7 +20,7 @@
 {% block content %}
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
-      {% if sectionTitle and (sectionTitle !== pageTitle) %}
+      {% if sectionTitle and sectionTitle.length and (sectionTitle !== pageTitle) %}
       <h2 class="govuk-caption-l govuk-!-margin-top-0" id="section-title">
         {{- sectionTitle -}}
       </h2>

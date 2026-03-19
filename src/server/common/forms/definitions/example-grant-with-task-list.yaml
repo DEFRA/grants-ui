@@ -253,6 +253,12 @@ pages:
           required: true
 
   # Task pages - Example submit section
+  - title: Check your answers
+    path: /summary
+    section: 31370d87-fb56-4fb3-aa2b-f35781073300
+    controller: CheckResponsesPageController
+    id: 608e4bcd-7019-4932-b412-25f892615d8d
+
   - title: Confirm and send
     id: 9817cd3a-c9ae-49f1-8a95-076a82504d25
     path: /declaration
