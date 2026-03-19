@@ -67,7 +67,7 @@ describe('DeclarationPageController', () => {
       def: {
         metadata: {
           submission: {
-            grantCode: 'example-grant-with-auth-v3'
+            grantCode: 'example-grant-with-auth'
           }
         }
       },

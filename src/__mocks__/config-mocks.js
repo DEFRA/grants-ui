@@ -4,7 +4,6 @@ export const mockLandGrantsConfig = () => ({
   config: {
     get: vi.fn((key) => {
       const values = {
-        'landGrants.grantCode': 'TEST-GRANT-CODE',
         'devTools.enabled': false
       }
       return values[key]
@@ -49,7 +48,6 @@ export const createMockConfig = (baseValues = {}) => {
         'session.cache.apiEndpoint': 'http://localhost:3001',
         'session.cache.authToken': 'backend-auth-token',
         'session.cache.encryptionKey': 'backend-encryption-key-32-chars',
-        'landGrants.grantCode': 'LAND001',
         ...backendValues
       }
       return configMock

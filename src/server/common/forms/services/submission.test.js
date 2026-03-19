@@ -1,7 +1,7 @@
 import { loadSubmissionSchemaValidators, validateSubmissionAnswers } from './submission.js'
 
 describe('Validate submission answers', () => {
-  const GRANT_CODE = 'example-grant-with-auth-v3'
+  const GRANT_CODE = 'example-grant-with-auth'
 
   const validPayload = {
     yesNoField: true,
