@@ -255,12 +255,42 @@ describe('print-application-service', () => {
       expect(result.sections[0].questions).toEqual([{ label: 'Start date', answer: '1 March 2026' }])
     })
 
-    test('should pass through configurablePrintContent to view model', () => {
-      const configurablePrintContent = { html: '<p>Custom print content</p>' }
-      const result = buildPrintViewModel({ ...baseParams, configurablePrintContent })
-
-      expect(result.configurablePrintContent).toEqual(configurablePrintContent)
-      expect(buildPrintViewModel(baseParams).configurablePrintContent).toBeUndefined()
+    test.each([
+      {
+        desc: 'passes through configurablePrintContent',
+        field: 'configurablePrintContent',
+        input: { html: '<p>Custom print content</p>' },
+        expected: { html: '<p>Custom print content</p>' }
+      },
+      {
+        desc: 'passes through applicantDetailsSections',
+        field: 'applicantDetailsSections',
+        input: {
+          person: { rows: [{ key: { text: 'First name' }, value: { text: 'Jane' } }] },
+          business: { rows: [{ key: { text: 'Business name' }, value: { text: 'Smith Farms' } }] },
+          contact: { rows: [{ key: { text: 'Email address' }, value: { text: 'jane@example.com' } }] }
+        },
+        expected: {
+          person: { rows: [{ key: { text: 'First name' }, value: { text: 'Jane' } }] },
+          business: { rows: [{ key: { text: 'Business name' }, value: { text: 'Smith Farms' } }] },
+          contact: { rows: [{ key: { text: 'Email address' }, value: { text: 'jane@example.com' } }] }
+        }
+      },
+      {
+        desc: 'defaults configurablePrintContent to undefined',
+        field: 'configurablePrintContent',
+        input: undefined,
+        expected: undefined
+      },
+      {
+        desc: 'defaults applicantDetailsSections to undefined',
+        field: 'applicantDetailsSections',
+        input: undefined,
+        expected: undefined
+      }
+    ])('should resolve $field — $desc', ({ field, input, expected }) => {
+      const result = buildPrintViewModel({ ...baseParams, ...(input === undefined ? {} : { [field]: input }) })
+      expect(result[field]).toEqual(expected)
     })
 
     test('should return populated paymentInfo when answers contain payment data', () => {

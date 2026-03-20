@@ -1,6 +1,8 @@
 engine: V2
 name: Farm payments
 metadata:
+  printPage:
+    showApplicantDetails: true
   id: 5c67688f-3c61-4839-a6e1-d48b598257f1
   enabledInProd: true
   whitelistCrnEnvVar: FARMING_PAYMENTS_WHITELIST_CRNS
