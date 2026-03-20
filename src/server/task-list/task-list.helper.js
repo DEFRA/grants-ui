@@ -158,9 +158,11 @@ function createTaskItem(pageDef, state, pages, metadata, basePath, formModel) {
     return taskItem
   }
 
+  const pageIndex = pages.indexOf(pageDef)
   if (
     completeInOrder &&
-    pages.indexOf(pageDef) > 0 &&
+    pages.includes(pageDef) &&
+    pageIndex > 0 &&
     !areAllPreviousTasksCompleted(pages, pageDef, state, formModel)
   ) {
     taskItem.status = createStatusTag(statuses.cannotStart, 'Cannot start yet', 'govuk-tag--grey')
