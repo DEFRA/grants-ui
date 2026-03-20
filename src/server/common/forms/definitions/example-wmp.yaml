@@ -1,9 +1,9 @@
 engine: V2
-name: Example grant with task list
+name: Example grant for WMP
 metadata:
-  id: f298fa47-0ebb-4c92-a0aa-3d0faed71aab
+  id: 04083f0a-2166-4d5a-8214-9fe1b104f13d
   enabledInProd: false
-  referenceNumberPrefix: EGWT
+  referenceNumberPrefix: EGWMP
   cookieConsent:
     enabled: true
     serviceName: Farm and land service
@@ -12,7 +12,7 @@ metadata:
   tasklist:
     completeInOrder: true # Optional, defaults to true - must complete tasks in order
     returnAfterSection: true # Optional, defaults to true - returns to task list after each section
-    showCompletionStatus: true # Optional, defaults to true - show "X of Y" completion status
+    showCompletionStatus: false # Optional, defaults to true - show "X of Y" completion status
     statuses: # Optional completion status display overrides (defaults shown below)
       cannotStart:
         text: 'Cannot start yet'
@@ -23,6 +23,9 @@ metadata:
       completed:
         text: 'Completed'
         classes: 'govuk-tag--green'
+      notApplicable:
+        text: 'Not applicable'
+        classes: 'govuk-tag--purple'
   submission:
     submissionSchemaPath: ./schemas/example-grant-with-auth-submission.schema.json
   grantRedirectRules:
@@ -171,6 +174,33 @@ pages:
           position: below # Renders component below task list
 
   # Task pages - Example section one
+  - title: Example optional question choice
+    id: 3ccb329c-d991-4ac7-a633-3afdddfcafa7
+    path: /choice
+    section: 52757632-60cb-437f-a648-cfbc6acdacd0
+    controller: TaskPageController
+    components:
+      - name: choice
+        id: 2552bf76-3297-474b-bc1d-164f2a3f8e2e
+        type: YesNoField
+        title: Show the conditional question?
+        options:
+          required: true
+
+  - title: Example conditional question
+    id: e5d08ffe-7cc2-49b7-9196-970dc306b0b4
+    path: /conditional-question
+    section: 52757632-60cb-437f-a648-cfbc6acdacd0
+    controller: TaskPageController
+    components:
+      - name: exampleConditionalQuestion
+        id: 90bd7aeb-677f-4c51-a2ff-b13913ec3a5a
+        type: NumberField
+        title: Example number field
+        options:
+          required: true
+    condition: c8ffa5ae-0155-4a49-b629-d881b8fc8787
+
   - title: Example multiple components task
     id: 523058ea-46f0-44fd-ae79-1a6be652c7f9
     path: /multiple-components-task-page
@@ -274,5 +304,13 @@ conditions:
         operator: is
         type: BooleanValue
         value: false
+  - id: c8ffa5ae-0155-4a49-b629-d881b8fc8787
+    displayName: choiceYes
+    items:
+      - id: 67f314fa-7a52-4a06-86fd-6d270c790d76
+        componentId: 2552bf76-3297-474b-bc1d-164f2a3f8e2e
+        operator: is
+        type: BooleanValue
+        value: true
 lists: []
 schema: 2

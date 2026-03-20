@@ -203,6 +203,8 @@ sections:
     title: Review and submit
 ```
 
+If only 1 section is used, section headers will be hidden on the task list page and all task pages.
+
 #### 2. Create the task list page
 
 Add a task list page using the `TaskListPageController`:

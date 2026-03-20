@@ -22,7 +22,9 @@
 
     {# Render task list sections #}
     {% for section in taskListSections %}
+    {% if taskListSections | length > 1 %}
     <h2 class="govuk-heading-m">{{ section.title }}</h2>
+    {% endif %}
 
     {{ govukTaskList({
     items: section.items

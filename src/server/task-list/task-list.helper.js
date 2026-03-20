@@ -63,6 +63,10 @@ function isTaskCompleted(pageDef, state) {
     return false
   }
 
+  if (pageDef.condition) {
+    return true // TODO for now always true - need 3 states - true/false/na - should be na if condition is false, otherwise complete checks below
+  }
+
   // Check if all components have a value in state (unless required=false)
   return componentNames.every((name) => {
     // Check if the exact name exists
@@ -127,12 +131,21 @@ function areAllPreviousTasksCompleted(pages, currentPage, state) {
  * @returns {object} Task Item object for GOV.UK Task List component
  */
 function createTaskItem(pageDef, state, pages, metadata, basePath) {
-  const completed = isTaskCompleted(pageDef, state)
+  const completed = isTaskCompleted(pageDef, state) // TODO need to handle a status object being returned with true/false/na
   const { statuses = {} } = metadata.tasklist ?? {}
   const href = `${basePath}${pageDef.path}`
   const completeInOrder = true // TODO force to true for now until completeInOrder=false logic implemented
+  const pageCondition = pageDef.condition
 
   const taskItem = createTaskItemBase(pageDef.title)
+
+  if (pageCondition) {
+    // TODO temp workaround just always show Not applicable
+    // TODO need to check completed status - if na, just hide task completely, otherwise continue to other checks using completed status
+    taskItem.href = areAllPreviousTasksCompleted(pages, pageDef, state) && href
+    taskItem.status = createStatusTag(statuses.notApplicable, 'Not applicable', 'govuk-tag--purple')
+    return taskItem
+  }
 
   if (completed) {
     taskItem.href = href
