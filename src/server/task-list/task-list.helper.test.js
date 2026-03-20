@@ -44,9 +44,10 @@ describe('task-list.helper', () => {
           }
         }
       }
+      const formModel = {}
       const state = { q1: 'val1', q3: 'val3' }
 
-      const stats = getCompletionStats(mockModel, state)
+      const stats = getCompletionStats(mockModel, formModel, state)
       expect(stats).toEqual({
         completed: 2,
         total: 3,
@@ -62,8 +63,9 @@ describe('task-list.helper', () => {
           }
         }
       }
+      const formModel = {}
       const state = { q1: 'val1' }
-      expect(getCompletionStats(mockModel, state).isComplete).toBe(true)
+      expect(getCompletionStats(mockModel, formModel, state).isComplete).toBe(true)
     })
 
     it('should return 0 completed if no tasks have values', () => {
@@ -74,8 +76,9 @@ describe('task-list.helper', () => {
           }
         }
       }
+      const formModel = {}
       const state = {}
-      const stats = getCompletionStats(mockModel, state)
+      const stats = getCompletionStats(mockModel, formModel, state)
       expect(stats.completed).toBe(0)
     })
   })
@@ -89,8 +92,9 @@ describe('task-list.helper', () => {
           }
         }
       }
+      const formModel = {}
       const state = { addr__postcode: 'SW1A 1AA' }
-      expect(getCompletionStats(mockModel, state).completed).toBe(1)
+      expect(getCompletionStats(mockModel, formModel, state).completed).toBe(1)
     })
 
     it('should ignore non-question components', () => {
@@ -101,9 +105,10 @@ describe('task-list.helper', () => {
           }
         }
       }
+      const formModel = {}
       const state = { h1: 'some html' }
-      expect(getCompletionStats(mockModel, state).completed).toBe(0)
-      expect(getCompletionStats(mockModel, state).total).toBe(1)
+      expect(getCompletionStats(mockModel, formModel, state).completed).toBe(0)
+      expect(getCompletionStats(mockModel, formModel, state).total).toBe(1)
     })
   })
 

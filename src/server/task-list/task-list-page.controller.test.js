@@ -71,7 +71,11 @@ describe('TaskListPageController', () => {
       const result = controller.getViewModel(mockRequest, mockContext)
 
       expect(helper.buildTaskListData).toHaveBeenCalledWith(expect.anything(), mockRequest.app.model, mockContext.state)
-      expect(helper.getCompletionStats).toHaveBeenCalledWith(expect.anything(), mockContext.state)
+      expect(helper.getCompletionStats).toHaveBeenCalledWith(
+        expect.anything(),
+        mockRequest.app.model,
+        mockContext.state
+      )
       expect(helper.splitComponents).toHaveBeenCalled()
 
       expect(result).toMatchObject({
