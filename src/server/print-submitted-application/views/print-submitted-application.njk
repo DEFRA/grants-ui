@@ -12,29 +12,42 @@
     <h1 class="govuk-heading-l">{{ pageTitle }}</h1>
     <p class="govuk-body">Application number: <strong>{{ referenceNumber }}</strong></p>
 
-    <h2 class="govuk-heading-m">Application details</h2>
-    {% set detailsRows = [] %}
-    {% if applicantDetails.contactName %}
-      {% set detailsRows = detailsRows.concat([{
-        key: { text: "Name" },
-        value: { text: applicantDetails.contactName }
-      }]) %}
-    {% endif %}
-    {% if applicantDetails.businessName %}
-      {% set detailsRows = detailsRows.concat([{
-        key: { text: "Business name" },
-        value: { text: applicantDetails.businessName }
-      }]) %}
-    {% endif %}
-    {% if applicantDetails.sbi %}
-      {% set detailsRows = detailsRows.concat([{
-        key: { text: "SBI number" },
-        value: { text: applicantDetails.sbi }
-      }]) %}
-    {% endif %}
+    {% if applicantDetailsSections %}
+      <h2 class="govuk-heading-m">Applicant details</h2>
 
-    {% if detailsRows | length %}
-      {{ govukSummaryList({ rows: detailsRows }) }}
+      <h3 class="govuk-heading-s">Your details</h3>
+      {{ govukSummaryList(applicantDetailsSections.person) }}
+
+      <h3 class="govuk-heading-s">Business details</h3>
+      {{ govukSummaryList(applicantDetailsSections.business) }}
+
+      <h3 class="govuk-heading-s">Contact details</h3>
+      {{ govukSummaryList(applicantDetailsSections.contact) }}
+    {% else %}
+      {% set detailsRows = [] %}
+      {% if applicantDetails.contactName %}
+        {% set detailsRows = detailsRows.concat([{
+          key: { text: "Name" },
+          value: { text: applicantDetails.contactName }
+        }]) %}
+      {% endif %}
+      {% if applicantDetails.businessName %}
+        {% set detailsRows = detailsRows.concat([{
+          key: { text: "Business name" },
+          value: { text: applicantDetails.businessName }
+        }]) %}
+      {% endif %}
+      {% if applicantDetails.sbi %}
+        {% set detailsRows = detailsRows.concat([{
+          key: { text: "SBI number" },
+          value: { text: applicantDetails.sbi }
+        }]) %}
+      {% endif %}
+
+      {% if detailsRows | length %}
+        <h2 class="govuk-heading-m">Application details</h2>
+        {{ govukSummaryList({ rows: detailsRows }) }}
+      {% endif %}
     {% endif %}
 
     {% set sectionRows = [] %}

@@ -11,10 +11,14 @@ import { ApplicationStatus } from '~/src/server/common/constants/application-sta
 import { log, LogCodes } from '../common/helpers/logging/log.js'
 import { mockHapiRequest, mockHapiResponseToolkit, mockHapiServer } from '~/src/__mocks__/hapi-mocks.js'
 import { MOCK_FORM_WITH_PATH, MOCK_SINGLE_PAGE_DEFINITION } from '~/src/__test-fixtures__/mock-forms-cache.js'
+import { fetchBusinessAndCustomerInformation } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
+import { createPersonRows, createBusinessRows, createContactRows } from '~/src/server/common/helpers/create-rows.js'
 
 vi.mock('../common/forms/services/find-form-by-slug.js')
 vi.mock('../common/helpers/print-application-service/print-application-service.js')
 vi.mock('~/src/server/common/helpers/forms-cache/forms-cache.js')
+vi.mock('~/src/server/common/services/consolidated-view/consolidated-view.service.js')
+vi.mock('~/src/server/common/helpers/create-rows.js')
 vi.mock('../common/helpers/logging/log.js', async () => {
   const { mockLogHelper } = await import('~/src/__mocks__')
   return mockLogHelper()
@@ -122,7 +126,8 @@ describe('print-submitted-application.controller', () => {
         businessName: 'Test Business',
         sbi: '123456789'
       },
-      configurablePrintContent: undefined
+      configurablePrintContent: undefined,
+      applicantDetailsSections: null
     })
     expect(processConfigurablePrintContent).toHaveBeenCalledWith(undefined, 'test-form')
     expect(mockH.view).toHaveBeenCalledWith('print-submitted-application', { test: 'viewModel' })
@@ -220,12 +225,112 @@ describe('print-submitted-application.controller', () => {
     )
   })
 
+  describe('applicant details sections', () => {
+    const mockPersonRows = { rows: [{ key: { text: 'First name' }, value: { text: 'Test' } }] }
+    const mockBusinessRows = { rows: [{ key: { text: 'Business name' }, value: { text: 'Test Business' } }] }
+    const mockContactRows = { rows: [{ key: { text: 'Email address' }, value: { text: 'test@example.com' } }] }
+    const definitionWithApplicantDetails = JSON.stringify({
+      ...mockDefinition,
+      metadata: { printPage: { showApplicantDetails: true } }
+    })
+
+    const fetchedData = {
+      customer: { name: { title: 'Mr', first: 'Fetched', last: 'User' } },
+      business: { name: 'Fetched Business' }
+    }
+
+    beforeEach(() => {
+      vi.mocked(createPersonRows).mockReturnValue(mockPersonRows)
+      vi.mocked(createBusinessRows).mockReturnValue(mockBusinessRows)
+      vi.mocked(createContactRows).mockReturnValue(mockContactRows)
+    })
+
+    test.each([
+      {
+        desc: 'state has applicant — uses state data',
+        state: mockState,
+        expectedPersonArg: mockState.applicant.customer.name,
+        expectedBusinessArg: mockState.applicant.business,
+        shouldFetch: false
+      },
+      {
+        desc: 'state.applicant is empty — fetches from API',
+        state: { ...mockState, applicant: {} },
+        expectedPersonArg: fetchedData.customer.name,
+        expectedBusinessArg: fetchedData.business,
+        shouldFetch: true
+      }
+    ])(
+      'should resolve applicant details when $desc',
+      async ({ state, expectedPersonArg, expectedBusinessArg, shouldFetch }) => {
+        mockGetState.mockResolvedValue(state)
+        mockReadFile.mockResolvedValue(definitionWithApplicantDetails)
+        if (shouldFetch) {
+          vi.mocked(fetchBusinessAndCustomerInformation).mockResolvedValue(fetchedData)
+        }
+
+        await handler(mockRequest, mockH)
+
+        if (shouldFetch) {
+          expect(fetchBusinessAndCustomerInformation).toHaveBeenCalledWith(mockRequest)
+        } else {
+          expect(fetchBusinessAndCustomerInformation).not.toHaveBeenCalled()
+        }
+        expect(createPersonRows).toHaveBeenCalledWith(expectedPersonArg)
+        expect(createBusinessRows).toHaveBeenCalledWith('123456789', expectedBusinessArg)
+        expect(createContactRows).toHaveBeenCalledWith(expectedBusinessArg)
+        expect(buildPrintViewModel).toHaveBeenCalledWith(
+          expect.objectContaining({
+            applicantDetailsSections: {
+              person: mockPersonRows,
+              business: mockBusinessRows,
+              contact: mockContactRows
+            }
+          })
+        )
+      }
+    )
+
+    test('should return null applicantDetailsSections when fetch fails', async () => {
+      mockGetState.mockResolvedValue({ ...mockState, applicant: {} })
+      mockReadFile.mockResolvedValue(definitionWithApplicantDetails)
+      vi.mocked(fetchBusinessAndCustomerInformation).mockRejectedValue(new Error('API failure'))
+
+      await handler(mockRequest, mockH)
+
+      expect(buildPrintViewModel).toHaveBeenCalledWith(
+        expect.objectContaining({
+          applicantDetailsSections: null
+        })
+      )
+      expect(vi.mocked(log)).toHaveBeenCalledWith(
+        LogCodes.PRINT_APPLICATION.ERROR,
+        expect.objectContaining({
+          errorMessage: expect.stringContaining('Failed to fetch applicant details')
+        }),
+        mockRequest
+      )
+    })
+
+    test('should pass null applicantDetailsSections when showApplicantDetails is not set', async () => {
+      await handler(mockRequest, mockH)
+
+      expect(fetchBusinessAndCustomerInformation).not.toHaveBeenCalled()
+      expect(createPersonRows).not.toHaveBeenCalled()
+      expect(buildPrintViewModel).toHaveBeenCalledWith(
+        expect.objectContaining({
+          applicantDetailsSections: null
+        })
+      )
+    })
+  })
+
   test('should process configurablePrintContent when metadata is present', async () => {
     processConfigurablePrintContent.mockReturnValue({ html: '<p>Processed</p>' })
     mockReadFile.mockResolvedValue(
       JSON.stringify({
         ...mockDefinition,
-        metadata: { configurablePrintContent: { html: '<p>Raw</p>' } }
+        metadata: { printPage: { configurablePrintContent: { html: '<p>Raw</p>' } } }
       })
     )
 
