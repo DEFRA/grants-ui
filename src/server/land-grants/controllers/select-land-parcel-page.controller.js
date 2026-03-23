@@ -6,6 +6,22 @@ import { mapParcelsToViewModel } from '~/src/server/land-grants/view-models/parc
 export default class SelectLandParcelPageController extends LandGrantsQuestionWithAuthCheckController {
   viewName = 'select-land-parcel'
 
+  /**
+   * Whether this journey allows selecting multiple parcels.
+   * Configured via `config` on the page in the form definition YAML:
+   *   controller: SelectLandParcelPageController
+   *   config:
+   *     enableMultipleParcelSelect: true
+   *
+   * @param {FormModel} model
+   * @param {import('@defra/forms-model').Page} pageDef
+   */
+  constructor(model, pageDef) {
+    super(model, pageDef)
+    const config = model.def.metadata?.pageConfig?.[pageDef.path] ?? {}
+    this.enableMultipleParcelSelect = config.enableMultipleParcelSelect === true
+  }
+
   resolveParcelId(request, _context) {
     return request.payload?.selectedLandParcel || null
   }
@@ -66,6 +82,7 @@ export default class SelectLandParcelPageController extends LandGrantsQuestionWi
     const baseViewModel = super.getViewModel(request, context)
     const existingLandParcels = Object.keys(landParcels || {}).length > 0
 
+    console.log({ enableMultipleParcelSelect: this.enableMultipleParcelSelect })
     try {
       const fetchedParcels = await fetchParcels(request)
       const parcels = mapParcelsToViewModel(fetchedParcels, landParcels)
@@ -107,5 +124,6 @@ export default class SelectLandParcelPageController extends LandGrantsQuestionWi
 
 /**
  * @import { FormContext, AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
+ * @import { FormModel } from '@defra/forms-engine-plugin/engine/models/index.js'
  * @import { ResponseObject, ResponseToolkit } from '@hapi/hapi'
  */
