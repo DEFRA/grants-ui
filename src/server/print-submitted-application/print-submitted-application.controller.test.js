@@ -1,7 +1,6 @@
 import { vi } from 'vitest'
-import { mockReadFile } from '~/src/__mocks__/fs-yaml-mocks.js'
 import { printSubmittedApplication } from './print-submitted-application.controller.js'
-import { findFormBySlug } from '../common/forms/services/find-form-by-slug.js'
+import { findFormBySlug, loadFormDefinition } from '../common/forms/services/find-form-by-slug.js'
 import {
   buildPrintViewModel,
   processConfigurablePrintContent
@@ -60,9 +59,9 @@ describe('print-submitted-application.controller', () => {
     })
     mockH = mockHapiResponseToolkit()
 
-    findFormBySlug.mockReturnValue(mockForm)
+    findFormBySlug.mockResolvedValue(mockForm)
+    loadFormDefinition.mockResolvedValue(mockDefinition)
     buildPrintViewModel.mockReturnValue({ test: 'viewModel' })
-    mockReadFile.mockResolvedValue(JSON.stringify(mockDefinition))
   })
 
   test('should register GET /{slug}/print-submitted-application route', () => {
@@ -87,7 +86,7 @@ describe('print-submitted-application.controller', () => {
   })
 
   test('should return 404 when form is not found', async () => {
-    findFormBySlug.mockReturnValue(null)
+    findFormBySlug.mockResolvedValue(null)
 
     await handler(mockRequest, mockH)
 
@@ -113,7 +112,7 @@ describe('print-submitted-application.controller', () => {
 
     expect(findFormBySlug).toHaveBeenCalledWith('test-form')
     expect(mockGetState).toHaveBeenCalledWith(mockRequest)
-    expect(mockReadFile).toHaveBeenCalledWith(mockForm.path, 'utf8')
+    expect(loadFormDefinition).toHaveBeenCalledWith(mockForm)
     expect(buildPrintViewModel).toHaveBeenCalledWith({
       definition: mockDefinition,
       form: mockForm,
@@ -149,7 +148,7 @@ describe('print-submitted-application.controller', () => {
   })
 
   test('should return 500 and log error when an exception occurs', async () => {
-    mockReadFile.mockRejectedValue(new Error('File read failed'))
+    loadFormDefinition.mockRejectedValue(new Error('File read failed'))
     mockRequest.auth = { credentials: { userId: 'user-42' } }
 
     await handler(mockRequest, mockH)
@@ -168,7 +167,7 @@ describe('print-submitted-application.controller', () => {
   })
 
   test('should use "unknown" userId when auth credentials are absent', async () => {
-    mockReadFile.mockRejectedValue(new Error('Oops'))
+    loadFormDefinition.mockRejectedValue(new Error('Oops'))
     mockRequest.auth = {}
 
     await handler(mockRequest, mockH)
@@ -264,7 +263,7 @@ describe('print-submitted-application.controller', () => {
       'should resolve applicant details when $desc',
       async ({ state, expectedPersonArg, expectedBusinessArg, shouldFetch }) => {
         mockGetState.mockResolvedValue(state)
-        mockReadFile.mockResolvedValue(definitionWithApplicantDetails)
+        loadFormDefinition.mockResolvedValue(JSON.parse(definitionWithApplicantDetails))
         if (shouldFetch) {
           vi.mocked(fetchBusinessAndCustomerInformation).mockResolvedValue(fetchedData)
         }
@@ -293,7 +292,7 @@ describe('print-submitted-application.controller', () => {
 
     test('should return null applicantDetailsSections when fetch fails', async () => {
       mockGetState.mockResolvedValue({ ...mockState, applicant: {} })
-      mockReadFile.mockResolvedValue(definitionWithApplicantDetails)
+      loadFormDefinition.mockResolvedValue(JSON.parse(definitionWithApplicantDetails))
       vi.mocked(fetchBusinessAndCustomerInformation).mockRejectedValue(new Error('API failure'))
 
       await handler(mockRequest, mockH)
@@ -327,12 +326,10 @@ describe('print-submitted-application.controller', () => {
 
   test('should process configurablePrintContent when metadata is present', async () => {
     processConfigurablePrintContent.mockReturnValue({ html: '<p>Processed</p>' })
-    mockReadFile.mockResolvedValue(
-      JSON.stringify({
-        ...mockDefinition,
-        metadata: { printPage: { configurablePrintContent: { html: '<p>Raw</p>' } } }
-      })
-    )
+    loadFormDefinition.mockResolvedValue({
+      ...mockDefinition,
+      metadata: { printPage: { configurablePrintContent: { html: '<p>Raw</p>' } } }
+    })
 
     await handler(mockRequest, mockH)
 

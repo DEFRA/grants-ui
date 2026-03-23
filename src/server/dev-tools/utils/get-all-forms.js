@@ -1,9 +1,9 @@
-import { getFormsCache } from '../../common/forms/services/form.js'
+import { getFormsRedisClient, getAllFormMetas } from '../../common/forms/services/forms-redis.js'
 
 /**
  * Get all forms from cache with metadata
- * @returns {Array} Array of form objects
+ * @returns {Promise<import('../../common/forms/services/forms-redis.js').FormCacheEntry[]>}
  */
-export function getAllForms() {
-  return getFormsCache()
+export async function getAllForms() {
+  return getAllFormMetas(getFormsRedisClient())
 }

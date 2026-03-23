@@ -2,30 +2,33 @@ import { vi } from 'vitest'
 import { getAllForms } from './get-all-forms.js'
 import { MOCK_FORM_CACHE } from '../../confirmation/__test-fixtures__/confirmation-test-fixtures.js'
 
-vi.mock('../../common/forms/services/form.js', () => ({
-  getFormsCache: vi.fn(() => MOCK_FORM_CACHE)
+vi.mock('../../common/forms/services/forms-redis.js', () => ({
+  getFormsRedisClient: vi.fn(() => ({})),
+  getAllFormMetas: vi.fn()
 }))
 
 describe('get-all-forms', () => {
-  let getFormsCacheMock
+  let getAllFormMetasMock
 
   beforeEach(async () => {
     vi.clearAllMocks()
-    const formService = await import('../../common/forms/services/form.js')
-    getFormsCacheMock = formService.getFormsCache
+    const formsRedis = await import('../../common/forms/services/forms-redis.js')
+    getAllFormMetasMock = formsRedis.getAllFormMetas
   })
 
-  test('should return all forms from cache', () => {
-    const result = getAllForms()
+  test('should return all forms from cache', async () => {
+    getAllFormMetasMock.mockResolvedValue(MOCK_FORM_CACHE)
 
-    expect(getFormsCacheMock).toHaveBeenCalled()
+    const result = await getAllForms()
+
+    expect(getAllFormMetasMock).toHaveBeenCalled()
     expect(result).toEqual(MOCK_FORM_CACHE)
   })
 
-  test('should handle empty cache', () => {
-    getFormsCacheMock.mockReturnValueOnce([])
+  test('should handle empty cache', async () => {
+    getAllFormMetasMock.mockResolvedValue([])
 
-    const result = getAllForms()
+    const result = await getAllForms()
 
     expect(result).toEqual([])
     expect(Array.isArray(result)).toBe(true)

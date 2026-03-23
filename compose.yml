@@ -68,6 +68,11 @@ services:
       ENABLE_LAND_GRANT_HEFER_20260219: ${ENABLE_LAND_GRANT_HEFER_20260219:-true}
       ENABLE_UPL_8_AND_10_20260303: ${ENABLE_UPL_8_AND_10_20260303:-true}
       ENABLE_FARM_PAYMENTS_PRINT_APPLICATION_20260311: ${ENABLE_FARM_PAYMENTS_PRINT_APPLICATION_20260311:-true}
+      CONFIG_API_URL: '${CONFIG_API_URL:-http://grants-ui-config-api:3011}'
+      CONFIG_API_JWT_SECRET: ${CONFIG_API_JWT_SECRET:-forms-config-jwt-secret}
+      CONFIG_API_JWT_EXPIRY: ${CONFIG_API_JWT_EXPIRY:-1h}
+      FORMS_API_SLUGS: ${FORMS_API_SLUGS:-}
+      FORMS_API_CACHE_TTL_SECONDS: ${FORMS_API_CACHE_TTL_SECONDS:-300}
     volumes:
       - ./src:/home/node/src
       - /home/node/node_modules
@@ -103,6 +108,36 @@ services:
     restart: unless-stopped
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:3001/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  grants-ui-config-api:
+#    image: defradigital/grants-ui-config-api
+    image: grants-ui-config-api:local
+#    pull_policy: always
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      localstack:
+        condition: service_healthy
+    ports:
+      - '3011:3011'
+    env_file:
+      - 'localstack/aws.env'
+    environment:
+      PORT: 3011
+      HOST: 0.0.0.0
+      NODE_ENV: development
+      MONGO_URI: mongodb://mongodb:27017/
+      LOCALSTACK_ENDPOINT: http://localstack:4566
+      JWT_SECRET: ${CONFIG_API_JWT_SECRET:-forms-config-jwt-secret}
+    networks:
+      - grants-ui-net
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:3011/health']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -210,6 +245,29 @@ services:
       interval: 5s
       timeout: 3s
       retries: 20
+
+  localstack:
+    image: localstack/localstack:4.14.0
+    ports:
+      - '4566:4566'
+      - '4510-4559:4510-4559'
+    env_file:
+      - 'localstack/aws.env'
+    environment:
+      DEBUG: ${DEBUG:-1}
+      LS_LOG: WARN
+      SERVICES: s3,sqs,sns,firehose
+      LOCALSTACK_HOST: 127.0.0.1
+    volumes:
+      - '${TMPDIR:-/tmp}/localstack:/var/lib/localstack'
+      - ./localstack/start-localstack.sh:/etc/localstack/init/ready.d/start-localstack.sh
+    healthcheck:
+      test: ['CMD', 'curl', 'localhost:4566']
+      interval: 5s
+      start_period: 5s
+      retries: 3
+    networks:
+      - grants-ui-net
 
 volumes:
   redis-data:

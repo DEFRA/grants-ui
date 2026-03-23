@@ -32,6 +32,7 @@ Core delivery platform Node.js Frontend Template.
   - [Setup](#setup)
   - [Development](#development)
   - [Environment variables](#environment-variables)
+  - [Grant Form Definitions](#grant-form-definitions)
   - [GAS Integration](#gas-integration)
   - [Production](#production)
   - [Npm scripts](#npm-scripts)
@@ -1078,13 +1079,35 @@ When `DEV_TOOLS_ENABLED=true`, the following demo data can be configured. See [D
 | `DEV_DEMO_SBI`           | Demo SBI number       | `999888777`          |
 | `DEV_DEMO_CONTACT_NAME`  | Demo contact name     | `Demo Test User`     |
 
+#### Config API (Form Definitions)
+
+Form definitions can optionally be loaded from the `grants-ui-config-api` instead of (or in addition to) local YAML files. See [Grant Form Definitions](#grant-form-definitions) for details on how these two sources work together.
+
+| Variable                      | Description                                                           | Default               |
+| ----------------------------- | --------------------------------------------------------------------- | --------------------- |
+| `CONFIG_API_URL`              | Base URL of the `grants-ui-config-api`                                | (empty — YAML only)   |
+| `CONFIG_API_JWT_SECRET`       | Shared secret used to sign JWT bearer tokens sent to the Config API   | (required if URL set) |
+| `CONFIG_API_JWT_EXPIRY`       | Expiry duration for the signed JWT (e.g. `"1h"`, `"30m"`)             | `1h`                  |
+| `FORMS_API_SLUGS`             | Comma-separated list of form slugs to load from the Config API        | (empty)               |
+| `FORMS_API_CACHE_TTL_SECONDS` | Redis TTL in seconds for form definitions fetched from the Config API | `300`                 |
+
 ### Grant Form Definitions
 
-Grant form definitions are stored in the `src/server/common/forms/definitions` directory as YAML files and read at startup.
+Grant form definitions can be sourced in two ways:
+
+#### 1. Local YAML files (default)
+
+Form definitions are stored in `src/server/common/forms/definitions` as YAML files and read at startup. Any changes to these files require a restart of the application.
 
 Forms will not be enabled in production unless the YAML file contains the `enabledInProd: true` property.
 
-Any changes to these files will require a restart of the application.
+#### 2. Config API
+
+When `CONFIG_API_URL` and `FORMS_API_SLUGS` are set, the application fetches the specified form definitions from the `grants-ui-config-api` at startup and caches them in Redis for `FORMS_API_CACHE_TTL_SECONDS` seconds. This allows form definitions to be updated without redeploying the application.
+
+Slugs listed in `FORMS_API_SLUGS` are loaded from the API; all other forms continue to be loaded from local YAML files. The two sources can be used together.
+
+To upload local YAML definitions to the Config API, see [tools/README.md](./tools/README.md).
 
 ### GAS Integration
 

@@ -13,7 +13,7 @@ const COMPOSITE_FIELD_PARTS = {
  * @typedef {{ type: string, name: string, title: string, list?: string, items?: Array<{text: string, value: string | number | boolean}> }} FormComponent
  * @typedef {{ title: string, components?: FormComponent[] }} FormPage
  * @typedef {{ pages?: FormPage[] }} FormDefinition
- * @typedef {{ title: string, path: string, slug: string, id: string }} FormMeta
+ * @typedef {{ title: string, path?: string, slug: string, id: string }} FormMeta
  * @typedef {Record<string, unknown>} Answers
  */
 

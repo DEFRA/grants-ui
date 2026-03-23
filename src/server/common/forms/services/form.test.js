@@ -4,7 +4,6 @@ import {
   addAllForms,
   configureFormDefinition,
   formsService,
-  getFormsCache,
   validateGrantRedirectRules,
   validateWhitelistConfiguration
 } from './form.js'
@@ -24,7 +23,12 @@ const DEFAULT_CONFIG_MOCK = {
     redact: []
   },
   serviceName: 'test-service',
-  serviceVersion: '1.0.0'
+  serviceVersion: '1.0.0',
+  'configApi.formSlugs': [],
+  'configApi.url': '',
+  'configApi.jwtSecret': '',
+  'configApi.jwtExpiry': '1h',
+  'configApi.cacheTtlSeconds': 300
 }
 
 const TEST_FORMS_ARRAY = [
@@ -72,6 +76,25 @@ const UNIQUE_FORMS_ARRAY = [
     title: 'Form 2'
   }
 ]
+
+// Stateful in-memory stores so formsService() startup writes are visible to later reads
+const _metaStore = new Map()
+const _reverseStore = new Map()
+
+vi.mock('./forms-redis.js', () => ({
+  getFormsRedisClient: vi.fn(() => ({})),
+  setFormMeta: vi.fn(async (_r, slug, entry) => {
+    _metaStore.set(slug, entry)
+  }),
+  setFormDef: vi.fn().mockResolvedValue(undefined),
+  setSlugReverse: vi.fn(async (_r, id, slug) => {
+    _reverseStore.set(id, slug)
+  }),
+  setAllSlugs: vi.fn().mockResolvedValue(undefined),
+  getFormMeta: vi.fn(async (_r, slug) => _metaStore.get(slug) ?? null),
+  getFormDef: vi.fn().mockResolvedValue(null),
+  getSlugByFormId: vi.fn(async (_r, id) => _reverseStore.get(id) ?? null)
+}))
 
 vi.mock('~/src/config/config.js', async () => {
   const { mockConfig } = await import('~/src/__mocks__')
@@ -140,6 +163,8 @@ describe('form', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    _metaStore.clear()
+    _reverseStore.clear()
     config.get.mockImplementation((key) => DEFAULT_CONFIG_MOCK[key])
     // Get the warn function from the mocked logger
     mockWarn = logger.warn
@@ -372,9 +397,7 @@ describe('form', () => {
 
       await expect(formsService()).resolves.toBeDefined()
 
-      // Assert that no errors were logged and formsCache is empty
       expect(mockError).not.toHaveBeenCalled()
-      expect(getFormsCache()).toEqual([])
 
       readdirSpy.mockRestore()
     })

@@ -8,9 +8,15 @@ import { parse as parseYaml } from 'yaml'
 import { notFound } from '@hapi/boom'
 import Joi from 'joi'
 import agreements from '~/src/config/agreements.js'
-
-// Simple in-memory cache of discovered forms metadata
-let formsCache = []
+import {
+  getFormMeta,
+  getFormsRedisClient,
+  getSlugByFormId,
+  setAllSlugs,
+  setFormMeta,
+  setSlugReverse
+} from './forms-redis.js'
+import { ApiFormService } from './api-form-service.js'
 
 async function loadSharedRedirectRules() {
   const filePath = path.resolve(process.cwd(), 'src/server/common/forms/shared-redirect-rules.yaml')
@@ -26,10 +32,6 @@ async function loadSharedRedirectRules() {
   }
 
   return rules
-}
-
-export function getFormsCache() {
-  return formsCache
 }
 
 export function configureFormDefinition(definition) {
@@ -223,8 +225,12 @@ export function validateGrantRedirectRules(form, definition) {
   }
 }
 
-async function discoverFormsFromYaml(baseDir = path.resolve(process.cwd(), 'src/server/common/forms/definitions')) {
+async function discoverFormsFromYaml(
+  apiSlugs,
+  baseDir = path.resolve(process.cwd(), 'src/server/common/forms/definitions')
+) {
   const isProduction = config.get('cdpEnvironment')?.toLowerCase() === 'prod'
+  const apiSlugSet = new Set(apiSlugs)
   let files = []
   try {
     files = await listYamlFilesRecursively(baseDir)
@@ -241,6 +247,12 @@ async function discoverFormsFromYaml(baseDir = path.resolve(process.cwd(), 'src/
 
       // Use file name as slug
       const fileName = path.basename(filePath, path.extname(filePath))
+
+      // Skip forms that are provided by the Config API
+      if (apiSlugSet.has(fileName)) {
+        logger.info(`Skipping YAML file for "${fileName}" — will be loaded from Config API`)
+        continue
+      }
 
       const { id, enabledInProd } = formMetadata
 
@@ -263,16 +275,23 @@ async function discoverFormsFromYaml(baseDir = path.resolve(process.cwd(), 'src/
 }
 
 export const formsService = async () => {
+  const redis = getFormsRedisClient()
+
+  const apiSlugs = /** @type {string[]} */ (config.get('configApi.formSlugs')).filter(Boolean)
+  const apiUrl = config.get('configApi.url')
+  const jwtSecret = config.get('configApi.jwtSecret')
+  const jwtExpiry = config.get('configApi.jwtExpiry')
+  const cacheTtlSeconds = config.get('configApi.cacheTtlSeconds')
+
   const loader = new GrantsFormLoader()
 
-  const forms = await discoverFormsFromYaml()
-  // Cache the discovered forms for reuse in tasklists
-  formsCache = forms
-  await addAllForms(loader, forms)
+  const yamlForms = await discoverFormsFromYaml(apiSlugs)
+  await addAllForms(loader, yamlForms)
 
   const sharedRules = await loadSharedRedirectRules()
 
-  for (const form of forms) {
+  // ── YAML forms ────────────────────────────────────────────────────────────
+  for (const form of yamlForms) {
     try {
       const definition = loader.getFormDefinition(form.id)
       definition.metadata.grantRedirectRules = {
@@ -285,23 +304,83 @@ export const formsService = async () => {
 
       validateGrantRedirectRules(form, definition)
       logger.info(`Grant redirect rules validated for form: ${form.title}`)
+
+      await Promise.all([
+        setFormMeta(redis, form.slug, {
+          id: form.id,
+          slug: form.slug,
+          title: form.title,
+          metadata: form.metadata,
+          source: 'yaml',
+          path: form.path
+        }),
+        setSlugReverse(redis, form.id, form.slug)
+      ])
     } catch (error) {
       logger.error(`Form validation failed during startup for ${form.title}: ${error.message}`)
       throw error
     }
   }
 
+  // ── API forms ─────────────────────────────────────────────────────────────
+  const apiFormService = new ApiFormService(apiUrl, jwtSecret, jwtExpiry, cacheTtlSeconds)
+
+  if (apiSlugs.length > 0) {
+    await apiFormService.loadAll(
+      redis,
+      apiSlugs,
+      sharedRules,
+      configureFormDefinition,
+      validateWhitelistConfiguration,
+      validateGrantRedirectRules
+    )
+  }
+
+  // ── Slug index ────────────────────────────────────────────────────────────
+  const allSlugs = [...yamlForms.map((f) => f.slug), ...apiSlugs]
+  await setAllSlugs(redis, allSlugs)
+
   const baseService = loader.toFormsService()
 
   return {
+    /**
+     * @param {string} slug
+     */
     getFormMetadata: async (slug) => {
+      const entry = await getFormMeta(redis, slug)
+      if (!entry) {
+        throw notFound(`Form '${slug}' not found`)
+      }
+      if (entry.source === 'api') {
+        // Return metadata in the shape the forms-engine-plugin expects
+        return {
+          ...metadata,
+          id: entry.id,
+          slug: entry.slug,
+          title: entry.title,
+          metadata: entry.metadata
+        }
+      }
       try {
         return await baseService.getFormMetadata(slug)
       } catch (error) {
         throw notFound(`Form '${slug}' not found`, error)
       }
     },
+
+    /**
+     * @param {string} id
+     * @param {unknown} state
+     */
     getFormDefinition: async (id, state) => {
+      const slug = await getSlugByFormId(redis, id)
+      if (!slug) {
+        throw notFound(`Form definition '${id}' not found`)
+      }
+      const entry = await getFormMeta(redis, slug)
+      if (entry?.source === 'api') {
+        return apiFormService.getFormDefinition(redis, slug, configureFormDefinition)
+      }
       try {
         return await baseService.getFormDefinition(id, state)
       } catch (error) {
@@ -310,3 +389,11 @@ export const formsService = async () => {
     }
   }
 }
+
+/**
+ * @typedef {import('@defra/forms-model').FormDefinition & { metadata: NonNullable<import('@defra/forms-model').FormDefinition['metadata']> }} FormDefinitionWithMetadata
+ */
+
+/**
+ * @typedef {import('@defra/forms-model').FormMetadataInput & { slug: string }} FormMetadataInputWithSlug
+ */
