@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, vi } from 'vitest'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
 import jwt from 'jsonwebtoken'
 import { ApiFormService } from './api-form-service.js'
 
@@ -37,7 +37,7 @@ describe('ApiFormService', () => {
   describe('generateJwt', () => {
     test('signs a JWT with the configured secret and expiry', () => {
       const token = service.generateJwt()
-      expect(jwt.sign).toHaveBeenCalledWith({}, 'secret', { expiresIn: '1h' })
+      expect(jwt.sign).toHaveBeenCalledWith({ sub: 'grants-ui' }, 'secret', { expiresIn: '1h' })
       expect(token).toBe('mock-token')
     })
   })

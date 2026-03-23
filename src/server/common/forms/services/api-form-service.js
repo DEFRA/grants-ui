@@ -17,7 +17,7 @@ export class ApiFormService {
   }
 
   generateJwt() {
-    return jwt.sign({}, this.jwtSecret, { expiresIn: this.jwtExpiry })
+    return jwt.sign({ sub: 'grants-ui' }, this.jwtSecret, { expiresIn: this.jwtExpiry })
   }
 
   /**
