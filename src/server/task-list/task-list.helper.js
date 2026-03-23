@@ -53,9 +53,10 @@ function getPageComponentNames(pageDef) {
  * Determines if a task (page) is completed based on state
  * @param {object} pageDef - The page definition
  * @param {object} state - The current form state
- * @returns {boolean} True if all question components on the page have values in state
+ * @param formModel
+ * @returns {boolean | null} True if all question components on the page have values in state, null if not applicable
  */
-function isTaskCompleted(pageDef, state) {
+function isTaskCompleted(pageDef, state, formModel) {
   const componentNames = getPageComponentNames(pageDef)
 
   // If no question components, consider it not applicable (shouldn't appear as task)
@@ -64,7 +65,13 @@ function isTaskCompleted(pageDef, state) {
   }
 
   if (pageDef.condition) {
-    return true // TODO for now always true - need 3 states - true/false/na - should be na if condition is false, otherwise complete checks below
+    const condition = formModel?.conditions[pageDef.condition]
+    const conditionExec = formModel?.makeCondition(condition)
+    const answer = formModel && conditionExec.fn(state)
+
+    if (!answer) {
+      return null // Hide task as it is not applicable
+    }
   }
 
   // Check if all components have a value in state (unless required=false)
@@ -114,11 +121,12 @@ function createStatusTag(statusConfig, defaultText, defaultClasses) {
  * @param {object[]} pages - Array of page definitions
  * @param {object} currentPage - The current page definition
  * @param {object} state - The current form state
- * @returns {boolean} True if all previous tasks are completed
+ * @param formModel
+ * @returns {boolean} True if all previous tasks are completed or not applicable
  */
-function areAllPreviousTasksCompleted(pages, currentPage, state) {
+function areAllPreviousTasksCompleted(pages, currentPage, state, formModel) {
   const currentIndex = pages.indexOf(currentPage)
-  return pages.slice(0, currentIndex).every((prevPage) => isTaskCompleted(prevPage, state))
+  return pages.slice(0, currentIndex).every((prevPage) => isTaskCompleted(prevPage, state, formModel) !== false)
 }
 
 /**
@@ -128,23 +136,20 @@ function areAllPreviousTasksCompleted(pages, currentPage, state) {
  * @param {object[]} pages - Array of page definitions
  * @param {object} metadata - Form metadata
  * @param {string} basePath - Base path for the service, used to build task links
+ * @param formModel
  * @returns {object} Task Item object for GOV.UK Task List component
  */
-function createTaskItem(pageDef, state, pages, metadata, basePath) {
-  const completed = isTaskCompleted(pageDef, state) // TODO need to handle a status object being returned with true/false/na
+function createTaskItem(pageDef, state, pages, metadata, basePath, formModel) {
+  const completed = isTaskCompleted(pageDef, state, formModel)
   const { statuses = {} } = metadata.tasklist ?? {}
   const href = `${basePath}${pageDef.path}`
   const completeInOrder = true // TODO force to true for now until completeInOrder=false logic implemented
-  const pageCondition = pageDef.condition
 
   const taskItem = createTaskItemBase(pageDef.title)
 
-  if (pageCondition) {
-    // TODO temp workaround just always show Not applicable
-    // TODO need to check completed status - if na, just hide task completely, otherwise continue to other checks using completed status
-    taskItem.href = areAllPreviousTasksCompleted(pages, pageDef, state) && href
-    taskItem.status = createStatusTag(statuses.notApplicable, 'Not applicable', 'govuk-tag--purple')
-    return taskItem
+  // If task is not applicable, hide it
+  if (completed === null) {
+    return null
   }
 
   if (completed) {
@@ -153,7 +158,13 @@ function createTaskItem(pageDef, state, pages, metadata, basePath) {
     return taskItem
   }
 
-  if (completeInOrder && pages.indexOf(pageDef) > 0 && !areAllPreviousTasksCompleted(pages, pageDef, state)) {
+  const pageIndex = pages.indexOf(pageDef)
+  if (
+    completeInOrder &&
+    pages.includes(pageDef) &&
+    pageIndex > 0 &&
+    !areAllPreviousTasksCompleted(pages, pageDef, state, formModel)
+  ) {
     taskItem.status = createStatusTag(statuses.cannotStart, 'Cannot start yet', 'govuk-tag--grey')
     return taskItem
   }
@@ -229,9 +240,11 @@ export function buildTaskListData(model, formModel, state) {
   for (const [sectionId, pages] of sectionGroups) {
     const sectionTitle = sectionsMap.get(sectionId) ?? ''
 
-    const items = pages.map((page) => ({
-      ...createTaskItem(page, state, taskPages, metadata, basePath)
-    }))
+    const items = pages
+      .map((page) => ({
+        ...createTaskItem(page, state, taskPages, metadata, basePath, formModel)
+      }))
+      .filter((p) => p.status)
 
     taskListSections.push({
       title: sectionTitle,
@@ -246,12 +259,13 @@ export function buildTaskListData(model, formModel, state) {
  * Calculates completion statistics for the task list
  * @param {object} model - The form model
  * @param {object} state - The current form state
+ * @param formModel
  * @returns {{ completed: number, total: number, isComplete: boolean }} Completion stats
  */
-export function getCompletionStats(model, state) {
+export function getCompletionStats(model, formModel, state) {
   const taskPages = getTaskPages(model)
 
-  const completed = taskPages.filter((page) => isTaskCompleted(page, state)).length
+  const completed = taskPages.filter((page) => isTaskCompleted(page, state, formModel)).length
   const total = taskPages.length
 
   return { completed, total, isComplete: completed === total }
