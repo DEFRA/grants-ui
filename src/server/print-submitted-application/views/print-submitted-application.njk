@@ -1,5 +1,10 @@
 {% extends "layouts/page.njk" %}
 {% set backLink = false %}
+
+{% block head %}
+  {{ super() }}
+  <meta name="format-detection" content="telephone=no">
+{% endblock %}
 {% from "govuk/components/summary-list/macro.njk" import govukSummaryList %}
 {% from "govuk/components/table/macro.njk" import govukTable %}
 {% from "summaryCard/macro.njk" import summaryCard %}
@@ -122,7 +127,7 @@
       <div class="govuk-details__text">
         <p class="govuk-body">Contact the Rural Payments Agency if you have a query.</p>
         <p class="govuk-body">
-          Telephone: 03000 200 301<br>
+          Telephone: <a class="govuk-link" href="tel:03000200301">03000 200 301</a><br>
           Monday to Friday, 8:30am to 5pm (except bank holidays)</p>
         <p class="govuk-body"><a class="govuk-link" href="https://www.gov.uk/call-charges" target="_blank">Find out about call charges (opens in new tab)</a></p>
         <p class="govuk-body">Email: <a class="govuk-link" href="mailto:ruralpayments@defra.gov.uk">ruralpayments@defra.gov.uk</a></p>
