@@ -1,16 +1,29 @@
 {% from "govuk/components/details/macro.njk" import govukDetails %}
 
-{% if params.typeOfSupport == 'question' %}
-  {% set summaryText = "If you have a question" %}
-  {% set introText = "Contact the Rural Payments Agency (RPA) if you have a query." %}
+{% if params.summaryText %}
+  {% set summaryText = params.summaryText %}
 {% else %}
-  {% set summaryText = "If you need to make an update" %}
-  {% set introText = "Contact the Rural Payments Agency (RPA) to update your details." %}
+  {% if params.typeOfSupport == 'question' %}
+    {% set summaryText = "If you have a question" %}
+  {% else %}
+    {% set summaryText = "If you need to make an update" %}
+  {% endif %}
+{% endif %}
+{% if params.html %}
+  {% set htmlContent = params.html %}
+{% else %}
+  {% if params.typeOfSupport == 'question' %}
+    {% set introText = "Contact the Rural Payments Agency (RPA) if you have a query." %}
+  {% else %}
+    {% set introText = "Contact the Rural Payments Agency (RPA) to update your details." %}
+  {% endif %}
+
+  {% set htmlContent %}
+    <p class="govuk-body">{{ introText }}</p>
+    {% include "rpa-contact-panel/html-content.njk" %}
+  {% endset %}
 {% endif %}
 
-{% set htmlContent %}
-  {% include "rpa-contact-panel/html-content.njk" %}
-{% endset %}
 
 {{ govukDetails({
   summaryText: summaryText,
