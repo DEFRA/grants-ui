@@ -114,9 +114,8 @@ services:
       start_period: 40s
 
   grants-ui-config-api:
-#    image: defradigital/grants-ui-config-api
-    image: grants-ui-config-api:local
-#    pull_policy: always
+    image: defradigital/grants-ui-config-api
+    pull_policy: always
     depends_on:
       mongodb:
         condition: service_healthy
