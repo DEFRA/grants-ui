@@ -7,6 +7,7 @@ import {
   validateGrantRedirectRules,
   validateWhitelistConfiguration
 } from './form.js'
+import { ApiFormService } from './api-form-service.js'
 import { logger } from '~/src/server/common/helpers/logging/log.js'
 import fs from 'node:fs/promises'
 
@@ -80,6 +81,10 @@ const UNIQUE_FORMS_ARRAY = [
 // Stateful in-memory stores so formsService() startup writes are visible to later reads
 const _metaStore = new Map()
 const _reverseStore = new Map()
+
+vi.mock('./api-form-service.js', () => ({
+  ApiFormService: vi.fn()
+}))
 
 vi.mock('./forms-redis.js', () => ({
   getFormsRedisClient: vi.fn(() => ({})),
@@ -159,7 +164,7 @@ Object.defineProperty(process, 'env', {
 })
 
 describe('form', () => {
-  let mockWarn, mockError
+  let mockWarn, mockError, mockApiFormServiceInstance
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -176,6 +181,12 @@ describe('form', () => {
     mockEnv.EXAMPLE_WHITELIST_SBIS = '123456789,987654321'
     mockEnv.FARMING_PAYMENTS_WHITELIST_CRNS = '1102838829, 1102760349, 1100495932'
     mockEnv.FARMING_PAYMENTS_WHITELIST_SBIS = '106284736, 121428499, 106238988'
+
+    mockApiFormServiceInstance = {
+      loadAll: vi.fn().mockResolvedValue(undefined),
+      getFormDefinition: vi.fn().mockResolvedValue({ name: 'api-form-def', pages: [] })
+    }
+    vi.mocked(ApiFormService).mockImplementation(() => mockApiFormServiceInstance)
   })
 
   afterEach(() => {})
@@ -206,6 +217,66 @@ describe('form', () => {
       expect(error.isBoom).toBe(true)
       expect(error.output.statusCode).toBe(404)
       expect(error.message).toContain("Form definition 'unknown-id' not found")
+    })
+
+    test('getFormMetadata returns api-shaped metadata for api-sourced form', async () => {
+      _metaStore.set('api-form', {
+        id: 'api-id',
+        slug: 'api-form',
+        title: 'API Form',
+        metadata: { foo: 'bar' },
+        source: 'api'
+      })
+
+      const service = await formsService()
+      const result = await service.getFormMetadata('api-form')
+
+      expect(result).toMatchObject({
+        id: 'api-id',
+        slug: 'api-form',
+        title: 'API Form',
+        metadata: { foo: 'bar' }
+      })
+    })
+
+    test('getFormDefinition delegates to apiFormService for api-sourced form', async () => {
+      _metaStore.set('api-form', { id: 'api-id', slug: 'api-form', title: 'API Form', metadata: {}, source: 'api' })
+      _reverseStore.set('api-id', 'api-form')
+
+      const service = await formsService()
+      const result = await service.getFormDefinition('api-id')
+
+      expect(mockApiFormServiceInstance.getFormDefinition).toHaveBeenCalledWith(
+        expect.anything(),
+        'api-form',
+        configureFormDefinition
+      )
+      expect(result).toEqual({ name: 'api-form-def', pages: [] })
+    })
+
+    test('calls apiFormService.loadAll when apiSlugs is non-empty', async () => {
+      config.get.mockImplementation((key) => {
+        if (key === 'configApi.formSlugs') {
+          return ['api-slug']
+        }
+        return DEFAULT_CONFIG_MOCK[key]
+      })
+
+      await formsService()
+
+      expect(mockApiFormServiceInstance.loadAll).toHaveBeenCalledWith(
+        expect.anything(),
+        ['api-slug'],
+        expect.anything(),
+        configureFormDefinition,
+        validateWhitelistConfiguration,
+        validateGrantRedirectRules
+      )
+    })
+
+    test('does not call apiFormService.loadAll when apiSlugs is empty', async () => {
+      await formsService()
+      expect(mockApiFormServiceInstance.loadAll).not.toHaveBeenCalled()
     })
   })
 

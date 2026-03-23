@@ -274,23 +274,14 @@ async function discoverFormsFromYaml(
   return forms
 }
 
-export const formsService = async () => {
-  const redis = getFormsRedisClient()
-
-  const apiSlugs = /** @type {string[]} */ (config.get('configApi.formSlugs')).filter(Boolean)
-  const apiUrl = config.get('configApi.url')
-  const jwtSecret = config.get('configApi.jwtSecret')
-  const jwtExpiry = config.get('configApi.jwtExpiry')
-  const cacheTtlSeconds = config.get('configApi.cacheTtlSeconds')
-
+async function initialiseLoader(apiSlugs) {
   const loader = new GrantsFormLoader()
-
   const yamlForms = await discoverFormsFromYaml(apiSlugs)
   await addAllForms(loader, yamlForms)
+  return { loader, yamlForms }
+}
 
-  const sharedRules = await loadSharedRedirectRules()
-
-  // ── YAML forms ────────────────────────────────────────────────────────────
+async function registerYamlForms(loader, redis, yamlForms, sharedRules) {
   for (const form of yamlForms) {
     try {
       const definition = loader.getFormDefinition(form.id)
@@ -321,27 +312,9 @@ export const formsService = async () => {
       throw error
     }
   }
+}
 
-  // ── API forms ─────────────────────────────────────────────────────────────
-  const apiFormService = new ApiFormService(apiUrl, jwtSecret, jwtExpiry, cacheTtlSeconds)
-
-  if (apiSlugs.length > 0) {
-    await apiFormService.loadAll(
-      redis,
-      apiSlugs,
-      sharedRules,
-      configureFormDefinition,
-      validateWhitelistConfiguration,
-      validateGrantRedirectRules
-    )
-  }
-
-  // ── Slug index ────────────────────────────────────────────────────────────
-  const allSlugs = [...yamlForms.map((f) => f.slug), ...apiSlugs]
-  await setAllSlugs(redis, allSlugs)
-
-  const baseService = loader.toFormsService()
-
+function buildServiceInterface(baseService, apiFormService, redis) {
   return {
     /**
      * @param {string} slug
@@ -388,6 +361,40 @@ export const formsService = async () => {
       }
     }
   }
+}
+
+export const formsService = async () => {
+  const redis = getFormsRedisClient()
+
+  const apiSlugs = /** @type {string[]} */ (config.get('configApi.formSlugs')).filter(Boolean)
+  const apiUrl = config.get('configApi.url')
+  const jwtSecret = config.get('configApi.jwtSecret')
+  const jwtExpiry = config.get('configApi.jwtExpiry')
+  const cacheTtlSeconds = config.get('configApi.cacheTtlSeconds')
+
+  const { loader, yamlForms } = await initialiseLoader(apiSlugs)
+  const sharedRules = await loadSharedRedirectRules()
+
+  await registerYamlForms(loader, redis, yamlForms, sharedRules)
+
+  // ── API forms ─────────────────────────────────────────────────────────────
+  const apiFormService = new ApiFormService(apiUrl, jwtSecret, jwtExpiry, cacheTtlSeconds)
+
+  if (apiSlugs.length > 0) {
+    await apiFormService.loadAll(
+      redis,
+      apiSlugs,
+      sharedRules,
+      configureFormDefinition,
+      validateWhitelistConfiguration,
+      validateGrantRedirectRules
+    )
+  }
+
+  // ── Slug index ────────────────────────────────────────────────────────────
+  await setAllSlugs(redis, [...yamlForms.map((f) => f.slug), ...apiSlugs])
+
+  return buildServiceInterface(loader.toFormsService(), apiFormService, redis)
 }
 
 /**
