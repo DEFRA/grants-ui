@@ -9,7 +9,6 @@ import { escapeHtml } from '~/src/server/common/utils/escape-html.js'
  * @property {string|null} [line2]
  * @property {string|null} [line3]
  * @property {string|null} [line4]
- * @property {string|null} [line5]
  * @property {string|null} [street]
  * @property {string|null} city
  * @property {string|null} postalCode
@@ -30,14 +29,14 @@ import { escapeHtml } from '~/src/server/common/utils/escape-html.js'
 
 /**
  * @typedef {AddressBase & {
- *   uprn?: null,
- *   county?: null,
- *   buildingName?: null,
- *   buildingNumberRange?: null,
- *   dependentLocality?: null,
- *   doubleDependentLocality?: null,
- *   flatName?: null,
- *   pafOrganisationName?: null
+ *   uprn?: never,
+ *   county?: never,
+ *   buildingName?: never,
+ *   buildingNumberRange?: never,
+ *   dependentLocality?: never,
+ *   doubleDependentLocality?: never,
+ *   flatName?: never,
+ *   pafOrganisationName?: never
  * }} AddressWithoutUprn
  */
 
