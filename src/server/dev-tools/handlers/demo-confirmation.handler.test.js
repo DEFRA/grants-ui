@@ -47,7 +47,7 @@ describe('demo-confirmation.handler', () => {
     test('should render demo confirmation page for valid form', async () => {
       const processedConfirmationContent = { html: '<h2>Processed demo content</h2>' }
 
-      findFormBySlug.mockReturnValue(mockForm)
+      findFormBySlug.mockResolvedValue(mockForm)
       ConfirmationService.loadConfirmationContent.mockResolvedValue({
         confirmationContent: mockConfirmationContent
       })
@@ -70,8 +70,8 @@ describe('demo-confirmation.handler', () => {
     })
 
     test('should return form not found response when form does not exist', async () => {
-      findFormBySlug.mockReturnValue(null)
-      generateFormNotFoundResponse.mockReturnValue('not-found-response')
+      findFormBySlug.mockResolvedValue(null)
+      generateFormNotFoundResponse.mockResolvedValue('not-found-response')
 
       const result = await demoConfirmationHandler(mockRequest, mockH)
 
@@ -84,7 +84,7 @@ describe('demo-confirmation.handler', () => {
         html: '<h2>What happens next (Development Mode)</h2><p><strong>⚠️ This is demo content - no configuration found.</strong></p>'
       }
 
-      findFormBySlug.mockReturnValue(mockForm)
+      findFormBySlug.mockResolvedValue(mockForm)
       ConfirmationService.loadConfirmationContent.mockResolvedValue({
         confirmationContent: null,
         formDefinition: null
@@ -111,9 +111,7 @@ describe('demo-confirmation.handler', () => {
         html: '<h2>Development Error</h2><p>Failed to load confirmation content for test-form</p>'
       }
 
-      findFormBySlug.mockImplementation(() => {
-        throw new Error('Handler error')
-      })
+      findFormBySlug.mockRejectedValue(new Error('Handler error'))
       ConfirmationService.processConfirmationContent.mockReturnValue(fallbackConfirmationContent)
       ConfirmationService.buildViewModel.mockReturnValue({ fallback: 'viewModel' })
 

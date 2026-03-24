@@ -63,7 +63,7 @@ describe('config-confirmation', () => {
         .mockReturnValueOnce('Test Business')
         .mockReturnValueOnce('123456789')
         .mockReturnValueOnce('Test Contact')
-      findFormBySlug.mockReturnValue(mockForm)
+      findFormBySlug.mockResolvedValue(mockForm)
       ConfirmationService.loadConfirmationContent.mockResolvedValue({
         confirmationContent,
         formDefinition
@@ -109,7 +109,7 @@ describe('config-confirmation', () => {
     })
 
     test('should return 404 when form not found', async () => {
-      findFormBySlug.mockReturnValue(null)
+      findFormBySlug.mockResolvedValue(null)
 
       await handler(mockRequest, mockH)
 
@@ -142,7 +142,7 @@ describe('config-confirmation', () => {
       mockFormsCacheService.getState.mockResolvedValue({})
       mockYarSession.get.mockReturnValue(undefined)
 
-      findFormBySlug.mockReturnValue(mockForm)
+      findFormBySlug.mockResolvedValue(mockForm)
       ConfirmationService.loadConfirmationContent.mockResolvedValue({
         confirmationContent: mockConfirmationContent,
         formDefinition: mockFormDefinition
@@ -168,7 +168,7 @@ describe('config-confirmation', () => {
         applicationStatus: 'SUBMITTED'
       })
 
-      findFormBySlug.mockReturnValue(mockForm)
+      findFormBySlug.mockResolvedValue(mockForm)
       ConfirmationService.loadConfirmationContent.mockResolvedValue({
         confirmationContent: null,
         formDefinition: { metadata: {} }
@@ -185,9 +185,7 @@ describe('config-confirmation', () => {
     })
 
     test('should handle errors gracefully', async () => {
-      findFormBySlug.mockImplementation(() => {
-        throw new Error('Service error')
-      })
+      findFormBySlug.mockRejectedValue(new Error('Service error'))
 
       await handler(mockRequest, mockH)
 

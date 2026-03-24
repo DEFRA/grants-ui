@@ -1,4 +1,4 @@
-import { getFormsCache } from '../../common/forms/services/form.js'
+import { getAllForms } from './get-all-forms.js'
 
 const HTTP_STATUS = {
   NOT_FOUND: 404
@@ -12,12 +12,12 @@ const HTTP_STATUS = {
  * @param {string} [options.backLink='/dev'] - Back navigation link
  * @param {string} [options.title='Invalid Form Slug'] - Page title
  * @param {string} [options.errorMessage='Local Mode Error'] - Error message prefix
- * @returns {object} Hapi response
+ * @returns {Promise<object>} Hapi response
  */
-export function generateFormNotFoundResponse(slug, h, options = {}) {
+export async function generateFormNotFoundResponse(slug, h, options = {}) {
   const { backLink = '/dev', title = 'Invalid Form Slug', errorMessage = 'Local Mode Error' } = options
 
-  const allForms = getFormsCache()
+  const allForms = await getAllForms()
   const availableSlugs = allForms.map((f) => `• ${f.slug} (${f.title})`).join('\n')
 
   return h

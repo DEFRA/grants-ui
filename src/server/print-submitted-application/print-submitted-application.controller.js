@@ -1,10 +1,8 @@
-import { readFile } from 'node:fs/promises'
-import { parse as parseYaml } from 'yaml'
 import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/forms-cache.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { ApplicationStatus } from '~/src/server/common/constants/application-status.js'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
-import { findFormBySlug } from '../common/forms/services/find-form-by-slug.js'
+import { findFormBySlug, loadFormDefinition } from '../common/forms/services/find-form-by-slug.js'
 import {
   buildPrintViewModel,
   enrichDefinitionWithListItems,
@@ -18,14 +16,14 @@ import { createPersonRows, createBusinessRows, createContactRows } from '~/src/s
  * @param {Request} request
  * @param {ResponseToolkit} h
  */
-function validateRequestAndFindForm(request, h) {
+async function validateRequestAndFindForm(request, h) {
   const { slug } = request.params
 
   if (!slug) {
     return { error: h.response('Bad request - missing slug').code(statusCodes.badRequest) }
   }
 
-  const form = findFormBySlug(slug)
+  const form = await findFormBySlug(slug)
   if (!form) {
     return { error: h.response('Form not found').code(statusCodes.notFound) }
   }
@@ -101,18 +99,17 @@ async function resolveApplicantDetailsSections(request, state, definition) {
 
 /**
  * Reads the YAML form definition, builds the print view model and renders the view.
- * @param {{ form: import('../common/helpers/print-application-service/print-application-service.js').FormMeta, state: Record<string, any>, slug: string }} params
+ * @param {{ form: import('../common/forms/services/forms-redis.js').FormCacheEntry, state: Record<string, any>, slug: string }} params
  * @param {Request} request
  * @param {ResponseToolkit} h
  */
 async function buildPrintResponse({ form, state, slug }, request, h) {
-  const raw = await readFile(form.path, 'utf8')
-  const definition = parseYaml(raw)
+  const definition = await loadFormDefinition(form)
 
   enrichDefinitionWithListItems(definition)
 
   const configurablePrintContent = processConfigurablePrintContent(
-    definition.metadata?.printPage?.configurablePrintContent,
+    /** @type {Record<string, any>} */ (definition.metadata)?.printPage?.configurablePrintContent,
     slug
   )
 
@@ -177,7 +174,7 @@ export const printSubmittedApplication = {
         path: '/{slug}/print-submitted-application',
         handler: async (request, h) => {
           try {
-            const validationResult = validateRequestAndFindForm(request, h)
+            const validationResult = await validateRequestAndFindForm(request, h)
             if (validationResult.error) {
               return validationResult.error
             }

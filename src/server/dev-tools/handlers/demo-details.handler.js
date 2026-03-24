@@ -110,7 +110,7 @@ export async function demoDetailsHandler(request, h) {
   try {
     const { slug } = request.params
 
-    const form = findFormBySlug(slug)
+    const form = await findFormBySlug(slug)
 
     if (!form) {
       return generateFormNotFoundResponse(slug, h)
@@ -171,7 +171,7 @@ export async function demoDetailsPostHandler(request, h) {
   const { slug } = request.params
   const { detailsCorrect } = request.payload || {}
 
-  const form = findFormBySlug(slug)
+  const form = await findFormBySlug(slug)
 
   if (!form) {
     return generateFormNotFoundResponse(slug, h)

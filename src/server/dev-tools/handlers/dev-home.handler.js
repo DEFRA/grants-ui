@@ -3,19 +3,19 @@ import { errorRoutes } from '../index.js'
 
 /**
  * Get forms that have confirmationContent configured
- * @returns {Array} Array of form objects with confirmationContent
+ * @returns {Promise<Array>} Array of form objects with confirmationContent
  */
-export function getFormsWithConfirmationContent() {
-  const allForms = getAllForms()
+export async function getFormsWithConfirmationContent() {
+  const allForms = await getAllForms()
   return allForms.filter((form) => form.metadata?.confirmationContent)
 }
 
 /**
  * Get forms that have detailsPage configured
- * @returns {Array} Array of form objects with detailsPage
+ * @returns {Promise<Array>} Array of form objects with detailsPage
  */
-export function getFormsWithDetailsPage() {
-  const allForms = getAllForms()
+export async function getFormsWithDetailsPage() {
+  const allForms = await getAllForms()
   return allForms.filter((form) => form.metadata?.detailsPage)
 }
 
@@ -203,12 +203,14 @@ export function generateDevHomePage(tools) {
  * Main dev home page handler
  * @param {object} _request - Hapi request object
  * @param {object} h - Hapi response toolkit
- * @returns {object} Hapi response
+ * @returns {Promise<object>} Hapi response
  */
-export function devHomeHandler(_request, h) {
-  const confirmationForms = getFormsWithConfirmationContent()
-  const detailsForms = getFormsWithDetailsPage()
-  const printApplicationForms = getAllForms()
+export async function devHomeHandler(_request, h) {
+  const [confirmationForms, detailsForms, printApplicationForms] = await Promise.all([
+    getFormsWithConfirmationContent(),
+    getFormsWithDetailsPage(),
+    getAllForms()
+  ])
   const tools = buildToolsConfig({ confirmationForms, detailsForms, printApplicationForms })
   const htmlContent = generateDevHomePage(tools)
 
