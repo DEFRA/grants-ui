@@ -83,7 +83,7 @@ describe('demo-details.handler', () => {
 
     buildDemoMappedData.mockReturnValue(mockDemoMappedData)
     buildDemoRequest.mockReturnValue(mockDemoRequest)
-    findFormBySlug.mockReturnValue(mockForm)
+    findFormBySlug.mockResolvedValue(mockForm)
   })
 
   describe('buildViewModel', () => {
@@ -180,7 +180,7 @@ describe('demo-details.handler', () => {
     })
 
     test('should return no config message when form has no displaySections', async () => {
-      findFormBySlug.mockReturnValue(mockFormWithoutConfig)
+      findFormBySlug.mockResolvedValue(mockFormWithoutConfig)
       mockRequest = mockHapiRequest({
         params: { slug: 'test-form-no-config' }
       })
@@ -202,8 +202,8 @@ describe('demo-details.handler', () => {
     })
 
     test('should return form not found response when form does not exist', async () => {
-      findFormBySlug.mockReturnValue(null)
-      generateFormNotFoundResponse.mockReturnValue('not-found-response')
+      findFormBySlug.mockResolvedValue(null)
+      generateFormNotFoundResponse.mockResolvedValue('not-found-response')
 
       const result = await demoDetailsHandler(mockRequest, mockH)
 
@@ -212,9 +212,7 @@ describe('demo-details.handler', () => {
     })
 
     test('should handle errors gracefully with fallback content', async () => {
-      findFormBySlug.mockImplementation(() => {
-        throw new Error('Handler error')
-      })
+      findFormBySlug.mockRejectedValue(new Error('Handler error'))
 
       await demoDetailsHandler(mockRequest, mockH)
 
@@ -321,8 +319,8 @@ describe('demo-details.handler', () => {
     })
 
     test('should return form not found response when form does not exist', async () => {
-      findFormBySlug.mockReturnValue(null)
-      generateFormNotFoundResponse.mockReturnValue('not-found-response')
+      findFormBySlug.mockResolvedValue(null)
+      generateFormNotFoundResponse.mockResolvedValue('not-found-response')
 
       const result = await demoDetailsPostHandler(mockRequest, mockH)
 
@@ -331,7 +329,7 @@ describe('demo-details.handler', () => {
     })
 
     test('should use empty sections array when form has no displaySections config during validation', async () => {
-      findFormBySlug.mockReturnValue(mockFormWithoutConfig)
+      findFormBySlug.mockResolvedValue(mockFormWithoutConfig)
       mockRequest = mockHapiRequest({
         params: { slug: 'test-form-no-config' },
         payload: {}

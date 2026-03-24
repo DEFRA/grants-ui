@@ -44,9 +44,10 @@ describe('task-list.helper', () => {
           }
         }
       }
+      const formModel = {}
       const state = { q1: 'val1', q3: 'val3' }
 
-      const stats = getCompletionStats(mockModel, state)
+      const stats = getCompletionStats(mockModel, formModel, state)
       expect(stats).toEqual({
         completed: 2,
         total: 3,
@@ -62,8 +63,9 @@ describe('task-list.helper', () => {
           }
         }
       }
+      const formModel = {}
       const state = { q1: 'val1' }
-      expect(getCompletionStats(mockModel, state).isComplete).toBe(true)
+      expect(getCompletionStats(mockModel, formModel, state).isComplete).toBe(true)
     })
 
     it('should return 0 completed if no tasks have values', () => {
@@ -74,8 +76,9 @@ describe('task-list.helper', () => {
           }
         }
       }
+      const formModel = {}
       const state = {}
-      const stats = getCompletionStats(mockModel, state)
+      const stats = getCompletionStats(mockModel, formModel, state)
       expect(stats.completed).toBe(0)
     })
   })
@@ -89,8 +92,9 @@ describe('task-list.helper', () => {
           }
         }
       }
+      const formModel = {}
       const state = { addr__postcode: 'SW1A 1AA' }
-      expect(getCompletionStats(mockModel, state).completed).toBe(1)
+      expect(getCompletionStats(mockModel, formModel, state).completed).toBe(1)
     })
 
     it('should ignore non-question components', () => {
@@ -101,9 +105,63 @@ describe('task-list.helper', () => {
           }
         }
       }
+      const formModel = {}
       const state = { h1: 'some html' }
-      expect(getCompletionStats(mockModel, state).completed).toBe(0)
-      expect(getCompletionStats(mockModel, state).total).toBe(1)
+      expect(getCompletionStats(mockModel, formModel, state).completed).toBe(0)
+      expect(getCompletionStats(mockModel, formModel, state).total).toBe(1)
+    })
+
+    it('should return null for tasks with unmet conditions', () => {
+      const mockModel = {
+        page: {
+          def: {
+            pages: [
+              {
+                section: 's1',
+                condition: 'cond1',
+                components: [{ type: 'TextField', name: 'q1' }]
+              }
+            ]
+          }
+        }
+      }
+      const formModel = {
+        conditions: {
+          cond1: { items: [] }
+        },
+        makeCondition: () => ({
+          fn: () => false
+        })
+      }
+      const state = {}
+      expect(getCompletionStats(mockModel, formModel, state).completed).toBe(0)
+      expect(getCompletionStats(mockModel, formModel, state).total).toBe(1)
+    })
+
+    it('should count tasks as completed when conditions are met', () => {
+      const mockModel = {
+        page: {
+          def: {
+            pages: [
+              {
+                section: 's1',
+                condition: 'cond1',
+                components: [{ type: 'TextField', name: 'q1' }]
+              }
+            ]
+          }
+        }
+      }
+      const formModel = {
+        conditions: {
+          cond1: { items: [] }
+        },
+        makeCondition: () => ({
+          fn: () => true
+        })
+      }
+      const state = { q1: 'value' }
+      expect(getCompletionStats(mockModel, formModel, state).completed).toBe(1)
     })
   })
 
@@ -129,7 +187,8 @@ describe('task-list.helper', () => {
                 completed: { text: 'Done', classes: 'done-class' }
               }
             }
-          }
+          },
+          pages: mockModel.page.def.pages
         }
       }
       const state = { q1: 'val1' }
@@ -162,6 +221,243 @@ describe('task-list.helper', () => {
 
       const data = buildTaskListData(mockModel, formModel, state)
       expect(data[0].items[1].status.tag.text).toBe('Cannot start yet')
+    })
+
+    it('should filter out tasks with unmet conditions', () => {
+      const mockModel = {
+        serviceUrl: '/service',
+        page: {
+          def: {
+            pages: [
+              { title: 'Task 1', section: 's1', path: '/t1', components: [{ type: 'TextField', name: 'q1' }] },
+              {
+                title: 'Conditional Task',
+                section: 's1',
+                path: '/t2',
+                condition: 'cond1',
+                components: [{ type: 'TextField', name: 'q2' }]
+              }
+            ],
+            sections: [{ id: 's1', title: 'Section 1' }]
+          }
+        }
+      }
+      const formModel = {
+        def: { metadata: {} },
+        conditions: {
+          cond1: { items: [] }
+        },
+        makeCondition: () => ({
+          fn: () => false
+        })
+      }
+      const state = { q1: 'val1' }
+
+      const data = buildTaskListData(mockModel, formModel, state)
+
+      expect(data).toHaveLength(1)
+      expect(data[0].items).toHaveLength(1)
+      expect(data[0].items[0].title.text).toBe('Task 1')
+    })
+
+    it('should include conditional tasks when conditions are met', () => {
+      const mockModel = {
+        serviceUrl: '/service',
+        page: {
+          def: {
+            pages: [
+              { title: 'Task 1', section: 's1', path: '/t1', components: [{ type: 'TextField', name: 'q1' }] },
+              {
+                title: 'Conditional Task',
+                section: 's1',
+                path: '/t2',
+                condition: 'cond1',
+                components: [{ type: 'TextField', name: 'q2' }]
+              }
+            ],
+            sections: [{ id: 's1', title: 'Section 1' }]
+          }
+        }
+      }
+      const formModel = {
+        def: { metadata: {} },
+        conditions: {
+          cond1: { items: [] }
+        },
+        makeCondition: () => ({
+          fn: () => true
+        })
+      }
+      const state = { q1: 'val1', q2: 'val2' }
+
+      const data = buildTaskListData(mockModel, formModel, state)
+
+      expect(data).toHaveLength(1)
+      expect(data[0].items).toHaveLength(2)
+      expect(data[0].items[1].title.text).toBe('Conditional Task')
+    })
+
+    it('should allow starting next task when previous conditional task is not applicable', () => {
+      const mockModel = {
+        serviceUrl: '/service',
+        page: {
+          def: {
+            pages: [
+              { title: 'Task 1', section: 's1', path: '/t1', components: [{ type: 'TextField', name: 'q1' }] },
+              {
+                title: 'Conditional Task',
+                section: 's1',
+                path: '/t2',
+                condition: 'cond1',
+                components: [{ type: 'TextField', name: 'q2' }]
+              },
+              { title: 'Task 3', section: 's1', path: '/t3', components: [{ type: 'TextField', name: 'q3' }] }
+            ],
+            sections: [{ id: 's1', title: 'Section 1' }]
+          }
+        }
+      }
+      const formModel = {
+        def: { metadata: {}, pages: mockModel.page.def.pages },
+        conditions: {
+          cond1: { items: [] }
+        },
+        makeCondition: () => ({
+          fn: () => false
+        })
+      }
+      const state = { q1: 'val1' }
+
+      const data = buildTaskListData(mockModel, formModel, state)
+
+      expect(data).toHaveLength(1)
+      expect(data[0].items).toHaveLength(2)
+      expect(data[0].items[0].title.text).toBe('Task 1')
+      expect(data[0].items[1].title.text).toBe('Task 3')
+      expect(data[0].items[1].status.tag.text).toBe('Not started')
+    })
+  })
+
+  describe('exit page blocking', () => {
+    it('should block next task when previous task triggers an exit page', () => {
+      const mockModel = {
+        serviceUrl: '/service',
+        page: {
+          def: {
+            pages: [
+              { title: 'Task 1', section: 's1', path: '/t1', components: [{ type: 'YesNoField', name: 'q1' }] },
+              {
+                title: 'Exit',
+                path: '/exit',
+                controller: 'TerminalPageController',
+                condition: 'exitCond',
+                components: [{ type: 'Html', name: 'info' }]
+              },
+              { title: 'Task 2', section: 's1', path: '/t2', components: [{ type: 'TextField', name: 'q2' }] }
+            ],
+            sections: [{ id: 's1', title: 'Section 1' }]
+          }
+        }
+      }
+      const formModel = {
+        def: {
+          metadata: {},
+          pages: mockModel.page.def.pages
+        },
+        conditions: {
+          exitCond: { items: [] }
+        },
+        makeCondition: () => ({
+          fn: () => true // Exit condition is triggered
+        })
+      }
+      const state = { q1: false } // Answered, triggers exit
+
+      const data = buildTaskListData(mockModel, formModel, state)
+
+      expect(data[0].items).toHaveLength(2)
+      expect(data[0].items[0].status.tag.text).toBe('Completed') // Task 1 answered
+      expect(data[0].items[1].status.tag.text).toBe('Cannot start yet') // Task 2 blocked
+    })
+
+    it('should not block next task when exit page condition is not triggered', () => {
+      const mockModel = {
+        serviceUrl: '/service',
+        page: {
+          def: {
+            pages: [
+              { title: 'Task 1', section: 's1', path: '/t1', components: [{ type: 'YesNoField', name: 'q1' }] },
+              {
+                title: 'Exit',
+                path: '/exit',
+                controller: 'TerminalPageController',
+                condition: 'exitCond',
+                components: [{ type: 'Html', name: 'info' }]
+              },
+              { title: 'Task 2', section: 's1', path: '/t2', components: [{ type: 'TextField', name: 'q2' }] }
+            ],
+            sections: [{ id: 's1', title: 'Section 1' }]
+          }
+        }
+      }
+      const formModel = {
+        def: {
+          metadata: {},
+          pages: mockModel.page.def.pages
+        },
+        conditions: {
+          exitCond: { items: [] }
+        },
+        makeCondition: () => ({
+          fn: () => false // Exit condition NOT triggered
+        })
+      }
+      const state = { q1: true } // Answered correctly
+
+      const data = buildTaskListData(mockModel, formModel, state)
+
+      expect(data[0].items).toHaveLength(2)
+      expect(data[0].items[0].status.tag.text).toBe('Completed')
+      expect(data[0].items[1].status.tag.text).toBe('Not started') // Not blocked
+    })
+
+    it('should show task as completed even when it triggers an exit page', () => {
+      const mockModel = {
+        serviceUrl: '/service',
+        page: {
+          def: {
+            pages: [
+              { title: 'Task 1', section: 's1', path: '/t1', components: [{ type: 'YesNoField', name: 'q1' }] },
+              {
+                title: 'Exit',
+                path: '/exit',
+                controller: 'TerminalPageController',
+                condition: 'exitCond',
+                components: [{ type: 'Html', name: 'info' }]
+              }
+            ],
+            sections: [{ id: 's1', title: 'Section 1' }]
+          }
+        }
+      }
+      const formModel = {
+        def: {
+          metadata: {},
+          pages: mockModel.page.def.pages
+        },
+        conditions: {
+          exitCond: { items: [] }
+        },
+        makeCondition: () => ({
+          fn: () => true
+        })
+      }
+      const state = { q1: false }
+
+      const data = buildTaskListData(mockModel, formModel, state)
+
+      expect(data[0].items).toHaveLength(1)
+      expect(data[0].items[0].status.tag.text).toBe('Completed') // Still shows completed
     })
   })
 

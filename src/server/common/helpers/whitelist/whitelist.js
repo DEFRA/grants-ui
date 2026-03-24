@@ -10,7 +10,7 @@ export default {
   }
 }
 
-const whitelistHandler = (request, h) => {
+const whitelistHandler = async (request, h) => {
   if (!request.auth.isAuthenticated) {
     return h.continue
   }
@@ -18,7 +18,8 @@ const whitelistHandler = (request, h) => {
   const crn = request.auth.credentials.crn
   const sbi = request.auth.credentials.sbi
 
-  const grantMetadata = getAllForms().find((form) => form.slug === request.params.slug)?.metadata
+  const allForms = await getAllForms()
+  const grantMetadata = allForms.find((form) => form.slug === request.params.slug)?.metadata
 
   const whitelistService = WhitelistServiceFactory.getService(grantMetadata)
   const validation = whitelistService.validateGrantAccess(crn, sbi)

@@ -1,9 +1,9 @@
-import { getFormsCache } from '../../common/forms/services/form.js'
+import { getFormsRedisClient, getAllSlugs } from '../../common/forms/services/forms-redis.js'
 
 /**
  * Get available form slugs as a list
- * @returns {Array<string>} Array of form slugs
+ * @returns {Promise<string[]>}
  */
-export function getAvailableFormSlugs() {
-  return getFormsCache().map((f) => f.slug)
+export async function getAvailableFormSlugs() {
+  return getAllSlugs(getFormsRedisClient())
 }

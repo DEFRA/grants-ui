@@ -52,14 +52,15 @@
     "test:performance": "./tools/run-performance-tests.sh",
     "test:all": "./tools/run-all-tests.sh",
     "test:watch": "vitest --watch",
-    "server:watch": "nodemon --ext js,mjs,json,njk,html --exec tsx --enable-source-maps ./src",
+    "server:watch": "nodemon --ext js,mjs,json,njk,html,yaml --exec tsx --enable-source-maps ./src",
     "server:debug": "nodemon --ext js,mjs,json,njk,html,yaml --exec tsx --enable-source-maps --inspect=0.0.0.0:9229 ./src",
     "snyk-test": "snyk test",
     "snyk-monitor": "snyk monitor",
     "prestart": "npm run build",
     "start": "NODE_ENV=production node --use-strict .",
     "setup:husky": "node -e \"try { (await import('husky')).default() } catch (e) { if (e.code !== 'ERR_MODULE_NOT_FOUND') throw e }\" --input-type module",
-    "unseal:cookie": "node ./tools/unseal-cookie.js"
+    "unseal:cookie": "node ./tools/unseal-cookie.js",
+    "upload:forms": "node ./tools/upload-forms-to-api.js"
   },
   "author": "Defra DDTS",
   "license": "OGL-UK-3.0",

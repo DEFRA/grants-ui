@@ -30,6 +30,27 @@ vi.mock('@defra/forms-engine-plugin', () => ({
   }
 }))
 
+vi.mock('~/src/server/common/forms/services/api-form-service.js', () => ({
+  ApiFormService: vi.fn().mockImplementation(() => ({
+    loadAll: vi.fn(async () => {}),
+    getFormDefinition: vi.fn(async () => null),
+    fetchAndCacheDefinition: vi.fn(async () => null)
+  }))
+}))
+
+vi.mock('~/src/server/common/forms/services/forms-redis.js', () => ({
+  getFormsRedisClient: vi.fn(() => ({})),
+  setFormMeta: vi.fn(async () => {}),
+  setFormDef: vi.fn(async () => {}),
+  setSlugReverse: vi.fn(async () => {}),
+  setAllSlugs: vi.fn(async () => {}),
+  getFormMeta: vi.fn(async () => null),
+  getFormDef: vi.fn(async () => null),
+  getSlugByFormId: vi.fn(async () => null),
+  getAllSlugs: vi.fn(async () => []),
+  getAllFormMetas: vi.fn(async () => [])
+}))
+
 process.env.EXAMPLE_WHITELIST_CRNS = '1104734543,1103521484'
 process.env.EXAMPLE_WHITELIST_SBIS = '123456789,987654321'
 process.env.FARMING_PAYMENTS_WHITELIST_CRNS = '1102838829, 1102760349, 1100495932'

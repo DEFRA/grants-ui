@@ -32,32 +32,32 @@ describe('dev-home.handler', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    getAllForms.mockReturnValue(mockAllForms)
+    getAllForms.mockResolvedValue(mockAllForms)
 
     mockRequest = mockHapiRequest()
     mockH = mockHapiResponseToolkit()
   })
 
   describe('getFormsWithConfirmationContent', () => {
-    test('should return only forms with confirmationContent in metadata', () => {
-      const result = getFormsWithConfirmationContent()
+    test('should return only forms with confirmationContent in metadata', async () => {
+      const result = await getFormsWithConfirmationContent()
 
       expect(result).toHaveLength(2)
       expect(result.map((f) => f.slug)).toEqual(['form-with-both', 'form-with-confirmation-only'])
     })
 
-    test('should return empty array when no forms have confirmationContent', () => {
-      getAllForms.mockReturnValue([{ slug: 'no-config', title: 'No Config', metadata: {} }])
+    test('should return empty array when no forms have confirmationContent', async () => {
+      getAllForms.mockResolvedValue([{ slug: 'no-config', title: 'No Config', metadata: {} }])
 
-      const result = getFormsWithConfirmationContent()
+      const result = await getFormsWithConfirmationContent()
 
       expect(result).toHaveLength(0)
     })
   })
 
   describe('getFormsWithDetailsPage', () => {
-    test('should return only forms with detailsPage in metadata', () => {
-      const result = getFormsWithDetailsPage()
+    test('should return only forms with detailsPage in metadata', async () => {
+      const result = await getFormsWithDetailsPage()
 
       expect(result).toHaveLength(2)
       expect(result.map((f) => f.slug)).toEqual(['form-with-both', 'form-with-details-only'])
@@ -108,8 +108,8 @@ describe('dev-home.handler', () => {
   })
 
   describe('devHomeHandler', () => {
-    test('should return HTML response with development tools page', () => {
-      devHomeHandler(mockRequest, mockH)
+    test('should return HTML response with development tools page', async () => {
+      await devHomeHandler(mockRequest, mockH)
 
       expect(getAllForms).toHaveBeenCalled()
       expect(mockH.response).toHaveBeenCalledWith(expect.stringContaining('<html>'))
@@ -129,25 +129,25 @@ describe('dev-home.handler', () => {
         ['form-with-both', 'form-with-details-only'],
         ['form-with-confirmation-only', 'form-with-neither']
       ]
-    ])('should only show forms with %s config in %s section', (_name, basePath, included, excluded) => {
-      devHomeHandler(mockRequest, mockH)
+    ])('should only show forms with %s config in %s section', async (_name, basePath, included, excluded) => {
+      await devHomeHandler(mockRequest, mockH)
 
       const htmlContent = mockH.response.mock.calls[0][0]
       included.forEach((slug) => expect(htmlContent).toContain(`${basePath}/${slug}`))
       excluded.forEach((slug) => expect(htmlContent).not.toContain(`${basePath}/${slug}`))
     })
 
-    test('should handle empty forms list gracefully', () => {
-      getAllForms.mockReturnValue([])
+    test('should handle empty forms list gracefully', async () => {
+      getAllForms.mockResolvedValue([])
 
-      devHomeHandler(mockRequest, mockH)
+      await devHomeHandler(mockRequest, mockH)
 
       expect(mockH.response).toHaveBeenCalledWith(expect.stringContaining('Available Tools'))
     })
   })
 
-  test('should include print application section with all forms', () => {
-    devHomeHandler(mockRequest, mockH)
+  test('should include print application section with all forms', async () => {
+    await devHomeHandler(mockRequest, mockH)
 
     const htmlContent = mockH.response.mock.calls[0][0]
     expect(htmlContent).toContain('Demo Print Application')
@@ -156,8 +156,8 @@ describe('dev-home.handler', () => {
     })
   })
 
-  test('should include error pages section in the response', () => {
-    devHomeHandler(mockRequest, mockH)
+  test('should include error pages section in the response', async () => {
+    await devHomeHandler(mockRequest, mockH)
 
     const htmlContent = mockH.response.mock.calls[0][0]
     expect(htmlContent).toContain('Test Error Pages')
