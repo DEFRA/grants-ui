@@ -21,6 +21,7 @@ export const viewPaths = (() => {
     path.join(serverDir, 'declaration/views'),
     path.join(serverDir, 'home/views'),
     path.join(serverDir, 'land-grants/views'),
+    path.join(serverDir, 'payment/views'),
     path.join(serverDir, 'land-grants/components'),
     path.join(serverDir, 'non-land-grants/pigs-might-fly/views'),
     path.join(serverDir, 'non-land-grants/methane/views'),

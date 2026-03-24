@@ -8,6 +8,7 @@ import { config } from '~/src/config/config.js'
 import { getConsentTypes } from '~/src/server/land-grants/utils/consent-types.js'
 import {
   calculate,
+  calculateWmp,
   parcelsGroups,
   parcelsWithExtendedInfo,
   parcelsWithSize,
@@ -29,7 +30,7 @@ const LAND_GRANTS_API_URL = config.get('landGrants.grantsServiceApiEndpoint')
  * @returns {Promise<{payment: PaymentCalculation, errorMessage?: string, paymentTotal: string}>} - Payment calculation result
  * @throws {Error}
  */
-export async function calculateGrantPayment(state) {
+export async function calculateLandActionsPayment(state) {
   const payload = {
     parcel: stateToLandActionsMapper(state)
   }
@@ -119,6 +120,20 @@ function mapAction(action) {
   return {
     ...action,
     description: landActionWithCode(action.description, action.code)
+  }
+}
+
+/**
+ * Calculates a one-off WMP payment.
+ * @param {{ parcelIds: string[], youngWoodlandArea: number, oldWoodlandArea: number }} params
+ * @returns {Promise<{ result: string, totalPence: number }>}
+ * @throws {Error}
+ */
+export async function calculateWmpPayment({ parcelIds, youngWoodlandArea, oldWoodlandArea }) {
+  const { result } = await calculateWmp({ parcelIds, youngWoodlandArea, oldWoodlandArea }, LAND_GRANTS_API_URL)
+  return {
+    result,
+    totalPence: Math.round(parseFloat(result) * 100)
   }
 }
 

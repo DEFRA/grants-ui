@@ -1,13 +1,17 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { vi } from 'vitest'
 import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
-import { calculateGrantPayment, fetchParcelsGroups } from '../services/land-grants.service.js'
-import { getRequiredConsents } from '../view-state/land-parcel.view-state.js'
-import LandActionsCheckPageController from './land-actions-check-page.controller.js'
+import { getRequiredConsents } from '~/src/server/land-grants/view-state/land-parcel.view-state.js'
+import PaymentPageController from './payment-page.controller.js'
 
-vi.mock('~/src/server/land-grants/services/land-grants.service.js', () => ({
-  calculateGrantPayment: vi.fn(),
-  fetchParcelsGroups: vi.fn()
+const mockStrategyFetch = vi.hoisted(() => vi.fn())
+
+vi.mock('~/src/server/payment/payment-strategies.js', () => ({
+  paymentStrategies: {
+    multiAction: {
+      fetch: mockStrategyFetch
+    }
+  }
 }))
 
 vi.mock('~/src/server/land-grants/utils/format-parcel.js', () => ({
@@ -18,33 +22,38 @@ vi.mock('~/src/server/land-grants/view-state/land-parcel.view-state.js', () => (
   getRequiredConsents: vi.fn()
 }))
 
-describe('LandActionsCheckPageController', () => {
+describe('PaymentPageController', () => {
   let controller
   let mockRequest
   let mockContext
   let mockH
 
-  const mockPaymentResponse = {
-    payment: {
-      annualTotalPence: 32006,
-      parcelItems: {
-        1: {
-          code: 'CMOR1',
-          description: 'Assess moorland and produce a written record: CMOR1',
-          quantity: 4.53,
-          annualPaymentPence: 4806,
-          sheetId: 'SD6743',
-          parcelId: '8083'
-        }
-      },
-      agreementLevelItems: {
-        1: {
-          code: 'MAN1',
-          description: 'Management payment',
-          annualPaymentPence: 27200
-        }
+  const mockPayment = {
+    annualTotalPence: 32006,
+    parcelItems: {
+      1: {
+        code: 'CMOR1',
+        description: 'Assess moorland and produce a written record: CMOR1',
+        quantity: 4.53,
+        annualPaymentPence: 4806,
+        sheetId: 'SD6743',
+        parcelId: '8083'
+      }
+    },
+    agreementLevelItems: {
+      1: {
+        code: 'MAN1',
+        description: 'Management payment',
+        annualPaymentPence: 27200
       }
     }
+  }
+
+  const mockStrategyResult = {
+    totalPence: 32006,
+    payment: mockPayment,
+    parcelItems: [{ text: 'sheet1-parcel1' }],
+    additionalYearlyPayments: []
   }
 
   beforeEach(() => {
@@ -52,7 +61,22 @@ describe('LandActionsCheckPageController', () => {
       pageTitle: 'Check selected land actions'
     })
 
-    controller = new LandActionsCheckPageController()
+    const mockModel = {
+      def: {
+        metadata: {
+          pageConfig: {
+            '/test': {
+              paymentStrategy: 'multiAction',
+              nextPath: '/submit-your-application',
+              addMoreActionsPath: '/select-land-parcel',
+              consentPath: '/you-must-have-consent'
+            }
+          }
+        }
+      }
+    }
+    const mockPageDef = { path: '/test' }
+    controller = new PaymentPageController(mockModel, mockPageDef)
     controller.collection = {
       getErrors: vi.fn().mockReturnValue([])
     }
@@ -62,11 +86,7 @@ describe('LandActionsCheckPageController', () => {
       .fn()
       .mockReturnValue([[{ text: 'sheet1-parcel1' }, { text: 'Test Action' }, { text: '10 hectares' }]])
 
-    calculateGrantPayment.mockResolvedValue(mockPaymentResponse)
-    fetchParcelsGroups.mockResolvedValue([
-      { name: 'Assess moorland', actions: ['CMOR1'] },
-      { name: 'Livestock grazing on moorland', actions: ['UPL1', 'UPL2', 'UPL3'] }
-    ])
+    mockStrategyFetch.mockResolvedValue(mockStrategyResult)
     getRequiredConsents.mockReturnValue([])
 
     mockRequest = {
@@ -98,47 +118,50 @@ describe('LandActionsCheckPageController', () => {
 
       await handler(mockRequest, mockContext, mockH)
 
-      expect(calculateGrantPayment).toHaveBeenCalled()
+      expect(mockStrategyFetch).toHaveBeenCalled()
       expect(controller.setState).toHaveBeenCalledWith(
         mockRequest,
         expect.objectContaining({
-          payment: mockPaymentResponse.payment,
-          draftApplicationAnnualTotalPence: 32006
+          totalPence: 32006,
+          payment: mockPayment
         })
       )
       expect(mockH.view).toHaveBeenCalledWith(
-        'land-actions-check',
+        'payment-page',
         expect.objectContaining({
-          totalYearlyPayment: '£320.06'
+          totalPayment: '£320.06'
         })
       )
     })
 
     test('should handle zero payment correctly', async () => {
-      calculateGrantPayment.mockResolvedValue({
-        payment: { annualTotalPence: 0, parcelItems: {}, agreementLevelItems: {} }
+      mockStrategyFetch.mockResolvedValue({
+        totalPence: 0,
+        payment: { annualTotalPence: 0, parcelItems: {}, agreementLevelItems: {} },
+        parcelItems: [],
+        additionalYearlyPayments: []
       })
 
       const handler = controller.makeGetRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
       expect(mockH.view).toHaveBeenCalledWith(
-        'land-actions-check',
+        'payment-page',
         expect.objectContaining({
-          totalYearlyPayment: '£0.00'
+          totalPayment: '£0.00'
         })
       )
     })
 
     test('should handle missing auth when error occurs', async () => {
       const requestWithoutAuth = { payload: {} }
-      calculateGrantPayment.mockRejectedValue(new Error('API error'))
+      mockStrategyFetch.mockRejectedValue(new Error('API error'))
 
       const handler = controller.makeGetRouteHandler()
       await handler(requestWithoutAuth, mockContext, mockH)
 
       expect(mockH.view).toHaveBeenCalledWith(
-        'land-actions-check',
+        'payment-page',
         expect.objectContaining({
           errors: [
             {
@@ -151,13 +174,13 @@ describe('LandActionsCheckPageController', () => {
 
     test('should handle missing credentials when error occurs', async () => {
       const requestWithoutCredentials = { auth: {}, payload: {} }
-      calculateGrantPayment.mockRejectedValue(new Error('API error'))
+      mockStrategyFetch.mockRejectedValue(new Error('API error'))
 
       const handler = controller.makeGetRouteHandler()
       await handler(requestWithoutCredentials, mockContext, mockH)
 
       expect(mockH.view).toHaveBeenCalledWith(
-        'land-actions-check',
+        'payment-page',
         expect.objectContaining({
           errors: [
             {
@@ -177,7 +200,7 @@ describe('LandActionsCheckPageController', () => {
       await handler(mockRequest, mockContext, mockH)
 
       expect(mockH.view).toHaveBeenCalledWith(
-        'land-actions-check',
+        'payment-page',
         expect.objectContaining({
           errors: [{ href: '#addMoreActions', text: 'Select if you want to add an action to another land parcel' }]
         })
@@ -226,13 +249,13 @@ describe('LandActionsCheckPageController', () => {
 
     test('should handle errors when fetching payment data for validation error', async () => {
       mockRequest.payload = { action: 'validate' }
-      calculateGrantPayment.mockRejectedValue(new Error('Payment calculation failed'))
+      mockStrategyFetch.mockRejectedValue(new Error('Payment calculation failed'))
 
       const handler = controller.makePostRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
 
       expect(mockH.view).toHaveBeenCalledWith(
-        'land-actions-check',
+        'payment-page',
         expect.objectContaining({
           errors: [{ href: '#addMoreActions', text: 'Select if you want to add an action to another land parcel' }],
           parcelItems: [],
@@ -243,13 +266,13 @@ describe('LandActionsCheckPageController', () => {
     })
 
     test('should handle timeout when calculating grant payment gracefully', async () => {
-      calculateGrantPayment.mockRejectedValue(new Error('Operation timed out after 30000ms'))
+      mockStrategyFetch.mockRejectedValue(new Error('Operation timed out after 30000ms'))
 
       const handler = controller.makeGetRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
       expect(mockH.view).toHaveBeenCalledWith(
-        'land-actions-check',
+        'payment-page',
         expect.objectContaining({
           errors: [
             {
@@ -263,13 +286,13 @@ describe('LandActionsCheckPageController', () => {
 
   describe('makeGetRouteHandler', () => {
     test('should render an error if process payment calculation fails', async () => {
-      calculateGrantPayment.mockRejectedValue(new Error('error'))
+      mockStrategyFetch.mockRejectedValue(new Error('error'))
 
       const handler = controller.makeGetRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
       expect(mockH.view).toHaveBeenCalledWith(
-        'land-actions-check',
+        'payment-page',
         expect.objectContaining({
           errors: [
             {
@@ -280,20 +303,19 @@ describe('LandActionsCheckPageController', () => {
       )
     })
 
-    test('should handle undefined payment in view model', () => {
-      const viewModel = controller.buildGetViewModel(mockRequest, mockContext, undefined, [], [])
-      expect(viewModel.totalYearlyPayment).toBe('£0.00')
+    test('should handle undefined totalPence in view model', () => {
+      const viewModel = controller.buildViewModel(mockRequest, mockContext, undefined, [], [])
+      expect(viewModel.totalPayment).toBe('£0.00')
     })
 
-    test('should handle null payment in view model', () => {
-      const viewModel = controller.buildGetViewModel(mockRequest, mockContext, null, [], [])
-      expect(viewModel.totalYearlyPayment).toBe('£0.00')
+    test('should handle zero totalPence in view model', () => {
+      const viewModel = controller.buildViewModel(mockRequest, mockContext, 0, [], [])
+      expect(viewModel.totalPayment).toBe('£0.00')
     })
 
-    test('should handle payment without annualTotalPence property', () => {
-      const paymentWithoutTotal = {}
-      const viewModel = controller.buildGetViewModel(mockRequest, mockContext, paymentWithoutTotal, [], [])
-      expect(viewModel.totalYearlyPayment).toBe('£0.00')
+    test('should handle a valid totalPence in view model', () => {
+      const viewModel = controller.buildViewModel(mockRequest, mockContext, 32006, [], [])
+      expect(viewModel.totalPayment).toBe('£320.06')
     })
   })
 
@@ -396,6 +418,74 @@ describe('LandActionsCheckPageController', () => {
         path: '/select-land-parcel'
       })
       expect(getRequiredConsents).not.toHaveBeenCalled()
+    })
+
+    test('should skip consent check and go to nextPath when consentPath is not configured', () => {
+      const model = {
+        def: {
+          metadata: {
+            pageConfig: {
+              '/test': {
+                paymentStrategy: 'multiAction',
+                nextPath: '/done',
+                addMoreActionsPath: '/add-more'
+              }
+            }
+          }
+        }
+      }
+      const ctrl = new PaymentPageController(model, { path: '/test' })
+      ctrl.collection = { getErrors: vi.fn().mockReturnValue([]) }
+
+      getRequiredConsents.mockReturnValue(['sssi'])
+
+      const result = ctrl.getNextPathFromSelection('false', mockContext.state)
+
+      expect(getRequiredConsents).not.toHaveBeenCalled()
+      expect(result).toEqual({ path: '/done' })
+    })
+  })
+
+  describe('constructor validation', () => {
+    test('should throw when nextPath is missing', () => {
+      const model = {
+        def: {
+          metadata: {
+            pageConfig: { '/test': { paymentStrategy: 'multiAction' } }
+          }
+        }
+      }
+      expect(() => new PaymentPageController(model, { path: '/test' })).toThrow(
+        'PaymentPageController: "nextPath" is required'
+      )
+    })
+
+    test('should throw when addMoreActionsPath is missing and showAddMoreActionsQuestion is true', () => {
+      const model = {
+        def: {
+          metadata: {
+            pageConfig: {
+              '/test': { paymentStrategy: 'multiAction', nextPath: '/done', showAddMoreActionsQuestion: true }
+            }
+          }
+        }
+      }
+      expect(() => new PaymentPageController(model, { path: '/test' })).toThrow(
+        'PaymentPageController: "addMoreActionsPath" is required'
+      )
+    })
+
+    test('should not throw when addMoreActionsPath is missing and showAddMoreActionsQuestion is false', () => {
+      const model = {
+        def: {
+          metadata: {
+            pageConfig: {
+              '/test': { paymentStrategy: 'multiAction', nextPath: '/done', showAddMoreActionsQuestion: false }
+            }
+          }
+        }
+      }
+      expect(() => new PaymentPageController(model, { path: '/test' })).not.toThrow()
     })
   })
 })

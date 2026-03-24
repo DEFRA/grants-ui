@@ -3,7 +3,8 @@ import { vi } from 'vitest'
 import { formatCurrency } from '~/src/config/nunjucks/filters/format-currency.js'
 import { fetchParcelsFromDal } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
 import {
-  calculateGrantPayment,
+  calculateLandActionsPayment,
+  calculateWmpPayment,
   fetchAvailableActionsForParcel,
   fetchParcels,
   fetchParcelsGroups,
@@ -11,6 +12,7 @@ import {
 } from '~/src/server/land-grants/services/land-grants.service.js'
 import {
   calculate,
+  calculateWmp,
   parcelsGroups,
   parcelsWithSize,
   parcelsWithExtendedInfo,
@@ -21,6 +23,7 @@ const mockApiEndpoint = 'https://land-grants-api'
 
 vi.mock('~/src/server/land-grants/services/land-grants.client.js', () => ({
   calculate: vi.fn(),
+  calculateWmp: vi.fn(),
   parcelsGroups: vi.fn(),
   parcelsWithSize: vi.fn(),
   parcelsWithExtendedInfo: vi.fn(),
@@ -64,7 +67,7 @@ describe('land-grants service', () => {
     vi.clearAllMocks()
   })
 
-  describe('calculateGrantPayment', () => {
+  describe('calculateLandActionsPayment', () => {
     it('should calculate payment and format amount', async () => {
       const mockCalculateResponse = {
         payment: { annualTotalPence: 123456 }
@@ -72,7 +75,7 @@ describe('land-grants service', () => {
       calculate.mockResolvedValueOnce(mockCalculateResponse)
       formatCurrency.mockReturnValue('£1,234.56')
 
-      const result = await calculateGrantPayment({
+      const result = await calculateLandActionsPayment({
         landParcels: {
           'SD1234-5678': {
             actionsObj: {
@@ -109,7 +112,7 @@ describe('land-grants service', () => {
       calculate.mockResolvedValueOnce(mockCalculateResponse)
       formatCurrency.mockReturnValue('£0.00')
 
-      const result = await calculateGrantPayment({
+      const result = await calculateLandActionsPayment({
         landParcels: {
           'SHEET123-PARCEL456': {
             actionsObj: { CMOR1: { value: 0 } }
@@ -129,7 +132,7 @@ describe('land-grants service', () => {
 
       formatCurrency.mockReturnValue(null)
 
-      const result = await calculateGrantPayment({
+      const result = await calculateLandActionsPayment({
         landParcels: {
           'SHEET123-PARCEL456': {}
         }
@@ -143,11 +146,45 @@ describe('land-grants service', () => {
       calculate.mockRejectedValueOnce(new Error('API error'))
 
       await expect(
-        calculateGrantPayment({
+        calculateLandActionsPayment({
           landParcels: {
             'SHEET123-PARCEL456': {}
           }
         })
+      ).rejects.toThrow('API error')
+    })
+  })
+
+  describe('calculateWmpPayment', () => {
+    it('should call calculateWmp with state params and return totalPence', async () => {
+      calculateWmp.mockResolvedValueOnce({ result: '125.50' })
+
+      const result = await calculateWmpPayment({
+        parcelIds: ['SD6346-3387'],
+        youngWoodlandArea: 1.5,
+        oldWoodlandArea: 0.5
+      })
+
+      expect(calculateWmp).toHaveBeenCalledWith(
+        { parcelIds: ['SD6346-3387'], youngWoodlandArea: 1.5, oldWoodlandArea: 0.5 },
+        mockApiEndpoint
+      )
+      expect(result).toEqual({ result: '125.50', totalPence: 12550 })
+    })
+
+    it('should handle zero result', async () => {
+      calculateWmp.mockResolvedValueOnce({ result: '0.00' })
+
+      const result = await calculateWmpPayment({ parcelIds: ['SD6346-3387'], youngWoodlandArea: 0, oldWoodlandArea: 0 })
+
+      expect(result).toEqual({ result: '0.00', totalPence: 0 })
+    })
+
+    it('should propagate API errors', async () => {
+      calculateWmp.mockRejectedValueOnce(new Error('API error'))
+
+      await expect(
+        calculateWmpPayment({ parcelIds: ['SD6346-3387'], youngWoodlandArea: 0, oldWoodlandArea: 0 })
       ).rejects.toThrow('API error')
     })
   })
