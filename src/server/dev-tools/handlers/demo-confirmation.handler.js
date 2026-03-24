@@ -84,7 +84,7 @@ export async function demoConfirmationHandler(request, h) {
   try {
     const { slug } = request.params
 
-    const form = findFormBySlug(slug)
+    const form = await findFormBySlug(slug)
 
     if (!form) {
       return generateFormNotFoundResponse(slug, h)

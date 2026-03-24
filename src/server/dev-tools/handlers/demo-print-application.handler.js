@@ -1,7 +1,5 @@
-import { readFile } from 'node:fs/promises'
-import { parse as parseYaml } from 'yaml'
 import { buildDemoData, buildDemoPrintAnswers, buildDemoPayment } from '../helpers/index.js'
-import { findFormBySlug } from '../../common/forms/services/find-form-by-slug.js'
+import { findFormBySlug, loadFormDefinition } from '../../common/forms/services/find-form-by-slug.js'
 import {
   buildPrintViewModel,
   enrichDefinitionWithListItems,
@@ -20,14 +18,13 @@ export async function demoPrintApplicationHandler(request, h) {
   try {
     const { slug } = request.params
 
-    const form = findFormBySlug(slug)
+    const form = await findFormBySlug(slug)
 
     if (!form) {
       return generateFormNotFoundResponse(slug, h)
     }
 
-    const raw = await readFile(form.path, 'utf8')
-    const definition = parseYaml(raw)
+    const definition = await loadFormDefinition(form)
 
     enrichDefinitionWithListItems(definition)
 
@@ -38,7 +35,7 @@ export async function demoPrintApplicationHandler(request, h) {
     const demoData = buildDemoData()
 
     const configurablePrintContent = processConfigurablePrintContent(
-      definition.metadata?.printPage?.configurablePrintContent,
+      /** @type {Record<string, any>} */ (definition.metadata)?.printPage?.configurablePrintContent,
       slug
     )
 

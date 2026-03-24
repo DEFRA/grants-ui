@@ -9,9 +9,9 @@ import { statusCodes } from '~/src/server/common/constants/status-codes.js'
  * Validates request parameters and finds form by slug
  * @param {object} request - Hapi request object
  * @param {object} h - Hapi response toolkit
- * @returns {object} Validation result with form or error response
+ * @returns {Promise<object>} Validation result with form or error response
  */
-function validateRequestAndFindForm(request, h) {
+async function validateRequestAndFindForm(request, h) {
   const { slug } = request.params
 
   if (!slug) {
@@ -26,7 +26,7 @@ function validateRequestAndFindForm(request, h) {
     return { error: h.response('Bad request - missing slug').code(statusCodes.badRequest) }
   }
 
-  const form = findFormBySlug(slug)
+  const form = await findFormBySlug(slug)
   if (!form) {
     log(
       LogCodes.CONFIRMATION.CONFIRMATION_ERROR,
@@ -137,7 +137,7 @@ export const configConfirmation = {
         path: '/{slug}/confirmation',
         handler: async (request, h) => {
           try {
-            const validationResult = validateRequestAndFindForm(request, h)
+            const validationResult = await validateRequestAndFindForm(request, h)
             if (validationResult.error) {
               return validationResult.error
             }

@@ -12,6 +12,7 @@ import { redisSchema } from './redis.js'
 import { rateLimitSchema } from './rate-limit.js'
 import { devToolsSchema } from './dev-tools.js'
 import { validateBackendAuthConfig } from './validate-backend-auth.js'
+import { configApiSchema } from './config-api.js'
 
 const dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -277,6 +278,7 @@ const convictConfig = {
     }
   },
   devTools: devToolsSchema,
+  configApi: configApiSchema,
   applicationLock: {
     secret: {
       doc: 'Secret used to sign application lock tokens',

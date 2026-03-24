@@ -1,31 +1,33 @@
 import { vi } from 'vitest'
 import { getAvailableFormSlugs } from './get-available-form-slugs.js'
-import { MOCK_FORM_CACHE_SUBSET } from '~/src/__test-fixtures__/mock-forms-cache.js'
 
-vi.mock('../../common/forms/services/form.js', () => ({
-  getFormsCache: vi.fn(() => MOCK_FORM_CACHE_SUBSET)
+vi.mock('../../common/forms/services/forms-redis.js', () => ({
+  getFormsRedisClient: vi.fn(() => ({})),
+  getAllSlugs: vi.fn()
 }))
 
 describe('getAvailableFormSlugs', () => {
-  let getFormsCacheMock
+  let getAllSlugsMock
 
   beforeEach(async () => {
     vi.clearAllMocks()
-    const formService = await import('../../common/forms/services/form.js')
-    getFormsCacheMock = formService.getFormsCache
+    const formsRedis = await import('../../common/forms/services/forms-redis.js')
+    getAllSlugsMock = formsRedis.getAllSlugs
   })
 
-  test('should return array of form slugs', () => {
-    const result = getAvailableFormSlugs()
+  test('should return array of form slugs', async () => {
+    getAllSlugsMock.mockResolvedValue(['example-grant', 'flying-pigs'])
 
-    expect(getFormsCacheMock).toHaveBeenCalledOnce()
+    const result = await getAvailableFormSlugs()
+
+    expect(getAllSlugsMock).toHaveBeenCalledOnce()
     expect(result).toEqual(['example-grant', 'flying-pigs'])
   })
 
-  test('should return empty array when cache is empty', () => {
-    getFormsCacheMock.mockReturnValueOnce([])
+  test('should return empty array when cache is empty', async () => {
+    getAllSlugsMock.mockResolvedValue([])
 
-    const result = getAvailableFormSlugs()
+    const result = await getAvailableFormSlugs()
 
     expect(result).toEqual([])
   })
