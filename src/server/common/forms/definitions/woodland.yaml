@@ -1,10 +1,50 @@
-name: Grants
+engine: V2
+name: Woodland Management Plan
 metadata:
   id: 95e92559-968d-44ae-8666-2b1ad3dffd38
   enabledInProd: true
+  referenceNumberPrefix: WMP
   submission:
     grantCode: woodland
-  grantRedirectRules: null
+  grantRedirectRules:
+    preSubmission:
+      - toPath: '/tasks'
+    postSubmission:
+      # Cleared - APPLICATION_WITHDRAWN status
+      - fromGrantsStatus: SUBMITTED,REOPENED
+        gasStatus: APPLICATION_WITHDRAWN
+        toGrantsStatus: CLEARED
+        toPath: /start
+
+      # Awaiting amendments
+      - fromGrantsStatus: SUBMITTED
+        gasStatus: APPLICATION_AMEND
+        toGrantsStatus: REOPENED
+        toPath: /tasks
+
+      # Offer sent, withdrawn, accepted -> agreements service
+      - fromGrantsStatus: 'SUBMITTED'
+        gasStatus: 'OFFER_SENT,OFFER_WITHDRAWN,OFFER_ACCEPTED'
+        toGrantsStatus: 'SUBMITTED'
+        toPath: /agreements
+
+      # Reopened
+      - fromGrantsStatus: REOPENED
+        gasStatus: default
+        toGrantsStatus: REOPENED
+        toPath: /tasks
+
+      # Submitted -> confirmation (default for most GAS statuses)
+      - fromGrantsStatus: SUBMITTED
+        gasStatus: default
+        toGrantsStatus: SUBMITTED
+        toPath: /confirmation
+
+      # Default fallback
+      - fromGrantsStatus: default
+        gasStatus: default
+        toGrantsStatus: SUBMITTED
+        toPath: /confirmation
   detailsPage:
     query:
       name: Business
@@ -38,7 +78,7 @@ metadata:
             sourcePath: customer.name
             format: fullName
       - title: Organisation details
-        description: If your application is successful, the following organisation will receive the MSFP grant.
+        description: If your application is successful, the following organisation will receive the Woodland Management Plan grant.
         fields:
           - label: Organisation name
             sourcePath: business.name
@@ -61,10 +101,10 @@ metadata:
           - label: CPH number
             sourcePath: countyParishHoldings
   tasklist:
-    completeInOrder: true # Optional, defaults to true - must complete tasks in order
-    returnAfterSection: true # Optional, defaults to true - returns to task list after each section
-    showCompletionStatus: true # Optional, defaults to true - show "X of Y" completion status
-    statuses: # Optional completion status display overrides (defaults shown below)
+    completeInOrder: true
+    returnAfterSection: true
+    showCompletionStatus: false
+    statuses:
       cannotStart:
         text: 'Cannot start yet'
         classes: 'govuk-tag--grey'
@@ -75,61 +115,70 @@ metadata:
         text: 'Completed'
         classes: 'govuk-tag--green'
   confirmationContent:
-    html: >
+    panelTitle: 'Details submitted'
+    panelText: 'Your reference number'
+    html: |
       <h2 class="govuk-heading-m">What happens next</h2>
       <p class="govuk-body">We will review your application.</p>
+      <p class="govuk-body">You will receive an email confirming your application has been received.</p>
+
+      <details class="govuk-details" data-module="govuk-details">
+        <summary class="govuk-details__summary">
+          <span class="govuk-details__summary-text">
+            If you have a question
+          </span>
+        </summary>
+        <div class="govuk-details__text">
+          <p class="govuk-body">Contact the Rural Payments Agency if you have a query.</p>
+          <p class="govuk-body">
+            Telephone: 03000 200 301<br>
+            Monday to Friday, 8:30am to 5pm (except bank holidays)</p>
+          <p class="govuk-body"><a class="govuk-link" href="https://www.gov.uk/call-charges" target="_blank">Find out about call charges (opens in new tab)</a></p>
+          <p class="govuk-body">Email: <a class="govuk-link" href="mailto:ruralpayments@defra.gov.uk">ruralpayments@defra.gov.uk</a></p>
+        </div>
+      </details>
+
+sections:
+  - name: check-your-eligibility
+    title: Check your eligibility
+    id: 16848e5e-ba30-4719-aa98-f0e1144fb492
+  - name: about-your-woodland
+    title: About your woodland
+    id: 38507a39-c936-4c4f-872a-bcbae2eeb7d5
+  - name: declaration
+    title: Declaration
+    id: 68ce97c6-8892-4e9b-b38e-06f4badbb844
+  - name: check-and-submit
+    title: Check and submit application
+    id: 52a9d09a-a977-4993-aa40-8eb77a4cd200
+
 pages:
-  - title: Check if you can apply for a woodlands grant
+  # ==========================================
+  # Pre-task-list pages (no section)
+  # ==========================================
+
+  # Start page
+  - title: Apply for a Woodland Management Plan grant
+    id: 4afc672b-71d6-4889-999d-c7934184f3cc
     path: /start
     controller: StartPageController
     components:
       - name: startInfoOne
-        title: Html
+        id: eb6eda3b-57ee-4440-bb0f-18e2a189bd8e
         type: Html
         content: >-
-          <p class="govuk-body">Use this service to:</p>
-          <ul class="govuk-list govuk-list--bullet">
-          <li>check if you can apply for wings for your pigs (takes about 3
-          minutes)</li>
-          <li>get an estimate of your grant funding (takes about 5 minutes if
-          you have all the pig details)</li>
-          </ul>
-          <p class="govuk-body">You can apply if you:</p>
-          <ul class="govuk-list govuk-list--bullet">
-          <li>are a pig farmer</li>
-          <li>have between 1 and 1,000 pigs</li>
-          <li>will use the wings in England</li>
-          <li>want to super-power your pigs</li>
-          </ul>
-        id: eb6eda3b-57ee-4440-bb0f-18e2a189bd8e
-        options: {}
-        schema: {}
-      - name: startInsetText
-        title: Inset text
-        type: InsetText
-        content: If your project is eligible, you can submit your answers to the Rural
-          Payments Agency (RPA) to request the full application form.
-        id: bbceb617-7602-49f1-8a53-251c6b3dccef
-        options: {}
-        schema: {}
+          <p class="govuk-body">Use this service to apply for a Woodland Management Plan (WMP) grant.</p>
+          <p class="govuk-body">A WMP grant helps you to create a management plan for your woodland. This plan will set out how you intend to manage your woodland over the agreement period.</p>
       - name: startInfoTwo
-        title: Html
+        id: 24172324-4841-445c-b1fb-4f377596d826
         type: Html
         content: >
-          <h2 class="govuk-heading-s">Grant funding rates</h2>
-          <p class="govuk-body">You can get funding for:</p>
-          <ul class="govuk-list govuk-list--bullet">
-          <li>£10 per pig for Large White breeds</li>
-          <li>£15 per pig for British Landrace breeds</li>
-          <li>£18 per pig for Berkshire breeds</li>
-          <li>£10 per pig for other breeds</li>
-          </ul>
           <h2 class="govuk-heading-s">Before you start</h2>
-          <p class="govuk-body">To use the checker, you need:</p>
+          <p class="govuk-body">To use this service, you need:</p>
           <ul class="govuk-list govuk-list--bullet">
-          <li>information about your farming business</li>
-          <li>the number and breeds of pigs you have</li>
-          <li>your contact details and business address</li>
+          <li>a Rural Payments service account</li>
+          <li>your land registered with the Rural Payments service</li>
+          <li>details of your woodland</li>
           </ul>
           <p class="govuk-body">If you do not enter any information for more
           than 20 minutes, your application will time out and you will have to
@@ -141,172 +190,338 @@ pages:
           <p class="govuk-body">Telephone: 03000 200 301</p>
           <p class="govuk-body">Monday to Friday, 9am to 5pm (except public
           holidays)</p>
-        id: 24172324-4841-445c-b1fb-4f377596d826
-        options: {}
-        schema: {}
-    id: 4afc672b-71d6-4889-999d-c7934184f3cc
+
+  # Check details page
   - title: Check your details are correct
     path: /check-details
     controller: CheckDetailsController
-    next: [ ]
+    next: []
     id: a24cb35f-a359-4934-b8c8-56ff92cb3df1
-  - title: Read all guidance
-    id: 9c8b1a0e-5c3d-4f1b-9c7a-2c8e5a9f8b6d
-    path: /read-all-guidance
-    components:
-      - name: readGuidanceInfo
-        title: Have you read all the guidance content prompt in here
-        type: YesNoField
-  - title: Example Task List
+
+  # Task list page
+  - title: Woodland Management Plan
     id: fd1c8e7c-9b0a-4c3b-9c5a-2f8e5a9f8b6d
-    path: /task-list
+    path: /tasks
     controller: TaskListPageController
     components:
       - name: taskListGuidance
         id: 184a3b28-53a2-4154-a544-f7d641106dc0
         type: Details
-        title: Task list guidance
+        title: Help with your application
         content: |
           <p class="govuk-body">This task list helps you track your progress through the application. Each section contains one or more tasks that must be completed.</p>
           <p class="govuk-body">Tasks will show as 'Completed' as they are populated. You must complete all sections before you can submit your application.</p>
           <p class="govuk-body">If you need to change any information you have already provided, you can go back to any completed section and update your answers. The status will update automatically as you progress through the application.</p>
         options:
-          position: above # Renders component above task list
-      - name: helpText
-        id: b3676e35-bc96-49f2-957c-09ead7e610ec
-        type: Html
-        content: |
-          <p class="govuk-body">This is some example help text.</p>
-          <p class="govuk-body">It can include links to guidance or other information.</p>
-        options:
-          position: below # Renders component below task list
-  - title: Do you have land control?
-    id: d40c01ac-f492-4665-90c6-b62a6e58d6aa
-    path: /management-control
+          position: above
+
+  # ==========================================
+  # Section 1: Check your eligibility
+  # ==========================================
+
+  # 1. Land registered
+  - title: Is all the land in your application registered with the Rural Payments service?
+    id: db67ebae-7851-4cd8-b22f-c74a7eb2e73d
+    path: /eligibility-land-registered
+    section: 16848e5e-ba30-4719-aa98-f0e1144fb492
     controller: TaskPageController
     components:
-      - name: hasLandPermissionPreamble
-        title: Management control
-        type: Html
-        content: >-
-          <p class="govuk-body">Do you have management control over the land and activities in this application for the full duration of the proposed agreement and option commitment(s) as outlined in the relevant customer guidance (including where appropriate, any countersignature)?</p>
-      - name: hasLandPErmission
-        title: Do have management control?
+      - name: landRegistered
+        id: eac135f5-78b1-4179-ab7d-d122befa6bd8
         type: YesNoField
-        hint: ''
-        options: {}
-        schema: {}
-        shortDescription: Do have management control?
-        id: 45052db5-d620-4382-b2ec-918168c98bc7
-  - title: You are not eligible for this grant
-    path: /you-must-have-permission
-    id: 21347447-b831-4074-bc25-a35ac5a9fd8f
-    condition: 341c2742-74d4-439e-91ee-641f4e56093f
-    components:
-      - name: FGyiLS
-        id: 2324fb1a-5c1d-4f49-ace0-5a9d5eaa088c
-        title: You are not eligible for this grant
-        type: Html
-        hint: ''
-        content: >
-          <p class="govuk-body">Sorry, this grant is only available for people with permission over the land.</p>
-        options: {}
-        schema: {}
-  - title: How many acres do you have?
-    path: /acre-count
-    components:
-      - name: acreCountInfo
-        type: Html
-        title: Html
-        content: <p class="govuk-hint">Enter the total number of acres you
-          are applying for<br><br>You can apply for up to 1,000 acres</p>
-        id: d22f5165-8952-4fb7-9fd3-139f4fb73e53
-        options: {}
-        schema: {}
-      - name: totalAcres
-        type: NumberField
-        title: Enter number of acres
+        title: Is all the land in your application registered with the Rural Payments service?
         options:
           required: true
-          classes: govuk-!-width-one-third
-          customValidationMessages:
-            any.required: Enter the number of acres you have
-            number.max: You can apply for for up to 1,000 acres
-            number.min: You must have at least 100 acres
-        schema:
-          min: 100
-          max: 1000
-          precision: 0
-        shortDescription: Enter number of acres
-        id: 11311189-f228-449a-90ee-68bbb6640fac
-    id: f04b730c-b5f3-4c37-9c89-fb2297153c73
-  - title: You are not eligible for this grant
-    condition: 53386d88-be5b-4637-8b90-7843f4473d4e
-    id: d7848b42-24b3-4ed0-abcc-1c31f967cb25
-    path: /not-eligible
+        shortDescription: Land registration
+
+  # 2. Exit - land not registered
+  - title: All the land in your application must be registered with the Rural Payments service
+    id: e692dbd0-57ec-4237-90fd-1bac172c9f94
+    path: /exit-eligibility-land-registered
     controller: TerminalPageController
+    condition: f64f8509-4b15-48a1-b301-5463f23e8b42
     components:
-      - name: FGyiLA
-        title: You are not eligible for this grant
+      - name: landNotRegisteredInfo
+        id: 6503008c-d3e0-4236-b0a6-09d409c2a818
         type: Html
-        hint: ''
         content: >
-          <p class="govuk-body">Sorry, this grant is only available for pig
-          farmers with between 100 to 1,000 acres</p>
-        options: {}
-        schema: {}
-        id: 10a9cac2-e419-42ee-9baa-b36240aca0c3
-  - title: Potential grant funding
-    path: /potential-funding
-    controller: WmpPotentialFundingController
-    id: 0ca92c0d-1318-491f-a461-bad92554dae3
-  - path: /check-answers
-    controller: SummaryPageController
-    title: Check your answers
-    id: e18e2a8f-4dcf-4f70-ae75-235752260c51
-lists:
-  - title: What type of pigs do you have?
-    name: pigBreedsList
-    type: string
-    items:
-      - text: Large White
-        description: £10 per pig funding rate
-        value: largeWhite
-        id: 4b9b35f6-16e8-434d-b9a5-267377c25a9a
-      - text: British Landrace
-        description: £15 per pig funding rate
-        value: britishLandrace
-        id: 6e4dc730-3a3b-41f2-9f76-ee2b30ce0946
-      - text: Berkshire
-        description: £18 per pig funding rate
-        value: berkshire
-        id: 2b55f154-b759-4ab2-9e58-dc8e6f420571
-      - text: Other
-        description: £10 per pig funding rate
-        value: other
-        id: f0973fe0-c200-44ad-9fdf-80707c4710dd
-    id: 3fdc57b9-f644-4255-886a-474e2b6743b0
-sections:
-  - title: Contact details
-    name: dhpiZu
-    hideTitle: false
+          <p class="govuk-body">You must register all the land parcels you want to include in any application for rural payments.</p>
+          <p class="govuk-body">This includes funding schemes such as the Sustainable Farming Incentive (SFI) and Countryside Stewardship (CS) Higher Tier and Capital Grants.</p>
+          <h2 class="govuk-heading-m">Check land parcels</h2>
+          <p class="govuk-body">All land parcels listed in your application must be registered on your digital maps in the Rural Payments service and have a parcel reference number (in the format AA1234 5678) before you apply.</p>
+          <p class="govuk-body">To find out if your land parcels are registered and up to date follow our <a class="govuk-link" href="https://www.gov.uk/guidance/digital-maps-in-the-rural-payments-service-check-and-change-mapping-updates" target="_blank">Digital maps in the Rural Payments service: check and change your maps guidance (opens in new tab)</a>.</p>
+          <h2 class="govuk-heading-m">Register land parcels</h2>
+          <p class="govuk-body">If your land parcels are not registered, you must register the land and wait for this to be completed before applying.</p>
+          <p class="govuk-body">To register land follow our <a class="govuk-link" href="https://www.ruralpayments.service.gov.uk/" target="_blank">Rural Payments service: how to register land and update digital maps guidance (opens in new tab)</a>.</p>
+
+  # 3. Management control
+  - title: Will you have management control for the duration of the agreement and, where applicable, the durability period?
+    id: 4bdbaa10-d57a-4e94-8a2b-c442658ca4a7
+    path: /eligibility-management-control
+    section: 16848e5e-ba30-4719-aa98-f0e1144fb492
+    controller: TaskPageController
+    components:
+      - name: managementControl
+        id: e0dcf5be-0b8f-4e50-befe-bdfe858e82a6
+        type: YesNoField
+        title: Will you have management control for the duration of the agreement and, where applicable, the durability period?
+        hint: Having management control means you're the person actively farming the land in your application. You must have management control of the land in an agreement for 5 years from your agreement start date. The durability period is the period where you must keep all funded capital items in the same condition and to the specification in your agreement, and use them only for the approved grant purpose. This is usually for a minimum of 7 years from the agreement start date.
+        options:
+          required: true
+        shortDescription: Management control
+
+  # 4. Countersignature (only shown when management control = no)
+  - title: Have you got the countersignature of your landlord?
+    id: 7498379b-f8f1-4f51-b27e-805f06e0bd6a
+    path: /eligibility-countersignature
+    section: 16848e5e-ba30-4719-aa98-f0e1144fb492
+    controller: TaskPageController
+    condition: 88a3283b-64fe-4e2b-aa14-5faca0333006
+    components:
+      - name: countersignature
+        id: 040d6021-bc32-4ef8-9cfe-235548157a30
+        type: YesNoField
+        title: Have you got the countersignature of your landlord?
+        hint: You need your landlord's countersignature to confirm management control for the duration of the agreement and, where applicable, the durability period.
+        options:
+          required: true
+        shortDescription: Landlord countersignature
+
+  # 6. Exit - no countersignature
+  - title: You must get your landlord's countersignature
+    id: ba713319-438e-4609-afbb-2585686bb491
+    path: /exit-eligibility-countersignature
+    controller: TerminalPageController
+    condition: b9f02e95-e022-4b6d-a8fb-dbe56124c03f
+    components:
+      - name: noCountersignatureInfo
+        id: 5af8ba37-9ac6-47a3-a5a9-e9716ab5141e
+        type: Html
+        content: >
+          <p class="govuk-body">You must get written consent from your landlord before you can apply for a Woodland Management Plan grant.</p>
+          <p class="govuk-body">You can download the
+          <a class="govuk-link" href="https://www.gov.uk/government/publications/countryside-stewardship-land-ownership-and-control-form" target="_blank">Land ownership and control form: Countryside Stewardship form (opens in new tab)</a>
+          to get your landlord's countersignature.</p>
+
+  # 7. Tenant
+  - title: Are you a tenant of a public body?
+    id: 8e65ecdb-22c7-4d9f-9500-af90718e61e1
+    path: /eligibility-tenant
+    section: 16848e5e-ba30-4719-aa98-f0e1144fb492
+    controller: TaskPageController
+    components:
+      - name: isTenant
+        id: bdff80de-080b-4fdd-a323-9762ef558ae8
+        type: YesNoField
+        title: Are you a tenant of a public body?
+        hint: If you are a tenant of a public body, you'll need to check if the land is eligible for a WMP with your landlord.
+        options:
+          required: true
+        shortDescription: Public body tenancy
+
+  # 8. Tenant obligations (conditional - only if tenant = yes)
+  - title: Are the proposed works a requirement of your tenancy or any other legally binding obligation?
+    id: aa0a2606-ad5b-46db-8c4c-3bf503fa23f9
+    path: /eligibility-tenant-obligations
+    section: 16848e5e-ba30-4719-aa98-f0e1144fb492
+    controller: TaskPageController
+    condition: b977ed06-398f-4bc7-aae8-a363c4183c3a
+    components:
+      - name: tenantObligations
+        id: f025cbb2-920c-4b07-9cfa-d43589369696
+        type: YesNoField
+        title: Are the proposed works a requirement of your tenancy or any other legally binding obligation?
+        hint: This includes any legally binding obligation such as a condition of planning permission or a covenant.
+        options:
+          required: true
+        shortDescription: Tenancy obligations
+
+  # 9. Exit - tenant obligations
+  - title: You cannot get a WMP grant for any proposed works which are a requirement of your tenancy or any other legally binding obligation
+    id: 566edfd9-2028-490f-8928-0d3b75e7eb4e
+    path: /exit-eligibility-tenant-obligations
+    controller: TerminalPageController
+    condition: d8ae9ed4-da31-41fb-a5d7-0025cc823c21
+    components:
+      - name: tenantObligationsExitInfo
+        id: 10a8335b-877c-436f-8a0d-e09d6cf53f71
+        type: Html
+        content: >
+          <p class="govuk-body">You cannot get a Woodland Management Plan grant for any proposed works which are a requirement of your tenancy or any other legally binding obligation.</p>
+          <p class="govuk-body">You can read the
+          <a class="govuk-link" href="#" target="_blank">Applicant's guide: PA3 Woodland management plan 2026 guidance (opens in new tab)</a>
+          for more information.</p>
+
+  # 10. Grazing rights
+  - title: Are you applying for land covered by common or shared grazing rights?
+    id: 3f4d21fd-7cf9-4c3e-9026-d9506cf94cb1
+    path: /eligibility-grazing-rights
+    section: 16848e5e-ba30-4719-aa98-f0e1144fb492
+    controller: TaskPageController
+    components:
+      - name: grazingRights
+        id: 540e77e4-13ec-4393-aee4-6ceed9cb91ed
+        type: YesNoField
+        title: Are you applying for land covered by common or shared grazing rights?
+        options:
+          required: true
+        shortDescription: Grazing rights
+
+  # 11. Valid WMP
+  - title: Do you already have any valid WMPs on any land in your application?
+    id: 93f46dcc-d0db-484e-9eb6-4ba5766c220d
+    path: /eligibility-valid-wmp
+    section: 16848e5e-ba30-4719-aa98-f0e1144fb492
+    controller: TaskPageController
+    components:
+      - name: hasValidWmp
+        id: e6a99259-82d6-4d2a-a2ec-349e9d473092
+        type: YesNoField
+        title: Do you already have any valid WMPs on any land in your application?
+        options:
+          required: true
+        shortDescription: Existing WMPs
+
+  # 12. WMP agreement number (conditional - only if valid-wmp = yes)
+  - title: Enter the agreement number for any valid WMPs
+    id: c8cf57d5-b410-4cfe-8bbd-1a912119b7ab
+    path: /eligibility-wmp-agreement
+    section: 16848e5e-ba30-4719-aa98-f0e1144fb492
+    controller: TaskPageController
+    condition: 7d822521-d6cc-4b1a-9538-8b9f18d7bdfc
+    components:
+      - name: wmpAgreementNumber
+        id: a9ae25aa-d70e-4616-84bf-47f71251e8b5
+        type: TextField
+        title: Enter the agreement number for any valid WMPs
+        hint: If you have more than one valid WMP, enter each agreement number separated by a comma.
+        options:
+          required: true
+          classes: govuk-!-width-two-thirds
+          customValidationMessages:
+            any.required: Enter the agreement number for your valid WMP
+        shortDescription: WMP agreement number
+
+  # 13. Higher tier
+  - title: Do you intend to apply for a Countryside Stewardship Higher Tier (CSHT) agreement if your WMP is approved?
+    id: 11c06c84-fb48-479e-98e2-27549195e4bd
+    path: /eligibility-higher-tier
+    section: 16848e5e-ba30-4719-aa98-f0e1144fb492
+    controller: TaskPageController
+    components:
+      - name: higherTierGuidance
+        id: 50a8fb82-ec37-4c57-83af-81e56aaf4506
+        type: Html
+        content: >-
+          <p class="govuk-body">You can read the
+          <a class="govuk-link" href="#" target="_blank">Applicant's guide: PA3 Woodland management plan 2026 guidance (opens in new tab)</a>
+          for more information about Countryside Stewardship Higher Tier agreements.</p>
+      - name: higherTier
+        id: e7d51cad-e4ea-4478-a12b-fedf3d18039d
+        type: YesNoField
+        title: Do you intend to apply for a Countryside Stewardship Higher Tier (CSHT) agreement if your WMP is approved?
+        options:
+          required: true
+        shortDescription: Higher Tier intention
+
+  # ==========================================
+  # Section 2: About your woodland (placeholder)
+  # ==========================================
+
+  - title: About your woodland
+    id: 8faaa0a2-e270-437a-8bac-cdfa83a37f24
+    path: /about-your-woodland-placeholder
+    section: 38507a39-c936-4c4f-872a-bcbae2eeb7d5
+    controller: TaskPageController
+    components:
+      - name: aboutWoodlandPlaceholder
+        id: 2f13f692-c40c-4aaa-be37-b2a50d5c01c0
+        type: Html
+        content: >-
+          <p class="govuk-body">This section is under development. Further questions about your woodland will be added in a future iteration.</p>
+
+  # ==========================================
+  # Section 3: Declaration
+  # ==========================================
+
+  - title: Confirm and send
+    id: ab194d2a-0b67-4a21-9158-1bd1bbdc4077
+    path: /declaration
+    section: 68ce97c6-8892-4e9b-b38e-06f4badbb844
+    controller: DeclarationPageController
+
+  # ==========================================
+  # Section 4: Check and submit application
+  # ==========================================
+
+  - title: Check your answers
+    id: 0d6ac201-a25f-4f4b-a0f5-ac034ca51c09
+    path: /summary
+    section: 52a9d09a-a977-4993-aa40-8eb77a4cd200
+    controller: CheckResponsesPageController
+
+lists: []
+
 conditions:
-  - id: 341c2742-74d4-439e-91ee-641f4e56093f
-    displayName: notLandOwner
+  # Land not registered (landRegistered = false) -> exit page
+  - id: f64f8509-4b15-48a1-b301-5463f23e8b42
+    displayName: landNotRegistered
     items:
-      - id: 47977a3b-2c17-42c4-b9ab-1f10e831df84
-        componentId: 45052db5-d620-4382-b2ec-918168c98bc7
+      - id: d37df5c8-e5c2-4d21-a133-c4fcd967db29
+        componentId: eac135f5-78b1-4179-ab7d-d122befa6bd8
         operator: is
         type: BooleanValue
         value: false
-  - id: 53386d88-be5b-4637-8b90-7843f4473d4e
-    displayName: Too many acres entered
+
+  # No management control (managementControl = false) -> show countersignature page
+  - id: 88a3283b-64fe-4e2b-aa14-5faca0333006
+    displayName: noManagementControl
     items:
-      - id: 8dfd0741-5b42-4feb-97b5-e233d2f26da5
-        componentId: 11311189-f228-449a-90ee-68bbb6640fac
-        operator: is more than
-        type: NumberValue
-        value: 1000
+      - id: 29a776b7-0374-4335-8c6f-d6d3c4ed9d30
+        componentId: e0dcf5be-0b8f-4e50-befe-bdfe858e82a6
+        operator: is
+        type: BooleanValue
+        value: false
+
+  # No countersignature (countersignature = false) -> exit page
+  - id: b9f02e95-e022-4b6d-a8fb-dbe56124c03f
+    displayName: noCountersignature
+    items:
+      - id: 46d2f6c5-c17a-4a67-8c6e-59fd129c8579
+        componentId: 040d6021-bc32-4ef8-9cfe-235548157a30
+        operator: is
+        type: BooleanValue
+        value: false
+
+  # Is tenant (isTenant = true) -> show tenant-obligations page
+  - id: b977ed06-398f-4bc7-aae8-a363c4183c3a
+    displayName: isTenant
+    items:
+      - id: ea7ed818-20d1-4d19-b290-df2e70fc44ac
+        componentId: bdff80de-080b-4fdd-a323-9762ef558ae8
+        operator: is
+        type: BooleanValue
+        value: true
+
+  # Has obligations (tenantObligations = true) -> exit page
+  - id: d8ae9ed4-da31-41fb-a5d7-0025cc823c21
+    displayName: hasObligations
+    items:
+      - id: 41f6d2cd-5826-42ee-beed-034389ffaa2e
+        componentId: f025cbb2-920c-4b07-9cfa-d43589369696
+        operator: is
+        type: BooleanValue
+        value: true
+
+  # Has valid WMP (hasValidWmp = true) -> show wmp-agreement page
+  - id: 7d822521-d6cc-4b1a-9538-8b9f18d7bdfc
+    displayName: hasValidWmp
+    items:
+      - id: 0b9c65c7-9dfd-4acd-a24d-05a8b0a1d966
+        componentId: e6a99259-82d6-4d2a-a2ec-349e9d473092
+        operator: is
+        type: BooleanValue
+        value: true
+
 startPage: /start
-engine: V2
 schema: 2
