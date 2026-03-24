@@ -115,12 +115,14 @@ metadata:
         text: 'Completed'
         classes: 'govuk-tag--green'
   confirmationContent:
-    panelTitle: 'Details submitted'
-    panelText: 'Your reference number'
+    panelTitle: 'Application submitted'
+    panelText: 'Application reference number'
     html: |
+      <p class="govuk-body">We've sent a confirmation email.</p>
       <h2 class="govuk-heading-m">What happens next</h2>
-      <p class="govuk-body">We will review your application.</p>
-      <p class="govuk-body">You will receive an email confirming your application has been received.</p>
+      <p class="govuk-body">We've received your application.</p>
+      <p class="govuk-body">We'll be in contact to say if your application has been successful or to ask for more information.</p>
+      <p class="govuk-body">If successful, we'll send you a grant funding agreement (GFA).</p>
 
       <details class="govuk-details" data-module="govuk-details">
         <summary class="govuk-details__summary">
@@ -145,9 +147,6 @@ sections:
   - name: about-your-woodland
     title: About your woodland
     id: 38507a39-c936-4c4f-872a-bcbae2eeb7d5
-  - name: declaration
-    title: Declaration
-    id: 68ce97c6-8892-4e9b-b38e-06f4badbb844
   - name: check-and-submit
     title: Check and submit application
     id: 52a9d09a-a977-4993-aa40-8eb77a4cd200
@@ -195,7 +194,6 @@ pages:
   - title: Check your details are correct
     path: /check-details
     controller: CheckDetailsController
-    next: []
     id: a24cb35f-a359-4934-b8c8-56ff92cb3df1
 
   # Task list page
@@ -232,6 +230,7 @@ pages:
         title: Is all the land in your application registered with the Rural Payments service?
         options:
           required: true
+          classes: govuk-radios
         shortDescription: Land registration
 
   # 2. Exit - land not registered
@@ -268,6 +267,7 @@ pages:
         hint: Having management control means you're the person actively farming the land in your application. You must have management control of the land in an agreement for 5 years from your agreement start date. The durability period is the period where you must keep all funded capital items in the same condition and to the specification in your agreement, and use them only for the approved grant purpose. This is usually for a minimum of 7 years from the agreement start date.
         options:
           required: true
+          classes: govuk-radios
         shortDescription: Management control
 
   # 4. Countersignature (only shown when management control = no)
@@ -285,6 +285,7 @@ pages:
         hint: You need your landlord's countersignature to confirm management control for the duration of the agreement and, where applicable, the durability period.
         options:
           required: true
+          classes: govuk-radios
         shortDescription: Landlord countersignature
 
   # 6. Exit - no countersignature
@@ -317,6 +318,7 @@ pages:
         hint: If you are a tenant of a public body, you'll need to check if the land is eligible for a WMP with your landlord.
         options:
           required: true
+          classes: govuk-radios
         shortDescription: Public body tenancy
 
   # 8. Tenant obligations (conditional - only if tenant = yes)
@@ -334,6 +336,7 @@ pages:
         hint: This includes any legally binding obligation such as a condition of planning permission or a covenant.
         options:
           required: true
+          classes: govuk-radios
         shortDescription: Tenancy obligations
 
   # 9. Exit - tenant obligations
@@ -365,6 +368,7 @@ pages:
         title: Are you applying for land covered by common or shared grazing rights?
         options:
           required: true
+          classes: govuk-radios
         shortDescription: Grazing rights
 
   # 11. Valid WMP
@@ -380,6 +384,7 @@ pages:
         title: Do you already have any valid WMPs on any land in your application?
         options:
           required: true
+          classes: govuk-radios
         shortDescription: Existing WMPs
 
   # 12. WMP agreement number (conditional - only if valid-wmp = yes)
@@ -419,36 +424,103 @@ pages:
       - name: higherTier
         id: e7d51cad-e4ea-4478-a12b-fedf3d18039d
         type: YesNoField
-        title: Do you intend to apply for a Countryside Stewardship Higher Tier (CSHT) agreement if your WMP is approved?
+        title: ''
         options:
           required: true
+          classes: govuk-radios
         shortDescription: Higher Tier intention
 
   # ==========================================
   # Section 2: About your woodland (placeholder)
   # ==========================================
 
-  - title: About your woodland
-    id: 8faaa0a2-e270-437a-8bac-cdfa83a37f24
-    path: /about-your-woodland-placeholder
+  - title: Enter total area of your land parcels
+    id: 5d8f5a78-8c19-4b3c-94fd-0ce7bdd5b038
+    path: /total-area-of-land-parcels
     section: 38507a39-c936-4c4f-872a-bcbae2eeb7d5
     controller: TaskPageController
     components:
-      - name: aboutWoodlandPlaceholder
-        id: 2f13f692-c40c-4aaa-be37-b2a50d5c01c0
+      - name: totalAreaOfLandParcels
+        id: 945c9e54-2e65-40f7-b8c9-37fbe8210d07
+        type: NumberField
+        title: Enter total area of your land parcels
+        options:
+          required: true
+          classes: govuk-input--width-5
+          suffix: ha
+        shortDescription: Total area of land parcels
+
+  - title: Enter total area of woodland on your land over 10 years old
+    id: 2c807ed2-18d7-4c9c-afa9-e6f10edfbca7
+    path: /total-area-of-land-over-10-years-old
+    section: 38507a39-c936-4c4f-872a-bcbae2eeb7d5
+    controller: TaskPageController
+    components:
+      - name: totalAreaOfLandOverTenYearsOld
+        id: 0232c1df-965f-4f41-a271-cb469ca9623a
+        type: NumberField
+        title: Enter total area of woodland on your land over ten years old
+        options:
+          required: true
+          classes: govuk-input--width-5
+          suffix: ha
+        shortDescription: Land over 10 years old
+
+  - title: Enter total area of newly planted woodland on your land under 10 years old
+    id: 20eac99a-adc2-41cc-bbf1-c0513a8c9e0a
+    path: /total-area-of-land-under-10-years-old
+    section: 38507a39-c936-4c4f-872a-bcbae2eeb7d5
+    controller: TaskPageController
+    components:
+      - name: totalAreaOfLandUnderTenYearsOld
+        id: b564e6d8-8675-4c9c-9ef8-002199386cf5
+        type: NumberField
+        title: Enter total area of woodland under 10 years old
+        options:
+          required: true
+          classes: govuk-input--width-5
+          suffix: ha
+        shortDescription: Land under 10 years old
+
+  - title: Enter the grid reference for the centre of your woodland
+    id: df178ed5-da13-4d90-b856-e95f19a92f73
+    path: /centre-of-woodland
+    section: 38507a39-c936-4c4f-872a-bcbae2eeb7d5
+    controller: TaskPageController
+    components:
+      - name: centreOfWoodlandGuidance
+        id: 0ecc3968-5293-4a17-adeb-426a51327507
         type: Html
-        content: >-
-          <p class="govuk-body">This section is under development. Further questions about your woodland will be added in a future iteration.</p>
+        content: |
+          <p class="govuk-body">To find the grid reference use <a href="" class="govuk-link">Natural England’s ‘MAGIC’ map website</a>.</p>
+          <p class="govuk-body">To find out how to get the grid reference read the ‘MAGIC’ guidance on <a href="" class="govuk-link">Using the Where Am I Tool</a>.</p>
+          <p class="govuk-body">The grid reference will be shown as the ‘National Grid Field No’ and include 2 letters and 8 numbers. For example, SP 4178 2432 </p>
+      - name: centreOfWoodlandGridReference
+        id: db02edf0-7c90-4470-a306-55d0f69d217c
+        type: TextField
+        title: ''
+        options:
+          required: true
+          customValidationMessages:
+            string.empty: Enter a grid reference
+          classes: govuk-input--width-10
+        shortDescription: Centre of your woodland
 
-  # ==========================================
-  # Section 3: Declaration
-  # ==========================================
-
-  - title: Confirm and send
-    id: ab194d2a-0b67-4a21-9158-1bd1bbdc4077
-    path: /declaration
-    section: 68ce97c6-8892-4e9b-b38e-06f4badbb844
-    controller: DeclarationPageController
+  - title: Which Forestry Commission team will be advising you?
+    id: cf70a8f0-7826-4452-ab6c-4e228ebaa334
+    path: /which-forestry-commission-team
+    section: 38507a39-c936-4c4f-872a-bcbae2eeb7d5
+    controller: TaskPageController
+    components:
+      - name: forestryCommissionTeam
+        id: 32ff781f-7960-4269-9294-db77a61a4a92
+        title: Forestry commission team
+        type: RadiosField
+        list: 66450d49-5614-478d-be30-0b1c9ac59c25
+        options:
+          customValidationMessages:
+            any.required: Select the option that applies
+        shortDescription: Forestry commission team
 
   # ==========================================
   # Section 4: Check and submit application
@@ -460,7 +532,57 @@ pages:
     section: 52a9d09a-a977-4993-aa40-8eb77a4cd200
     controller: CheckResponsesPageController
 
-lists: []
+  - title: Potential funding
+    id: 7fcbf5a6-ea20-498a-9b7a-5cdcf6193369
+    path: /potential-funding
+    section: 52a9d09a-a977-4993-aa40-8eb77a4cd200
+    components:
+      - name: fundingGuidance
+        id: 38272f70-0d51-422c-95f2-7e572084aa65
+        type: Html
+        content: >-
+          <p class="govuk-body">We calculate the amount to be paid using the total area of eligible woodland on the holding.</p>
+          <p class="govuk-body">Threshold payments for eligible land:</p>
+          <ul class="govuk-list govuk-list--bullet">
+          <li>0.5 hectares (ha) to 50ha: flat rate of £1,500</li>
+          <li>51ha to 100ha: flat rate of £1,500 for the first 50ha, plus £30 for each additional hectare up to and including 100ha</li>
+          <li>more than 100ha: flat rate of £3,000, plus £15 for each additional hectare over 100ha</li>
+          </ul>
+          <p class="govuk-body">For full details read our <a href="" class="govuk-link">Applicant’s guide: PA3 Woodland management plan 2026 guidance</a>.</p>
+          <p class="govuk-body">Based on the information provided, you may be eligible for a grant of up to £1,500.00.</p>
+      - name: fundingInsetText
+        id: 4e5014d2-7f6a-4e9f-9fa4-01fd5978db4e
+        type: InsetText
+        content: There’s no guarantee you’ll receive a grant
+
+  - title: Submit your application
+    id: ab194d2a-0b67-4a21-9158-1bd1bbdc4077
+    path: /declaration
+    view: woodland-declaration-page.html
+    section: 52a9d09a-a977-4993-aa40-8eb77a4cd200
+    controller: DeclarationPageController
+
+lists:
+  - title: Forestry commission team list
+    id: 66450d49-5614-478d-be30-0b1c9ac59c25
+    name: forestryCommissionTeamList
+    type: string
+    items:
+      - text: East and East Midlands
+        value: eastAndEastMidlands
+        id: 1160571d-8ca8-48d1-876b-cc93cfc472ed
+      - text: North West and West Midlands
+        value: northWestAndWestMidlands
+        id: ea6d6ab0-f63f-4b3d-bf7b-8ce04bbb9756
+      - text: South East and London
+        value: southEastAndLondon
+        id: 224534ea-52a2-4447-93cc-a57a0f5f74b1
+      - text: South West
+        value: southWest
+        id: cf4411bc-f86f-4bb0-9c33-19319c5db0f2
+      - text: Yorkshire and North East
+        value: yorkshireAndNorthEast
+        id: 6d292cce-ba3e-4cc1-8b06-382d7bac0789
 
 conditions:
   # Land not registered (landRegistered = false) -> exit page
