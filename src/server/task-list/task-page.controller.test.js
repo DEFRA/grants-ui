@@ -52,7 +52,6 @@ vi.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js', () =
 })
 
 vi.mock('./task-list.helper.js', () => ({
-  getNextTaskPath: vi.fn(),
   getTaskListPath: vi.fn().mockReturnValue('/task-list'),
   getTaskPageBackLink: vi.fn()
 }))
@@ -74,6 +73,18 @@ describe('TaskPageController', () => {
   describe('constructor', () => {
     it('should override viewName if provided in pageDef', () => {
       expect(controller.viewName).toBe('custom-view')
+    })
+
+    it('should resolve section by id for V2 forms', () => {
+      const section = { id: 'section-uuid', name: 'my-section', title: 'My Section' }
+      const model = {
+        def: { metadata: { tasklist: {} } },
+        sections: [section]
+      }
+      const pageDef = { section: 'section-uuid' }
+
+      const ctrl = new TaskPageController(model, pageDef)
+      expect(ctrl.section).toBe(section)
     })
   })
 
@@ -167,13 +178,53 @@ describe('TaskPageController', () => {
   })
 
   describe('getNextOrTaskPath', () => {
-    it('should return getNextTaskPath if it is a task page and returnAfterSection is true', () => {
+    it('should return default next path when next page is in the same section', () => {
+      const section = { name: 's1', id: 'section-1' }
       mockPageDef.section = 's1'
       mockModel.def.metadata.tasklist.returnAfterSection = true
-      helper.getNextTaskPath.mockReturnValue('/task-next')
+      mockModel.pages = [{ path: '/next-path', section }]
+      controller.section = section
 
       const result = controller.getNextOrTaskPath({})
-      expect(result).toBe('/task-next')
+      expect(result).toBe('/next-path')
+    })
+
+    it('should return default next path when next page has no section (e.g. exit page)', () => {
+      const section = { name: 's1', id: 'section-1' }
+      mockPageDef.section = 's1'
+      mockModel.def.metadata.tasklist.returnAfterSection = true
+      mockModel.pages = [{ path: '/next-path', section: undefined }]
+      controller.section = section
+
+      const result = controller.getNextOrTaskPath({})
+      expect(result).toBe('/next-path')
+    })
+
+    it('should return task list path when next page is in a different section', () => {
+      const section = { name: 's1', id: 'section-1' }
+      const otherSection = { name: 's2', id: 'section-2' }
+      mockPageDef.section = 's1'
+      mockModel.def.metadata.tasklist.returnAfterSection = true
+      mockModel.pages = [{ path: '/next-path', section: otherSection }]
+      controller.section = section
+
+      const result = controller.getNextOrTaskPath({})
+      expect(result).toBe('/task-list')
+    })
+
+    it('should return task list path when there is no next page', () => {
+      const section = { name: 's1', id: 'section-1' }
+      mockPageDef.section = 's1'
+      mockModel.def.metadata.tasklist.returnAfterSection = true
+      mockModel.pages = []
+      controller.section = section
+
+      const spy = vi.spyOn(QuestionPageController.prototype, 'getNextPath').mockReturnValue(undefined)
+
+      const result = controller.getNextOrTaskPath({})
+      expect(result).toBe('/task-list')
+
+      spy.mockRestore()
     })
 
     it('should fall back to default navigation if not a task page', () => {
