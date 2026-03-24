@@ -16,9 +16,9 @@ export default class TaskPageController extends QuestionPageController {
     this.model = model
     this.pageDef = pageDef
 
-    // Resolve section by id for V2 forms (engine only resolves by name)
-    if (!this.section && pageDef.section) {
-      this.section = model.sections.find((section) => section.id === pageDef.section)
+    // Resolve section
+    if (pageDef.section) {
+      this.section = model.getSection(pageDef.section)
     }
 
     // Override view name

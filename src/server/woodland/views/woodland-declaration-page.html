@@ -1,0 +1,43 @@
+{% extends baseLayoutPath %}
+
+{% from "govuk/components/warning-text/macro.njk" import govukWarningText %}
+{% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/checkboxes/macro.njk" import govukCheckboxes %}
+{% from "support-details/macro.njk" import defraSupportDetails %}
+
+{% set mainClasses = "govuk-body" %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      {% if sectionTitle and sectionTitle.length and (sectionTitle !== pageTitle) %}
+      <h2 class="govuk-caption-l govuk-!-margin-top-0" id="section-title">
+        {{- sectionTitle -}}
+      </h2>
+      {% endif %}
+      <h1 class="govuk-heading-l">Submit your application</h1>
+
+      <p class="govuk-body">By submitting your application, you confirm that:</p>
+
+      <ul class="govuk-list govuk-list--bullet">
+      <li>the information you have provided is correct to the best of your knowledge</li>
+        <li>you have read and understand the information in the <a href="" class="govuk-link">Countryside Stewardship (CS) guidance</a> about this grant application, and agree to the <a href="" class="govuk-link">CS terms and conditions</a> for the duration of any CS agreement subsequently offered to and accepted by you</li>
+      <li>you are capable of fulfilling the obligations which will be required of you if your application is successful</li>
+      <li>you agree to let any authorised person access the land and relevant records related to this application so they can inspect or audit them to verify the information you’ve provided to the Rural Payments Agency (RPA) and the Forestry Commission (FC), and to check that you are complying with this agreement</li>
+      <li>you agree to disclose all information relevant to this application, provide any additional information as may be required by the RPA, field officers or auditors and co-operate with or take part in any economic, environmental or other monitoring and evaluation of the scheme (including any research and development studies) conducted by RPA or the FC or by anyone appointed by either of them for that purpose</li>
+      </ul>
+
+      {% block form %}
+      <form method="post" novalidate>
+        <input type="hidden" name="crumb" value="{{ crumb }}">
+        {{ govukButton({
+          text: "Confirm and send",
+          preventDoubleClick: true
+        }) }}
+      </form>
+      {% endblock %}
+
+      {{ defraSupportDetails({typeOfSupport: 'question'}) }}
+    </div>
+  </div>
+{% endblock %}
