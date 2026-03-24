@@ -83,6 +83,58 @@ describe('task-list.helper', () => {
     })
   })
 
+  describe('evaluateCondition (via isTaskCompleted / triggersExitPage)', () => {
+    it('should hide a conditioned task when formModel is absent', () => {
+      const mockModel = {
+        page: {
+          def: {
+            pages: [
+              {
+                section: 's1',
+                condition: 'cond1',
+                components: [{ type: 'TextField', name: 'q1' }]
+              }
+            ]
+          }
+        }
+      }
+      const state = { q1: 'value' }
+      expect(getCompletionStats(mockModel, undefined, state).completed).toBe(0)
+    })
+
+    it('should not trigger an exit page when its condition name is absent from formModel.conditions', () => {
+      const mockModel = {
+        serviceUrl: '/service',
+        page: {
+          def: {
+            pages: [
+              { title: 'Task 1', section: 's1', path: '/t1', components: [{ type: 'YesNoField', name: 'q1' }] },
+              {
+                title: 'Exit',
+                path: '/exit',
+                controller: 'TerminalPageController',
+                condition: 'unknownCond',
+                components: [{ type: 'Html', name: 'info' }]
+              },
+              { title: 'Task 2', section: 's1', path: '/t2', components: [{ type: 'TextField', name: 'q2' }] }
+            ],
+            sections: [{ id: 's1', title: 'Section 1' }]
+          }
+        }
+      }
+      const formModel = {
+        def: { metadata: {}, pages: mockModel.page.def.pages },
+        conditions: {}, // 'unknownCond' absent
+        makeCondition: () => ({ fn: () => true })
+      }
+      const state = { q1: true }
+
+      const data = buildTaskListData(mockModel, formModel, state)
+
+      expect(data[0].items[1].status.tag.text).toBe('Not started')
+    })
+  })
+
   describe('isTaskCompleted', () => {
     it('should handle subfields in state', () => {
       const mockModel = {
