@@ -2,13 +2,13 @@ import { log, debug, LogCodes } from '~/src/server/common/helpers/logging/log.js
 import { fetchParcels } from '../services/land-grants.service.js'
 import QuestionPageWithParcelCheckController from '~/src/server/common/controllers/question-page-with-parcel-check.controller.js'
 import { mapParcelsToViewModel } from '~/src/server/land-grants/view-models/parcel.view-model.js'
+import { getParcelIdsFromPayload } from '../utils/parcel-request.utils.js'
 
 export default class SelectLandParcelPageController extends QuestionPageWithParcelCheckController {
   viewName = 'select-land-parcel'
 
   resolveParcelIds(request, _context) {
-    const selectedLandParcel = request.payload?.selectedLandParcel || null
-    return selectedLandParcel ? [selectedLandParcel] : null
+    return getParcelIdsFromPayload(request)
   }
 
   /**

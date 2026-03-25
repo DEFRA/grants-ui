@@ -4,6 +4,7 @@ import {
   deleteParcelFromState,
   deleteActionFromState
 } from '~/src/server/land-grants/view-state/land-parcel.view-state.js'
+import { getParcelIdFromQuery } from '../utils/parcel-request.utils.js'
 
 const checkSelectedLandActionsPath = '/check-selected-land-actions'
 const selectActionsForParcelPath = '/select-actions-for-land-parcel'
@@ -13,8 +14,7 @@ export default class RemoveActionPageController extends QuestionPageWithParcelCh
   viewName = 'remove-action'
 
   resolveParcelIds(request) {
-    const parcelId = request?.query?.parcelId
-    return parcelId ? [parcelId] : null
+    return getParcelIdFromQuery(request)
   }
 
   /**

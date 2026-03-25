@@ -14,14 +14,14 @@ import {
   extractLandActionFields,
   validateLandActionsSelection
 } from '~/src/server/land-grants/validators/land-actions.validator.js'
+import { getParcelIdFromQuery } from '../utils/parcel-request.utils.js'
 
 export default class SelectLandActionsPageController extends QuestionPageWithParcelCheckController {
   viewName = 'select-actions-for-land-parcel'
   actionFieldPrefix = 'landAction_'
 
   resolveParcelIds(request) {
-    const parcelId = request?.query?.parcelId
-    return parcelId ? [parcelId] : null
+    return getParcelIdFromQuery(request)
   }
 
   /**
