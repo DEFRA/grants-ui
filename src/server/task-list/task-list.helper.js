@@ -53,7 +53,8 @@ function getPageComponentNames(pageDef) {
     'AutocompleteField',
     'YesNoField',
     'UkAddressField',
-    'FileUploadField'
+    'FileUploadField',
+    'NationalGridFieldNumberField'
   ])
 
   return pageDef.components
@@ -151,7 +152,8 @@ function getTaskTitle(pageDef) {
     'AutocompleteField',
     'YesNoField',
     'UkAddressField',
-    'FileUploadField'
+    'FileUploadField',
+    'NationalGridFieldNumberField'
   ])
 
   const firstQuestion = pageDef.components?.find((c) => questionComponentTypes.has(c.type))
