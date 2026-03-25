@@ -47,6 +47,7 @@ import whitelist from '~/src/server/common/helpers/whitelist/whitelist.js'
 import ConfirmMethaneDetailsController from '~/src/server/non-land-grants/methane/controllers/confirm-methane-details.controller.js'
 import TaskListPageController from '~/src/server/task-list/task-list-page.controller.js'
 import TaskPageController from '~/src/server/task-list/task-page.controller.js'
+import WoodlandHectaresPageController from '~/src/server/woodland/woodland-hectares-page.controller.js'
 import TerminalPageController from '~/src/server/task-list/terminal-page.controller.js'
 import CheckDetailsController from '~/src/server/details-page/check-details.controller.js'
 
@@ -138,7 +139,8 @@ const registerFormsPlugin = async (server, prefix = '') => {
         TaskListPageController,
         TaskPageController,
         TerminalPageController,
-        CheckDetailsController
+        CheckDetailsController,
+        WoodlandHectaresPageController
       }
     }
   })
