@@ -156,9 +156,12 @@
     }
   }
 
-  function findCurrentStep() {
+  function findCurrentStep(afterIndex, section) {
     const path = globalThis.location.pathname
-    for (let i = 0; i < steps.length; i++) {
+    for (let i = afterIndex + 1; i < steps.length; i++) {
+      if (section && steps[i].section !== section) {
+        continue
+      }
       if (path.endsWith(`/${steps[i].slug}`)) {
         return i
       }
@@ -173,7 +176,8 @@
     }
 
     const state = JSON.parse(raw)
-    const idx = findCurrentStep()
+    const lastCompleted = state.lastCompleted ?? -1
+    const idx = findCurrentStep(lastCompleted, state.section)
 
     if (idx === -1) {
       sessionStorage.removeItem(STORAGE_KEY)
@@ -181,11 +185,19 @@
       return
     }
 
+    const step = steps[idx]
     const stepNumber = idx + 1
+
+    // When running a named section, stop if we've left that section
+    if (state.section && step.section !== state.section) {
+      sessionStorage.removeItem(STORAGE_KEY)
+      console.log(`${LOG_PREFIX} Section "${state.section}" complete — stopping at ${globalThis.location.pathname}`)
+      return
+    }
 
     if (stepNumber >= state.stopAt) {
       sessionStorage.removeItem(STORAGE_KEY)
-      console.log(`${LOG_PREFIX} Arrived at "${steps[idx].name}" (step ${stepNumber}) — stopping here`)
+      console.log(`${LOG_PREFIX} Arrived at "${step.name}" (step ${stepNumber}) — stopping here`)
       return
     }
 
@@ -196,7 +208,6 @@
       return
     }
 
-    const step = steps[idx]
     console.log(`${LOG_PREFIX} Step ${stepNumber}: ${step.name}`)
 
     const handler = typeHandlers[step.type]
@@ -207,6 +218,8 @@
     }
 
     try {
+      state.lastCompleted = idx
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state))
       handler(step)
     } catch (err) {
       sessionStorage.removeItem(STORAGE_KEY)
@@ -214,10 +227,23 @@
     }
   }
 
-  globalThis.runJourney = function (stopAtPage) {
-    const totalPages = stopAtPage || steps.length
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ stopAt: totalPages }))
-    console.log(`${LOG_PREFIX} Starting journey, will stop at step ${totalPages}`)
+  globalThis.runJourney = function (stopAtPageOrSection) {
+    let state
+    if (typeof stopAtPageOrSection === 'string') {
+      const hasSection = steps.some(function (s) {
+        return s.section === stopAtPageOrSection
+      })
+      if (!hasSection) {
+        console.error(`${LOG_PREFIX} No steps found for section "${stopAtPageOrSection}"`)
+        return
+      }
+      state = { stopAt: steps.length + 1, section: stopAtPageOrSection }
+      console.log(`${LOG_PREFIX} Starting journey for section "${stopAtPageOrSection}"`)
+    } else {
+      state = { stopAt: stopAtPageOrSection || steps.length + 1 }
+      console.log(`${LOG_PREFIX} Starting journey, will stop at step ${state.stopAt}`)
+    }
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state))
     processCurrentPage()
   }
 
