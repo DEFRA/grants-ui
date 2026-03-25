@@ -395,7 +395,7 @@ pages:
     controller: TaskPageController
     condition: 7d822521-d6cc-4b1a-9538-8b9f18d7bdfc
     components:
-      - name: wmpAgreementNumber
+      - name: appLandHasExistingWmp
         id: a9ae25aa-d70e-4616-84bf-47f71251e8b5
         type: TextField
         title: Enter the agreement number for any valid WMPs
@@ -440,7 +440,7 @@ pages:
     section: 38507a39-c936-4c4f-872a-bcbae2eeb7d5
     controller: TaskPageController
     components:
-      - name: totalAreaOfLandParcels
+      - name: totalHectaresAppliedFor
         id: 945c9e54-2e65-40f7-b8c9-37fbe8210d07
         type: NumberField
         title: Enter total area of your land parcels
@@ -454,9 +454,9 @@ pages:
     id: 2c807ed2-18d7-4c9c-afa9-e6f10edfbca7
     path: /total-area-of-land-over-10-years-old
     section: 38507a39-c936-4c4f-872a-bcbae2eeb7d5
-    controller: TaskPageController
+    controller: WoodlandHectaresPageController
     components:
-      - name: totalAreaOfLandOverTenYearsOld
+      - name: hectaresTenOrOverYearsOld
         id: 0232c1df-965f-4f41-a271-cb469ca9623a
         type: NumberField
         title: Enter total area of woodland on your land over ten years old
@@ -470,9 +470,9 @@ pages:
     id: 20eac99a-adc2-41cc-bbf1-c0513a8c9e0a
     path: /total-area-of-land-under-10-years-old
     section: 38507a39-c936-4c4f-872a-bcbae2eeb7d5
-    controller: TaskPageController
+    controller: WoodlandHectaresPageController
     components:
-      - name: totalAreaOfLandUnderTenYearsOld
+      - name: hectaresUnderTenYearsOld
         id: b564e6d8-8675-4c9c-9ef8-002199386cf5
         type: NumberField
         title: Enter total area of woodland under 10 years old
