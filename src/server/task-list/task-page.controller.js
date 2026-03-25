@@ -1,5 +1,5 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
-import { getNextTaskPath, getTaskListPath, getTaskPageBackLink } from './task-list.helper.js'
+import { getTaskListPath, getTaskPageBackLink } from './task-list.helper.js'
 import { FormAction } from '@defra/forms-engine-plugin/types'
 
 /**
@@ -15,6 +15,11 @@ export default class TaskPageController extends QuestionPageController {
     super(model, pageDef)
     this.model = model
     this.pageDef = pageDef
+
+    // Resolve section
+    if (pageDef.section) {
+      this.section = model.getSection(pageDef.section)
+    }
 
     // Override view name
     if (pageDef.view) {
@@ -87,10 +92,8 @@ export default class TaskPageController extends QuestionPageController {
   }
 
   /**
-   * Use task-aware navigation when submitting a task page.
-   * This method returns the next path for the task page, or the task list page if there is no next path.
-   *
-   * Note: we still inherit the default getNextPath function to handle context building and as a fallback.
+   * Use the engine's default condition-aware navigation, but redirect to the
+   * task list when the next page would leave the current section.
    *
    * @param {FormContext} context
    * @returns {string|undefined} The next path
@@ -99,13 +102,20 @@ export default class TaskPageController extends QuestionPageController {
     const { model, pageDef } = this
     const { returnAfterSection = true } = model.def.metadata.tasklist ?? {}
 
-    // Use task flow navigation if this is a task page and returnAfterSection is true
+    // Use the engine's default navigation (respects conditions, exit pages, etc.)
+    const defaultNext = super.getNextPath(context)
+
     if (pageDef.section && returnAfterSection) {
-      return getNextTaskPath(model, pageDef)
+      // Check if the default next page belongs to a different section.
+      // If so, the current section is complete — return to the task list.
+      const nextPage = defaultNext && model.pages.find((p) => p.path === defaultNext)
+
+      if (!nextPage || (nextPage.section && nextPage.section !== this.section)) {
+        return getTaskListPath(model) ?? defaultNext
+      }
     }
 
-    // Fall back to default navigation
-    return super.getNextPath(context)
+    return defaultNext
   }
 }
 

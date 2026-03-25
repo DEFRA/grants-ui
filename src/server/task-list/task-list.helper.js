@@ -16,6 +16,19 @@
 import TaskListPageController from '~/src/server/task-list/task-list-page.controller.js'
 
 /**
+ * Evaluates a named condition from the form model against the current state.
+ * Returns false if the condition is not found or the model is unavailable.
+ * @param {object|undefined} formModel
+ * @param {string} conditionName
+ * @param {object} state
+ * @returns {boolean}
+ */
+function evaluateCondition(formModel, conditionName, state) {
+  const condition = formModel?.conditions[conditionName]
+  return condition ? formModel.makeCondition(condition).fn(state) : false
+}
+
+/**
  * Gets the names of all required question components on a page
  * @param {object} pageDef - The page definition from YAML
  * @returns {string[]} Array of required component names that hold state
@@ -64,18 +77,12 @@ function isTaskCompleted(pageDef, state, formModel) {
     return false
   }
 
-  if (pageDef.condition) {
-    const condition = formModel?.conditions[pageDef.condition]
-    const conditionExec = formModel?.makeCondition(condition)
-    const answer = formModel && conditionExec.fn(state)
-
-    if (!answer) {
-      return null // Hide task as it is not applicable
-    }
+  if (pageDef.condition && !evaluateCondition(formModel, pageDef.condition, state)) {
+    return null // Hide task as it is not applicable
   }
 
   // Check if all components have a value in state (unless required=false)
-  return componentNames.every((name) => {
+  const allAnswered = componentNames.every((name) => {
     // Check if the exact name exists
     const value = state[name]
     if (value !== undefined && value !== null && value !== '') {
@@ -85,6 +92,70 @@ function isTaskCompleted(pageDef, state, formModel) {
     // Check if any subfield exists (name__subfield pattern)
     return Object.keys(state).some((key) => key.startsWith(`${name}__`))
   })
+
+  return allAnswered
+}
+
+/**
+ * Checks if a task page's answers trigger a following exit (terminal) page condition.
+ * Exit pages follow their task page in the definition and have controller: TerminalPageController.
+ * @param {object} pageDef - The task page definition
+ * @param {object} state - The current form state
+ * @param {object} formModel - The form model
+ * @returns {boolean} True if an exit page condition is triggered
+ */
+function triggersExitPage(pageDef, state, formModel) {
+  const allPages = formModel.def.pages
+  const currentIndex = allPages.findIndex((p) => p.path === pageDef.path)
+
+  // Look at pages following this one until we hit the next task page
+  for (let i = currentIndex + 1; i < allPages.length; i++) {
+    const nextPage = allPages[i]
+
+    // Stop when we hit a page with a section (next task page)
+    if (nextPage.section) {
+      break
+    }
+
+    // Check if this is a terminal/exit page with a condition that evaluates to true
+    if (
+      nextPage.controller === 'TerminalPageController' &&
+      nextPage.condition &&
+      evaluateCondition(formModel, nextPage.condition, state)
+    ) {
+      return true
+    }
+  }
+
+  return false
+}
+
+/**
+ * Gets the display title for a task in the task list.
+ * Uses the first question component's shortDescription if available, otherwise the page title.
+ * @param {object} pageDef - The page definition
+ * @returns {string} The title to display in the task list
+ */
+function getTaskTitle(pageDef) {
+  const questionComponentTypes = new Set([
+    'TextField',
+    'EmailAddressField',
+    'TelephoneNumberField',
+    'NumberField',
+    'MultilineTextField',
+    'DatePartsField',
+    'MonthYearField',
+    'RadiosField',
+    'CheckboxesField',
+    'SelectField',
+    'AutocompleteField',
+    'YesNoField',
+    'UkAddressField',
+    'FileUploadField'
+  ])
+
+  const firstQuestion = pageDef.components?.find((c) => questionComponentTypes.has(c.type))
+  return firstQuestion?.shortDescription ?? pageDef.title
 }
 
 /**
@@ -126,7 +197,16 @@ function createStatusTag(statusConfig, defaultText, defaultClasses) {
  */
 function areAllPreviousTasksCompleted(pages, currentPage, state, formModel) {
   const currentIndex = pages.indexOf(currentPage)
-  return pages.slice(0, currentIndex).every((prevPage) => isTaskCompleted(prevPage, state, formModel) !== false)
+  return pages.slice(0, currentIndex).every((prevPage) => {
+    if (isTaskCompleted(prevPage, state, formModel) === false) {
+      return false
+    }
+    // Block if a previous task's answer triggers an exit page
+    if (formModel && triggersExitPage(prevPage, state, formModel)) {
+      return false
+    }
+    return true
+  })
 }
 
 /**
@@ -145,7 +225,7 @@ function createTaskItem(pageDef, state, pages, metadata, basePath, formModel) {
   const href = `${basePath}${pageDef.path}`
   const completeInOrder = true // TODO force to true for now until completeInOrder=false logic implemented
 
-  const taskItem = createTaskItemBase(pageDef.title)
+  const taskItem = createTaskItemBase(getTaskTitle(pageDef))
 
   // If task is not applicable, hide it
   if (completed === null) {
