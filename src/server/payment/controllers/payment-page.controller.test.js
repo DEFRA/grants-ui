@@ -330,9 +330,7 @@ describe('PaymentPageController', () => {
           }
         }
       }
-      expect(() => new PaymentPageController(model, { path: '/test' })).toThrow(
-        '"redirects.next" is required'
-      )
+      expect(() => new PaymentPageController(model, { path: '/test' })).toThrow('"redirects.next" is required')
     })
 
     test('should throw when redirects.addMoreActions is missing and showAddMoreActionsQuestion is true', () => {
