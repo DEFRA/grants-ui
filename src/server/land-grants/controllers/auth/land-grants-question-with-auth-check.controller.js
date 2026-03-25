@@ -6,14 +6,29 @@ import { getCachedAuthParcels, setCachedAuthParcels } from '~/src/server/land-gr
 import { stringifyParcel } from '~/src/server/land-grants/utils/format-parcel.js'
 
 export default class LandGrantsQuestionWithAuthCheckController extends QuestionPageController {
-  resolveParcelId(request) {
-    return request.query?.parcelId || request.payload?.selectedLandParcel || null
+  resolveParcelIds(request) {
+    const queryValue = request.query?.parcelId
+    if (queryValue) {
+      return [queryValue]
+    }
+
+    const fromPayload = request.payload?.selectedLandParcel
+
+    if (Array.isArray(fromPayload)) {
+      return fromPayload
+    }
+
+    if (fromPayload) {
+      return [fromPayload]
+    }
+
+    return null
   }
 
   makeGetRouteHandler() {
     return async (request, context, h) => {
-      const parcelId = this.resolveParcelId(request)
-      const unauthorised = await this.performAuthCheck(request, h, parcelId)
+      const parcelIds = this.resolveParcelIds(request)
+      const unauthorised = await this.performAuthCheck(request, h, parcelIds)
 
       if (unauthorised) {
         return unauthorised
@@ -24,8 +39,8 @@ export default class LandGrantsQuestionWithAuthCheckController extends QuestionP
 
   makePostRouteHandler() {
     return async (request, context, h) => {
-      const parcelId = this.resolveParcelId(request)
-      const unauthorised = await this.performAuthCheck(request, h, parcelId)
+      const parcelIds = this.resolveParcelIds(request)
+      const unauthorised = await this.performAuthCheck(request, h, parcelIds)
       if (unauthorised) {
         return unauthorised
       }
@@ -41,8 +56,8 @@ export default class LandGrantsQuestionWithAuthCheckController extends QuestionP
     return super.makePostRouteHandler()(request, context, h)
   }
 
-  performAuthCheck = async (request, h, landParcel) => {
-    if (!landParcel) {
+  performAuthCheck = async (request, h, parcelIds) => {
+    if (!parcelIds || parcelIds.length === 0) {
       return null
     }
 
@@ -57,12 +72,14 @@ export default class LandGrantsQuestionWithAuthCheckController extends QuestionP
         setCachedAuthParcels(sbi, landParcelsForSbi)
       }
 
-      if (!landParcelsForSbi.includes(landParcel)) {
+      const unauthorisedParcel = parcelIds.find((id) => !landParcelsForSbi.includes(id))
+
+      if (unauthorisedParcel) {
         log(
           LogCodes.LAND_GRANTS.UNAUTHORISED_PARCEL,
           {
             sbi,
-            selectedLandParcel: landParcel,
+            selectedLandParcel: unauthorisedParcel,
             landParcelsForSbi
           },
           request

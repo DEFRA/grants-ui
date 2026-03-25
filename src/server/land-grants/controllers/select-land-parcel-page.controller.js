@@ -6,8 +6,18 @@ import { mapParcelsToViewModel } from '~/src/server/land-grants/view-models/parc
 export default class SelectLandParcelPageController extends LandGrantsQuestionWithAuthCheckController {
   viewName = 'select-land-parcel'
 
-  resolveParcelId(request, _context) {
-    return request.payload?.selectedLandParcel || null
+  resolveParcelIds(request, _context) {
+    const selected = request.payload?.selectedLandParcel
+
+    if (Array.isArray(selected)) {
+      return selected
+    }
+
+    if (selected) {
+      return [selected]
+    }
+
+    return null
   }
 
   /**

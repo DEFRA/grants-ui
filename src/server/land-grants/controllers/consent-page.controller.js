@@ -5,7 +5,7 @@ import { getRequiredConsents } from '~/src/server/common/utils/consents.js'
 export default class ConsentPageController extends LandGrantsQuestionWithAuthCheckController {
   viewName = 'consent-required'
 
-  resolveParcelId(_request, _context) {
+  resolveParcelIds(_request, _context) {
     return null
   }
 

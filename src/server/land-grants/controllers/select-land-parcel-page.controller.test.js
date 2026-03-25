@@ -99,6 +99,27 @@ describe('SelectLandParcelPageController', () => {
 
   afterEach(vi.clearAllMocks)
 
+  describe('resolveParcelIds', () => {
+    it('returns array from payload', () => {
+      mockRequest.payload = { selectedLandParcel: 'p1' }
+
+      expect(controller.resolveParcelIds(mockRequest)).toEqual(['p1'])
+    })
+
+    it('returns null when nothing provided', () => {
+      mockRequest.payload = {}
+      mockRequest.query = {}
+
+      expect(controller.resolveParcelIds(mockRequest)).toBeNull()
+    })
+
+    it('returns array unchanged when payload already array', () => {
+      mockRequest.payload = { selectedLandParcel: ['p1', 'p2'] }
+
+      expect(controller.resolveParcelIds(mockRequest)).toEqual(['p1', 'p2'])
+    })
+  })
+
   describe('GET route handler', () => {
     it('gets parcels info and renders view', async () => {
       const result = await controller.makeGetRouteHandler()(mockRequest, mockContext, mockH)
@@ -146,13 +167,13 @@ describe('SelectLandParcelPageController', () => {
   })
 
   describe('POST route handler', () => {
-    it('redirects to select actions page with parcelId query param', async () => {
+    it('redirects with selected parcel id in query', async () => {
       mockRequest.payload = state
       mockContext = setupContext({ existing: 'value' })
 
       const result = await controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
 
-      expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH, state.selectedLandParcel)
+      expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH, [state.selectedLandParcel])
       expect(controller.setState).not.toHaveBeenCalled()
       expect(controller.proceed).toHaveBeenCalledWith(
         mockRequest,
@@ -244,10 +265,9 @@ describe('SelectLandParcelPageController', () => {
       expect(result).toBe('next')
     })
 
-    it('should use selectedLandParcel from query when available', async () => {
+    it('does not use query parcelId for validation', async () => {
       mockRequest.query = { parcelId: 'queryParcel' }
       mockRequest.payload = { action: 'validate' }
-      mockContext = setupContext({ selectedLandParcel: 'stateParcel' })
 
       await controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
 

@@ -60,7 +60,7 @@ describe('LandGrantsQuestionWithAuthCheckController', () => {
       fetchParcelsFromDal.mockResolvedValue([{ sheetId: 'sheet1', parcelId: 'parcel1' }])
       vi.spyOn(controller, 'renderUnauthorisedView')
 
-      await controller.performAuthCheck(mockRequest, mockH, 'sheet3-parcel3')
+      await controller.performAuthCheck(mockRequest, mockH, ['sheet3-parcel3'])
 
       expect(fetchParcelsFromDal).toHaveBeenCalledWith(mockRequest)
       expect(controller.renderUnauthorisedView).toHaveBeenCalledWith(mockH)
@@ -69,7 +69,7 @@ describe('LandGrantsQuestionWithAuthCheckController', () => {
     test('returns null if parcel belongs to SBI', async () => {
       fetchParcelsFromDal.mockResolvedValue([{ sheetId: 'sheet1', parcelId: 'parcel1' }])
 
-      const result = await controller.performAuthCheck(mockRequest, mockH, 'sheet1-parcel1')
+      const result = await controller.performAuthCheck(mockRequest, mockH, ['sheet1-parcel1'])
 
       expect(fetchParcelsFromDal).toHaveBeenCalledWith(mockRequest)
       expect(result).toBeNull()
@@ -80,7 +80,7 @@ describe('LandGrantsQuestionWithAuthCheckController', () => {
       fetchParcelsFromDal.mockRejectedValue(mockError)
       vi.spyOn(controller, 'renderUnauthorisedView')
 
-      await controller.performAuthCheck(mockRequest, mockH, 'sheet1-parcel1')
+      await controller.performAuthCheck(mockRequest, mockH, ['sheet1-parcel1'])
 
       expect(fetchParcelsFromDal).toHaveBeenCalledWith(mockRequest)
       expect(debug).toHaveBeenCalledWith(
@@ -97,7 +97,7 @@ describe('LandGrantsQuestionWithAuthCheckController', () => {
     test('uses cached parcels instead of fetching when cache hit', async () => {
       getCachedAuthParcels.mockReturnValue(['sheet1-parcel1', 'sheet2-parcel2'])
 
-      const result = await controller.performAuthCheck(mockRequest, mockH, 'sheet1-parcel1')
+      const result = await controller.performAuthCheck(mockRequest, mockH, ['sheet1-parcel1'])
 
       expect(getCachedAuthParcels).toHaveBeenCalledWith('987654321')
       expect(fetchParcelsFromDal).not.toHaveBeenCalled()
@@ -107,7 +107,7 @@ describe('LandGrantsQuestionWithAuthCheckController', () => {
     test('fetches and caches parcels on cache miss', async () => {
       fetchParcelsFromDal.mockResolvedValue([{ sheetId: 'sheet1', parcelId: 'parcel1' }])
 
-      const result = await controller.performAuthCheck(mockRequest, mockH, 'sheet1-parcel1')
+      const result = await controller.performAuthCheck(mockRequest, mockH, ['sheet1-parcel1'])
 
       expect(getCachedAuthParcels).toHaveBeenCalledWith('987654321')
       expect(fetchParcelsFromDal).toHaveBeenCalledWith(mockRequest)
@@ -118,32 +118,37 @@ describe('LandGrantsQuestionWithAuthCheckController', () => {
     test('does not cache when fetchParcelsFromDal throws', async () => {
       fetchParcelsFromDal.mockRejectedValue(new Error('API error'))
 
-      await controller.performAuthCheck(mockRequest, mockH, 'sheet1-parcel1')
+      await controller.performAuthCheck(mockRequest, mockH, ['sheet1-parcel1'])
 
       expect(setCachedAuthParcels).not.toHaveBeenCalled()
     })
   })
 
-  describe('resolveParcelId', () => {
-    test('returns query.parcelId when present', () => {
-      mockRequest.query = { parcelId: 'query-parcel' }
+  describe('resolveParcelIds', () => {
+    test('returns array from payload (single)', () => {
       mockRequest.payload = { selectedLandParcel: 'payload-parcel' }
 
-      expect(controller.resolveParcelId(mockRequest)).toBe('query-parcel')
+      expect(controller.resolveParcelIds(mockRequest)).toEqual(['payload-parcel'])
     })
 
-    test('returns payload.selectedLandParcel when query is absent', () => {
-      mockRequest.query = {}
-      mockRequest.payload = { selectedLandParcel: 'payload-parcel' }
+    test('returns array from payload (multiple)', () => {
+      mockRequest.payload = { selectedLandParcel: ['p1', 'p2'] }
 
-      expect(controller.resolveParcelId(mockRequest)).toBe('payload-parcel')
+      expect(controller.resolveParcelIds(mockRequest)).toEqual(['p1', 'p2'])
     })
 
-    test('returns null when no parcel ID found', () => {
+    test('return payload if query is absent', () => {
+      mockRequest.payload = { selectedLandParcel: ['p1'] }
       mockRequest.query = {}
+
+      expect(controller.resolveParcelIds(mockRequest)).toEqual(['p1'])
+    })
+
+    test('returns null when nothing provided', () => {
       mockRequest.payload = {}
+      mockRequest.query = {}
 
-      expect(controller.resolveParcelId(mockRequest)).toBeNull()
+      expect(controller.resolveParcelIds(mockRequest)).toBeNull()
     })
   })
 
