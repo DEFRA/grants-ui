@@ -112,12 +112,6 @@ describe('SelectLandParcelPageController', () => {
 
       expect(controller.resolveParcelIds(mockRequest)).toBeNull()
     })
-
-    it('returns array unchanged when payload already array', () => {
-      mockRequest.payload = { selectedLandParcel: ['p1', 'p2'] }
-
-      expect(controller.resolveParcelIds(mockRequest)).toEqual(['p1', 'p2'])
-    })
   })
 
   describe('GET route handler', () => {

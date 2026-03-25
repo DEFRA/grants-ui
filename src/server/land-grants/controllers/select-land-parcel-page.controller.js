@@ -9,10 +9,6 @@ export default class SelectLandParcelPageController extends LandGrantsQuestionWi
   resolveParcelIds(request, _context) {
     const selected = request.payload?.selectedLandParcel
 
-    if (Array.isArray(selected)) {
-      return selected
-    }
-
     if (selected) {
       return [selected]
     }
