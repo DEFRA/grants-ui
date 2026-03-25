@@ -12,6 +12,11 @@ const selectLandParcelPath = '/select-land-parcel'
 export default class RemoveActionPageController extends LandGrantsQuestionWithAuthCheckController {
   viewName = 'remove-action'
 
+  resolveParcelIds(request) {
+    const parcelId = request?.query?.parcelId
+    return parcelId ? [parcelId] : null
+  }
+
   /**
    * Determine next path after action removal
    * @param {object} newState - Updated state after removal

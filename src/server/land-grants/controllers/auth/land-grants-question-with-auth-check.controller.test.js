@@ -125,38 +125,18 @@ describe('LandGrantsQuestionWithAuthCheckController', () => {
   })
 
   describe('resolveParcelIds', () => {
-    test('returns array from payload (single)', () => {
-      mockRequest.payload = { selectedLandParcel: 'payload-parcel' }
-
-      expect(controller.resolveParcelIds(mockRequest)).toEqual(['payload-parcel'])
-    })
-
-    test('returns array from payload (multiple)', () => {
-      mockRequest.payload = { selectedLandParcel: ['p1', 'p2'] }
-
-      expect(controller.resolveParcelIds(mockRequest)).toEqual(['p1', 'p2'])
-    })
-
-    test('return payload if query is absent', () => {
-      mockRequest.payload = { selectedLandParcel: ['p1'] }
-      mockRequest.query = {}
-
-      expect(controller.resolveParcelIds(mockRequest)).toEqual(['p1'])
-    })
-
-    test('returns null when nothing provided', () => {
-      mockRequest.payload = {}
-      mockRequest.query = {}
-
-      expect(controller.resolveParcelIds(mockRequest)).toBeNull()
+    test('throws if not overridden by subclass', () => {
+      expect(() => controller.resolveParcelIds(mockRequest)).toThrow(
+        'LandGrantsQuestionWithAuthCheckController must implement resolveParcelIds()'
+      )
     })
   })
 
   describe('makeGetRouteHandler', () => {
     test('returns auth error when performAuthCheck fails', async () => {
+      controller.resolveParcelIds = vi.fn().mockReturnValue(['sheet1-parcel1'])
       controller.performAuthCheck = vi.fn().mockResolvedValue('unauthorised')
       controller.handleGet = vi.fn()
-      mockRequest.query = { parcelId: 'sheet1-parcel1' }
       const context = { state: {} }
 
       const handler = controller.makeGetRouteHandler()
@@ -167,6 +147,7 @@ describe('LandGrantsQuestionWithAuthCheckController', () => {
     })
 
     test('delegates to handleGet when auth passes', async () => {
+      controller.resolveParcelIds = vi.fn().mockReturnValue(null)
       controller.performAuthCheck = vi.fn().mockResolvedValue(null)
       controller.handleGet = vi.fn().mockResolvedValue('get-response')
       const context = { state: {} }
@@ -181,9 +162,9 @@ describe('LandGrantsQuestionWithAuthCheckController', () => {
 
   describe('makePostRouteHandler', () => {
     test('returns auth error when performAuthCheck fails', async () => {
+      controller.resolveParcelIds = vi.fn().mockReturnValue(['sheet1-parcel1'])
       controller.performAuthCheck = vi.fn().mockResolvedValue('unauthorised')
       controller.handlePost = vi.fn()
-      mockRequest.query = { parcelId: 'sheet1-parcel1' }
       const context = { state: {} }
 
       const handler = controller.makePostRouteHandler()
@@ -194,6 +175,7 @@ describe('LandGrantsQuestionWithAuthCheckController', () => {
     })
 
     test('delegates to handlePost when auth passes', async () => {
+      controller.resolveParcelIds = vi.fn().mockReturnValue(null)
       controller.performAuthCheck = vi.fn().mockResolvedValue(null)
       controller.handlePost = vi.fn().mockResolvedValue('post-response')
       const context = { state: {} }

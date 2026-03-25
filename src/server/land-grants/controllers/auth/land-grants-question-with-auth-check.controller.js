@@ -6,23 +6,8 @@ import { getCachedAuthParcels, setCachedAuthParcels } from '~/src/server/land-gr
 import { stringifyParcel } from '~/src/server/land-grants/utils/format-parcel.js'
 
 export default class LandGrantsQuestionWithAuthCheckController extends QuestionPageController {
-  resolveParcelIds(request) {
-    const queryValue = request.query?.parcelId
-    if (queryValue) {
-      return [queryValue]
-    }
-
-    const fromPayload = request.payload?.selectedLandParcel
-
-    if (Array.isArray(fromPayload)) {
-      return fromPayload
-    }
-
-    if (fromPayload) {
-      return [fromPayload]
-    }
-
-    return null
+  resolveParcelIds(_request) {
+    throw new Error(`${this.constructor.name} must implement resolveParcelIds()`)
   }
 
   makeGetRouteHandler() {

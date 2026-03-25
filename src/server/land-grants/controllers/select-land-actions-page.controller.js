@@ -19,6 +19,11 @@ export default class SelectLandActionsPageController extends LandGrantsQuestionW
   viewName = 'select-actions-for-land-parcel'
   actionFieldPrefix = 'landAction_'
 
+  resolveParcelIds(request) {
+    const parcelId = request?.query?.parcelId
+    return parcelId ? [parcelId] : null
+  }
+
   /**
    * Resolve parcel identifiers from query param
    * @param {AnyFormRequest} request
