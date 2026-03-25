@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import LandGrantsQuestionWithAuthCheckController from './land-grants-question-with-auth-check.controller'
+import QuestionPageWithParcelCheckController from './question-page-with-parcel-check.controller'
 import { fetchParcelsFromDal } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
 import { getCachedAuthParcels, setCachedAuthParcels } from '~/src/server/land-grants/services/parcel-cache.js'
 import { debug, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { SystemError } from '~/src/server/common/utils/errors/SystemError.js'
 
 vi.mock('~/src/server/common/services/consolidated-view/consolidated-view.service.js', () => ({
   fetchParcelsFromDal: vi.fn()
@@ -13,13 +14,13 @@ vi.mock('~/src/server/land-grants/services/parcel-cache.js', () => ({
   setCachedAuthParcels: vi.fn()
 }))
 
-describe('LandGrantsQuestionWithAuthCheckController', () => {
+describe('QuestionPageWithParcelCheckController', () => {
   let controller
   let mockRequest
   let mockH
 
   beforeEach(() => {
-    controller = new LandGrantsQuestionWithAuthCheckController()
+    controller = new QuestionPageWithParcelCheckController()
     mockRequest = {
       query: {},
       payload: {},
@@ -49,6 +50,13 @@ describe('LandGrantsQuestionWithAuthCheckController', () => {
   })
 
   describe('performAuthCheck', () => {
+    test('throws SystemError if resolveParcelIds returns a non-array', async () => {
+      await expect(controller.performAuthCheck(mockRequest, mockH, 'not-an-array')).rejects.toThrow(SystemError)
+      await expect(controller.performAuthCheck(mockRequest, mockH, 'not-an-array')).rejects.toThrow(
+        'QuestionPageWithParcelCheckController.resolveParcelIds() must return an array or null'
+      )
+    })
+
     test('returns null if landParcel is not provided', async () => {
       const result = await controller.performAuthCheck(mockRequest, mockH, null)
 
@@ -125,9 +133,10 @@ describe('LandGrantsQuestionWithAuthCheckController', () => {
   })
 
   describe('resolveParcelIds', () => {
-    test('throws if not overridden by subclass', () => {
+    test('throws SystemError if not overridden by subclass', () => {
+      expect(() => controller.resolveParcelIds(mockRequest)).toThrow(SystemError)
       expect(() => controller.resolveParcelIds(mockRequest)).toThrow(
-        'LandGrantsQuestionWithAuthCheckController must implement resolveParcelIds()'
+        'QuestionPageWithParcelCheckController must implement resolveParcelIds()'
       )
     })
   })

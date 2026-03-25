@@ -1,9 +1,9 @@
 import { log, debug, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { fetchParcels } from '../services/land-grants.service.js'
-import LandGrantsQuestionWithAuthCheckController from '~/src/server/land-grants/controllers/auth/land-grants-question-with-auth-check.controller.js'
+import QuestionPageWithParcelCheckController from '~/src/server/common/controllers/question-page-with-parcel-check.controller.js'
 import { mapParcelsToViewModel } from '~/src/server/land-grants/view-models/parcel.view-model.js'
 
-export default class SelectLandParcelPageController extends LandGrantsQuestionWithAuthCheckController {
+export default class SelectLandParcelPageController extends QuestionPageWithParcelCheckController {
   viewName = 'select-land-parcel'
 
   resolveParcelIds(request, _context) {
