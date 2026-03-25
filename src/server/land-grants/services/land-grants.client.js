@@ -99,13 +99,13 @@ export async function parcelsWithExtendedInfo(parcelIds, baseUrl) {
 
 /**
  * Calls the Land Grants API calculate-wmp endpoint.
- * @param {{ parcelIds: string[], youngWoodlandArea: number, oldWoodlandArea: number }} payload
+ * @param {{ parcelIds: string[], newWoodlandAreaHa: number, oldWoodlandAreaHa: number }} payload
  * @param {string} baseUrl
- * @returns {Promise<{ result: string }>}
+ * @returns {Promise<{ message: string, payment: object }>}
  * @throws {Error}
  */
 export async function calculateWmp(payload, baseUrl) {
-  return postToLandGrantsApi('/api/v2/payments/calculate-wmp', payload, baseUrl)
+  return postToLandGrantsApi('/api/v2/wmp/payments/calculate', payload, baseUrl)
 }
 
 /**

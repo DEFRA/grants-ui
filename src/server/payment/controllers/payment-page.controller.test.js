@@ -1,7 +1,6 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { vi } from 'vitest'
 import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
-import { getRequiredConsents } from '~/src/server/land-grants/view-state/land-parcel.view-state.js'
 import PaymentPageController from './payment-page.controller.js'
 
 const mockStrategyFetch = vi.hoisted(() => vi.fn())
@@ -18,8 +17,8 @@ vi.mock('~/src/server/land-grants/utils/format-parcel.js', () => ({
   stringifyParcel: ({ parcelId, sheetId }) => `${sheetId}-${parcelId}`
 }))
 
-vi.mock('~/src/server/land-grants/view-state/land-parcel.view-state.js', () => ({
-  getRequiredConsents: vi.fn()
+vi.mock('~/src/server/common/utils/payment.js', () => ({
+  formatPrice: (value) => `£${(value / 100).toFixed(2)}`
 }))
 
 describe('PaymentPageController', () => {
@@ -51,6 +50,7 @@ describe('PaymentPageController', () => {
 
   const mockStrategyResult = {
     totalPence: 32006,
+    totalPayment: '£320.06',
     payment: mockPayment,
     parcelItems: [{ text: 'sheet1-parcel1' }],
     additionalYearlyPayments: []
@@ -67,9 +67,10 @@ describe('PaymentPageController', () => {
           pageConfig: {
             '/test': {
               paymentStrategy: 'multiAction',
-              nextPath: '/submit-your-application',
-              addMoreActionsPath: '/select-land-parcel',
-              consentPath: '/you-must-have-consent'
+              redirects: {
+                next: '/you-must-have-consent',
+                addMoreActions: '/select-land-parcel'
+              }
             }
           }
         }
@@ -87,7 +88,6 @@ describe('PaymentPageController', () => {
       .mockReturnValue([[{ text: 'sheet1-parcel1' }, { text: 'Test Action' }, { text: '10 hectares' }]])
 
     mockStrategyFetch.mockResolvedValue(mockStrategyResult)
-    getRequiredConsents.mockReturnValue([])
 
     mockRequest = {
       payload: {},
@@ -123,6 +123,7 @@ describe('PaymentPageController', () => {
         mockRequest,
         expect.objectContaining({
           totalPence: 32006,
+          totalPayment: '£320.06',
           payment: mockPayment
         })
       )
@@ -137,6 +138,7 @@ describe('PaymentPageController', () => {
     test('should handle zero payment correctly', async () => {
       mockStrategyFetch.mockResolvedValue({
         totalPence: 0,
+        totalPayment: '£0.00',
         payment: { annualTotalPence: 0, parcelItems: {}, agreementLevelItems: {} },
         parcelItems: [],
         additionalYearlyPayments: []
@@ -228,13 +230,13 @@ describe('PaymentPageController', () => {
       expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/select-land-parcel')
     })
 
-    test('should continue to next step when user chooses no', async () => {
+    test('should continue to next path when user chooses no', async () => {
       mockRequest.payload = { addMoreActions: 'false' }
 
       const handler = controller.makePostRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
-      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/submit-your-application')
+      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/you-must-have-consent')
     })
 
     test('should proceed normally when no validation required', async () => {
@@ -243,7 +245,7 @@ describe('PaymentPageController', () => {
       const handler = controller.makePostRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
-      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/submit-your-application')
+      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/you-must-have-consent')
       expect(mockH.view).not.toHaveBeenCalled()
     })
 
@@ -303,184 +305,65 @@ describe('PaymentPageController', () => {
       )
     })
 
-    test('should handle undefined totalPence in view model', () => {
+    test('should handle undefined totalPayment in view model', () => {
       const viewModel = controller.buildViewModel(mockRequest, mockContext, undefined, [], [])
+      expect(viewModel.totalPayment).toBeUndefined()
+    })
+
+    test('should handle zero totalPayment in view model', () => {
+      const viewModel = controller.buildViewModel(mockRequest, mockContext, '£0.00', [], [])
       expect(viewModel.totalPayment).toBe('£0.00')
     })
 
-    test('should handle zero totalPence in view model', () => {
-      const viewModel = controller.buildViewModel(mockRequest, mockContext, 0, [], [])
-      expect(viewModel.totalPayment).toBe('£0.00')
-    })
-
-    test('should handle a valid totalPence in view model', () => {
-      const viewModel = controller.buildViewModel(mockRequest, mockContext, 32006, [], [])
+    test('should handle a valid totalPayment in view model', () => {
+      const viewModel = controller.buildViewModel(mockRequest, mockContext, '£320.06', [], [])
       expect(viewModel.totalPayment).toBe('£320.06')
     })
   })
 
-  describe('POST Handler - Consent Handling', () => {
-    test('should redirect to consent page when consents are required', async () => {
-      mockRequest.payload = { addMoreActions: 'false' }
-      getRequiredConsents.mockReturnValue(['sssi'])
-
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
-
-      expect(controller.setState).toHaveBeenCalledWith(
-        mockRequest,
-        expect.objectContaining({
-          requiredConsents: ['sssi']
-        })
+  describe('constructor validation', () => {
+    test('should throw when redirects.next is missing', () => {
+      const model = {
+        def: {
+          metadata: {
+            pageConfig: { '/test': { paymentStrategy: 'multiAction', redirects: {} } }
+          }
+        }
+      }
+      expect(() => new PaymentPageController(model, { path: '/test' })).toThrow(
+        'PaymentPageController: "redirects.next" is required'
       )
-      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/you-must-have-consent')
     })
 
-    test('should redirect to submit application when no consents required', async () => {
-      mockRequest.payload = { addMoreActions: 'false' }
-      getRequiredConsents.mockReturnValue([])
-
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
-
-      expect(controller.setState).toHaveBeenCalledWith(
-        mockRequest,
-        expect.objectContaining({
-          requiredConsents: []
-        })
-      )
-      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/submit-your-application')
-    })
-
-    test('should handle multiple consent types', async () => {
-      mockRequest.payload = { addMoreActions: 'false' }
-      getRequiredConsents.mockReturnValue(['sssi', 'hefer'])
-
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
-
-      expect(controller.setState).toHaveBeenCalledWith(
-        mockRequest,
-        expect.objectContaining({
-          requiredConsents: ['sssi', 'hefer']
-        })
-      )
-      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/you-must-have-consent')
-    })
-
-    test('should call getRequiredConsents with state when user chooses not to add more actions', async () => {
-      mockRequest.payload = { addMoreActions: 'false' }
-      getRequiredConsents.mockReturnValue([])
-
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
-
-      expect(getRequiredConsents).toHaveBeenCalledWith(mockContext.state)
-    })
-
-    test('should not call getRequiredConsents when user chooses to add more actions', async () => {
-      mockRequest.payload = { addMoreActions: 'true' }
-
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
-
-      expect(getRequiredConsents).not.toHaveBeenCalled()
-      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/select-land-parcel')
-    })
-  })
-
-  describe('getNextPathFromSelection', () => {
-    test('should return consent page path when consents are required', () => {
-      getRequiredConsents.mockReturnValue(['sssi'])
-
-      const result = controller.getNextPathFromSelection('false', mockContext.state)
-
-      expect(result).toEqual({
-        path: '/you-must-have-consent',
-        requiredConsents: ['sssi']
-      })
-    })
-
-    test('should return submit application path when no consents required', () => {
-      getRequiredConsents.mockReturnValue([])
-
-      const result = controller.getNextPathFromSelection('false', mockContext.state)
-
-      expect(result).toEqual({
-        path: '/submit-your-application'
-      })
-    })
-
-    test('should return select parcel path when adding more actions', () => {
-      const result = controller.getNextPathFromSelection('true', mockContext.state)
-
-      expect(result).toEqual({
-        path: '/select-land-parcel'
-      })
-      expect(getRequiredConsents).not.toHaveBeenCalled()
-    })
-
-    test('should skip consent check and go to nextPath when consentPath is not configured', () => {
+    test('should throw when redirects.addMoreActions is missing and showAddMoreActionsQuestion is true', () => {
       const model = {
         def: {
           metadata: {
             pageConfig: {
               '/test': {
                 paymentStrategy: 'multiAction',
-                nextPath: '/done',
-                addMoreActionsPath: '/add-more'
+                redirects: { next: '/done' },
+                showAddMoreActionsQuestion: true
               }
             }
           }
         }
       }
-      const ctrl = new PaymentPageController(model, { path: '/test' })
-      ctrl.collection = { getErrors: vi.fn().mockReturnValue([]) }
-
-      getRequiredConsents.mockReturnValue(['sssi'])
-
-      const result = ctrl.getNextPathFromSelection('false', mockContext.state)
-
-      expect(getRequiredConsents).not.toHaveBeenCalled()
-      expect(result).toEqual({ path: '/done' })
-    })
-  })
-
-  describe('constructor validation', () => {
-    test('should throw when nextPath is missing', () => {
-      const model = {
-        def: {
-          metadata: {
-            pageConfig: { '/test': { paymentStrategy: 'multiAction' } }
-          }
-        }
-      }
       expect(() => new PaymentPageController(model, { path: '/test' })).toThrow(
-        'PaymentPageController: "nextPath" is required'
+        'PaymentPageController: "redirects.addMoreActions" is required'
       )
     })
 
-    test('should throw when addMoreActionsPath is missing and showAddMoreActionsQuestion is true', () => {
+    test('should not throw when redirects.addMoreActions is missing and showAddMoreActionsQuestion is false', () => {
       const model = {
         def: {
           metadata: {
             pageConfig: {
-              '/test': { paymentStrategy: 'multiAction', nextPath: '/done', showAddMoreActionsQuestion: true }
-            }
-          }
-        }
-      }
-      expect(() => new PaymentPageController(model, { path: '/test' })).toThrow(
-        'PaymentPageController: "addMoreActionsPath" is required'
-      )
-    })
-
-    test('should not throw when addMoreActionsPath is missing and showAddMoreActionsQuestion is false', () => {
-      const model = {
-        def: {
-          metadata: {
-            pageConfig: {
-              '/test': { paymentStrategy: 'multiAction', nextPath: '/done', showAddMoreActionsQuestion: false }
+              '/test': {
+                paymentStrategy: 'multiAction',
+                redirects: { next: '/done' },
+                showAddMoreActionsQuestion: false
+              }
             }
           }
         }

@@ -7,7 +7,6 @@ import {
   deleteActionFromState,
   hasLandParcels,
   findActionInfoFromState,
-  getRequiredConsents
 } from './land-parcel.view-state.js'
 
 const configState = vi.hoisted(() => {
@@ -438,90 +437,6 @@ describe('land-parcel-state.manager', () => {
       const result = findActionInfoFromState(landParcels, 'AB1234-5678', 'SAM1')
 
       expect(result).toBeNull()
-    })
-  })
-
-  describe('getRequiredConsents', () => {
-    it('should return empty in array when state has no land parcels', () => {
-      const state = {}
-
-      const result = getRequiredConsents(state)
-
-      expect(result).toEqual([])
-    })
-
-    it('should return empty in array when landParcels is empty', () => {
-      const state = { landParcels: {} }
-
-      const result = getRequiredConsents(state)
-
-      expect(result).toEqual([])
-    })
-
-    it('should return array with sssi when SSSI consent is required', () => {
-      const state = {
-        landParcels: {
-          'AB1234-5678': {
-            actionsObj: {
-              SAM1: { description: 'Action 1', consents: ['sssi'] }
-            }
-          }
-        }
-      }
-
-      const result = getRequiredConsents(state)
-
-      expect(result).toContain('sssi')
-      expect(result.length).toBeGreaterThanOrEqual(1)
-    })
-
-    it('should return array with hefer when HEFER is required', () => {
-      const state = {
-        landParcels: {
-          'AB1234-5678': {
-            actionsObj: {
-              SAM1: { description: 'Action 1', consents: ['hefer'] }
-            }
-          }
-        }
-      }
-
-      const result = getRequiredConsents(state)
-
-      expect(result).toContain('hefer')
-    })
-
-    it('should return empty array when no consent checks pass', () => {
-      const state = {
-        landParcels: {
-          'AB1234-5678': {
-            actionsObj: {
-              SAM1: { description: 'Action 1', consents: [] }
-            }
-          }
-        }
-      }
-
-      const result = getRequiredConsents(state)
-
-      expect(result).toEqual([])
-    })
-
-    it('should return multiple consent types when both are required', () => {
-      const state = {
-        landParcels: {
-          'AB1234-5678': {
-            actionsObj: {
-              SAM1: { description: 'Action 1', consents: ['sssi'] },
-              SAM2: { description: 'Action 2', consents: ['hefer'] }
-            }
-          }
-        }
-      }
-
-      const result = getRequiredConsents(state)
-
-      expect(result).toEqual(['sssi', 'hefer'])
     })
   })
 })

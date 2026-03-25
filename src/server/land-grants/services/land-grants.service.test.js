@@ -156,35 +156,50 @@ describe('land-grants service', () => {
   })
 
   describe('calculateWmpPayment', () => {
-    it('should call calculateWmp with state params and return totalPence', async () => {
-      calculateWmp.mockResolvedValueOnce({ result: '125.50' })
+    const mockPayment = {
+      agreementTotalPence: 375000,
+      agreementStartDate: '2026-06-01',
+      agreementEndDate: '2036-06-01',
+      frequency: 'Single',
+      parcelItems: {},
+      agreementLevelItems: {
+        1: {
+          code: 'PA3',
+          description: 'Woodland Management Plan',
+          agreementTotalPence: 375000
+        }
+      }
+    }
+
+    it('should call calculateWmp with new field names and return payment and totalPence', async () => {
+      calculateWmp.mockResolvedValueOnce({ message: 'success', payment: mockPayment })
 
       const result = await calculateWmpPayment({
         parcelIds: ['SD6346-3387'],
-        youngWoodlandArea: 1.5,
-        oldWoodlandArea: 0.5
+        newWoodlandAreaHa: 1.5,
+        oldWoodlandAreaHa: 0.5
       })
 
       expect(calculateWmp).toHaveBeenCalledWith(
-        { parcelIds: ['SD6346-3387'], youngWoodlandArea: 1.5, oldWoodlandArea: 0.5 },
+        { parcelIds: ['SD6346-3387'], newWoodlandAreaHa: 1.5, oldWoodlandAreaHa: 0.5 },
         mockApiEndpoint
       )
-      expect(result).toEqual({ result: '125.50', totalPence: 12550 })
+      expect(result).toEqual({ payment: mockPayment, totalPence: 375000 })
     })
 
-    it('should handle zero result', async () => {
-      calculateWmp.mockResolvedValueOnce({ result: '0.00' })
+    it('should return zero totalPence when agreementTotalPence is missing', async () => {
+      calculateWmp.mockResolvedValueOnce({ message: 'success', payment: {} })
 
-      const result = await calculateWmpPayment({ parcelIds: ['SD6346-3387'], youngWoodlandArea: 0, oldWoodlandArea: 0 })
+      const result = await calculateWmpPayment({ parcelIds: ['SD6346-3387'], newWoodlandAreaHa: 0, oldWoodlandAreaHa: 0 })
 
-      expect(result).toEqual({ result: '0.00', totalPence: 0 })
+      expect(result).toEqual({ payment: {}, totalPence: 0 })
     })
 
     it('should propagate API errors', async () => {
       calculateWmp.mockRejectedValueOnce(new Error('API error'))
 
       await expect(
-        calculateWmpPayment({ parcelIds: ['SD6346-3387'], youngWoodlandArea: 0, oldWoodlandArea: 0 })
+        calculateWmpPayment({ parcelIds: ['SD6346-3387'], newWoodlandAreaHa: 0, oldWoodlandAreaHa: 0 })
       ).rejects.toThrow('API error')
     })
   })

@@ -100,9 +100,9 @@ pages:
     controller: PaymentPageController
     config:
       paymentStrategy: multiAction
-      nextPath: /submit-your-application
-      addMoreActionsPath: /select-land-parcel
-      consentPath: /you-must-have-consent
+      redirects:
+        next: /you-must-have-consent
+        addMoreActions: /select-land-parcel
       showPaymentActions: true
       showAddMoreActionsQuestion: true
       showSupportLink: true
@@ -123,7 +123,7 @@ pages:
   - title: You must have consent
     path: /you-must-have-consent
     controller: ConsentPageController
-    next: []
+    next: [{ path: '/submit-your-application' }]
     id: f8c5a770-2187-4bbe-98d0-4621c3bf2180
   - title: Submit your application
     path: /submit-your-application

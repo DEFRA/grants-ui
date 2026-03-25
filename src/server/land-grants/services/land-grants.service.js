@@ -125,16 +125,14 @@ function mapAction(action) {
 
 /**
  * Calculates a one-off WMP payment.
- * @param {{ parcelIds: string[], youngWoodlandArea: number, oldWoodlandArea: number }} params
- * @returns {Promise<{ result: string, totalPence: number }>}
+ * @param {{ parcelIds: string[], newWoodlandAreaHa: number, oldWoodlandAreaHa: number }} params
+ * @returns {Promise<{ payment: object, totalPence: number }>}
  * @throws {Error}
  */
-export async function calculateWmpPayment({ parcelIds, youngWoodlandArea, oldWoodlandArea }) {
-  const { result } = await calculateWmp({ parcelIds, youngWoodlandArea, oldWoodlandArea }, LAND_GRANTS_API_URL)
-  return {
-    result,
-    totalPence: Math.round(parseFloat(result) * 100)
-  }
+export async function calculateWmpPayment({ parcelIds, newWoodlandAreaHa, oldWoodlandAreaHa }) {
+  const { payment } = await calculateWmp({ parcelIds, newWoodlandAreaHa, oldWoodlandAreaHa }, LAND_GRANTS_API_URL)
+  const totalPence = payment?.agreementTotalPence ?? 0
+  return { payment, totalPence }
 }
 
 /**

@@ -8,18 +8,18 @@ A generic payment summary page used across grant journeys. It is driven entirely
 YAML config
     │
     ▼
-PaymentPageController (constructor reads config)
+PaymentPageController (constructor reads config via resolveConfig)
     │
     ├── strategy.fetch(state) ──► service function(s) ──► Land Grants API
     │        │
-    │        └── returns { totalPence, payment, parcelItems?, additionalYearlyPayments? }
+    │        └── returns { totalPence, totalPayment, payment, parcelItems?, additionalYearlyPayments? }
     │
     ├── buildViewModel(...)  ──► payment-page.html (Nunjucks)
     │
-    └── getNextPathFromSelection(...) ──► nextPath / addMoreActionsPath / consentPath
+    └── redirect ──► redirects.next / redirects.addMoreActions
 ```
 
-On GET, the controller calls `strategy.fetch(state)`, stores `totalPence` and the raw `payment` object in session state, then renders the view.
+On GET, the controller calls `strategy.fetch(state)`, stores `totalPence`, `totalPayment`, and the raw `payment` object in session state, then renders the view.
 
 On POST, if the user triggers validation (submit without answering the radio), it re-fetches and re-renders with errors. Otherwise it reads `addMoreActions` from the payload and navigates accordingly.
 
@@ -32,13 +32,11 @@ On POST, if the user triggers validation (submit without answering the radio), i
   config:
     # Required
     paymentStrategy: multiAction # key in payment-strategies.js
-    nextPath: /submit-your-application # where to go when user is done
 
-    # Required when showAddMoreActionsQuestion: true
-    addMoreActionsPath: /select-land-parcel
-
-    # Optional — where to go if consents are required for any action
-    consentPath: /you-must-have-consent
+    # Navigation paths (next is required; addMoreActions required if showAddMoreActionsQuestion: true)
+    redirects:
+      next: /submit-your-application # where to go when user is done (often a consent check page or submit application)
+      addMoreActions: /select-land-parcel
 
     # Display options (all optional, defaults shown)
     showPaymentActions: true # show per-parcel action breakdown tables
@@ -61,7 +59,8 @@ Open [`payment-strategies.js`](./payment-strategies.js) and add an entry. Each s
 
 | Field                      | Type                 | Description                                                                            |
 | -------------------------- | -------------------- | -------------------------------------------------------------------------------------- |
-| `totalPence`               | `number`             | Total payment in pence — used by the controller to format the display amount           |
+| `totalPence`               | `number`             | Total payment in pence — stored in state for re-render on validation errors            |
+| `totalPayment`             | `string`             | Formatted currency string e.g. `"£4,393.68"` — rendered directly in the view           |
 | `payment`                  | `object`             | Raw API response — stored in session state for downstream use (e.g. submission mapper) |
 | `parcelItems`              | `Array` _(optional)_ | Mapped view models for per-parcel action tables. Omit if not applicable                |
 | `additionalYearlyPayments` | `Array` _(optional)_ | Mapped view models for agreement-level payment rows. Omit if not applicable            |
@@ -71,10 +70,11 @@ Example for a simple one-off payment:
 ```js
 myJourney: {
   async fetch(state) {
-    const { result, totalPence } = await calculateMyPayment(state)
+    const { totalPence } = await calculateMyPayment(state)
     return {
       totalPence,
-      payment: { result }
+      totalPayment: formatPrice(totalPence),
+      payment: { totalPence }
     }
   }
 }
@@ -90,8 +90,10 @@ myMultiAction: {
       fetchMyActionGroups(state)
     ])
     const { payment } = paymentResult
+    const totalPence = payment?.annualTotalPence ?? 0
     return {
-      totalPence: payment?.annualTotalPence ?? 0,
+      totalPence,
+      totalPayment: formatPrice(totalPence),
       payment,
       parcelItems: mapPaymentInfoToParcelItems(payment, actionGroups),
       additionalYearlyPayments: mapAdditionalYearlyPayments(payment)
@@ -99,6 +101,8 @@ myMultiAction: {
   }
 }
 ```
+
+`formatPrice` is available from `~/src/server/common/utils/payment.js`.
 
 ### 2. Add a service function
 
@@ -112,7 +116,7 @@ See `calculateLandActionsPayment` and `calculateWmpPayment` in [`land-grants.ser
 
 ### 3. Configure the YAML page
 
-Set `paymentStrategy: <your-key>` in the page config block, along with `nextPath` and any other required options (see YAML config reference above).
+Set `paymentStrategy: <your-key>` in the page config block, along with `redirects.next` and any other required options (see YAML config reference above).
 
 ## API communication
 
@@ -121,7 +125,7 @@ Payment calculations go through the Land Grants API. The client layer ([`land-gr
 | Strategy      | Endpoint                              | Request shape                                                        |
 | ------------- | ------------------------------------- | -------------------------------------------------------------------- |
 | `multiAction` | `POST /api/v2/payments/calculate`     | `{ parcel: [{ sheetId, parcelId, actions: [{ code, quantity }] }] }` |
-| `oneOff`      | `POST /api/v2/payments/calculate-wmp` | `{ parcelIds, youngWoodlandArea, oldWoodlandArea }`                  |
+| `wmp`         | `POST /api/v2/wmp/payments/calculate` | `{ parcelIds, newWoodlandAreaHa, oldWoodlandAreaHa }`                |
 
 ### `multiAction` response
 
@@ -135,13 +139,26 @@ Payment calculations go through the Land Grants API. The client layer ([`land-gr
 }
 ```
 
-### `oneOff` response
+### `wmp` response
 
 ```json
-{ "result": "125.00" }
+{
+  "message": "success",
+  "payment": {
+    "agreementTotalPence": 375000,
+    "agreementStartDate": "2026-06-01",
+    "agreementEndDate": "2036-06-01",
+    "frequency": "Single",
+    "parcelItems": {},
+    "agreementLevelItems": {
+      "1": { "code": "PA3", "description": "Woodland Management Plan", "agreementTotalPence": 375000, ... }
+    },
+    "payments": [{ "totalPaymentPence": 375000, "paymentDate": "2026-06-15", ... }]
+  }
+}
 ```
 
-The `oneOff` strategy converts `result` (pounds string) to pence: `Math.round(parseFloat(result) * 100)`.
+The `wmp` strategy reads `payment.agreementTotalPence` for `totalPence`.
 
 ## Session state
 
@@ -149,9 +166,10 @@ After a successful GET, the controller stores the following in session state:
 
 ```js
 {
-  totalPence: 439368,   // used by the view on re-render (e.g. POST validation error)
-  payment: { ... }      // raw API response, used by downstream mappers (e.g. GAS submission mapper)
+  totalPence: 439368,        // used on re-render (e.g. POST validation error fallback)
+  totalPayment: '£4,393.68', // formatted string, used directly in the view on re-render
+  payment: { ... }           // raw API response, used by downstream mappers (e.g. GAS submission mapper)
 }
 ```
 
-The raw `payment` object shape depends on the strategy. For `multiAction`, downstream code (the GAS answers mapper) reads `payment.annualTotalPence` from state.
+The raw `payment` object shape depends on the strategy. For `multiAction`, downstream code (the GAS answers mapper) reads `payment.annualTotalPence` from state. For `wmp`, it reads `payment.agreementTotalPence`.

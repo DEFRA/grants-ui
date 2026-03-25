@@ -1,9 +1,46 @@
 import nunjucks from 'nunjucks'
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { debug, LogCodes } from '~/src/server/common/helpers/logging/log.js'
-import { formatPrice } from '~/src/server/land-grants/view-models/payment.view-model.js'
-import { getRequiredConsents } from '~/src/server/land-grants/view-state/land-parcel.view-state.js'
 import { paymentStrategies } from '~/src/server/payment/payment-strategies.js'
+
+/**
+ * Validate the YAML page config and return resolved values. Throws descriptively on misconfiguration.
+ * @param {object} config
+ * @param {string} path
+ * @returns {{ strategy: object, showPaymentActions: boolean, showAddMoreActionsQuestion: boolean, paymentExplanation: string|null, showSupportLink: boolean|null, nextPath: string, addMoreActionsPath: string|undefined }}
+ */
+function resolveConfig(config, path) {
+  const strategy = paymentStrategies[config.paymentStrategy]
+  if (!strategy) {
+    throw new Error(
+      `PaymentPageController: unknown paymentStrategy "${config.paymentStrategy}". ` +
+        `Available strategies: ${Object.keys(paymentStrategies).join(', ')}`
+    )
+  }
+
+  const showAddMoreActionsQuestion = config.showAddMoreActionsQuestion ?? true
+  const redirects = config.redirects ?? {}
+
+  if (!redirects.next) {
+    throw new Error(`PaymentPageController: "redirects.next" is required in config for page "${path}"`)
+  }
+
+  if (showAddMoreActionsQuestion && !redirects.addMoreActions) {
+    throw new Error(
+      `PaymentPageController: "redirects.addMoreActions" is required in config when showAddMoreActionsQuestion is true for page "${path}"`
+    )
+  }
+
+  return {
+    strategy,
+    showPaymentActions: config.showPaymentActions ?? true,
+    showAddMoreActionsQuestion,
+    paymentExplanation: config.paymentExplanation ?? null,
+    showSupportLink: config.showSupportLink ?? null,
+    nextPath: redirects.next,
+    addMoreActionsPath: redirects.addMoreActions ?? undefined
+  }
+}
 
 /**
  * Generic controller for pages that display a payment summary.
@@ -18,9 +55,9 @@ import { paymentStrategies } from '~/src/server/payment/payment-strategies.js'
  *     paymentExplanation: |                 # HTML rendered above the payment total; Nunjucks syntax
  *       <p>You may be eligible for <strong>{{ totalPayment }}</strong>.</p>
  *     showSupportLink: true                 # show the "If you have a question" support link
- *     nextPath: /submit-your-application       # path when user is done (required)
- *     addMoreActionsPath: /select-land-parcel  # path when user wants to add more actions (required if showAddMoreActionsQuestion: true)
- *     consentPath: /you-must-have-consent      # path when consents are required (optional)
+ *     redirects:
+ *        next: /you-must-have-consent       # path when user is done (required)
+ *        addMoreActions: /select-land-parcel  # path when user wants to add more actions (required if showAddMoreActionsQuestion: true)
  *
  * To add a new journey, register its strategy in payment-strategies.js.
  *
@@ -36,34 +73,23 @@ export default class PaymentPageController extends QuestionPageController {
   constructor(model, pageDef) {
     super(model, pageDef)
     const config = model?.def?.metadata?.pageConfig?.[pageDef?.path] ?? {}
+    const {
+      strategy,
+      showPaymentActions,
+      showAddMoreActionsQuestion,
+      paymentExplanation,
+      showSupportLink,
+      nextPath,
+      addMoreActionsPath
+    } = resolveConfig(config, pageDef?.path)
 
-    const paymentStrategy = paymentStrategies[config.paymentStrategy]
-    if (!paymentStrategy) {
-      throw new Error(
-        `PaymentPageController: unknown paymentStrategy "${config.paymentStrategy}". ` +
-          `Available services: ${Object.keys(paymentStrategies).join(', ')}`
-      )
-    }
-
-    this.strategy = paymentStrategy
-
-    this.showPaymentActions = config.showPaymentActions ?? true
-    this.showAddMoreActionsQuestion = config.showAddMoreActionsQuestion ?? true
-    this.paymentExplanation = config.paymentExplanation ?? null
-    this.showSupportLink = config.showSupportLink ?? null
-
-    if (!config.nextPath) {
-      throw new Error(`PaymentPageController: "nextPath" is required in config for page "${pageDef?.path}"`)
-    }
-    this.nextPath = config.nextPath
-
-    if (this.showAddMoreActionsQuestion && !config.addMoreActionsPath) {
-      throw new Error(
-        `PaymentPageController: "addMoreActionsPath" is required in config when showAddMoreActionsQuestion is true for page "${pageDef?.path}"`
-      )
-    }
-    this.addMoreActionsPath = config.addMoreActionsPath ?? null
-    this.consentPath = config.consentPath ?? null
+    this.strategy = strategy
+    this.showPaymentActions = showPaymentActions
+    this.showAddMoreActionsQuestion = showAddMoreActionsQuestion
+    this.paymentExplanation = paymentExplanation
+    this.showSupportLink = showSupportLink
+    this.nextPath = nextPath
+    this.addMoreActionsPath = addMoreActionsPath
   }
 
   /**
@@ -85,39 +111,15 @@ export default class PaymentPageController extends QuestionPageController {
   }
 
   /**
-   * Determine next path based on user selection
-   * @param {string|undefined} addMoreActions
-   * @param {object} context
-   * @returns {{path: string, requiredConsents?: string[]}}
-   */
-  getNextPathFromSelection(addMoreActions, context) {
-    const { state } = context
-
-    if (addMoreActions !== 'true') {
-      if (this.consentPath) {
-        const requiredConsents = getRequiredConsents(state)
-        if (requiredConsents.length > 0) {
-          return { path: this.consentPath, requiredConsents }
-        }
-      }
-
-      return { path: this.nextPath }
-    }
-
-    return { path: this.addMoreActionsPath }
-  }
-
-  /**
    * @param {object} request
    * @param {object} context
-   * @param {number} totalPence
+   * @param {string} totalPayment
    * @param {Array} parcelItems
    * @param {Array} additionalYearlyPayments
    * @param {Array} [errors]
    */
-  buildViewModel(request, context, totalPence, parcelItems, additionalYearlyPayments, errors) {
+  buildViewModel(request, context, totalPayment, parcelItems, additionalYearlyPayments, errors) {
     const { state } = context
-    const totalPayment = formatPrice(totalPence || 0)
 
     return {
       ...this.getViewModel(request, context),
@@ -142,7 +144,14 @@ export default class PaymentPageController extends QuestionPageController {
     const { state } = context
     return h.view(
       this.viewName,
-      this.buildViewModel(request, context, state.totalPence ?? 0, parcelItems, additionalYearlyPayments, errorMessages)
+      this.buildViewModel(
+        request,
+        context,
+        state.totalPayment ?? '£0.00',
+        parcelItems,
+        additionalYearlyPayments,
+        errorMessages
+      )
     )
   }
 
@@ -151,6 +160,7 @@ export default class PaymentPageController extends QuestionPageController {
       const { viewName } = this
       const { state } = context
       let totalPence = 0
+      let totalPayment = '£0.00'
       let payment = {}
       let parcelItems = []
       let additionalYearlyPayments = []
@@ -158,11 +168,12 @@ export default class PaymentPageController extends QuestionPageController {
       try {
         const result = await this.strategy.fetch(state)
         totalPence = result.totalPence
+        totalPayment = result.totalPayment
         payment = result.payment
         parcelItems = result.parcelItems ?? []
         additionalYearlyPayments = result.additionalYearlyPayments ?? []
 
-        await this.setState(request, { ...state, totalPence, payment })
+        await this.setState(request, { ...state, totalPence, totalPayment, payment })
       } catch (error) {
         const sbi = request.auth?.credentials?.sbi
         debug(
@@ -178,7 +189,10 @@ export default class PaymentPageController extends QuestionPageController {
         ])
       }
 
-      return h.view(viewName, this.buildViewModel(request, context, totalPence, parcelItems, additionalYearlyPayments))
+      return h.view(
+        viewName,
+        this.buildViewModel(request, context, totalPayment, parcelItems, additionalYearlyPayments)
+      )
     }
   }
 
@@ -209,10 +223,7 @@ export default class PaymentPageController extends QuestionPageController {
       }
 
       const { addMoreActions } = payload
-      const { path: nextPath, requiredConsents = [] } = this.getNextPathFromSelection(addMoreActions, context)
-
-      await this.setState(request, { ...state, requiredConsents })
-
+      const nextPath = addMoreActions === 'true' ? this.addMoreActionsPath : this.nextPath
       return this.proceed(request, h, nextPath)
     }
   }
