@@ -6,7 +6,7 @@ import {
   deleteParcelFromState,
   deleteActionFromState,
   hasLandParcels,
-  findActionInfoFromState,
+  findActionInfoFromState
 } from './land-parcel.view-state.js'
 
 const configState = vi.hoisted(() => {

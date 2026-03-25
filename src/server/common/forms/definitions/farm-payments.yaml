@@ -108,7 +108,7 @@ pages:
       showSupportLink: true
       paymentExplanation: |
         <p class="govuk-body-l">The annual payment is <strong>{{ totalPayment }}</strong>.</p>
-    next: [{ path: '/submit-your-application' }]
+    next: []
     id: 245dc425-8efa-45b7-92df-178d1b0fe4ce
   - title: Remove parcel
     path: /remove-parcel
@@ -123,7 +123,7 @@ pages:
   - title: You must have consent
     path: /you-must-have-consent
     controller: ConsentPageController
-    next: [{ path: '/submit-your-application' }]
+    next: []
     id: f8c5a770-2187-4bbe-98d0-4621c3bf2180
   - title: Submit your application
     path: /submit-your-application

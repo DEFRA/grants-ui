@@ -8,4 +8,3 @@ import { formatCurrency } from '~/src/config/nunjucks/filters/filters.js'
 export function formatPrice(value) {
   return formatCurrency(value / 100, 'en-GB', 'GBP', 2, 'currency')
 }
-

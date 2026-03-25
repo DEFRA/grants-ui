@@ -190,7 +190,11 @@ describe('land-grants service', () => {
     it('should return zero totalPence when agreementTotalPence is missing', async () => {
       calculateWmp.mockResolvedValueOnce({ message: 'success', payment: {} })
 
-      const result = await calculateWmpPayment({ parcelIds: ['SD6346-3387'], newWoodlandAreaHa: 0, oldWoodlandAreaHa: 0 })
+      const result = await calculateWmpPayment({
+        parcelIds: ['SD6346-3387'],
+        newWoodlandAreaHa: 0,
+        oldWoodlandAreaHa: 0
+      })
 
       expect(result).toEqual({ payment: {}, totalPence: 0 })
     })
