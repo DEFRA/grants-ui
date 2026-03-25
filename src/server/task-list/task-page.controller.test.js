@@ -79,7 +79,8 @@ describe('TaskPageController', () => {
       const section = { id: 'section-uuid', name: 'my-section', title: 'My Section' }
       const model = {
         def: { metadata: { tasklist: {} } },
-        sections: [section]
+        sections: [section],
+        getSection: () => section
       }
       const pageDef = { section: 'section-uuid' }
 

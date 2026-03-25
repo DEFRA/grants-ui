@@ -22,6 +22,11 @@ export default class DeclarationPageController extends SummaryPageController {
     this.model = model
     this.viewName = 'declaration-page.html'
 
+    // Override view name
+    if (pageDef.view) {
+      this.viewName = pageDef.view
+    }
+
     // Resolve section
     if (pageDef.section) {
       this.section = model.getSection(pageDef.section)

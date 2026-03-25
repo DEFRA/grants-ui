@@ -16,6 +16,19 @@
 import TaskListPageController from '~/src/server/task-list/task-list-page.controller.js'
 
 /**
+ * Evaluates a named condition from the form model against the current state.
+ * Returns false if the condition is not found or the model is unavailable.
+ * @param {object|undefined} formModel
+ * @param {string} conditionName
+ * @param {object} state
+ * @returns {boolean}
+ */
+function evaluateCondition(formModel, conditionName, state) {
+  const condition = formModel?.conditions[conditionName]
+  return condition ? formModel.makeCondition(condition).fn(state) : false
+}
+
+/**
  * Gets the names of all required question components on a page
  * @param {object} pageDef - The page definition from YAML
  * @returns {string[]} Array of required component names that hold state
@@ -64,14 +77,8 @@ function isTaskCompleted(pageDef, state, formModel) {
     return false
   }
 
-  if (pageDef.condition) {
-    const condition = formModel?.conditions[pageDef.condition]
-    const conditionExec = formModel?.makeCondition(condition)
-    const answer = formModel && conditionExec.fn(state)
-
-    if (!answer) {
-      return null // Hide task as it is not applicable
-    }
+  if (pageDef.condition && !evaluateCondition(formModel, pageDef.condition, state)) {
+    return null // Hide task as it is not applicable
   }
 
   // Check if all components have a value in state (unless required=false)
@@ -111,14 +118,12 @@ function triggersExitPage(pageDef, state, formModel) {
     }
 
     // Check if this is a terminal/exit page with a condition that evaluates to true
-    if (nextPage.controller === 'TerminalPageController' && nextPage.condition) {
-      const condition = formModel.conditions[nextPage.condition]
-      if (condition) {
-        const conditionExec = formModel.makeCondition(condition)
-        if (conditionExec.fn(state)) {
-          return true
-        }
-      }
+    if (
+      nextPage.controller === 'TerminalPageController' &&
+      nextPage.condition &&
+      evaluateCondition(formModel, nextPage.condition, state)
+    ) {
+      return true
     }
   }
 
