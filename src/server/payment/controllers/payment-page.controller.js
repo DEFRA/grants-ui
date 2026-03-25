@@ -2,26 +2,37 @@ import nunjucks from 'nunjucks'
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { debug, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { paymentStrategies } from '~/src/server/payment/payment-strategies.js'
+import { SystemError } from '~/src/server/common/utils/errors/SystemError.js'
 
 function resolveStrategy(paymentStrategy) {
   const strategy = paymentStrategies[paymentStrategy]
   if (!strategy) {
-    throw new Error(
-      `PaymentPageController: unknown paymentStrategy "${paymentStrategy}". ` +
-        `Available strategies: ${Object.keys(paymentStrategies).join(', ')}`
-    )
+    const systemError = new SystemError({
+      message: `Unknown paymentStrategy "${paymentStrategy}". Available strategies: ${Object.keys(paymentStrategies).join(', ')}`,
+      source: 'PaymentPageController',
+      reason: 'invalid_config'
+    })
+    throw systemError
   }
   return strategy
 }
 
 function resolveRedirects(redirects, showAddMoreActionsQuestion, path) {
   if (!redirects.next) {
-    throw new Error(`PaymentPageController: "redirects.next" is required in config for page "${path}"`)
+    const systemError = new SystemError({
+      message: `"redirects.next" is required in config for page "${path}"`,
+      source: 'PaymentPageController',
+      reason: 'invalid_config'
+    })
+    throw systemError
   }
   if (showAddMoreActionsQuestion && !redirects.addMoreActions) {
-    throw new Error(
-      `PaymentPageController: "redirects.addMoreActions" is required in config when showAddMoreActionsQuestion is true for page "${path}"`
-    )
+    const systemError = new SystemError({
+      message: `"redirects.addMoreActions" is required in config when showAddMoreActionsQuestion is true for page "${path}"`,
+      source: 'PaymentPageController',
+      reason: 'invalid_config'
+    })
+    throw systemError
   }
   return {
     nextPath: redirects.next,

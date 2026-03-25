@@ -6,5 +6,5 @@ import { formatCurrency } from '~/src/config/nunjucks/filters/filters.js'
  * @returns {string} - Formatted currency string e.g. "£4,393.68"
  */
 export function formatPrice(value) {
-  return formatCurrency(value / 100, 'en-GB', 'GBP', 2, 'currency')
+  return formatCurrency((Number(value) || 0) / 100, 'en-GB', 'GBP', 2, 'currency')
 }

@@ -107,6 +107,5 @@ export default class SelectLandParcelPageController extends LandGrantsQuestionWi
 
 /**
  * @import { FormContext, AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
- * @import { FormModel } from '@defra/forms-engine-plugin/engine/models/index.js'
  * @import { ResponseObject, ResponseToolkit } from '@hapi/hapi'
  */

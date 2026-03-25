@@ -10,7 +10,7 @@ export function getRequiredConsents(state) {
 
   const allConsents = Object.values(state.landParcels)
     .flatMap((parcel) => Object.values(parcel.actionsObj || {}))
-    .flatMap((action) => action.consents || [])
+    .flatMap((action) => action?.consents || [])
 
   return [...new Set(allConsents)]
 }

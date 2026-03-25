@@ -64,4 +64,13 @@ describe('getRequiredConsents', () => {
     }
     expect(getRequiredConsents(state)).toEqual(['hefer'])
   })
+
+  it('should handle parcels with no actionsObj', () => {
+    const state = {
+      landParcels: {
+        'AB1234-5678': { anotherObj: { ACTION1: null, ACTION2: { consents: ['sssi'] } } }
+      }
+    }
+    expect(getRequiredConsents(state)).toEqual([])
+  })
 })
