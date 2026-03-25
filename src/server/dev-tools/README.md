@@ -85,9 +85,12 @@ Open the browser console and run:
 
 ```js
 runJourney() // Run through all steps
-runJourney(5) // Stop at step 5
+runJourney(5) // Stop before step 5
+runJourney('sectionName') // Run only the named section
 stopJourney() // Cancel a running journey
 ```
+
+Sections allow you to complete one task list section at a time. The section name must match the `section` property in the journey JSON steps.
 
 ### Adding a new journey
 
@@ -104,11 +107,12 @@ The file is an array of step objects, executed in order:
 
 Each step requires:
 
-| Field  | Description                             |
-| ------ | --------------------------------------- |
-| `slug` | The page URL slug to match against      |
-| `name` | Human-readable label (for console logs) |
-| `type` | The handler to use (see below)          |
+| Field     | Required | Description                                               |
+| --------- | -------- | --------------------------------------------------------- |
+| `slug`    | Yes      | The page URL slug to match against                        |
+| `name`    | Yes      | Human-readable label (for console logs)                   |
+| `type`    | Yes      | The handler to use (see below)                            |
+| `section` | No       | Section name, used for section-based `runJourney()` calls |
 
 ### Step types
 
@@ -135,3 +139,28 @@ Each step requires:
 | `farm-payments.json`                | Farm payments             |
 | `flying-pigs.json`                  | Flying pigs               |
 | `methane.json`                      | Methane                   |
+| `woodland.json`                     | Woodland Management Plan  |
+
+### Woodland Management Plan
+
+Navigate to `http://localhost:3000/woodland/start` and open the browser console.
+
+```js
+// Run from /woodland/start or /woodland/tasks
+runJourney() // Run all remaining sections from the current page
+
+// Run from /woodland/start
+runJourney('start') // Submit start and check details pages to reach task list
+
+// Run from /woodland/tasks
+runJourney('eligibility') // Complete the eligibility section
+runJourney('about-woodland') // Complete the about your woodland section
+```
+
+Available sections:
+
+| Section          | Description                                       |
+| ---------------- | ------------------------------------------------- |
+| `start`          | Start and check details pages (reaches task list) |
+| `eligibility`    | Eligibility questions (land, tenancy, WMP, etc.)  |
+| `about-woodland` | Woodland details (area, grid ref, FC team)        |

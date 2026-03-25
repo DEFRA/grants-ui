@@ -145,6 +145,18 @@ describe('DeclarationPageController', () => {
       expect(controller.viewName).toBe('declaration-page.html')
     })
 
+    test('should override viewName when pageDef.view is provided', () => {
+      const pageDefWithView = { ...mockPageDef, view: 'custom-view.html' }
+      const controllerWithView = new DeclarationPageController(mockModel, pageDefWithView)
+      expect(controllerWithView.viewName).toBe('custom-view.html')
+    })
+
+    test('should keep default viewName when pageDef.view is not provided', () => {
+      const pageDefWithoutView = { ...mockPageDef }
+      const controllerWithoutView = new DeclarationPageController(mockModel, pageDefWithoutView)
+      expect(controllerWithoutView.viewName).toBe('declaration-page.html')
+    })
+
     test('should set model property', () => {
       expect(controller.model).toBe(mockModel)
     })
