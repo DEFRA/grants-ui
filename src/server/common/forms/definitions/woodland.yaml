@@ -497,7 +497,7 @@ pages:
           <p class="govuk-body">The grid reference will be shown as the ‘National Grid Field No’ and include 2 letters and 8 numbers. For example, SP 4178 2432 </p>
       - name: centreOfWoodlandGridReference
         id: db02edf0-7c90-4470-a306-55d0f69d217c
-        type: TextField
+        type: NationalGridFieldNumberField
         title: ''
         options:
           required: true
