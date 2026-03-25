@@ -7,6 +7,9 @@ export default class SelectLandParcelPageController extends LandGrantsQuestionWi
   viewName = 'select-land-parcel'
 
   resolveParcelIds(request, _context) {
+  const selectedLandParcel = request.payload?.selectedLandParcel || null
+  return selectedLandParcel ? [selectedLandParcel] : null
+  }
     const selected = request.payload?.selectedLandParcel
 
     if (selected) {
