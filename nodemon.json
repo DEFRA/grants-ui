@@ -4,7 +4,7 @@
     "NODE_ENV": "development"
   },
   "ignore": ["**/*.test.*", "./src/server/common/test-helpers", "./src/client"],
-  "ext": "cjs,js,json, html, njk",
+  "ext": "cjs,js,json,html,njk,yaml",
   "signal": "SIGINT",
   "legacyWatch": true,
   "polling": true,
