@@ -3,33 +3,36 @@ import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/Q
 import { debug, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { paymentStrategies } from '~/src/server/payment/payment-strategies.js'
 
-/**
- * Validate the YAML page config and return resolved values. Throws descriptively on misconfiguration.
- * @param {object} config
- * @param {string} path
- * @returns {{ strategy: object, showPaymentActions: boolean, showAddMoreActionsQuestion: boolean, paymentExplanation: string|null, showSupportLink: boolean|null, nextPath: string, addMoreActionsPath: string|undefined }}
- */
-function resolveConfig(config, path) {
-  const strategy = paymentStrategies[config.paymentStrategy]
+function resolveStrategy(paymentStrategy) {
+  const strategy = paymentStrategies[paymentStrategy]
   if (!strategy) {
     throw new Error(
-      `PaymentPageController: unknown paymentStrategy "${config.paymentStrategy}". ` +
+      `PaymentPageController: unknown paymentStrategy "${paymentStrategy}". ` +
         `Available strategies: ${Object.keys(paymentStrategies).join(', ')}`
     )
   }
+  return strategy
+}
 
-  const showAddMoreActionsQuestion = config.showAddMoreActionsQuestion ?? true
-  const redirects = config.redirects ?? {}
-
+function resolveRedirects(redirects, showAddMoreActionsQuestion, path) {
   if (!redirects.next) {
     throw new Error(`PaymentPageController: "redirects.next" is required in config for page "${path}"`)
   }
-
   if (showAddMoreActionsQuestion && !redirects.addMoreActions) {
     throw new Error(
       `PaymentPageController: "redirects.addMoreActions" is required in config when showAddMoreActionsQuestion is true for page "${path}"`
     )
   }
+  return {
+    nextPath: redirects.next,
+    addMoreActionsPath: redirects.addMoreActions ?? undefined
+  }
+}
+
+function resolveConfig(config, path) {
+  const strategy = resolveStrategy(config.paymentStrategy)
+  const showAddMoreActionsQuestion = config.showAddMoreActionsQuestion ?? true
+  const { nextPath, addMoreActionsPath } = resolveRedirects(config.redirects ?? {}, showAddMoreActionsQuestion, path)
 
   return {
     strategy,
@@ -37,8 +40,8 @@ function resolveConfig(config, path) {
     showAddMoreActionsQuestion,
     paymentExplanation: config.paymentExplanation ?? null,
     showSupportLink: config.showSupportLink ?? null,
-    nextPath: redirects.next,
-    addMoreActionsPath: redirects.addMoreActions ?? undefined
+    nextPath,
+    addMoreActionsPath
   }
 }
 
@@ -159,11 +162,7 @@ export default class PaymentPageController extends QuestionPageController {
     return async (request, context, h) => {
       const { viewName } = this
       const { state } = context
-      let totalPence = 0
-      let totalPayment = '£0.00'
-      let payment = {}
-      let parcelItems = []
-      let additionalYearlyPayments = []
+      let totalPence, totalPayment, payment, parcelItems, additionalYearlyPayments
 
       try {
         const result = await this.strategy.fetch(state)
