@@ -333,6 +333,40 @@ describe('DeclarationPageController', () => {
     })
   })
 
+  describe('buildWoodlandData', () => {
+    test('should build identifiers and pass context.state directly to transformer', () => {
+      controller.buildWoodlandData(mockRequest, mockContext)
+
+      expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
+        {
+          clientRef: 'ref123',
+          previousClientRef: 'ref345',
+          sbi: 'sbi123',
+          frn: 'frn',
+          crn: '1234567890'
+        },
+        mockContext.state,
+        expect.any(Function)
+      )
+    })
+
+    test('should not include previousClientRef when previousReferenceNumber is absent', () => {
+      const contextWithoutPreviousRef = { ...mockContext, state: {} }
+      controller.buildWoodlandData(mockRequest, contextWithoutPreviousRef)
+
+      expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
+        {
+          clientRef: 'ref123',
+          sbi: 'sbi123',
+          frn: 'frn',
+          crn: '1234567890'
+        },
+        {},
+        expect.any(Function)
+      )
+    })
+  })
+
   describe('makePostRouteHandler', () => {
     test('should return a function', () => {
       const handler = controller.makePostRouteHandler()
@@ -373,6 +407,26 @@ describe('DeclarationPageController', () => {
         mockRequest
       )
       expect(mockH.redirect).toHaveBeenCalledWith('/example-grant-with-auth/confirmation')
+    })
+
+    test('should use buildWoodlandData when grantCode is woodland', async () => {
+      const woodlandRequest = mockHapiRequest({
+        payload: { declaration: true },
+        params: { slug: 'woodland' },
+        path: '/woodland/declaration',
+        auth: { credentials: { sbi: 'sbi123', crn: '1234567890' } }
+      })
+
+      const handler = controller.makePostRouteHandler()
+      await handler(woodlandRequest, mockContext, mockH)
+
+      expect(transformAnswerKeysToText).not.toHaveBeenCalled()
+      expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
+        expect.objectContaining({ clientRef: 'ref123' }),
+        mockContext.state,
+        expect.any(Function)
+      )
+      expect(submitGrantApplication).toHaveBeenCalledWith('woodland', expect.any(Object), woodlandRequest)
     })
 
     test('should not include previousClientRef when previousReferenceNumber is absent', async () => {

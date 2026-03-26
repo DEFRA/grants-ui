@@ -75,7 +75,8 @@
     "serialize-javascript": "7.0.4",
     "svgo": "4.0.1",
     "underscore": "1.13.8",
-    "liquidjs": "10.25.0"
+    "liquidjs": "10.25.0",
+    "picomatch": "2.3.2"
   },
   "dependencies": {
     "@babel/runtime": "7.28.6",

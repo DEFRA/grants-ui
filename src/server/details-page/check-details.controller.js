@@ -67,14 +67,6 @@ export default class CheckDetailsController extends QuestionPageController {
         return h.view('incorrect-details', this.buildIncorrectDetailsViewModel(baseViewModel, request))
       }
 
-      await this.setState(request, {
-        ...context.state,
-        businessDetailsUpToDate: 'true', // TODO make this configurable
-        guidanceRead: 'true', // TODO hard coded for WMP demo - REMOVE when page is present in woodland.yaml
-        includedAllEligibleWoodland: 'true', // TODO hard coded for WMP demo - REMOVE when page is present in woodland.yaml
-        applicationConfirmation: 'true' // TODO hard coded for WMP demo - REMOVE when page is present in woodland.yaml
-      })
-
       return this.handleDetailsConfirmed(request, context, config, h)
     }
   }
@@ -116,7 +108,11 @@ export default class CheckDetailsController extends QuestionPageController {
         ...context.state,
         applicant: mappedData,
         detailsCorrect: 'true',
-        detailsConfirmedAt: new Date().toISOString()
+        detailsConfirmedAt: new Date().toISOString(),
+        businessDetailsUpToDate: 'true', // TODO make this configurable
+        guidanceRead: 'true', // TODO hard coded for WMP demo - REMOVE when page is present in woodland.yaml
+        includedAllEligibleWoodland: 'true', // TODO hard coded for WMP demo - REMOVE when page is present in woodland.yaml
+        applicationConfirmation: 'true' // TODO hard coded for WMP demo - REMOVE when page is present in woodland.yaml
       })
       return this.proceed(request, h, this.getNextPath(context))
     } catch (error) {

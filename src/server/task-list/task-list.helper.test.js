@@ -215,6 +215,32 @@ describe('task-list.helper', () => {
       const state = { q1: 'value' }
       expect(getCompletionStats(mockModel, formModel, state).completed).toBe(1)
     })
+
+    it('should treat NationalGridFieldNumberField as a question component', () => {
+      const mockModel = {
+        page: {
+          def: {
+            pages: [{ section: 's1', components: [{ type: 'NationalGridFieldNumberField', name: 'grid' }] }]
+          }
+        }
+      }
+      const formModel = {}
+      const state = { grid: 'SP123456' }
+      expect(getCompletionStats(mockModel, formModel, state).completed).toBe(1)
+    })
+
+    it('should treat NationalGridFieldNumberField as incomplete when state is empty', () => {
+      const mockModel = {
+        page: {
+          def: {
+            pages: [{ section: 's1', components: [{ type: 'NationalGridFieldNumberField', name: 'grid' }] }]
+          }
+        }
+      }
+      const formModel = {}
+      const state = {}
+      expect(getCompletionStats(mockModel, formModel, state).completed).toBe(0)
+    })
   })
 
   describe('buildTaskListData', () => {
@@ -347,6 +373,30 @@ describe('task-list.helper', () => {
       expect(data).toHaveLength(1)
       expect(data[0].items).toHaveLength(2)
       expect(data[0].items[1].title.text).toBe('Conditional Task')
+    })
+
+    it('should use NationalGridFieldNumberField shortDescription as task title', () => {
+      const mockModel = {
+        serviceUrl: '/service',
+        page: {
+          def: {
+            pages: [
+              {
+                title: 'Page Title',
+                section: 's1',
+                path: '/t1',
+                components: [{ type: 'NationalGridFieldNumberField', name: 'grid', shortDescription: 'Grid reference' }]
+              }
+            ],
+            sections: [{ id: 's1', title: 'Section 1' }]
+          }
+        }
+      }
+      const formModel = { def: { metadata: {} } }
+      const state = {}
+
+      const data = buildTaskListData(mockModel, formModel, state)
+      expect(data[0].items[0].title.text).toBe('Grid reference')
     })
 
     it('should allow starting next task when previous conditional task is not applicable', () => {
