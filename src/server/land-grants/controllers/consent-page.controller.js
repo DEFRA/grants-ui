@@ -1,11 +1,11 @@
-import LandGrantsQuestionWithAuthCheckController from '~/src/server/land-grants/controllers/auth/land-grants-question-with-auth-check.controller.js'
+import QuestionPageWithParcelCheckController from '~/src/server/common/controllers/question-page-with-parcel-check.controller.js'
 import { mapConsentPanelToViewModel } from '~/src/server/land-grants/view-models/consent.view-model.js'
 import { getRequiredConsents } from '~/src/server/common/utils/consents.js'
 
-export default class ConsentPageController extends LandGrantsQuestionWithAuthCheckController {
+export default class ConsentPageController extends QuestionPageWithParcelCheckController {
   viewName = 'consent-required'
 
-  resolveParcelId(_request, _context) {
+  resolveParcelIds(_request) {
     return null
   }
 

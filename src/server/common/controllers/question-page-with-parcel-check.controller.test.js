@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import LandGrantsQuestionWithAuthCheckController from './land-grants-question-with-auth-check.controller'
+import QuestionPageWithParcelCheckController from './question-page-with-parcel-check.controller'
 import { fetchParcelsFromDal } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
 import { getCachedAuthParcels, setCachedAuthParcels } from '~/src/server/land-grants/services/parcel-cache.js'
 import { debug, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { SystemError } from '~/src/server/common/utils/errors/SystemError.js'
 
 vi.mock('~/src/server/common/services/consolidated-view/consolidated-view.service.js', () => ({
   fetchParcelsFromDal: vi.fn()
@@ -13,13 +14,13 @@ vi.mock('~/src/server/land-grants/services/parcel-cache.js', () => ({
   setCachedAuthParcels: vi.fn()
 }))
 
-describe('LandGrantsQuestionWithAuthCheckController', () => {
+describe('QuestionPageWithParcelCheckController', () => {
   let controller
   let mockRequest
   let mockH
 
   beforeEach(() => {
-    controller = new LandGrantsQuestionWithAuthCheckController()
+    controller = new QuestionPageWithParcelCheckController()
     mockRequest = {
       query: {},
       payload: {},
@@ -49,6 +50,13 @@ describe('LandGrantsQuestionWithAuthCheckController', () => {
   })
 
   describe('performAuthCheck', () => {
+    test('throws SystemError if resolveParcelIds returns a non-array', async () => {
+      await expect(controller.performAuthCheck(mockRequest, mockH, 'not-an-array')).rejects.toThrow(SystemError)
+      await expect(controller.performAuthCheck(mockRequest, mockH, 'not-an-array')).rejects.toThrow(
+        'QuestionPageWithParcelCheckController.resolveParcelIds() must return an array or null'
+      )
+    })
+
     test('returns null if landParcel is not provided', async () => {
       const result = await controller.performAuthCheck(mockRequest, mockH, null)
 
@@ -60,7 +68,7 @@ describe('LandGrantsQuestionWithAuthCheckController', () => {
       fetchParcelsFromDal.mockResolvedValue([{ sheetId: 'sheet1', parcelId: 'parcel1' }])
       vi.spyOn(controller, 'renderUnauthorisedView')
 
-      await controller.performAuthCheck(mockRequest, mockH, 'sheet3-parcel3')
+      await controller.performAuthCheck(mockRequest, mockH, ['sheet3-parcel3'])
 
       expect(fetchParcelsFromDal).toHaveBeenCalledWith(mockRequest)
       expect(controller.renderUnauthorisedView).toHaveBeenCalledWith(mockH)
@@ -69,7 +77,7 @@ describe('LandGrantsQuestionWithAuthCheckController', () => {
     test('returns null if parcel belongs to SBI', async () => {
       fetchParcelsFromDal.mockResolvedValue([{ sheetId: 'sheet1', parcelId: 'parcel1' }])
 
-      const result = await controller.performAuthCheck(mockRequest, mockH, 'sheet1-parcel1')
+      const result = await controller.performAuthCheck(mockRequest, mockH, ['sheet1-parcel1'])
 
       expect(fetchParcelsFromDal).toHaveBeenCalledWith(mockRequest)
       expect(result).toBeNull()
@@ -80,7 +88,7 @@ describe('LandGrantsQuestionWithAuthCheckController', () => {
       fetchParcelsFromDal.mockRejectedValue(mockError)
       vi.spyOn(controller, 'renderUnauthorisedView')
 
-      await controller.performAuthCheck(mockRequest, mockH, 'sheet1-parcel1')
+      await controller.performAuthCheck(mockRequest, mockH, ['sheet1-parcel1'])
 
       expect(fetchParcelsFromDal).toHaveBeenCalledWith(mockRequest)
       expect(debug).toHaveBeenCalledWith(
@@ -97,7 +105,7 @@ describe('LandGrantsQuestionWithAuthCheckController', () => {
     test('uses cached parcels instead of fetching when cache hit', async () => {
       getCachedAuthParcels.mockReturnValue(['sheet1-parcel1', 'sheet2-parcel2'])
 
-      const result = await controller.performAuthCheck(mockRequest, mockH, 'sheet1-parcel1')
+      const result = await controller.performAuthCheck(mockRequest, mockH, ['sheet1-parcel1'])
 
       expect(getCachedAuthParcels).toHaveBeenCalledWith('987654321')
       expect(fetchParcelsFromDal).not.toHaveBeenCalled()
@@ -107,7 +115,7 @@ describe('LandGrantsQuestionWithAuthCheckController', () => {
     test('fetches and caches parcels on cache miss', async () => {
       fetchParcelsFromDal.mockResolvedValue([{ sheetId: 'sheet1', parcelId: 'parcel1' }])
 
-      const result = await controller.performAuthCheck(mockRequest, mockH, 'sheet1-parcel1')
+      const result = await controller.performAuthCheck(mockRequest, mockH, ['sheet1-parcel1'])
 
       expect(getCachedAuthParcels).toHaveBeenCalledWith('987654321')
       expect(fetchParcelsFromDal).toHaveBeenCalledWith(mockRequest)
@@ -118,40 +126,26 @@ describe('LandGrantsQuestionWithAuthCheckController', () => {
     test('does not cache when fetchParcelsFromDal throws', async () => {
       fetchParcelsFromDal.mockRejectedValue(new Error('API error'))
 
-      await controller.performAuthCheck(mockRequest, mockH, 'sheet1-parcel1')
+      await controller.performAuthCheck(mockRequest, mockH, ['sheet1-parcel1'])
 
       expect(setCachedAuthParcels).not.toHaveBeenCalled()
     })
   })
 
-  describe('resolveParcelId', () => {
-    test('returns query.parcelId when present', () => {
-      mockRequest.query = { parcelId: 'query-parcel' }
-      mockRequest.payload = { selectedLandParcel: 'payload-parcel' }
-
-      expect(controller.resolveParcelId(mockRequest)).toBe('query-parcel')
-    })
-
-    test('returns payload.selectedLandParcel when query is absent', () => {
-      mockRequest.query = {}
-      mockRequest.payload = { selectedLandParcel: 'payload-parcel' }
-
-      expect(controller.resolveParcelId(mockRequest)).toBe('payload-parcel')
-    })
-
-    test('returns null when no parcel ID found', () => {
-      mockRequest.query = {}
-      mockRequest.payload = {}
-
-      expect(controller.resolveParcelId(mockRequest)).toBeNull()
+  describe('resolveParcelIds', () => {
+    test('throws SystemError if not overridden by subclass', () => {
+      expect(() => controller.resolveParcelIds(mockRequest)).toThrow(SystemError)
+      expect(() => controller.resolveParcelIds(mockRequest)).toThrow(
+        'QuestionPageWithParcelCheckController must implement resolveParcelIds()'
+      )
     })
   })
 
   describe('makeGetRouteHandler', () => {
     test('returns auth error when performAuthCheck fails', async () => {
+      controller.resolveParcelIds = vi.fn().mockReturnValue(['sheet1-parcel1'])
       controller.performAuthCheck = vi.fn().mockResolvedValue('unauthorised')
       controller.handleGet = vi.fn()
-      mockRequest.query = { parcelId: 'sheet1-parcel1' }
       const context = { state: {} }
 
       const handler = controller.makeGetRouteHandler()
@@ -162,6 +156,7 @@ describe('LandGrantsQuestionWithAuthCheckController', () => {
     })
 
     test('delegates to handleGet when auth passes', async () => {
+      controller.resolveParcelIds = vi.fn().mockReturnValue(null)
       controller.performAuthCheck = vi.fn().mockResolvedValue(null)
       controller.handleGet = vi.fn().mockResolvedValue('get-response')
       const context = { state: {} }
@@ -176,9 +171,9 @@ describe('LandGrantsQuestionWithAuthCheckController', () => {
 
   describe('makePostRouteHandler', () => {
     test('returns auth error when performAuthCheck fails', async () => {
+      controller.resolveParcelIds = vi.fn().mockReturnValue(['sheet1-parcel1'])
       controller.performAuthCheck = vi.fn().mockResolvedValue('unauthorised')
       controller.handlePost = vi.fn()
-      mockRequest.query = { parcelId: 'sheet1-parcel1' }
       const context = { state: {} }
 
       const handler = controller.makePostRouteHandler()
@@ -189,6 +184,7 @@ describe('LandGrantsQuestionWithAuthCheckController', () => {
     })
 
     test('delegates to handlePost when auth passes', async () => {
+      controller.resolveParcelIds = vi.fn().mockReturnValue(null)
       controller.performAuthCheck = vi.fn().mockResolvedValue(null)
       controller.handlePost = vi.fn().mockResolvedValue('post-response')
       const context = { state: {} }
