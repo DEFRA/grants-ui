@@ -16,6 +16,13 @@ export function _setFormsRedisClient(client) {
   _client = client
 }
 
+export async function closeFormsRedisClient() {
+  if (_client) {
+    await _client.quit()
+    _client = null
+  }
+}
+
 const KEYS = {
   meta: (slug) => `forms:meta:${slug}`,
   def: (slug) => `forms:def:${slug}`,
