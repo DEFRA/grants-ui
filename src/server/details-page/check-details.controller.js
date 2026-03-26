@@ -109,10 +109,10 @@ export default class CheckDetailsController extends QuestionPageController {
         applicant: mappedData,
         detailsCorrect: 'true',
         detailsConfirmedAt: new Date().toISOString(),
-        businessDetailsUpToDate: 'true', // TODO make this configurable
-        guidanceRead: 'true', // TODO hard coded for WMP demo - REMOVE when page is present in woodland.yaml
-        includedAllEligibleWoodland: 'true', // TODO hard coded for WMP demo - REMOVE when page is present in woodland.yaml
-        applicationConfirmation: 'true' // TODO hard coded for WMP demo - REMOVE when page is present in woodland.yaml
+        businessDetailsUpToDate: true, // TODO make this configurable
+        guidanceRead: true, // TODO hard coded for WMP demo - REMOVE when page is present in woodland.yaml
+        includedAllEligibleWoodland: true, // TODO hard coded for WMP demo - REMOVE when page is present in woodland.yaml
+        applicationConfirmation: true // TODO hard coded for WMP demo - REMOVE when page is present in woodland.yaml
       })
       return this.proceed(request, h, this.getNextPath(context))
     } catch (error) {
