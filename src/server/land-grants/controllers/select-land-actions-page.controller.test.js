@@ -155,7 +155,7 @@ describe('SelectLandActionsPageController', () => {
       const handler = controller.makeGetRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
-      expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH, 'sheet2-parcel2')
+      expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH, ['sheet2-parcel2'])
 
       expect(parseLandParcel).toHaveBeenCalledWith('sheet2-parcel2')
       expect(fetchAvailableActionsForParcel).toHaveBeenCalledWith({
@@ -256,7 +256,7 @@ describe('SelectLandActionsPageController', () => {
 
         const result = await controller.makeGetRouteHandler()(mockRequest, mockContext, mockH)
 
-        expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH, 'sheet1-parcel1')
+        expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH, ['sheet1-parcel1'])
 
         expect(result).toEqual('failed auth check')
       })
@@ -291,7 +291,7 @@ describe('SelectLandActionsPageController', () => {
       const handler = controller.makePostRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
-      expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH, 'query-parcel')
+      expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH, ['query-parcel'])
     })
 
     test('should handle result with actions but empty array', async () => {
@@ -421,7 +421,7 @@ describe('SelectLandActionsPageController', () => {
           }
         })
       )
-      expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH, 'sheet1-parcel1')
+      expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH, ['sheet1-parcel1'])
 
       expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-path')
       expect(result).toBe('redirected')
@@ -715,7 +715,7 @@ describe('SelectLandActionsPageController', () => {
 
         const result = await controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
 
-        expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH, 'sheet1-parcel1')
+        expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH, ['sheet1-parcel1'])
 
         expect(result).toEqual('failed auth check')
       })
