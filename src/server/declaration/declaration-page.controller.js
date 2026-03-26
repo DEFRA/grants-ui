@@ -194,7 +194,7 @@ export default class DeclarationPageController extends SummaryPageController {
       try {
         const grantCode = getGrantCode(request)
 
-        // TODO FIXME
+        // TODO sort this after demo
         const applicationData =
           grantCode === 'woodland'
             ? this.buildWoodlandData(request, context)
