@@ -6,7 +6,7 @@ import {
   executeConfigDrivenQuery,
   hasOnlyToleratedFailures
 } from '../common/services/consolidated-view/consolidated-view.service.js'
-import { log, debug, LogCodes } from '../common/helpers/logging/log.js'
+import { debug, log, LogCodes } from '../common/helpers/logging/log.js'
 import { setupControllerMocks } from '~/src/__mocks__/controller-mocks.js'
 
 vi.mock('../common/services/details-page/index.js')
@@ -276,19 +276,16 @@ describe('CheckDetailsController', () => {
         const handler = controller.makePostRouteHandler()
         const result = await handler(mockRequest, mockContext, mockH)
 
-        expect(controller.setState).toHaveBeenCalledTimes(2)
-        expect(controller.setState).toHaveBeenNthCalledWith(1, mockRequest, {
-          someState: 'value',
-          businessDetailsUpToDate: 'true',
-          guidanceRead: 'true',
-          includedAllEligibleWoodland: 'true',
-          applicationConfirmation: 'true'
-        })
-        expect(controller.setState).toHaveBeenNthCalledWith(2, mockRequest, {
+        expect(controller.setState).toHaveBeenCalledTimes(1)
+        expect(controller.setState).toHaveBeenCalledWith(mockRequest, {
           someState: 'value',
           applicant: mockMappedData,
           detailsCorrect: 'true',
-          detailsConfirmedAt: '2024-01-15T10:00:00.000Z'
+          detailsConfirmedAt: '2024-01-15T10:00:00.000Z',
+          businessDetailsUpToDate: true,
+          guidanceRead: true,
+          includedAllEligibleWoodland: true,
+          applicationConfirmation: true
         })
         expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-path')
         expect(result).toBe('redirected')
@@ -311,14 +308,7 @@ describe('CheckDetailsController', () => {
           { endpoint: 'ConsolidatedView', errorMessage: 'Data fetch failed' },
           mockRequest
         )
-        expect(controller.setState).toHaveBeenCalledTimes(1)
-        expect(controller.setState).toHaveBeenCalledWith(mockRequest, {
-          someState: 'value',
-          businessDetailsUpToDate: 'true',
-          guidanceRead: 'true',
-          includedAllEligibleWoodland: 'true',
-          applicationConfirmation: 'true'
-        })
+        expect(controller.setState).not.toHaveBeenCalled()
         expect(controller.proceed).not.toHaveBeenCalled()
         expect(mockH.view).toHaveBeenCalledWith('check-details', {
           serviceName: 'Test Service',

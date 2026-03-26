@@ -51,10 +51,40 @@ export function configureFormDefinition(definition) {
   return definition
 }
 
+/**
+ * Hoists the `config` key from each page into `definition.metadata.pageConfig[path]`
+ * so it is accessible in controllers via `model.def.metadata.pageConfig[pageDef.path]`
+ * without triggering DXT Joi schema validation errors (which don't allow unknown page keys).
+ *
+ * YAML usage:
+ *   - path: /my-page
+ *     controller: MyController
+ *     config:
+ *       myCustomParam: true
+ */
+export function hoistPageConfig(definition) {
+  if (!definition.pages?.length) {
+    return definition
+  }
+
+  definition.metadata ??= {}
+  definition.metadata.pageConfig ??= {}
+
+  for (const page of definition.pages) {
+    if (page.config) {
+      definition.metadata.pageConfig[page.path] = page.config
+      delete page.config
+    }
+  }
+
+  return definition
+}
+
 class GrantsFormLoader extends FileFormService {
   getFormDefinition(id) {
     const definition = super.getFormDefinition(id)
 
+    hoistPageConfig(definition)
     return configureFormDefinition(definition)
   }
 }

@@ -97,7 +97,17 @@ pages:
     id: 7b0a5e2f-4c31-4a45-95ee-abc000da0473
   - title: Review the actions you have selected
     path: /check-selected-land-actions
-    controller: LandActionsCheckPageController
+    controller: PaymentPageController
+    config:
+      paymentStrategy: multiAction
+      redirects:
+        next: /you-must-have-consent
+        addMoreActions: /select-land-parcel
+      showPaymentActions: true
+      showAddMoreActionsQuestion: true
+      showSupportLink: true
+      paymentExplanation: |
+        <p class="govuk-body-l">The annual payment is <strong>{{ totalPayment }}</strong>.</p>
     next: []
     id: 245dc425-8efa-45b7-92df-178d1b0fe4ce
   - title: Remove parcel

@@ -103,6 +103,21 @@ export default class DeclarationPageController extends SummaryPageController {
     return transformStateObjectToGasApplication(identifiers, stateWithTextAnswers, (s) => s)
   }
 
+  buildWoodlandData(request, context) {
+    const identifiers = {
+      clientRef: context.referenceNumber.toLowerCase(),
+      sbi: request.auth?.credentials?.sbi,
+      frn: 'frn',
+      crn: request.auth?.credentials?.crn
+    }
+
+    if (context.state.previousReferenceNumber) {
+      identifiers.previousClientRef = context.state.previousReferenceNumber.toLowerCase()
+    }
+
+    return transformStateObjectToGasApplication(identifiers, context.state, (s) => s)
+  }
+
   async handleSuccessfulSubmission({ request, context, cacheService, applicationData, sbi, crn, grantCode }) {
     log(
       LogCodes.SUBMISSION.SUBMISSION_COMPLETED,
@@ -177,8 +192,13 @@ export default class DeclarationPageController extends SummaryPageController {
       )
 
       try {
-        const applicationData = this.buildApplicationData(request, context)
         const grantCode = getGrantCode(request)
+
+        // TODO sort this after demo
+        const applicationData =
+          grantCode === 'woodland'
+            ? this.buildWoodlandData(request, context)
+            : this.buildApplicationData(request, context)
 
         const result = await submitGrantApplication(grantCode, applicationData, request)
 
