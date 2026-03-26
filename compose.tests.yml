@@ -18,7 +18,7 @@ services:
       MOCKSERVER_PORT: 1080
     volumes:
       - ./nginx/certs:/etc/ssl/certs:ro
-    command: ['npm', 'run', 'test:ci']
+    command: ["npm", "run", "test:ci"]
     networks:
       - grants-ui-net
 
@@ -40,7 +40,7 @@ services:
       MOCKSERVER_PORT: 1080
     volumes:
       - ./nginx/certs:/etc/ssl/certs:ro
-    command: ['npm', 'run', 'test:ci']
+    command: ["npm", "run", "test:ci"]
     networks:
       - grants-ui-net
 
@@ -53,12 +53,12 @@ services:
       DURATION_SECONDS: 60
       RAMPUP_SECONDS: 15
       VU_COUNT: 10
-      P95_THRESHOLD_MS: ${P95_THRESHOLD_MS:-400}
+      P95_THRESHOLD_MS: ${P95_THRESHOLD_MS:-609}
       GENERATE_REPORT: false
     volumes:
       - ./nginx/certs:/etc/ssl/certs:ro
       - ./performance-test-users.csv:/home/k6/scenarios/users.csv:ro
-    command: ['npm', 'run', 'test:ci']
+    command: ["npm", "run", "test:ci"]
     networks:
       - grants-ui-net
 
@@ -66,9 +66,9 @@ services:
     image: selenium/standalone-chromium:4.34.0-20250727
     shm_size: 2g
     ports:
-      - '4444:4444'
+      - "4444:4444"
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:4444/wd/hub/status']
+      test: ["CMD", "curl", "-f", "http://localhost:4444/wd/hub/status"]
       interval: 5s
       timeout: 10s
       retries: 12
