@@ -44,6 +44,23 @@ services:
     networks:
       - grants-ui-net
 
+  woodland-grant-journey-tests:
+    image: defradigital/woodland-grant-journey-tests
+    pull_policy: always
+    environment:
+      MAX_INSTANCES: 1
+      BASE_URL: https://grants-ui-proxy:4000
+      BASE_BACKEND_URL: https://grants-ui-proxy:4001
+      GRANTS_UI_BACKEND_AUTH_TOKEN: ${GRANTS_UI_BACKEND_AUTH_TOKEN:-auth_token}
+      GRANTS_UI_BACKEND_ENCRYPTION_KEY: ${GRANTS_UI_BACKEND_ENCRYPTION_KEY:-encryption_key}
+      APPLICATION_LOCK_TOKEN_SECRET: ${APPLICATION_LOCK_TOKEN_SECRET:-dev-lock-secret}
+      DEFRA_ID_USER_PASSWORD: x
+      MOCKSERVER_HOST: mockserver
+      MOCKSERVER_PORT: 1080
+    command: ["npm", "run", "test:ci"]
+    networks:
+      - grants-ui-net
+
   grants-ui-performance-tests:
     image: defradigital/grants-ui-performance-tests
     pull_policy: always
@@ -53,7 +70,7 @@ services:
       DURATION_SECONDS: 60
       RAMPUP_SECONDS: 15
       VU_COUNT: 10
-      P95_THRESHOLD_MS: ${P95_THRESHOLD_MS:-609}
+      P95_THRESHOLD_MS: ${P95_THRESHOLD_MS:-400}
       GENERATE_REPORT: false
     volumes:
       - ./nginx/certs:/etc/ssl/certs:ro
