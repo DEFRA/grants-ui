@@ -165,7 +165,7 @@
     "source-map-loader": "5.0.0",
     "stylelint": "16.26.1",
     "stylelint-config-gds": "2.0.0",
-    "terser-webpack-plugin": "5.3.16",
+    "terser-webpack-plugin": "5.4.0",
     "tsx": "4.21.0",
     "typescript": "5.9.3",
     "vitest": "3.2.4",
