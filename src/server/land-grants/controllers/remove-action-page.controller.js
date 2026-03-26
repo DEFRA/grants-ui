@@ -1,16 +1,21 @@
-import LandGrantsQuestionWithAuthCheckController from '~/src/server/land-grants/controllers/auth/land-grants-question-with-auth-check.controller.js'
+import QuestionPageWithParcelCheckController from '~/src/server/common/controllers/question-page-with-parcel-check.controller.js'
 import {
   findActionInfoFromState,
   deleteParcelFromState,
   deleteActionFromState
 } from '~/src/server/land-grants/view-state/land-parcel.view-state.js'
+import { getParcelIdFromQuery } from '../utils/parcel-request.utils.js'
 
 const checkSelectedLandActionsPath = '/check-selected-land-actions'
 const selectActionsForParcelPath = '/select-actions-for-land-parcel'
 const selectLandParcelPath = '/select-land-parcel'
 
-export default class RemoveActionPageController extends LandGrantsQuestionWithAuthCheckController {
+export default class RemoveActionPageController extends QuestionPageWithParcelCheckController {
   viewName = 'remove-action'
+
+  resolveParcelIds(request) {
+    return getParcelIdFromQuery(request)
+  }
 
   /**
    * Determine next path after action removal
