@@ -4,7 +4,7 @@ import {
   executeConfigDrivenQuery,
   hasOnlyToleratedFailures
 } from '../common/services/consolidated-view/consolidated-view.service.js'
-import { log, debug, LogCodes } from '../common/helpers/logging/log.js'
+import { debug, log, LogCodes } from '../common/helpers/logging/log.js'
 
 const ERROR_TITLE = 'There is a problem'
 
@@ -66,6 +66,14 @@ export default class CheckDetailsController extends QuestionPageController {
         })
         return h.view('incorrect-details', this.buildIncorrectDetailsViewModel(baseViewModel, request))
       }
+
+      await this.setState(request, {
+        ...context.state,
+        businessDetailsUpToDate: 'true', // TODO make this configurable
+        guidanceRead: 'true', // TODO hard coded for WMP demo - REMOVE when page is present in woodland.yaml
+        includedAllEligibleWoodland: 'true', // TODO hard coded for WMP demo - REMOVE when page is present in woodland.yaml
+        applicationConfirmation: 'true' // TODO hard coded for WMP demo - REMOVE when page is present in woodland.yaml
+      })
 
       return this.handleDetailsConfirmed(request, context, config, h)
     }
