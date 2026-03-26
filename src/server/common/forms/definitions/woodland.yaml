@@ -224,7 +224,7 @@ pages:
     section: 16848e5e-ba30-4719-aa98-f0e1144fb492
     controller: TaskPageController
     components:
-      - name: landRegistered
+      - name: landRegisteredWithRpa
         id: eac135f5-78b1-4179-ab7d-d122befa6bd8
         type: YesNoField
         title: Is all the land in your application registered with the Rural Payments service?
@@ -260,7 +260,7 @@ pages:
     section: 16848e5e-ba30-4719-aa98-f0e1144fb492
     controller: TaskPageController
     components:
-      - name: managementControl
+      - name: landManagementControl
         id: e0dcf5be-0b8f-4e50-befe-bdfe858e82a6
         type: YesNoField
         title: Will you have management control for the duration of the agreement and, where applicable, the durability period?
@@ -311,7 +311,7 @@ pages:
     section: 16848e5e-ba30-4719-aa98-f0e1144fb492
     controller: TaskPageController
     components:
-      - name: isTenant
+      - name: publicBodyTenant
         id: bdff80de-080b-4fdd-a323-9762ef558ae8
         type: YesNoField
         title: Are you a tenant of a public body?
@@ -362,7 +362,7 @@ pages:
     section: 16848e5e-ba30-4719-aa98-f0e1144fb492
     controller: TaskPageController
     components:
-      - name: grazingRights
+      - name: landHasGrazingRights
         id: 540e77e4-13ec-4393-aee4-6ceed9cb91ed
         type: YesNoField
         title: Are you applying for land covered by common or shared grazing rights?
@@ -378,7 +378,7 @@ pages:
     section: 16848e5e-ba30-4719-aa98-f0e1144fb492
     controller: TaskPageController
     components:
-      - name: hasValidWmp
+      - name: appLandHasExistingWmp
         id: e6a99259-82d6-4d2a-a2ec-349e9d473092
         type: YesNoField
         title: Do you already have any valid WMPs on any land in your application?
@@ -395,7 +395,7 @@ pages:
     controller: TaskPageController
     condition: 7d822521-d6cc-4b1a-9538-8b9f18d7bdfc
     components:
-      - name: appLandHasExistingWmp
+      - name: existingWmps
         id: a9ae25aa-d70e-4616-84bf-47f71251e8b5
         type: TextField
         title: Enter the agreement number for any valid WMPs
@@ -421,7 +421,7 @@ pages:
           <p class="govuk-body">You can read the
           <a class="govuk-link" href="#" target="_blank">Applicant's guide: PA3 Woodland management plan 2026 guidance (opens in new tab)</a>
           for more information about Countryside Stewardship Higher Tier agreements.</p>
-      - name: higherTier
+      - name: intendToApplyHigherTier
         id: e7d51cad-e4ea-4478-a12b-fedf3d18039d
         type: YesNoField
         title: ''
@@ -495,9 +495,9 @@ pages:
           <p class="govuk-body">To find the grid reference use <a href="" class="govuk-link">Natural England’s ‘MAGIC’ map website</a>.</p>
           <p class="govuk-body">To find out how to get the grid reference read the ‘MAGIC’ guidance on <a href="" class="govuk-link">Using the Where Am I Tool</a>.</p>
           <p class="govuk-body">The grid reference will be shown as the ‘National Grid Field No’ and include 2 letters and 8 numbers. For example, SP 4178 2432 </p>
-      - name: centreOfWoodlandGridReference
+      - name: centreGridReference
         id: db02edf0-7c90-4470-a306-55d0f69d217c
-        type: TextField
+        type: NationalGridFieldNumberField
         title: ''
         options:
           required: true
@@ -512,7 +512,7 @@ pages:
     section: 38507a39-c936-4c4f-872a-bcbae2eeb7d5
     controller: TaskPageController
     components:
-      - name: forestryCommissionTeam
+      - name: fcTeamCode
         id: 32ff781f-7960-4269-9294-db77a61a4a92
         title: Forestry commission team
         type: RadiosField
@@ -569,19 +569,19 @@ lists:
     type: string
     items:
       - text: East and East Midlands
-        value: eastAndEastMidlands
+        value: EAST_AND_EAST_MIDLANDS
         id: 1160571d-8ca8-48d1-876b-cc93cfc472ed
       - text: North West and West Midlands
-        value: northWestAndWestMidlands
+        value: NORTH_WEST_AND_WEST_MIDLANDS
         id: ea6d6ab0-f63f-4b3d-bf7b-8ce04bbb9756
       - text: South East and London
-        value: southEastAndLondon
+        value: SOUTH_EAST_AND_LONDON
         id: 224534ea-52a2-4447-93cc-a57a0f5f74b1
       - text: South West
-        value: southWest
+        value: SOUTH_WEST
         id: cf4411bc-f86f-4bb0-9c33-19319c5db0f2
       - text: Yorkshire and North East
-        value: yorkshireAndNorthEast
+        value: YORKSHIRE_AND_NORTH_EAST
         id: 6d292cce-ba3e-4cc1-8b06-382d7bac0789
 
 conditions:

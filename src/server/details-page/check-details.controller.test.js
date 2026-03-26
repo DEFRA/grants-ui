@@ -276,7 +276,15 @@ describe('CheckDetailsController', () => {
         const handler = controller.makePostRouteHandler()
         const result = await handler(mockRequest, mockContext, mockH)
 
-        expect(controller.setState).toHaveBeenCalledWith(mockRequest, {
+        expect(controller.setState).toHaveBeenCalledTimes(2)
+        expect(controller.setState).toHaveBeenNthCalledWith(1, mockRequest, {
+          someState: 'value',
+          businessDetailsUpToDate: 'true',
+          guidanceRead: 'true',
+          includedAllEligibleWoodland: 'true',
+          applicationConfirmation: 'true'
+        })
+        expect(controller.setState).toHaveBeenNthCalledWith(2, mockRequest, {
           someState: 'value',
           applicant: mockMappedData,
           detailsCorrect: 'true',
@@ -303,7 +311,14 @@ describe('CheckDetailsController', () => {
           { endpoint: 'ConsolidatedView', errorMessage: 'Data fetch failed' },
           mockRequest
         )
-        expect(controller.setState).not.toHaveBeenCalled()
+        expect(controller.setState).toHaveBeenCalledTimes(1)
+        expect(controller.setState).toHaveBeenCalledWith(mockRequest, {
+          someState: 'value',
+          businessDetailsUpToDate: 'true',
+          guidanceRead: 'true',
+          includedAllEligibleWoodland: 'true',
+          applicationConfirmation: 'true'
+        })
         expect(controller.proceed).not.toHaveBeenCalled()
         expect(mockH.view).toHaveBeenCalledWith('check-details', {
           serviceName: 'Test Service',
