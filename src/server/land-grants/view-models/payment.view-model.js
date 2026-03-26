@@ -1,20 +1,11 @@
-import { formatCurrency } from '~/src/config/nunjucks/filters/filters.js'
 import { landActionWithCode } from '~/src/server/land-grants/utils/land-action-with-code.js'
 import { stringifyParcel } from '../utils/format-parcel.js'
+import { formatPrice } from '~/src/server/common/utils/payment.js'
 
 /**
  * Maps payment information to view models for rendering in check pages.
  * Handles transformation of payment data into table rows and summary items.
  */
-
-/**
- * Get formatted price from pence value
- * @param {number} value - Value in pence
- * @returns {string} - Formatted currency string
- */
-export function formatPrice(value) {
-  return formatCurrency(value / 100, 'en-GB', 'GBP', 2, 'currency')
-}
 
 /**
  * Creates action links for a parcel item

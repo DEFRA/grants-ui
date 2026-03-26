@@ -1,4 +1,5 @@
 import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
+import { getRequiredConsents } from '~/src/server/common/utils/consents.js'
 import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/forms-cache.js'
 import { transformStateObjectToGasApplication } from '~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
 import { submitGrantApplication } from '~/src/server/common/services/grant-application/grant-application.service.js'
@@ -21,6 +22,19 @@ export default class SubmissionPageController extends SummaryPageController {
     super(model, pageDef)
     this.model = model
     this.viewName = 'submit-your-application'
+  }
+
+  /**
+   * Override back link to point to consent page when consents are required,
+   * or directly to the payment check page otherwise.
+   * @param {object} _request
+   * @param {object} context
+   */
+  getBackLink(_request, context) {
+    const { state } = context
+    const backPath = getRequiredConsents(state).length > 0 ? '/you-must-have-consent' : '/check-selected-land-actions'
+    const { basePath } = this.model
+    return { text: 'Back', href: `/${basePath}${backPath}` }
   }
 
   /**
