@@ -60,6 +60,10 @@ metadata:
         gasStatus: default
         toGrantsStatus: SUBMITTED
         toPath: /confirmation
+    stateGuards:
+      - stateKey: applicant
+        allowedPaths: ['confirm-farm-details']
+        redirectTo: /confirm-farm-details
     excludedPaths: ['terms-and-conditions', 'fptt-information', 'fptt-actions']
   confirmationContent:
     html: |
