@@ -16,6 +16,7 @@ import {
   setFormMeta,
   setSlugReverse
 } from './forms-redis.js'
+import { waitForRedisReady } from '~/src/server/common/helpers/redis-client.js'
 import { ApiFormService } from './api-form-service.js'
 
 async function loadSharedRedirectRules() {
@@ -395,6 +396,7 @@ function buildServiceInterface(baseService, apiFormService, redis) {
 
 export const formsService = async () => {
   const redis = getFormsRedisClient()
+  await waitForRedisReady(redis)
 
   const apiSlugs = /** @type {string[]} */ (config.get('configApi.formSlugs')).filter(Boolean)
   const apiUrl = config.get('configApi.url')

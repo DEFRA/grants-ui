@@ -39,7 +39,7 @@ vi.mock('~/src/server/common/forms/services/api-form-service.js', () => ({
 }))
 
 vi.mock('~/src/server/common/forms/services/forms-redis.js', () => ({
-  getFormsRedisClient: vi.fn(() => ({})),
+  getFormsRedisClient: vi.fn(() => ({ status: 'ready' })),
   setFormMeta: vi.fn(async () => {}),
   setFormDef: vi.fn(async () => {}),
   setSlugReverse: vi.fn(async () => {}),

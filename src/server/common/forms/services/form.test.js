@@ -87,7 +87,7 @@ vi.mock('./api-form-service.js', () => ({
 }))
 
 vi.mock('./forms-redis.js', () => ({
-  getFormsRedisClient: vi.fn(() => ({})),
+  getFormsRedisClient: vi.fn(() => ({ status: 'ready' })),
   setFormMeta: vi.fn(async (_r, slug, entry) => {
     _metaStore.set(slug, entry)
   }),
