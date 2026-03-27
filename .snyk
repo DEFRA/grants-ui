@@ -9,3 +9,11 @@ ignore:
     - '*':
         reason: 'No upgrade or patch available'
         expires: '2026-05-01'
+  'SNYK-JS-CONVICT-15182994':
+    - '*':
+        reason: 'No upgrade or patch available — persists in 6.2.5'
+        expires: '2026-06-27'
+  'SNYK-JS-BRACEEXPANSION-15789759':
+    - '*':
+        reason: 'Deep transitive dependency via polygon-splitter — awaiting upstream fix'
+        expires: '2026-06-27'
