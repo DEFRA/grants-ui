@@ -49,6 +49,7 @@ services:
     pull_policy: always
     environment:
       MAX_INSTANCES: 1
+      NODE_EXTRA_CA_CERTS: /etc/ssl/certs/nginx.crt
       BASE_URL: https://grants-ui-proxy:4000
       BASE_BACKEND_URL: https://grants-ui-proxy:4001
       GRANTS_UI_BACKEND_AUTH_TOKEN: ${GRANTS_UI_BACKEND_AUTH_TOKEN:-auth_token}
@@ -57,6 +58,8 @@ services:
       DEFRA_ID_USER_PASSWORD: x
       MOCKSERVER_HOST: mockserver
       MOCKSERVER_PORT: 1080
+    volumes:
+      - ./nginx/certs:/etc/ssl/certs:ro
     command: ["npm", "run", "test:ci"]
     networks:
       - grants-ui-net
