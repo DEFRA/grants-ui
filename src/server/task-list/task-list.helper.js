@@ -272,7 +272,7 @@ export function getTaskListPath(model) {
  * @returns {object[]} Array of page definitions that have a section
  */
 function getTaskPages(model) {
-  return model.page.def.pages.filter((page) => page.section)
+  return model.page.def.pages.filter((page) => page.section && page.controller !== 'CheckDetailsController')
 }
 
 /**

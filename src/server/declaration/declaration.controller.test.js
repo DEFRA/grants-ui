@@ -3,7 +3,6 @@ import * as formSlugHelper from '~/src/server/common/helpers/form-slug-helper.js
 import { submitGrantApplication } from '~/src/server/common/services/grant-application/grant-application.service.js'
 import { transformStateObjectToGasApplication } from '~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
 import DeclarationPageController from './declaration-page.controller.js'
-import { transformAnswerKeysToText } from './state-to-gas-answers-mapper.js'
 import { vi } from 'vitest'
 import { mockHapiRequest } from '~/src/__mocks__'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
@@ -48,7 +47,6 @@ vi.mock('@defra/forms-engine-plugin/controllers/SummaryPageController.js', () =>
 })
 vi.mock('~/src/server/common/services/grant-application/grant-application.service.js')
 vi.mock('~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js')
-vi.mock('./state-to-gas-answers-mapper.js')
 vi.mock('~/src/server/task-list/task-list.helper.js', () => ({
   getTaskPageBackLink: vi.fn()
 }))
@@ -112,6 +110,9 @@ describe('DeclarationPageController', () => {
       referenceNumber: 'REF123',
       state: {
         previousReferenceNumber: 'REF345'
+      },
+      payload: {
+        declaration: true
       }
     }
 
@@ -120,7 +121,6 @@ describe('DeclarationPageController', () => {
       view: vi.fn().mockReturnValue('rendered view')
     }
 
-    transformAnswerKeysToText.mockReturnValue({ transformedState: true })
     transformStateObjectToGasApplication.mockReturnValue({
       transformedApp: true,
       metadata: {
@@ -333,40 +333,6 @@ describe('DeclarationPageController', () => {
     })
   })
 
-  describe('buildWoodlandData', () => {
-    test('should build identifiers and pass context.state directly to transformer', () => {
-      controller.buildWoodlandData(mockRequest, mockContext)
-
-      expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
-        {
-          clientRef: 'ref123',
-          previousClientRef: 'ref345',
-          sbi: 'sbi123',
-          frn: 'frn',
-          crn: '1234567890'
-        },
-        mockContext.state,
-        expect.any(Function)
-      )
-    })
-
-    test('should not include previousClientRef when previousReferenceNumber is absent', () => {
-      const contextWithoutPreviousRef = { ...mockContext, state: {} }
-      controller.buildWoodlandData(mockRequest, contextWithoutPreviousRef)
-
-      expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
-        {
-          clientRef: 'ref123',
-          sbi: 'sbi123',
-          frn: 'frn',
-          crn: '1234567890'
-        },
-        {},
-        expect.any(Function)
-      )
-    })
-  })
-
   describe('makePostRouteHandler', () => {
     test('should return a function', () => {
       const handler = controller.makePostRouteHandler()
@@ -378,21 +344,16 @@ describe('DeclarationPageController', () => {
       await handler(mockRequest, mockContext, mockH)
 
       expect(formSlugHelper.storeSlugInContext).toHaveBeenCalledWith(mockRequest, mockContext, 'DeclarationController')
-      expect(transformAnswerKeysToText).toHaveBeenCalledWith(
-        mockContext.relevantState,
-        mockModel.componentDefMap,
-        mockModel.listDefIdMap
-      )
 
       expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
         {
           clientRef: 'ref123',
           previousClientRef: 'ref345',
           sbi: 'sbi123',
-          frn: 'frn',
+          frn: undefined,
           crn: '1234567890'
         },
-        { transformedState: true, referenceNumber: 'REF123' },
+        { referenceNumber: 'REF123', field1: 'value1', declaration: true },
         expect.any(Function)
       )
 
@@ -409,26 +370,6 @@ describe('DeclarationPageController', () => {
       expect(mockH.redirect).toHaveBeenCalledWith('/example-grant-with-auth/confirmation')
     })
 
-    test('should use buildWoodlandData when grantCode is woodland', async () => {
-      const woodlandRequest = mockHapiRequest({
-        payload: { declaration: true },
-        params: { slug: 'woodland' },
-        path: '/woodland/declaration',
-        auth: { credentials: { sbi: 'sbi123', crn: '1234567890' } }
-      })
-
-      const handler = controller.makePostRouteHandler()
-      await handler(woodlandRequest, mockContext, mockH)
-
-      expect(transformAnswerKeysToText).not.toHaveBeenCalled()
-      expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
-        expect.objectContaining({ clientRef: 'ref123' }),
-        mockContext.state,
-        expect.any(Function)
-      )
-      expect(submitGrantApplication).toHaveBeenCalledWith('woodland', expect.any(Object), woodlandRequest)
-    })
-
     test('should not include previousClientRef when previousReferenceNumber is absent', async () => {
       const handler = controller.makePostRouteHandler()
 
@@ -443,10 +384,10 @@ describe('DeclarationPageController', () => {
         {
           clientRef: 'ref123',
           sbi: 'sbi123',
-          frn: 'frn',
+          frn: undefined,
           crn: '1234567890'
         },
-        { transformedState: true, referenceNumber: 'REF123' },
+        { referenceNumber: 'REF123', field1: 'value1', declaration: true },
         expect.any(Function)
       )
     })
