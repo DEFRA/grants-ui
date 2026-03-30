@@ -147,6 +147,7 @@ export default class CheckDetailsController extends QuestionPageController {
       await this.setState(request, {
         ...context.state,
         additionalAnswers: {
+          ...context.state?.additionalAnswers,
           applicant: mappedData,
           detailsConfirmedAt: new Date().toISOString()
         }
