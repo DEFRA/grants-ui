@@ -84,9 +84,16 @@ export default class DeclarationPageController extends SummaryPageController {
 
     // Include form fields from declaration page and convert to booleans as appropriate
     const { action, ...rest } = payload
-    const declarationPayload = Object.fromEntries(
-      Object.entries(rest).map(([key, value]) => [key, value === 'true' ? true : value === 'false' ? false : value])
-    )
+    const toBoolean = (value) => {
+      if (value === 'true') {
+        return true
+      }
+      if (value === 'false') {
+        return false
+      }
+      return value
+    }
+    const declarationPayload = Object.fromEntries(Object.entries(rest).map(([key, value]) => [key, toBoolean(value)]))
 
     const frn = state.additionalAnswers?.applicant
       ? state.additionalAnswers.applicant['business']?.reference
