@@ -4,6 +4,7 @@
 {% from "govuk/components/button/macro.njk" import govukButton %}
 {% from "govuk/components/checkboxes/macro.njk" import govukCheckboxes %}
 {% from "support-details/macro.njk" import defraSupportDetails %}
+{% from "partials/components.html" import componentList with context %}
 
 {% set mainClasses = "govuk-body" %}
 
@@ -30,6 +31,14 @@
       {% block form %}
       <form method="post" novalidate>
         <input type="hidden" name="crumb" value="{{ crumb }}">
+
+        {{ componentList(components) }}
+
+        <!-- TODO temp workaround for Woodland journey as some pages do not exist yet -->
+        <input type="hidden" id="guidanceRead" name="guidanceRead" value="true">
+        <input type="hidden" id="includedAllEligibleWoodland" name="includedAllEligibleWoodland" value="true">
+        <input type="hidden" id="applicationConfirmation" name="applicationConfirmation" value="true">
+
         {{ govukButton({
           text: "Confirm and send",
           preventDoubleClick: true

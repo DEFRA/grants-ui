@@ -3,7 +3,6 @@ import { getConfirmationPath, storeSlugInContext } from '~/src/server/common/hel
 import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/forms-cache.js'
 import { submitGrantApplication } from '~/src/server/common/services/grant-application/grant-application.service.js'
 import { transformStateObjectToGasApplication } from '~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
-import { transformAnswerKeysToText } from './state-to-gas-answers-mapper.js'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { persistSubmissionToApi } from '~/src/server/common/helpers/state/persist-submission-helper.js'
 import { ApplicationStatus } from '~/src/server/common/constants/application-status.js'
@@ -81,41 +80,44 @@ export default class DeclarationPageController extends SummaryPageController {
   }
 
   buildApplicationData(request, context) {
-    const stateWithTextAnswers = transformAnswerKeysToText(
-      context.relevantState,
-      this.model.componentDefMap,
-      this.model.listDefIdMap
-    )
+    const { state, relevantState, referenceNumber, payload } = context
 
-    stateWithTextAnswers.referenceNumber = context.referenceNumber
+    // Include form fields from declaration page and convert to booleans as appropriate
+    const { action, ...rest } = payload
+    const toBoolean = (value) => {
+      if (value === 'true') {
+        return true
+      }
+      if (value === 'false') {
+        return false
+      }
+      return value
+    }
+    const declarationPayload = Object.fromEntries(Object.entries(rest).map(([key, value]) => [key, toBoolean(value)]))
+
+    const frn = state.additionalAnswers?.applicant
+      ? state.additionalAnswers.applicant['business']?.reference
+      : undefined
 
     const identifiers = {
-      clientRef: context.referenceNumber.toLowerCase(),
+      clientRef: referenceNumber.toLowerCase(),
       sbi: request.auth?.credentials?.sbi,
-      frn: 'frn',
-      crn: request.auth?.credentials?.crn
+      crn: request.auth?.credentials?.crn,
+      frn
     }
 
-    if (context.state.previousReferenceNumber) {
-      identifiers.previousClientRef = context.state.previousReferenceNumber.toLowerCase()
+    if (state.previousReferenceNumber) {
+      identifiers.previousClientRef = state.previousReferenceNumber.toLowerCase()
     }
 
-    return transformStateObjectToGasApplication(identifiers, stateWithTextAnswers, (s) => s)
-  }
-
-  buildWoodlandData(request, context) {
-    const identifiers = {
-      clientRef: context.referenceNumber.toLowerCase(),
-      sbi: request.auth?.credentials?.sbi,
-      frn: 'frn',
-      crn: request.auth?.credentials?.crn
+    const submissionState = {
+      referenceNumber,
+      ...relevantState,
+      ...state.additionalAnswers,
+      ...declarationPayload
     }
 
-    if (context.state.previousReferenceNumber) {
-      identifiers.previousClientRef = context.state.previousReferenceNumber.toLowerCase()
-    }
-
-    return transformStateObjectToGasApplication(identifiers, context.state, (s) => s)
+    return transformStateObjectToGasApplication(identifiers, submissionState, (s) => s)
   }
 
   async handleSuccessfulSubmission({ request, context, cacheService, applicationData, sbi, crn, grantCode }) {
@@ -194,11 +196,7 @@ export default class DeclarationPageController extends SummaryPageController {
       try {
         const grantCode = getGrantCode(request)
 
-        // TODO sort this after demo
-        const applicationData =
-          grantCode === 'woodland'
-            ? this.buildWoodlandData(request, context)
-            : this.buildApplicationData(request, context)
+        const applicationData = this.buildApplicationData(request, context)
 
         const result = await submitGrantApplication(grantCode, applicationData, request)
 

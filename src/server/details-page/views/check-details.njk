@@ -6,6 +6,7 @@
 {% from "dev-mode-banner/macro.njk" import appDevModeBanner %}
 {% from "section-list/macro.njk" import appSectionList %}
 {% from "two-thirds-column/macro.njk" import appTwoThirdsColumn %}
+{% from "partials/components.html" import componentList with context %}
 
 {% block content %}
   {% call appTwoThirdsColumn() %}
@@ -31,21 +32,7 @@
     {{ appSectionList({ sections: sections }) }}
 
     <form method="post" novalidate="novalidate">
-      {{ govukRadios({
-        classes: "govuk-radios--inline",
-        name: "detailsCorrect",
-        fieldset: {
-          legend: {
-            text: "Are these details correct?",
-            classes: "govuk-fieldset__legend--m"
-          }
-        },
-        items: [
-          { value: "true", text: "Yes", checked: detailsCorrect === "true" },
-          { value: "false", text: "No", checked: detailsCorrect === "false" }
-        ],
-        errorMessage: errors and errors[0] and { text: errors[0].text }
-      }) }}
+      {{ componentList(components) }}
 
       {% if isDevelopmentMode %}
         {% if crumb %}

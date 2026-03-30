@@ -9,11 +9,55 @@ import {
 import { debug, log, LogCodes } from '../common/helpers/logging/log.js'
 import { setupControllerMocks } from '~/src/__mocks__/controller-mocks.js'
 
+vi.mock('@defra/forms-model', () => ({
+  ComponentType: {
+    Html: 'Html',
+    RadiosField: 'RadiosField'
+  }
+}))
+
 vi.mock('../common/services/details-page/index.js')
 vi.mock('../common/services/consolidated-view/consolidated-view.service.js')
 vi.mock('../common/helpers/logging/log.js', async () => {
   const { mockLogHelper } = await import('~/src/__mocks__')
   return mockLogHelper()
+})
+
+vi.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js', () => {
+  return {
+    QuestionPageController: class {
+      constructor(model, pageDef) {
+        this.model = model
+        this.pageDef = pageDef
+        this.collection = {
+          getViewErrors: vi.fn((errors) => errors)
+        }
+      }
+
+      getViewModel(request, context) {
+        return {
+          serviceName: 'Test Service',
+          serviceUrl: '/test-form'
+        }
+      }
+
+      setState() {
+        return Promise.resolve()
+      }
+
+      proceed() {
+        return 'redirected'
+      }
+
+      getNextPath() {
+        return '/next-path'
+      }
+
+      filterConditionalComponents() {
+        return []
+      }
+    }
+  }
 })
 
 const TEST_FORM_ENDPOINT = '/test-form'
@@ -64,6 +108,7 @@ describe('CheckDetailsController', () => {
   beforeEach(() => {
     mockModel = {
       basePath: TEST_FORM_ENDPOINT,
+      lists: [],
       def: {
         metadata: {
           detailsPage: mockConfig,
@@ -74,7 +119,8 @@ describe('CheckDetailsController', () => {
 
     mockPageDef = {
       path: '/check-details',
-      title: 'Check your details'
+      title: 'Check your details',
+      components: []
     }
 
     controller = new CheckDetailsController(mockModel, mockPageDef)
@@ -94,21 +140,21 @@ describe('CheckDetailsController', () => {
     }
 
     mockContext = {
-      state: { someState: 'value' }
+      state: { someState: 'value' },
+      payload: {},
+      errors: null,
+      evaluationState: {}
     }
 
     mockH = {
       view: vi.fn().mockReturnValue('mocked-view')
     }
 
-    // Mock the parent class method
-    vi.spyOn(QuestionPageController.prototype, 'getViewModel').mockReturnValue({
-      serviceName: 'Test Service',
-      serviceUrl: TEST_FORM_ENDPOINT
-    })
-
     // Reset all mocks
     vi.clearAllMocks()
+
+    // Re-setup controller mocks after clearAllMocks
+    setupControllerMocks(controller)
 
     // Setup default mocks
     vi.mocked(buildGraphQLQuery).mockReturnValue('query { business { name } }')
@@ -130,6 +176,50 @@ describe('CheckDetailsController', () => {
     it('should store model reference', () => {
       expect(controller.model).toBe(mockModel)
     })
+
+    it('should set confirmationFieldName from metadata', () => {
+      const modelWithFieldName = {
+        ...mockModel,
+        lists: [],
+        def: { metadata: { detailsPage: { ...mockConfig, confirmationFieldName: 'myConfirmField' } } }
+      }
+      const ctrl = new CheckDetailsController(modelWithFieldName, mockPageDef)
+      expect(ctrl.confirmationFieldName).toBe('myConfirmField')
+    })
+
+    it('should default confirmationFieldName to detailsConfirmed when not in metadata', () => {
+      const modelWithoutFieldName = {
+        ...mockModel,
+        lists: [],
+        def: { metadata: { detailsPage: mockConfig } }
+      }
+      const ctrl = new CheckDetailsController(modelWithoutFieldName, mockPageDef)
+      expect(ctrl.confirmationFieldName).toBe('detailsConfirmed')
+    })
+
+    it('should inject yesNo list into model if not present', () => {
+      expect(mockModel.lists.some((l) => l.name === 'yesNo')).toBe(true)
+    })
+
+    it('should not duplicate yesNo list if already present', () => {
+      const modelWithYesNo = {
+        ...mockModel,
+        lists: [{ name: 'yesNo' }],
+        def: { metadata: { detailsPage: mockConfig } }
+      }
+      const ctrl = new CheckDetailsController(modelWithYesNo, mockPageDef)
+      expect(ctrl).toBeDefined()
+      expect(modelWithYesNo.lists.filter((l) => l.name === 'yesNo')).toHaveLength(1)
+    })
+
+    it('should patch pageDef with Html placeholder and RadiosField components', () => {
+      expect(controller.pageDef.components).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ type: 'Html', name: 'placeholder' }),
+          expect.objectContaining({ type: 'RadiosField', name: 'detailsConfirmed' })
+        ])
+      )
+    })
   })
 
   describe('makeGetRouteHandler', () => {
@@ -149,23 +239,7 @@ describe('CheckDetailsController', () => {
       expect(mockH.view).toHaveBeenCalledWith('check-details', {
         serviceName: 'Test Service',
         serviceUrl: TEST_FORM_ENDPOINT,
-        sections: mockSections,
-        detailsCorrect: undefined
-      })
-      expect(result).toBe('mocked-view')
-    })
-
-    it('should pass detailsCorrect from state to the view', async () => {
-      mockContext.state = { someState: 'value', detailsCorrect: 'true' }
-
-      const handler = controller.makeGetRouteHandler()
-      const result = await handler(mockRequest, mockContext, mockH)
-
-      expect(mockH.view).toHaveBeenCalledWith('check-details', {
-        serviceName: 'Test Service',
-        serviceUrl: TEST_FORM_ENDPOINT,
-        sections: mockSections,
-        detailsCorrect: 'true'
+        sections: mockSections
       })
       expect(result).toBe('mocked-view')
     })
@@ -194,98 +268,100 @@ describe('CheckDetailsController', () => {
     })
 
     it('should call getViewModel with request and context', async () => {
+      const getViewModelSpy = vi.spyOn(QuestionPageController.prototype, 'getViewModel')
       const handler = controller.makeGetRouteHandler()
 
       await handler(mockRequest, mockContext, mockH)
 
-      expect(QuestionPageController.prototype.getViewModel).toHaveBeenCalledWith(mockRequest, mockContext)
+      expect(getViewModelSpy).toHaveBeenCalledWith(mockRequest, mockContext)
+    })
+
+    it('should handle missing config by showing config error', async () => {
+      mockModel.def.metadata = undefined
+
+      const handler = controller.makeGetRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(log).toHaveBeenCalledWith(
+        LogCodes.SYSTEM.CONFIG_MISSING,
+        { missing: ['metadata.detailsPage'] },
+        mockRequest
+      )
+      expect(mockH.view).toHaveBeenCalledWith('check-details', {
+        serviceName: 'Test Service',
+        serviceUrl: TEST_FORM_ENDPOINT,
+        error: {
+          titleText: 'There is a problem',
+          errorList: [{ text: 'This page is not configured correctly. Please contact support.', href: '' }]
+        }
+      })
     })
   })
 
   describe('makePostRouteHandler', () => {
-    describe('validation - no radio selection', () => {
-      it('should show validation error when no selection made', async () => {
-        mockRequest.payload = {}
+    describe('with context.errors (validation errors from framework)', () => {
+      it('should render view with sections and filtered components on validation errors', async () => {
+        mockContext.errors = [{ text: 'Select yes if your details are correct' }]
+        mockContext.payload = {}
 
-        const handler = controller.makePostRouteHandler()
-        await handler(mockRequest, mockContext, mockH)
-
-        expect(mockH.view).toHaveBeenCalledWith('check-details', {
+        const getViewModelSpy = vi.spyOn(controller, 'getViewModel').mockReturnValue({
           serviceName: 'Test Service',
           serviceUrl: TEST_FORM_ENDPOINT,
-          sections: mockSections,
-          errors: [{ text: 'Select yes if your details are correct', href: '#detailsCorrect' }]
+          errors: [{ text: 'Select yes if your details are correct' }],
+          components: []
         })
-      })
-
-      it('should log error and show validation error when API fails', async () => {
-        mockRequest.payload = {}
-        vi.mocked(executeConfigDrivenQuery).mockRejectedValue(new Error('API Error'))
+        controller.collection = { getViewErrors: vi.fn((e) => e) }
 
         const handler = controller.makePostRouteHandler()
         await handler(mockRequest, mockContext, mockH)
 
-        expect(debug).toHaveBeenCalledWith(
-          LogCodes.SYSTEM.EXTERNAL_API_ERROR,
-          { endpoint: 'ConsolidatedView', errorMessage: 'API Error' },
-          mockRequest
+        expect(mockH.view).toHaveBeenCalledWith(
+          'check-details',
+          expect.objectContaining({
+            sections: mockSections
+          })
         )
-        expect(mockH.view).toHaveBeenCalledWith('check-details', {
-          serviceName: 'Test Service',
-          serviceUrl: TEST_FORM_ENDPOINT,
-          errors: [{ text: 'Select yes if your details are correct', href: '#detailsCorrect' }]
-        })
+        getViewModelSpy.mockRestore()
       })
     })
 
-    describe('detailsCorrect = false', () => {
-      it('should render incorrect-details view', async () => {
-        mockRequest.payload = { detailsCorrect: 'false' }
+    describe('confirmationValue === false (user says details are wrong)', () => {
+      it('should save state and render incorrect-details view', async () => {
+        mockContext.payload = { detailsConfirmed: false }
 
         const handler = controller.makePostRouteHandler()
         await handler(mockRequest, mockContext, mockH)
 
+        expect(controller.setState).toHaveBeenCalledWith(mockRequest, { someState: 'value' })
         expect(mockH.view).toHaveBeenCalledWith('incorrect-details', {
           serviceName: 'Test Service',
           serviceUrl: TEST_FORM_ENDPOINT,
-          continueUrl: TEST_FORM_ENDPOINT,
+          continueUrl: '/test-form/check-details',
           backLink: { text: 'Back', href: '/test-form/check-details' }
-        })
-      })
-
-      it('should save detailsCorrect to state and not call proceed', async () => {
-        mockRequest.payload = { detailsCorrect: 'false' }
-
-        const handler = controller.makePostRouteHandler()
-        await handler(mockRequest, mockContext, mockH)
-
-        expect(controller.setState).toHaveBeenCalledWith(mockRequest, {
-          someState: 'value',
-          detailsCorrect: 'false'
         })
         expect(controller.proceed).not.toHaveBeenCalled()
       })
     })
 
-    describe('detailsCorrect = true (success)', () => {
-      it('should store applicant and detailsConfirmedAt in state and proceed', async () => {
-        mockRequest.payload = { detailsCorrect: 'true' }
+    describe('confirmationValue is truthy (user confirms details)', () => {
+      it('should call handleDetailsConfirmed and proceed', async () => {
+        mockContext.payload = { detailsConfirmed: true }
         const mockDate = new Date('2024-01-15T10:00:00.000Z')
         vi.setSystemTime(mockDate)
 
         const handler = controller.makePostRouteHandler()
         const result = await handler(mockRequest, mockContext, mockH)
 
-        expect(controller.setState).toHaveBeenCalledTimes(1)
-        expect(controller.setState).toHaveBeenCalledWith(mockRequest, {
+        expect(controller.setState).toHaveBeenCalledTimes(2)
+        // First setState saves state
+        expect(controller.setState).toHaveBeenNthCalledWith(1, mockRequest, { someState: 'value' })
+        // Second setState in handleDetailsConfirmed
+        expect(controller.setState).toHaveBeenNthCalledWith(2, mockRequest, {
           someState: 'value',
-          applicant: mockMappedData,
-          detailsCorrect: 'true',
-          detailsConfirmedAt: '2024-01-15T10:00:00.000Z',
-          businessDetailsUpToDate: true,
-          guidanceRead: true,
-          includedAllEligibleWoodland: true,
-          applicationConfirmation: true
+          additionalAnswers: {
+            applicant: mockMappedData,
+            detailsConfirmedAt: '2024-01-15T10:00:00.000Z'
+          }
         })
         expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-path')
         expect(result).toBe('redirected')
@@ -294,32 +370,87 @@ describe('CheckDetailsController', () => {
       })
     })
 
-    describe('detailsCorrect = true with API error', () => {
-      it('should log error and show error view when API fails', async () => {
-        mockRequest.payload = { detailsCorrect: 'true' }
-        const error = new Error('Data fetch failed')
-        vi.mocked(executeConfigDrivenQuery).mockRejectedValue(error)
+    describe('missing config in POST', () => {
+      it('should show config error when metadata is undefined', async () => {
+        mockModel.def.metadata = undefined
+        mockContext.payload = { detailsConfirmed: true }
 
         const handler = controller.makePostRouteHandler()
-        const result = await handler(mockRequest, mockContext, mockH)
+        await handler(mockRequest, mockContext, mockH)
 
-        expect(debug).toHaveBeenCalledWith(
-          LogCodes.SYSTEM.EXTERNAL_API_ERROR,
-          { endpoint: 'ConsolidatedView', errorMessage: 'Data fetch failed' },
+        expect(log).toHaveBeenCalledWith(
+          LogCodes.SYSTEM.CONFIG_MISSING,
+          { missing: ['metadata.detailsPage'] },
           mockRequest
         )
-        expect(controller.setState).not.toHaveBeenCalled()
-        expect(controller.proceed).not.toHaveBeenCalled()
         expect(mockH.view).toHaveBeenCalledWith('check-details', {
           serviceName: 'Test Service',
           serviceUrl: TEST_FORM_ENDPOINT,
           error: {
             titleText: 'There is a problem',
-            errorList: [{ text: 'Unable to save your details. Please try again later.', href: '' }]
+            errorList: [{ text: 'This page is not configured correctly. Please contact support.', href: '' }]
           }
         })
-        expect(result).toBe('mocked-view')
       })
+    })
+  })
+
+  describe('handleDetailsConfirmed', () => {
+    it('should store additionalAnswers in state and proceed', async () => {
+      const mockDate = new Date('2024-01-15T10:00:00.000Z')
+      vi.setSystemTime(mockDate)
+
+      await controller.handleDetailsConfirmed(mockRequest, mockContext, mockConfig, mockH)
+
+      expect(controller.setState).toHaveBeenCalledWith(mockRequest, {
+        someState: 'value',
+        additionalAnswers: {
+          applicant: mockMappedData,
+          detailsConfirmedAt: '2024-01-15T10:00:00.000Z'
+        }
+      })
+      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-path')
+
+      vi.useRealTimers()
+    })
+
+    it('should log error and show error view when API fails', async () => {
+      const error = new Error('Data fetch failed')
+      vi.mocked(executeConfigDrivenQuery).mockRejectedValue(error)
+
+      const result = await controller.handleDetailsConfirmed(mockRequest, mockContext, mockConfig, mockH)
+
+      expect(debug).toHaveBeenCalledWith(
+        LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+        { endpoint: 'ConsolidatedView', errorMessage: 'Data fetch failed' },
+        mockRequest
+      )
+      expect(controller.setState).not.toHaveBeenCalled()
+      expect(controller.proceed).not.toHaveBeenCalled()
+      expect(mockH.view).toHaveBeenCalledWith('check-details', {
+        serviceName: 'Test Service',
+        serviceUrl: TEST_FORM_ENDPOINT,
+        error: {
+          titleText: 'There is a problem',
+          errorList: [{ text: 'Unable to save your details. Please try again later.', href: '' }]
+        }
+      })
+      expect(result).toBe('mocked-view')
+    })
+
+    it('should handle null context state', async () => {
+      mockContext.state = null
+
+      await controller.handleDetailsConfirmed(mockRequest, mockContext, mockConfig, mockH)
+
+      expect(controller.setState).toHaveBeenCalledWith(
+        mockRequest,
+        expect.objectContaining({
+          additionalAnswers: expect.objectContaining({
+            applicant: mockMappedData
+          })
+        })
+      )
     })
   })
 
@@ -414,7 +545,7 @@ describe('CheckDetailsController', () => {
   })
 
   describe('buildIncorrectDetailsViewModel', () => {
-    it('should return view model with serviceName, serviceUrl, and continueUrl', () => {
+    it('should return view model with serviceName, serviceUrl, continueUrl and backLink', () => {
       const baseViewModel = {
         serviceName: 'My Service',
         serviceUrl: '/my-service',
@@ -426,27 +557,13 @@ describe('CheckDetailsController', () => {
       expect(result).toEqual({
         serviceName: 'My Service',
         serviceUrl: '/my-service',
-        continueUrl: '/my-service',
+        continueUrl: '/my-service/check-details',
         backLink: { text: 'Back', href: '/my-service/check-details' }
       })
     })
   })
 
   describe('edge cases', () => {
-    it('should handle undefined payload in POST', async () => {
-      mockRequest.payload = undefined
-
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
-
-      expect(mockH.view).toHaveBeenCalledWith(
-        'check-details',
-        expect.objectContaining({
-          errors: [{ text: 'Select yes if your details are correct', href: '#detailsCorrect' }]
-        })
-      )
-    })
-
     it('should handle missing metadata gracefully in GET by showing config error', async () => {
       mockModel.def.metadata = undefined
 
@@ -470,7 +587,7 @@ describe('CheckDetailsController', () => {
 
     it('should handle missing metadata gracefully in POST by showing config error', async () => {
       mockModel.def.metadata = undefined
-      mockRequest.payload = { detailsCorrect: 'true' }
+      mockContext.payload = { detailsConfirmed: true }
 
       const handler = controller.makePostRouteHandler()
       await handler(mockRequest, mockContext, mockH)
@@ -488,22 +605,6 @@ describe('CheckDetailsController', () => {
           errorList: [{ text: 'This page is not configured correctly. Please contact support.', href: '' }]
         }
       })
-    })
-
-    it('should handle null context state', async () => {
-      mockRequest.payload = { detailsCorrect: 'true' }
-      mockContext.state = null
-
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
-
-      expect(controller.setState).toHaveBeenCalledWith(
-        mockRequest,
-        expect.objectContaining({
-          applicant: mockMappedData,
-          detailsCorrect: 'true'
-        })
-      )
     })
   })
 })
