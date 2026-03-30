@@ -111,6 +111,7 @@ export default class DeclarationPageController extends SummaryPageController {
     }
 
     const submissionState = {
+      referenceNumber,
       ...relevantState,
       ...state.additionalAnswers,
       ...declarationPayload
