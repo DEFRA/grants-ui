@@ -12,6 +12,7 @@ TEST_COMMAND='npm run test:ci'
 export ACCEPTANCE_TESTS_HOOK="
   docker compose -f compose.tests.yml run --quiet-pull --rm grants-ui-acceptance-tests $TEST_COMMAND &&
   docker compose -f compose.tests.yml run --quiet-pull --rm land-grants-journey-tests $TEST_COMMAND &&
+  docker compose -f compose.tests.yml run --quiet-pull --rm woodland-grant-journey-tests $TEST_COMMAND &&
   docker compose -f compose.tests.yml down
 "
 

@@ -1,5 +1,6 @@
 import {
   calculate,
+  calculateWmp,
   parcelsGroups,
   parcelsWithExtendedInfo,
   parcelsWithFields,
@@ -357,6 +358,29 @@ describe('Land Grants client', () => {
           Promise.race([parcelsWithExtendedInfo(['parcel1'], mockApiEndpoint), timeoutPromise])
         ).rejects.toThrow('Operation timed out')
       }, 10000)
+    })
+  })
+
+  describe('calculateWmp', () => {
+    it('should trigger a POST request to /api/v2/wmp/payments/calculate', async () => {
+      const mockResponse = { message: 'success', payment: { agreementTotalPence: 375000 } }
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => mockResponse
+      })
+
+      const payload = { parcelIds: ['SD6346-3387'], newWoodlandAreaHa: 0.0, oldWoodlandAreaHa: 0.0 }
+      const result = await calculateWmp(payload, mockApiEndpoint)
+
+      expect(mockFetch).toHaveBeenCalledWith(`${mockApiEndpoint}/api/v2/wmp/payments/calculate`, {
+        method: 'POST',
+        headers: {
+          Authorization: expect.any(String),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      })
+      expect(result).toEqual(mockResponse)
     })
   })
 

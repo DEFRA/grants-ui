@@ -132,6 +132,12 @@ services:
       MONGO_URI: mongodb://mongodb:27017/
       LOCALSTACK_ENDPOINT: http://localstack:4566
       JWT_SECRET: ${CONFIG_API_JWT_SECRET:-forms-config-jwt-secret}
+      FORMS_CONFIG_BUCKET_NAME: ${FORMS_CONFIG_BUCKET_NAME:-forms-config}
+      FORMS_API_SLUGS: ${FORMS_API_SLUGS:-example-grant-with-auth}
+      DEFAULT_FORM_ORGANISATION: ${DEFAULT_FORM_ORGANISATION:-Defra}
+      DEFAULT_FORM_TEAM_NAME: ${DEFAULT_FORM_TEAM_NAME:-Digital Delivery}
+      DEFAULT_FORM_TEAM_EMAIL: '${DEFAULT_FORM_TEAM_EMAIL:-digitaldelivery@defra.gov.uk}'
+      DEFAULT_FORM_NOTIFICATION_EMAIL: '${DEFAULT_FORM_NOTIFICATION_EMAIL:-digitaldelivery@defra.gov.uk}'
     networks:
       - grants-ui-net
     restart: unless-stopped
@@ -260,6 +266,7 @@ services:
     volumes:
       - '${TMPDIR:-/tmp}/localstack:/var/lib/localstack'
       - ./localstack/start-localstack.sh:/etc/localstack/init/ready.d/start-localstack.sh
+      - ./localstack/forms:/etc/localstack/forms:ro
     healthcheck:
       test: ['CMD', 'curl', 'localhost:4566']
       interval: 5s

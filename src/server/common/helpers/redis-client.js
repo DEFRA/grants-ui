@@ -98,5 +98,22 @@ export function buildRedisClient(redisConfig) {
 }
 
 /**
+ * Resolves when the Redis client is ready to accept commands.
+ * Required when enableOfflineQueue is false, as commands issued before
+ * the client reaches 'ready' status are rejected immediately.
+ * @param {Cluster | Redis} client
+ * @returns {Promise<void>}
+ */
+export function waitForRedisReady(client) {
+  if (client.status === 'ready') {
+    return Promise.resolve()
+  }
+  return new Promise((resolve, reject) => {
+    client.once('ready', resolve)
+    client.once('error', reject)
+  })
+}
+
+/**
  * @import { RedisOptions } from 'ioredis'
  */

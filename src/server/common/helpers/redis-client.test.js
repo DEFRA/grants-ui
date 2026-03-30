@@ -2,7 +2,7 @@ import { vi } from 'vitest'
 import { Cluster, Redis } from 'ioredis'
 import { config } from '~/src/config/config.js'
 
-import { buildRedisClient } from '~/src/server/common/helpers/redis-client.js'
+import { buildRedisClient, waitForRedisReady } from '~/src/server/common/helpers/redis-client.js'
 
 vi.mock('ioredis')
 vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
@@ -76,6 +76,42 @@ describe('#buildRedisClient', () => {
       dnsCallback('localhost', mockCb)
 
       expect(mockCb).toHaveBeenCalledWith(null, 'localhost')
+    })
+  })
+
+  describe('#waitForRedisReady', () => {
+    test('resolves immediately when client status is already ready', async () => {
+      const client = { status: 'ready' }
+      await expect(waitForRedisReady(client)).resolves.toBeUndefined()
+    })
+
+    test('resolves when the ready event fires', async () => {
+      const listeners = {}
+      const client = {
+        status: 'connecting',
+        once: vi.fn((event, cb) => {
+          listeners[event] = cb
+        })
+      }
+
+      const promise = waitForRedisReady(client)
+      listeners.ready()
+      await expect(promise).resolves.toBeUndefined()
+    })
+
+    test('rejects when the error event fires', async () => {
+      const listeners = {}
+      const client = {
+        status: 'connecting',
+        once: vi.fn((event, cb) => {
+          listeners[event] = cb
+        })
+      }
+
+      const error = new Error('connection refused')
+      const promise = waitForRedisReady(client)
+      listeners.error(error)
+      await expect(promise).rejects.toThrow('connection refused')
     })
   })
 

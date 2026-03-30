@@ -66,23 +66,6 @@ export function addActionsToExistingState(state, payload, actionFieldPrefix, gro
 }
 
 /**
- * Determine which consents are required based on state
- * @param {object} state - Current state
- * @returns {Array<string>} - Array of required consent types (e.g., ['sssi', 'hefer'])
- */
-export function getRequiredConsents(state) {
-  if (!state.landParcels || Object.keys(state.landParcels).length === 0) {
-    return []
-  }
-
-  const allConsents = Object.values(state.landParcels)
-    .flatMap((parcel) => Object.values(parcel.actionsObj || {}))
-    .flatMap((action) => action.consents || [])
-
-  return [...new Set(allConsents)]
-}
-
-/**
  * Extract added actions from state for a specific parcel
  * @param {object} state - Current state
  * @param {string} selectedLandParcel - The selected land parcel ID (format: "sheetId-parcelId")

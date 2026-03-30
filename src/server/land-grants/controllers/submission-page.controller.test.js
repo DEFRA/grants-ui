@@ -295,6 +295,42 @@ describe('SubmissionPageController', () => {
     })
   })
 
+  describe('getBackLink', () => {
+    beforeEach(() => {
+      controller.model = { basePath: 'farm-payments' }
+    })
+
+    it('should point to consent page when consents are required', () => {
+      const context = {
+        state: {
+          landParcels: {
+            'AB1234-5678': { actionsObj: { ACTION1: { consents: ['sssi'] } } }
+          }
+        }
+      }
+      const result = controller.getBackLink({}, context)
+      expect(result).toEqual({ text: 'Back', href: '/farm-payments/you-must-have-consent' })
+    })
+
+    it('should point to check-selected-land-actions when no consents required', () => {
+      const context = {
+        state: {
+          landParcels: {
+            'AB1234-5678': { actionsObj: { ACTION1: { consents: [] } } }
+          }
+        }
+      }
+      const result = controller.getBackLink({}, context)
+      expect(result).toEqual({ text: 'Back', href: '/farm-payments/check-selected-land-actions' })
+    })
+
+    it('should point to check-selected-land-actions when no land parcels in state', () => {
+      const context = { state: {} }
+      const result = controller.getBackLink({}, context)
+      expect(result).toEqual({ text: 'Back', href: '/farm-payments/check-selected-land-actions' })
+    })
+  })
+
   describe('getStatusPath', () => {
     it('should return confirmation path', () => {
       const mockRequest = {

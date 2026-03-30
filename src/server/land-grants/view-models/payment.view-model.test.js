@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest'
 import {
-  formatPrice,
   createParcelItemRow,
   buildLandParcelHeaderActions,
   buildLandParcelFooterActions,
@@ -8,20 +7,6 @@ import {
   mapAdditionalYearlyPayments
 } from './payment.view-model.js'
 describe('payment-view-model.mapper', () => {
-  describe('formatPrice', () => {
-    it('should format price from pence to currency', () => {
-      expect(formatPrice(10050)).toBe('£100.50')
-    })
-
-    it('should handle zero', () => {
-      expect(formatPrice(0)).toBe('£0.00')
-    })
-
-    it('should handle large amounts', () => {
-      expect(formatPrice(123456789)).toBe('£1,234,567.89')
-    })
-  })
-
   describe('createParcelItemRow', () => {
     it('should create row with all columns', () => {
       const data = {

@@ -296,7 +296,7 @@ describe('RemoveActionPageController', () => {
 
       const result = await handler(mockRequest, mockContext, mockH)
 
-      expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH, mockRequest.query.parcelId)
+      expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH, [mockRequest.query.parcelId])
       expect(mockH.view).toHaveBeenCalledWith('remove-action', {
         pageTitle: 'Remove action',
         parcelId: 'SD6743-8083',
@@ -350,7 +350,7 @@ describe('RemoveActionPageController', () => {
 
         const result = await handler(mockRequest, mockContext, mockH)
 
-        expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH, mockRequest.query.parcelId)
+        expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH, [mockRequest.query.parcelId])
 
         expect(result).toEqual('failed auth check')
       })
@@ -402,7 +402,7 @@ describe('RemoveActionPageController', () => {
       const handler = controller.makePostRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
 
-      expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH, mockRequest.query.parcelId)
+      expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH, [mockRequest.query.parcelId])
 
       expect(controller.setState).toHaveBeenCalledWith(
         mockRequest,
@@ -501,7 +501,7 @@ describe('RemoveActionPageController', () => {
 
         const result = await handler(mockRequest, mockContext, mockH)
 
-        expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH, mockRequest.query.parcelId)
+        expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH, [mockRequest.query.parcelId])
 
         expect(result).toEqual('failed auth check')
       })
