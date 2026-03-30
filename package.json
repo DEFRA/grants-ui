@@ -73,7 +73,8 @@
     "babel-plugin-module-resolver": {
       "minimatch": "10.2.3"
     },
-    "serialize-javascript": "7.0.4",
+    "serialize-javascript": "7.0.5",
+    "sirv": "3.0.2",
     "svgo": "4.0.1",
     "underscore": "1.13.8",
     "liquidjs": "10.25.1",
@@ -138,9 +139,9 @@
     "@types/webpack-assets-manifest": "5.1.4",
     "@typescript-eslint/eslint-plugin": "8.56.1",
     "@typescript-eslint/parser": "8.56.1",
-    "@vitest/coverage-v8": "3.2.4",
+    "@vitest/coverage-v8": "4.1.2",
     "@vitest/eslint-plugin": "1.6.13",
-    "@vitest/ui": "3.2.4",
+    "@vitest/ui": "4.1.2",
     "autoprefixer": "10.4.27",
     "babel-loader": "10.0.0",
     "babel-plugin-transform-import-meta": "2.3.3",
@@ -170,7 +171,7 @@
     "terser-webpack-plugin": "5.4.0",
     "tsx": "4.21.0",
     "typescript": "5.9.3",
-    "vitest": "3.2.4",
+    "vitest": "4.1.2",
     "webpack": "5.105.4",
     "webpack-assets-manifest": "6.5.0",
     "webpack-cli": "6.0.1"

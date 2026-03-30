@@ -186,7 +186,9 @@ describe('form', () => {
       loadAll: vi.fn().mockResolvedValue(undefined),
       getFormDefinition: vi.fn().mockResolvedValue({ name: 'api-form-def', pages: [] })
     }
-    vi.mocked(ApiFormService).mockImplementation(() => mockApiFormServiceInstance)
+    vi.mocked(ApiFormService).mockImplementation(function () {
+      return mockApiFormServiceInstance
+    })
   })
 
   afterEach(() => {})
