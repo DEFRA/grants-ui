@@ -4,6 +4,7 @@
 {% from "govuk/components/button/macro.njk" import govukButton %}
 {% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
 {% from "section-list/macro.njk" import appSectionList %}
+{% from "partials/components.html" import componentList with context %}
 
 {% block content %}
   <div class="govuk-grid-row">
@@ -32,21 +33,7 @@
       <form method="post" novalidate>
         <input type="hidden" name="crumb" value="{{ crumb }}">
 
-        {{ govukRadios({
-          classes: "govuk-radios--inline",
-          name: "detailsCorrect",
-          fieldset: {
-            legend: {
-              text: "Are these details correct?",
-              classes: "govuk-fieldset__legend--m"
-            }
-          },
-          items: [
-            { value: "true", text: "Yes", checked: detailsCorrect === "true" },
-            { value: "false", text: "No", checked: detailsCorrect === "false" }
-          ],
-          errorMessage: errors[0].text if errors else null
-        }) }}
+        {{ componentList(components) }}
 
         {{ govukButton({
           text: "Continue",

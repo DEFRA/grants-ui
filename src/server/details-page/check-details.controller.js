@@ -5,6 +5,7 @@ import {
   hasOnlyToleratedFailures
 } from '../common/services/consolidated-view/consolidated-view.service.js'
 import { debug, log, LogCodes } from '../common/helpers/logging/log.js'
+import { ComponentType } from '@defra/forms-model'
 
 const ERROR_TITLE = 'There is a problem'
 
@@ -15,14 +16,64 @@ const ERROR_TITLE = 'There is a problem'
  */
 export default class CheckDetailsController extends QuestionPageController {
   viewName = 'check-details'
+  confirmationFieldName
 
   /**
    * @param {FormModel} model
    * @param {PageQuestion} pageDef
    */
   constructor(model, pageDef) {
-    super(model, pageDef)
+    const confirmationFieldName = model.def.metadata?.detailsPage?.confirmationFieldName ?? 'detailsConfirmed'
+
+    // Inject `yesNo` list into the model before patching the page with RadiosField
+    const yesNoList = {
+      id: 'yesNo',
+      name: 'yesNo',
+      title: 'Yes or No',
+      type: 'boolean',
+      items: [
+        { text: 'Yes', value: true },
+        { text: 'No', value: false }
+      ]
+    }
+
+    if (!model.lists.some((l) => l.name === 'yesNo')) {
+      model.lists.push(yesNoList)
+    }
+    // Inject Html (placeholder) and RadiosField components into the page def BEFORE super() so they are
+    // included in the collection's formSchema/stateSchema from the start.
+    // Using RadiosField because YesNoField does not support custom error messages.
+    // Placeholder ensures RadiosField is not treated as sole component by DXT, avoiding H1 legend.
+    /** @type {import('@defra/forms-model').PageQuestion} */
+    const patchedPageDef = {
+      ...pageDef,
+      components: [
+        ...(pageDef.components ?? []),
+        {
+          type: ComponentType.Html,
+          name: 'placeholder',
+          title: 'Placeholder for business details',
+          content: '',
+          options: {}
+        },
+        {
+          type: ComponentType.RadiosField,
+          name: confirmationFieldName,
+          title: 'Are these details correct?',
+          list: 'yesNo',
+          options: {
+            required: true,
+            customValidationMessages: {
+              'any.required': 'Select yes if your details are correct'
+            }
+          }
+        }
+      ]
+    }
+    super(model, patchedPageDef)
     this.model = model
+    this.pageDef = patchedPageDef
+    this.confirmationFieldName = confirmationFieldName
   }
 
   makeGetRouteHandler() {
@@ -37,8 +88,7 @@ export default class CheckDetailsController extends QuestionPageController {
       try {
         const { sections, mappedData } = await this.fetchAndProcessData(request, config)
         request.app.detailsPageData = mappedData
-        const detailsCorrect = context.state?.detailsCorrect
-        return h.view(this.viewName, { ...baseViewModel, sections, detailsCorrect })
+        return h.view(this.viewName, { ...baseViewModel, sections })
       } catch (error) {
         return this.handleError(error, baseViewModel, h, request)
       }
@@ -47,7 +97,10 @@ export default class CheckDetailsController extends QuestionPageController {
 
   makePostRouteHandler() {
     return async (request, context, h) => {
-      const { detailsCorrect } = request.payload || {}
+      const confirmationValue = context.payload[this.confirmationFieldName]
+
+      const { collection, viewName, model } = this
+      const { state, evaluationState } = context
       const baseViewModel = super.getViewModel(request, context)
       const config = this.model.def.metadata?.detailsPage
 
@@ -55,39 +108,26 @@ export default class CheckDetailsController extends QuestionPageController {
         return this.handleConfigError(baseViewModel, h, request)
       }
 
-      if (!detailsCorrect) {
-        return this.handleMissingSelection(request, config, baseViewModel, h)
+      if (context.errors) {
+        const viewModel = this.getViewModel(request, context)
+        viewModel.errors = collection.getViewErrors(viewModel.errors)
+        const { sections } = await this.fetchAndProcessData(request, config)
+        viewModel.sections = sections
+
+        // Filter components based on their conditions using evaluated state
+        viewModel.components = this.filterConditionalComponents(viewModel, model, evaluationState)
+
+        return h.view(viewName, viewModel)
       }
 
-      if (detailsCorrect === 'false') {
-        await this.setState(request, {
-          ...context.state,
-          detailsCorrect: 'false'
-        })
+      // Save state
+      await this.setState(request, state)
+
+      if (confirmationValue === false) {
         return h.view('incorrect-details', this.buildIncorrectDetailsViewModel(baseViewModel, request))
       }
 
       return this.handleDetailsConfirmed(request, context, config, h)
-    }
-  }
-
-  /**
-   * Handle POST when no radio selection was made
-   * @param {AnyFormRequest} request
-   * @param {object} config
-   * @param {object} baseViewModel
-   * @param {ResponseToolkit} h
-   * @returns {Promise<ResponseObject>}
-   */
-  async handleMissingSelection(request, config, baseViewModel, h) {
-    const validationError = { text: 'Select yes if your details are correct', href: '#detailsCorrect' }
-
-    try {
-      const { sections } = await this.fetchAndProcessData(request, config)
-      return h.view(this.viewName, { ...baseViewModel, sections, errors: [validationError] })
-    } catch (error) {
-      debug(LogCodes.SYSTEM.EXTERNAL_API_ERROR, { endpoint: 'ConsolidatedView', errorMessage: error.message }, request)
-      return h.view(this.viewName, { ...baseViewModel, errors: [validationError] })
     }
   }
 
@@ -106,13 +146,11 @@ export default class CheckDetailsController extends QuestionPageController {
       const { mappedData } = await this.fetchAndProcessData(request, config)
       await this.setState(request, {
         ...context.state,
-        applicant: mappedData,
-        detailsCorrect: 'true',
-        detailsConfirmedAt: new Date().toISOString(),
-        businessDetailsUpToDate: true, // TODO make this configurable
-        guidanceRead: true, // TODO hard coded for WMP demo - REMOVE when page is present in woodland.yaml
-        includedAllEligibleWoodland: true, // TODO hard coded for WMP demo - REMOVE when page is present in woodland.yaml
-        applicationConfirmation: true // TODO hard coded for WMP demo - REMOVE when page is present in woodland.yaml
+        additionalAnswers: {
+          ...context.state?.additionalAnswers,
+          applicant: mappedData,
+          detailsConfirmedAt: new Date().toISOString()
+        }
       })
       return this.proceed(request, h, this.getNextPath(context))
     } catch (error) {
@@ -204,13 +242,14 @@ export default class CheckDetailsController extends QuestionPageController {
   /**
    * Build view model for the incorrect details page
    * @param {object} baseViewModel
+   * @param {object} request
    * @returns {object}
    */
   buildIncorrectDetailsViewModel(baseViewModel, request) {
     return {
       serviceName: baseViewModel.serviceName,
       serviceUrl: baseViewModel.serviceUrl,
-      continueUrl: baseViewModel.serviceUrl,
+      continueUrl: request.path,
       backLink: { text: 'Back', href: request.path }
     }
   }
