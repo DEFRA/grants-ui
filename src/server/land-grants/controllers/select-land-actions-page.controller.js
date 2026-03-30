@@ -2,7 +2,7 @@ import {
   fetchAvailableActionsForParcel,
   validateApplication
 } from '~/src/server/land-grants/services/land-grants.service.js'
-import LandGrantsQuestionWithAuthCheckController from '~/src/server/land-grants/controllers/auth/land-grants-question-with-auth-check.controller.js'
+import QuestionPageWithParcelCheckController from '~/src/server/common/controllers/question-page-with-parcel-check.controller.js'
 import { parseLandParcel } from '~/src/server/land-grants/utils/format-parcel.js'
 import { log, debug, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { mapGroupedActionsToViewModel } from '~/src/server/land-grants/view-models/action.view-model.js'
@@ -14,10 +14,15 @@ import {
   extractLandActionFields,
   validateLandActionsSelection
 } from '~/src/server/land-grants/validators/land-actions.validator.js'
+import { getParcelIdFromQuery } from '../utils/parcel-request.utils.js'
 
-export default class SelectLandActionsPageController extends LandGrantsQuestionWithAuthCheckController {
+export default class SelectLandActionsPageController extends QuestionPageWithParcelCheckController {
   viewName = 'select-actions-for-land-parcel'
   actionFieldPrefix = 'landAction_'
+
+  resolveParcelIds(request) {
+    return getParcelIdFromQuery(request)
+  }
 
   /**
    * Resolve parcel identifiers from query param

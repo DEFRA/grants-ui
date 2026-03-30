@@ -1,4 +1,4 @@
-import { formatPrice } from '~/src/server/land-grants/view-models/payment.view-model.js'
+import { formatPrice } from '~/src/server/common/utils/payment.js'
 import { landActionWithCode } from '~/src/server/land-grants/utils/land-action-with-code.js'
 
 /**

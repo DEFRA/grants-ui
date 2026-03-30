@@ -16,6 +16,10 @@ vi.mock('hapi-pino', async () => {
   }
 })
 
+vi.mock('~/src/server/common/forms/services/forms-redis.js', () => ({
+  closeFormsRedisClient: vi.fn().mockResolvedValue(undefined)
+}))
+
 vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
   log: vi.fn(),
   debug: vi.fn(),
@@ -108,6 +112,64 @@ describe('#startServer', () => {
 
       expect(mockLoggerInfo).toHaveBeenCalledWith('Server failed to start :(')
       expect(mockLoggerError).toHaveBeenCalledWith(Error('Server failed to start'))
+    })
+  })
+
+  describe('shutdown signal handlers', () => {
+    let mockServer, onSpy, originalExitCode
+
+    beforeEach(async () => {
+      vi.clearAllMocks()
+      originalExitCode = process.exitCode
+
+      onSpy = vi.spyOn(process, 'on')
+
+      const { createServer } = await import('~/src/server/index.js')
+      mockServer = {
+        start: vi.fn().mockResolvedValue(undefined),
+        stop: vi.fn().mockResolvedValue(undefined),
+        logger: { info: vi.fn(), error: vi.fn() }
+      }
+      createServer.mockResolvedValueOnce(mockServer)
+
+      const mod = await import('~/src/server/common/helpers/start-server.js')
+      await mod.startServer()
+    })
+
+    afterEach(() => {
+      onSpy.mockRestore()
+      process.removeAllListeners('SIGTERM')
+      process.removeAllListeners('SIGINT')
+      process.exitCode = originalExitCode
+    })
+
+    const getHandler = (onSpy, signal) => onSpy.mock.calls.find(([ev]) => ev === signal)?.[1]
+
+    test('SIGTERM stops the server then closes the forms Redis client', async () => {
+      const { closeFormsRedisClient } = await import('~/src/server/common/forms/services/forms-redis.js')
+      await getHandler(onSpy, 'SIGTERM')()
+
+      expect(mockServer.stop).toHaveBeenCalledWith({ timeout: 10000 })
+      expect(closeFormsRedisClient).toHaveBeenCalledTimes(1)
+    })
+
+    test('SIGINT stops the server then closes the forms Redis client', async () => {
+      const { closeFormsRedisClient } = await import('~/src/server/common/forms/services/forms-redis.js')
+      await getHandler(onSpy, 'SIGINT')()
+
+      expect(mockServer.stop).toHaveBeenCalledWith({ timeout: 10000 })
+      expect(closeFormsRedisClient).toHaveBeenCalledTimes(1)
+    })
+
+    test('logs error and sets exitCode to 1 when shutdown throws', async () => {
+      const { closeFormsRedisClient } = await import('~/src/server/common/forms/services/forms-redis.js')
+      const error = new Error('redis error')
+      vi.mocked(closeFormsRedisClient).mockRejectedValueOnce(error)
+
+      await getHandler(onSpy, 'SIGTERM')()
+
+      expect(logger.error).toHaveBeenCalledWith(`Error during shutdown: ${error}`)
+      expect(process.exitCode).toBe(1)
     })
   })
 })

@@ -1,10 +1,11 @@
-import LandGrantsQuestionWithAuthCheckController from '~/src/server/land-grants/controllers/auth/land-grants-question-with-auth-check.controller.js'
+import QuestionPageWithParcelCheckController from '~/src/server/common/controllers/question-page-with-parcel-check.controller.js'
 import { mapConsentPanelToViewModel } from '~/src/server/land-grants/view-models/consent.view-model.js'
+import { getRequiredConsents } from '~/src/server/common/utils/consents.js'
 
-export default class ConsentPageController extends LandGrantsQuestionWithAuthCheckController {
+export default class ConsentPageController extends QuestionPageWithParcelCheckController {
   viewName = 'consent-required'
 
-  resolveParcelId(_request, _context) {
+  resolveParcelIds(_request) {
     return null
   }
 
@@ -13,25 +14,24 @@ export default class ConsentPageController extends LandGrantsQuestionWithAuthChe
    */
   async handleGet(request, context, h) {
     const { viewName } = this
-    const {
-      state: { requiredConsents, landParcels }
-    } = context
+    const { state } = context
+    const landParcels = state.landParcels || {}
     const baseViewModel = super.getViewModel(request, context)
 
-    if (!requiredConsents || requiredConsents.length === 0) {
-      return this.proceed(request, h, '/check-selected-land-actions')
+    const requiredConsents = getRequiredConsents(state)
+    if (requiredConsents.length === 0) {
+      return this.proceed(request, h, this.getNextPath(context))
     }
 
-    const actionCount = Object.values(landParcels || {}).reduce(
-      (total, parcel) => total + Object.keys(parcel.actionsObj || {}).length,
+    const actionCount = Object.values(landParcels).reduce(
+      (total, parcel) =>
+        total + Object.values(parcel.actionsObj || {}).filter((action) => action.consents?.length > 0).length,
       0
     )
 
-    const consentPanel = mapConsentPanelToViewModel(requiredConsents)
-
     return h.view(viewName, {
       ...baseViewModel,
-      consentPanel,
+      consentPanel: mapConsentPanelToViewModel(requiredConsents),
       actionCount
     })
   }
@@ -39,12 +39,12 @@ export default class ConsentPageController extends LandGrantsQuestionWithAuthChe
   /**
    * Handle POST requests to the page
    * @param {AnyFormRequest} request
-   * @param {FormContext} _context
+   * @param {FormContext} context
    * @param {Pick<ResponseToolkit, 'redirect' | 'view'>} h
    * @returns {Promise<ResponseObject>}
    */
-  async handlePost(request, _context, h) {
-    return this.proceed(request, h, '/submit-your-application')
+  async handlePost(request, context, h) {
+    return this.proceed(request, h, this.getNextPath(context))
   }
 }
 

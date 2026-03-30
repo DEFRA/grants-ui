@@ -98,6 +98,17 @@ export async function parcelsWithExtendedInfo(parcelIds, baseUrl) {
 }
 
 /**
+ * Calls the Land Grants API calculate-wmp endpoint.
+ * @param {{ parcelIds: string[], newWoodlandAreaHa: number, oldWoodlandAreaHa: number }} payload
+ * @param {string} baseUrl
+ * @returns {Promise<{ message: string, payment: object }>}
+ * @throws {Error}
+ */
+export async function calculateWmp(payload, baseUrl) {
+  return postToLandGrantsApi('/api/v2/wmp/payments/calculate', payload, baseUrl)
+}
+
+/**
  * Calls the Land Grants API validate application endpoint.
  * @param {ValidateApplicationRequest} request
  * @param {string} baseUrl

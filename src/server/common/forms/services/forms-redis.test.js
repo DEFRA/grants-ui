@@ -1,6 +1,7 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import {
   _setFormsRedisClient,
+  closeFormsRedisClient,
   getFormsRedisClient,
   setFormMeta,
   getFormMeta,
@@ -165,6 +166,34 @@ describe('forms-redis', () => {
       mockRedis.get.mockResolvedValue(null)
 
       expect(await getAllSlugs(mockRedis)).toEqual([])
+    })
+  })
+
+  describe('closeFormsRedisClient', () => {
+    test('calls quit() on the active client', async () => {
+      const quit = vi.fn().mockResolvedValue('OK')
+      mockRedis.quit = quit
+
+      await closeFormsRedisClient()
+
+      expect(quit).toHaveBeenCalledTimes(1)
+    })
+
+    test('nulls the singleton so the next getFormsRedisClient rebuilds it', async () => {
+      mockRedis.quit = vi.fn().mockResolvedValue('OK')
+      const { buildRedisClient } = await import('~/src/server/common/helpers/redis-client.js')
+      const newClient = { get: vi.fn(), set: vi.fn(), quit: vi.fn() }
+      vi.mocked(buildRedisClient).mockReturnValueOnce(newClient)
+
+      await closeFormsRedisClient()
+
+      expect(getFormsRedisClient()).toBe(newClient)
+      _setFormsRedisClient(mockRedis) // restore for subsequent tests
+    })
+
+    test('is a no-op when no client is set', async () => {
+      _setFormsRedisClient(null)
+      await expect(closeFormsRedisClient()).resolves.toBeUndefined()
     })
   })
 

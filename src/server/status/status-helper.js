@@ -155,11 +155,17 @@ function isFormsStartPage(request, context) {
  * @param request - Hapi request object
  * @param h - Hapi response toolkit
  * @param context - { paths: ['/start'], state: { applicationStatus: 'CLEARED' } }
- * @returns {Symbol} - Symbol.for('continue') if no redirect is required, otherwise Symbol.for('redirect')
+ * @returns {Symbol | import('@hapi/hapi').ResponseObject} - h.continue if no redirect is required, otherwise a redirect response
  */
 function preSubmissionRedirect(request, h, context) {
   const grantId = request.params?.slug
   const grantRedirectRules = request.app.model?.def?.metadata?.grantRedirectRules
+
+  const guardRedirect = checkStateGuards(request, h, context, grantRedirectRules)
+  if (guardRedirect !== h.continue) {
+    return guardRedirect
+  }
+
   const preSubmissionRedirectRule = grantRedirectRules.preSubmission[0]
   const preSubmissionRedirectUrl = preSubmissionRedirectRule.toPath.startsWith('/')
     ? `/${grantId}${preSubmissionRedirectRule.toPath}`
@@ -168,6 +174,39 @@ function preSubmissionRedirect(request, h, context) {
   if (hasMeaningfulState(context.state) && isFormsStartPage(request, context)) {
     return h.redirect(preSubmissionRedirectUrl).takeover()
   }
+  return h.continue
+}
+
+/**
+ * Checks state guards defined in grantRedirectRules.stateGuards.
+ * If a required state key is missing and the current path is not in
+ * the guard's allowedPaths, redirects to the guard's redirectTo path.
+ *
+ * @param {import('@hapi/hapi').Request} request
+ * @param {import('@hapi/hapi').ResponseToolkit} h
+ * @param {object} context
+ * @param {object} grantRedirectRules
+ * @returns {symbol|import('@hapi/hapi').ResponseObject} h.continue or a redirect
+ */
+function checkStateGuards(request, h, context, grantRedirectRules) {
+  const stateGuards = grantRedirectRules?.stateGuards
+  if (!stateGuards?.length) {
+    return h.continue
+  }
+
+  const currentPath = request.params?.path
+
+  for (const guard of stateGuards) {
+    const hasRequiredState = context.state?.[guard.stateKey] !== undefined && context.state?.[guard.stateKey] !== null
+    const isAllowedPath = guard.allowedPaths?.includes(currentPath)
+
+    if (!hasRequiredState && !isAllowedPath) {
+      const grantId = request.params?.slug
+      const redirectUrl = buildRedirectUrl(grantId, guard.redirectTo)
+      return h.redirect(redirectUrl).takeover()
+    }
+  }
+
   return h.continue
 }
 
