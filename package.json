@@ -106,7 +106,7 @@
     "date-fns": "4.1.0",
     "dotenv": "16.6.1",
     "global-agent": "3.0.0",
-    "govuk-frontend": "5.14.0",
+    "govuk-frontend": "6.1.0",
     "hapi-pino": "12.1.0",
     "hapi-pulse": "3.0.1",
     "hapi-rate-limit": "8.0.0",
