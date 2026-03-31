@@ -97,7 +97,7 @@ export default class DeclarationPageController extends SummaryPageController {
 
     const frn = state.additionalAnswers?.applicant
       ? state.additionalAnswers.applicant['business']?.reference
-      : undefined
+      : 'undefined'
 
     const identifiers = {
       clientRef: referenceNumber.toLowerCase(),
