@@ -1,4 +1,4 @@
-import { findFormBySlug, loadFormDefinition } from './find-form-by-slug.js'
+import { findFormBySlug, loadFormDefinition, clearYamlCache } from './find-form-by-slug.js'
 import { MOCK_FORM_ENTRIES } from '~/src/__test-fixtures__/mock-forms-cache.js'
 
 const { mockReadFile, mockParseYaml } = vi.hoisted(() => ({
@@ -22,14 +22,12 @@ vi.mock('./forms-redis.js', () => ({
 }))
 
 describe('findFormBySlug', () => {
-  // eslint-disable-next-line no-unused-vars
-  let getFormMetaMock, getFormDefMock
+  let getFormMetaMock
 
   beforeEach(async () => {
     vi.clearAllMocks()
     const formsRedis = await import('./forms-redis.js')
     getFormMetaMock = formsRedis.getFormMeta
-    getFormDefMock = formsRedis.getFormDef
   })
 
   test('should return the form matching the given slug', async () => {
@@ -46,13 +44,6 @@ describe('findFormBySlug', () => {
 
     expect(await findFormBySlug('non-existent')).toBeNull()
   })
-
-  test('should return the form entry when searching by slug', async () => {
-    getFormMetaMock.mockResolvedValue(MOCK_FORM_ENTRIES.testForm)
-
-    const result = await findFormBySlug('test-form')
-    expect(result.id).toBe(MOCK_FORM_ENTRIES.testForm.id)
-  })
 })
 
 describe('loadFormDefinition', () => {
@@ -60,6 +51,7 @@ describe('loadFormDefinition', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks()
+    clearYamlCache()
     const formsRedis = await import('./forms-redis.js')
     getFormDefMock = formsRedis.getFormDef
   })
@@ -75,6 +67,35 @@ describe('loadFormDefinition', () => {
     expect(mockReadFile).toHaveBeenCalledWith('/path/to/form.yaml', 'utf8')
     expect(mockParseYaml).toHaveBeenCalledWith(rawYaml)
     expect(result).toEqual(parsedDef)
+  })
+
+  test('returns a cached YAML definition on subsequent calls without re-reading the file', async () => {
+    const rawYaml = 'name: Test Form\npages: []'
+    const parsedDef = { name: 'Test Form', pages: [] }
+    mockReadFile.mockResolvedValue(rawYaml)
+    mockParseYaml.mockReturnValue(parsedDef)
+
+    const form = { source: 'yaml', path: '/path/to/form.yaml', slug: 'test-form' }
+    await loadFormDefinition(form)
+    const result = await loadFormDefinition(form)
+
+    expect(mockReadFile).toHaveBeenCalledTimes(1)
+    expect(mockParseYaml).toHaveBeenCalledTimes(1)
+    expect(result).toEqual(parsedDef)
+  })
+
+  test('returns a deep clone so callers cannot mutate the cache', async () => {
+    const rawYaml = 'name: Test Form\npages: []'
+    const parsedDef = { name: 'Test Form', pages: [] }
+    mockReadFile.mockResolvedValue(rawYaml)
+    mockParseYaml.mockReturnValue(parsedDef)
+
+    const form = { source: 'yaml', path: '/path/to/form.yaml', slug: 'test-form' }
+    const first = await loadFormDefinition(form)
+    first.name = 'Mutated'
+    const second = await loadFormDefinition(form)
+
+    expect(second.name).toBe('Test Form')
   })
 
   test('returns cached definition from Redis for api-sourced forms', async () => {
