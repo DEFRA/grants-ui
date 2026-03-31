@@ -4,6 +4,7 @@ import { submitGrantApplication } from '~/src/server/common/services/grant-appli
 import { transformStateObjectToGasApplication } from '../../common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
 import { stateToLandGrantsGasAnswers } from '../mappers/state-to-gas-answers-mapper.js'
 import { validateApplication } from '../services/land-grants.service.js'
+import { resolveApplicant } from '~/src/server/common/helpers/state/resolve-applicant.js'
 import SubmissionPageController from './submission-page.controller.js'
 import { log, debug } from '~/src/server/common/helpers/logging/log.js'
 import { LogCodes } from '../../common/helpers/logging/log-codes.js'
@@ -13,6 +14,11 @@ vi.mock('~/src/server/common/services/grant-application/grant-application.servic
 vi.mock('~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js')
 vi.mock('../mappers/state-to-gas-answers-mapper.js')
 vi.mock('~/src/server/common/helpers/forms-cache/forms-cache.js')
+vi.mock('~/src/server/common/helpers/state/resolve-applicant.js', () => ({
+  resolveApplicant: vi
+    .fn()
+    .mockResolvedValue({ customer: { name: { first: 'Test', last: 'User' } }, business: { name: 'Test Business' } })
+}))
 vi.mock('../services/land-grants.service.js')
 vi.mock('@defra/forms-engine-plugin/controllers/SummaryPageController.js', () => ({
   SummaryPageController: class {
@@ -269,6 +275,33 @@ describe('SubmissionPageController', () => {
 
       await controller.handleSuccessfulSubmission(mockRequest, mockContext, mockH, 204)
 
+      expect(mockH.redirect).toHaveBeenCalledWith('/confirmation')
+    })
+
+    it('should still submit when applicant details fetch fails', async () => {
+      const mockRequest = {
+        server: {},
+        auth: { credentials: { sbi: '123', crn: 'crn123' } },
+        params: { slug: 'test-grant' }
+      }
+      const mockContext = {
+        referenceNumber: 'REF123',
+        relevantState: { field1: 'value1' },
+        state: { previousReferenceNumber: 'REF345' }
+      }
+      const mockH = { redirect: vi.fn().mockResolvedValue() }
+      vi.spyOn(controller, 'getStatusPath').mockReturnValue('/confirmation')
+      mockCacheService.getState.mockResolvedValue({})
+      resolveApplicant.mockResolvedValueOnce(undefined)
+
+      await controller.handleSuccessfulSubmission(mockRequest, mockContext, mockH, 204)
+
+      expect(mockCacheService.setState).toHaveBeenCalledWith(
+        mockRequest,
+        expect.objectContaining({
+          applicationStatus: 'SUBMITTED'
+        })
+      )
       expect(mockH.redirect).toHaveBeenCalledWith('/confirmation')
     })
 

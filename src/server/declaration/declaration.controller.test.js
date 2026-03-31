@@ -7,10 +7,16 @@ import { vi } from 'vitest'
 import { mockHapiRequest } from '~/src/__mocks__'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { handleGasApiError } from '~/src/server/common/helpers/gas-error-messages.js'
+import { resolveApplicant } from '~/src/server/common/helpers/state/resolve-applicant.js'
 import { log, LogCodes } from '../common/helpers/logging/log.js'
 import { getTaskPageBackLink } from '~/src/server/task-list/task-list.helper.js'
 
 vi.mock('~/src/server/common/helpers/gas-error-messages.js')
+vi.mock('~/src/server/common/helpers/state/resolve-applicant.js', () => ({
+  resolveApplicant: vi
+    .fn()
+    .mockResolvedValue({ customer: { name: { first: 'Test', last: 'User' } }, business: { name: 'Test Business' } })
+}))
 vi.mock('../common/helpers/logging/log.js', async () => {
   const { mockLogHelper } = await import('~/src/__mocks__')
   return mockLogHelper()
@@ -427,6 +433,21 @@ describe('DeclarationPageController', () => {
         },
         mockRequest
       )
+    })
+
+    test('should still submit when applicant details fetch fails', async () => {
+      resolveApplicant.mockResolvedValueOnce(undefined)
+
+      const handler = controller.makePostRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(mockCacheService.setState).toHaveBeenCalledWith(
+        mockRequest,
+        expect.objectContaining({
+          applicationStatus: 'SUBMITTED'
+        })
+      )
+      expect(mockH.redirect).toHaveBeenCalledWith('/example-grant-with-auth/confirmation')
     })
 
     test('should handle submission errors', async () => {
