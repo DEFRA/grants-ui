@@ -10,6 +10,7 @@ import { handleGasApiError } from '~/src/server/common/helpers/gas-error-message
 import { log, LogCodes } from '../common/helpers/logging/log.js'
 import { getTaskPageBackLink } from '~/src/server/task-list/task-list.helper.js'
 import { getGrantCode } from '../common/helpers/grant-code.js'
+import { resolveApplicant } from '~/src/server/common/helpers/state/resolve-applicant.js'
 
 export default class DeclarationPageController extends SummaryPageController {
   /**
@@ -133,9 +134,14 @@ export default class DeclarationPageController extends SummaryPageController {
     )
 
     const currentState = await cacheService.getState(request)
+    const applicant = await resolveApplicant(currentState, request, {
+      grantType: grantCode,
+      referenceNumber: context.referenceNumber
+    })
 
     await cacheService.setState(request, {
       ...currentState,
+      ...(applicant && { applicant }),
       applicationStatus: ApplicationStatus.SUBMITTED,
       submittedAt: applicationData.metadata?.submittedAt,
       submittedBy: crn

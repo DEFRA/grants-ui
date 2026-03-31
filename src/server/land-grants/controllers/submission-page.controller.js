@@ -12,6 +12,7 @@ import { getConfirmationPath } from '~/src/server/common/helpers/form-slug-helpe
 import { log, debug } from '~/src/server/common/helpers/logging/log.js'
 import { LogCodes } from '~/src/server/common/helpers/logging/log-codes.js'
 import { getGrantCode } from '../../common/helpers/grant-code.js'
+import { resolveApplicant } from '~/src/server/common/helpers/state/resolve-applicant.js'
 
 export default class SubmissionPageController extends SummaryPageController {
   /**
@@ -129,10 +130,15 @@ export default class SubmissionPageController extends SummaryPageController {
       )
 
       const currentState = await cacheService.getState(request)
+      const applicant = await resolveApplicant(currentState, request, {
+        grantType: grantCode,
+        referenceNumber: context.referenceNumber
+      })
 
       // Update application status so the confirmation page knows a submission happened
       await cacheService.setState(request, {
         ...currentState,
+        ...(applicant && { applicant }),
         applicationStatus: ApplicationStatus.SUBMITTED,
         submittedAt,
         submittedBy: crn
