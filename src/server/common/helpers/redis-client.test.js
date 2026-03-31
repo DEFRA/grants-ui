@@ -4,7 +4,14 @@ import { config } from '~/src/config/config.js'
 
 import { buildRedisClient, waitForRedisReady } from '~/src/server/common/helpers/redis-client.js'
 
-vi.mock('ioredis')
+vi.mock('ioredis', () => ({
+  Redis: vi.fn().mockImplementation(function () {
+    return { on: vi.fn() }
+  }),
+  Cluster: vi.fn().mockImplementation(function () {
+    return { on: vi.fn() }
+  })
+}))
 vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
   log: vi.fn(),
   debug: vi.fn(),
@@ -47,7 +54,9 @@ describe('#buildRedisClient', () => {
         }
       })
 
-      vi.mocked(Redis).mockReturnValue({ on: mockOn })
+      vi.mocked(Redis).mockImplementation(function () {
+        return { on: mockOn }
+      })
 
       buildRedisClient({
         ...config.get('redis'),
@@ -62,7 +71,7 @@ describe('#buildRedisClient', () => {
       const mockOn = vi.fn()
       let dnsCallback
 
-      vi.mocked(Cluster).mockImplementation((nodes, options) => {
+      vi.mocked(Cluster).mockImplementation(function (nodes, options) {
         dnsCallback = options.dnsLookup
         return { on: mockOn }
       })

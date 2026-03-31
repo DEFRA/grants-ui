@@ -31,11 +31,13 @@ vi.mock('@defra/forms-engine-plugin', () => ({
 }))
 
 vi.mock('~/src/server/common/forms/services/api-form-service.js', () => ({
-  ApiFormService: vi.fn().mockImplementation(() => ({
-    loadAll: vi.fn(async () => {}),
-    getFormDefinition: vi.fn(async () => null),
-    fetchAndCacheDefinition: vi.fn(async () => null)
-  }))
+  ApiFormService: vi.fn().mockImplementation(function () {
+    return {
+      loadAll: vi.fn(async () => {}),
+      getFormDefinition: vi.fn(async () => null),
+      fetchAndCacheDefinition: vi.fn(async () => null)
+    }
+  })
 }))
 
 vi.mock('~/src/server/common/forms/services/forms-redis.js', () => ({

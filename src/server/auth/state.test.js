@@ -1,14 +1,15 @@
 import { vi } from 'vitest'
-import crypto from 'crypto'
 import { createState, validateState } from './state.js'
 import { log } from '~/src/server/common/helpers/logging/log.js'
 import { LogCodes } from '~/src/server/common/helpers/logging/log-codes.js'
 
-vi.mock('crypto', () => ({
+const mockRandomUUID = vi.hoisted(() => vi.fn())
+
+vi.mock('node:crypto', () => ({
   default: {
-    randomUUID: vi.fn()
+    randomUUID: mockRandomUUID
   },
-  randomUUID: vi.fn()
+  randomUUID: mockRandomUUID
 }))
 vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
   log: vi.fn(),
@@ -33,14 +34,14 @@ describe('State Management Functions', () => {
       }
     }
 
-    crypto.randomUUID.mockReturnValue('test-uuid-123')
+    mockRandomUUID.mockReturnValue('test-uuid-123')
   })
 
   describe('createState', () => {
     it('should generate a state value using crypto.randomUUID', () => {
       const state = createState(mockRequest)
 
-      expect(crypto.randomUUID).toHaveBeenCalledTimes(1)
+      expect(mockRandomUUID).toHaveBeenCalledTimes(1)
 
       const expectedState = Buffer.from(JSON.stringify({ id: 'test-uuid-123' })).toString('base64')
       expect(state).toBe(expectedState)
