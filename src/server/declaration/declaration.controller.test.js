@@ -350,7 +350,7 @@ describe('DeclarationPageController', () => {
           clientRef: 'ref123',
           previousClientRef: 'ref345',
           sbi: 'sbi123',
-          frn: undefined,
+          frn: 'undefined',
           crn: '1234567890'
         },
         { referenceNumber: 'REF123', field1: 'value1', declaration: true },
@@ -384,7 +384,7 @@ describe('DeclarationPageController', () => {
         {
           clientRef: 'ref123',
           sbi: 'sbi123',
-          frn: undefined,
+          frn: 'undefined',
           crn: '1234567890'
         },
         { referenceNumber: 'REF123', field1: 'value1', declaration: true },
