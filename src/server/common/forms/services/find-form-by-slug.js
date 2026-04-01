@@ -37,9 +37,9 @@ export async function loadFormDefinition(form) {
     }
 
     const raw = await readFile(filePath, 'utf8')
-    const definition = parseYaml(raw)
-    yamlCache.set(filePath, definition)
-    return structuredClone(definition)
+    const parsed = parseYaml(raw)
+    yamlCache.set(filePath, parsed)
+    return structuredClone(parsed)
   }
 
   const redis = getFormsRedisClient()

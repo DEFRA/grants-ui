@@ -10,7 +10,6 @@ import { handleGasApiError } from '~/src/server/common/helpers/gas-error-message
 import { log, LogCodes } from '../common/helpers/logging/log.js'
 import { getTaskPageBackLink } from '~/src/server/task-list/task-list.helper.js'
 import { getGrantCode } from '../common/helpers/grant-code.js'
-import { resolveApplicant } from '~/src/server/common/helpers/state/resolve-applicant.js'
 
 export default class DeclarationPageController extends SummaryPageController {
   /**
@@ -96,9 +95,7 @@ export default class DeclarationPageController extends SummaryPageController {
     }
     const declarationPayload = Object.fromEntries(Object.entries(rest).map(([key, value]) => [key, toBoolean(value)]))
 
-    const frn = state.additionalAnswers?.applicant
-      ? state.additionalAnswers.applicant['business']?.reference
-      : 'undefined'
+    const frn = state.applicant ? state.applicant['business']?.reference : 'undefined'
 
     const identifiers = {
       clientRef: referenceNumber.toLowerCase(),
@@ -115,6 +112,7 @@ export default class DeclarationPageController extends SummaryPageController {
       referenceNumber,
       ...relevantState,
       ...state.additionalAnswers,
+      applicant: state.applicant,
       ...declarationPayload
     }
 
@@ -134,14 +132,9 @@ export default class DeclarationPageController extends SummaryPageController {
     )
 
     const currentState = await cacheService.getState(request)
-    const applicant = await resolveApplicant(currentState, request, {
-      grantType: grantCode,
-      referenceNumber: context.referenceNumber
-    })
 
     await cacheService.setState(request, {
       ...currentState,
-      ...(applicant && { applicant }),
       applicationStatus: ApplicationStatus.SUBMITTED,
       submittedAt: applicationData.metadata?.submittedAt,
       submittedBy: crn

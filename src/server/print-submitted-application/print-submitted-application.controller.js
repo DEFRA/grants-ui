@@ -8,7 +8,6 @@ import {
   enrichDefinitionWithListItems,
   processConfigurablePrintContent
 } from '../common/helpers/print-application-service/print-application-service.js'
-import { fetchBusinessAndCustomerInformation } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
 import { createPersonRows, createBusinessRows, createContactRows } from '~/src/server/common/helpers/create-rows.js'
 
 /**
@@ -47,45 +46,20 @@ async function loadSubmittedApplication(request) {
 }
 
 /**
- * Logs an applicant details fetch failure.
- * @param {Error} error
- * @param {Request} request
- */
-function logApplicantDetailsFetchError(error, request) {
-  log(
-    LogCodes.PRINT_APPLICATION.ERROR,
-    {
-      userId: request.auth?.credentials?.userId || 'unknown',
-      errorMessage: `Failed to fetch applicant details: ${error.message}`,
-      slug: request.params?.slug
-    },
-    request
-  )
-}
-
-/**
- * Resolves applicant details sections for forms that have showApplicantDetails enabled.
+ * Builds applicant details sections for forms that have showApplicantDetails enabled.
  * @param {Request} request
  * @param {Record<string, any>} state
  * @param {{ metadata?: { printPage?: { showApplicantDetails?: boolean } } }} definition
- * @returns {Promise<{ person: { rows: object[] }, business: { rows: object[] }, contact: { rows: object[] } } | null>}
+ * @returns {{ person: { rows: object[] }, business: { rows: object[] }, contact: { rows: object[] } } | null}
  */
-async function resolveApplicantDetailsSections(request, state, definition) {
+function resolveApplicantDetailsSections(request, state, definition) {
   if (!definition.metadata?.printPage?.showApplicantDetails) {
     return null
   }
 
-  let applicantData = null
-
-  if (state.applicant?.customer || state.applicant?.business?.name) {
-    applicantData = state.applicant
-  } else {
-    try {
-      applicantData = await fetchBusinessAndCustomerInformation(request)
-    } catch (error) {
-      logApplicantDetailsFetchError(error, request)
-      return null
-    }
+  const applicantData = state.applicant
+  if (!applicantData?.customer && !applicantData?.business?.name) {
+    return null
   }
 
   const sbi = /** @type {string} */ (request.auth?.credentials?.sbi ?? '')
@@ -124,7 +98,7 @@ async function buildPrintResponse({ form, state, slug }, request, h) {
     sbi: /** @type {string | undefined} */ (request.auth?.credentials?.sbi)
   }
 
-  const applicantDetailsSections = await resolveApplicantDetailsSections(request, state, definition)
+  const applicantDetailsSections = resolveApplicantDetailsSections(request, state, definition)
 
   const viewModel = buildPrintViewModel({
     definition,

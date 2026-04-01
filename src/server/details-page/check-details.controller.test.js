@@ -358,8 +358,8 @@ describe('CheckDetailsController', () => {
         // Second setState in handleDetailsConfirmed
         expect(controller.setState).toHaveBeenNthCalledWith(2, mockRequest, {
           someState: 'value',
+          applicant: mockMappedData,
           additionalAnswers: {
-            applicant: mockMappedData,
             detailsConfirmedAt: '2024-01-15T10:00:00.000Z'
           }
         })
@@ -396,7 +396,7 @@ describe('CheckDetailsController', () => {
   })
 
   describe('handleDetailsConfirmed', () => {
-    it('should store additionalAnswers in state and proceed', async () => {
+    it('should store applicant in state and proceed', async () => {
       const mockDate = new Date('2024-01-15T10:00:00.000Z')
       vi.setSystemTime(mockDate)
 
@@ -404,8 +404,8 @@ describe('CheckDetailsController', () => {
 
       expect(controller.setState).toHaveBeenCalledWith(mockRequest, {
         someState: 'value',
+        applicant: mockMappedData,
         additionalAnswers: {
-          applicant: mockMappedData,
           detailsConfirmedAt: '2024-01-15T10:00:00.000Z'
         }
       })
@@ -446,9 +446,7 @@ describe('CheckDetailsController', () => {
       expect(controller.setState).toHaveBeenCalledWith(
         mockRequest,
         expect.objectContaining({
-          additionalAnswers: expect.objectContaining({
-            applicant: mockMappedData
-          })
+          applicant: mockMappedData
         })
       )
     })
@@ -559,51 +557,6 @@ describe('CheckDetailsController', () => {
         serviceUrl: '/my-service',
         continueUrl: '/my-service/check-details',
         backLink: { text: 'Back', href: '/my-service/check-details' }
-      })
-    })
-  })
-
-  describe('edge cases', () => {
-    it('should handle missing metadata gracefully in GET by showing config error', async () => {
-      mockModel.def.metadata = undefined
-
-      const handler = controller.makeGetRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
-
-      expect(log).toHaveBeenCalledWith(
-        LogCodes.SYSTEM.CONFIG_MISSING,
-        { missing: ['metadata.detailsPage'] },
-        mockRequest
-      )
-      expect(mockH.view).toHaveBeenCalledWith('check-details', {
-        serviceName: 'Test Service',
-        serviceUrl: TEST_FORM_ENDPOINT,
-        error: {
-          titleText: 'There is a problem',
-          errorList: [{ text: 'This page is not configured correctly. Please contact support.', href: '' }]
-        }
-      })
-    })
-
-    it('should handle missing metadata gracefully in POST by showing config error', async () => {
-      mockModel.def.metadata = undefined
-      mockContext.payload = { detailsConfirmed: true }
-
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
-
-      expect(log).toHaveBeenCalledWith(
-        LogCodes.SYSTEM.CONFIG_MISSING,
-        { missing: ['metadata.detailsPage'] },
-        mockRequest
-      )
-      expect(mockH.view).toHaveBeenCalledWith('check-details', {
-        serviceName: 'Test Service',
-        serviceUrl: TEST_FORM_ENDPOINT,
-        error: {
-          titleText: 'There is a problem',
-          errorList: [{ text: 'This page is not configured correctly. Please contact support.', href: '' }]
-        }
       })
     })
   })

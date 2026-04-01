@@ -146,9 +146,9 @@ export default class CheckDetailsController extends QuestionPageController {
       const { mappedData } = await this.fetchAndProcessData(request, config)
       await this.setState(request, {
         ...context.state,
+        applicant: mappedData,
         additionalAnswers: {
           ...context.state?.additionalAnswers,
-          applicant: mappedData,
           detailsConfirmedAt: new Date().toISOString()
         }
       })

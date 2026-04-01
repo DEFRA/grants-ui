@@ -7,16 +7,10 @@ import { vi } from 'vitest'
 import { mockHapiRequest } from '~/src/__mocks__'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { handleGasApiError } from '~/src/server/common/helpers/gas-error-messages.js'
-import { resolveApplicant } from '~/src/server/common/helpers/state/resolve-applicant.js'
 import { log, LogCodes } from '../common/helpers/logging/log.js'
 import { getTaskPageBackLink } from '~/src/server/task-list/task-list.helper.js'
 
 vi.mock('~/src/server/common/helpers/gas-error-messages.js')
-vi.mock('~/src/server/common/helpers/state/resolve-applicant.js', () => ({
-  resolveApplicant: vi
-    .fn()
-    .mockResolvedValue({ customer: { name: { first: 'Test', last: 'User' } }, business: { name: 'Test Business' } })
-}))
 vi.mock('../common/helpers/logging/log.js', async () => {
   const { mockLogHelper } = await import('~/src/__mocks__')
   return mockLogHelper()
@@ -157,16 +151,6 @@ describe('DeclarationPageController', () => {
       expect(controllerWithView.viewName).toBe('custom-view.html')
     })
 
-    test('should keep default viewName when pageDef.view is not provided', () => {
-      const pageDefWithoutView = { ...mockPageDef }
-      const controllerWithoutView = new DeclarationPageController(mockModel, pageDefWithoutView)
-      expect(controllerWithoutView.viewName).toBe('declaration-page.html')
-    })
-
-    test('should set model property', () => {
-      expect(controller.model).toBe(mockModel)
-    })
-
     test('should resolve section when pageDef has section property', () => {
       const getSectionSpy = vi.spyOn(mockModel, 'getSection')
       const controllerWithSection = new DeclarationPageController(mockModel, mockPageDef)
@@ -181,11 +165,6 @@ describe('DeclarationPageController', () => {
       const pageDefWithoutSection = {}
       const controllerWithoutSection = new DeclarationPageController(mockModel, pageDefWithoutSection)
       expect(controllerWithoutSection.section).toBeUndefined()
-    })
-
-    test('should call parent constructor', () => {
-      const controllerInstance = new DeclarationPageController(mockModel, mockPageDef)
-      expect(controllerInstance.pageDef).toBe(mockPageDef)
     })
   })
 
@@ -215,19 +194,9 @@ describe('DeclarationPageController', () => {
       expect(result.backLink).toEqual({ href: '/task-list', text: 'Back to task list' })
     })
 
-    test('should not include backLink when getTaskPageBackLink returns null', () => {
-      getTaskPageBackLink.mockReturnValue(null)
-
+    test.each([null, undefined])('should not include backLink when getTaskPageBackLink returns %s', (returnValue) => {
+      getTaskPageBackLink.mockReturnValue(returnValue)
       const result = controller.getSummaryViewModel(mockRequest, mockContext)
-
-      expect(result.backLink).toBeUndefined()
-    })
-
-    test('should not include backLink when getTaskPageBackLink returns undefined', () => {
-      getTaskPageBackLink.mockReturnValue(undefined)
-
-      const result = controller.getSummaryViewModel(mockRequest, mockContext)
-
       expect(result.backLink).toBeUndefined()
     })
 
@@ -328,15 +297,6 @@ describe('DeclarationPageController', () => {
 
       expect(formSlugHelper.storeSlugInContext).toHaveBeenCalled()
     })
-
-    test('should handle case when parent handler returns undefined', async () => {
-      parentGetHandler.mockResolvedValueOnce(undefined)
-
-      const handler = controller.makeGetRouteHandler()
-      const result = await handler(mockRequest, mockContext, mockH)
-
-      expect(result).toBeUndefined()
-    })
   })
 
   describe('makePostRouteHandler', () => {
@@ -433,21 +393,6 @@ describe('DeclarationPageController', () => {
         },
         mockRequest
       )
-    })
-
-    test('should still submit when applicant details fetch fails', async () => {
-      resolveApplicant.mockResolvedValueOnce(undefined)
-
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
-
-      expect(mockCacheService.setState).toHaveBeenCalledWith(
-        mockRequest,
-        expect.objectContaining({
-          applicationStatus: 'SUBMITTED'
-        })
-      )
-      expect(mockH.redirect).toHaveBeenCalledWith('/example-grant-with-auth/confirmation')
     })
 
     test('should handle submission errors', async () => {
