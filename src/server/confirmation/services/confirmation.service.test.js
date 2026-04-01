@@ -1,7 +1,6 @@
 import { vi } from 'vitest'
 import { ConfirmationService } from './confirmation.service.js'
 import { ComponentsRegistry } from './components.registry.js'
-import { config } from '~/src/config/config.js'
 import { MOCK_FORM_CACHE } from '../__test-fixtures__/confirmation-test-fixtures.js'
 
 vi.mock('./components.registry.js', () => ({
@@ -10,17 +9,10 @@ vi.mock('./components.registry.js', () => ({
   }
 }))
 
-vi.mock('~/src/config/config.js', () => ({
-  config: {
-    get: vi.fn()
-  }
-}))
-
 describe('ConfirmationService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     ComponentsRegistry.replaceComponents.mockImplementation((content) => content)
-    config.get.mockReturnValue(true)
   })
 
   describe('loadConfirmationContent', () => {
@@ -182,46 +174,6 @@ describe('ConfirmationService', () => {
 
       expect(ComponentsRegistry.replaceComponents).not.toHaveBeenCalled()
       expect(result).toEqual(rawContent)
-    })
-
-    test('should strip print link for farm-payments when enablePrintApplication flag is off', () => {
-      config.get.mockImplementation((key) => {
-        return key !== 'landGrants.enablePrintApplication'
-      })
-
-      const rawContent = {
-        html: '<p>Some content</p>\n\n      <p class="govuk-body"><a class="govuk-link" href="/farm-payments/print-submitted-application" target="_blank">View / Print submitted application (opens in new tab)</a></p>\n\n      <p>More content</p>'
-      }
-
-      const result = ConfirmationService.processConfirmationContent(rawContent, 'farm-payments')
-
-      expect(result.html).not.toContain('print-submitted-application')
-      expect(result.html).toContain('Some content')
-      expect(result.html).toContain('More content')
-    })
-
-    test('should keep print link for farm-payments when enablePrintApplication flag is on', () => {
-      const rawContent = {
-        html: '<p class="govuk-body"><a class="govuk-link" href="/{{SLUG}}/print-submitted-application" target="_blank">View / Print submitted application (opens in new tab)</a></p>'
-      }
-
-      const result = ConfirmationService.processConfirmationContent(rawContent, 'farm-payments')
-
-      expect(result.html).toContain('print-submitted-application')
-    })
-
-    test('should not strip print link for non-farm-payments forms even when flag is off', () => {
-      config.get.mockImplementation((key) => {
-        return key !== 'landGrants.enablePrintApplication'
-      })
-
-      const rawContent = {
-        html: '<p class="govuk-body"><a class="govuk-link" href="/methane/print-submitted-application" target="_blank">View / Print submitted application (opens in new tab)</a></p>'
-      }
-
-      const result = ConfirmationService.processConfirmationContent(rawContent, 'methane')
-
-      expect(result.html).toContain('print-submitted-application')
     })
   })
 })
