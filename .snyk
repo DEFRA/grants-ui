@@ -17,3 +17,11 @@ ignore:
     - '*':
         reason: 'Deep transitive dependency via polygon-splitter — awaiting upstream fix'
         expires: '2026-06-27'
+  'SNYK-JS-LODASH-15869619':
+    - '*':
+        reason: 'Fix version 4.18.0 is deprecated — no viable upgrade path available'
+        expires: '2026-07-01'
+  'SNYK-JS-LODASH-15869625':
+    - '*':
+        reason: 'Fix version 4.18.0 is deprecated — no viable upgrade path available'
+        expires: '2026-07-01'
