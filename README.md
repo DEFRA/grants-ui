@@ -10,7 +10,7 @@ A YAML-configured grant application form engine built on Node.js, Hapi, and the 
 
 ```bash
 nvm use
-npm install
+npm ci
 npm run dev
 ```
 
