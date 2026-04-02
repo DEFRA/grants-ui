@@ -7,22 +7,6 @@ import { getParcelIdsFromPayload } from '../utils/parcel-request.utils.js'
 export default class SelectLandParcelPageController extends QuestionPageWithParcelCheckController {
   viewName = 'select-land-parcel'
 
-  /**
-   * Whether this journey allows selecting multiple parcels.
-   * Configured via `config` on the page in the form definition YAML:
-   *   controller: SelectLandParcelPageController
-   *   config:
-   *     enableMultipleParcelSelect: true
-   *
-   * @param {FormModel} model
-   * @param {import('@defra/forms-model').Page} pageDef
-   */
-  constructor(model, pageDef) {
-    super(model, pageDef)
-    const config = model.def.metadata?.pageConfig?.[pageDef.path] ?? {}
-    this.enableMultipleParcelSelect = config.enableMultipleParcelSelect === true
-  }
-
   resolveParcelIds(request, _context) {
     return getParcelIdsFromPayload(request)
   }
@@ -36,10 +20,11 @@ export default class SelectLandParcelPageController extends QuestionPageWithParc
   async handlePost(request, context, h) {
     const { state } = context
     const payload = request.payload ?? {}
-    const { selectedLandParcel, action } = payload
-    const existingLandParcels = Object.keys(state.landParcels || {}).length > 0
+    const selectedParcelId = getParcelIdsFromPayload(request)[0]
+    const { action } = payload
+    const hasExistingLandParcels = Array.isArray(state.landParcels) && state.landParcels.length > 0
 
-    if (action === 'validate' && !selectedLandParcel) {
+    if (action === 'validate' && !selectedParcelId) {
       let parcels = []
       try {
         const fetchedParcels = await fetchParcels(request)
@@ -57,12 +42,12 @@ export default class SelectLandParcelPageController extends QuestionPageWithParc
         ...super.getViewModel(request, context),
         ...state,
         parcels,
-        existingLandParcels,
+        hasExistingLandParcels,
         errors: 'Select a land parcel'
       })
     }
 
-    return this.proceed(request, h, `${this.getNextPath(context)}?parcelId=${selectedLandParcel}`)
+    return this.proceed(request, h, `${this.getNextPath(context)}?parcelId=${selectedParcelId}`)
   }
 
   /**
@@ -83,7 +68,6 @@ export default class SelectLandParcelPageController extends QuestionPageWithParc
     const baseViewModel = super.getViewModel(request, context)
     const existingLandParcels = Object.keys(landParcels || {}).length > 0
 
-    console.log({ enableMultipleParcelSelect: this.enableMultipleParcelSelect })
     try {
       const fetchedParcels = await fetchParcels(request)
       const parcels = mapParcelsToViewModel(fetchedParcels, landParcels)
@@ -125,6 +109,5 @@ export default class SelectLandParcelPageController extends QuestionPageWithParc
 
 /**
  * @import { FormContext, AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
- * @import { FormModel } from '@defra/forms-engine-plugin/engine/models/index.js'
  * @import { ResponseObject, ResponseToolkit } from '@hapi/hapi'
  */
