@@ -503,4 +503,114 @@ describe('DeclarationPageController', () => {
       expect(handleGasApiError).not.toHaveBeenCalled()
     })
   })
+
+  describe('buildApplicationData', () => {
+    test('should use frn from state.additionalAnswers.applicant.business.reference when full chain is present', () => {
+      const context = {
+        ...mockContext,
+        state: {
+          ...mockContext.state,
+          additionalAnswers: {
+            applicant: {
+              business: {
+                reference: 'FRN123456'
+              }
+            }
+          }
+        }
+      }
+
+      controller.buildApplicationData(mockRequest, context)
+
+      expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
+        expect.objectContaining({ frn: 'FRN123456' }),
+        expect.anything(),
+        expect.any(Function)
+      )
+    })
+
+    test('should fall back to "undefined" when state.additionalAnswers is undefined', () => {
+      const context = {
+        ...mockContext,
+        state: {
+          ...mockContext.state,
+          additionalAnswers: undefined
+        }
+      }
+
+      controller.buildApplicationData(mockRequest, context)
+
+      expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
+        expect.objectContaining({ frn: 'undefined' }),
+        expect.anything(),
+        expect.any(Function)
+      )
+    })
+
+    test('should fall back to "undefined" when state.additionalAnswers.applicant is undefined', () => {
+      const context = {
+        ...mockContext,
+        state: {
+          ...mockContext.state,
+          additionalAnswers: {
+            applicant: undefined
+          }
+        }
+      }
+
+      controller.buildApplicationData(mockRequest, context)
+
+      expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
+        expect.objectContaining({ frn: 'undefined' }),
+        expect.anything(),
+        expect.any(Function)
+      )
+    })
+
+    test('should fall back to "undefined" when state.additionalAnswers.applicant.business is undefined', () => {
+      const context = {
+        ...mockContext,
+        state: {
+          ...mockContext.state,
+          additionalAnswers: {
+            applicant: {
+              business: undefined
+            }
+          }
+        }
+      }
+
+      controller.buildApplicationData(mockRequest, context)
+
+      expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
+        expect.objectContaining({ frn: 'undefined' }),
+        expect.anything(),
+        expect.any(Function)
+      )
+    })
+
+    test('should fall back to "undefined" when state.additionalAnswers.applicant.business.reference is undefined', () => {
+      const context = {
+        ...mockContext,
+        state: {
+          ...mockContext.state,
+          additionalAnswers: {
+            applicant: {
+              business: {
+                reference: undefined
+              }
+            }
+          }
+        }
+      }
+
+      controller.buildApplicationData(mockRequest, context)
+
+      expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
+        expect.objectContaining({ frn: 'undefined' }),
+        expect.anything(),
+        expect.any(Function)
+      )
+    })
+  })
 })
