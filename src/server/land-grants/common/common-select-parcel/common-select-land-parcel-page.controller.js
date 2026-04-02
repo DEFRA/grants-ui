@@ -20,7 +20,7 @@ export default class CommonSelectLandParcelPageController extends LandGrantsQues
   constructor(model, pageDef) {
     super(model, pageDef)
     const config = model.def.metadata?.pageConfig?.[pageDef.path] ?? {}
-    this.enableMultipleParcelSelect = config.enableMultipleParcelSelect ? 'multiple' : 'single'
+    this.enableMultipleParcelSelect = config.enableMultipleParcelSelect === true
     this.topSection = config.topSection || ''
     this.bottomSection = config.bottomSection || ''
     this.selectionHint = config.selectionHint || ''
@@ -79,7 +79,7 @@ export default class CommonSelectLandParcelPageController extends LandGrantsQues
         ...baseViewModel,
         parcels,
         hasExistingLandParcels,
-        selectionMode: this.enableMultipleParcelSelect,
+        selectionMode: this.enableMultipleParcelSelect ? 'multiple' : 'single',
         topSection: this.topSection,
         bottomSection: this.bottomSection,
         selectedParcelIds,
