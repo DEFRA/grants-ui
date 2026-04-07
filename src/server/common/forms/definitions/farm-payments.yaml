@@ -92,8 +92,6 @@ pages:
     id: 4884e676-569a-4669-b8c8-dda3e3a522e9
   - title: Select land parcel for actions
     controller: SelectLandParcelPageController
-    config:
-      enableMultipleParcelSelect: false
     path: /select-land-parcel
     next: []
     id: f9f1a33b-2fb5-4418-951b-680067efc179
