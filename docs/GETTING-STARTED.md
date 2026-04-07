@@ -91,7 +91,7 @@ This subfolder approach is particularly useful for features with multiple pages,
 Install application dependencies:
 
 ```bash
-npm install
+npm ci
 ```
 
 ### Development
