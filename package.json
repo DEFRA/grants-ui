@@ -167,7 +167,7 @@
     "sass-loader": "16.0.7",
     "snyk": "1.1303.2",
     "source-map-loader": "5.0.0",
-    "stylelint": "16.26.1",
+    "stylelint": "17.6.0",
     "stylelint-config-gds": "2.0.0",
     "terser-webpack-plugin": "5.4.0",
     "tsx": "4.21.0",
