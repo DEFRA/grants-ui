@@ -8,7 +8,8 @@ const provider = new PactV4({
   consumer: 'grants-ui',
   provider: 'fg-gas-backend',
   dir: path.join(path.join(__dirname, './pacts')),
-  spec: SpecificationVersion.SPECIFICATION_VERSION_V4
+  spec: SpecificationVersion.SPECIFICATION_VERSION_V4,
+  port: 0
 })
 
 const { string, regex } = MatchersV3

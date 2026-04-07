@@ -6,7 +6,8 @@ const provider = new PactV4({
   consumer: 'grants-ui',
   provider: 'grants-ui-backend',
   dir: path.join(path.join(__dirname, './pacts')),
-  spec: SpecificationVersion.SPECIFICATION_VERSION_V4
+  spec: SpecificationVersion.SPECIFICATION_VERSION_V4,
+  port: 0
 })
 
 describe('Pact between grants-ui (consumer) and grants-ui-backend (provider)', () => {

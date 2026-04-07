@@ -22,7 +22,8 @@ const provider = new PactV3({
   dir: path.resolve(process.cwd(), 'src/contracts/pacts'),
   consumer: 'grants-ui',
   provider: 'land-grants-api',
-  spec: SpecificationVersion.SPECIFICATION_VERSION_V4
+  spec: SpecificationVersion.SPECIFICATION_VERSION_V4,
+  port: 0
 })
 
 describe('parcelsWithFields', () => {
