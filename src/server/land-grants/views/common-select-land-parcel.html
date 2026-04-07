@@ -1,0 +1,94 @@
+{% extends baseLayoutPath %}
+
+{% from "govuk/components/radios/macro.njk" import govukRadios %}
+{% from "govuk/components/checkboxes/macro.njk" import govukCheckboxes %}
+{% from "govuk/components/inset-text/macro.njk" import govukInsetText %}
+{% from "govuk/components/warning-text/macro.njk" import govukWarningText %}
+{% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/input/macro.njk" import govukInput %}
+{% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
+{% from "support-details/macro.njk" import defraSupportDetails %}
+
+{% set hintConfig = selectionHint and {
+  text: selectionHint
+} %}
+
+{% block content %}
+<div class="govuk-body">
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      {% if errors %}
+        {{ govukErrorSummary({
+          titleText: "There is a problem",
+          errorList: [{
+            text: errors,
+            href: "#landParcels"
+          }]
+        }) }}
+      {% endif %}
+
+      <form method="post" data-actions="{{ actions }}" >
+
+        <h1 class="govuk-heading-l">{{ pageTitle }}</h1>
+
+        {% if topSection %}
+          {{ topSection | safe }}
+        {% endif %}
+        {% if selectionMode === "single" %}
+          {{ govukRadios({
+              name: "landParcels",
+              fieldset: {
+                legend: {
+                  isPageHeading: false,
+                  classes: "govuk-fieldset__legend--l"
+                }
+              },
+              hint: hintConfig,
+              items: parcels,
+              value: parcelId,
+              errorMessage: errors and { text: errors }
+            })
+          }}
+        {% elif selectionMode === "multiple" %}
+          {{ govukCheckboxes({
+              name: "landParcels",
+              fieldset: {
+                legend: {
+                  isPageHeading: false,
+                  classes: "govuk-fieldset__legend--l"
+                }
+              },
+              hint: hintConfig,
+              items: parcels,
+              values: selectedParcelIds,
+              errorMessage: errors and { text: errors }
+            }) }}
+        {% endif %}
+
+        {% if parcels.length > 0 %}
+          <div class="govuk-!-margin-top-4">
+            {% if bottomSection %}
+                {{ bottomSection | safe}}
+            {% endif %}
+          </div>
+
+          <div id="landParcels" class="govuk-button-group">
+            <input type="hidden" name="crumb" value="{{ crumb }}">
+            {% block form %}
+                {{ govukButton({
+                  text: "Continue",
+                  preventDoubleClick: true
+                }) }}
+            {% endblock %}
+          </div>
+        {% endif %}
+      </form>
+
+      {{ defraSupportDetails({
+        summaryText: supportDetailsSummaryText,
+        html: supportDetailsHtml
+      }) }}
+    </div>
+  </div>
+</div>
+{% endblock %}

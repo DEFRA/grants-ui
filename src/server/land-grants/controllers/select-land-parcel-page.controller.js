@@ -20,10 +20,11 @@ export default class SelectLandParcelPageController extends QuestionPageWithParc
   async handlePost(request, context, h) {
     const { state } = context
     const payload = request.payload ?? {}
-    const { selectedLandParcel, action } = payload
-    const existingLandParcels = Object.keys(state.landParcels || {}).length > 0
+    const selectedParcelId = getParcelIdsFromPayload(request)[0]
+    const { action } = payload
+    const hasExistingLandParcels = Array.isArray(state.landParcels) && state.landParcels.length > 0
 
-    if (action === 'validate' && !selectedLandParcel) {
+    if (action === 'validate' && !selectedParcelId) {
       let parcels = []
       try {
         const fetchedParcels = await fetchParcels(request)
@@ -41,12 +42,12 @@ export default class SelectLandParcelPageController extends QuestionPageWithParc
         ...super.getViewModel(request, context),
         ...state,
         parcels,
-        existingLandParcels,
+        hasExistingLandParcels,
         errors: 'Select a land parcel'
       })
     }
 
-    return this.proceed(request, h, `${this.getNextPath(context)}?parcelId=${selectedLandParcel}`)
+    return this.proceed(request, h, `${this.getNextPath(context)}?parcelId=${selectedParcelId}`)
   }
 
   /**
