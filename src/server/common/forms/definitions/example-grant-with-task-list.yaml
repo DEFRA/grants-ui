@@ -236,10 +236,6 @@ pages:
 
   - title: Select land parcel for actions
     controller: CommonSelectLandParcelPageController
-    components:
-      - name: landParcels
-        type: CheckboxesField
-        title: Select land parcels
     config:
       enableMultipleParcelSelect: false
       bottomSection: |
