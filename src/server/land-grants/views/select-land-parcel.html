@@ -17,14 +17,14 @@
           titleText: "There is a problem",
           errorList: [{
             text: errors,
-            href: "#selectedLandParcel"
+            href: "#landParcels"
           }]
         }) }}
       {% endif %}
 
       <form method="post" data-actions="{{ actions }}" >
         {{ govukRadios({
-            name: "selectedLandParcel",
+            name: "landParcels",
             fieldset: {
               legend: {
                 text: pageTitle,
@@ -57,7 +57,7 @@
         {% endif %}
       </form>
 
-      {% if existingLandParcels %}
+      {% if hasExistingLandParcels %}
           <p class="govuk-body govuk-!-margin-bottom-5">
           <a href="check-selected-land-actions" class="govuk-link govuk-link--no-visited-state">Back to review selected actions</a>
         </p>

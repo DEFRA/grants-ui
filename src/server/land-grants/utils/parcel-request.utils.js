@@ -1,9 +1,13 @@
-export function getParcelIdFromQuery(request) {
-  const parcelId = request?.query?.parcelId
-  return parcelId ? [parcelId] : null
+export function getParcelIdsFromPayload(request) {
+  const landParcels = request.payload?.landParcels
+  if (!landParcels || landParcels.length === 0) {
+    return []
+  }
+
+  return Array.isArray(landParcels) ? landParcels : [landParcels]
 }
 
-export function getParcelIdsFromPayload(request) {
-  const selectedLandParcel = request.payload?.selectedLandParcel || null
-  return selectedLandParcel ? [selectedLandParcel] : null
+export function getParcelIdFromQuery(request) {
+  const parcelId = request?.query?.parcelId
+  return parcelId ? [parcelId] : []
 }
