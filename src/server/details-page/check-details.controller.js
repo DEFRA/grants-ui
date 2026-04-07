@@ -7,6 +7,7 @@ import {
 import { debug, log, LogCodes } from '../common/helpers/logging/log.js'
 import { ComponentType } from '@defra/forms-model'
 import { mergeAdditionalAnswers } from '../common/helpers/state/additional-answers-helper.js'
+import { config } from '~/src/config/config.js'
 
 const ERROR_TITLE = 'There is a problem'
 
@@ -250,8 +251,22 @@ export default class CheckDetailsController extends QuestionPageController {
       serviceName: baseViewModel.serviceName,
       serviceUrl: baseViewModel.serviceUrl,
       continueUrl: request.path,
+      updateThroughSFDUrl: this.getSFDUpdateUrl(request),
+      isSFDUpdateEnabled: config.get('externalLinks.sfd.enabled'),
       backLink: { text: 'Back', href: request.path }
     }
+  }
+
+  /**
+   * Get the URL to update business details through SFD
+   * @param request
+   * @returns {string}
+   */
+  getSFDUpdateUrl(request) {
+    const { sbi } = request.auth.credentials
+    const url = new URL(config.get('externalLinks.sfd.updateUrl'))
+    url.searchParams.set('ssoOrgId', sbi)
+    return url.toString()
   }
 }
 

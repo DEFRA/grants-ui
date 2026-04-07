@@ -333,12 +333,15 @@ describe('CheckDetailsController', () => {
         await handler(mockRequest, mockContext, mockH)
 
         expect(controller.setState).toHaveBeenCalledWith(mockRequest, { someState: 'value' })
-        expect(mockH.view).toHaveBeenCalledWith('incorrect-details', {
-          serviceName: 'Test Service',
-          serviceUrl: TEST_FORM_ENDPOINT,
-          continueUrl: '/test-form/check-details',
-          backLink: { text: 'Back', href: '/test-form/check-details' }
-        })
+        expect(mockH.view).toHaveBeenCalledWith(
+          'incorrect-details',
+          expect.objectContaining({
+            serviceName: 'Test Service',
+            serviceUrl: TEST_FORM_ENDPOINT,
+            continueUrl: '/test-form/check-details',
+            backLink: { text: 'Back', href: '/test-form/check-details' }
+          })
+        )
         expect(controller.proceed).not.toHaveBeenCalled()
       })
     })
@@ -552,12 +555,19 @@ describe('CheckDetailsController', () => {
         otherProperty: 'ignored'
       }
 
-      const result = controller.buildIncorrectDetailsViewModel(baseViewModel, { path: '/my-service/check-details' })
+      const result = controller.buildIncorrectDetailsViewModel(baseViewModel, {
+        path: '/my-service/check-details',
+        auth: {
+          credentials: { sbi: 'SBI1234' }
+        }
+      })
 
       expect(result).toEqual({
         serviceName: 'My Service',
         serviceUrl: '/my-service',
         continueUrl: '/my-service/check-details',
+        updateThroughSFDUrl: expect.any(String),
+        isSFDUpdateEnabled: expect.any(Boolean),
         backLink: { text: 'Back', href: '/my-service/check-details' }
       })
     })

@@ -1,0 +1,20 @@
+import convict from 'convict'
+
+const externalLinks = convict({
+  sfd: {
+    enabled: {
+      doc: 'Is updating through Single Front Door enabled',
+      format: Boolean,
+      default: true,
+      env: 'SFD_UPDATE_ENABLED'
+    },
+    updateUrl: {
+      doc: 'The URL to redirect to when updating through Single Front Door',
+      format: String,
+      default: 'https://fcp-sfd-frontend.dev.cdp-int.defra.cloud/home',
+      env: 'SFD_UPDATE_URL'
+    }
+  }
+})
+
+export default externalLinks
