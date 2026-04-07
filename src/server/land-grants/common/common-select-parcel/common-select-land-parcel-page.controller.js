@@ -3,6 +3,7 @@ import LandGrantsQuestionWithAuthCheckController from '../../controllers/auth/la
 import { fetchParcels } from '../../services/land-grants.service.js'
 import { mapParcelsToViewModel } from '../../view-models/parcel.view-model.js'
 import { getParcelIdFromQuery, getParcelIdsFromPayload } from '../../utils/parcel-request.utils.js'
+import { ComponentType } from '@defra/forms-model'
 
 export default class CommonSelectLandParcelPageController extends LandGrantsQuestionWithAuthCheckController {
   viewName = 'common-select-land-parcel'
@@ -15,11 +16,36 @@ export default class CommonSelectLandParcelPageController extends LandGrantsQues
    *     enableMultipleParcelSelect: true
    *
    * @param {FormModel} model
-   * @param {import('@defra/forms-model').Page} pageDef
+   * @param {PageQuestion} pageDef
    */
   constructor(model, pageDef) {
-    super(model, pageDef)
     const config = model.def.metadata?.pageConfig?.[pageDef.path] ?? {}
+
+    const existing = pageDef.components?.find((c) => c.name === 'landParcels')
+    // Inject Html (placeholder) and RadiosField components into the page def BEFORE super() so they are
+    // included in the collection's formSchema/stateSchema from the start.
+    // Using RadiosField because YesNoField does not support custom error messages.
+    // Placeholder ensures RadiosField is not treated as sole component by DXT, avoiding H1 legend.
+    /** @type {import('@defra/forms-model').PageQuestion} */
+    const patchedPageDef = {
+      ...pageDef,
+      components: existing
+        ? pageDef.components
+        : [
+            ...(pageDef.components ?? []),
+            {
+              type: ComponentType.CheckboxesField,
+              name: 'landParcels',
+              title: 'Select land parcels',
+              list: 'landParcels',
+              options: {
+                required: true
+              }
+            }
+          ]
+    }
+    super(model, patchedPageDef)
+
     this.enableMultipleParcelSelect = config.enableMultipleParcelSelect === true
     this.topSection = config.topSection || ''
     this.bottomSection = config.bottomSection || ''
@@ -141,6 +167,7 @@ export default class CommonSelectLandParcelPageController extends LandGrantsQues
 
 /**
  * @import { FormContext, AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
+ * @import { PageQuestion } from '@defra/forms-model'
  * @import { FormModel } from '@defra/forms-engine-plugin/engine/models/index.js'
- * @import { ResponseObject, ResponseToolkit } from '@hapi/hapi'
+ * @import { ResponseToolkit } from '@hapi/hapi'
  */

@@ -333,10 +333,6 @@ pages:
     id: 88d7b067-68c2-4fe1-9a9a-ea98f0752e03
   - title: Select all the eligible land parcels for the location of your woodland
     controller: CommonSelectLandParcelPageController
-    components:
-      - name: landParcels
-        type: CheckboxesField
-        title: Select land parcels
     config:
       enableMultipleParcelSelect: true
       topSection: |
