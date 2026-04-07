@@ -132,7 +132,7 @@
     "@stryker-mutator/core": "9.6.0",
     "@stryker-mutator/vitest-runner": "9.6.0",
     "@types/convict": "6.1.6",
-    "@types/hapi__catbox-memory": "4.1.8",
+    "@types/hapi__catbox-memory": "6.0.2",
     "@types/lodash": "4.17.24",
     "@types/node": "25.5.2",
     "@types/nunjucks": "3.2.6",
