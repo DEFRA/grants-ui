@@ -78,7 +78,9 @@
     "svgo": "4.0.1",
     "underscore": "1.13.8",
     "liquidjs": "10.25.1",
-    "picomatch": "4.0.4"
+    "picomatch": "4.0.4",
+    "lodash": "$lodash",
+    "@hapi/content": "6.0.1"
   },
   "dependencies": {
     "@babel/runtime": "7.29.2",
