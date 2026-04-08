@@ -62,7 +62,7 @@ function resolveConfig(config, path) {
 
   return {
     strategy,
-    showPaymentActions: config.showPaymentActions ?? true,
+    showPaymentActions: config.showPaymentActions ?? false,
     showAddMoreActionsQuestion,
     paymentExplanation: config.paymentExplanation ?? null,
     showSupportLink: config.showSupportLink ?? null,
@@ -79,7 +79,7 @@ function resolveConfig(config, path) {
  *   controller: PaymentPageController
  *   config:
  *     paymentStrategy: multiAction          # key from payment-strategies.js (required)
- *     showPaymentActions: true              # show per-parcel action tables (default: true)
+ *     showPaymentActions: true              # show per-parcel action tables (default: false)
  *     showAddMoreActionsQuestion: true      # show the Yes/No "add another parcel" radio (default: false)
  *     paymentExplanation: |                 # HTML rendered above the payment total; Nunjucks syntax
  *       <p>You may be eligible for <strong>{{ totalPayment }}</strong>.</p>
