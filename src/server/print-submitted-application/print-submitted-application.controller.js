@@ -57,7 +57,7 @@ function resolveApplicantDetailsSections(request, state, definition) {
     return null
   }
 
-  const applicantData = state.applicant
+  const applicantData = state.additionalAnswers?.applicant
   if (!applicantData?.customer && !applicantData?.business?.name) {
     return null
   }
@@ -87,7 +87,7 @@ async function buildPrintResponse({ form, state, slug }, request, h) {
     slug
   )
 
-  const applicant = state.applicant || {}
+  const applicant = state.additionalAnswers?.applicant || {}
   const customerName = applicant.customer?.name
   const sessionData = {
     contactName: customerName

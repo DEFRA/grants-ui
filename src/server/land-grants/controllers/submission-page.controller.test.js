@@ -390,7 +390,7 @@ describe('SubmissionPageController', () => {
     })
 
     it('should extract frn from applicant business reference', async () => {
-      postContext.state = { applicant: { business: { reference: 'FRN999' } } }
+      postContext.state = { additionalAnswers: { applicant: { business: { reference: 'FRN999' } } } }
       const mockValidationResult = { id: 'val-123', valid: true }
       validateApplication.mockResolvedValue(mockValidationResult)
       vi.spyOn(controller, 'submitGasApplication').mockResolvedValue({ status: 204 })
@@ -472,7 +472,7 @@ describe('SubmissionPageController', () => {
     })
 
     it('should handle submission errors', async () => {
-      postContext.state = { applicant: { business: { reference: 'FRN123' } } }
+      postContext.state = { additionalAnswers: { applicant: { business: { reference: 'FRN123' } } } }
       const mockValidationResult = { id: 'validation-123', valid: true }
       validateApplication.mockResolvedValue(mockValidationResult)
       vi.spyOn(controller, 'submitGasApplication').mockRejectedValue(new Error('Submission failed'))

@@ -95,7 +95,9 @@ export default class DeclarationPageController extends SummaryPageController {
     }
     const declarationPayload = Object.fromEntries(Object.entries(rest).map(([key, value]) => [key, toBoolean(value)]))
 
-    const frn = state.applicant ? state.applicant['business']?.reference : 'undefined'
+    const frn = state.additionalAnswers?.applicant
+      ? state.additionalAnswers.applicant['business']?.reference
+      : 'undefined'
 
     const identifiers = {
       clientRef: referenceNumber.toLowerCase(),
@@ -112,7 +114,6 @@ export default class DeclarationPageController extends SummaryPageController {
       referenceNumber,
       ...relevantState,
       ...state.additionalAnswers,
-      applicant: state.applicant,
       ...declarationPayload
     }
 

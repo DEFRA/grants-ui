@@ -144,9 +144,13 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
 
       if (sbi) {
         const applicant = await fetchBusinessAndCustomerInformation(request)
+        const prevAdditionalAnswers = /** @type {object} */ (state.additionalAnswers)
         await this.setState(request, {
           ...state,
-          applicant
+          additionalAnswers: {
+            ...prevAdditionalAnswers,
+            applicant
+          }
         })
       }
 

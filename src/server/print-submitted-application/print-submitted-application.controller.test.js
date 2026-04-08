@@ -29,9 +29,11 @@ const mockState = {
   field1: 'Some answer',
   $$__referenceNumber: 'REF-123',
   submittedAt: '2025-01-15T10:00:00.000Z',
-  applicant: {
-    business: { name: 'Test Business' },
-    customer: { name: { first: 'Test', last: 'User' } }
+  additionalAnswers: {
+    applicant: {
+      business: { name: 'Test Business' },
+      customer: { name: { first: 'Test', last: 'User' } }
+    }
   }
 }
 
@@ -206,8 +208,8 @@ describe('print-submitted-application.controller', () => {
   })
 
   test('should handle missing applicant in state gracefully', async () => {
-    const { applicant, ...stateWithoutApplicant } = mockState
-    mockGetState.mockResolvedValue(stateWithoutApplicant)
+    const { additionalAnswers, ...stateWithoutAdditionalAnswers } = mockState
+    mockGetState.mockResolvedValue(stateWithoutAdditionalAnswers)
 
     await handler(mockRequest, mockH)
 
@@ -243,9 +245,9 @@ describe('print-submitted-application.controller', () => {
 
       await handler(mockRequest, mockH)
 
-      expect(createPersonRows).toHaveBeenCalledWith(mockState.applicant.customer.name)
-      expect(createBusinessRows).toHaveBeenCalledWith('123456789', mockState.applicant.business)
-      expect(createContactRows).toHaveBeenCalledWith(mockState.applicant.business)
+      expect(createPersonRows).toHaveBeenCalledWith(mockState.additionalAnswers.applicant.customer.name)
+      expect(createBusinessRows).toHaveBeenCalledWith('123456789', mockState.additionalAnswers.applicant.business)
+      expect(createContactRows).toHaveBeenCalledWith(mockState.additionalAnswers.applicant.business)
       expect(buildPrintViewModel).toHaveBeenCalledWith(
         expect.objectContaining({
           applicantDetailsSections: {
@@ -258,7 +260,7 @@ describe('print-submitted-application.controller', () => {
     })
 
     test('should return null applicantDetailsSections when state has no applicant data', async () => {
-      mockGetState.mockResolvedValue({ ...mockState, applicant: {} })
+      mockGetState.mockResolvedValue({ ...mockState, additionalAnswers: { applicant: {} } })
       loadFormDefinition.mockResolvedValue(JSON.parse(definitionWithApplicantDetails))
 
       await handler(mockRequest, mockH)

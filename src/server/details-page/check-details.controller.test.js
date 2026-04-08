@@ -358,8 +358,8 @@ describe('CheckDetailsController', () => {
         // Second setState in handleDetailsConfirmed
         expect(controller.setState).toHaveBeenNthCalledWith(2, mockRequest, {
           someState: 'value',
-          applicant: mockMappedData,
           additionalAnswers: {
+            applicant: mockMappedData,
             detailsConfirmedAt: '2024-01-15T10:00:00.000Z'
           }
         })
@@ -404,8 +404,8 @@ describe('CheckDetailsController', () => {
 
       expect(controller.setState).toHaveBeenCalledWith(mockRequest, {
         someState: 'value',
-        applicant: mockMappedData,
         additionalAnswers: {
+          applicant: mockMappedData,
           detailsConfirmedAt: '2024-01-15T10:00:00.000Z'
         }
       })
@@ -446,7 +446,9 @@ describe('CheckDetailsController', () => {
       expect(controller.setState).toHaveBeenCalledWith(
         mockRequest,
         expect.objectContaining({
-          applicant: mockMappedData
+          additionalAnswers: expect.objectContaining({
+            applicant: mockMappedData
+          })
         })
       )
     })

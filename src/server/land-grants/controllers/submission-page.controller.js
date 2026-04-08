@@ -172,7 +172,8 @@ export default class SubmissionPageController extends SummaryPageController {
       const { credentials: { sbi, crn } = {} } = request.auth ?? {}
       const grantCode = getGrantCode(request)
       const { state, referenceNumber } = context
-      const frn = state.applicant ? state.applicant['business']?.reference : undefined
+      const additionalAnswers = /** @type {Record<string, any> | undefined} */ (state.additionalAnswers)
+      const frn = additionalAnswers?.applicant ? additionalAnswers.applicant['business']?.reference : undefined
 
       const identifiers = {
         sbi,
