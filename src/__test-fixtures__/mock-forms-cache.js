@@ -10,7 +10,7 @@ export const MOCK_FORM_ENTRIES = {
   testForm: { id: 'form1', slug: 'test-form', title: 'Test Form' },
   anotherForm: { id: 'form2', slug: 'another-form', title: 'Another Form' },
   exampleGrant: { id: 'form3', slug: 'example-grant', title: 'Example Grant' },
-  flyingPigs: { id: 'form4', slug: 'flying-pigs', title: 'Flying Pigs Grant' }
+  flyingPigs: { id: 'form4', slug: 'pigs-might-fly', title: 'Flying Pigs Grant' }
 }
 
 export const MOCK_FORM_CACHE = Object.values(MOCK_FORM_ENTRIES)
