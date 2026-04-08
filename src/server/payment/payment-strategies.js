@@ -25,11 +25,14 @@ import { formatPrice } from '~/src/server/common/utils/payment.js'
  * To add a new journey:
  *   1. Add an entry below with a `fetch` method
  *   2. Set `paymentStrategy: <key>` in the YAML page config
- *
- * @type {Record<string, { fetch: (state: object) => Promise<{ totalPence: number, totalPayment: string, payment: object, parcelItems?: Array, additionalYearlyPayments?: Array }> }>}
  */
+/** @type {Record<string, { fetch: (state: object) => Promise<PaymentStrategyResult> }>} */
 export const paymentStrategies = {
   multiAction: {
+    /**
+     * @param {MultiActionState} state
+     * @returns {Promise<PaymentStrategyResult>}
+     */
     async fetch(state) {
       const [paymentResult, actionGroups] = await Promise.all([
         calculateLandActionsPayment(state),
@@ -48,6 +51,10 @@ export const paymentStrategies = {
   },
 
   wmp: {
+    /**
+     * @param {WmpState} state
+     * @returns {Promise<PaymentStrategyResult>}
+     */
     async fetch(state) {
       const { parcelIds = [], newWoodlandAreaHa = 0, oldWoodlandAreaHa = 0 } = state
       const { payment, totalPence } = await calculateWmpPayment({ parcelIds, newWoodlandAreaHa, oldWoodlandAreaHa })
@@ -59,3 +66,7 @@ export const paymentStrategies = {
     }
   }
 }
+
+/**
+ * @import { PaymentStrategyResult, MultiActionState, WmpState } from './payment-strategies.d.js'
+ */

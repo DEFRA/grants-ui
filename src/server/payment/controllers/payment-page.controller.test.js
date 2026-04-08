@@ -67,6 +67,7 @@ describe('PaymentPageController', () => {
           pageConfig: {
             '/test': {
               paymentStrategy: 'multiAction',
+              showAddMoreActionsQuestion: true,
               redirects: {
                 next: '/you-must-have-consent',
                 addMoreActions: '/select-land-parcel'
@@ -169,7 +170,8 @@ describe('PaymentPageController', () => {
             {
               text: 'Unable to get payment information, please try again later or contact the Rural Payments Agency.'
             }
-          ]
+          ],
+          hasPaymentError: true
         })
       )
     })
@@ -188,7 +190,8 @@ describe('PaymentPageController', () => {
             {
               text: 'Unable to get payment information, please try again later or contact the Rural Payments Agency.'
             }
-          ]
+          ],
+          hasPaymentError: true
         })
       )
     })
@@ -280,7 +283,8 @@ describe('PaymentPageController', () => {
             {
               text: 'Unable to get payment information, please try again later or contact the Rural Payments Agency.'
             }
-          ]
+          ],
+          hasPaymentError: true
         })
       )
     })
@@ -300,7 +304,8 @@ describe('PaymentPageController', () => {
             {
               text: 'Unable to get payment information, please try again later or contact the Rural Payments Agency.'
             }
-          ]
+          ],
+          hasPaymentError: true
         })
       )
     })
