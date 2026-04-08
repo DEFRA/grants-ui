@@ -4,7 +4,7 @@ import { mockHapiResponseToolkit } from '~/src/__mocks__/hapi-mocks.js'
 
 const mockForms = [
   { id: 'form3', slug: 'example-grant', title: 'Example Grant', metadata: {} },
-  { id: 'form4', slug: 'flying-pigs', title: 'Flying Pigs Grant', metadata: {} }
+  { id: 'form4', slug: 'pigs-might-fly', title: 'Flying Pigs Grant', metadata: {} }
 ]
 
 vi.mock('../../common/forms/services/forms-redis.js', () => ({
@@ -37,7 +37,7 @@ describe('generate-form-not-found-response', () => {
 
     const htmlContent = mockH.response.mock.calls[0][0]
     expect(htmlContent).toContain('• example-grant (Example Grant)')
-    expect(htmlContent).toContain('• flying-pigs (Flying Pigs Grant)')
+    expect(htmlContent).toContain('• pigs-might-fly (Flying Pigs Grant)')
   })
 
   test('should use custom options when provided', async () => {

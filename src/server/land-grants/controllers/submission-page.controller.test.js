@@ -125,66 +125,19 @@ describe('SubmissionPageController', () => {
       })
     })
 
-    it('should use validationId when provided', () => {
+    it.each([
+      ['validationId when provided', { referenceNumber: 'REF456' }, 'validation-123', 'validation-123'],
+      ['referenceNumber when validationId not provided', { referenceNumber: 'REF456' }, undefined, 'REF456'],
+      ['N/A when neither available', {}, undefined, 'N/A']
+    ])('should use %s', (_desc, context, validationId, expectedRef) => {
       const mockH = { view: vi.fn().mockReturnValue('error-view') }
-      const mockContext = { referenceNumber: 'REF456' }
-      const validationId = 'validation-123'
 
-      controller.renderSubmissionError(mockH, mockRequest, mockContext, validationId)
+      controller.renderSubmissionError(mockH, mockRequest, context, validationId)
 
-      expect(mockH.view).toHaveBeenCalledWith(
-        'submission-error',
-        expect.objectContaining({
-          refNumber: 'validation-123'
-        })
-      )
+      expect(mockH.view).toHaveBeenCalledWith('submission-error', expect.objectContaining({ refNumber: expectedRef }))
       expect(log).toHaveBeenCalledWith(
         LogCodes.SUBMISSION.SUBMISSION_VALIDATION_ERROR,
-        expect.objectContaining({
-          validationId: 'validation-123'
-        }),
-        mockRequest
-      )
-    })
-
-    it('should fallback to referenceNumber when validationId not provided', () => {
-      const mockH = { view: vi.fn().mockReturnValue('error-view') }
-      const mockContext = { referenceNumber: 'REF456' }
-
-      controller.renderSubmissionError(mockH, mockRequest, mockContext)
-
-      expect(mockH.view).toHaveBeenCalledWith(
-        'submission-error',
-        expect.objectContaining({
-          refNumber: 'REF456'
-        })
-      )
-      expect(log).toHaveBeenCalledWith(
-        LogCodes.SUBMISSION.SUBMISSION_VALIDATION_ERROR,
-        expect.objectContaining({
-          validationId: 'REF456'
-        }),
-        mockRequest
-      )
-    })
-
-    it('should use N/A when neither validationId nor referenceNumber available', () => {
-      const mockH = { view: vi.fn().mockReturnValue('error-view') }
-      const mockContext = {}
-
-      controller.renderSubmissionError(mockH, mockRequest, mockContext)
-
-      expect(mockH.view).toHaveBeenCalledWith(
-        'submission-error',
-        expect.objectContaining({
-          refNumber: 'N/A'
-        })
-      )
-      expect(log).toHaveBeenCalledWith(
-        LogCodes.SUBMISSION.SUBMISSION_VALIDATION_ERROR,
-        expect.objectContaining({
-          validationId: 'N/A'
-        }),
+        expect.objectContaining({ validationId: expectedRef }),
         mockRequest
       )
     })
@@ -348,43 +301,36 @@ describe('SubmissionPageController', () => {
   })
 
   describe('makePostRouteHandler', () => {
-    it('should validate, submit application and redirect on success', async () => {
-      const mockRequest = {
-        auth: {
-          credentials: {
-            sbi: '123456789',
-            crn: 'crn123'
-          }
-        },
+    let postRequest, postContext, postH
+
+    beforeEach(() => {
+      postRequest = {
+        auth: { credentials: { sbi: '123456789', crn: 'crn123' } },
         server: {},
         params: { slug: 'test-grant' }
       }
-      const mockContext = {
-        state: { landParcels: { parcel1: 'data' }, previousReferenceNumber: 'REF345' },
-        referenceNumber: 'REF123'
-      }
-      const mockH = {
-        redirect: vi.fn().mockReturnValue('redirected'),
-        view: vi.fn()
-      }
-      const mockValidationResult = { id: 'validation-123', valid: true }
-      const statusCode = 204
-      const mockSubmitResult = { success: true, status: statusCode }
-      validateApplication.mockResolvedValue(mockValidationResult)
+      postContext = { state: {}, referenceNumber: 'REF123' }
+      postH = { redirect: vi.fn().mockReturnValue('redirected'), view: vi.fn().mockReturnValue('error-view') }
+    })
 
+    it('should validate, submit application and redirect on success', async () => {
+      postContext.state = { landParcels: { parcel1: 'data' }, previousReferenceNumber: 'REF345' }
+      const mockValidationResult = { id: 'validation-123', valid: true }
+      const mockSubmitResult = { success: true, status: 204 }
+      validateApplication.mockResolvedValue(mockValidationResult)
       vi.spyOn(controller, 'submitGasApplication').mockResolvedValue(mockSubmitResult)
       vi.spyOn(controller, 'handleSuccessfulSubmission').mockResolvedValue('proceeded')
 
       const handler = controller.makePostRouteHandler()
-      const result = await handler(mockRequest, mockContext, mockH)
+      const result = await handler(postRequest, postContext, postH)
 
       expect(validateApplication).toHaveBeenCalledWith({
         applicationId: 'REF123',
         crn: 'crn123',
         sbi: '123456789',
-        state: { landParcels: { parcel1: 'data' }, previousReferenceNumber: 'REF345' }
+        state: postContext.state
       })
-      expect(controller.submitGasApplication).toHaveBeenCalledWith(mockRequest, {
+      expect(controller.submitGasApplication).toHaveBeenCalledWith(postRequest, {
         identifiers: {
           clientRef: 'ref123',
           previousClientRef: 'ref345',
@@ -392,78 +338,45 @@ describe('SubmissionPageController', () => {
           frn: undefined,
           sbi: '123456789'
         },
-        state: mockContext.state,
+        state: postContext.state,
         validationResult: mockValidationResult
       })
-      expect(controller.handleSuccessfulSubmission).toHaveBeenCalledWith(mockRequest, mockContext, mockH, statusCode)
+      expect(controller.handleSuccessfulSubmission).toHaveBeenCalledWith(postRequest, postContext, postH, 204)
       expect(result).toBe('proceeded')
     })
 
     it('should not include previousClientRef when previousReferenceNumber is absent', async () => {
-      const mockRequest = {
-        auth: {
-          credentials: {
-            sbi: '123456789',
-            crn: 'crn123'
-          }
-        },
-        server: {},
-        params: { slug: 'test-grant' }
-      }
-
-      const mockContext = {
-        state: { landParcels: { parcel1: 'data' } }, // no previousReferenceNumber
-        referenceNumber: 'REF123'
-      }
-
-      const mockH = {
-        redirect: vi.fn(),
-        view: vi.fn()
-      }
-
+      postContext.state = { landParcels: { parcel1: 'data' } }
       const mockValidationResult = { id: 'validation-123', valid: true }
-      const statusCode = 204
-      const mockSubmitResult = { success: true, status: statusCode }
-
       validateApplication.mockResolvedValue(mockValidationResult)
-
-      vi.spyOn(controller, 'submitGasApplication').mockResolvedValue(mockSubmitResult)
+      vi.spyOn(controller, 'submitGasApplication').mockResolvedValue({ success: true, status: 204 })
       vi.spyOn(controller, 'handleSuccessfulSubmission').mockResolvedValue('proceeded')
 
       const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await handler(postRequest, postContext, postH)
 
       const identifiers = controller.submitGasApplication.mock.calls[0][1].identifiers
-
       expect(identifiers).toEqual({
         clientRef: 'ref123',
         crn: 'crn123',
         frn: undefined,
         sbi: '123456789'
       })
-
       expect(identifiers).not.toHaveProperty('previousClientRef')
     })
 
     it('should handle undefined auth', async () => {
-      const mockRequest = {
-        server: {},
-        params: { slug: 'test-grant' }
-      }
-      const mockContext = {
-        state: { previousReferenceNumber: 'REF345' },
-        referenceNumber: 'REF123'
-      }
-      const mockH = { redirect: vi.fn(), view: vi.fn() }
+      postRequest = { server: {}, params: { slug: 'test-grant' } }
+      postContext.state = { previousReferenceNumber: 'REF345' }
       const mockValidationResult = { id: 'val-123', valid: true }
       validateApplication.mockResolvedValue(mockValidationResult)
       vi.spyOn(controller, 'submitGasApplication').mockResolvedValue({ status: 204 })
       vi.spyOn(controller, 'handleSuccessfulSubmission').mockResolvedValue('proceeded')
 
       const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await handler(postRequest, postContext, postH)
 
-      expect(controller.submitGasApplication).toHaveBeenCalledWith(mockRequest, {
+      expect(controller.submitGasApplication).toHaveBeenCalledWith(postRequest, {
         identifiers: {
           clientRef: 'ref123',
           previousClientRef: 'ref345',
@@ -471,201 +384,103 @@ describe('SubmissionPageController', () => {
           frn: undefined,
           sbi: undefined
         },
-        state: {
-          previousReferenceNumber: 'REF345'
-        },
+        state: postContext.state,
         validationResult: mockValidationResult
       })
     })
 
     it('should extract frn from applicant business reference', async () => {
-      const mockRequest = {
-        auth: { credentials: { sbi: '123', crn: 'crn123' } },
-        server: {},
-        params: { slug: 'test-grant' }
-      }
-      const mockContext = {
-        state: {
-          applicant: {
-            business: { reference: 'FRN999' }
-          }
-        },
-        referenceNumber: 'REF123',
-        previousReferenceNumber: 'REF345'
-      }
-      const mockH = { redirect: vi.fn(), view: vi.fn() }
+      postContext.state = { additionalAnswers: { applicant: { business: { reference: 'FRN999' } } } }
       const mockValidationResult = { id: 'val-123', valid: true }
       validateApplication.mockResolvedValue(mockValidationResult)
       vi.spyOn(controller, 'submitGasApplication').mockResolvedValue({ status: 204 })
       vi.spyOn(controller, 'handleSuccessfulSubmission').mockResolvedValue('proceeded')
 
       const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await handler(postRequest, postContext, postH)
 
-      expect(controller.submitGasApplication).toHaveBeenCalledWith(mockRequest, {
-        identifiers: expect.objectContaining({
-          frn: 'FRN999'
-        }),
-        state: mockContext.state,
+      expect(controller.submitGasApplication).toHaveBeenCalledWith(postRequest, {
+        identifiers: expect.objectContaining({ frn: 'FRN999' }),
+        state: postContext.state,
         validationResult: mockValidationResult
       })
     })
 
     it('should handle missing applicant', async () => {
-      const mockRequest = {
-        auth: { credentials: { sbi: '123', crn: 'crn123' } },
-        server: {},
-        params: { slug: 'test-grant' }
-      }
-      const mockContext = {
-        state: {},
-        referenceNumber: 'REF123',
-        previousReferenceNumber: 'REF345'
-      }
-      const mockH = { redirect: vi.fn(), view: vi.fn() }
       const mockValidationResult = { id: 'val-123', valid: true }
       validateApplication.mockResolvedValue(mockValidationResult)
       vi.spyOn(controller, 'submitGasApplication').mockResolvedValue({ status: 204 })
       vi.spyOn(controller, 'handleSuccessfulSubmission').mockResolvedValue('proceeded')
 
       const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await handler(postRequest, postContext, postH)
 
-      expect(controller.submitGasApplication).toHaveBeenCalledWith(mockRequest, {
-        identifiers: expect.objectContaining({
-          frn: undefined
-        }),
+      expect(controller.submitGasApplication).toHaveBeenCalledWith(postRequest, {
+        identifiers: expect.objectContaining({ frn: undefined }),
         state: {},
         validationResult: mockValidationResult
       })
     })
 
     it('should convert referenceNumber to lowercase for clientRef', async () => {
-      const mockRequest = {
-        auth: { credentials: { sbi: '123', crn: 'crn123' } },
-        server: {},
-        params: { slug: 'test-grant' }
-      }
-      const mockContext = {
-        state: {},
-        referenceNumber: 'REF-UPPER-123'
-      }
-      const mockH = { redirect: vi.fn(), view: vi.fn() }
+      postContext.referenceNumber = 'REF-UPPER-123'
       const mockValidationResult = { id: 'val-123', valid: true }
       validateApplication.mockResolvedValue(mockValidationResult)
       vi.spyOn(controller, 'submitGasApplication').mockResolvedValue({ status: 204 })
       vi.spyOn(controller, 'handleSuccessfulSubmission').mockResolvedValue('proceeded')
 
       const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await handler(postRequest, postContext, postH)
 
-      expect(controller.submitGasApplication).toHaveBeenCalledWith(mockRequest, {
-        identifiers: expect.objectContaining({
-          clientRef: 'ref-upper-123'
-        }),
+      expect(controller.submitGasApplication).toHaveBeenCalledWith(postRequest, {
+        identifiers: expect.objectContaining({ clientRef: 'ref-upper-123' }),
         state: {},
         validationResult: mockValidationResult
       })
     })
 
     it('should convert previousReferenceNumber to lowercase for previousClientRef', async () => {
-      const mockRequest = {
-        auth: { credentials: { sbi: '123', crn: 'crn123' } },
-        server: {},
-        params: { slug: 'test-grant' }
-      }
-      const mockContext = {
-        state: {},
-        referenceNumber: 'REF-UPPER-123',
-        previousReferenceNumber: 'PREV-UPPER-456'
-      }
-      const mockH = { redirect: vi.fn(), view: vi.fn() }
+      postContext.referenceNumber = 'REF-UPPER-123'
       const mockValidationResult = { id: 'val-123', valid: true }
       validateApplication.mockResolvedValue(mockValidationResult)
       vi.spyOn(controller, 'submitGasApplication').mockResolvedValue({ status: 204 })
       vi.spyOn(controller, 'handleSuccessfulSubmission').mockResolvedValue('proceeded')
 
       const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await handler(postRequest, postContext, postH)
 
-      expect(controller.submitGasApplication).toHaveBeenCalledWith(mockRequest, {
-        identifiers: expect.objectContaining({
-          clientRef: 'ref-upper-123'
-        }),
+      expect(controller.submitGasApplication).toHaveBeenCalledWith(postRequest, {
+        identifiers: expect.objectContaining({ clientRef: 'ref-upper-123' }),
         state: {},
         validationResult: mockValidationResult
       })
     })
 
     it('should return error view when validation fails', async () => {
-      const mockRequest = {
-        auth: {
-          credentials: {
-            sbi: '123456789',
-            crn: 'crn123'
-          }
-        },
-        server: {},
-        params: { slug: 'test-grant' }
-      }
-      const mockContext = {
-        state: { landParcels: {} },
-        referenceNumber: 'REF123'
-      }
-      const mockH = {
-        view: vi.fn().mockReturnValue('error-view'),
-        redirect: vi.fn()
-      }
-
+      postContext.state = { landParcels: {} }
       const mockValidationResult = { id: 'validation-123', valid: false }
-
       validateApplication.mockResolvedValue(mockValidationResult)
       vi.spyOn(controller, 'renderSubmissionError').mockReturnValue('error-view')
       vi.spyOn(controller, 'submitGasApplication').mockResolvedValue({ success: true })
 
       const handler = controller.makePostRouteHandler()
-      const result = await handler(mockRequest, mockContext, mockH)
+      const result = await handler(postRequest, postContext, postH)
 
-      expect(controller.renderSubmissionError).toHaveBeenCalledWith(mockH, mockRequest, mockContext, 'validation-123')
+      expect(controller.renderSubmissionError).toHaveBeenCalledWith(postH, postRequest, postContext, 'validation-123')
       expect(controller.submitGasApplication).not.toHaveBeenCalled()
       expect(result).toBe('error-view')
     })
 
     it('should handle submission errors', async () => {
-      const mockError = new Error('Submission failed')
-      const mockRequest = {
-        auth: {
-          credentials: {
-            sbi: '123456789',
-            crn: 'crn123'
-          }
-        },
-        server: {},
-        params: { slug: 'test-grant' }
-      }
-      const mockContext = {
-        state: {
-          applicant: {
-            business: {
-              reference: 'FRN123'
-            }
-          }
-        },
-        referenceNumber: 'REF123'
-      }
-      const mockH = {
-        redirect: vi.fn(),
-        view: vi.fn()
-      }
+      postContext.state = { additionalAnswers: { applicant: { business: { reference: 'FRN123' } } } }
       const mockValidationResult = { id: 'validation-123', valid: true }
-
       validateApplication.mockResolvedValue(mockValidationResult)
-      vi.spyOn(controller, 'submitGasApplication').mockRejectedValue(mockError)
+      vi.spyOn(controller, 'submitGasApplication').mockRejectedValue(new Error('Submission failed'))
 
       const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await handler(postRequest, postContext, postH)
 
-      expect(mockH.view).toHaveBeenCalledWith(
+      expect(postH.view).toHaveBeenCalledWith(
         'submission-error',
         expect.objectContaining({
           backLink: null,
@@ -676,25 +491,11 @@ describe('SubmissionPageController', () => {
     })
 
     it('should handle validation error gracefully', async () => {
-      const mockError = new Error('Validation failed')
-      const mockRequest = {
-        auth: undefined,
-        server: {},
-        params: { slug: 'test-grant' }
-      }
-      const mockContext = {
-        state: {},
-        referenceNumber: 'REF123'
-      }
-      const mockH = {
-        redirect: vi.fn(),
-        view: vi.fn()
-      }
-
-      validateApplication.mockRejectedValue(mockError)
+      postRequest = { auth: undefined, server: {}, params: { slug: 'test-grant' } }
+      validateApplication.mockRejectedValue(new Error('Validation failed'))
 
       const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await handler(postRequest, postContext, postH)
 
       expect(debug).toHaveBeenCalledWith(
         LogCodes.SUBMISSION.SUBMISSION_FAILURE,
@@ -705,40 +506,20 @@ describe('SubmissionPageController', () => {
           crn: undefined,
           errorMessage: 'Validation failed'
         }),
-        mockRequest
+        postRequest
       )
     })
 
     it('should handle errors from handleSuccessfulSubmission', async () => {
-      const mockError = new Error('Cache service failed')
-      const mockRequest = {
-        auth: {
-          credentials: {
-            sbi: '123456789',
-            crn: 'crn123'
-          }
-        },
-        server: {},
-        params: { slug: 'test-grant' }
-      }
-      const mockContext = {
-        state: {},
-        referenceNumber: 'REF123'
-      }
-      const mockH = {
-        view: vi.fn().mockReturnValue('error-view')
-      }
       const mockValidationResult = { id: 'validation-123', valid: true }
-      const mockSubmitResult = { success: true }
-
       validateApplication.mockResolvedValue(mockValidationResult)
-      vi.spyOn(controller, 'submitGasApplication').mockResolvedValue(mockSubmitResult)
-      vi.spyOn(controller, 'handleSuccessfulSubmission').mockRejectedValue(mockError)
+      vi.spyOn(controller, 'submitGasApplication').mockResolvedValue({ success: true })
+      vi.spyOn(controller, 'handleSuccessfulSubmission').mockRejectedValue(new Error('Cache service failed'))
 
       const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await handler(postRequest, postContext, postH)
 
-      expect(mockH.view).toHaveBeenCalledWith(
+      expect(postH.view).toHaveBeenCalledWith(
         'submission-error',
         expect.objectContaining({
           backLink: null,
@@ -749,30 +530,13 @@ describe('SubmissionPageController', () => {
     })
 
     it('should handle timeout when submitting application gracefully', async () => {
-      const mockRequest = {
-        auth: {
-          credentials: {
-            sbi: '123456789',
-            crn: 'crn123'
-          }
-        },
-        server: {},
-        params: { slug: 'test-grant' }
-      }
-      const mockContext = {
-        state: {},
-        referenceNumber: 'REF456'
-      }
-      const mockH = {
-        view: vi.fn().mockReturnValue('error-view')
-      }
-
+      postContext.referenceNumber = 'REF456'
       validateApplication.mockRejectedValue(new Error('Operation timed out after 30000ms'))
 
       const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await handler(postRequest, postContext, postH)
 
-      expect(mockH.view).toHaveBeenCalledWith(
+      expect(postH.view).toHaveBeenCalledWith(
         'submission-error',
         expect.objectContaining({
           backLink: null,

@@ -55,7 +55,7 @@ describe('ConfirmFarmDetailsController', () => {
         }
       }
     }
-    mockContext = {}
+    mockContext = { state: {} }
     mockH = {
       view: vi.fn().mockReturnValue('mocked-view')
     }
@@ -76,9 +76,11 @@ describe('ConfirmFarmDetailsController', () => {
       expect(controller.setState).toHaveBeenCalledWith(
         mockRequest,
         expect.objectContaining({
-          applicant: {
-            ...mockData
-          }
+          additionalAnswers: expect.objectContaining({
+            applicant: {
+              ...mockData
+            }
+          })
         })
       )
 

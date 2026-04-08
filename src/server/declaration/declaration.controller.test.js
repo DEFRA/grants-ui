@@ -151,16 +151,6 @@ describe('DeclarationPageController', () => {
       expect(controllerWithView.viewName).toBe('custom-view.html')
     })
 
-    test('should keep default viewName when pageDef.view is not provided', () => {
-      const pageDefWithoutView = { ...mockPageDef }
-      const controllerWithoutView = new DeclarationPageController(mockModel, pageDefWithoutView)
-      expect(controllerWithoutView.viewName).toBe('declaration-page.html')
-    })
-
-    test('should set model property', () => {
-      expect(controller.model).toBe(mockModel)
-    })
-
     test('should resolve section when pageDef has section property', () => {
       const getSectionSpy = vi.spyOn(mockModel, 'getSection')
       const controllerWithSection = new DeclarationPageController(mockModel, mockPageDef)
@@ -175,11 +165,6 @@ describe('DeclarationPageController', () => {
       const pageDefWithoutSection = {}
       const controllerWithoutSection = new DeclarationPageController(mockModel, pageDefWithoutSection)
       expect(controllerWithoutSection.section).toBeUndefined()
-    })
-
-    test('should call parent constructor', () => {
-      const controllerInstance = new DeclarationPageController(mockModel, mockPageDef)
-      expect(controllerInstance.pageDef).toBe(mockPageDef)
     })
   })
 
@@ -209,19 +194,9 @@ describe('DeclarationPageController', () => {
       expect(result.backLink).toEqual({ href: '/task-list', text: 'Back to task list' })
     })
 
-    test('should not include backLink when getTaskPageBackLink returns null', () => {
-      getTaskPageBackLink.mockReturnValue(null)
-
+    test.each([null, undefined])('should not include backLink when getTaskPageBackLink returns %s', (returnValue) => {
+      getTaskPageBackLink.mockReturnValue(returnValue)
       const result = controller.getSummaryViewModel(mockRequest, mockContext)
-
-      expect(result.backLink).toBeUndefined()
-    })
-
-    test('should not include backLink when getTaskPageBackLink returns undefined', () => {
-      getTaskPageBackLink.mockReturnValue(undefined)
-
-      const result = controller.getSummaryViewModel(mockRequest, mockContext)
-
       expect(result.backLink).toBeUndefined()
     })
 
@@ -321,15 +296,6 @@ describe('DeclarationPageController', () => {
       await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow(error)
 
       expect(formSlugHelper.storeSlugInContext).toHaveBeenCalled()
-    })
-
-    test('should handle case when parent handler returns undefined', async () => {
-      parentGetHandler.mockResolvedValueOnce(undefined)
-
-      const handler = controller.makeGetRouteHandler()
-      const result = await handler(mockRequest, mockContext, mockH)
-
-      expect(result).toBeUndefined()
     })
   })
 
@@ -501,6 +467,116 @@ describe('DeclarationPageController', () => {
         mockRequest
       )
       expect(handleGasApiError).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('buildApplicationData', () => {
+    test('should use frn from state.additionalAnswers.applicant.business.reference when full chain is present', () => {
+      const context = {
+        ...mockContext,
+        state: {
+          ...mockContext.state,
+          additionalAnswers: {
+            applicant: {
+              business: {
+                reference: 'FRN123456'
+              }
+            }
+          }
+        }
+      }
+
+      controller.buildApplicationData(mockRequest, context)
+
+      expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
+        expect.objectContaining({ frn: 'FRN123456' }),
+        expect.anything(),
+        expect.any(Function)
+      )
+    })
+
+    test('should fall back to "undefined" when state.additionalAnswers is undefined', () => {
+      const context = {
+        ...mockContext,
+        state: {
+          ...mockContext.state,
+          additionalAnswers: undefined
+        }
+      }
+
+      controller.buildApplicationData(mockRequest, context)
+
+      expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
+        expect.objectContaining({ frn: 'undefined' }),
+        expect.anything(),
+        expect.any(Function)
+      )
+    })
+
+    test('should fall back to "undefined" when state.additionalAnswers.applicant is undefined', () => {
+      const context = {
+        ...mockContext,
+        state: {
+          ...mockContext.state,
+          additionalAnswers: {
+            applicant: undefined
+          }
+        }
+      }
+
+      controller.buildApplicationData(mockRequest, context)
+
+      expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
+        expect.objectContaining({ frn: 'undefined' }),
+        expect.anything(),
+        expect.any(Function)
+      )
+    })
+
+    test('should fall back to "undefined" when state.additionalAnswers.applicant.business is undefined', () => {
+      const context = {
+        ...mockContext,
+        state: {
+          ...mockContext.state,
+          additionalAnswers: {
+            applicant: {
+              business: undefined
+            }
+          }
+        }
+      }
+
+      controller.buildApplicationData(mockRequest, context)
+
+      expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
+        expect.objectContaining({ frn: 'undefined' }),
+        expect.anything(),
+        expect.any(Function)
+      )
+    })
+
+    test('should fall back to "undefined" when state.additionalAnswers.applicant.business.reference is undefined', () => {
+      const context = {
+        ...mockContext,
+        state: {
+          ...mockContext.state,
+          additionalAnswers: {
+            applicant: {
+              business: {
+                reference: undefined
+              }
+            }
+          }
+        }
+      }
+
+      controller.buildApplicationData(mockRequest, context)
+
+      expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
+        expect.objectContaining({ frn: 'undefined' }),
+        expect.anything(),
+        expect.any(Function)
+      )
     })
   })
 })

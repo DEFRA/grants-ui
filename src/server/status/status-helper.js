@@ -113,7 +113,7 @@ async function persistStatus(request, newStatus, previousStatus, grantId, existi
  * @returns {boolean} - True if state contains meaningful values, otherwise false
  */
 function hasMeaningfulState(state) {
-  const baseStateKeys = new Set(['$$__referenceNumber', 'applicationStatus', 'applicant'])
+  const baseStateKeys = new Set(['$$__referenceNumber', 'applicationStatus', 'additionalAnswers'])
 
   // TODO remove workaround for state clearing bug when SFIR-647 are complete
   const farmPaymentsStateKeys = new Set(['selectedLandParcel'])
@@ -197,7 +197,8 @@ function checkStateGuards(request, h, context, grantRedirectRules) {
   const currentPath = request.params?.path
 
   for (const guard of stateGuards) {
-    const hasRequiredState = context.state?.[guard.stateKey] !== undefined && context.state?.[guard.stateKey] !== null
+    const value = guard.stateKey.split('.').reduce((obj, key) => obj?.[key], context.state)
+    const hasRequiredState = value !== undefined && value !== null
     const isAllowedPath = guard.allowedPaths?.includes(currentPath)
 
     if (!hasRequiredState && !isAllowedPath) {

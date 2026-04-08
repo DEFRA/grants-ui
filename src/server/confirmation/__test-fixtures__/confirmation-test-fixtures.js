@@ -12,8 +12,8 @@ export const MOCK_FORMS = {
     title: 'Example Grant with Auth'
   },
   flyingPigs: {
-    id: 'flying-pigs-id',
-    slug: 'flying-pigs',
+    id: 'pigs-might-fly-id',
+    slug: 'pigs-might-fly',
     title: 'Flying Pigs Grant'
   }
 }
