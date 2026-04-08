@@ -122,9 +122,13 @@ export default class ConfirmMethaneDetailsController extends QuestionPageControl
       if (sbi) {
         const toleratedPaths = this.model?.def?.metadata?.toleratedFailurePaths
         const applicant = await fetchBusinessAndCPH(request, { toleratedPaths })
+        const prevAdditionalAnswers = /** @type {object} */ (state.additionalAnswers)
         await this.setState(request, {
           ...state,
-          applicant
+          additionalAnswers: {
+            ...prevAdditionalAnswers,
+            applicant
+          }
         })
       }
 

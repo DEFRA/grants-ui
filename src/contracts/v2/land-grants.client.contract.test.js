@@ -23,7 +23,8 @@ const provider = new PactV3({
   dir: path.resolve(process.cwd(), 'src/contracts/pacts'),
   consumer: 'grants-ui',
   provider: 'land-grants-api',
-  spec: SpecificationVersion.SPECIFICATION_VERSION_V4
+  spec: SpecificationVersion.SPECIFICATION_VERSION_V4,
+  port: 0
 })
 
 describe('calculate', () => {
@@ -218,12 +219,9 @@ describe('calculate', () => {
         body: EXPECTED_BODY
       })
       .executeTest(async (mockserver) => {
-        try {
-          await postToLandGrantsApi('/api/v2/payments/calculate', badRequestPayload, mockserver.url)
-        } catch (error) {
-          expect(error.code).toBe(400)
-          expect(error.message).toBe('Bad Request')
-        }
+        await expect(
+          postToLandGrantsApi('/api/v2/payments/calculate', badRequestPayload, mockserver.url)
+        ).rejects.toMatchObject({ code: 400, message: 'Bad Request' })
       })
   })
 
@@ -263,12 +261,9 @@ describe('calculate', () => {
         body: EXPECTED_BODY
       })
       .executeTest(async (mockserver) => {
-        try {
-          await postToLandGrantsApi('/api/v2/payments/calculate', badRequestPayload, mockserver.url)
-        } catch (error) {
-          expect(error.code).toBe(400)
-          expect(error.message).toBe('Bad Request')
-        }
+        await expect(
+          postToLandGrantsApi('/api/v2/payments/calculate', badRequestPayload, mockserver.url)
+        ).rejects.toMatchObject({ code: 400, message: 'Bad Request' })
       })
   })
 
@@ -308,12 +303,9 @@ describe('calculate', () => {
         body: EXPECTED_BODY
       })
       .executeTest(async (mockserver) => {
-        try {
-          await postToLandGrantsApi('/api/v2/payments/calculate', invalidQuantityPayload, mockserver.url)
-        } catch (error) {
-          expect(error.code).toBe(422)
-          expect(error.message).toBe('Unprocessable Entity')
-        }
+        await expect(
+          postToLandGrantsApi('/api/v2/payments/calculate', invalidQuantityPayload, mockserver.url)
+        ).rejects.toMatchObject({ code: 422, message: 'Unprocessable Entity' })
       })
   })
 
@@ -353,12 +345,9 @@ describe('calculate', () => {
         body: EXPECTED_BODY
       })
       .executeTest(async (mockserver) => {
-        try {
-          await postToLandGrantsApi('/api/v2/payments/calculate', invalidQuantityPayload, mockserver.url)
-        } catch (error) {
-          expect(error.code).toBe(422)
-          expect(error.message).toBe('Unprocessable Entity')
-        }
+        await expect(
+          postToLandGrantsApi('/api/v2/payments/calculate', invalidQuantityPayload, mockserver.url)
+        ).rejects.toMatchObject({ code: 422, message: 'Unprocessable Entity' })
       })
   })
 })
@@ -383,16 +372,9 @@ describe('parcels', () => {
       })
       .willRespondWith({ status: 400, headers: { 'Content-Type': 'application/json' }, body: EXPECTED_BODY })
       .executeTest(async (mockserver) => {
-        try {
-          await postToLandGrantsApi(
-            '/api/v2/parcels',
-            { parcelIds: ['SD6743-8083'], fields: ['WRONG'] },
-            mockserver.url
-          )
-        } catch (error) {
-          expect(error.code).toBe(400)
-          expect(error.message).toBe('Bad Request')
-        }
+        await expect(
+          postToLandGrantsApi('/api/v2/parcels', { parcelIds: ['SD6743-8083'], fields: ['WRONG'] }, mockserver.url)
+        ).rejects.toMatchObject({ code: 400, message: 'Bad Request' })
       })
   })
 
@@ -439,16 +421,9 @@ describe('parcels', () => {
       })
       .willRespondWith({ status: 400, headers: { 'Content-Type': 'application/json' }, body: EXPECTED_BODY })
       .executeTest(async (mockserver) => {
-        try {
-          await postToLandGrantsApi(
-            '/api/v2/parcels',
-            { parcelIds: ['BADFORMAT-91977'], fields: ['size'] },
-            mockserver.url
-          )
-        } catch (error) {
-          expect(error.code).toBe(400)
-          expect(error.message).toBe('Bad Request')
-        }
+        await expect(
+          postToLandGrantsApi('/api/v2/parcels', { parcelIds: ['BADFORMAT-91977'], fields: ['size'] }, mockserver.url)
+        ).rejects.toMatchObject({ code: 400, message: 'Bad Request' })
       })
   })
 
@@ -471,12 +446,9 @@ describe('parcels', () => {
       })
       .willRespondWith({ status: 404, headers: { 'Content-Type': 'application/json' }, body: EXPECTED_BODY })
       .executeTest(async (mockserver) => {
-        try {
-          await postToLandGrantsApi('/api/v2/parcels', { parcelIds: ['SD6843-1234'], fields: ['size'] }, mockserver.url)
-        } catch (error) {
-          expect(error.code).toBe(404)
-          expect(error.message).toBe('Not Found')
-        }
+        await expect(
+          postToLandGrantsApi('/api/v2/parcels', { parcelIds: ['SD6843-1234'], fields: ['size'] }, mockserver.url)
+        ).rejects.toMatchObject({ code: 404, message: 'Not Found' })
       })
   })
 
@@ -579,8 +551,8 @@ describe('parcels', () => {
       })
       .willRespondWith({ status: 400, headers: { 'Content-Type': 'application/json' }, body: EXPECTED_BODY })
       .executeTest(async (mockserver) => {
-        try {
-          await postToLandGrantsApi(
+        await expect(
+          postToLandGrantsApi(
             '/api/v2/parcels',
             {
               parcelIds: ['SD6743-8083', 'SD6743-8084'],
@@ -589,10 +561,7 @@ describe('parcels', () => {
             },
             mockserver.url
           )
-        } catch (error) {
-          expect(error.code).toBe(400)
-          expect(error.message).toBe('Bad Request')
-        }
+        ).rejects.toMatchObject({ code: 400, message: 'Bad Request' })
       })
   })
 
@@ -664,16 +633,13 @@ describe('parcels', () => {
       })
       .willRespondWith({ status: 400, headers: { 'Content-Type': 'application/json' }, body: EXPECTED_BODY })
       .executeTest(async (mockserver) => {
-        try {
-          await postToLandGrantsApi(
+        await expect(
+          postToLandGrantsApi(
             '/api/v2/parcels',
             { parcelIds: ['MALFORMED-PARCEL'], fields: ['actions', 'size'] },
             mockserver.url
           )
-        } catch (error) {
-          expect(error.code).toBe(400)
-          expect(error.message).toBe('Bad Request')
-        }
+        ).rejects.toMatchObject({ code: 400, message: 'Bad Request' })
       })
   })
 
@@ -696,16 +662,13 @@ describe('parcels', () => {
       })
       .willRespondWith({ status: 404, headers: { 'Content-Type': 'application/json' }, body: EXPECTED_BODY })
       .executeTest(async (mockserver) => {
-        try {
-          await postToLandGrantsApi(
+        await expect(
+          postToLandGrantsApi(
             '/api/v2/parcels',
             { parcelIds: ['SD1234-5678'], fields: ['actions', 'size'] },
             mockserver.url
           )
-        } catch (error) {
-          expect(error.code).toBe(404)
-          expect(error.message).toBe('Not Found')
-        }
+        ).rejects.toMatchObject({ code: 404, message: 'Not Found' })
       })
   })
 })
@@ -1000,12 +963,9 @@ describe('validate', () => {
         body: EXPECTED_BODY
       })
       .executeTest(async (mockserver) => {
-        try {
-          await postToLandGrantsApi('/api/v2/application/validate', negativeQuantityPayload, mockserver.url)
-        } catch (error) {
-          expect(error.code).toBe(422)
-          expect(error.message).toBe('Unprocessable Entity')
-        }
+        await expect(
+          postToLandGrantsApi('/api/v2/application/validate', negativeQuantityPayload, mockserver.url)
+        ).rejects.toMatchObject({ code: 422, message: 'Unprocessable Entity' })
       })
   })
 
@@ -1045,12 +1005,9 @@ describe('validate', () => {
         body: EXPECTED_BODY
       })
       .executeTest(async (mockserver) => {
-        try {
-          await postToLandGrantsApi('/api/v2/application/validate', negativeQuantityPayload, mockserver.url)
-        } catch (error) {
-          expect(error.code).toBe(422)
-          expect(error.message).toBe('Unprocessable Entity')
-        }
+        await expect(
+          postToLandGrantsApi('/api/v2/application/validate', negativeQuantityPayload, mockserver.url)
+        ).rejects.toMatchObject({ code: 422, message: 'Unprocessable Entity' })
       })
   })
 
@@ -1083,12 +1040,9 @@ describe('validate', () => {
         body: EXPECTED_BODY
       })
       .executeTest(async (mockserver) => {
-        try {
-          await postToLandGrantsApi('/api/v2/application/validate', incompletePayload, mockserver.url)
-        } catch (error) {
-          expect(error.code).toBe(400)
-          expect(error.message).toBe('Bad Request')
-        }
+        await expect(
+          postToLandGrantsApi('/api/v2/application/validate', incompletePayload, mockserver.url)
+        ).rejects.toMatchObject({ code: 400, message: 'Bad Request' })
       })
   })
 
@@ -1130,12 +1084,9 @@ describe('validate', () => {
         body: EXPECTED_BODY
       })
       .executeTest(async (mockserver) => {
-        try {
-          await postToLandGrantsApi('/api/v2/application/validate', notFoundPayload, mockserver.url)
-        } catch (error) {
-          expect(error.code).toBe(400)
-          expect(error.message).toBe('Bad Request')
-        }
+        await expect(
+          postToLandGrantsApi('/api/v2/application/validate', notFoundPayload, mockserver.url)
+        ).rejects.toMatchObject({ code: 400, message: 'Bad Request' })
       })
   })
 })
