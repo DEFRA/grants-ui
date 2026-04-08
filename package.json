@@ -149,7 +149,7 @@
     "clean-webpack-plugin": "4.0.0",
     "copy-webpack-plugin": "14.0.0",
     "eslint": "9.39.4",
-    "eslint-config-prettier": "9.1.2",
+    "eslint-config-prettier": "10.1.8",
     "eslint-import-resolver-typescript": "3.10.1",
     "eslint-plugin-import": "2.32.0",
     "eslint-plugin-jsdoc": "48.11.0",
