@@ -4,7 +4,7 @@
     "slug": "check-details",
     "name": "Check details — Yes",
     "type": "yesNo",
-    "fieldName": "detailsCorrect",
+    "fieldName": "businessDetailsUpToDate",
     "value": "true",
     "section": "start"
   },
@@ -20,7 +20,7 @@
     "slug": "eligibility-land-registered",
     "name": "Land registered — Yes",
     "type": "yesNo",
-    "fieldName": "landRegistered",
+    "fieldName": "landRegisteredWithRpa",
     "value": "true",
     "section": "eligibility"
   },
@@ -28,7 +28,7 @@
     "slug": "eligibility-management-control",
     "name": "Management control — Yes",
     "type": "yesNo",
-    "fieldName": "managementControl",
+    "fieldName": "landManagementControl",
     "value": "true",
     "section": "eligibility"
   },
@@ -36,7 +36,7 @@
     "slug": "eligibility-tenant",
     "name": "Tenant — No",
     "type": "yesNo",
-    "fieldName": "isTenant",
+    "fieldName": "publicBodyTenant",
     "value": "false",
     "section": "eligibility"
   },
@@ -44,7 +44,7 @@
     "slug": "eligibility-grazing-rights",
     "name": "Grazing rights — No",
     "type": "yesNo",
-    "fieldName": "grazingRights",
+    "fieldName": "landHasGrazingRights",
     "value": "false",
     "section": "eligibility"
   },
@@ -52,7 +52,7 @@
     "slug": "eligibility-valid-wmp",
     "name": "Valid WMP — No",
     "type": "yesNo",
-    "fieldName": "hasValidWmp",
+    "fieldName": "appLandHasExistingWmp",
     "value": "false",
     "section": "eligibility"
   },
@@ -60,7 +60,7 @@
     "slug": "eligibility-higher-tier",
     "name": "Higher tier — No",
     "type": "yesNo",
-    "fieldName": "higherTier",
+    "fieldName": "intendToApplyHigherTier",
     "value": "false",
     "section": "eligibility"
   },
@@ -100,14 +100,14 @@
     "slug": "centre-of-woodland",
     "name": "Centre of woodland grid reference",
     "type": "textFields",
-    "fields": { "centreOfWoodlandGridReference": "SP 4178 2432" },
+    "fields": { "centreGridReference": "SP 4178 2432" },
     "section": "about-woodland"
   },
   {
     "slug": "which-forestry-commission-team",
     "name": "Forestry commission team",
     "type": "radios",
-    "fieldName": "forestryCommissionTeam",
+    "fieldName": "fcTeamCode",
     "section": "about-woodland"
   }
 ]

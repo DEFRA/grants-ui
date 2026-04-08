@@ -66,8 +66,37 @@ metadata:
           fields:
             - path: info
               fields:
-                - path: name
                 - path: reference
+                - path: email
+                  fields:
+                    - path: address
+                - path: phone
+                  fields:
+                    - path: mobile
+                    - path: landline
+                - path: name
+                - path: address
+                  fields:
+                    - path: line1
+                    - path: line2
+                    - path: line3
+                    - path: line4
+                    - path: line5
+                    - path: street
+                    - path: city
+                    - path: postalCode
+                    - path: uprn
+                    - path: county
+                    - path: buildingName
+                    - path: buildingNumberRange
+                    - path: dependentLocality
+                    - path: doubleDependentLocality
+                    - path: flatName
+                    - path: pafOrganisationName
+                - path: vat
+            - path: countyParishHoldings
+              fields:
+                - path: cphNumber
     responseMapping:
       business: data.business.info
       countyParishHoldings: data.business.countyParishHoldings[0].cphNumber
