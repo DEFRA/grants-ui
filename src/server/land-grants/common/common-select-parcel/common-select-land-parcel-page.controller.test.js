@@ -68,6 +68,32 @@ describe('CommonSelectLandParcelPageController', () => {
 
   afterEach(vi.clearAllMocks)
 
+  describe('constructor', () => {
+    it('does NOT inject CheckboxesField if landParcels already exists', () => {
+      const model = {
+        def: { metadata: { pageConfig: {} } }
+      }
+
+      const existingComponent = {
+        type: 'CheckboxesField',
+        name: 'landParcels',
+        title: 'Existing'
+      }
+
+      const pageDef = {
+        path: '/test',
+        components: [existingComponent]
+      }
+
+      const controller = new CommonSelectLandParcelPageController(model, pageDef)
+
+      const components =
+        controller.form?.definition?.pages?.[0]?.components || controller.pageDef?.components || pageDef.components
+
+      expect(components).toEqual([existingComponent])
+    })
+  })
+
   describe('resolveParcelIds', () => {
     it('returns payload values for POST', () => {
       const controller = createController()
