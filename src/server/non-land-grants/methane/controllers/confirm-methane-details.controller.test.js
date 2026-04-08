@@ -316,7 +316,9 @@ describe('ConfirmMethaneDetailsController', () => {
       expect(fetchBusinessAndCPH).toHaveBeenCalledWith(mockRequest, { toleratedPaths: ['countyParishHoldings'] })
       expect(controller.setState).toHaveBeenCalledWith(mockRequest, {
         someState: 'value',
-        applicant: mockData
+        additionalAnswers: {
+          applicant: mockData
+        }
       })
       expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-path')
       expect(result).toBe('redirected')
