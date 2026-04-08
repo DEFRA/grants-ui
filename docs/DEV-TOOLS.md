@@ -137,7 +137,7 @@ Each step requires:
 | `example-grant-with-auth.json`      | Example grant (with auth) |
 | `example-grant-with-task-list.json` | Example grant (task list) |
 | `farm-payments.json`                | Farm payments             |
-| `flying-pigs.json`                  | Flying pigs               |
+| `pigs-might-fly.json`               | Flying pigs               |
 | `methane.json`                      | Methane                   |
 | `woodland.json`                     | Woodland Management Plan  |
 

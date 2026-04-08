@@ -128,7 +128,7 @@ The script provides detailed progress for each form:
 ============================================================
 ✅ Successful: 6
    - farm-payments
-   - flying-pigs
+   - pigs-might-fly
    - methane
    - example-grant-with-auth
    - example-grant-with-task-list
