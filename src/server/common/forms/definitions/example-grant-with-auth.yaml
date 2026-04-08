@@ -12,6 +12,67 @@ metadata:
   submission:
     submissionSchemaPath: ./schemas/example-grant-with-auth-submission.schema.json
   grantRedirectRules: null
+  detailsPage:
+    query:
+      name: Business
+      entities:
+        - name: customer
+          variableName: crn
+          variableSource: credentials.crn
+          fields:
+            - path: info
+              fields:
+                - path: name
+                  fields:
+                    - path: title
+                    - path: first
+                    - path: middle
+                    - path: last
+        - name: business
+          variableName: sbi
+          variableSource: credentials.sbi
+          fields:
+            - path: info
+              fields:
+                - path: reference
+                - path: email
+                  fields:
+                    - path: address
+                - path: phone
+                  fields:
+                    - path: mobile
+                    - path: landline
+                - path: name
+                - path: address
+                  fields:
+                    - path: line1
+                    - path: line2
+                    - path: line3
+                    - path: line4
+                    - path: line5
+                    - path: street
+                    - path: city
+                    - path: postalCode
+                    - path: uprn
+                    - path: county
+    responseMapping:
+      business: data.business.info
+      customer: data.customer.info
+    displaySections:
+      - title: Applicant details
+        fields:
+          - label: Applicant name
+            sourcePath: customer.name
+            format: fullName
+      - title: Organisation details
+        fields:
+          - label: Organisation name
+            sourcePath: business.name
+          - label: Single Business Identifier (SBI) number
+            sourceType: credentials
+            sourcePath: sbi
+          - label: Organisation email
+            sourcePath: business.email.address
   printPage:
     showApplicantDetails: true
     configurablePrintContent:
@@ -465,6 +526,10 @@ pages:
         options: {}
         schema: {}
     id: 089374a5-13e7-494d-994e-9b38c4b7392c
+  - title: Check your details
+    path: /check-details
+    controller: CheckDetailsController
+    id: f7a2c8b1-3d4e-5f6a-7b8c-9d0e1f2a3b4c
   - title: Check your answers
     path: /summary
     controller: CheckResponsesPageController

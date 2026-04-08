@@ -10,13 +10,11 @@ import { ApplicationStatus } from '~/src/server/common/constants/application-sta
 import { log, LogCodes } from '../common/helpers/logging/log.js'
 import { mockHapiRequest, mockHapiResponseToolkit, mockHapiServer } from '~/src/__mocks__/hapi-mocks.js'
 import { MOCK_FORM_WITH_PATH, MOCK_SINGLE_PAGE_DEFINITION } from '~/src/__test-fixtures__/mock-forms-cache.js'
-import { fetchBusinessAndCustomerInformation } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
 import { createPersonRows, createBusinessRows, createContactRows } from '~/src/server/common/helpers/create-rows.js'
 
 vi.mock('../common/forms/services/find-form-by-slug.js')
 vi.mock('../common/helpers/print-application-service/print-application-service.js')
 vi.mock('~/src/server/common/helpers/forms-cache/forms-cache.js')
-vi.mock('~/src/server/common/services/consolidated-view/consolidated-view.service.js')
 vi.mock('~/src/server/common/helpers/create-rows.js')
 vi.mock('../common/helpers/logging/log.js', async () => {
   const { mockLogHelper } = await import('~/src/__mocks__')
@@ -31,9 +29,11 @@ const mockState = {
   field1: 'Some answer',
   $$__referenceNumber: 'REF-123',
   submittedAt: '2025-01-15T10:00:00.000Z',
-  applicant: {
-    business: { name: 'Test Business' },
-    customer: { name: { first: 'Test', last: 'User' } }
+  additionalAnswers: {
+    applicant: {
+      business: { name: 'Test Business' },
+      customer: { name: { first: 'Test', last: 'User' } }
+    }
   }
 }
 
@@ -208,8 +208,8 @@ describe('print-submitted-application.controller', () => {
   })
 
   test('should handle missing applicant in state gracefully', async () => {
-    const { applicant, ...stateWithoutApplicant } = mockState
-    mockGetState.mockResolvedValue(stateWithoutApplicant)
+    const { additionalAnswers, ...stateWithoutAdditionalAnswers } = mockState
+    mockGetState.mockResolvedValue(stateWithoutAdditionalAnswers)
 
     await handler(mockRequest, mockH)
 
@@ -233,67 +233,35 @@ describe('print-submitted-application.controller', () => {
       metadata: { printPage: { showApplicantDetails: true } }
     })
 
-    const fetchedData = {
-      customer: { name: { title: 'Mr', first: 'Fetched', last: 'User' } },
-      business: { name: 'Fetched Business' }
-    }
-
     beforeEach(() => {
       vi.mocked(createPersonRows).mockReturnValue(mockPersonRows)
       vi.mocked(createBusinessRows).mockReturnValue(mockBusinessRows)
       vi.mocked(createContactRows).mockReturnValue(mockContactRows)
     })
 
-    test.each([
-      {
-        desc: 'state has applicant — uses state data',
-        state: mockState,
-        expectedPersonArg: mockState.applicant.customer.name,
-        expectedBusinessArg: mockState.applicant.business,
-        shouldFetch: false
-      },
-      {
-        desc: 'state.applicant is empty — fetches from API',
-        state: { ...mockState, applicant: {} },
-        expectedPersonArg: fetchedData.customer.name,
-        expectedBusinessArg: fetchedData.business,
-        shouldFetch: true
-      }
-    ])(
-      'should resolve applicant details when $desc',
-      async ({ state, expectedPersonArg, expectedBusinessArg, shouldFetch }) => {
-        mockGetState.mockResolvedValue(state)
-        loadFormDefinition.mockResolvedValue(JSON.parse(definitionWithApplicantDetails))
-        if (shouldFetch) {
-          vi.mocked(fetchBusinessAndCustomerInformation).mockResolvedValue(fetchedData)
-        }
-
-        await handler(mockRequest, mockH)
-
-        if (shouldFetch) {
-          expect(fetchBusinessAndCustomerInformation).toHaveBeenCalledWith(mockRequest)
-        } else {
-          expect(fetchBusinessAndCustomerInformation).not.toHaveBeenCalled()
-        }
-        expect(createPersonRows).toHaveBeenCalledWith(expectedPersonArg)
-        expect(createBusinessRows).toHaveBeenCalledWith('123456789', expectedBusinessArg)
-        expect(createContactRows).toHaveBeenCalledWith(expectedBusinessArg)
-        expect(buildPrintViewModel).toHaveBeenCalledWith(
-          expect.objectContaining({
-            applicantDetailsSections: {
-              person: mockPersonRows,
-              business: mockBusinessRows,
-              contact: mockContactRows
-            }
-          })
-        )
-      }
-    )
-
-    test('should return null applicantDetailsSections when fetch fails', async () => {
-      mockGetState.mockResolvedValue({ ...mockState, applicant: {} })
+    test('should resolve applicant details from state', async () => {
+      mockGetState.mockResolvedValue(mockState)
       loadFormDefinition.mockResolvedValue(JSON.parse(definitionWithApplicantDetails))
-      vi.mocked(fetchBusinessAndCustomerInformation).mockRejectedValue(new Error('API failure'))
+
+      await handler(mockRequest, mockH)
+
+      expect(createPersonRows).toHaveBeenCalledWith(mockState.additionalAnswers.applicant.customer.name)
+      expect(createBusinessRows).toHaveBeenCalledWith('123456789', mockState.additionalAnswers.applicant.business)
+      expect(createContactRows).toHaveBeenCalledWith(mockState.additionalAnswers.applicant.business)
+      expect(buildPrintViewModel).toHaveBeenCalledWith(
+        expect.objectContaining({
+          applicantDetailsSections: {
+            person: mockPersonRows,
+            business: mockBusinessRows,
+            contact: mockContactRows
+          }
+        })
+      )
+    })
+
+    test('should return null applicantDetailsSections when state has no applicant data', async () => {
+      mockGetState.mockResolvedValue({ ...mockState, additionalAnswers: { applicant: {} } })
+      loadFormDefinition.mockResolvedValue(JSON.parse(definitionWithApplicantDetails))
 
       await handler(mockRequest, mockH)
 
@@ -302,19 +270,11 @@ describe('print-submitted-application.controller', () => {
           applicantDetailsSections: null
         })
       )
-      expect(vi.mocked(log)).toHaveBeenCalledWith(
-        LogCodes.PRINT_APPLICATION.ERROR,
-        expect.objectContaining({
-          errorMessage: expect.stringContaining('Failed to fetch applicant details')
-        }),
-        mockRequest
-      )
     })
 
     test('should pass null applicantDetailsSections when showApplicantDetails is not set', async () => {
       await handler(mockRequest, mockH)
 
-      expect(fetchBusinessAndCustomerInformation).not.toHaveBeenCalled()
       expect(createPersonRows).not.toHaveBeenCalled()
       expect(buildPrintViewModel).toHaveBeenCalledWith(
         expect.objectContaining({
