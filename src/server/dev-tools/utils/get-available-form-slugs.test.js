@@ -16,12 +16,12 @@ describe('getAvailableFormSlugs', () => {
   })
 
   test('should return array of form slugs', async () => {
-    getAllSlugsMock.mockResolvedValue(['example-grant', 'flying-pigs'])
+    getAllSlugsMock.mockResolvedValue(['example-grant', 'pigs-might-fly'])
 
     const result = await getAvailableFormSlugs()
 
     expect(getAllSlugsMock).toHaveBeenCalledOnce()
-    expect(result).toEqual(['example-grant', 'flying-pigs'])
+    expect(result).toEqual(['example-grant', 'pigs-might-fly'])
   })
 
   test('should return empty array when cache is empty', async () => {
