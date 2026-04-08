@@ -8,7 +8,7 @@ const mockStrategyFetch = vi.hoisted(() => vi.fn())
 vi.mock('~/src/server/payment/payment-strategies.js', () => ({
   paymentStrategies: {
     multiAction: {
-      fetch: mockStrategyFetch
+      calculatePayment: mockStrategyFetch
     }
   }
 }))

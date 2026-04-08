@@ -6,7 +6,7 @@ import { SystemError } from '~/src/server/common/utils/errors/SystemError.js'
 
 /**
  * @param {string | undefined} paymentStrategy
- * @returns {{ fetch: (state: object) => Promise<PaymentStrategyResult> }}
+ * @returns {{ calculatePayment: (state: object) => Promise<PaymentStrategyResult> }}
  */
 function resolveStrategy(paymentStrategy) {
   const strategy = paymentStrategy ? paymentStrategies[paymentStrategy] : undefined
@@ -223,7 +223,7 @@ export default class PaymentPageController extends QuestionPageController {
       let totalPence, totalPayment, payment, parcelItems, additionalYearlyPayments
 
       try {
-        const result = await this.strategy.fetch(state)
+        const result = await this.strategy.calculatePayment(state)
         totalPence = result.totalPence
         totalPayment = result.totalPayment
         payment = result.payment
@@ -277,7 +277,7 @@ export default class PaymentPageController extends QuestionPageController {
         /** @type {AdditionalPaymentViewModel[]} */
         let additionalYearlyPayments = []
         try {
-          const result = await this.strategy.fetch(state)
+          const result = await this.strategy.calculatePayment(state)
           parcelItems = result.parcelItems ?? []
           additionalYearlyPayments = result.additionalYearlyPayments ?? []
         } catch (error) {
