@@ -215,7 +215,7 @@ export default class PaymentPageController extends QuestionPageController {
      * Handle GET requests to the payment page.
      * @param {AnyFormRequest} request
      * @param {FormContext} context
-     * @param {Pick<ResponseToolkit, 'redirect' | 'view'>} h
+     * @param {ResponseToolkit} h
      */
     return async (request, context, h) => {
       const { viewName } = this
@@ -264,7 +264,7 @@ export default class PaymentPageController extends QuestionPageController {
      * Handle POST requests to the payment page.
      * @param {AnyFormRequest} request
      * @param {FormContext} context
-     * @param {Pick<ResponseToolkit, 'redirect' | 'view'>} h
+     * @param {ResponseToolkit} h
      */
     return async (request, context, h) => {
       const payload = request.payload ?? {}
