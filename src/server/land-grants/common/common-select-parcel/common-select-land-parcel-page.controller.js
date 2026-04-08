@@ -15,6 +15,10 @@ export default class CommonSelectLandParcelPageController extends LandGrantsQues
    *   config:
    *     enableMultipleParcelSelect: true
    *
+   * Ensures a `landParcels` CheckboxesField component exists on the page.
+   * If not defined in YAML, it is injected here so the form schema and state
+   * are consistent across all journeys.
+   *
    * @param {FormModel} model
    * @param {PageQuestion} pageDef
    */
@@ -22,10 +26,6 @@ export default class CommonSelectLandParcelPageController extends LandGrantsQues
     const config = model.def.metadata?.pageConfig?.[pageDef.path] ?? {}
 
     const existing = pageDef.components?.find((c) => c.name === 'landParcels')
-    // Inject Html (placeholder) and RadiosField components into the page def BEFORE super() so they are
-    // included in the collection's formSchema/stateSchema from the start.
-    // Using RadiosField because YesNoField does not support custom error messages.
-    // Placeholder ensures RadiosField is not treated as sole component by DXT, avoiding H1 legend.
     /** @type {import('@defra/forms-model').PageQuestion} */
     const patchedPageDef = {
       ...pageDef,
