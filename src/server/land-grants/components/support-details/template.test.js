@@ -37,7 +37,7 @@ describe('Support Details Component', () => {
     }
   )
 
-  describe('common content', () => {
+  describe('common content (default template)', () => {
     let $component
 
     beforeEach(() => {
@@ -62,9 +62,18 @@ describe('Support Details Component', () => {
     })
 
     const staticContentTests = [
-      { name: 'call charges link', selector: 'a[href="https://www.gov.uk/call-charges"]' },
-      { name: 'opening hours', text: 'Monday to Friday, 8:30am to 5pm (except bank holidays)' },
-      { name: 'response time', text: 'The RPA responds to email queries within 10 working days.' }
+      {
+        name: 'call charges link',
+        selector: 'a[href="https://www.gov.uk/call-charges"]'
+      },
+      {
+        name: 'opening hours',
+        text: 'Monday to Friday, 8:30am to 5pm'
+      },
+      {
+        name: 'response time',
+        text: '10 working days'
+      }
     ]
 
     test.each(staticContentTests)('should include $name', ({ selector, text }) => {
@@ -73,6 +82,44 @@ describe('Support Details Component', () => {
       } else {
         expect($component('.govuk-details__text').text()).toContain(text)
       }
+    })
+  })
+
+  describe('custom overrides', () => {
+    test('should override summary text', () => {
+      const $component = renderSupportDetails({
+        summaryText: 'Get help with your application',
+        html: '<p class="govuk-body">Custom content</p>'
+      })
+
+      expect($component('.govuk-details__summary-text').text().trim()).toBe('Get help with your application')
+    })
+
+    test('should override HTML content completely', () => {
+      const $component = renderSupportDetails({
+        summaryText: 'Get help',
+        html: `
+          <p class="govuk-body">Phone: 020 8026 2395</p>
+          <p class="govuk-body">Custom support text</p>
+        `
+      })
+
+      const text = $component('.govuk-details__text').text()
+
+      expect(text).toContain('020 8026 2395')
+      expect(text).toContain('Custom support text')
+    })
+
+    test('should NOT include default intro when html override is provided', () => {
+      const $component = renderSupportDetails({
+        typeOfSupport: 'question',
+        html: '<p>Only custom</p>'
+      })
+
+      const text = $component('.govuk-details__text').text()
+
+      expect(text).not.toContain('Contact the Rural Payments Agency')
+      expect(text).toContain('Only custom')
     })
   })
 })

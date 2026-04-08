@@ -12,6 +12,67 @@ metadata:
   submission:
     submissionSchemaPath: ./schemas/example-grant-with-auth-submission.schema.json
   grantRedirectRules: null
+  detailsPage:
+    query:
+      name: Business
+      entities:
+        - name: customer
+          variableName: crn
+          variableSource: credentials.crn
+          fields:
+            - path: info
+              fields:
+                - path: name
+                  fields:
+                    - path: title
+                    - path: first
+                    - path: middle
+                    - path: last
+        - name: business
+          variableName: sbi
+          variableSource: credentials.sbi
+          fields:
+            - path: info
+              fields:
+                - path: reference
+                - path: email
+                  fields:
+                    - path: address
+                - path: phone
+                  fields:
+                    - path: mobile
+                    - path: landline
+                - path: name
+                - path: address
+                  fields:
+                    - path: line1
+                    - path: line2
+                    - path: line3
+                    - path: line4
+                    - path: line5
+                    - path: street
+                    - path: city
+                    - path: postalCode
+                    - path: uprn
+                    - path: county
+    responseMapping:
+      business: data.business.info
+      customer: data.customer.info
+    displaySections:
+      - title: Applicant details
+        fields:
+          - label: Applicant name
+            sourcePath: customer.name
+            format: fullName
+      - title: Organisation details
+        fields:
+          - label: Organisation name
+            sourcePath: business.name
+          - label: Single Business Identifier (SBI) number
+            sourceType: credentials
+            sourcePath: sbi
+          - label: Organisation email
+            sourcePath: business.email.address
   printPage:
     showApplicantDetails: true
     configurablePrintContent:
@@ -331,6 +392,66 @@ pages:
         id: 264fbff1-35f6-49d3-98ae-b7582b1e41b5
         schema: {}
     id: 88d7b067-68c2-4fe1-9a9a-ea98f0752e03
+  - title: Select all the eligible land parcels for the location of your woodland
+    controller: CommonSelectLandParcelPageController
+    components:
+      - name: landParcels
+        type: CheckboxesField
+        title: Select land parcels
+    config:
+      enableMultipleParcelSelect: true
+      topSection: |
+        <div class="govuk-body">
+          <p>
+            You must include all woodland on your holding in your application. A holding
+            is all the land in the same geographical location that is managed as a unit.
+          </p>
+
+          <p>
+            For larger holdings, this is all woodland within the same geographical
+            location.
+          </p>
+
+          <p>
+            Land parcels must be entirely within England and defined as an area of land
+            that:
+          </p>
+
+          <ul class="govuk-list govuk-list--bullet">
+            <li>is at least 0.5 hectares</li>
+            <li>has an average width of at least 20 metres</li>
+            <li>
+              is a group or line of trees that are, or will reach, at least 5 metres in height
+            </li>
+            <li>has a crown cover of more than 20% of the ground area</li>
+          </ul>
+
+          <p>
+            The woodland must be larger than 0.5 hectares in total. The total area for the
+            application can be made up of separate blocks of woodland but the minimum
+            block size must be 0.5ha.
+          </p>
+
+          <p>
+            To find out more about what land is eligible for a WMP read our
+            <a href="#" class="govuk-link">
+              Applicant's guide: PA3 Woodland management plan 2026 guidance
+            </a>.
+          </p>
+        </div>
+      supportDetailsSummaryText: Get help with your application
+      supportDetailsHtml: |
+        <p>Phone: <a href="tel:02080262395" class="telephone-link" aria-label="Call us on 020 8026 2395">020 8026 2395</a></p>
+        <p>Monday to Friday, 8:30am to 5pm, except bank holidays</p>
+        <p>
+          <a href='https://www.gov.uk/call-charges' target='_blank'>
+            Find out about call charges (opens in new tab)
+          </a>
+        </p>
+        <p>Email: <a href='mailto:farmpayments@rpa.gov.uk'>farmpayments@rpa.gov.uk</a></p>
+        <p>We aim to respond to emails within 10 working days</p>
+    path: /select-land-parcel
+    id: f9f1a33b-2fb5-4418-951b-680067efc179
   - title: Multi Field Form Example
     path: /multi-field-form
     components:
@@ -405,6 +526,10 @@ pages:
         options: {}
         schema: {}
     id: 089374a5-13e7-494d-994e-9b38c4b7392c
+  - title: Check your details
+    path: /check-details
+    controller: CheckDetailsController
+    id: f7a2c8b1-3d4e-5f6a-7b8c-9d0e1f2a3b4c
   - title: Check your answers
     path: /summary
     controller: CheckResponsesPageController

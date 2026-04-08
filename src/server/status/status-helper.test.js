@@ -573,7 +573,11 @@ describe('formsStatusCallback', () => {
   describe('stateGuards', () => {
     it('redirects to guard path when required state key is missing and path is not allowed', async () => {
       request.app.model.def.metadata.grantRedirectRules.stateGuards = [
-        { stateKey: 'applicant', allowedPaths: ['confirm-farm-details'], redirectTo: '/confirm-farm-details' }
+        {
+          stateKey: 'additionalAnswers.applicant',
+          allowedPaths: ['confirm-farm-details'],
+          redirectTo: '/confirm-farm-details'
+        }
       ]
       request.params.path = 'confirm-you-will-be-eligible'
       context.state = { applicationStatus: undefined }
@@ -586,7 +590,11 @@ describe('formsStatusCallback', () => {
 
     it('continues when on an allowed path even if state key is missing', async () => {
       request.app.model.def.metadata.grantRedirectRules.stateGuards = [
-        { stateKey: 'applicant', allowedPaths: ['confirm-farm-details'], redirectTo: '/confirm-farm-details' }
+        {
+          stateKey: 'additionalAnswers.applicant',
+          allowedPaths: ['confirm-farm-details'],
+          redirectTo: '/confirm-farm-details'
+        }
       ]
       request.params.path = 'confirm-farm-details'
       context.state = { applicationStatus: undefined }
@@ -598,10 +606,14 @@ describe('formsStatusCallback', () => {
 
     it('continues when required state key is present', async () => {
       request.app.model.def.metadata.grantRedirectRules.stateGuards = [
-        { stateKey: 'applicant', allowedPaths: ['confirm-farm-details'], redirectTo: '/confirm-farm-details' }
+        {
+          stateKey: 'additionalAnswers.applicant',
+          allowedPaths: ['confirm-farm-details'],
+          redirectTo: '/confirm-farm-details'
+        }
       ]
       request.params.path = 'confirm-you-will-be-eligible'
-      context.state = { applicationStatus: undefined, applicant: { name: 'Test' } }
+      context.state = { applicationStatus: undefined, additionalAnswers: { applicant: { name: 'Test' } } }
 
       const result = await formsStatusCallback(request, h, context)
 
@@ -619,10 +631,14 @@ describe('formsStatusCallback', () => {
 
     it('redirects to guard path when state key is null', async () => {
       request.app.model.def.metadata.grantRedirectRules.stateGuards = [
-        { stateKey: 'applicant', allowedPaths: ['confirm-farm-details'], redirectTo: '/confirm-farm-details' }
+        {
+          stateKey: 'additionalAnswers.applicant',
+          allowedPaths: ['confirm-farm-details'],
+          redirectTo: '/confirm-farm-details'
+        }
       ]
       request.params.path = 'select-land-parcel'
-      context.state = { applicationStatus: ApplicationStatus.CLEARED, applicant: null }
+      context.state = { applicationStatus: ApplicationStatus.CLEARED, additionalAnswers: { applicant: null } }
 
       const result = await formsStatusCallback(request, h, context)
 

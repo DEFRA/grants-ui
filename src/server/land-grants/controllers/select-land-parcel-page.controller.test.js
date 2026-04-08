@@ -47,7 +47,7 @@ describe('SelectLandParcelPageController', () => {
   let mockH
 
   const renderedViewMock = 'mock-rendered-view'
-  const state = { selectedLandParcel: 'sheet123' }
+  const state = { landParcels: ['sheet123'] }
 
   const setupRequest = () => ({
     query: {},
@@ -101,16 +101,16 @@ describe('SelectLandParcelPageController', () => {
 
   describe('resolveParcelIds', () => {
     it('returns array from payload', () => {
-      mockRequest.payload = { selectedLandParcel: 'p1' }
+      mockRequest.payload = { landParcels: 'p1' }
 
       expect(controller.resolveParcelIds(mockRequest)).toEqual(['p1'])
     })
 
-    it('returns null when nothing provided', () => {
+    it('returns empty array when nothing provided', () => {
       mockRequest.payload = {}
       mockRequest.query = {}
 
-      expect(controller.resolveParcelIds(mockRequest)).toBeNull()
+      expect(controller.resolveParcelIds(mockRequest)).toEqual([])
     })
   })
 
@@ -167,13 +167,9 @@ describe('SelectLandParcelPageController', () => {
 
       const result = await controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
 
-      expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH, [state.selectedLandParcel])
+      expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH, [state.landParcels[0]])
       expect(controller.setState).not.toHaveBeenCalled()
-      expect(controller.proceed).toHaveBeenCalledWith(
-        mockRequest,
-        mockH,
-        `/next-page?parcelId=${state.selectedLandParcel}`
-      )
+      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, `/next-page?parcelId=${state.landParcels[0]}`)
       expect(result).toBe('next')
     })
 
@@ -219,7 +215,7 @@ describe('SelectLandParcelPageController', () => {
     })
 
     it('should verify both action=validate AND selectedLandParcel conditions', async () => {
-      mockRequest.payload = { action: 'validate', selectedLandParcel: '' }
+      mockRequest.payload = { action: 'validate', landParcels: [''] }
       mockContext = setupContext({ existing: 'value' })
 
       const result = await controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
@@ -234,7 +230,7 @@ describe('SelectLandParcelPageController', () => {
     })
 
     it('should not show error when action is not validate even if selectedLandParcel missing', async () => {
-      mockRequest.payload = { action: 'other', selectedLandParcel: '' }
+      mockRequest.payload = { action: 'other', landParcels: [''] }
       mockContext = setupContext({})
 
       await controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
