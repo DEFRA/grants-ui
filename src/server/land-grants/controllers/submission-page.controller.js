@@ -49,10 +49,12 @@ export default class SubmissionPageController extends SummaryPageController {
   async submitGasApplication(request, data) {
     const { identifiers, state, validationResult } = data
     const grantCode = getGrantCode(request)
+    const additionalAnswers = /** @type {Record<string, any> | undefined} */ (state.additionalAnswers)
     const applicationData = transformStateObjectToGasApplication(
       identifiers,
       {
         ...state,
+        ...additionalAnswers,
         validationResult
       },
       stateToLandGrantsGasAnswers

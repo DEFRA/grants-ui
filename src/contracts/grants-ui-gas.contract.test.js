@@ -8,7 +8,8 @@ const provider = new PactV4({
   consumer: 'grants-ui',
   provider: 'fg-gas-backend',
   dir: path.join(path.join(__dirname, './pacts')),
-  spec: SpecificationVersion.SPECIFICATION_VERSION_V4
+  spec: SpecificationVersion.SPECIFICATION_VERSION_V4,
+  port: 0
 })
 
 const { string, regex } = MatchersV3
@@ -171,20 +172,14 @@ describe('Pact between grants-ui (consumer) and fg-gas-backend (provider)', () =
           })
         })
         .executeTest(async (mockServer) => {
-          let thrownError
-          try {
-            await makeGasApiRequest(
+          await expect(
+            makeGasApiRequest(
               `${mockServer.url}/grants/frps-private-beta/applications/non-existent-ref/status`,
               'frps-private-beta',
               {},
               { method: 'GET' }
             )
-          } catch (error) {
-            thrownError = error
-          }
-
-          expect(thrownError).toBeDefined()
-          expect(thrownError.status).toBe(404)
+          ).rejects.toMatchObject({ status: 404 })
         })
     })
   })
