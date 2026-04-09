@@ -369,5 +369,40 @@ describe('PaymentPageController', () => {
       }
       expect(() => new PaymentPageController(model, { path: '/test' })).not.toThrow()
     })
+
+    test('should throw when paymentStrategy is unknown', () => {
+      const model = {
+        def: {
+          metadata: {
+            pageConfig: {
+              '/test': {
+                paymentStrategy: 'unknownStrategy',
+                redirects: { next: '/done' }
+              }
+            }
+          }
+        }
+      }
+      expect(() => new PaymentPageController(model, { path: '/test' })).toThrow(
+        'Unknown paymentStrategy "unknownStrategy"'
+      )
+    })
+
+    test('should throw when paymentStrategy is undefined', () => {
+      const model = {
+        def: {
+          metadata: {
+            pageConfig: {
+              '/test': {
+                redirects: { next: '/done' }
+              }
+            }
+          }
+        }
+      }
+      expect(() => new PaymentPageController(model, { path: '/test' })).toThrow(
+        'Unknown paymentStrategy "undefined"'
+      )
+    })
   })
 })
