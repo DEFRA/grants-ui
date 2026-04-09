@@ -75,13 +75,13 @@ describe('WoodlandHectaresPageController', () => {
       const handler = controller.makePostRouteHandler()
       const context = { state: { totalHectaresAppliedFor: 50 }, evaluationState: {} }
 
-      await handler({ payload: { hectaresTenOrOverYearsOld: 'abc', hectaresUnderTenYearsOld: '10' } }, context, mockH)
+      await handler({ payload: { oldWoodlandAreaHa: 'abc', newWoodlandAreaHa: '10' } }, context, mockH)
 
       expect(context.errors).toEqual([
         {
-          path: ['hectaresTenOrOverYearsOld'],
-          href: '#hectaresTenOrOverYearsOld',
-          name: 'hectaresTenOrOverYearsOld',
+          path: ['oldWoodlandAreaHa'],
+          href: '#oldWoodlandAreaHa',
+          name: 'oldWoodlandAreaHa',
           text: 'Enter the total area of woodland over 10 years old'
         }
       ])
@@ -91,13 +91,13 @@ describe('WoodlandHectaresPageController', () => {
       const handler = controller.makePostRouteHandler()
       const context = { state: { totalHectaresAppliedFor: 50 }, evaluationState: {} }
 
-      await handler({ payload: { hectaresTenOrOverYearsOld: '10', hectaresUnderTenYearsOld: 'abc' } }, context, mockH)
+      await handler({ payload: { oldWoodlandAreaHa: '10', newWoodlandAreaHa: 'abc' } }, context, mockH)
 
       expect(context.errors).toEqual([
         {
-          path: ['hectaresUnderTenYearsOld'],
-          href: '#hectaresUnderTenYearsOld',
-          name: 'hectaresUnderTenYearsOld',
+          path: ['newWoodlandAreaHa'],
+          href: '#newWoodlandAreaHa',
+          name: 'newWoodlandAreaHa',
           text: 'Enter the total area of newly planted woodland under 10 years old'
         }
       ])
@@ -107,19 +107,19 @@ describe('WoodlandHectaresPageController', () => {
       const handler = controller.makePostRouteHandler()
       const context = { state: { totalHectaresAppliedFor: 50 }, evaluationState: {} }
 
-      await handler({ payload: { hectaresTenOrOverYearsOld: 'abc', hectaresUnderTenYearsOld: 'xyz' } }, context, mockH)
+      await handler({ payload: { oldWoodlandAreaHa: 'abc', newWoodlandAreaHa: 'xyz' } }, context, mockH)
 
       expect(context.errors).toEqual([
         {
-          path: ['hectaresTenOrOverYearsOld'],
-          href: '#hectaresTenOrOverYearsOld',
-          name: 'hectaresTenOrOverYearsOld',
+          path: ['oldWoodlandAreaHa'],
+          href: '#oldWoodlandAreaHa',
+          name: 'oldWoodlandAreaHa',
           text: 'Enter the total area of woodland over 10 years old'
         },
         {
-          path: ['hectaresUnderTenYearsOld'],
-          href: '#hectaresUnderTenYearsOld',
-          name: 'hectaresUnderTenYearsOld',
+          path: ['newWoodlandAreaHa'],
+          href: '#newWoodlandAreaHa',
+          name: 'newWoodlandAreaHa',
           text: 'Enter the total area of newly planted woodland under 10 years old'
         }
       ])
@@ -135,15 +135,15 @@ describe('WoodlandHectaresPageController', () => {
 
       expect(context.errors).toEqual([
         {
-          path: ['hectaresTenOrOverYearsOld'],
-          href: '#hectaresTenOrOverYearsOld',
-          name: 'hectaresTenOrOverYearsOld',
+          path: ['oldWoodlandAreaHa'],
+          href: '#oldWoodlandAreaHa',
+          name: 'oldWoodlandAreaHa',
           text: 'Enter the total area of woodland over 10 years old'
         },
         {
-          path: ['hectaresUnderTenYearsOld'],
-          href: '#hectaresUnderTenYearsOld',
-          name: 'hectaresUnderTenYearsOld',
+          path: ['newWoodlandAreaHa'],
+          href: '#newWoodlandAreaHa',
+          name: 'newWoodlandAreaHa',
           text: 'Enter the total area of newly planted woodland under 10 years old'
         }
       ])
@@ -153,13 +153,13 @@ describe('WoodlandHectaresPageController', () => {
       const handler = controller.makePostRouteHandler()
       const context = { state: { totalHectaresAppliedFor: 50 }, evaluationState: {} }
 
-      await handler({ payload: { hectaresTenOrOverYearsOld: '10' } }, context, mockH)
+      await handler({ payload: { oldWoodlandAreaHa: '10' } }, context, mockH)
 
       expect(context.errors).toEqual([
         {
-          path: ['hectaresUnderTenYearsOld'],
-          href: '#hectaresUnderTenYearsOld',
-          name: 'hectaresUnderTenYearsOld',
+          path: ['newWoodlandAreaHa'],
+          href: '#newWoodlandAreaHa',
+          name: 'newWoodlandAreaHa',
           text: 'Enter the total area of newly planted woodland under 10 years old'
         }
       ])
@@ -172,13 +172,13 @@ describe('WoodlandHectaresPageController', () => {
       const handler = controller.makePostRouteHandler()
       const context = { state: { totalHectaresAppliedFor: 50 }, evaluationState: {} }
 
-      await handler({ payload: { hectaresTenOrOverYearsOld: overTen, hectaresUnderTenYearsOld: underTen } }, context, mockH)
+      await handler({ payload: { oldWoodlandAreaHa: overTen, newWoodlandAreaHa: underTen } }, context, mockH)
 
       expect(context.errors).toEqual([
         {
-          path: ['hectaresUnderTenYearsOld'],
-          href: '#hectaresUnderTenYearsOld',
-          name: 'hectaresUnderTenYearsOld',
+          path: ['newWoodlandAreaHa'],
+          href: '#newWoodlandAreaHa',
+          name: 'newWoodlandAreaHa',
           text: 'The total area of woodland must be larger than 0.5 ha'
         }
       ])
@@ -192,7 +192,7 @@ describe('WoodlandHectaresPageController', () => {
       const handler = controller.makePostRouteHandler()
       const context = { state: { totalHectaresAppliedFor: 50 } }
 
-      await handler({ payload: { hectaresTenOrOverYearsOld: overTen, hectaresUnderTenYearsOld: underTen } }, context, mockH)
+      await handler({ payload: { oldWoodlandAreaHa: overTen, newWoodlandAreaHa: underTen } }, context, mockH)
 
       expect(context.errors).toBeUndefined()
     })
@@ -203,13 +203,13 @@ describe('WoodlandHectaresPageController', () => {
       const handler = controller.makePostRouteHandler()
       const context = { state: { totalHectaresAppliedFor: 50 }, evaluationState: {} }
 
-      await handler({ payload: { hectaresTenOrOverYearsOld: '60', hectaresUnderTenYearsOld: '0' } }, context, mockH)
+      await handler({ payload: { oldWoodlandAreaHa: '60', newWoodlandAreaHa: '0' } }, context, mockH)
 
       expect(context.errors).toEqual([
         {
-          path: ['hectaresTenOrOverYearsOld'],
-          href: '#hectaresTenOrOverYearsOld',
-          name: 'hectaresTenOrOverYearsOld',
+          path: ['oldWoodlandAreaHa'],
+          href: '#oldWoodlandAreaHa',
+          name: 'oldWoodlandAreaHa',
           text: 'Area of woodland over 10 years old must not be more than the total area of land parcels. You have 50 ha available'
         }
       ])
@@ -219,13 +219,13 @@ describe('WoodlandHectaresPageController', () => {
       const handler = controller.makePostRouteHandler()
       const context = { state: { totalHectaresAppliedFor: 50 }, evaluationState: {} }
 
-      await handler({ payload: { hectaresTenOrOverYearsOld: '30', hectaresUnderTenYearsOld: '25' } }, context, mockH)
+      await handler({ payload: { oldWoodlandAreaHa: '30', newWoodlandAreaHa: '25' } }, context, mockH)
 
       expect(context.errors).toEqual([
         {
-          path: ['hectaresUnderTenYearsOld'],
-          href: '#hectaresUnderTenYearsOld',
-          name: 'hectaresUnderTenYearsOld',
+          path: ['newWoodlandAreaHa'],
+          href: '#newWoodlandAreaHa',
+          name: 'newWoodlandAreaHa',
           text: 'Combined area of woodland over 10 years old and under 10 years old must not be more than the total area of land parcels. You have 20 ha remaining'
         }
       ])
@@ -235,7 +235,7 @@ describe('WoodlandHectaresPageController', () => {
       const handler = controller.makePostRouteHandler()
       const context = { state: { totalHectaresAppliedFor: 100 }, evaluationState: {} }
 
-      await handler({ payload: { hectaresTenOrOverYearsOld: '40', hectaresUnderTenYearsOld: '70' } }, context, mockH)
+      await handler({ payload: { oldWoodlandAreaHa: '40', newWoodlandAreaHa: '70' } }, context, mockH)
 
       expect(context.errors[0].text).toBe(
         'Combined area of woodland over 10 years old and under 10 years old must not be more than the total area of land parcels. You have 60 ha remaining'
@@ -250,14 +250,14 @@ describe('WoodlandHectaresPageController', () => {
       const handler = controller.makePostRouteHandler()
       const context = { state: { totalHectaresAppliedFor: 50 } }
 
-      await handler({ payload: { hectaresTenOrOverYearsOld: overTen, hectaresUnderTenYearsOld: underTen } }, context, mockH)
+      await handler({ payload: { oldWoodlandAreaHa: overTen, newWoodlandAreaHa: underTen } }, context, mockH)
 
       expect(context.errors).toBeUndefined()
     })
   })
 
   describe('backend validation', () => {
-    const validPayload = { hectaresTenOrOverYearsOld: '10', hectaresUnderTenYearsOld: '5' }
+    const validPayload = { oldWoodlandAreaHa: '10', newWoodlandAreaHa: '5' }
     const validState = { totalHectaresAppliedFor: 50, selectedParcelIds: ['SD6346-3387'] }
 
     it('calls the service with parcel IDs and hectare values from payload', async () => {
@@ -284,9 +284,9 @@ describe('WoodlandHectaresPageController', () => {
 
       expect(context.errors).toEqual([
         {
-          path: ['hectaresTenOrOverYearsOld'],
-          href: '#hectaresTenOrOverYearsOld',
-          name: 'hectaresTenOrOverYearsOld',
+          path: ['oldWoodlandAreaHa'],
+          href: '#oldWoodlandAreaHa',
+          name: 'oldWoodlandAreaHa',
           text: 'The woodland area over 10 years old (10 ha) does not meet the minimum required area of (0.5 ha)'
         }
       ])

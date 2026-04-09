@@ -7,8 +7,8 @@ import { debug, LogCodes } from '~/src/server/common/helpers/logging/log.js'
  */
 
 const MIN_WOODLAND_TOTAL_AREA_HA = 0.5
-const HECTARES_OVER_TEN_FIELD_NAME = 'hectaresTenOrOverYearsOld'
-const HECTARES_UNDER_TEN_FIELD_NAME = 'hectaresUnderTenYearsOld'
+const HECTARES_OVER_TEN_FIELD_NAME = 'oldWoodlandAreaHa'
+const HECTARES_UNDER_TEN_FIELD_NAME = 'newWoodlandAreaHa'
 
 /**
  * @param {string} fieldName
