@@ -148,15 +148,7 @@ export default class PaymentPageController extends QuestionPageController {
    * @param {{ text: string }[]} [errors]
    * @returns {object}
    */
-  buildViewModel(
-    request,
-    context,
-    totalPayment,
-    parcelItems,
-    additionalYearlyPayments,
-    errors,
-    hasPaymentError = false
-  ) {
+  buildViewModel(request, context, totalPayment, parcelItems, additionalYearlyPayments, errors) {
     const { state } = context
 
     return {
@@ -166,12 +158,11 @@ export default class PaymentPageController extends QuestionPageController {
       additionalYearlyPayments,
       totalPayment,
       showPaymentActions: this.showPaymentActions,
-      showAddMoreActionsQuestion: hasPaymentError ? false : this.showAddMoreActionsQuestion,
+      showAddMoreActionsQuestion: this.showAddMoreActionsQuestion,
       paymentExplanation: this.paymentExplanation
         ? nunjucks.renderString(this.paymentExplanation, { totalPayment })
         : null,
       showSupportLink: this.showSupportLink,
-      hasPaymentError,
       ...(errors && { errors })
     }
   }
@@ -183,18 +174,9 @@ export default class PaymentPageController extends QuestionPageController {
    * @param {{ text: string }[]} errorMessages
    * @param {ParcelCardViewModel[]} [parcelItems]
    * @param {AdditionalPaymentViewModel[]} [additionalYearlyPayments]
-   * @param {boolean} [hasPaymentError]
    * @returns {ResponseObject}
    */
-  renderErrorView(
-    h,
-    request,
-    context,
-    errorMessages,
-    parcelItems = [],
-    additionalYearlyPayments = [],
-    hasPaymentError = false
-  ) {
+  renderErrorView(h, request, context, errorMessages, parcelItems = [], additionalYearlyPayments = []) {
     const { state } = context
     return h.view(
       this.viewName,
@@ -204,8 +186,7 @@ export default class PaymentPageController extends QuestionPageController {
         /** @type {string} */ (state.totalPayment) ?? '£0.00',
         parcelItems,
         additionalYearlyPayments,
-        errorMessages,
-        hasPaymentError
+        errorMessages
       )
     )
   }
@@ -241,15 +222,9 @@ export default class PaymentPageController extends QuestionPageController {
           },
           request
         )
-        return this.renderErrorView(
-          h,
-          request,
-          context,
-          [{ text: 'Unable to get payment information, please try again later or contact the Rural Payments Agency.' }],
-          [],
-          [],
-          true
-        )
+        return this.renderErrorView(h, request, context, [
+          { text: 'Unable to get payment information, please try again later or contact the Rural Payments Agency.' }
+        ])
       }
 
       return h.view(
