@@ -273,6 +273,12 @@ export const LogCodes = {
         `Land Grants API request | endpoint: ${messageOptions.endpoint} | url: ${messageOptions.url}`
     }
   },
+  WOODLAND: {
+    VALIDATE_ERROR: {
+      level: 'error',
+      messageFunc: (messageOptions) => `Woodland validation error: ${messageOptions.errorMessage}`
+    }
+  },
   AGREEMENTS: {
     AGREEMENT_LOAD: {
       level: 'info',

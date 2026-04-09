@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import WoodlandHectaresPageController from './woodland-hectares-page.controller.js'
+import * as woodlandService from './woodland.service.js'
+
+vi.mock('./woodland.service.js', () => ({
+  validateWoodlandHectares: vi.fn().mockResolvedValue([])
+}))
 
 vi.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js', () => {
   return {
@@ -205,6 +210,69 @@ describe('WoodlandHectaresPageController', () => {
       const context = { state: { totalHectaresAppliedFor: 50 } }
 
       await handler({ payload: { hectaresTenOrOverYearsOld: overTen, hectaresUnderTenYearsOld: underTen } }, context, mockH)
+
+      expect(context.errors).toBeUndefined()
+    })
+  })
+
+  describe('backend validation', () => {
+    const validPayload = { hectaresTenOrOverYearsOld: '10', hectaresUnderTenYearsOld: '5' }
+    const validState = { totalHectaresAppliedFor: 50, selectedParcelIds: ['SD6346-3387'] }
+
+    it('calls the service with parcel IDs and hectare values from payload', async () => {
+      const handler = controller.makePostRouteHandler()
+      const context = { state: validState }
+
+      await handler({ payload: validPayload }, context, mockH)
+
+      expect(woodlandService.validateWoodlandHectares).toHaveBeenCalledWith({
+        parcelIds: ['SD6346-3387'],
+        oldWoodlandAreaHa: 10,
+        newWoodlandAreaHa: 5
+      })
+    })
+
+    it('sets errors from failed rules returned by the service', async () => {
+      woodlandService.validateWoodlandHectares.mockResolvedValueOnce([
+        'The woodland area over 10 years old (10 ha) does not meet the minimum required area of (0.5 ha)'
+      ])
+      const handler = controller.makePostRouteHandler()
+      const context = { state: validState, evaluationState: {} }
+
+      await handler({ payload: validPayload }, context, mockH)
+
+      expect(context.errors).toEqual([
+        {
+          path: ['hectaresUnderTenYearsOld'],
+          href: '#hectaresUnderTenYearsOld',
+          name: 'hectaresUnderTenYearsOld',
+          text: 'The woodland area over 10 years old (10 ha) does not meet the minimum required area of (0.5 ha)'
+        }
+      ])
+    })
+
+    it('sets a generic error when the service throws', async () => {
+      woodlandService.validateWoodlandHectares.mockRejectedValueOnce(new Error('Network failure'))
+      const handler = controller.makePostRouteHandler()
+      const context = { state: validState, evaluationState: {} }
+
+      await handler({ payload: validPayload }, context, mockH)
+
+      expect(context.errors).toEqual([
+        {
+          path: ['hectaresUnderTenYearsOld'],
+          href: '#hectaresUnderTenYearsOld',
+          name: 'hectaresUnderTenYearsOld',
+          text: 'There has been an issue validating your woodland area. Please try again later or contact the Rural Payments Agency.'
+        }
+      ])
+    })
+
+    it('does not set errors when the service returns no failures', async () => {
+      const handler = controller.makePostRouteHandler()
+      const context = { state: validState }
+
+      await handler({ payload: validPayload }, context, mockH)
 
       expect(context.errors).toBeUndefined()
     })
