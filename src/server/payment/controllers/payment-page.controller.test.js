@@ -400,9 +400,7 @@ describe('PaymentPageController', () => {
           }
         }
       }
-      expect(() => new PaymentPageController(model, { path: '/test' })).toThrow(
-        'Unknown paymentStrategy "undefined"'
-      )
+      expect(() => new PaymentPageController(model, { path: '/test' })).toThrow('Unknown paymentStrategy "undefined"')
     })
   })
 })
