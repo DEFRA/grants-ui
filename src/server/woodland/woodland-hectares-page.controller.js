@@ -15,8 +15,7 @@ const HECTARES_UNDER_TEN_FIELD_NAME = 'hectaresUnderTenYearsOld'
  * @param {string} text
  * @returns {FormSubmissionError}
  */
-const makeError = (fieldName, text) =>
-  /** @type {FormSubmissionError} */ ({ path: [fieldName], href: `#${fieldName}`, name: fieldName, text })
+const makeError = (fieldName, text) => ({ path: [fieldName], href: `#${fieldName}`, name: fieldName, text })
 
 export default class WoodlandHectaresPageController extends TaskPageController {
   /**
@@ -34,35 +33,20 @@ export default class WoodlandHectaresPageController extends TaskPageController {
   /**
    * Validates the hectare inputs against frontend rules.
    * Returns an array of errors, or null if non-numeric input should defer to the engine.
-   * @param {string} overTenRaw
-   * @param {string} underTenRaw
+   * Empty string parses as NaN (missing), non-numeric string parses as NaN (defer to engine).
+   * @param {number} overTen
+   * @param {number} underTen
    * @param {number} totalHectaresAppliedFor
    * @returns {Array<object> | null}
    */
-  validatePayload(overTenRaw, underTenRaw, totalHectaresAppliedFor) {
-    if ((overTenRaw && Number.isNaN(Number(overTenRaw))) || (underTenRaw && Number.isNaN(Number(underTenRaw)))) {
-      return null
-    }
-
-    const emptyErrors = [
-      ...(overTenRaw
-        ? []
-        : [makeError(HECTARES_OVER_TEN_FIELD_NAME, 'Enter the total area of woodland over 10 years old')]),
-      ...(underTenRaw
-        ? []
-        : [
-            makeError(
-              HECTARES_UNDER_TEN_FIELD_NAME,
-              'Enter the total area of newly planted woodland under 10 years old'
-            )
-          ])
+  validatePayload(overTen, underTen, totalHectaresAppliedFor) {
+    const missingErrors = [
+      ...(Number.isNaN(overTen) ? [makeError(HECTARES_OVER_TEN_FIELD_NAME, 'Enter the total area of woodland over 10 years old')] : []),
+      ...(Number.isNaN(underTen) ? [makeError(HECTARES_UNDER_TEN_FIELD_NAME, 'Enter the total area of newly planted woodland under 10 years old')] : [])
     ]
-    if (emptyErrors.length) {
-      return emptyErrors
+    if (missingErrors.length) {
+      return missingErrors
     }
-
-    const overTen = Number(overTenRaw)
-    const underTen = Number(underTenRaw)
 
     if (overTen + underTen < MIN_WOODLAND_TOTAL_AREA_HA) {
       return [makeError(HECTARES_UNDER_TEN_FIELD_NAME, 'The total area of woodland must be larger than 0.5 ha')]
@@ -124,10 +108,10 @@ export default class WoodlandHectaresPageController extends TaskPageController {
       const payload = /** @type {Record<string, string>} */ (request.payload ?? {})
 
       const totalHectaresAppliedFor = Number(state['totalHectaresAppliedFor']) || 0
-      const overTenRaw = payload[HECTARES_OVER_TEN_FIELD_NAME]
-      const underTenRaw = payload[HECTARES_UNDER_TEN_FIELD_NAME]
+      const overTen = Number.parseFloat(payload[HECTARES_OVER_TEN_FIELD_NAME])
+      const underTen = Number.parseFloat(payload[HECTARES_UNDER_TEN_FIELD_NAME])
 
-      const frontendErrors = this.validatePayload(overTenRaw, underTenRaw, totalHectaresAppliedFor)
+      const frontendErrors = this.validatePayload(overTen, underTen, totalHectaresAppliedFor)
       if (frontendErrors === null) {
         return parentHandler(request, context, h)
       }
@@ -136,12 +120,7 @@ export default class WoodlandHectaresPageController extends TaskPageController {
         context.errors = frontendErrors
       } else {
         const parcelIds = /** @type {string[]} */ (state['selectedParcelIds'] ?? [])
-        const backendErrors = await this.validateApplication(
-          request,
-          parcelIds,
-          Number(overTenRaw),
-          Number(underTenRaw)
-        )
+        const backendErrors = await this.validateApplication(request, parcelIds, overTen, underTen)
         if (backendErrors.length) {
           const isTopLevel = backendErrors.some((e) => /** @type {FormSubmissionError} */ (e).path.length === 0)
           if (isTopLevel) {

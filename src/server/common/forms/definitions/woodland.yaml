@@ -473,17 +473,19 @@ pages:
     path: /total-area-of-woodland
     section: 38507a39-c936-4c4f-872a-bcbae2eeb7d5
     controller: WoodlandHectaresPageController
-    view: woodland-hectares-page.html
     components:
       - name: woodlandHectaresGuidance
         id: 1a3b5c7d-9e2f-4a8b-c6d0-e4f2a8b6c0d2
         type: Html
         content: >-
           <p class="govuk-body">The woodland must be larger than 0.5 hectares (ha) in total.</p>
-      - name: woodlandHectaresInfo
-        id: 2b4c6d8e-0f1a-5b9c-d7e1-f5a3b9c7d1e3
-        type: Html
-        content: >-
+          <div class="govuk-inset-text">
+           {% if totalHectaresAppliedFor %}
+              The total area of your selected land parcels is {{ totalHectaresAppliedFor }} ha
+           {% else %}
+              The total area of your selected land parcels is 0 ha
+           {% endif %}
+          </div>
           <p class="govuk-body">We use a combination of the total area and age of the eligible woodland in your application to work out what you may get paid.</p>
           <p class="govuk-body">To find out more about what you'll get paid read our <a href="#" class="govuk-link">Applicant's guide: PA3 Woodland management plan 2026 guidance</a>.</p>
       - name: hectaresTenOrOverYearsOld
