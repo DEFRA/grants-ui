@@ -170,7 +170,7 @@ describe('PaymentPageController', () => {
             {
               text: 'Unable to get payment information, please try again later or contact the Rural Payments Agency.'
             }
-          ],
+          ]
         })
       )
     })
@@ -189,7 +189,7 @@ describe('PaymentPageController', () => {
             {
               text: 'Unable to get payment information, please try again later or contact the Rural Payments Agency.'
             }
-          ],
+          ]
         })
       )
     })
@@ -281,7 +281,7 @@ describe('PaymentPageController', () => {
             {
               text: 'Unable to get payment information, please try again later or contact the Rural Payments Agency.'
             }
-          ],
+          ]
         })
       )
     })
@@ -301,7 +301,7 @@ describe('PaymentPageController', () => {
             {
               text: 'Unable to get payment information, please try again later or contact the Rural Payments Agency.'
             }
-          ],
+          ]
         })
       )
     })
