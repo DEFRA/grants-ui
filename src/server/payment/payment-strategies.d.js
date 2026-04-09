@@ -18,7 +18,7 @@
 
 /**
  * @typedef {object} WmpState
- * @property {string[]} [parcelIds]
+ * @property {string[]} [landParcels]
  * @property {number} [newWoodlandAreaHa]
  * @property {number} [oldWoodlandAreaHa]
  */
