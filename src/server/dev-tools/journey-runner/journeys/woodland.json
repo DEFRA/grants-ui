@@ -73,14 +73,6 @@
     "section": "about-woodland"
   },
   {
-    "slug": "total-area-of-land-parcels",
-    "name": "Total area of land parcels",
-    "type": "numberField",
-    "fieldName": "totalHectaresAppliedFor",
-    "value": "50",
-    "section": "about-woodland"
-  },
-  {
     "slug": "total-area-of-land-over-10-years-old",
     "name": "Area over 10 years old",
     "type": "numberField",

@@ -468,48 +468,37 @@ pages:
   # Section 2: About your woodland (placeholder)
   # ==========================================
 
-  - title: Enter total area of your land parcels
-    id: 5d8f5a78-8c19-4b3c-94fd-0ce7bdd5b038
-    path: /total-area-of-land-parcels
-    section: 38507a39-c936-4c4f-872a-bcbae2eeb7d5
-    controller: TaskPageController
-    components:
-      - name: totalHectaresAppliedFor
-        id: 945c9e54-2e65-40f7-b8c9-37fbe8210d07
-        type: NumberField
-        title: Enter total area of your land parcels
-        options:
-          required: true
-          classes: govuk-input--width-5
-          suffix: ha
-        shortDescription: Total area of land parcels
-
-  - title: Enter total area of woodland on your land over 10 years old
+  - title: Enter total area of woodland in your application
     id: 2c807ed2-18d7-4c9c-afa9-e6f10edfbca7
-    path: /total-area-of-land-over-10-years-old
+    path: /total-area-of-woodland
     section: 38507a39-c936-4c4f-872a-bcbae2eeb7d5
     controller: WoodlandHectaresPageController
+    view: woodland-hectares-page.html
     components:
+      - name: woodlandHectaresGuidance
+        id: 1a3b5c7d-9e2f-4a8b-c6d0-e4f2a8b6c0d2
+        type: Html
+        content: >-
+          <p class="govuk-body">The woodland must be larger than 0.5 hectares (ha) in total.</p>
+      - name: woodlandHectaresInfo
+        id: 2b4c6d8e-0f1a-5b9c-d7e1-f5a3b9c7d1e3
+        type: Html
+        content: >-
+          <p class="govuk-body">We use a combination of the total area and age of the eligible woodland in your application to work out what you may get paid.</p>
+          <p class="govuk-body">To find out more about what you'll get paid read our <a href="#" class="govuk-link">Applicant's guide: PA3 Woodland management plan 2026 guidance</a>.</p>
       - name: hectaresTenOrOverYearsOld
         id: 0232c1df-965f-4f41-a271-cb469ca9623a
         type: NumberField
-        title: Enter total area of woodland on your land over ten years old
+        title: Enter total area of woodland over 10 years old
         options:
           required: true
           classes: govuk-input--width-5
           suffix: ha
         shortDescription: Land over 10 years old
-
-  - title: Enter total area of newly planted woodland on your land under 10 years old
-    id: 20eac99a-adc2-41cc-bbf1-c0513a8c9e0a
-    path: /total-area-of-land-under-10-years-old
-    section: 38507a39-c936-4c4f-872a-bcbae2eeb7d5
-    controller: WoodlandHectaresPageController
-    components:
       - name: hectaresUnderTenYearsOld
         id: b564e6d8-8675-4c9c-9ef8-002199386cf5
         type: NumberField
-        title: Enter total area of woodland under 10 years old
+        title: Enter total area of newly planted woodland under 10 years old
         options:
           required: true
           classes: govuk-input--width-5
