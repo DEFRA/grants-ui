@@ -243,29 +243,33 @@ describe('WoodlandHectaresPageController', () => {
 
       expect(context.errors).toEqual([
         {
-          path: ['hectaresUnderTenYearsOld'],
-          href: '#hectaresUnderTenYearsOld',
-          name: 'hectaresUnderTenYearsOld',
+          path: ['hectaresTenOrOverYearsOld'],
+          href: '#hectaresTenOrOverYearsOld',
+          name: 'hectaresTenOrOverYearsOld',
           text: 'The woodland area over 10 years old (10 ha) does not meet the minimum required area of (0.5 ha)'
         }
       ])
     })
 
-    it('sets a generic error when the service throws', async () => {
+    it('renders a top-level error when the service throws', async () => {
       woodlandService.validateWoodlandHectares.mockRejectedValueOnce(new Error('Network failure'))
       const handler = controller.makePostRouteHandler()
       const context = { state: validState, evaluationState: {} }
 
       await handler({ payload: validPayload }, context, mockH)
 
-      expect(context.errors).toEqual([
-        {
-          path: ['hectaresUnderTenYearsOld'],
-          href: '#hectaresUnderTenYearsOld',
-          name: 'hectaresUnderTenYearsOld',
-          text: 'There has been an issue validating your woodland area. Please try again later or contact the Rural Payments Agency.'
-        }
-      ])
+      expect(context.errors).toBeUndefined()
+      expect(mockH.view).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          errors: expect.arrayContaining([
+            expect.objectContaining({
+              path: [],
+              text: 'There has been an issue validating your woodland area. Please try again later or contact the Rural Payments Agency.'
+            })
+          ])
+        })
+      )
     })
 
     it('does not set errors when the service returns no failures', async () => {
