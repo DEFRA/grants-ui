@@ -155,7 +155,12 @@ export default class CommonSelectLandParcelPageController extends LandGrantsQues
       return sum + (parcel?.area?.value || 0)
     }, 0)
 
-    await this.mergeState(request, state, { landParcels: selectedParcelIds, totalHectaresAppliedFor })
+    const landParcelMetadata = selectedParcelIds.map((id) => {
+      const parcel = parcelMap.get(id)
+      return { id, area: parcel?.area ?? null }
+    })
+
+    await this.mergeState(request, state, { landParcels: selectedParcelIds, landParcelMetadata, totalHectaresAppliedFor })
 
     return this.proceed(request, h, `${this.getNextPath(context)}`)
   }
