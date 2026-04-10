@@ -115,8 +115,8 @@ async function persistStatus(request, newStatus, previousStatus, grantId, existi
 function hasMeaningfulState(state) {
   const baseStateKeys = new Set(['$$__referenceNumber', 'applicationStatus', 'additionalAnswers'])
 
-  // TODO remove workaround for state clearing bug when SFIR-647 are complete
-  const farmPaymentsStateKeys = new Set(['selectedLandParcel'])
+  // TODO remove workaround for state clearing bug when SFIR-647 and TGC-1204 are complete
+  const farmPaymentsStateKeys = new Set(['selectedLandParcel', 'totalPence', 'totalPayment'])
   for (const key of farmPaymentsStateKeys) {
     baseStateKeys.add(key)
   }
