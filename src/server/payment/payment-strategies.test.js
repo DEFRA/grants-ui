@@ -11,9 +11,7 @@ vi.mock('~/src/server/common/utils/payment.js')
 describe('paymentStrategies', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(paymentUtils.formatPrice).mockImplementation(
-      (pence) => `£${(pence / 100).toFixed(2)}`
-    )
+    vi.mocked(paymentUtils.formatPrice).mockImplementation((pence) => `£${(pence / 100).toFixed(2)}`)
   })
 
   describe('multiAction.calculatePayment', () => {
@@ -54,10 +52,7 @@ describe('paymentStrategies', () => {
     it('maps parcel items using payment and actionGroups', async () => {
       await paymentStrategies.multiAction.calculatePayment(mockState)
 
-      expect(paymentViewModel.mapPaymentInfoToParcelItems).toHaveBeenCalledWith(
-        mockPayment,
-        mockActionGroups
-      )
+      expect(paymentViewModel.mapPaymentInfoToParcelItems).toHaveBeenCalledWith(mockPayment, mockActionGroups)
     })
 
     it('maps additional yearly payments using payment', async () => {
@@ -121,9 +116,7 @@ describe('paymentStrategies', () => {
     it('defaults landParcels to empty array when not in state', async () => {
       await paymentStrategies.wmp.calculatePayment({ newWoodlandAreaHa: 1, oldWoodlandAreaHa: 0 })
 
-      expect(landGrantsService.calculateWmpPayment).toHaveBeenCalledWith(
-        expect.objectContaining({ parcelIds: [] })
-      )
+      expect(landGrantsService.calculateWmpPayment).toHaveBeenCalledWith(expect.objectContaining({ parcelIds: [] }))
     })
 
     it('defaults newWoodlandAreaHa to 0 when not in state', async () => {
