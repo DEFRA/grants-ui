@@ -217,7 +217,7 @@ describe('CommonSelectLandParcelPageController', () => {
         totalHectaresAppliedFor: 30
       })
 
-      expect(controller.proceed).toHaveBeenCalledWith(request, h, '/next?selectedParcelIds=S1-P1,S2-P2')
+      expect(controller.proceed).toHaveBeenCalledWith(request, h, '/next')
 
       expect(result).toBe('next')
     })
