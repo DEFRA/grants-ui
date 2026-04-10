@@ -10,8 +10,8 @@ export const parseLandParcel = (landParcel) => {
 /**
  * Converts landParcel object into a string
  * @param {object} parcel
- * @param {object} parcel.parcelId
- * @param {object} parcel.sheetId
+ * @param {string} parcel.parcelId
+ * @param {string} parcel.sheetId
  * @returns {string}
  */
 export const stringifyParcel = ({ parcelId, sheetId }) => `${sheetId}-${parcelId}`
