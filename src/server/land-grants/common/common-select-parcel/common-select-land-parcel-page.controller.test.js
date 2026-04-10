@@ -159,6 +159,24 @@ describe('CommonSelectLandParcelPageController', () => {
         })
       )
     })
+
+    it('handles throw during fetch', async () => {
+      fetchParcels.mockRejectedValue('string error')
+
+      const controller = createController()
+      const request = setupRequest()
+      const context = setupContext({})
+      const h = setupH()
+
+      await controller.handleGet(request, context, h)
+
+      expect(h.view).toHaveBeenCalledWith(
+        'common-select-land-parcel',
+        expect.objectContaining({
+          errors: ['Unable to find parcel information, please try again later or contact the Rural Payments Agency.']
+        })
+      )
+    })
   })
 
   describe('handlePost', () => {
@@ -224,6 +242,27 @@ describe('CommonSelectLandParcelPageController', () => {
 
     it('handles fetch error gracefully for validation', async () => {
       fetchParcels.mockRejectedValue(new Error('fail'))
+
+      const controller = createController()
+      const request = setupRequest('post')
+      const context = setupContext({})
+      const h = setupH()
+
+      controller.mergeState = vi.fn()
+
+      await controller.handlePost(request, context, h)
+
+      expect(h.view).toHaveBeenCalledWith(
+        'common-select-land-parcel',
+        expect.objectContaining({
+          parcels: mappedParcels,
+          errors: 'Select a land parcel'
+        })
+      )
+    })
+
+    it('handles non-Error throw during fetch gracefully for validation', async () => {
+      fetchParcels.mockRejectedValue('string error')
 
       const controller = createController()
       const request = setupRequest('post')
