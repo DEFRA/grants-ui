@@ -40,7 +40,5 @@ export async function validateWoodlandHectares({ parcelIds, oldWoodlandAreaHa, n
     return []
   }
 
-  return (response.result?.rules ?? [])
-    .filter((rule) => !rule.passed)
-    .map((rule) => rule.reason)
+  return (response.result?.rules ?? []).filter((rule) => !rule.passed).map((rule) => rule.reason)
 }

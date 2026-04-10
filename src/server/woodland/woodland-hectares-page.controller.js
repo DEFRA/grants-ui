@@ -41,8 +41,17 @@ export default class WoodlandHectaresPageController extends TaskPageController {
    */
   validatePayload(overTen, underTen, totalHectaresAppliedFor) {
     const missingErrors = [
-      ...(Number.isNaN(overTen) ? [makeError(HECTARES_OVER_TEN_FIELD_NAME, 'Enter the total area of woodland over 10 years old')] : []),
-      ...(Number.isNaN(underTen) ? [makeError(HECTARES_UNDER_TEN_FIELD_NAME, 'Enter the total area of newly planted woodland under 10 years old')] : [])
+      ...(Number.isNaN(overTen)
+        ? [makeError(HECTARES_OVER_TEN_FIELD_NAME, 'Enter the total area of woodland over 10 years old')]
+        : []),
+      ...(Number.isNaN(underTen)
+        ? [
+            makeError(
+              HECTARES_UNDER_TEN_FIELD_NAME,
+              'Enter the total area of newly planted woodland under 10 years old'
+            )
+          ]
+        : [])
     ]
     if (missingErrors.length) {
       return missingErrors
