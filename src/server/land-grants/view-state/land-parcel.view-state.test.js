@@ -295,14 +295,16 @@ describe('land-parcel-state.manager', () => {
           'AB1234-5678': { actionsObj: { SAM1: {} } }
         },
         payment: { total: 100 },
-        draftApplicationAnnualTotalPence: 10000
+        totalPence: 10000,
+        totalPayment: 500
       }
 
       const result = deleteParcelFromState(state, 'AB1234-5678')
 
       expect(result).not.toHaveProperty('landParcels')
       expect(result).not.toHaveProperty('payment')
-      expect(result).not.toHaveProperty('draftApplicationAnnualTotalPence')
+      expect(result).not.toHaveProperty('totalPence')
+      expect(result).not.toHaveProperty('totalPayment')
     })
 
     it('should not mutate original state', () => {
@@ -357,14 +359,16 @@ describe('land-parcel-state.manager', () => {
           'AB1234-5678': { actionsObj: { SAM1: {} } }
         },
         payment: { total: 100 },
-        draftApplicationAnnualTotalPence: 10000
+        totalPence: 10000,
+        totalPayment: 500
       }
 
       const result = deleteActionFromState(state, 'AB1234-5678', 'SAM1')
 
       expect(result).not.toHaveProperty('landParcels')
       expect(result).not.toHaveProperty('payment')
-      expect(result).not.toHaveProperty('draftApplicationAnnualTotalPence')
+      expect(result).not.toHaveProperty('totalPence')
+      expect(result).not.toHaveProperty('totalPayment')
     })
 
     it('should handle deleting non-existent action gracefully', () => {
