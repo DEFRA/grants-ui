@@ -3,6 +3,7 @@ import LandGrantsQuestionWithAuthCheckController from '../../controllers/auth/la
 import { fetchParcels } from '../../services/land-grants.service.js'
 import { mapParcelsToViewModel } from '../../view-models/parcel.view-model.js'
 import { getParcelIdFromQuery, getParcelIdsFromPayload } from '../../utils/parcel-request.utils.js'
+import { stringifyParcel } from '../../utils/format-parcel.js'
 
 export default class CommonSelectLandParcelPageController extends LandGrantsQuestionWithAuthCheckController {
   viewName = 'common-select-land-parcel'
@@ -131,7 +132,7 @@ export default class CommonSelectLandParcelPageController extends LandGrantsQues
       })
     }
 
-    const parcelMap = new Map(fetchedParcels.map((p) => [`${p.sheetId}-${p.parcelId}`, p]))
+    const parcelMap = new Map(fetchedParcels.map((p) => [stringifyParcel(p), p]))
 
     const totalHectaresAppliedFor = selectedParcelIds.reduce((sum, id) => {
       const parcel = parcelMap.get(id)
@@ -143,7 +144,7 @@ export default class CommonSelectLandParcelPageController extends LandGrantsQues
       totalHectaresAppliedFor
     })
 
-    return this.proceed(request, h, `${this.getNextPath(context)}?selectedParcelIds=${selectedParcelIds.join(',')}`)
+    return this.proceed(request, h, `${this.getNextPath(context)}`)
   }
 }
 
