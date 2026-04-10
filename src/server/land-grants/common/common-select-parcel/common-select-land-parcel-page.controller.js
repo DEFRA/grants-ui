@@ -3,6 +3,7 @@ import LandGrantsQuestionWithAuthCheckController from '../../controllers/auth/la
 import { fetchParcels } from '../../services/land-grants.service.js'
 import { mapParcelsToViewModel } from '../../view-models/parcel.view-model.js'
 import { getParcelIdFromQuery, getParcelIdsFromPayload } from '../../utils/parcel-request.utils.js'
+import { stringifyParcel } from '../../utils/format-parcel.js'
 
 export default class CommonSelectLandParcelPageController extends LandGrantsQuestionWithAuthCheckController {
   viewName = 'common-select-land-parcel'
@@ -108,19 +109,19 @@ export default class CommonSelectLandParcelPageController extends LandGrantsQues
     const selectedParcelIds = getParcelIdsFromPayload(request)
     const isEmpty = selectedParcelIds.length === 0
 
-    if (isEmpty) {
-      let parcels = []
+    let fetchedParcels = []
+    try {
+      fetchedParcels = await fetchParcels(request)
+    } catch (error) {
+      debug(
+        { level: 'error', error, messageFunc: () => 'Error fetching parcels for validation error rendering' },
+        {},
+        request
+      )
+    }
 
-      try {
-        const fetchedParcels = await fetchParcels(request)
-        parcels = mapParcelsToViewModel(fetchedParcels)
-      } catch (error) {
-        debug(
-          { level: 'error', error, messageFunc: () => 'Error fetching parcels for validation error rendering' },
-          {},
-          request
-        )
-      }
+    if (isEmpty) {
+      const parcels = mapParcelsToViewModel(fetchedParcels)
 
       return h.view(this.viewName, {
         ...super.getViewModel(request, context),
@@ -131,11 +132,19 @@ export default class CommonSelectLandParcelPageController extends LandGrantsQues
       })
     }
 
+    const parcelMap = new Map(fetchedParcels.map((p) => [stringifyParcel(p), p]))
+
+    const totalHectaresAppliedFor = selectedParcelIds.reduce((sum, id) => {
+      const parcel = parcelMap.get(id)
+      return sum + (parcel?.area?.value || 0)
+    }, 0)
+
     await this.mergeState(request, state, {
-      landParcels: selectedParcelIds
+      landParcels: selectedParcelIds,
+      totalHectaresAppliedFor
     })
 
-    return this.proceed(request, h, `${this.getNextPath(context)}?selectedParcelIds=${selectedParcelIds.join(',')}`)
+    return this.proceed(request, h, `${this.getNextPath(context)}`)
   }
 }
 

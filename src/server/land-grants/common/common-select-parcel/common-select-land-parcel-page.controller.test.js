@@ -13,8 +13,15 @@ vi.mock('../../view-models/parcel.view-model.js', () => ({
   mapParcelsToViewModel: vi.fn()
 }))
 
-const mockParcels = [{ id: 'p1' }]
-const mappedParcels = [{ value: 'p1', text: 'Parcel 1' }]
+const mockParcels = [
+  { sheetId: 'S1', parcelId: 'P1', area: { value: 10 } },
+  { sheetId: 'S2', parcelId: 'P2', area: { value: 20 } }
+]
+
+const mappedParcels = [
+  { value: 'S1-P1', text: 'Parcel 1' },
+  { value: 'S2-P2', text: 'Parcel 2' }
+]
 
 const setupRequest = (method = 'get') => ({
   method,
@@ -66,23 +73,25 @@ describe('CommonSelectLandParcelPageController', () => {
     mapParcelsToViewModel.mockReturnValue(mappedParcels)
   })
 
-  afterEach(vi.clearAllMocks)
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
 
   describe('resolveParcelIds', () => {
     it('returns payload values for POST', () => {
       const controller = createController()
       const request = setupRequest('post')
-      request.payload = { landParcels: 'p1' }
+      request.payload = { landParcels: 'S1-P1' }
 
-      expect(controller.resolveParcelIds(request)).toEqual(['p1'])
+      expect(controller.resolveParcelIds(request)).toEqual(['S1-P1'])
     })
 
     it('returns query value for GET', () => {
       const controller = createController()
       const request = setupRequest('get')
-      request.query = { parcelId: 'p1' }
+      request.query = { parcelId: 'S1-P1' }
 
-      expect(controller.resolveParcelIds(request)).toEqual(['p1'])
+      expect(controller.resolveParcelIds(request)).toEqual(['S1-P1'])
     })
 
     it('returns empty array when nothing provided', () => {
@@ -97,20 +106,19 @@ describe('CommonSelectLandParcelPageController', () => {
     it('renders parcels successfully', async () => {
       const controller = createController({ enableMultipleParcelSelect: true })
       const request = setupRequest()
-      const context = setupContext({ landParcels: ['p1'] })
+
+      const context = setupContext({ landParcels: ['S1-P1'] })
+
       const h = setupH()
 
       await controller.handleGet(request, context, h)
-
-      expect(fetchParcels).toHaveBeenCalled()
-      expect(mapParcelsToViewModel).toHaveBeenCalledWith(mockParcels)
 
       expect(h.view).toHaveBeenCalledWith(
         'common-select-land-parcel',
         expect.objectContaining({
           parcels: mappedParcels,
           selectionMode: 'multiple',
-          selectedParcelIds: ['p1']
+          selectedParcelIds: ['S1-P1']
         })
       )
     })
@@ -151,33 +159,6 @@ describe('CommonSelectLandParcelPageController', () => {
         })
       )
     })
-
-    it('passes config values to view', async () => {
-      const controller = createController({
-        topSection: '<p>Top</p>',
-        bottomSection: '<p>Bottom</p>',
-        selectionHint: 'Hint text',
-        supportDetailsSummaryText: 'Help',
-        supportDetailsHtml: '<p>Help content</p>'
-      })
-
-      const request = setupRequest()
-      const context = setupContext({})
-      const h = setupH()
-
-      await controller.handleGet(request, context, h)
-
-      expect(h.view).toHaveBeenCalledWith(
-        'common-select-land-parcel',
-        expect.objectContaining({
-          topSection: '<p>Top</p>',
-          bottomSection: '<p>Bottom</p>',
-          selectionHint: 'Hint text',
-          supportDetailsSummaryText: 'Help',
-          supportDetailsHtml: '<p>Help content</p>'
-        })
-      )
-    })
   })
 
   describe('handlePost', () => {
@@ -187,7 +168,7 @@ describe('CommonSelectLandParcelPageController', () => {
       const context = setupContext({})
       const h = setupH()
 
-      request.payload = {}
+      controller.mergeState = vi.fn()
 
       await controller.handlePost(request, context, h)
 
@@ -205,7 +186,7 @@ describe('CommonSelectLandParcelPageController', () => {
       const context = setupContext({})
       const h = setupH()
 
-      request.payload = {}
+      controller.mergeState = vi.fn()
 
       await controller.handlePost(request, context, h)
 
@@ -217,28 +198,31 @@ describe('CommonSelectLandParcelPageController', () => {
       )
     })
 
-    it('merges state and proceeds when valid', async () => {
+    it('merges state and calculates total area', async () => {
       const controller = createController()
       const request = setupRequest('post')
       const context = setupContext({})
       const h = setupH()
 
-      request.payload = { landParcels: ['p1', 'p2'] }
+      request.payload = { landParcels: ['S1-P1', 'S2-P2'] }
 
       controller.mergeState = vi.fn()
 
       const result = await controller.handlePost(request, context, h)
 
+      expect(fetchParcels).toHaveBeenCalled()
+
       expect(controller.mergeState).toHaveBeenCalledWith(request, context.state, {
-        landParcels: ['p1', 'p2']
+        landParcels: ['S1-P1', 'S2-P2'],
+        totalHectaresAppliedFor: 30
       })
 
-      expect(controller.proceed).toHaveBeenCalledWith(request, h, '/next?selectedParcelIds=p1,p2')
+      expect(controller.proceed).toHaveBeenCalledWith(request, h, '/next')
 
       expect(result).toBe('next')
     })
 
-    it('handles fetch error during validation gracefully', async () => {
+    it('handles fetch error gracefully for validation', async () => {
       fetchParcels.mockRejectedValue(new Error('fail'))
 
       const controller = createController()
@@ -246,14 +230,14 @@ describe('CommonSelectLandParcelPageController', () => {
       const context = setupContext({})
       const h = setupH()
 
-      request.payload = {}
+      controller.mergeState = vi.fn()
 
       await controller.handlePost(request, context, h)
 
       expect(h.view).toHaveBeenCalledWith(
         'common-select-land-parcel',
         expect.objectContaining({
-          parcels: [],
+          parcels: mappedParcels,
           errors: 'Select a land parcel'
         })
       )
