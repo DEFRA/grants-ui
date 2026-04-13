@@ -8,6 +8,7 @@ import {
 } from '~/src/server/common/helpers/create-rows.js'
 import { logger } from '~/src/server/common/helpers/logging/log.js'
 import { fetchBusinessAndCPH } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
+import { mergeAdditionalAnswers } from '~/src/server/common/helpers/state/additional-answers-helper.js'
 
 export default class ConfirmMethaneDetailsController extends QuestionPageController {
   viewName = 'confirm-methane-details'
@@ -122,14 +123,7 @@ export default class ConfirmMethaneDetailsController extends QuestionPageControl
       if (sbi) {
         const toleratedPaths = this.model?.def?.metadata?.toleratedFailurePaths
         const applicant = await fetchBusinessAndCPH(request, { toleratedPaths })
-        const prevAdditionalAnswers = /** @type {object} */ (state.additionalAnswers)
-        await this.setState(request, {
-          ...state,
-          additionalAnswers: {
-            ...prevAdditionalAnswers,
-            applicant
-          }
-        })
+        await this.setState(request, mergeAdditionalAnswers(state, { applicant }))
       }
 
       return this.proceed(request, h, this.getNextPath(context))

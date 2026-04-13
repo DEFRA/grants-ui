@@ -1,4 +1,4 @@
-import { log, debug, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { debug, log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import LandGrantsQuestionWithAuthCheckController from '../../controllers/auth/land-grants-question-with-auth-check.controller.js'
 import { fetchParcels } from '../../services/land-grants.service.js'
 import { mapParcelsToViewModel } from '../../view-models/parcel.view-model.js'
@@ -163,7 +163,8 @@ export default class CommonSelectLandParcelPageController extends LandGrantsQues
     await this.mergeState(request, state, {
       landParcels: selectedParcelIds,
       landParcelMetadata,
-      totalHectaresAppliedFor
+      totalHectaresAppliedFor,
+      additionalAnswers: { totalHectaresAppliedFor }
     })
 
     return this.proceed(request, h, `${this.getNextPath(context)}`)
