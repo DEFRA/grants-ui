@@ -30,6 +30,18 @@ export default class CheckResponsesPageController extends SummaryPageController 
     const backLink = getTaskPageBackLink(viewModel, pageDef)
     const sectionTitle = this.section?.hideTitle !== true ? this.section?.title : ''
 
+    const landParcelsDisplay = context.state.landParcelsDisplay
+
+    if (landParcelsDisplay && viewModel.checkAnswers) {
+      for (const section of viewModel.checkAnswers) {
+        for (const row of section.summaryList.rows) {
+          if (row.key?.text === 'Select land parcels') {
+            row.value = { text: landParcelsDisplay }
+          }
+        }
+      }
+    }
+
     return {
       ...viewModel,
       sectionTitle,
