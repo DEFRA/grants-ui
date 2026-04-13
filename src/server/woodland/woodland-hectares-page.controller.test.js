@@ -107,7 +107,7 @@ describe('WoodlandHectaresPageController', () => {
           path: ['oldWoodlandAreaHa'],
           href: '#oldWoodlandAreaHa',
           name: 'oldWoodlandAreaHa',
-          text: 'Enter the total area of woodland over 10 years old'
+          text: 'The total area of woodland must be more than 0.5ha'
         }
       ])
     })
@@ -123,7 +123,7 @@ describe('WoodlandHectaresPageController', () => {
           path: ['newWoodlandAreaHa'],
           href: '#newWoodlandAreaHa',
           name: 'newWoodlandAreaHa',
-          text: 'Enter the total area of newly planted woodland under 10 years old'
+          text: 'The total area of woodland must be more than 0.5ha'
         }
       ])
     })
@@ -139,13 +139,13 @@ describe('WoodlandHectaresPageController', () => {
           path: ['oldWoodlandAreaHa'],
           href: '#oldWoodlandAreaHa',
           name: 'oldWoodlandAreaHa',
-          text: 'Enter the total area of woodland over 10 years old'
+          text: 'The total area of woodland must be more than 0.5ha'
         },
         {
           path: ['newWoodlandAreaHa'],
           href: '#newWoodlandAreaHa',
           name: 'newWoodlandAreaHa',
-          text: 'Enter the total area of newly planted woodland under 10 years old'
+          text: 'The total area of woodland must be more than 0.5ha'
         }
       ])
     })
@@ -163,13 +163,13 @@ describe('WoodlandHectaresPageController', () => {
           path: ['oldWoodlandAreaHa'],
           href: '#oldWoodlandAreaHa',
           name: 'oldWoodlandAreaHa',
-          text: 'Enter the total area of woodland over 10 years old'
+          text: 'The total area of woodland must be more than 0.5ha'
         },
         {
           path: ['newWoodlandAreaHa'],
           href: '#newWoodlandAreaHa',
           name: 'newWoodlandAreaHa',
-          text: 'Enter the total area of newly planted woodland under 10 years old'
+          text: 'The total area of woodland must be more than 0.5ha'
         }
       ])
     })
@@ -185,7 +185,7 @@ describe('WoodlandHectaresPageController', () => {
           path: ['newWoodlandAreaHa'],
           href: '#newWoodlandAreaHa',
           name: 'newWoodlandAreaHa',
-          text: 'Enter the total area of newly planted woodland under 10 years old'
+          text: 'The total area of woodland must be more than 0.5ha'
         }
       ])
     })
@@ -201,10 +201,15 @@ describe('WoodlandHectaresPageController', () => {
 
       expect(context.errors).toEqual([
         {
+          path: ['oldWoodlandAreaHa'],
+          href: '#oldWoodlandAreaHa',
+          name: 'oldWoodlandAreaHa',
+          text: 'The total area of woodland must be more than 0.5ha'
+        },
+        {
           path: ['newWoodlandAreaHa'],
-          href: '#newWoodlandAreaHa',
-          name: 'newWoodlandAreaHa',
-          text: 'The total area of woodland must be larger than 0.5 ha'
+          href: '#oldWoodlandAreaHa',
+          text: 'The total area of woodland must be more than 0.5ha'
         }
       ])
     })
@@ -224,47 +229,28 @@ describe('WoodlandHectaresPageController', () => {
   })
 
   describe('exceeds total land parcel area', () => {
-    it('sets error on over-10 field when it alone exceeds max', async () => {
+    it.each([
+      { overTen: '60', underTen: '0', desc: 'over-10 alone exceeds max' },
+      { overTen: '30', underTen: '25', desc: 'combined total exceeds max' }
+    ])('sets error on both fields when $desc', async ({ overTen, underTen }) => {
       const handler = controller.makePostRouteHandler()
       const context = { state: { totalHectaresAppliedFor: 50 }, evaluationState: {} }
 
-      await handler({ payload: { oldWoodlandAreaHa: '60', newWoodlandAreaHa: '0' } }, context, mockH)
+      await handler({ payload: { oldWoodlandAreaHa: overTen, newWoodlandAreaHa: underTen } }, context, mockH)
 
       expect(context.errors).toEqual([
         {
           path: ['oldWoodlandAreaHa'],
           href: '#oldWoodlandAreaHa',
           name: 'oldWoodlandAreaHa',
-          text: 'Area of woodland over 10 years old must not be more than the total area of land parcels. You have 50 ha available'
-        }
-      ])
-    })
-
-    it('sets error on under-10 field when combined total exceeds max', async () => {
-      const handler = controller.makePostRouteHandler()
-      const context = { state: { totalHectaresAppliedFor: 50 }, evaluationState: {} }
-
-      await handler({ payload: { oldWoodlandAreaHa: '30', newWoodlandAreaHa: '25' } }, context, mockH)
-
-      expect(context.errors).toEqual([
+          text: 'Total area of woodland cannot be more than total area of selected land parcels (50ha)'
+        },
         {
           path: ['newWoodlandAreaHa'],
-          href: '#newWoodlandAreaHa',
-          name: 'newWoodlandAreaHa',
-          text: 'Combined area of woodland over 10 years old and under 10 years old must not be more than the total area of land parcels. You have 20 ha remaining'
+          href: '#oldWoodlandAreaHa',
+          text: 'Total area of woodland cannot be more than total area of selected land parcels (50ha)'
         }
       ])
-    })
-
-    it('calculates remaining correctly based on over-10 value', async () => {
-      const handler = controller.makePostRouteHandler()
-      const context = { state: { totalHectaresAppliedFor: 100 }, evaluationState: {} }
-
-      await handler({ payload: { oldWoodlandAreaHa: '40', newWoodlandAreaHa: '70' } }, context, mockH)
-
-      expect(context.errors[0].text).toBe(
-        'Combined area of woodland over 10 years old and under 10 years old must not be more than the total area of land parcels. You have 60 ha remaining'
-      )
     })
 
     it.each([

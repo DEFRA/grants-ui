@@ -12,12 +12,27 @@ const MIN_WOODLAND_TOTAL_AREA_HA = 0.5
 const HECTARES_OVER_TEN_FIELD_NAME = 'oldWoodlandAreaHa'
 const HECTARES_UNDER_TEN_FIELD_NAME = 'newWoodlandAreaHa'
 
+const ERROR_BELOW_MINIMUM = `The total area of woodland must be more than ${MIN_WOODLAND_TOTAL_AREA_HA}ha`
+const ERROR_EXCEEDS_MAX = (/** @type {number} */ max) =>
+  `Total area of woodland cannot be more than total area of selected land parcels (${max}ha)`
+
 /**
  * @param {string} fieldName
  * @param {string} text
  * @returns {FormSubmissionError}
  */
 const makeError = (fieldName, text) => ({ path: [fieldName], href: `#${fieldName}`, name: fieldName, text })
+
+/**
+ * Returns two errors with the same text: one full error on the first field (appears in summary),
+ * and a path-only error on the second field (highlights it inline without duplicating the summary).
+ * @param {string} text
+ * @returns {Array<object>}
+ */
+const makeBothFieldsError = (text) => [
+  makeError(HECTARES_OVER_TEN_FIELD_NAME, text),
+  { path: [HECTARES_UNDER_TEN_FIELD_NAME], href: `#${HECTARES_OVER_TEN_FIELD_NAME}`, text }
+]
 
 export default class WoodlandHectaresPageController extends TaskPageController {
   /**
@@ -52,41 +67,22 @@ export default class WoodlandHectaresPageController extends TaskPageController {
    * @returns {Array<object> | null}
    */
   validatePayload(overTen, underTen, totalHectaresAppliedFor) {
-    const missingErrors = [
-      ...(Number.isNaN(overTen)
-        ? [makeError(HECTARES_OVER_TEN_FIELD_NAME, 'Enter the total area of woodland over 10 years old')]
-        : []),
-      ...(Number.isNaN(underTen)
-        ? [
-            makeError(
-              HECTARES_UNDER_TEN_FIELD_NAME,
-              'Enter the total area of newly planted woodland under 10 years old'
-            )
-          ]
-        : [])
-    ]
+    const missingErrors = []
+    if (Number.isNaN(overTen)) {
+      missingErrors.push(makeError(HECTARES_OVER_TEN_FIELD_NAME, ERROR_BELOW_MINIMUM))
+    }
+    if (Number.isNaN(underTen)) {
+      missingErrors.push(makeError(HECTARES_UNDER_TEN_FIELD_NAME, ERROR_BELOW_MINIMUM))
+    }
     if (missingErrors.length) {
       return missingErrors
     }
 
     if (overTen + underTen < MIN_WOODLAND_TOTAL_AREA_HA) {
-      return [makeError(HECTARES_UNDER_TEN_FIELD_NAME, 'The total area of woodland must be larger than 0.5 ha')]
+      return makeBothFieldsError(ERROR_BELOW_MINIMUM)
     }
-    if (overTen > totalHectaresAppliedFor) {
-      return [
-        makeError(
-          HECTARES_OVER_TEN_FIELD_NAME,
-          `Area of woodland over 10 years old must not be more than the total area of land parcels. You have ${totalHectaresAppliedFor} ha available`
-        )
-      ]
-    }
-    if (overTen + underTen > totalHectaresAppliedFor) {
-      return [
-        makeError(
-          HECTARES_UNDER_TEN_FIELD_NAME,
-          `Combined area of woodland over 10 years old and under 10 years old must not be more than the total area of land parcels. You have ${totalHectaresAppliedFor - overTen} ha remaining`
-        )
-      ]
+    if (overTen > totalHectaresAppliedFor || overTen + underTen > totalHectaresAppliedFor) {
+      return makeBothFieldsError(ERROR_EXCEEDS_MAX(totalHectaresAppliedFor))
     }
 
     return []
@@ -116,6 +112,29 @@ export default class WoodlandHectaresPageController extends TaskPageController {
     }
   }
 
+  /**
+   * Renders the page with errors, deduplicating the summary when multiple errors share the same text.
+   * @param {AnyFormRequest} request
+   * @param {FormContext} context
+   * @param {Pick<import('@hapi/hapi').ResponseToolkit, 'redirect' | 'view'>} h
+   * @param {Array<object>} errors
+   */
+  renderWithErrors(request, context, h, errors) {
+    context.errors = errors
+    const viewModel = /** @type {Record<string, any>} */ (this.getViewModel(request, context))
+    viewModel.errors = this.collection.getViewErrors(errors)
+    const seen = new Set()
+    viewModel.errors = viewModel.errors?.filter((/** @type {{ text: string }} */ e) => {
+      const { text } = e
+      if (seen.has(text)) {
+        return false
+      }
+      seen.add(text)
+      return true
+    })
+    return h.view(/** @type {string} */ (this.viewName), viewModel)
+  }
+
   makePostRouteHandler() {
     const parentHandler = super.makePostRouteHandler()
 
@@ -138,20 +157,20 @@ export default class WoodlandHectaresPageController extends TaskPageController {
       }
 
       if (frontendErrors.length) {
-        context.errors = frontendErrors
-      } else {
-        const parcelIds = /** @type {string[]} */ (state['landParcels'] ?? [])
-        const backendErrors = await this.validateApplication(request, parcelIds, overTen, underTen)
-        if (backendErrors.length) {
-          const isTopLevel = backendErrors.some((e) => /** @type {FormSubmissionError} */ (e).path.length === 0)
-          if (isTopLevel) {
-            // render directly so it isn't stripped by getViewErrors
-            const viewModel = /** @type {Record<string, unknown>} */ (this.getViewModel(request, context))
-            viewModel.errors = backendErrors
-            return h.view(/** @type {string} */ (this.viewName), viewModel)
-          }
-          context.errors = backendErrors
+        return this.renderWithErrors(request, context, h, frontendErrors)
+      }
+
+      const parcelIds = /** @type {string[]} */ (state['landParcels'] ?? [])
+      const backendErrors = await this.validateApplication(request, parcelIds, overTen, underTen)
+      if (backendErrors.length) {
+        const isTopLevel = backendErrors.some((e) => /** @type {FormSubmissionError} */ (e).path.length === 0)
+        if (isTopLevel) {
+          // render directly so it isn't stripped by getViewErrors
+          const viewModel = /** @type {Record<string, unknown>} */ (this.getViewModel(request, context))
+          viewModel.errors = backendErrors
+          return h.view(/** @type {string} */ (this.viewName), viewModel)
         }
+        context.errors = backendErrors
       }
 
       return parentHandler(request, context, h)
