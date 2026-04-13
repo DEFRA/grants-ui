@@ -2,6 +2,7 @@ import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/Q
 import { fetchBusinessAndCustomerInformation } from '../../common/services/consolidated-view/consolidated-view.service.js'
 import { createBusinessRows, createContactRows, createPersonRows } from '../../common/helpers/create-rows.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { mergeAdditionalAnswers } from '~/src/server/common/helpers/state/additional-answers-helper.js'
 
 export default class ConfirmFarmDetailsController extends QuestionPageController {
   viewName = 'confirm-farm-details'
@@ -144,14 +145,7 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
 
       if (sbi) {
         const applicant = await fetchBusinessAndCustomerInformation(request)
-        const prevAdditionalAnswers = /** @type {object} */ (state.additionalAnswers)
-        await this.setState(request, {
-          ...state,
-          additionalAnswers: {
-            ...prevAdditionalAnswers,
-            applicant
-          }
-        })
+        await this.setState(request, mergeAdditionalAnswers(state, { applicant }))
       }
 
       return this.proceed(request, h, this.getNextPath(context))

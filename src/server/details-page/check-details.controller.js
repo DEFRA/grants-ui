@@ -6,6 +6,7 @@ import {
 } from '../common/services/consolidated-view/consolidated-view.service.js'
 import { debug, log, LogCodes } from '../common/helpers/logging/log.js'
 import { ComponentType } from '@defra/forms-model'
+import { mergeAdditionalAnswers } from '../common/helpers/state/additional-answers-helper.js'
 
 const ERROR_TITLE = 'There is a problem'
 
@@ -144,14 +145,13 @@ export default class CheckDetailsController extends QuestionPageController {
 
     try {
       const { mappedData } = await this.fetchAndProcessData(request, config)
-      await this.setState(request, {
-        ...context.state,
-        additionalAnswers: {
-          ...context.state?.additionalAnswers,
+      await this.setState(
+        request,
+        mergeAdditionalAnswers(context.state, {
           applicant: mappedData,
           detailsConfirmedAt: new Date().toISOString()
-        }
-      })
+        })
+      )
       return this.proceed(request, h, this.getNextPath(context))
     } catch (error) {
       debug(LogCodes.SYSTEM.EXTERNAL_API_ERROR, { endpoint: 'ConsolidatedView', errorMessage: error.message }, request)
