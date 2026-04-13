@@ -284,10 +284,8 @@ describe('WoodlandHectaresPageController', () => {
       })
     })
 
-    it('sets errors from failed rules returned by the service', async () => {
-      woodlandService.validateWoodlandHectares.mockResolvedValueOnce([
-        'The woodland area over 10 years old (10 ha) does not meet the minimum required area of (0.5 ha)'
-      ])
+    it('highlights both fields and shows backend reason when the service returns failures', async () => {
+      woodlandService.validateWoodlandHectares.mockResolvedValueOnce(['some backend reason'])
       const handler = controller.makePostRouteHandler()
       const context = { state: validState, evaluationState: {} }
 
@@ -298,7 +296,12 @@ describe('WoodlandHectaresPageController', () => {
           path: ['oldWoodlandAreaHa'],
           href: '#oldWoodlandAreaHa',
           name: 'oldWoodlandAreaHa',
-          text: 'The woodland area over 10 years old (10 ha) does not meet the minimum required area of (0.5 ha)'
+          text: 'some backend reason'
+        },
+        {
+          path: ['newWoodlandAreaHa'],
+          href: '#oldWoodlandAreaHa',
+          text: 'some backend reason'
         }
       ])
     })

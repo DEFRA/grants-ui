@@ -59,12 +59,10 @@ export default class WoodlandHectaresPageController extends TaskPageController {
 
   /**
    * Validates the hectare inputs against frontend rules.
-   * Returns an array of errors, or null if non-numeric input should defer to the engine.
-   * Empty string parses as NaN (missing), non-numeric string parses as NaN (defer to engine).
    * @param {number} overTen
    * @param {number} underTen
    * @param {number} totalHectaresAppliedFor
-   * @returns {Array<object> | null}
+   * @returns {Array<object>}
    */
   validatePayload(overTen, underTen, totalHectaresAppliedFor) {
     const missingErrors = []
@@ -84,31 +82,41 @@ export default class WoodlandHectaresPageController extends TaskPageController {
     if (overTen > totalHectaresAppliedFor || overTen + underTen > totalHectaresAppliedFor) {
       return makeBothFieldsError(ERROR_EXCEEDS_MAX(totalHectaresAppliedFor))
     }
-
     return []
   }
 
   /**
-   * Calls the backend validate endpoint and maps any failed rules to errors.
+   * Calls the backend validate endpoint and returns true if validation passed.
+   * On failure, renders the page with a top-level error and returns false.
    * @param {AnyFormRequest} request
+   * @param {FormContext} context
+   * @param {Pick<import('@hapi/hapi').ResponseToolkit, 'redirect' | 'view'>} h
    * @param {string[]} parcelIds
    * @param {number} oldWoodlandAreaHa
    * @param {number} newWoodlandAreaHa
-   * @returns {Promise<Array<{ path: string[], text: string }>>}
+   * @returns {Promise<import('@hapi/hapi').ResponseObject | null>} a rendered response if validation failed, otherwise null
    */
-  async validateApplication(request, parcelIds, oldWoodlandAreaHa, newWoodlandAreaHa) {
+  async renderBackendErrors(request, context, h, parcelIds, oldWoodlandAreaHa, newWoodlandAreaHa) {
     try {
-      const errorReasons = await validateWoodlandHectares({ parcelIds, oldWoodlandAreaHa, newWoodlandAreaHa })
-      return errorReasons.map((reason) => makeError(HECTARES_OVER_TEN_FIELD_NAME, reason))
+      const failedReasons = await validateWoodlandHectares({ parcelIds, oldWoodlandAreaHa, newWoodlandAreaHa })
+      if (!failedReasons.length) {
+        return null
+      }
+      return this.renderWithErrors(request, context, h, failedReasons.flatMap(makeBothFieldsError))
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err)
-      debug(LogCodes.WOODLAND.VALIDATE_ERROR, { errorMessage: message }, request)
-      return [
+      debug(
+        LogCodes.WOODLAND.VALIDATE_ERROR,
+        { errorMessage: err instanceof Error ? err.message : String(err) },
+        request
+      )
+      const viewModel = /** @type {Record<string, unknown>} */ (this.getViewModel(request, context))
+      viewModel.errors = [
         {
           path: [],
           text: 'There has been an issue validating your woodland area. Please try again later or contact the Rural Payments Agency.'
         }
       ]
+      return h.view(/** @type {string} */ (this.viewName), viewModel)
     }
   }
 
@@ -152,25 +160,14 @@ export default class WoodlandHectaresPageController extends TaskPageController {
       const underTen = Number.parseFloat(payload[HECTARES_UNDER_TEN_FIELD_NAME])
 
       const frontendErrors = this.validatePayload(overTen, underTen, totalHectaresAppliedFor)
-      if (frontendErrors === null) {
-        return parentHandler(request, context, h)
-      }
-
       if (frontendErrors.length) {
         return this.renderWithErrors(request, context, h, frontendErrors)
       }
 
       const parcelIds = /** @type {string[]} */ (state['landParcels'] ?? [])
-      const backendErrors = await this.validateApplication(request, parcelIds, overTen, underTen)
-      if (backendErrors.length) {
-        const isTopLevel = backendErrors.some((e) => /** @type {FormSubmissionError} */ (e).path.length === 0)
-        if (isTopLevel) {
-          // render directly so it isn't stripped by getViewErrors
-          const viewModel = /** @type {Record<string, unknown>} */ (this.getViewModel(request, context))
-          viewModel.errors = backendErrors
-          return h.view(/** @type {string} */ (this.viewName), viewModel)
-        }
-        context.errors = backendErrors
+      const backendResponse = await this.renderBackendErrors(request, context, h, parcelIds, overTen, underTen)
+      if (backendResponse) {
+        return backendResponse
       }
 
       return parentHandler(request, context, h)
