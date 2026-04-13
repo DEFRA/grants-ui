@@ -1,3 +1,5 @@
+import nunjucks from 'nunjucks'
+import { ComponentType } from '@defra/forms-model'
 import TaskPageController from '~/src/server/task-list/task-page.controller.js'
 import { validateWoodlandHectares } from '~/src/server/woodland/woodland.service.js'
 import { debug, LogCodes } from '~/src/server/common/helpers/logging/log.js'
@@ -24,10 +26,20 @@ export default class WoodlandHectaresPageController extends TaskPageController {
    */
   getViewModel(request, context) {
     const { state } = context
-    return {
-      ...super.getViewModel(request, context),
-      totalHectaresAppliedFor: state['totalHectaresAppliedFor']
+    const totalHectaresAppliedFor = state['totalHectaresAppliedFor'] ?? 0
+    const viewModel = /** @type {Record<string, any>} */ (super.getViewModel(request, context))
+
+    const guidanceIndex = viewModel.components?.findIndex(
+      (/** @type {{ type: string }} */ c) => c.type === ComponentType.Html
+    )
+    if (guidanceIndex !== -1) {
+      viewModel.components[guidanceIndex].model.content = nunjucks.renderString(
+        viewModel.components[guidanceIndex].model.content,
+        { totalHectaresAppliedFor }
+      )
     }
+
+    return { ...viewModel, totalHectaresAppliedFor }
   }
 
   /**
@@ -128,7 +140,7 @@ export default class WoodlandHectaresPageController extends TaskPageController {
       if (frontendErrors.length) {
         context.errors = frontendErrors
       } else {
-        const parcelIds = /** @type {string[]} */ (state['selectedParcelIds'] ?? [])
+        const parcelIds = /** @type {string[]} */ (state['landParcels'] ?? [])
         const backendErrors = await this.validateApplication(request, parcelIds, overTen, underTen)
         if (backendErrors.length) {
           const isTopLevel = backendErrors.some((e) => /** @type {FormSubmissionError} */ (e).path.length === 0)

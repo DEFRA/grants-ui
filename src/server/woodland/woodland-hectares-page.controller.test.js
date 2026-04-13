@@ -26,7 +26,14 @@ vi.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js', () =
               ...this.pageDef,
               metadata: { tasklist: {} }
             }
-          }
+          },
+          components: [
+            {
+              type: 'Html',
+              isFormComponent: false,
+              model: { content: '{{ totalHectaresAppliedFor }} ha' }
+            }
+          ]
         }
       }
 
@@ -258,7 +265,7 @@ describe('WoodlandHectaresPageController', () => {
 
   describe('backend validation', () => {
     const validPayload = { oldWoodlandAreaHa: '10', newWoodlandAreaHa: '5' }
-    const validState = { totalHectaresAppliedFor: 50, selectedParcelIds: ['SD6346-3387'] }
+    const validState = { totalHectaresAppliedFor: 50, landParcels: ['SD6346-3387'] }
 
     it('calls the service with parcel IDs and hectare values from payload', async () => {
       const handler = controller.makePostRouteHandler()
