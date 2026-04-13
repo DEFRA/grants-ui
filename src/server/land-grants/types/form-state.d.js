@@ -20,12 +20,19 @@
  */
 
 /**
+ * @typedef {Object} LandParcelMetadataItem
+ * @property {string} id - Parcel identifier (format: "sheetId-parcelId")
+ * @property {{ unit: string, value: number } | null} area - Area of the parcel
+ */
+
+/**
  * @typedef {Object} FormState
  * @property {string} sbi - Single Business Identifier
  * @property {string} crn - Customer Reference Number
  * @property {Applicant} applicant - Applicant details
  * @property {PaymentCalculation} payment - Payment details
  * @property {LandParcels} landParcels - Land parcels with actions
+ * @property {LandParcelMetadataItem[]} [landParcelMetadata] - Area metadata for selected parcels (woodland journey)
  */
 
 /**

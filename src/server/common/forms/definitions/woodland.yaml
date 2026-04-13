@@ -468,22 +468,58 @@ pages:
   # Section 2: About your woodland (placeholder)
   # ==========================================
 
-  - title: Enter total area of your land parcels
+  - title: Select all the eligible land parcels for the location of your woodland
     id: 5d8f5a78-8c19-4b3c-94fd-0ce7bdd5b038
-    path: /total-area-of-land-parcels
+    path: /land-parcels
     section: 38507a39-c936-4c4f-872a-bcbae2eeb7d5
-    controller: TaskPageController
+    controller: CommonSelectLandParcelPageController
     components:
-      - name: totalHectaresAppliedFor
-        id: 945c9e54-2e65-40f7-b8c9-37fbe8210d07
-        type: NumberField
-        title: Enter total area of your land parcels
-        options:
-          required: true
-          classes: govuk-input--width-5
-          suffix: ha
-        shortDescription: Total area of land parcels
+      - name: landParcels
+        type: CheckboxesField
+        title: Select land parcels
+        shortDescription: Select land parcels
+    config:
+      showSupportDetails: false
+      enableMultipleParcelSelect: true
+      topSection: |
+        <div class="govuk-body">
+          <p>
+            You must include all woodland on your holding in your application. A holding
+            is all the land in the same geographical location that is managed as a unit.
+          </p>
 
+          <p>
+            For larger holdings, this is all woodland within the same geographical
+            location.
+          </p>
+
+          <p>
+            Land parcels must be entirely within England and defined as an area of land
+            that:
+          </p>
+
+          <ul class="govuk-list govuk-list--bullet">
+            <li>is at least 0.5 hectares</li>
+            <li>has an average width of at least 20 metres</li>
+            <li>
+              is a group or line of trees that are, or will reach, at least 5 metres in height
+            </li>
+            <li>has a crown cover of more than 20% of the ground area</li>
+          </ul>
+
+          <p>
+            The woodland must be larger than 0.5 hectares in total. The total area for the
+            application can be made up of separate blocks of woodland but the minimum
+            block size must be 0.5ha.
+          </p>
+
+          <p>
+            To find out more about what land is eligible for a WMP read our
+            <a href="https://www.gov.uk/government/publications/pa3-woodland-management-plan-2026/applicants-guide-pa3-woodland-management-plan-2026#landthat-is-eligible-for-a-wmp" class="govuk-link">
+              Applicant's guide: PA3 Woodland management plan 2026 guidance
+            </a>.
+          </p>
+        </div>
   - title: Enter total area of woodland on your land over 10 years old
     id: 2c807ed2-18d7-4c9c-afa9-e6f10edfbca7
     path: /total-area-of-land-over-10-years-old
