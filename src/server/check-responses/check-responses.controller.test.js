@@ -23,7 +23,19 @@ vi.mock('@defra/forms-engine-plugin/controllers/SummaryPageController.js', () =>
           serviceUrl: '/service',
           page: {
             title: 'Summary'
-          }
+          },
+          checkAnswers: [
+            {
+              summaryList: {
+                rows: [
+                  {
+                    key: { text: 'Select land parcels' },
+                    value: { text: 'Not provided' }
+                  }
+                ]
+              }
+            }
+          ]
         }
       }
     }
@@ -47,6 +59,10 @@ describe('CheckResponsesPageController', () => {
       section: 'section-id-123'
     }
     controller = new CheckResponsesPageController(mockModel, mockPageDef)
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
   })
 
   describe('constructor', () => {
@@ -91,7 +107,58 @@ describe('CheckResponsesPageController', () => {
 
     beforeEach(() => {
       mockRequest = mockSimpleRequest()
-      mockContextObj = mockContext()
+      mockContextObj = mockContext({ state: {} })
+    })
+
+    it('should replace land parcels value when landParcelsDisplay exists in state', () => {
+      const contextWithDisplay = mockContext({
+        state: {
+          landParcelsDisplay: 'Parcel A, Parcel B'
+        }
+      })
+
+      const result = controller.getSummaryViewModel(mockRequest, contextWithDisplay)
+
+      expect(result.checkAnswers[0].summaryList.rows[0].value).toEqual({
+        text: 'Parcel A, Parcel B'
+      })
+    })
+
+    it('should not modify land parcels row when landParcelsDisplay is missing', () => {
+      const result = controller.getSummaryViewModel(mockRequest, mockContextObj)
+
+      expect(result.checkAnswers[0].summaryList.rows[0].value).toEqual({
+        text: 'Not provided'
+      })
+    })
+
+    it('should not throw if land parcels row is not present', () => {
+      vi.spyOn(SummaryPageController.prototype, 'getSummaryViewModel').mockReturnValue({
+        serviceUrl: '/service',
+        page: { title: 'Summary' },
+        checkAnswers: [
+          {
+            summaryList: {
+              rows: [
+                {
+                  key: { text: 'Something else' },
+                  value: { text: 'Value' }
+                }
+              ]
+            }
+          }
+        ]
+      })
+
+      const contextWithDisplay = mockContext({
+        state: { landParcelsDisplay: 'Parcel A' }
+      })
+
+      const result = controller.getSummaryViewModel(mockRequest, contextWithDisplay)
+
+      expect(result.checkAnswers[0].summaryList.rows[0].value).toEqual({
+        text: 'Value'
+      })
     })
 
     it('should call parent getSummaryViewModel and add section title', () => {
@@ -110,6 +177,22 @@ describe('CheckResponsesPageController', () => {
       expect(getTaskPageBackLink).toHaveBeenCalledWith(
         {
           serviceUrl: '/service',
+          checkAnswers: [
+            {
+              summaryList: {
+                rows: [
+                  {
+                    key: {
+                      text: 'Select land parcels'
+                    },
+                    value: {
+                      text: 'Not provided'
+                    }
+                  }
+                ]
+              }
+            }
+          ],
           page: {
             title: 'Summary'
           }

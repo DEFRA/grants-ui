@@ -232,6 +232,7 @@ describe('CommonSelectLandParcelPageController', () => {
 
       expect(controller.mergeState).toHaveBeenCalledWith(request, context.state, {
         landParcels: ['S1-P1', 'S2-P2'],
+        landParcelsDisplay: 'S1-P1, S2-P2',
         landParcelMetadata: [
           { id: 'S1-P1', area: { value: 10 } },
           { id: 'S2-P2', area: { value: 20 } }
