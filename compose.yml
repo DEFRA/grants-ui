@@ -8,6 +8,10 @@ services:
         condition: service_healthy
       grants-ui-backend:
         condition: service_started
+      grants-ui-config-api:
+        condition: service_healthy
+      grants-config-broker:
+        condition: service_healthy
       fcp-defra-id-stub:
         condition: service_healthy
     ports:
@@ -91,6 +95,10 @@ services:
     depends_on:
       mongodb:
         condition: service_healthy
+      grants-ui-config-api:
+        condition: service_healthy
+      grants-config-broker:
+        condition: service_healthy
     ports:
       - '3001:3001'
     environment:
@@ -120,6 +128,8 @@ services:
         condition: service_healthy
       localstack:
         condition: service_healthy
+      grants-config-broker:
+        condition: service_healthy
     ports:
       - '3011:3011'
     env_file:
@@ -131,7 +141,7 @@ services:
       MONGO_URI: mongodb://mongodb:27017/
       LOCALSTACK_ENDPOINT: http://localstack:4566
       JWT_SECRET: ${CONFIG_API_JWT_SECRET:-forms-config-jwt-secret}
-      FORMS_CONFIG_BUCKET_NAME: ${FORMS_CONFIG_BUCKET_NAME:-forms-config}
+      CONFIG_BROKER_URL: '${CONFIG_BROKER_URL:-http://grants-config-broker:3012}'
       FORMS_API_SLUGS: ${FORMS_API_SLUGS:-example-grant-with-auth}
       DEFAULT_FORM_ORGANISATION: ${DEFAULT_FORM_ORGANISATION:-Defra}
       DEFAULT_FORM_TEAM_NAME: ${DEFAULT_FORM_TEAM_NAME:-Digital Delivery}
@@ -142,6 +152,39 @@ services:
     restart: unless-stopped
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:3011/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  grants-config-broker:
+    image: defradigital/grants-config-broker:latest
+    pull_policy: always
+    ports:
+      - '3012:3012'
+    links:
+      - 'localstack:localstack'
+      - 'mongodb:mongodb'
+    depends_on:
+      localstack:
+        condition: service_healthy
+      mongodb:
+        condition: service_started
+    env_file:
+      - 'localstack/aws.env'
+    environment:
+      PORT: 3012
+      NODE_ENV: development
+      AWS_ENDPOINT_URL: http://localstack:4566
+      CONFIG_BUCKET_NAME: configs-bucket
+      MONGO_URI: mongodb://mongodb:27017/
+      SERVICE_VERSION: 1.0.0
+    networks:
+      - grants-ui-net
+    volumes:
+      - ./localstack/config-broker:/home/node/config
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:3012/health']
       interval: 30s
       timeout: 10s
       retries: 3
