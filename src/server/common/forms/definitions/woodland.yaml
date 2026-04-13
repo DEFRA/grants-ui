@@ -333,10 +333,9 @@ pages:
         id: 5af8ba37-9ac6-47a3-a5a9-e9716ab5141e
         type: Html
         content: >
-          <p class="govuk-body">You must get written consent from your landlord before you can apply for a Woodland Management Plan grant.</p>
-          <p class="govuk-body">You can download the
-          <a class="govuk-link" href="https://www.gov.uk/government/publications/countryside-stewardship-land-ownership-and-control-form" target="_blank">Land ownership and control form: Countryside Stewardship form (opens in new tab)</a>
-          to get your landlord's countersignature.</p>
+          <p class="govuk-body">You must get the written consent of all other parties with management control over part or all of the land in your application for the entire duration of the agreement  (and any durability period)</p>
+          <p class="govuk-body">To get countersignatures follow the guidance in and complete our <a class="govuk-link" href="https://www.gov.uk/government/publications/countryside-stewardship-land-ownership-and-control-form" target="_blank">Land ownership and control form: Countryside Stewardship form</a>.</p>
+          <p class="govuk-body">You must complete a separate form for each countersignatory.</p>
 
   # 7. Tenant
   - title: Are you a tenant of a public body?
