@@ -95,6 +95,27 @@ describe('WoodlandHectaresPageController', () => {
     })
   })
 
+  describe('payload edge cases', () => {
+    it('treats null payload as empty and shows missing errors', async () => {
+      const handler = controller.makePostRouteHandler()
+      const context = { state: { totalHectaresAppliedFor: 50 }, evaluationState: {} }
+
+      await handler({ payload: null }, context, mockH)
+
+      expect(context.errors[0].text).toBe('The total area of woodland must be more than 0.5ha')
+    })
+
+    it('defaults totalHectaresAppliedFor to 0 when missing from state', async () => {
+      const handler = controller.makePostRouteHandler()
+      const context = { state: {}, evaluationState: {} }
+
+      await handler({ payload: { oldWoodlandAreaHa: '1', newWoodlandAreaHa: '1' } }, context, mockH)
+
+      // totalHectaresAppliedFor defaults to 0, so any positive value triggers exceeds-max
+      expect(context.errors[0].text).toContain('cannot be more than total area of selected land parcels (0ha)')
+    })
+  })
+
   describe('non-numeric input', () => {
     it('sets error on over-10 field when it is not a number', async () => {
       const handler = controller.makePostRouteHandler()
