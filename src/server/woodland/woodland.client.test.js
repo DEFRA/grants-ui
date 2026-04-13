@@ -12,11 +12,7 @@ describe('validateWoodland', () => {
 
     const result = await validateWoodland(payload, 'http://api')
 
-    expect(landGrantsClient.postToLandGrantsApi).toHaveBeenCalledWith(
-      '/api/v1/wmp/validate',
-      payload,
-      'http://api'
-    )
+    expect(landGrantsClient.postToLandGrantsApi).toHaveBeenCalledWith('/api/v1/wmp/validate', payload, 'http://api')
     expect(result).toEqual({ message: 'success' })
   })
 })
