@@ -13,7 +13,7 @@ const HECTARES_OVER_TEN_FIELD_NAME = 'oldWoodlandAreaHa'
 const HECTARES_UNDER_TEN_FIELD_NAME = 'newWoodlandAreaHa'
 
 const ERROR_BELOW_MINIMUM = `The total area of woodland must be more than ${MIN_WOODLAND_TOTAL_AREA_HA}ha`
-const ERROR_EXCEEDS_MAX = (/** @type {number} */ max) =>
+const errorExceedsMax = (/** @type {number} */ max) =>
   `Total area of woodland cannot be more than total area of selected land parcels (${max}ha)`
 
 /**
@@ -80,7 +80,7 @@ export default class WoodlandHectaresPageController extends TaskPageController {
       return makeBothFieldsError(ERROR_BELOW_MINIMUM)
     }
     if (overTen > totalHectaresAppliedFor || overTen + underTen > totalHectaresAppliedFor) {
-      return makeBothFieldsError(ERROR_EXCEEDS_MAX(totalHectaresAppliedFor))
+      return makeBothFieldsError(errorExceedsMax(totalHectaresAppliedFor))
     }
     return []
   }
