@@ -236,8 +236,11 @@ describe('CommonSelectLandParcelPageController', () => {
           { id: 'S1-P1', area: { value: 10 } },
           { id: 'S2-P2', area: { value: 20 } }
         ],
-        totalHectaresAppliedFor: 30
+        totalHectaresAppliedFor: 30,
+        additionalAnswers: { totalHectaresAppliedFor: 30 }
       })
+
+      expect(controller.setState).not.toHaveBeenCalled()
 
       expect(controller.proceed).toHaveBeenCalledWith(request, h, '/next')
 
