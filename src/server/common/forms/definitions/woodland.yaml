@@ -637,7 +637,7 @@ pages:
     path: /declaration
     view: woodland-declaration-page.html
     section: 52a9d09a-a977-4993-aa40-8eb77a4cd200
-    controller: DeclarationPageController
+    controller: WoodlandDeclarationPageController
 
 lists:
   - title: Forestry commission team list

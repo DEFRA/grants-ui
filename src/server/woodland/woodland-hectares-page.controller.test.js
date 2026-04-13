@@ -77,6 +77,24 @@ describe('WoodlandHectaresPageController', () => {
     controller = new WoodlandHectaresPageController(mockModel, { path: '/total-area-of-woodland' })
   })
 
+  describe('getViewModel', () => {
+    it('renders hectares guidance content with totalHectaresAppliedFor from state', () => {
+      const context = { state: { totalHectaresAppliedFor: 42 }, evaluationState: {} }
+      const viewModel = controller.getViewModel({}, context)
+
+      expect(viewModel.totalHectaresAppliedFor).toBe(42)
+      expect(viewModel.components[0].model.content).toContain('42 ha')
+    })
+
+    it('defaults totalHectaresAppliedFor to 0 when missing from state', () => {
+      const context = { state: {}, evaluationState: {} }
+      const viewModel = controller.getViewModel({}, context)
+
+      expect(viewModel.totalHectaresAppliedFor).toBe(0)
+      expect(viewModel.components[0].model.content).toContain('0 ha')
+    })
+  })
+
   describe('non-numeric input', () => {
     it('sets error on over-10 field when it is not a number', async () => {
       const handler = controller.makePostRouteHandler()

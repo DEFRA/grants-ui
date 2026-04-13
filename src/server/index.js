@@ -48,6 +48,7 @@ import ConfirmMethaneDetailsController from '~/src/server/non-land-grants/methan
 import TaskListPageController from '~/src/server/task-list/task-list-page.controller.js'
 import TaskPageController from '~/src/server/task-list/task-page.controller.js'
 import WoodlandHectaresPageController from '~/src/server/woodland/woodland-hectares-page.controller.js'
+import WoodlandDeclarationPageController from '~/src/server/woodland/woodland-declaration-page.controller.js'
 import TerminalPageController from '~/src/server/task-list/terminal-page.controller.js'
 import CheckDetailsController from '~/src/server/details-page/check-details.controller.js'
 import CommonSelectLandParcelPageController from './land-grants/common/common-select-parcel/common-select-land-parcel-page.controller.js'
@@ -142,7 +143,8 @@ const registerFormsPlugin = async (server, prefix = '') => {
         TaskPageController,
         TerminalPageController,
         CheckDetailsController,
-        WoodlandHectaresPageController
+        WoodlandHectaresPageController,
+        WoodlandDeclarationPageController
       }
     }
   })
