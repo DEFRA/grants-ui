@@ -110,6 +110,44 @@ describe('CheckResponsesPageController', () => {
       mockContextObj = mockContext({ state: {} })
     })
 
+    it('should not throw when checkAnswers is undefined', () => {
+      vi.spyOn(SummaryPageController.prototype, 'getSummaryViewModel').mockReturnValue({
+        serviceUrl: '/service',
+        page: { title: 'Summary' }
+        // no checkAnswers
+      })
+
+      const contextWithDisplay = mockContext({
+        state: { landParcelsDisplay: 'Parcel A' }
+      })
+
+      const result = controller.getSummaryViewModel(mockRequest, contextWithDisplay)
+
+      expect(result).toBeDefined()
+    })
+
+    it('should skip section when rows are undefined', () => {
+      vi.spyOn(SummaryPageController.prototype, 'getSummaryViewModel').mockReturnValue({
+        serviceUrl: '/service',
+        page: { title: 'Summary' },
+        checkAnswers: [
+          {
+            summaryList: {
+              // rows missing
+            }
+          }
+        ]
+      })
+
+      const contextWithDisplay = mockContext({
+        state: { landParcelsDisplay: 'Parcel A' }
+      })
+
+      const result = controller.getSummaryViewModel(mockRequest, contextWithDisplay)
+
+      expect(result).toBeDefined()
+    })
+
     it('should replace land parcels value when landParcelsDisplay exists in state', () => {
       const contextWithDisplay = mockContext({
         state: {
