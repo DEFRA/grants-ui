@@ -7,6 +7,7 @@ metadata:
   submission:
     grantCode: woodland
   grantRedirectRules:
+    excludedPaths: ['check-details']
     preSubmission:
       - toPath: '/tasks'
     postSubmission:
@@ -189,7 +190,30 @@ pages:
   # Pre-task-list pages (no section)
   # ==========================================
 
-  # Start page
+  # Check details page
+  - title: Confirm your details
+    path: /check-details
+    controller: CheckDetailsController
+    id: a24cb35f-a359-4934-b8c8-56ff92cb3df1
+
+  # Task list page
+  - title: Woodland Management Plan
+    id: fd1c8e7c-9b0a-4c3b-9c5a-2f8e5a9f8b6d
+    path: /tasks
+    controller: TaskListPageController
+    components:
+      - name: taskListGuidance
+        id: 184a3b28-53a2-4154-a544-f7d641106dc0
+        type: Details
+        title: Help with your application
+        content: |
+          <p class="govuk-body">This task list helps you track your progress through the application. Each section contains one or more tasks that must be completed.</p>
+          <p class="govuk-body">Tasks will show as 'Completed' as they are populated. You must complete all sections before you can submit your application.</p>
+          <p class="govuk-body">If you need to change any information you have already provided, you can go back to any completed section and update your answers. The status will update automatically as you progress through the application.</p>
+        options:
+          position: above
+
+  # Start page (kept for backward compatibility — journey starts at /check-details)
   - title: Apply for a Woodland Management Plan grant
     id: 4afc672b-71d6-4889-999d-c7934184f3cc
     path: /start
@@ -222,30 +246,6 @@ pages:
           <p class="govuk-body">Telephone: 03000 200 301</p>
           <p class="govuk-body">Monday to Friday, 9am to 5pm (except public
           holidays)</p>
-
-  # Check details page
-  - title: Confirm your details
-    path: /check-details
-    section: af79b6c8-3ed1-4150-a172-9d721023c25d
-    controller: CheckDetailsController
-    id: a24cb35f-a359-4934-b8c8-56ff92cb3df1
-
-  # Task list page
-  - title: Woodland Management Plan
-    id: fd1c8e7c-9b0a-4c3b-9c5a-2f8e5a9f8b6d
-    path: /tasks
-    controller: TaskListPageController
-    components:
-      - name: taskListGuidance
-        id: 184a3b28-53a2-4154-a544-f7d641106dc0
-        type: Details
-        title: Help with your application
-        content: |
-          <p class="govuk-body">This task list helps you track your progress through the application. Each section contains one or more tasks that must be completed.</p>
-          <p class="govuk-body">Tasks will show as 'Completed' as they are populated. You must complete all sections before you can submit your application.</p>
-          <p class="govuk-body">If you need to change any information you have already provided, you can go back to any completed section and update your answers. The status will update automatically as you progress through the application.</p>
-        options:
-          position: above
 
   # ==========================================
   # Section 1: Check your eligibility
@@ -713,5 +713,5 @@ conditions:
         type: BooleanValue
         value: true
 
-startPage: /start
+startPage: /check-details
 schema: 2
