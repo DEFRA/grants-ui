@@ -11,7 +11,7 @@ const externalLinks = convict({
     updateUrl: {
       doc: 'The URL to redirect to when updating through Single Front Door',
       format: String,
-      default: 'https://fcp-sfd-frontend.dev.cdp-int.defra.cloud/home',
+      default: '',
       env: 'SFD_UPDATE_URL'
     }
   }
