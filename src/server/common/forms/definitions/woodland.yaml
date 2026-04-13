@@ -548,7 +548,7 @@ pages:
           required: true
           classes: govuk-input--width-5
           suffix: ha
-        shortDescription: Land over 10 years old
+        shortDescription: Total area of woodland
       - name: newWoodlandAreaHa
         id: b564e6d8-8675-4c9c-9ef8-002199386cf5
         type: NumberField
