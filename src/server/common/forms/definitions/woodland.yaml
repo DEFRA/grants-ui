@@ -348,7 +348,6 @@ pages:
         id: bdff80de-080b-4fdd-a323-9762ef558ae8
         type: YesNoField
         title: Are you a tenant of a public body?
-        hint: If you are a tenant of a public body, you'll need to check if the land is eligible for a WMP with your landlord.
         options:
           required: true
           classes: govuk-radios
