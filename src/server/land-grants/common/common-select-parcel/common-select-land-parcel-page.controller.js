@@ -162,6 +162,7 @@ export default class CommonSelectLandParcelPageController extends LandGrantsQues
 
     await this.mergeState(request, state, {
       landParcels: selectedParcelIds,
+      landParcelsDisplay: selectedParcelIds.join(', '),
       landParcelMetadata,
       totalHectaresAppliedFor,
       additionalAnswers: { totalHectaresAppliedFor }

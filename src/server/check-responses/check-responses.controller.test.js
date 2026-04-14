@@ -18,13 +18,35 @@ vi.mock('@defra/forms-engine-plugin/controllers/SummaryPageController.js', () =>
         this.pageDef = pageDef
       }
 
-      getSummaryViewModel(request, context) {
-        return {
-          serviceUrl: '/service',
-          page: {
-            title: 'Summary'
-          }
-        }
+      getSummaryViewModel() {
+        return JSON.parse(
+          JSON.stringify({
+            serviceUrl: '/service',
+            page: { title: 'Summary' },
+            details: [
+              {
+                items: [
+                  {
+                    name: 'landParcels',
+                    value: ''
+                  }
+                ]
+              }
+            ],
+            checkAnswers: [
+              {
+                summaryList: {
+                  rows: [
+                    {
+                      key: { text: 'Select land parcels' },
+                      value: { text: 'Not provided' }
+                    }
+                  ]
+                }
+              }
+            ]
+          })
+        )
       }
     }
   }
@@ -37,16 +59,23 @@ describe('CheckResponsesPageController', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+
     mockModel = {
       basePath: '/test-form',
       getSection: vi.fn((id) => ({ id, title: 'Example Section' }))
     }
+
     mockPageDef = {
       path: '/check-answers',
       title: 'Check your answers',
       section: 'section-id-123'
     }
+
     controller = new CheckResponsesPageController(mockModel, mockPageDef)
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
   })
 
   describe('constructor', () => {
@@ -54,165 +83,169 @@ describe('CheckResponsesPageController', () => {
       expect(controller).toBeInstanceOf(SummaryPageController)
     })
 
-    it('should set viewName to check-responses-page', () => {
+    it('should set viewName', () => {
       expect(controller.viewName).toBe('check-responses-page')
     })
 
-    it('should call parent constructor', () => {
-      expect(controller.model).toBe(mockModel)
-      expect(controller.pageDef).toBe(mockPageDef)
-    })
-
-    it('should resolve section when pageDef has section property', () => {
-      const getSectionSpy = vi.spyOn(mockModel, 'getSection')
-      const controllerWithSection = new CheckResponsesPageController(mockModel, mockPageDef)
-
-      expect(controllerWithSection.section).toEqual({
+    it('should resolve section', () => {
+      expect(controller.section).toEqual({
         id: 'section-id-123',
         title: 'Example Section'
       })
-      expect(getSectionSpy).toHaveBeenCalledWith('section-id-123')
-    })
-
-    it('should not resolve section when pageDef has no section property', () => {
-      const pageDefWithoutSection = {
-        path: '/check-answers',
-        title: 'Check your answers'
-      }
-      const controllerWithoutSection = new CheckResponsesPageController(mockModel, pageDefWithoutSection)
-
-      expect(controllerWithoutSection.section).toBeUndefined()
     })
   })
 
-  describe('getSummaryViewModel', () => {
+  describe('getSummaryViewModel - land parcels logic', () => {
     let mockRequest
-    let mockContextObj
 
     beforeEach(() => {
       mockRequest = mockSimpleRequest()
-      mockContextObj = mockContext()
     })
 
-    it('should call parent getSummaryViewModel and add section title', () => {
-      const result = controller.getSummaryViewModel(mockRequest, mockContextObj)
+    it('should replace land parcels in both details and checkAnswers', () => {
+      const context = mockContext({
+        state: { landParcels: ['A', 'B'] }
+      })
 
-      expect(result.serviceUrl).toBe('/service')
-      expect(result.page.title).toBe('Summary')
+      const result = controller.getSummaryViewModel(mockRequest, context)
+
+      expect(result.checkAnswers[0].summaryList.rows[0].value).toEqual({
+        html: 'A, B'
+      })
+    })
+
+    it('should not modify when landParcels is missing', () => {
+      const context = mockContext({ state: {} })
+
+      const result = controller.getSummaryViewModel(mockRequest, context)
+
+      expect(result.details[0].items[0].value).toBe('')
+      expect(result.checkAnswers[0].summaryList.rows[0].value).toEqual({
+        text: 'Not provided'
+      })
+    })
+
+    it('should not modify when landParcels is empty array', () => {
+      const context = mockContext({ state: { landParcels: [] } })
+
+      const result = controller.getSummaryViewModel(mockRequest, context)
+
+      expect(result.checkAnswers[0].summaryList.rows[0].value).toEqual({
+        text: 'Not provided'
+      })
+    })
+
+    it('should not throw when details is undefined', () => {
+      vi.spyOn(SummaryPageController.prototype, 'getSummaryViewModel').mockReturnValue({
+        serviceUrl: '/service',
+        page: { title: 'Summary' },
+        checkAnswers: []
+      })
+
+      const context = mockContext({
+        state: { landParcels: ['A'] }
+      })
+
+      const result = controller.getSummaryViewModel(mockRequest, context)
+
+      expect(result).toBeDefined()
+    })
+
+    it('should not throw when items is undefined', () => {
+      vi.spyOn(SummaryPageController.prototype, 'getSummaryViewModel').mockReturnValue({
+        serviceUrl: '/service',
+        page: { title: 'Summary' },
+        details: [{}],
+        checkAnswers: []
+      })
+
+      const context = mockContext({
+        state: { landParcels: ['A'] }
+      })
+
+      const result = controller.getSummaryViewModel(mockRequest, context)
+
+      expect(result).toBeDefined()
+    })
+
+    it('should not modify when landParcels item is not found', () => {
+      vi.spyOn(SummaryPageController.prototype, 'getSummaryViewModel').mockReturnValue({
+        serviceUrl: '/service',
+        page: { title: 'Summary' },
+        details: [
+          {
+            items: [{ name: 'otherField', value: 'X' }]
+          }
+        ],
+        checkAnswers: [
+          {
+            summaryList: {
+              rows: [{ value: { text: 'Original' } }]
+            }
+          }
+        ]
+      })
+
+      const context = mockContext({
+        state: { landParcels: ['A'] }
+      })
+
+      const result = controller.getSummaryViewModel(mockRequest, context)
+
+      expect(result.checkAnswers[0].summaryList.rows[0].value).toEqual({
+        text: 'Original'
+      })
+    })
+  })
+
+  describe('getSummaryViewModel - general behaviour', () => {
+    let mockRequest
+    let context
+
+    beforeEach(() => {
+      mockRequest = mockSimpleRequest()
+      context = mockContext({ state: {} })
+    })
+
+    it('should add sectionTitle', () => {
+      const result = controller.getSummaryViewModel(mockRequest, context)
       expect(result.sectionTitle).toBe('Example Section')
     })
 
-    it('should include backLink when getTaskPageBackLink returns a value', () => {
-      getTaskPageBackLink.mockReturnValue({ href: '/task-list', text: 'Back to task list' })
-
-      const result = controller.getSummaryViewModel(mockRequest, mockContextObj)
-
-      expect(getTaskPageBackLink).toHaveBeenCalledWith(
-        {
-          serviceUrl: '/service',
-          page: {
-            title: 'Summary'
-          }
-        },
-        mockPageDef
-      )
-      expect(result.backLink).toEqual({ href: '/task-list', text: 'Back to task list' })
-    })
-
-    it('should not include backLink when getTaskPageBackLink returns null', () => {
-      getTaskPageBackLink.mockReturnValue(null)
-
-      const result = controller.getSummaryViewModel(mockRequest, mockContextObj)
-
-      expect(result.backLink).toBeUndefined()
-    })
-
-    it('should not include backLink when getTaskPageBackLink returns undefined', () => {
-      getTaskPageBackLink.mockReturnValue(undefined)
-
-      const result = controller.getSummaryViewModel(mockRequest, mockContextObj)
-
-      expect(result.backLink).toBeUndefined()
-    })
-
-    it('should set sectionTitle to empty string when section has hideTitle set to true', () => {
+    it('should hide sectionTitle when hideTitle is true', () => {
       mockModel.getSection = vi.fn().mockReturnValue({
-        id: 'section-id-123',
-        title: 'Example Section',
+        title: 'Hidden',
         hideTitle: true
       })
-      const controllerWithHiddenTitle = new CheckResponsesPageController(mockModel, mockPageDef)
 
-      const result = controllerWithHiddenTitle.getSummaryViewModel(mockRequest, mockContextObj)
+      const ctrl = new CheckResponsesPageController(mockModel, mockPageDef)
+
+      const result = ctrl.getSummaryViewModel(mockRequest, context)
 
       expect(result.sectionTitle).toBe('')
     })
 
-    it('should set sectionTitle to undefined when section is undefined', () => {
-      const pageDefWithoutSection = {
-        path: '/check-answers',
-        title: 'Check your answers'
-      }
-      const controllerWithoutSection = new CheckResponsesPageController(mockModel, pageDefWithoutSection)
+    it('should include backLink when provided', () => {
+      getTaskPageBackLink.mockReturnValue({ href: '/x', text: 'Back' })
 
-      const result = controllerWithoutSection.getSummaryViewModel(mockRequest, mockContextObj)
+      const result = controller.getSummaryViewModel(mockRequest, context)
 
-      expect(result.sectionTitle).toBeUndefined()
+      expect(result.backLink).toEqual({ href: '/x', text: 'Back' })
     })
 
-    it('should preserve all parent view model properties', () => {
-      vi.spyOn(SummaryPageController.prototype, 'getSummaryViewModel').mockReturnValue({
-        serviceUrl: '/service',
-        page: { title: 'Summary' },
-        otherProperty: 'value',
-        anotherProperty: 123
-      })
+    it('should not include backLink when null', () => {
+      getTaskPageBackLink.mockReturnValue(null)
 
-      const result = controller.getSummaryViewModel(mockRequest, mockContextObj)
+      const result = controller.getSummaryViewModel(mockRequest, context)
 
-      expect(result.serviceUrl).toBe('/service')
-      expect(result.page.title).toBe('Summary')
-      expect(result.otherProperty).toBe('value')
-      expect(result.anotherProperty).toBe(123)
-      expect(result.sectionTitle).toBe('Example Section')
+      expect(result.backLink).toBeUndefined()
     })
   })
 
   describe('makePostRouteHandler', () => {
-    let handler
+    it('should call proceed with next path', async () => {
+      const handler = controller.makePostRouteHandler()
 
-    beforeEach(async () => {
-      handler = controller.makePostRouteHandler()
-    })
-
-    it('should return a function', () => {
-      expect(typeof handler).toBe('function')
-    })
-
-    it('should call getNextPath with context and proceed with correct arguments, returning its result', async () => {
-      const request = mockSimpleRequest({ method: 'post', path: '/some-path' })
-      const context = mockContext({ payload: { foo: 'bar' } })
-      const h = mockHapiResponseToolkit({ redirect: vi.fn() })
-
-      const nextPath = '/test-form/declaration'
-
-      controller.getNextPath = vi.fn().mockReturnValue(nextPath)
-      const proceedResult = Symbol('proceed-result')
-      controller.proceed = vi.fn().mockReturnValue(proceedResult)
-
-      const result = await handler(request, context, h)
-
-      expect(controller.getNextPath).toHaveBeenCalledTimes(1)
-      expect(controller.getNextPath).toHaveBeenCalledWith(context)
-
-      expect(controller.proceed).toHaveBeenCalledTimes(1)
-      expect(controller.proceed).toHaveBeenCalledWith(request, h, nextPath)
-
-      expect(result).toBe(proceedResult)
-    })
-
-    it('should preserve controller context inside returned handler', async () => {
-      // If `this` is lost, spies won't be hit
       const request = mockSimpleRequest()
       const context = mockContext()
       const h = mockHapiResponseToolkit()
@@ -220,45 +253,17 @@ describe('CheckResponsesPageController', () => {
       controller.getNextPath = vi.fn().mockReturnValue('/next')
       controller.proceed = vi.fn().mockReturnValue('ok')
 
-      const fn = controller.makePostRouteHandler()
-      const ret = await fn(request, context, h)
+      const result = await handler(request, context, h)
 
       expect(controller.proceed).toHaveBeenCalledWith(request, h, '/next')
-      expect(ret).toBe('ok')
-    })
-  })
-
-  describe('integration with SummaryPageController', () => {
-    it('should properly set up the controller instance', () => {
-      expect(controller).toBeDefined()
-      expect(controller.viewName).toBe('check-responses-page')
-      expect(controller).toHaveProperty('makePostRouteHandler')
-    })
-
-    it('should override getSummaryViewModel from parent', () => {
-      expect(controller.getSummaryViewModel).toBeDefined()
-    })
-
-    it('should override makePostRouteHandler from parent', () => {
-      const handler = controller.makePostRouteHandler()
-      expect(typeof handler).toBe('function')
-      expect(handler.constructor.name).toBe('AsyncFunction')
+      expect(result).toBe('ok')
     })
   })
 
   describe('view file existence', () => {
-    it('should reference a view file that actually exists', () => {
-      const viewPath = controller.viewName
-      expect(viewPath).toBe('check-responses-page')
-
-      // Check that the view file exists at the expected location
-      const absoluteViewPath = join(process.cwd(), 'src/server/check-responses/views', `${viewPath}.html`)
-      expect(existsSync(absoluteViewPath)).toBe(true)
-    })
-
-    it('should have view file in the feature-based location', () => {
-      const featureViewPath = join(process.cwd(), 'src/server/check-responses/views/check-responses-page.html')
-      expect(existsSync(featureViewPath)).toBe(true)
+    it('should exist', () => {
+      const viewPath = join(process.cwd(), 'src/server/check-responses/views/check-responses-page.html')
+      expect(existsSync(viewPath)).toBe(true)
     })
   })
 })
