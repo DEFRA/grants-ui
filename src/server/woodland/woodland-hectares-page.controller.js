@@ -102,7 +102,12 @@ export default class WoodlandHectaresPageController extends TaskPageController {
       if (!failedReasons.length) {
         return null
       }
-      return this.renderWithErrors(request, context, h, failedReasons.flatMap(makeBothFieldsError))
+      return this.renderWithErrors(
+        request,
+        context,
+        h,
+        failedReasons.map((reason) => makeError(HECTARES_OVER_TEN_FIELD_NAME, reason))
+      )
     } catch (err) {
       debug(LogCodes.WOODLAND.VALIDATE_ERROR, { errorMessage: String(err) }, request)
       const viewModel = /** @type {Record<string, unknown>} */ (this.getViewModel(request, context))
