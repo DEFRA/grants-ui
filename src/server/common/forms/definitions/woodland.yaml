@@ -382,10 +382,8 @@ pages:
         id: 10a8335b-877c-436f-8a0d-e09d6cf53f71
         type: Html
         content: >
-          <p class="govuk-body">You cannot get a Woodland Management Plan grant for any proposed works which are a requirement of your tenancy or any other legally binding obligation.</p>
-          <p class="govuk-body">You can read the
-          <a class="govuk-link" href="#" target="_blank">Applicant's guide: PA3 Woodland management plan 2026 guidance (opens in new tab)</a>
-          for more information.</p>
+          <p class="govuk-body">To find out more read our
+          <a class="govuk-link" href="#" target="_blank">Applicant's guide: PA3 Woodland management plan 2026 guidance</a>.</p>
 
   # 10. Grazing rights
   - title: Are you applying for land covered by common or shared grazing rights?
