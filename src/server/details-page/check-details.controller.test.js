@@ -578,7 +578,7 @@ describe('CheckDetailsController', () => {
       const result = controller.buildIncorrectDetailsViewModel(baseViewModel, {
         path: '/my-service/check-details',
         auth: {
-          credentials: { sbi: 'SBI1234' }
+          credentials: { organisationId: '1234' }
         }
       })
 
@@ -586,7 +586,7 @@ describe('CheckDetailsController', () => {
         serviceName: 'My Service',
         serviceUrl: '/my-service',
         continueUrl: '/my-service/check-details',
-        updateThroughSFDUrl: 'https://sfd-test.example.com/update?ssoOrgId=SBI1234',
+        updateThroughSFDUrl: 'https://sfd-test.example.com/update?ssoOrgId=1234',
         isSFDUpdateEnabled: true,
         backLink: { text: 'Back', href: '/my-service/check-details' }
       })
@@ -601,7 +601,7 @@ describe('CheckDetailsController', () => {
       })
 
       const baseViewModel = { serviceName: 'My Service', serviceUrl: '/my-service' }
-      const request = { path: '/path', auth: { credentials: { sbi: 'SBI1234' } } }
+      const request = { path: '/path', auth: { credentials: { organisationId: '1234' } } }
 
       const result = controller.buildIncorrectDetailsViewModel(baseViewModel, request)
       expect(result.updateThroughSFDUrl).toBeUndefined()
@@ -620,7 +620,7 @@ describe('CheckDetailsController', () => {
       })
 
       const baseViewModel = { serviceName: 'My Service', serviceUrl: '/my-service' }
-      const request = { path: '/path', auth: { credentials: { sbi: 'SBI1234' } } }
+      const request = { path: '/path', auth: { credentials: { organisationId: '1234' } } }
 
       const result = controller.buildIncorrectDetailsViewModel(baseViewModel, request)
       expect(result.updateThroughSFDUrl).toBe('')
@@ -643,7 +643,7 @@ describe('CheckDetailsController', () => {
       })
 
       const baseViewModel = { serviceName: 'My Service', serviceUrl: '/my-service' }
-      const request = { path: '/path', auth: { credentials: { sbi: 'SBI1234' } } }
+      const request = { path: '/path', auth: { credentials: { organisationId: '1234' } } }
 
       const result = controller.buildIncorrectDetailsViewModel(baseViewModel, request)
       expect(result.updateThroughSFDUrl).toBe('')

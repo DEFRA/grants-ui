@@ -266,7 +266,7 @@ export default class CheckDetailsController extends QuestionPageController {
    * @returns {string}
    */
   getSFDUpdateUrl(request) {
-    const { sbi } = request.auth.credentials
+    const { organisationId } = request.auth.credentials
     const updateUrl = config.get('externalLinks.sfd.updateUrl')
     if (!updateUrl) {
       return ''
@@ -274,7 +274,7 @@ export default class CheckDetailsController extends QuestionPageController {
 
     try {
       const url = new URL(updateUrl)
-      url.searchParams.set('ssoOrgId', sbi)
+      url.searchParams.set('ssoOrgId', organisationId)
       return url.toString()
     } catch (error) {
       debug(LogCodes.SYSTEM.CONFIG_INVALID, { key: 'externalLinks.sfd.updateUrl', value: updateUrl }, request)
