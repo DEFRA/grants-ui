@@ -362,7 +362,7 @@ describe('Land Grants client', () => {
   })
 
   describe('calculateWmp', () => {
-    it('should trigger a POST request to /api/v2/wmp/payments/calculate', async () => {
+    it('should trigger a POST request to /api/v1/wmp/payments/calculate', async () => {
       const mockResponse = { message: 'success', payment: { agreementTotalPence: 375000 } }
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -372,7 +372,7 @@ describe('Land Grants client', () => {
       const payload = { parcelIds: ['SD6346-3387'], newWoodlandAreaHa: 0.0, oldWoodlandAreaHa: 0.0 }
       const result = await calculateWmp(payload, mockApiEndpoint)
 
-      expect(mockFetch).toHaveBeenCalledWith(`${mockApiEndpoint}/api/v2/wmp/payments/calculate`, {
+      expect(mockFetch).toHaveBeenCalledWith(`${mockApiEndpoint}/api/v1/wmp/payments/calculate`, {
         method: 'POST',
         headers: {
           Authorization: expect.any(String),

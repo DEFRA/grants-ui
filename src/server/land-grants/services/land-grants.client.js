@@ -5,10 +5,11 @@ import { getConsentTypes } from '~/src/server/land-grants/utils/consent-types.js
 
 /**
  * Performs a POST request to the Land Grants API.
+ * @template T
  * @param {string} endpoint
  * @param {object} body
  * @param {string} baseUrl
- * @returns {Promise<Object>}
+ * @returns {Promise<T>}
  * @throws {Error}
  */
 export async function postToLandGrantsApi(endpoint, body, baseUrl) {
@@ -18,7 +19,7 @@ export async function postToLandGrantsApi(endpoint, body, baseUrl) {
   const apiOperation = async () => {
     const response = await fetch(url, {
       method: 'POST',
-      headers: createApiHeadersForLandGrantsBackend(),
+      headers: /** @type {HeadersInit} */ (createApiHeadersForLandGrantsBackend()),
       body: JSON.stringify(body)
     })
 
@@ -105,7 +106,7 @@ export async function parcelsWithExtendedInfo(parcelIds, baseUrl) {
  * @throws {Error}
  */
 export async function calculateWmp(payload, baseUrl) {
-  return postToLandGrantsApi('/api/v2/wmp/payments/calculate', payload, baseUrl)
+  return postToLandGrantsApi('/api/v1/wmp/payments/calculate', payload, baseUrl)
 }
 
 /**

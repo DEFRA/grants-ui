@@ -13,7 +13,7 @@ import { formatPrice } from '~/src/server/common/utils/payment.js'
  * Registry of payment strategies keyed by name.
  * Referenced from the form definition YAML via `config.paymentStrategy`.
  *
- * Each strategy exposes a single `fetch(state)` method that returns:
+ * Each strategy exposes a single `calculatePayment(state)` method that returns:
  *   { totalPence, totalPayment, payment, parcelItems?, additionalYearlyPayments? }
  *
  * - `totalPence`              — raw amount in pence, stored in state for re-render on validation errors
@@ -23,14 +23,17 @@ import { formatPrice } from '~/src/server/common/utils/payment.js'
  * - `additionalYearlyPayments`— mapped view models for agreement-level items (empty if not applicable)
  *
  * To add a new journey:
- *   1. Add an entry below with a `fetch` method
+ *   1. Add an entry below with a `calculatePayment` method
  *   2. Set `paymentStrategy: <key>` in the YAML page config
- *
- * @type {Record<string, { fetch: (state: object) => Promise<{ totalPence: number, totalPayment: string, payment: object, parcelItems?: Array, additionalYearlyPayments?: Array }> }>}
  */
+/** @type {Record<string, { calculatePayment: (state: object) => Promise<PaymentStrategyResult> }>} */
 export const paymentStrategies = {
   multiAction: {
-    async fetch(state) {
+    /**
+     * @param {MultiActionState} state
+     * @returns {Promise<PaymentStrategyResult>}
+     */
+    async calculatePayment(state) {
       const [paymentResult, actionGroups] = await Promise.all([
         calculateLandActionsPayment(state),
         fetchParcelsGroups(state)
@@ -48,9 +51,17 @@ export const paymentStrategies = {
   },
 
   wmp: {
-    async fetch(state) {
-      const { parcelIds = [], newWoodlandAreaHa = 0, oldWoodlandAreaHa = 0 } = state
-      const { payment, totalPence } = await calculateWmpPayment({ parcelIds, newWoodlandAreaHa, oldWoodlandAreaHa })
+    /**
+     * @param {WmpState} state
+     * @returns {Promise<PaymentStrategyResult>}
+     */
+    async calculatePayment(state) {
+      const { landParcels = [], newWoodlandAreaHa = 0, oldWoodlandAreaHa = 0 } = state
+      const { payment, totalPence } = await calculateWmpPayment({
+        parcelIds: landParcels,
+        newWoodlandAreaHa,
+        oldWoodlandAreaHa
+      })
       return {
         totalPence,
         totalPayment: formatPrice(totalPence),
@@ -59,3 +70,7 @@ export const paymentStrategies = {
     }
   }
 }
+
+/**
+ * @import { PaymentStrategyResult, MultiActionState, WmpState } from './payment-strategies.d.js'
+ */

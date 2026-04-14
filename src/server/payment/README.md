@@ -125,7 +125,7 @@ Payment calculations go through the Land Grants API. The client layer ([`land-gr
 | Strategy      | Endpoint                              | Request shape                                                        |
 | ------------- | ------------------------------------- | -------------------------------------------------------------------- |
 | `multiAction` | `POST /api/v2/payments/calculate`     | `{ parcel: [{ sheetId, parcelId, actions: [{ code, quantity }] }] }` |
-| `wmp`         | `POST /api/v2/wmp/payments/calculate` | `{ parcelIds, newWoodlandAreaHa, oldWoodlandAreaHa }`                |
+| `wmp`         | `POST /api/v1/wmp/payments/calculate` | `{ parcelIds, newWoodlandAreaHa, oldWoodlandAreaHa }`                |
 
 ### `multiAction` response
 
