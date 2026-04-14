@@ -24,6 +24,16 @@ vi.mock('@defra/forms-engine-plugin/controllers/SummaryPageController.js', () =>
           page: {
             title: 'Summary'
           },
+          details: [
+            {
+              items: [
+                {
+                  name: 'landParcels',
+                  value: ''
+                }
+              ]
+            }
+          ],
           checkAnswers: [
             {
               summaryList: {
@@ -118,7 +128,7 @@ describe('CheckResponsesPageController', () => {
       })
 
       const contextWithDisplay = mockContext({
-        state: { landParcelsDisplay: 'Parcel A' }
+        state: { landParcels: ['Parcel A'] }
       })
 
       const result = controller.getSummaryViewModel(mockRequest, contextWithDisplay)
@@ -140,7 +150,7 @@ describe('CheckResponsesPageController', () => {
       })
 
       const contextWithDisplay = mockContext({
-        state: { landParcelsDisplay: 'Parcel A' }
+        state: { landParcels: ['Parcel A'] }
       })
 
       const result = controller.getSummaryViewModel(mockRequest, contextWithDisplay)
@@ -148,21 +158,21 @@ describe('CheckResponsesPageController', () => {
       expect(result).toBeDefined()
     })
 
-    it('should replace land parcels value when landParcelsDisplay exists in state', () => {
+    it('should replace land parcels value when landParcels exists in state', () => {
       const contextWithDisplay = mockContext({
         state: {
-          landParcelsDisplay: 'Parcel A, Parcel B'
+          landParcels: ['Parcel A', 'Parcel B']
         }
       })
 
       const result = controller.getSummaryViewModel(mockRequest, contextWithDisplay)
 
       expect(result.checkAnswers[0].summaryList.rows[0].value).toEqual({
-        text: 'Parcel A, Parcel B'
+        html: 'Parcel A, Parcel B'
       })
     })
 
-    it('should not modify land parcels row when landParcelsDisplay is missing', () => {
+    it('should not modify land parcels row when landParcels is missing', () => {
       const result = controller.getSummaryViewModel(mockRequest, mockContextObj)
 
       expect(result.checkAnswers[0].summaryList.rows[0].value).toEqual({
@@ -189,7 +199,7 @@ describe('CheckResponsesPageController', () => {
       })
 
       const contextWithDisplay = mockContext({
-        state: { landParcelsDisplay: 'Parcel A' }
+        state: { landParcels: ['Parcel A'] }
       })
 
       const result = controller.getSummaryViewModel(mockRequest, contextWithDisplay)
@@ -229,6 +239,16 @@ describe('CheckResponsesPageController', () => {
                   }
                 ]
               }
+            }
+          ],
+          details: [
+            {
+              items: [
+                {
+                  name: 'landParcels',
+                  value: ''
+                }
+              ]
             }
           ],
           page: {

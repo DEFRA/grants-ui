@@ -16,22 +16,16 @@ export default class CheckResponsesPageController extends SummaryPageController 
     }
   }
 
-  #applyLandParcelsDisplay(viewModel, landParcelsDisplay) {
-    if (!landParcelsDisplay || !viewModel?.checkAnswers) {
-      return
-    }
-
-    for (const section of viewModel.checkAnswers) {
-      const rows = section?.summaryList?.rows
-      if (!rows) {
-        continue
-      }
-
-      const targetRow = rows.find((row) => row?.key?.text === 'Select land parcels')
-
-      if (targetRow) {
-        targetRow.value = { text: landParcelsDisplay }
-      }
+  #applyLandParcels(viewModel, landParcels) {
+    if (Array.isArray(landParcels) && landParcels.length) {
+      const displayValue = landParcels.join(', ')
+      viewModel.details?.forEach((detail, di) => {
+        const ii = detail.items?.findIndex((item) => item.name === 'landParcels') ?? -1
+        if (ii !== -1) {
+          detail.items[ii].value = displayValue
+          viewModel.checkAnswers[di].summaryList.rows[ii].value = { html: displayValue }
+        }
+      })
     }
   }
 
@@ -49,7 +43,7 @@ export default class CheckResponsesPageController extends SummaryPageController 
     const backLink = getTaskPageBackLink(viewModel, pageDef)
     const sectionTitle = this.section?.hideTitle !== true ? this.section?.title : ''
 
-    this.#applyLandParcelsDisplay(viewModel, context?.state?.landParcelsDisplay)
+    this.#applyLandParcels(viewModel, context?.state?.landParcels)
 
     return {
       ...viewModel,
