@@ -5,7 +5,7 @@ const externalLinks = convict({
     enabled: {
       doc: 'Is updating through Single Front Door enabled',
       format: Boolean,
-      default: true,
+      default: false,
       env: 'SFD_UPDATE_ENABLED'
     },
     updateUrl: {
