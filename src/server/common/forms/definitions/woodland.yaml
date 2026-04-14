@@ -429,7 +429,7 @@ pages:
         id: a9ae25aa-d70e-4616-84bf-47f71251e8b5
         type: TextField
         title: Enter the agreement number for any valid WMPs
-        hint: If you have more than one valid WMP, enter each agreement number separated by a comma.
+        hint: This is the 7-digit number you'll find in your agreement documentation and communications. For example, 1234567. If you need to enter 2 or more agreement numbers, use a comma to separate each agreement number. For example, 1234567, 7654321, 1726354
         options:
           required: true
           classes: govuk-!-width-two-thirds
