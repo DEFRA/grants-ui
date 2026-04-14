@@ -383,7 +383,7 @@ pages:
         type: Html
         content: >
           <p class="govuk-body">To find out more read our
-          <a class="govuk-link" href="#" target="_blank">Applicant's guide: PA3 Woodland management plan 2026 guidance</a>.</p>
+          <a class="govuk-link" href="https://www.gov.uk/government/publications/pa3-woodland-management-plan-2026/applicants-guide-pa3-woodland-management-plan-2026#landthat-is-eligible-for-a-wmp" target="_blank">Applicant's guide: PA3 Woodland management plan 2026 guidance</a>.</p>
 
   # 10. Grazing rights
   - title: Are you applying for land covered by common or shared grazing rights?
@@ -449,7 +449,7 @@ pages:
         type: Html
         content: >-
           <p class="govuk-body">You must have a WMP approved before you can apply for woodland support under CSHT. To find out more read our
-          <a class="govuk-link" href="#" target="_blank">Applicant's guide: PA3 Woodland management plan 2026 guidance</a>.</p>
+          <a class="govuk-link" href="https://www.gov.uk/government/publications/pa3-woodland-management-plan-2026/applicants-guide-pa3-woodland-management-plan-2026#landthat-is-eligible-for-a-wmp" target="_blank">Applicant's guide: PA3 Woodland management plan 2026 guidance</a>.</p>
       - name: intendToApplyHigherTier
         id: e7d51cad-e4ea-4478-a12b-fedf3d18039d
         type: YesNoField
@@ -557,7 +557,7 @@ pages:
         id: 0ecc3968-5293-4a17-adeb-426a51327507
         type: Html
         content: |
-          <p class="govuk-body">To find the grid reference use <a href="" class="govuk-link">Natural England’s ‘MAGIC’ map website</a>.</p>
+          <p class="govuk-body">To find the grid reference use <a href="https://www.gov.uk/guidance/how-to-access-natural-englands-maps-and-data" class="govuk-link">Natural England’s ‘MAGIC’ map website</a>.</p>
           <p class="govuk-body">To find out how to get the grid reference read the ‘MAGIC’ guidance on <a href="" class="govuk-link">Using the Where Am I Tool</a>.</p>
           <p class="govuk-body">The grid reference will be shown as the ‘National Grid Field No’ and include 2 letters and 8 numbers. For example, SP 4178 2432 </p>
       - name: centreGridReference
