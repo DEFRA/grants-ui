@@ -365,7 +365,7 @@ pages:
         id: f025cbb2-920c-4b07-9cfa-d43589369696
         type: YesNoField
         title: Are the proposed works a requirement of your tenancy or any other legally binding obligation?
-        hint: This includes any legally binding obligation such as a condition of planning permission or a covenant.
+        hint: A legally binding obligation is any requirement on the land in your application which has force in law and can be enforced by the courts and legal system.
         options:
           required: true
           classes: govuk-radios
