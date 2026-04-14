@@ -22,7 +22,6 @@ export default class CheckResponsesPageController extends SummaryPageController 
       viewModel.details?.forEach((detail, di) => {
         const ii = detail.items?.findIndex((item) => item.name === 'landParcels') ?? -1
         if (ii !== -1) {
-          detail.items[ii].value = displayValue
           viewModel.checkAnswers[di].summaryList.rows[ii].value = { html: displayValue }
         }
       })
