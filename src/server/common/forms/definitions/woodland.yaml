@@ -316,7 +316,7 @@ pages:
         id: 040d6021-bc32-4ef8-9cfe-235548157a30
         type: YesNoField
         title: Have you got the countersignature of your landlord?
-        hint: You need your landlord's countersignature to confirm management control for the duration of the agreement and, where applicable, the durability period.
+        hint: If your management control or durability period does not cover the duration of your agreement, you need the countersignature and permission of your landlord.
         options:
           required: true
           classes: govuk-radios
