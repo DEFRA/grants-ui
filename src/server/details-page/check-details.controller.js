@@ -145,7 +145,7 @@ export default class CheckDetailsController extends QuestionPageController {
     const baseViewModel = super.getViewModel(request, context)
 
     try {
-      const { mappedData } = await this.fetchAndProcessData(request, config)
+      const { mappedData } = await this.fetchAndProcessData(request, detailsConfig)
       await this.setState(
         request,
         mergeAdditionalAnswers(context.state, {
