@@ -540,7 +540,7 @@ pages:
           </div>
           <p class="govuk-body">We use a combination of the total area and age of the eligible woodland in your application to work out what you may get paid.</p>
           <p class="govuk-body">To find out more about what you'll get paid read our <a href="#" class="govuk-link">Applicant's guide: PA3 Woodland management plan 2026 guidance</a>.</p>
-      - name: oldWoodlandAreaHa
+      - name: hectaresTenOrOverYearsOld
         id: 0232c1df-965f-4f41-a271-cb469ca9623a
         type: NumberField
         title: Enter total area of woodland over 10 years old
@@ -549,7 +549,7 @@ pages:
           classes: govuk-input--width-5
           suffix: ha
         shortDescription: Woodland over 10 years old
-      - name: newWoodlandAreaHa
+      - name: hectaresUnderTenYearsOld
         id: b564e6d8-8675-4c9c-9ef8-002199386cf5
         type: NumberField
         title: Enter total area of newly planted woodland under 10 years old

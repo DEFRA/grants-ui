@@ -27,13 +27,13 @@ const LAND_GRANTS_API_URL = config.get('landGrants.grantsServiceApiEndpoint')
  * Returns an array of error strings from any failed rules, or an empty array on success.
  * @param {object} options
  * @param {string[]} options.parcelIds
- * @param {number} options.oldWoodlandAreaHa
- * @param {number} options.newWoodlandAreaHa
+ * @param {number} options.hectaresTenOrOverYearsOld
+ * @param {number} options.hectaresUnderTenYearsOld
  * @returns {Promise<string[]>}
  */
-export async function validateWoodlandHectares({ parcelIds, oldWoodlandAreaHa, newWoodlandAreaHa }) {
+export async function validateWoodlandHectares({ parcelIds, hectaresTenOrOverYearsOld, hectaresUnderTenYearsOld }) {
   const response = /** @type {WoodlandValidationResponse} */ (
-    await validateWoodland({ parcelIds, oldWoodlandAreaHa, newWoodlandAreaHa }, LAND_GRANTS_API_URL)
+    await validateWoodland({ parcelIds, hectaresTenOrOverYearsOld, hectaresUnderTenYearsOld }, LAND_GRANTS_API_URL)
   )
 
   if (response.result?.hasPassed) {

@@ -12,22 +12,25 @@ import {
 } from '~/src/server/land-grants/services/land-grants.service.js'
 import {
   calculate,
-  calculateWmp,
   parcelsGroups,
   parcelsWithSize,
   parcelsWithExtendedInfo,
   validate
 } from '~/src/server/land-grants/services/land-grants.client.js'
+import { calculateWmp } from '~/src/server/woodland/woodland.client.js'
 import { clearParcelCache } from '~/src/server/land-grants/services/parcel-cache.js'
 const mockApiEndpoint = 'https://land-grants-api'
 
 vi.mock('~/src/server/land-grants/services/land-grants.client.js', () => ({
   calculate: vi.fn(),
-  calculateWmp: vi.fn(),
   parcelsGroups: vi.fn(),
   parcelsWithSize: vi.fn(),
   parcelsWithExtendedInfo: vi.fn(),
   validate: vi.fn()
+}))
+
+vi.mock('~/src/server/woodland/woodland.client.js', () => ({
+  calculateWmp: vi.fn()
 }))
 
 vi.mock('~/src/config/nunjucks/filters/format-currency.js')
@@ -176,12 +179,12 @@ describe('land-grants service', () => {
 
       const result = await calculateWmpPayment({
         parcelIds: ['SD6346-3387'],
-        newWoodlandAreaHa: 1.5,
-        oldWoodlandAreaHa: 0.5
+        hectaresUnderTenYearsOld: 1.5,
+        hectaresTenOrOverYearsOld: 0.5
       })
 
       expect(calculateWmp).toHaveBeenCalledWith(
-        { parcelIds: ['SD6346-3387'], newWoodlandAreaHa: 1.5, oldWoodlandAreaHa: 0.5 },
+        { parcelIds: ['SD6346-3387'], hectaresUnderTenYearsOld: 1.5, hectaresTenOrOverYearsOld: 0.5 },
         mockApiEndpoint
       )
       expect(result).toEqual({ payment: mockPayment, totalPence: 375000 })
@@ -192,8 +195,8 @@ describe('land-grants service', () => {
 
       const result = await calculateWmpPayment({
         parcelIds: ['SD6346-3387'],
-        newWoodlandAreaHa: 0,
-        oldWoodlandAreaHa: 0
+        hectaresUnderTenYearsOld: 0,
+        hectaresTenOrOverYearsOld: 0
       })
 
       expect(result).toEqual({ payment: {}, totalPence: 0 })
@@ -203,7 +206,7 @@ describe('land-grants service', () => {
       calculateWmp.mockRejectedValueOnce(new Error('API error'))
 
       await expect(
-        calculateWmpPayment({ parcelIds: ['SD6346-3387'], newWoodlandAreaHa: 0, oldWoodlandAreaHa: 0 })
+        calculateWmpPayment({ parcelIds: ['SD6346-3387'], hectaresUnderTenYearsOld: 0, hectaresTenOrOverYearsOld: 0 })
       ).rejects.toThrow('API error')
     })
   })

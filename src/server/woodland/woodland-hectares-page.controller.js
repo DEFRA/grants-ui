@@ -9,8 +9,8 @@ import { debug, LogCodes } from '~/src/server/common/helpers/logging/log.js'
  */
 
 const MIN_WOODLAND_TOTAL_AREA_HA = 0.5
-const HECTARES_OVER_TEN_FIELD_NAME = 'oldWoodlandAreaHa'
-const HECTARES_UNDER_TEN_FIELD_NAME = 'newWoodlandAreaHa'
+const HECTARES_OVER_TEN_FIELD_NAME = 'hectaresTenOrOverYearsOld'
+const HECTARES_UNDER_TEN_FIELD_NAME = 'hectaresUnderTenYearsOld'
 
 const ERROR_BELOW_MINIMUM = `The total area of woodland must be at least ${MIN_WOODLAND_TOTAL_AREA_HA}ha`
 const truncate4dp = (/** @type {number} */ n) => Math.floor(n * 10000) / 10000
@@ -101,13 +101,13 @@ export default class WoodlandHectaresPageController extends TaskPageController {
    * @param {FormContext} context
    * @param {Pick<import('@hapi/hapi').ResponseToolkit, 'redirect' | 'view'>} h
    * @param {string[]} parcelIds
-   * @param {number} oldWoodlandAreaHa
-   * @param {number} newWoodlandAreaHa
+   * @param {number} hectaresTenOrOverYearsOld
+   * @param {number} hectaresUnderTenYearsOld
    * @returns {Promise<import('@hapi/hapi').ResponseObject | null>} a rendered response if validation failed, otherwise null
    */
-  async renderBackendErrors(request, context, h, parcelIds, oldWoodlandAreaHa, newWoodlandAreaHa) {
+  async renderBackendErrors(request, context, h, parcelIds, hectaresTenOrOverYearsOld, hectaresUnderTenYearsOld) {
     try {
-      const failedReasons = await validateWoodlandHectares({ parcelIds, oldWoodlandAreaHa, newWoodlandAreaHa })
+      const failedReasons = await validateWoodlandHectares({ parcelIds, hectaresTenOrOverYearsOld, hectaresUnderTenYearsOld })
       if (!failedReasons.length) {
         return null
       }
