@@ -24,7 +24,7 @@ const LAND_GRANTS_API_URL = config.get('landGrants.grantsServiceApiEndpoint')
 
 /**
  * Calculates grant payment for land actions.
- * @param {FormState} state
+ * @param {object} state
  * @returns {Promise<{payment: PaymentCalculation, errorMessage?: string, paymentTotal: string}>} - Payment calculation result
  * @throws {Error}
  */
@@ -125,12 +125,13 @@ function mapAction(action) {
 
 /**
  * Fetches parcel groups for a list of parcel IDs.
- * @param {FormState} state
+ * @param {object} state
  * @returns {Promise<ActionGroupDefinition[]>}
  * @throws {Error}
  */
 export async function fetchParcelsGroups(state) {
-  const parcelIds = Object.keys(state.landParcels) || []
+  const { landParcels = {} } = /** @type {{ landParcels?: LandParcels }} */ (state)
+  const parcelIds = Object.keys(landParcels) || []
   if (!parcelIds.length) {
     return []
   }
@@ -186,7 +187,7 @@ export async function fetchParcels(request) {
  * @param {string} data.applicationId
  * @param {string} data.crn
  * @param {string} data.sbi
- * @param {FormState} data.state
+ * @param {object} data.state
  * @returns {Promise<ValidateApplicationResponse>}
  * @throws {Error}
  */
@@ -236,6 +237,6 @@ function buildErrorMessagesFromResponse(actions = []) {
 /**
  * @import { ActionOption, ActionGroup, ActionGroupDefinition, Parcel, ValidateApplicationResponse, ValidationAction, ErrorItem, Size } from '~/src/server/land-grants/types/land-grants.client.d.js'
  * @import { PaymentCalculation } from '~/src/server/land-grants/types/payment.d.js'
- * @import { FormState } from '~/src/server/land-grants/types/form-state.d.js'
+ * @import { LandParcels } from '~/src/server/land-grants/types/form-state.d.js'
  * @import { AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
  */
