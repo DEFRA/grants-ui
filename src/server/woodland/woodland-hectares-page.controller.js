@@ -107,7 +107,11 @@ export default class WoodlandHectaresPageController extends TaskPageController {
    */
   async renderBackendErrors(request, context, h, parcelIds, hectaresTenOrOverYearsOld, hectaresUnderTenYearsOld) {
     try {
-      const failedReasons = await validateWoodlandHectares({ parcelIds, hectaresTenOrOverYearsOld, hectaresUnderTenYearsOld })
+      const failedReasons = await validateWoodlandHectares({
+        parcelIds,
+        hectaresTenOrOverYearsOld,
+        hectaresUnderTenYearsOld
+      })
       if (!failedReasons.length) {
         return null
       }

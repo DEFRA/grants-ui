@@ -13,29 +13,40 @@ describe('validateWoodland', () => {
       'http://api'
     )
 
-    expect(landGrantsClient.postToLandGrantsApi).toHaveBeenCalledWith('/api/v1/wmp/validate', {
-      parcelIds: ['SD6346-3387'],
-      oldWoodlandAreaHa: 2,
-      newWoodlandAreaHa: 1
-    }, 'http://api')
+    expect(landGrantsClient.postToLandGrantsApi).toHaveBeenCalledWith(
+      '/api/v1/wmp/validate',
+      {
+        parcelIds: ['SD6346-3387'],
+        oldWoodlandAreaHa: 2,
+        newWoodlandAreaHa: 1
+      },
+      'http://api'
+    )
     expect(result).toEqual({ message: 'success' })
   })
 })
 
 describe('calculateWmp', () => {
   it('posts to the calculate endpoint mapping new field names to old API names', async () => {
-    landGrantsClient.postToLandGrantsApi.mockResolvedValueOnce({ message: 'success', payment: { agreementTotalPence: 375000 } })
+    landGrantsClient.postToLandGrantsApi.mockResolvedValueOnce({
+      message: 'success',
+      payment: { agreementTotalPence: 375000 }
+    })
 
     const result = await calculateWmp(
       { parcelIds: ['SD6346-3387'], hectaresTenOrOverYearsOld: 0, hectaresUnderTenYearsOld: 0 },
       'http://api'
     )
 
-    expect(landGrantsClient.postToLandGrantsApi).toHaveBeenCalledWith('/api/v1/wmp/payments/calculate', {
-      parcelIds: ['SD6346-3387'],
-      oldWoodlandAreaHa: 0,
-      newWoodlandAreaHa: 0
-    }, 'http://api')
+    expect(landGrantsClient.postToLandGrantsApi).toHaveBeenCalledWith(
+      '/api/v1/wmp/payments/calculate',
+      {
+        parcelIds: ['SD6346-3387'],
+        oldWoodlandAreaHa: 0,
+        newWoodlandAreaHa: 0
+      },
+      'http://api'
+    )
     expect(result).toEqual({ message: 'success', payment: { agreementTotalPence: 375000 } })
   })
 })

@@ -130,7 +130,10 @@ function mapAction(action) {
  * @throws {Error}
  */
 export async function calculateWmpPayment({ parcelIds, hectaresUnderTenYearsOld, hectaresTenOrOverYearsOld }) {
-  const { payment } = await calculateWmp({ parcelIds, hectaresUnderTenYearsOld, hectaresTenOrOverYearsOld }, LAND_GRANTS_API_URL)
+  const { payment } = await calculateWmp(
+    { parcelIds, hectaresUnderTenYearsOld, hectaresTenOrOverYearsOld },
+    LAND_GRANTS_API_URL
+  )
   const totalPence = payment?.agreementTotalPence ?? 0
   return { payment, totalPence }
 }

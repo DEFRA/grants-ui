@@ -183,7 +183,11 @@ describe('WoodlandHectaresPageController', () => {
       const handler = controller.makePostRouteHandler()
       const context = { state: { totalHectaresAppliedFor: 50 }, evaluationState: {} }
 
-      await handler({ payload: { hectaresTenOrOverYearsOld: overTen, hectaresUnderTenYearsOld: underTen } }, context, mockH)
+      await handler(
+        { payload: { hectaresTenOrOverYearsOld: overTen, hectaresUnderTenYearsOld: underTen } },
+        context,
+        mockH
+      )
 
       expect(context.errors).toEqual([
         {
@@ -208,7 +212,11 @@ describe('WoodlandHectaresPageController', () => {
       const handler = controller.makePostRouteHandler()
       const context = { state: { totalHectaresAppliedFor: 50 } }
 
-      await handler({ payload: { hectaresTenOrOverYearsOld: overTen, hectaresUnderTenYearsOld: underTen } }, context, mockH)
+      await handler(
+        { payload: { hectaresTenOrOverYearsOld: overTen, hectaresUnderTenYearsOld: underTen } },
+        context,
+        mockH
+      )
 
       expect(context.errors).toBeUndefined()
     })
@@ -222,7 +230,11 @@ describe('WoodlandHectaresPageController', () => {
       const handler = controller.makePostRouteHandler()
       const context = { state: { totalHectaresAppliedFor: 50 }, evaluationState: {} }
 
-      await handler({ payload: { hectaresTenOrOverYearsOld: overTen, hectaresUnderTenYearsOld: underTen } }, context, mockH)
+      await handler(
+        { payload: { hectaresTenOrOverYearsOld: overTen, hectaresUnderTenYearsOld: underTen } },
+        context,
+        mockH
+      )
 
       expect(context.errors).toEqual([
         {
@@ -247,7 +259,11 @@ describe('WoodlandHectaresPageController', () => {
       const handler = controller.makePostRouteHandler()
       const context = { state: { totalHectaresAppliedFor: 50 } }
 
-      await handler({ payload: { hectaresTenOrOverYearsOld: overTen, hectaresUnderTenYearsOld: underTen } }, context, mockH)
+      await handler(
+        { payload: { hectaresTenOrOverYearsOld: overTen, hectaresUnderTenYearsOld: underTen } },
+        context,
+        mockH
+      )
 
       expect(context.errors).toBeUndefined()
     })

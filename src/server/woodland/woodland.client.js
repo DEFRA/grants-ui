@@ -7,11 +7,15 @@ import { postToLandGrantsApi } from '~/src/server/land-grants/services/land-gran
  * @returns {Promise<object>}
  */
 export async function validateWoodland({ parcelIds, hectaresTenOrOverYearsOld, hectaresUnderTenYearsOld }, baseUrl) {
-  return postToLandGrantsApi('/api/v1/wmp/validate', {
-    parcelIds,
-    oldWoodlandAreaHa: hectaresTenOrOverYearsOld,
-    newWoodlandAreaHa: hectaresUnderTenYearsOld
-  }, baseUrl)
+  return postToLandGrantsApi(
+    '/api/v1/wmp/validate',
+    {
+      parcelIds,
+      oldWoodlandAreaHa: hectaresTenOrOverYearsOld,
+      newWoodlandAreaHa: hectaresUnderTenYearsOld
+    },
+    baseUrl
+  )
 }
 
 /**
@@ -22,9 +26,13 @@ export async function validateWoodland({ parcelIds, hectaresTenOrOverYearsOld, h
  * @throws {Error}
  */
 export async function calculateWmp({ parcelIds, hectaresTenOrOverYearsOld, hectaresUnderTenYearsOld }, baseUrl) {
-  return postToLandGrantsApi('/api/v1/wmp/payments/calculate', {
-    parcelIds,
-    oldWoodlandAreaHa: hectaresTenOrOverYearsOld,
-    newWoodlandAreaHa: hectaresUnderTenYearsOld
-  }, baseUrl)
+  return postToLandGrantsApi(
+    '/api/v1/wmp/payments/calculate',
+    {
+      parcelIds,
+      oldWoodlandAreaHa: hectaresTenOrOverYearsOld,
+      newWoodlandAreaHa: hectaresUnderTenYearsOld
+    },
+    baseUrl
+  )
 }
