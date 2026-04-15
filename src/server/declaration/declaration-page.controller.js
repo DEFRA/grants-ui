@@ -196,7 +196,6 @@ export default class DeclarationPageController extends SummaryPageController {
 
         const applicationData = this.buildApplicationData(request, context)
 
-        console.log({ applicationData })
         const result = await submitGrantApplication(grantCode, applicationData, request)
 
         if (result.status === statusCodes.noContent) {
