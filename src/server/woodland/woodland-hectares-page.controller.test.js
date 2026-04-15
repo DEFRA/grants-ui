@@ -102,7 +102,7 @@ describe('WoodlandHectaresPageController', () => {
 
       await handler({ payload: null }, context, mockH)
 
-      expect(context.errors[0].text).toBe('The total area of woodland must be more than 0.5ha')
+      expect(context.errors[0].text).toBe('The total area of woodland must be at least 0.5ha')
     })
 
     it('defaults totalHectaresAppliedFor to 0 when missing from state', async () => {
@@ -128,52 +128,23 @@ describe('WoodlandHectaresPageController', () => {
           path: ['oldWoodlandAreaHa'],
           href: '#oldWoodlandAreaHa',
           name: 'oldWoodlandAreaHa',
-          text: 'The total area of woodland must be more than 0.5ha'
+          text: 'The total area of woodland must be at least 0.5ha'
         }
       ])
     })
 
-    it('sets error on under-10 field when it is not a number', async () => {
+    it('treats non-numeric under-10 as 0 (field is optional)', async () => {
       const handler = controller.makePostRouteHandler()
-      const context = { state: { totalHectaresAppliedFor: 50 }, evaluationState: {} }
+      const context = { state: { totalHectaresAppliedFor: 50 } }
 
-      await handler({ payload: { oldWoodlandAreaHa: '10', newWoodlandAreaHa: 'abc' } }, context, mockH)
+      await handler({ payload: { oldWoodlandAreaHa: '1', newWoodlandAreaHa: 'abc' } }, context, mockH)
 
-      expect(context.errors).toEqual([
-        {
-          path: ['newWoodlandAreaHa'],
-          href: '#newWoodlandAreaHa',
-          name: 'newWoodlandAreaHa',
-          text: 'The total area of woodland must be more than 0.5ha'
-        }
-      ])
-    })
-
-    it('sets errors on both fields when both are not numbers', async () => {
-      const handler = controller.makePostRouteHandler()
-      const context = { state: { totalHectaresAppliedFor: 50 }, evaluationState: {} }
-
-      await handler({ payload: { oldWoodlandAreaHa: 'abc', newWoodlandAreaHa: 'xyz' } }, context, mockH)
-
-      expect(context.errors).toEqual([
-        {
-          path: ['oldWoodlandAreaHa'],
-          href: '#oldWoodlandAreaHa',
-          name: 'oldWoodlandAreaHa',
-          text: 'The total area of woodland must be more than 0.5ha'
-        },
-        {
-          path: ['newWoodlandAreaHa'],
-          href: '#newWoodlandAreaHa',
-          name: 'newWoodlandAreaHa',
-          text: 'The total area of woodland must be more than 0.5ha'
-        }
-      ])
+      expect(context.errors).toBeUndefined()
     })
   })
 
   describe('minimum 0.5 ha total', () => {
-    it('sets errors on both fields when both are empty', async () => {
+    it('sets error on over-10 field when both are empty (under-10 defaults to 0)', async () => {
       const handler = controller.makePostRouteHandler()
       const context = { state: { totalHectaresAppliedFor: 50 }, evaluationState: {} }
 
@@ -184,29 +155,7 @@ describe('WoodlandHectaresPageController', () => {
           path: ['oldWoodlandAreaHa'],
           href: '#oldWoodlandAreaHa',
           name: 'oldWoodlandAreaHa',
-          text: 'The total area of woodland must be more than 0.5ha'
-        },
-        {
-          path: ['newWoodlandAreaHa'],
-          href: '#newWoodlandAreaHa',
-          name: 'newWoodlandAreaHa',
-          text: 'The total area of woodland must be more than 0.5ha'
-        }
-      ])
-    })
-
-    it('sets error only on missing field when one is empty', async () => {
-      const handler = controller.makePostRouteHandler()
-      const context = { state: { totalHectaresAppliedFor: 50 }, evaluationState: {} }
-
-      await handler({ payload: { oldWoodlandAreaHa: '10' } }, context, mockH)
-
-      expect(context.errors).toEqual([
-        {
-          path: ['newWoodlandAreaHa'],
-          href: '#newWoodlandAreaHa',
-          name: 'newWoodlandAreaHa',
-          text: 'The total area of woodland must be more than 0.5ha'
+          text: 'The total area of woodland must be at least 0.5ha'
         }
       ])
     })
@@ -225,12 +174,12 @@ describe('WoodlandHectaresPageController', () => {
           path: ['oldWoodlandAreaHa'],
           href: '#oldWoodlandAreaHa',
           name: 'oldWoodlandAreaHa',
-          text: 'The total area of woodland must be more than 0.5ha'
+          text: 'The total area of woodland must be at least 0.5ha'
         },
         {
           path: ['newWoodlandAreaHa'],
           href: '#oldWoodlandAreaHa',
-          text: 'The total area of woodland must be more than 0.5ha'
+          text: 'The total area of woodland must be at least 0.5ha'
         }
       ])
     })

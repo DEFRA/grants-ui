@@ -530,7 +530,7 @@ pages:
         id: 1a3b5c7d-9e2f-4a8b-c6d0-e4f2a8b6c0d2
         type: Html
         content: >-
-          <p class="govuk-body">The woodland must be larger than 0.5 hectares (ha) in total.</p>
+          <p class="govuk-body">The woodland must be at least 0.5 hectares (ha) in total.</p>
           <div class="govuk-inset-text">
            {% if totalHectaresAppliedFor %}
               The total area of your selected land parcels is {{ totalHectaresAppliedFor }} ha
@@ -554,7 +554,7 @@ pages:
         type: NumberField
         title: Enter total area of newly planted woodland under 10 years old
         options:
-          required: true
+          required: false
           classes: govuk-input--width-5
           suffix: ha
         shortDescription: Newly planted woodland under 10 years old
