@@ -56,6 +56,10 @@ vi.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js', () =
       filterConditionalComponents() {
         return []
       }
+
+      getStateFromValidForm(_request, state, payload) {
+        return { ...state, ...payload }
+      }
     }
   }
 })
@@ -75,6 +79,18 @@ describe('WoodlandHectaresPageController', () => {
     vi.clearAllMocks()
     mockModel = { def: { metadata: { tasklist: {} } } }
     controller = new WoodlandHectaresPageController(mockModel, { path: '/total-area-of-woodland' })
+  })
+
+  describe('getStateFromValidForm', () => {
+    it('preserves hectaresUnderTenYearsOld from payload when present', () => {
+      const state = controller.getStateFromValidForm({}, {}, { hectaresUnderTenYearsOld: 3 })
+      expect(state.hectaresUnderTenYearsOld).toBe(3)
+    })
+
+    it('defaults hectaresUnderTenYearsOld to 0 when absent from payload', () => {
+      const state = controller.getStateFromValidForm({}, {}, {})
+      expect(state.hectaresUnderTenYearsOld).toBe(0)
+    })
   })
 
   describe('getViewModel', () => {
