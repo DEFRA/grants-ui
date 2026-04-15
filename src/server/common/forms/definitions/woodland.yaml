@@ -312,7 +312,7 @@ pages:
     controller: TaskPageController
     condition: 88a3283b-64fe-4e2b-aa14-5faca0333006
     components:
-      - name: countersignature
+      - name: counterSignature
         id: 040d6021-bc32-4ef8-9cfe-235548157a30
         type: YesNoField
         title: Have you got the countersignature of your landlord?
@@ -680,7 +680,7 @@ conditions:
         type: BooleanValue
         value: false
 
-  # No countersignature (countersignature = false) -> exit page
+  # No countersignature (counterSignature = false) -> exit page
   - id: b9f02e95-e022-4b6d-a8fb-dbe56124c03f
     displayName: noCountersignature
     items:
