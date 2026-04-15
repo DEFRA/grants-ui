@@ -1,5 +1,6 @@
 import { getFormsCacheService } from '../../common/helpers/forms-cache/forms-cache.js'
 import { SessionError } from '~/src/server/common/utils/errors/SessionError.js'
+import { findFormBySlug, loadFormDefinition } from '~/src/server/common/forms/services/find-form-by-slug.js'
 
 /**
  * Clears the current application state
@@ -12,6 +13,14 @@ export async function clearApplicationStateHandler(request, h) {
 
   // we need a slug to clear the persisted state
   if (slug) {
+    if (!request.app.model) {
+      const form = await findFormBySlug(slug)
+      if (form) {
+        const definition = await loadFormDefinition(form)
+        request.app.model = { def: definition }
+      }
+    }
+
     const cacheService = getFormsCacheService(request.server)
     let sessionKey = 'unknown'
     try {

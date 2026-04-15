@@ -47,7 +47,6 @@ export class ApiFormService {
       id: apiMeta.id,
       slug: apiMeta.slug,
       title: apiMeta.title,
-      metadata: {},
       source: 'api'
     }
   }
@@ -114,9 +113,6 @@ export class ApiFormService {
 
         // Apply URL substitutions
         const definition = configureDefinition(rawDefinition)
-
-        // Carry metadata from the definition into the cache entry
-        entry.metadata = definition.metadata ?? {}
 
         const form = { title: entry.title }
         validateWhitelist(form, definition)

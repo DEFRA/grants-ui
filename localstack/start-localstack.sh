@@ -16,12 +16,8 @@ aws --endpoint-url=http://localhost:4566 s3api put-bucket-versioning \
   --bucket form-definition-storage \
   --versioning-configuration Status=Enabled
 
-# Forms config bucket - stores YAML form definitions for seeding on startup (FORMS_CONFIG_BUCKET_NAME)
-aws --endpoint-url=http://localhost:4566 s3 mb s3://forms-config
-
-# Seed form YAML definitions into forms-config bucket
-aws --endpoint-url=http://localhost:4566 s3 cp \
-  /etc/localstack/forms/ s3://forms-config/ --recursive
+# Config broker S3 bucket
+aws --endpoint-url=http://localhost:4566 s3 mb s3://configs-bucket
 
 # queues
 aws --endpoint-url=http://localhost:4566 sqs create-queue --queue-name cdp-clamav-results

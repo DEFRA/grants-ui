@@ -33,7 +33,8 @@ describe('StatePersistenceService', () => {
 
   const fakeRequest = {
     params: { slug: 'grant-a', state: '123' },
-    auth: { credentials: { contactId: 'user-1', sbi: 'biz-1', crn: 'user-1', relationships: ['rel:biz-1'] } }
+    auth: { credentials: { contactId: 'user-1', sbi: 'biz-1', crn: 'user-1', relationships: ['rel:biz-1'] } },
+    app: {}
   }
 
   beforeEach(() => {
@@ -112,7 +113,8 @@ describe('StatePersistenceService', () => {
     const state = { foo: 'bar' }
     await service.setState(fakeRequest, state)
     expect(persistModule.persistStateToApi).toHaveBeenCalledWith(state, 'biz-1:grant-a', {
-      lockToken: 'MOCK-LOCK-TOKEN'
+      lockToken: 'MOCK-LOCK-TOKEN',
+      grantVersion: 1
     })
     expect(lockModule.mintLockToken).toHaveBeenCalledWith({
       userId: 'user-1',
@@ -175,5 +177,59 @@ describe('StatePersistenceService', () => {
     fetchModule.clearSavedStateFromApi.mockRejectedValue(err)
 
     await expect(service.clearState(fakeRequest, true)).rejects.toThrow('clear failed')
+  })
+
+  describe('with config-broker model (semver grantVersion)', () => {
+    const fakeRequestWithVersion = {
+      params: { slug: 'grant-a', state: '123' },
+      auth: { credentials: { contactId: 'user-1', sbi: 'biz-1', crn: 'user-1', relationships: ['rel:biz-1'] } },
+      app: { model: { def: { metadata: { version: '1.0.0' } } } }
+    }
+
+    test('getState passes semver grantVersion to mintLockToken', async () => {
+      getCacheKey.mockReturnValue({ sbi: 'biz-1', grantCode: 'grant-a' })
+      fetchModule.fetchSavedStateFromApi.mockResolvedValue({ foo: 'bar' })
+
+      await service.getState(fakeRequestWithVersion)
+
+      expect(lockModule.mintLockToken).toHaveBeenCalledWith({
+        userId: 'user-1',
+        sbi: 'biz-1',
+        grantCode: 'grant-a',
+        grantVersion: '1.0.0'
+      })
+    })
+
+    test('setState passes semver grantVersion to persistStateToApi and mintLockToken', async () => {
+      getCacheKey.mockReturnValue({ sbi: 'biz-1', grantCode: 'grant-a' })
+      const state = { foo: 'bar' }
+
+      await service.setState(fakeRequestWithVersion, state)
+
+      expect(persistModule.persistStateToApi).toHaveBeenCalledWith(state, 'biz-1:grant-a', {
+        lockToken: 'MOCK-LOCK-TOKEN',
+        grantVersion: '1.0.0'
+      })
+      expect(lockModule.mintLockToken).toHaveBeenCalledWith({
+        userId: 'user-1',
+        sbi: 'biz-1',
+        grantCode: 'grant-a',
+        grantVersion: '1.0.0'
+      })
+    })
+
+    test('clearState(force=true) passes semver grantVersion to mintLockToken', async () => {
+      getCacheKey.mockReturnValue({ sbi: 'biz-1', grantCode: 'grant-a' })
+      fetchModule.clearSavedStateFromApi.mockResolvedValue(undefined)
+
+      await service.clearState(fakeRequestWithVersion, true)
+
+      expect(lockModule.mintLockToken).toHaveBeenCalledWith({
+        userId: 'user-1',
+        sbi: 'biz-1',
+        grantCode: 'grant-a',
+        grantVersion: '1.0.0'
+      })
+    })
   })
 })

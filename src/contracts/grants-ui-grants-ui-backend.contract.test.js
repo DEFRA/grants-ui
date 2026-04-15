@@ -16,7 +16,7 @@ describe('Pact between grants-ui (consumer) and grants-ui-backend (provider)', (
       const submission = {
         crn: '1234567890',
         grantCode: 'example-grant-with-auth',
-        grantVersion: 1,
+        grantVersion: '1.0.0',
         referenceNumber: 'ABC-123',
         sbi: '123456789',
         submittedAt: '2024-01-01T00:00:00.000Z'

@@ -124,7 +124,7 @@ export async function getAllFormMetas(redis) {
  * @property {string} id
  * @property {string} slug
  * @property {string} title
- * @property {object} metadata
  * @property {'yaml' | 'api'} source
  * @property {string} [path] - Absolute path to the YAML file; only present for source='yaml' forms
+ * @property {Record<string, unknown>} [metadata] - Custom metadata from the form definition
  */

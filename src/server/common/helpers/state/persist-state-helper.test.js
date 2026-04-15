@@ -1,8 +1,8 @@
 import { vi } from 'vitest'
 import {
+  createCustomMockConfig,
   createMockConfig,
   createMockConfigWithoutEndpoint,
-  createCustomMockConfig,
   ERROR_MESSAGES,
   HTTP_STATUS,
   MOCK_STATE_DATA,
@@ -10,14 +10,13 @@ import {
 } from './test-helpers/auth-test-helpers.js'
 import { createMockFetchResponse } from '~/src/__mocks__/hapi-mocks.js'
 import { createApiHeadersForGrantsUiBackend } from '../auth/backend-auth-helper.js'
+
 vi.mock('../auth/backend-auth-helper.js', () => ({
   createApiHeadersForGrantsUiBackend: vi.fn(({ lockToken }) => ({
     'Content-Type': 'application/json',
     Authorization: `Bearer ${Buffer.from('test').toString('base64')}`
   }))
 }))
-
-const GRANT_VERSION = 1
 
 const mockParseSessionKey = vi.fn()
 vi.mock('./get-cache-key-helper.js', () => ({
@@ -72,7 +71,6 @@ describe('persistStateToApi', () => {
       const expectedBody = JSON.stringify({
         sbi: TEST_USER_IDS.ORGANISATION_ID,
         grantCode: TEST_USER_IDS.GRANT_ID,
-        grantVersion: GRANT_VERSION,
         state: testState
       })
 

@@ -24,7 +24,8 @@ describe('clearApplicationStateHandler', () => {
 
     mockRequest = {
       params: {},
-      server: {}
+      server: {},
+      app: { model: {} }
     }
 
     mockH = {
