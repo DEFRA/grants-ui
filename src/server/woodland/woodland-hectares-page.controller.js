@@ -9,12 +9,14 @@ import { debug, LogCodes } from '~/src/server/common/helpers/logging/log.js'
  */
 
 const MIN_WOODLAND_TOTAL_AREA_HA = 0.5
-const HECTARES_OVER_TEN_FIELD_NAME = 'oldWoodlandAreaHa'
-const HECTARES_UNDER_TEN_FIELD_NAME = 'newWoodlandAreaHa'
+const HECTARES_OVER_TEN_FIELD_NAME = 'hectaresTenOrOverYearsOld'
+const HECTARES_UNDER_TEN_FIELD_NAME = 'hectaresUnderTenYearsOld'
 
-const ERROR_BELOW_MINIMUM = `The total area of woodland must be more than ${MIN_WOODLAND_TOTAL_AREA_HA}ha`
+const ERROR_BELOW_MINIMUM = `The total area of woodland must be at least ${MIN_WOODLAND_TOTAL_AREA_HA}ha`
+const truncate4dp = (/** @type {number} */ n) => Math.floor(n * 10000) / 10000
+
 const errorExceedsMax = (/** @type {number} */ max) =>
-  `Total area of woodland cannot be more than total area of selected land parcels (${max}ha)`
+  `Total area of woodland cannot be more than total area of selected land parcels (${truncate4dp(max)}ha)`
 
 /**
  * @param {string} fieldName
@@ -39,9 +41,19 @@ export default class WoodlandHectaresPageController extends TaskPageController {
    * @param {AnyFormRequest} request
    * @param {FormContext} context
    */
+  /**
+   * @param {AnyFormRequest} request
+   * @param {Record<string, unknown>} state
+   * @param {Record<string, unknown>} payload
+   */
+  getStateFromValidForm(request, state, payload) {
+    const formState = /** @type {Record<string, unknown>} */ (super.getStateFromValidForm(request, state, payload))
+    return { ...formState, [HECTARES_UNDER_TEN_FIELD_NAME]: formState[HECTARES_UNDER_TEN_FIELD_NAME] ?? 0 }
+  }
+
   getViewModel(request, context) {
     const { state } = context
-    const totalHectaresAppliedFor = state['totalHectaresAppliedFor'] ?? 0
+    const totalHectaresAppliedFor = truncate4dp(Number(state['totalHectaresAppliedFor'] ?? 0))
     const viewModel = /** @type {Record<string, any>} */ (super.getViewModel(request, context))
 
     const guidanceIndex = viewModel.components?.findIndex(
@@ -69,9 +81,6 @@ export default class WoodlandHectaresPageController extends TaskPageController {
     if (Number.isNaN(overTen)) {
       missingErrors.push(makeError(HECTARES_OVER_TEN_FIELD_NAME, ERROR_BELOW_MINIMUM))
     }
-    if (Number.isNaN(underTen)) {
-      missingErrors.push(makeError(HECTARES_UNDER_TEN_FIELD_NAME, ERROR_BELOW_MINIMUM))
-    }
     if (missingErrors.length) {
       return missingErrors
     }
@@ -92,13 +101,17 @@ export default class WoodlandHectaresPageController extends TaskPageController {
    * @param {FormContext} context
    * @param {Pick<import('@hapi/hapi').ResponseToolkit, 'redirect' | 'view'>} h
    * @param {string[]} parcelIds
-   * @param {number} oldWoodlandAreaHa
-   * @param {number} newWoodlandAreaHa
+   * @param {number} hectaresTenOrOverYearsOld
+   * @param {number} hectaresUnderTenYearsOld
    * @returns {Promise<import('@hapi/hapi').ResponseObject | null>} a rendered response if validation failed, otherwise null
    */
-  async renderBackendErrors(request, context, h, parcelIds, oldWoodlandAreaHa, newWoodlandAreaHa) {
+  async renderBackendErrors(request, context, h, parcelIds, hectaresTenOrOverYearsOld, hectaresUnderTenYearsOld) {
     try {
-      const failedReasons = await validateWoodlandHectares({ parcelIds, oldWoodlandAreaHa, newWoodlandAreaHa })
+      const failedReasons = await validateWoodlandHectares({
+        parcelIds,
+        hectaresTenOrOverYearsOld,
+        hectaresUnderTenYearsOld
+      })
       if (!failedReasons.length) {
         return null
       }
@@ -158,7 +171,7 @@ export default class WoodlandHectaresPageController extends TaskPageController {
 
       const totalHectaresAppliedFor = Number(state['totalHectaresAppliedFor']) || 0
       const overTen = Number.parseFloat(payload[HECTARES_OVER_TEN_FIELD_NAME])
-      const underTen = Number.parseFloat(payload[HECTARES_UNDER_TEN_FIELD_NAME])
+      const underTen = Number.parseFloat(payload[HECTARES_UNDER_TEN_FIELD_NAME]) || 0
 
       const frontendErrors = this.validatePayload(overTen, underTen, totalHectaresAppliedFor)
       if (frontendErrors.length) {

@@ -20,7 +20,7 @@ const makeResponse = (rules) => ({
 })
 
 describe('validateWoodlandHectares', () => {
-  const args = { parcelIds: ['SD6346-3387'], oldWoodlandAreaHa: 2, newWoodlandAreaHa: 1 }
+  const args = { parcelIds: ['SD6346-3387'], hectaresTenOrOverYearsOld: 2, hectaresUnderTenYearsOld: 1 }
 
   it('returns an empty array when all rules pass', async () => {
     woodlandClient.validateWoodland.mockResolvedValue(
@@ -60,7 +60,7 @@ describe('validateWoodlandHectares', () => {
     await validateWoodlandHectares(args)
 
     expect(woodlandClient.validateWoodland).toHaveBeenCalledWith(
-      { parcelIds: ['SD6346-3387'], oldWoodlandAreaHa: 2, newWoodlandAreaHa: 1 },
+      { parcelIds: ['SD6346-3387'], hectaresTenOrOverYearsOld: 2, hectaresUnderTenYearsOld: 1 },
       'http://api'
     )
   })

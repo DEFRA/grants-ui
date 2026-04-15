@@ -56,11 +56,11 @@ export const paymentStrategies = {
      * @returns {Promise<PaymentStrategyResult>}
      */
     async calculatePayment(state) {
-      const { landParcels = [], newWoodlandAreaHa = 0, oldWoodlandAreaHa = 0 } = state
+      const { landParcels = [], hectaresUnderTenYearsOld = 0, hectaresTenOrOverYearsOld = 0 } = state
       const { payment, totalPence } = await calculateWmpPayment({
         parcelIds: landParcels,
-        newWoodlandAreaHa,
-        oldWoodlandAreaHa
+        hectaresUnderTenYearsOld,
+        hectaresTenOrOverYearsOld
       })
       return {
         totalPence,

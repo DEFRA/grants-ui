@@ -8,12 +8,12 @@ import { config } from '~/src/config/config.js'
 import { getConsentTypes } from '~/src/server/land-grants/utils/consent-types.js'
 import {
   calculate,
-  calculateWmp,
   parcelsGroups,
   parcelsWithExtendedInfo,
   parcelsWithSize,
   validate
 } from '~/src/server/land-grants/services/land-grants.client.js'
+import { calculateWmp } from '~/src/server/woodland/woodland.client.js'
 import { formatAreaUnit } from '~/src/server/land-grants/utils/format-area-unit.js'
 import {
   getCachedParcel,
@@ -125,12 +125,15 @@ function mapAction(action) {
 
 /**
  * Calculates a one-off WMP payment.
- * @param {{ parcelIds: string[], newWoodlandAreaHa: number, oldWoodlandAreaHa: number }} params
+ * @param {{ parcelIds: string[], hectaresUnderTenYearsOld: number, hectaresTenOrOverYearsOld: number }} params
  * @returns {Promise<{ payment: object, totalPence: number }>}
  * @throws {Error}
  */
-export async function calculateWmpPayment({ parcelIds, newWoodlandAreaHa, oldWoodlandAreaHa }) {
-  const { payment } = await calculateWmp({ parcelIds, newWoodlandAreaHa, oldWoodlandAreaHa }, LAND_GRANTS_API_URL)
+export async function calculateWmpPayment({ parcelIds, hectaresUnderTenYearsOld, hectaresTenOrOverYearsOld }) {
+  const { payment } = await calculateWmp(
+    { parcelIds, hectaresUnderTenYearsOld, hectaresTenOrOverYearsOld },
+    LAND_GRANTS_API_URL
+  )
   const totalPence = payment?.agreementTotalPence ?? 0
   return { payment, totalPence }
 }

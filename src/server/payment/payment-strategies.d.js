@@ -19,6 +19,6 @@
 /**
  * @typedef {object} WmpState
  * @property {string[]} [landParcels]
- * @property {number} [newWoodlandAreaHa]
- * @property {number} [oldWoodlandAreaHa]
+ * @property {number} [hectaresUnderTenYearsOld]
+ * @property {number} [hectaresTenOrOverYearsOld]
  */

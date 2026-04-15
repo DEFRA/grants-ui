@@ -81,8 +81,8 @@ describe('paymentStrategies', () => {
   describe('wmp.calculatePayment', () => {
     const mockState = {
       landParcels: ['parcel1', 'parcel2'],
-      newWoodlandAreaHa: 5.5,
-      oldWoodlandAreaHa: 2.0
+      hectaresUnderTenYearsOld: 5.5,
+      hectaresTenOrOverYearsOld: 2.0
     }
     const mockPayment = { someWmpData: true }
 
@@ -98,8 +98,8 @@ describe('paymentStrategies', () => {
 
       expect(landGrantsService.calculateWmpPayment).toHaveBeenCalledWith({
         parcelIds: ['parcel1', 'parcel2'],
-        newWoodlandAreaHa: 5.5,
-        oldWoodlandAreaHa: 2.0
+        hectaresUnderTenYearsOld: 5.5,
+        hectaresTenOrOverYearsOld: 2.0
       })
     })
 
@@ -114,24 +114,24 @@ describe('paymentStrategies', () => {
     })
 
     it('defaults landParcels to empty array when not in state', async () => {
-      await paymentStrategies.wmp.calculatePayment({ newWoodlandAreaHa: 1, oldWoodlandAreaHa: 0 })
+      await paymentStrategies.wmp.calculatePayment({ hectaresUnderTenYearsOld: 1, hectaresTenOrOverYearsOld: 0 })
 
       expect(landGrantsService.calculateWmpPayment).toHaveBeenCalledWith(expect.objectContaining({ parcelIds: [] }))
     })
 
-    it('defaults newWoodlandAreaHa to 0 when not in state', async () => {
+    it('defaults hectaresUnderTenYearsOld to 0 when not in state', async () => {
       await paymentStrategies.wmp.calculatePayment({ landParcels: [] })
 
       expect(landGrantsService.calculateWmpPayment).toHaveBeenCalledWith(
-        expect.objectContaining({ newWoodlandAreaHa: 0 })
+        expect.objectContaining({ hectaresUnderTenYearsOld: 0 })
       )
     })
 
-    it('defaults oldWoodlandAreaHa to 0 when not in state', async () => {
+    it('defaults hectaresTenOrOverYearsOld to 0 when not in state', async () => {
       await paymentStrategies.wmp.calculatePayment({ landParcels: [] })
 
       expect(landGrantsService.calculateWmpPayment).toHaveBeenCalledWith(
-        expect.objectContaining({ oldWoodlandAreaHa: 0 })
+        expect.objectContaining({ hectaresTenOrOverYearsOld: 0 })
       )
     })
   })
