@@ -8,6 +8,13 @@ import {
 } from '../common/services/consolidated-view/consolidated-view.service.js'
 import { debug, log, LogCodes } from '../common/helpers/logging/log.js'
 import { setupControllerMocks } from '~/src/__mocks__/controller-mocks.js'
+import { config } from '~/src/config/config.js'
+
+vi.mock('~/src/config/config.js', () => ({
+  config: {
+    get: vi.fn()
+  }
+}))
 
 vi.mock('@defra/forms-model', () => ({
   ComponentType: {
@@ -333,12 +340,15 @@ describe('CheckDetailsController', () => {
         await handler(mockRequest, mockContext, mockH)
 
         expect(controller.setState).toHaveBeenCalledWith(mockRequest, { someState: 'value' })
-        expect(mockH.view).toHaveBeenCalledWith('incorrect-details', {
-          serviceName: 'Test Service',
-          serviceUrl: TEST_FORM_ENDPOINT,
-          continueUrl: '/test-form/check-details',
-          backLink: { text: 'Back', href: '/test-form/check-details' }
-        })
+        expect(mockH.view).toHaveBeenCalledWith(
+          'incorrect-details',
+          expect.objectContaining({
+            serviceName: 'Test Service',
+            serviceUrl: TEST_FORM_ENDPOINT,
+            continueUrl: '/test-form/check-details',
+            backLink: { text: 'Back', href: '/test-form/check-details' }
+          })
+        )
         expect(controller.proceed).not.toHaveBeenCalled()
       })
     })
@@ -545,6 +555,19 @@ describe('CheckDetailsController', () => {
   })
 
   describe('buildIncorrectDetailsViewModel', () => {
+    beforeEach(() => {
+      vi.resetAllMocks()
+      vi.mocked(config.get).mockImplementation((key) => {
+        if (key === 'externalLinks.sfd.enabled') {
+          return true
+        }
+        if (key === 'externalLinks.sfd.updateUrl') {
+          return 'https://sfd-test.example.com/update'
+        }
+        return undefined
+      })
+    })
+
     it('should return view model with serviceName, serviceUrl, continueUrl and backLink', () => {
       const baseViewModel = {
         serviceName: 'My Service',
@@ -552,14 +575,78 @@ describe('CheckDetailsController', () => {
         otherProperty: 'ignored'
       }
 
-      const result = controller.buildIncorrectDetailsViewModel(baseViewModel, { path: '/my-service/check-details' })
+      const result = controller.buildIncorrectDetailsViewModel(baseViewModel, {
+        path: '/my-service/check-details',
+        auth: {
+          credentials: { organisationId: '1234' }
+        }
+      })
 
       expect(result).toEqual({
         serviceName: 'My Service',
         serviceUrl: '/my-service',
         continueUrl: '/my-service/check-details',
+        updateThroughSFDUrl: 'https://sfd-test.example.com/update?ssoOrgId=1234',
+        isSFDUpdateEnabled: true,
         backLink: { text: 'Back', href: '/my-service/check-details' }
       })
+    })
+
+    it('should return undefined for updateThroughSFDUrl when SFD is disabled', () => {
+      vi.mocked(config.get).mockImplementation((key) => {
+        if (key === 'externalLinks.sfd.enabled') {
+          return false
+        }
+        return undefined
+      })
+
+      const baseViewModel = { serviceName: 'My Service', serviceUrl: '/my-service' }
+      const request = { path: '/path', auth: { credentials: { organisationId: '1234' } } }
+
+      const result = controller.buildIncorrectDetailsViewModel(baseViewModel, request)
+      expect(result.updateThroughSFDUrl).toBeUndefined()
+      expect(result.isSFDUpdateEnabled).toBe(false)
+    })
+
+    it('should return empty string and log debug when updateUrl is invalid', () => {
+      vi.mocked(config.get).mockImplementation((key) => {
+        if (key === 'externalLinks.sfd.enabled') {
+          return true
+        }
+        if (key === 'externalLinks.sfd.updateUrl') {
+          return 'not-a-url'
+        }
+        return undefined
+      })
+
+      const baseViewModel = { serviceName: 'My Service', serviceUrl: '/my-service' }
+      const request = { path: '/path', auth: { credentials: { organisationId: '1234' } } }
+
+      const result = controller.buildIncorrectDetailsViewModel(baseViewModel, request)
+      expect(result.updateThroughSFDUrl).toBe('')
+      expect(debug).toHaveBeenCalledWith(
+        LogCodes.SYSTEM.CONFIG_INVALID,
+        { key: 'externalLinks.sfd.updateUrl', value: 'not-a-url' },
+        request
+      )
+    })
+
+    it('should return empty string when updateUrl is missing', () => {
+      vi.mocked(config.get).mockImplementation((key) => {
+        if (key === 'externalLinks.sfd.enabled') {
+          return true
+        }
+        if (key === 'externalLinks.sfd.updateUrl') {
+          return ''
+        }
+        return undefined
+      })
+
+      const baseViewModel = { serviceName: 'My Service', serviceUrl: '/my-service' }
+      const request = { path: '/path', auth: { credentials: { organisationId: '1234' } } }
+
+      const result = controller.buildIncorrectDetailsViewModel(baseViewModel, request)
+      expect(result.updateThroughSFDUrl).toBe('')
     })
   })
 })

@@ -4,8 +4,12 @@ import { debug, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { paymentStrategies } from '~/src/server/payment/payment-strategies.js'
 import { SystemError } from '~/src/server/common/utils/errors/SystemError.js'
 
+/**
+ * @param {string | undefined} paymentStrategy
+ * @returns {{ calculatePayment: (state: object) => Promise<PaymentStrategyResult> }}
+ */
 function resolveStrategy(paymentStrategy) {
-  const strategy = paymentStrategies[paymentStrategy]
+  const strategy = paymentStrategy ? paymentStrategies[paymentStrategy] : undefined
   if (!strategy) {
     const systemError = new SystemError({
       message: `Unknown paymentStrategy "${paymentStrategy}". Available strategies: ${Object.keys(paymentStrategies).join(', ')}`,
@@ -17,6 +21,12 @@ function resolveStrategy(paymentStrategy) {
   return strategy
 }
 
+/**
+ * @param {{ next?: string, addMoreActions?: string }} redirects
+ * @param {boolean} showAddMoreActionsQuestion
+ * @param {string} path
+ * @returns {{ nextPath: string, addMoreActionsPath: string | undefined }}
+ */
 function resolveRedirects(redirects, showAddMoreActionsQuestion, path) {
   if (!redirects.next) {
     const systemError = new SystemError({
@@ -26,6 +36,7 @@ function resolveRedirects(redirects, showAddMoreActionsQuestion, path) {
     })
     throw systemError
   }
+
   if (showAddMoreActionsQuestion && !redirects.addMoreActions) {
     const systemError = new SystemError({
       message: `"redirects.addMoreActions" is required in config when showAddMoreActionsQuestion is true for page "${path}"`,
@@ -40,14 +51,18 @@ function resolveRedirects(redirects, showAddMoreActionsQuestion, path) {
   }
 }
 
+/**
+ * @param {{ paymentStrategy?: string, showPaymentActions?: boolean, showAddMoreActionsQuestion?: boolean, paymentExplanation?: string, showSupportLink?: boolean, redirects?: { next?: string, addMoreActions?: string } }} config
+ * @param {string} path
+ */
 function resolveConfig(config, path) {
   const strategy = resolveStrategy(config.paymentStrategy)
-  const showAddMoreActionsQuestion = config.showAddMoreActionsQuestion ?? true
+  const showAddMoreActionsQuestion = config.showAddMoreActionsQuestion ?? false
   const { nextPath, addMoreActionsPath } = resolveRedirects(config.redirects ?? {}, showAddMoreActionsQuestion, path)
 
   return {
     strategy,
-    showPaymentActions: config.showPaymentActions ?? true,
+    showPaymentActions: config.showPaymentActions ?? false,
     showAddMoreActionsQuestion,
     paymentExplanation: config.paymentExplanation ?? null,
     showSupportLink: config.showSupportLink ?? null,
@@ -64,8 +79,8 @@ function resolveConfig(config, path) {
  *   controller: PaymentPageController
  *   config:
  *     paymentStrategy: multiAction          # key from payment-strategies.js (required)
- *     showPaymentActions: true              # show per-parcel action tables (default: true)
- *     showAddMoreActionsQuestion: true      # show the Yes/No "add another parcel" radio (default: true)
+ *     showPaymentActions: true              # show per-parcel action tables (default: false)
+ *     showAddMoreActionsQuestion: true      # show the Yes/No "add another parcel" radio (default: false)
  *     paymentExplanation: |                 # HTML rendered above the payment total; Nunjucks syntax
  *       <p>You may be eligible for <strong>{{ totalPayment }}</strong>.</p>
  *     showSupportLink: true                 # show the "If you have a question" support link
@@ -108,8 +123,8 @@ export default class PaymentPageController extends QuestionPageController {
 
   /**
    * Validate POST request payload
-   * @param {object} payload
-   * @returns {{href: string, text: string}|null}
+   * @param {Record<string, string>} payload
+   * @returns {{ href: string, text: string } | null}
    */
   validatePostPayload(payload) {
     const { addMoreActions, action } = payload
@@ -125,12 +140,13 @@ export default class PaymentPageController extends QuestionPageController {
   }
 
   /**
-   * @param {object} request
-   * @param {object} context
+   * @param {AnyFormRequest} request
+   * @param {FormContext} context
    * @param {string} totalPayment
-   * @param {Array} parcelItems
-   * @param {Array} additionalYearlyPayments
-   * @param {Array} [errors]
+   * @param {ParcelCardViewModel[]} parcelItems
+   * @param {AdditionalPaymentViewModel[]} additionalYearlyPayments
+   * @param {{ text: string }[]} [errors]
+   * @returns {object}
    */
   buildViewModel(request, context, totalPayment, parcelItems, additionalYearlyPayments, errors) {
     const { state } = context
@@ -152,7 +168,13 @@ export default class PaymentPageController extends QuestionPageController {
   }
 
   /**
-   * Render error view for POST validation
+   * @param {ResponseToolkit} h
+   * @param {AnyFormRequest} request
+   * @param {FormContext} context
+   * @param {{ text: string }[]} errorMessages
+   * @param {ParcelCardViewModel[]} [parcelItems]
+   * @param {AdditionalPaymentViewModel[]} [additionalYearlyPayments]
+   * @returns {ResponseObject}
    */
   renderErrorView(h, request, context, errorMessages, parcelItems = [], additionalYearlyPayments = []) {
     const { state } = context
@@ -161,7 +183,7 @@ export default class PaymentPageController extends QuestionPageController {
       this.buildViewModel(
         request,
         context,
-        state.totalPayment ?? '£0.00',
+        /** @type {string} */ (state.totalPayment) ?? '£0.00',
         parcelItems,
         additionalYearlyPayments,
         errorMessages
@@ -170,13 +192,19 @@ export default class PaymentPageController extends QuestionPageController {
   }
 
   makeGetRouteHandler() {
+    /**
+     * Handle GET requests to the payment page.
+     * @param {AnyFormRequest} request
+     * @param {FormContext} context
+     * @param {ResponseToolkit} h
+     */
     return async (request, context, h) => {
       const { viewName } = this
       const { state } = context
       let totalPence, totalPayment, payment, parcelItems, additionalYearlyPayments
 
       try {
-        const result = await this.strategy.fetch(state)
+        const result = await this.strategy.calculatePayment(state)
         totalPence = result.totalPence
         totalPayment = result.totalPayment
         payment = result.payment
@@ -190,7 +218,7 @@ export default class PaymentPageController extends QuestionPageController {
           LogCodes.SYSTEM.EXTERNAL_API_ERROR,
           {
             endpoint: `Land grants API`,
-            errorMessage: `error fetching payment data for sbi ${sbi} - ${error.message}`
+            errorMessage: `error fetching payment data for sbi ${sbi} - ${/** @type {Error} */ (error).message}`
           },
           request
         )
@@ -207,16 +235,24 @@ export default class PaymentPageController extends QuestionPageController {
   }
 
   makePostRouteHandler() {
+    /**
+     * Handle POST requests to the payment page.
+     * @param {AnyFormRequest} request
+     * @param {FormContext} context
+     * @param {ResponseToolkit} h
+     */
     return async (request, context, h) => {
       const payload = request.payload ?? {}
       const { state } = context
 
       const validationError = this.validatePostPayload(payload)
       if (validationError) {
+        /** @type {ParcelCardViewModel[]} */
         let parcelItems = []
+        /** @type {AdditionalPaymentViewModel[]} */
         let additionalYearlyPayments = []
         try {
-          const result = await this.strategy.fetch(state)
+          const result = await this.strategy.calculatePayment(state)
           parcelItems = result.parcelItems ?? []
           additionalYearlyPayments = result.additionalYearlyPayments ?? []
         } catch (error) {
@@ -224,7 +260,7 @@ export default class PaymentPageController extends QuestionPageController {
             LogCodes.SYSTEM.EXTERNAL_API_ERROR,
             {
               endpoint: `Land grants API`,
-              errorMessage: `error fetching payment data for validation error - ${error.message}`
+              errorMessage: `error fetching payment data for validation error - ${/** @type {Error} */ (error).message}`
             },
             request
           )
@@ -241,4 +277,8 @@ export default class PaymentPageController extends QuestionPageController {
 
 /**
  * @import { FormModel } from '@defra/forms-engine-plugin/engine/models/index.js'
+ * @import { FormContext, AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
+ * @import { ResponseObject, ResponseToolkit } from '@hapi/hapi'
+ * @import { PaymentStrategyResult } from '../payment-strategies.d.js'
+ * @import { ParcelCardViewModel, AdditionalPaymentViewModel } from '~/src/server/land-grants/view-models/payment.view-model.js'
  */

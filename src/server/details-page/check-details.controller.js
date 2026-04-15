@@ -7,6 +7,7 @@ import {
 import { debug, log, LogCodes } from '../common/helpers/logging/log.js'
 import { ComponentType } from '@defra/forms-model'
 import { mergeAdditionalAnswers } from '../common/helpers/state/additional-answers-helper.js'
+import { config } from '~/src/config/config.js'
 
 const ERROR_TITLE = 'There is a problem'
 
@@ -80,14 +81,14 @@ export default class CheckDetailsController extends QuestionPageController {
   makeGetRouteHandler() {
     return async (request, context, h) => {
       const baseViewModel = super.getViewModel(request, context)
-      const config = this.model.def.metadata?.detailsPage
+      const detailsPage = this.model.def.metadata?.detailsPage
 
-      if (!config) {
+      if (!detailsPage) {
         return this.handleConfigError(baseViewModel, h, request)
       }
 
       try {
-        const { sections, mappedData } = await this.fetchAndProcessData(request, config)
+        const { sections, mappedData } = await this.fetchAndProcessData(request, detailsPage)
         request.app.detailsPageData = mappedData
         return h.view(this.viewName, { ...baseViewModel, sections })
       } catch (error) {
@@ -103,16 +104,16 @@ export default class CheckDetailsController extends QuestionPageController {
       const { collection, viewName, model } = this
       const { state, evaluationState } = context
       const baseViewModel = super.getViewModel(request, context)
-      const config = this.model.def.metadata?.detailsPage
+      const detailsPage = this.model.def.metadata?.detailsPage
 
-      if (!config) {
+      if (!detailsPage) {
         return this.handleConfigError(baseViewModel, h, request)
       }
 
       if (context.errors) {
         const viewModel = this.getViewModel(request, context)
         viewModel.errors = collection.getViewErrors(viewModel.errors)
-        const { sections } = await this.fetchAndProcessData(request, config)
+        const { sections } = await this.fetchAndProcessData(request, detailsPage)
         viewModel.sections = sections
 
         // Filter components based on their conditions using evaluated state
@@ -128,7 +129,7 @@ export default class CheckDetailsController extends QuestionPageController {
         return h.view('incorrect-details', this.buildIncorrectDetailsViewModel(baseViewModel, request))
       }
 
-      return this.handleDetailsConfirmed(request, context, config, h)
+      return this.handleDetailsConfirmed(request, context, detailsPage, h)
     }
   }
 
@@ -136,15 +137,15 @@ export default class CheckDetailsController extends QuestionPageController {
    * Handle POST when user confirms details are correct
    * @param {AnyFormRequest} request
    * @param {object} context
-   * @param {object} config
+   * @param {object} detailsConfig
    * @param {ResponseToolkit} h
    * @returns {Promise<ResponseObject>}
    */
-  async handleDetailsConfirmed(request, context, config, h) {
+  async handleDetailsConfirmed(request, context, detailsConfig, h) {
     const baseViewModel = super.getViewModel(request, context)
 
     try {
-      const { mappedData } = await this.fetchAndProcessData(request, config)
+      const { mappedData } = await this.fetchAndProcessData(request, detailsConfig)
       await this.setState(
         request,
         mergeAdditionalAnswers(context.state, {
@@ -168,12 +169,12 @@ export default class CheckDetailsController extends QuestionPageController {
   /**
    * Fetch data from consolidated view and process it according to config
    * @param {AnyFormRequest} request
-   * @param {object} config - detailsPage configuration from form metadata
+   * @param {object} detailsConfig - detailsPage configuration from form metadata
    * @returns {Promise<{sections: Array, mappedData: object}>}
    */
-  async fetchAndProcessData(request, config) {
+  async fetchAndProcessData(request, detailsConfig) {
     const toleratedPaths = this.model.def.metadata?.toleratedFailurePaths
-    const query = buildGraphQLQuery(config.query, request)
+    const query = buildGraphQLQuery(detailsConfig.query, request)
     const response = await executeConfigDrivenQuery(request, query, { toleratedPaths })
 
     if (response?.errors?.length > 0) {
@@ -197,8 +198,8 @@ export default class CheckDetailsController extends QuestionPageController {
       )
     }
 
-    const mappedData = mapResponse(config.responseMapping, response)
-    const sections = processSections(config.displaySections, mappedData, request)
+    const mappedData = mapResponse(detailsConfig.responseMapping, response)
+    const sections = processSections(detailsConfig.displaySections, mappedData, request)
     return { sections, mappedData }
   }
 
@@ -246,11 +247,38 @@ export default class CheckDetailsController extends QuestionPageController {
    * @returns {object}
    */
   buildIncorrectDetailsViewModel(baseViewModel, request) {
+    const isSFDUpdateEnabled = config.get('externalLinks.sfd.enabled')
+    const updateThroughSFDUrl = isSFDUpdateEnabled ? this.getSFDUpdateUrl(request) : undefined
+
     return {
       serviceName: baseViewModel.serviceName,
       serviceUrl: baseViewModel.serviceUrl,
       continueUrl: request.path,
+      updateThroughSFDUrl,
+      isSFDUpdateEnabled,
       backLink: { text: 'Back', href: request.path }
+    }
+  }
+
+  /**
+   * Get the URL to update business details through SFD
+   * @param request
+   * @returns {string}
+   */
+  getSFDUpdateUrl(request) {
+    const { organisationId } = request.auth.credentials
+    const updateUrl = config.get('externalLinks.sfd.updateUrl')
+    if (!updateUrl) {
+      return ''
+    }
+
+    try {
+      const url = new URL(updateUrl)
+      url.searchParams.set('ssoOrgId', organisationId)
+      return url.toString()
+    } catch (error) {
+      debug(LogCodes.SYSTEM.CONFIG_INVALID, { key: 'externalLinks.sfd.updateUrl', value: updateUrl }, request)
+      return ''
     }
   }
 }

@@ -305,7 +305,7 @@ describe('WoodlandHectaresPageController', () => {
       })
     })
 
-    it('highlights both fields and shows backend reason when the service returns failures', async () => {
+    it('highlights the over-10 field with the backend reason when the service returns failures', async () => {
       woodlandService.validateWoodlandHectares.mockResolvedValueOnce(['some backend reason'])
       const handler = controller.makePostRouteHandler()
       const context = { state: validState, evaluationState: {} }
@@ -317,11 +317,6 @@ describe('WoodlandHectaresPageController', () => {
           path: ['oldWoodlandAreaHa'],
           href: '#oldWoodlandAreaHa',
           name: 'oldWoodlandAreaHa',
-          text: 'some backend reason'
-        },
-        {
-          path: ['newWoodlandAreaHa'],
-          href: '#oldWoodlandAreaHa',
           text: 'some backend reason'
         }
       ])

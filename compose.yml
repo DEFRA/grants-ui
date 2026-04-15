@@ -72,6 +72,8 @@ services:
       CONFIG_API_JWT_EXPIRY: ${CONFIG_API_JWT_EXPIRY:-1h}
       FORMS_API_SLUGS: ${FORMS_API_SLUGS:-}
       FORMS_API_CACHE_TTL_SECONDS: ${FORMS_API_CACHE_TTL_SECONDS:-300}
+      SFD_UPDATE_URL: '${SFD_UPDATE_URL:-http://localhost:3000/sfd/mock}'
+      SFD_UPDATE_ENABLED: ${SFD_UPDATE_ENABLED:-false}
     volumes:
       - ./src:/home/node/src
       - /home/node/node_modules

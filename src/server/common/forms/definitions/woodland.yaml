@@ -548,7 +548,7 @@ pages:
           required: true
           classes: govuk-input--width-5
           suffix: ha
-        shortDescription: Total area of woodland
+        shortDescription: Woodland over 10 years old
       - name: newWoodlandAreaHa
         id: b564e6d8-8675-4c9c-9ef8-002199386cf5
         type: NumberField
@@ -557,7 +557,7 @@ pages:
           required: true
           classes: govuk-input--width-5
           suffix: ha
-        shortDescription: Land under 10 years old
+        shortDescription: Newly planted woodland under 10 years old
 
   - title: Enter the grid reference for the centre of your woodland
     id: df178ed5-da13-4d90-b856-e95f19a92f73
@@ -613,24 +613,22 @@ pages:
     id: 7fcbf5a6-ea20-498a-9b7a-5cdcf6193369
     path: /potential-funding
     section: 52a9d09a-a977-4993-aa40-8eb77a4cd200
-    components:
-      - name: fundingGuidance
-        id: 38272f70-0d51-422c-95f2-7e572084aa65
-        type: Html
-        content: >-
-          <p class="govuk-body">We calculate the amount to be paid using the total area of eligible woodland on the holding.</p>
-          <p class="govuk-body">Threshold payments for eligible land:</p>
-          <ul class="govuk-list govuk-list--bullet">
-          <li>0.5 hectares (ha) to 50ha: flat rate of £1,500</li>
-          <li>51ha to 100ha: flat rate of £1,500 for the first 50ha, plus £30 for each additional hectare up to and including 100ha</li>
-          <li>more than 100ha: flat rate of £3,000, plus £15 for each additional hectare over 100ha</li>
-          </ul>
-          <p class="govuk-body">For full details read our <a href="" class="govuk-link">Applicant’s guide: PA3 Woodland management plan 2026 guidance</a>.</p>
-          <p class="govuk-body">Based on the information provided, you may be eligible for a grant of up to £1,500.00.</p>
-      - name: fundingInsetText
-        id: 4e5014d2-7f6a-4e9f-9fa4-01fd5978db4e
-        type: InsetText
-        content: There’s no guarantee you’ll receive a grant
+    controller: PaymentPageController
+    config:
+      paymentStrategy: wmp
+      redirects:
+        next: /declaration
+      paymentExplanation: |
+        <p class="govuk-body">We calculate the amount to be paid using the total area of eligible woodland on the holding.</p>
+        <p class="govuk-body">Threshold payments for eligible land:</p>
+        <ul class="govuk-list govuk-list--bullet">
+        <li>0.5 hectares (ha) to 50ha: flat rate of £1,500</li>
+        <li>51ha to 100ha: flat rate of £1,500 for the first 50ha, plus £30 for each additional hectare up to and including 100ha</li>
+        <li>more than 100ha: flat rate of £3,000, plus £15 for each additional hectare over 100ha</li>
+        </ul>
+        <p class="govuk-body">For full details read our <a href="https://www.gov.uk/government/publications/pa3-woodland-management-plan-2026/applicants-guide-pa3-woodland-management-plan-2026" class="govuk-link">Applicant’s guide: PA3 Woodland management plan 2026 guidance</a>.</p>
+        <p class="govuk-body">Based on the information provided, you may be eligible for a grant of up to {{ totalPayment }}.</p>
+        <div class="govuk-inset-text">There’s no guarantee you’ll receive a grant</div>
 
   - title: Submit your application
     id: ab194d2a-0b67-4a21-9158-1bd1bbdc4077

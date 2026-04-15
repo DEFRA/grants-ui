@@ -126,15 +126,17 @@
               errorMessage: errors and errors[0] and errors[0].href and { text: errors[0].text, href: errors[0].href }
             }) }}
           {% endif %}
-          <div class="govuk-button-group">
-            <input type="hidden" name="crumb" value="{{ crumb }}">
-            {% block form %}
-              {{ govukButton({
-              text: "Continue",
-              preventDoubleClick: true
-            }) }}
-            {% endblock %}
-          </div>
+          {% if not hasPaymentError %}
+            <div class="govuk-button-group">
+              <input type="hidden" name="crumb" value="{{ crumb }}">
+              {% block form %}
+                {{ govukButton({
+                text: "Continue",
+                preventDoubleClick: true
+              }) }}
+              {% endblock %}
+            </div>
+          {% endif %}
         </form>
         {% if showSupportLink %}
           {{ defraSupportDetails({ typeOfSupport: 'question' }) }}

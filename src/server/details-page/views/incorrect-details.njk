@@ -16,7 +16,14 @@
       You will need to contact the Rural Payments Agency (RPA) to let them know of any changes to your details before you can continue with your application.
     </p>
 
-    {{ defraSupportDetails({ typeOfSupport: 'update' }) }}
+    {% if isSFDUpdateEnabled %}
+      {{ govukButton({
+        text: "Update details",
+        href: updateThroughSFDUrl
+      }) }}
+    {%  else  %}
+      {{ defraSupportDetails({ typeOfSupport: 'update' }) }}
+    {%  endif %}
 
     <p class="govuk-body govuk-!-margin-top-6">
       Once your details have been updated, you can return to this service and continue with your application.
