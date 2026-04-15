@@ -51,7 +51,7 @@ const landGrants = convict({
     doc: 'Comma-separated list of action codes to show in the UI',
     format: Array,
     default: ['CMOR1', 'UPL1', 'UPL2', 'UPL3', 'UPL8', 'UPL10'],
-    env: 'ENABLED_ACTIONS'
+    env: 'LAND_GRANTS_ENABLED_ACTIONS'
   }
 })
 
