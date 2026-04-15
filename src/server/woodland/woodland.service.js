@@ -1,5 +1,5 @@
 import { config } from '~/src/config/config.js'
-import { validateWoodland } from '~/src/server/woodland/woodland.client.js'
+import { validateWoodland, calculateWmp } from '~/src/server/woodland/woodland.client.js'
 
 const LAND_GRANTS_API_URL = config.get('landGrants.grantsServiceApiEndpoint')
 
@@ -42,3 +42,22 @@ export async function validateWoodlandHectares({ parcelIds, hectaresTenOrOverYea
 
   return (response.result?.rules ?? []).filter((rule) => !rule.passed).map((rule) => rule.reason)
 }
+
+/**
+ * Calculates a one-off WMP payment.
+ * @param {{ parcelIds: string[], hectaresUnderTenYearsOld: number, hectaresTenOrOverYearsOld: number }} params
+ * @returns {Promise<{ payment: PaymentCalculation, totalPence: number }>}
+ * @throws {Error}
+ */
+export async function calculateWmpPayment({ parcelIds, hectaresUnderTenYearsOld, hectaresTenOrOverYearsOld }) {
+  const { payment } = await calculateWmp(
+    { parcelIds, hectaresUnderTenYearsOld, hectaresTenOrOverYearsOld },
+    LAND_GRANTS_API_URL
+  )
+  const totalPence = payment?.agreementTotalPence ?? 0
+  return { payment, totalPence }
+}
+
+/**
+ * @import { PaymentCalculation } from '~/src/server/land-grants/types/payment.d.js'
+ */
