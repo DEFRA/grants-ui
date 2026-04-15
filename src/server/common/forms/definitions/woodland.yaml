@@ -170,6 +170,16 @@ metadata:
           <p class="govuk-body">Email: <a class="govuk-link" href="mailto:ruralpayments@defra.gov.uk">ruralpayments@defra.gov.uk</a></p>
         </div>
       </details>
+  incorrectDetailsContent:
+    heading: Update your details
+    paragraphs:
+      - Make sure your details are correct before you apply for a woodland management plan (WMP) grant.
+      - textBefore: 'To update your details follow our '
+        link:
+          text: Register and update your details with the Rural Payments Agency guidance
+          href: https://www.gov.uk/guidance/update-personal-and-business-details-in-the-rural-payments-service
+        textAfter: '.'
+    showRpaSupport: false
 
 sections:
   - name: business-details
