@@ -494,8 +494,7 @@ pages:
           </p>
 
           <p>
-            Land parcels must be entirely within England and defined as an area of land
-            that:
+            The land parcels must be entirely within England and the land must be woodland. Woodland is defined as an area of land that:
           </p>
 
           <ul class="govuk-list govuk-list--bullet">
@@ -506,12 +505,6 @@ pages:
             </li>
             <li>has a crown cover of more than 20% of the ground area</li>
           </ul>
-
-          <p>
-            The woodland must be larger than 0.5 hectares in total. The total area for the
-            application can be made up of separate blocks of woodland but the minimum
-            block size must be 0.5ha.
-          </p>
 
           <p>
             To find out more about what land is eligible for a WMP read our
