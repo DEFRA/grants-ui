@@ -3,7 +3,6 @@ import { fetchParcelsFromDal } from '~/src/server/common/services/consolidated-v
 import { landActionWithCode } from '~/src/server/land-grants/utils/land-action-with-code.js'
 import { stringifyParcel } from '../utils/format-parcel.js'
 import { stateToLandActionsMapper } from '../mappers/state-to-land-grants-mapper.js'
-
 import { config } from '~/src/config/config.js'
 import { getConsentTypes } from '~/src/server/land-grants/utils/consent-types.js'
 import {
@@ -13,7 +12,6 @@ import {
   parcelsWithSize,
   validate
 } from '~/src/server/land-grants/services/land-grants.client.js'
-import { calculateWmp } from '~/src/server/woodland/woodland.client.js'
 import { formatAreaUnit } from '~/src/server/land-grants/utils/format-area-unit.js'
 import {
   getCachedParcel,
@@ -26,7 +24,7 @@ const LAND_GRANTS_API_URL = config.get('landGrants.grantsServiceApiEndpoint')
 
 /**
  * Calculates grant payment for land actions.
- * @param {object} state
+ * @param {FormState} state
  * @returns {Promise<{payment: PaymentCalculation, errorMessage?: string, paymentTotal: string}>} - Payment calculation result
  * @throws {Error}
  */
@@ -59,7 +57,7 @@ const createGroup = (name, groupActions) => ({
   },
   actions: groupActions,
   consents: getConsentTypes()
-    .filter((ct) => groupActions.some((a) => a[ct.apiField]))
+    .filter((ct) => groupActions.some((a) => /** @type {Record<string, unknown>} */ (a)[ct.apiField]))
     .map((ct) => ct.key)
 })
 
@@ -77,15 +75,17 @@ export async function fetchAvailableActionsForParcel({ parcelId = '', sheetId = 
     return cached
   }
 
+  /** @type {ActionGroup[]} */
   const actions = []
   const parcelIds = [cacheKey]
   const { parcels, groups: groupDefinitions = [] } = await parcelsWithExtendedInfo(parcelIds, LAND_GRANTS_API_URL)
   const foundParcel = parcels?.find((p) => p.parcelId === parcelId && p.sheetId === sheetId)
   const actionsForParcel = foundParcel?.actions?.map(mapAction) || []
 
+  const enabledActions = /** @type {string[]} */ (config.get('landGrants.enabledActions')) ?? []
   groupDefinitions.forEach((group) => {
     const groupActions = actionsForParcel.filter((a) => {
-      if (['UPL8', 'UPL10'].includes(a.code) && !config.get('landGrants.enableUpl8And10')) {
+      if (enabledActions.length > 0 && !enabledActions.includes(a.code)) {
         return false
       }
       return group.actions.includes(a.code)
@@ -124,23 +124,8 @@ function mapAction(action) {
 }
 
 /**
- * Calculates a one-off WMP payment.
- * @param {{ parcelIds: string[], hectaresUnderTenYearsOld: number, hectaresTenOrOverYearsOld: number }} params
- * @returns {Promise<{ payment: object, totalPence: number }>}
- * @throws {Error}
- */
-export async function calculateWmpPayment({ parcelIds, hectaresUnderTenYearsOld, hectaresTenOrOverYearsOld }) {
-  const { payment } = await calculateWmp(
-    { parcelIds, hectaresUnderTenYearsOld, hectaresTenOrOverYearsOld },
-    LAND_GRANTS_API_URL
-  )
-  const totalPence = payment?.agreementTotalPence ?? 0
-  return { payment, totalPence }
-}
-
-/**
  * Fetches parcel groups for a list of parcel IDs.
- * @param {object} state
+ * @param {FormState} state
  * @returns {Promise<ActionGroupDefinition[]>}
  * @throws {Error}
  */
@@ -157,7 +142,7 @@ export async function fetchParcelsGroups(state) {
 /**
  * Fetches parcel size for a list of parcel IDs.
  * @param {string[]} parcelIds
- * @returns {Promise<Object.<string, number>>}
+ * @returns {Promise<Record<string, Size | null>>}
  * @throws {Error}
  */
 async function fetchParcelsSize(parcelIds) {
@@ -166,7 +151,7 @@ async function fetchParcelsSize(parcelIds) {
   return parcels.reduce((acc, p) => {
     acc[stringifyParcel(p)] = p.size
     return acc
-  }, {})
+  }, /** @type {Record<string, Size | null>} */ ({}))
 }
 
 /**
@@ -201,7 +186,7 @@ export async function fetchParcels(request) {
  * @param {string} data.applicationId
  * @param {string} data.crn
  * @param {string} data.sbi
- * @param {object} data.state
+ * @param {FormState} data.state
  * @returns {Promise<ValidateApplicationResponse>}
  * @throws {Error}
  */
@@ -251,5 +236,6 @@ function buildErrorMessagesFromResponse(actions = []) {
 /**
  * @import { ActionOption, ActionGroup, ActionGroupDefinition, Parcel, ValidateApplicationResponse, ValidationAction, ErrorItem, Size } from '~/src/server/land-grants/types/land-grants.client.d.js'
  * @import { PaymentCalculation } from '~/src/server/land-grants/types/payment.d.js'
+ * @import { FormState } from '~/src/server/land-grants/types/form-state.d.js'
  * @import { AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
  */

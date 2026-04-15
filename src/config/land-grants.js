@@ -12,6 +12,7 @@ import 'dotenv/config'
  * @property {boolean} enableSSSIFeature
  * @property {boolean} enableHeferFeature
  * @property {boolean} enablePrintApplication
+ * @property {string[]} enabledActions
  */
 
 const landGrants = convict({
@@ -46,11 +47,11 @@ const landGrants = convict({
     default: false,
     env: 'ENABLE_LAND_GRANT_HEFER_20260219'
   },
-  enableUpl8And10: {
-    doc: 'Enable UPL8 and UPL10 feature from 03/03/2026',
-    format: Boolean,
-    default: false,
-    env: 'ENABLE_UPL_8_AND_10_20260303'
+  enabledActions: {
+    doc: 'Comma-separated list of action codes to show in the UI',
+    format: Array,
+    default: ['CMOR1', 'UPL1', 'UPL2', 'UPL3', 'UPL8', 'UPL10'],
+    env: 'ENABLED_ACTIONS'
   }
 })
 

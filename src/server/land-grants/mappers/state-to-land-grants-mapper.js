@@ -2,10 +2,10 @@ import { parseLandParcel } from '../utils/format-parcel.js'
 
 /**
  * Maps state actions into the expected payload structure for the API.
- * @param {object} state
- * @returns {object}
+ * @param {FormState} state
+ * @returns {LandActions[]}
  */
-export const stateToLandActionsMapper = (state = {}) => {
+export const stateToLandActionsMapper = (state = /** @type {FormState} */ ({})) => {
   const { landParcels = {} } = state
 
   const stateActionsObjectToApiFormat = (actionsObj = {}) =>
@@ -24,3 +24,8 @@ export const stateToLandActionsMapper = (state = {}) => {
 
   return landActions
 }
+
+/**
+ * @import { LandActions } from '~/src/server/land-grants/types/land-grants.client.d.js'
+ * @import { FormState } from '~/src/server/land-grants/types/form-state.d.js'
+ */
