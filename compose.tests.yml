@@ -77,7 +77,6 @@ services:
       GENERATE_REPORT: false
     volumes:
       - ./nginx/certs:/etc/ssl/certs:ro
-      - ./performance-test-users.csv:/home/k6/scenarios/users.csv:ro
     command: ["npm", "run", "test:ci"]
     networks:
       - grants-ui-net
