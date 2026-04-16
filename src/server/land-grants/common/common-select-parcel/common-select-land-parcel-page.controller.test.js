@@ -274,6 +274,29 @@ describe('CommonSelectLandParcelPageController', () => {
       )
     })
 
+    it('sets areaHa to null when parcel has no area value', async () => {
+      fetchParcels.mockResolvedValue([{ sheetId: 'S1', parcelId: 'P1', area: { value: null } }])
+
+      const controller = createController()
+      const request = setupRequest('post')
+      const context = setupContext({})
+      const h = setupH()
+
+      request.payload = { landParcels: ['S1-P1'] }
+      controller.mergeState = vi.fn()
+
+      await controller.handlePost(request, context, h)
+
+      expect(controller.mergeState).toHaveBeenCalledWith(
+        request,
+        context.state,
+        expect.objectContaining({
+          landParcelMetadata: [{ parcelId: 'S1-P1', areaHa: null }],
+          totalHectaresAppliedFor: 0
+        })
+      )
+    })
+
     it('handles fetch error gracefully for validation', async () => {
       fetchParcels.mockRejectedValue(new Error('fail'))
 

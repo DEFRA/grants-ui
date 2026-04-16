@@ -578,5 +578,28 @@ describe('DeclarationPageController', () => {
         expect.any(Function)
       )
     })
+
+    test('uses woodland transformer when grant code is woodland', () => {
+      const woodlandRequest = mockHapiRequest({
+        ...mockRequest,
+        params: { slug: 'woodland' }
+      })
+
+      controller.buildApplicationData(woodlandRequest, mockContext)
+
+      const [, , transformFn] = transformStateObjectToGasApplication.mock.calls.at(-1)
+      const result = transformFn({ referenceNumber: 'WMP-123', foo: 'bar' })
+      expect(result).not.toHaveProperty('referenceNumber')
+      expect(result).toHaveProperty('foo', 'bar')
+    })
+
+    test('uses passthrough transformer when grant code has no registered transformer', () => {
+      controller.buildApplicationData(mockRequest, mockContext)
+
+      const [, , transformFn] = transformStateObjectToGasApplication.mock.calls.at(-1)
+      const input = { referenceNumber: 'REF123', foo: 'bar' }
+      const result = transformFn(input)
+      expect(result).toEqual(input)
+    })
   })
 })
