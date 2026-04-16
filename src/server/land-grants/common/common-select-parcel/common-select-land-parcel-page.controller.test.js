@@ -234,8 +234,8 @@ describe('CommonSelectLandParcelPageController', () => {
         landParcels: ['S1-P1', 'S2-P2'],
         landParcelsDisplay: 'S1-P1, S2-P2',
         landParcelMetadata: [
-          { id: 'S1-P1', area: { value: 10 } },
-          { id: 'S2-P2', area: { value: 20 } }
+          { parcelId: 'S1-P1', areaHa: 10 },
+          { parcelId: 'S2-P2', areaHa: 20 }
         ],
         totalHectaresAppliedFor: 30,
         additionalAnswers: { totalHectaresAppliedFor: 30 }
