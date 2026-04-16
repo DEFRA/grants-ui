@@ -2,9 +2,15 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { clearApplicationStateHandler } from './clear-application-state.handler.js'
 import { getFormsCacheService } from '../../common/helpers/forms-cache/forms-cache.js'
 import { SessionError } from '~/src/server/common/utils/errors/SessionError.js'
+import { findFormBySlug, loadFormDefinition } from '~/src/server/common/forms/services/find-form-by-slug.js'
 
 vi.mock('../../common/helpers/forms-cache/forms-cache.js', () => ({
   getFormsCacheService: vi.fn()
+}))
+
+vi.mock('~/src/server/common/forms/services/find-form-by-slug.js', () => ({
+  findFormBySlug: vi.fn(),
+  loadFormDefinition: vi.fn()
 }))
 
 describe('clearApplicationStateHandler', () => {
@@ -171,6 +177,58 @@ describe('clearApplicationStateHandler', () => {
       await clearApplicationStateHandler(mockRequest, mockH)
 
       expect(callOrder).toEqual(['clearState', 'redirect'])
+    })
+  })
+
+  describe('when request.app.model is not set', () => {
+    beforeEach(() => {
+      mockRequest.app = {}
+      mockRequest.params.slug = 'test-slug'
+    })
+
+    it('should call findFormBySlug with the slug when model is not set', async () => {
+      const mockForm = { id: 'form-1' }
+      const mockDefinition = { pages: [] }
+      findFormBySlug.mockResolvedValue(mockForm)
+      loadFormDefinition.mockResolvedValue(mockDefinition)
+
+      await clearApplicationStateHandler(mockRequest, mockH)
+
+      expect(findFormBySlug).toHaveBeenCalledWith('test-slug')
+      expect(loadFormDefinition).toHaveBeenCalledWith(mockForm)
+      expect(mockRequest.app.model).toEqual({ def: mockDefinition })
+    })
+
+    it('should not call loadFormDefinition when findFormBySlug returns null', async () => {
+      findFormBySlug.mockResolvedValue(null)
+
+      await clearApplicationStateHandler(mockRequest, mockH)
+
+      expect(findFormBySlug).toHaveBeenCalledWith('test-slug')
+      expect(loadFormDefinition).not.toHaveBeenCalled()
+      expect(mockRequest.app.model).toBeUndefined()
+    })
+
+    it('should still clear state and redirect even when form is not found', async () => {
+      findFormBySlug.mockResolvedValue(null)
+
+      const result = await clearApplicationStateHandler(mockRequest, mockH)
+
+      expect(mockCacheService.clearState).toHaveBeenCalledWith(mockRequest, true)
+      expect(mockH.redirect).toHaveBeenCalledWith('/test-slug')
+      expect(result).toEqual({ redirect: '/test-slug' })
+    })
+  })
+
+  describe('when request.app.model is already set', () => {
+    it('should skip findFormBySlug when model is already present', async () => {
+      mockRequest.params.slug = 'test-slug'
+      mockRequest.app.model = { def: { pages: [] } }
+
+      await clearApplicationStateHandler(mockRequest, mockH)
+
+      expect(findFormBySlug).not.toHaveBeenCalled()
+      expect(loadFormDefinition).not.toHaveBeenCalled()
     })
   })
 
