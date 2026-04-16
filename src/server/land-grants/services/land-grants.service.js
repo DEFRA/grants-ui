@@ -82,7 +82,7 @@ export async function fetchAvailableActionsForParcel({ parcelId = '', sheetId = 
   const foundParcel = parcels?.find((p) => p.parcelId === parcelId && p.sheetId === sheetId)
   const actionsForParcel = foundParcel?.actions?.map(mapAction) || []
 
-  const enabledActions = (/** @type {string[]} */ (config.get('landGrants.enabledActions')) ?? []).map((a) => a.trim())
+  const enabledActions = /** @type {string[]} */ ((config.get('landGrants.enabledActions')) ?? []).map((a) => a.trim())
   groupDefinitions.forEach((group) => {
     const groupActions = actionsForParcel.filter((a) => {
       if (enabledActions.length > 0 && !enabledActions.includes(a.code)) {
