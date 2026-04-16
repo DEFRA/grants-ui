@@ -1,9 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
-import { validateWoodlandHectares } from './woodland.service.js'
+import { validateWoodlandHectares, calculateWmpPayment } from './woodland.service.js'
 import * as woodlandClient from './woodland.client.js'
 
 vi.mock('./woodland.client.js', () => ({
-  validateWoodland: vi.fn()
+  validateWoodland: vi.fn(),
+  calculateWmp: vi.fn()
 }))
 
 vi.mock('~/src/config/config.js', () => ({
@@ -63,5 +64,54 @@ describe('validateWoodlandHectares', () => {
       { parcelIds: ['SD6346-3387'], hectaresTenOrOverYearsOld: 2, hectaresUnderTenYearsOld: 1 },
       'http://api'
     )
+  })
+})
+
+describe('calculateWmpPayment', () => {
+  const mockPayment = {
+    agreementTotalPence: 375000,
+    agreementStartDate: '2026-06-01',
+    agreementEndDate: '2036-06-01',
+    frequency: 'Single',
+    parcelItems: {},
+    agreementLevelItems: {
+      1: { code: 'PA3', description: 'Woodland Management Plan', agreementTotalPence: 375000 }
+    }
+  }
+
+  it('calls calculateWmp with correct args and returns payment and totalPence', async () => {
+    woodlandClient.calculateWmp.mockResolvedValueOnce({ message: 'success', payment: mockPayment })
+
+    const result = await calculateWmpPayment({
+      parcelIds: ['SD6346-3387'],
+      hectaresUnderTenYearsOld: 1.5,
+      hectaresTenOrOverYearsOld: 0.5
+    })
+
+    expect(woodlandClient.calculateWmp).toHaveBeenCalledWith(
+      { parcelIds: ['SD6346-3387'], hectaresUnderTenYearsOld: 1.5, hectaresTenOrOverYearsOld: 0.5 },
+      'http://api'
+    )
+    expect(result).toEqual({ payment: mockPayment, totalPence: 375000 })
+  })
+
+  it('returns zero totalPence when agreementTotalPence is missing', async () => {
+    woodlandClient.calculateWmp.mockResolvedValueOnce({ message: 'success', payment: {} })
+
+    const result = await calculateWmpPayment({
+      parcelIds: ['SD6346-3387'],
+      hectaresUnderTenYearsOld: 0,
+      hectaresTenOrOverYearsOld: 0
+    })
+
+    expect(result).toEqual({ payment: {}, totalPence: 0 })
+  })
+
+  it('propagates API errors', async () => {
+    woodlandClient.calculateWmp.mockRejectedValueOnce(new Error('API error'))
+
+    await expect(
+      calculateWmpPayment({ parcelIds: ['SD6346-3387'], hectaresUnderTenYearsOld: 0, hectaresTenOrOverYearsOld: 0 })
+    ).rejects.toThrow('API error')
   })
 })

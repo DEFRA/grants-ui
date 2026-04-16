@@ -14,7 +14,7 @@ metadata:
       - fromGrantsStatus: SUBMITTED,REOPENED
         gasStatus: APPLICATION_WITHDRAWN
         toGrantsStatus: CLEARED
-        toPath: /start
+        toPath: /check-details
 
       # Awaiting amendments
       - fromGrantsStatus: SUBMITTED
@@ -169,6 +169,16 @@ metadata:
           <p class="govuk-body">Email: <a class="govuk-link" href="mailto:ruralpayments@defra.gov.uk">ruralpayments@defra.gov.uk</a></p>
         </div>
       </details>
+  incorrectDetailsContent:
+    heading: Update your details
+    paragraphs:
+      - Make sure your details are correct before you apply for a woodland management plan (WMP) grant.
+      - textBefore: 'To update your details follow our '
+        link:
+          text: Register and update your details with the Rural Payments Agency guidance
+          href: https://www.gov.uk/guidance/update-personal-and-business-details-in-the-rural-payments-service
+        textAfter: '.'
+    showRpaSupport: false
 
 sections:
   - name: business-details
@@ -189,44 +199,9 @@ pages:
   # Pre-task-list pages (no section)
   # ==========================================
 
-  # Start page
-  - title: Apply for a Woodland Management Plan grant
-    id: 4afc672b-71d6-4889-999d-c7934184f3cc
-    path: /start
-    controller: StartPageController
-    components:
-      - name: startInfoOne
-        id: eb6eda3b-57ee-4440-bb0f-18e2a189bd8e
-        type: Html
-        content: >-
-          <p class="govuk-body">Use this service to apply for a Woodland Management Plan (WMP) grant.</p>
-          <p class="govuk-body">A WMP grant helps you to create a management plan for your woodland. This plan will set out how you intend to manage your woodland over the agreement period.</p>
-      - name: startInfoTwo
-        id: 24172324-4841-445c-b1fb-4f377596d826
-        type: Html
-        content: >
-          <h2 class="govuk-heading-s">Before you start</h2>
-          <p class="govuk-body">To use this service, you need:</p>
-          <ul class="govuk-list govuk-list--bullet">
-          <li>a Rural Payments service account</li>
-          <li>your land registered with the Rural Payments service</li>
-          <li>details of your woodland</li>
-          </ul>
-          <p class="govuk-body">If you do not enter any information for more
-          than 20 minutes, your application will time out and you will have to
-          start again.</p>
-          <h2 class="govuk-heading-s">Problems using the online service</h2>
-          <p class="govuk-body">If you have any problems using the online
-          service, contact the RPA.</p>
-          <h2 class="govuk-heading-s">Telephone</h2>
-          <p class="govuk-body">Telephone: 03000 200 301</p>
-          <p class="govuk-body">Monday to Friday, 9am to 5pm (except public
-          holidays)</p>
-
   # Check details page
   - title: Confirm your details
     path: /check-details
-    section: af79b6c8-3ed1-4150-a172-9d721023c25d
     controller: CheckDetailsController
     id: a24cb35f-a359-4934-b8c8-56ff92cb3df1
 
@@ -316,7 +291,7 @@ pages:
         id: 040d6021-bc32-4ef8-9cfe-235548157a30
         type: YesNoField
         title: Have you got the countersignature of your landlord?
-        hint: You need your landlord's countersignature to confirm management control for the duration of the agreement and, where applicable, the durability period.
+        hint: If your management control or durability period does not cover the duration of your agreement, you need the countersignature and permission of your landlord.
         options:
           required: true
           classes: govuk-radios
@@ -333,10 +308,9 @@ pages:
         id: 5af8ba37-9ac6-47a3-a5a9-e9716ab5141e
         type: Html
         content: >
-          <p class="govuk-body">You must get written consent from your landlord before you can apply for a Woodland Management Plan grant.</p>
-          <p class="govuk-body">You can download the
-          <a class="govuk-link" href="https://www.gov.uk/government/publications/countryside-stewardship-land-ownership-and-control-form" target="_blank">Land ownership and control form: Countryside Stewardship form (opens in new tab)</a>
-          to get your landlord's countersignature.</p>
+          <p class="govuk-body">You must get the written consent of all other parties with management control over part or all of the land in your application for the entire duration of the agreement  (and any durability period)</p>
+          <p class="govuk-body">To get countersignatures follow the guidance in and complete our <a class="govuk-link" href="https://www.gov.uk/government/publications/countryside-stewardship-land-ownership-and-control-form" target="_blank">Land ownership and control form: Countryside Stewardship form</a>.</p>
+          <p class="govuk-body">You must complete a separate form for each countersignatory.</p>
 
   # 7. Tenant
   - title: Are you a tenant of a public body?
@@ -349,7 +323,6 @@ pages:
         id: bdff80de-080b-4fdd-a323-9762ef558ae8
         type: YesNoField
         title: Are you a tenant of a public body?
-        hint: If you are a tenant of a public body, you'll need to check if the land is eligible for a WMP with your landlord.
         options:
           required: true
           classes: govuk-radios
@@ -367,7 +340,7 @@ pages:
         id: f025cbb2-920c-4b07-9cfa-d43589369696
         type: YesNoField
         title: Are the proposed works a requirement of your tenancy or any other legally binding obligation?
-        hint: This includes any legally binding obligation such as a condition of planning permission or a covenant.
+        hint: A legally binding obligation is any requirement on the land in your application which has force in law and can be enforced by the courts and legal system.
         options:
           required: true
           classes: govuk-radios
@@ -384,10 +357,8 @@ pages:
         id: 10a8335b-877c-436f-8a0d-e09d6cf53f71
         type: Html
         content: >
-          <p class="govuk-body">You cannot get a Woodland Management Plan grant for any proposed works which are a requirement of your tenancy or any other legally binding obligation.</p>
-          <p class="govuk-body">You can read the
-          <a class="govuk-link" href="#" target="_blank">Applicant's guide: PA3 Woodland management plan 2026 guidance (opens in new tab)</a>
-          for more information.</p>
+          <p class="govuk-body">To find out more read our
+          <a class="govuk-link" href="https://www.gov.uk/government/publications/pa3-woodland-management-plan-2026/applicants-guide-pa3-woodland-management-plan-2026#landthat-is-eligible-for-a-wmp" target="_blank">Applicant's guide: PA3 Woodland management plan 2026 guidance</a>.</p>
 
   # 10. Grazing rights
   - title: Are you applying for land covered by common or shared grazing rights?
@@ -433,7 +404,7 @@ pages:
         id: a9ae25aa-d70e-4616-84bf-47f71251e8b5
         type: TextField
         title: Enter the agreement number for any valid WMPs
-        hint: If you have more than one valid WMP, enter each agreement number separated by a comma.
+        hint: This is the 7-digit number you'll find in your agreement documentation and communications. For example, 1234567. If you need to enter 2 or more agreement numbers, use a comma to separate each agreement number. For example, 1234567, 7654321, 1726354
         options:
           required: true
           classes: govuk-!-width-two-thirds
@@ -452,9 +423,8 @@ pages:
         id: 50a8fb82-ec37-4c57-83af-81e56aaf4506
         type: Html
         content: >-
-          <p class="govuk-body">You can read the
-          <a class="govuk-link" href="#" target="_blank">Applicant's guide: PA3 Woodland management plan 2026 guidance (opens in new tab)</a>
-          for more information about Countryside Stewardship Higher Tier agreements.</p>
+          <p class="govuk-body">You must have a WMP approved before you can apply for woodland support under CSHT. To find out more read our
+          <a class="govuk-link" href="https://www.gov.uk/government/publications/pa3-woodland-management-plan-2026/applicants-guide-pa3-woodland-management-plan-2026#landthat-is-eligible-for-a-wmp" target="_blank">Applicant's guide: PA3 Woodland management plan 2026 guidance</a>.</p>
       - name: intendToApplyHigherTier
         id: e7d51cad-e4ea-4478-a12b-fedf3d18039d
         type: YesNoField
@@ -494,8 +464,7 @@ pages:
           </p>
 
           <p>
-            Land parcels must be entirely within England and defined as an area of land
-            that:
+            The land parcels must be entirely within England and the land must be woodland. Woodland is defined as an area of land that:
           </p>
 
           <ul class="govuk-list govuk-list--bullet">
@@ -506,12 +475,6 @@ pages:
             </li>
             <li>has a crown cover of more than 20% of the ground area</li>
           </ul>
-
-          <p>
-            The woodland must be larger than 0.5 hectares in total. The total area for the
-            application can be made up of separate blocks of woodland but the minimum
-            block size must be 0.5ha.
-          </p>
 
           <p>
             To find out more about what land is eligible for a WMP read our
@@ -569,7 +532,7 @@ pages:
         id: 0ecc3968-5293-4a17-adeb-426a51327507
         type: Html
         content: |
-          <p class="govuk-body">To find the grid reference use <a href="" class="govuk-link">Natural England’s ‘MAGIC’ map website</a>.</p>
+          <p class="govuk-body">To find the grid reference use <a href="https://www.gov.uk/guidance/how-to-access-natural-englands-maps-and-data" class="govuk-link">Natural England’s ‘MAGIC’ map website</a>.</p>
           <p class="govuk-body">To find out how to get the grid reference read the ‘MAGIC’ guidance on <a href="" class="govuk-link">Using the Where Am I Tool</a>.</p>
           <p class="govuk-body">The grid reference will be shown as the ‘National Grid Field No’ and include 2 letters and 8 numbers. For example, SP 4178 2432 </p>
       - name: centreGridReference
@@ -719,5 +682,5 @@ conditions:
         type: BooleanValue
         value: true
 
-startPage: /start
+startPage: /check-details
 schema: 2

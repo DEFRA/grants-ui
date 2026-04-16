@@ -4,7 +4,6 @@ import { formatCurrency } from '~/src/config/nunjucks/filters/format-currency.js
 import { fetchParcelsFromDal } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
 import {
   calculateLandActionsPayment,
-  calculateWmpPayment,
   fetchAvailableActionsForParcel,
   fetchParcels,
   fetchParcelsGroups,
@@ -17,7 +16,6 @@ import {
   parcelsWithExtendedInfo,
   validate
 } from '~/src/server/land-grants/services/land-grants.client.js'
-import { calculateWmp } from '~/src/server/woodland/woodland.client.js'
 import { clearParcelCache } from '~/src/server/land-grants/services/parcel-cache.js'
 const mockApiEndpoint = 'https://land-grants-api'
 
@@ -27,10 +25,6 @@ vi.mock('~/src/server/land-grants/services/land-grants.client.js', () => ({
   parcelsWithSize: vi.fn(),
   parcelsWithExtendedInfo: vi.fn(),
   validate: vi.fn()
-}))
-
-vi.mock('~/src/server/woodland/woodland.client.js', () => ({
-  calculateWmp: vi.fn()
 }))
 
 vi.mock('~/src/config/nunjucks/filters/format-currency.js')
@@ -154,59 +148,6 @@ describe('land-grants service', () => {
             'SHEET123-PARCEL456': {}
           }
         })
-      ).rejects.toThrow('API error')
-    })
-  })
-
-  describe('calculateWmpPayment', () => {
-    const mockPayment = {
-      agreementTotalPence: 375000,
-      agreementStartDate: '2026-06-01',
-      agreementEndDate: '2036-06-01',
-      frequency: 'Single',
-      parcelItems: {},
-      agreementLevelItems: {
-        1: {
-          code: 'PA3',
-          description: 'Woodland Management Plan',
-          agreementTotalPence: 375000
-        }
-      }
-    }
-
-    it('should call calculateWmp with new field names and return payment and totalPence', async () => {
-      calculateWmp.mockResolvedValueOnce({ message: 'success', payment: mockPayment })
-
-      const result = await calculateWmpPayment({
-        parcelIds: ['SD6346-3387'],
-        hectaresUnderTenYearsOld: 1.5,
-        hectaresTenOrOverYearsOld: 0.5
-      })
-
-      expect(calculateWmp).toHaveBeenCalledWith(
-        { parcelIds: ['SD6346-3387'], hectaresUnderTenYearsOld: 1.5, hectaresTenOrOverYearsOld: 0.5 },
-        mockApiEndpoint
-      )
-      expect(result).toEqual({ payment: mockPayment, totalPence: 375000 })
-    })
-
-    it('should return zero totalPence when agreementTotalPence is missing', async () => {
-      calculateWmp.mockResolvedValueOnce({ message: 'success', payment: {} })
-
-      const result = await calculateWmpPayment({
-        parcelIds: ['SD6346-3387'],
-        hectaresUnderTenYearsOld: 0,
-        hectaresTenOrOverYearsOld: 0
-      })
-
-      expect(result).toEqual({ payment: {}, totalPence: 0 })
-    })
-
-    it('should propagate API errors', async () => {
-      calculateWmp.mockRejectedValueOnce(new Error('API error'))
-
-      await expect(
-        calculateWmpPayment({ parcelIds: ['SD6346-3387'], hectaresUnderTenYearsOld: 0, hectaresTenOrOverYearsOld: 0 })
       ).rejects.toThrow('API error')
     })
   })
@@ -533,13 +474,55 @@ describe('land-grants service', () => {
       ).rejects.toThrow('API error')
     })
 
-    describe('when enableUpl8And10 flag is off', () => {
+    describe('when enabledActions entries have surrounding spaces', () => {
       beforeEach(() => {
         configState.reset()
-        configState.set('landGrants.enableUpl8And10', false)
+        configState.set('landGrants.enabledActions', [' CMOR1 ', ' UPL8 ', ' UPL10 '])
       })
 
-      it('should treat UPL8 and UPL10 actions as ungrouped when flag is off', async () => {
+      it('should trim spaces and still match action codes correctly', async () => {
+        const mockApiResponse = {
+          parcels: [
+            {
+              parcelId: 'PARCEL456',
+              sheetId: 'SHEET123',
+              size: { value: 50.5, unit: 'ha' },
+              actions: [
+                {
+                  code: 'CMOR1',
+                  availableArea: { value: 10.5, unit: 'ha' },
+                  description: 'Assess moorland and produce a written record'
+                },
+                {
+                  code: 'UPL8',
+                  availableArea: { value: 12.0, unit: 'ha' },
+                  description: 'Shepherding livestock on moorland'
+                }
+              ]
+            }
+          ],
+          groups: [
+            { name: 'Assess moorland', actions: ['CMOR1'] },
+            { name: 'Shepherding livestock on moorland', actions: ['UPL8', 'UPL10'] }
+          ]
+        }
+        parcelsWithExtendedInfo.mockResolvedValueOnce(mockApiResponse)
+
+        const result = await fetchAvailableActionsForParcel({ parcelId: 'PARCEL456', sheetId: 'SHEET123' })
+
+        expect(result.actions).toHaveLength(2)
+        expect(result.actions[0].name).toBe('Assess moorland')
+        expect(result.actions[1].name).toBe('Shepherding livestock on moorland')
+      })
+    })
+
+    describe('when enabledActions does not include UPL8 and UPL10', () => {
+      beforeEach(() => {
+        configState.reset()
+        configState.set('landGrants.enabledActions', ['CMOR1'])
+      })
+
+      it('should exclude UPL8 and UPL10 actions when they are not in enabledActions', async () => {
         const mockApiResponse = {
           parcels: [
             {
@@ -594,10 +577,10 @@ describe('land-grants service', () => {
       })
     })
 
-    describe('when enableUpl8And10 flag is on', () => {
+    describe('when enabledActions includes UPL8 and UPL10', () => {
       beforeEach(() => {
         configState.reset()
-        configState.set('landGrants.enableUpl8And10', true)
+        configState.set('landGrants.enabledActions', ['CMOR1', 'UPL8', 'UPL10'])
       })
 
       it('should group UPL8 and UPL10 actions under Shepherding livestock on moorland', async () => {
