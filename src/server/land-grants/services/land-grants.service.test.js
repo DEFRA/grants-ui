@@ -474,6 +474,48 @@ describe('land-grants service', () => {
       ).rejects.toThrow('API error')
     })
 
+    describe('when enabledActions entries have surrounding spaces', () => {
+      beforeEach(() => {
+        configState.reset()
+        configState.set('landGrants.enabledActions', [' CMOR1 ', ' UPL8 ', ' UPL10 '])
+      })
+
+      it('should trim spaces and still match action codes correctly', async () => {
+        const mockApiResponse = {
+          parcels: [
+            {
+              parcelId: 'PARCEL456',
+              sheetId: 'SHEET123',
+              size: { value: 50.5, unit: 'ha' },
+              actions: [
+                {
+                  code: 'CMOR1',
+                  availableArea: { value: 10.5, unit: 'ha' },
+                  description: 'Assess moorland and produce a written record'
+                },
+                {
+                  code: 'UPL8',
+                  availableArea: { value: 12.0, unit: 'ha' },
+                  description: 'Shepherding livestock on moorland'
+                }
+              ]
+            }
+          ],
+          groups: [
+            { name: 'Assess moorland', actions: ['CMOR1'] },
+            { name: 'Shepherding livestock on moorland', actions: ['UPL8', 'UPL10'] }
+          ]
+        }
+        parcelsWithExtendedInfo.mockResolvedValueOnce(mockApiResponse)
+
+        const result = await fetchAvailableActionsForParcel({ parcelId: 'PARCEL456', sheetId: 'SHEET123' })
+
+        expect(result.actions).toHaveLength(2)
+        expect(result.actions[0].name).toBe('Assess moorland')
+        expect(result.actions[1].name).toBe('Shepherding livestock on moorland')
+      })
+    })
+
     describe('when enabledActions does not include UPL8 and UPL10', () => {
       beforeEach(() => {
         configState.reset()

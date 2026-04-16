@@ -94,7 +94,6 @@ export function buildIncorrectDetailsViewModel(form, slug, request) {
   return {
     serviceName: form?.title || 'Check your details',
     serviceUrl: slug ? `/${slug}` : '/',
-    continueUrl: slug ? `/${slug}` : '/',
     isDevelopmentMode: true,
     backLink: { text: 'Back', href: request?.path ?? (slug ? `/${slug}/check-details` : '/') }
   }
