@@ -153,7 +153,7 @@ export default class CommonSelectLandParcelPageController extends LandGrantsQues
     const landParcelMetadata = selectedParcelIds.map((id) => {
       const parcel = parcelMap.get(id)
       const rawArea = parcel?.area?.value
-      return { parcelId: id, areaHa: rawArea != null ? Number(rawArea) : null }
+      return { parcelId: id, areaHa: rawArea == null ? null : Number(rawArea) }
     })
 
     const totalHectaresAppliedFor =
