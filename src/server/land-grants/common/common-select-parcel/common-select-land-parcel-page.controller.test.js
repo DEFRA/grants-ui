@@ -318,6 +318,63 @@ describe('CommonSelectLandParcelPageController', () => {
       )
     })
 
+    it('shows error when total area is below minimumAreaHa threshold', async () => {
+      const controller = createController({ enableMultipleParcelSelect: true, minimumAreaHa: 0.5 })
+      const request = setupRequest('post')
+      const context = setupContext({})
+      const h = setupH()
+
+      // S1-P1 has area 10 but we override to a small parcel
+      fetchParcels.mockResolvedValue([{ sheetId: 'S1', parcelId: 'P1', area: { value: 0.1654 } }])
+      mapParcelsToViewModel.mockReturnValue([{ value: 'S1-P1', text: 'PF 2617 0561' }])
+      request.payload = { landParcels: 'S1-P1' }
+
+      controller.mergeState = vi.fn()
+
+      await controller.handlePost(request, context, h)
+
+      expect(h.view).toHaveBeenCalledWith(
+        'common-select-land-parcel',
+        expect.objectContaining({
+          errors: 'Total area of selected land parcels must be more than 0.5ha'
+        })
+      )
+      expect(controller.mergeState).not.toHaveBeenCalled()
+    })
+
+    it('proceeds when total area meets minimumAreaHa threshold', async () => {
+      const controller = createController({ minimumAreaHa: 0.5 })
+      const request = setupRequest('post')
+      const context = setupContext({})
+      const h = setupH()
+
+      request.payload = { landParcels: ['S1-P1', 'S2-P2'] }
+
+      controller.mergeState = vi.fn()
+
+      const result = await controller.handlePost(request, context, h)
+
+      expect(h.view).not.toHaveBeenCalled()
+      expect(result).toBe('next')
+    })
+
+    it('proceeds without area check when minimumAreaHa is not configured', async () => {
+      const controller = createController()
+      const request = setupRequest('post')
+      const context = setupContext({})
+      const h = setupH()
+
+      fetchParcels.mockResolvedValue([{ sheetId: 'S1', parcelId: 'P1', area: { value: 0.001 } }])
+      request.payload = { landParcels: 'S1-P1' }
+
+      controller.mergeState = vi.fn()
+
+      const result = await controller.handlePost(request, context, h)
+
+      expect(h.view).not.toHaveBeenCalled()
+      expect(result).toBe('next')
+    })
+
     it('handles non-Error throw during fetch gracefully for validation', async () => {
       fetchParcels.mockRejectedValue('string error')
 
