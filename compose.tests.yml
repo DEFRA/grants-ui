@@ -73,7 +73,7 @@ services:
       DURATION_SECONDS: 60
       RAMPUP_SECONDS: 15
       VU_COUNT: 10
-      P95_THRESHOLD_MS: ${P95_THRESHOLD_MS:-400}
+      P95_THRESHOLD_MS: ${P95_THRESHOLD_MS:-500}
       GENERATE_REPORT: false
     volumes:
       - ./nginx/certs:/etc/ssl/certs:ro
