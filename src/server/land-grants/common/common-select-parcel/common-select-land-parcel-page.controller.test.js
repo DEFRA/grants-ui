@@ -248,6 +248,32 @@ describe('CommonSelectLandParcelPageController', () => {
       expect(result).toBe('next')
     })
 
+    it('rounds totalHectaresAppliedFor to 4dp to avoid float precision issues', async () => {
+      fetchParcels.mockResolvedValue([
+        { sheetId: 'S1', parcelId: 'P1', area: { value: 25.3874 } },
+        { sheetId: 'S2', parcelId: 'P2', area: { value: 169.8586 } }
+      ])
+
+      const controller = createController()
+      const request = setupRequest('post')
+      const context = setupContext({})
+      const h = setupH()
+
+      request.payload = { landParcels: ['S1-P1', 'S2-P2'] }
+      controller.mergeState = vi.fn()
+
+      await controller.handlePost(request, context, h)
+
+      expect(controller.mergeState).toHaveBeenCalledWith(
+        request,
+        context.state,
+        expect.objectContaining({
+          totalHectaresAppliedFor: 195.246,
+          additionalAnswers: { totalHectaresAppliedFor: 195.246 }
+        })
+      )
+    })
+
     it('handles fetch error gracefully for validation', async () => {
       fetchParcels.mockRejectedValue(new Error('fail'))
 

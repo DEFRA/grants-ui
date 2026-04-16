@@ -156,7 +156,8 @@ export default class CommonSelectLandParcelPageController extends LandGrantsQues
       return { parcelId: id, areaHa: rawArea != null ? Number(rawArea) : null }
     })
 
-    const totalHectaresAppliedFor = landParcelMetadata.reduce((sum, { areaHa }) => sum + (areaHa ?? 0), 0)
+    const totalHectaresAppliedFor =
+      Math.round(landParcelMetadata.reduce((sum, { areaHa }) => sum + (areaHa ?? 0), 0) * 10000) / 10000
 
     await this.mergeState(request, state, {
       landParcels: selectedParcelIds,
