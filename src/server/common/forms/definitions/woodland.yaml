@@ -7,7 +7,6 @@ metadata:
   submission:
     grantCode: woodland
   grantRedirectRules:
-    excludedPaths: ['check-details']
     preSubmission:
       - toPath: '/tasks'
     postSubmission:
@@ -15,7 +14,7 @@ metadata:
       - fromGrantsStatus: SUBMITTED,REOPENED
         gasStatus: APPLICATION_WITHDRAWN
         toGrantsStatus: CLEARED
-        toPath: /start
+        toPath: /check-details
 
       # Awaiting amendments
       - fromGrantsStatus: SUBMITTED
@@ -222,40 +221,6 @@ pages:
           <p class="govuk-body">If you need to change any information you have already provided, you can go back to any completed section and update your answers. The status will update automatically as you progress through the application.</p>
         options:
           position: above
-
-  # Start page (kept for backward compatibility — journey starts at /check-details)
-  - title: Apply for a Woodland Management Plan grant
-    id: 4afc672b-71d6-4889-999d-c7934184f3cc
-    path: /start
-    controller: StartPageController
-    components:
-      - name: startInfoOne
-        id: eb6eda3b-57ee-4440-bb0f-18e2a189bd8e
-        type: Html
-        content: >-
-          <p class="govuk-body">Use this service to apply for a Woodland Management Plan (WMP) grant.</p>
-          <p class="govuk-body">A WMP grant helps you to create a management plan for your woodland. This plan will set out how you intend to manage your woodland over the agreement period.</p>
-      - name: startInfoTwo
-        id: 24172324-4841-445c-b1fb-4f377596d826
-        type: Html
-        content: >
-          <h2 class="govuk-heading-s">Before you start</h2>
-          <p class="govuk-body">To use this service, you need:</p>
-          <ul class="govuk-list govuk-list--bullet">
-          <li>a Rural Payments service account</li>
-          <li>your land registered with the Rural Payments service</li>
-          <li>details of your woodland</li>
-          </ul>
-          <p class="govuk-body">If you do not enter any information for more
-          than 20 minutes, your application will time out and you will have to
-          start again.</p>
-          <h2 class="govuk-heading-s">Problems using the online service</h2>
-          <p class="govuk-body">If you have any problems using the online
-          service, contact the RPA.</p>
-          <h2 class="govuk-heading-s">Telephone</h2>
-          <p class="govuk-body">Telephone: 03000 200 301</p>
-          <p class="govuk-body">Monday to Friday, 9am to 5pm (except public
-          holidays)</p>
 
   # ==========================================
   # Section 1: Check your eligibility

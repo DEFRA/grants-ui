@@ -51,7 +51,7 @@ describe('update-details plugin', () => {
       pageTitle: 'Update your details',
       serviceName: 'Test Form',
       serviceUrl: '/test-form',
-      continueUrl: '/test-form/check-details',
+      backLink: { href: '/test-form/check-details' },
       incorrectDetailsContent
     })
   })

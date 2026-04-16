@@ -1,6 +1,5 @@
 {% extends baseLayoutPath %}
 
-{% from "govuk/components/button/macro.njk" import govukButton %}
 {% from "support-details/macro.njk" import defraSupportDetails %}
 
 {% block content %}
@@ -42,10 +41,6 @@
         </p>
       {% endif %}
 
-      {{ govukButton({
-        text: incorrectDetailsContent.continueText or "Continue",
-        href: continueUrl
-      }) }}
     </div>
   </div>
 {% endblock %}

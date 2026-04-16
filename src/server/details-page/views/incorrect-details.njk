@@ -1,8 +1,14 @@
 {% extends "layouts/page.njk" %}
-{% set backLink = false %}
-{% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/back-link/macro.njk" import govukBackLink %}
 {% from "support-details/macro.njk" import defraSupportDetails %}
 {% from "two-thirds-column/macro.njk" import appTwoThirdsColumn %}
+
+{% block beforeContent %}
+  {{ super() }}
+  {% if backLink %}
+    {{ govukBackLink(backLink) }}
+  {% endif %}
+{% endblock %}
 
 {% block content %}
   {% call appTwoThirdsColumn() %}
@@ -38,19 +44,5 @@
       </p>
     {% endif %}
 
-    {% if isDevelopmentMode %}
-      {{ govukButton({
-        text: incorrectDetailsContent.continueText or "Continue",
-        disabled: true
-      }) }}
-      <p class="govuk-body-s govuk-!-margin-top-4" style="color: #666;">
-        Button disabled in demo mode
-      </p>
-    {% else %}
-      {{ govukButton({
-        text: incorrectDetailsContent.continueText or "Continue",
-        href: continueUrl
-      }) }}
-    {% endif %}
   {% endcall %}
 {% endblock %}
