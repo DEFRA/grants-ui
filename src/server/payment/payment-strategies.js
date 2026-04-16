@@ -1,8 +1,8 @@
 import {
   calculateLandActionsPayment,
-  calculateWmpPayment,
   fetchParcelsGroups
 } from '~/src/server/land-grants/services/land-grants.service.js'
+import { calculateWmpPayment } from '~/src/server/woodland/woodland.service.js'
 import {
   mapPaymentInfoToParcelItems,
   mapAdditionalYearlyPayments
