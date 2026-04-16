@@ -265,14 +265,6 @@ async function handlePostSubmission(request, h, context, previousStatus, grantCo
 
   const redirectUrl = rule.toPath === agreements.get('baseUrl') ? rule.toPath : buildRedirectUrl(grantId, rule.toPath)
 
-  const isAlreadyReopened = previousStatus === ApplicationStatus.REOPENED
-  const isStillAwaitingAmendments = gasStatus === 'APPLICATION_AMEND'
-  const isWithinGrantPages = request.headers['sec-fetch-site'] === 'same-origin' // request initiated from within grant pages
-
-  if (isAlreadyReopened && isStillAwaitingAmendments && isWithinGrantPages) {
-    return h.continue
-  }
-
   return request.path === redirectUrl ? h.continue : h.redirect(redirectUrl).takeover()
 }
 
@@ -337,9 +329,10 @@ export const formsStatusCallback = async (request, h, context) => {
 
   const previousStatus = context.state.applicationStatus
   const grantRedirectRules = request.app.model?.def?.metadata?.grantRedirectRules
+  const isWithinGrantPages = request.headers['sec-fetch-site'] === 'same-origin'
 
   // Don't redirect if page is listed in the grant config excludedPaths
-  if (grantRedirectRules?.excludedPaths?.includes(request.params?.path)) {
+  if (grantRedirectRules?.excludedPaths?.includes(request.params?.path) || isWithinGrantPages) {
     return h.continue
   }
 
