@@ -60,7 +60,9 @@ function buildRequestOptions(method, payload) {
  * @private
  */
 function buildRequestUrl(url, method, queryParams) {
-  if (method !== 'GET' || !queryParams) return url
+  if (method !== 'GET' || !queryParams) {
+    return url
+  }
 
   const searchParams = new URLSearchParams()
 
