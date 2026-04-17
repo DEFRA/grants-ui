@@ -590,9 +590,8 @@ pages:
         <li>more than 100ha: flat rate of £3,000, plus £15 for each additional hectare over 100ha</li>
         </ul>
         <p class="govuk-body">For full details read our <a href="https://www.gov.uk/government/publications/pa3-woodland-management-plan-2026/applicants-guide-pa3-woodland-management-plan-2026" class="govuk-link">Applicant’s guide: PA3 Woodland management plan 2026 guidance</a>.</p>
-        <p class="govuk-body">Based on the information provided, you may be eligible for a grant of up to {{ totalPayment }}.</p>
-        <div class="govuk-inset-text">There’s no guarantee you’ll receive a grant</div>
-
+        <p class="govuk-inset-text">Based on the information provided, you may be eligible for a grant of up to {{ totalPayment }}.</p>
+        <p class="govuk-body">This amount may vary as a result of the processes set out in the <a href="https://www.gov.uk/government/publications/capital-grants-agreements-terms-and-conditions-2026/capital-grants-agreements-terms-and-conditions-2026" class="govuk-link">Capital grants agreements: Terms and Conditions 2026</a>. For example, amendments to change the size of a parcel and adjustments to a payment rate to eliminate greening double funding.</p>
   - title: Submit your application
     id: ab194d2a-0b67-4a21-9158-1bd1bbdc4077
     path: /declaration
