@@ -17,7 +17,7 @@ class GrantApplicationServiceApiError extends Error {
    * @param {string} code - Grant code for context
    * @param {Error} [cause] - Optional underlying error
    */
-  constructor(message, statusCode, responseBody, code, cause = null) {
+  constructor(message, statusCode, responseBody, code, cause) {
     super(message, cause ? { cause } : undefined)
     this.name = 'GrantApplicationServiceApiError'
     this.status = statusCode
