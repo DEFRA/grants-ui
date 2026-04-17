@@ -1,11 +1,22 @@
 import { config } from '~/src/config/config.js'
 import { debug } from '~/src/server/common/helpers/logging/log.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
+import { statusCodes } from '../../constants/status-codes.js'
 
 const GAS_API_ENDPOINT = config.get('gas.apiEndpoint')
 const GAS_API_AUTH_TOKEN = config.get('gas.authToken')
 
+/**
+ * Custom error type thrown when GAS API requests fail.
+ */
 class GrantApplicationServiceApiError extends Error {
+  /**
+   * @param {string} message - Human-readable error message
+   * @param {number} statusCode - HTTP status code returned by GAS
+   * @param {string} responseBody - Error response body from GAS
+   * @param {string} code - Grant code for context
+   * @param {Error} [cause] - Optional underlying error
+   */
   constructor(message, statusCode, responseBody, code, cause = null) {
     super(message, cause ? { cause } : undefined)
     this.name = 'GrantApplicationServiceApiError'
@@ -13,6 +24,78 @@ class GrantApplicationServiceApiError extends Error {
     this.responseBody = responseBody
     this.grantCode = code
   }
+}
+
+/**
+ * Builds HTTP request options for GAS API calls.
+ *
+ * @param {string} method - HTTP method (GET, POST, etc.)
+ * @param {object} [payload] - Request payload for non-GET requests
+ * @returns {RequestInit} Fetch-compatible request options
+ * @private
+ */
+function buildRequestOptions(method, payload) {
+  const options = {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(GAS_API_AUTH_TOKEN ? { Authorization: `Bearer ${GAS_API_AUTH_TOKEN}` } : {})
+    }
+  }
+
+  if (method !== 'GET' && payload) {
+    options.body = JSON.stringify(payload)
+  }
+
+  return options
+}
+
+/**
+ * Builds a full request URL including query parameters (if provided).
+ *
+ * @param {string} url - Base API URL
+ * @param {string} method - HTTP method
+ * @param {object} [queryParams] - Optional query parameters
+ * @returns {string} Fully constructed URL
+ * @private
+ */
+function buildRequestUrl(url, method, queryParams) {
+  if (method !== 'GET' || !queryParams) return url
+
+  const searchParams = new URLSearchParams()
+
+  Object.entries(queryParams).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      searchParams.append(key, value.toString())
+    }
+  })
+
+  const query = searchParams.toString()
+  return query ? `${url}?${query}` : url
+}
+
+/**
+ * Validates the HTTP response and throws a typed error if the request failed.
+ *
+ * @param {Response} response - Fetch response object
+ * @param {string} grantCode - Grant code for error context
+ * @returns {Promise<Response>} The original response if successful
+ * @throws {GrantApplicationServiceApiError}
+ * @private
+ */
+async function handleResponse(response, grantCode) {
+  if (!response.ok) {
+    const error = await response.json()
+
+    throw new GrantApplicationServiceApiError(
+      `${response.status} ${response.statusText} - ${error.message}`,
+      response.status,
+      error.message,
+      grantCode
+    )
+  }
+
+  return response
 }
 
 /**
@@ -32,31 +115,8 @@ export async function makeGasApiRequest(url, grantCode, request, options = {}) {
   const { method = 'POST', payload, queryParams, retryConfig = {} } = options
 
   try {
-    // Add query parameters for GET requests
-    let requestUrl = url
-    if (method === 'GET' && queryParams) {
-      const searchParams = new URLSearchParams()
-      Object.entries(queryParams).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          searchParams.append(key, value.toString())
-        }
-      })
-      if (searchParams.toString()) {
-        requestUrl += `?${searchParams.toString()}`
-      }
-    }
-
-    const requestOptions = {
-      method,
-      headers: {
-        'Content-Type': 'application/json',
-        ...(GAS_API_AUTH_TOKEN ? { Authorization: `Bearer ${GAS_API_AUTH_TOKEN}` } : {})
-      }
-    }
-
-    if (method !== 'GET' && payload) {
-      requestOptions.body = JSON.stringify(payload)
-    }
+    const requestUrl = buildRequestUrl(url, method, queryParams)
+    const requestOptions = buildRequestOptions(method, payload)
 
     const response = await retry(() => fetch(requestUrl, requestOptions), {
       timeout: 30000,
@@ -65,18 +125,9 @@ export async function makeGasApiRequest(url, grantCode, request, options = {}) {
       serviceName: 'GrantApplicationService.makeGasApiRequest'
     })
 
-    if (!response.ok) {
-      const error = await response.json()
+    await handleResponse(response, grantCode)
 
-      throw new GrantApplicationServiceApiError(
-        `${response.status} ${response.statusText} - ${error.message}`,
-        response.status,
-        error.message,
-        grantCode
-      )
-    }
-
-    if (response.status === 204 && response.body) {
+    if (response.status === statusCodes.noContent && response.body) {
       await response.arrayBuffer()
     }
 
