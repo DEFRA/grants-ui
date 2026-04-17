@@ -34,7 +34,7 @@
 
         {{ componentList(components) }}
 
-        <!-- TODO temp workaround for Woodland journey as some pages do not exist yet -->
+        {# GAS wants us to send this as confirmation that the user has reached this page #}
         <input type="hidden" id="guidanceRead" name="guidanceRead" value="true">
         <input type="hidden" id="includedAllEligibleWoodland" name="includedAllEligibleWoodland" value="true">
         <input type="hidden" id="applicationConfirmation" name="applicationConfirmation" value="true">

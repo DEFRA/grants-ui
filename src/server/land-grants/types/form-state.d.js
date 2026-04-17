@@ -21,8 +21,8 @@
 
 /**
  * @typedef {Object} LandParcelMetadataItem
- * @property {string} id - Parcel identifier (format: "sheetId-parcelId")
- * @property {{ unit: string, value: number } | null} area - Area of the parcel
+ * @property {string} parcelId - Parcel identifier (format: "sheetId-parcelId")
+ * @property {number | null} areaHa - Area of the parcel in hectares
  */
 
 /**
