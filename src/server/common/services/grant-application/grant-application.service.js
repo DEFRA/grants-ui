@@ -76,6 +76,10 @@ export async function makeGasApiRequest(url, grantCode, request, options = {}) {
       )
     }
 
+    if (response.status === 204 && response.body) {
+      await response.arrayBuffer()
+    }
+
     return response
   } catch (error) {
     debug(
