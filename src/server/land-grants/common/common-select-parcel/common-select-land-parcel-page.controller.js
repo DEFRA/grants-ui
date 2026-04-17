@@ -25,6 +25,7 @@ export default class CommonSelectLandParcelPageController extends LandGrantsQues
     this.supportDetailsSummaryText = config.supportDetailsSummaryText || ''
     this.supportDetailsHtml = config.supportDetailsHtml || ''
     this.showSupportDetails = config.showSupportDetails !== false
+    this.minimumAreaHa = config.minimumAreaHa ?? null
   }
 
   /**
@@ -150,15 +151,23 @@ export default class CommonSelectLandParcelPageController extends LandGrantsQues
     }
 
     const parcelMap = new Map(fetchedParcels.map((p) => [stringifyParcel(p), p]))
-    const totalHectaresAppliedFor = selectedParcelIds.reduce((sum, id) => {
-      const parcel = parcelMap.get(id)
-      return sum + (parcel?.area?.value || 0)
-    }, 0)
-
     const landParcelMetadata = selectedParcelIds.map((id) => {
       const parcel = parcelMap.get(id)
-      return { id, area: parcel?.area ?? null }
+      const rawArea = parcel?.area?.value
+      return { parcelId: id, areaHa: rawArea == null ? null : Number(rawArea) }
     })
+
+    const totalHectaresAppliedFor =
+      Math.round(landParcelMetadata.reduce((sum, { areaHa }) => sum + (areaHa ?? 0), 0) * 10000) / 10000
+
+    if (this.minimumAreaHa !== null && totalHectaresAppliedFor < this.minimumAreaHa) {
+      const parcels = mapParcelsToViewModel(fetchedParcels)
+      const validationError = `Total area of selected land parcels must be more than ${this.minimumAreaHa}ha`
+      return h.view(
+        this.viewName,
+        this.buildViewModel(request, context, { parcels, selectedParcelIds, errors: validationError })
+      )
+    }
 
     await this.mergeState(request, state, {
       landParcels: selectedParcelIds,

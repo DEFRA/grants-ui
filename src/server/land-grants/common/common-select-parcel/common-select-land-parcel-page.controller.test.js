@@ -234,8 +234,8 @@ describe('CommonSelectLandParcelPageController', () => {
         landParcels: ['S1-P1', 'S2-P2'],
         landParcelsDisplay: 'S1-P1, S2-P2',
         landParcelMetadata: [
-          { id: 'S1-P1', area: { value: 10 } },
-          { id: 'S2-P2', area: { value: 20 } }
+          { parcelId: 'S1-P1', areaHa: 10 },
+          { parcelId: 'S2-P2', areaHa: 20 }
         ],
         totalHectaresAppliedFor: 30,
         additionalAnswers: { totalHectaresAppliedFor: 30 }
@@ -246,6 +246,55 @@ describe('CommonSelectLandParcelPageController', () => {
       expect(controller.proceed).toHaveBeenCalledWith(request, h, '/next')
 
       expect(result).toBe('next')
+    })
+
+    it('rounds totalHectaresAppliedFor to 4dp to avoid float precision issues', async () => {
+      fetchParcels.mockResolvedValue([
+        { sheetId: 'S1', parcelId: 'P1', area: { value: 25.3874 } },
+        { sheetId: 'S2', parcelId: 'P2', area: { value: 169.8586 } }
+      ])
+
+      const controller = createController()
+      const request = setupRequest('post')
+      const context = setupContext({})
+      const h = setupH()
+
+      request.payload = { landParcels: ['S1-P1', 'S2-P2'] }
+      controller.mergeState = vi.fn()
+
+      await controller.handlePost(request, context, h)
+
+      expect(controller.mergeState).toHaveBeenCalledWith(
+        request,
+        context.state,
+        expect.objectContaining({
+          totalHectaresAppliedFor: 195.246,
+          additionalAnswers: { totalHectaresAppliedFor: 195.246 }
+        })
+      )
+    })
+
+    it('sets areaHa to null when parcel has no area value', async () => {
+      fetchParcels.mockResolvedValue([{ sheetId: 'S1', parcelId: 'P1', area: { value: null } }])
+
+      const controller = createController()
+      const request = setupRequest('post')
+      const context = setupContext({})
+      const h = setupH()
+
+      request.payload = { landParcels: ['S1-P1'] }
+      controller.mergeState = vi.fn()
+
+      await controller.handlePost(request, context, h)
+
+      expect(controller.mergeState).toHaveBeenCalledWith(
+        request,
+        context.state,
+        expect.objectContaining({
+          landParcelMetadata: [{ parcelId: 'S1-P1', areaHa: null }],
+          totalHectaresAppliedFor: 0
+        })
+      )
     })
 
     it('handles fetch error gracefully for validation', async () => {
@@ -267,6 +316,63 @@ describe('CommonSelectLandParcelPageController', () => {
           errors: 'Select a land parcel'
         })
       )
+    })
+
+    it('shows error when total area is below minimumAreaHa threshold', async () => {
+      const controller = createController({ enableMultipleParcelSelect: true, minimumAreaHa: 0.5 })
+      const request = setupRequest('post')
+      const context = setupContext({})
+      const h = setupH()
+
+      // S1-P1 has area 10 but we override to a small parcel
+      fetchParcels.mockResolvedValue([{ sheetId: 'S1', parcelId: 'P1', area: { value: 0.1654 } }])
+      mapParcelsToViewModel.mockReturnValue([{ value: 'S1-P1', text: 'PF 2617 0561' }])
+      request.payload = { landParcels: 'S1-P1' }
+
+      controller.mergeState = vi.fn()
+
+      await controller.handlePost(request, context, h)
+
+      expect(h.view).toHaveBeenCalledWith(
+        'common-select-land-parcel',
+        expect.objectContaining({
+          errors: 'Total area of selected land parcels must be more than 0.5ha'
+        })
+      )
+      expect(controller.mergeState).not.toHaveBeenCalled()
+    })
+
+    it('proceeds when total area meets minimumAreaHa threshold', async () => {
+      const controller = createController({ minimumAreaHa: 0.5 })
+      const request = setupRequest('post')
+      const context = setupContext({})
+      const h = setupH()
+
+      request.payload = { landParcels: ['S1-P1', 'S2-P2'] }
+
+      controller.mergeState = vi.fn()
+
+      const result = await controller.handlePost(request, context, h)
+
+      expect(h.view).not.toHaveBeenCalled()
+      expect(result).toBe('next')
+    })
+
+    it('proceeds without area check when minimumAreaHa is not configured', async () => {
+      const controller = createController()
+      const request = setupRequest('post')
+      const context = setupContext({})
+      const h = setupH()
+
+      fetchParcels.mockResolvedValue([{ sheetId: 'S1', parcelId: 'P1', area: { value: 0.001 } }])
+      request.payload = { landParcels: 'S1-P1' }
+
+      controller.mergeState = vi.fn()
+
+      const result = await controller.handlePost(request, context, h)
+
+      expect(h.view).not.toHaveBeenCalled()
+      expect(result).toBe('next')
     })
 
     it('handles non-Error throw during fetch gracefully for validation', async () => {

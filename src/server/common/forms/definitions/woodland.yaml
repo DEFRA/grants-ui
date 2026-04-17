@@ -451,6 +451,7 @@ pages:
     config:
       showSupportDetails: false
       enableMultipleParcelSelect: true
+      minimumAreaHa: 0.5
       topSection: |
         <div class="govuk-body">
           <p>
