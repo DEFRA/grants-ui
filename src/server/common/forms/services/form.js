@@ -293,7 +293,8 @@ async function discoverFormsFromYaml(
           path: filePath,
           id,
           slug: fileName,
-          title
+          title,
+          metadata: formMetadata
         })
       }
     } catch (err) {
@@ -331,6 +332,7 @@ async function registerYamlForms(loader, redis, yamlForms, sharedRules) {
           id: form.id,
           slug: form.slug,
           title: form.title,
+          metadata: form.metadata,
           source: 'yaml',
           path: form.path
         }),
@@ -359,7 +361,8 @@ function buildServiceInterface(baseService, apiFormService, redis) {
           ...metadata,
           id: entry.id,
           slug: entry.slug,
-          title: entry.title
+          title: entry.title,
+          metadata: entry.metadata
         }
       }
       try {

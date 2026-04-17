@@ -114,6 +114,9 @@ export class ApiFormService {
         // Apply URL substitutions
         const definition = configureDefinition(rawDefinition)
 
+        // Copy metadata from the definition into the cache entry
+        entry.metadata = definition.metadata
+
         const form = { title: entry.title }
         validateWhitelist(form, definition)
         logger.info(`Whitelist configuration validated for API form: ${entry.title}`)

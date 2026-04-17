@@ -23,6 +23,7 @@
     "docker:debug": "docker compose stop grants-ui && docker compose run --service-ports --name grants-ui-debug --rm grants-ui npm run dev:debug",
     "docker:cycle-ui": "docker compose up -d --force-recreate grants-ui",
     "docker:reset": "docker compose down --volumes --remove-orphans --rmi local && docker volume ls --format '{{.Name}}' | grep -E '^[a-f0-9]{64}$' | xargs docker volume rm",
+    "docker:localstack:purge": "docker compose stop localstack && docker compose rm -f localstack && docker volume rm grants-ui_localstack-data",
     "docker:ha:up": "docker compose -f compose.yml -f compose.ha.yml up -d --scale grants-ui=2 --scale grants-ui-backend=2",
     "docker:ha:down": "docker compose -f compose.yml -f compose.ha.yml down --remove-orphans",
     "docker:landgrants:up": "docker compose -f compose.yml -f compose.land-grants.yml up -d",

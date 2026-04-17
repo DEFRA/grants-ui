@@ -7,10 +7,8 @@ services:
       redis:
         condition: service_healthy
       grants-ui-backend:
-        condition: service_started
-      grants-ui-config-api:
         condition: service_healthy
-      grants-config-broker:
+      grants-ui-config-api:
         condition: service_healthy
       fcp-defra-id-stub:
         condition: service_healthy
@@ -96,10 +94,6 @@ services:
     pull_policy: always
     depends_on:
       mongodb:
-        condition: service_healthy
-      grants-ui-config-api:
-        condition: service_healthy
-      grants-config-broker:
         condition: service_healthy
     ports:
       - '3001:3001'
@@ -289,15 +283,6 @@ services:
     volumes:
       - ./scripts/wait-for-replicaset.sh:/wait-for-replicaset.sh:ro
     entrypoint: ['/bin/bash', '/wait-for-replicaset.sh']
-    healthcheck:
-      test:
-        [
-          'CMD-SHELL',
-          "mongosh 'mongodb://mongodb:27017/?directConnection=true' --quiet --eval 'db.hello().isWritablePrimary' | grep -q true || exit 1"
-        ]
-      interval: 5s
-      timeout: 3s
-      retries: 20
 
   localstack:
     image: localstack/localstack:4.14.0
@@ -312,7 +297,7 @@ services:
       SERVICES: s3,sqs,sns,firehose
       LOCALSTACK_HOST: 127.0.0.1
     volumes:
-      - '${TMPDIR:-/tmp}/localstack:/var/lib/localstack'
+      - localstack-data:/var/lib/localstack
       - ./localstack/start-localstack.sh:/etc/localstack/init/ready.d/start-localstack.sh
       - ./localstack/forms:/etc/localstack/forms:ro
     healthcheck:
@@ -327,6 +312,7 @@ volumes:
   redis-data:
   mongodb-data:
   mongodb-config:
+  localstack-data:
 
 networks:
   grants-ui-net:
