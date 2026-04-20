@@ -19,13 +19,15 @@ vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
 
 const { like, eachLike, string } = MatchersV3
 
-const provider = new PactV3({
-  dir: path.resolve(process.cwd(), 'src/contracts/pacts'),
-  consumer: 'grants-ui',
-  provider: 'land-grants-api',
-  spec: SpecificationVersion.SPECIFICATION_VERSION_V4,
-  port: 0
-})
+function createProvider() {
+  return new PactV3({
+    dir: path.resolve(process.cwd(), 'src/contracts/pacts'),
+    consumer: 'grants-ui',
+    provider: 'land-grants-api',
+    spec: SpecificationVersion.SPECIFICATION_VERSION_V4,
+    port: 0
+  })
+}
 
 describe('calculate', () => {
   it('returns HTTP 200 and payment information for the requested parcels', async () => {
@@ -158,6 +160,7 @@ describe('calculate', () => {
       message: 'success',
       payment: calculateResponseContract
     })
+    const provider = createProvider()
     await provider
       .given('has parcels', {
         parcels: [
@@ -204,6 +207,7 @@ describe('calculate', () => {
       message: 'Land parcels not found: INVALID-PARCEL'
     }
     const EXPECTED_BODY = like(notFoundResponseExample)
+    const provider = createProvider()
     await provider
       .given('has parcels', { parcels: [] })
       .uponReceiving('a calculate request for an invalid parcel')
@@ -246,6 +250,7 @@ describe('calculate', () => {
       message: 'Actions not found: INVALID_ACTION'
     }
     const EXPECTED_BODY = like(notFoundResponseExample)
+    const provider = createProvider()
     await provider
       .given('has parcels', { parcels: [{ sheetId: 'SD6743', parcelId: '8083' }] })
       .uponReceiving('a calculate request for an invalid action')
@@ -288,6 +293,7 @@ describe('calculate', () => {
       message: 'Quantity must be a positive number'
     }
     const EXPECTED_BODY = like(unprocessableResponseExample)
+    const provider = createProvider()
     await provider
       .given('has parcels', { parcels: [{ sheetId: 'SD6743', parcelId: '8083' }] })
       .uponReceiving('a calculate request with invalid quantity')
@@ -330,6 +336,7 @@ describe('calculate', () => {
       message: 'Quantity must be a positive number'
     }
     const EXPECTED_BODY = like(unprocessableResponseExample)
+    const provider = createProvider()
     await provider
       .given('has parcels', { parcels: [{ sheetId: 'SD6743', parcelId: '8083' }] })
       .uponReceiving('a calculate request with a negative quantity')
@@ -361,6 +368,7 @@ describe('parcels', () => {
     }
     const EXPECTED_BODY = like(badRequestResponseExample)
 
+    const provider = createProvider()
     await provider
       .given('has parcels', { parcels: [{ sheetId: 'SD6743', parcelId: '8083' }] })
       .uponReceiving('a v2 request for a wrong field name')
@@ -382,6 +390,7 @@ describe('parcels', () => {
     const parcelWithSizeExample = { sheetId: 'SD6743', parcelId: '8083', size: { value: 23.3424, unit: 'ha' } }
     const EXPECTED_BODY = like({ message: 'success', parcels: eachLike(parcelWithSizeExample) })
 
+    const provider = createProvider()
     await provider
       .given('has parcels', { parcels: [{ sheetId: 'SD6743', parcelId: '8083' }] })
       .uponReceiving('a v2 request for specific parcels with size field')
@@ -411,6 +420,7 @@ describe('parcels', () => {
     }
     const EXPECTED_BODY = like(badRequestResponseExample)
 
+    const provider = createProvider()
     await provider
       .uponReceiving('a v2 request for a malformed parcel with size field')
       .withRequest({
@@ -435,6 +445,7 @@ describe('parcels', () => {
     }
     const EXPECTED_BODY = like(notFoundParcelExample)
 
+    const provider = createProvider()
     await provider
       .given('has parcels', { parcels: [] })
       .uponReceiving('a v2 request for a not found parcel with size field')
@@ -487,6 +498,7 @@ describe('parcels', () => {
     }
     const EXPECTED_BODY = like({ message: 'success', parcels: eachLike(parcelWithConsentExample) })
 
+    const provider = createProvider()
     await provider
       .given('has parcels', { parcels: [{ sheetId: 'SD6743', parcelId: '8083' }] })
       .uponReceiving('a v2 request for a single parcel with SSSI consent information')
@@ -531,6 +543,7 @@ describe('parcels', () => {
     }
     const EXPECTED_BODY = like(badRequestResponseExample)
 
+    const provider = createProvider()
     await provider
       .given('has parcels', {
         parcels: [
@@ -594,6 +607,7 @@ describe('parcels', () => {
     }
     const EXPECTED_BODY = like({ message: 'success', parcels: eachLike(parcelWithActionsAndSizeExample) })
 
+    const provider = createProvider()
     await provider
       .given('has parcels', { parcels: [{ sheetId: 'SD6743', parcelId: '8083' }] })
       .uponReceiving('a v2 request for a single parcel with actions and size')
@@ -623,6 +637,7 @@ describe('parcels', () => {
     }
     const EXPECTED_BODY = like(badRequestResponseExample)
 
+    const provider = createProvider()
     await provider
       .uponReceiving('a v2 request for a malformed parcel with actions and size')
       .withRequest({
@@ -651,6 +666,7 @@ describe('parcels', () => {
     }
     const EXPECTED_BODY = like(notFoundParcelExample)
 
+    const provider = createProvider()
     await provider
       .given('has parcels', { parcels: [] })
       .uponReceiving('a v2 request for a not found parcel with actions and size')
@@ -742,6 +758,7 @@ describe('validate', () => {
     }
     const EXPECTED_BODY = like(validateResponseExample)
 
+    const provider = createProvider()
     await provider
       .given('has parcels', { parcels: [{ sheetId: 'SD7861', parcelId: '5677' }] })
       .uponReceiving('a v2 validation request for multiple actions with no caveat')
@@ -823,6 +840,7 @@ describe('validate', () => {
     }
     const EXPECTED_BODY = like(validateResponseExample)
 
+    const provider = createProvider()
     await provider
       .given('has parcels', { parcels: [{ sheetId: 'SD7861', parcelId: '5677' }] })
       .uponReceiving('a v2 validation request for an action with SSSI caveat')
@@ -901,6 +919,7 @@ describe('validate', () => {
     }
     const EXPECTED_BODY = like(validateResponseWithMoorlandFailure)
 
+    const provider = createProvider()
     await provider
       .given('has parcels', { parcels: [{ sheetId: 'SK0971', parcelId: '4262' }] })
       .uponReceiving('a v2 validation request that fails moorland check without SSSI caveat')
@@ -948,6 +967,7 @@ describe('validate', () => {
     }
     const EXPECTED_BODY = like(unprocessableResponseExample)
 
+    const provider = createProvider()
     await provider
       .given('has parcels', { parcels: [{ sheetId: 'SD6743', parcelId: '8083' }] })
       .uponReceiving('a v2 validation request for invalid quantity')
@@ -990,6 +1010,7 @@ describe('validate', () => {
     }
     const EXPECTED_BODY = like(unprocessableResponseExample)
 
+    const provider = createProvider()
     await provider
       .given('has parcels', { parcels: [{ sheetId: 'SD6743', parcelId: '8083' }] })
       .uponReceiving('a v2 validation request for negative quantity')
@@ -1025,6 +1046,7 @@ describe('validate', () => {
     }
     const EXPECTED_BODY = like(badRequestResponseExample)
 
+    const provider = createProvider()
     await provider
       .given('has parcels', { parcels: [{ sheetId: 'SD6743', parcelId: '8083' }] })
       .uponReceiving('a v2 validation request with missing required fields')
@@ -1069,6 +1091,7 @@ describe('validate', () => {
 
     const EXPECTED_BODY = like(notFoundResponseExample)
 
+    const provider = createProvider()
     await provider
       .given('has parcels', { parcels: [] })
       .uponReceiving('a v2 validation request for a non-existent parcel')

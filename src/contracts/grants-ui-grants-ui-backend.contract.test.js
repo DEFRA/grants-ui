@@ -2,17 +2,20 @@ import path from 'path'
 import { PactV4, SpecificationVersion } from '@pact-foundation/pact'
 import { describe, expect, it } from 'vitest'
 
-const provider = new PactV4({
-  consumer: 'grants-ui',
-  provider: 'grants-ui-backend',
-  dir: path.join(path.join(__dirname, './pacts')),
-  spec: SpecificationVersion.SPECIFICATION_VERSION_V4,
-  port: 0
-})
+function createProvider() {
+  return new PactV4({
+    consumer: 'grants-ui',
+    provider: 'grants-ui-backend',
+    dir: path.join(path.join(__dirname, './pacts')),
+    spec: SpecificationVersion.SPECIFICATION_VERSION_V4,
+    port: 0
+  })
+}
 
 describe('Pact between grants-ui (consumer) and grants-ui-backend (provider)', () => {
   describe('POST /submissions', () => {
     it('successfully persists a grant application submission', async () => {
+      const provider = createProvider()
       const submission = {
         crn: '1234567890',
         grantCode: 'example-grant-with-auth',
