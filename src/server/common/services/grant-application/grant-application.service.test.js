@@ -504,6 +504,23 @@ describe('Grant Application service (token present)', () => {
       expect(thrownError.message).toBe('Failed to process GAS API request: Network connection failed')
       expect(thrownError.grantCode).toBe(testGrantCode)
     })
+
+    test('should drain response body for 204 responses', async () => {
+      const mockedFetch = mockFetch()
+
+      const mockRawResponse = {
+        ok: true,
+        status: 204,
+        body: true,
+        arrayBuffer: vi.fn().mockResolvedValueOnce(undefined)
+      }
+
+      mockedFetch.mockResolvedValueOnce(mockRawResponse)
+
+      await makeGasApiRequest(testUrl, testGrantCode, mockRequest)
+
+      expect(mockRawResponse.arrayBuffer).toHaveBeenCalled()
+    })
   })
 
   describe('getApplicationStatus', () => {

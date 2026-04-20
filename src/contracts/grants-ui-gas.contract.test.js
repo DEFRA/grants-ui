@@ -4,19 +4,22 @@ import { PactV4, SpecificationVersion, MatchersV3 } from '@pact-foundation/pact'
 import { describe, expect, it } from 'vitest'
 import { makeGasApiRequest } from '../server/common/services/grant-application/grant-application.service.js'
 
-const provider = new PactV4({
-  consumer: 'grants-ui',
-  provider: 'fg-gas-backend',
-  dir: path.join(path.join(__dirname, './pacts')),
-  spec: SpecificationVersion.SPECIFICATION_VERSION_V4,
-  port: 0
-})
+function createProvider() {
+  return new PactV4({
+    consumer: 'grants-ui',
+    provider: 'fg-gas-backend',
+    dir: path.join(__dirname, './pacts'),
+    spec: SpecificationVersion.SPECIFICATION_VERSION_V4,
+    port: 0
+  })
+}
 
 const { string, regex } = MatchersV3
 
 describe('Pact between grants-ui (consumer) and fg-gas-backend (provider)', () => {
   describe('POST /applications', () => {
     it('successfully submits farm-payments application', async () => {
+      const provider = createProvider()
       const payload = JSON.parse(fs.readFileSync(path.join(__dirname, 'resources/farm-payments.json'), 'utf-8'))
 
       await provider
@@ -47,6 +50,7 @@ describe('Pact between grants-ui (consumer) and fg-gas-backend (provider)', () =
     })
 
     it('successfully submits farm-payments application with only required properties', async () => {
+      const provider = createProvider()
       const payload = JSON.parse(
         fs.readFileSync(path.join(__dirname, 'resources/farm-payments-required-only.json'), 'utf-8')
       )
@@ -79,6 +83,7 @@ describe('Pact between grants-ui (consumer) and fg-gas-backend (provider)', () =
     })
 
     it('successfully submits amendment application', async () => {
+      const provider = createProvider()
       const payload = JSON.parse(
         fs.readFileSync(path.join(__dirname, 'resources/farm-payments-amendment.json'), 'utf-8')
       )
@@ -113,6 +118,7 @@ describe('Pact between grants-ui (consumer) and fg-gas-backend (provider)', () =
 
   describe('GET /grants/{grantCode}/applications/{clientRef}/status', () => {
     it('successfully gets the status of farm-payments application with reference 710-877-8fd', async () => {
+      const provider = createProvider()
       await provider
         .addInteraction()
         .given('frps-private-beta is configured in fg-gas-backend with a client reference 710-877-8fd')
@@ -150,6 +156,7 @@ describe('Pact between grants-ui (consumer) and fg-gas-backend (provider)', () =
     })
 
     it('returns 404 when application does not exist', async () => {
+      const provider = createProvider()
       await provider
         .addInteraction()
         .given('frps-private-beta is configured in fg-gas-backend')
