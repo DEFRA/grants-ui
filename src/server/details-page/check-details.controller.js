@@ -172,7 +172,7 @@ export default class CheckDetailsController extends QuestionPageController {
    * @returns {Promise<{sections: Array, mappedData: object}>}
    */
   async fetchAndProcessData(request, config) {
-    const toleratedPaths = this.model.def.metadata?.toleratedFailurePaths
+    const toleratedPaths = config.toleratedFailurePaths ?? this.model.def.metadata?.toleratedFailurePaths
     const query = buildGraphQLQuery(config.query, request)
     const response = await executeConfigDrivenQuery(request, query, { toleratedPaths })
 
