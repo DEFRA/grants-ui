@@ -47,6 +47,9 @@ metadata:
         toPath: /confirmation
   detailsPage:
     confirmationFieldName: businessDetailsUpToDate
+    toleratedFailurePaths:
+      - vat
+      - countyParishHoldings
     query:
       name: Business
       entities:
