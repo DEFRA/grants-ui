@@ -23,6 +23,7 @@
     "docker:debug": "docker compose stop grants-ui && docker compose run --service-ports --name grants-ui-debug --rm grants-ui npm run dev:debug",
     "docker:cycle-ui": "docker compose up -d --force-recreate grants-ui",
     "docker:reset": "docker compose down --volumes --remove-orphans --rmi local && docker volume ls --format '{{.Name}}' | grep -E '^[a-f0-9]{64}$' | xargs docker volume rm",
+    "docker:localstack:purge": "docker compose stop localstack && docker compose rm -f localstack && docker volume rm grants-ui_localstack-data",
     "docker:ha:up": "docker compose -f compose.yml -f compose.ha.yml up -d --scale grants-ui=2 --scale grants-ui-backend=2",
     "docker:ha:down": "docker compose -f compose.yml -f compose.ha.yml down --remove-orphans",
     "docker:landgrants:up": "docker compose -f compose.yml -f compose.land-grants.yml up -d",
@@ -60,7 +61,9 @@
     "start": "NODE_ENV=production node --use-strict .",
     "setup:husky": "node -e \"try { (await import('husky')).default() } catch (e) { if (e.code !== 'ERR_MODULE_NOT_FOUND') throw e }\" --input-type module",
     "unseal:cookie": "node ./tools/unseal-cookie.js",
-    "upload:forms": "node ./tools/upload-forms-to-api.js"
+    "upload:forms": "node ./tools/upload-forms-to-api.js",
+    "generate:broker-token": "node ./tools/generate-broker-token.js",
+    "generate:broker-token:save": "node ./tools/generate-broker-token.js --save"
   },
   "author": "Defra DDTS",
   "license": "OGL-UK-3.0",
