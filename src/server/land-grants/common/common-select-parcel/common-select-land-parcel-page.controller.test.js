@@ -102,6 +102,51 @@ describe('CommonSelectLandParcelPageController', () => {
     })
   })
 
+  describe('makeGetRouteHandler (returnUrl stripping)', () => {
+    it('redirects to same path when returnUrl is present', async () => {
+      const controller = createController()
+      const request = setupRequest('get')
+
+      request.query = { returnUrl: '/summary' }
+      request.path = '/test'
+
+      const context = setupContext({})
+      const h = setupH()
+
+      const handler = controller.makeGetRouteHandler()
+
+      await handler(request, context, h)
+
+      expect(h.redirect).toHaveBeenCalledWith('/test')
+      expect(h.redirect).toHaveBeenCalledTimes(1)
+      expect(h.view).not.toHaveBeenCalled()
+    })
+
+    it('calls normal GET handler when returnUrl is NOT present', async () => {
+      const controller = createController()
+      const request = setupRequest('get')
+
+      request.query = {}
+      request.path = '/test'
+
+      const context = setupContext({})
+      const h = setupH()
+
+      const handler = controller.makeGetRouteHandler()
+
+      await handler(request, context, h)
+
+      expect(h.view).toHaveBeenCalledWith(
+        'common-select-land-parcel',
+        expect.objectContaining({
+          parcels: mappedParcels
+        })
+      )
+
+      expect(h.redirect).not.toHaveBeenCalled()
+    })
+  })
+
   describe('handleGet', () => {
     it('renders parcels successfully', async () => {
       const controller = createController({ enableMultipleParcelSelect: true })
