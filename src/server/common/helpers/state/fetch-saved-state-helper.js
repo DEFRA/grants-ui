@@ -25,13 +25,15 @@ function logApiError(logCode = LogCodes.SYSTEM.EXTERNAL_API_ERROR) {
 /**
  * Constructs the endpoint URL for the state API based on the session key
  * @param key
+ * @param grantVersion
  * @returns {string}
  */
-function getEndpoint(key) {
+function getEndpoint(key, grantVersion) {
   const { sbi, grantCode } = parseSessionKey(key)
   const url = new URL('/state/', GRANTS_UI_BACKEND_ENDPOINT)
   url.searchParams.set('sbi', sbi)
   url.searchParams.set('grantCode', grantCode)
+  url.searchParams.set('grantVersion', grantVersion)
   return url.href
 }
 
@@ -39,20 +41,20 @@ function getEndpoint(key) {
  * Makes an API call to the state endpoint with the specified HTTP method
  * @param {string} key - The session key
  * @param {string} method - HTTP method (GET or DELETE)
- * @param {Request} request - The request object
+ * @param request - The request object
  * @param {{lockToken?: string}} [options]
  * @returns {Promise<Object|null>} The response JSON or null
  */
 async function callStateApi(key, method, request, { lockToken } = {}) {
   const logDebug = logApiError(LogCodes.SYSTEM.EXTERNAL_API_CALL_DEBUG)
   const logError = logApiError()
-
+  const grantVersion = request.app.model?.def?.metadata?.version ?? 1 // Default to 1 to support non-config broker grants
   if (!GRANTS_UI_BACKEND_ENDPOINT?.length) {
     return null
   }
 
   let response
-  const endpoint = getEndpoint(key)
+  const endpoint = getEndpoint(key, grantVersion)
 
   logDebug(request, {
     method,

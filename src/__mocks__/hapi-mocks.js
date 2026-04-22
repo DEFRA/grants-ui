@@ -114,6 +114,7 @@ export const mockAuthRequest = (customProps = {}) => ({
 export const mockSimpleRequest = (customProps = {}) => ({
   method: 'GET',
   path: '/test',
+  app: {},
   ...customProps
 })
 

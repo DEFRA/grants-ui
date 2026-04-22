@@ -1,7 +1,7 @@
 import 'dotenv/config'
 import { config } from '~/src/config/config.js'
 import { createApiHeadersForGrantsUiBackend } from '../auth/backend-auth-helper.js'
-import { log, debug, LogCodes } from '../logging/log.js'
+import { debug, log, LogCodes } from '../logging/log.js'
 import { mintLockToken } from '../lock/lock-token.js'
 import { getGrantCode } from '../grant-code.js'
 
@@ -28,11 +28,12 @@ export async function persistSubmissionToApi(submission, request) {
   )
 
   const grantCode = getGrantCode(request)
+  const grantVersion = request.app.model?.def?.metadata?.version ?? 1 // Default to 1 to support non-config broker grants
   const lockToken = mintLockToken({
     userId: request.auth?.credentials?.contactId,
     sbi: request.auth?.credentials?.sbi,
     grantCode,
-    grantVersion: 1
+    grantVersion
   })
 
   try {
@@ -41,7 +42,7 @@ export async function persistSubmissionToApi(submission, request) {
       headers: createApiHeadersForGrantsUiBackend({ lockToken }),
       body: JSON.stringify({
         ...submission,
-        grantVersion: 1 // NOSONAR TODO: Update when support for same grant versioning is implemented
+        grantVersion
       })
     })
 
