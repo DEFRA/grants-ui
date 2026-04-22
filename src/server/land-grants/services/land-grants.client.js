@@ -24,6 +24,7 @@ export async function postToLandGrantsApi(endpoint, body, baseUrl) {
     })
 
     if (!response.ok) {
+      await response.arrayBuffer()
       /**
        * @type {Error & {code?: number, status?: number}}
        */
