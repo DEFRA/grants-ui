@@ -51,6 +51,7 @@ describe('formsStatusCallback', () => {
         model: {
           def: {
             metadata: {
+              version: '1.0.0',
               submission: { grantCode: 'grant-a-code' },
               grantRedirectRules: {
                 preSubmission: [{ toPath: '/check-selected-land-actions' }],
@@ -281,11 +282,34 @@ describe('formsStatusCallback', () => {
       userId: 'contact-123',
       sbi: '12345',
       grantCode: 'grant-a',
-      grantVersion: 1
+      grantVersion: '1.0.0'
     })
-    expect(updateApplicationStatus).toHaveBeenCalledWith('REOPENED', '12345:grant-a', { lockToken: 'mock-lock-token' })
+    expect(updateApplicationStatus).toHaveBeenCalledWith('REOPENED', '12345:grant-a', {
+      lockToken: 'mock-lock-token',
+      grantVersion: '1.0.0'
+    })
     expect(h.redirect).toHaveBeenCalledWith('/grant-a/summary')
     expect(result).toEqual(expect.any(Symbol))
+  })
+
+  it('uses integer 1 as grantVersion for non-config-broker grants (no version in model metadata)', async () => {
+    delete request.app.model.def.metadata.version
+    getApplicationStatus.mockResolvedValue({
+      json: async () => ({ status: 'APPLICATION_AMEND' })
+    })
+
+    await formsStatusCallback(request, h, context)
+
+    expect(mintLockToken).toHaveBeenCalledWith({
+      userId: 'contact-123',
+      sbi: '12345',
+      grantCode: 'grant-a',
+      grantVersion: 1
+    })
+    expect(updateApplicationStatus).toHaveBeenCalledWith('REOPENED', '12345:grant-a', {
+      lockToken: 'mock-lock-token',
+      grantVersion: 1
+    })
   })
 
   it('updates session cache when transitioning to REOPENED', async () => {

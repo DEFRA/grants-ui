@@ -2,7 +2,7 @@ import 'dotenv/config'
 import { config } from '~/src/config/config.js'
 import { parseSessionKey } from './get-cache-key-helper.js'
 import { createApiHeadersForGrantsUiBackend } from '../auth/backend-auth-helper.js'
-import { log, debug, LogCodes } from '../logging/log.js'
+import { debug, log, LogCodes } from '../logging/log.js'
 
 // @ts-ignore - TS2589: Type instantiation excessively deep (convict type complexity)
 const GRANTS_UI_BACKEND_ENDPOINT = config.get('session.cache.apiEndpoint')
@@ -14,10 +14,10 @@ const MAX_DB_STATE_SIZE_BYTES = config.get('session.cache.maxDbStateSizeBytes')
  *
  * @param {object} state - The state object to persist. Can include form/session data.
  * @param {string} key - The cache/session key to identify this state.
- * @param {{lockToken?: string}} [options] - Optional lock token to identify who is locking the state.
+ * @param {{grantVersion?: string, lockToken?: string}} [options] - Optional grant version, lock token to identify who is locking the state.
  * @returns {Promise<void>} Resolves once the state is sent to the backend.
  */
-export async function persistStateToApi(state, key, { lockToken } = {}) {
+export async function persistStateToApi(state, key, { lockToken, grantVersion } = {}) {
   if (!GRANTS_UI_BACKEND_ENDPOINT?.length) {
     return
   }
@@ -39,7 +39,7 @@ export async function persistStateToApi(state, key, { lockToken } = {}) {
   const body = JSON.stringify({
     sbi,
     grantCode,
-    grantVersion: 1, // NOSONAR TODO: Update when support for same grant versioning is implemented
+    grantVersion,
     state
   })
 

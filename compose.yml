@@ -7,7 +7,9 @@ services:
       redis:
         condition: service_healthy
       grants-ui-backend:
-        condition: service_started
+        condition: service_healthy
+      grants-ui-config-api:
+        condition: service_healthy
       fcp-defra-id-stub:
         condition: service_healthy
     ports:
@@ -122,6 +124,8 @@ services:
         condition: service_healthy
       localstack:
         condition: service_healthy
+      grants-config-broker:
+        condition: service_healthy
     ports:
       - '3011:3011'
     env_file:
@@ -133,7 +137,9 @@ services:
       MONGO_URI: mongodb://mongodb:27017/
       LOCALSTACK_ENDPOINT: http://localstack:4566
       JWT_SECRET: ${CONFIG_API_JWT_SECRET:-forms-config-jwt-secret}
-      FORMS_CONFIG_BUCKET_NAME: ${FORMS_CONFIG_BUCKET_NAME:-forms-config}
+      CONFIG_BROKER_URL: '${CONFIG_BROKER_URL:-http://grants-config-broker:3012}'
+      CONFIG_BROKER_AUTH_TOKEN: '${CONFIG_BROKER_AUTH_TOKEN:-config-broker-auth-token}'
+      CONFIG_BROKER_ENCRYPTION_KEY: '${CONFIG_BROKER_ENCRYPTION_KEY:-config-broker-encryption-key}'
       FORMS_API_SLUGS: ${FORMS_API_SLUGS:-example-grant-with-auth}
       DEFAULT_FORM_ORGANISATION: ${DEFAULT_FORM_ORGANISATION:-Defra}
       DEFAULT_FORM_TEAM_NAME: ${DEFAULT_FORM_TEAM_NAME:-Digital Delivery}
@@ -144,6 +150,41 @@ services:
     restart: unless-stopped
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:3011/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  grants-config-broker:
+    image: defradigital/grants-config-broker:latest
+    pull_policy: always
+    ports:
+      - '3012:3012'
+    links:
+      - 'localstack:localstack'
+      - 'mongodb:mongodb'
+    depends_on:
+      localstack:
+        condition: service_healthy
+      mongodb:
+        condition: service_started
+    env_file:
+      - 'localstack/aws.env'
+    environment:
+      PORT: 3012
+      NODE_ENV: development
+      AWS_ENDPOINT_URL: http://localstack:4566
+      CONFIG_BUCKET_NAME: configs-bucket
+      GRANTS_CONFIG_BROKER_AUTH_TOKEN: '${GRANTS_CONFIG_BROKER_AUTH_TOKEN:-config-broker-auth-token}'
+      GRANTS_CONFIG_BROKER_ENCRYPTION_KEY: '${GRANTS_CONFIG_BROKER_ENCRYPTION_KEY:-config-broker-encryption-key}'
+      MONGO_URI: mongodb://mongodb:27017/
+      SERVICE_VERSION: 1.0.0
+    networks:
+      - grants-ui-net
+    volumes:
+      - ./localstack/config-broker:/home/node/config
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:3012/health']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -242,15 +283,6 @@ services:
     volumes:
       - ./scripts/wait-for-replicaset.sh:/wait-for-replicaset.sh:ro
     entrypoint: ['/bin/bash', '/wait-for-replicaset.sh']
-    healthcheck:
-      test:
-        [
-          'CMD-SHELL',
-          "mongosh 'mongodb://mongodb:27017/?directConnection=true' --quiet --eval 'db.hello().isWritablePrimary' | grep -q true || exit 1"
-        ]
-      interval: 5s
-      timeout: 3s
-      retries: 20
 
   localstack:
     image: localstack/localstack:4.14.0
@@ -265,7 +297,7 @@ services:
       SERVICES: s3,sqs,sns,firehose
       LOCALSTACK_HOST: 127.0.0.1
     volumes:
-      - '${TMPDIR:-/tmp}/localstack:/var/lib/localstack'
+      - localstack-data:/var/lib/localstack
       - ./localstack/start-localstack.sh:/etc/localstack/init/ready.d/start-localstack.sh
       - ./localstack/forms:/etc/localstack/forms:ro
     healthcheck:
@@ -280,6 +312,7 @@ volumes:
   redis-data:
   mongodb-data:
   mongodb-config:
+  localstack-data:
 
 networks:
   grants-ui-net:

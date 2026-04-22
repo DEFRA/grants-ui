@@ -200,5 +200,28 @@
         ]
       }
     }
+  },
+  {
+    "id": "land-grants-api-v2-parcels-200",
+    "priority": 0,
+    "httpRequest": {
+      "method": "POST",
+      "path": "/api/v2/parcels"
+    },
+    "httpResponse": {
+      "statusCode": 200,
+      "body": {
+        "parcels": [
+          {
+            "parcelId": "9215",
+            "sheetId": "SD5649",
+            "size": {
+              "unit": "ha",
+              "value": 12.34
+            }
+          }
+        ]
+      }
+    }
   }
 ]

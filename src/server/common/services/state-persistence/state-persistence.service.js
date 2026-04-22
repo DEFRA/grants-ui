@@ -71,7 +71,8 @@ export class StatePersistenceService extends CacheService {
   async setState(request, state) {
     const key = this._Key(request)
     const lockToken = this._buildLockToken(request)
-    await persistStateToApi(state, key, { lockToken })
+    const grantVersion = request.app.model?.def?.metadata?.version ?? 1 // Default to 1 to support non-config broker grants
+    await persistStateToApi(state, key, { lockToken, grantVersion })
     return state
   }
 
@@ -107,6 +108,7 @@ export class StatePersistenceService extends CacheService {
   /**
    * Clear state in backend (no-op if you don’t want to clear on submission).
    * @param {AnyFormRequest} request
+   * @param force
    */
   async clearState(request, force = false) {
     // NO-OP because you want to keep state even after submission
@@ -150,11 +152,11 @@ export class StatePersistenceService extends CacheService {
    * - the SBI (organisation)
    * - the grant (code + version)
    *
-   * @param {import('@hapi/hapi').Request} request - Hapi request object
    * @returns {string} A signed JWT lock token
    */
   _buildLockToken(request) {
     const { sbi, grantCode } = getCacheKey(request)
+    const grantVersion = request.app.model?.def?.metadata?.version ?? 1 // Default to 1 to support non-config broker grants
     const contactId = request.auth?.credentials?.contactId
 
     if (!contactId) {
@@ -165,7 +167,7 @@ export class StatePersistenceService extends CacheService {
       userId: String(contactId),
       sbi,
       grantCode,
-      grantVersion: 1
+      grantVersion
     })
   }
 }
