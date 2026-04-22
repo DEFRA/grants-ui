@@ -5,11 +5,7 @@ export default {
   test: {
     ...baseConfig.test,
     include: ['**/src/contracts/**/*.test.js'],
-    poolOptions: {
-      forks: {
-        singleFork: true
-      }
-    },
+    fileParallelism: false,
     coverage: {
       ...baseConfig.test.coverage,
       enabled: false
