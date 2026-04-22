@@ -1,7 +1,7 @@
 import {
-  buildPrintPaymentViewModel,
+  buildPrintAdditionalPayments,
   buildPrintParcelItems,
-  buildPrintAdditionalPayments
+  buildPrintPaymentViewModel
 } from './build-print-payment-view-model.js'
 
 import { MOCK_PAYMENT } from '~/src/__test-fixtures__/mock-payment.js'
@@ -26,12 +26,10 @@ describe('buildPrintPaymentViewModel', () => {
     expect(result.additionalPayments).toHaveLength(1)
   })
 
-  test('handles payment with no parcel items or agreement items', () => {
+  test('returns null if no parcel items', () => {
     const result = buildPrintPaymentViewModel({ annualTotalPence: 0 })
 
-    expect(result.totalAnnualPayment).toBe('£0.00')
-    expect(result.parcelItems).toEqual([])
-    expect(result.additionalPayments).toEqual([])
+    expect(result).toBeNull()
   })
 })
 
