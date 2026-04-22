@@ -1,0 +1,388 @@
+### Grants UI Config API - HTTP Client
+
+### Health Check
+# @name HealthCheck
+GET {{configUrl}}/health
+x-api-key: {{x-api-key}}
+
+###
+
+### List Live Slugs
+# @name ListLiveSlugs
+GET {{configUrl}}/forms/slugs
+x-api-key: {{x-api-key}}
+
+###
+
+### List Forms
+# @name ListForms
+GET {{configUrl}}/forms
+x-api-key: {{x-api-key}}
+Accept-Encoding: identity
+
+###
+
+### List Forms with Query Parameters
+# @name ListFormsWithQuery
+GET {{configUrl}}/forms?organisations=Defra
+x-api-key: {{x-api-key}}
+Accept-Encoding: identity
+
+###
+
+### Create Form (requires auth)
+# @name CreateForm
+POST {{configUrl}}/forms
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+x-api-key: {{x-api-key}}
+
+{
+  "title": "Sample Form",
+  "organisation": "Defra",
+  "teamName": "Test Team",
+  "teamEmail": "test.team.email@defra.gov.uk",
+  "slug": "sample"
+}
+
+> {%
+  client.global.set("formId", response.body.id);
+  client.global.set("slug", "sample");
+%}
+
+###
+
+### Default versionNumber (editor workflow)
+@versionNumber=1
+
+### Default semver (config broker workflow)
+@semver=1.0.0
+
+### Default slug (config broker workflow)
+@slug=example-grant-with-auth
+
+###
+
+### Get Form by ID
+# @name GetFormById
+GET {{configUrl}}/forms/{{formId}}
+x-api-key: {{x-api-key}}
+Accept-Encoding: identity
+
+###
+
+### Get Form by Slug
+# @name GetFormBySlug
+GET {{configUrl}}/forms/slug/{{slug}}
+x-api-key: {{x-api-key}}
+Accept-Encoding: identity
+
+###
+
+### Get Latest Active Form Definition by Slug (config broker forms)
+# @name GetLatestActiveDefinitionBySlug
+GET {{configUrl}}/forms/slug/{{slug}}/definition
+x-api-key: {{x-api-key}}
+Accept-Encoding: identity
+
+###
+
+### Get Specific Semver Form Definition by Slug
+# @name GetDefinitionBySlugAndVersion
+GET {{configUrl}}/forms/slug/{{slug}}/definition?version={{semver}}
+x-api-key: {{x-api-key}}
+Accept-Encoding: identity
+
+###
+
+### Get Form Metadata by Slug with Semver (optional)
+# @name GetFormBySlugWithVersion
+GET {{configUrl}}/forms/slug/{{slug}}?version={{semver}}
+x-api-key: {{x-api-key}}
+Accept-Encoding: identity
+
+###
+
+### Update Form Metadata (requires auth)
+# @name UpdateFormMetadata
+PATCH {{configUrl}}/forms/{{formId}}
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+x-api-key: {{x-api-key}}
+
+{
+  "title": "Updated Form Title"
+}
+
+###
+
+### Delete Form (requires auth)
+# @name DeleteForm
+DELETE {{configUrl}}/forms/{{formId}}
+Authorization: Bearer {{authToken}}
+x-api-key: {{x-api-key}}
+
+###
+
+### Get Draft Form Definition
+# @name GetDraftDefinition
+GET {{configUrl}}/forms/{{formId}}/definition/draft
+x-api-key: {{x-api-key}}
+Accept-Encoding: identity
+
+###
+
+### Update Draft Form Definition (requires auth)
+# @name UpdateDraftDefinition
+POST {{configUrl}}/forms/{{formId}}/definition/draft
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+x-api-key: {{x-api-key}}
+
+{
+  "engine": "V2",
+  "schema": 2,
+  "metadata": {
+    "id": "9f9c5ec4-e237-4e6e-b67c-f232a6377d76",
+    "enabledInProd": false,
+    "referenceNumberPrefix": "EGWA",
+    "cookieConsent": {
+      "enabled": true,
+      "serviceName": "Farm and land service",
+      "cookiePolicyUrl": "/cookies",
+      "expiryDays": 365
+    },
+    "submission": {
+      "grantCode": "example-grant-with-auth-v3",
+      "submissionSchemaPath": "./schemas/example-grant-with-auth-submission.schema.json"
+    },
+    "grantRedirectRules": null,
+    "confirmationContent": {
+      "panelTitle": "Details submitted",
+      "panelText": "Your reference number",
+      "html": "<h2 class=\"govuk-heading-m\">What happens next</h2>\n<p class=\"govuk-body\">Defra will email you when your funding offer is available to review. This will be within 5 working days.</p>\n<p class=\"govuk-body\">You will need to sign in to the service to accept your funding offer.</p>\n<p class=\"govuk-body\">You should not start work on the actions you have applied for until:</p>\n<ul class=\"govuk-list govuk-list--bullet govuk-!-margin-bottom-6\">\n  <li>you have accepted your offer</li>\n  <li>the Rural Payments Agency confirms your start date</li>\n</ul>\n\n<details class=\"govuk-details\" data-module=\"govuk-details\">\n  <summary class=\"govuk-details__summary\">\n    <span class=\"govuk-details__summary-text\">\n      If you have a question\n    </span>\n  </summary>\n  <div class=\"govuk-details__text\">\n    <p class=\"govuk-body\">Contact the Rural Payments Agency if you have a query.</p>\n    <p class=\"govuk-body\">\n      Telephone: 03000 200 301<br>\n      Monday to Friday, 8:30am to 5pm (except bank holidays)</p>\n    <p class=\"govuk-body\"><a class=\"govuk-link\" href=\"https://www.gov.uk/call-charges\" target=\"_blank\">Find out about call charges (opens in new tab)</a></p>\n    <p class=\"govuk-body\">Email: <a class=\"govuk-link\" href=\"mailto:ruralpayments@defra.gov.uk\">ruralpayments@defra.gov.uk</a></p>\n  </div>\n</details>"
+    },
+    "tasklist": {
+      "completeInOrder": true,
+      "returnAfterSection": true,
+      "showCompletionStatus": true,
+      "statuses": {
+        "cannotStart": {
+          "text": "Cannot start yet",
+          "classes": "govuk-tag--grey"
+        },
+        "notStarted": {
+          "text": "Not started",
+          "classes": "govuk-tag--blue"
+        },
+        "completed": {
+          "text": "Completed",
+          "classes": "govuk-tag--green"
+        }
+      }
+    }
+  },
+  "pages": [],
+  "lists": [],
+  "sections": [],
+  "conditions": []
+}
+
+###
+
+### Get Live Form Definition
+# @name GetLiveDefinition
+GET {{configUrl}}/forms/{{formId}}/definition
+x-api-key: {{x-api-key}}
+Accept-Encoding: identity
+
+###
+
+### Create Live from Draft (requires auth)
+# @name CreateLiveFromDraft
+POST {{configUrl}}/forms/{{formId}}/create-live
+Authorization: Bearer {{authToken}}
+x-api-key: {{x-api-key}}
+
+###
+
+### Create Draft from Live (requires auth)
+# @name CreateDraftFromLive
+POST {{configUrl}}/forms/{{formId}}/create-draft
+Authorization: Bearer {{authToken}}
+x-api-key: {{x-api-key}}
+
+###
+
+### Delete Draft Definition Only (requires auth)
+# @name DeleteDraftDefinition
+DELETE {{configUrl}}/forms/{{formId}}/draft
+Authorization: Bearer {{authToken}}
+x-api-key: {{x-api-key}}
+
+###
+
+### Migrate Definition to V2 (requires auth)
+# @name MigrateDefinitionToV2
+POST {{configUrl}}/forms/{{formId}}/definition/draft/migrate/2
+Authorization: Bearer {{authToken}}
+x-api-key: {{x-api-key}}
+
+###
+
+### Get Form Versions
+# @name GetFormVersions
+GET {{configUrl}}/forms/{{formId}}/versions
+x-api-key: {{x-api-key}}
+Accept-Encoding: identity
+
+###
+
+### Get Specific Form Version
+# @name GetFormVersion
+GET {{configUrl}}/forms/{{formId}}/versions/{{versionNumber}}
+x-api-key: {{x-api-key}}
+Accept-Encoding: identity
+
+###
+
+### Get Specific Form Version Definition
+# @name GetFormVersionDefinition
+GET {{configUrl}}/forms/{{formId}}/versions/{{versionNumber}}/definition
+x-api-key: {{x-api-key}}
+Accept-Encoding: identity
+
+###
+
+### Create Page on Draft Definition (requires auth)
+# @name CreatePage
+POST {{configUrl}}/forms/{{formId}}/definition/draft/pages
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+x-api-key: {{x-api-key}}
+
+{
+  "title": "New Page",
+  "path": "/new-page",
+  "next": []
+}
+
+> {%
+  client.global.set("pageId", response.body.id);
+%}
+
+###
+
+# Manually set pageId if required
+# @pageId=
+
+### Reorder Pages on Draft Definition (requires auth)
+# @name ReorderPages
+POST {{configUrl}}/forms/{{formId}}/definition/draft/pages/order
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+x-api-key: {{x-api-key}}
+
+{
+  "ids": ["pageId1", "pageId2", "pageId3"]
+}
+
+###
+
+### Patch Page on Draft Definition (requires auth)
+# @name PatchPage
+PATCH {{configUrl}}/forms/{{formId}}/definition/draft/pages/{{pageId}}
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+x-api-key: {{x-api-key}}
+
+{
+  "title": "Updated Page Title"
+}
+
+###
+
+### Delete Page from Draft Definition (requires auth)
+# @name DeletePage
+DELETE {{configUrl}}/forms/{{formId}}/definition/draft/pages/{{pageId}}
+Authorization: Bearer {{authToken}}
+x-api-key: {{x-api-key}}
+
+###
+
+### Create Component on Draft Definition (requires auth)
+# @name CreateComponent
+POST {{configUrl}}/forms/{{formId}}/definition/draft/pages/{{pageId}}/components
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+x-api-key: {{x-api-key}}
+
+{
+  "type": "TextField",
+  "name": "fieldName",
+  "title": "Field Title1",
+  "options": {}
+}
+
+> {%
+  client.global.set("componentId", response.body.id);
+%}
+
+###
+
+# Manually set componentId if required
+# @componentId=
+
+### Create Component with Prepend (requires auth)
+# @name CreateComponentWithPrepend
+POST {{configUrl}}/forms/{{formId}}/definition/draft/pages/{{pageId}}/components?prepend=true
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+x-api-key: {{x-api-key}}
+
+{
+  "type": "TextField",
+  "name": "fieldName",
+  "title": "Prepended Field Title",
+  "options": {}
+}
+
+###
+
+### Reorder Components on Draft Definition (requires auth)
+# @name ReorderComponents
+POST {{configUrl}}/forms/{{formId}}/definition/draft/page/{{pageId}}/components/order
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+x-api-key: {{x-api-key}}
+
+{
+  "ids": ["componentId1", "componentId2", "componentId3"]
+}
+
+###
+
+### Update Component on Draft Definition (requires auth)
+# @name UpdateComponent
+PUT {{configUrl}}/forms/{{formId}}/definition/draft/pages/{{pageId}}/components/{{componentId}}
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+x-api-key: {{x-api-key}}
+
+{
+  "id": "{{componentId}}",
+  "type": "TextField",
+  "name": "updatedFieldName",
+  "title": "Updated Field Title",
+  "options": {}
+}
+
+###
+
+### Delete Component from Draft Definition (requires auth)
+# @name DeleteComponent
+DELETE {{configUrl}}/forms/{{formId}}/definition/draft/pages/{{pageId}}/components/{{componentId}}
+Authorization: Bearer {{authToken}}
+x-api-key: {{x-api-key}}
+
+###

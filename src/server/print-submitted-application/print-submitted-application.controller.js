@@ -8,7 +8,7 @@ import {
   enrichDefinitionWithListItems,
   processConfigurablePrintContent
 } from '../common/helpers/print-application-service/print-application-service.js'
-import { createPersonRows, createBusinessRows, createContactRows } from '~/src/server/common/helpers/create-rows.js'
+import { createBusinessRows, createContactRows, createPersonRows } from '~/src/server/common/helpers/create-rows.js'
 
 /**
  * Validates the request has a slug param and finds the matching form definition.
@@ -74,11 +74,11 @@ function resolveApplicantDetailsSections(request, state, definition) {
 /**
  * Reads the YAML form definition, builds the print view model and renders the view.
  * @param {{ form: import('../common/forms/services/forms-redis.js').FormCacheEntry, state: Record<string, any>, slug: string }} params
- * @param {Request} request
+ * @param request
  * @param {ResponseToolkit} h
  */
 async function buildPrintResponse({ form, state, slug }, request, h) {
-  const definition = await loadFormDefinition(form)
+  const definition = await loadFormDefinition(form, request.server.app.formsService)
 
   enrichDefinitionWithListItems(definition)
 

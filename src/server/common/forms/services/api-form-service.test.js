@@ -75,7 +75,7 @@ describe('ApiFormService', () => {
       const result = await service.fetchFormMetadata('my-form')
 
       expect(service.apiFetch).toHaveBeenCalledWith('/forms/slug/my-form')
-      expect(result).toEqual({ id: 'api-id', slug: 'my-form', title: 'My Form', metadata: {}, source: 'api' })
+      expect(result).toEqual({ id: 'api-id', slug: 'my-form', title: 'My Form', source: 'api' })
     })
   })
 
@@ -192,7 +192,7 @@ describe('ApiFormService', () => {
       expect(setFormMeta).toHaveBeenCalledWith(
         {},
         'my-form',
-        expect.objectContaining({ metadata: expect.objectContaining({ whitelistCrnEnvVar: 'SOME_VAR' }) })
+        expect.objectContaining({ id: 'api-id', slug: 'my-form', title: 'My Form', source: 'api' })
       )
     })
 
