@@ -81,8 +81,7 @@ describe('Land Grants client', () => {
       mockFetch.mockResolvedValue({
         ok: false,
         status: 404,
-        statusText: 'Not Found',
-        arrayBuffer: vi.fn().mockResolvedValue(undefined)
+        statusText: 'Not Found'
       })
 
       await expect(postToLandGrantsApi('/invalid', {}, mockApiEndpoint)).rejects.toThrow('Not Found')
@@ -114,8 +113,7 @@ describe('Land Grants client', () => {
       mockFetch.mockResolvedValue({
         ok: false,
         status: 500,
-        statusText: 'Internal Server Error',
-        arrayBuffer: vi.fn().mockResolvedValue(undefined)
+        statusText: 'Internal Server Error'
       })
 
       try {
@@ -146,8 +144,7 @@ describe('Land Grants client', () => {
         ok: false,
         status: 400,
         statusText: 'Bad Request',
-        json: mockJson,
-        arrayBuffer: vi.fn().mockResolvedValue(undefined)
+        json: mockJson
       })
 
       try {
@@ -231,8 +228,7 @@ describe('Land Grants client', () => {
         mockFetch.mockResolvedValueOnce({
           ok: false,
           status,
-          statusText: `Error ${status}`,
-          arrayBuffer: vi.fn().mockResolvedValue(undefined)
+          statusText: `Error ${status}`
         })
 
         try {
