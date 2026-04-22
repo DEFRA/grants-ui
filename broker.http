@@ -1,0 +1,38 @@
+### Config Broker - HTTP Client
+
+# ─────────────────────────────────────────────
+# Health
+# ─────────────────────────────────────────────
+
+### Health check (no auth required)
+GET {{brokerUrl}}/health
+
+###
+
+# ─────────────────────────────────────────────
+# Grants and Versions
+# ─────────────────────────────────────────────
+
+@slug = example-grant-with-auth
+@semver = 1.0.0
+
+### List All Grants
+# @name GetAllGrants
+GET {{brokerUrl}}/api/allGrants
+Authorization: Bearer {{brokerAuthToken}}
+
+###
+
+### Get Grant Version Detail
+# @name GetGrantVersion
+GET {{brokerUrl}}/api/version?grant={{slug}}&version={{semver}}
+Authorization: Bearer {{brokerAuthToken}}
+
+###
+
+### Get Latest Grant Version
+# @name GetLatestVersion
+GET {{brokerUrl}}/api/latestVersion?grant={{slug}}
+Authorization: Bearer {{brokerAuthToken}}
+
+###

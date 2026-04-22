@@ -57,10 +57,8 @@ pages:
       - name: startInfoOne
         title: Html
         type: Html
-        content: |
-          <p class="govuk-body">This grant definition has been loaded from S3 v0.0.1.</p>
-          <p class="govuk-body">This service uses DefraID and
-          demonstrates the use of the following components and page
+        content: <p class="govuk-body">Config Broker Version 1.0.1 - This service uses DefraID and the Save and Return
+          feature, and demonstrates the use of the following components and page
           types:</p>
         id: 434ab3dc-fad9-44c5-8601-b19477a1d77e
         options: {}
@@ -131,6 +129,7 @@ pages:
           application
         type: YesNoField
         options:
+          classes: govuk-radios--inline
           customValidationMessages:
             any.required: Select 'Yes' to continue
         shortDescription: Yes or No

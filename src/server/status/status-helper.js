@@ -90,6 +90,7 @@ async function persistStatus(request, newStatus, previousStatus, grantId, existi
 
   if (newStatus !== ApplicationStatus.CLEARED) {
     const { sbi, grantCode } = getCacheKey(request)
+    const grantVersion = request.app.model?.def?.metadata?.version ?? 1 // Default to 1 to support non-config broker grants
     const contactId = request.auth?.credentials?.contactId || request.auth?.credentials?.crn
 
     if (!contactId) {
@@ -100,10 +101,10 @@ async function persistStatus(request, newStatus, previousStatus, grantId, existi
       userId: String(contactId),
       sbi,
       grantCode,
-      grantVersion: 1
+      grantVersion
     })
 
-    await updateApplicationStatus(newStatus, `${organisationId}:${grantId}`, { lockToken })
+    await updateApplicationStatus(newStatus, `${organisationId}:${grantId}`, { lockToken, grantVersion })
   }
 }
 

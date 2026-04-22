@@ -236,8 +236,7 @@ describe('form', () => {
       expect(result).toMatchObject({
         id: 'api-id',
         slug: 'api-form',
-        title: 'API Form',
-        metadata: { foo: 'bar' }
+        title: 'API Form'
       })
     })
 

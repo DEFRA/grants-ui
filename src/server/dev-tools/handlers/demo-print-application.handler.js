@@ -1,4 +1,4 @@
-import { buildDemoData, buildDemoPrintAnswers, buildDemoPayment } from '../helpers/index.js'
+import { buildDemoData, buildDemoPayment, buildDemoPrintAnswers } from '../helpers/index.js'
 import { findFormBySlug, loadFormDefinition } from '../../common/forms/services/find-form-by-slug.js'
 import {
   buildPrintViewModel,
@@ -24,7 +24,7 @@ export async function demoPrintApplicationHandler(request, h) {
       return generateFormNotFoundResponse(slug, h)
     }
 
-    const definition = await loadFormDefinition(form)
+    const definition = await loadFormDefinition(form, request.server.app.formsService)
 
     enrichDefinitionWithListItems(definition)
 

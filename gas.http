@@ -2,7 +2,7 @@
 
 # @name createExampleGrantWithAuth
 
-POST {{base}}/grants HTTP/1.1
+POST {{gasUrl}}/grants HTTP/1.1
 Content-Type: application/json
 Authorization: Bearer {{serviceToken}}
 x-api-key: {{x-api-key}}
@@ -251,7 +251,7 @@ x-api-key: {{x-api-key}}
 
 # @name submitExampleGrantWithAuthApplication
 
-POST {{base}}/grants/example-grant-with-auth/applications HTTP/1.1
+POST {{gasUrl}}/grants/example-grant-with-auth/applications HTTP/1.1
 Content-Type: application/json
 Authorization: Bearer {{serviceToken}}
 
@@ -290,5 +290,5 @@ Authorization: Bearer {{serviceToken}}
 
 # @name getHealth
 
-GET {{base}}/health HTTP/1.1
+GET {{gasUrl}}/health HTTP/1.1
 x-api-key: {{x-api-key}}

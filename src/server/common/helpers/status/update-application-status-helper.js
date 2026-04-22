@@ -2,14 +2,14 @@ import 'dotenv/config'
 import { config } from '~/src/config/config.js'
 import { parseSessionKey } from '../state/get-cache-key-helper.js'
 import { createApiHeadersForGrantsUiBackend } from '../auth/backend-auth-helper.js'
-import { log, debug, LogCodes } from '../logging/log.js'
+import { debug, log, LogCodes } from '../logging/log.js'
 
 const GRANTS_UI_BACKEND_ENDPOINT = config.get('session.cache.apiEndpoint')
 
 export async function updateApplicationStatus(
   applicationStatus,
   key,
-  { lockToken } = /** @type {{ lockToken?: string }} */ ({})
+  { lockToken, grantVersion = '1.0.0' } = /** @type {{ lockToken?: string, grantVersion?: string }} */ ({})
 ) {
   if (!GRANTS_UI_BACKEND_ENDPOINT?.length) {
     return
@@ -17,7 +17,7 @@ export async function updateApplicationStatus(
 
   const { sbi, grantCode } = parseSessionKey(key)
 
-  const url = new URL(`/state/${sbi}/${grantCode}`, GRANTS_UI_BACKEND_ENDPOINT)
+  const url = new URL(`/state/${sbi}/${grantCode}/${grantVersion}`, GRANTS_UI_BACKEND_ENDPOINT)
 
   log(LogCodes.SYSTEM.EXTERNAL_API_CALL_DEBUG, {
     method: 'PATCH',
