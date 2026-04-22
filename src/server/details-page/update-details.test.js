@@ -47,7 +47,7 @@ describe('update-details plugin', () => {
 
     await handler(mockRequest, mockH)
 
-    expect(mockH.view).toHaveBeenCalledWith('incorrect-details', {
+    expect(mockH.view).toHaveBeenCalledWith('update-details', {
       pageTitle: 'Update your details',
       serviceName: 'Test Form',
       serviceUrl: '/test-form',
@@ -62,7 +62,7 @@ describe('update-details plugin', () => {
     await handler(mockRequest, mockH)
 
     expect(mockH.view).toHaveBeenCalledWith(
-      'incorrect-details',
+      'update-details',
       expect.objectContaining({ incorrectDetailsContent: null })
     )
   })

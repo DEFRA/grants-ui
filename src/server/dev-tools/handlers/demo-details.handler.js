@@ -85,12 +85,12 @@ export function generateFallbackViewModel(error) {
 }
 
 /**
- * Build view model for incorrect details page
+ * Build view model for update details page
  * @param {object} form - Form object
  * @param {string} slug - Form slug
  * @returns {object} View model for incorrect details template
  */
-export function buildIncorrectDetailsViewModel(form, slug, request) {
+export function buildUpdateDetailsViewModel(form, slug, request) {
   return {
     serviceName: form?.title || 'Check your details',
     serviceUrl: slug ? `/${slug}` : '/',
@@ -201,6 +201,6 @@ export async function demoDetailsPostHandler(request, h) {
     return h.redirect(`/${slug}`)
   }
 
-  const incorrectDetailsViewModel = buildIncorrectDetailsViewModel(form, slug, request)
-  return h.view('incorrect-details', incorrectDetailsViewModel)
+  const updateDetailsViewModel = buildUpdateDetailsViewModel(form, slug, request)
+  return h.view('update-details', updateDetailsViewModel)
 }

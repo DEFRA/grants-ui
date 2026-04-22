@@ -3,7 +3,7 @@ import {
   demoDetailsHandler,
   demoDetailsPostHandler,
   buildViewModel,
-  buildIncorrectDetailsViewModel,
+  buildUpdateDetailsViewModel,
   generateFallbackViewModel,
   loadDisplaySectionsConfig
 } from './demo-details.handler.js'
@@ -235,7 +235,7 @@ describe('demo-details.handler', () => {
 
   describe('buildIncorrectDetailsViewModel', () => {
     test('should build view model with correct structure', () => {
-      const result = buildIncorrectDetailsViewModel(mockForm, 'test-form')
+      const result = buildUpdateDetailsViewModel(mockForm, 'test-form')
 
       expect(result).toEqual({
         serviceName: 'Test Form',
@@ -248,13 +248,13 @@ describe('demo-details.handler', () => {
     test('should use fallback serviceName when form has no title', () => {
       const formWithoutTitle = { id: 'test-id', slug: 'test-form' }
 
-      const result = buildIncorrectDetailsViewModel(formWithoutTitle, 'test-form')
+      const result = buildUpdateDetailsViewModel(formWithoutTitle, 'test-form')
 
       expect(result.serviceName).toBe('Check your details')
     })
 
     test('should use fallback serviceUrl when slug is empty', () => {
-      const result = buildIncorrectDetailsViewModel(mockForm, '')
+      const result = buildUpdateDetailsViewModel(mockForm, '')
 
       expect(result.serviceUrl).toBe('/')
     })
@@ -281,7 +281,7 @@ describe('demo-details.handler', () => {
       await demoDetailsPostHandler(mockRequest, mockH)
 
       expect(mockH.view).toHaveBeenCalledWith(
-        'incorrect-details',
+        'update-details',
         expect.objectContaining({
           serviceName: 'Test Form',
           serviceUrl: '/test-form',

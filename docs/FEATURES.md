@@ -212,7 +212,7 @@ The service supports several specialized page types for different stages of the 
 ### Update Details Exit Page
 
 - **Purpose**: Page shown when a user indicates on the Check Details page that their Rural Payments Agency (RPA) details are incorrect. Served at `GET /{slug}/update-details` by the `updateDetails` plugin so the browser URL reflects the state the user is in.
-- **Flow**: The `CheckDetailsController` POST handler redirects to `/{slug}/update-details` when `detailsConfirmed === false`; the plugin resolves the form by slug and renders the `incorrect-details` view.
+- **Flow**: The `CheckDetailsController` POST handler redirects to `/{slug}/update-details` when `detailsConfirmed === false`; the plugin resolves the form by slug and renders the `update-details` view.
 - **Configuration**: Page content is driven by the form's `metadata.incorrectDetailsContent` block. If the block is omitted, the view falls back to a generic "Contact the RPA" message.
   - `heading` – page heading text.
   - `paragraphs` – ordered list of body paragraphs. Each entry is either a plain string or an object with `textBefore`, `link: { text, href }`, and `textAfter` to embed a single inline link.
