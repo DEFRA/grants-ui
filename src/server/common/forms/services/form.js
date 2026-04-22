@@ -390,6 +390,10 @@ function buildServiceInterface(baseService, apiFormService, redis) {
       } catch (error) {
         throw notFound(`Form definition '${id}' not found`, error)
       }
+    },
+
+    getFormDefinitionBySlug: async (slug) => {
+      return await apiFormService.getFormDefinition(redis, slug, configureFormDefinition)
     }
   }
 }

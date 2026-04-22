@@ -85,7 +85,7 @@ export class ApiFormService {
    */
   async getFormDefinition(redis, slug, configureDefinition) {
     const cached = await getFormDef(redis, slug)
-    return cached ?? this.fetchAndCacheDefinition(redis, slug, configureDefinition)
+    return cached ?? (await this.fetchAndCacheDefinition(redis, slug, configureDefinition))
   }
 
   /**

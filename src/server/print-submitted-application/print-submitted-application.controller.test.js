@@ -55,7 +55,8 @@ describe('print-submitted-application.controller', () => {
 
     mockRequest = mockHapiRequest({
       params: { slug: 'test-form' },
-      auth: { credentials: { sbi: '123456789' } }
+      auth: { credentials: { sbi: '123456789' } },
+      server: { app: { formsService: { getFormDefinitionBySlug: vi.fn() } } }
     })
     mockH = mockHapiResponseToolkit()
 
@@ -112,7 +113,7 @@ describe('print-submitted-application.controller', () => {
 
     expect(findFormBySlug).toHaveBeenCalledWith('test-form')
     expect(mockGetState).toHaveBeenCalledWith(mockRequest)
-    expect(loadFormDefinition).toHaveBeenCalledWith(mockForm)
+    expect(loadFormDefinition).toHaveBeenCalledWith(mockForm, mockRequest.server.app.formsService)
     expect(buildPrintViewModel).toHaveBeenCalledWith({
       definition: mockDefinition,
       form: mockForm,

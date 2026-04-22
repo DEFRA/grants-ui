@@ -30,7 +30,7 @@ describe('clearApplicationStateHandler', () => {
 
     mockRequest = {
       params: {},
-      server: {},
+      server: { app: { formsService: { getFormDefinitionBySlug: vi.fn() } } },
       app: { model: {} }
     }
 
@@ -195,7 +195,7 @@ describe('clearApplicationStateHandler', () => {
       await clearApplicationStateHandler(mockRequest, mockH)
 
       expect(findFormBySlug).toHaveBeenCalledWith('test-slug')
-      expect(loadFormDefinition).toHaveBeenCalledWith(mockForm)
+      expect(loadFormDefinition).toHaveBeenCalledWith(mockForm, mockRequest.server.app.formsService)
       expect(mockRequest.app.model).toEqual({ def: mockDefinition })
     })
 
@@ -234,7 +234,7 @@ describe('clearApplicationStateHandler', () => {
 
   describe('getFormsCacheService integration', () => {
     it('should call getFormsCacheService with correct server instance', async () => {
-      const mockServer = { name: 'test-server' }
+      const mockServer = { name: 'test-server', app: { formsService: { getFormDefinitionBySlug: vi.fn() } } }
       mockRequest.server = mockServer
       mockRequest.params.slug = 'test'
 

@@ -16,7 +16,7 @@ export async function clearApplicationStateHandler(request, h) {
     if (!request.app.model) {
       const form = await findFormBySlug(slug)
       if (form) {
-        const definition = await loadFormDefinition(form)
+        const definition = await loadFormDefinition(form, request.server.app.formsService)
         request.app.model = { def: definition }
       }
     }

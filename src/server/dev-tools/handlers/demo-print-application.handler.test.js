@@ -5,7 +5,7 @@ import {
   buildPrintViewModel,
   enrichDefinitionWithListItems
 } from '../../common/helpers/print-application-service/print-application-service.js'
-import { buildDemoData, buildDemoPrintAnswers, buildDemoPayment } from '../helpers/index.js'
+import { buildDemoData, buildDemoPayment, buildDemoPrintAnswers } from '../helpers/index.js'
 import { generateFormNotFoundResponse } from '../utils/index.js'
 import { mockHapiRequest, mockHapiResponseToolkit } from '~/src/__mocks__/hapi-mocks.js'
 import { debug, LogCodes } from '../../common/helpers/logging/log.js'
@@ -31,7 +31,10 @@ describe('demo-print-application.handler', () => {
   beforeEach(() => {
     vi.clearAllMocks()
 
-    mockRequest = mockHapiRequest({ params: { slug: 'test-form' } })
+    mockRequest = mockHapiRequest({
+      params: { slug: 'test-form' },
+      server: { app: { formsService: { getFormDefinitionBySlug: vi.fn() } } }
+    })
     mockH = mockHapiResponseToolkit()
 
     buildDemoData.mockReturnValue(MOCK_DEMO_DATA)
@@ -48,7 +51,7 @@ describe('demo-print-application.handler', () => {
     await demoPrintApplicationHandler(mockRequest, mockH)
 
     expect(findFormBySlug).toHaveBeenCalledWith('test-form')
-    expect(loadFormDefinition).toHaveBeenCalledWith(mockForm)
+    expect(loadFormDefinition).toHaveBeenCalledWith(mockForm, mockRequest.server.app.formsService)
     expect(enrichDefinitionWithListItems).toHaveBeenCalledWith(mockDefinition)
     expect(buildDemoPrintAnswers).toHaveBeenCalledWith(mockDefinition)
     expect(buildPrintViewModel).toHaveBeenCalledWith(
@@ -69,7 +72,10 @@ describe('demo-print-application.handler', () => {
   })
 
   test('should include demo payment data for farm-payments slug', async () => {
-    mockRequest = mockHapiRequest({ params: { slug: 'farm-payments' } })
+    mockRequest = mockHapiRequest({
+      params: { slug: 'farm-payments' },
+      server: { app: { formsService: { getFormDefinitionBySlug: vi.fn() } } }
+    })
     findFormBySlug.mockResolvedValue(mockForm)
     buildPrintViewModel.mockReturnValue({ test: 'viewModel' })
 
