@@ -17,10 +17,6 @@ vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
   }
 }))
 
-vi.mock('~/src/server/common/helpers/retry.js', () => ({
-  retry: (operation) => operation()
-}))
-
 const { like, eachLike, string } = MatchersV3
 
 function createProvider() {
