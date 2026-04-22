@@ -16,6 +16,14 @@ vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
   }
 }))
 
+vi.mock('~/src/server/common/helpers/retry.js', async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    retry: (operation, options) => actual.retry(operation, { ...options, maxAttempts: 1 })
+  }
+})
+
 const { like, eachLike, string } = MatchersV3
 
 function createProvider() {
