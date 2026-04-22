@@ -47,6 +47,9 @@ metadata:
         toPath: /confirmation
   detailsPage:
     confirmationFieldName: businessDetailsUpToDate
+    toleratedFailurePaths:
+      - vat
+      - countyParishHoldings
     query:
       name: Business
       entities:
@@ -583,16 +586,17 @@ pages:
       redirects:
         next: /declaration
       paymentExplanation: |
-        <p class="govuk-body">We calculate the amount to be paid using the total area of eligible woodland on the holding.</p>
-        <p class="govuk-body">Threshold payments for eligible land:</p>
+        <p class="govuk-body">We calculate the amount to be paid using the total area of eligible woodland in your application.</p>
+        <p class="govuk-body">Threshold payments for eligible land in hectares (ha):</p>
         <ul class="govuk-list govuk-list--bullet">
         <li>0.5 hectares (ha) to 50ha: flat rate of £1,500</li>
         <li>51ha to 100ha: flat rate of £1,500 for the first 50ha, plus £30 for each additional hectare up to and including 100ha</li>
         <li>more than 100ha: flat rate of £3,000, plus £15 for each additional hectare over 100ha</li>
         </ul>
-        <p class="govuk-body">For full details read our <a href="https://www.gov.uk/government/publications/pa3-woodland-management-plan-2026/applicants-guide-pa3-woodland-management-plan-2026" class="govuk-link">Applicant’s guide: PA3 Woodland management plan 2026 guidance</a>.</p>
-        <p class="govuk-inset-text">Based on the information provided, you may be eligible for a grant of up to {{ totalPayment }}.</p>
-        <p class="govuk-body">This amount may vary as a result of the processes set out in the <a href="https://www.gov.uk/government/publications/capital-grants-agreements-terms-and-conditions-2026/capital-grants-agreements-terms-and-conditions-2026" class="govuk-link">Capital grants agreements: Terms and Conditions 2026</a>. For example, amendments to change the size of a parcel and adjustments to a payment rate to eliminate greening double funding.</p>
+        <p class="govuk-body">For full details read our <a href="https://www.gov.uk/government/publications/pa3-woodland-management-plan-2026/applicants-guide-pa3-woodland-management-plan-2026#whatyoull-get-paid" class="govuk-link">Applicant’s guide: PA3 Woodland management plan 2026 guidance</a>.</p>
+        <p class="govuk-body">Based on the information provided, you may be eligible for a grant of up to {{ totalPayment }}.</p>
+        <p class="govuk-inset-text">There’s no guarantee you’ll receive a grant</p>
+        <p class="govuk-body">Please note that these figures are correct as at the Agreement Start Date and may vary as a result of the processes set out in the <a href="https://www.gov.uk/government/publications/capital-grants-agreements-terms-and-conditions-2026" class="govuk-link">Capital grants agreements: Terms and conditions 2026</a>. Examples of where the figures may change include amendments to change the size of a parcel and adjustments to a payment rate to eliminate greening double funding.</p>
   - title: Submit your application
     id: ab194d2a-0b67-4a21-9158-1bd1bbdc4077
     path: /declaration
