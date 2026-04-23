@@ -1,8 +1,18 @@
 import fs from 'fs'
 import path from 'path'
 import { PactV4, SpecificationVersion, MatchersV3 } from '@pact-foundation/pact'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { makeGasApiRequest } from '../server/common/services/grant-application/grant-application.service.js'
+
+vi.mock('../server/common/helpers/retry.js', () => ({
+  retry: (operation) => operation()
+}))
+
+vi.mock('../server/common/helpers/logging/log.js', () => ({
+  debug: vi.fn(),
+  log: vi.fn(),
+  logger: { debug: vi.fn(), info: vi.fn(), error: vi.fn(), warn: vi.fn() }
+}))
 
 function createProvider() {
   return new PactV4({
