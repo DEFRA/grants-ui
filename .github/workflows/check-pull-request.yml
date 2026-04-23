@@ -51,6 +51,7 @@ jobs:
           npm run format:check
           npm run lint
           npm test
+          npm run test:contracts
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v5
