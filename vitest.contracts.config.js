@@ -7,6 +7,7 @@ export default {
     globals: true,
     environment: 'node',
     include: ['src/contracts/**/*.contract.test.js'],
+    exclude: ['**/node_modules/**', '**/.stryker-tmp/**'],
     fileParallelism: false,
     setupFiles: [],
     coverage: {
