@@ -71,7 +71,8 @@
     "serialize-javascript": "7.0.5",
     "sirv": "3.0.2",
     "follow-redirects": "^1.16.0",
-    "basic-ftp": "5.3.0"
+    "basic-ftp": "5.3.0",
+    "uuid": "^14.0.0"
   },
   "dependencies": {
     "@babel/runtime": "7.29.2",

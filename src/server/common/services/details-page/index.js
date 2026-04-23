@@ -2,3 +2,4 @@ export { buildGraphQLQuery, validateQueryConfig } from './graphql-query-builder.
 export { mapResponse } from './field-mapping-processor.js'
 export { processDisplayFields, processSections } from './display-field-processor.js'
 export { getFormatter } from './formatters/index.js'
+export { validateDetailsPageConfig } from './validate-details-page-config.js'

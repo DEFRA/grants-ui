@@ -55,8 +55,19 @@ metadata:
                     - path: postalCode
                     - path: uprn
                     - path: county
+                    - path: buildingName
+                    - path: buildingNumberRange
+                    - path: dependentLocality
+                    - path: doubleDependentLocality
+                    - path: flatName
+                    - path: pafOrganisationName
+                - path: vat
+            - path: countyParishHoldings
+              fields:
+                - path: cphNumber
     responseMapping:
       business: data.business.info
+      countyParishHoldings: data.business.countyParishHoldings[0].cphNumber
       customer: data.customer.info
     displaySections:
       - title: Applicant details
@@ -71,8 +82,23 @@ metadata:
           - label: Single Business Identifier (SBI) number
             sourceType: credentials
             sourcePath: sbi
+          - label: Business reference
+            sourcePath: business.reference
           - label: Organisation email
             sourcePath: business.email.address
+          - label: Mobile phone number
+            sourcePath: business.phone.mobile
+          - label: Landline phone number
+            sourcePath: business.phone.landline
+          - label: Organisation address
+            sourcePath: business.address
+            format: address
+          - label: VAT registration number
+            sourcePath: business.vat
+      - title: County parish holding (CPH) numbers
+        fields:
+          - label: CPH number
+            sourcePath: countyParishHoldings
   printPage:
     showApplicantDetails: true
     configurablePrintContent:

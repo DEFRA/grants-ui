@@ -94,6 +94,7 @@ describe('DeclarationPageController', () => {
       },
       path: '/example-grant-with-auth/declaration',
       server: {},
+      app: { model: mockModel },
       auth: {
         credentials: {
           sbi: 'sbi123',

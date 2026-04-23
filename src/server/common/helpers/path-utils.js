@@ -22,6 +22,18 @@ function resolvePathPart(current, part) {
 }
 
 /**
+ * Strips the leading `data.` prefix and any `[digit]` array indices from a
+ * responseMapping value, producing a plain dot-path for string comparison.
+ * e.g. `data.business.countyParishHoldings[0].cphNumber` → `business.countyParishHoldings.cphNumber`
+ *
+ * @param {string} value
+ * @returns {string}
+ */
+export function normaliseResponseMappingPath(value) {
+  return value.replace(/^data\./, '').replaceAll(/\[\d+\]/g, '')
+}
+
+/**
  * Resolves a value from an object using dot-notation path
  * Supports array index notation (e.g., 'items[0].name')
  *
