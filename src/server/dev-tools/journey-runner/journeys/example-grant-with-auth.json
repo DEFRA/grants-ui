@@ -34,6 +34,12 @@
     "value": "Test description for the journey runner."
   },
   {
+    "slug": "select-land-parcel",
+    "name": "SelectLandParcel",
+    "type": "checkboxes",
+    "fieldName": "landParcels"
+  },
+  {
     "slug": "multi-field-form",
     "name": "MultiFieldForm",
     "type": "textFields",

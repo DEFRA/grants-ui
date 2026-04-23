@@ -136,7 +136,7 @@
     "priority": 0,
     "httpRequest": {
       "method": "POST",
-      "path": "/parcels",
+      "path": "/api/v2/parcels",
       "body": {
         "type": "JSON_PATH",
         "jsonPath": "$.fields[?(@ == 'actions')]"
@@ -183,7 +183,7 @@
     "priority": 0,
     "httpRequest": {
       "method": "POST",
-      "path": "/parcels"
+      "path": "/api/v2/parcels"
     },
     "httpResponse": {
       "statusCode": 200,

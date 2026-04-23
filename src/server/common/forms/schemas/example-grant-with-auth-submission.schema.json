@@ -24,7 +24,71 @@
     },
     "applicantBusinessAddress__town": { "type": "string" },
     "applicantBusinessAddress__county": { "type": ["string", "null"] },
-    "applicantBusinessAddress__postcode": { "type": "string" }
+    "applicantBusinessAddress__postcode": { "type": "string" },
+    "detailsConfirmedAt": { "type": "string", "format": "date-time" },
+    "applicant": {
+      "type": "object",
+      "description": "Business and customer details sourced from the DAL via the check-details controller",
+      "properties": {
+        "business": {
+          "type": "object",
+          "properties": {
+            "reference": { "type": ["string", "null"] },
+            "name": { "type": ["string", "null"] },
+            "vat": { "type": ["string", "null"] },
+            "email": {
+              "type": "object",
+              "properties": {
+                "address": { "type": ["string", "null"] }
+              }
+            },
+            "phone": {
+              "type": "object",
+              "properties": {
+                "mobile": { "type": ["string", "null"] },
+                "landline": { "type": ["string", "null"] }
+              }
+            },
+            "address": {
+              "type": "object",
+              "properties": {
+                "line1": { "type": ["string", "null"] },
+                "line2": { "type": ["string", "null"] },
+                "line3": { "type": ["string", "null"] },
+                "line4": { "type": ["string", "null"] },
+                "line5": { "type": ["string", "null"] },
+                "street": { "type": ["string", "null"] },
+                "city": { "type": ["string", "null"] },
+                "postalCode": { "type": ["string", "null"] },
+                "uprn": { "type": ["string", "null"] },
+                "county": { "type": ["string", "null"] },
+                "buildingName": { "type": ["string", "null"] },
+                "buildingNumberRange": { "type": ["string", "null"] },
+                "dependentLocality": { "type": ["string", "null"] },
+                "doubleDependentLocality": { "type": ["string", "null"] },
+                "flatName": { "type": ["string", "null"] },
+                "pafOrganisationName": { "type": ["string", "null"] }
+              }
+            }
+          }
+        },
+        "customer": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "object",
+              "properties": {
+                "title": { "type": ["string", "null"] },
+                "first": { "type": ["string", "null"] },
+                "middle": { "type": ["string", "null"] },
+                "last": { "type": ["string", "null"] }
+              }
+            }
+          }
+        },
+        "countyParishHoldings": { "type": ["string", "null"] }
+      }
+    }
   },
   "required": [
     "yesNoField",
