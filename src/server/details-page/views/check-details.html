@@ -5,6 +5,7 @@
 {% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
 {% from "section-list/macro.njk" import appSectionList %}
 {% from "partials/components.html" import componentList with context %}
+{% from "support-details/macro.njk" import defraSupportDetails %}
 
 {% block content %}
   <div class="govuk-grid-row">
@@ -28,6 +29,8 @@
         {{ pageTitle }}
       </h1>
 
+      <p class="govuk-body">If your details are not correct you need to update them before you apply.</p>
+
       {{ appSectionList({ sections: sections }) }}
 
       <form method="post" novalidate>
@@ -40,10 +43,8 @@
           preventDoubleClick: true
         }) }}
       </form>
+
+      {{ defraSupportDetails({typeOfSupport: 'help'}) }}
     </div>
   </div>
-
-  {% if config.cdpEnvironment == 'local' and context | length and not context.isForceAccess %}
-    {% include "partials/debug.html" %}
-  {% endif %}
 {% endblock %}

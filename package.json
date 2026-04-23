@@ -20,7 +20,7 @@
     "dev:debug": "run-p frontend:watch server:debug",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down --remove-orphans",
-    "docker:debug": "docker compose stop grants-ui && docker compose run --service-ports --name grants-ui-debug --rm grants-ui npm run dev:debug",
+    "docker:debug": "node ./tools/docker-debug.js",
     "docker:cycle-ui": "docker compose up -d --force-recreate grants-ui",
     "docker:reset": "docker compose down --volumes --remove-orphans --rmi local && docker volume ls --format '{{.Name}}' | grep -E '^[a-f0-9]{64}$' | xargs docker volume rm",
     "docker:localstack:purge": "docker compose stop localstack && docker compose rm -f localstack && docker volume rm grants-ui_localstack-data",
