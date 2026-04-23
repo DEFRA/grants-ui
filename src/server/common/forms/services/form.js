@@ -18,6 +18,7 @@ import {
 } from './forms-redis.js'
 import { waitForRedisReady } from '~/src/server/common/helpers/redis-client.js'
 import { ApiFormService } from './api-form-service.js'
+import { validateDetailsPageConfig } from '~/src/server/common/services/details-page/validate-details-page-config.js'
 
 async function loadSharedRedirectRules() {
   const filePath = path.resolve(process.cwd(), 'src/server/common/forms/shared-redirect-rules.yaml')
@@ -161,6 +162,14 @@ function validateSbiEnvironmentVariable(whitelistSbiEnvVar, form, definition) {
     const error = `SBI whitelist environment variable ${whitelistSbiEnvVar} is defined in form ${definition.name || form.title || 'unnamed'} but not configured in environment`
     throw new Error(error)
   }
+}
+
+export function validateDetailsPageConfiguration(form, definition) {
+  if (!definition.metadata?.detailsPage) {
+    return
+  }
+  const formName = definition.name || form.title || 'unnamed'
+  validateDetailsPageConfig(definition.metadata.detailsPage, formName)
 }
 
 export function validateWhitelistConfiguration(form, definition) {
@@ -327,6 +336,8 @@ async function registerYamlForms(loader, redis, yamlForms, sharedRules) {
       validateGrantRedirectRules(form, definition)
       logger.info(`Grant redirect rules validated for form: ${form.title}`)
 
+      validateDetailsPageConfiguration(form, definition)
+
       await Promise.all([
         setFormMeta(redis, form.slug, {
           id: form.id,
@@ -423,7 +434,8 @@ export const formsService = async () => {
       sharedRules,
       configureFormDefinition,
       validateWhitelistConfiguration,
-      validateGrantRedirectRules
+      validateGrantRedirectRules,
+      validateDetailsPageConfiguration
     )
   }
 

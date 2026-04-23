@@ -99,8 +99,17 @@ export class ApiFormService {
    * @param {(definition: import('@defra/forms-model').FormDefinition) => import('@defra/forms-model').FormDefinition} configureDefinition
    * @param {(form: {title: string}, definition: import('@defra/forms-model').FormDefinition) => void} validateWhitelist
    * @param {(form: {title: string}, definition: import('@defra/forms-model').FormDefinition) => void} validateRedirectRules
+   * @param {(form: {title: string}, definition: import('@defra/forms-model').FormDefinition) => void} validateDetailsPage
    */
-  async loadAll(redis, slugs, sharedRules, configureDefinition, validateWhitelist, validateRedirectRules) {
+  async loadAll(
+    redis,
+    slugs,
+    sharedRules,
+    configureDefinition,
+    validateWhitelist,
+    validateRedirectRules,
+    validateDetailsPage
+  ) {
     for (const slug of slugs) {
       try {
         const [entry, rawDefinition] = await Promise.all([this.fetchFormMetadata(slug), this.fetchFormDefinition(slug)])
@@ -123,6 +132,8 @@ export class ApiFormService {
 
         validateRedirectRules(form, definition)
         logger.info(`Grant redirect rules validated for API form: ${entry.title}`)
+
+        validateDetailsPage(form, definition)
 
         await Promise.all([
           setFormMeta(redis, slug, entry),

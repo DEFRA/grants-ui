@@ -4,6 +4,7 @@ import {
   addAllForms,
   configureFormDefinition,
   formsService,
+  validateDetailsPageConfiguration,
   validateGrantRedirectRules,
   validateWhitelistConfiguration
 } from './form.js'
@@ -63,20 +64,7 @@ const TEST_FORMS_ARRAY = [
   }
 ]
 
-const UNIQUE_FORMS_ARRAY = [
-  {
-    path: 'path/to/form1.yaml',
-    id: 'form-id-1',
-    slug: 'form-slug-1',
-    title: 'Form 1'
-  },
-  {
-    path: 'path/to/form2.yaml',
-    id: 'form-id-2',
-    slug: 'form-slug-2',
-    title: 'Form 2'
-  }
-]
+const UNIQUE_FORMS_ARRAY = TEST_FORMS_ARRAY.slice(0, 2)
 
 // Stateful in-memory stores so formsService() startup writes are visible to later reads
 const _metaStore = new Map()
@@ -271,7 +259,8 @@ describe('form', () => {
         expect.anything(),
         configureFormDefinition,
         validateWhitelistConfiguration,
-        validateGrantRedirectRules
+        validateGrantRedirectRules,
+        validateDetailsPageConfiguration
       )
     })
 
@@ -504,164 +493,81 @@ describe('form', () => {
   describe('validateWhitelistConfiguration', () => {
     const testForm = { title: 'Test Form' }
 
-    test('throws error when only CRN environment variable is provided', () => {
-      const definition = {
-        metadata: {
-          whitelistCrnEnvVar: 'EXAMPLE_WHITELIST_CRNS'
-        }
-      }
-
-      expect(() => validateWhitelistConfiguration(testForm, definition)).toThrow(
+    test.each([
+      [
+        'only CRN variable is provided',
+        { whitelistCrnEnvVar: 'EXAMPLE_WHITELIST_CRNS' },
         'Incomplete whitelist configuration in form Test Form: whitelistCrnEnvVar is defined but whitelistSbiEnvVar is missing. Both CRN and SBI whitelist variables must be configured together.'
-      )
-    })
-
-    test('throws error when only SBI environment variable is provided', () => {
-      const definition = {
-        metadata: {
-          whitelistSbiEnvVar: 'EXAMPLE_WHITELIST_SBIS'
-        }
-      }
-
-      expect(() => validateWhitelistConfiguration(testForm, definition)).toThrow(
+      ],
+      [
+        'only SBI variable is provided',
+        { whitelistSbiEnvVar: 'EXAMPLE_WHITELIST_SBIS' },
         'Incomplete whitelist configuration in form Test Form: whitelistSbiEnvVar is defined but whitelistCrnEnvVar is missing. Both CRN and SBI whitelist variables must be configured together.'
-      )
-    })
-
-    test('throws error when CRN environment variable is missing', () => {
-      const definition = {
-        metadata: {
-          whitelistCrnEnvVar: 'MISSING_CRN_VAR',
-          whitelistSbiEnvVar: 'EXAMPLE_WHITELIST_SBIS'
-        }
-      }
-
-      expect(() => validateWhitelistConfiguration(testForm, definition)).toThrow(
+      ],
+      [
+        'CRN env variable is missing from environment',
+        { whitelistCrnEnvVar: 'MISSING_CRN_VAR', whitelistSbiEnvVar: 'EXAMPLE_WHITELIST_SBIS' },
         'CRN whitelist environment variable MISSING_CRN_VAR is defined in form Test Form but not configured in environment'
-      )
-    })
-
-    test('throws error when SBI environment variable is missing', () => {
-      const definition = {
-        metadata: {
-          whitelistCrnEnvVar: 'EXAMPLE_WHITELIST_CRNS',
-          whitelistSbiEnvVar: 'MISSING_SBI_VAR'
-        }
-      }
-
-      expect(() => validateWhitelistConfiguration(testForm, definition)).toThrow(
+      ],
+      [
+        'SBI env variable is missing from environment',
+        { whitelistCrnEnvVar: 'EXAMPLE_WHITELIST_CRNS', whitelistSbiEnvVar: 'MISSING_SBI_VAR' },
         'SBI whitelist environment variable MISSING_SBI_VAR is defined in form Test Form but not configured in environment'
-      )
+      ]
+    ])('throws when %s', (_name, metadata, expectedError) => {
+      expect(() => validateWhitelistConfiguration(testForm, { metadata })).toThrow(expectedError)
     })
   })
 
   describe('startup configuration validation', () => {
     const testForm = { title: 'Test Form' }
+    const validPostRule = {
+      fromGrantsStatus: 'SUBMITTED',
+      gasStatus: 'RECEIVED',
+      toGrantsStatus: 'SUBMITTED',
+      toPath: '/confirmation'
+    }
+    const defaultFallbackRule = {
+      fromGrantsStatus: 'default',
+      gasStatus: 'default',
+      toGrantsStatus: 'default',
+      toPath: '/default-redirect'
+    }
 
-    test('throws error if redirect rules are missing required properties in preSubmission', async () => {
-      const badDefinition = {
-        metadata: {
-          grantRedirectRules: {
-            preSubmission: [{}], // missing toPath
-            postSubmission: [
-              {
-                toPath: '/confirmation',
-                fromGrantsStatus: 'SUBMITTED',
-                gasStatus: 'RECEIVED',
-                toGrantsStatus: 'SUBMITTED'
-              }
-            ]
-          }
-        }
-      }
-
-      expect(() => validateGrantRedirectRules(testForm, badDefinition)).toThrow(
+    test.each([
+      [
+        'preSubmission rule is missing toPath',
+        { preSubmission: [{}], postSubmission: [validPostRule] },
         'Invalid redirect rules in form Test Form: "[0].toPath" is required'
-      )
-    })
-
-    test('throws error if redirect rules are missing required properties in postSubmission', async () => {
-      const badDefinition = {
-        metadata: {
-          grantRedirectRules: {
-            preSubmission: [
-              {
-                toPath: '/summary'
-              }
-            ],
-            postSubmission: [
-              {
-                // Missing required toPath
-                fromGrantsStatus: 'SUBMITTED',
-                gasStatus: 'RECEIVED',
-                toGrantsStatus: 'SUBMITTED'
-              }
-            ]
-          }
-        }
-      }
-
-      expect(() => validateGrantRedirectRules(testForm, badDefinition)).toThrow(
+      ],
+      [
+        'postSubmission rule is missing toPath',
+        {
+          preSubmission: [{ toPath: '/summary' }],
+          postSubmission: [{ fromGrantsStatus: 'SUBMITTED', gasStatus: 'RECEIVED', toGrantsStatus: 'SUBMITTED' }]
+        },
         'Invalid redirect rules in form Test Form: "[0].toPath" is required'
-      )
-    })
-
-    test('does throw if redirect rules are missing required fallback rule in postSubmission', async () => {
-      const badDefinition = {
-        metadata: {
-          grantRedirectRules: {
-            preSubmission: [{ toPath: '/start' }],
-            postSubmission: [
-              {
-                fromGrantsStatus: 'SUBMITTED',
-                gasStatus: 'RECEIVED',
-                toGrantsStatus: 'SUBMITTED',
-                toPath: '/confirmation'
-              }
-            ]
-          }
-        }
-      }
-
-      expect(() => validateGrantRedirectRules(testForm, badDefinition)).toThrow(
+      ],
+      [
+        'postSubmission is missing the default/default fallback rule',
+        { preSubmission: [{ toPath: '/start' }], postSubmission: [validPostRule] },
         'Invalid redirect configuration in form Test Form: missing default/default fallback rule in postSubmission'
-      )
-    })
-
-    test('throws error if postSubmission array is empty', async () => {
-      const badDefinition = {
-        metadata: {
-          grantRedirectRules: {
-            preSubmission: [{ toPath: '/start' }],
-            postSubmission: []
-          }
-        }
-      }
-
-      expect(() => validateGrantRedirectRules(testForm, badDefinition)).toThrow(
+      ],
+      [
+        'postSubmission array is empty',
+        { preSubmission: [{ toPath: '/start' }], postSubmission: [] },
         'Invalid redirect configuration in form Test Form: no postSubmission redirect rules defined'
-      )
+      ]
+    ])('throws when %s', (_name, grantRedirectRules, expectedError) => {
+      expect(() => validateGrantRedirectRules(testForm, { metadata: { grantRedirectRules } })).toThrow(expectedError)
     })
 
-    test('does not throw when all redirect rules are valid', async () => {
+    test('does not throw when all redirect rules are valid', () => {
       const goodDefinition = {
         metadata: {
           grantRedirectRules: {
             preSubmission: [{ toPath: '/start' }],
-            postSubmission: [
-              {
-                fromGrantsStatus: 'SUBMITTED',
-                gasStatus: 'RECEIVED',
-                toGrantsStatus: 'SUBMITTED',
-                toPath: '/confirmation'
-              },
-              {
-                fromGrantsStatus: 'default',
-                gasStatus: 'default',
-                toGrantsStatus: 'default',
-                toPath: '/default-redirect'
-              }
-            ]
+            postSubmission: [validPostRule, defaultFallbackRule]
           }
         }
       }
