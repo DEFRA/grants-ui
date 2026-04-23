@@ -5,6 +5,8 @@
 {% else %}
   {% if params.typeOfSupport == 'question' %}
     {% set summaryText = "If you have a question" %}
+  {% elseif params.typeOfSupport == 'help' %}
+    {% set summaryText = "If you need help" %}
   {% else %}
     {% set summaryText = "If you need to make an update" %}
   {% endif %}
@@ -14,12 +16,13 @@
 {% else %}
   {% if params.typeOfSupport == 'question' %}
     {% set introText = "Contact the Rural Payments Agency (RPA) if you have a query." %}
+  {% elseif params.typeOfSupport == 'help' %}
+    {% set introText = "Get help with your application." %}
   {% else %}
     {% set introText = "Contact the Rural Payments Agency (RPA) to update your details." %}
   {% endif %}
 
   {% set htmlContent %}
-    <p class="govuk-body">{{ introText }}</p>
     {% include "rpa-contact-panel/html-content.njk" %}
   {% endset %}
 {% endif %}

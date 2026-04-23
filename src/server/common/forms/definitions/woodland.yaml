@@ -62,7 +62,33 @@ metadata:
                 - path: name
                   fields:
                     - path: first
+                    - path: middle
                     - path: last
+                - path: email
+                  fields:
+                    - path: address
+                - path: phone
+                  fields:
+                    - path: mobile
+                    - path: landline
+                - path: address
+                  fields:
+                    - path: line1
+                    - path: line2
+                    - path: line3
+                    - path: line4
+                    - path: line5
+                    - path: street
+                    - path: city
+                    - path: postalCode
+                    - path: uprn
+                    - path: county
+                    - path: buildingName
+                    - path: buildingNumberRange
+                    - path: dependentLocality
+                    - path: doubleDependentLocality
+                    - path: flatName
+                    - path: pafOrganisationName
         - name: business
           variableName: sbi
           variableSource: credentials.sbi
@@ -97,42 +123,45 @@ metadata:
                     - path: flatName
                     - path: pafOrganisationName
                 - path: vat
-            - path: countyParishHoldings
-              fields:
-                - path: cphNumber
     responseMapping:
       business: data.business.info
-      countyParishHoldings: data.business.countyParishHoldings[0].cphNumber
       customer: data.customer.info
     displaySections:
-      - title: Applicant details
+      - title: Business contact details
         fields:
-          - label: Applicant name
-            sourcePath: customer.name
-            format: fullName
-      - title: Organisation details
-        description: If your application is successful, the following organisation will receive the Woodland Management Plan grant.
-        fields:
-          - label: Organisation name
+          - label: Business name
             sourcePath: business.name
-          - label: Single Business Identifier (SBI) number
-            sourceType: credentials
-            sourcePath: sbi
-          - label: Organisation email
-            sourcePath: business.email.address
-          - label: Mobile phone number
-            sourcePath: business.phone.mobile
-          - label: Landline phone number
-            sourcePath: business.phone.landline
-          - label: Organisation address
+          - label: Business address
             sourcePath: business.address
             format: address
+          - label: Business phone numbers
+            sourcePath: business.phone
+            format: phoneNumbers
+          - label: Business email address
+            sourcePath: business.email.address
+      - title: Reference numbers
+        fields:
+          - label: Single Business Identifier (SBI)
+            sourceType: credentials
+            sourcePath: sbi
           - label: VAT registration number
             sourcePath: business.vat
-      - title: County parish holding (CPH) numbers
+      - title: Personal details
         fields:
-          - label: CPH number
-            sourcePath: countyParishHoldings
+          - label: Full name
+            sourcePath: customer.name
+            format: fullName
+          - label: Customer reference number
+            sourceType: credentials
+            sourcePath: crn
+          - label: Personal address
+            sourcePath: customer.address
+            format: address
+          - label: Personal phone numbers
+            sourcePath: customer.phone
+            format: phoneNumbers
+          - label: Personal email address
+            sourcePath: customer.email.address
   tasklist:
     completeInOrder: true
     returnAfterSection: true
@@ -426,8 +455,8 @@ pages:
         id: 50a8fb82-ec37-4c57-83af-81e56aaf4506
         type: Html
         content: >-
-          <p class="govuk-body">You must have a WMP approved before you can apply for woodland support under CSHT. To find out more read our
-          <a class="govuk-link" href="https://www.gov.uk/government/publications/pa3-woodland-management-plan-2026/applicants-guide-pa3-woodland-management-plan-2026#landthat-is-eligible-for-a-wmp" target="_blank">Applicant's guide: PA3 Woodland management plan 2026 guidance</a>.</p>
+          <p class="govuk-body">You must have a WMP approved before you can apply for woodland support under CSHT.</p>
+          <p class="govuk-body">To find out more read our <a class="govuk-link" href="https://www.gov.uk/government/publications/pa3-woodland-management-plan-2026/applicants-guide-pa3-woodland-management-plan-2026#landthat-is-eligible-for-a-wmp" target="_blank">Applicant's guide: PA3 Woodland management plan 2026 guidance</a>.</p>
       - name: intendToApplyHigherTier
         id: e7d51cad-e4ea-4478-a12b-fedf3d18039d
         type: YesNoField
