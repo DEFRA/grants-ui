@@ -544,6 +544,10 @@ pages:
           required: true
           classes: govuk-input--width-5
           suffix: ha
+          customValidationMessages:
+            number.precision: Total area of woodland over 10 years old must be 4 decimal places or fewer
+        schema:
+          precision: 4
         shortDescription: Woodland over 10 years old
       - name: hectaresUnderTenYearsOld
         id: b564e6d8-8675-4c9c-9ef8-002199386cf5
@@ -553,6 +557,10 @@ pages:
           required: false
           classes: govuk-input--width-5
           suffix: ha
+          customValidationMessages:
+            number.precision: Total area of newly planted woodland under 10 years old must be 4 decimal places or fewer
+        schema:
+          precision: 4
         shortDescription: Newly planted woodland under 10 years old
 
   - title: Enter the grid reference for the centre of your woodland
