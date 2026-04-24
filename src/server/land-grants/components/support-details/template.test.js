@@ -47,7 +47,7 @@ describe('Support Details Component', () => {
     const contactInfoTests = [
       {
         name: 'RPA telephone number',
-        selector: 'a[href="tel:03000200301"]',
+        selector: '[data-type="telephone"]',
         expectedText: '03000 200 301'
       },
       {
