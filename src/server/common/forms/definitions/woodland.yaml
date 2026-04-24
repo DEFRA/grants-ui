@@ -582,6 +582,23 @@ pages:
           classes: govuk-input--width-10
         shortDescription: Centre of your woodland
 
+  - title: What is the name of your woodland?
+    id: dd82a091-1843-447e-bc7e-35db827873fc
+    path: /woodland-name
+    section: 38507a39-c936-4c4f-872a-bcbae2eeb7d5
+    controller: TaskPageController
+    components:
+      - name: woodlandName
+        id: b0beace7-e0b2-4958-b87f-05cb515097ae
+        title: What is the name of your woodland?
+        hint: This will be used to identify your application and agreement whenever you need to contact us.
+        type: TextField
+        options:
+          required: true
+          customValidationMessages:
+            string.empty: Enter the name of your woodland
+        shortDescription: Name of woodland
+
   - title: Which Forestry Commission team will be advising you?
     id: cf70a8f0-7826-4452-ab6c-4e228ebaa334
     path: /which-forestry-commission-team
