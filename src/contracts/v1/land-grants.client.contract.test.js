@@ -32,7 +32,7 @@ function createProvider() {
   })
 }
 
-describe.sequential('wmp/payments/calculate', () => {
+describe('wmp/payments/calculate', () => {
   it('returns HTTP 200 and payment information for a valid woodland management plan request', async () => {
     const calculateResponseContract = {
       explanations: [],
@@ -165,7 +165,7 @@ describe.sequential('wmp/payments/calculate', () => {
   })
 })
 
-describe.sequential('wmp/validate', () => {
+describe('wmp/validate', () => {
   it('returns HTTP 200 with a passing validation result when woodland areas are sufficient', async () => {
     const validateResponseContract = {
       hasPassed: true,
