@@ -67,11 +67,14 @@
     },
 
     checkboxes: function (step) {
-      const checkbox = document.querySelector(inputSelector(step.fieldName))
-      if (!checkbox) {
+      const all = document.querySelectorAll(inputSelector(step.fieldName))
+      if (!all.length) {
         throw new Error(`${step.fieldName} checkbox not found`)
       }
-      checkbox.click()
+      const toClick = step.selectAll ? Array.from(all) : [all[0]]
+      toClick.forEach(function (cb) {
+        cb.click()
+      })
       submitForm()
     },
 
