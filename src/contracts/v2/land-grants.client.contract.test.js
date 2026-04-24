@@ -33,7 +33,7 @@ function createProvider() {
   })
 }
 
-describe('calculate', () => {
+describe.sequential('calculate', () => {
   it('returns HTTP 200 and payment information for the requested parcels', async () => {
     const calculateResponseContract = {
       explanations: eachLike({
@@ -363,7 +363,7 @@ describe('calculate', () => {
   })
 })
 
-describe('parcels', () => {
+describe.sequential('parcels', () => {
   it('returns HTTP 400 when passing a wrong field name', async () => {
     const badRequestResponseExample = {
       statusCode: 400,
@@ -693,7 +693,7 @@ describe('parcels', () => {
   })
 })
 
-describe('validate', () => {
+describe.sequential('validate', () => {
   it('returns HTTP 200 with validation for multiple actions with no caveat', async () => {
     const validateResponseExample = {
       id: like(33),

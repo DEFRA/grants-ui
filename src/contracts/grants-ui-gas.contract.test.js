@@ -26,7 +26,7 @@ function createProvider() {
 
 const { string, regex } = MatchersV3
 
-describe('Pact between grants-ui (consumer) and fg-gas-backend (provider)', () => {
+describe.sequential('Pact between grants-ui (consumer) and fg-gas-backend (provider)', () => {
   describe('POST /applications', () => {
     it('successfully submits farm-payments application', async () => {
       const provider = createProvider()
