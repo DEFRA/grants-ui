@@ -183,6 +183,7 @@ metadata:
       <p class="govuk-body">We've sent a confirmation email.</p>
       <h2 class="govuk-heading-m">What happens next</h2>
       <p class="govuk-body">We've received your application.</p>
+      <p class="govuk-body"><a class="govuk-link" href="/{{SLUG}}/print-submitted-application" target="_blank">View / Print submitted application (opens in new tab)</a></p>
       <p class="govuk-body">We'll be in contact to say if your application has been successful or to ask for more information.</p>
       <p class="govuk-body">If successful, we'll send you a grant funding agreement (GFA).</p>
 
@@ -201,6 +202,8 @@ metadata:
           <p class="govuk-body">Email: <a class="govuk-link" href="mailto:ruralpayments@defra.gov.uk">ruralpayments@defra.gov.uk</a></p>
         </div>
       </details>
+  printPage:
+    showApplicantDetails: true
   incorrectDetailsContent:
     heading: Update your details
     paragraphs:
@@ -478,8 +481,8 @@ pages:
     components:
       - name: landParcels
         type: CheckboxesField
-        title: Select land parcels
-        shortDescription: Select land parcels
+        title: Land parcels
+        shortDescription: Land parcels
     config:
       showSupportDetails: false
       enableMultipleParcelSelect: true

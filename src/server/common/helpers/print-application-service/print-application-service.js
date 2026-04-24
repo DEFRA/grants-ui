@@ -1,5 +1,5 @@
 import { formatAnswer } from './utils/format-answer.js'
-import { DISPLAY_ONLY_TYPES, COMPONENT_TYPES } from './constants.js'
+import { COMPONENT_TYPES, DISPLAY_ONLY_TYPES } from './constants.js'
 import { buildPrintPaymentViewModel } from './utils/build-print-payment-view-model.js'
 import { ComponentsRegistry } from '../../../confirmation/services/components.registry.js'
 
@@ -10,7 +10,7 @@ const COMPOSITE_FIELD_PARTS = {
 }
 
 /**
- * @typedef {{ type: string, name: string, title: string, list?: string, items?: Array<{text: string, value: string | number | boolean}> }} FormComponent
+ * @typedef {{ type: string, name: string, title: string, shortDescription?: string, list?: string, items?: Array<{text: string, value: string | number | boolean}> }} FormComponent
  * @typedef {{ title: string, components?: FormComponent[] }} FormPage
  * @typedef {{ pages?: FormPage[] }} FormDefinition
  * @typedef {{ title: string, path?: string, slug: string, id: string }} FormMeta
@@ -75,7 +75,7 @@ function extractQuestions(components, answers) {
       return rawAnswer !== undefined && rawAnswer !== null
     })
     .map((component) => ({
-      label: component.title,
+      label: component.title || component.shortDescription || '',
       answer: formatAnswer(component, resolveAnswer(component, answers))
     }))
 }
