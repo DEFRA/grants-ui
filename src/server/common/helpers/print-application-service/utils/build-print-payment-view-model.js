@@ -3,12 +3,12 @@ import { landActionWithCode } from '~/src/server/land-grants/utils/land-action-w
 
 /**
  * Builds a print-friendly view model from payment data.
- * Returns null when there is no payment data.
+ * Returns null when there is no payment data or parcelItems is empty.
  * @param {object | undefined} payment
  * @returns {{ totalAnnualPayment: string, parcelItems: object[], additionalPayments: object[] } | null}
  */
 export function buildPrintPaymentViewModel(payment) {
-  if (!payment) {
+  if (!payment?.parcelItems || !Object.keys(payment.parcelItems).length) {
     return null
   }
 
