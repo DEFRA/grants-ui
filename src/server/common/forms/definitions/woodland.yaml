@@ -308,14 +308,14 @@ pages:
         id: e0dcf5be-0b8f-4e50-befe-bdfe858e82a6
         type: YesNoField
         title: Will you have management control for the duration of the agreement and, where applicable, the durability period?
-        hint: Having management control means you're the person actively farming the land in your application. You must have management control of the land in an agreement for 5 years from your agreement start date. The durability period is the period where you must keep all funded capital items in the same condition and to the specification in your agreement, and use them only for the approved grant purpose. This is usually for a minimum of 7 years from the agreement start date.
+        hint: Having management control means you’re the person actively managing the land in your application. You must have management control of the land in an agreement for 5 years from the agreement start date which includes the durability period. If you do not meet this requirement, you must get the written consent of all other parties who have management control.
         options:
           required: true
           classes: govuk-radios
         shortDescription: Management control
 
   # 4. Countersignature (only shown when management control = no)
-  - title: Have you got the countersignature of your landlord?
+  - title: Have you got the countersignature of the parties who do have management control of the land?
     id: 7498379b-f8f1-4f51-b27e-805f06e0bd6a
     path: /eligibility-countersignature
     section: 16848e5e-ba30-4719-aa98-f0e1144fb492
@@ -325,8 +325,8 @@ pages:
       - name: counterSignature
         id: 040d6021-bc32-4ef8-9cfe-235548157a30
         type: YesNoField
-        title: Have you got the countersignature of your landlord?
-        hint: If your management control or durability period does not cover the duration of your agreement, you need the countersignature and permission of your landlord.
+        title: Have you got the countersignature of the parties who do have management control of the land?
+        hint: If you do not have management control for 5 years from the start of your agreement, you need the countersignature and consent of the parties who do have management control. This is normally your landlord(s).
         options:
           required: true
           classes: govuk-radios
@@ -364,7 +364,7 @@ pages:
         shortDescription: Public body tenancy
 
   # 8. Tenant obligations (conditional - only if tenant = yes)
-  - title: Are the proposed works a requirement of your tenancy or any other legally binding obligation?
+  - title: Is the proposed plan a requirement of your tenancy or any other legally binding obligation?
     id: aa0a2606-ad5b-46db-8c4c-3bf503fa23f9
     path: /eligibility-tenant-obligations
     section: 16848e5e-ba30-4719-aa98-f0e1144fb492
@@ -374,7 +374,7 @@ pages:
       - name: tenantObligations
         id: f025cbb2-920c-4b07-9cfa-d43589369696
         type: YesNoField
-        title: Are the proposed works a requirement of your tenancy or any other legally binding obligation?
+        title: Is the proposed plan a requirement of your tenancy or any other legally binding obligation?
         hint: A legally binding obligation is any requirement on the land in your application which has force in law and can be enforced by the courts and legal system.
         options:
           required: true
@@ -382,7 +382,7 @@ pages:
         shortDescription: Tenancy obligations
 
   # 9. Exit - tenant obligations
-  - title: You cannot get a WMP grant for any proposed works which are a requirement of your tenancy or any other legally binding obligation
+  - title: You cannot apply for a woodland management plan (WMP) for any work that is a requirement of your tenancy or any other legally binding obligation
     id: 566edfd9-2028-490f-8928-0d3b75e7eb4e
     path: /exit-eligibility-tenant-obligations
     controller: TerminalPageController
@@ -392,8 +392,8 @@ pages:
         id: 10a8335b-877c-436f-8a0d-e09d6cf53f71
         type: Html
         content: >
-          <p class="govuk-body">To find out more read our
-          <a class="govuk-link" href="https://www.gov.uk/government/publications/pa3-woodland-management-plan-2026/applicants-guide-pa3-woodland-management-plan-2026#landthat-is-eligible-for-a-wmp" target="_blank">Applicant's guide: PA3 Woodland management plan 2026 guidance</a>.</p>
+          <p class="govuk-body">To find out more read
+          <a class="govuk-link" href="https://www.gov.uk/government/publications/pa3-woodland-management-plan-2026/applicants-guide-pa3-woodland-management-plan-2026#landthat-is-eligible-for-a-wmp" target="_blank">Applicant's guide: PA3 Woodland management plan 2026 guidance (opens in new tab)</a>.</p>
 
   # 10. Grazing rights
   - title: Are you applying for land covered by common or shared grazing rights?
@@ -412,7 +412,7 @@ pages:
         shortDescription: Grazing rights
 
   # 11. Valid WMP
-  - title: Do you already have any valid WMPs on any land in your application?
+  - title: Do you already have any live woodland management plans (WMPs) on any land in your application?
     id: 93f46dcc-d0db-484e-9eb6-4ba5766c220d
     path: /eligibility-valid-wmp
     section: 16848e5e-ba30-4719-aa98-f0e1144fb492
@@ -421,14 +421,14 @@ pages:
       - name: appLandHasExistingWmp
         id: e6a99259-82d6-4d2a-a2ec-349e9d473092
         type: YesNoField
-        title: Do you already have any valid WMPs on any land in your application?
+        title: Do you already have any live woodland management plans (WMPs) on any land in your application?
         options:
           required: true
           classes: govuk-radios
         shortDescription: Existing WMPs
 
   # 12. WMP agreement number (conditional - only if valid-wmp = yes)
-  - title: Enter the agreement number for any valid WMPs
+  - title: Enter the FC plan references for any live WMPs
     id: c8cf57d5-b410-4cfe-8bbd-1a912119b7ab
     path: /eligibility-wmp-agreement
     section: 16848e5e-ba30-4719-aa98-f0e1144fb492
@@ -438,8 +438,8 @@ pages:
       - name: existingWmps
         id: a9ae25aa-d70e-4616-84bf-47f71251e8b5
         type: TextField
-        title: Enter the agreement number for any valid WMPs
-        hint: This is the 7-digit number you'll find in your agreement documentation and communications. For example, 1234567. If you need to enter 2 or more agreement numbers, use a comma to separate each agreement number. For example, 1234567, 7654321, 1726354
+        title: Enter the FC plan references for any live WMPs
+        hint: This is the 5, 6 or 7-digit plan reference number you’ll find on your Forestry Commission WMP. If you need to enter 2 or more plan reference numbers, use a comma to separate each one. For example - 1234567, 7654321, 1726354
         options:
           required: true
           classes: govuk-!-width-two-thirds
@@ -448,7 +448,7 @@ pages:
         shortDescription: WMP agreement number
 
   # 13. Higher tier
-  - title: Do you intend to apply for a Countryside Stewardship Higher Tier (CSHT) agreement if your WMP is approved?
+  - title: Are you interested in a Countryside Stewardship Higher Tier (CSHT) agreement if your WMP is approved?
     id: 11c06c84-fb48-479e-98e2-27549195e4bd
     path: /eligibility-higher-tier
     section: 16848e5e-ba30-4719-aa98-f0e1144fb492
@@ -458,8 +458,8 @@ pages:
         id: 50a8fb82-ec37-4c57-83af-81e56aaf4506
         type: Html
         content: >-
-          <p class="govuk-body">You must have a WMP approved before you can apply for woodland support under CSHT.</p>
-          <p class="govuk-body">To find out more read our <a class="govuk-link" href="https://www.gov.uk/government/publications/pa3-woodland-management-plan-2026/applicants-guide-pa3-woodland-management-plan-2026#landthat-is-eligible-for-a-wmp" target="_blank">Applicant's guide: PA3 Woodland management plan 2026 guidance</a>.</p>
+          <p class="govuk-body">You must have a WMP approved by the Forestry Commission before you can apply for woodland support under CSHT.</p>
+          <p class="govuk-body">To find out more read <a class="govuk-link" href="https://www.gov.uk/government/publications/pa3-woodland-management-plan-2026/applicants-guide-pa3-woodland-management-plan-2026#landthat-is-eligible-for-a-wmp" target="_blank">Applicant's guide: PA3 Woodland management plan 2026 guidance</a>.</p>
       - name: intendToApplyHigherTier
         id: e7d51cad-e4ea-4478-a12b-fedf3d18039d
         type: YesNoField
