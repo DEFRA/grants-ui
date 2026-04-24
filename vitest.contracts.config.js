@@ -9,7 +9,6 @@ export default {
     include: ['src/contracts/**/*.contract.test.js'],
     exclude: ['**/node_modules/**', '**/.stryker-tmp/**'],
     fileParallelism: false,
-    retry: 2,
     setupFiles: [],
     coverage: {
       enabled: false
