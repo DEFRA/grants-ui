@@ -223,5 +223,47 @@
         ]
       }
     }
+  },
+  {
+    "id": "land-grants-api-wmp-validate-200",
+    "priority": 0,
+    "httpRequest": {
+      "method": "POST",
+      "path": "/api/v1/wmp/validate"
+    },
+    "httpResponse": {
+      "statusCode": 200,
+      "body": {
+        "message": "success",
+        "result": {
+          "hasPassed": true,
+          "rules": []
+        }
+      }
+    }
+  },
+  {
+    "id": "land-grants-api-parcels-size-with-value-200",
+    "priority": 5,
+    "httpRequest": {
+      "method": "POST",
+      "path": "/api/v2/parcels",
+      "body": {
+        "type": "JSON_PATH",
+        "jsonPath": "$.fields[?(@ == 'size')]"
+      }
+    },
+    "httpResponse": {
+      "statusCode": 200,
+      "body": {
+        "parcels": [
+          {
+            "parcelId": "7039",
+            "sheetId": "SD6843",
+            "size": { "value": 100, "unit": "ha" }
+          }
+        ]
+      }
+    }
   }
 ]
