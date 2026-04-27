@@ -116,19 +116,19 @@ Each step requires:
 
 ### Step types
 
-| Type            | Description                            | Extra fields                                      |
-| --------------- | -------------------------------------- | ------------------------------------------------- |
-| `submitOnly`    | Clicks the submit button               | None                                              |
-| `yesNo`         | Selects a radio button and submits     | `fieldName`, `value` (default `"true"`)           |
-| `radios`        | Selects the first radio option         | `fieldName`                                       |
-| `checkboxes`    | Selects the first checkbox             | `fieldName`                                       |
-| `numberField`   | Fills a number/text input              | `fieldName`, `value`                              |
-| `selectField`   | Selects the first non-empty option     | `fieldName`                                       |
-| `multilineText` | Fills a textarea                       | `fieldName`, `value`                              |
-| `dateParts`     | Fills day/month/year inputs with today | `fieldName`, `offsetDays` (optional, shifts date) |
-| `monthYear`     | Fills month/year inputs with current   | `fieldName`                                       |
-| `textFields`    | Fills multiple text inputs at once     | `fields` (object of `{ name: value }` pairs)      |
-| `clickLink`     | Clicks a link by its href suffix       | `linkSlug`                                        |
+| Type            | Description                            | Extra fields                                                                   |
+| --------------- | -------------------------------------- | ------------------------------------------------------------------------------ |
+| `submitOnly`    | Clicks the submit button               | None                                                                           |
+| `yesNo`         | Selects a radio button and submits     | `fieldName`, `value` (default `"true"`)                                        |
+| `radios`        | Selects the first radio option         | `fieldName`                                                                    |
+| `checkboxes`    | Selects the first checkbox             | `fieldName`, `selectAll` (optional; `true` ticks every checkbox for the field) |
+| `numberField`   | Fills a number/text input              | `fieldName`, `value`                                                           |
+| `selectField`   | Selects the first non-empty option     | `fieldName`                                                                    |
+| `multilineText` | Fills a textarea                       | `fieldName`, `value`                                                           |
+| `dateParts`     | Fills day/month/year inputs with today | `fieldName`, `offsetDays` (optional, shifts date)                              |
+| `monthYear`     | Fills month/year inputs with current   | `fieldName`                                                                    |
+| `textFields`    | Fills multiple text inputs at once     | `fields` (object of `{ name: value }` pairs)                                   |
+| `clickLink`     | Clicks a link by its href suffix       | `linkSlug`                                                                     |
 
 ### Existing journeys
 
@@ -144,6 +144,8 @@ Each step requires:
 ### Woodland Management Plan
 
 Navigate to `http://localhost:3000/woodland/start` and open the browser console.
+
+Sign in with CRN `1102838829` — this CRN has selectable land parcels, which the woodland journey requires.
 
 ```js
 // Run from /woodland/start or /woodland/tasks

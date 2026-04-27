@@ -69,23 +69,25 @@
     "slug": "tasks",
     "name": "Task list — about your woodland",
     "type": "clickLink",
-    "linkSlug": "total-area-of-land-parcels",
+    "linkSlug": "land-parcels",
     "section": "about-woodland"
   },
   {
-    "slug": "total-area-of-land-over-10-years-old",
-    "name": "Area over 10 years old",
-    "type": "numberField",
-    "fieldName": "hectaresTenOrOverYearsOld",
-    "value": "30",
+    "slug": "land-parcels",
+    "name": "Select land parcels",
+    "type": "checkboxes",
+    "fieldName": "landParcels",
+    "selectAll": true,
     "section": "about-woodland"
   },
   {
-    "slug": "total-area-of-land-under-10-years-old",
-    "name": "Area under 10 years old",
-    "type": "numberField",
-    "fieldName": "hectaresUnderTenYearsOld",
-    "value": "20",
+    "slug": "total-area-of-woodland",
+    "name": "Total area of woodland",
+    "type": "textFields",
+    "fields": {
+      "hectaresTenOrOverYearsOld": "30",
+      "hectaresUnderTenYearsOld": "20"
+    },
     "section": "about-woodland"
   },
   {

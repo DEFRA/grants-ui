@@ -180,28 +180,10 @@ metadata:
     panelTitle: 'Application submitted'
     panelText: 'Application reference number'
     html: |
-      <p class="govuk-body">We've sent a confirmation email.</p>
-      <h2 class="govuk-heading-m">What happens next</h2>
       <p class="govuk-body">We've received your application.</p>
+      <h2 class="govuk-heading-m">What happens next</h2>
+      <p class="govuk-body">We'll be in contact to offer you an agreement, or to ask for more information.</p>
       <p class="govuk-body"><a class="govuk-link" href="/{{SLUG}}/print-submitted-application" target="_blank">View / Print submitted application (opens in new tab)</a></p>
-      <p class="govuk-body">We'll be in contact to say if your application has been successful or to ask for more information.</p>
-      <p class="govuk-body">If successful, we'll send you a grant funding agreement (GFA).</p>
-
-      <details class="govuk-details" data-module="govuk-details">
-        <summary class="govuk-details__summary">
-          <span class="govuk-details__summary-text">
-            If you have a question
-          </span>
-        </summary>
-        <div class="govuk-details__text">
-          <p class="govuk-body">Contact the Rural Payments Agency if you have a query.</p>
-          <p class="govuk-body">
-            Telephone: 03000 200 301<br>
-            Monday to Friday, 8:30am to 5pm (except bank holidays)</p>
-          <p class="govuk-body"><a class="govuk-link" href="https://www.gov.uk/call-charges" target="_blank">Find out about call charges (opens in new tab)</a></p>
-          <p class="govuk-body">Email: <a class="govuk-link" href="mailto:ruralpayments@defra.gov.uk">ruralpayments@defra.gov.uk</a></p>
-        </div>
-      </details>
   printPage:
     showApplicantDetails: true
   incorrectDetailsContent:
@@ -275,7 +257,7 @@ pages:
         options:
           required: true
           classes: govuk-radios
-        shortDescription: Land registration
+        shortDescription: All land registered
 
   # 2. Exit - land not registered
   - title: All the land in your application must be registered with the Rural Payments service
@@ -295,7 +277,7 @@ pages:
           <p class="govuk-body">To find out if your land parcels are registered and up to date follow our <a class="govuk-link" href="https://www.gov.uk/guidance/digital-maps-in-the-rural-payments-service-check-and-change-mapping-updates" target="_blank">Digital maps in the Rural Payments service: check and change your maps guidance (opens in new tab)</a>.</p>
           <h2 class="govuk-heading-m">Register land parcels</h2>
           <p class="govuk-body">If your land parcels are not registered, you must register the land and wait for this to be completed before applying.</p>
-          <p class="govuk-body">To register land follow our <a class="govuk-link" href="https://www.ruralpayments.service.gov.uk/" target="_blank">Rural Payments service: how to register land and update digital maps guidance (opens in new tab)</a>.</p>
+          <p class="govuk-body">To register land follow our <a class="govuk-link" href="https://www.gov.uk/guidance/rural-payments-service-how-to-register-land-and-update-digital-maps" target="_blank">Rural Payments service: how to register land and update digital maps guidance (opens in new tab)</a>.</p>
 
   # 3. Management control
   - title: Will you have management control for the duration of the agreement and, where applicable, the durability period?
@@ -330,7 +312,7 @@ pages:
         options:
           required: true
           classes: govuk-radios
-        shortDescription: Landlord countersignature
+        shortDescription: Countersignature
 
   # 6. Exit - no countersignature
   - title: You must get your landlord's countersignature
@@ -361,7 +343,7 @@ pages:
         options:
           required: true
           classes: govuk-radios
-        shortDescription: Public body tenancy
+        shortDescription: Public body tenant
 
   # 8. Tenant obligations (conditional - only if tenant = yes)
   - title: Is the proposed plan a requirement of your tenancy or any other legally binding obligation?
@@ -379,7 +361,7 @@ pages:
         options:
           required: true
           classes: govuk-radios
-        shortDescription: Tenancy obligations
+        shortDescription: Tenancy and legal obligations
 
   # 9. Exit - tenant obligations
   - title: You cannot apply for a woodland management plan (WMP) for any work that is a requirement of your tenancy or any other legally binding obligation
@@ -409,7 +391,7 @@ pages:
         options:
           required: true
           classes: govuk-radios
-        shortDescription: Grazing rights
+        shortDescription: Common or shared grazing rights
 
   # 11. Valid WMP
   - title: Do you already have any live woodland management plans (WMPs) on any land in your application?
@@ -425,7 +407,7 @@ pages:
         options:
           required: true
           classes: govuk-radios
-        shortDescription: Existing WMPs
+        shortDescription: Live WMPs on land
 
   # 12. WMP agreement number (conditional - only if valid-wmp = yes)
   - title: Enter the FC plan references for any live WMPs
@@ -445,7 +427,7 @@ pages:
           classes: govuk-!-width-two-thirds
           customValidationMessages:
             any.required: Enter the agreement number for your valid WMP
-        shortDescription: WMP agreement number
+        shortDescription: Live WMP plan references
 
   # 13. Higher tier
   - title: Are you interested in a Countryside Stewardship Higher Tier (CSHT) agreement if your WMP is approved?
@@ -467,7 +449,7 @@ pages:
         options:
           required: true
           classes: govuk-radios
-        shortDescription: Higher Tier intention
+        shortDescription: Apply for CSHT
 
   # ==========================================
   # Section 2: About your woodland (placeholder)
@@ -515,8 +497,7 @@ pages:
           <p>
             To find out more about what land is eligible for a WMP read
             <a href="https://www.gov.uk/government/publications/pa3-woodland-management-plan-2026/applicants-guide-pa3-woodland-management-plan-2026#landthat-is-eligible-for-a-wmp" class="govuk-link" target="_blank">
-              Applicant's guide: PA3 Woodland management plan 2026 guidance (opens in new tab)
-            </a>.
+              Applicant's guide: PA3 Woodland management plan 2026 guidance (opens in new tab)</a>.
           </p>
         </div>
   - title: Enter total area of woodland in your application
@@ -538,7 +519,8 @@ pages:
            {% endif %}
           </div>
           <p class="govuk-body">We use a combination of the total area and age of the eligible woodland in your application to work out what you may get paid.</p>
-          <p class="govuk-body">To find out more about what you'll get paid read our <a href="#" class="govuk-link">Applicant's guide: PA3 Woodland management plan 2026 guidance</a>.</p>
+          <p class="govuk-body">To find out more about what you'll get paid read our
+            <a href="https://www.gov.uk/government/publications/pa3-woodland-management-plan-2026/applicants-guide-pa3-woodland-management-plan-2026#whatyoull-get-paid" class="govuk-link" target="_blank">Applicant's guide: PA3 Woodland management plan 2026 guidance (opens in new tab)</a>.</p>
       - name: hectaresTenOrOverYearsOld
         id: 0232c1df-965f-4f41-a271-cb469ca9623a
         type: NumberField
@@ -547,16 +529,24 @@ pages:
           required: true
           classes: govuk-input--width-5
           suffix: ha
+          customValidationMessages:
+            number.precision: Total area of woodland over 10 years old must be 4 decimal places or fewer
+        schema:
+          precision: 4
         shortDescription: Woodland over 10 years old
       - name: hectaresUnderTenYearsOld
         id: b564e6d8-8675-4c9c-9ef8-002199386cf5
         type: NumberField
-        title: Enter total area of newly planted woodland under 10 years old
+        title: Enter total area of new woodland under 10 years old
         options:
           required: false
           classes: govuk-input--width-5
           suffix: ha
-        shortDescription: Newly planted woodland under 10 years old
+          customValidationMessages:
+            number.precision: Total area of new woodland under 10 years old must be 4 decimal places or fewer
+        schema:
+          precision: 4
+        shortDescription: New woodland under 10 years old
 
   - title: Enter the grid reference for the centre of your woodland
     id: df178ed5-da13-4d90-b856-e95f19a92f73
@@ -568,9 +558,9 @@ pages:
         id: 0ecc3968-5293-4a17-adeb-426a51327507
         type: Html
         content: |
-          <p class="govuk-body">To find the grid reference use <a href="https://www.gov.uk/guidance/how-to-access-natural-englands-maps-and-data" class="govuk-link">Natural England’s ‘MAGIC’ map website</a>.</p>
-          <p class="govuk-body">To find out how to get the grid reference read the ‘MAGIC’ guidance on <a href="" class="govuk-link">Using the Where Am I Tool</a>.</p>
-          <p class="govuk-body">The grid reference will be shown as the ‘National Grid Field No’ and include 2 letters and 8 numbers. For example, SP 4178 2432 </p>
+          <p class="govuk-body">To find the grid reference use <a href="https://magic.defra.gov.uk/home.htm" class="govuk-link" target="_blank">Natural England’s ‘MAGIC’ map website (opens in new tab)</a>.</p>
+          <p class="govuk-body">To find out how to get the grid reference read the ‘MAGIC’ guidance on <a href="https://magic.defra.gov.uk/Help_text.htm#WhereAmI" class="govuk-link" target="_blank">Using the Where Am I Tool (opens in new tab)</a>.</p>
+          <p class="govuk-body">The grid reference will be shown as the ‘National Grid Field No’ and include 2 letters and 8 numbers. For example, SP 4178 2432</p>
       - name: centreGridReference
         id: db02edf0-7c90-4470-a306-55d0f69d217c
         type: NationalGridFieldNumberField
@@ -580,9 +570,27 @@ pages:
           customValidationMessages:
             string.empty: Enter a grid reference
           classes: govuk-input--width-10
-        shortDescription: Centre of your woodland
+        shortDescription: Grid reference
 
-  - title: Which Forestry Commission team will be advising you?
+  - title: What is the name of your woodland?
+    id: dd82a091-1843-447e-bc7e-35db827873fc
+    path: /woodland-name
+    section: 38507a39-c936-4c4f-872a-bcbae2eeb7d5
+    controller: TaskPageController
+    components:
+      - name: woodlandName
+        id: b0beace7-e0b2-4958-b87f-05cb515097ae
+        title: What is the name of your woodland?
+        hint: This will be used to identify your application and agreement whenever you need to contact us.
+        type: TextField
+        options:
+          required: true
+          customValidationMessages:
+            string.empty: Enter the name of your woodland
+          classes: govuk-input--width-20
+        shortDescription: Name of woodland
+
+  - title: Which Forestry Commission (FC) team will be advising you?
     id: cf70a8f0-7826-4452-ab6c-4e228ebaa334
     path: /which-forestry-commission-team
     section: 38507a39-c936-4c4f-872a-bcbae2eeb7d5
@@ -590,13 +598,13 @@ pages:
     components:
       - name: fcTeamCode
         id: 32ff781f-7960-4269-9294-db77a61a4a92
-        title: Forestry commission team
+        title: Forestry Commission (FC) team
         type: RadiosField
         list: 66450d49-5614-478d-be30-0b1c9ac59c25
         options:
           customValidationMessages:
             any.required: Select the option that applies
-        shortDescription: Forestry commission team
+        shortDescription: Forestry Commission (FC) team
 
   # ==========================================
   # Section 4: Check and submit application
@@ -625,10 +633,10 @@ pages:
         <li>51ha to 100ha: flat rate of £1,500 for the first 50ha, plus £30 for each additional hectare up to and including 100ha</li>
         <li>more than 100ha: flat rate of £3,000, plus £15 for each additional hectare over 100ha</li>
         </ul>
-        <p class="govuk-body">For full details read our <a href="https://www.gov.uk/government/publications/pa3-woodland-management-plan-2026/applicants-guide-pa3-woodland-management-plan-2026#whatyoull-get-paid" class="govuk-link">Applicant’s guide: PA3 Woodland management plan 2026 guidance</a>.</p>
-        <p class="govuk-body">Based on the information provided, you may be eligible for a grant of up to {{ totalPayment }}.</p>
+        <p class="govuk-body">For full details read our <a href="https://www.gov.uk/government/publications/pa3-woodland-management-plan-2026/applicants-guide-pa3-woodland-management-plan-2026#whatyoull-get-paid" class="govuk-link" target="_blank">Applicant’s guide: PA3 Woodland management plan 2026 guidance (opens in new tab)</a>.</p>
+        <p class="govuk-body">Based on the information provided, you may be eligible for a grant of {{ totalPayment }}.</p>
         <p class="govuk-inset-text">There’s no guarantee you’ll receive a grant</p>
-        <p class="govuk-body">Please note that these figures are correct as at the Agreement Start Date and may vary as a result of the processes set out in the <a href="https://www.gov.uk/government/publications/capital-grants-agreements-terms-and-conditions-2026" class="govuk-link">Capital grants agreements: Terms and conditions 2026</a>. Examples of where the figures may change include amendments to change the size of a parcel and adjustments to a payment rate to eliminate greening double funding.</p>
+        <p class="govuk-body">Please note that these figures are correct as at the Agreement Start Date and may vary as a result of the processes set out in the <a href="https://www.gov.uk/government/publications/capital-grants-agreements-terms-and-conditions-2026" class="govuk-link" target="_blank">Capital grants agreements: Terms and conditions 2026 (opens in new tab)</a>. Examples of where the figures may change include amendments to change the size of a parcel and adjustments to a payment rate to eliminate greening double funding.</p>
   - title: Submit your application
     id: ab194d2a-0b67-4a21-9158-1bd1bbdc4077
     path: /declaration
