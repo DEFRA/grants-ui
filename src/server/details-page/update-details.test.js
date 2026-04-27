@@ -38,11 +38,12 @@ describe('update-details plugin', () => {
     const incorrectDetailsContent = {
       heading: 'Update your details',
       paragraphs: ['Check your details.'],
-      showRpaSupport: false
+      showRpaSupport: false,
+      supportEmail: 'ruralpayments@defra.gov.uk'
     }
     findFormBySlug.mockResolvedValue({
       title: 'Test Form',
-      metadata: { incorrectDetailsContent }
+      metadata: { incorrectDetailsContent, supportEmail: 'ruralpayments@defra.gov.uk' }
     })
 
     await handler(mockRequest, mockH)
@@ -52,7 +53,8 @@ describe('update-details plugin', () => {
       serviceName: 'Test Form',
       serviceUrl: '/test-form',
       backLink: { href: '/test-form/check-details' },
-      incorrectDetailsContent
+      incorrectDetailsContent,
+      supportEmail: 'ruralpayments@defra.gov.uk'
     })
   })
 
