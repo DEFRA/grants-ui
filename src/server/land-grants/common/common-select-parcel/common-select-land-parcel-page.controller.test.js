@@ -288,9 +288,36 @@ describe('CommonSelectLandParcelPageController', () => {
 
       expect(controller.setState).not.toHaveBeenCalled()
 
-      expect(controller.proceed).toHaveBeenCalledWith(request, h, '/next')
+      expect(controller.proceed).toHaveBeenCalledWith(
+        expect.objectContaining({
+          query: expect.not.objectContaining({
+            returnUrl: expect.anything()
+          })
+        }),
+        h,
+        '/next'
+      )
 
       expect(result).toBe('next')
+    })
+
+    it('strips returnUrl from request before proceeding', async () => {
+      const controller = createController()
+      const request = setupRequest('post')
+      const context = setupContext({})
+      const h = setupH()
+
+      request.payload = { landParcels: ['S1-P1'] }
+      request.query = { returnUrl: '/summary', somethingElse: 'x' }
+
+      controller.mergeState = vi.fn()
+
+      await controller.handlePost(request, context, h)
+
+      const passedRequest = controller.proceed.mock.calls[0][0]
+
+      expect(passedRequest.query).toEqual({ somethingElse: 'x' })
+      expect(passedRequest.query.returnUrl).toBeUndefined()
     })
 
     it('rounds totalHectaresAppliedFor to 4dp to avoid float precision issues', async () => {

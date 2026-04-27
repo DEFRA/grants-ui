@@ -187,7 +187,9 @@ export default class CommonSelectLandParcelPageController extends LandGrantsQues
       additionalAnswers: { totalHectaresAppliedFor }
     })
 
-    return this.proceed(request, h, `${this.getNextPath(context)}`)
+    const { returnUrl: _removed, ...queryWithoutReturnUrl } = request.query ?? {}
+    const requestWithoutReturnUrl = { ...request, query: queryWithoutReturnUrl }
+    return this.proceed(requestWithoutReturnUrl, h, `${this.getNextPath(context)}`)
   }
 }
 
