@@ -119,6 +119,7 @@ export default class PaymentPageController extends QuestionPageController {
     this.showSupportLink = showSupportLink
     this.nextPath = nextPath
     this.addMoreActionsPath = addMoreActionsPath
+    this.supportEmail = model?.def?.metadata?.supportEmail ?? null
   }
 
   /**
@@ -163,6 +164,7 @@ export default class PaymentPageController extends QuestionPageController {
         ? nunjucks.renderString(this.paymentExplanation, { totalPayment })
         : null,
       showSupportLink: this.showSupportLink,
+      supportEmail: this.supportEmail,
       ...(errors && { errors })
     }
   }

@@ -41,7 +41,7 @@ describe('Support Details Component', () => {
     let $component
 
     beforeEach(() => {
-      $component = renderSupportDetails({ typeOfSupport: 'question' })
+      $component = renderSupportDetails({ typeOfSupport: 'question', email: 'farmpayments@rpa.gov.uk' })
     })
 
     const contactInfoTests = [

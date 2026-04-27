@@ -51,10 +51,12 @@ export function handleGasApiError(h, context, error) {
 
   return h
     .view('submission-error', {
+      pageTitle: errorInfo.heading,
       backLink: null,
       heading: errorInfo.heading,
       message: errorInfo.message,
-      refNumber
+      refNumber,
+      supportEmail: h.request.app.model?.def?.metadata?.supportEmail ?? null
     })
     .code(statusCode)
 }

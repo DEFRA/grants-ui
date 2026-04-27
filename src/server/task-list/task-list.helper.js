@@ -156,8 +156,11 @@ function getTaskTitle(pageDef) {
     'NationalGridFieldNumberField'
   ])
 
-  const firstQuestion = pageDef.components?.find((c) => questionComponentTypes.has(c.type))
-  return firstQuestion?.shortDescription ?? pageDef.title
+  const questionComponents = pageDef.components?.filter((c) => questionComponentTypes.has(c.type)) ?? []
+  if (questionComponents.length === 1) {
+    return questionComponents[0].shortDescription ?? pageDef.title
+  }
+  return pageDef.title
 }
 
 /**
