@@ -22,6 +22,7 @@
     {% set introText = "Contact the Rural Payments Agency (RPA) to update your details." %}
   {% endif %}
 
+  {% set email = params.email %}
   {% set htmlContent %}
     {% include "rpa-contact-panel/html-content.njk" %}
   {% endset %}
