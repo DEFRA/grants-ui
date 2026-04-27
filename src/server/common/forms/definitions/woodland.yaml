@@ -274,10 +274,10 @@ pages:
           <p class="govuk-body">This includes funding schemes such as the Sustainable Farming Incentive (SFI) and Countryside Stewardship (CS) Higher Tier and Capital Grants.</p>
           <h2 class="govuk-heading-m">Check land parcels</h2>
           <p class="govuk-body">All land parcels listed in your application must be registered on your digital maps in the Rural Payments service and have a parcel reference number (in the format AA1234 5678) before you apply.</p>
-          <p class="govuk-body">To find out if your land parcels are registered and up to date follow our <a class="govuk-link" href="https://www.gov.uk/guidance/digital-maps-in-the-rural-payments-service-check-and-change-mapping-updates" target="_blank">Digital maps in the Rural Payments service: check and change your maps guidance (opens in new tab)</a>.</p>
+          <p class="govuk-body">To find out if your land parcels are registered and up to date follow our <a class="govuk-link" href="https://www.gov.uk/guidance/digital-maps-in-the-rural-payments-service-check-and-change-mapping-updates">Digital maps in the Rural Payments service: check and change your maps guidance</a>.</p>
           <h2 class="govuk-heading-m">Register land parcels</h2>
           <p class="govuk-body">If your land parcels are not registered, you must register the land and wait for this to be completed before applying.</p>
-          <p class="govuk-body">To register land follow our <a class="govuk-link" href="https://www.gov.uk/guidance/rural-payments-service-how-to-register-land-and-update-digital-maps" target="_blank">Rural Payments service: how to register land and update digital maps guidance (opens in new tab)</a>.</p>
+          <p class="govuk-body">To register land follow our <a class="govuk-link" href="https://www.gov.uk/guidance/rural-payments-service-how-to-register-land-and-update-digital-maps">Rural Payments service: how to register land and update digital maps guidance</a>.</p>
 
   # 3. Management control
   - title: Management control
@@ -331,7 +331,7 @@ pages:
         type: Html
         content: >
           <p class="govuk-body">You must get the written consent of all other parties with management control over part or all of the land in your application for the entire duration of the agreement  (and any durability period)</p>
-          <p class="govuk-body">To get countersignatures follow the guidance in and complete our <a class="govuk-link" href="https://www.gov.uk/government/publications/countryside-stewardship-land-ownership-and-control-form" target="_blank">Land ownership and control form: Countryside Stewardship form</a>.</p>
+          <p class="govuk-body">To get countersignatures follow the guidance in and complete our <a class="govuk-link" href="https://www.gov.uk/government/publications/countryside-stewardship-land-ownership-and-control-form">Land ownership and control form: Countryside Stewardship form</a>.</p>
           <p class="govuk-body">You must complete a separate form for each countersignatory.</p>
 
   # 7. Tenant
@@ -380,7 +380,7 @@ pages:
         type: Html
         content: >
           <p class="govuk-body">To find out more read
-          <a class="govuk-link" href="https://www.gov.uk/government/publications/pa3-woodland-management-plan-2026/applicants-guide-pa3-woodland-management-plan-2026#landthat-is-eligible-for-a-wmp" target="_blank">Applicant's guide: PA3 Woodland management plan 2026 guidance (opens in new tab)</a>.</p>
+          <a class="govuk-link" href="https://www.gov.uk/government/publications/pa3-woodland-management-plan-2026/applicants-guide-pa3-woodland-management-plan-2026#landthat-is-eligible-for-a-wmp">Applicant's guide: PA3 Woodland management plan 2026 guidance</a>.</p>
 
   # 10. Grazing rights
   - title: Are you applying for land covered by common or shared grazing rights?
@@ -446,7 +446,7 @@ pages:
         type: Html
         content: |
           <p class="govuk-body">You must have a WMP approved by the Forestry Commission before you can apply for woodland support under CSHT.</p>
-          <p class="govuk-body">To find out more read <a class="govuk-link" href="https://www.gov.uk/government/publications/pa3-woodland-management-plan-2026/applicants-guide-pa3-woodland-management-plan-2026#landthat-is-eligible-for-a-wmp" target="_blank">Applicant's guide: PA3 Woodland management plan 2026 guidance</a>.</p>
+          <p class="govuk-body">To find out more read <a class="govuk-link" href="https://www.gov.uk/government/publications/pa3-woodland-management-plan-2026/applicants-guide-pa3-woodland-management-plan-2026#landthat-is-eligible-for-a-wmp" target="_blank">Applicant's guide: PA3 Woodland management plan 2026 guidance (opens in new tab)</a>.</p>
       - name: intendToApplyHigherTier
         id: e7d51cad-e4ea-4478-a12b-fedf3d18039d
         type: YesNoField
