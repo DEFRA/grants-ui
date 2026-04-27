@@ -28,6 +28,16 @@ export default class CommonSelectLandParcelPageController extends LandGrantsQues
     this.minimumAreaHa = config.minimumAreaHa ?? null
   }
 
+  makeGetRouteHandler() {
+    return async (request, context, h) => {
+      if (request.query?.returnUrl) {
+        return h.redirect(request.path)
+      }
+
+      return super.makeGetRouteHandler()(request, context, h)
+    }
+  }
+
   /**
    * @param {AnyFormRequest} request
    * @returns {string[]}
@@ -177,7 +187,9 @@ export default class CommonSelectLandParcelPageController extends LandGrantsQues
       additionalAnswers: { totalHectaresAppliedFor }
     })
 
-    return this.proceed(request, h, `${this.getNextPath(context)}`)
+    const { returnUrl: _removed, ...queryWithoutReturnUrl } = request.query ?? {}
+    const requestWithoutReturnUrl = { ...request, query: queryWithoutReturnUrl }
+    return this.proceed(requestWithoutReturnUrl, h, `${this.getNextPath(context)}`)
   }
 }
 
