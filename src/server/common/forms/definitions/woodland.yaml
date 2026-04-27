@@ -512,8 +512,8 @@ pages:
         content: >-
           <p class="govuk-body">The woodland must be at least 0.5 hectares (ha) in total.</p>
           <div class="govuk-inset-text">
-           {% if totalHectaresAppliedFor %}
-              The total area of your selected land parcels is {{ totalHectaresAppliedFor }} ha
+           {% if totalHectaresForSelectedParcels %}
+              The total area of your selected land parcels is {{ totalHectaresForSelectedParcels }} ha
            {% else %}
               The total area of your selected land parcels is 0 ha
            {% endif %}
