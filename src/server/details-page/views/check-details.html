@@ -44,7 +44,7 @@
         }) }}
       </form>
 
-      {{ defraSupportDetails({typeOfSupport: 'help'}) }}
+      {{ defraSupportDetails({typeOfSupport: 'help', email: page.def.metadata.supportEmail}) }}
     </div>
   </div>
 {% endblock %}

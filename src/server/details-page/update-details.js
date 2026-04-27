@@ -29,7 +29,8 @@ export const updateDetails = {
             serviceName: form.title,
             serviceUrl: `/${slug}`,
             backLink: { href: `/${slug}/check-details` },
-            incorrectDetailsContent: metadata.incorrectDetailsContent ?? null
+            incorrectDetailsContent: metadata.incorrectDetailsContent ?? null,
+            supportEmail: metadata.supportEmail ?? null
           })
         }
       })

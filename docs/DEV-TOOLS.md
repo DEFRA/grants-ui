@@ -147,6 +147,23 @@ Navigate to `http://localhost:3000/woodland/start` and open the browser console.
 
 Sign in with CRN `1102838829` — this CRN has selectable land parcels, which the woodland journey requires.
 
+The `total-area-of-woodland` page POSTs to the land-grants-api `/api/v1/wmp/validate` endpoint. To keep the journey runner reliable regardless of which compose stack is running, point `LAND_GRANTS_API_URL` at mockserver — which has a mock success response in `mockserver/expectations.json`. If you're running with `compose.land-grants.yml` (real backend), layer in `compose.journey-runner.yml` to override the URL back to mockserver:
+
+```sh
+npm run docker:landgrants:journey-runner:up
+# tear down with: npm run docker:landgrants:journey-runner:down
+```
+
+Without `compose.land-grants.yml`, the default in `compose.yml` already points at mockserver, so no override is needed.
+
+If you change `mockserver/expectations.json` mid-session and the journey still shows the old values:
+
+1. `docker compose restart mockserver` — reload expectations
+2. Visit `http://localhost:3000/woodland/clear-application-state` — flushes Redis session state and the in-memory parcel cache in one hit
+3. Re-run `runJourney()` from `/woodland/start`
+
+A full grants-ui restart is _not_ needed thanks to step 2.
+
 ```js
 // Run from /woodland/start or /woodland/tasks
 runJourney() // Run all remaining sections from the current page

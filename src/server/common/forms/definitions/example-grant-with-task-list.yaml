@@ -4,6 +4,7 @@ metadata:
   id: f298fa47-0ebb-4c92-a0aa-3d0faed71aab
   enabledInProd: false
   referenceNumberPrefix: EGWT
+  supportEmail: support@defra.gov.uk
   cookieConsent:
     enabled: true
     serviceName: Farm and land service
