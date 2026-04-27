@@ -68,6 +68,7 @@ metadata:
         allowedPaths: ['confirm-farm-details','confirm-you-will-be-eligible','confirm-your-land-details-are-up-to-date','select-land-parcel','select-actions-for-land-parcel']
         redirectTo: /confirm-farm-details
     excludedPaths: ['terms-and-conditions', 'fptt-information', 'fptt-actions']
+  supportEmail: farmpayments@rpa.gov.uk
   confirmationContent:
     html: |
       <p class="govuk-body">It may be useful to write down your application number, so you have it ready if you need to contact us.</p>
