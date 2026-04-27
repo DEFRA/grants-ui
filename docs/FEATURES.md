@@ -276,6 +276,11 @@ Guidance components provide contextual help and information without requiring us
 - **Reference Number Prefix**: Custom prefix for application references
 - **Whitelist Configuration**: CRN and SBI environment variables
 - **Submission Configuration**: Grant code and schema path
+- **Options**: Grant-scoped configuration options
+
+#### Metadata Options
+
+`submitButtonText` - Override the standard "Continue" button text for all question type pages
 
 ### Confirmation Content Configuration
 

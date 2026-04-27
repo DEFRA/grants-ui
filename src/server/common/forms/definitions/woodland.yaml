@@ -197,7 +197,8 @@ metadata:
           href: https://www.gov.uk/guidance/update-personal-and-business-details-in-the-rural-payments-service
         textAfter: '.'
     showRpaSupport: false
-
+  options:
+    submitButtonText: Save and continue
 sections:
   - name: business-details
     title: Your details
