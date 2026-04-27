@@ -26,6 +26,11 @@ export default class CommonSelectLandParcelPageController extends LandGrantsQues
     this.supportDetailsHtml = config.supportDetailsHtml || ''
     this.showSupportDetails = config.showSupportDetails !== false
     this.minimumAreaHa = config.minimumAreaHa ?? null
+
+    // Resolve section
+    if (pageDef.section) {
+      this.section = model.getSection(pageDef.section)
+    }
   }
 
   makeGetRouteHandler() {
@@ -66,8 +71,12 @@ export default class CommonSelectLandParcelPageController extends LandGrantsQues
    */
   buildViewModel(request, context, { parcels, selectedParcelIds, errors } = {}) {
     const { state } = context
+
+    const sectionTitle = this.section?.hideTitle !== true ? this.section?.title : ''
+
     return {
       ...super.getViewModel(request, context),
+      sectionTitle,
       parcels,
       hasExistingLandParcels: Array.isArray(state.landParcels) && state.landParcels.length > 0,
       selectionMode: this.enableMultipleParcelSelect ? 'multiple' : 'single',
