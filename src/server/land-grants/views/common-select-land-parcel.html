@@ -29,6 +29,11 @@
 
       <form method="post" data-actions="{{ actions }}" >
 
+        {% if sectionTitle and sectionTitle.length and (sectionTitle !== pageTitle) %}
+        <h2 class="govuk-caption-l govuk-!-margin-top-0" id="section-title">
+          {{- sectionTitle -}}
+        </h2>
+        {% endif %}
         <h1 class="govuk-heading-l">{{ pageTitle }}</h1>
 
         {% if topSection %}
