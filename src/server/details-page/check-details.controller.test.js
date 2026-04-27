@@ -9,6 +9,20 @@ import {
 import { debug, log, LogCodes } from '../common/helpers/logging/log.js'
 import { setupControllerMocks } from '~/src/__mocks__/controller-mocks.js'
 
+vi.mock('~/src/config/config.js', () => ({
+  config: {
+    get: vi.fn((key) => {
+      if (key === 'externalLinks.sfd.enabled') {
+        return false
+      }
+      if (key === 'externalLinks.sfd.updateUrl') {
+        return 'http://localhost:3000/sfd/update-sbi'
+      }
+      return undefined
+    })
+  }
+}))
+
 vi.mock('@defra/forms-model', () => ({
   ComponentType: {
     Html: 'Html',
