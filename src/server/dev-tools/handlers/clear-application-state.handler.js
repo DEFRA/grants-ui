@@ -6,7 +6,7 @@ import { clearParcelCache } from '~/src/server/land-grants/services/parcel-cache
 /**
  * @typedef {import('@hapi/hapi').Request & {
  *   app: { model?: { def?: object } },
- *   server: import('@hapi/hapi').Request['server'] & { app: { formsService?: object } }
+ *   server: import('@hapi/hapi').Request['server'] & { methods: { getFormService?: () => any } }
  * }} ClearStateRequest
  */
 
@@ -24,7 +24,13 @@ export async function clearApplicationStateHandler(request, h) {
     if (!request.app.model) {
       const form = await findFormBySlug(slug)
       if (form) {
-        const definition = await loadFormDefinition(form, request.server.methods.getFormService())
+        const getFormService = request.server.methods.getFormService
+
+        if (typeof getFormService !== 'function') {
+          throw new Error('getFormService is not available')
+        }
+
+        const definition = await loadFormDefinition(form, getFormService())
         request.app.model = { def: definition }
       }
     }
