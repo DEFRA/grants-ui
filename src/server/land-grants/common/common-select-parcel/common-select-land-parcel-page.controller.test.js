@@ -102,51 +102,6 @@ describe('CommonSelectLandParcelPageController', () => {
     })
   })
 
-  describe('makeGetRouteHandler (returnUrl stripping)', () => {
-    it('redirects to same path when returnUrl is present', async () => {
-      const controller = createController()
-      const request = setupRequest('get')
-
-      request.query = { returnUrl: '/summary' }
-      request.path = '/test'
-
-      const context = setupContext({})
-      const h = setupH()
-
-      const handler = controller.makeGetRouteHandler()
-
-      await handler(request, context, h)
-
-      expect(h.redirect).toHaveBeenCalledWith('/test')
-      expect(h.redirect).toHaveBeenCalledTimes(1)
-      expect(h.view).not.toHaveBeenCalled()
-    })
-
-    it('calls normal GET handler when returnUrl is NOT present', async () => {
-      const controller = createController()
-      const request = setupRequest('get')
-
-      request.query = {}
-      request.path = '/test'
-
-      const context = setupContext({})
-      const h = setupH()
-
-      const handler = controller.makeGetRouteHandler()
-
-      await handler(request, context, h)
-
-      expect(h.view).toHaveBeenCalledWith(
-        'common-select-land-parcel',
-        expect.objectContaining({
-          parcels: mappedParcels
-        })
-      )
-
-      expect(h.redirect).not.toHaveBeenCalled()
-    })
-  })
-
   describe('handleGet', () => {
     it('renders parcels successfully', async () => {
       const controller = createController({ enableMultipleParcelSelect: true })
@@ -288,39 +243,10 @@ describe('CommonSelectLandParcelPageController', () => {
 
       expect(controller.setState).not.toHaveBeenCalled()
 
-      expect(controller.proceed).toHaveBeenCalledWith(
-        expect.objectContaining({
-          query: expect.not.objectContaining({
-            returnUrl: expect.anything()
-          })
-        }),
-        h,
-        '/next'
-      )
 
       expect(result).toBe('next')
     })
 
-    it('strips returnUrl from request before proceeding', async () => {
-      const controller = createController()
-      const request = setupRequest('post')
-      const context = setupContext({})
-      const h = setupH()
-
-      request.payload = { landParcels: ['S1-P1'] }
-      request.query = { returnUrl: '/summary', somethingElse: 'x' }
-
-      controller.mergeState = vi.fn()
-
-      await controller.handlePost(request, context, h)
-
-      const passedRequest = controller.proceed.mock.calls[0][0]
-
-      expect(passedRequest.query).toEqual({ somethingElse: 'x' })
-      expect(passedRequest.query.returnUrl).toBeUndefined()
-    })
-
-    it('rounds totalHectaresAppliedFor to 4dp to avoid float precision issues', async () => {
       fetchParcels.mockResolvedValue([
         { sheetId: 'S1', parcelId: 'P1', area: { value: 25.3874 } },
         { sheetId: 'S2', parcelId: 'P2', area: { value: 169.8586 } }

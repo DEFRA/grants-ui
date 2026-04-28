@@ -30,16 +30,6 @@ export default class CommonSelectLandParcelPageController extends LandGrantsQues
     this.invalidates = Array.isArray(config.invalidates) ? config.invalidates : []
   }
 
-  makeGetRouteHandler() {
-    return async (request, context, h) => {
-      if (request.query?.returnUrl) {
-        return h.redirect(request.path)
-      }
-
-      return super.makeGetRouteHandler()(request, context, h)
-    }
-  }
-
   /**
    * @param {AnyFormRequest} request
    * @returns {string[]}
@@ -203,9 +193,7 @@ export default class CommonSelectLandParcelPageController extends LandGrantsQues
       additionalAnswers: { totalHectaresAppliedFor }
     })
 
-    const { returnUrl: _removed, ...queryWithoutReturnUrl } = request.query ?? {}
-    const requestWithoutReturnUrl = { ...request, query: queryWithoutReturnUrl }
-    return this.proceed(requestWithoutReturnUrl, h, `${this.getNextPath(context)}`)
+    return this.proceed(request, h, `${this.getNextPath(context)}`)
   }
 }
 
