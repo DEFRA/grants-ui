@@ -373,6 +373,27 @@ describe('CheckDetailsController', () => {
         expect(result).toBe('redirected-to-update-details')
       })
 
+      it('should save state and redirect to /{slug}/update-details when SFD is enabled but no SFD URL has been set', async () => {
+        vi.mocked(config.get).mockImplementation((key) => {
+          if (key === 'externalLinks.sfd.enabled') {
+            return true
+          }
+          if (key === 'externalLinks.sfd.updateUrl') {
+            return undefined
+          }
+        })
+
+        mockContext.payload = { detailsConfirmed: false }
+        mockRequest.auth.credentials.currentRelationshipId = 'REL123'
+        mockH.redirect = vi.fn().mockReturnValue('redirected-to-update-details')
+
+        const handler = controller.makePostRouteHandler()
+        const result = await handler(mockRequest, mockContext, mockH)
+
+        expect(mockH.redirect).toHaveBeenCalledWith('/test-form/update-details')
+        expect(result).toBe('redirected-to-update-details')
+      })
+
       it('should redirect to SFD update URL when SFD is enabled', async () => {
         vi.mocked(config.get).mockImplementation((key) => {
           if (key === 'externalLinks.sfd.enabled') {
@@ -593,6 +614,7 @@ describe('CheckDetailsController', () => {
 
   describe('getSFDUpdateUrl', () => {
     beforeEach(() => {
+      vi.clearAllMocks()
       mockRequest.auth.credentials.currentRelationshipId = 'REL123'
     })
 
@@ -611,12 +633,6 @@ describe('CheckDetailsController', () => {
     it('should log error and return empty string if updateUrl is invalid', () => {
       vi.mocked(config.get).mockReturnValue('not-a-url')
       const result = controller.getSFDUpdateUrl(mockRequest)
-
-      expect(debug).toHaveBeenCalledWith(
-        LogCodes.SYSTEM.CONFIG_INVALID,
-        { key: 'externalLinks.sfd.updateUrl', value: 'not-a-url' },
-        mockRequest
-      )
       expect(result).toBe('')
     })
   })

@@ -431,6 +431,11 @@ export const LogCodes = {
       messageFunc: (messageOptions) =>
         `Missing required configuration: ${messageOptions?.missing?.join(', ') || 'unknown'}`
     },
+    CONFIG_INVALID: {
+      level: 'error',
+      messageFunc: (messageOptions) =>
+        `Invalid configuration, key "${messageOptions.key}" is missing or invalid: ${messageOptions.value}`
+    },
     WHITELIST_CONFIG_INCOMPLETE: {
       level: 'error',
       messageFunc: (messageOptions) =>

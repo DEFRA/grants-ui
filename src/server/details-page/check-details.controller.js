@@ -126,8 +126,9 @@ export default class CheckDetailsController extends QuestionPageController {
       await this.setState(request, state)
 
       if (confirmationValue === false) {
-        if (config.get('externalLinks.sfd.enabled')) {
-          return h.redirect(this.getSFDUpdateUrl(request))
+        const redirectTarget = this.getSFDUpdateUrl(request)
+        if (config.get('externalLinks.sfd.enabled') && redirectTarget !== '') {
+          return h.redirect(redirectTarget)
         } else {
           return h.redirect(`/${request.params.slug}/update-details`)
         }
@@ -261,7 +262,7 @@ export default class CheckDetailsController extends QuestionPageController {
       url.searchParams.set('ssoOrgId', currentRelationshipId)
       return url.toString()
     } catch (error) {
-      debug(LogCodes.SYSTEM.CONFIG_INVALID, { key: 'externalLinks.sfd.updateUrl', value: updateUrl }, request)
+      debug(LogCodes.SYSTEM.CONFIG_MISSING, { key: 'externalLinks.sfd.updateUrl', value: updateUrl }, request)
       return ''
     }
   }
