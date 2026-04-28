@@ -203,6 +203,20 @@ describe('clearApplicationStateHandler', () => {
       expect(mockRequest.app.model).toEqual({ def: mockDefinition })
     })
 
+    it('should throw an error if getFormService is not available', async () => {
+      const mockForm = { id: 'form-1' }
+      const mockDefinition = { pages: [] }
+      findFormBySlug.mockResolvedValue(mockForm)
+      loadFormDefinition.mockResolvedValue(mockDefinition)
+      mockRequest = {
+        params: { slug: 'test-slug' },
+        server: { methods: { getFormService: {} } },
+        app: { }
+      }
+
+      await expect(clearApplicationStateHandler(mockRequest, mockH)).rejects.toThrow('getFormService is not available')
+    })
+
     it('should not call loadFormDefinition when findFormBySlug returns null', async () => {
       findFormBySlug.mockResolvedValue(null)
 

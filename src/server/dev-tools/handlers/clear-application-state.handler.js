@@ -24,14 +24,7 @@ export async function clearApplicationStateHandler(request, h) {
     if (!request.app.model) {
       const form = await findFormBySlug(slug)
       if (form) {
-        const getFormService = request.server.methods.getFormService
-
-        if (typeof getFormService !== 'function') {
-          throw new Error('getFormService is not available')
-        }
-
-        const definition = await loadFormDefinition(form, getFormService())
-        request.app.model = { def: definition }
+        await loadFormAndSetOnRequestModel(form, request)
       }
     }
 
@@ -55,4 +48,15 @@ export async function clearApplicationStateHandler(request, h) {
   clearParcelCache()
 
   return h.redirect(`/${slug}`)
+}
+
+const loadFormAndSetOnRequestModel = async (form, request) => {
+  const getFormService = request.server.methods.getFormService
+
+  if (typeof getFormService !== 'function') {
+    throw new Error('getFormService is not available')
+  }
+
+  const definition = await loadFormDefinition(form, getFormService())
+  request.app.model = { def: definition }
 }
