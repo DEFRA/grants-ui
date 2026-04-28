@@ -448,7 +448,7 @@ pages:
         type: Html
         content: |
           <p class="govuk-body">You must have a WMP approved by the Forestry Commission before you can apply for woodland support under CSHT.</p>
-          <p class="govuk-body">To find out more read <a class="govuk-link" href="https://www.gov.uk/government/publications/pa3-woodland-management-plan-2026/applicants-guide-pa3-woodland-management-plan-2026#landthat-is-eligible-for-a-wmp" target="_blank">Applicant's guide: PA3 Woodland management plan 2026 guidance (opens in new tab)</a>.</p>
+          <p class="govuk-body">To find out more read <a class="govuk-link" href="https://www.gov.uk/government/publications/pa3-woodland-management-plan-2026/applicants-guide-pa3-woodland-management-plan-2026#wmp-agreements-and-countryside-stewardship-higher-tier-csht" target="_blank">Applicant's guide: PA3 Woodland management plan 2026 guidance (opens in new tab)</a>.</p>
       - name: intendToApplyHigherTier
         id: e7d51cad-e4ea-4478-a12b-fedf3d18039d
         type: YesNoField
