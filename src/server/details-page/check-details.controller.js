@@ -141,15 +141,15 @@ export default class CheckDetailsController extends QuestionPageController {
    * Handle POST when user confirms details are correct
    * @param {AnyFormRequest} request
    * @param {object} context
-   * @param {object} config
+   * @param {object} detailsConfig
    * @param {ResponseToolkit} h
    * @returns {Promise<ResponseObject>}
    */
-  async handleDetailsConfirmed(request, context, config, h) {
+  async handleDetailsConfirmed(request, context, detailsConfig, h) {
     const baseViewModel = super.getViewModel(request, context)
 
     try {
-      const { mappedData } = await this.fetchAndProcessData(request, config)
+      const { mappedData } = await this.fetchAndProcessData(request, detailsConfig)
       await this.setState(
         request,
         mergeAdditionalAnswers(context.state, {
@@ -173,12 +173,12 @@ export default class CheckDetailsController extends QuestionPageController {
   /**
    * Fetch data from consolidated view and process it according to config
    * @param {AnyFormRequest} request
-   * @param {object} config - detailsPage configuration from form metadata
+   * @param {object} detailsConfig - detailsPage configuration from form metadata
    * @returns {Promise<{sections: Array, mappedData: object}>}
    */
-  async fetchAndProcessData(request, config) {
-    const toleratedPaths = config.toleratedFailurePaths ?? this.model.def.metadata?.toleratedFailurePaths
-    const query = buildGraphQLQuery(config.query, request)
+  async fetchAndProcessData(request, detailsConfig) {
+    const toleratedPaths = detailsConfig.toleratedFailurePaths ?? this.model.def.metadata?.toleratedFailurePaths
+    const query = buildGraphQLQuery(detailsConfig.query, request)
     const response = await executeConfigDrivenQuery(request, query, { toleratedPaths })
 
     if (response?.errors?.length > 0) {
@@ -202,8 +202,8 @@ export default class CheckDetailsController extends QuestionPageController {
       )
     }
 
-    const mappedData = mapResponse(config.responseMapping, response)
-    const sections = processSections(config.displaySections, mappedData, request)
+    const mappedData = mapResponse(detailsConfig.responseMapping, response)
+    const sections = processSections(detailsConfig.displaySections, mappedData, request)
     return { sections, mappedData }
   }
 
