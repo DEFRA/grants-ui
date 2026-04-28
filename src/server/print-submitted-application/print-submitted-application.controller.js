@@ -2,33 +2,14 @@ import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/fo
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { ApplicationStatus } from '~/src/server/common/constants/application-status.js'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
-import { findFormBySlug, loadFormDefinition } from '../common/forms/services/find-form-by-slug.js'
+import { loadFormDefinition } from '../common/forms/services/find-form-by-slug.js'
 import {
   buildPrintViewModel,
   enrichDefinitionWithListItems,
   processConfigurablePrintContent
 } from '../common/helpers/print-application-service/print-application-service.js'
 import { createBusinessRows, createContactRows, createPersonRows } from '~/src/server/common/helpers/create-rows.js'
-
-/**
- * Validates the request has a slug param and finds the matching form definition.
- * @param {Request} request
- * @param {ResponseToolkit} h
- */
-async function validateRequestAndFindForm(request, h) {
-  const { slug } = request.params
-
-  if (!slug) {
-    return { error: h.response('Bad request - missing slug').code(statusCodes.badRequest) }
-  }
-
-  const form = await findFormBySlug(slug)
-  if (!form) {
-    return { error: h.response('Form not found').code(statusCodes.notFound) }
-  }
-
-  return { form, slug }
-}
+import { validateRequestAndFindForm } from '~/src/server/common/helpers/form-verify-and-request-load.js'
 
 /**
  * Loads the application state from the session cache and returns it only if submitted.
@@ -78,7 +59,7 @@ function resolveApplicantDetailsSections(request, state, definition) {
  * @param {ResponseToolkit} h
  */
 async function buildPrintResponse({ form, state, slug }, request, h) {
-  const definition = await loadFormDefinition(form, request.server.app.formsService)
+  const definition = await loadFormDefinition(form, request.server.methods.getFormService())
 
   enrichDefinitionWithListItems(definition)
 
@@ -146,14 +127,15 @@ export const printSubmittedApplication = {
       server.route({
         method: 'GET',
         path: '/{slug}/print-submitted-application',
+        options: {
+          pre: [{ method: validateRequestAndFindForm, assign: 'validatedSlugAndForm' }]
+        },
         handler: async (request, h) => {
           try {
-            const validationResult = await validateRequestAndFindForm(request, h)
-            if (validationResult.error) {
-              return validationResult.error
+            const { error: validationError, form, slug } = request.pre.validatedSlugAndForm
+            if (validationError) {
+              return validationError
             }
-
-            const { form, slug } = validationResult
 
             const state = await loadSubmittedApplication(request)
             if (!state) {

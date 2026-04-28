@@ -1,47 +1,9 @@
-import { findFormBySlug } from '~/src/server/common/forms/services/find-form-by-slug.js'
 import { ConfirmationService } from './services/confirmation.service.js'
 import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/forms-cache.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { ApplicationStatus } from '~/src/server/common/constants/application-status.js'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
-
-/**
- * Validates request parameters and finds form by slug
- * @param {object} request - Hapi request object
- * @param {object} h - Hapi response toolkit
- * @returns {Promise<object>} Validation result with form or error response
- */
-async function validateRequestAndFindForm(request, h) {
-  const { slug } = request.params
-
-  if (!slug) {
-    log(
-      LogCodes.CONFIRMATION.CONFIRMATION_ERROR,
-      {
-        userId: request.auth?.credentials?.userId || 'unknown',
-        errorMessage: 'No slug provided in confirmation route'
-      },
-      request
-    )
-    return { error: h.response('Bad request - missing slug').code(statusCodes.badRequest) }
-  }
-
-  const form = await findFormBySlug(slug)
-  if (!form) {
-    log(
-      LogCodes.CONFIRMATION.CONFIRMATION_ERROR,
-      {
-        userId: request.auth?.credentials?.userId || 'unknown',
-        errorMessage: `Form not found for slug: ${slug}`
-      },
-      request
-    )
-    // @todo - should maybe use the `error/404` view here?
-    return { error: h.response('Form not found').code(statusCodes.notFound) }
-  }
-
-  return { form, slug }
-}
+import { validateRequestAndFindForm } from '~/src/server/common/helpers/form-verify-and-request-load.js'
 
 /**
  * Loads and validates confirmation content for the form
@@ -135,14 +97,37 @@ export const configConfirmation = {
       server.route({
         method: 'GET',
         path: '/{slug}/confirmation',
+        options: {
+          pre: [{ method: validateRequestAndFindForm, assign: 'validatedSlugAndForm' }]
+        },
         handler: async (request, h) => {
           try {
-            const validationResult = await validateRequestAndFindForm(request, h)
-            if (validationResult.error) {
-              return validationResult.error
+            const { validationResult: validationError, form, slug } = request.pre.validatedSlugAndForm
+            if (!slug) {
+              log(
+                LogCodes.CONFIRMATION.CONFIRMATION_ERROR,
+                {
+                  userId: request.auth?.credentials?.userId || 'unknown',
+                  errorMessage: 'No slug provided in confirmation route'
+                },
+                request
+              )
             }
 
-            const { form, slug } = validationResult
+            if (!form) {
+              log(
+                LogCodes.CONFIRMATION.CONFIRMATION_ERROR,
+                {
+                  userId: request.auth?.credentials?.userId || 'unknown',
+                  errorMessage: `Form not found for slug: ${slug}`
+                },
+                request
+              )
+            }
+
+            if (validationError) {
+              return validationError
+            }
 
             const sessionData = await getSessionDataAndState(request)
             const confirmationContent = await loadConfirmationContent(form, slug, sessionData.state)

@@ -24,7 +24,7 @@ export async function demoPrintApplicationHandler(request, h) {
       return generateFormNotFoundResponse(slug, h)
     }
 
-    const definition = await loadFormDefinition(form, request.server.app.formsService)
+    const definition = await loadFormDefinition(form, request.server.methods.getFormService())
 
     enrichDefinitionWithListItems(definition)
 

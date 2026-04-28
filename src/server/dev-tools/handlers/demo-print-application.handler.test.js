@@ -26,14 +26,18 @@ const mockForm = MOCK_FORM_WITH_PATH
 
 describe('demo-print-application.handler', () => {
   let mockRequest
+  let mockGetFormService
+  let mockFormService
   let mockH
 
   beforeEach(() => {
     vi.clearAllMocks()
 
+    mockFormService = vi.fn()
+    mockGetFormService = vi.fn().mockReturnValue(mockFormService)
     mockRequest = mockHapiRequest({
       params: { slug: 'test-form' },
-      server: { app: { formsService: { getFormDefinitionBySlug: vi.fn() } } }
+      server: { methods: { getFormService: mockGetFormService } }
     })
     mockH = mockHapiResponseToolkit()
 
@@ -51,7 +55,7 @@ describe('demo-print-application.handler', () => {
     await demoPrintApplicationHandler(mockRequest, mockH)
 
     expect(findFormBySlug).toHaveBeenCalledWith('test-form')
-    expect(loadFormDefinition).toHaveBeenCalledWith(mockForm, mockRequest.server.app.formsService)
+    expect(loadFormDefinition).toHaveBeenCalledWith(mockForm, mockFormService)
     expect(enrichDefinitionWithListItems).toHaveBeenCalledWith(mockDefinition)
     expect(buildDemoPrintAnswers).toHaveBeenCalledWith(mockDefinition)
     expect(buildPrintViewModel).toHaveBeenCalledWith(
@@ -74,7 +78,7 @@ describe('demo-print-application.handler', () => {
   test('should include demo payment data for farm-payments slug', async () => {
     mockRequest = mockHapiRequest({
       params: { slug: 'farm-payments' },
-      server: { app: { formsService: { getFormDefinitionBySlug: vi.fn() } } }
+      server: { methods: { getFormService: mockGetFormService } }
     })
     findFormBySlug.mockResolvedValue(mockForm)
     buildPrintViewModel.mockReturnValue({ test: 'viewModel' })

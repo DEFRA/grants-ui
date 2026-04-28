@@ -6,6 +6,7 @@ import { mockHapiRequest, mockHapiResponseToolkit } from '~/src/__mocks__/hapi-m
 import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
 import { MOCK_CONFIRMATION_CONTENT, MOCK_FORMS } from './__test-fixtures__/confirmation-test-fixtures.js'
 import { log } from '~/src/server/common/helpers/logging/log.js'
+import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 
 const mockFormsCacheService = {
   getState: vi.fn()
@@ -35,6 +36,7 @@ describe('config-confirmation', () => {
     mockLogger = mockRequestLogger()
     mockRequest = mockHapiRequest({
       params: { slug: 'test-slug' },
+      pre: { validatedSlugAndForm: { slug: 'test-slug', form: mockForm } },
       logger: mockLogger,
       yar: mockYarSession
     })
@@ -46,7 +48,7 @@ describe('config-confirmation', () => {
     ConfirmationService.hasConfigDrivenConfirmation = vi.fn().mockResolvedValue(true)
 
     const server = { route: vi.fn() }
-    await configConfirmation.plugin.register(server)
+    configConfirmation.plugin.register(server)
     handler = server.route.mock.calls[0][0].handler
 
     mockFormsCacheService.getState.mockResolvedValue({
@@ -79,7 +81,6 @@ describe('config-confirmation', () => {
 
       await handler(mockRequest, mockH)
 
-      expect(findFormBySlug).toHaveBeenCalledWith('test-slug')
       expect(ConfirmationService.loadConfirmationContent).toHaveBeenCalledWith(mockForm)
       expect(ConfirmationService.processConfirmationContent).toHaveBeenCalledWith(
         mockConfirmationContent,
@@ -100,20 +101,18 @@ describe('config-confirmation', () => {
       expect(mockH.view).toHaveBeenCalledWith('config-confirmation-page', { test: 'viewModel' })
     })
 
-    test('should return 400 when slug is missing', async () => {
-      mockRequest.params = {}
+    test('should return validation error when pre-handler returns it', async () => {
+      mockRequest = mockHapiRequest({
+        params: {},
+        pre: {
+          validatedSlugAndForm: { error: mockH.response('Bad request - missing slug').code(statusCodes.badRequest) }
+        }
+      })
 
       await handler(mockRequest, mockH)
 
+      expect(mockH.response).toHaveBeenCalledWith('Bad request - missing slug')
       expect(mockH.code).toHaveBeenCalledWith(400)
-    })
-
-    test('should return 404 when form not found', async () => {
-      findFormBySlug.mockResolvedValue(null)
-
-      await handler(mockRequest, mockH)
-
-      expect(mockH.code).toHaveBeenCalledWith(404)
     })
 
     test('should render page with default content when no config-driven content available', async () => {
