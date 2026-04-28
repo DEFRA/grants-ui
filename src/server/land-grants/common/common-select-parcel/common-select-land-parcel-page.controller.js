@@ -176,10 +176,10 @@ export default class CommonSelectLandParcelPageController extends LandGrantsQues
       return { parcelId: id, areaHa: rawArea == null ? null : Number(rawArea) }
     })
 
-    const totalHectaresAppliedFor =
+    const totalHectaresForSelectedParcels =
       Math.round(landParcelMetadata.reduce((sum, { areaHa }) => sum + (areaHa ?? 0), 0) * 10000) / 10000
 
-    if (this.minimumAreaHa !== null && totalHectaresAppliedFor < this.minimumAreaHa) {
+    if (this.minimumAreaHa !== null && totalHectaresForSelectedParcels < this.minimumAreaHa) {
       const parcels = mapParcelsToViewModel(fetchedParcels)
       const validationError = `Total area of selected land parcels must be more than ${this.minimumAreaHa}ha`
       return h.view(
@@ -192,8 +192,8 @@ export default class CommonSelectLandParcelPageController extends LandGrantsQues
       landParcels: selectedParcelIds,
       landParcelsDisplay: selectedParcelIds.join(', '),
       landParcelMetadata,
-      totalHectaresAppliedFor,
-      additionalAnswers: { totalHectaresAppliedFor }
+      totalHectaresForSelectedParcels,
+      additionalAnswers: { totalHectaresForSelectedParcels }
     })
 
     const { returnUrl: _removed, ...queryWithoutReturnUrl } = request.query ?? {}

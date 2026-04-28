@@ -53,7 +53,7 @@ export default class WoodlandHectaresPageController extends TaskPageController {
 
   getViewModel(request, context) {
     const { state } = context
-    const totalHectaresAppliedFor = truncate4dp(Number(state['totalHectaresAppliedFor'] ?? 0))
+    const totalHectaresForSelectedParcels = truncate4dp(Number(state['totalHectaresForSelectedParcels'] ?? 0))
     const viewModel = /** @type {Record<string, any>} */ (super.getViewModel(request, context))
 
     const guidanceIndex = viewModel.components?.findIndex(
@@ -62,21 +62,21 @@ export default class WoodlandHectaresPageController extends TaskPageController {
     if (guidanceIndex !== -1) {
       viewModel.components[guidanceIndex].model.content = nunjucks.renderString(
         viewModel.components[guidanceIndex].model.content,
-        { totalHectaresAppliedFor }
+        { totalHectaresForSelectedParcels }
       )
     }
 
-    return { ...viewModel, totalHectaresAppliedFor }
+    return { ...viewModel, totalHectaresForSelectedParcels }
   }
 
   /**
    * Validates the hectare inputs against frontend rules.
    * @param {number} overTen
    * @param {number} underTen
-   * @param {number} totalHectaresAppliedFor
+   * @param {number} totalHectaresForSelectedParcels
    * @returns {Array<object>}
    */
-  validatePayload(overTen, underTen, totalHectaresAppliedFor) {
+  validatePayload(overTen, underTen, totalHectaresForSelectedParcels) {
     const missingErrors = []
     if (Number.isNaN(overTen)) {
       missingErrors.push(makeError(HECTARES_OVER_TEN_FIELD_NAME, ERROR_BELOW_MINIMUM))
@@ -88,8 +88,8 @@ export default class WoodlandHectaresPageController extends TaskPageController {
     if (overTen + underTen < MIN_WOODLAND_TOTAL_AREA_HA) {
       return makeBothFieldsError(ERROR_BELOW_MINIMUM)
     }
-    if (overTen > totalHectaresAppliedFor || overTen + underTen > totalHectaresAppliedFor) {
-      return makeBothFieldsError(errorExceedsMax(totalHectaresAppliedFor))
+    if (overTen > totalHectaresForSelectedParcels || overTen + underTen > totalHectaresForSelectedParcels) {
+      return makeBothFieldsError(errorExceedsMax(totalHectaresForSelectedParcels))
     }
     return []
   }
@@ -169,11 +169,11 @@ export default class WoodlandHectaresPageController extends TaskPageController {
       const { state } = context
       const payload = /** @type {Record<string, string>} */ (request.payload ?? {})
 
-      const totalHectaresAppliedFor = Number(state['totalHectaresAppliedFor']) || 0
+      const totalHectaresForSelectedParcels = Number(state['totalHectaresForSelectedParcels']) || 0
       const overTen = Number.parseFloat(payload[HECTARES_OVER_TEN_FIELD_NAME])
       const underTen = Number.parseFloat(payload[HECTARES_UNDER_TEN_FIELD_NAME]) || 0
 
-      const frontendErrors = this.validatePayload(overTen, underTen, totalHectaresAppliedFor)
+      const frontendErrors = this.validatePayload(overTen, underTen, totalHectaresForSelectedParcels)
       if (frontendErrors.length) {
         return this.renderWithErrors(request, context, h, frontendErrors)
       }
