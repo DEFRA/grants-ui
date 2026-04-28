@@ -71,6 +71,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Clean pact files
+        run: rm -rf src/contracts/pacts
+
       - name: Run contract tests
         run: npm run test:contracts
 
