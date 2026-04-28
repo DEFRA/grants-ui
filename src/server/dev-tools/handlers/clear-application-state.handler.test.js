@@ -211,7 +211,7 @@ describe('clearApplicationStateHandler', () => {
       mockRequest = {
         params: { slug: 'test-slug' },
         server: { methods: { getFormService: {} } },
-        app: { }
+        app: {}
       }
 
       await expect(clearApplicationStateHandler(mockRequest, mockH)).rejects.toThrow('getFormService is not available')
