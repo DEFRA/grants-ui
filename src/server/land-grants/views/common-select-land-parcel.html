@@ -29,6 +29,11 @@
 
       <form method="post" data-actions="{{ actions }}" >
 
+        {% if sectionTitle and sectionTitle.length and (sectionTitle !== pageTitle) %}
+        <h2 class="govuk-caption-l govuk-!-margin-top-0" id="section-title">
+          {{- sectionTitle -}}
+        </h2>
+        {% endif %}
         <h1 class="govuk-heading-l">{{ pageTitle }}</h1>
 
         {% if topSection %}
@@ -76,7 +81,7 @@
             <input type="hidden" name="crumb" value="{{ crumb }}">
             {% block form %}
                 {{ govukButton({
-                  text: "Continue",
+                  text: submitButtonText or "Continue",
                   preventDoubleClick: true
                 }) }}
             {% endblock %}

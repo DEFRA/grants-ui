@@ -28,6 +28,11 @@ export default class CommonSelectLandParcelPageController extends LandGrantsQues
     this.showSupportDetails = config.showSupportDetails !== false
     this.minimumAreaHa = config.minimumAreaHa ?? null
     this.invalidates = Array.isArray(config.invalidates) ? config.invalidates : []
+
+    // Resolve section
+    if (pageDef.section) {
+      this.section = model.getSection(pageDef.section)
+    }
   }
 
   /**
@@ -70,8 +75,12 @@ export default class CommonSelectLandParcelPageController extends LandGrantsQues
    */
   buildViewModel(request, context, { parcels, selectedParcelIds, errors } = {}) {
     const { state } = context
+
+    const sectionTitle = this.section?.hideTitle !== true ? this.section?.title : ''
+
     return {
       ...super.getViewModel(request, context),
+      sectionTitle,
       parcels,
       hasExistingLandParcels: Array.isArray(state.landParcels) && state.landParcels.length > 0,
       selectionMode: this.enableMultipleParcelSelect ? 'multiple' : 'single',
@@ -171,10 +180,10 @@ export default class CommonSelectLandParcelPageController extends LandGrantsQues
       return { parcelId: id, areaHa: rawArea == null ? null : Number(rawArea) }
     })
 
-    const totalHectaresAppliedFor =
+    const totalHectaresForSelectedParcels =
       Math.round(landParcelMetadata.reduce((sum, { areaHa }) => sum + (areaHa ?? 0), 0) * 10000) / 10000
 
-    if (this.minimumAreaHa !== null && totalHectaresAppliedFor < this.minimumAreaHa) {
+    if (this.minimumAreaHa !== null && totalHectaresForSelectedParcels < this.minimumAreaHa) {
       const parcels = mapParcelsToViewModel(fetchedParcels)
       const validationError = `Total area of selected land parcels must be more than ${this.minimumAreaHa}ha`
       return h.view(
@@ -189,8 +198,8 @@ export default class CommonSelectLandParcelPageController extends LandGrantsQues
       landParcels: selectedParcelIds,
       landParcelsDisplay: selectedParcelIds.join(', '),
       landParcelMetadata,
-      totalHectaresAppliedFor,
-      additionalAnswers: { totalHectaresAppliedFor }
+      totalHectaresForSelectedParcels,
+      additionalAnswers: { totalHectaresForSelectedParcels }
     })
 
     return this.proceed(request, h, `${this.getNextPath(context)}`)

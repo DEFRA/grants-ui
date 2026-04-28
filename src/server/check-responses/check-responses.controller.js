@@ -8,6 +8,7 @@ export default class CheckResponsesPageController extends SummaryPageController 
    */
   constructor(model, pageDef) {
     super(model, pageDef)
+    this.model = model
     this.viewName = 'check-responses-page'
 
     // Resolve section
@@ -16,16 +17,67 @@ export default class CheckResponsesPageController extends SummaryPageController 
     }
   }
 
+  /**
+   * @param {{ details?: any[], checkAnswers?: any[] }} viewModel
+   * @param {any} landParcels
+   */
   #applyLandParcels(viewModel, landParcels) {
     if (Array.isArray(landParcels) && landParcels.length) {
       const displayValue = landParcels.join(', ')
       viewModel.details?.forEach((detail, di) => {
-        const ii = detail.items?.findIndex((item) => item.name === 'landParcels') ?? -1
-        if (ii !== -1) {
+        const ii = detail.items?.findIndex((/** @type {any} */ item) => item.name === 'landParcels') ?? -1
+        if (ii !== -1 && viewModel.checkAnswers) {
           viewModel.checkAnswers[di].summaryList.rows[ii].value = { html: displayValue }
         }
       })
     }
+  }
+
+  /**
+   * @param {{ details?: any[], checkAnswers?: any[] }} viewModel
+   */
+  #excludeCheckDetailsEntries(viewModel) {
+    const excludedPaths = new Set(
+      (this.model?.def?.pages ?? [])
+        .filter((/** @type {any} */ page) => page.controller === 'CheckDetailsController')
+        .map((/** @type {any} */ page) => page.path)
+    )
+
+    if (excludedPaths.size === 0 || !Array.isArray(viewModel.details)) {
+      return
+    }
+
+    /** @type {any[]} */
+    const keptDetails = []
+    /** @type {any[]} */
+    const keptCheckAnswers = []
+
+    viewModel.details.forEach((detail, di) => {
+      const items = detail.items ?? []
+      const keep = items.map((/** @type {any} */ item) => !excludedPaths.has(item.page?.path))
+      const filteredItems = items.filter((/** @type {any} */ _item, /** @type {number} */ i) => keep[i])
+
+      if (filteredItems.length === 0) {
+        return
+      }
+
+      keptDetails.push({ ...detail, items: filteredItems })
+
+      const checkAnswer = viewModel.checkAnswers?.[di]
+      if (checkAnswer) {
+        const rows = checkAnswer.summaryList?.rows ?? []
+        keptCheckAnswers.push({
+          ...checkAnswer,
+          summaryList: {
+            ...checkAnswer.summaryList,
+            rows: rows.filter((/** @type {any} */ _row, /** @type {number} */ i) => keep[i])
+          }
+        })
+      }
+    })
+
+    viewModel.details = keptDetails
+    viewModel.checkAnswers = keptCheckAnswers
   }
 
   /**
@@ -42,6 +94,7 @@ export default class CheckResponsesPageController extends SummaryPageController 
     const backLink = getTaskPageBackLink(viewModel, pageDef)
     const sectionTitle = this.section?.hideTitle !== true ? this.section?.title : ''
 
+    this.#excludeCheckDetailsEntries(viewModel)
     this.#applyLandParcels(viewModel, context?.state?.landParcels)
 
     return {

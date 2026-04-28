@@ -387,7 +387,11 @@ function renderErrorView(h, statusCode) {
       errorView = 'errors/500'
   }
 
-  return h.view(errorView, {}).code(statusCode)
+  return h
+    .view(errorView, {
+      supportEmail: h.request.app.model?.def?.metadata?.supportEmail ?? null
+    })
+    .code(statusCode)
 }
 
 /**

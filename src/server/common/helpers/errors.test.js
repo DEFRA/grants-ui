@@ -57,6 +57,8 @@ process.env.EXAMPLE_WHITELIST_CRNS = '1104734543,1103521484'
 process.env.EXAMPLE_WHITELIST_SBIS = '123456789,987654321'
 process.env.FARMING_PAYMENTS_WHITELIST_CRNS = '1102838829, 1102760349, 1100495932'
 process.env.FARMING_PAYMENTS_WHITELIST_SBIS = '106284736, 121428499, 106238988'
+process.env.WOODLAND_WHITELIST_CRNS = '1102838829, 1102760349, 1100495932'
+process.env.WOODLAND_WHITELIST_SBIS = '106284736, 121428499, 106238988'
 
 describe('#errors', () => {
   /** @type {Server} */
@@ -98,7 +100,8 @@ describe('#catchAll', () => {
   const mockToolkitCode = vi.fn()
   const mockToolkit = {
     view: mockToolkitView.mockReturnThis(),
-    code: mockToolkitCode.mockReturnThis()
+    code: mockToolkitCode.mockReturnThis(),
+    request: { app: { model: null } }
   }
   const SERVER_ERROR_STATUS = statusCodes.internalServerError
   const HTTP_METHOD = 'GET'
@@ -176,7 +179,7 @@ describe('#catchAll', () => {
   test.each(testCases)('Should provide expected "%name" page', ({ name, statusCode, expectedView }) => {
     catchAll(mockRequest(statusCode), mockToolkit)
     expect(mockErrorLogger).not.toHaveBeenCalledWith(mockStack)
-    expect(mockToolkitView).toHaveBeenCalledWith(expectedView, {})
+    expect(mockToolkitView).toHaveBeenCalledWith(expectedView, { supportEmail: null })
     expect(mockToolkitCode).toHaveBeenCalledWith(statusCode)
   })
 
@@ -184,7 +187,7 @@ describe('#catchAll', () => {
     catchAll(mockRequest(statusCodes.imATeapot), mockToolkit)
 
     expect(mockErrorLogger).not.toHaveBeenCalledWith(mockStack)
-    expect(mockToolkitView).toHaveBeenCalledWith('errors/500', {})
+    expect(mockToolkitView).toHaveBeenCalledWith('errors/500', { supportEmail: null })
     expect(mockToolkitCode).toHaveBeenCalledWith(statusCodes.imATeapot)
   })
 
@@ -219,7 +222,7 @@ describe('#catchAll', () => {
       })
     )
     expect(mockErrorLogger).not.toHaveBeenCalled()
-    expect(mockToolkitView).toHaveBeenCalledWith(errorPage, {})
+    expect(mockToolkitView).toHaveBeenCalledWith(errorPage, { supportEmail: null })
     expect(mockToolkitCode).toHaveBeenCalledWith(statusCodes.internalServerError)
   })
 
@@ -246,7 +249,7 @@ describe('#catchAll', () => {
       }),
       request
     )
-    expect(mockToolkitView).toHaveBeenCalledWith(errorPage, {})
+    expect(mockToolkitView).toHaveBeenCalledWith(errorPage, { supportEmail: null })
     expect(mockToolkitCode).toHaveBeenCalledWith(statusCode)
   })
 
@@ -270,7 +273,7 @@ describe('#catchAll', () => {
       }),
       request
     )
-    expect(mockToolkitView).toHaveBeenCalledWith(errorPage, {})
+    expect(mockToolkitView).toHaveBeenCalledWith(errorPage, { supportEmail: null })
     expect(mockToolkitCode).toHaveBeenCalledWith(statusCode)
   })
 
@@ -286,7 +289,7 @@ describe('#catchAll', () => {
     const callArgs = log.mock.calls.map((call) => call[1]?.step)
     expect(callArgs).not.toContain('auth_flow_error')
     expect(callArgs).not.toContain('bell_oauth_error')
-    expect(mockToolkitView).toHaveBeenCalledWith(errorPage, {})
+    expect(mockToolkitView).toHaveBeenCalledWith(errorPage, { supportEmail: null })
     expect(mockToolkitCode).toHaveBeenCalledWith(statusCode)
   })
 
@@ -301,7 +304,11 @@ describe('#catchAll', () => {
       path: '/auth/x',
       method: 'GET'
     }
-    const toolkit = { view: vi.fn().mockReturnThis(), code: vi.fn().mockReturnThis() }
+    const toolkit = {
+      view: vi.fn().mockReturnThis(),
+      code: vi.fn().mockReturnThis(),
+      request: { app: { model: null } }
+    }
 
     catchAll(request, toolkit)
 
@@ -316,7 +323,11 @@ describe('#catchAll', () => {
       method: 'GET',
       headers: {}
     }
-    const toolkit = { view: vi.fn().mockReturnThis(), code: vi.fn().mockReturnThis() }
+    const toolkit = {
+      view: vi.fn().mockReturnThis(),
+      code: vi.fn().mockReturnThis(),
+      request: { app: { model: null } }
+    }
 
     catchAll(request, toolkit)
 
@@ -540,7 +551,8 @@ describe('#catchAll', () => {
 describe('#catchAll 404 Logging', () => {
   const mockToolkit = {
     view: vi.fn().mockReturnThis(),
-    code: vi.fn().mockReturnThis()
+    code: vi.fn().mockReturnThis(),
+    request: { app: { model: null } }
   }
   const NOT_FOUND_STATUS = statusCodes.notFound
   const HTTP_METHOD = 'GET'
@@ -649,7 +661,11 @@ describe('#catchAll 404 Logging', () => {
       method: 'GET'
     }
 
-    const toolkit = { view: vi.fn().mockReturnThis(), code: vi.fn().mockReturnThis() }
+    const toolkit = {
+      view: vi.fn().mockReturnThis(),
+      code: vi.fn().mockReturnThis(),
+      request: { app: { model: null } }
+    }
     catchAll(request, toolkit)
 
     expect(log).toHaveBeenCalledWith(
@@ -672,7 +688,11 @@ describe('#catchAll 404 Logging', () => {
       method: 'GET'
     }
 
-    const toolkit = { view: vi.fn().mockReturnThis(), code: vi.fn().mockReturnThis() }
+    const toolkit = {
+      view: vi.fn().mockReturnThis(),
+      code: vi.fn().mockReturnThis(),
+      request: { app: { model: null } }
+    }
     catchAll(request, toolkit)
 
     expect(log).toHaveBeenCalledWith(
@@ -688,7 +708,8 @@ describe('#catchAll Redirect Handling', () => {
   const mockToolkit = {
     redirect: mockToolkitRedirect,
     view: vi.fn().mockReturnThis(),
-    code: vi.fn().mockReturnThis()
+    code: vi.fn().mockReturnThis(),
+    request: { app: { model: null } }
   }
 
   const createRedirectRequest = (statusCode, location) => ({

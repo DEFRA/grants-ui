@@ -67,7 +67,8 @@ describe('ConfirmationService', () => {
         confirmationContent: { html: '<h2>Test content</h2>' },
         serviceName: 'Test Form',
         serviceUrl: '/test-form',
-        breadcrumbs: []
+        breadcrumbs: [],
+        supportEmail: null
       })
     })
 

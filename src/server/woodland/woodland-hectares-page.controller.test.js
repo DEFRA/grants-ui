@@ -31,7 +31,7 @@ vi.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js', () =
             {
               type: 'Html',
               isFormComponent: false,
-              model: { content: '{{ totalHectaresAppliedFor }} ha' }
+              model: { content: '{{ totalHectaresForSelectedParcels }} ha' }
             }
           ]
         }
@@ -94,19 +94,19 @@ describe('WoodlandHectaresPageController', () => {
   })
 
   describe('getViewModel', () => {
-    it('renders hectares guidance content with totalHectaresAppliedFor from state', () => {
-      const context = { state: { totalHectaresAppliedFor: 42 }, evaluationState: {} }
+    it('renders hectares guidance content with totalHectaresForSelectedParcels from state', () => {
+      const context = { state: { totalHectaresForSelectedParcels: 42 }, evaluationState: {} }
       const viewModel = controller.getViewModel({}, context)
 
-      expect(viewModel.totalHectaresAppliedFor).toBe(42)
+      expect(viewModel.totalHectaresForSelectedParcels).toBe(42)
       expect(viewModel.components[0].model.content).toContain('42 ha')
     })
 
-    it('defaults totalHectaresAppliedFor to 0 when missing from state', () => {
+    it('defaults totalHectaresForSelectedParcels to 0 when missing from state', () => {
       const context = { state: {}, evaluationState: {} }
       const viewModel = controller.getViewModel({}, context)
 
-      expect(viewModel.totalHectaresAppliedFor).toBe(0)
+      expect(viewModel.totalHectaresForSelectedParcels).toBe(0)
       expect(viewModel.components[0].model.content).toContain('0 ha')
     })
   })
@@ -114,20 +114,20 @@ describe('WoodlandHectaresPageController', () => {
   describe('payload edge cases', () => {
     it('treats null payload as empty and shows missing errors', async () => {
       const handler = controller.makePostRouteHandler()
-      const context = { state: { totalHectaresAppliedFor: 50 }, evaluationState: {} }
+      const context = { state: { totalHectaresForSelectedParcels: 50 }, evaluationState: {} }
 
       await handler({ payload: null }, context, mockH)
 
       expect(context.errors[0].text).toBe('The total area of woodland must be at least 0.5ha')
     })
 
-    it('defaults totalHectaresAppliedFor to 0 when missing from state', async () => {
+    it('defaults totalHectaresForSelectedParcels to 0 when missing from state', async () => {
       const handler = controller.makePostRouteHandler()
       const context = { state: {}, evaluationState: {} }
 
       await handler({ payload: { hectaresTenOrOverYearsOld: '1', hectaresUnderTenYearsOld: '1' } }, context, mockH)
 
-      // totalHectaresAppliedFor defaults to 0, so any positive value triggers exceeds-max
+      // totalHectaresForSelectedParcels defaults to 0, so any positive value triggers exceeds-max
       expect(context.errors[0].text).toContain('cannot be more than total area of selected land parcels (0ha)')
     })
   })
@@ -135,7 +135,7 @@ describe('WoodlandHectaresPageController', () => {
   describe('non-numeric input', () => {
     it('sets error on over-10 field when it is not a number', async () => {
       const handler = controller.makePostRouteHandler()
-      const context = { state: { totalHectaresAppliedFor: 50 }, evaluationState: {} }
+      const context = { state: { totalHectaresForSelectedParcels: 50 }, evaluationState: {} }
 
       await handler({ payload: { hectaresTenOrOverYearsOld: 'abc', hectaresUnderTenYearsOld: '10' } }, context, mockH)
 
@@ -151,7 +151,7 @@ describe('WoodlandHectaresPageController', () => {
 
     it('treats non-numeric under-10 as 0 (field is optional)', async () => {
       const handler = controller.makePostRouteHandler()
-      const context = { state: { totalHectaresAppliedFor: 50 } }
+      const context = { state: { totalHectaresForSelectedParcels: 50 } }
 
       await handler({ payload: { hectaresTenOrOverYearsOld: '1', hectaresUnderTenYearsOld: 'abc' } }, context, mockH)
 
@@ -162,7 +162,7 @@ describe('WoodlandHectaresPageController', () => {
   describe('minimum 0.5 ha total', () => {
     it('sets error on over-10 field when both are empty (under-10 defaults to 0)', async () => {
       const handler = controller.makePostRouteHandler()
-      const context = { state: { totalHectaresAppliedFor: 50 }, evaluationState: {} }
+      const context = { state: { totalHectaresForSelectedParcels: 50 }, evaluationState: {} }
 
       await handler({ payload: {} }, context, mockH)
 
@@ -181,7 +181,7 @@ describe('WoodlandHectaresPageController', () => {
       { overTen: '0.4', underTen: '0', desc: 'only over-10 below minimum' }
     ])('sets error when combined total is below 0.5 ha ($desc)', async ({ overTen, underTen }) => {
       const handler = controller.makePostRouteHandler()
-      const context = { state: { totalHectaresAppliedFor: 50 }, evaluationState: {} }
+      const context = { state: { totalHectaresForSelectedParcels: 50 }, evaluationState: {} }
 
       await handler(
         { payload: { hectaresTenOrOverYearsOld: overTen, hectaresUnderTenYearsOld: underTen } },
@@ -210,7 +210,7 @@ describe('WoodlandHectaresPageController', () => {
       { overTen: '1', underTen: '0', desc: 'above minimum' }
     ])('does not set minimum error when combined total is at least 0.5 ha ($desc)', async ({ overTen, underTen }) => {
       const handler = controller.makePostRouteHandler()
-      const context = { state: { totalHectaresAppliedFor: 50 } }
+      const context = { state: { totalHectaresForSelectedParcels: 50 } }
 
       await handler(
         { payload: { hectaresTenOrOverYearsOld: overTen, hectaresUnderTenYearsOld: underTen } },
@@ -228,7 +228,7 @@ describe('WoodlandHectaresPageController', () => {
       { overTen: '30', underTen: '25', desc: 'combined total exceeds max' }
     ])('sets error on both fields when $desc', async ({ overTen, underTen }) => {
       const handler = controller.makePostRouteHandler()
-      const context = { state: { totalHectaresAppliedFor: 50 }, evaluationState: {} }
+      const context = { state: { totalHectaresForSelectedParcels: 50 }, evaluationState: {} }
 
       await handler(
         { payload: { hectaresTenOrOverYearsOld: overTen, hectaresUnderTenYearsOld: underTen } },
@@ -257,7 +257,7 @@ describe('WoodlandHectaresPageController', () => {
       { overTen: '20', underTen: '10', desc: 'combined under max' }
     ])('does not set error when $desc', async ({ overTen, underTen }) => {
       const handler = controller.makePostRouteHandler()
-      const context = { state: { totalHectaresAppliedFor: 50 } }
+      const context = { state: { totalHectaresForSelectedParcels: 50 } }
 
       await handler(
         { payload: { hectaresTenOrOverYearsOld: overTen, hectaresUnderTenYearsOld: underTen } },
@@ -271,7 +271,7 @@ describe('WoodlandHectaresPageController', () => {
 
   describe('backend validation', () => {
     const validPayload = { hectaresTenOrOverYearsOld: '10', hectaresUnderTenYearsOld: '5' }
-    const validState = { totalHectaresAppliedFor: 50, landParcels: ['SD6346-3387'] }
+    const validState = { totalHectaresForSelectedParcels: 50, landParcels: ['SD6346-3387'] }
 
     it('calls the service with parcel IDs and hectare values from payload', async () => {
       const handler = controller.makePostRouteHandler()
