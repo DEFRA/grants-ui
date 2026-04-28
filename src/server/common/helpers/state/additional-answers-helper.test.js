@@ -23,9 +23,9 @@ describe('mergeAdditionalAnswers', () => {
   })
 
   it('overwrites matching keys with values from newAnswers', () => {
-    const state = { additionalAnswers: { totalHectaresAppliedFor: 10, applicant: 'old' } }
-    const result = mergeAdditionalAnswers(state, { totalHectaresAppliedFor: 99 })
-    expect(result.additionalAnswers).toEqual({ totalHectaresAppliedFor: 99, applicant: 'old' })
+    const state = { additionalAnswers: { totalHectaresForSelectedParcels: 10, applicant: 'old' } }
+    const result = mergeAdditionalAnswers(state, { totalHectaresForSelectedParcels: 99 })
+    expect(result.additionalAnswers).toEqual({ totalHectaresForSelectedParcels: 99, applicant: 'old' })
   })
 
   it('merges multiple keys at once', () => {
@@ -35,10 +35,10 @@ describe('mergeAdditionalAnswers', () => {
   })
 
   it('preserves all other state keys', () => {
-    const state = { landParcels: ['S1-P1'], totalHectaresAppliedFor: 5, additionalAnswers: {} }
+    const state = { landParcels: ['S1-P1'], totalHectaresForSelectedParcels: 5, additionalAnswers: {} }
     const result = mergeAdditionalAnswers(state, { foo: 'bar' })
     expect(result.landParcels).toEqual(['S1-P1'])
-    expect(result.totalHectaresAppliedFor).toBe(5)
+    expect(result.totalHectaresForSelectedParcels).toBe(5)
   })
 
   it('does not mutate the original state', () => {

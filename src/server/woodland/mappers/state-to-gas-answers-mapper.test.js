@@ -22,7 +22,7 @@ const baseSubmissionState = {
   referenceNumber: 'WMP-ABC-123',
   businessDetailsUpToDate: true,
   landParcels: ['SD7560-9193', 'SD5848-9205'],
-  totalHectaresAppliedFor: 195.246,
+  totalHectaresForSelectedParcels: 195.246,
   guidanceRead: true
 }
 
@@ -100,7 +100,7 @@ describe('transformWoodlandAnswers', () => {
   it('passes through other submission state fields unchanged', () => {
     const result = transformWoodlandAnswers(baseSubmissionState, baseRawState)
     expect(result.businessDetailsUpToDate).toBe(true)
-    expect(result.totalHectaresAppliedFor).toBe(195.246)
+    expect(result.totalHectaresForSelectedParcels).toBe(195.246)
     expect(result.guidanceRead).toBe(true)
   })
 

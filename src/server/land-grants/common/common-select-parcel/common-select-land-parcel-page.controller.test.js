@@ -282,8 +282,8 @@ describe('CommonSelectLandParcelPageController', () => {
           { parcelId: 'S1-P1', areaHa: 10 },
           { parcelId: 'S2-P2', areaHa: 20 }
         ],
-        totalHectaresAppliedFor: 30,
-        additionalAnswers: { totalHectaresAppliedFor: 30 }
+        totalHectaresForSelectedParcels: 30,
+        additionalAnswers: { totalHectaresForSelectedParcels: 30 }
       })
 
       expect(controller.setState).not.toHaveBeenCalled()
@@ -320,7 +320,7 @@ describe('CommonSelectLandParcelPageController', () => {
       expect(passedRequest.query.returnUrl).toBeUndefined()
     })
 
-    it('rounds totalHectaresAppliedFor to 4dp to avoid float precision issues', async () => {
+    it('rounds totalHectaresForSelectedParcels to 4dp to avoid float precision issues', async () => {
       fetchParcels.mockResolvedValue([
         { sheetId: 'S1', parcelId: 'P1', area: { value: 25.3874 } },
         { sheetId: 'S2', parcelId: 'P2', area: { value: 169.8586 } }
@@ -340,8 +340,8 @@ describe('CommonSelectLandParcelPageController', () => {
         request,
         context.state,
         expect.objectContaining({
-          totalHectaresAppliedFor: 195.246,
-          additionalAnswers: { totalHectaresAppliedFor: 195.246 }
+          totalHectaresForSelectedParcels: 195.246,
+          additionalAnswers: { totalHectaresForSelectedParcels: 195.246 }
         })
       )
     })
@@ -364,7 +364,7 @@ describe('CommonSelectLandParcelPageController', () => {
         context.state,
         expect.objectContaining({
           landParcelMetadata: [{ parcelId: 'S1-P1', areaHa: null }],
-          totalHectaresAppliedFor: 0
+          totalHectaresForSelectedParcels: 0
         })
       )
     })
