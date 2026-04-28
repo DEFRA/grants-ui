@@ -467,5 +467,103 @@ describe('CommonSelectLandParcelPageController', () => {
         })
       )
     })
+
+    describe('invalidates', () => {
+      it('spreads invalidated state into mergeState when parcel selection changes', async () => {
+        const controller = createController({
+          invalidates: ['hectaresTenOrOverYearsOld', 'hectaresUnderTenYearsOld']
+        })
+        const request = setupRequest('post')
+        const context = setupContext({})
+        const h = setupH()
+
+        request.payload = { landParcels: ['S1-P1', 'S2-P2'] }
+        controller.mergeState = vi.fn()
+        controller.getInvalidatedState = vi
+          .fn()
+          .mockResolvedValue({ hectaresTenOrOverYearsOld: undefined, hectaresUnderTenYearsOld: undefined })
+
+        await controller.handlePost(request, context, h)
+
+        expect(controller.mergeState).toHaveBeenCalledWith(
+          request,
+          context.state,
+          expect.objectContaining({
+            hectaresTenOrOverYearsOld: undefined,
+            hectaresUnderTenYearsOld: undefined
+          })
+        )
+      })
+
+      it('spreads empty object into mergeState when parcel selection does not change', async () => {
+        const controller = createController({
+          invalidates: ['hectaresTenOrOverYearsOld', 'hectaresUnderTenYearsOld']
+        })
+        const request = setupRequest('post')
+        const context = setupContext({})
+        const h = setupH()
+
+        request.payload = { landParcels: ['S1-P1', 'S2-P2'] }
+        controller.mergeState = vi.fn()
+        controller.getInvalidatedState = vi.fn().mockResolvedValue({})
+
+        await controller.handlePost(request, context, h)
+
+        expect(controller.mergeState).toHaveBeenCalledWith(
+          request,
+          context.state,
+          expect.not.objectContaining({
+            hectaresTenOrOverYearsOld: undefined,
+            hectaresUnderTenYearsOld: undefined
+          })
+        )
+      })
+    })
+
+    describe('getInvalidatedState', () => {
+      it('clears dependent state keys when parcel selection changes', async () => {
+        const controller = createController({
+          invalidates: ['hectaresTenOrOverYearsOld', 'hectaresUnderTenYearsOld']
+        })
+        const request = setupRequest('post')
+        controller.getState = vi.fn().mockResolvedValue({ landParcels: ['S1-P1'] })
+
+        const result = await controller.getInvalidatedState(request, ['S1-P1', 'S2-P2'])
+
+        expect(result).toEqual({ hectaresTenOrOverYearsOld: undefined, hectaresUnderTenYearsOld: undefined })
+      })
+
+      it('returns empty object when parcel selection does not change', async () => {
+        const controller = createController({
+          invalidates: ['hectaresTenOrOverYearsOld', 'hectaresUnderTenYearsOld']
+        })
+        const request = setupRequest('post')
+        controller.getState = vi.fn().mockResolvedValue({ landParcels: ['S1-P1', 'S2-P2'] })
+
+        const result = await controller.getInvalidatedState(request, ['S2-P2', 'S1-P1'])
+
+        expect(result).toEqual({})
+      })
+
+      it('returns empty object when no invalidates are configured', async () => {
+        const controller = createController()
+        const request = setupRequest('post')
+        controller.getState = vi.fn().mockResolvedValue({ landParcels: ['S1-P1'] })
+
+        const result = await controller.getInvalidatedState(request, ['S2-P2'])
+
+        expect(result).toEqual({})
+      })
+
+      it('clears dependent state when switching from no previous selection', async () => {
+        const controller = createController({ invalidates: ['hectaresTenOrOverYearsOld'] })
+        const request = setupRequest('post')
+        controller.getState = vi.fn().mockResolvedValue({})
+
+        const result = await controller.getInvalidatedState(request, ['S1-P1'])
+
+        expect(result).toEqual({ hectaresTenOrOverYearsOld: undefined })
+      })
+    })
   })
 })

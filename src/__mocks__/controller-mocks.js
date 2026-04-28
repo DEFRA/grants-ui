@@ -4,4 +4,5 @@ export const setupControllerMocks = (controller, { proceed = 'redirected', nextP
   controller.proceed = vi.fn().mockResolvedValue(proceed)
   controller.getNextPath = vi.fn().mockReturnValue(nextPath)
   controller.setState = vi.fn()
+  controller.getState = vi.fn().mockResolvedValue({})
 }
