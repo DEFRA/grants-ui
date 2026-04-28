@@ -236,6 +236,16 @@ describe('CheckDetailsController', () => {
         ])
       )
     })
+
+    it('should handle missing components in pageDef during patching', () => {
+      const pageDefWithoutComponents = {
+        path: '/check-details',
+        title: 'Check your details'
+      }
+      const ctrl = new CheckDetailsController(mockModel, pageDefWithoutComponents)
+      expect(ctrl.pageDef.components).toHaveLength(2)
+      expect(ctrl.pageDef.components[0].name).toBe('placeholder')
+    })
   })
 
   describe('makeGetRouteHandler', () => {
