@@ -1,0 +1,4 @@
+services:
+  grants-ui:
+    environment:
+      LAND_GRANTS_API_URL: http://mockserver:1080

@@ -98,6 +98,13 @@
     "section": "about-woodland"
   },
   {
+    "slug": "woodland-name",
+    "name": "Name of woodland",
+    "type": "textFields",
+    "fields": { "woodlandName": "Test Woodland" },
+    "section": "about-woodland"
+  },
+  {
     "slug": "which-forestry-commission-team",
     "name": "Forestry commission team",
     "type": "radios",
