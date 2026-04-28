@@ -399,6 +399,76 @@ describe('task-list.helper', () => {
       expect(data[0].items[0].title.text).toBe('Grid reference')
     })
 
+    describe('getTaskTitle (via buildTaskListData)', () => {
+      const makeModel = (components) => ({
+        serviceUrl: '/service',
+        page: {
+          def: {
+            pages: [{ title: 'Page Title', section: 's1', path: '/t1', components }],
+            sections: [{ id: 's1', title: 'Section 1' }]
+          }
+        }
+      })
+      const formModel = { def: { metadata: {} } }
+
+      it('should use shortDescription when there is exactly one question component', () => {
+        const model = makeModel([{ type: 'TextField', name: 'q1', shortDescription: 'Your name' }])
+        const data = buildTaskListData(model, formModel, {})
+        expect(data[0].items[0].title.text).toBe('Your name')
+      })
+
+      it('should fall back to pageDef.title when single question component has no shortDescription', () => {
+        const model = makeModel([{ type: 'TextField', name: 'q1' }])
+        const data = buildTaskListData(model, formModel, {})
+        expect(data[0].items[0].title.text).toBe('Page Title')
+      })
+
+      it('should use pageDef.title when there are multiple question components', () => {
+        const model = makeModel([
+          { type: 'TextField', name: 'q1', shortDescription: 'First name' },
+          { type: 'TextField', name: 'q2', shortDescription: 'Last name' }
+        ])
+        const data = buildTaskListData(model, formModel, { q1: 'a', q2: 'b' })
+        expect(data[0].items[0].title.text).toBe('Page Title')
+      })
+
+      it('should use pageDef.title when there are no question components', () => {
+        // Page with no question components won't appear as a task item (isTaskCompleted returns false)
+        // so we verify via a page that has a question alongside the Html component
+        const mixedModel = {
+          serviceUrl: '/service',
+          page: {
+            def: {
+              pages: [
+                {
+                  title: 'Mixed Page',
+                  section: 's1',
+                  path: '/t1',
+                  components: [
+                    { type: 'Html', name: 'info', content: 'Some content' },
+                    { type: 'TextField', name: 'q1', shortDescription: 'Your answer' },
+                    { type: 'TextField', name: 'q2', shortDescription: 'Another answer' }
+                  ]
+                }
+              ],
+              sections: [{ id: 's1', title: 'Section 1' }]
+            }
+          }
+        }
+        const data = buildTaskListData(mixedModel, formModel, { q1: 'a', q2: 'b' })
+        expect(data[0].items[0].title.text).toBe('Mixed Page')
+      })
+
+      it('should use pageDef.title when there are multiple question components even if only one has shortDescription', () => {
+        const model = makeModel([
+          { type: 'RadiosField', name: 'q1', shortDescription: 'Your choice' },
+          { type: 'TextField', name: 'q2' }
+        ])
+        const data = buildTaskListData(model, formModel, { q1: 'yes', q2: 'text' })
+        expect(data[0].items[0].title.text).toBe('Page Title')
+      })
+    })
+
     it('should allow starting next task when previous conditional task is not applicable', () => {
       const mockModel = {
         serviceUrl: '/service',

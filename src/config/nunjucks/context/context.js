@@ -149,11 +149,14 @@ const buildCommonConfig = (serviceName, cookiePolicyUrl, cookieConsentExpiryDays
  * @returns {object} Complete context object for successful authentication
  */
 const buildSuccessContext = (auth, request, serviceName, cookiePolicyUrl, cookieConsentExpiryDays) => {
+  const submitButtonText = request?.app?.model?.def?.metadata?.options?.submitButtonText
+
   return {
     ...buildCommonConfig(serviceName, cookiePolicyUrl, cookieConsentExpiryDays),
     auth,
     navigation: buildNavigation(request),
-    getAssetPath: createAssetPathGetter
+    getAssetPath: createAssetPathGetter,
+    ...(submitButtonText ? { submitButtonText } : {})
   }
 }
 

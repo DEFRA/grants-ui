@@ -1,12 +1,20 @@
 import { getFormsCacheService } from '../../common/helpers/forms-cache/forms-cache.js'
 import { SessionError } from '~/src/server/common/utils/errors/SessionError.js'
 import { findFormBySlug, loadFormDefinition } from '~/src/server/common/forms/services/find-form-by-slug.js'
+import { clearParcelCache } from '~/src/server/land-grants/services/parcel-cache.js'
+
+/**
+ * @typedef {import('@hapi/hapi').Request & {
+ *   app: { model?: { def?: object } },
+ *   server: import('@hapi/hapi').Request['server'] & { app: { formsService?: object } }
+ * }} ClearStateRequest
+ */
 
 /**
  * Clears the current application state
- * @param {object} request - Hapi request object
- * @param {object} h - Hapi response toolkit
- * @returns {Promise<Response>} Hapi response
+ * @param {ClearStateRequest} request - Hapi request object
+ * @param {import('@hapi/hapi').ResponseToolkit} h - Hapi response toolkit
+ * @returns {Promise<import('@hapi/hapi').ResponseObject>} Hapi response
  */
 export async function clearApplicationStateHandler(request, h) {
   const slug = request.params?.slug || ''
@@ -34,9 +42,11 @@ export async function clearApplicationStateHandler(request, h) {
         slug,
         sessionKey
       })
-      throw sessionError.from(error)
+      throw sessionError.from(/** @type {Error} */ (error))
     }
   }
+
+  clearParcelCache()
 
   return h.redirect(`/${slug}`)
 }
