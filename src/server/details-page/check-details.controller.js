@@ -7,6 +7,7 @@ import {
 import { debug, log, LogCodes } from '../common/helpers/logging/log.js'
 import { mergeAdditionalAnswers } from '../common/helpers/state/additional-answers-helper.js'
 import { ComponentType } from '@defra/forms-model'
+import { config } from '~/src/config/config.js'
 
 const ERROR_TITLE = 'There is a problem'
 
@@ -80,14 +81,14 @@ export default class CheckDetailsController extends QuestionPageController {
   makeGetRouteHandler() {
     return async (request, context, h) => {
       const baseViewModel = super.getViewModel(request, context)
-      const config = this.model.def.metadata?.detailsPage
+      const detailsPageConfig = this.model.def.metadata?.detailsPage
 
-      if (!config) {
+      if (!detailsPageConfig) {
         return this.handleConfigError(baseViewModel, h, request)
       }
 
       try {
-        const { sections, mappedData } = await this.fetchAndProcessData(request, config)
+        const { sections, mappedData } = await this.fetchAndProcessData(request, detailsPageConfig)
         request.app.detailsPageData = mappedData
         return h.view(this.viewName, { ...baseViewModel, sections })
       } catch (error) {
@@ -103,16 +104,16 @@ export default class CheckDetailsController extends QuestionPageController {
       const { collection, viewName, model } = this
       const { state, evaluationState } = context
       const baseViewModel = super.getViewModel(request, context)
-      const config = this.model.def.metadata?.detailsPage
+      const detailsPageConfig = this.model.def.metadata?.detailsPage
 
-      if (!config) {
+      if (!detailsPageConfig) {
         return this.handleConfigError(baseViewModel, h, request)
       }
 
       if (context.errors) {
         const viewModel = this.getViewModel(request, context)
         viewModel.errors = collection.getViewErrors(viewModel.errors)
-        const { sections } = await this.fetchAndProcessData(request, config)
+        const { sections } = await this.fetchAndProcessData(request, detailsPageConfig)
         viewModel.sections = sections
 
         // Filter components based on their conditions using evaluated state
@@ -125,10 +126,14 @@ export default class CheckDetailsController extends QuestionPageController {
       await this.setState(request, state)
 
       if (confirmationValue === false) {
-        return h.redirect(`/${request.params.slug}/update-details`)
+        if (config.get('externalLinks.sfd.enabled')) {
+          return h.redirect(this.getSFDUpdateUrl(request))
+        } else {
+          return h.redirect(`/${request.params.slug}/update-details`)
+        }
       }
 
-      return this.handleDetailsConfirmed(request, context, config, h)
+      return this.handleDetailsConfirmed(request, context, detailsPageConfig, h)
     }
   }
 
@@ -237,6 +242,28 @@ export default class CheckDetailsController extends QuestionPageController {
         errorList: [{ text: 'This page is not configured correctly. Please contact support.', href: '' }]
       }
     })
+  }
+
+  /**
+   * Get the URL to update business details through SFD
+   * @param request
+   * @returns {string}
+   */
+  getSFDUpdateUrl(request) {
+    const { currentRelationshipId } = request.auth.credentials
+    const updateUrl = config.get('externalLinks.sfd.updateUrl')
+    if (!updateUrl) {
+      return ''
+    }
+
+    try {
+      const url = new URL(updateUrl)
+      url.searchParams.set('ssoOrgId', currentRelationshipId)
+      return url.toString()
+    } catch (error) {
+      debug(LogCodes.SYSTEM.CONFIG_INVALID, { key: 'externalLinks.sfd.updateUrl', value: updateUrl }, request)
+      return ''
+    }
   }
 }
 
