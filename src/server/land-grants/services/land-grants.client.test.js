@@ -283,6 +283,82 @@ describe('Land Grants client', () => {
       )
     })
 
+    it('should fall back to lastUpstreamStatus when retry error has no status or code', async () => {
+      // Simulate a retry-level failure (e.g. timeout) where the rejected error has no status/code,
+      // but the inner operation already captured an upstream status via lastUpstreamStatus.
+      retry.mockImplementationOnce(async (operation) => {
+        await operation().catch(() => {})
+        const timeoutError = new Error('Operation timed out')
+        throw timeoutError
+      })
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 502,
+        statusText: 'Bad Gateway',
+        arrayBuffer: vi.fn().mockResolvedValue(undefined)
+      })
+
+      await expect(postToLandGrantsApi('/test', {}, mockApiEndpoint)).rejects.toThrow('Operation timed out')
+
+      const exhaustionLogCall = log.mock.calls.find(
+        ([code, opts]) => code?.level === 'error' && opts?.errorMessage === 'Operation timed out'
+      )
+      expect(exhaustionLogCall).toBeDefined()
+      expect(exhaustionLogCall[1]).toEqual(
+        expect.objectContaining({
+          endpoint: '/test',
+          service: 'grants-ui-backend',
+          upstreamStatus: 502,
+          errorMessage: 'Operation timed out'
+        })
+      )
+    })
+
+    it('should pass null upstreamStatus when no upstream response was received', async () => {
+      // Network-level failure: fetch rejects before any HTTP response arrives.
+      retry.mockImplementationOnce(async () => {
+        throw new Error('Network down')
+      })
+
+      await expect(postToLandGrantsApi('/test', {}, mockApiEndpoint)).rejects.toThrow('Network down')
+
+      const exhaustionLogCall = log.mock.calls.find(
+        ([code, opts]) => code?.level === 'error' && opts?.errorMessage === 'Network down'
+      )
+      expect(exhaustionLogCall).toBeDefined()
+      expect(exhaustionLogCall[1]).toEqual(
+        expect.objectContaining({
+          endpoint: '/test',
+          service: 'grants-ui-backend',
+          upstreamStatus: null,
+          errorMessage: 'Network down'
+        })
+      )
+    })
+
+    it('should use error.code when error.status is missing', async () => {
+      retry.mockImplementationOnce(async () => {
+        const err = /** @type {Error & {code?: number}} */ (new Error('Forbidden'))
+        err.code = 403
+        throw err
+      })
+
+      await expect(postToLandGrantsApi('/test', {}, mockApiEndpoint)).rejects.toThrow('Forbidden')
+
+      const exhaustionLogCall = log.mock.calls.find(
+        ([code, opts]) => code?.level === 'error' && opts?.errorMessage === 'Forbidden'
+      )
+      expect(exhaustionLogCall).toBeDefined()
+      expect(exhaustionLogCall[1]).toEqual(
+        expect.objectContaining({
+          endpoint: '/test',
+          service: 'grants-ui-backend',
+          upstreamStatus: 403,
+          errorMessage: 'Forbidden'
+        })
+      )
+    })
+
     it('should return the exact response from json()', async () => {
       const expectedResponse = {
         id: 123,

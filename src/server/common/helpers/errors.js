@@ -15,6 +15,7 @@ import { config } from '~/src/config/config.js'
 import { BaseError } from '~/src/server/common/utils/errors/BaseError.js'
 
 const UNKNOWN_USER = 'unknown'
+const SERVER_ERROR_RANGE_END = 600
 
 export const HTTP_STATUS = {
   BAD_REQUEST: 400,
@@ -80,12 +81,16 @@ function statusCodeMessage(statusCode) {
  * (e.g. grants-ui-backend) responds with 5xx, the call site throws an Error
  * with `code`/`status` set; `boomify` mutates that error in place to add Boom
  * fields without removing the original properties.
- * @param {object} response
+ * @param {ErrorResponse} response
  * @returns {number | null}
  */
 function getUpstreamStatus(response) {
   const candidate = response?.code ?? response?.status ?? null
-  return typeof candidate === 'number' && candidate >= 500 && candidate < 600 ? candidate : null
+  return typeof candidate === 'number' &&
+    candidate >= statusCodes.internalServerError &&
+    candidate < SERVER_ERROR_RANGE_END
+    ? candidate
+    : null
 }
 
 /**
@@ -123,8 +128,8 @@ export function catchAll(request, h) {
 }
 
 /**
- * @param {object} request
- * @param {object} response
+ * @param {AnyRequest} request
+ * @param {ErrorResponse} response
  * @param {number} statusCode
  * @param {number | null} [upstreamStatus]
  */
@@ -139,8 +144,8 @@ function handleErrorLogging(request, response, statusCode, upstreamStatus = null
 }
 
 /**
- * @param {object} request
- * @param {object} response
+ * @param {AnyRequest} request
+ * @param {ErrorResponse} response
  * @param {number} statusCode
  * @param {number | null} [upstreamStatus]
  */
@@ -160,6 +165,11 @@ function handleServerErrors(request, response, statusCode, upstreamStatus = null
   logDebugInformation(request, response, statusCode, errorContext)
 }
 
+/**
+ * @param {AnyRequest} request
+ * @param {ErrorResponse} response
+ * @returns {ErrorContext}
+ */
 function analyzeError(request, response) {
   return {
     isAuthError: request.path?.startsWith('/auth'),
@@ -168,6 +178,10 @@ function analyzeError(request, response) {
   }
 }
 
+/**
+ * @param {ErrorResponse} response
+ * @returns {boolean | undefined}
+ */
 function isBellRelatedError(response) {
   return (
     response?.message?.includes('bell') ||
@@ -177,6 +191,11 @@ function isBellRelatedError(response) {
   )
 }
 
+/**
+ * @param {AnyRequest} request
+ * @param {ErrorResponse} response
+ * @param {ErrorContext} errorContext
+ */
 function logAuthError(request, response, errorContext) {
   log(
     LogCodes.AUTH.SIGN_IN_FAILURE,
@@ -190,6 +209,11 @@ function logAuthError(request, response, errorContext) {
   )
 }
 
+/**
+ * @param {AnyRequest} request
+ * @param {ErrorResponse} response
+ * @param {ErrorContext} errorContext
+ */
 function logBellError(request, response, errorContext) {
   log(
     LogCodes.AUTH.SIGN_IN_FAILURE,
@@ -203,6 +227,12 @@ function logBellError(request, response, errorContext) {
   )
 }
 
+/**
+ * @param {AnyRequest} request
+ * @param {ErrorResponse} response
+ * @param {ErrorContext} errorContext
+ * @returns {Record<string, unknown>}
+ */
 function buildAuthContext(request, response, errorContext) {
   return {
     path: request.path,
@@ -223,8 +253,8 @@ function buildAuthContext(request, response, errorContext) {
 }
 
 /**
- * @param {object} request
- * @param {object} response
+ * @param {AnyRequest} request
+ * @param {ErrorResponse} response
  * @param {number} statusCode
  * @param {number | null} [upstreamStatus]
  */
@@ -243,6 +273,12 @@ function logSystemError(request, response, statusCode, upstreamStatus = null) {
   )
 }
 
+/**
+ * @param {AnyRequest} request
+ * @param {ErrorResponse} response
+ * @param {number} statusCode
+ * @param {ErrorContext} errorContext
+ */
 function logDebugInformation(request, response, statusCode, errorContext) {
   const errorMessage = statusCodeMessage(statusCode)
 
@@ -276,6 +312,11 @@ function logDebugInformation(request, response, statusCode, errorContext) {
   )
 }
 
+/**
+ * @param {AnyRequest} request
+ * @param {ErrorResponse} response
+ * @param {number} statusCode
+ */
 function handleClientErrors(request, response, statusCode) {
   if (statusCode === statusCodes.locked) {
     // Expected business condition – no system error log
@@ -333,7 +374,7 @@ function tryParseForm(path, errorMsg) {
 /**
  * Parse resource path to determine type and context
  * @param {string} path - Request path
- * @param {object} response - Response object
+ * @param {ErrorResponse} response - Response object
  * @returns {{type: string, identifier: string, reason: string}}
  */
 function parseResourcePath(path, response) {
@@ -350,7 +391,7 @@ function parseResourcePath(path, response) {
 /**
  * Handle 404 errors with detailed context logging
  * @param {AnyRequest} request
- * @param {object} response
+ * @param {ErrorResponse} response
  */
 function handle404WithContext(request, response) {
   const path = request.path || 'unknown'
@@ -392,6 +433,10 @@ function handle404WithContext(request, response) {
   }
 }
 
+/**
+ * @param {ResponseToolkit} h
+ * @param {number} statusCode
+ */
 function renderErrorView(h, statusCode) {
   // SonarQube does not like this being set as the default for the switch, it's apparently a critical issue.
   let errorView
@@ -430,6 +475,17 @@ function renderErrorView(h, statusCode) {
 }
 
 /**
+ * @typedef {Object} ErrorContext
+ * @property {boolean} [isAuthError] - Whether the request is for an /auth path
+ * @property {boolean} [alreadyLogged] - Whether the error has already been logged upstream
+ * @property {boolean} [isBellError] - Whether the error originates from Bell/OAuth
+ *
+ * @typedef {Boom & { code?: number, status?: number, alreadyLogged?: boolean }} ErrorResponse
+ *   A Boom error, optionally augmented with `code`/`status` (set by upstream
+ *   client code before `boomify` wraps the Error) and `alreadyLogged` (set by
+ *   handlers that have already emitted a log entry to suppress duplicates).
+ *
+ * @import { Boom } from '@hapi/boom'
  * @import { AnyRequest } from '@defra/forms-engine-plugin/engine/types.js'
  * @import { ResponseToolkit } from '@hapi/hapi'
  */
