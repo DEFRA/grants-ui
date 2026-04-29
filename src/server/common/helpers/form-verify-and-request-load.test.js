@@ -35,6 +35,6 @@ describe('form-verify-and-request-load', () => {
     expect(result.error).toBeUndefined()
     expect(result.form).toBe(formWithMetaData)
     expect(result.slug).toBe('test-slug')
-    expect(requestProps.app.model.def.metadata).to.eql({ some: 'metadata' })
+    expect(requestProps.app.model.def.metadata).toEqual({ some: 'metadata' })
   })
 })

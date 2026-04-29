@@ -101,18 +101,18 @@ describe('config-confirmation', () => {
       expect(mockH.view).toHaveBeenCalledWith('config-confirmation-page', { test: 'viewModel' })
     })
 
-    test('should return validation error when pre-handler returns it', async () => {
+    test('should return validation error from handler when pre-handler returns an error', async () => {
+      const preHandlerError = mockH.response('Bad request - missing slug').code(statusCodes.badRequest).takeover()
       mockRequest = mockHapiRequest({
         params: {},
         pre: {
-          validatedSlugAndForm: { error: mockH.response('Bad request - missing slug').code(statusCodes.badRequest) }
+          validatedSlugAndForm: { error: preHandlerError }
         }
       })
 
-      await handler(mockRequest, mockH)
+      const result = await handler(mockRequest, mockH)
 
-      expect(mockH.response).toHaveBeenCalledWith('Bad request - missing slug')
-      expect(mockH.code).toHaveBeenCalledWith(400)
+      expect(result).toEqual(preHandlerError)
     })
 
     test('should render page with default content when no config-driven content available', async () => {

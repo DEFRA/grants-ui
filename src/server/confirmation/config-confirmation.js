@@ -102,7 +102,7 @@ export const configConfirmation = {
         },
         handler: async (request, h) => {
           try {
-            const { validationResult: validationError, form, slug } = request.pre.validatedSlugAndForm
+            const { error: validationError, form, slug } = request.pre.validatedSlugAndForm
             if (!slug) {
               log(
                 LogCodes.CONFIRMATION.CONFIRMATION_ERROR,

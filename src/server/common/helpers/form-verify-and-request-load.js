@@ -5,12 +5,12 @@ export async function validateRequestAndFindForm(request, h) {
   const { slug } = request.params
 
   if (!slug) {
-    return { error: h.response('Bad request - missing slug').code(statusCodes.badRequest) }
+    return { error: h.response('Bad request - missing slug').code(statusCodes.badRequest).takeover() }
   }
 
   const form = await findFormBySlug(slug)
   if (!form) {
-    return { error: h.response('Form not found').code(statusCodes.notFound) }
+    return { error: h.response('Form not found').code(statusCodes.notFound).takeover() }
   }
 
   // For pages that do not extend the DXT controllers, this model will not be set, but it is required for retrieving the
