@@ -478,6 +478,9 @@ pages:
       showSupportDetails: false
       enableMultipleParcelSelect: true
       minimumAreaHa: 0.5
+      invalidates:
+        - hectaresTenOrOverYearsOld
+        - hectaresUnderTenYearsOld
       topSection: |
         <div class="govuk-body">
           <p>

@@ -1,4 +1,5 @@
 import { debug, log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { buildInvalidatedState } from '~/src/server/common/utils/state-invalidation.js'
 import LandGrantsQuestionWithAuthCheckController from '../../controllers/auth/land-grants-question-with-auth-check.controller.js'
 import { fetchParcels } from '../../services/land-grants.service.js'
 import { mapParcelsToViewModel } from '../../view-models/parcel.view-model.js'
@@ -26,20 +27,11 @@ export default class CommonSelectLandParcelPageController extends LandGrantsQues
     this.supportDetailsHtml = config.supportDetailsHtml || ''
     this.showSupportDetails = config.showSupportDetails !== false
     this.minimumAreaHa = config.minimumAreaHa ?? null
+    this.invalidates = Array.isArray(config.invalidates) ? config.invalidates : []
 
     // Resolve section
     if (pageDef.section) {
       this.section = model.getSection(pageDef.section)
-    }
-  }
-
-  makeGetRouteHandler() {
-    return async (request, context, h) => {
-      if (request.query?.returnUrl) {
-        return h.redirect(request.path)
-      }
-
-      return super.makeGetRouteHandler()(request, context, h)
     }
   }
 
@@ -61,6 +53,18 @@ export default class CommonSelectLandParcelPageController extends LandGrantsQues
    */
   getSelectedParcelIdsFromState(state) {
     return Array.isArray(state.landParcels) ? /** @type {string[]} */ (state.landParcels) : []
+  }
+
+  /**
+   * Returns a patch of invalidated state keys if the parcel selection has changed since last save.
+   * @param {AnyFormRequest} request
+   * @param {string[]} selectedParcelIds
+   * @returns {Promise<Record<string, undefined>>}
+   */
+  async getInvalidatedState(request, selectedParcelIds) {
+    const persistedState = await this.getState(request)
+    const previousParcelIds = this.getSelectedParcelIdsFromState(persistedState)
+    return buildInvalidatedState(previousParcelIds, selectedParcelIds, this.invalidates)
   }
 
   /**
@@ -188,7 +192,9 @@ export default class CommonSelectLandParcelPageController extends LandGrantsQues
       )
     }
 
+    const invalidatedState = await this.getInvalidatedState(request, selectedParcelIds)
     await this.mergeState(request, state, {
+      ...invalidatedState,
       landParcels: selectedParcelIds,
       landParcelsDisplay: selectedParcelIds.join(', '),
       landParcelMetadata,
@@ -196,9 +202,7 @@ export default class CommonSelectLandParcelPageController extends LandGrantsQues
       additionalAnswers: { totalHectaresForSelectedParcels }
     })
 
-    const { returnUrl: _removed, ...queryWithoutReturnUrl } = request.query ?? {}
-    const requestWithoutReturnUrl = { ...request, query: queryWithoutReturnUrl }
-    return this.proceed(requestWithoutReturnUrl, h, `${this.getNextPath(context)}`)
+    return this.proceed(request, h, `${this.getNextPath(context)}`)
   }
 }
 
