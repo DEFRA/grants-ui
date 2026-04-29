@@ -102,6 +102,7 @@ const createHapiServer = () => {
  * @param {string} prefix
  */
 const registerFormsPlugin = async (server, prefix = '') => {
+  const formService = await formsService()
   await server.register({
     plugin,
     options: {
@@ -110,7 +111,7 @@ const registerFormsPlugin = async (server, prefix = '') => {
       baseUrl: config.get('baseUrl'),
       onRequest: formsStatusCallback,
       services: {
-        formsService: await formsService(),
+        formsService: formService,
         outputService
       },
       filters: {
@@ -146,6 +147,7 @@ const registerFormsPlugin = async (server, prefix = '') => {
       }
     }
   })
+  server.method('getFormService', () => formService)
 }
 
 const registerPlugins = async (server) => {

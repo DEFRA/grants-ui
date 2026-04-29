@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken'
 import { logger } from '~/src/server/common/helpers/logging/log.js'
 import { getFormDef, setFormDef, setFormMeta, setSlugReverse } from './forms-redis.js'
+import { hoistPageConfig } from '~/src/server/common/forms/services/form.js'
 
 export class ApiFormService {
   /**
@@ -122,6 +123,7 @@ export class ApiFormService {
 
         // Apply URL substitutions
         const definition = configureDefinition(rawDefinition)
+        hoistPageConfig(definition)
 
         // Copy metadata from the definition into the cache entry
         entry.metadata = definition.metadata

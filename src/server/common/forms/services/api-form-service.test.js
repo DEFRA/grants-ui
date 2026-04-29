@@ -145,6 +145,34 @@ describe('ApiFormService', () => {
       expect(setSlugReverse).toHaveBeenCalledWith({}, 'api-id', 'my-form')
     })
 
+    test('hoists config section if present on a page', async () => {
+      const entry = { id: 'api-id', slug: 'my-form', title: 'My Form', metadata: {}, source: 'api' }
+      const definition = {
+        name: 'my-form',
+        metadata: { grantRedirectRules: {} },
+        pages: [{ path: 'mypage', config: { item: 'value' } }]
+      }
+      vi.spyOn(service, 'fetchFormMetadata').mockResolvedValue(entry)
+      vi.spyOn(service, 'fetchFormDefinition').mockResolvedValue(definition)
+      const configure = vi.fn((d) => d)
+      const validateWhitelist = vi.fn()
+      const validateRedirect = vi.fn()
+      const validateDetailsPage = vi.fn()
+
+      await service.loadAll({}, ['my-form'], {}, configure, validateWhitelist, validateRedirect, validateDetailsPage)
+
+      expect(configure).toHaveBeenCalledWith(definition)
+      expect(validateWhitelist).toHaveBeenCalledWith({ title: 'My Form' }, definition)
+      expect(validateRedirect).toHaveBeenCalledWith({ title: 'My Form' }, definition)
+      expect(validateDetailsPage).toHaveBeenCalledWith({ title: 'My Form' }, definition)
+      expect(setFormMeta).toHaveBeenCalledWith({}, 'my-form', {
+        ...entry,
+        metadata: { grantRedirectRules: {}, pageConfig: { mypage: { item: 'value' } } }
+      })
+      expect(setFormDef).toHaveBeenCalledWith({}, 'my-form', { ...definition, pages: [{ path: 'mypage' }] }, 300)
+      expect(setSlugReverse).toHaveBeenCalledWith({}, 'api-id', 'my-form')
+    })
+
     test('merges shared redirect rules into definition metadata', async () => {
       const entry = { id: 'api-id', slug: 'my-form', title: 'My Form', metadata: {}, source: 'api' }
       const definition = {

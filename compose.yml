@@ -74,7 +74,7 @@ services:
       CONFIG_API_URL: '${CONFIG_API_URL:-http://grants-ui-config-api:3011}'
       CONFIG_API_JWT_SECRET: ${CONFIG_API_JWT_SECRET:-forms-config-jwt-secret}
       CONFIG_API_JWT_EXPIRY: ${CONFIG_API_JWT_EXPIRY:-1h}
-      FORMS_API_SLUGS: ${FORMS_API_SLUGS:-}
+      FORMS_API_SLUGS: ${FORMS_API_SLUGS:-example-grant-with-auth}
       FORMS_API_CACHE_TTL_SECONDS: ${FORMS_API_CACHE_TTL_SECONDS:-300}
       SFD_UPDATE_URL: '${SFD_UPDATE_URL:-http://localhost:3000/sfd/mock}'
       SFD_UPDATE_ENABLED: ${SFD_UPDATE_ENABLED:-false}
@@ -139,9 +139,9 @@ services:
       MONGO_URI: mongodb://mongodb:27017/
       LOCALSTACK_ENDPOINT: http://localstack:4566
       JWT_SECRET: ${CONFIG_API_JWT_SECRET:-forms-config-jwt-secret}
-      CONFIG_BROKER_URL: '${CONFIG_BROKER_URL:-http://grants-config-broker:3012}'
-      CONFIG_BROKER_AUTH_TOKEN: '${CONFIG_BROKER_AUTH_TOKEN:-config-broker-auth-token}'
-      CONFIG_BROKER_ENCRYPTION_KEY: '${CONFIG_BROKER_ENCRYPTION_KEY:-config-broker-encryption-key}'
+      GRANTS_CONFIG_BROKER_URL: '${CONFIG_BROKER_URL:-http://grants-config-broker:3012}'
+      GRANTS_CONFIG_BROKER_AUTH_TOKEN: '${CONFIG_BROKER_AUTH_TOKEN:-config-broker-auth-token}'
+      GRANTS_CONFIG_BROKER_ENCRYPTION_KEY: '${CONFIG_BROKER_ENCRYPTION_KEY:-config-broker-encryption-key}'
       FORMS_API_SLUGS: ${FORMS_API_SLUGS:-example-grant-with-auth}
       DEFAULT_FORM_ORGANISATION: ${DEFAULT_FORM_ORGANISATION:-Defra}
       DEFAULT_FORM_TEAM_NAME: ${DEFAULT_FORM_TEAM_NAME:-Digital Delivery}

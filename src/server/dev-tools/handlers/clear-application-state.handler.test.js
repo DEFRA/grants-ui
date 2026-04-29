@@ -15,6 +15,8 @@ vi.mock('~/src/server/common/forms/services/find-form-by-slug.js', () => ({
 
 describe('clearApplicationStateHandler', () => {
   let mockRequest
+  let mockGetFormService
+  let mockFormService
   let mockH
   let mockCacheService
 
@@ -28,9 +30,11 @@ describe('clearApplicationStateHandler', () => {
 
     getFormsCacheService.mockReturnValue(mockCacheService)
 
+    mockFormService = vi.fn()
+    mockGetFormService = vi.fn().mockReturnValue(mockFormService)
     mockRequest = {
       params: {},
-      server: { app: { formsService: { getFormDefinitionBySlug: vi.fn() } } },
+      server: { methods: { getFormService: mockGetFormService } },
       app: { model: {} }
     }
 
@@ -195,7 +199,7 @@ describe('clearApplicationStateHandler', () => {
       await clearApplicationStateHandler(mockRequest, mockH)
 
       expect(findFormBySlug).toHaveBeenCalledWith('test-slug')
-      expect(loadFormDefinition).toHaveBeenCalledWith(mockForm, mockRequest.server.app.formsService)
+      expect(loadFormDefinition).toHaveBeenCalledWith(mockForm, mockFormService)
       expect(mockRequest.app.model).toEqual({ def: mockDefinition })
     })
 

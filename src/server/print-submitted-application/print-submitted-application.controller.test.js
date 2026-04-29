@@ -11,6 +11,7 @@ import { log, LogCodes } from '../common/helpers/logging/log.js'
 import { mockHapiRequest, mockHapiResponseToolkit, mockHapiServer } from '~/src/__mocks__/hapi-mocks.js'
 import { MOCK_FORM_WITH_PATH, MOCK_SINGLE_PAGE_DEFINITION } from '~/src/__test-fixtures__/mock-forms-cache.js'
 import { createPersonRows, createBusinessRows, createContactRows } from '~/src/server/common/helpers/create-rows.js'
+import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 
 vi.mock('../common/forms/services/find-form-by-slug.js')
 vi.mock('../common/helpers/print-application-service/print-application-service.js')
@@ -40,6 +41,8 @@ const mockState = {
 describe('print-submitted-application.controller', () => {
   let handler
   let mockRequest
+  let mockGetFormService
+  let mockFormService
   let mockH
   let mockGetState
 
@@ -51,12 +54,15 @@ describe('print-submitted-application.controller', () => {
     handler = server.route.mock.calls[0][0].handler
 
     mockGetState = vi.fn().mockResolvedValue(mockState)
+    mockFormService = vi.fn()
+    mockGetFormService = vi.fn().mockReturnValue(mockFormService)
     getFormsCacheService.mockReturnValue({ getState: mockGetState })
 
     mockRequest = mockHapiRequest({
       params: { slug: 'test-form' },
       auth: { credentials: { sbi: '123456789' } },
-      server: { app: { formsService: { getFormDefinitionBySlug: vi.fn() } } }
+      pre: { validatedSlugAndForm: { slug: 'test-form', form: mockForm } },
+      server: { methods: { getFormService: mockGetFormService } }
     })
     mockH = mockHapiResponseToolkit()
 
@@ -77,23 +83,18 @@ describe('print-submitted-application.controller', () => {
     )
   })
 
-  test('should return 400 when slug is missing', async () => {
-    mockRequest = mockHapiRequest({ params: {} })
+  test('should return validation error when pre-handler returns it', async () => {
+    mockRequest = mockHapiRequest({
+      params: {},
+      pre: {
+        validatedSlugAndForm: { error: mockH.response('Bad request - missing slug').code(statusCodes.badRequest) }
+      }
+    })
 
     await handler(mockRequest, mockH)
 
     expect(mockH.response).toHaveBeenCalledWith('Bad request - missing slug')
     expect(mockH.code).toHaveBeenCalledWith(400)
-  })
-
-  test('should return 404 when form is not found', async () => {
-    findFormBySlug.mockResolvedValue(null)
-
-    await handler(mockRequest, mockH)
-
-    expect(findFormBySlug).toHaveBeenCalledWith('test-form')
-    expect(mockH.response).toHaveBeenCalledWith('Form not found')
-    expect(mockH.code).toHaveBeenCalledWith(404)
   })
 
   test.each([
@@ -111,9 +112,8 @@ describe('print-submitted-application.controller', () => {
   test('should render print view for a submitted application', async () => {
     await handler(mockRequest, mockH)
 
-    expect(findFormBySlug).toHaveBeenCalledWith('test-form')
     expect(mockGetState).toHaveBeenCalledWith(mockRequest)
-    expect(loadFormDefinition).toHaveBeenCalledWith(mockForm, mockRequest.server.app.formsService)
+    expect(loadFormDefinition).toHaveBeenCalledWith(mockForm, mockFormService)
     expect(buildPrintViewModel).toHaveBeenCalledWith({
       definition: mockDefinition,
       form: mockForm,
