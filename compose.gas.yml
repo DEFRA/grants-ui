@@ -1,0 +1,70 @@
+services:
+  grants-ui:
+    environment:
+      GAS_API_URL: http://fg-gas-backend:3102
+
+  localstack:
+    volumes:
+      - ./localstack/start-gas-localstack.sh:/etc/localstack/init/ready.d/start-gas-localstack.sh
+
+  mongo-ready:
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "mongosh 'mongodb://mongodb:27017/?directConnection=true' --quiet --eval 'db.hello().isWritablePrimary' | grep -q true || exit 1",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 60
+
+  fg-gas-backend:
+    container_name: gas
+    image: defradigital/fg-gas-backend:latest
+    pull_policy: always
+    restart: on-failure
+    depends_on:
+      mongo-ready:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      localstack:
+        condition: service_healthy
+    ports:
+      - '3102:3102'
+    environment:
+      PORT: 3102
+      NODE_ENV: development
+      ENVIRONMENT: local
+      SERVICE_NAME: fg-gas-backend
+      SERVICE_VERSION: 0.0.0
+      LOG_ENABLED: true
+      LOG_LEVEL: info
+      LOG_FORMAT: pino-pretty
+      MONGO_URI: mongodb://mongodb:27017/?replicaSet=mongoRepl
+      MONGO_DATABASE: fg-gas-backend
+      AWS_ENDPOINT_URL: http://localstack:4566
+      AWS_REGION: eu-west-2
+      AWS_DEFAULT_REGION: eu-west-2
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      TRACING_HEADER: x-trace
+      OUTBOX_MAX_RETRIES: 5
+      OUTBOX_CLAIM_MAX_RECORDS: 2
+      OUTBOX_EXPIRES_MS: 5000
+      OUTBOX_POLL_MS: 250
+      INBOX_MAX_RETRIES: 5
+      INBOX_CLAIM_MAX_RECORDS: 2
+      INBOX_EXPIRES_MS: 5000
+      INBOX_POLL_MS: 250
+      FIFO_LOCK_TTL_MS: 5000
+      GAS__SNS__CREATE_AGREEMENT_TOPIC_ARN: arn:aws:sns:eu-west-2:000000000000:gas__sns__create_agreement_fifo.fifo
+      GAS__SNS__GRANT_APPLICATION_CREATED_TOPIC_ARN: arn:aws:sns:eu-west-2:000000000000:gas__sns__grant_application_created_fifo.fifo
+      GAS__SNS__GRANT_APPLICATION_STATUS_UPDATED_TOPIC_ARN: arn:aws:sns:eu-west-2:000000000000:gas__sns__application_status_updated_fifo.fifo
+      GAS__SNS__CREATE_NEW_CASE_TOPIC_ARN: arn:aws:sns:eu-west-2:000000000000:gas__sns__create_new_case_fifo.fifo
+      GAS__SNS__UPDATE_CASE_STATUS_TOPIC_ARN: arn:aws:sns:eu-west-2:000000000000:gas__sns__update_case_status_fifo.fifo
+      GAS__SNS__UPDATE_AGREEMENT_STATUS_TOPIC_ARN: arn:aws:sns:eu-west-2:000000000000:gas__sns__update_agreement_status_fifo.fifo
+      GAS__SQS__UPDATE_STATUS_QUEUE_URL: http://sqs.eu-west-2.localstack:4566/000000000000/gas__sqs__update_status_fifo.fifo
+      GAS__SQS__UPDATE_AGREEMENT_STATUS_QUEUE_URL: http://sqs.eu-west-2.localstack:4566/000000000000/gas__sqs__update_agreement_status_fifo.fifo
+    networks:
+      - grants-ui-net
