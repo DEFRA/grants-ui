@@ -2,7 +2,7 @@ engine: V2
 name: Woodland Management Plan
 metadata:
   id: 95e92559-968d-44ae-8666-2b1ad3dffd38
-  enabledInProd: false
+  enabledInProd: true
   whitelistCrnEnvVar: WOODLAND_WHITELIST_CRNS
   whitelistSbiEnvVar: WOODLAND_WHITELIST_SBIS
   referenceNumberPrefix: WMP
