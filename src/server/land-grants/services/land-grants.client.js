@@ -5,12 +5,18 @@ import { getConsentTypes } from '~/src/server/land-grants/utils/consent-types.js
 
 const LAND_GRANTS_SERVICE = 'grants-ui-backend'
 
+/**
+ * @param {string} endpoint
+ * @param {number | null | undefined} status
+ * @param {string} errorMessage
+ * @param {number} [attempts]
+ */
 function logUpstreamError(endpoint, status, errorMessage, attempts) {
   log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
     endpoint,
     service: LAND_GRANTS_SERVICE,
     upstreamStatus: status,
-    ...(attempts !== undefined ? { attempts } : {}),
+    ...(attempts === undefined ? {} : { attempts }),
     errorMessage
   })
 }
@@ -19,7 +25,7 @@ function logUpstreamError(endpoint, status, errorMessage, attempts) {
  * Performs a POST request to the Land Grants API.
  * @template T
  * @param {string} endpoint
- * @param {object} body
+ * @param {Record<string, unknown>} body
  * @param {string} baseUrl
  * @returns {Promise<T>}
  * @throws {Error}
@@ -29,6 +35,7 @@ export async function postToLandGrantsApi(endpoint, body, baseUrl) {
   log(LogCodes.LAND_GRANTS.API_REQUEST, { endpoint, url })
 
   let attempts = 0
+  /** @type {number | null} */
   let lastUpstreamStatus = null
 
   const apiOperation = async () => {
