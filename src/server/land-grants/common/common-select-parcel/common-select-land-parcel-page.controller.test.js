@@ -244,7 +244,7 @@ describe('CommonSelectLandParcelPageController', () => {
       expect(controller.setState).not.toHaveBeenCalled()
     })
 
-    it('rounds totalHectaresForSelectedParcels to 4dp to avoid float precision issues', async () => {
+    it('passes parcel area sum to GAS', async () => {
       fetchParcels.mockResolvedValue([
         { sheetId: 'S1', parcelId: 'P1', area: { value: 25.3874 } },
         { sheetId: 'S2', parcelId: 'P2', area: { value: 169.8586 } }
@@ -260,12 +260,13 @@ describe('CommonSelectLandParcelPageController', () => {
 
       await controller.handlePost(request, context, h)
 
+      const expectedTotal = 25.3874 + 169.8586
       expect(controller.mergeState).toHaveBeenCalledWith(
         request,
         context.state,
         expect.objectContaining({
-          totalHectaresForSelectedParcels: 195.246,
-          additionalAnswers: { totalHectaresForSelectedParcels: 195.246 }
+          totalHectaresForSelectedParcels: expectedTotal,
+          additionalAnswers: { totalHectaresForSelectedParcels: expectedTotal }
         })
       )
     })

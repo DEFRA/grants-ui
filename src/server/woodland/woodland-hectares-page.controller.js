@@ -13,10 +13,9 @@ const HECTARES_OVER_TEN_FIELD_NAME = 'hectaresTenOrOverYearsOld'
 const HECTARES_UNDER_TEN_FIELD_NAME = 'hectaresUnderTenYearsOld'
 
 const ERROR_BELOW_MINIMUM = `The total area of woodland must be at least ${MIN_WOODLAND_TOTAL_AREA_HA}ha`
-const truncate4dp = (/** @type {number} */ n) => Math.floor(n * 10000) / 10000
 
 const errorExceedsMax = (/** @type {number} */ max) =>
-  `Total area of woodland cannot be more than total area of selected land parcels (${truncate4dp(max)}ha)`
+  `Total area of woodland cannot be more than total area of selected land parcels (${max}ha)`
 
 /**
  * @param {string} fieldName
@@ -53,7 +52,7 @@ export default class WoodlandHectaresPageController extends TaskPageController {
 
   getViewModel(request, context) {
     const { state } = context
-    const totalHectaresForSelectedParcels = truncate4dp(Number(state['totalHectaresForSelectedParcels'] ?? 0))
+    const totalHectaresForSelectedParcels = Number(state['totalHectaresForSelectedParcels'] ?? 0)
     const viewModel = /** @type {Record<string, any>} */ (super.getViewModel(request, context))
 
     const guidanceIndex = viewModel.components?.findIndex(
