@@ -54,7 +54,7 @@ const loadFormAndSetOnRequestModel = async (form, request) => {
   const getFormService = request.server.methods.getFormService
 
   if (typeof getFormService !== 'function') {
-    throw new Error('getFormService is not available')
+    throw new TypeError('getFormService is not available')
   }
 
   const definition = await loadFormDefinition(form, getFormService())
