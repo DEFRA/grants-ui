@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import { LogCodes } from '~/src/server/common/helpers/logging/log-codes-definition.js'
+import { LogCodes } from '~/src/server/common/helpers/logging/log-codes/definition.js'
 
 export const mockLoggerFactory = () => ({
   info: vi.fn(),
@@ -15,14 +15,14 @@ export const mockLoggerFactoryWithCustomMethods = (customMethods = {}) => ({
 
 /**
  * @typedef {Object} MockLogCodesDefinition
- * @property {import('~/src/server/common/helpers/logging/log-codes-definition.js').LogTypes.LogLevel} level
+ * @property {import('~/src/server/common/helpers/logging/log-codes/definition.js').LogTypes.LogLevel} level
  * @property {import('vitest').Mock} messageFunc
  */
 
 /**
  * Auto-generate mock LogCodes from real LogCodes
  * Each messageFunc becomes a vi.fn() for test assertions
- * @param {typeof import('~/src/server/common/helpers/logging/log-codes-definition.js').LogCodes} codes
+ * @param {typeof import('~/src/server/common/helpers/logging/log-codes/definition.js').LogCodes} codes
  * @returns {Record<string, Record<string, MockLogCodesDefinition>>}
  */
 const autoMockLogCodes = (codes) =>

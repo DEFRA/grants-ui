@@ -1,7 +1,7 @@
 /**
  * @typedef {typeof import('../../constants/status-codes.js').statusCodes} StatusCodes
  * @typedef {(StatusCodes)[keyof StatusCodes]} StatusCode
- * @typedef {import('../../helpers/logging/log-codes-definition.js').LogCodesDefinition} LogDefinition
+ * @typedef {import('../../helpers/logging/log-codes/definition.js').LogCodesDefinition} LogDefinition
  *
  */
 
