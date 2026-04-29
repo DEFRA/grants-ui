@@ -378,7 +378,13 @@ export const LogCodes = {
     },
     SERVER_ERROR: {
       level: 'error',
-      messageFunc: (messageOptions) => `Server error occurred: ${messageOptions.errorMessage}`
+      messageFunc: (messageOptions) => {
+        const suffix =
+          messageOptions.upstreamStatus !== undefined && messageOptions.upstreamStatus !== null
+            ? ` | upstreamStatus=${messageOptions.upstreamStatus}`
+            : ''
+        return `Server error occurred: ${messageOptions.errorMessage}${suffix}`
+      }
     },
     STARTUP_PHASE: {
       level: 'info',
@@ -408,8 +414,19 @@ export const LogCodes = {
     },
     EXTERNAL_API_ERROR: {
       level: 'error',
-      messageFunc: (messageOptions) =>
-        `External API error for ${messageOptions.endpoint}: ${messageOptions.errorMessage}`
+      messageFunc: (messageOptions) => {
+        const parts = [`External API error for ${messageOptions.endpoint}`]
+        if (messageOptions.service) {
+          parts.push(`service=${messageOptions.service}`)
+        }
+        if (messageOptions.upstreamStatus !== undefined && messageOptions.upstreamStatus !== null) {
+          parts.push(`upstreamStatus=${messageOptions.upstreamStatus}`)
+        }
+        if (messageOptions.attempts !== undefined && messageOptions.attempts !== null) {
+          parts.push(`attempts=${messageOptions.attempts}`)
+        }
+        return `${parts.join(' | ')}: ${messageOptions.errorMessage}`
+      }
     },
     GAS_ACTION_ERROR: {
       level: 'error',

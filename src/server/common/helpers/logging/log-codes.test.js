@@ -635,6 +635,18 @@ describe('LogCodes', () => {
         `Server error occurred: ${TEST_ERRORS.DATABASE_ERROR}`
       ],
       [
+        'SERVER_ERROR with upstreamStatus',
+        'error',
+        { errorMessage: TEST_ERRORS.DATABASE_ERROR, upstreamStatus: 502 },
+        `Server error occurred: ${TEST_ERRORS.DATABASE_ERROR} | upstreamStatus=502`
+      ],
+      [
+        'SERVER_ERROR with null upstreamStatus is omitted',
+        'error',
+        { errorMessage: TEST_ERRORS.DATABASE_ERROR, upstreamStatus: null },
+        `Server error occurred: ${TEST_ERRORS.DATABASE_ERROR}`
+      ],
+      [
         'SYSTEM_STARTUP',
         'info',
         { port: TEST_PORTS.DEFAULT },
@@ -663,6 +675,29 @@ describe('LogCodes', () => {
         'error',
         { endpoint: TEST_ENDPOINTS.API_GRANTS, errorMessage: TEST_ERRORS.CONNECTION_FAILED },
         `External API error for ${TEST_ENDPOINTS.API_GRANTS}: ${TEST_ERRORS.CONNECTION_FAILED}`
+      ],
+      [
+        'EXTERNAL_API_ERROR with service and upstreamStatus',
+        'error',
+        {
+          endpoint: TEST_ENDPOINTS.API_GRANTS,
+          errorMessage: TEST_ERRORS.CONNECTION_FAILED,
+          service: 'grants-ui-backend',
+          upstreamStatus: 502
+        },
+        `External API error for ${TEST_ENDPOINTS.API_GRANTS} | service=grants-ui-backend | upstreamStatus=502: ${TEST_ERRORS.CONNECTION_FAILED}`
+      ],
+      [
+        'EXTERNAL_API_ERROR with attempts after retry exhaustion',
+        'error',
+        {
+          endpoint: TEST_ENDPOINTS.API_GRANTS,
+          errorMessage: TEST_ERRORS.CONNECTION_FAILED,
+          service: 'grants-ui-backend',
+          upstreamStatus: 502,
+          attempts: 3
+        },
+        `External API error for ${TEST_ENDPOINTS.API_GRANTS} | service=grants-ui-backend | upstreamStatus=502 | attempts=3: ${TEST_ERRORS.CONNECTION_FAILED}`
       ],
       [
         'GAS_ACTION_ERROR',

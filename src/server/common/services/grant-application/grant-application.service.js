@@ -1,5 +1,5 @@
 import { config } from '~/src/config/config.js'
-import { debug } from '~/src/server/common/helpers/logging/log.js'
+import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
 import { statusCodes } from '../../constants/status-codes.js'
 
@@ -100,6 +100,19 @@ async function handleResponse(response, grantCode) {
   return response
 }
 
+function logGasUpstreamError(request, url, error) {
+  log(
+    LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+    {
+      endpoint: url,
+      service: 'grant-application-service',
+      upstreamStatus: error.status ?? null,
+      errorMessage: error.message
+    },
+    request
+  )
+}
+
 /**
  * Makes a request to the Grant Application Service (GAS) API
  * @param {string} url - API endpoint URL
@@ -135,15 +148,7 @@ export async function makeGasApiRequest(url, grantCode, request, options = {}) {
 
     return response
   } catch (error) {
-    debug(
-      {
-        level: 'error',
-        error,
-        messageFunc: () => 'Unexpected error in GAS API request: ' + error.message
-      },
-      {},
-      request
-    )
+    logGasUpstreamError(request, url, error)
     if (error instanceof GrantApplicationServiceApiError) {
       throw error
     }

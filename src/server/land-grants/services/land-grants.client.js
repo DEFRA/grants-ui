@@ -3,6 +3,18 @@ import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
 import { getConsentTypes } from '~/src/server/land-grants/utils/consent-types.js'
 
+const LAND_GRANTS_SERVICE = 'grants-ui-backend'
+
+function logUpstreamError(endpoint, status, errorMessage, attempts) {
+  log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
+    endpoint,
+    service: LAND_GRANTS_SERVICE,
+    upstreamStatus: status,
+    ...(attempts !== undefined ? { attempts } : {}),
+    errorMessage
+  })
+}
+
 /**
  * Performs a POST request to the Land Grants API.
  * @template T
@@ -16,7 +28,11 @@ export async function postToLandGrantsApi(endpoint, body, baseUrl) {
   const url = `${baseUrl}${endpoint}`
   log(LogCodes.LAND_GRANTS.API_REQUEST, { endpoint, url })
 
+  let attempts = 0
+  let lastUpstreamStatus = null
+
   const apiOperation = async () => {
+    attempts += 1
     const response = await fetch(url, {
       method: 'POST',
       headers: /** @type {HeadersInit} */ (createApiHeadersForLandGrantsBackend()),
@@ -25,6 +41,8 @@ export async function postToLandGrantsApi(endpoint, body, baseUrl) {
 
     if (!response.ok) {
       await response.arrayBuffer()
+      lastUpstreamStatus = response.status
+      logUpstreamError(endpoint, response.status, response.statusText)
       /**
        * @type {Error & {code?: number, status?: number}}
        */
@@ -37,10 +55,15 @@ export async function postToLandGrantsApi(endpoint, body, baseUrl) {
     return response.json()
   }
 
-  return retry(apiOperation, {
+  const result = await retry(apiOperation, {
     timeout: 30000,
     serviceName: `LandGrantsApi.postTo ${endpoint}`
+  }).catch((error) => {
+    logUpstreamError(endpoint, error.status ?? error.code ?? lastUpstreamStatus, error.message, attempts)
+    throw error
   })
+
+  return result
 }
 
 /**

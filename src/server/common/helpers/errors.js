@@ -75,6 +75,20 @@ function statusCodeMessage(statusCode) {
 }
 
 /**
+ * Reads the upstream HTTP status from a thrown error wrapped by Boom, so it can
+ * be attached to the SERVER_ERROR log payload. When a downstream service
+ * (e.g. grants-ui-backend) responds with 5xx, the call site throws an Error
+ * with `code`/`status` set; `boomify` mutates that error in place to add Boom
+ * fields without removing the original properties.
+ * @param {object} response
+ * @returns {number | null}
+ */
+function getUpstreamStatus(response) {
+  const candidate = response?.code ?? response?.status ?? null
+  return typeof candidate === 'number' && candidate >= 500 && candidate < 600 ? candidate : null
+}
+
+/**
  * @param { AnyRequest } request
  * @param { ResponseToolkit } h
  */
@@ -86,6 +100,7 @@ export function catchAll(request, h) {
   }
 
   let statusCode
+  let upstreamStatus = null
 
   if (response instanceof BaseError) {
     const rootErrors = BaseError.findRootErrors(response)
@@ -95,7 +110,8 @@ export function catchAll(request, h) {
     statusCode = response.details.status || statusCodes.internalServerError
   } else {
     statusCode = response.output.statusCode || statusCodes.internalServerError
-    handleErrorLogging(request, response, statusCode)
+    upstreamStatus = getUpstreamStatus(response)
+    handleErrorLogging(request, response, statusCode, upstreamStatus)
   }
 
   // Handle redirects properly
@@ -106,9 +122,15 @@ export function catchAll(request, h) {
   return renderErrorView(h, statusCode)
 }
 
-function handleErrorLogging(request, response, statusCode) {
+/**
+ * @param {object} request
+ * @param {object} response
+ * @param {number} statusCode
+ * @param {number | null} [upstreamStatus]
+ */
+function handleErrorLogging(request, response, statusCode, upstreamStatus = null) {
   if (statusCode >= statusCodes.internalServerError) {
-    handleServerErrors(request, response, statusCode)
+    handleServerErrors(request, response, statusCode, upstreamStatus)
   } else if (statusCode >= statusCodes.badRequest) {
     handleClientErrors(request, response, statusCode)
   } else {
@@ -116,7 +138,13 @@ function handleErrorLogging(request, response, statusCode) {
   }
 }
 
-function handleServerErrors(request, response, statusCode) {
+/**
+ * @param {object} request
+ * @param {object} response
+ * @param {number} statusCode
+ * @param {number | null} [upstreamStatus]
+ */
+function handleServerErrors(request, response, statusCode, upstreamStatus = null) {
   const errorContext = analyzeError(request, response)
 
   if (errorContext.isAuthError && !errorContext.alreadyLogged) {
@@ -124,7 +152,7 @@ function handleServerErrors(request, response, statusCode) {
   } else if (errorContext.isBellError && !errorContext.alreadyLogged) {
     logBellError(request, response, errorContext)
   } else if (!errorContext.isAuthError && !errorContext.isBellError && !errorContext.alreadyLogged) {
-    logSystemError(request, response, statusCode)
+    logSystemError(request, response, statusCode, upstreamStatus)
   } else {
     // Error already logged, skip to avoid duplicates
   }
@@ -194,12 +222,19 @@ function buildAuthContext(request, response, errorContext) {
   }
 }
 
-function logSystemError(request, response, statusCode) {
+/**
+ * @param {object} request
+ * @param {object} response
+ * @param {number} statusCode
+ * @param {number | null} [upstreamStatus]
+ */
+function logSystemError(request, response, statusCode, upstreamStatus = null) {
   log(
     LogCodes.SYSTEM.SERVER_ERROR,
     {
       errorMessage: response?.message || 'Internal server error',
       statusCode,
+      ...(upstreamStatus ? { upstreamStatus } : {}),
       path: request.path,
       method: request.method,
       stack: response?.stack
