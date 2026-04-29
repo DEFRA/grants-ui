@@ -8,6 +8,21 @@ import {
 } from '../common/services/consolidated-view/consolidated-view.service.js'
 import { debug, log, LogCodes } from '../common/helpers/logging/log.js'
 import { setupControllerMocks } from '~/src/__mocks__/controller-mocks.js'
+import { config } from '~/src/config/config.js'
+
+vi.mock('~/src/config/config.js', () => ({
+  config: {
+    get: vi.fn((key) => {
+      if (key === 'externalLinks.sfd.enabled') {
+        return false
+      }
+      if (key === 'externalLinks.sfd.updateUrl') {
+        return 'http://localhost:3000/sfd/update-sbi'
+      }
+      return undefined
+    })
+  }
+}))
 
 vi.mock('@defra/forms-model', () => ({
   ComponentType: {
@@ -129,6 +144,7 @@ describe('CheckDetailsController', () => {
     mockRequest = {
       app: {},
       path: '/test-form/check-details',
+      params: { slug: 'test-form' },
       auth: {
         isAuthenticated: true,
         credentials: {
@@ -219,6 +235,16 @@ describe('CheckDetailsController', () => {
           expect.objectContaining({ type: 'RadiosField', name: 'detailsConfirmed' })
         ])
       )
+    })
+
+    it('should handle missing components in pageDef during patching', () => {
+      const pageDefWithoutComponents = {
+        path: '/check-details',
+        title: 'Check your details'
+      }
+      const ctrl = new CheckDetailsController(mockModel, pageDefWithoutComponents)
+      expect(ctrl.pageDef.components).toHaveLength(2)
+      expect(ctrl.pageDef.components[0].name).toBe('placeholder')
     })
   })
 
@@ -326,7 +352,13 @@ describe('CheckDetailsController', () => {
     })
 
     describe('confirmationValue === false (user says details are wrong)', () => {
-      it('should save state and redirect to /{slug}/update-details', async () => {
+      it('should save state and redirect to /{slug}/update-details when SFD is disabled', async () => {
+        vi.mocked(config.get).mockImplementation((key) => {
+          if (key === 'externalLinks.sfd.enabled') {
+            return false
+          }
+        })
+
         mockContext.payload = { detailsConfirmed: false }
         mockRequest.params = { slug: 'test-form' }
         mockH.redirect = vi.fn().mockReturnValue('redirected-to-update-details')
@@ -339,6 +371,49 @@ describe('CheckDetailsController', () => {
         expect(mockH.view).not.toHaveBeenCalled()
         expect(controller.proceed).not.toHaveBeenCalled()
         expect(result).toBe('redirected-to-update-details')
+      })
+
+      it('should save state and redirect to /{slug}/update-details when SFD is enabled but no SFD URL has been set', async () => {
+        vi.mocked(config.get).mockImplementation((key) => {
+          if (key === 'externalLinks.sfd.enabled') {
+            return true
+          }
+          if (key === 'externalLinks.sfd.updateUrl') {
+            return undefined
+          }
+        })
+
+        mockContext.payload = { detailsConfirmed: false }
+        mockRequest.auth.credentials.currentRelationshipId = 'REL123'
+        mockH.redirect = vi.fn().mockReturnValue('redirected-to-update-details')
+
+        const handler = controller.makePostRouteHandler()
+        const result = await handler(mockRequest, mockContext, mockH)
+
+        expect(mockH.redirect).toHaveBeenCalledWith('/test-form/update-details')
+        expect(result).toBe('redirected-to-update-details')
+      })
+
+      it('should redirect to SFD update URL when SFD is enabled', async () => {
+        vi.mocked(config.get).mockImplementation((key) => {
+          if (key === 'externalLinks.sfd.enabled') {
+            return true
+          }
+          if (key === 'externalLinks.sfd.updateUrl') {
+            return 'http://localhost:3000/sfd/update-sbi'
+          }
+          return undefined
+        })
+
+        mockContext.payload = { detailsConfirmed: false }
+        mockRequest.auth.credentials.currentRelationshipId = 'REL123'
+        mockH.redirect = vi.fn().mockReturnValue('redirected-to-sfd')
+
+        const handler = controller.makePostRouteHandler()
+        const result = await handler(mockRequest, mockContext, mockH)
+
+        expect(mockH.redirect).toHaveBeenCalledWith('http://localhost:3000/sfd/update-sbi?ssoOrgId=REL123')
+        expect(result).toBe('redirected-to-sfd')
       })
     })
 
@@ -516,6 +591,49 @@ describe('CheckDetailsController', () => {
       )
       expect(mapResponse).toHaveBeenCalledWith(mockConfig.responseMapping, partialResponse)
       expect(result).toEqual({ sections: mockSections, mappedData: mockMappedData })
+    })
+
+    it('should use toleratedFailurePaths from detailsConfig if present', async () => {
+      const configWithToleratedPaths = {
+        ...mockConfig,
+        toleratedFailurePaths: ['customPath']
+      }
+      vi.mocked(executeConfigDrivenQuery).mockResolvedValue({
+        errors: [{ message: 'Error' }]
+      })
+      vi.mocked(hasOnlyToleratedFailures).mockReturnValue(true)
+
+      await controller.fetchAndProcessData(mockRequest, configWithToleratedPaths)
+
+      expect(executeConfigDrivenQuery).toHaveBeenCalledWith(mockRequest, expect.any(String), {
+        toleratedPaths: ['customPath']
+      })
+      expect(hasOnlyToleratedFailures).toHaveBeenCalledWith(expect.any(Array), ['customPath'])
+    })
+  })
+
+  describe('getSFDUpdateUrl', () => {
+    beforeEach(() => {
+      vi.clearAllMocks()
+      mockRequest.auth.credentials.currentRelationshipId = 'REL123'
+    })
+
+    it('should return correct SFD update URL with ssoOrgId', () => {
+      vi.mocked(config.get).mockReturnValue('https://sfd.example.com/update')
+      const result = controller.getSFDUpdateUrl(mockRequest)
+      expect(result).toBe('https://sfd.example.com/update?ssoOrgId=REL123')
+    })
+
+    it('should return empty string if updateUrl config is missing', () => {
+      vi.mocked(config.get).mockReturnValue(undefined)
+      const result = controller.getSFDUpdateUrl(mockRequest)
+      expect(result).toBe('')
+    })
+
+    it('should log error and return empty string if updateUrl is invalid', () => {
+      vi.mocked(config.get).mockReturnValue('not-a-url')
+      const result = controller.getSFDUpdateUrl(mockRequest)
+      expect(result).toBe('')
     })
   })
 
