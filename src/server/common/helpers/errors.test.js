@@ -191,6 +191,26 @@ describe('#catchAll', () => {
     expect(mockToolkitCode).toHaveBeenCalledWith(statusCodes.imATeapot)
   })
 
+  test('Should include upstreamStatus in the SERVER_ERROR log payload when the response carries an upstream 5xx', () => {
+    const request = mockRequest(statusCodes.internalServerError)
+    request.response.code = statusCodes.badGateway
+    request.response.status = statusCodes.badGateway
+
+    catchAll(request, mockToolkit)
+
+    expect(log).toHaveBeenCalledWith(
+      expect.objectContaining({ level: 'error' }),
+      expect.objectContaining({
+        upstreamStatus: statusCodes.badGateway,
+        statusCode: statusCodes.internalServerError
+      }),
+      request
+    )
+    // Response status is unchanged — 500 stays 500 user-facing.
+    expect(mockToolkitView).toHaveBeenCalledWith('errors/500', { supportEmail: null })
+    expect(mockToolkitCode).toHaveBeenCalledWith(statusCodes.internalServerError)
+  })
+
   test('Should provide expected "Something went wrong" page and log error for internalServerError', () => {
     catchAll(mockRequest(statusCodes.internalServerError), mockToolkit)
 
