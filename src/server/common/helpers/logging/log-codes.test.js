@@ -143,6 +143,12 @@ describe('LogCodes', () => {
         'error',
         { errorMessage: TEST_ERRORS.INVALID_TOKEN },
         `Token verification failed for user=unknown. Error: ${TEST_ERRORS.INVALID_TOKEN}`
+      ],
+      [
+        'GENERIC_ERROR',
+        'error',
+        { userId: TEST_USER_IDS.DEFAULT, errorMessage: TEST_ERRORS.INVALID_CREDENTIALS },
+        `Authentication error for user=${TEST_USER_IDS.DEFAULT}: ${TEST_ERRORS.INVALID_CREDENTIALS}`
       ]
     ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
       assertLogCode('AUTH', logCodeName, expectedLevel, testParams, expectedMessage)
@@ -300,6 +306,18 @@ describe('LogCodes', () => {
         'info',
         { formName: TEST_FORM_NAMES.DECLARATION },
         `Form saved: ${TEST_FORM_NAMES.DECLARATION} for user=unknown`
+      ],
+      [
+        'SLUG_STORED',
+        'debug',
+        { controller: 'DeclarationController', slug: 'example-grant' },
+        'DeclarationController: Storing slug in context: example-grant'
+      ],
+      [
+        'SLUG_RESOLVED',
+        'debug',
+        { controller: 'DeclarationController', message: 'Resolved slug from context' },
+        'DeclarationController: Resolved slug from context'
       ]
     ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
       assertLogCode('FORMS', logCodeName, expectedLevel, testParams, expectedMessage)
@@ -519,6 +537,18 @@ describe('LogCodes', () => {
         'info',
         { endpoint: '/api/v2/parcels', url: 'https://land-grants-api/api/v2/parcels' },
         'Land Grants API request | endpoint: /api/v2/parcels | url: https://land-grants-api/api/v2/parcels'
+      ],
+      [
+        'FARM_DETAILS_MISSING_FIELDS',
+        'warn',
+        { sbi: TEST_SBI.DEFAULT, missingFields: ['email', 'telephone'] },
+        `Missing farm contact details for sbi: ${TEST_SBI.DEFAULT} | fields: email, telephone`
+      ],
+      [
+        'FARM_DETAILS_MISSING_FIELDS with single field',
+        'warn',
+        { sbi: TEST_SBI.DEFAULT, missingFields: ['email'] },
+        `Missing farm contact details for sbi: ${TEST_SBI.DEFAULT} | fields: email`
       ]
     ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
       assertLogCode('LAND_GRANTS', logCodeName, expectedLevel, testParams, expectedMessage)
@@ -544,9 +574,60 @@ describe('LogCodes', () => {
         'error',
         { userId: TEST_USER_IDS.DEFAULT, errorMessage: TEST_ERRORS.PROCESSING_FAILED },
         `Agreement processing error for user=${TEST_USER_IDS.DEFAULT}: ${TEST_ERRORS.PROCESSING_FAILED}`
-      ]
+      ],
+      ['PROXY_RESPONSE_ERROR', 'error', {}, 'Proxy response is undefined. Possible upstream error or misconfiguration.']
     ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
       assertLogCode('AGREEMENTS', logCodeName, expectedLevel, testParams, expectedMessage)
+    })
+  })
+
+  describe('APPLICATION_LOCKS log codes', () => {
+    it.each([
+      [
+        'RELEASE_SKIPPED',
+        'debug',
+        { ownerId: 'session-abc', reason: 'no-owner' },
+        'Application locks release skipped | ownerId=session-abc | reason=no-owner'
+      ],
+      [
+        'RELEASE_ATTEMPTED',
+        'debug',
+        { ownerId: 'session-abc' },
+        'Attempting application locks release | ownerId=session-abc'
+      ],
+      [
+        'RELEASE_SUCCEEDED',
+        'debug',
+        { ownerId: 'session-abc', releasedCount: 3 },
+        'Application locks released | ownerId=session-abc | releasedCount=3'
+      ],
+      [
+        'RELEASE_TIMEOUT',
+        'warn',
+        { ownerId: 'session-abc', timeoutMs: 5000 },
+        'Application locks release timed out | ownerId=session-abc | timeoutMs=5000'
+      ],
+      [
+        'RELEASE_FAILED',
+        'error',
+        { ownerId: 'session-abc', errorName: 'TimeoutError', errorMessage: 'connection lost' },
+        'Failed to release application locks | ownerId=session-abc | errorName=TimeoutError | errorMessage=connection lost'
+      ]
+    ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
+      assertLogCode('APPLICATION_LOCKS', logCodeName, expectedLevel, testParams, expectedMessage)
+    })
+  })
+
+  describe('WOODLAND log codes', () => {
+    it.each([
+      [
+        'VALIDATE_ERROR',
+        'error',
+        { errorMessage: 'Invalid woodland data' },
+        'Woodland validation error: Invalid woodland data'
+      ]
+    ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
+      assertLogCode('WOODLAND', logCodeName, expectedLevel, testParams, expectedMessage)
     })
   })
 
@@ -635,6 +716,18 @@ describe('LogCodes', () => {
         `Server error occurred: ${TEST_ERRORS.DATABASE_ERROR}`
       ],
       [
+        'SERVER_ERROR with upstreamStatus',
+        'error',
+        { errorMessage: TEST_ERRORS.DATABASE_ERROR, upstreamStatus: 502 },
+        `Server error occurred: ${TEST_ERRORS.DATABASE_ERROR} | upstreamStatus=502`
+      ],
+      [
+        'SERVER_ERROR with null upstreamStatus is omitted',
+        'error',
+        { errorMessage: TEST_ERRORS.DATABASE_ERROR, upstreamStatus: null },
+        `Server error occurred: ${TEST_ERRORS.DATABASE_ERROR}`
+      ],
+      [
         'SYSTEM_STARTUP',
         'info',
         { port: TEST_PORTS.DEFAULT },
@@ -663,6 +756,29 @@ describe('LogCodes', () => {
         'error',
         { endpoint: TEST_ENDPOINTS.API_GRANTS, errorMessage: TEST_ERRORS.CONNECTION_FAILED },
         `External API error for ${TEST_ENDPOINTS.API_GRANTS}: ${TEST_ERRORS.CONNECTION_FAILED}`
+      ],
+      [
+        'EXTERNAL_API_ERROR with service and upstreamStatus',
+        'error',
+        {
+          endpoint: TEST_ENDPOINTS.API_GRANTS,
+          errorMessage: TEST_ERRORS.CONNECTION_FAILED,
+          service: 'grants-ui-backend',
+          upstreamStatus: 502
+        },
+        `External API error for ${TEST_ENDPOINTS.API_GRANTS} | service=grants-ui-backend | upstreamStatus=502: ${TEST_ERRORS.CONNECTION_FAILED}`
+      ],
+      [
+        'EXTERNAL_API_ERROR with attempts after retry exhaustion',
+        'error',
+        {
+          endpoint: TEST_ENDPOINTS.API_GRANTS,
+          errorMessage: TEST_ERRORS.CONNECTION_FAILED,
+          service: 'grants-ui-backend',
+          upstreamStatus: 502,
+          attempts: 3
+        },
+        `External API error for ${TEST_ENDPOINTS.API_GRANTS} | service=grants-ui-backend | upstreamStatus=502 | attempts=3: ${TEST_ERRORS.CONNECTION_FAILED}`
       ],
       [
         'GAS_ACTION_ERROR',
@@ -811,6 +927,77 @@ describe('LogCodes', () => {
         'error',
         { errorMessage: 'Connection failed' },
         'Unexpected error fetching business data from Consolidated View API | sbi=unknown | status=unknown | error=Connection failed'
+      ],
+      [
+        'CONSOLIDATED_VIEW_API_ERROR with statusCode and responseBody',
+        'error',
+        {
+          sbi: TEST_SBI.DEFAULT,
+          statusCode: 503,
+          errorMessage: 'Service Unavailable',
+          responseBody: '{"error":"upstream"}'
+        },
+        `Unexpected error fetching business data from Consolidated View API | sbi=${TEST_SBI.DEFAULT} | status=503 | error=Service Unavailable | responseBody={"error":"upstream"}`
+      ],
+      [
+        'GENERIC_ERROR',
+        'error',
+        { errorMessage: TEST_ERRORS.DATABASE_ERROR },
+        `An error occurred: ${TEST_ERRORS.DATABASE_ERROR}`
+      ],
+      [
+        'CONFIG_INVALID',
+        'error',
+        { key: 'apiUrl', value: 'not-a-url' },
+        'Invalid configuration, key "apiUrl" is missing or invalid: not-a-url'
+      ],
+      [
+        'CONSOLIDATED_VIEW_SUCCESS',
+        'info',
+        { sbi: TEST_SBI.DEFAULT },
+        `Consolidated View API request successful | sbi=${TEST_SBI.DEFAULT}`
+      ],
+      ['CONSOLIDATED_VIEW_SUCCESS with fallback', 'info', {}, 'Consolidated View API request successful | sbi=unknown'],
+      [
+        'CONSOLIDATED_VIEW_PARTIAL_SUCCESS',
+        'info',
+        { sbi: TEST_SBI.DEFAULT, failedPaths: 'address,phone', statusCode: 207 },
+        `Partial success from Consolidated View API | sbi=${TEST_SBI.DEFAULT} | failedPaths=address,phone | status=207`
+      ],
+      [
+        'CONSOLIDATED_VIEW_PARTIAL_SUCCESS with fallbacks',
+        'info',
+        { failedPaths: 'address' },
+        'Partial success from Consolidated View API | sbi=unknown | failedPaths=address | status=unknown'
+      ],
+      [
+        'CONSOLIDATED_VIEW_ADDRESS_FORMAT structured',
+        'info',
+        { sbi: TEST_SBI.DEFAULT, uprn: '12345' },
+        `Address format for sbi=${TEST_SBI.DEFAULT} is structured, uprn=12345`
+      ],
+      [
+        'CONSOLIDATED_VIEW_ADDRESS_FORMAT unstructured',
+        'info',
+        { sbi: TEST_SBI.DEFAULT },
+        `Address format for sbi=${TEST_SBI.DEFAULT} is unstructured, uprn=not set`
+      ],
+      [
+        'RATE_LIMIT_EXCEEDED',
+        'warn',
+        {
+          path: TEST_PATHS.EXAMPLE_GRANT,
+          ip: '127.0.0.1',
+          userId: TEST_USER_IDS.DEFAULT,
+          userAgent: 'Mozilla/5.0'
+        },
+        `Rate limit exceeded: path=${TEST_PATHS.EXAMPLE_GRANT}, ip=127.0.0.1, userId=${TEST_USER_IDS.DEFAULT}, userAgent=Mozilla/5.0`
+      ],
+      [
+        'RATE_LIMIT_EXCEEDED with fallbacks',
+        'warn',
+        { path: TEST_PATHS.EXAMPLE_GRANT },
+        `Rate limit exceeded: path=${TEST_PATHS.EXAMPLE_GRANT}, ip=unknown, userId=anonymous, userAgent=unknown`
       ]
     ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
       assertLogCode('SYSTEM', logCodeName, expectedLevel, testParams, expectedMessage)

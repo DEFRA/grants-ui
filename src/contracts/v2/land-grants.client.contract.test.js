@@ -4,18 +4,10 @@ import path from 'path'
 import { vi } from 'vitest'
 import { postToLandGrantsApi } from '~/src/server/land-grants/services/land-grants.client'
 
-vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
-  LogCodes: {
-    LAND_GRANTS: {
-      API_REQUEST: { level: 'info', messageFunc: vi.fn() }
-    }
-  },
-  log: vi.fn(),
-  debug: vi.fn(),
-  logger: {
-    debug: vi.fn()
-  }
-}))
+vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
+  const { mockLogHelper } = await import('~/src/__mocks__/logger-mocks.js')
+  return mockLogHelper()
+})
 
 vi.mock('~/src/server/common/helpers/retry.js', () => ({
   retry: (operation) => operation()

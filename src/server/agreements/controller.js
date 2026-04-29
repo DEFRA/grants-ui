@@ -2,7 +2,7 @@ import { config } from '~/src/config/config.js'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import Jwt from '@hapi/jwt'
 import { SystemError } from '~/src/server/common/utils/errors/SystemError.js'
-import { log, debug } from '~/src/server/common/helpers/logging/log.js'
+import { log } from '~/src/server/common/helpers/logging/log.js'
 import { LogCodes } from '~/src/server/common/helpers/logging/log-codes.js'
 
 /**
@@ -76,6 +76,19 @@ function buildProxyHeaders(token, request) {
   }
 }
 
+function logAgreementsUpstreamError(request, error) {
+  log(
+    LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+    {
+      endpoint: 'agreements',
+      service: 'farming-grants-agreements-ui',
+      upstreamStatus: error.statusCode ?? error.output?.statusCode ?? error.status ?? null,
+      errorMessage: error.message
+    },
+    request
+  )
+}
+
 /**
  * Controller for the agreements API
  * @satisfies {Partial<ServerRoute>}
@@ -108,7 +121,7 @@ export const getAgreementController = {
 
       return apiResponse
     } catch (error) {
-      debug(LogCodes.SYSTEM.EXTERNAL_API_ERROR, { endpoint: 'agreements', errorMessage: error.message }, request)
+      logAgreementsUpstreamError(request, error)
 
       if (error.message.includes('Missing required configuration')) {
         return h

@@ -10,6 +10,7 @@ import {
   fetchBusinessAndCPH
 } from './consolidated-view.service.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
+import { log } from '~/src/server/common/helpers/logging/log.js'
 
 vi.mock('~/src/server/common/helpers/retry.js')
 
@@ -253,6 +254,26 @@ describe('Consolidated View Service', () => {
 
       await expect(fetchBusinessAndCPH(mockRequest)).rejects.toThrow(
         'Failed to fetch business data: 500 Internal Server Error'
+      )
+    })
+
+    it('should log CONSOLIDATED_VIEW_API_ERROR at error level on upstream failure', async () => {
+      mockFetchInstance.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        statusText: 'Internal Server Error',
+        text: () => Promise.resolve('Server error')
+      })
+
+      await expect(fetchBusinessAndCPH(mockRequest)).rejects.toThrow()
+
+      expect(log).toHaveBeenCalledWith(
+        expect.objectContaining({ level: 'error' }),
+        expect.objectContaining({
+          sbi: mockSbi,
+          errorMessage: expect.stringContaining('500')
+        }),
+        mockRequest
       )
     })
 

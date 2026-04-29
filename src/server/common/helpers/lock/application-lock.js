@@ -1,9 +1,26 @@
 import { createApiHeadersForGrantsUiBackend } from '../auth/backend-auth-helper.js'
-import { log, debug, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { mintLockReleaseToken } from './lock-token.js'
 import { config } from '~/src/config/config.js'
 
 const GRANTS_UI_BACKEND_ENDPOINT = config.get('session.cache.apiEndpoint')
+
+function logLockReleaseError(err, urlHref, ownerId, timeoutMs) {
+  if (err.name === 'AbortError') {
+    log(LogCodes.APPLICATION_LOCKS.RELEASE_TIMEOUT, {
+      ownerId,
+      timeoutMs
+    })
+  } else {
+    log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
+      method: 'DELETE',
+      endpoint: urlHref,
+      service: 'grants-ui-backend',
+      identity: ownerId,
+      errorMessage: err.message
+    })
+  }
+}
 
 /**
  * Releases all application locks held by a given user via the grants-ui-backend API.
@@ -61,8 +78,10 @@ export async function releaseAllApplicationLocksForOwnerFromApi({ ownerId }) {
       log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
         method: 'DELETE',
         endpoint: url.href,
+        service: 'grants-ui-backend',
+        upstreamStatus: response.status,
         identity: ownerId,
-        errorMessage: `${response.status} - ${response.statusText}`
+        errorMessage: response.statusText
       })
       return { ok: false, releasedCount: 0 }
     }
@@ -74,19 +93,7 @@ export async function releaseAllApplicationLocksForOwnerFromApi({ ownerId }) {
     })
     return { ok: true, releasedCount: body.releasedCount ?? 0 }
   } catch (err) {
-    if (err.name === 'AbortError') {
-      debug(LogCodes.APPLICATION_LOCKS.RELEASE_TIMEOUT, {
-        ownerId,
-        timeoutMs
-      })
-    } else {
-      debug(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
-        method: 'DELETE',
-        endpoint: url.href,
-        identity: ownerId,
-        errorMessage: err.message
-      })
-    }
+    logLockReleaseError(err, url.href, ownerId, timeoutMs)
     return { ok: false, releasedCount: 0 }
   } finally {
     clearTimeout(timeoutId)

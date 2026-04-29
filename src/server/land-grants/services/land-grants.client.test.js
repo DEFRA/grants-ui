@@ -9,20 +9,9 @@ import {
 } from './land-grants.client.js'
 import { vi } from 'vitest'
 import { retry } from '~/src/server/common/helpers/retry.js'
+import { log } from '~/src/server/common/helpers/logging/log.js'
 
 vi.mock('~/src/server/common/helpers/retry.js')
-
-vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
-  log: vi.fn(),
-  LogCodes: {
-    LAND_GRANTS: {
-      API_REQUEST: {
-        level: 'info',
-        messageFunc: (opts) => `Land Grants API request | endpoint: ${opts.endpoint} | url: ${opts.url}`
-      }
-    }
-  }
-}))
 
 /** @type {import('vitest').MockedFunction<any>} */
 const mockFetch = vi.fn()
@@ -224,10 +213,9 @@ describe('Land Grants client', () => {
       )
     })
 
-    it('should handle error with different status codes', async () => {
-      const statusCodes = [400, 401, 403, 500, 502, 503]
-
-      for (const status of statusCodes) {
+    it.each([400, 401, 403, 500, 502, 503])(
+      'propagates upstream status %i as both error.code and error.status',
+      async (status) => {
         mockFetch.mockResolvedValueOnce({
           ok: false,
           status,
@@ -235,14 +223,140 @@ describe('Land Grants client', () => {
           arrayBuffer: vi.fn().mockResolvedValue(undefined)
         })
 
-        try {
-          await postToLandGrantsApi('/test', {}, mockApiEndpoint)
-          expect.fail('Should have thrown an error')
-        } catch (error) {
-          expect(error.status).toBe(status)
-          expect(error.code).toBe(status)
-        }
+        await expect(postToLandGrantsApi('/test', {}, mockApiEndpoint)).rejects.toMatchObject({
+          code: status,
+          status
+        })
       }
+    )
+
+    it('should log EXTERNAL_API_ERROR with upstreamStatus and service when BE returns 502', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 502,
+        statusText: 'Bad Gateway',
+        arrayBuffer: vi.fn().mockResolvedValue(undefined)
+      })
+
+      await expect(postToLandGrantsApi('/test', {}, mockApiEndpoint)).rejects.toThrow('Bad Gateway')
+
+      // Call-site log: fired before the error is rethrown, capturing upstream status
+      expect(log).toHaveBeenCalledWith(
+        expect.objectContaining({ level: 'error' }),
+        expect.objectContaining({
+          endpoint: '/test',
+          service: 'grants-ui-backend',
+          upstreamStatus: 502,
+          errorMessage: 'Bad Gateway'
+        })
+      )
+    })
+
+    it('should log EXTERNAL_API_ERROR with attempts after retry exhaustion', async () => {
+      // Make retry behave as if it tried multiple times before giving up.
+      retry.mockImplementationOnce(async (operation) => {
+        await operation().catch(() => {})
+        await operation().catch(() => {})
+        return operation()
+      })
+      mockFetch.mockResolvedValue({
+        ok: false,
+        status: 502,
+        statusText: 'Bad Gateway',
+        arrayBuffer: vi.fn().mockResolvedValue(undefined)
+      })
+
+      await expect(postToLandGrantsApi('/test', {}, mockApiEndpoint)).rejects.toThrow('Bad Gateway')
+
+      const exhaustionLogCall = log.mock.calls.find(
+        ([code, opts]) => code?.level === 'error' && opts?.attempts !== undefined
+      )
+      expect(exhaustionLogCall).toBeDefined()
+      expect(exhaustionLogCall[1]).toEqual(
+        expect.objectContaining({
+          endpoint: '/test',
+          service: 'grants-ui-backend',
+          upstreamStatus: 502,
+          attempts: 3,
+          errorMessage: 'Bad Gateway'
+        })
+      )
+    })
+
+    it('should fall back to lastUpstreamStatus when retry error has no status or code', async () => {
+      // Simulate a retry-level failure (e.g. timeout) where the rejected error has no status/code,
+      // but the inner operation already captured an upstream status via lastUpstreamStatus.
+      retry.mockImplementationOnce(async (operation) => {
+        await operation().catch(() => {})
+        const timeoutError = new Error('Operation timed out')
+        throw timeoutError
+      })
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 502,
+        statusText: 'Bad Gateway',
+        arrayBuffer: vi.fn().mockResolvedValue(undefined)
+      })
+
+      await expect(postToLandGrantsApi('/test', {}, mockApiEndpoint)).rejects.toThrow('Operation timed out')
+
+      const exhaustionLogCall = log.mock.calls.find(
+        ([code, opts]) => code?.level === 'error' && opts?.errorMessage === 'Operation timed out'
+      )
+      expect(exhaustionLogCall).toBeDefined()
+      expect(exhaustionLogCall[1]).toEqual(
+        expect.objectContaining({
+          endpoint: '/test',
+          service: 'grants-ui-backend',
+          upstreamStatus: 502,
+          errorMessage: 'Operation timed out'
+        })
+      )
+    })
+
+    it('should pass null upstreamStatus when no upstream response was received', async () => {
+      // Network-level failure: fetch rejects before any HTTP response arrives.
+      retry.mockImplementationOnce(async () => {
+        throw new Error('Network down')
+      })
+
+      await expect(postToLandGrantsApi('/test', {}, mockApiEndpoint)).rejects.toThrow('Network down')
+
+      const exhaustionLogCall = log.mock.calls.find(
+        ([code, opts]) => code?.level === 'error' && opts?.errorMessage === 'Network down'
+      )
+      expect(exhaustionLogCall).toBeDefined()
+      expect(exhaustionLogCall[1]).toEqual(
+        expect.objectContaining({
+          endpoint: '/test',
+          service: 'grants-ui-backend',
+          upstreamStatus: null,
+          errorMessage: 'Network down'
+        })
+      )
+    })
+
+    it('should use error.code when error.status is missing', async () => {
+      retry.mockImplementationOnce(async () => {
+        const err = /** @type {Error & {code?: number}} */ (new Error('Forbidden'))
+        err.code = 403
+        throw err
+      })
+
+      await expect(postToLandGrantsApi('/test', {}, mockApiEndpoint)).rejects.toThrow('Forbidden')
+
+      const exhaustionLogCall = log.mock.calls.find(
+        ([code, opts]) => code?.level === 'error' && opts?.errorMessage === 'Forbidden'
+      )
+      expect(exhaustionLogCall).toBeDefined()
+      expect(exhaustionLogCall[1]).toEqual(
+        expect.objectContaining({
+          endpoint: '/test',
+          service: 'grants-ui-backend',
+          upstreamStatus: 403,
+          errorMessage: 'Forbidden'
+        })
+      )
     })
 
     it('should return the exact response from json()', async () => {
