@@ -51,12 +51,6 @@ export async function clearApplicationStateHandler(request, h) {
 }
 
 const loadFormAndSetOnRequestModel = async (form, request) => {
-  const getFormService = request.server.methods.getFormService
-
-  if (typeof getFormService !== 'function') {
-    throw new TypeError('getFormService is not available')
-  }
-
-  const definition = await loadFormDefinition(form, getFormService())
+  const definition = await loadFormDefinition(form, request.server.methods.getFormService())
   request.app.model = { def: definition }
 }
