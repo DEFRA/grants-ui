@@ -19,7 +19,7 @@
     "dev": "run-p frontend:watch server:watch",
     "dev:debug": "run-p frontend:watch server:debug",
     "docker:up": "docker compose up -d",
-    "docker:down": "docker compose down --remove-orphans",
+    "docker:down": "docker compose down --remove-orphans -v",
     "docker:debug": "node ./tools/docker-debug.js",
     "docker:cycle-ui": "docker compose up -d --force-recreate grants-ui",
     "docker:reset": "docker compose down --volumes --remove-orphans --rmi local && docker volume ls --format '{{.Name}}' | grep -E '^[a-f0-9]{64}$' | xargs docker volume rm",
