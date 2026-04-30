@@ -29,6 +29,8 @@ else
 fi
 
 COMPOSE_COMMAND='docker compose -f compose.yml -f compose.ha.yml -f compose.land-grants.yml -f compose.ci.yml'
+echo "Running pre-emptive volume cleanse..."
+docker volume prune -f
 echo "Building docker compose containers..."
 eval "${COMPOSE_COMMAND} build --quiet > /dev/null 2>&1"
 echo "Starting services with docker compose..."
@@ -75,9 +77,6 @@ done
 echo "All services are healthy!"
 echo "Service Status:"
 docker compose ps
-
-echo "Running pre-emptive volume cleanse..."
-docker volume prune -f
 
 if [ -n "${ACCEPTANCE_TESTS_HOOK:-}" ]; then
   echo "Running Acceptance Tests..."
