@@ -29,6 +29,8 @@ else
 fi
 
 COMPOSE_COMMAND='docker compose -f compose.yml -f compose.ha.yml -f compose.land-grants.yml -f compose.ci.yml'
+echo "Running pre-emptive volume cleanse..."
+docker volume prune -f
 echo "Building docker compose containers..."
 eval "${COMPOSE_COMMAND} build --quiet > /dev/null 2>&1"
 echo "Starting services with docker compose..."
@@ -86,6 +88,6 @@ if [ -n "${PERFORMANCE_TESTS_HOOK:-}" ]; then
   eval "${PERFORMANCE_TESTS_HOOK}"
 fi
 
-eval "${COMPOSE_COMMAND} down"
+eval "${COMPOSE_COMMAND} down -v"
 echo ""
 echo "Tests complete."

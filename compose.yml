@@ -74,7 +74,7 @@ services:
       CONFIG_API_URL: '${CONFIG_API_URL:-http://grants-ui-config-api:3011}'
       CONFIG_API_JWT_SECRET: ${CONFIG_API_JWT_SECRET:-forms-config-jwt-secret}
       CONFIG_API_JWT_EXPIRY: ${CONFIG_API_JWT_EXPIRY:-1h}
-      FORMS_API_SLUGS: ${FORMS_API_SLUGS:-example-grant-with-auth}
+      FORMS_API_SLUGS: ${FORMS_API_SLUGS:-}
       FORMS_API_CACHE_TTL_SECONDS: ${FORMS_API_CACHE_TTL_SECONDS:-300}
       SFD_UPDATE_URL: '${SFD_UPDATE_URL:-http://localhost:3000/sfd/mock}'
       SFD_UPDATE_ENABLED: ${SFD_UPDATE_ENABLED:-false}
