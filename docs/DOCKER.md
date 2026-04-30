@@ -43,6 +43,8 @@ A local environment with:
 - FCP Defra ID Stub
 - This service
 - Grants UI Backend
+- Grants UI Config API
+- Grants Config Broker (with pre-loaded config for example-grant-with-auth)
 - MockServer, providing a stub for [fg-gas-backend](http://github.com/DEFRA/fg-gas-backend)
 
 ```bash
