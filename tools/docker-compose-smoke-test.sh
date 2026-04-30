@@ -76,6 +76,9 @@ echo "All services are healthy!"
 echo "Service Status:"
 docker compose ps
 
+echo "Running pre-emptive volume cleanse..."
+docker volume prune -f
+
 if [ -n "${ACCEPTANCE_TESTS_HOOK:-}" ]; then
   echo "Running Acceptance Tests..."
   eval "${ACCEPTANCE_TESTS_HOOK}"
