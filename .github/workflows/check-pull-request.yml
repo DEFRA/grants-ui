@@ -30,6 +30,18 @@ jobs:
           npm install --package-lock-only && git diff --exit-code package-lock.json || \
           (echo "ERROR: You need to run npm install and commit package-lock.json" && exit 1)
 
+      - uses: dorny/paths-filter@v4
+        id: changes
+        with:
+          filters: |
+            src:
+              - 'src/server/common/forms/definitions/example-grant-with-auth.yaml'
+
+      # run only if example grant config updated
+      - if: steps.changes.outputs.src == 'true'
+        run: |
+          ./tools/compare-remote-config.sh
+
   test:
     name: Test and Lint
     runs-on: ubuntu-latest
