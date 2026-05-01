@@ -210,6 +210,10 @@ pages:
         options: {}
         schema: {}
     id: 89f408cd-6953-4f6b-b31c-f957c520fb67
+  - title: Check your details
+    path: /check-details
+    controller: CheckDetailsController
+    id: f7a2c8b1-3d4e-5f6a-7b8c-9d0e1f2a3b4c
   - title: YesNoField Example
     path: /yes-no-field
     components:
@@ -555,10 +559,6 @@ pages:
         options: {}
         schema: {}
     id: 089374a5-13e7-494d-994e-9b38c4b7392c
-  - title: Check your details
-    path: /check-details
-    controller: CheckDetailsController
-    id: f7a2c8b1-3d4e-5f6a-7b8c-9d0e1f2a3b4c
   - title: Check your answers
     path: /summary
     controller: CheckResponsesPageController

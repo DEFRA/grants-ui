@@ -1,5 +1,12 @@
 [
   { "slug": "start", "name": "Start", "type": "submitOnly" },
+  {
+    "slug": "check-details",
+    "name": "Check your details",
+    "type": "yesNo",
+    "fieldName": "detailsConfirmed",
+    "value": "true"
+  },
   { "slug": "yes-no-field", "name": "YesNoField", "type": "yesNo", "fieldName": "yesNoField" },
   {
     "slug": "autocomplete-field",
