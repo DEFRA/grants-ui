@@ -275,7 +275,8 @@ export function getTaskListPath(model) {
  * @returns {object[]} Array of page definitions that have a section
  */
 function getTaskPages(model) {
-  return model.page.def.pages.filter((page) => page.section && page.controller !== 'CheckDetailsController')
+  const excludedControllers = new Set(['CheckDetailsController', 'TerminalPageController'])
+  return model.page.def.pages.filter((page) => page.section && !excludedControllers.has(page.controller))
 }
 
 /**

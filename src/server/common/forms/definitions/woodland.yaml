@@ -192,11 +192,11 @@ metadata:
   incorrectDetailsContent:
     heading: Update your details
     paragraphs:
-      - Make sure your details are correct before you apply for a woodland management plan (WMP) grant.
+      - Make sure your details are correct before you apply for a woodland management plan (WMP).
       - textBefore: 'To update your details follow our '
         link:
           text: Register and update your details with the Rural Payments Agency guidance
-          href: https://www.gov.uk/guidance/update-personal-and-business-details-in-the-rural-payments-service
+          href: https://www.gov.uk/guidance/update-personal-and-business-details-in-the-rural-payments-service#what-personal-details-you-can-update
         textAfter: '.'
     showRpaSupport: false
   options:
@@ -267,6 +267,7 @@ pages:
   - title: All the land in your application must be registered with the Rural Payments service
     id: e692dbd0-57ec-4237-90fd-1bac172c9f94
     path: /exit-eligibility-land-registered
+    section: 16848e5e-ba30-4719-aa98-f0e1144fb492
     controller: TerminalPageController
     condition: f64f8509-4b15-48a1-b301-5463f23e8b42
     components:
@@ -327,6 +328,7 @@ pages:
   - title: You must get your landlord's countersignature
     id: ba713319-438e-4609-afbb-2585686bb491
     path: /exit-eligibility-countersignature
+    section: 16848e5e-ba30-4719-aa98-f0e1144fb492
     controller: TerminalPageController
     condition: b9f02e95-e022-4b6d-a8fb-dbe56124c03f
     components:
@@ -334,7 +336,7 @@ pages:
         id: 5af8ba37-9ac6-47a3-a5a9-e9716ab5141e
         type: Html
         content: >
-          <p class="govuk-body">You must get the written consent of all other parties with management control over part or all of the land in your application for the entire duration of the agreement  (and any durability period)</p>
+          <p class="govuk-body">You must get the written consent of all other parties with management control over part or all of the land in your application for the entire duration of the agreement (and any durability period).</p>
           <p class="govuk-body">To get countersignatures follow the guidance in and complete our <a class="govuk-link" href="https://www.gov.uk/government/publications/countryside-stewardship-land-ownership-and-control-form">Land ownership and control form: Countryside Stewardship form</a>.</p>
           <p class="govuk-body">You must complete a separate form for each countersignatory.</p>
 
@@ -376,6 +378,7 @@ pages:
   - title: You cannot apply for a woodland management plan (WMP) for any work that is a requirement of your tenancy or any other legally binding obligation
     id: 566edfd9-2028-490f-8928-0d3b75e7eb4e
     path: /exit-eligibility-tenant-obligations
+    section: 16848e5e-ba30-4719-aa98-f0e1144fb492
     controller: TerminalPageController
     condition: d8ae9ed4-da31-41fb-a5d7-0025cc823c21
     components:
@@ -430,7 +433,7 @@ pages:
         id: a9ae25aa-d70e-4616-84bf-47f71251e8b5
         type: TextField
         title: Enter the FC plan references for any live WMPs
-        hint: This is the 5, 6 or 7-digit plan reference number you’ll find on your Forestry Commission WMP. If you need to enter 2 or more plan reference numbers, use a comma to separate each one. For example - 1234567, 7654321, 1726354
+        hint: This is the 5, 6 or 7-digit plan reference number you’ll find on your Forestry Commission WMP. If you need to enter 2 or more plan reference numbers, use a comma to separate each one. For example - 1234567, 7654321, 1726354.
         options:
           required: true
           classes: govuk-!-width-two-thirds
@@ -522,10 +525,10 @@ pages:
         id: 1a3b5c7d-9e2f-4a8b-c6d0-e4f2a8b6c0d2
         type: Html
         content: >-
-          <p class="govuk-body">The woodland must be at least 0.5 hectares (ha) in total.</p>
+          <p class="govuk-body">The woodland must be larger than 0.5 hectares (ha) in total.</p>
           <div class="govuk-inset-text">
            {% if totalHectaresForSelectedParcels %}
-              The total area of your selected land parcels is {{ totalHectaresForSelectedParcels }} ha
+              The total area of your selected land parcels is {{ totalHectaresForSelectedParcels }}ha
            {% else %}
               The total area of your selected land parcels is 0 ha
            {% endif %}
