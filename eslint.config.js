@@ -28,6 +28,17 @@ export default [
     }
   },
   {
+    files: ['acceptance/**/*.js'],
+    languageOptions: {
+      globals: {
+        browser: 'readonly',
+        $: 'readonly',
+        $$: 'readonly',
+        expect: 'readonly'
+      }
+    }
+  },
+  {
     files: ['**/*.test.{js,cjs}'],
     plugins: {
       vitest: vitestPlugin
