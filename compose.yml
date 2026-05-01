@@ -184,7 +184,7 @@ services:
     networks:
       - grants-ui-net
     volumes:
-      - ./localstack/config-broker:/home/node/config
+      - ./localstack/config-broker-local:/home/node/config
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:3012/health']
       interval: 30s
