@@ -20,3 +20,4 @@ reports/mutation/mutation.html
 .stryker-tmp
 /http-client.private.env.json
 /performance-test-users.csv
+localstack/config-broker-local
