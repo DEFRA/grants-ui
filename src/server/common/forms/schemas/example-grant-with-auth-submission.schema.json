@@ -15,16 +15,9 @@
     "monthYearField__year": { "type": "number" },
     "selectField": { "type": "string" },
     "multilineTextField": { "type": "string" },
-    "applicantName": { "type": "string" },
-    "applicantEmail": { "type": "string", "format": "email" },
-    "applicantMobile": { "type": "string" },
-    "applicantBusinessAddress__addressLine1": { "type": "string" },
-    "applicantBusinessAddress__addressLine2": {
-      "type": ["string", "null"]
-    },
-    "applicantBusinessAddress__town": { "type": "string" },
-    "applicantBusinessAddress__county": { "type": ["string", "null"] },
-    "applicantBusinessAddress__postcode": { "type": "string" },
+    "projectName": { "type": "string" },
+    "projectDescription": { "type": "string" },
+    "projectBudget": { "type": "number" },
     "detailsConfirmedAt": { "type": "string", "format": "date-time" },
     "applicant": {
       "type": "object",
@@ -103,11 +96,7 @@
     "monthYearField__year",
     "selectField",
     "multilineTextField",
-    "applicantName",
-    "applicantEmail",
-    "applicantMobile",
-    "applicantBusinessAddress__addressLine1",
-    "applicantBusinessAddress__town",
-    "applicantBusinessAddress__postcode"
+    "projectName",
+    "projectBudget"
   ]
 }

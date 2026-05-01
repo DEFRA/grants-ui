@@ -425,6 +425,60 @@ pages:
         id: 264fbff1-35f6-49d3-98ae-b7582b1e41b5
         schema: {}
     id: 88d7b067-68c2-4fe1-9a9a-ea98f0752e03
+  - title: Multi Field Form Example
+    path: /multi-field-form
+    components:
+      - name: formInfo
+        title: Html
+        type: Html
+        content: >-
+          <p class="govuk-body">This is an example of a form containing multiple
+          components on the same page.<br>
+        id: 96f851a6-8758-42dd-9df5-e85e89b8cc14
+        options: {}
+        schema: {}
+      - type: TextField
+        name: projectName
+        title: Project name
+        options:
+          required: true
+          customValidationMessages:
+            string.empty: Enter a project name
+            string.max: Project name must be 100 characters or fewer
+        schema:
+          max: 100
+        shortDescription: Project name
+        id: 1f2a3b4c-5d6e-4a8b-9c0d-1e2f3a4b5c6d
+      - type: MultilineTextField
+        name: projectDescription
+        title: Project description
+        hint: Optional. Describe your project in up to 200 words.
+        options:
+          required: false
+          rows: 5
+          maxWords: 200
+        shortDescription: Project description
+        id: 2a3b4c5d-6e7f-4a9b-8c0d-1e2f3a4b5c7e
+      - type: NumberField
+        name: projectBudget
+        title: Project budget
+        hint: Enter the total project budget in pounds, for example 50000
+        options:
+          prefix: £
+          required: true
+          autocomplete: off
+          classes: govuk-!-width-one-third
+          customValidationMessages:
+            any.required: Enter the project budget
+            number.max: Enter a value less than £1 million
+            number.min: Enter a value of £1 or more
+        schema:
+          min: 1
+          max: 999999
+          precision: 0
+        shortDescription: Project budget
+        id: 3b4c5d6e-7f8a-4b9c-9d0e-1f2a3b4c5d8f
+    id: 089374a5-13e7-494d-994e-9b38c4b7392c
   - title: Select all the eligible land parcels for the location of your woodland
     controller: CommonSelectLandParcelPageController
     components:
@@ -485,80 +539,6 @@ pages:
         <p>We aim to respond to emails within 10 working days</p>
     path: /select-land-parcel
     id: f9f1a33b-2fb5-4418-951b-680067efc179
-  - title: Multi Field Form Example
-    path: /multi-field-form
-    components:
-      - name: formInfo
-        title: Html
-        type: Html
-        content: >-
-          <p class="govuk-body">This is an example of a form containing multiple
-          components:<br>
-
-          TextField, EmailAddressField, TelephoneNumberField and
-          UkAddressField.</p>
-
-          <p class="govuk-body">UkAddressField is a component that renders
-          multiple fields, some of which are optional.</p>
-        id: 96f851a6-8758-42dd-9df5-e85e89b8cc14
-        options: {}
-        schema: {}
-      - type: TextField
-        name: applicantName
-        title: Name
-        options:
-          required: true
-          customValidationMessages:
-            string.empty: Enter your name
-            string.max: Name must be 30 characters or fewer
-            string.pattern.base: Name must only include letters, hyphens and apostrophes
-        schema:
-          regex: ^[a-zA-Z' -]*$
-          max: 30
-        shortDescription: Name
-        id: a0a4c5de-fad5-4901-9b48-3e3a72eb9763
-      - type: EmailAddressField
-        name: applicantEmail
-        title: Email address
-        hint: Example of a hint
-        options:
-          required: true
-          customValidationMessages:
-            string.empty: Enter your email address
-            string.email: Enter an email address in the correct format, like name@example.com
-        schema:
-          regex: ^\w+([.-]\w+)*@[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*(\.[a-zA-Z]{2,})+$
-        shortDescription: Email address
-        id: da81e4a3-1557-4a1c-9be3-be0d0d96b767
-      - type: TelephoneNumberField
-        name: applicantMobile
-        title: Mobile number
-        options:
-          required: true
-          customValidationMessages:
-            string.empty: Enter a mobile number
-            string.pattern.base: Enter a telephone number, like 01632 960 001, 07700 900 982
-              or +44 0808 157 0192
-          autocomplete: tel
-        schema:
-          regex: ^\+?[0-9\s()-]{10,}$
-        shortDescription: Mobile number
-        id: b3bce07d-4897-4124-a965-7ca02d9356a5
-      - type: Html
-        name: applicantBusinessAddressHeader
-        title: Html
-        content: <h1 class="govuk-heading-m">Business address</h1>
-        id: 601ef0e8-bfe6-431f-b11f-1ca851edae3c
-        options: {}
-        schema: {}
-      - type: UkAddressField
-        title: Address
-        name: applicantBusinessAddress
-        shortDescription: Address
-        id: 509a72f9-4c5a-4375-a58d-b056094fd7b9
-        options: {}
-        schema: {}
-    id: 089374a5-13e7-494d-994e-9b38c4b7392c
   - title: Check your answers
     path: /summary
     controller: CheckResponsesPageController

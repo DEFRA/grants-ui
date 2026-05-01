@@ -41,25 +41,21 @@
     "value": "Test description for the journey runner."
   },
   {
+    "slug": "multi-field-form",
+    "name": "MultiFieldForm",
+    "type": "textFields",
+    "fields": {
+      "projectName": "Test project",
+      "projectDescription": "Project description for the journey runner.",
+      "projectBudget": "50000"
+    }
+  },
+  {
     "slug": "select-land-parcel",
     "name": "SelectLandParcel",
     "type": "checkboxes",
     "fieldName": "landParcels"
   },
-  {
-    "slug": "multi-field-form",
-    "name": "MultiFieldForm",
-    "type": "textFields",
-    "fields": {
-      "applicantName": "Test User",
-      "applicantEmail": "test@example.com",
-      "applicantMobile": "07700900000",
-      "applicantBusinessAddress__addressLine1": "10 Test Street",
-      "applicantBusinessAddress__town": "Test Town",
-      "applicantBusinessAddress__postcode": "TE1 1ST"
-    }
-  },
   { "slug": "summary", "name": "Summary (Check your answers)", "type": "submitOnly" },
-  { "slug": "declaration", "name": "Declaration (Confirm and send)", "type": "submitOnly" },
-  { "slug": "confirmation", "name": "Confirmation", "type": "submitOnly" }
+  { "slug": "declaration", "name": "Declaration (Confirm and send)", "type": "submitOnly" }
 ]
