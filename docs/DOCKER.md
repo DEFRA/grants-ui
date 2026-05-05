@@ -37,7 +37,7 @@ npx gae up --gas                        # include GAS (fg-gas-backend + localsta
 npx gae up --land-grants                # include Land Grants API + Postgres
 npx gae up --gas --land-grants --ha     # all addons + HA proxy
 npx gae up --scale 2                    # run 2 replicas of grants-ui / grants-ui-backend
-npx gae up --local-grants-ui-backend    # use locally-built defradigital/grants-ui-backend:local
+npx gae up --local-grants-ui-backend    # use locally-built grants-ui-backend:local
 
 # Stop the stack (uses saved state automatically)
 npx gae down
