@@ -27,7 +27,7 @@ function createProvider() {
 const { string, regex } = MatchersV3
 
 describe('Pact between grants-ui (consumer) and fg-gas-backend (provider)', () => {
-  describe('POST /applications', () => {
+  describe('POST /grants/frps-private-beta/applications', () => {
     it('successfully submits farm-payments application', async () => {
       const provider = createProvider()
       const payload = JSON.parse(fs.readFileSync(path.join(__dirname, 'resources/farm-payments.json'), 'utf-8'))
@@ -197,6 +197,83 @@ describe('Pact between grants-ui (consumer) and fg-gas-backend (provider)', () =
               { method: 'GET' }
             )
           ).rejects.toMatchObject({ status: 404 })
+        })
+    })
+  })
+
+  describe('POST /grants/woodland/applications', () => {
+    it('successfully submits woodland application', async () => {
+      const provider = createProvider()
+      const payload = JSON.parse(fs.readFileSync(path.join(__dirname, 'resources/woodland.json'), 'utf-8'))
+
+      await provider
+        .addInteraction()
+        .given('woodland is configured in fg-gas-backend')
+        .uponReceiving('a woodland application')
+        .withRequest('POST', '/grants/woodland/applications', (builder) => {
+          builder.headers({
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer 00000000-0000-0000-0000-000000000000'
+          })
+          builder.jsonBody(payload)
+        })
+        .willRespondWith(204)
+        .executeTest(async (mockServer) => {
+          const response = await makeGasApiRequest(
+            `${mockServer.url}/grants/woodland/applications`,
+            'woodland',
+            {},
+            {
+              method: 'POST',
+              payload
+            }
+          )
+          expect(response.status).toBe(204)
+        })
+    })
+
+    it('returns 400 when woodland hectares are invalid', async () => {
+      const provider = createProvider()
+      const validPayload = JSON.parse(fs.readFileSync(path.join(__dirname, 'resources/woodland.json'), 'utf-8'))
+      const payload = {
+        ...validPayload,
+        answers: {
+          ...validPayload.answers,
+          hectaresTenOrOverYearsOld: 0.1 // invalid
+        }
+      }
+
+      await provider
+        .addInteraction()
+        .given('woodland validation fails due to invalid hectares')
+        .uponReceiving('a woodland application with invalid hectares')
+        .withRequest('POST', '/grants/woodland/applications', (builder) => {
+          builder.headers({
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer 00000000-0000-0000-0000-000000000000'
+          })
+          builder.jsonBody(payload)
+        })
+        .willRespondWith(400, (builder) => {
+          builder.headers({ 'Content-Type': 'application/json' })
+          builder.jsonBody({
+            statusCode: 400,
+            error: 'Bad Request',
+            message: MatchersV3.string('Some validation error')
+          })
+        })
+        .executeTest(async (mockServer) => {
+          await expect(
+            makeGasApiRequest(
+              `${mockServer.url}/grants/woodland/applications`,
+              'woodland',
+              {},
+              {
+                method: 'POST',
+                payload
+              }
+            )
+          ).rejects.toMatchObject({ status: 400 })
         })
     })
   })
