@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import { log, logger, LogCodes, debug } from './log.js'
+import { log, logger, LogCodes, debug, error } from './log.js'
 
 vi.unmock('~/src/server/common/helpers/logging/log.js')
 
@@ -147,5 +147,14 @@ describe('Logger Functionality', () => {
       error: undefined
     })
     expect(logger.debug).toHaveBeenCalledWith({}, 'Authentication error for user=123: undefined')
+  })
+
+  it('should always log at error level when using the dedicated error logger', () => {
+    const logCode = LogCodes.AUTH.SIGN_IN_SUCCESS
+    error(logCode, { userId: '123', organisationId: 'org-456' })
+
+    expect(logger.error).toHaveBeenCalledWith({}, 'User sign-in successful for user=123, organisation=org-456')
+    expect(logger.info).not.toHaveBeenCalled()
+    expect(logger.debug).not.toHaveBeenCalled()
   })
 })
