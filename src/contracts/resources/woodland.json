@@ -1,0 +1,90 @@
+{
+  "metadata": {
+    "sbi": "121428499",
+    "crn": "1102760349",
+    "frn": "2396577132",
+    "clientRef": "44e-85c-692",
+    "submittedAt": "2026-02-12T09:29:00.297Z"
+  },
+  "answers": {
+    "businessDetailsUpToDate": true,
+    "landRegisteredWithRpa": true,
+    "landManagementControl": true,
+    "publicBodyTenant": true,
+    "tenantObligations": false,
+    "landHasGrazingRights": true,
+    "appLandHasExistingWmp": true,
+    "existingWmps": "1234",
+    "intendToApplyHigherTier": true,
+    "hectaresTenOrOverYearsOld": 2,
+    "hectaresUnderTenYearsOld": 2,
+    "centreGridReference": "NG12345678",
+    "woodlandName": "dfsfds",
+    "fcTeamCode": "EAST_AND_EAST_MIDLANDS",
+    "applicant": {
+      "business": {
+        "name": "Elm Acres",
+        "reference": "0300000068",
+        "email": {
+          "address": "contact+300000068@example.test"
+        },
+        "phone": {
+          "mobile": "07300000068"
+        },
+        "address": {
+          "line1": "69 Church Lane",
+          "line2": "Barns",
+          "line3": "Coventry",
+          "line4": "Lancashire",
+          "line5": "",
+          "street": "Church Lane",
+          "city": "Coventry",
+          "postalCode": "LN19 9JR"
+        }
+      },
+      "customer": {
+        "name": {
+          "title": "Mr",
+          "first": "Ruby",
+          "middle": "David",
+          "last": "Reed"
+        }
+      }
+    },
+    "detailsConfirmedAt": "2026-05-05T08:51:55.586Z",
+    "totalHectaresForSelectedParcels": 10.4442,
+    "guidanceRead": true,
+    "includedAllEligibleWoodland": true,
+    "applicationConfirmation": true,
+    "landParcels": [
+      {
+        "parcelId": "SD8460-6537",
+        "areaHa": 2.2142
+      },
+      {
+        "parcelId": "SD6350-6541",
+        "areaHa": 3.3466
+      },
+      {
+        "parcelId": "SD5361-6542",
+        "areaHa": 4.8834
+      }
+    ],
+    "totalAgreementPaymentPence": 150000,
+    "payments": {
+      "agreement": [
+        {
+          "code": "PA3",
+          "description": "Woodland management plan",
+          "activePaymentTier": 1,
+          "quantityInActiveTier": 2.8,
+          "activeTierRatePence": 0,
+          "activeTierFlatRatePence": 150000,
+          "quantity": 2.8,
+          "agreementTotalPence": 150000,
+          "unit": "ha"
+        }
+      ]
+    }
+  }
+}
