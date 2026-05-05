@@ -1,0 +1,105 @@
+services:
+  grants-ui:
+    environment:
+      GAS_API_URL: http://fg-gas-backend:3102
+      GAS_API_AUTH_TOKEN: 3e4a1b2c-5d6e-7f8a-9b0c-1d2e3f4a5b6c # This local dev token has been pre-hashed and inserted into mongo
+
+  localstack:
+    volumes:
+      - ./localstack/start-localstack-gas.sh:/etc/localstack/init/ready.d/start-localstack-gas.sh
+
+  mongo-ready:
+    environment:
+      AFTER_REPLICA_SET_READY_COMMAND: |
+        echo 'Waiting for fg-gas-backend health before seeding GAS access token...'
+        for i in {1..120}; do
+          status="$$({
+            exec 3<>/dev/tcp/fg-gas-backend/3102
+            printf 'GET /health HTTP/1.1\r\nHost: fg-gas-backend\r\nConnection: close\r\n\r\n' >&3
+            read -r line <&3 || true
+            printf '%s' "$$line"
+            exec 3<&-
+            exec 3>&-
+          } 2>/dev/null || true)"
+          if [[ "$$status" == *' 200 '* ]]; then
+            break
+          fi
+          if [ "$$i" -eq 120 ]; then
+            echo 'Timed out waiting for fg-gas-backend health; GAS access token was not seeded.'
+            exit 1
+          fi
+          sleep 2
+        done
+        mongosh mongodb://mongodb:27017/fg-gas-backend?directConnection=true --quiet --eval "
+          const targetDb = db.getSiblingDB('fg-gas-backend');
+          targetDb.access_tokens.updateOne(
+            { id: 'aada6ad875e96b5d661a227096d5df75065f9524c7a897008ae8a971a440f080' },
+            { \$$set: { id: 'aada6ad875e96b5d661a227096d5df75065f9524c7a897008ae8a971a440f080', client: 'grants-ui', expiresAt: null } },
+            { upsert: true, writeConcern: { w: 'majority' } }
+          );
+          print('GAS access token seeded.');
+        "
+    healthcheck:
+      test: ['CMD-SHELL', 'mongosh mongodb://mongodb:27017/?directConnection=true --quiet --eval "db.hello().isWritablePrimary" | grep -q true']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  fg-gas-backend:
+    container_name: gas
+    image: defradigital/fg-gas-backend:latest
+    pull_policy: always
+    restart: on-failure
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      localstack:
+        condition: service_healthy
+      mongo-ready:
+        condition: service_healthy
+    ports:
+      - '3102:3102'
+    environment:
+      PORT: 3102
+      NODE_ENV: development
+      ENVIRONMENT: local
+      SERVICE_NAME: fg-gas-backend
+      SERVICE_VERSION: 0.0.0
+      LOG_ENABLED: true
+      LOG_LEVEL: info
+      LOG_FORMAT: pino-pretty
+      MONGO_URI: mongodb://mongodb:27017/?replicaSet=mongoRepl
+      MONGO_DATABASE: fg-gas-backend
+      AWS_ENDPOINT_URL: http://localstack:4566
+      AWS_REGION: eu-west-2
+      AWS_DEFAULT_REGION: eu-west-2
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      TRACING_HEADER: x-trace
+      OUTBOX_MAX_RETRIES: 5
+      OUTBOX_CLAIM_MAX_RECORDS: 2
+      OUTBOX_EXPIRES_MS: 5000
+      OUTBOX_POLL_MS: 250
+      INBOX_MAX_RETRIES: 5
+      INBOX_CLAIM_MAX_RECORDS: 2
+      INBOX_EXPIRES_MS: 5000
+      INBOX_POLL_MS: 250
+      FIFO_LOCK_TTL_MS: 5000
+      GAS__SNS__CREATE_AGREEMENT_TOPIC_ARN: arn:aws:sns:eu-west-2:000000000000:gas__sns__create_agreement_fifo.fifo
+      GAS__SNS__GRANT_APPLICATION_CREATED_TOPIC_ARN: arn:aws:sns:eu-west-2:000000000000:gas__sns__grant_application_created_fifo.fifo
+      GAS__SNS__GRANT_APPLICATION_STATUS_UPDATED_TOPIC_ARN: arn:aws:sns:eu-west-2:000000000000:gas__sns__application_status_updated_fifo.fifo
+      GAS__SNS__CREATE_NEW_CASE_TOPIC_ARN: arn:aws:sns:eu-west-2:000000000000:gas__sns__create_new_case_fifo.fifo
+      GAS__SNS__UPDATE_CASE_STATUS_TOPIC_ARN: arn:aws:sns:eu-west-2:000000000000:gas__sns__update_case_status_fifo.fifo
+      GAS__SNS__UPDATE_AGREEMENT_STATUS_TOPIC_ARN: arn:aws:sns:eu-west-2:000000000000:gas__sns__update_agreement_status_fifo.fifo
+      GAS__SQS__UPDATE_STATUS_QUEUE_URL: http://sqs.eu-west-2.localstack:4566/000000000000/gas__sqs__update_status_fifo.fifo
+      GAS__SQS__UPDATE_AGREEMENT_STATUS_QUEUE_URL: http://sqs.eu-west-2.localstack:4566/000000000000/gas__sqs__update_agreement_status_fifo.fifo
+    healthcheck:
+      test: ['CMD-SHELL', 'node -e "require(''http'').get(''http://localhost:3102/health'', r => process.exit(r.statusCode === 200 ? 0 : 1)).on(''error'', () => process.exit(1))"']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - grants-ui-net
+
