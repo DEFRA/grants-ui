@@ -18,7 +18,7 @@
     "build:server": "NODE_ENV=production babel --delete-dir-on-start --ignore \"**/*.test.js\" --ignore \"**/test-helpers\" --ignore \"**/__mocks__\" --copy-files --no-copy-ignored --out-dir ./.server ./src",
     "dev": "run-p frontend:watch server:watch",
     "dev:debug": "run-p frontend:watch server:debug",
-    "docker:up": "docker compose up -d",
+    "docker:up": "./tools/setup-local-config.sh && docker compose up -d",
     "docker:down": "docker compose down --remove-orphans",
     "docker:debug": "node ./tools/docker-debug.js",
     "docker:cycle-ui": "docker compose up -d --force-recreate grants-ui",

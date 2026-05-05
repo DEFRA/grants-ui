@@ -120,6 +120,11 @@ export default class PaymentPageController extends QuestionPageController {
     this.nextPath = nextPath
     this.addMoreActionsPath = addMoreActionsPath
     this.supportEmail = model?.def?.metadata?.supportEmail ?? null
+
+    // Resolve section
+    if (pageDef.section) {
+      this.section = model.getSection(pageDef.section)
+    }
   }
 
   /**

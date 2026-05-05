@@ -1,0 +1,26 @@
+{
+  "name": "grants-ui-acceptance-tests",
+  "version": "0.0.0",
+  "description": "",
+  "engines": {
+    "node": ">=20.11.1"
+  },
+  "author": "Defra DDTS",
+  "license": "OGL-UK-3.0",
+  "type": "module",
+  "scripts": {
+    "test:ci": "wdio run wdio.ci.conf.js",
+    "test:local": "wdio run wdio.local.conf.js"
+  },
+  "devDependencies": {
+    "@axe-core/webdriverio": "4.11.0",
+    "@wdio/cli": "^9.10.1",
+    "@wdio/cucumber-framework": "9.10.1",
+    "@wdio/globals": "9.10.1",
+    "@wdio/local-runner": "9.10.1",
+    "@wdio/spec-reporter": "9.10.1",
+    "jsonwebtoken": "9.0.3",
+    "mockserver-client": "5.15.0",
+    "tsx": "4.19.0"
+  }
+}

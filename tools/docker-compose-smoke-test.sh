@@ -28,6 +28,21 @@ else
     exit 1
 fi
 
+rm -fr localstack/config-broker-local
+
+if "${USE_LOCAL_CONFIG_DEFINITION:-true}" = "true"; then
+  echo "Using local version of the config"
+  "$(dirname "$0")/setup-local-config.sh"
+else
+  # Get latest tagged external config
+  TAG=$(curl -s https://api.github.com/repos/DEFRA/grant-config-example-grants/tags | jq -r '.[0].name')
+  echo "Using version $TAG of the config for example-grant-with-auth"
+
+  mkdir -p localstack/config-broker-local/example-grant-with-auth@$TAG
+  curl -L https://raw.githubusercontent.com/DEFRA/grant-config-example-grants/$TAG/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml -o localstack/config-broker-local/example-grant-with-auth@$TAG/example-grant-with-auth.yaml
+  sed "s/^version:.*/version: $TAG/" localstack/config-broker/release.yml > localstack/config-broker-local/release.yml
+fi
+
 COMPOSE_COMMAND='docker compose -f compose.yml -f compose.ha.yml -f compose.land-grants.yml -f compose.ci.yml'
 echo "Running pre-emptive volume cleanse..."
 docker volume prune -f
