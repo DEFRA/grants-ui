@@ -9,6 +9,7 @@ import { devTools } from '~/src/server/dev-tools/index.js'
 import { journeyRunnerPlugin } from '~/src/server/dev-tools/journey-runner/journey-runner-plugin.js'
 import { configConfirmation } from '~/src/server/confirmation/config-confirmation.js'
 import { clearApplicationState } from './dev-tools/clear-application-state.js'
+import { headers } from '~/src/server/headers/index.js'
 import { cookies } from '~/src/server/cookies/index.js'
 import { printSubmittedApplication } from '~/src/server/print-submitted-application/print-submitted-application.controller.js'
 import { updateDetails } from '~/src/server/details-page/update-details.js'
@@ -43,7 +44,7 @@ export const router = {
       }
 
       if (cdpEnvironment !== 'prod') {
-        await server.register([clearApplicationState])
+        await server.register([clearApplicationState, headers])
       }
 
       // Static assets
