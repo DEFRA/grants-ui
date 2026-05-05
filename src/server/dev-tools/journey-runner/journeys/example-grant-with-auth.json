@@ -41,6 +41,28 @@
     "value": "Test description for the journey runner."
   },
   {
+    "slug": "email-address-field",
+    "name": "EmailAddressField",
+    "type": "textFields",
+    "fields": { "emailAddressField": "test@example.com" }
+  },
+  {
+    "slug": "telephone-number-field",
+    "name": "TelephoneNumberField",
+    "type": "textFields",
+    "fields": { "telephoneNumberField": "01234 567890" }
+  },
+  {
+    "slug": "uk-address-field",
+    "name": "UkAddressField",
+    "type": "textFields",
+    "fields": {
+      "ukAddressField__addressLine1": "1 Example Street",
+      "ukAddressField__town": "Exampleton",
+      "ukAddressField__postcode": "EX1 1EX"
+    }
+  },
+  {
     "slug": "multi-field-form",
     "name": "MultiFieldForm",
     "type": "textFields",

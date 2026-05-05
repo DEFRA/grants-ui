@@ -425,6 +425,80 @@ pages:
         id: 264fbff1-35f6-49d3-98ae-b7582b1e41b5
         schema: {}
     id: 88d7b067-68c2-4fe1-9a9a-ea98f0752e03
+  - title: EmailAddressField Example
+    path: /email-address-field
+    components:
+      # EmailAddressField uses Joi's built-in `.email()` validator. The engine
+      # ignores `schema.regex`/`schema.max` for this component, so the GDS-
+      # recommended 254 character cap cannot be enforced via YAML — would need
+      # a custom controller or upstream change to forms-engine-plugin.
+      # Engine sets type="email" and autocomplete="email" automatically.
+      - name: emailAddressField
+        title: Email address
+        type: EmailAddressField
+        hint: We'll only use this to contact you about your application
+        options:
+          required: true
+          customValidationMessages:
+            string.empty: Enter your email address
+            string.email: Enter an email address in the correct format, like name@example.com
+            any.required: Enter your email address
+        shortDescription: Email address
+        id: f2b3c4d5-e6f7-4a8b-9c0d-1e2f3a4b5c6d
+        schema: {}
+    id: e1a2b3c4-d5e6-4f7a-8b9c-0d1e2f3a4b5c
+  - title: TelephoneNumberField Example
+    path: /telephone-number-field
+    components:
+      # TelephoneNumberField only enforces a hardcoded character pattern
+      # (digits, spaces, +, brackets, hyphens). Length is NOT validated:
+      # the engine's TelephoneNumberField ignores schema.min/max. The hint
+      # below documents the expected length for users; enforce it via a
+      # custom controller or upstream change to forms-engine-plugin if needed.
+      - name: telephoneNumberField
+        title: Telephone number
+        type: TelephoneNumberField
+        hint: |
+          Use numbers only, with spaces, brackets, hyphens or a leading + for the country code.
+          UK numbers are usually 11 digits, for example 01234 567890. International numbers are typically 8 to 15 digits, for example +44 1234 567890.
+        options:
+          required: true
+          autocomplete: tel
+          classes: govuk-input--width-20
+          customValidationMessages:
+            string.empty: Enter a telephone number, like 01632 960 001, 07700 900 982 or +44 808 157 0192
+            any.required: Enter a telephone number, like 01632 960 001, 07700 900 982 or +44 808 157 0192
+            string.pattern.base: Enter a telephone number using only numbers, spaces, brackets, hyphens or a leading +
+        shortDescription: Telephone number
+        id: b4c5d6e7-f8a9-4b0c-9d1e-3f4a5b6c7d8e
+        schema: {}
+    id: a3b4c5d6-e7f8-4a9b-8c0d-2e3f4a5b6c7d
+  - title: UkAddressField Example
+    path: /uk-address-field
+    components:
+      - name: ukAddressFieldInfo
+        title: Html
+        type: Html
+        content: |
+          <p class="govuk-body">This is a compound component (UkAddressField), which renders multiple inputs for the parts of a UK address.</p>
+        id: d6e7f8a9-b0c1-4d2e-9f3a-5b6c7d8e9fa0
+        options: {}
+        schema: {}
+      # UkAddressField is configured by the engine to match the GDS address pattern:
+      # autocomplete address-line1/2, address-level2 (town), address-level1 (county),
+      # postal-code; town width-two-thirds, postcode width-10; required = address line 1,
+      # town, postcode; max 100 chars per line; postcode regex tolerates case and an
+      # optional internal space. Engine gap vs GDS: postcode regex does NOT accept
+      # punctuation (hyphens, brackets, full stops) that GDS recommends accepting.
+      - name: ukAddressField
+        title: Address
+        type: UkAddressField
+        options:
+          required: true
+        shortDescription: Address
+        id: e7f8a9b0-c1d2-4e3f-8a4b-6c7d8e9fa0b1
+        schema: {}
+    id: c5d6e7f8-a9b0-4c1d-8e2f-4a5b6c7d8e9f
   - title: Multi Field Form Example
     path: /multi-field-form
     components:

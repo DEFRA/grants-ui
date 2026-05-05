@@ -141,6 +141,34 @@ Each step requires:
 | `methane.json`                      | Methane                   |
 | `woodland.json`                     | Woodland Management Plan  |
 
+### Example grant with auth
+
+The `example-grant-with-auth` journey is the canonical demo of every form component. Use the step numbers below with `runJourney(N)` to stop on a specific page For example, `runJourney(8)` fills in and submits steps 1–7, then lands on the `number-field` page without filling it in. Handy when iterating on a single component.
+
+| Step | Page slug                | Component / purpose                                         |
+| ---- | ------------------------ | ----------------------------------------------------------- |
+| 1    | `start`                  | Start page (guidance components)                            |
+| 2    | `check-details`          | Authenticated details check (DefraID)                       |
+| 3    | `yes-no-field`           | `YesNoField`                                                |
+| 4    | `autocomplete-field`     | `AutocompleteField`                                         |
+| 5    | `radios-field`           | `RadiosField`                                               |
+| 6    | `conditional-page`       | Conditional page (reached when radios option one is chosen) |
+| 7    | `checkboxes-field`       | `CheckboxesField`                                           |
+| 8    | `number-field`           | `NumberField`                                               |
+| 9    | `date-parts-field`       | `DatePartsField`                                            |
+| 10   | `month-year-field`       | `MonthYearField`                                            |
+| 11   | `select-field`           | `SelectField`                                               |
+| 12   | `multiline-text-field`   | `MultilineTextField`                                        |
+| 13   | `email-address-field`    | `EmailAddressField`                                         |
+| 14   | `telephone-number-field` | `TelephoneNumberField`                                      |
+| 15   | `uk-address-field`       | `UkAddressField` (compound)                                 |
+| 16   | `multi-field-form`       | Multiple components on one page (`TextField` + others)      |
+| 17   | `select-land-parcel`     | `CommonSelectLandParcelPageController` + `CheckboxesField`  |
+| 18   | `summary`                | Check answers (`CheckResponsesPageController`)              |
+| 19   | `declaration`            | Declaration / submit (`DeclarationPageController`)          |
+
+The `terminal-page` is reached only when `yes-no-field` is answered "No"; the journey runner answers "Yes" so it is skipped during a normal `runJourney()`.
+
 ### Woodland Management Plan
 
 Navigate to `http://localhost:3000/woodland/start` and open the browser console.
