@@ -231,5 +231,50 @@ describe('Pact between grants-ui (consumer) and fg-gas-backend (provider)', () =
           expect(response.status).toBe(204)
         })
     })
+
+    it('returns 400 when woodland hectares are invalid', async () => {
+      const provider = createProvider()
+      const validPayload = JSON.parse(fs.readFileSync(path.join(__dirname, 'resources/woodland.json'), 'utf-8'))
+      const payload = {
+        ...validPayload,
+        answers: {
+          ...validPayload.answers,
+          hectaresTenOrOverYearsOld: 0.1 // invalid
+        }
+      }
+
+      await provider
+        .addInteraction()
+        .given('woodland validation fails due to invalid hectares')
+        .uponReceiving('a woodland application with invalid hectares')
+        .withRequest('POST', '/grants/woodland/applications', (builder) => {
+          builder.headers({
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer 00000000-0000-0000-0000-000000000000'
+          })
+          builder.jsonBody(payload)
+        })
+        .willRespondWith(400, (builder) => {
+          builder.headers({ 'Content-Type': 'application/json' })
+          builder.jsonBody({
+            statusCode: 400,
+            error: 'Bad Request',
+            message: MatchersV3.string('Some validation error')
+          })
+        })
+        .executeTest(async (mockServer) => {
+          await expect(
+            makeGasApiRequest(
+              `${mockServer.url}/grants/woodland/applications`,
+              'woodland',
+              {},
+              {
+                method: 'POST',
+                payload
+              }
+            )
+          ).rejects.toMatchObject({ status: 400 })
+        })
+    })
   })
 })
