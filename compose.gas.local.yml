@@ -1,0 +1,32 @@
+include:
+  - path: ../fg-gas-backend/compose/compose.gas.yml
+    project_directory: ../fg-gas-backend
+
+services:
+  grants-ui:
+    environment:
+      GAS_API_URL: 'http://gas:3102'
+      GAS_API_AUTH_TOKEN: '<mint an auth token>'
+
+  gas:
+    networks: [grants-ui-net]
+
+  mongo-ready:
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "mongosh 'mongodb://mongodb:27017/?directConnection=true' --quiet --eval 'db.hello().isWritablePrimary' | grep -q true || exit 1",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 60
+
+  localstack:
+    volumes:
+      - ../fg-gas-backend/compose/start-localstack.sh:/etc/localstack/init/ready.d/start-gas-localstack.sh
+
+networks:
+  cdp-tenant:
+    name: grants-ui-net
+    external: true
