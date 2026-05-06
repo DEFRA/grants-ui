@@ -494,13 +494,26 @@ describe('LogCodes', () => {
       [
         'VALIDATE_APPLICATION_ERROR',
         'error',
-        { errorMessage: 'testErrorMessage', statusCode: 422, sbi: TEST_SBI.DEFAULT, parcelId: 'testParcelId', sheetId: 'testSheetId', selectedActions: ['CMOR1'] },
+        {
+          errorMessage: 'testErrorMessage',
+          statusCode: 422,
+          sbi: TEST_SBI.DEFAULT,
+          parcelId: 'testParcelId',
+          sheetId: 'testSheetId',
+          selectedActions: ['CMOR1']
+        },
         `Error validating application: testErrorMessage | statusCode: 422 | sbi: ${TEST_SBI.DEFAULT} | parcelId: testParcelId | sheetId: testSheetId | selectedActions: ["CMOR1"]`
       ],
       [
         'FETCH_ACTIONS_ERROR',
         'error',
-        { errorMessage: 'testErrorMessage', statusCode: 422, sbi: TEST_SBI.DEFAULT, parcelId: 'testParcelId', sheetId: 'testSheetId' },
+        {
+          errorMessage: 'testErrorMessage',
+          statusCode: 422,
+          sbi: TEST_SBI.DEFAULT,
+          parcelId: 'testParcelId',
+          sheetId: 'testSheetId'
+        },
         `Error fetching actions: testErrorMessage | statusCode: 422 | sbi: ${TEST_SBI.DEFAULT} | parcelId: testParcelId | sheetId: testSheetId`
       ],
       [
