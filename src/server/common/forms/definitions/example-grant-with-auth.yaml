@@ -14,6 +14,8 @@ metadata:
     submissionSchemaPath: ./schemas/example-grant-with-auth-submission.schema.json
   grantRedirectRules: null
   detailsPage:
+    toleratedFailurePaths:
+      - countyParishHoldings
     query:
       name: Business
       entities:
