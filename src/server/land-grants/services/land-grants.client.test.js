@@ -176,6 +176,23 @@ describe('Land Grants client', () => {
       }
     })
 
+    it('should fall back to status text when response body has no message field', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        statusText: 'Bad Request',
+        json: vi.fn().mockResolvedValue({ error: 'some other shape' })
+      })
+
+      try {
+        await postToLandGrantsApi('/test', {}, mockApiEndpoint)
+        expect.fail('Should have thrown an error')
+      } catch (error) {
+        expect(error.status).toBe(400)
+        expect(error.message).toBe('Bad Request')
+      }
+    })
+
     it('should construct URL correctly with baseUrl and endpoint', async () => {
       const mockResponse = { success: true }
       mockFetch.mockResolvedValueOnce({

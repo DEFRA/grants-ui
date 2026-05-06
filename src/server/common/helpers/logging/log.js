@@ -1,4 +1,3 @@
-import { LogCodes } from './log-codes.js'
 import { pino } from 'pino'
 import { loggerOptions } from '~/src/server/common/helpers/logging/logger-options.js'
 
@@ -61,4 +60,5 @@ const getLoggerOfType = (level, request) => {
   return (errorContext, message) => requestLogger[level](errorContext || {}, message)
 }
 
-export { log, debug, error, logger, LogCodes }
+export { log, debug, error, logger }
+export { LogCodes } from './log-codes.js'
