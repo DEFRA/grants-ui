@@ -22,7 +22,7 @@
     "docker:down": "docker compose down --remove-orphans",
     "docker:debug": "node ./tools/docker-debug.js",
     "docker:cycle-ui": "docker compose up -d --force-recreate grants-ui",
-    "docker:reset": "docker compose down --volumes --remove-orphans --rmi local && docker volume ls --format '{{.Name}}' | grep -E '^[a-f0-9]{64}$' | xargs docker volume rm",
+    "docker:reset": "docker compose down --volumes --remove-orphans --rmi local && docker volume ls --format '{{.Name}}' | grep -E '^[a-f0-9]{64}$' | xargs docker volume rm && docker rmi -f defradigital/fg-gas-backend defradigital/grants-ui-dal-stub defradigital/land-grants-api defradigital/land-grants-postgres-seeded 2>/dev/null; docker volume rm -f grants-ui_postgres_data 2>/dev/null; true",
     "docker:localstack:purge": "docker compose stop localstack && docker compose rm -f localstack && docker volume rm grants-ui_localstack-data",
     "docker:ha:up": "docker compose -f compose.yml -f compose.ha.yml up -d --scale grants-ui=2 --scale grants-ui-backend=2",
     "docker:ha:down": "docker compose -f compose.yml -f compose.ha.yml down --remove-orphans",
@@ -166,5 +166,8 @@
     "webpack": "5.106.1",
     "webpack-assets-manifest": "6.5.1",
     "webpack-cli": "7.0.2"
+  },
+  "bin": {
+    "gae": "./tools/grants-ui-cli.js"
   }
 }

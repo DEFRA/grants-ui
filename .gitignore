@@ -21,3 +21,4 @@ reports/mutation/mutation.html
 /http-client.private.env.json
 /performance-test-users.csv
 localstack/config-broker-local
+/.grants-ui-cli-state.json
