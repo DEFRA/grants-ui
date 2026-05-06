@@ -157,4 +157,20 @@ describe('Logger Functionality', () => {
     expect(logger.info).not.toHaveBeenCalled()
     expect(logger.debug).not.toHaveBeenCalled()
   })
+
+  it('should pass error objects to the logger when using the dedicated error logger', () => {
+    const testError = new Error('Test error')
+    const logCode = { level: 'info', messageFunc: () => 'An error occurred', error: testError }
+    error(logCode, {})
+
+    expect(logger.error).toHaveBeenCalledWith({ err: testError }, 'An error occurred')
+  })
+
+  it('should pass error objects to the logger when using the dedicated debug logger', () => {
+    const testError = new Error('Test error')
+    const logCode = { level: 'info', messageFunc: () => 'A debug error', error: testError }
+    debug(logCode, {})
+
+    expect(logger.debug).toHaveBeenCalledWith({ err: testError }, 'A debug error')
+  })
 })
