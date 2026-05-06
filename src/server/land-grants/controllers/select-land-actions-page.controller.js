@@ -225,8 +225,14 @@ export default class SelectLandActionsPageController extends QuestionPageWithPar
       }
     } catch (e) {
       const { message: errorMessage, status: statusCode } = /** @type {Error & {status?: number}} */ (e)
-      const selectedActions = extractLandActionFields(payload, this.actionFieldPrefix).map((field) => /** @type {Record<string, unknown>} */ (payload)[field])
-      error(LogCodes.LAND_GRANTS.VALIDATE_APPLICATION_ERROR, { sbi, parcelId, sheetId, errorMessage, statusCode, selectedActions }, request)
+      const selectedActions = extractLandActionFields(payload, this.actionFieldPrefix).map(
+        (field) => /** @type {Record<string, unknown>} */ (payload)[field]
+      )
+      error(
+        LogCodes.LAND_GRANTS.VALIDATE_APPLICATION_ERROR,
+        { sbi, parcelId, sheetId, errorMessage, statusCode, selectedActions },
+        request
+      )
       const addedActions = getAddedActionsForStateParcel(prevState, selectedLandParcel)
       return this.renderErrorView(h, request, context, {
         errors: [
