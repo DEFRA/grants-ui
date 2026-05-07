@@ -26,6 +26,8 @@ export default class CheckDetailsController extends QuestionPageController {
    */
   constructor(model, pageDef) {
     const confirmationFieldName = model.def.metadata?.detailsPage?.confirmationFieldName ?? 'detailsConfirmed'
+    const isSfdEnabled = config.get('externalLinks.sfd.enabled')
+    const noButtonLabel = isSfdEnabled ? 'No, update my details on the Farm and Land Service' : 'No'
 
     // Inject `yesNo` list into the model before patching the page with RadiosField
     const yesNoList = {
@@ -35,7 +37,7 @@ export default class CheckDetailsController extends QuestionPageController {
       type: 'boolean',
       items: [
         { text: 'Yes', value: true },
-        { text: 'No', value: false }
+        { text: noButtonLabel, value: false }
       ]
     }
 
