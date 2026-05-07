@@ -82,7 +82,7 @@ describe('Land Grants client', () => {
         ok: false,
         status: 404,
         statusText: 'Not Found',
-        json: vi.fn().mockResolvedValue({ message: 'Resource not found' })
+        text: vi.fn().mockResolvedValue(JSON.stringify({ message: 'Resource not found' }))
       })
 
       await expect(postToLandGrantsApi('/invalid', {}, mockApiEndpoint)).rejects.toThrow('Resource not found')
@@ -115,7 +115,7 @@ describe('Land Grants client', () => {
         ok: false,
         status: 500,
         statusText: 'Internal Server Error',
-        json: vi.fn().mockResolvedValue({ message: 'Internal error' })
+        text: vi.fn().mockResolvedValue(JSON.stringify({ message: 'Internal error' }))
       })
 
       try {
@@ -146,7 +146,7 @@ describe('Land Grants client', () => {
         ok: false,
         status: 422,
         statusText: 'Unprocessable Entity',
-        json: vi.fn().mockResolvedValue({ message: backendMessage })
+        text: vi.fn().mockResolvedValue(JSON.stringify({ message: backendMessage }))
       })
 
       try {
@@ -163,8 +163,7 @@ describe('Land Grants client', () => {
         ok: false,
         status: 500,
         statusText: 'Internal Server Error',
-        json: vi.fn().mockRejectedValue(new Error('Invalid JSON')),
-        arrayBuffer: vi.fn().mockResolvedValue(undefined)
+        text: vi.fn().mockResolvedValue('not json content')
       })
 
       try {
@@ -181,7 +180,7 @@ describe('Land Grants client', () => {
         ok: false,
         status: 400,
         statusText: 'Bad Request',
-        json: vi.fn().mockResolvedValue({ error: 'some other shape' })
+        text: vi.fn().mockResolvedValue(JSON.stringify({ error: 'some other shape' }))
       })
 
       try {
@@ -266,7 +265,7 @@ describe('Land Grants client', () => {
           ok: false,
           status,
           statusText: `Error ${status}`,
-          json: vi.fn().mockResolvedValue({ message: `Error message for ${status}` })
+          text: vi.fn().mockResolvedValue(JSON.stringify({ message: `Error message for ${status}` }))
         })
 
         try {
