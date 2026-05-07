@@ -20,7 +20,8 @@ describe('QuestionPageWithParcelCheckController', () => {
   let mockH
 
   beforeEach(() => {
-    controller = new QuestionPageWithParcelCheckController()
+    const mockModel = { def: { metadata: { tasklist: {} } }, getSection: vi.fn() }
+    controller = new QuestionPageWithParcelCheckController(mockModel, {})
     mockRequest = {
       query: {},
       payload: {},

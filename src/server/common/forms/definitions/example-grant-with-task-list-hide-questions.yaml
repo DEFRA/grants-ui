@@ -1,9 +1,9 @@
 engine: V2
-name: Example grant with task list
+name: Example grant with task list - hide questions
 metadata:
-  id: f298fa47-0ebb-4c92-a0aa-3d0faed71aab
+  id: 19d14e60-e5bc-40f6-8f32-e1eaa7a0e7af
   enabledInProd: false
-  referenceNumberPrefix: EGWT
+  referenceNumberPrefix: EGWTHQ
   supportEmail: support@defra.gov.uk
   cookieConsent:
     enabled: true
@@ -13,7 +13,7 @@ metadata:
   tasklist:
     returnAfterSection: true # Optional, defaults to true - returns to task list after each section
     showCompletionStatus: true # Optional, defaults to true - show "X of Y" completion status
-    showQuestions: true # Optional, defaults to true
+    showQuestions: false # Optional, defaults to true
     statuses: # Optional completion status display overrides (defaults shown below)
       cannotStart:
         text: 'Cannot start yet'

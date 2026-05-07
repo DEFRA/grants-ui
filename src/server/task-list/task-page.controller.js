@@ -35,10 +35,9 @@ export default class TaskPageController extends QuestionPageController {
    */
   getViewModel(request, context) {
     const viewModel = super.getViewModel(request, context)
-
     const { pageDef } = this
 
-    const backLink = getTaskPageBackLink(viewModel, pageDef)
+    const backLink = getTaskPageBackLink(viewModel, pageDef, !!request.query.returnUrl)
     const { returnAfterSection = true } = viewModel.page.def.metadata.tasklist ?? {}
 
     const basePath = viewModel.serviceUrl
@@ -87,35 +86,32 @@ export default class TaskPageController extends QuestionPageController {
       }
 
       // Proceed to the next page
-      return this.proceed(request, h, this.getNextOrTaskPath(context))
+      return this.proceed(request, h, this.getNextPath(context))
     }
   }
 
   /**
-   * Use the engine's default condition-aware navigation, but redirect to the
-   * task list when the next page would leave the current section.
+   * Override proceed to apply task-list redirect logic after a POST.
    *
-   * @param {FormContext} context
-   * @returns {string|undefined} The next path
+   * @param {AnyFormRequest} request
+   * @param {object} h
+   * @param {string|undefined} nextPath
    */
-  getNextOrTaskPath(context) {
+  proceed(request, h, nextPath) {
     const { model, pageDef } = this
     const { returnAfterSection = true } = model.def.metadata.tasklist ?? {}
-
-    // Use the engine's default navigation (respects conditions, exit pages, etc.)
-    const defaultNext = super.getNextPath(context)
 
     if (pageDef.section && returnAfterSection) {
       // Check if the default next page belongs to a different section.
       // If so, the current section is complete — return to the task list.
-      const nextPage = defaultNext && model.pages.find((p) => p.path === defaultNext)
+      const nextPage = nextPath && model.pages.find((p) => p.path === nextPath)
 
       if (!nextPage || (nextPage.section && nextPage.section !== this.section)) {
-        return getTaskListPath(model) ?? defaultNext
+        return super.proceed(request, h, getTaskListPath(model) ?? nextPath)
       }
     }
 
-    return defaultNext
+    return super.proceed(request, h, nextPath)
   }
 }
 

@@ -79,7 +79,7 @@ describe('TaskListPageController', () => {
       expect(helper.splitComponents).toHaveBeenCalled()
 
       expect(result).toMatchObject({
-        taskListSections: [{ title: 'Section 1', items: [] }],
+        tasks: [{ title: 'Section 1', items: [] }],
         completionStats: { completed: 1, total: 2, isComplete: false },
         someConfig: 'value',
         isComplete: false,

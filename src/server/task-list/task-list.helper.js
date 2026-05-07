@@ -1,6 +1,6 @@
 /**
  * @typedef {object} TaskItem
- * @property {string} title - The task title (page title)
+ * @property {string} title - The task or task page title
  * @property {string} href - The path to the task page
  * @property {object} status - The status object for GOV.UK Task List component
  * @property {string} [status.text] - Status text (e.g., "Completed", "Not yet started")
@@ -8,9 +8,9 @@
  */
 
 /**
- * @typedef {object} TaskListSection
- * @property {string} title - The section title
- * @property {Array<TaskItem>} items - The tasks in this section
+ * @typedef {object} Task
+ * @property {string} title - The task title
+ * @property {Array<TaskItem>} items - The task pages/questions for this task
  */
 
 import TaskListPageController from '~/src/server/task-list/task-list-page.controller.js'
@@ -64,13 +64,13 @@ function getPageComponentNames(pageDef) {
 }
 
 /**
- * Determines if a task (page) is completed based on state
+ * Determines if a task page is completed based on state
  * @param {object} pageDef - The page definition
  * @param {object} state - The current form state
  * @param formModel
  * @returns {boolean | null} True if all question components on the page have values in state, null if not applicable
  */
-function isTaskCompleted(pageDef, state, formModel) {
+function isTaskPageCompleted(pageDef, state, formModel) {
   const componentNames = getPageComponentNames(pageDef)
 
   // If no question components, consider it not applicable (shouldn't appear as task)
@@ -113,7 +113,7 @@ function triggersExitPage(pageDef, state, formModel) {
   for (let i = currentIndex + 1; i < allPages.length; i++) {
     const nextPage = allPages[i]
 
-    // Stop when we hit a page with a section (next task page)
+    // Stop when we hit a page with a section property (next task page)
     if (nextPage.section) {
       break
     }
@@ -203,7 +203,7 @@ function createStatusTag(statusConfig, defaultText, defaultClasses) {
 function areAllPreviousTasksCompleted(pages, currentPage, state, formModel) {
   const currentIndex = pages.indexOf(currentPage)
   return pages.slice(0, currentIndex).every((prevPage) => {
-    if (isTaskCompleted(prevPage, state, formModel) === false) {
+    if (isTaskPageCompleted(prevPage, state, formModel) === false) {
       return false
     }
     // Block if a previous task's answer triggers an exit page
@@ -225,7 +225,7 @@ function areAllPreviousTasksCompleted(pages, currentPage, state, formModel) {
  * @returns {object} Task Item object for GOV.UK Task List component
  */
 function createTaskItem(pageDef, state, pages, metadata, basePath, formModel) {
-  const completed = isTaskCompleted(pageDef, state, formModel)
+  const completed = isTaskPageCompleted(pageDef, state, formModel)
   const { statuses = {} } = metadata.tasklist ?? {}
   const href = `${basePath}${pageDef.path}`
   const completeInOrder = true // TODO force to true for now until completeInOrder=false logic implemented
@@ -270,9 +270,9 @@ export function getTaskListPath(model) {
 }
 
 /**
- * Gets all pages that belong to a section (i.e., are tasks)
+ * Gets all pages that belong to a task
  * @param {object} model - The form model
- * @returns {object[]} Array of page definitions that have a section
+ * @returns {object[]} Array of page definitions that have a section property
  */
 function getTaskPages(model) {
   const excludedControllers = new Set(['CheckDetailsController', 'TerminalPageController'])
@@ -280,20 +280,137 @@ function getTaskPages(model) {
 }
 
 /**
- * Builds the sections map from the model definition
+ * Builds the task map from the model definition
  * @param {object} model - The form model
- * @returns {Map<string, string>} Map of section name to section title
+ * @returns {Map<string, string>} Map of section id to section (task) title
  */
-function getSectionsMap(model) {
-  const sectionsMap = new Map()
+function getTaskMap(model) {
+  const taskMap = new Map()
 
   if (model.page.def.sections) {
     for (const section of model.page.def.sections) {
-      sectionsMap.set(section.id, section.title)
+      taskMap.set(section.id, section.title)
     }
   }
 
-  return sectionsMap
+  return taskMap
+}
+
+/**
+ * Checks if all task pages before the given index are completed.
+ * @param {number} taskIndex - The index of the current task
+ * @param {object[][]} orderedTaskPages - All task page groups in order
+ * @param {object} state - The current form state
+ * @param {object} formModel - The form model
+ * @returns {boolean} True if all previous tasks are completed
+ */
+function arePreviousTaskPagesCompleted(taskIndex, orderedTaskPages, state, formModel) {
+  for (let i = 0; i < taskIndex; i++) {
+    const prevPages = orderedTaskPages[i]
+    const prevApplicablePages = prevPages.filter((pageDef) => isTaskPageCompleted(pageDef, state, formModel) !== null)
+    const prevAllCompleted =
+      prevApplicablePages.length === 0 ||
+      prevApplicablePages.every((page) => isTaskPageCompleted(page, state, formModel) === true)
+    if (!prevAllCompleted) {
+      return false
+    }
+  }
+  return true
+}
+
+/**
+ * Determines the status of a task when showQuestions is false.
+ * Status is based on all task pages belonging to that task.
+ * @param {string} sectionId - The section id
+ * @param {object[][]} orderedTaskPages - All task page groups in order [[pages], ...]
+ * @param {string[]} orderedTaskIds - Task ids in order
+ * @param {object} state - The current form state
+ * @param {object} formModel - The form model
+ * @returns {'notStarted'|'inProgress'|'completed'|'cannotStart'|'cannotContinue'} The task status
+ */
+function getTaskStatus(sectionId, orderedTaskIds, orderedTaskPages, state, formModel) {
+  const taskIndex = orderedTaskIds.indexOf(sectionId)
+  const pages = orderedTaskPages[taskIndex]
+
+  // Only consider applicable pages (not conditionally excluded ones)
+  const applicablePages = pages.filter((page) => isTaskPageCompleted(page, state, formModel) !== null)
+  const completedPages = applicablePages.filter((page) => isTaskPageCompleted(page, state, formModel) === true)
+
+  const previousTasksComplete = arePreviousTaskPagesCompleted(taskIndex, orderedTaskPages, state, formModel)
+
+  if (applicablePages.length === 0 || completedPages.length === applicablePages.length) {
+    // Task is complete, but if a previous task is now incomplete, block access
+    return previousTasksComplete ? 'completed' : 'cannotContinue'
+  }
+  if (completedPages.length > 0) {
+    // Task is in progress, but if a previous task is now incomplete, block access
+    return previousTasksComplete ? 'inProgress' : 'cannotContinue'
+  }
+
+  // Task not started - block if any previous task is incomplete
+  return previousTasksComplete ? 'notStarted' : 'cannotStart'
+}
+
+/**
+ * Builds the task list data structure when showQuestions is false.
+ * Each task is displayed as a single task item (not individual question pages).
+ * @param {object} model - The form model
+ * @param {object} formModel - The form model from the session store
+ * @param {object} state - The current form state
+ * @returns {Task[]} Array with a single task
+ */
+function buildTaskListDataHideQuestions(model, formModel, state) {
+  const taskPages = getTaskPages(model)
+  const taskMap = getTaskMap(model)
+  const basePath = model.serviceUrl
+  const { statuses = {} } = formModel.def.metadata.tasklist ?? {}
+
+  // Group pages by task/section, maintaining order from YAML
+  const taskGroups = new Map()
+  for (const page of taskPages) {
+    const sectionId = page.section
+    if (!taskGroups.has(sectionId)) {
+      taskGroups.set(sectionId, [])
+    }
+    taskGroups.get(sectionId).push(page)
+  }
+
+  const orderedTaskIds = [...taskGroups.keys()]
+  const orderedTaskPages = orderedTaskIds.map((id) => taskGroups.get(id))
+
+  const items = orderedTaskIds.map((sectionId, index) => {
+    const taskTitle = taskMap.get(sectionId) ?? ''
+    const pages = orderedTaskPages[index]
+    const status = getTaskStatus(sectionId, orderedTaskIds, orderedTaskPages, state, formModel)
+
+    // For inProgress, link to last page so forms-engine-plugin redirects to first unanswered question
+    // For notStarted or completed, link to first page
+    const firstPagePath = pages[0]?.path
+    const lastPagePath = pages[pages.length - 1]?.path
+    const hrefPath = status === 'inProgress' ? lastPagePath : firstPagePath
+    const href = hrefPath ? `${basePath}${hrefPath}` : undefined
+
+    const taskItem = createTaskItemBase(taskTitle)
+
+    if (status === 'completed') {
+      taskItem.href = href
+      taskItem.status = createStatusTag(statuses.completed, 'Completed', 'govuk-tag--green')
+    } else if (status === 'inProgress') {
+      taskItem.href = href
+      taskItem.status = createStatusTag(statuses.inProgress, 'In progress', 'govuk-tag--blue')
+    } else if (status === 'cannotStart') {
+      taskItem.status = createStatusTag(statuses.cannotStart, 'Cannot start yet', 'govuk-tag--grey')
+    } else if (status === 'cannotContinue') {
+      taskItem.status = createStatusTag(statuses.cannotContinue, 'On hold', 'govuk-tag--purple')
+    } else {
+      taskItem.href = href
+      taskItem.status = createStatusTag(statuses.notStarted, 'Not started', 'govuk-tag--yellow')
+    }
+
+    return taskItem
+  })
+
+  return [{ title: '', items }]
 }
 
 /**
@@ -301,30 +418,36 @@ function getSectionsMap(model) {
  * @param {object} model - The form model
  * @param {object} formModel - The form model from the session store, used to build task links
  * @param {object} state - The current form state
- * @returns {TaskListSection[]} Array of sections with their tasks
+ * @returns {Task[]} Array of tasks with their task pages
  */
 export function buildTaskListData(model, formModel, state) {
+  const { showQuestions = true } = formModel.def.metadata.tasklist ?? {}
+
+  if (!showQuestions) {
+    return buildTaskListDataHideQuestions(model, formModel, state)
+  }
+
   const taskPages = getTaskPages(model)
-  const sectionsMap = getSectionsMap(model)
+  const taskMap = getTaskMap(model)
   const basePath = model.serviceUrl
   const metadata = formModel.def.metadata
 
-  // Group pages by section, maintaining order from YAML
-  const sectionGroups = new Map()
+  // Group pages by task, maintaining order from YAML
+  const taskGroups = new Map()
 
   for (const page of taskPages) {
     const sectionId = page.section
-    if (!sectionGroups.has(sectionId)) {
-      sectionGroups.set(sectionId, [])
+    if (!taskGroups.has(sectionId)) {
+      taskGroups.set(sectionId, [])
     }
-    sectionGroups.get(sectionId).push(page)
+    taskGroups.get(sectionId).push(page)
   }
 
-  // Build the task list sections
-  const taskListSections = []
+  // Build the task list
+  const tasks = []
 
-  for (const [sectionId, pages] of sectionGroups) {
-    const sectionTitle = sectionsMap.get(sectionId) ?? ''
+  for (const [sectionId, pages] of taskGroups) {
+    const taskTitle = taskMap.get(sectionId) ?? ''
 
     const items = pages
       .map((page) => ({
@@ -332,13 +455,13 @@ export function buildTaskListData(model, formModel, state) {
       }))
       .filter((p) => p.status)
 
-    taskListSections.push({
-      title: sectionTitle,
+    tasks.push({
+      title: taskTitle,
       items
     })
   }
 
-  return taskListSections
+  return tasks
 }
 
 /**
@@ -351,21 +474,22 @@ export function buildTaskListData(model, formModel, state) {
 export function getCompletionStats(model, formModel, state) {
   const taskPages = getTaskPages(model)
 
-  const completed = taskPages.filter((page) => isTaskCompleted(page, state, formModel)).length
-  const total = taskPages.length
+  const applicablePages = taskPages.filter((page) => isTaskPageCompleted(page, state, formModel) !== null)
+  const completed = applicablePages.filter((page) => isTaskPageCompleted(page, state, formModel) === true).length
+  const total = applicablePages.length
 
   return { completed, total, isComplete: completed === total }
 }
 
 /**
- * Finds the next page in the same section after the current page.
- * Stops searching when hitting a page with a different section.
+ * Finds the next task page for this task after the current task page.
+ * Stops searching when hitting a task page with a different section property.
  * @param {object[]} pages - All pages in the form
  * @param {number} startIndex - Index to start searching from (exclusive)
  * @param {string} section - The section to match
  * @returns {object|undefined} The next page in the same section, or undefined
  */
-function findNextPageInSection(pages, startIndex, section) {
+function findNextTaskPage(pages, startIndex, section) {
   const remainingPages = pages.slice(startIndex + 1)
 
   for (const page of remainingPages) {
@@ -382,23 +506,23 @@ function findNextPageInSection(pages, startIndex, section) {
 }
 
 /**
- * Determines if there is a next page in the section after the current page.
+ * Determines if there is a next task page for this task after the current task page.
  * @param {object} model - The form model
  * @param {object} currentPage - The current page definition
- * @returns {boolean} True if there is a next page in the section, false otherwise
+ * @returns {boolean} True if there is a next task page for this task, false otherwise
  */
-export function hasNextPageInSection(model, currentPage) {
+export function hasNextTaskPage(model, currentPage) {
   const allPages = model.page.def.pages
   const currentIndex = allPages.findIndex((p) => p.path === currentPage.path)
 
-  const nextPageInSection = findNextPageInSection(allPages, currentIndex, currentPage.section)
+  const nextPageForTask = findNextTaskPage(allPages, currentIndex, currentPage.section)
 
-  return nextPageInSection !== undefined
+  return nextPageForTask !== undefined
 }
 
 /**
  * Determines the next page path after completing a task page.
- * If there's another page in the same section, go there.
+ * If there's another task page for this task, go there.
  * Otherwise, return to the task list.
  * @param {object} model - The form model
  * @param {object} currentPage - The current page definition
@@ -408,10 +532,10 @@ export function getNextTaskPath(model, currentPage) {
   const allPages = model.pages
   const currentIndex = allPages.findIndex((p) => p.path === currentPage.path)
 
-  const nextPageInSection = findNextPageInSection(allPages, currentIndex, currentPage.section)
+  const nextPageForTask = findNextTaskPage(allPages, currentIndex, currentPage.section)
 
-  if (nextPageInSection) {
-    return nextPageInSection.path
+  if (nextPageForTask) {
+    return nextPageForTask.path
   }
 
   return getTaskListPath(model)
@@ -419,19 +543,20 @@ export function getNextTaskPath(model, currentPage) {
 
 /**
  * Determine backLink for task page
- * If first page in section, return to task list using getTaskListPath
- * Otherwise, return null to fallback to default DXT behaviour
+ * If first task page for task, return to task list using getTaskListPath
+ * Otherwise, return null to fallback to default forms-engine-plugin behaviour
  * @param {object} viewModel - The view model
  * @param {object} currentPage - The current page definition
+ * @param {boolean} [hasReturnUrl=false] - Whether a returnUrl query parameter was provided
  * @returns {object|null} Back link object or null
  */
-export function getTaskPageBackLink(viewModel, currentPage) {
-  const taskPages = getTaskPages(viewModel)
-  const pagesInSection = taskPages.filter((page) => page.section === currentPage.section)
-  const isFirstPageInSection = pagesInSection[0]?.path === currentPage.path
+export function getTaskPageBackLink(viewModel, currentPage, hasReturnUrl = false) {
+  const allTaskPages = getTaskPages(viewModel)
+  const pagesForTask = allTaskPages.filter((page) => page.section === currentPage.section)
+  const isFirstTaskPage = pagesForTask[0]?.path === currentPage.path
   const { returnAfterSection = true } = viewModel.page.def.metadata.tasklist ?? {}
 
-  if (isFirstPageInSection && returnAfterSection) {
+  if (isFirstTaskPage && returnAfterSection && !hasReturnUrl) {
     const basePath = viewModel.serviceUrl
     const taskListPath = getTaskListPath(viewModel.page.model)
     return {

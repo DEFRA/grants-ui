@@ -36,8 +36,8 @@ vi.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js', () =
         return Promise.resolve()
       }
 
-      proceed() {
-        return 'proceeded'
+      proceed(request, h, nextPath) {
+        return `proceeded:${nextPath}`
       }
 
       getNextPath() {
@@ -92,7 +92,7 @@ describe('TaskPageController', () => {
   describe('getViewModel', () => {
     it('should add back link and backToTaskList if configured', () => {
       helper.getTaskPageBackLink.mockReturnValue({ href: '/back', text: 'Back' })
-      const mockRequest = {}
+      const mockRequest = { query: {} }
       const mockContext = {}
 
       const result = controller.getViewModel(mockRequest, mockContext)
@@ -103,7 +103,7 @@ describe('TaskPageController', () => {
     })
 
     it('should add backToTaskList if returnAfterSection is false', () => {
-      const mockRequest = {}
+      const mockRequest = { query: {} }
       const mockContext = {}
 
       // Mocking returnAfterSection = false in the viewModel
@@ -140,7 +140,7 @@ describe('TaskPageController', () => {
 
     it('should handle validation errors', async () => {
       const handler = controller.makePostRouteHandler()
-      const mockRequest = { payload: { action: 'submit' } }
+      const mockRequest = { payload: { action: 'submit' }, query: {} }
       const mockContext = { errors: { some: 'error' }, evaluationState: {} }
       const mockH = {
         view: vi.fn().mockReturnValue('error view')
@@ -169,16 +169,15 @@ describe('TaskPageController', () => {
       const mockContext = { state: {} }
       const mockH = {}
 
-      controller.getNextOrTaskPath = vi.fn().mockReturnValue('/next')
       controller.proceed = vi.fn().mockReturnValue('proceeded')
 
       const result = await handler(mockRequest, mockContext, mockH)
-      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next')
+      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-path')
       expect(result).toBe('proceeded')
     })
   })
 
-  describe('getNextOrTaskPath', () => {
+  describe('proceed', () => {
     it('should return default next path when next page is in the same section', () => {
       const section = { name: 's1', id: 'section-1' }
       mockPageDef.section = 's1'
@@ -186,8 +185,8 @@ describe('TaskPageController', () => {
       mockModel.pages = [{ path: '/next-path', section }]
       controller.section = section
 
-      const result = controller.getNextOrTaskPath({})
-      expect(result).toBe('/next-path')
+      const result = controller.proceed({}, {}, '/next-path')
+      expect(result).toBe('proceeded:/next-path')
     })
 
     it('should return default next path when next page has no section (e.g. exit page)', () => {
@@ -197,11 +196,11 @@ describe('TaskPageController', () => {
       mockModel.pages = [{ path: '/next-path', section: undefined }]
       controller.section = section
 
-      const result = controller.getNextOrTaskPath({})
-      expect(result).toBe('/next-path')
+      const result = controller.proceed({}, {}, '/next-path')
+      expect(result).toBe('proceeded:/next-path')
     })
 
-    it('should return task list path when next page is in a different section', () => {
+    it('should redirect to task list when next page is in a different section', () => {
       const section = { name: 's1', id: 'section-1' }
       const otherSection = { name: 's2', id: 'section-2' }
       mockPageDef.section = 's1'
@@ -209,28 +208,27 @@ describe('TaskPageController', () => {
       mockModel.pages = [{ path: '/next-path', section: otherSection }]
       controller.section = section
 
-      const result = controller.getNextOrTaskPath({})
-      expect(result).toBe('/task-list')
+      const result = controller.proceed({}, {}, '/next-path')
+      expect(result).toBe('proceeded:/task-list')
     })
 
-    it('should return task list path when there is no next page', () => {
+    it('should redirect to task list when there is no next page', () => {
       const section = { name: 's1', id: 'section-1' }
       mockPageDef.section = 's1'
       mockModel.def.metadata.tasklist.returnAfterSection = true
       mockModel.pages = []
       controller.section = section
 
-      const spy = vi.spyOn(QuestionPageController.prototype, 'getNextPath').mockReturnValue(undefined)
-
-      const result = controller.getNextOrTaskPath({})
-      expect(result).toBe('/task-list')
-
-      spy.mockRestore()
+      const result = controller.proceed({}, {}, undefined)
+      expect(result).toBe('proceeded:/task-list')
     })
 
-    it('should fall back to default navigation if not a task page', () => {
-      const result = controller.getNextOrTaskPath({})
-      expect(result).toBe('/next-path')
+    it('should fall back to default navigation if not a task page (no section)', () => {
+      // pageDef has no section
+      mockModel.pages = [{ path: '/next-path' }]
+
+      const result = controller.proceed({}, {}, '/next-path')
+      expect(result).toBe('proceeded:/next-path')
     })
   })
 })

@@ -25,11 +25,11 @@ export default class TaskListPageController extends QuestionPageController {
     // Config options
     const tasklistConfig = viewModel.page.def.metadata.tasklist ?? {}
 
-    // Build task list data from sections and pages
-    const taskListSections = buildTaskListData(viewModel, formModel, state)
+    // Build task list data from tasks and task pages
+    const tasks = buildTaskListData(viewModel, formModel, state)
     const completionStats = getCompletionStats(viewModel, formModel, state)
 
-    if (taskListSections.length === 1 && formModel?.sections?.[0]) {
+    if (tasks.length === 1 && formModel?.sections?.[0]) {
       formModel.sections[0].hideTitle = true
     }
 
@@ -38,7 +38,7 @@ export default class TaskListPageController extends QuestionPageController {
 
     return {
       ...viewModel,
-      taskListSections,
+      tasks,
       completionStats,
       ...tasklistConfig,
       isComplete: completionStats.completed === completionStats.total,

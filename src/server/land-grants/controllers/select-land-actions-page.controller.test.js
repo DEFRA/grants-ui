@@ -1,5 +1,5 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
-import { beforeEach, describe, expect, test, vi, afterEach } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
 import {
   fetchAvailableActionsForParcel,
@@ -8,7 +8,7 @@ import {
 } from '~/src/server/land-grants/services/land-grants.service.js'
 import { parseLandParcel, stringifyParcel } from '~/src/server/land-grants/utils/format-parcel.js'
 import SelectLandActionsPageController from './select-land-actions-page.controller.js'
-import { log, debug } from '~/src/server/common/helpers/logging/log.js'
+import { debug, log } from '~/src/server/common/helpers/logging/log.js'
 
 vi.mock('~/src/config/config.js', async () => {
   const { mockLandGrantsConfig } = await import('~/src/__mocks__')
@@ -73,10 +73,15 @@ describe('SelectLandActionsPageController', () => {
 
   beforeEach(() => {
     QuestionPageController.prototype.getViewModel = vi.fn().mockReturnValue({
-      pageTitle: 'Land Actions'
+      pageTitle: 'Land Actions',
+      page: {
+        model: { pages: [] },
+        def: { pages: [], metadata: { tasklist: {} } }
+      }
     })
 
-    controller = new SelectLandActionsPageController()
+    const mockModel = { def: { metadata: { tasklist: {} } }, getSection: vi.fn(), pages: [] }
+    controller = new SelectLandActionsPageController(mockModel, {})
     controller.collection = {
       getErrors: vi.fn().mockReturnValue([])
     }

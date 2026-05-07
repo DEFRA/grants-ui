@@ -1,12 +1,12 @@
-import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
-import { log, debug, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { debug, log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { fetchParcelsFromDal } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
 import { getCachedAuthParcels, setCachedAuthParcels } from '~/src/server/land-grants/services/parcel-cache.js'
 import { stringifyParcel } from '~/src/server/land-grants/utils/format-parcel.js'
 import { SystemError } from '~/src/server/common/utils/errors/SystemError.js'
+import TaskPageController from '~/src/server/task-list/task-page.controller.js'
 
-export default class QuestionPageWithParcelCheckController extends QuestionPageController {
+export default class QuestionPageWithParcelCheckController extends TaskPageController {
   resolveParcelIds(_request) {
     throw new SystemError({
       message: `${this.constructor.name} must implement resolveParcelIds()`,

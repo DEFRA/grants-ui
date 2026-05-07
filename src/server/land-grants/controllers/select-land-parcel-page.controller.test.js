@@ -74,11 +74,26 @@ describe('SelectLandParcelPageController', () => {
   })
 
   beforeEach(() => {
+    const mockModelForViewModel = {
+      def: { metadata: { tasklist: {} } },
+      pages: [],
+      page: { def: { pages: [] } }
+    }
     QuestionPageController.prototype.getViewModel = vi.fn().mockReturnValue({
-      pageTitle: 'Select Land Parcel'
+      pageTitle: 'Select Land Parcel',
+      serviceUrl: '/service',
+      page: {
+        model: mockModelForViewModel,
+        def: { pages: [], metadata: { tasklist: {} } }
+      }
     })
 
-    controller = new SelectLandParcelPageController()
+    const mockModel = {
+      def: { metadata: { tasklist: {} } },
+      getSection: vi.fn()
+    }
+    const mockPageDef = {}
+    controller = new SelectLandParcelPageController(mockModel, mockPageDef)
     setupControllerMocks(controller, { proceed: 'next', nextPath: '/next-page' })
     controller.performAuthCheck = vi.fn().mockResolvedValue(null)
 

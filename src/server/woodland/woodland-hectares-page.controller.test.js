@@ -69,6 +69,17 @@ vi.mock('~/src/server/task-list/task-list.helper.js', () => ({
   getTaskPageBackLink: vi.fn()
 }))
 
+vi.mock('~/src/server/task-list/task-page.controller.js', async () => {
+  const { QuestionPageController } = await import('@defra/forms-engine-plugin/controllers/QuestionPageController.js')
+  return {
+    default: class TaskPageController extends QuestionPageController {
+      getViewModel(request, context) {
+        return super.getViewModel(request, context)
+      }
+    }
+  }
+})
+
 const mockH = { view: vi.fn().mockReturnValue('error view') }
 
 describe('WoodlandHectaresPageController', () => {
