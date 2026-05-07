@@ -82,7 +82,7 @@ describe('Land Grants client', () => {
         ok: false,
         status: 404,
         statusText: 'Not Found',
-        text: vi.fn().mockResolvedValue(JSON.stringify({ message: 'Resource not found' }))
+        json: vi.fn().mockResolvedValue({ message: 'Resource not found' })
       })
 
       await expect(postToLandGrantsApi('/invalid', {}, mockApiEndpoint)).rejects.toThrow('Resource not found')
@@ -115,7 +115,7 @@ describe('Land Grants client', () => {
         ok: false,
         status: 500,
         statusText: 'Internal Server Error',
-        text: vi.fn().mockResolvedValue(JSON.stringify({ message: 'Internal error' }))
+        json: vi.fn().mockResolvedValue({ message: 'Internal error' })
       })
 
       try {
@@ -146,7 +146,7 @@ describe('Land Grants client', () => {
         ok: false,
         status: 422,
         statusText: 'Unprocessable Entity',
-        text: vi.fn().mockResolvedValue(JSON.stringify({ message: backendMessage }))
+        json: vi.fn().mockResolvedValue({ message: backendMessage })
       })
 
       try {
@@ -163,7 +163,7 @@ describe('Land Grants client', () => {
         ok: false,
         status: 500,
         statusText: 'Internal Server Error',
-        text: vi.fn().mockResolvedValue('not json content')
+        json: vi.fn().mockRejectedValue(new TypeError('Body is unusable'))
       })
 
       try {
@@ -180,7 +180,7 @@ describe('Land Grants client', () => {
         ok: false,
         status: 400,
         statusText: 'Bad Request',
-        text: vi.fn().mockResolvedValue(JSON.stringify({ error: 'some other shape' }))
+        json: vi.fn().mockResolvedValue({ error: 'some other shape' })
       })
 
       try {
@@ -265,7 +265,7 @@ describe('Land Grants client', () => {
           ok: false,
           status,
           statusText: `Error ${status}`,
-          text: vi.fn().mockResolvedValue(JSON.stringify({ message: `Error message for ${status}` }))
+          json: vi.fn().mockResolvedValue({ message: `Error message for ${status}` })
         })
 
         try {
