@@ -308,9 +308,7 @@ function arePreviousTaskPagesCompleted(taskIndex, orderedTaskPages, state, formM
   for (let i = 0; i < taskIndex; i++) {
     const prevPages = orderedTaskPages[i]
     const prevApplicablePages = prevPages.filter((pageDef) => isTaskPageCompleted(pageDef, state, formModel) !== null)
-    const prevAllCompleted =
-      prevApplicablePages.length === 0 ||
-      prevApplicablePages.every((page) => isTaskPageCompleted(page, state, formModel) === true)
+    const prevAllCompleted = prevApplicablePages.every((page) => isTaskPageCompleted(page, state, formModel) === true)
     if (!prevAllCompleted) {
       return false
     }
@@ -552,8 +550,8 @@ export function getNextTaskPath(model, currentPage) {
  */
 export function getTaskPageBackLink(viewModel, currentPage, hasReturnUrl = false) {
   const allTaskPages = getTaskPages(viewModel)
-  const pagesForTask = allTaskPages.filter((page) => page.section === currentPage.section)
-  const isFirstTaskPage = pagesForTask[0]?.path === currentPage.path
+  const firstTaskPage = allTaskPages.find((page) => page.section === currentPage.section)
+  const isFirstTaskPage = firstTaskPage?.path === currentPage.path
   const { returnAfterSection = true } = viewModel.page.def.metadata.tasklist ?? {}
 
   if (isFirstTaskPage && returnAfterSection && !hasReturnUrl) {
