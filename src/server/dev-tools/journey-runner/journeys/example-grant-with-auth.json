@@ -18,10 +18,17 @@
   { "slug": "conditional-page", "name": "ConditionalPage", "type": "submitOnly" },
   { "slug": "checkboxes-field", "name": "CheckboxesField", "type": "checkboxes", "fieldName": "checkboxesField" },
   {
-    "slug": "number-field",
-    "name": "NumberField",
+    "slug": "number-field-validation",
+    "name": "NumberField (validation)",
     "type": "numberField",
-    "fieldName": "numberField",
+    "fieldName": "numberFieldValidation",
+    "value": "50000"
+  },
+  {
+    "slug": "number-field-routing",
+    "name": "NumberField (conditional routing)",
+    "type": "numberField",
+    "fieldName": "numberFieldRouting",
     "value": "50000"
   },
   {
@@ -63,6 +70,25 @@
     }
   },
   {
+    "slug": "location-components",
+    "name": "Location components",
+    "type": "textFields",
+    "fields": {
+      "eastingNorthingField__easting": "530000",
+      "eastingNorthingField__northing": "180000",
+      "osGridRefField": "ST 678 678",
+      "nationalGridFieldNumberField": "NG 1234 5678",
+      "latLongField__latitude": "51.519450",
+      "latLongField__longitude": "-0.127758",
+      "geospatialField": "[{\"type\":\"Feature\",\"properties\":{\"description\":\"Example location\",\"coordinateGridReference\":\"ST 00001\",\"centroidGridReference\":\"ST 00001\"},\"geometry\":{\"coordinates\":[-2.5723699109417737,53.2380485215034],\"type\":\"Point\"},\"id\":\"a\"}]"
+    }
+  },
+  {
+    "slug": "hidden-field",
+    "name": "HiddenField",
+    "type": "submitOnly"
+  },
+  {
     "slug": "multi-field-form",
     "name": "MultiFieldForm",
     "type": "textFields",
@@ -73,10 +99,26 @@
     }
   },
   {
+    "slug": "repeat-page",
+    "name": "RepeatPage (item entry)",
+    "type": "textFields",
+    "matchMode": "prefix",
+    "fields": {
+      "repeatItemName": "Repeat item example",
+      "repeatItemAmount": "12000"
+    }
+  },
+  {
+    "slug": "repeat-page/summary",
+    "name": "RepeatPage (list summary)",
+    "type": "submitOnly"
+  },
+  {
     "slug": "select-land-parcel",
     "name": "SelectLandParcel",
     "type": "checkboxes",
-    "fieldName": "landParcels"
+    "fieldName": "landParcels",
+    "selectAll": true
   },
   { "slug": "summary", "name": "Summary (Check your answers)", "type": "submitOnly" },
   { "slug": "declaration", "name": "Declaration (Confirm and send)", "type": "submitOnly" }
