@@ -24,11 +24,17 @@ export async function postToLandGrantsApi(endpoint, body, baseUrl) {
     })
 
     if (!response.ok) {
-      await response.arrayBuffer()
+      let message = response.statusText
+      try {
+        const responseBody = await response.json()
+        message = responseBody?.message ?? message
+      } catch {
+        // no json found
+      }
       /**
        * @type {Error & {code?: number, status?: number}}
        */
-      const error = new Error(response.statusText)
+      const error = new Error(message)
       error.code = response.status
       error.status = response.status
       throw error

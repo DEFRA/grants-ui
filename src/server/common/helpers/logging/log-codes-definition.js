@@ -250,12 +250,12 @@ export const LogCodes = {
     VALIDATE_APPLICATION_ERROR: {
       level: 'error',
       messageFunc: (messageOptions) =>
-        `Error validating application: ${messageOptions.errorMessage} | parcelId: ${messageOptions.parcelId} | sheetId: ${messageOptions.sheetId}`
+        `Error validating application: ${messageOptions.errorMessage} | statusCode: ${messageOptions.statusCode ?? 'unknown'} | sbi: ${messageOptions.sbi} | parcelId: ${messageOptions.parcelId} | sheetId: ${messageOptions.sheetId} | selectedActions: ${JSON.stringify(messageOptions.selectedActions)}`
     },
     FETCH_ACTIONS_ERROR: {
       level: 'error',
       messageFunc: (messageOptions) =>
-        `Error fetching actions: ${messageOptions.errorMessage} | sbi: ${messageOptions.sbi} | parcelId: ${messageOptions.parcelId} | sheetId: ${messageOptions.sheetId}`
+        `Error fetching actions: ${messageOptions.errorMessage} | statusCode: ${messageOptions.statusCode ?? 'unknown'} | sbi: ${messageOptions.sbi} | parcelId: ${messageOptions.parcelId} | sheetId: ${messageOptions.sheetId}`
     },
     FARM_DETAILS_MISSING_FIELDS: {
       level: 'warn',
