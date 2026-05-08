@@ -162,9 +162,6 @@ services:
     pull_policy: always
     ports:
       - '3012:3012'
-    links:
-      - 'localstack:localstack'
-      - 'mongodb:mongodb'
     depends_on:
       localstack:
         condition: service_healthy
