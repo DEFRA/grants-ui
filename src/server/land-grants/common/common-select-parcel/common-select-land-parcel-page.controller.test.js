@@ -60,9 +60,11 @@ const createController = (config = {}) => {
     nextPath: '/next'
   })
 
-  controller.getViewModel = vi.fn().mockReturnValue({
-    pageTitle: 'Select parcel'
-  })
+  controller.buildViewModel = vi.fn().mockImplementation((_request, _context, overrides = {}) => ({
+    pageTitle: 'Select parcel',
+    selectionMode: controller.enableMultipleParcelSelect ? 'multiple' : 'single',
+    ...overrides
+  }))
 
   return controller
 }

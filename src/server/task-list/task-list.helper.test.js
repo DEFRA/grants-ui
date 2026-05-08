@@ -1,12 +1,12 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   buildTaskListData,
   getCompletionStats,
   getNextTaskPath,
   getTaskListPath,
   getTaskPageBackLink,
-  hasNextPageInSection,
-  splitComponents
+  hasNextTaskPage,
+  withTaskContext
 } from './task-list.helper.js'
 import TaskListPageController from './task-list-page.controller.js'
 
@@ -187,7 +187,7 @@ describe('task-list.helper', () => {
       }
       const state = {}
       expect(getCompletionStats(mockModel, formModel, state).completed).toBe(0)
-      expect(getCompletionStats(mockModel, formModel, state).total).toBe(1)
+      expect(getCompletionStats(mockModel, formModel, state).total).toBe(0)
     })
 
     it('should count tasks as completed when conditions are met', () => {
@@ -647,11 +647,11 @@ describe('task-list.helper', () => {
     }
 
     it('should return true if there is another page in the same section', () => {
-      expect(hasNextPageInSection(mockModel, { path: '/p1', section: 's1' })).toBe(true)
+      expect(hasNextTaskPage(mockModel, { path: '/p1', section: 's1' })).toBe(true)
     })
 
     it('should return false if there are no more pages in the same section', () => {
-      expect(hasNextPageInSection(mockModel, { path: '/p2', section: 's1' })).toBe(false)
+      expect(hasNextTaskPage(mockModel, { path: '/p2', section: 's1' })).toBe(false)
     })
   })
 
@@ -716,31 +716,442 @@ describe('task-list.helper', () => {
       expect(backLink).toBeNull()
       viewModel.page.def.metadata.tasklist.returnAfterSection = true // reset
     })
+
+    it('should return null for first page in section when hasReturnUrl is true', () => {
+      const backLink = getTaskPageBackLink(viewModel, { path: '/p1', section: 's1' }, true)
+      expect(backLink).toBeNull()
+    })
   })
 
-  describe('splitComponents', () => {
-    it('should split components into above and below arrays', () => {
-      const components = [
-        {
-          type: 'Html',
-          content: 'above content',
-          options: { position: 'above' },
-          isFormComponent: false,
-          title: 'Above'
-        },
-        {
-          type: 'Html',
-          content: 'below content',
-          options: { position: 'below' },
-          isFormComponent: false,
-          title: 'Below'
+  describe('buildTaskListData with showQuestions: false', () => {
+    const makeModel = () => ({
+      serviceUrl: '/service',
+      page: {
+        def: {
+          pages: [
+            { path: '/t1a', section: 's1', components: [{ type: 'TextField', name: 'q1' }] },
+            { path: '/t1b', section: 's1', components: [{ type: 'TextField', name: 'q2' }] },
+            { path: '/t2a', section: 's2', components: [{ type: 'TextField', name: 'q3' }] }
+          ],
+          sections: [
+            { id: 's1', title: 'Task one' },
+            { id: 's2', title: 'Task two' }
+          ]
         }
-      ]
-      const [above, below] = splitComponents(components)
-      expect(above).toHaveLength(1)
-      expect(above[0].model.content).toBe('above content')
-      expect(below).toHaveLength(1)
-      expect(below[0].model.content).toBe('below content')
+      }
+    })
+
+    const makeFormModel = (state = {}) => ({
+      def: {
+        metadata: {
+          tasklist: { showQuestions: false }
+        },
+        pages: makeModel().page.def.pages
+      },
+      conditions: {},
+      makeCondition: () => ({ fn: () => true })
+    })
+
+    it('should return a single section with one item per task section', () => {
+      const data = buildTaskListData(makeModel(), makeFormModel(), {})
+      expect(data).toHaveLength(1)
+      expect(data[0].items).toHaveLength(2)
+    })
+
+    it('should show notStarted for first task when nothing answered', () => {
+      const data = buildTaskListData(makeModel(), makeFormModel(), {})
+      expect(data[0].items[0].status.tag.text).toBe('Not started')
+      expect(data[0].items[0].href).toBe('/service/t1a')
+    })
+
+    it('should show cannotStart for second task when first task not completed and second task not started', () => {
+      const data = buildTaskListData(makeModel(), makeFormModel(), {})
+      expect(data[0].items[1].status.tag.text).toBe('Cannot start yet')
+      expect(data[0].items[1].href).toBeUndefined()
+    })
+
+    it('should show cannotContinue for second task when it is inProgress but first task is not completed', () => {
+      // q1 (task one, page 1) not answered, but q3 (task two, page 1) is answered
+      const state = { q3: 'val3' }
+      const data = buildTaskListData(makeModel(), makeFormModel(), state)
+      expect(data[0].items[1].status.tag.text).toBe('On hold')
+      expect(data[0].items[1].href).toBeUndefined()
+    })
+
+    it('should show cannotContinue for second task when it is completed but first task is not completed', () => {
+      // task two fully answered but task one not complete
+      const state = { q1: 'val1', q3: 'val3' } // q2 missing so task one is inProgress
+      const data = buildTaskListData(makeModel(), makeFormModel(), state)
+      expect(data[0].items[1].status.tag.text).toBe('On hold')
+      expect(data[0].items[1].href).toBeUndefined()
+    })
+
+    it('should show inProgress when some but not all pages in section are completed', () => {
+      const state = { q1: 'val1' } // only first page of s1 answered
+      const data = buildTaskListData(makeModel(), makeFormModel(), state)
+      expect(data[0].items[0].status.tag.text).toBe('In progress')
+      expect(data[0].items[0].href).toBe('/service/t1b') // last page, so forms-engine-plugin redirects to first unanswered
+    })
+
+    it('should show completed when all pages in section are completed', () => {
+      const state = { q1: 'val1', q2: 'val2' }
+      const data = buildTaskListData(makeModel(), makeFormModel(), state)
+      expect(data[0].items[0].status.tag.text).toBe('Completed')
+      expect(data[0].items[0].href).toBe('/service/t1a')
+    })
+
+    it('should show notStarted for second task when first task is completed', () => {
+      const state = { q1: 'val1', q2: 'val2' }
+      const data = buildTaskListData(makeModel(), makeFormModel(), state)
+      expect(data[0].items[1].status.tag.text).toBe('Not started')
+      expect(data[0].items[1].href).toBe('/service/t2a')
+    })
+
+    it('should treat a conditionally excluded page as not applicable and ignore it for status', () => {
+      // t1b has a condition that evaluates to false - should be excluded from status calculation
+      const model = {
+        serviceUrl: '/service',
+        page: {
+          def: {
+            pages: [
+              { path: '/t1a', section: 's1', components: [{ type: 'TextField', name: 'q1' }] },
+              {
+                path: '/t1b',
+                section: 's1',
+                condition: 'condFalse',
+                components: [{ type: 'TextField', name: 'q2' }]
+              },
+              { path: '/t2a', section: 's2', components: [{ type: 'TextField', name: 'q3' }] }
+            ],
+            sections: [
+              { id: 's1', title: 'Task one' },
+              { id: 's2', title: 'Task two' }
+            ]
+          }
+        }
+      }
+      const formModel = {
+        def: { metadata: { tasklist: { showQuestions: false } }, pages: model.page.def.pages },
+        conditions: { condFalse: {} },
+        makeCondition: () => ({ fn: () => false }) // condition always false -> page excluded
+      }
+      // Only q1 answered; t1b is excluded by condition, so task one should be 'completed'
+      const state = { q1: 'val1' }
+      const data = buildTaskListData(model, formModel, state)
+      expect(data[0].items[0].status.tag.text).toBe('Completed')
+    })
+
+    it('should show inProgress when conditional page is included and not yet answered', () => {
+      const model = {
+        serviceUrl: '/service',
+        page: {
+          def: {
+            pages: [
+              { path: '/t1a', section: 's1', components: [{ type: 'TextField', name: 'q1' }] },
+              {
+                path: '/t1b',
+                section: 's1',
+                condition: 'condTrue',
+                components: [{ type: 'TextField', name: 'q2' }]
+              }
+            ],
+            sections: [{ id: 's1', title: 'Task one' }]
+          }
+        }
+      }
+      const formModel = {
+        def: { metadata: { tasklist: { showQuestions: false } }, pages: model.page.def.pages },
+        conditions: { condTrue: {} },
+        makeCondition: () => ({ fn: () => true }) // condition true -> page included
+      }
+      // q1 answered but q2 (conditional, included) not answered -> inProgress
+      const state = { q1: 'val1' }
+      const data = buildTaskListData(model, formModel, state)
+      expect(data[0].items[0].status.tag.text).toBe('In progress')
+    })
+
+    it('should allow second task to start when first task has all applicable pages completed (some excluded)', () => {
+      const model = {
+        serviceUrl: '/service',
+        page: {
+          def: {
+            pages: [
+              { path: '/t1a', section: 's1', components: [{ type: 'TextField', name: 'q1' }] },
+              {
+                path: '/t1b',
+                section: 's1',
+                condition: 'condFalse',
+                components: [{ type: 'TextField', name: 'q2' }]
+              },
+              { path: '/t2a', section: 's2', components: [{ type: 'TextField', name: 'q3' }] }
+            ],
+            sections: [
+              { id: 's1', title: 'Task one' },
+              { id: 's2', title: 'Task two' }
+            ]
+          }
+        }
+      }
+      const formModel = {
+        def: { metadata: { tasklist: { showQuestions: false } }, pages: model.page.def.pages },
+        conditions: { condFalse: {} },
+        makeCondition: () => ({ fn: () => false }) // t1b excluded
+      }
+      // q1 answered; t1b excluded -> task one completed -> task two should be notStarted (not cannotStart)
+      const state = { q1: 'val1' }
+      const data = buildTaskListData(model, formModel, state)
+      expect(data[0].items[1].status.tag.text).toBe('Not started')
+    })
+
+    it('should use custom status text from metadata statuses config', () => {
+      const model = makeModel()
+      const formModel = {
+        def: {
+          metadata: {
+            tasklist: {
+              showQuestions: false,
+              statuses: {
+                notStarted: { text: 'To do', classes: 'govuk-tag--blue' }
+              }
+            }
+          },
+          pages: model.page.def.pages
+        },
+        conditions: {},
+        makeCondition: () => ({ fn: () => true })
+      }
+      const data = buildTaskListData(model, formModel, {})
+      expect(data[0].items[0].status.tag.text).toBe('To do')
+    })
+  })
+
+  describe('withTaskContext', () => {
+    let BaseClass
+    let MixedClass
+    let mockModel
+    let mockPageDef
+
+    beforeEach(() => {
+      vi.clearAllMocks()
+
+      mockModel = {
+        pages: [],
+        def: { metadata: { tasklist: {} } }
+      }
+
+      mockPageDef = { path: '/current', section: 's1' }
+
+      BaseClass = class {
+        constructor(model, pageDef) {
+          this.model = model
+          this.pageDef = pageDef
+        }
+
+        getViewModel(_request, _context) {
+          return {
+            serviceUrl: '/service',
+            page: {
+              model: mockModel,
+              def: { metadata: { tasklist: {} } }
+            }
+          }
+        }
+
+        buildViewModel(_request, _context, _overrides) {
+          return {
+            serviceUrl: '/service',
+            page: {
+              model: mockModel,
+              def: { metadata: { tasklist: {} } }
+            }
+          }
+        }
+
+        proceed(_request, _h, nextPath) {
+          return `proceeded:${nextPath}`
+        }
+      }
+
+      MixedClass = withTaskContext(BaseClass)
+    })
+
+    it('should return a class', () => {
+      expect(typeof MixedClass).toBe('function')
+    })
+
+    describe('getViewModel', () => {
+      it('should add backLink when getTaskPageBackLink returns a value', () => {
+        const taskListPage = new TaskListPageController({}, { path: '/task-list' })
+        taskListPage.path = '/task-list'
+        mockModel.pages = [taskListPage]
+
+        const viewModelWithPages = {
+          serviceUrl: '/service',
+          page: {
+            model: mockModel,
+            def: {
+              pages: [{ path: '/current', section: 's1' }],
+              metadata: { tasklist: {} }
+            }
+          }
+        }
+
+        BaseClass.prototype.getViewModel = vi.fn().mockReturnValue(viewModelWithPages)
+
+        const controller = new MixedClass(mockModel, mockPageDef)
+        const result = controller.getViewModel({ query: {} }, {})
+
+        expect(result.backLink).toEqual({ href: '/service/task-list', text: 'Back to task list' })
+      })
+
+      it('should add backToTaskList when returnAfterSection is false', () => {
+        const taskListPage = new TaskListPageController({}, { path: '/task-list' })
+        taskListPage.path = '/task-list'
+        mockModel.pages = [taskListPage]
+
+        const viewModelWithPages = {
+          serviceUrl: '/service',
+          page: {
+            model: mockModel,
+            def: {
+              pages: [{ path: '/current', section: 's1' }],
+              metadata: { tasklist: { returnAfterSection: false } }
+            }
+          }
+        }
+
+        BaseClass.prototype.getViewModel = vi.fn().mockReturnValue(viewModelWithPages)
+
+        const controller = new MixedClass(mockModel, mockPageDef)
+        const result = controller.getViewModel({ query: {} }, {})
+
+        expect(result.backToTaskList).toEqual({ href: '/service/task-list', text: 'Back to task list' })
+      })
+
+      it('should not add backToTaskList when returnAfterSection is true (default)', () => {
+        const taskListPage = new TaskListPageController({}, { path: '/task-list' })
+        taskListPage.path = '/task-list'
+        mockModel.pages = [taskListPage]
+
+        const viewModelWithPages = {
+          serviceUrl: '/service',
+          page: {
+            model: mockModel,
+            def: {
+              pages: [{ path: '/current', section: 's1' }],
+              metadata: { tasklist: {} }
+            }
+          }
+        }
+
+        BaseClass.prototype.getViewModel = vi.fn().mockReturnValue(viewModelWithPages)
+
+        const controller = new MixedClass(mockModel, mockPageDef)
+        const result = controller.getViewModel({ query: {} }, {})
+
+        expect(result.backToTaskList).toBeUndefined()
+      })
+    })
+
+    describe('buildViewModel', () => {
+      it('should apply task page view model additions via buildViewModel', () => {
+        const taskListPage = new TaskListPageController({}, { path: '/task-list' })
+        taskListPage.path = '/task-list'
+        mockModel.pages = [taskListPage]
+
+        const viewModelWithPages = {
+          serviceUrl: '/service',
+          page: {
+            model: mockModel,
+            def: {
+              pages: [{ path: '/current', section: 's1' }],
+              metadata: { tasklist: { returnAfterSection: false } }
+            }
+          }
+        }
+
+        BaseClass.prototype.buildViewModel = vi.fn().mockReturnValue(viewModelWithPages)
+
+        const controller = new MixedClass(mockModel, mockPageDef)
+        const result = controller.buildViewModel({ query: {} }, {}, {})
+
+        expect(result.backToTaskList).toEqual({ href: '/service/task-list', text: 'Back to task list' })
+      })
+    })
+
+    describe('proceed', () => {
+      it('should redirect to task list when next page is in a different section', () => {
+        const taskListPage = new TaskListPageController({}, { path: '/task-list' })
+        taskListPage.path = '/task-list'
+        const otherSection = 's2'
+        mockModel.pages = [{ path: '/next-path', section: otherSection }, taskListPage]
+        mockModel.def.metadata.tasklist.returnAfterSection = true
+
+        const controller = new MixedClass(mockModel, mockPageDef)
+        controller.section = 's1'
+
+        const result = controller.proceed({}, {}, '/next-path')
+        expect(result).toBe('proceeded:/task-list')
+      })
+
+      it('should redirect to task list when there is no next page', () => {
+        const taskListPage = new TaskListPageController({}, { path: '/task-list' })
+        taskListPage.path = '/task-list'
+        mockModel.pages = [taskListPage]
+        mockModel.def.metadata.tasklist.returnAfterSection = true
+
+        const controller = new MixedClass(mockModel, mockPageDef)
+        controller.section = 's1'
+
+        const result = controller.proceed({}, {}, undefined)
+        expect(result).toBe('proceeded:/task-list')
+      })
+
+      it('should proceed normally when next page is in the same section', () => {
+        const section = 's1'
+        mockModel.pages = [{ path: '/next-path', section }]
+        mockModel.def.metadata.tasklist.returnAfterSection = true
+
+        const controller = new MixedClass(mockModel, mockPageDef)
+        controller.section = section
+
+        const result = controller.proceed({}, {}, '/next-path')
+        expect(result).toBe('proceeded:/next-path')
+      })
+
+      it('should proceed normally when next page has no section (e.g. exit page)', () => {
+        const section = 's1'
+        mockModel.pages = [{ path: '/next-path', section: undefined }]
+        mockModel.def.metadata.tasklist.returnAfterSection = true
+
+        const controller = new MixedClass(mockModel, mockPageDef)
+        controller.section = section
+
+        const result = controller.proceed({}, {}, '/next-path')
+        expect(result).toBe('proceeded:/next-path')
+      })
+
+      it('should fall back to default navigation if pageDef has no section', () => {
+        mockModel.pages = [{ path: '/next-path' }]
+        const controller = new MixedClass(mockModel, { path: '/current' }) // no section
+        controller.section = undefined
+
+        const result = controller.proceed({}, {}, '/next-path')
+        expect(result).toBe('proceeded:/next-path')
+      })
+
+      it('should fall back to default navigation when returnAfterSection is false', () => {
+        const section = 's1'
+        const otherSection = 's2'
+        mockModel.pages = [{ path: '/next-path', section: otherSection }]
+        mockModel.def.metadata.tasklist.returnAfterSection = false
+
+        const controller = new MixedClass(mockModel, mockPageDef)
+        controller.section = section
+
+        const result = controller.proceed({}, {}, '/next-path')
+        expect(result).toBe('proceeded:/next-path')
+      })
     })
   })
 })

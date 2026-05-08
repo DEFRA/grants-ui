@@ -48,6 +48,7 @@ export const mockLogHelper = () => ({
   logger: mockLoggerFactory(),
   log: vi.fn(),
   debug: vi.fn(),
+  error: vi.fn(),
   LogCodes: MockLogCodes
 })
 
