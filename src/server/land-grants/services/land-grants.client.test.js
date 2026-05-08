@@ -82,10 +82,10 @@ describe('Land Grants client', () => {
         ok: false,
         status: 404,
         statusText: 'Not Found',
-        arrayBuffer: vi.fn().mockResolvedValue(undefined)
+        json: vi.fn().mockResolvedValue({ message: 'Resource not found' })
       })
 
-      await expect(postToLandGrantsApi('/invalid', {}, mockApiEndpoint)).rejects.toThrow('Not Found')
+      await expect(postToLandGrantsApi('/invalid', {}, mockApiEndpoint)).rejects.toThrow('Resource not found')
 
       let code, message
       try {
@@ -95,7 +95,7 @@ describe('Land Grants client', () => {
         message = error.message
       }
       expect(code).toBe(404)
-      expect(message).toBe('Not Found')
+      expect(message).toBe('Resource not found')
     })
 
     it('should handle empty endpoint', async () => {
@@ -115,7 +115,7 @@ describe('Land Grants client', () => {
         ok: false,
         status: 500,
         statusText: 'Internal Server Error',
-        arrayBuffer: vi.fn().mockResolvedValue(undefined)
+        json: vi.fn().mockResolvedValue({ message: 'Internal error' })
       })
 
       try {
@@ -140,23 +140,56 @@ describe('Land Grants client', () => {
       expect(mockJson).toHaveBeenCalledTimes(1)
     })
 
-    it('should not call response.json() when response is not ok', async () => {
-      const mockJson = vi.fn().mockResolvedValue({ data: 'test' })
+    it('should use backend message as error message when response is not ok', async () => {
+      const backendMessage = 'The land parcel has insufficient coverage'
       mockFetch.mockResolvedValueOnce({
         ok: false,
-        status: 400,
-        statusText: 'Bad Request',
-        json: mockJson,
-        arrayBuffer: vi.fn().mockResolvedValue(undefined)
+        status: 422,
+        statusText: 'Unprocessable Entity',
+        json: vi.fn().mockResolvedValue({ message: backendMessage })
       })
 
       try {
         await postToLandGrantsApi('/test', {}, mockApiEndpoint)
+        expect.fail('Should have thrown an error')
       } catch (error) {
-        // Expected error
+        expect(error.status).toBe(422)
+        expect(error.message).toBe(backendMessage)
       }
+    })
 
-      expect(mockJson).not.toHaveBeenCalled()
+    it('should fall back to status text when response body is not JSON', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        statusText: 'Internal Server Error',
+        json: vi.fn().mockRejectedValue(new TypeError('Body is unusable'))
+      })
+
+      try {
+        await postToLandGrantsApi('/test', {}, mockApiEndpoint)
+        expect.fail('Should have thrown an error')
+      } catch (error) {
+        expect(error.status).toBe(500)
+        expect(error.message).toBe('Internal Server Error')
+      }
+    })
+
+    it('should fall back to status text when response body has no message field', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        statusText: 'Bad Request',
+        json: vi.fn().mockResolvedValue({ error: 'some other shape' })
+      })
+
+      try {
+        await postToLandGrantsApi('/test', {}, mockApiEndpoint)
+        expect.fail('Should have thrown an error')
+      } catch (error) {
+        expect(error.status).toBe(400)
+        expect(error.message).toBe('Bad Request')
+      }
     })
 
     it('should construct URL correctly with baseUrl and endpoint', async () => {
@@ -232,7 +265,7 @@ describe('Land Grants client', () => {
           ok: false,
           status,
           statusText: `Error ${status}`,
-          arrayBuffer: vi.fn().mockResolvedValue(undefined)
+          json: vi.fn().mockResolvedValue({ message: `Error message for ${status}` })
         })
 
         try {

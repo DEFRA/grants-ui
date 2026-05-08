@@ -1,4 +1,3 @@
-import { LogCodes } from './log-codes.js'
 import { pino } from 'pino'
 import { loggerOptions } from '~/src/server/common/helpers/logging/logger-options.js'
 
@@ -36,6 +35,21 @@ const debug = (logCode, messageOptions, request) => {
 }
 
 /**
+ * Logs an event at error level, regardless of the logCode's level.
+ * @param {object} logCode - Logging options.
+ * @param {Function} logCode.messageFunc - A function that creates an interpolated message string
+ * @param {object} [logCode.error] - An error object (optional)
+ * @param {object} messageOptions - Values for message interpolation
+ * @param {import('@hapi/hapi').Request} [request] - Hapi request object (optional)
+ */
+const error = (logCode, messageOptions, request) => {
+  const message = logCode.messageFunc(messageOptions)
+  const err = logCode.error
+  const errorContext = err ? { err } : undefined
+  getLoggerOfType('error', request)(errorContext, message)
+}
+
+/**
  * Returns the logger function corresponding to the given log level.
  * @param {import('./log-codes-definition.js').LogTypes.LogLevel} level - The log level.
  * @param {object} [request] - Hapi request object (optional)
@@ -46,4 +60,5 @@ const getLoggerOfType = (level, request) => {
   return (errorContext, message) => requestLogger[level](errorContext || {}, message)
 }
 
-export { log, debug, logger, LogCodes }
+export { log, debug, error, logger }
+export { LogCodes } from './log-codes.js'

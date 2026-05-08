@@ -8,7 +8,7 @@ import {
 } from '~/src/server/land-grants/services/land-grants.service.js'
 import { parseLandParcel, stringifyParcel } from '~/src/server/land-grants/utils/format-parcel.js'
 import SelectLandActionsPageController from './select-land-actions-page.controller.js'
-import { debug, log } from '~/src/server/common/helpers/logging/log.js'
+import { error, log } from '~/src/server/common/helpers/logging/log.js'
 
 vi.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js', () => ({
   QuestionPageController: class {
@@ -246,7 +246,7 @@ describe('SelectLandActionsPageController', () => {
         })
       )
 
-      expect(debug).toHaveBeenCalledWith(
+      expect(error).toHaveBeenCalledWith(
         expect.objectContaining({
           level: 'error',
           messageFunc: expect.any(Function)
