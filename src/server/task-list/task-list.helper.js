@@ -16,6 +16,45 @@
 import TaskListPageController from '~/src/server/task-list/task-list-page.controller.js'
 
 /**
+ * Status key constants for task status comparisons.
+ */
+export const TASK_STATUS = Object.freeze({
+  completed: 'completed',
+  inProgress: 'inProgress',
+  notStarted: 'notStarted',
+  cannotStart: 'cannotStart',
+  cannotContinue: 'cannotContinue'
+})
+
+/**
+ * Default status configurations for the GOV.UK Task List component.
+ * Each entry maps a status key to its default label and CSS tag class.
+ * These can be overridden via metadata.tasklist.statuses in the form YAML.
+ */
+export const TASK_STATUS_CONFIG = Object.freeze({
+  [TASK_STATUS.completed]: {
+    text: 'Completed',
+    classes: 'govuk-tag--green'
+  },
+  [TASK_STATUS.inProgress]: {
+    text: 'In progress',
+    classes: 'govuk-tag--blue'
+  },
+  [TASK_STATUS.notStarted]: {
+    text: 'Not started',
+    classes: 'govuk-tag--yellow'
+  },
+  [TASK_STATUS.cannotStart]: {
+    text: 'Cannot start yet',
+    classes: 'govuk-tag--grey'
+  },
+  [TASK_STATUS.cannotContinue]: {
+    text: 'On hold',
+    classes: 'govuk-tag--purple'
+  }
+})
+
+/**
  * Evaluates a named condition from the form model against the current state.
  * Returns false if the condition is not found or the model is unavailable.
  * @param {object|undefined} formModel
@@ -179,15 +218,14 @@ function createTaskItemBase(title) {
 /**
  * Creates a status tag with default values
  * @param {object} statusConfig - Status configuration from metadata
- * @param {string} defaultText - Default status text
- * @param {string} defaultClasses - Default CSS classes
+ * @param {{ text: string, classes: string }} defaults - Default status text and CSS classes
  * @returns {object} Status tag configuration
  */
-function createStatusTag(statusConfig, defaultText, defaultClasses) {
+function createStatusTag(statusConfig, defaults) {
   return {
     tag: {
-      text: statusConfig?.text ?? defaultText,
-      classes: statusConfig?.classes ?? defaultClasses
+      text: statusConfig?.text ?? defaults.text,
+      classes: statusConfig?.classes ?? defaults.classes
     }
   }
 }
@@ -239,7 +277,7 @@ function createTaskItem(pageDef, state, pages, metadata, basePath, formModel) {
 
   if (completed) {
     taskItem.href = href
-    taskItem.status = createStatusTag(statuses.completed, 'Completed', 'govuk-tag--green')
+    taskItem.status = createStatusTag(statuses.completed, TASK_STATUS_CONFIG.completed)
     return taskItem
   }
 
@@ -250,12 +288,12 @@ function createTaskItem(pageDef, state, pages, metadata, basePath, formModel) {
     pageIndex > 0 &&
     !areAllPreviousTasksCompleted(pages, pageDef, state, formModel)
   ) {
-    taskItem.status = createStatusTag(statuses.cannotStart, 'Cannot start yet', 'govuk-tag--grey')
+    taskItem.status = createStatusTag(statuses.cannotStart, TASK_STATUS_CONFIG.cannotStart)
     return taskItem
   }
 
   taskItem.href = href
-  taskItem.status = createStatusTag(statuses.notStarted, 'Not started', 'govuk-tag--blue')
+  taskItem.status = createStatusTag(statuses.notStarted, TASK_STATUS_CONFIG.notStarted)
   return taskItem
 }
 
@@ -324,7 +362,7 @@ function arePreviousTaskPagesCompleted(taskIndex, orderedTaskPages, state, formM
  * @param {string[]} orderedTaskIds - Task ids in order
  * @param {object} state - The current form state
  * @param {object} formModel - The form model
- * @returns {'notStarted'|'inProgress'|'completed'|'cannotStart'|'cannotContinue'} The task status
+ * @returns {keyof typeof TASK_STATUS} The task status
  */
 function getTaskStatus(sectionId, orderedTaskIds, orderedTaskPages, state, formModel) {
   const taskIndex = orderedTaskIds.indexOf(sectionId)
@@ -338,15 +376,15 @@ function getTaskStatus(sectionId, orderedTaskIds, orderedTaskPages, state, formM
 
   if (applicablePages.length === 0 || completedPages.length === applicablePages.length) {
     // Task is complete, but if a previous task is now incomplete, block access
-    return previousTasksComplete ? 'completed' : 'cannotContinue'
+    return previousTasksComplete ? TASK_STATUS.completed : TASK_STATUS.cannotContinue
   }
   if (completedPages.length > 0) {
     // Task is in progress, but if a previous task is now incomplete, block access
-    return previousTasksComplete ? 'inProgress' : 'cannotContinue'
+    return previousTasksComplete ? TASK_STATUS.inProgress : TASK_STATUS.cannotContinue
   }
 
   // Task not started - block if any previous task is incomplete
-  return previousTasksComplete ? 'notStarted' : 'cannotStart'
+  return previousTasksComplete ? TASK_STATUS.notStarted : TASK_STATUS.cannotStart
 }
 
 /**
@@ -385,24 +423,24 @@ function buildTaskListDataHideQuestions(model, formModel, state) {
     // For notStarted or completed, link to first page
     const firstPagePath = pages[0]?.path
     const lastPagePath = pages[pages.length - 1]?.path
-    const hrefPath = status === 'inProgress' ? lastPagePath : firstPagePath
+    const hrefPath = status === TASK_STATUS.inProgress ? lastPagePath : firstPagePath
     const href = hrefPath ? `${basePath}${hrefPath}` : undefined
 
     const taskItem = createTaskItemBase(taskTitle)
 
-    if (status === 'completed') {
+    if (status === TASK_STATUS.completed) {
       taskItem.href = href
-      taskItem.status = createStatusTag(statuses.completed, 'Completed', 'govuk-tag--green')
-    } else if (status === 'inProgress') {
+      taskItem.status = createStatusTag(statuses.completed, TASK_STATUS_CONFIG.completed)
+    } else if (status === TASK_STATUS.inProgress) {
       taskItem.href = href
-      taskItem.status = createStatusTag(statuses.inProgress, 'In progress', 'govuk-tag--blue')
-    } else if (status === 'cannotStart') {
-      taskItem.status = createStatusTag(statuses.cannotStart, 'Cannot start yet', 'govuk-tag--grey')
-    } else if (status === 'cannotContinue') {
-      taskItem.status = createStatusTag(statuses.cannotContinue, 'On hold', 'govuk-tag--purple')
+      taskItem.status = createStatusTag(statuses.inProgress, TASK_STATUS_CONFIG.inProgress)
+    } else if (status === TASK_STATUS.cannotStart) {
+      taskItem.status = createStatusTag(statuses.cannotStart, TASK_STATUS_CONFIG.cannotStart)
+    } else if (status === TASK_STATUS.cannotContinue) {
+      taskItem.status = createStatusTag(statuses.cannotContinue, TASK_STATUS_CONFIG.cannotContinue)
     } else {
       taskItem.href = href
-      taskItem.status = createStatusTag(statuses.notStarted, 'Not started', 'govuk-tag--yellow')
+      taskItem.status = createStatusTag(statuses.notStarted, TASK_STATUS_CONFIG.notStarted)
     }
 
     return taskItem
@@ -567,33 +605,75 @@ export function getTaskPageBackLink(viewModel, currentPage, hasReturnUrl = false
 }
 
 /**
- * Splits components into above and below positions
- * @param {object[]} components - Array of components
- * @returns {[object[], object[]]} Array of above and below components
+ * Mixin that adds task-list navigation behaviour to any controller class.
+ *
+ * Usage:
+ *   class MyController extends withTaskContext(QuestionPageController) { ... }
+ *
+ * @template {new (...args: any[]) => any} T
+ * @param {T} Base
  */
-export function splitComponents(components) {
-  const aboveComponents = components
-    .filter((component) => component.options?.position === 'above')
-    .map(mapComponentToViewModelComponent)
-  const belowComponents = components
-    .filter((component) => component.options?.position === 'below')
-    .map(mapComponentToViewModelComponent)
-  return [aboveComponents, belowComponents]
+export function withTaskContext(Base) {
+  return class TaskContextMixin extends Base {
+    /**
+     * Wraps the parent's view-model builder to add back-link / back-to-task-list.
+     * Works whether the parent exposes `getViewModel` or `buildViewModel`.
+     */
+    getViewModel(request, context) {
+      const viewModel = super.getViewModel(request, context)
+      return applyTaskPageViewModel(viewModel, this.pageDef, !!request.query.returnUrl)
+    }
+
+    /**
+     * Same wrapper for controllers that use `buildViewModel` instead of `getViewModel`.
+     */
+    buildViewModel(request, context, overrides) {
+      const viewModel = super.buildViewModel(request, context, overrides)
+      return applyTaskPageViewModel(viewModel, this.pageDef, !!request.query.returnUrl)
+    }
+
+    /**
+     * Override proceed to apply task-list redirect logic after a POST.
+     */
+    proceed(request, h, nextPath) {
+      const { model, pageDef } = this
+      const { returnAfterSection = true } = model.def.metadata.tasklist ?? {}
+
+      if (pageDef.section && returnAfterSection) {
+        // Check if the default next page belongs to a different section.
+        // If so, the current section is complete — return to the task list.
+        const nextPage = nextPath && model.pages.find((p) => p.path === nextPath)
+
+        if (!nextPage || (nextPage.section && nextPage.section !== this.section)) {
+          return super.proceed(request, h, getTaskListPath(model) ?? nextPath)
+        }
+      }
+
+      return super.proceed(request, h, nextPath)
+    }
+  }
 }
 
 /**
- * Maps a component to a ViewModel component
- * @param {object} component - The component to map
- * @returns {object} The mapped ViewModel component
+ * Applies task-list additions to an already-built view model.
+ * @param {object} viewModel
+ * @param {object} pageDef
+ * @param {boolean} [hasReturnUrl=false] - Whether a returnUrl query parameter was provided
  */
-function mapComponentToViewModelComponent(component) {
+function applyTaskPageViewModel(viewModel, pageDef, hasReturnUrl = false) {
+  const backLink = getTaskPageBackLink(viewModel, pageDef, hasReturnUrl)
+  const { returnAfterSection = true } = viewModel.page.def.metadata.tasklist ?? {}
+
+  const basePath = viewModel.serviceUrl
+  const taskListPath = getTaskListPath(viewModel.page.model)
+  const backToTaskList = {
+    href: `${basePath}${taskListPath}`,
+    text: 'Back to task list'
+  }
+
   return {
-    type: component.type,
-    isFormComponent: component.isFormComponent,
-    model: {
-      content: component.content,
-      html: component.content,
-      summaryHtml: component.title
-    }
+    ...viewModel,
+    ...(backLink ? { backLink } : {}),
+    ...(returnAfterSection ? {} : { backToTaskList })
   }
 }

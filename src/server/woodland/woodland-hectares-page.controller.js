@@ -1,8 +1,9 @@
 import nunjucks from 'nunjucks'
 import { ComponentType } from '@defra/forms-model'
-import TaskPageController from '~/src/server/task-list/task-page.controller.js'
 import { validateWoodlandHectares } from '~/src/server/woodland/woodland.service.js'
 import { debug, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
+import { withTaskContext } from '~/src/server/task-list/task-list.helper.js'
 
 /**
  * @import { AnyFormRequest, FormContext, FormSubmissionError } from '@defra/forms-engine-plugin/types'
@@ -35,7 +36,7 @@ const makeBothFieldsError = (text) => [
   { path: [HECTARES_UNDER_TEN_FIELD_NAME], href: `#${HECTARES_OVER_TEN_FIELD_NAME}`, text }
 ]
 
-export default class WoodlandHectaresPageController extends TaskPageController {
+export default class WoodlandHectaresPageController extends withTaskContext(QuestionPageController) {
   /**
    * @param {AnyFormRequest} request
    * @param {FormContext} context

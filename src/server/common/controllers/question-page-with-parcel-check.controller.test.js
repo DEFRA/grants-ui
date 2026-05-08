@@ -5,6 +5,27 @@ import { getCachedAuthParcels, setCachedAuthParcels } from '~/src/server/land-gr
 import { debug, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { SystemError } from '~/src/server/common/utils/errors/SystemError.js'
 
+vi.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js', () => ({
+  QuestionPageController: class {
+    constructor(model, pageDef) {
+      this.model = model
+      this.pageDef = pageDef
+    }
+
+    makeGetRouteHandler() {
+      return vi.fn().mockResolvedValue('get-response')
+    }
+
+    makePostRouteHandler() {
+      return vi.fn().mockResolvedValue('post-response')
+    }
+  }
+}))
+
+vi.mock('~/src/server/task-list/task-list.helper.js', () => ({
+  withTaskContext: (Base) => Base
+}))
+
 vi.mock('~/src/server/common/services/consolidated-view/consolidated-view.service.js', () => ({
   fetchParcelsFromDal: vi.fn()
 }))

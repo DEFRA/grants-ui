@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   buildTaskListData,
   getCompletionStats,
@@ -6,7 +6,7 @@ import {
   getTaskListPath,
   getTaskPageBackLink,
   hasNextTaskPage,
-  splitComponents
+  withTaskContext
 } from './task-list.helper.js'
 import TaskListPageController from './task-list-page.controller.js'
 
@@ -925,29 +925,233 @@ describe('task-list.helper', () => {
     })
   })
 
-  describe('splitComponents', () => {
-    it('should split components into above and below arrays', () => {
-      const components = [
-        {
-          type: 'Html',
-          content: 'above content',
-          options: { position: 'above' },
-          isFormComponent: false,
-          title: 'Above'
-        },
-        {
-          type: 'Html',
-          content: 'below content',
-          options: { position: 'below' },
-          isFormComponent: false,
-          title: 'Below'
+  describe('withTaskContext', () => {
+    let BaseClass
+    let MixedClass
+    let mockModel
+    let mockPageDef
+
+    beforeEach(() => {
+      vi.clearAllMocks()
+
+      mockModel = {
+        pages: [],
+        def: { metadata: { tasklist: {} } }
+      }
+
+      mockPageDef = { path: '/current', section: 's1' }
+
+      BaseClass = class {
+        constructor(model, pageDef) {
+          this.model = model
+          this.pageDef = pageDef
         }
-      ]
-      const [above, below] = splitComponents(components)
-      expect(above).toHaveLength(1)
-      expect(above[0].model.content).toBe('above content')
-      expect(below).toHaveLength(1)
-      expect(below[0].model.content).toBe('below content')
+
+        getViewModel(_request, _context) {
+          return {
+            serviceUrl: '/service',
+            page: {
+              model: mockModel,
+              def: { metadata: { tasklist: {} } }
+            }
+          }
+        }
+
+        buildViewModel(_request, _context, _overrides) {
+          return {
+            serviceUrl: '/service',
+            page: {
+              model: mockModel,
+              def: { metadata: { tasklist: {} } }
+            }
+          }
+        }
+
+        proceed(_request, _h, nextPath) {
+          return `proceeded:${nextPath}`
+        }
+      }
+
+      MixedClass = withTaskContext(BaseClass)
+    })
+
+    it('should return a class', () => {
+      expect(typeof MixedClass).toBe('function')
+    })
+
+    describe('getViewModel', () => {
+      it('should add backLink when getTaskPageBackLink returns a value', () => {
+        const taskListPage = new TaskListPageController({}, { path: '/task-list' })
+        taskListPage.path = '/task-list'
+        mockModel.pages = [taskListPage]
+
+        const viewModelWithPages = {
+          serviceUrl: '/service',
+          page: {
+            model: mockModel,
+            def: {
+              pages: [{ path: '/current', section: 's1' }],
+              metadata: { tasklist: {} }
+            }
+          }
+        }
+
+        BaseClass.prototype.getViewModel = vi.fn().mockReturnValue(viewModelWithPages)
+
+        const controller = new MixedClass(mockModel, mockPageDef)
+        const result = controller.getViewModel({ query: {} }, {})
+
+        expect(result.backLink).toEqual({ href: '/service/task-list', text: 'Back to task list' })
+      })
+
+      it('should add backToTaskList when returnAfterSection is false', () => {
+        const taskListPage = new TaskListPageController({}, { path: '/task-list' })
+        taskListPage.path = '/task-list'
+        mockModel.pages = [taskListPage]
+
+        const viewModelWithPages = {
+          serviceUrl: '/service',
+          page: {
+            model: mockModel,
+            def: {
+              pages: [{ path: '/current', section: 's1' }],
+              metadata: { tasklist: { returnAfterSection: false } }
+            }
+          }
+        }
+
+        BaseClass.prototype.getViewModel = vi.fn().mockReturnValue(viewModelWithPages)
+
+        const controller = new MixedClass(mockModel, mockPageDef)
+        const result = controller.getViewModel({ query: {} }, {})
+
+        expect(result.backToTaskList).toEqual({ href: '/service/task-list', text: 'Back to task list' })
+      })
+
+      it('should not add backToTaskList when returnAfterSection is true (default)', () => {
+        const taskListPage = new TaskListPageController({}, { path: '/task-list' })
+        taskListPage.path = '/task-list'
+        mockModel.pages = [taskListPage]
+
+        const viewModelWithPages = {
+          serviceUrl: '/service',
+          page: {
+            model: mockModel,
+            def: {
+              pages: [{ path: '/current', section: 's1' }],
+              metadata: { tasklist: {} }
+            }
+          }
+        }
+
+        BaseClass.prototype.getViewModel = vi.fn().mockReturnValue(viewModelWithPages)
+
+        const controller = new MixedClass(mockModel, mockPageDef)
+        const result = controller.getViewModel({ query: {} }, {})
+
+        expect(result.backToTaskList).toBeUndefined()
+      })
+    })
+
+    describe('buildViewModel', () => {
+      it('should apply task page view model additions via buildViewModel', () => {
+        const taskListPage = new TaskListPageController({}, { path: '/task-list' })
+        taskListPage.path = '/task-list'
+        mockModel.pages = [taskListPage]
+
+        const viewModelWithPages = {
+          serviceUrl: '/service',
+          page: {
+            model: mockModel,
+            def: {
+              pages: [{ path: '/current', section: 's1' }],
+              metadata: { tasklist: { returnAfterSection: false } }
+            }
+          }
+        }
+
+        BaseClass.prototype.buildViewModel = vi.fn().mockReturnValue(viewModelWithPages)
+
+        const controller = new MixedClass(mockModel, mockPageDef)
+        const result = controller.buildViewModel({ query: {} }, {}, {})
+
+        expect(result.backToTaskList).toEqual({ href: '/service/task-list', text: 'Back to task list' })
+      })
+    })
+
+    describe('proceed', () => {
+      it('should redirect to task list when next page is in a different section', () => {
+        const taskListPage = new TaskListPageController({}, { path: '/task-list' })
+        taskListPage.path = '/task-list'
+        const otherSection = 's2'
+        mockModel.pages = [{ path: '/next-path', section: otherSection }, taskListPage]
+        mockModel.def.metadata.tasklist.returnAfterSection = true
+
+        const controller = new MixedClass(mockModel, mockPageDef)
+        controller.section = 's1'
+
+        const result = controller.proceed({}, {}, '/next-path')
+        expect(result).toBe('proceeded:/task-list')
+      })
+
+      it('should redirect to task list when there is no next page', () => {
+        const taskListPage = new TaskListPageController({}, { path: '/task-list' })
+        taskListPage.path = '/task-list'
+        mockModel.pages = [taskListPage]
+        mockModel.def.metadata.tasklist.returnAfterSection = true
+
+        const controller = new MixedClass(mockModel, mockPageDef)
+        controller.section = 's1'
+
+        const result = controller.proceed({}, {}, undefined)
+        expect(result).toBe('proceeded:/task-list')
+      })
+
+      it('should proceed normally when next page is in the same section', () => {
+        const section = 's1'
+        mockModel.pages = [{ path: '/next-path', section }]
+        mockModel.def.metadata.tasklist.returnAfterSection = true
+
+        const controller = new MixedClass(mockModel, mockPageDef)
+        controller.section = section
+
+        const result = controller.proceed({}, {}, '/next-path')
+        expect(result).toBe('proceeded:/next-path')
+      })
+
+      it('should proceed normally when next page has no section (e.g. exit page)', () => {
+        const section = 's1'
+        mockModel.pages = [{ path: '/next-path', section: undefined }]
+        mockModel.def.metadata.tasklist.returnAfterSection = true
+
+        const controller = new MixedClass(mockModel, mockPageDef)
+        controller.section = section
+
+        const result = controller.proceed({}, {}, '/next-path')
+        expect(result).toBe('proceeded:/next-path')
+      })
+
+      it('should fall back to default navigation if pageDef has no section', () => {
+        mockModel.pages = [{ path: '/next-path' }]
+        const controller = new MixedClass(mockModel, { path: '/current' }) // no section
+        controller.section = undefined
+
+        const result = controller.proceed({}, {}, '/next-path')
+        expect(result).toBe('proceeded:/next-path')
+      })
+
+      it('should fall back to default navigation when returnAfterSection is false', () => {
+        const section = 's1'
+        const otherSection = 's2'
+        mockModel.pages = [{ path: '/next-path', section: otherSection }]
+        mockModel.def.metadata.tasklist.returnAfterSection = false
+
+        const controller = new MixedClass(mockModel, mockPageDef)
+        controller.section = section
+
+        const result = controller.proceed({}, {}, '/next-path')
+        expect(result).toBe('proceeded:/next-path')
+      })
     })
   })
 })

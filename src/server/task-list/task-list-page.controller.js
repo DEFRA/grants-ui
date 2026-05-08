@@ -1,4 +1,4 @@
-import { buildTaskListData, getCompletionStats, splitComponents } from './task-list.helper.js'
+import { buildTaskListData, getCompletionStats } from './task-list.helper.js'
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 
 export default class TaskListPageController extends QuestionPageController {
@@ -46,6 +46,38 @@ export default class TaskListPageController extends QuestionPageController {
       belowComponents
     }
   }
+}
+
+/**
+ * Maps a component to a ViewModel component
+ * @param {object} component - The component to map
+ * @returns {object} The mapped ViewModel component
+ */
+function mapComponentToViewModelComponent(component) {
+  return {
+    type: component.type,
+    isFormComponent: component.isFormComponent,
+    model: {
+      content: component.content,
+      html: component.content,
+      summaryHtml: component.title
+    }
+  }
+}
+
+/**
+ * Splits components into above and below positions
+ * @param {object[]} components - Array of components
+ * @returns {[object[], object[]]} Array of above and below components
+ */
+function splitComponents(components) {
+  const aboveComponents = components
+    .filter((component) => component.options?.position === 'above')
+    .map(mapComponentToViewModelComponent)
+  const belowComponents = components
+    .filter((component) => component.options?.position === 'below')
+    .map(mapComponentToViewModelComponent)
+  return [aboveComponents, belowComponents]
 }
 
 /**

@@ -4,9 +4,10 @@ import { fetchParcelsFromDal } from '~/src/server/common/services/consolidated-v
 import { getCachedAuthParcels, setCachedAuthParcels } from '~/src/server/land-grants/services/parcel-cache.js'
 import { stringifyParcel } from '~/src/server/land-grants/utils/format-parcel.js'
 import { SystemError } from '~/src/server/common/utils/errors/SystemError.js'
-import TaskPageController from '~/src/server/task-list/task-page.controller.js'
+import { withTaskContext } from '~/src/server/task-list/task-list.helper.js'
+import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 
-export default class QuestionPageWithParcelCheckController extends TaskPageController {
+export default class QuestionPageWithParcelCheckController extends withTaskContext(QuestionPageController) {
   resolveParcelIds(_request) {
     throw new SystemError({
       message: `${this.constructor.name} must implement resolveParcelIds()`,

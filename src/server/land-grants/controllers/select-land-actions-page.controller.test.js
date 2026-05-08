@@ -10,6 +10,33 @@ import { parseLandParcel, stringifyParcel } from '~/src/server/land-grants/utils
 import SelectLandActionsPageController from './select-land-actions-page.controller.js'
 import { debug, log } from '~/src/server/common/helpers/logging/log.js'
 
+vi.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js', () => ({
+  QuestionPageController: class {
+    getViewModel() {}
+
+    makeGetRouteHandler() {
+      return async (request, context, h) => h.view('select-land-actions', this.getViewModel(request, context))
+    }
+
+    makePostRouteHandler() {
+      return async (request, context, h) => h.view('select-land-actions', this.getViewModel(request, context))
+    }
+  }
+}))
+
+vi.mock('~/src/server/task-list/task-list.helper.js', () => ({
+  withTaskContext: (Base) => Base
+}))
+
+vi.mock('~/src/server/common/services/consolidated-view/consolidated-view.service.js', () => ({
+  fetchParcelsFromDal: vi.fn().mockResolvedValue([])
+}))
+
+vi.mock('~/src/server/land-grants/services/parcel-cache.js', () => ({
+  getCachedAuthParcels: vi.fn().mockReturnValue(null),
+  setCachedAuthParcels: vi.fn()
+}))
+
 vi.mock('~/src/config/config.js', async () => {
   const { mockLandGrantsConfig } = await import('~/src/__mocks__')
   return mockLandGrantsConfig()

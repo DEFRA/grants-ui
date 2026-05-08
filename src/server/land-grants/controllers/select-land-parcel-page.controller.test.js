@@ -5,6 +5,33 @@ import { setupControllerMocks } from '~/src/__mocks__/controller-mocks.js'
 import { fetchParcels } from '~/src/server/land-grants/services/land-grants.service.js'
 import SelectLandParcelPageController from './select-land-parcel-page.controller.js'
 
+vi.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js', () => ({
+  QuestionPageController: class {
+    getViewModel() {}
+
+    makeGetRouteHandler() {
+      return async (request, context, h) => h.view('select-land-parcel', this.getViewModel(request, context))
+    }
+
+    makePostRouteHandler() {
+      return async (request, context, h) => h.view('select-land-parcel', this.getViewModel(request, context))
+    }
+  }
+}))
+
+vi.mock('~/src/server/task-list/task-list.helper.js', () => ({
+  withTaskContext: (Base) => Base
+}))
+
+vi.mock('~/src/server/common/services/consolidated-view/consolidated-view.service.js', () => ({
+  fetchParcelsFromDal: vi.fn().mockResolvedValue([])
+}))
+
+vi.mock('~/src/server/land-grants/services/parcel-cache.js', () => ({
+  getCachedAuthParcels: vi.fn().mockReturnValue(null),
+  setCachedAuthParcels: vi.fn()
+}))
+
 vi.mock('~/src/server/land-grants/services/land-grants.service.js', () => ({
   fetchParcels: vi.fn()
 }))
