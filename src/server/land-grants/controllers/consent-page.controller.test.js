@@ -13,7 +13,8 @@ describe('ConsentPageController', () => {
       pageTitle: 'You must have consent'
     })
 
-    controller = new ConsentPageController()
+    const mockModel = { def: { metadata: { tasklist: {} } }, getSection: vi.fn() }
+    controller = new ConsentPageController(mockModel, {})
     controller.setState = vi.fn().mockResolvedValue(true)
     controller.proceed = vi.fn().mockReturnValue('redirected')
     controller.getNextPath = vi.fn().mockReturnValue('/submit-your-application')

@@ -31,22 +31,24 @@ Feature: Task Lists
         Then the user should be at URL "tasks"
         And should see heading "Example Task List"
         And the page is analyzed for accessibility
-        And should see the following task list with 0 of 6 tasks completed
-            | Example section one              |                  |
-            | Example multiple components task | Not started      |
-            | Example single component task    | Cannot start yet |
-            | Example section two              |                  |
-            | Example compound component task  | Cannot start yet |
-            | Example task with guidance       | Cannot start yet |
-            | Example submit section           |                  |
+        And should see the following task list with 0 of 8 tasks completed
+            | Example task one                 |                  |
+            | Example multiple components      | Not started      |
+            | Optional choice                  | Cannot start yet |
+            | Single component                 | Cannot start yet |
+            | Example task two                 |                  |
+            | Compound component               | Cannot start yet |
+            | Land parcels                     | Cannot start yet |
+            | Number with guidance             | Cannot start yet |
+            | Example check and submit task    |                  |
             | Check your answers               | Cannot start yet |
             | Confirm and send                 | Cannot start yet |
-        When the user selects task "Example multiple components task"
+        When the user selects task "Example multiple components"
 
         # multiple-components-task-page
         Then the user should be at URL "multiple-components-task-page"
-        And should see section title "Example section one"
-        And should see heading "Example multiple components task"
+        And should see task title "Example task one"
+        And should see heading "Example multiple components"
         When the user enters the following
             | FIELD                  | VALUE       |
             | First name             | James       |
@@ -54,31 +56,40 @@ Feature: Task Lists
             | Last name              | Test-Farmer |
         And continues
 
+        # optional-choice-task-page
+        Then the user should be at URL "optional-choice-task-page"
+        And should see task title "Example task one"
+        And should see heading "Example optional choice"
+        When the user selects "No"
+        And continues
+
         # single-component-task-page
         Then the user should be at URL "single-component-task-page"
-        And should see section title "Example section one"
-        And should see label heading "Example single component task"
-        When the user enters "cl-defra-gae-test-applicant-email@equalexperts.com" for label heading "Example single component task"
+        And should see task title "Example task one"
+        And should see label heading "Example single component"
+        When the user enters "cl-defra-gae-test-applicant-email@equalexperts.com" for label heading "Example single component"
         And continues
 
         # tasks
         Then the user should be back at URL "tasks"
-        And should see the following task list with 2 of 6 tasks completed
-            | Example section one              |                  |
-            | Example multiple components task | Completed        |
-            | Example single component task    | Completed        |
-            | Example section two              |                  |
-            | Example compound component task  | Not started      |
-            | Example task with guidance       | Cannot start yet |
-            | Example submit section           |                  |
-            | Check your answers               | Cannot start yet |
-            | Confirm and send                 | Cannot start yet |
-        When the user selects task "Example compound component task"
+        And should see the following task list with 3 of 8 tasks completed
+          | Example task one                 |                  |
+          | Example multiple components      | Completed        |
+          | Optional choice                  | Completed        |
+          | Single component                 | Completed        |
+          | Example task two                 |                  |
+          | Compound component               | Not started      |
+          | Land parcels                     | Cannot start yet |
+          | Number with guidance             | Cannot start yet |
+          | Example check and submit task    |                  |
+          | Check your answers               | Cannot start yet |
+          | Confirm and send                 | Cannot start yet |
+        When the user selects task "Compound component"
 
         # compound-component-task-page
         Then the user should be at URL "compound-component-task-page"
-        And should see section title "Example section two"
-        And should see heading "Example compound component task"
+        And should see task title "Example task two"
+        And should see heading "Example compound component"
         When the user enters the following
             | FIELD                     | VALUE            |
             | Address line 1            | Test Farm        |
@@ -96,26 +107,28 @@ Feature: Task Lists
 
         # example-task-with-guidance
         Then the user should be at URL "example-task-with-guidance"
-        And should see section title "Example section two"
-        And should see heading "Example task with guidance"
+        And should see task title "Example task two"
+        And should see heading "Example with guidance"
         When the user enters "150000" for "Example number field"
         And continues
 
         # tasks
         Then the user should be back at URL "tasks"
-        And should see the following task list with 4 of 6 tasks completed
-            | Example section one              |                  |
-            | Example multiple components task | Completed        |
-            | Example single component task    | Completed        |
-            | Example section two              |                  |
-            | Example compound component task  | Completed        |
-            | Example task with guidance       | Completed        |
-            | Example submit section           |                  |
-            | Check your answers               | Not started      |
-            | Confirm and send                 | Cannot start yet |
+        And should see the following task list with 6 of 8 tasks completed
+          | Example task one                 |                  |
+          | Example multiple components      | Completed        |
+          | Optional choice                  | Completed        |
+          | Single component                 | Completed        |
+          | Example task two                 |                  |
+          | Compound component               | Completed        |
+          | Land parcels                     | Completed        |
+          | Number with guidance             | Completed        |
+          | Example check and submit task    |                  |
+          | Check your answers               | Not started      |
+          | Confirm and send                 | Cannot start yet |
 
         # revisit a task
-        When the user selects task "Example task with guidance"
+        When the user selects task "Number with guidance"
 
         # example-task-with-guidance
         Then the user should be at URL "example-task-with-guidance"
@@ -124,16 +137,18 @@ Feature: Task Lists
 
         # tasks
         Then the user should be back at URL "tasks"
-        And should see the following task list with 4 of 6 tasks completed
-            | Example section one              |                  |
-            | Example multiple components task | Completed        |
-            | Example single component task    | Completed        |
-            | Example section two              |                  |
-            | Example compound component task  | Completed        |
-            | Example task with guidance       | Completed        |
-            | Example submit section           |                  |
-            | Check your answers               | Not started      |
-            | Confirm and send                 | Cannot start yet |
+      And should see the following task list with 6 of 8 tasks completed
+        | Example task one                 |                  |
+        | Example multiple components      | Completed        |
+        | Optional choice                  | Completed        |
+        | Single component                 | Completed        |
+        | Example task two                 |                  |
+        | Compound component               | Completed        |
+        | Land parcels                     | Completed        |
+        | Number with guidance             | Completed        |
+        | Example check and submit task    |                  |
+        | Check your answers               | Not started      |
+        | Confirm and send                 | Cannot start yet |
         When the user selects task "Check your answers"
 
         # summary
