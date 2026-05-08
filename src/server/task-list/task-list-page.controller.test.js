@@ -24,8 +24,7 @@ vi.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js', () =
 
 vi.mock('./task-list.helper.js', () => ({
   buildTaskListData: vi.fn(),
-  getCompletionStats: vi.fn(),
-  splitComponents: vi.fn().mockReturnValue([[], []])
+  getCompletionStats: vi.fn()
 }))
 
 describe('TaskListPageController', () => {
@@ -66,8 +65,6 @@ describe('TaskListPageController', () => {
 
       helper.buildTaskListData.mockReturnValue([{ title: 'Section 1', items: [] }])
       helper.getCompletionStats.mockReturnValue({ completed: 1, total: 2, isComplete: false })
-      helper.splitComponents.mockReturnValue([['above'], ['below']])
-
       const result = controller.getViewModel(mockRequest, mockContext)
 
       expect(helper.buildTaskListData).toHaveBeenCalledWith(expect.anything(), mockRequest.app.model, mockContext.state)
@@ -76,16 +73,49 @@ describe('TaskListPageController', () => {
         mockRequest.app.model,
         mockContext.state
       )
-      expect(helper.splitComponents).toHaveBeenCalled()
 
       expect(result).toMatchObject({
-        taskListSections: [{ title: 'Section 1', items: [] }],
+        tasks: [{ title: 'Section 1', items: [] }],
         completionStats: { completed: 1, total: 2, isComplete: false },
         someConfig: 'value',
         isComplete: false,
-        aboveComponents: ['above'],
-        belowComponents: ['below']
+        aboveComponents: [],
+        belowComponents: []
       })
+    })
+
+    it('should split components into aboveComponents and belowComponents', () => {
+      const mockRequest = {
+        app: {
+          model: { def: { metadata: {} } }
+        }
+      }
+      const mockContext = { state: {} }
+
+      helper.buildTaskListData.mockReturnValue([])
+      helper.getCompletionStats.mockReturnValue({ completed: 0, total: 0, isComplete: true })
+
+      // Override the super getViewModel to return components with positions
+      controller.pageDef = {
+        metadata: { tasklist: {} }
+      }
+      vi.spyOn(Object.getPrototypeOf(Object.getPrototypeOf(controller)), 'getViewModel').mockReturnValue({
+        page: {
+          def: controller.pageDef,
+          collection: {
+            components: [
+              { type: 'Html', content: 'above', options: { position: 'above' }, isFormComponent: false, title: 'A' },
+              { type: 'Html', content: 'below', options: { position: 'below' }, isFormComponent: false, title: 'B' }
+            ]
+          }
+        }
+      })
+
+      const result = controller.getViewModel(mockRequest, mockContext)
+      expect(result.aboveComponents).toHaveLength(1)
+      expect(result.aboveComponents[0].model.content).toBe('above')
+      expect(result.belowComponents).toHaveLength(1)
+      expect(result.belowComponents[0].model.content).toBe('below')
     })
 
     it('should use empty state if context.state is missing', () => {

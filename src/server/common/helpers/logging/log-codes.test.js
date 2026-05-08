@@ -494,14 +494,27 @@ describe('LogCodes', () => {
       [
         'VALIDATE_APPLICATION_ERROR',
         'error',
-        { errorMessage: 'testErrorMessage', parcelId: 'testParcelId', sheetId: 'testSheetId' },
-        `Error validating application: testErrorMessage | parcelId: testParcelId | sheetId: testSheetId`
+        {
+          errorMessage: 'testErrorMessage',
+          statusCode: 422,
+          sbi: TEST_SBI.DEFAULT,
+          parcelId: 'testParcelId',
+          sheetId: 'testSheetId',
+          selectedActions: ['CMOR1']
+        },
+        `Error validating application: testErrorMessage | statusCode: 422 | sbi: ${TEST_SBI.DEFAULT} | parcelId: testParcelId | sheetId: testSheetId | selectedActions: ["CMOR1"]`
       ],
       [
         'FETCH_ACTIONS_ERROR',
         'error',
-        { errorMessage: 'testErrorMessage', sbi: TEST_SBI.DEFAULT, parcelId: 'testParcelId', sheetId: 'testSheetId' },
-        `Error fetching actions: testErrorMessage | sbi: ${TEST_SBI.DEFAULT} | parcelId: testParcelId | sheetId: testSheetId`
+        {
+          errorMessage: 'testErrorMessage',
+          statusCode: 422,
+          sbi: TEST_SBI.DEFAULT,
+          parcelId: 'testParcelId',
+          sheetId: 'testSheetId'
+        },
+        `Error fetching actions: testErrorMessage | statusCode: 422 | sbi: ${TEST_SBI.DEFAULT} | parcelId: testParcelId | sheetId: testSheetId`
       ],
       [
         'UNAUTHORISED_PARCEL',

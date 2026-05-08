@@ -1,4 +1,4 @@
-import { buildTaskListData, getCompletionStats, splitComponents } from './task-list.helper.js'
+import { buildTaskListData, getCompletionStats } from './task-list.helper.js'
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 
 export default class TaskListPageController extends QuestionPageController {
@@ -25,11 +25,11 @@ export default class TaskListPageController extends QuestionPageController {
     // Config options
     const tasklistConfig = viewModel.page.def.metadata.tasklist ?? {}
 
-    // Build task list data from sections and pages
-    const taskListSections = buildTaskListData(viewModel, formModel, state)
+    // Build task list data from tasks and task pages
+    const tasks = buildTaskListData(viewModel, formModel, state)
     const completionStats = getCompletionStats(viewModel, formModel, state)
 
-    if (taskListSections.length === 1 && formModel?.sections?.[0]) {
+    if (tasks.length === 1 && formModel?.sections?.[0]) {
       formModel.sections[0].hideTitle = true
     }
 
@@ -38,7 +38,7 @@ export default class TaskListPageController extends QuestionPageController {
 
     return {
       ...viewModel,
-      taskListSections,
+      tasks,
       completionStats,
       ...tasklistConfig,
       isComplete: completionStats.completed === completionStats.total,
@@ -46,6 +46,38 @@ export default class TaskListPageController extends QuestionPageController {
       belowComponents
     }
   }
+}
+
+/**
+ * Maps a component to a ViewModel component
+ * @param {object} component - The component to map
+ * @returns {object} The mapped ViewModel component
+ */
+function mapComponentToViewModelComponent(component) {
+  return {
+    type: component.type,
+    isFormComponent: component.isFormComponent,
+    model: {
+      content: component.content,
+      html: component.content,
+      summaryHtml: component.title
+    }
+  }
+}
+
+/**
+ * Splits components into above and below positions
+ * @param {object[]} components - Array of components
+ * @returns {[object[], object[]]} Array of above and below components
+ */
+function splitComponents(components) {
+  const aboveComponents = components
+    .filter((component) => component.options?.position === 'above')
+    .map(mapComponentToViewModelComponent)
+  const belowComponents = components
+    .filter((component) => component.options?.position === 'below')
+    .map(mapComponentToViewModelComponent)
+  return [aboveComponents, belowComponents]
 }
 
 /**

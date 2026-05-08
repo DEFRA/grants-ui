@@ -160,7 +160,7 @@ describe('wmp/payments/calculate', () => {
       .executeTest(async (mockserver) => {
         await expect(
           postToLandGrantsApi('/api/v1/wmp/payments/calculate', invalidPayload, mockserver.url)
-        ).rejects.toMatchObject({ code: 400, message: 'Bad Request' })
+        ).rejects.toMatchObject({ code: 400, status: 400 })
       })
   })
 })
@@ -325,7 +325,7 @@ describe('wmp/validate', () => {
       })
       .executeTest(async (mockserver) => {
         await expect(postToLandGrantsApi('/api/v1/wmp/validate', invalidPayload, mockserver.url)).rejects.toMatchObject(
-          { code: 400, message: 'Bad Request' }
+          { code: 400, status: 400 }
         )
       })
   })

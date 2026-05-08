@@ -14,7 +14,7 @@ export default class CommonSelectLandParcelPageController extends LandGrantsQues
 
   /**
    * @param {FormModel} model
-   * @param {import('@defra/forms-model').Page} pageDef
+   * @param {PageQuestion} pageDef
    */
   constructor(model, pageDef) {
     super(model, pageDef)
@@ -210,6 +210,7 @@ export default class CommonSelectLandParcelPageController extends LandGrantsQues
 /**
  * @import { FormContext, AnyFormRequest, FormSubmissionState } from '@defra/forms-engine-plugin/engine/types.js'
  * @import { FormModel } from '@defra/forms-engine-plugin/engine/models/index.js'
+ * @import { PageQuestion } from '@defra/forms-model'
  * @import { ResponseToolkit } from '@hapi/hapi'
  * @import { RadioItem, Parcel } from '../../view-models/parcel.view-model.js'
  */
