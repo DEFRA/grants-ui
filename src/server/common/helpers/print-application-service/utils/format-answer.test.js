@@ -198,6 +198,34 @@ describe('formatAnswer', () => {
     })
   })
 
+  describe('EastingNorthingField', () => {
+    const component = { type: 'EastingNorthingField' }
+
+    test('should join easting and northing with a comma', () => {
+      expect(formatAnswer(component, { easting: 530000, northing: 180000 })).toBe('530000, 180000')
+    })
+
+    test('should handle a zero easting', () => {
+      expect(formatAnswer(component, { easting: 0, northing: 180000 })).toBe('0, 180000')
+    })
+
+    test('should stringify non-object value', () => {
+      expect(formatAnswer(component, 'not an object')).toBe('not an object')
+    })
+  })
+
+  describe('LatLongField', () => {
+    const component = { type: 'LatLongField' }
+
+    test('should join latitude and longitude with a comma', () => {
+      expect(formatAnswer(component, { latitude: 51.51945, longitude: -0.127758 })).toBe('51.51945, -0.127758')
+    })
+
+    test('should stringify non-object value', () => {
+      expect(formatAnswer(component, 'not an object')).toBe('not an object')
+    })
+  })
+
   describe('string-type fields', () => {
     test.each([
       ['TextField', 'some text'],

@@ -13,7 +13,9 @@ export const COMPONENT_TYPES = {
   RadiosField: 'RadiosField',
   SelectField: 'SelectField',
   AutocompleteField: 'AutocompleteField',
-  CheckboxesField: 'CheckboxesField'
+  CheckboxesField: 'CheckboxesField',
+  EastingNorthingField: 'EastingNorthingField',
+  LatLongField: 'LatLongField'
 }
 
 export const MONTH_NAMES = [
