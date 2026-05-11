@@ -49,6 +49,7 @@ export class UpdateDetailsPageController extends TerminalPageController {
 export default class CheckDetailsController extends QuestionPageController {
   viewName = 'check-details'
   confirmationFieldName
+  isSfdEnabled
 
   /**
    * @param {FormModel} model
@@ -108,6 +109,7 @@ export default class CheckDetailsController extends QuestionPageController {
     this.model = model
     this.pageDef = patchedPageDef
     this.confirmationFieldName = confirmationFieldName
+    this.isSfdEnabled = isSfdEnabled
   }
 
   /**
@@ -120,7 +122,7 @@ export default class CheckDetailsController extends QuestionPageController {
   ensureUpdateDetailsPage() {
     // When SFD external redirect is enabled, the user is sent directly to the external
     // service on clicking No — the update-details page is never needed or shown.
-    if (config.get('externalLinks.sfd.enabled')) {
+    if (this.isSfdEnabled) {
       return
     }
     const { model, confirmationFieldName } = this
@@ -211,7 +213,7 @@ export default class CheckDetailsController extends QuestionPageController {
         return h.view(viewName, viewModel)
       }
 
-      if (confirmationValue === false && config.get('externalLinks.sfd.enabled')) {
+      if (confirmationValue === false && this.isSfdEnabled) {
         // When SFD external redirect is enabled, do NOT persist the confirmation answer.
         // Saving detailsConfirmed: false would cause the engine to treat check-details as
         // "answered" when walking from start/summary, routing past it instead of back to it.
