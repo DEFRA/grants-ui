@@ -1,14 +1,12 @@
-import { world } from '@wdio/cucumber-framework'
+export function getExpectationIdStore(world) {
+  const ids = world.expectationIds
 
-class ExpectationIdStore {
-  get all() {
-    return world.expectationIds || []
-  }
-
-  push(expectationId) {
-    world.expectationIds = world.expectationIds || []
-    world.expectationIds.push(expectationId)
+  return {
+    get all() {
+      return [...ids]
+    },
+    push(expectationId) {
+      ids.push(expectationId)
+    }
   }
 }
-
-export default new ExpectationIdStore()

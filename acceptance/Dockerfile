@@ -1,15 +1,15 @@
-FROM node:24-alpine
+FROM mcr.microsoft.com/playwright:v1.59.1-noble
 
 ENV TZ="Europe/London"
 
-USER node
+USER pwuser
 
-WORKDIR /home/node/app
+WORKDIR /home/pwuser/app
 
-COPY --chown=node:node . .
+COPY --chown=pwuser:pwuser . .
 
 RUN npm install
 
-ENTRYPOINT [ "./entrypoint.sh" ]
+ENTRYPOINT [ "/bin/sh", "./entrypoint.sh" ]
 
 CMD ["npm", "run", "test:ci"]

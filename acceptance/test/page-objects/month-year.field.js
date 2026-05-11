@@ -3,16 +3,16 @@ export default class MonthYearField {
     this.id = id
   }
 
-  async set(month, year) {
-    await this.#monthSelector().setValue(month)
-    await this.#yearSelector().setValue(year)
+  async set(page, month, year) {
+    await this.#monthSelector(page).fill(month)
+    await this.#yearSelector(page).fill(year)
   }
 
-  #monthSelector() {
-    return $(`//input[@id='${this.id}__month']`)
+  #monthSelector(page) {
+    return page.locator(`//input[@id='${this.id}__month']`)
   }
 
-  #yearSelector() {
-    return $(`//input[@id='${this.id}__year']`)
+  #yearSelector(page) {
+    return page.locator(`//input[@id='${this.id}__year']`)
   }
 }

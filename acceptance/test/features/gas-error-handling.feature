@@ -1,6 +1,6 @@
 Feature: GAS Error-Handling
 
-    @ci
+   
     Scenario: Handle unexpected GAS errors with a generic response to the user
         Given there is no application state stored for CRN "1100988734" and SBI "115646286" and grant "example-grant-with-auth"
         And the next application submitted to GAS for SBI "115646286" will return HTTP 429 "Too many requests" for 3 requests

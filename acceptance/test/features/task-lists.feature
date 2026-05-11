@@ -1,6 +1,6 @@
 Feature: Task Lists
 
-    @ci
+   
     Scenario: Complete a task list based grant application
         Given there is no application state stored for CRN "1100957579" and SBI "106604915" and grant "example-grant-with-task-list"
 

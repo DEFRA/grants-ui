@@ -1,12 +1,12 @@
 class DefraAccountBar {
-  async signOut() {
-    await $(`//div[@class='defra-account-bar']//a[contains(text(),'Sign out')]`).click()
+  async signOut(page) {
+    await page.locator(`//div[@class='defra-account-bar']//a[contains(text(),'Sign out')]`).click()
   }
 
-  async sbi() {
-    const elementText = await $(
-      `//div[@class='defra-account-bar']//div[contains(text(),'Single business identifier (SBI):')]`
-    ).getText()
+  async sbi(page) {
+    const elementText = await page
+      .locator(`//div[@class='defra-account-bar']//div[contains(text(),'Single business identifier (SBI):')]`)
+      .textContent()
     return elementText.split(':')[1].trim()
   }
 }

@@ -1,32 +1,24 @@
-import { world } from '@wdio/cucumber-framework'
+export function getReferenceNumberStore(world) {
+  const refs = world.referenceNumbers
 
-class ReferenceNumberStore {
-  get current() {
-    const refs = world.referenceNumbers || []
-    return refs[refs.length - 1]
-  }
-
-  get previous() {
-    const refs = world.referenceNumbers || []
-    return refs[refs.length - 2]
-  }
-
-  get first() {
-    return world.referenceNumbers?.[0]
-  }
-
-  get second() {
-    return world.referenceNumbers?.[1]
-  }
-
-  get third() {
-    return world.referenceNumbers?.[2]
-  }
-
-  push(referenceNumber) {
-    world.referenceNumbers = world.referenceNumbers || []
-    world.referenceNumbers.push(referenceNumber)
+  return {
+    get current() {
+      return refs[refs.length - 1]
+    },
+    get previous() {
+      return refs[refs.length - 2]
+    },
+    get first() {
+      return refs[0]
+    },
+    get second() {
+      return refs[1]
+    },
+    get third() {
+      return refs[2]
+    },
+    push(referenceNumber) {
+      refs.push(referenceNumber)
+    }
   }
 }
-
-export default new ReferenceNumberStore()

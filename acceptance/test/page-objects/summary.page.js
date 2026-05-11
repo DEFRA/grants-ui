@@ -1,35 +1,43 @@
-import SummaryAnswer from '../dto/summary-answer'
+import SummaryAnswer from '../dto/summary-answer.js'
 
 class SummaryPage {
-  async answers() {
+  async answers(page) {
     const summaryAnswers = []
 
+    await page.locator('//h1/following-sibling::dl/div[1]').waitFor({ state: 'visible' })
+
     for (let i = 1; ; i++) {
-      if (!(await $(`//h1/following-sibling::dl/div[${i}]`).isExisting())) {
+      const row = page.locator(`//h1/following-sibling::dl/div[${i}]`)
+      if (!(await row.isVisible().catch(() => false))) {
         break
       }
 
-      const question = (await $(`//h1/following-sibling::dl/div[${i}]/dt`).getText()).trim()
+      const question = (await page.locator(`//h1/following-sibling::dl/div[${i}]/dt`).textContent()).trim()
       const summaryAnswer = new SummaryAnswer(question)
       summaryAnswers.push(summaryAnswer)
 
-      if (await $(`//h1/following-sibling::dl/div[${i}]/dd[1]/ul`).isExisting()) {
-        // answers are in LI elements
-        summaryAnswer.answers = await Promise.all(
-          await $$(`//h1/following-sibling::dl/div[${i}]/dd[1]/ul/li`).map(async (e) => (await e.getText()).trim())
-        )
+      const hasList = await page
+        .locator(`//h1/following-sibling::dl/div[${i}]/dd[1]/ul`)
+        .isVisible()
+        .catch(() => false)
+      if (hasList) {
+        const items = await page.locator(`//h1/following-sibling::dl/div[${i}]/dd[1]/ul/li`).all()
+        summaryAnswer.answers = await Promise.all(items.map(async (e) => (await e.textContent()).trim()))
       } else {
-        summaryAnswer.answers = (await $(`//h1/following-sibling::dl/div[${i}]/dd[1]`).getText())
-          .split(/\r\n|\r|\n/)
-          .map((e) => e.trim())
+        summaryAnswer.answers = await page.locator(`//h1/following-sibling::dl/div[${i}]/dd[1]`).evaluate((el) =>
+          el.innerHTML
+            .split(/<br\s*\/?>/i)
+            .map((s) => s.replace(/<[^>]*>/g, '').trim())
+            .filter((s) => s.length > 0)
+        )
       }
     }
 
     return summaryAnswers
   }
 
-  async changeAnswerFor(question) {
-    await $(`//dt[contains(text(),'${question}')]/following-sibling::dd[2]/a`).click()
+  async changeAnswerFor(page, question) {
+    await page.locator(`//dt[contains(text(),'${question}')]/following-sibling::dd[2]/a`).click()
   }
 }
 

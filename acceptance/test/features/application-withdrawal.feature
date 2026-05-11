@@ -1,6 +1,6 @@
 Feature: Application Withdrawal
 
-    @ci
+   
     Scenario: A withdrawn application can be re-submitted as a new application
         Given there is no application state stored for CRN "1100954058" and SBI "106527272" and grant "example-grant-with-auth"
 

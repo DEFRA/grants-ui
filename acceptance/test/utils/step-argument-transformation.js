@@ -1,11 +1,17 @@
-import referenceNumbers from './reference-number-store'
+import { getReferenceNumberStore } from './reference-number-store.js'
 
-export function transformStepArgument(value) {
+export function transformStepArgument(value, world) {
   if (value === '{DATE IN A WEEK}') {
     const date = new Date()
     date.setDate(date.getUTCDate() + 7)
     return `${date.getUTCDate()} ${date.toLocaleString('default', { month: 'long' })} ${date.getUTCFullYear()}`
   }
+
+  if (!world) {
+    return value
+  }
+
+  const referenceNumbers = getReferenceNumberStore(world)
 
   if (value === '{REFERENCE NUMBER}' || value === '{CURRENT REFERENCE NUMBER}') {
     if (!referenceNumbers.current) {

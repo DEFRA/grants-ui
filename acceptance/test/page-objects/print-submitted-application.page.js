@@ -1,19 +1,22 @@
 class PrintSubmittedApplicationPage {
-  async referenceNumber() {
-    return (await $(`//p[contains(text(),'Application number:')]/strong`).getText()).trim()
+  async referenceNumber(page) {
+    return (await page.locator(`//p[contains(text(),'Application number:')]/strong`).textContent()).trim()
   }
 
-  async submittedAnswers() {
+  async submittedAnswers(page) {
     const submittedAnswers = []
 
     for (let i = 1; ; i++) {
-      if (!(await $(`//h2[text()='Submitted answers']/following-sibling::dl/div[${i}]`).isExisting())) {
+      const row = page.locator(`//h2[text()='Submitted answers']/following-sibling::dl/div[${i}]`)
+      if (!(await row.isVisible().catch(() => false))) {
         break
       }
 
-      const question = (await $(`//h2[text()='Submitted answers']/following-sibling::dl/div[${i}]/dt`).getText()).trim()
+      const question = (
+        await page.locator(`//h2[text()='Submitted answers']/following-sibling::dl/div[${i}]/dt`).textContent()
+      ).trim()
       const answer = (
-        await $(`//h2[text()='Submitted answers']/following-sibling::dl/div[${i}]/dd[1]`).getText()
+        await page.locator(`//h2[text()='Submitted answers']/following-sibling::dl/div[${i}]/dd[1]`).textContent()
       ).trim()
       submittedAnswers.push({ question, answer })
     }
@@ -21,17 +24,22 @@ class PrintSubmittedApplicationPage {
     return submittedAnswers
   }
 
-  async applicantDetails() {
+  async applicantDetails(page) {
     const details = []
 
     for (const section of ['Your details', 'Business details', 'Contact details']) {
       for (let i = 1; ; i++) {
-        if (!(await $(`//h3[text()='${section}']/following-sibling::dl[1]/div[${i}]`).isExisting())) {
+        const row = page.locator(`//h3[text()='${section}']/following-sibling::dl[1]/div[${i}]`)
+        if (!(await row.isVisible().catch(() => false))) {
           break
         }
 
-        const title = (await $(`//h3[text()='${section}']/following-sibling::dl[1]/div[${i}]/dt`).getText()).trim()
-        const value = (await $(`//h3[text()='${section}']/following-sibling::dl[1]/div[${i}]/dd[1]`).getText()).trim()
+        const title = (
+          await page.locator(`//h3[text()='${section}']/following-sibling::dl[1]/div[${i}]/dt`).textContent()
+        ).trim()
+        const value = (
+          await page.locator(`//h3[text()='${section}']/following-sibling::dl[1]/div[${i}]/dd[1]`).textContent()
+        ).trim()
         details.push({ title, value })
       }
     }
@@ -39,8 +47,8 @@ class PrintSubmittedApplicationPage {
     return details
   }
 
-  async hasConfigurableContent(text) {
-    return $(`//*[contains(.,'${text}')]`).isExisting()
+  async hasConfigurableContent(page, text) {
+    return (await page.locator(`//*[contains(.,'${text}')]`).count()) > 0
   }
 }
 

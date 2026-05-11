@@ -1,33 +1,38 @@
-import Task from '../dto/task'
-import TaskListApplicationStatus from '../dto/task-list-application-status'
-import TaskListGroup from '../dto/task-list-group'
+import Task from '../dto/task.js'
+import TaskListApplicationStatus from '../dto/task-list-application-status.js'
+import TaskListGroup from '../dto/task-list-group.js'
 
 class TaskListPage {
-  async applicationStatus() {
-    const statusText = await $("//h2[contains(text(),'Application status')]/following-sibling::p[1]").getText()
+  async applicationStatus(page) {
+    const statusText = await page
+      .locator(`//h2[contains(text(),'Application status')]/following-sibling::p[1]`)
+      .textContent()
     const [completed, total] = statusText.match(/\d+/g).map(Number)
     return new TaskListApplicationStatus(completed, total)
   }
 
-  async groups() {
-    const groupHeadingElements = await $$(`//h2[@class='govuk-heading-m']`)
+  async groups(page) {
+    const groupHeadingElements = await page.locator(`//h2[@class='govuk-heading-m']`).all()
     return await Promise.all(
-      await groupHeadingElements.map(async (e) => {
-        return new TaskListGroup((await e.getText()).trim(), await this.#getTasksForGroup(e))
+      groupHeadingElements.map(async (e) => {
+        return new TaskListGroup((await e.textContent()).trim(), await this.#getTasksForGroup(e))
       })
     )
   }
 
-  async selectTask(taskName) {
-    await $(`//h2[@class='govuk-heading-m']/following-sibling::ul/li/div/a[contains(text(),'${taskName}')]`).click()
+  async selectTask(page, taskName) {
+    await page
+      .locator(`//h2[@class='govuk-heading-m']/following-sibling::ul/li/div/a[contains(text(),'${taskName}')]`)
+      .click()
   }
 
   async #getTasksForGroup(groupHeadingElement) {
-    const liElements = await groupHeadingElement.nextElement().$$('li')
+    // The ul immediately follows the h2 in the DOM
+    const liElements = await groupHeadingElement.locator('xpath=following-sibling::ul[1]/li').all()
     return await Promise.all(
-      await liElements.map(async (li) => {
-        const taskName = (await li.$('div.govuk-task-list__name-and-hint').getText()).trim()
-        const status = (await li.$('div.govuk-task-list__status').getText()).trim()
+      liElements.map(async (li) => {
+        const taskName = (await li.locator('div.govuk-task-list__name-and-hint').textContent()).trim()
+        const status = (await li.locator('div.govuk-task-list__status').textContent()).trim()
         return new Task(taskName, status)
       })
     )

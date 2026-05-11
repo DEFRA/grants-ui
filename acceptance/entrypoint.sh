@@ -2,10 +2,10 @@
 
 echo "Executing: $@"
 "$@"
+STATUS=$?
 
-if [ -f FAILED ]; then
+if [ $STATUS -ne 0 ]; then
   echo "test suite failed"
-  cat ./FAILED
   exit 1
 fi
 

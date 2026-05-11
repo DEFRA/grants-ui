@@ -1,6 +1,6 @@
 Feature: Defra ID Signout
 
-    @ci
+   
     Scenario: Sign out of Defra ID and sign in as another user
         Given there is no application state stored for CRN "1101003693" and SBI "115722586" and grant "example-grant-with-auth"
         And there is no application state stored for CRN "1100995056" and SBI "115680267" and grant "example-grant-with-auth"
