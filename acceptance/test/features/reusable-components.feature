@@ -15,6 +15,17 @@ Feature: Reusable Components
         Then the user should be at URL "check-details"
         And should see heading "Check your details"
         And the page is analyzed for accessibility
+        When the user selects "No"
+        And continues
+
+        # update-details
+        Then the user should be at URL "update-details"
+        And should see heading "Contact the RPA to update your details"
+        And the page is analyzed for accessibility
+        When the user navigates backward
+        
+        # check-details
+        Then the user should be at URL "check-details"
         When the user selects "Yes"
         And continues
 
