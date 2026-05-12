@@ -52,6 +52,7 @@
     "test:stryker": "vitest run --config vitest.stryker.config.js",
     "test:contracts": "vitest run --config vitest.contracts.config.js",
     "test:acceptance": "./tools/run-acceptance-tests.sh",
+    "test:acceptance:rebuild": "docker compose -f compose.tests.yml build grants-ui-acceptance-tests",
     "test:performance": "./tools/run-performance-tests.sh",
     "test:all": "./tools/run-all-tests.sh",
     "test:watch": "vitest --watch",

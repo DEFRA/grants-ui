@@ -10,6 +10,12 @@ Feature: Application Lifecycle
         Then the user should see heading "Example Grant"
         When the user clicks on "Start now"
 
+        # check-details
+        Then the user should be at URL "check-details"
+        And should see heading "Check your details"
+        When the user selects "Yes"
+        And continues
+
         # yes-no-field
         Then the user should be at URL "yes-no-field"
         When the user selects "Yes"
@@ -31,9 +37,14 @@ Feature: Application Lifecycle
             | Option two   |
         And continues
 
-        # number-field
-        Then the user should be at URL "number-field"
+        # number-field-validation
+        Then the user should be at URL "number-field-validation"
         When the user enters "100000" for "Enter amount"
+        And continues
+
+        # number-field-routing
+        Then the user should be at URL "number-field-routing"
+        When the user enters "50000" for "Enter amount that may divert the journey"
         And continues
 
         # date-parts-field
@@ -56,31 +67,69 @@ Feature: Application Lifecycle
         When the user enters "Lorem ipsum" for MultilineTextField "MultilineTextField Example"
         And continues
 
+        # email-address-field
+        Then the user should be at URL "email-address-field"
+        When the user enters "test@example.com" for "EmailAddressField Example"
+        And continues
+
+        # telephone-number-field
+        Then the user should be at URL "telephone-number-field"
+        When the user enters "01234 567890" for "TelephoneNumberField Example"
+        And continues
+
+        # uk-address-field
+        Then the user should be at URL "uk-address-field"
+        When the user enters the following
+            | FIELD          | VALUE             |
+            | Address line 1 | 1 Example Street  |
+            | Town or city   | Exampleton        |
+            | Postcode       | EX1 1EX           |
+        And continues
+
+        # location-components
+        Then the user should be at URL "location-components"
+        When the user enters the following
+            | FIELD                       | VALUE          |
+            | Easting                     | 530000         |
+            | Northing                    | 180000         |
+            | OS national grid reference  | ST 678 678     |
+            | National Grid field number  | NG 1234 5678   |
+            | Latitude                    | 51.519450      |
+            | Longitude                   | -0.127758      |
+            | GeospatialField             | [{"type":"Feature","properties":{"description":"Example location","coordinateGridReference":"ST 00001","centroidGridReference":"ST 00001"},"geometry":{"coordinates":[-2.5723699109417737,53.2380485215034],"type":"Point"},"id":"a"}] |
+        And continues
+
+        # hidden-field
+        Then the user should be at URL "hidden-field"
+        When the user continues
+
+        # multi-field-form
+        Then the user should be at URL "multi-field-form"
+        When the user enters the following
+            | FIELD               | VALUE                                          |
+            | Project name        | Test project                                   |
+            | Project description | Project description for the journey runner.    |
+            | Project budget      | 50000                                          |
+        And continues
+
+        # repeat-page (item entry)
+        Then the user should be at URL "repeat-page"
+        When the user enters the following
+            | FIELD     | VALUE               |
+            | Item name | Repeat item example |
+            | Amount    | 12000               |
+        And continues
+
+        # repeat-page (list summary)
+        When the user continues
+
         # select-land-parcel
         Then the user should be at URL "select-land-parcel"
         When the user selects the following
             | SD6351 8781 |
         And continues
 
-        # multi-field-form
-        Then the user should be at URL "multi-field-form"
-        When the user enters the following
-            | FIELD                     | VALUE                                              |
-            | Name                      | James Test-Farmer                                  |
-            | Email address             | cl-defra-gae-test-applicant-email@equalexperts.com |
-            | Mobile number             | 07777 123456                                       |
-            | Address line 1            | Test Farm                                          |
-            | Address line 2 (optional) | Cogenhoe                                           |
-            | Town                      | Northampton                                        |
-            | County (optional)         | Northamptonshire                                   |
-            | Postcode                  | NN7 1NN                                            |
-        And continues
-
-        # check-details
-        Then the user should be at URL "check-details"
-        And should see heading "Check your details"
-        When the user selects "Yes"
-        And continues
+        # check-details was moved to after start; no longer visited here
 
         # summary
         Then the user should be at URL "summary"
@@ -97,13 +146,15 @@ Feature: Application Lifecycle
 
         # validate Mongo state storage
         And the following application state should be stored for CRN "1100995048" and SBI "115664358" and grant "example-grant-with-auth"
-            | FIELD               | VALUE              |
-            | $$__referenceNumber | {REFERENCE NUMBER} |
-            | applicationStatus   | SUBMITTED          |
-            | submittedBy         | 1100995048         |
-            | autocompleteField   | ENG                |
-            | multilineTextField  | Lorem ipsum        |
-            | applicantName       | James Test-Farmer  |
+            | FIELD                | VALUE              |
+            | $$__referenceNumber  | {REFERENCE NUMBER} |
+            | applicationStatus    | SUBMITTED          |
+            | submittedBy          | 1100995048         |
+            | autocompleteField    | ENG                |
+            | multilineTextField   | Lorem ipsum        |
+            | emailAddressField    | test@example.com   |
+            | telephoneNumberField | 01234 567890       |
+            | projectName          | Test project       |
 
         # validate Mongo submission storage
         And the following application submissions should be stored for CRN "1100995048" and SBI "115664358" and grant "example-grant-with-auth"

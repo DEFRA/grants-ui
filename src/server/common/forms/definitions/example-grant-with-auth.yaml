@@ -158,19 +158,25 @@ pages:
         type: Details
         content: |+
           <ul class="govuk-list govuk-list--bullet">
-            <li>AutocompleteField</li>
-            <li>CheckboxesField</li>
-            <li>DatePartsField</li>
-            <li>EmailAddressField</li>
-            <li>MonthYearField</li>
-            <li>MultilineTextField</li>
-            <li>NumberField</li>
-            <li>RadiosField</li>
-            <li>SelectField</li>
-            <li>TelephoneNumberField</li>
-            <li>TextField</li>
-            <li>UkAddressField</li>
             <li>YesNoField</li>
+            <li>AutocompleteField</li>
+            <li>RadiosField</li>
+            <li>CheckboxesField</li>
+            <li>NumberField</li>
+            <li>DatePartsField</li>
+            <li>MonthYearField</li>
+            <li>SelectField</li>
+            <li>MultilineTextField</li>
+            <li>EmailAddressField</li>
+            <li>TelephoneNumberField</li>
+            <li>UkAddressField</li>
+            <li>EastingNorthingField</li>
+            <li>OsGridRefField</li>
+            <li>NationalGridFieldNumberField</li>
+            <li>LatLongField</li>
+            <li>GeospatialField</li>
+            <li>HiddenField</li>
+            <li>TextField</li>
           </ul>
 
         id: dc4b8bac-ac3d-43ba-ae28-575997f8836d
@@ -181,10 +187,13 @@ pages:
         type: Details
         content: |+
           <ul class="govuk-list govuk-list--bullet">
+            <li>Check details page</li>
+            <li>Terminal page</li>
+            <li>Conditional page</li>
+            <li>Repeat page</li>
             <li>Summary page</li>
             <li>Declaration page</li>
             <li>Confirmation page</li>
-            <li>Terminal page</li>
           </ul>
 
         id: 884fd5d0-12da-4156-8396-348cce116c96
@@ -210,6 +219,10 @@ pages:
         options: {}
         schema: {}
     id: 89f408cd-6953-4f6b-b31c-f957c520fb67
+  - title: Check your details
+    path: /check-details
+    controller: CheckDetailsController
+    id: f7a2c8b1-3d4e-5f6a-7b8c-9d0e1f2a3b4c
   - title: YesNoField Example
     path: /yes-no-field
     components:
@@ -327,17 +340,31 @@ pages:
         id: b9c60a2f-2c1a-43fd-96f0-7ea6a566ca9a
         schema: {}
     id: 738a8007-fc6e-4a23-b284-d68be8bf02ee
-  - title: NumberField Example
-    path: /number-field
+  - title: Checkbox follow-up
+    path: /checkboxes-follow-up
     components:
-      - name: projectCostInfo
+      - name: checkboxesFollowUpInfo
+        title: Html
+        type: Html
+        content: |
+          <p class="govuk-body">You selected option three. This page demonstrates routing when a CheckboxesField <em>contains</em> a specific list item (the operator : contains condition on a ListItemRef). The journey runner ticks only the first option, so this page is only reached when you select option three manually.</p>
+        id: e6d9fda0-1b2c-3d4e-5f6a-7b8c9daebfc0
+        options: {}
+        schema: {}
+    condition: f7eaaeb1-2c3d-4e5f-6a7b-8c9daebfc0d1
+    id: d5c8ecf9-0a1b-2c3d-4e5f-6a7b8c9daebf
+  - title: NumberField with validation
+    path: /number-field-validation
+    components:
+      - name: numberFieldValidationInfo
         type: Html
         title: Html
-        content: <p class="govuk-hint">Enter cost of items, for example 695000</p>
+        content: |
+          <p class="govuk-body">This page demonstrates a NumberField with schema-level validation. The engine rejects values outside £10,000 to £999,999 and re-renders the page with a custom error message. You cannot move on until the value is in range.</p>
         id: dc6894f1-b7b1-4873-8adb-7ac869da21f7
         options: {}
         schema: {}
-      - name: numberField
+      - name: numberFieldValidation
         type: NumberField
         title: Enter amount
         options:
@@ -348,7 +375,7 @@ pages:
           customValidationMessages:
             any.required: Enter the numeric value
             number.max: Enter a value less than £1 million
-            number.min: Enter a value of £10000 or more
+            number.min: Enter a value of £10,000 or more
         schema:
           min: 10000
           max: 999999
@@ -356,6 +383,46 @@ pages:
         shortDescription: Enter amount
         id: 4643daa8-d84a-4a1b-942c-3e5f8b53a5ad
     id: 57ee940c-a2ab-4c98-8733-887fb5c0d396
+  - title: NumberField with conditional routing
+    path: /number-field-routing
+    components:
+      - name: numberFieldRoutingInfo
+        type: Html
+        title: Html
+        content: |
+          <p class="govuk-body">This page demonstrates a NumberField that drives <em>conditional routing</em>: any value is accepted, but values over £100,000 send the user to the next page (/number-too-high) via an operator : is more than condition on a NumberValue.</p>
+        id: 7c3d2e1f-9a8b-4c5d-8e6f-1a2b3c4d5e6f
+        options: {}
+        schema: {}
+      - name: numberFieldRouting
+        type: NumberField
+        title: Enter amount that may divert the journey
+        options:
+          prefix: £
+          required: true
+          autocomplete: off
+          classes: govuk-!-width-one-third
+          customValidationMessages:
+            any.required: Enter the numeric value
+        schema:
+          precision: 0
+        shortDescription: Routing amount
+        id: 8d4e3f2a-0b9c-4d5e-9f7a-2b3c4d5e6f7a
+    id: 9e5f4a3b-1c0d-4e6f-8a7b-3c4d5e6f7a8b
+  - title: Number too high
+    path: /number-too-high
+    controller: TerminalPageController
+    components:
+      - name: numberTooHighInfo
+        title: Html
+        type: Html
+        content: |
+          <p class="govuk-body">The amount entered on the previous page is over £100,000. This page demonstrates routing when a NumberField exceeds a threshold (the operator : is more than condition on a NumberValue, applied to the <em>routing</em> NumberField on the previous page, not the validation NumberField). The journey runner enters £50,000 by default, so this page is only reached when you enter a higher value manually.</p>
+        id: a2f5b9c6-7d8e-9f0a-1b2c-3d4e5f6a7b8c
+        options: {}
+        schema: {}
+    condition: b3a6cad7-8e9f-0a1b-2c3d-4e5f6a7b8c9d
+    id: f1e4a8b5-6c7d-8e9f-0a1b-2c3d4e5f6a7b
   - title: DatePartsField Example
     path: /date-parts-field
     components:
@@ -421,6 +488,289 @@ pages:
         id: 264fbff1-35f6-49d3-98ae-b7582b1e41b5
         schema: {}
     id: 88d7b067-68c2-4fe1-9a9a-ea98f0752e03
+  - title: EmailAddressField Example
+    path: /email-address-field
+    components:
+      # EmailAddressField uses Joi's built-in `.email()` validator. The engine
+      # ignores `schema.regex`/`schema.max` for this component, so the GDS-
+      # recommended 254 character cap cannot be enforced via YAML. You would need
+      # a custom controller or upstream change to forms-engine-plugin.
+      # Engine sets type="email" and autocomplete="email" automatically.
+      - name: emailAddressField
+        title: Email address
+        type: EmailAddressField
+        hint: We'll only use this to contact you about your application
+        options:
+          required: true
+          customValidationMessages:
+            string.empty: Enter your email address
+            string.email: Enter an email address in the correct format, like name@example.com
+            any.required: Enter your email address
+        shortDescription: Email address
+        id: f2b3c4d5-e6f7-4a8b-9c0d-1e2f3a4b5c6d
+        schema: {}
+    id: e1a2b3c4-d5e6-4f7a-8b9c-0d1e2f3a4b5c
+  - title: TelephoneNumberField Example
+    path: /telephone-number-field
+    components:
+      # TelephoneNumberField only enforces a hardcoded character pattern
+      # (digits, spaces, +, brackets, hyphens). Length is NOT validated:
+      # the engine's TelephoneNumberField ignores schema.min/max. The hint
+      # below documents the expected length for users; enforce it via a
+      # custom controller or upstream change to forms-engine-plugin if needed.
+      - name: telephoneNumberField
+        title: Telephone number
+        type: TelephoneNumberField
+        hint: |
+          Use numbers only, with spaces, brackets, hyphens or a leading + for the country code.
+          UK numbers are usually 11 digits, for example 01234 567890. International numbers are typically 8 to 15 digits, for example +44 1234 567890.
+        options:
+          required: true
+          autocomplete: tel
+          classes: govuk-input--width-20
+          customValidationMessages:
+            string.empty: Enter a telephone number, like 01632 960 001, 07700 900 982 or +44 808 157 0192
+            any.required: Enter a telephone number, like 01632 960 001, 07700 900 982 or +44 808 157 0192
+            string.pattern.base: Enter a telephone number using only numbers, spaces, brackets, hyphens or a leading +
+        shortDescription: Telephone number
+        id: b4c5d6e7-f8a9-4b0c-9d1e-3f4a5b6c7d8e
+        schema: {}
+    id: a3b4c5d6-e7f8-4a9b-8c0d-2e3f4a5b6c7d
+  - title: UkAddressField Example
+    path: /uk-address-field
+    components:
+      - name: ukAddressFieldInfo
+        title: Html
+        type: Html
+        content: |
+          <p class="govuk-body">This is a compound component (UkAddressField), which renders multiple inputs for the parts of a UK address.</p>
+        id: d6e7f8a9-b0c1-4d2e-9f3a-5b6c7d8e9fa0
+        options: {}
+        schema: {}
+      # UkAddressField is configured by the engine to match the GDS address pattern:
+      # autocomplete address-line1/2, address-level2 (town), address-level1 (county),
+      # postal-code; town width-two-thirds, postcode width-10; required = address line 1,
+      # town, postcode; max 100 chars per line; postcode regex tolerates case and an
+      # optional internal space. Engine gap vs GDS: postcode regex does NOT accept
+      # punctuation (hyphens, brackets, full stops) that GDS recommends accepting.
+      - name: ukAddressField
+        title: Address
+        type: UkAddressField
+        options:
+          required: true
+        shortDescription: Address
+        id: e7f8a9b0-c1d2-4e3f-8a4b-6c7d8e9fa0b1
+        schema: {}
+    id: c5d6e7f8-a9b0-4c1d-8e2f-4a5b6c7d8e9f
+  - title: Location components Example
+    path: /location-components
+    components:
+      - name: locationComponentsInfo
+        title: Html
+        type: Html
+        content: |
+          <p class="govuk-body">This page demonstrates location components on a single page: EastingNorthingField, OsGridRefField, NationalGridFieldNumberField, LatLongField and GeospatialField.</p>
+        id: 8d2a6c4f-4b3e-4c6d-8e1f-9a7b8c4d5e6f
+        options: {}
+        schema: {}
+      - name: eastingNorthingField
+        title: Easting and northing
+        hint: British National Grid coordinates. Easting 0 to 700000, northing 0 to 1300000.
+        type: EastingNorthingField
+        options:
+          required: true
+        shortDescription: Easting and northing
+        id: 9e3b7d5a-4c4f-4d7e-9f2a-ab8c9d5e6f70
+        schema: {}
+      - name: osGridRefField
+        title: OS national grid reference
+        hint: Two letters and 6, 8 or 10 digits, for example ST 678 678 or SO 12345 12345.
+        type: OsGridRefField
+        options:
+          required: true
+          customValidationMessages:
+            string.empty: Enter an OS grid reference
+        shortDescription: OS grid reference
+        id: af4c8e6b-4d5a-4e8f-8a3b-bc9dae6f7081
+        schema: {}
+      - name: nationalGridFieldNumberField
+        title: National Grid field number
+        hint: Two letters and 8 digits in 2 blocks of 4, for example NG 1234 5678.
+        type: NationalGridFieldNumberField
+        options:
+          required: true
+          customValidationMessages:
+            string.empty: Enter a National Grid field number
+          classes: govuk-input--width-10
+        shortDescription: National Grid field number
+        id: b05d9f7c-4e6b-4f9a-9b4c-cdaebf708192
+        schema: {}
+      - name: latLongField
+        title: Latitude and longitude
+        hint: Decimal degrees within Great Britain. Latitude 49.85 to 60.859, longitude -13.687 to 1.767.
+        type: LatLongField
+        options:
+          required: true
+        shortDescription: Latitude and longitude
+        id: c16ea08d-4f7c-4a0b-8c5d-deafc08192a3
+        schema: {}
+      - name: geospatialFieldFormat
+        title: Format
+        type: Details
+        content: |
+          <p class="govuk-body">Enter a JSON array (between 1 and 50 items) of GeoJSON-style features. Each feature requires:</p>
+          <ul class="govuk-list govuk-list--bullet">
+            <li><code>id</code> — unique string</li>
+            <li><code>type</code> — must be <code>"Feature"</code></li>
+            <li><code>properties.description</code> — string</li>
+            <li><code>properties.coordinateGridReference</code> — string</li>
+            <li><code>properties.centroidGridReference</code> — string</li>
+            <li><code>geometry.type</code> — <code>"Point"</code>, <code>"LineString"</code> or <code>"Polygon"</code></li>
+            <li><code>geometry.coordinates</code> — <code>[longitude, latitude]</code> for Point; an array of at least 2 such pairs for LineString; an array of rings (each at least 3 pairs) for Polygon</li>
+          </ul>
+          <p class="govuk-body">Example (one Point feature):</p>
+          <pre class="govuk-body"><code>[
+            {
+              "id": "a",
+              "type": "Feature",
+              "properties": {
+                "description": "Example location",
+                "coordinateGridReference": "ST 00001",
+                "centroidGridReference": "ST 00001"
+              },
+              "geometry": {
+                "type": "Point",
+                "coordinates": [-2.5723699, 53.2380485]
+              }
+            }
+          ]</code></pre>
+        id: c08fa30a-4b9c-4d0e-8f1a-1c2d3e4f5061
+        options: {}
+        schema: {}
+      - name: geospatialField
+        title: GeospatialField
+        hint: Enter a JSON array of GeoJSON features (see the format guidance above).
+        type: GeospatialField
+        options:
+          required: true
+        shortDescription: GeospatialField
+        id: d27fb19e-4a8d-4b1c-9d6e-efb019283b40
+        schema: {}
+    id: 7c1f5b3e-4a2d-4b5c-9d0e-8f6a7b3c4d5e
+  - title: HiddenField Example
+    path: /hidden-field
+    components:
+      - name: hiddenFieldInfo
+        title: Html
+        type: Html
+        content: |
+          <p class="govuk-body">This page demonstrates a HiddenField. The component renders an <code>&lt;input type="hidden"&gt;</code> with no visible label, so users see only the surrounding guidance and the submit button. Hidden fields are typically populated by upstream pages, controllers or query parameters; here it is configured as optional so the journey can submit without a value.</p>
+        id: f4912d3a-4c0f-4d3e-9f80-01d23b4a5d62
+        options: {}
+        schema: {}
+      - name: hiddenField
+        title: Hidden field
+        type: HiddenField
+        options:
+          required: false
+        shortDescription: Hidden field
+        id: 05a23e4b-4310-4e4f-8a91-12e34c5b6e73
+        schema: {}
+    id: e3801c2f-4b9e-4c2d-8e7f-f0c12a394c51
+  - title: Multi Field Form Example
+    path: /multi-field-form
+    components:
+      - name: formInfo
+        title: Html
+        type: Html
+        content: >-
+          <p class="govuk-body">This is an example of a form containing multiple
+          components on the same page.<br>
+        id: 96f851a6-8758-42dd-9df5-e85e89b8cc14
+        options: {}
+        schema: {}
+      - type: TextField
+        name: projectName
+        title: Project name
+        options:
+          required: true
+          customValidationMessages:
+            string.empty: Enter a project name
+            string.max: Project name must be 100 characters or fewer
+        schema:
+          max: 100
+        shortDescription: Project name
+        id: 1f2a3b4c-5d6e-4a8b-9c0d-1e2f3a4b5c6d
+      - type: MultilineTextField
+        name: projectDescription
+        title: Project description
+        hint: Optional. Describe your project in up to 200 words.
+        options:
+          required: false
+          rows: 5
+          maxWords: 200
+        shortDescription: Project description
+        id: 2a3b4c5d-6e7f-4a9b-8c0d-1e2f3a4b5c7e
+      - type: NumberField
+        name: projectBudget
+        title: Project budget
+        hint: Enter the total project budget in pounds, for example 50000
+        options:
+          prefix: £
+          required: true
+          autocomplete: off
+          classes: govuk-!-width-one-third
+          customValidationMessages:
+            any.required: Enter the project budget
+            number.max: Enter a value less than £1 million
+            number.min: Enter a value of £1 or more
+        schema:
+          min: 1
+          max: 999999
+          precision: 0
+        shortDescription: Project budget
+        id: 3b4c5d6e-7f8a-4b9c-9d0e-1f2a3b4c5d8f
+    id: 089374a5-13e7-494d-994e-9b38c4b7392c
+  - title: RepeatPage Example
+    path: /repeat-page
+    controller: RepeatPageController
+    repeat:
+      options:
+        name: repeatItems
+        title: Item
+      schema:
+        min: 1
+        max: 10
+    components:
+      - name: repeatItemName
+        title: Item name
+        type: TextField
+        options:
+          required: true
+          customValidationMessages:
+            string.empty: Enter a name for this item
+        schema:
+          max: 100
+        shortDescription: Item name
+        id: d9c2e6f3-4a5b-6c7d-8e9f-0a1b2c3d4e5f
+      - name: repeatItemAmount
+        title: Amount
+        type: NumberField
+        options:
+          prefix: £
+          required: true
+          classes: govuk-!-width-one-third
+          customValidationMessages:
+            any.required: Enter an amount
+            number.min: Enter a value of £1 or more
+            number.max: Enter a value less than £1 million
+        schema:
+          min: 1
+          max: 999999
+          precision: 0
+        shortDescription: Amount
+        id: e0d3f7a4-5b6c-7d8e-9f0a-1b2c3d4e5f6a
+    id: c8b1d5e2-3f4a-5b6c-7d8e-9f0a1b2c3d4e
   - title: Select all the eligible land parcels for the location of your woodland
     controller: CommonSelectLandParcelPageController
     components:
@@ -481,84 +831,6 @@ pages:
         <p>We aim to respond to emails within 10 working days</p>
     path: /select-land-parcel
     id: f9f1a33b-2fb5-4418-951b-680067efc179
-  - title: Multi Field Form Example
-    path: /multi-field-form
-    components:
-      - name: formInfo
-        title: Html
-        type: Html
-        content: >-
-          <p class="govuk-body">This is an example of a form containing multiple
-          components:<br>
-
-          TextField, EmailAddressField, TelephoneNumberField and
-          UkAddressField.</p>
-
-          <p class="govuk-body">UkAddressField is a component that renders
-          multiple fields, some of which are optional.</p>
-        id: 96f851a6-8758-42dd-9df5-e85e89b8cc14
-        options: {}
-        schema: {}
-      - type: TextField
-        name: applicantName
-        title: Name
-        options:
-          required: true
-          customValidationMessages:
-            string.empty: Enter your name
-            string.max: Name must be 30 characters or fewer
-            string.pattern.base: Name must only include letters, hyphens and apostrophes
-        schema:
-          regex: ^[a-zA-Z' -]*$
-          max: 30
-        shortDescription: Name
-        id: a0a4c5de-fad5-4901-9b48-3e3a72eb9763
-      - type: EmailAddressField
-        name: applicantEmail
-        title: Email address
-        hint: Example of a hint
-        options:
-          required: true
-          customValidationMessages:
-            string.empty: Enter your email address
-            string.email: Enter an email address in the correct format, like name@example.com
-        schema:
-          regex: ^\w+([.-]\w+)*@[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*(\.[a-zA-Z]{2,})+$
-        shortDescription: Email address
-        id: da81e4a3-1557-4a1c-9be3-be0d0d96b767
-      - type: TelephoneNumberField
-        name: applicantMobile
-        title: Mobile number
-        options:
-          required: true
-          customValidationMessages:
-            string.empty: Enter a mobile number
-            string.pattern.base: Enter a telephone number, like 01632 960 001, 07700 900 982
-              or +44 0808 157 0192
-          autocomplete: tel
-        schema:
-          regex: ^\+?[0-9\s()-]{10,}$
-        shortDescription: Mobile number
-        id: b3bce07d-4897-4124-a965-7ca02d9356a5
-      - type: Html
-        name: applicantBusinessAddressHeader
-        title: Html
-        content: <h1 class="govuk-heading-m">Business address</h1>
-        id: 601ef0e8-bfe6-431f-b11f-1ca851edae3c
-        options: {}
-        schema: {}
-      - type: UkAddressField
-        title: Address
-        name: applicantBusinessAddress
-        shortDescription: Address
-        id: 509a72f9-4c5a-4375-a58d-b056094fd7b9
-        options: {}
-        schema: {}
-    id: 089374a5-13e7-494d-994e-9b38c4b7392c
-  - title: Check your details
-    path: /check-details
-    controller: CheckDetailsController
-    id: f7a2c8b1-3d4e-5f6a-7b8c-9d0e1f2a3b4c
   - title: Check your answers
     path: /summary
     controller: CheckResponsesPageController
@@ -736,4 +1008,22 @@ conditions:
         value:
           listId: 57f1e7a6-d27a-4144-ace6-6ddacad103df
           itemId: 277989e5-7414-47d0-93d5-b8b6469daeea
+  - id: b3a6cad7-8e9f-0a1b-2c3d-4e5f6a7b8c9d
+    displayName: numberFieldTooHigh
+    items:
+      - id: c4b7dbe8-9f0a-1b2c-3d4e-5f6a7b8c9dae
+        componentId: 8d4e3f2a-0b9c-4d5e-9f7a-2b3c4d5e6f7a
+        operator: is more than
+        type: NumberValue
+        value: 100000
+  - id: f7eaaeb1-2c3d-4e5f-6a7b-8c9daebfc0d1
+    displayName: checkboxesContainsThird
+    items:
+      - id: a8fbbfc2-3d4e-5f6a-7b8c-9daebfc0d1e2
+        componentId: b9c60a2f-2c1a-43fd-96f0-7ea6a566ca9a
+        operator: contains
+        type: ListItemRef
+        value:
+          listId: aae88d9a-2b7b-4a49-a7f4-1482d86e6be6
+          itemId: 7da1ec83-d30e-49ad-80f9-f433969b2e23
 schema: 2
