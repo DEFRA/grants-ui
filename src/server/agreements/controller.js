@@ -4,6 +4,7 @@ import Jwt from '@hapi/jwt'
 import { SystemError } from '~/src/server/common/utils/errors/SystemError.js'
 import { log } from '~/src/server/common/helpers/logging/log.js'
 import { LogCodes } from '~/src/server/common/helpers/logging/log-codes.js'
+import { logUpstreamError } from '~/src/server/common/helpers/logging/upstream-error.js'
 
 /**
  * Validates required configuration values
@@ -77,8 +78,7 @@ function buildProxyHeaders(token, request) {
 }
 
 function logAgreementsUpstreamError(request, error) {
-  log(
-    LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+  logUpstreamError(
     {
       endpoint: 'agreements',
       service: 'farming-grants-agreements-ui',

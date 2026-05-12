@@ -281,7 +281,8 @@ describe('Land Grants client', () => {
           service: 'grants-ui-backend',
           upstreamStatus: 502,
           errorMessage: 'Bad Gateway'
-        })
+        }),
+        undefined
       )
     })
 

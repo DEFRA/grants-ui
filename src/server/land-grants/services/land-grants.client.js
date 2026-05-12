@@ -1,25 +1,10 @@
 import { createApiHeadersForLandGrantsBackend } from '~/src/server/common/helpers/auth/backend-auth-helper.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { logUpstreamError } from '~/src/server/common/helpers/logging/upstream-error.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
 import { getConsentTypes } from '~/src/server/land-grants/utils/consent-types.js'
 
 const LAND_GRANTS_SERVICE = 'grants-ui-backend'
-
-/**
- * @param {string} endpoint
- * @param {number | null | undefined} status
- * @param {string} errorMessage
- * @param {number} [attempts]
- */
-function logUpstreamError(endpoint, status, errorMessage, attempts) {
-  log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
-    endpoint,
-    service: LAND_GRANTS_SERVICE,
-    upstreamStatus: status,
-    ...(attempts === undefined ? {} : { attempts }),
-    errorMessage
-  })
-}
 
 /**
  * Performs a POST request to the Land Grants API.
@@ -55,7 +40,12 @@ export async function postToLandGrantsApi(endpoint, body, baseUrl) {
       } catch {
         // no json found
       }
-      logUpstreamError(endpoint, response.status, message)
+      logUpstreamError({
+        endpoint,
+        service: LAND_GRANTS_SERVICE,
+        upstreamStatus: response.status,
+        errorMessage: message
+      })
       /**
        * @type {Error & {code?: number, status?: number}}
        */
@@ -72,7 +62,13 @@ export async function postToLandGrantsApi(endpoint, body, baseUrl) {
     timeout: 30000,
     serviceName: `LandGrantsApi.postTo ${endpoint}`
   }).catch((error) => {
-    logUpstreamError(endpoint, error.status ?? error.code ?? lastUpstreamStatus, error.message, attempts)
+    logUpstreamError({
+      endpoint,
+      service: LAND_GRANTS_SERVICE,
+      upstreamStatus: error.status ?? error.code ?? lastUpstreamStatus,
+      errorMessage: error.message,
+      attempts
+    })
     throw error
   })
 
