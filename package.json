@@ -52,6 +52,7 @@
     "test:stryker": "vitest run --config vitest.stryker.config.js",
     "test:contracts": "vitest run --config vitest.contracts.config.js",
     "test:acceptance": "./tools/run-acceptance-tests.sh",
+    "test:acceptance:rebuild": "docker compose -f compose.tests.yml build grants-ui-acceptance-tests",
     "test:performance": "./tools/run-performance-tests.sh",
     "test:all": "./tools/run-all-tests.sh",
     "test:watch": "vitest --watch",
@@ -74,7 +75,8 @@
     "sirv": "3.0.2",
     "follow-redirects": "^1.16.0",
     "underscore": "^1.13.8",
-    "uuid": "^14.0.0"
+    "uuid": "^14.0.0",
+    "webpack-dev-server": "5.2.4"
   },
   "dependencies": {
     "@babel/runtime": "7.29.2",

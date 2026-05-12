@@ -170,6 +170,34 @@ describe('print-application-service', () => {
       expect(result.sections[0].questions).toEqual([{ label: 'Answered', answer: 'yes' }])
     })
 
+    test('should prefer shortDescription over title for question labels', () => {
+      const result = buildPrintViewModel({
+        ...baseParams,
+        definition: {
+          pages: [
+            {
+              title: 'Page 1',
+              components: [
+                {
+                  type: 'NumberField',
+                  name: 'amount',
+                  title: 'Enter amount that may divert the journey',
+                  shortDescription: 'Routing amount'
+                },
+                { type: 'TextField', name: 'noShortDesc', title: 'Title only' }
+              ]
+            }
+          ]
+        },
+        answers: { amount: 50000, noShortDesc: 'value' }
+      })
+
+      expect(result.sections[0].questions).toEqual([
+        { label: 'Routing amount', answer: '50000' },
+        { label: 'Title only', answer: 'value' }
+      ])
+    })
+
     test('should handle definition with no pages', () => {
       const result = buildPrintViewModel({
         ...baseParams,
@@ -221,8 +249,29 @@ describe('print-application-service', () => {
           businessAddress__postcode: 'SW1A 2AA'
         },
         expected: '10 Downing Street, London, SW1A 2AA'
+      },
+      {
+        type: 'EastingNorthingField',
+        name: 'siteLocation',
+        title: 'Site location',
+        answers: { siteLocation__easting: 530000, siteLocation__northing: 180000 },
+        expected: '530000, 180000'
+      },
+      {
+        type: 'LatLongField',
+        name: 'siteCoordinates',
+        title: 'Site coordinates',
+        answers: { siteCoordinates__latitude: 51.51945, siteCoordinates__longitude: -0.127758 },
+        expected: '51.51945, -0.127758'
+      },
+      {
+        type: 'GeospatialField',
+        name: 'features',
+        title: 'Mapped locations',
+        answers: { features: [{ id: 'a' }, { id: 'b' }] },
+        expected: '2 features'
       }
-    ])('should resolve $type from flat __ keys in answers', ({ type, name, title, answers, expected }) => {
+    ])('should resolve and format $type answers', ({ type, name, title, answers, expected }) => {
       const result = buildPrintViewModel({
         ...baseParams,
         definition: { pages: [{ title: 'Page', components: [{ type, name, title }] }] },

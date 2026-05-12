@@ -30,6 +30,25 @@ vi.mock('@defra/forms-engine-plugin', () => ({
   }
 }))
 
+vi.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js', () => ({
+  QuestionPageController: class {
+    constructor(model, pageDef) {
+      this.model = model
+      this.pageDef = pageDef
+    }
+  }
+}))
+
+vi.mock('@defra/forms-engine-plugin/controllers/TerminalPageController.js', () => ({
+  TerminalPageController: class {
+    constructor(model, pageDef) {
+      this.model = model
+      this.pageDef = pageDef
+      this.path = pageDef?.path
+    }
+  }
+}))
+
 vi.mock('~/src/server/common/forms/services/api-form-service.js', () => ({
   ApiFormService: vi.fn().mockImplementation(function () {
     return {

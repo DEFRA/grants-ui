@@ -208,6 +208,30 @@ describe('formsStatusCallback', () => {
     expect(h.redirect).not.toHaveBeenCalled()
   })
 
+  it('redirects when state has landParcels with keys (meaningful state)', async () => {
+    const contextWithLandParcels = {
+      referenceNumber: 'REF-004',
+      state: { applicationStatus: 'CLEARED', landParcels: { parcel1: 'data' } },
+      paths: ['/start']
+    }
+
+    const result = await formsStatusCallback(request, h, contextWithLandParcels)
+    expect(h.redirect).toHaveBeenCalled()
+    expect(result).toEqual(expect.any(Symbol))
+  })
+
+  it('continues when state has empty landParcels object (not meaningful)', async () => {
+    const contextWithEmptyLandParcels = {
+      referenceNumber: 'REF-005',
+      state: { applicationStatus: 'CLEARED', landParcels: {} },
+      paths: ['/start']
+    }
+
+    const result = await formsStatusCallback(request, h, contextWithEmptyLandParcels)
+    expect(result).toBe(h.continue)
+    expect(h.redirect).not.toHaveBeenCalled()
+  })
+
   it('continues when previousStatus is SUBMITTED and no redirect needed', async () => {
     getApplicationStatus.mockResolvedValue({ json: async () => ({ status: 'RECEIVED' }) })
     request.path = '/grant-a/confirmation'
@@ -223,6 +247,19 @@ describe('formsStatusCallback', () => {
     const result = await formsStatusCallback(request, h, context)
     expect(result).toBe(h.continue)
     expect(getApplicationStatus).not.toHaveBeenCalled()
+  })
+
+  it('redirects to preSubmission path when toPath does not start with slash', async () => {
+    request.app.model.def.metadata.grantRedirectRules.preSubmission = [{ toPath: 'check-selected-land-actions' }]
+    const preSubmissionContext = {
+      referenceNumber: 'REF-006',
+      state: { question: 'answer' },
+      paths: ['/start']
+    }
+
+    await formsStatusCallback(request, h, preSubmissionContext)
+
+    expect(h.redirect).toHaveBeenCalledWith('/grant-a/check-selected-land-actions')
   })
 
   it.each([undefined, 'CLEARED'])('redirects to "check answers" page if some saved state', async (status) => {
@@ -579,6 +616,31 @@ describe('formsStatusCallback', () => {
     const result = await formsStatusCallback(request, h, context)
     expect(h.redirect).toHaveBeenCalledWith('/grant-a/confirmation')
     expect(result).toEqual(expect.any(Symbol))
+  })
+
+  it('continues when checkDetailsChangesPending is true and startPage is /check-details', async () => {
+    request.app.model.def.startPage = '/check-details'
+    context.state = { applicationStatus: 'SUBMITTED', checkDetailsChangesPending: true }
+
+    const result = await formsStatusCallback(request, h, context)
+
+    expect(result).toBe(h.continue)
+    expect(h.redirect).not.toHaveBeenCalled()
+    expect(getApplicationStatus).not.toHaveBeenCalled()
+  })
+
+  it('does not short-circuit when checkDetailsChangesPending is true but startPage is not /check-details', async () => {
+    request.app.model.def.startPage = '/start'
+    context.state = { applicationStatus: 'SUBMITTED', checkDetailsChangesPending: true }
+
+    getApplicationStatus.mockResolvedValue({
+      json: async () => ({ status: 'RECEIVED' })
+    })
+
+    const result = await formsStatusCallback(request, h, context)
+
+    expect(getApplicationStatus).toHaveBeenCalled()
+    expect(result).not.toBe(h.continue)
   })
 
   it('continues without redirect when current path is in excludedPaths', async () => {
