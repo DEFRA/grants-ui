@@ -336,9 +336,14 @@ export const formsStatusCallback = async (request, h, context) => {
   const checkDetailsChangesPending = context.state.checkDetailsChangesPending
   const isCheckDetailsStartPage = request.app.model?.def?.startPage === '/check-details'
 
-  // Don't redirect if page is listed in the grant config excludedPaths
-  // or request has come from a link within our domain
-  // or check details changes are pending
+  /** Don't redirect if page is listed in the grant config excludedPaths
+   * or if the request is from within the grant pages (e.g. user refreshing the page or navigating using the back button)
+   * or check details changes are pending
+   * NOTE: Some older OS versions and browsers don't support sec-fetch-site header, so the isWithinGrantPages check is
+   * not 100% reliable, but it provides an additional layer of protection against redirect loops while still allowing
+   * the excludedPaths configuration to work as intended for most users.
+   */
+
   if (
     grantRedirectRules?.excludedPaths?.includes(request.params?.path) ||
     isWithinGrantPages ||
