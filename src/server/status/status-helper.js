@@ -306,6 +306,7 @@ function handlePostSubmissionError(err, request, h, context, grantId, grantCode,
 /**
  * @typedef {object} GrantModel
  * @property {{ submission: { grantCode: string }, grantRedirectRules?: object }} metadata
+ * @property {string} [startPage]
  */
 
 /**
@@ -332,8 +333,17 @@ export const formsStatusCallback = async (request, h, context) => {
   const grantRedirectRules = request.app.model?.def?.metadata?.grantRedirectRules
   const isWithinGrantPages = request.headers['sec-fetch-site'] === 'same-origin'
 
+  const checkDetailsChangesPending = context.state.checkDetailsChangesPending
+  const isCheckDetailsStartPage = request.app.model?.def?.startPage === '/check-details'
+
   // Don't redirect if page is listed in the grant config excludedPaths
-  if (grantRedirectRules?.excludedPaths?.includes(request.params?.path) || isWithinGrantPages) {
+  // or request has come from a link within our domain
+  // or check details changes are pending
+  if (
+    grantRedirectRules?.excludedPaths?.includes(request.params?.path) ||
+    isWithinGrantPages ||
+    (checkDetailsChangesPending && isCheckDetailsStartPage)
+  ) {
     return h.continue
   }
 
