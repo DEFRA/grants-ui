@@ -48,7 +48,7 @@ When('(the user )navigates backward', async () => {
 })
 
 When('(the user )enters {string} for {string}', async (text, label) => {
-  await $(`//label[contains(text(),'${label}')]/following::input[@type='text']`).setValue(text)
+  await $(`//label[contains(text(),'${label}')]/following::input[1]`).setValue(text)
 })
 
 When('(the user )enters {string} for label heading {string}', async (text, label) => {
@@ -62,7 +62,7 @@ When('(the user )enters {string} for MultilineTextField {string}', async (text, 
 When('the user enters the following', async (dataTable) => {
   for (const row of dataTable.hashes()) {
     const element = await $(
-      `//label[contains(text(),'${row.FIELD}')]/following::*[name()='input' or name()='select'][1]`
+      `//label[contains(text(),'${row.FIELD}')]/following::*[name()='input' or name()='select' or name()='textarea'][1]`
     )
     const tag = await element.getTagName()
     if (tag === 'select') {

@@ -16,6 +16,34 @@
 import TaskListPageController from '~/src/server/task-list/task-list-page.controller.js'
 
 /**
+ * Component types that store a user answer in state (question types), as opposed
+ * to display-only guidance components. Used to decide which pages count as tasks
+ * and which component drives a task's title.
+ */
+const QUESTION_COMPONENT_TYPES = new Set([
+  'TextField',
+  'EmailAddressField',
+  'TelephoneNumberField',
+  'NumberField',
+  'MultilineTextField',
+  'DatePartsField',
+  'MonthYearField',
+  'RadiosField',
+  'CheckboxesField',
+  'SelectField',
+  'AutocompleteField',
+  'YesNoField',
+  'UkAddressField',
+  'FileUploadField',
+  'EastingNorthingField',
+  'LatLongField',
+  'OsGridRefField',
+  'NationalGridFieldNumberField',
+  'GeospatialField',
+  'HiddenField'
+])
+
+/**
  * Status key constants for task status comparisons.
  */
 export const TASK_STATUS = Object.freeze({
@@ -77,27 +105,8 @@ function getPageComponentNames(pageDef) {
     return []
   }
 
-  // Components that store answers in state (question types)
-  const questionComponentTypes = new Set([
-    'TextField',
-    'EmailAddressField',
-    'TelephoneNumberField',
-    'NumberField',
-    'MultilineTextField',
-    'DatePartsField',
-    'MonthYearField',
-    'RadiosField',
-    'CheckboxesField',
-    'SelectField',
-    'AutocompleteField',
-    'YesNoField',
-    'UkAddressField',
-    'FileUploadField',
-    'NationalGridFieldNumberField'
-  ])
-
   return pageDef.components
-    .filter((component) => questionComponentTypes.has(component.type) && component.options?.required !== false)
+    .filter((component) => QUESTION_COMPONENT_TYPES.has(component.type) && component.options?.required !== false)
     .map((component) => component.name)
     .filter(Boolean)
 }
@@ -177,25 +186,7 @@ function triggersExitPage(pageDef, state, formModel) {
  * @returns {string} The title to display in the task list
  */
 function getTaskTitle(pageDef) {
-  const questionComponentTypes = new Set([
-    'TextField',
-    'EmailAddressField',
-    'TelephoneNumberField',
-    'NumberField',
-    'MultilineTextField',
-    'DatePartsField',
-    'MonthYearField',
-    'RadiosField',
-    'CheckboxesField',
-    'SelectField',
-    'AutocompleteField',
-    'YesNoField',
-    'UkAddressField',
-    'FileUploadField',
-    'NationalGridFieldNumberField'
-  ])
-
-  const questionComponents = pageDef.components?.filter((c) => questionComponentTypes.has(c.type)) ?? []
+  const questionComponents = pageDef.components?.filter((c) => QUESTION_COMPONENT_TYPES.has(c.type)) ?? []
   if (questionComponents.length === 1) {
     return questionComponents[0].shortDescription ?? pageDef.title
   }

@@ -198,13 +198,60 @@ describe('formatAnswer', () => {
     })
   })
 
+  describe('EastingNorthingField', () => {
+    const component = { type: 'EastingNorthingField' }
+
+    test('should join easting and northing with a comma', () => {
+      expect(formatAnswer(component, { easting: 530000, northing: 180000 })).toBe('530000, 180000')
+    })
+
+    test('should handle a zero easting', () => {
+      expect(formatAnswer(component, { easting: 0, northing: 180000 })).toBe('0, 180000')
+    })
+
+    test('should stringify non-object value', () => {
+      expect(formatAnswer(component, 'not an object')).toBe('not an object')
+    })
+  })
+
+  describe('LatLongField', () => {
+    const component = { type: 'LatLongField' }
+
+    test('should join latitude and longitude with a comma', () => {
+      expect(formatAnswer(component, { latitude: 51.51945, longitude: -0.127758 })).toBe('51.51945, -0.127758')
+    })
+
+    test('should stringify non-object value', () => {
+      expect(formatAnswer(component, 'not an object')).toBe('not an object')
+    })
+  })
+
+  describe('GeospatialField', () => {
+    const component = { type: 'GeospatialField' }
+
+    test('should summarise a single feature', () => {
+      expect(formatAnswer(component, [{ id: 'a' }])).toBe('1 feature')
+    })
+
+    test('should summarise multiple features', () => {
+      expect(formatAnswer(component, [{ id: 'a' }, { id: 'b' }])).toBe('2 features')
+    })
+
+    test('should stringify a non-array value', () => {
+      expect(formatAnswer(component, 'not an array')).toBe('not an array')
+    })
+  })
+
   describe('string-type fields', () => {
     test.each([
       ['TextField', 'some text'],
       ['NumberField', 12345],
       ['EmailAddressField', 'test@example.com'],
       ['TelephoneNumberField', '01onal234567'],
-      ['MultilineTextField', 'line1\nline2']
+      ['MultilineTextField', 'line1\nline2'],
+      ['OsGridRefField', 'ST 678 678'],
+      ['NationalGridFieldNumberField', 'NG 1234 5678'],
+      ['HiddenField', 'hidden value']
     ])('%s should stringify the value', (type, value) => {
       expect(formatAnswer({ type }, value)).toBe(String(value))
     })

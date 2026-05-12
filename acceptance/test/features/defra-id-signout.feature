@@ -15,6 +15,11 @@ Feature: Defra ID Signout
         And should see heading "Example Grant"
         When the user clicks on "Start now"
 
+        # check-details
+        Then the user should be at URL "check-details"
+        When the user selects "Yes"
+        And continues
+
         # yes-no-field
         Then the user should be at URL "yes-no-field"
         When the user selects "Yes"
@@ -38,6 +43,11 @@ Feature: Defra ID Signout
         Then the user should be at URL "start"
         And should see heading "Example Grant"
         When the user clicks on "Start now"
+
+        # check-details
+        Then the user should be at URL "check-details"
+        When the user selects "Yes"
+        And continues
 
         # yes-no-field
         Then the user should be at URL "yes-no-field"
