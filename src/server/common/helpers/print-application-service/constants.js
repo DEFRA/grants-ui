@@ -15,7 +15,11 @@ export const COMPONENT_TYPES = {
   AutocompleteField: 'AutocompleteField',
   CheckboxesField: 'CheckboxesField',
   EastingNorthingField: 'EastingNorthingField',
-  LatLongField: 'LatLongField'
+  LatLongField: 'LatLongField',
+  OsGridRefField: 'OsGridRefField',
+  NationalGridFieldNumberField: 'NationalGridFieldNumberField',
+  GeospatialField: 'GeospatialField',
+  HiddenField: 'HiddenField'
 }
 
 export const MONTH_NAMES = [

@@ -3,7 +3,7 @@ import { COMPONENT_TYPES, DISPLAY_ONLY_TYPES } from './constants.js'
 import { buildPrintPaymentViewModel } from './utils/build-print-payment-view-model.js'
 import { ComponentsRegistry } from '../../../confirmation/services/components.registry.js'
 
-const COMPOSITE_FIELD_PARTS = {
+export const COMPOSITE_FIELD_PARTS = {
   [COMPONENT_TYPES.DatePartsField]: ['day', 'month', 'year'],
   [COMPONENT_TYPES.MonthYearField]: ['month', 'year'],
   [COMPONENT_TYPES.UkAddressField]: ['addressLine1', 'addressLine2', 'town', 'county', 'postcode'],

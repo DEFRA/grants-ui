@@ -263,8 +263,15 @@ describe('print-application-service', () => {
         title: 'Site coordinates',
         answers: { siteCoordinates__latitude: 51.51945, siteCoordinates__longitude: -0.127758 },
         expected: '51.51945, -0.127758'
+      },
+      {
+        type: 'GeospatialField',
+        name: 'features',
+        title: 'Mapped locations',
+        answers: { features: [{ id: 'a' }, { id: 'b' }] },
+        expected: '2 features'
       }
-    ])('should resolve $type from flat __ keys in answers', ({ type, name, title, answers, expected }) => {
+    ])('should resolve and format $type answers', ({ type, name, title, answers, expected }) => {
       const result = buildPrintViewModel({
         ...baseParams,
         definition: { pages: [{ title: 'Page', components: [{ type, name, title }] }] },

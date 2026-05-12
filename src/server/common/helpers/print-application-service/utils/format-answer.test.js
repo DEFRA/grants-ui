@@ -226,13 +226,32 @@ describe('formatAnswer', () => {
     })
   })
 
+  describe('GeospatialField', () => {
+    const component = { type: 'GeospatialField' }
+
+    test('should summarise a single feature', () => {
+      expect(formatAnswer(component, [{ id: 'a' }])).toBe('1 feature')
+    })
+
+    test('should summarise multiple features', () => {
+      expect(formatAnswer(component, [{ id: 'a' }, { id: 'b' }])).toBe('2 features')
+    })
+
+    test('should stringify a non-array value', () => {
+      expect(formatAnswer(component, 'not an array')).toBe('not an array')
+    })
+  })
+
   describe('string-type fields', () => {
     test.each([
       ['TextField', 'some text'],
       ['NumberField', 12345],
       ['EmailAddressField', 'test@example.com'],
       ['TelephoneNumberField', '01onal234567'],
-      ['MultilineTextField', 'line1\nline2']
+      ['MultilineTextField', 'line1\nline2'],
+      ['OsGridRefField', 'ST 678 678'],
+      ['NationalGridFieldNumberField', 'NG 1234 5678'],
+      ['HiddenField', 'hidden value']
     ])('%s should stringify the value', (type, value) => {
       expect(formatAnswer({ type }, value)).toBe(String(value))
     })

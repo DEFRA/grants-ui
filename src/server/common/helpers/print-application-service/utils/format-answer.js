@@ -64,6 +64,19 @@ function formatLatLong(_component, value) {
   return String(value)
 }
 
+/**
+ * @param {object} _component
+ * @param {*} value
+ * @returns {string}
+ */
+function formatGeospatial(_component, value) {
+  if (Array.isArray(value)) {
+    const unit = value.length === 1 ? 'feature' : 'features'
+    return `${value.length} ${unit}`
+  }
+  return String(value)
+}
+
 function formatStringValue(_component, value) {
   return String(value)
 }
@@ -79,11 +92,15 @@ const FORMATTERS = {
   [COMPONENT_TYPES.UkAddressField]: formatUkAddress,
   [COMPONENT_TYPES.EastingNorthingField]: formatEastingNorthing,
   [COMPONENT_TYPES.LatLongField]: formatLatLong,
+  [COMPONENT_TYPES.GeospatialField]: formatGeospatial,
   [COMPONENT_TYPES.TextField]: formatStringValue,
   [COMPONENT_TYPES.NumberField]: formatStringValue,
   [COMPONENT_TYPES.EmailAddressField]: formatStringValue,
   [COMPONENT_TYPES.TelephoneNumberField]: formatStringValue,
-  [COMPONENT_TYPES.MultilineTextField]: formatStringValue
+  [COMPONENT_TYPES.MultilineTextField]: formatStringValue,
+  [COMPONENT_TYPES.OsGridRefField]: formatStringValue,
+  [COMPONENT_TYPES.NationalGridFieldNumberField]: formatStringValue,
+  [COMPONENT_TYPES.HiddenField]: formatStringValue
 }
 
 /**
