@@ -10,7 +10,8 @@
   "main": ".server/index.js",
   "type": "module",
   "engines": {
-    "node": ">=24.13.1"
+    "node": ">=24.15.0 <25.0.0",
+    "npm": ">=11.12.1"
   },
   "scripts": {
     "build": "run-s build:frontend build:server",
@@ -73,9 +74,9 @@
   "overrides": {
     "serialize-javascript": "7.0.5",
     "sirv": "3.0.2",
-    "follow-redirects": "^1.16.0",
-    "underscore": "^1.13.8",
-    "uuid": "^14.0.0",
+    "follow-redirects": "1.16.0",
+    "underscore": "1.13.8",
+    "uuid": "14.0.0",
     "webpack-dev-server": "5.2.4"
   },
   "dependencies": {
