@@ -10,6 +10,10 @@ export { loadGoogleAnalytics } from '../../shared/cookie-utils.js'
 
 const cookieBannerString = 'cookie-banner'
 
+/**
+ * Reads the cookie banner config from the banner element's dataset.
+ * @returns {CookieConfig | null} The config, or null if the banner is not in the DOM.
+ */
 const getCookieConfig = () => {
   const banner = document.getElementById(cookieBannerString)
   if (!banner) {
@@ -23,10 +27,17 @@ const getCookieConfig = () => {
   }
 }
 
+/**
+ * @param {string} cookieName - The name of the consent cookie to check for.
+ * @returns {boolean} True if the cookie is present (a consent decision has been recorded).
+ */
 const hasConsent = (cookieName) => {
   return getCookie(cookieName) !== null
 }
 
+/**
+ * @returns {void}
+ */
 const showBanner = () => {
   const banner = document.getElementById(cookieBannerString)
   if (banner) {
@@ -34,6 +45,9 @@ const showBanner = () => {
   }
 }
 
+/**
+ * @returns {void}
+ */
 const hideBanner = () => {
   const banner = document.getElementById(cookieBannerString)
   if (banner) {
@@ -41,6 +55,10 @@ const hideBanner = () => {
   }
 }
 
+/**
+ * @param {CookieConfig} config
+ * @returns {void}
+ */
 const handleAccept = (config) => {
   setConsent(true, config.cookieName, config.expiryDays)
   hideBanner()
@@ -50,12 +68,21 @@ const handleAccept = (config) => {
   }
 }
 
+/**
+ * @param {CookieConfig} config
+ * @returns {void}
+ */
 const handleReject = (config) => {
   setConsent(false, config.cookieName, config.expiryDays)
   deleteGoogleAnalyticsCookies()
   hideBanner()
 }
 
+/**
+ * Initialises the cookie consent banner: wires accept/reject buttons and
+ * loads Google Analytics if prior consent has been granted.
+ * @returns {void}
+ */
 export const initCookieConsent = () => {
   const config = getCookieConfig()
 
@@ -88,3 +115,10 @@ if (document.readyState === 'loading') {
 } else {
   initCookieConsent()
 }
+
+/**
+ * @typedef {object} CookieConfig
+ * @property {string} cookieName - Name of the consent cookie.
+ * @property {number} expiryDays - Days until the consent cookie expires.
+ * @property {string | undefined} gaTrackingId - Google Analytics tracking ID, if configured.
+ */
