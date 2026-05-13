@@ -1,11 +1,10 @@
 Feature: Application Withdrawal
 
-    @ci
     Scenario: A withdrawn application can be re-submitted as a new application
         Given there is no application state stored for CRN "1100954058" and SBI "106527272" and grant "example-grant-with-auth"
 
         # start
-        Given the user navigates to "/example-grant-with-auth/start"
+        Given the user navigates to "/example-grant-with-auth"
         And completes any login process as CRN "1100954058"
         Then the user should see heading "Example Grant"
         When the user clicks on "Start now"
@@ -105,10 +104,10 @@ Feature: Application Withdrawal
         # multi-field-form
         Then the user should be at URL "multi-field-form"
         When the user enters the following
-            | FIELD               | VALUE                                          |
-            | Project name        | Test project                                   |
-            | Project description | Project description for the journey runner.    |
-            | Project budget      | 50000                                          |
+            | FIELD               | VALUE               |
+            | Project name        | Test project        |
+            | Project description | Project description |
+            | Project budget      | 50000               |
         And continues
 
         # repeat-page (item entry)
@@ -270,10 +269,10 @@ Feature: Application Withdrawal
         # multi-field-form
         Then the user should be at URL "multi-field-form"
         When the user enters the following
-            | FIELD               | VALUE                                          |
-            | Project name        | Test project                                   |
-            | Project description | Project description for the journey runner.    |
-            | Project budget      | 50000                                          |
+            | FIELD               | VALUE               |
+            | Project name        | Test project        |
+            | Project description | Project description |
+            | Project budget      | 50000               |
         And continues
 
         # repeat-page (item entry)

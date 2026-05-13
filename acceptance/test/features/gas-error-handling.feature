@@ -1,12 +1,11 @@
 Feature: GAS Error-Handling
 
-    @ci
     Scenario: Handle unexpected GAS errors with a generic response to the user
         Given there is no application state stored for CRN "1100988734" and SBI "115646286" and grant "example-grant-with-auth"
         And the next application submitted to GAS for SBI "115646286" will return HTTP 429 "Too many requests" for 3 requests
 
         # start
-        Given the user navigates to "/example-grant-with-auth/start"
+        Given the user navigates to "/example-grant-with-auth"
         And completes any login process as CRN "1100988734"
         Then the user should see heading "Example Grant"
         When the user clicks on "Start now"
@@ -107,10 +106,10 @@ Feature: GAS Error-Handling
         # multi-field-form
         Then the user should be at URL "multi-field-form"
         When the user enters the following
-            | FIELD               | VALUE                                       |
-            | Project name        | Test project                                |
-            | Project description | Project description for the journey runner. |
-            | Project budget      | 50000                                       |
+            | FIELD               | VALUE               |
+            | Project name        | Test project        |
+            | Project description | Project description |
+            | Project budget      | 50000               |
         And continues
 
         # repeat-page (item entry)

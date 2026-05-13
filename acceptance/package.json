@@ -19,6 +19,7 @@
     "@wdio/globals": "9.10.1",
     "@wdio/local-runner": "9.10.1",
     "@wdio/spec-reporter": "9.10.1",
+    "ajv": "^8.18.0",
     "jsonwebtoken": "9.0.3",
     "mockserver-client": "5.15.0",
     "tsx": "4.19.0"

@@ -1,11 +1,10 @@
 Feature: Application Lifecycle
 
-    @ci
     Scenario: Application is successfully submitted and taken thru to agreement offer stages
         Given there is no application state stored for CRN "1100995048" and SBI "115664358" and grant "example-grant-with-auth"
 
         # start
-        Given the user navigates to "/example-grant-with-auth/start"
+        Given the user navigates to "/example-grant-with-auth"
         And completes any login process as CRN "1100995048"
         Then the user should see heading "Example Grant"
         When the user clicks on "Start now"
@@ -106,10 +105,10 @@ Feature: Application Lifecycle
         # multi-field-form
         Then the user should be at URL "multi-field-form"
         When the user enters the following
-            | FIELD               | VALUE                                          |
-            | Project name        | Test project                                   |
-            | Project description | Project description for the journey runner.    |
-            | Project budget      | 50000                                          |
+            | FIELD               | VALUE               |
+            | Project name        | Test project        |
+            | Project description | Project description |
+            | Project budget      | 50000               |
         And continues
 
         # repeat-page (item entry)
