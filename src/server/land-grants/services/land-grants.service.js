@@ -10,6 +10,7 @@ import {
   parcelsGroups,
   parcelsWithExtendedInfo,
   parcelsWithSize,
+  postToLandGrantsApi,
   validate
 } from '~/src/server/land-grants/services/land-grants.client.js'
 import { formatAreaUnit } from '~/src/server/land-grants/utils/format-area-unit.js'
@@ -153,6 +154,23 @@ async function fetchParcelsSize(parcelIds) {
     acc[stringifyParcel(p)] = p.size
     return acc
   }, /** @type {Record<string, Size | null>} */ ({}))
+}
+
+/**
+ * Fetches the tile coordinate and parcel centroid for the given parcel IDs.
+ * Used to set the initial map viewport.
+ * @param {string[]} parcelIds  e.g. ['SD6151-1717', …]
+ * @returns {Promise<{minLng: number, minLat: number, maxLng: number, maxLat: number} | null>}
+ */
+export async function fetchParcelTileLocation(parcelIds) {
+  try {
+    const result = /** @type {{message: string, bbox: {minLng: number, minLat: number, maxLng: number, maxLat: number}}} */ (
+      await postToLandGrantsApi('/api/v1/parcel-tiles/locate', { parcelIds }, LAND_GRANTS_API_URL)
+    )
+    return result.bbox
+  } catch {
+    return null
+  }
 }
 
 /**

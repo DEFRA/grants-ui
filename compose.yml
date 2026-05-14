@@ -80,6 +80,7 @@ services:
       SFD_UPDATE_ENABLED: ${SFD_UPDATE_ENABLED:-false}
     volumes:
       - ./src:/home/node/src
+      - ./.public:/home/node/.public
       - /home/node/node_modules
     networks:
       - grants-ui-net

@@ -1,0 +1,85 @@
+{% extends baseLayoutPath %}
+
+{% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
+
+{% block content %}
+<div class="govuk-body">
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-full">
+
+      {% if errors %}
+        {{ govukErrorSummary({
+          titleText: "There is a problem",
+          errorList: [{
+            text: errors,
+            href: "#parcel-map"
+          }]
+        }) }}
+      {% endif %}
+
+      <h1 class="govuk-heading-l">{{ pageTitle }}</h1>
+
+      {% if parcelCount %}
+        <p class="govuk-body">
+          {{ parcelCount }} land parcel{{ 's' if parcelCount != 1 }}{% if totalAreaHa %} — {{ totalAreaHa }} ha total{% endif %}.
+          Click a parcel to see its details, then select the one you want.
+        </p>
+      {% else %}
+        <p class="govuk-body">Click on a field to select it. You can select multiple fields.</p>
+      {% endif %}
+
+      <div
+        id="parcel-map"
+        data-parcel-meta="{{ parcelMeta | escape }}"
+        data-parcel-ids="{{ parcelIds | escape }}"
+        data-tile-location="{{ tileLocation | escape }}"
+        aria-label="Land parcel selection map"
+      ></div>
+
+      <div id="parcel-detail-panel" class="govuk-inset-text govuk-!-margin-top-4" hidden>
+        <h2 class="govuk-heading-s" id="parcel-detail-title">Parcel details</h2>
+        <dl class="govuk-summary-list govuk-summary-list--no-border govuk-!-margin-bottom-0">
+          <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Total area</dt>
+            <dd class="govuk-summary-list__value" id="parcel-detail-area">—</dd>
+          </div>
+          <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">SFI actions</dt>
+            <dd class="govuk-summary-list__value" id="parcel-detail-actions">—</dd>
+          </div>
+          <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Land cover</dt>
+            <dd class="govuk-summary-list__value" id="parcel-detail-landcover">—</dd>
+          </div>
+        </dl>
+      </div>
+
+      <p id="parcel-selection-summary" class="govuk-body govuk-!-margin-top-4" aria-live="polite">
+        No parcels selected.
+      </p>
+
+      <form method="post" action="{{ formAction }}">
+        <input type="hidden" name="crumb" value="{{ crumb }}">
+        <div id="selected-parcels-inputs" aria-hidden="true"></div>
+        {{ govukButton({
+          text: "Continue",
+          preventDoubleClick: true,
+          attributes: { id: "map-select-continue" }
+        }) }}
+      </form>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block head %}
+  {{ super() }}
+  <link rel="stylesheet" href="/public/stylesheets/interactive-map.css">
+{% endblock %}
+
+{% block bodyEnd %}
+  {{ super() }}
+  <script type="module" nonce="{{ cspNonce }}" src="/public/javascripts/map-select.js"></script>
+{% endblock %}

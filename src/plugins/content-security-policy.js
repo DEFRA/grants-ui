@@ -9,10 +9,18 @@ const defaultContentPolicy = (nonce) => {
   const self = "'self'"
   const statsDblClick = 'https://stats.g.doubleclick.net'
 
+  // MapLibre GL spawns a Web Worker from a blob URL and fetches vector tiles
+  // from external tile servers. Both require explicit CSP allowances.
+  const cartoCdn = 'https://basemaps.cartocdn.com'
+  const cartoTiles = 'https://*.basemaps.cartocdn.com'
+
   const scriptSrc = [self, "'strict-dynamic'", `'nonce-${nonce}'`, gtm, ga4].join(' ')
-  const connectSrc = [self, ga4, statsDblClick, ga4WildCard, gtmWildCard].join(' ')
+  // Allow local Land Grants tile server in non-production environments
+  const localTileServer = config.get('isProduction') ? '' : 'http://localhost:3009'
+  const connectSrc = [self, ga4, statsDblClick, ga4WildCard, gtmWildCard, cartoCdn, cartoTiles, localTileServer].filter(Boolean).join(' ')
   const fontSrc = [self, 'data:', 'https://fonts.gstatic.com'].join(' ')
-  const imgSrc = [self, 'data:', 'blob:', ga4, statsDblClick, ga4WildCard].join(' ')
+  const imgSrc = [self, 'data:', 'blob:', ga4, statsDblClick, ga4WildCard, cartoCdn, cartoTiles].join(' ')
+  const workerSrc = [self, 'blob:'].join(' ')
 
   return [
     "default-src 'self'",
@@ -25,6 +33,7 @@ const defaultContentPolicy = (nonce) => {
     "style-src 'self' 'unsafe-inline'",
     `font-src ${fontSrc}`,
     `frame-src ${gtm}`,
+    `worker-src ${workerSrc}`,
     'upgrade-insecure-requests'
   ].join('; ')
 }

@@ -99,6 +99,11 @@ pages:
     path: /select-land-parcel
     next: []
     id: f9f1a33b-2fb5-4418-951b-680067efc179
+  - title: Select land parcel for actions (map)
+    controller: MapSelectLandParcelPageController
+    path: /map-select-land-parcel
+    next: []
+    id: a1b2c3d4-e5f6-7890-abcd-ef1234567890
   - title: Select actions for land parcel
     controller: SelectLandActionsPageController
     path: /select-actions-for-land-parcel

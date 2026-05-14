@@ -12,6 +12,7 @@ import { clearApplicationState } from './dev-tools/clear-application-state.js'
 import { cookies } from '~/src/server/cookies/index.js'
 import { printSubmittedApplication } from '~/src/server/print-submitted-application/print-submitted-application.controller.js'
 import { updateDetails } from '~/src/server/details-page/update-details.js'
+import { parcelTilesProxy } from '~/src/server/land-grants/parcel-tiles-proxy.js'
 
 const cdpEnvironment = config.get('cdpEnvironment')
 
@@ -31,7 +32,7 @@ export const router = {
       await server.register([auth])
 
       // Application specific routes, add your own routes here
-      await server.register([home, agreements, configConfirmation, cookies, printSubmittedApplication, updateDetails])
+      await server.register([home, agreements, configConfirmation, cookies, printSubmittedApplication, updateDetails, parcelTilesProxy])
 
       // Development tools (only available in development mode)
       if (

@@ -67,8 +67,19 @@ export function setCachedAuthParcels(sbi, data) {
   authParcelsCache.set(sbi, data)
 }
 
+const tileParcelIdsCache = createCache()
+
+export function getCachedTileParcelIds(sbi) {
+  return tileParcelIdsCache.get(sbi) ?? null
+}
+
+export function setCachedTileParcelIds(sbi, parcelIds) {
+  tileParcelIdsCache.set(sbi, parcelIds)
+}
+
 export function clearParcelCache() {
   parcelActionsCache.clear()
   sbiParcelsCache.clear()
   authParcelsCache.clear()
+  tileParcelIdsCache.clear()
 }
