@@ -10,7 +10,7 @@ const logger = pino(loggerOptions)
  * @param {Function} logCode.messageFunc - A function that creates an interpolated message string
  * @param {object} [logCode.error] - An error object (optional)
  * @param {object} messageOptions - Values for message interpolation
- * @param {import('@hapi/hapi').Request} [request] - Hapi request object (optional)
+ * @param {import('@defra/forms-engine-plugin/engine/types.js').AnyRequest} [request] - Hapi request object (optional)
  */
 const log = (logCode, messageOptions, request) => {
   const message = logCode.messageFunc(messageOptions)
@@ -25,7 +25,7 @@ const log = (logCode, messageOptions, request) => {
  * @param {Function} logCode.messageFunc - A function that creates an interpolated message string
  * @param {object} [logCode.error] - An error object (optional)
  * @param {object} messageOptions - Values for message interpolation
- * @param {import('@hapi/hapi').Request} [request] - Hapi request object (optional)
+ * @param {import('@defra/forms-engine-plugin/engine/types.js').AnyRequest} [request] - Hapi request object (optional)
  */
 const debug = (logCode, messageOptions, request) => {
   const message = logCode.messageFunc(messageOptions)
@@ -40,7 +40,7 @@ const debug = (logCode, messageOptions, request) => {
  * @param {Function} logCode.messageFunc - A function that creates an interpolated message string
  * @param {object} [logCode.error] - An error object (optional)
  * @param {object} messageOptions - Values for message interpolation
- * @param {import('@hapi/hapi').Request} [request] - Hapi request object (optional)
+ * @param {import('@defra/forms-engine-plugin/engine/types.js').AnyRequest} [request] - Hapi request object (optional)
  */
 const error = (logCode, messageOptions, request) => {
   const message = logCode.messageFunc(messageOptions)

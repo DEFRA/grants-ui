@@ -19,7 +19,7 @@ export default class SelectLandParcelPageController extends QuestionPageWithParc
    */
   async handlePost(request, context, h) {
     const { state } = context
-    const payload = request.payload ?? {}
+    const payload = /** @type {{ action?: string }} */ (request.payload ?? {})
     const selectedParcelId = getParcelIdsFromPayload(request)[0]
     const { action } = payload
     const hasExistingLandParcels = Array.isArray(state.landParcels) && state.landParcels.length > 0

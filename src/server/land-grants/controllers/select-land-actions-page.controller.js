@@ -202,7 +202,12 @@ export default class SelectLandActionsPageController extends QuestionPageWithPar
     const { sbi, crn } = request.auth.credentials
 
     try {
-      const validationResult = await validateApplication({ applicationId: referenceNumber, sbi, crn, state })
+      const validationResult = await validateApplication({
+        applicationId: /** @type {string} */ (referenceNumber),
+        sbi: /** @type {string} */ (sbi),
+        crn: /** @type {string} */ (crn),
+        state
+      })
       const { valid, errorMessages = [] } = validationResult
 
       if (!valid) {

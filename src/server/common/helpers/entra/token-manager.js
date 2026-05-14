@@ -21,6 +21,10 @@ let tokenState = {
   tokenExpiry: null
 }
 
+/**
+ * Resets the in-memory OAuth2 token state.
+ * @returns {void}
+ */
 export function clearTokenState() {
   tokenState = {
     currentToken: null,
@@ -123,7 +127,7 @@ export async function refreshToken() {
       reason: 'entra_token_refresh_failure',
       endpoint: 'Entra token refresh'
     })
-    throw externalApiError.from(error)
+    throw externalApiError.from(/** @type {Error} */ (error))
   }
 }
 

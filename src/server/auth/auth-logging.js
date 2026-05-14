@@ -2,6 +2,13 @@ import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
 const UNKNOWN_USER = 'unknown'
 const USER_AGENT = 'user-agent'
+
+/**
+ * Log an authentication failure with full request context.
+ * @param {AnyRequest} request
+ * @param {string} authErrorMessage
+ * @param {boolean} hasCredentials
+ */
 function logAuthFailure(request, authErrorMessage, hasCredentials) {
   const errorDetails = {
     path: request.path,
@@ -44,6 +51,10 @@ function logAuthFailure(request, authErrorMessage, hasCredentials) {
   )
 }
 
+/**
+ * Log auth debug information for a request.
+ * @param {AnyRequest} request
+ */
 function logAuthDebugInfo(request) {
   const authDebugInfo = {
     path: request.path,
@@ -66,6 +77,11 @@ function logAuthDebugInfo(request) {
   log(LogCodes.AUTH.AUTH_DEBUG, authDebugInfo, request)
 }
 
+/**
+ * Log a token-exchange failure with troubleshooting context.
+ * @param {AnyRequest} request
+ * @param {boolean} hasCredentials
+ */
 function logTokenExchangeFailure(request, hasCredentials) {
   log(
     LogCodes.AUTH.SIGN_IN_FAILURE,
@@ -98,6 +114,12 @@ function logTokenExchangeFailure(request, hasCredentials) {
   )
 }
 
+/**
+ * Log a successful sign-in event.
+ * @param {AuthProfile} profile
+ * @param {string} role
+ * @param {string[]} scope
+ */
 function logSuccessfulSignIn(profile, role, scope) {
   log(LogCodes.AUTH.SIGN_IN_SUCCESS, {
     userId: profile.contactId,
@@ -109,3 +131,15 @@ function logSuccessfulSignIn(profile, role, scope) {
 }
 
 export { logAuthFailure, logAuthDebugInfo, logTokenExchangeFailure, logSuccessfulSignIn }
+
+/**
+ * @import { AnyRequest } from '@defra/forms-engine-plugin/engine/types.js'
+ */
+
+/**
+ * @typedef {{
+ *   contactId?: string,
+ *   currentRelationshipId?: string,
+ *   sessionId?: string
+ * }} AuthProfile
+ */

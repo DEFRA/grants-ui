@@ -38,19 +38,25 @@ const makeBothFieldsError = (text) => [
 
 export default class WoodlandHectaresPageController extends withTaskContext(QuestionPageController) {
   /**
-   * @param {AnyFormRequest} request
-   * @param {FormContext} context
-   */
-  /**
-   * @param {AnyFormRequest} request
-   * @param {Record<string, unknown>} state
-   * @param {Record<string, unknown>} payload
+   * @param {import('@defra/forms-engine-plugin/types').FormContextRequest} request
+   * @param {import('@defra/forms-engine-plugin/types').FormSubmissionState} state
+   * @param {import('@defra/forms-engine-plugin/types').FormPayload} payload
    */
   getStateFromValidForm(request, state, payload) {
     const formState = /** @type {Record<string, unknown>} */ (super.getStateFromValidForm(request, state, payload))
-    return { ...formState, [HECTARES_UNDER_TEN_FIELD_NAME]: formState[HECTARES_UNDER_TEN_FIELD_NAME] ?? 0 }
+    return /** @type {import('@defra/forms-engine-plugin/types').FormState} */ (
+      /** @type {unknown} */ ({
+        ...formState,
+        [HECTARES_UNDER_TEN_FIELD_NAME]: formState[HECTARES_UNDER_TEN_FIELD_NAME] ?? 0
+      })
+    )
   }
 
+  /**
+   * @param {import('@defra/forms-engine-plugin/types').FormContextRequest} request
+   * @param {FormContext} context
+   * @returns {import('@defra/forms-engine-plugin/types').FormPageViewModel}
+   */
   getViewModel(request, context) {
     const { state } = context
     const totalHectaresForSelectedParcels = Number(state['totalHectaresForSelectedParcels'] ?? 0)
@@ -66,7 +72,12 @@ export default class WoodlandHectaresPageController extends withTaskContext(Ques
       )
     }
 
-    return { ...viewModel, totalHectaresForSelectedParcels }
+    return /** @type {import('@defra/forms-engine-plugin/types').FormPageViewModel} */ (
+      /** @type {unknown} */ ({
+        ...viewModel,
+        totalHectaresForSelectedParcels
+      })
+    )
   }
 
   /**
@@ -123,7 +134,9 @@ export default class WoodlandHectaresPageController extends withTaskContext(Ques
       )
     } catch (err) {
       debug(LogCodes.WOODLAND.VALIDATE_ERROR, { errorMessage: String(err) }, request)
-      const viewModel = /** @type {Record<string, unknown>} */ (this.getViewModel(request, context))
+      const viewModel = /** @type {Record<string, unknown>} */ (
+        /** @type {unknown} */ (this.getViewModel(request, context))
+      )
       viewModel.errors = [
         {
           path: [],
@@ -161,9 +174,9 @@ export default class WoodlandHectaresPageController extends withTaskContext(Ques
     const parentHandler = super.makePostRouteHandler()
 
     /**
-     * @param {AnyFormRequest} request
+     * @param {import('@defra/forms-engine-plugin/types').FormRequestPayload} request
      * @param {FormContext} context
-     * @param {Pick<import('@hapi/hapi').ResponseToolkit, 'redirect' | 'view'>} h
+     * @param {import('@defra/forms-engine-plugin/types').FormResponseToolkit} h
      */
     return async (request, context, h) => {
       const { state } = context

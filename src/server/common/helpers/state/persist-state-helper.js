@@ -14,7 +14,7 @@ const MAX_DB_STATE_SIZE_BYTES = config.get('session.cache.maxDbStateSizeBytes')
  *
  * @param {object} state - The state object to persist. Can include form/session data.
  * @param {string} key - The cache/session key to identify this state.
- * @param {{grantVersion?: string, lockToken?: string}} [options] - Optional grant version, lock token to identify who is locking the state.
+ * @param {{grantVersion?: unknown, lockToken?: string}} [options] - Optional grant version, lock token to identify who is locking the state.
  * @returns {Promise<void>} Resolves once the state is sent to the backend.
  */
 export async function persistStateToApi(state, key, { lockToken, grantVersion } = {}) {
