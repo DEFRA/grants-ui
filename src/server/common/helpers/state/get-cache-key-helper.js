@@ -4,7 +4,7 @@ import { BaseError } from '../../utils/errors/BaseError.js'
 /**
  * Generates a cache key from a Hapi request by extracting user, business, and grant identifiers.
  *
- * @param {import('@hapi/hapi').Request} request - The Hapi request object containing authentication credentials and route parameters.
+ * @param {import('@defra/forms-engine-plugin/engine/types.js').AnyRequest} request - The Hapi request object containing authentication credentials and route parameters.
  * @returns {{ sbi: string, grantCode: string }} An object containing identifiers to be used as a cache key.
  * @throws {Error} If authentication credentials, user ID, business relationship, or grant ID are missing or malformed.
  */

@@ -24,9 +24,9 @@ export default class QuestionPageWithParcelCheckController extends withTaskConte
 
   makeGetRouteHandler() {
     /**
-     * @param {AnyFormRequest} request
+     * @param {FormRequest} request
      * @param {FormContext} context
-     * @param {ResponseToolkit} h
+     * @param {FormResponseToolkit} h
      */
     return async (request, context, h) => {
       const parcelIds = this.resolveParcelIds(request)
@@ -41,9 +41,9 @@ export default class QuestionPageWithParcelCheckController extends withTaskConte
 
   makePostRouteHandler() {
     /**
-     * @param {AnyFormRequest} request
+     * @param {FormRequestPayload} request
      * @param {FormContext} context
-     * @param {ResponseToolkit} h
+     * @param {FormResponseToolkit} h
      */
     return async (request, context, h) => {
       const parcelIds = this.resolveParcelIds(request)
@@ -56,18 +56,18 @@ export default class QuestionPageWithParcelCheckController extends withTaskConte
   }
 
   /**
-   * @param {AnyFormRequest} request
+   * @param {FormRequest} request
    * @param {FormContext} context
-   * @param {ResponseToolkit} h
+   * @param {FormResponseToolkit} h
    */
   handleGet(request, context, h) {
     return super.makeGetRouteHandler()(request, context, h)
   }
 
   /**
-   * @param {AnyFormRequest} request
+   * @param {FormRequestPayload} request
    * @param {FormContext} context
-   * @param {ResponseToolkit} h
+   * @param {FormResponseToolkit} h
    */
   handlePost(request, context, h) {
     return super.makePostRouteHandler()(request, context, h)
@@ -77,7 +77,7 @@ export default class QuestionPageWithParcelCheckController extends withTaskConte
    * Verify each requested parcel ID is in the SBI's authorised set; render the
    * unauthorised view (and return it) if any parcel is unknown, else `null`.
    * @param {AnyFormRequest} request
-   * @param {ResponseToolkit} h
+   * @param {FormResponseToolkit} h
    * @param {string[] | null} parcelIds
    * @returns {Promise<ResponseObject | null>}
    */
@@ -135,15 +135,17 @@ export default class QuestionPageWithParcelCheckController extends withTaskConte
   }
 
   /**
-   * @param {ResponseToolkit} h
+   * @param {FormResponseToolkit} h
    * @returns {ResponseObject}
    */
   renderUnauthorisedView = (h) => {
-    return h.response(h.view('unauthorised')).code(statusCodes.forbidden)
+    return /** @type {import('@hapi/hapi').ResponseToolkit} */ (h)
+      .response(h.view('unauthorised'))
+      .code(statusCodes.forbidden)
   }
 }
 
 /**
- * @import { AnyFormRequest, FormContext } from '@defra/forms-engine-plugin/engine/types.js'
- * @import { ResponseObject, ResponseToolkit } from '@hapi/hapi'
+ * @import { AnyFormRequest, FormContext, FormRequest, FormRequestPayload, FormResponseToolkit } from '@defra/forms-engine-plugin/types'
+ * @import { ResponseObject } from '@hapi/hapi'
  */

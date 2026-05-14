@@ -1,5 +1,6 @@
 import '@hapi/hapi'
 import type { CacheService } from '@defra/forms-engine-plugin/cache-service.js'
+import type { FormModel } from '@defra/forms-engine-plugin/engine/models/index.js'
 
 declare module '@hapi/hapi' {
   interface ServerMethods {
@@ -18,11 +19,7 @@ declare module '@hapi/hapi' {
   // resolve because the plugin's .d.ts uses path aliases (~/src/...).
   interface RequestApplicationState {
     cspNonce?: string
-    model?: {
-      def?: {
-        metadata?: Record<string, unknown>
-      }
-    }
+    model?: FormModel
   }
 
   // Mirrors @defra/forms-engine-plugin's hapi augmentation; the plugin's own

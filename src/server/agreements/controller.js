@@ -58,11 +58,16 @@ function buildProxyHeaders(token, request) {
   const source = 'defra'
   const jwtSecret = config.get('agreements.jwtSecret')
   try {
-    const encryptedAuth = Jwt.token.generate({ sbi: sbi.toString(), source }, jwtSecret)
+    const encryptedAuth = Jwt.token.generate(
+      { sbi: /** @type {string | number} */ (sbi).toString(), source },
+      jwtSecret
+    )
+    const contentTypeHeader = request.headers['content-type']
+    const contentType = Array.isArray(contentTypeHeader) ? contentTypeHeader[0] : contentTypeHeader
     return {
       Authorization: `Bearer ${token}`,
       'x-base-url': /** @type {string} */ (config.get('agreements.baseUrl')),
-      'content-type': request.headers['content-type'] || 'application/x-www-form-urlencoded',
+      'content-type': contentType || 'application/x-www-form-urlencoded',
       'x-encrypted-auth': encryptedAuth,
       'x-csp-nonce': /** @type {string} */ (request.app.cspNonce)
     }

@@ -70,7 +70,7 @@ export class BaseError extends Error {
 
   /**
    * Sends error details to the logger
-   * @param {import('@hapi/hapi').Request|undefined} request
+   * @param {import('@defra/forms-engine-plugin/engine/types.js').AnyRequest|undefined} request
    * @param {...Record<string, any>} additionalDetail
    */
   log(request = undefined, ...additionalDetail) {

@@ -64,9 +64,8 @@ export default class SubmissionPageController extends SummaryPageController {
 
   /**
    * Gets the confirmation page path for successful submission
-   * @private
-   * @param {object} request - Request object
-   * @param {object} context - Form context
+   * @param {object} [request] - Request object
+   * @param {object} [context] - Form context
    * @returns {string} - Confirmation page path
    */
   getStatusPath(request, context) {
@@ -133,12 +132,17 @@ export default class SubmissionPageController extends SummaryPageController {
       const currentState = await cacheService.getState(request)
 
       // Update application status so the confirmation page knows a submission happened
-      await cacheService.setState(request, {
-        ...currentState,
-        applicationStatus: ApplicationStatus.SUBMITTED,
-        submittedAt,
-        submittedBy: crn
-      })
+      await cacheService.setState(
+        request,
+        /** @type {FormSubmissionState} */ (
+          /** @type {unknown} */ ({
+            ...currentState,
+            applicationStatus: ApplicationStatus.SUBMITTED,
+            submittedAt,
+            submittedBy: crn
+          })
+        )
+      )
 
       // Add to submissions collection
       await persistSubmissionToApi(
@@ -189,7 +193,12 @@ export default class SubmissionPageController extends SummaryPageController {
       }
 
       try {
-        const validationResult = await validateApplication({ applicationId: referenceNumber, crn, sbi, state })
+        const validationResult = await validateApplication({
+          applicationId: /** @type {string} */ (referenceNumber),
+          crn: /** @type {string} */ (crn),
+          sbi: /** @type {string} */ (sbi),
+          state
+        })
         const { valid } = validationResult
         if (!valid) {
           return this.renderSubmissionError(h, request, context, validationResult.id)
@@ -232,7 +241,7 @@ export default class SubmissionPageController extends SummaryPageController {
 }
 
 /**
- * @import { FormContext, AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
+ * @import { FormContext, AnyFormRequest, FormSubmissionState } from '@defra/forms-engine-plugin/types'
  * @import { ResponseObject, type ResponseToolkit } from '@hapi/hapi'
  * @import { ValidateApplicationResponse } from '../types/land-grants.client.d.js'
  * @import { FormModel } from '@defra/forms-engine-plugin/engine/models/index.js'

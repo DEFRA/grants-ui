@@ -482,7 +482,7 @@ function buildServiceInterface(baseService, apiFormService, redis) {
 
     /**
      * @param {string} id
-     * @param {unknown} state
+     * @param {import('@defra/forms-engine-plugin/types').FormStatus} state
      */
     getFormDefinition: async (id, state) => {
       const slug = await getSlugByFormId(redis, id)
@@ -603,5 +603,5 @@ export const formsService = async () => {
 /**
  * @typedef {object} BaseFormsService
  * @property {(slug: string) => Promise<unknown>} getFormMetadata
- * @property {(id: string, state?: unknown) => Promise<unknown>} getFormDefinition
+ * @property {(id: string, state: import('@defra/forms-engine-plugin/types').FormStatus) => Promise<unknown>} getFormDefinition
  */

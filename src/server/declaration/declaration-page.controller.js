@@ -61,8 +61,8 @@ export default class DeclarationPageController extends SummaryPageController {
 
   /**
    * Gets the path to the status page (in this case /confirmation page) for the POST handler.
-   * @param {AnyFormRequest} request - The request object containing the URL info
-   * @param {FormContext} context - The context object which may contain form state
+   * @param {AnyFormRequest} [request] - The request object containing the URL info
+   * @param {FormContext} [context] - The context object which may contain form state
    * @returns {string} path to the status page
    */
   getStatusPath(request, context) {
