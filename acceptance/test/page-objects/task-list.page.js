@@ -9,20 +9,31 @@ class TaskListPage {
     return new TaskListApplicationStatus(completed, total)
   }
 
-  async groups() {
+  async groupsOfQuestions() {
     const groupHeadingElements = await $$(`//h2[@class='govuk-heading-m']`)
     return await Promise.all(
       await groupHeadingElements.map(async (e) => {
-        return new TaskListGroup((await e.getText()).trim(), await this.#getTasksForGroup(e))
+        return new TaskListGroup((await e.getText()).trim(), await this.#getQuestionsForGroup(e))
       })
     )
   }
 
   async selectTask(taskName) {
-    await $(`//h2[@class='govuk-heading-m']/following-sibling::ul/li/div/a[contains(text(),'${taskName}')]`).click()
+    await $(`//a[contains(text(),'${taskName}')]`).click()
   }
 
-  async #getTasksForGroup(groupHeadingElement) {
+  async tasksWithoutQuestions() {
+    const liElements = await $$(`//ul[@class='govuk-task-list']/li`)
+    return await Promise.all(
+      await liElements.map(async (li) => {
+        const taskName = (await li.$('div.govuk-task-list__name-and-hint').getText()).trim()
+        const status = (await li.$('div.govuk-task-list__status').getText()).trim()
+        return new Task(taskName, status)
+      })
+    )
+  }
+
+  async #getQuestionsForGroup(groupHeadingElement) {
     const liElements = await groupHeadingElement.nextElement().$$('li')
     return await Promise.all(
       await liElements.map(async (li) => {
