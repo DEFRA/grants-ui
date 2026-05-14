@@ -1,5 +1,10 @@
 import { vi } from 'vitest'
 
+/**
+ * Creates a fake hapi-pino plugin that decorates the server with a stub logger.
+ * @param {Record<string, unknown>} [customLogger] Extra logger methods to merge into the stub.
+ * @returns {{ register: (server: { decorate: (target: string, name: string, value: unknown) => void }) => void, name: string }}
+ */
 export const mockHapiPino = (customLogger = {}) => ({
   register: (server) => {
     server.decorate('server', 'logger', {
@@ -13,6 +18,10 @@ export const mockHapiPino = (customLogger = {}) => ({
   name: 'mock-hapi-pino'
 })
 
+/**
+ * Creates a partial Hapi request object suitable for unit-testing handlers.
+ * @param {Record<string, unknown>} [customProps] Properties to merge over the defaults.
+ */
 export const mockHapiRequest = (customProps = {}) => ({
   method: 'GET',
   url: { pathname: '/test' },
@@ -48,6 +57,10 @@ export const mockHapiRequest = (customProps = {}) => ({
   ...customProps
 })
 
+/**
+ * Creates a partial Hapi response toolkit whose chainable methods are vitest spies.
+ * @param {Record<string, unknown>} [customMethods] Methods to override on the toolkit.
+ */
 export const mockHapiResponseToolkit = (customMethods = {}) => ({
   redirect: vi.fn().mockReturnThis(),
   view: vi.fn().mockReturnThis(),
@@ -62,6 +75,10 @@ export const mockHapiResponseToolkit = (customMethods = {}) => ({
   ...customMethods
 })
 
+/**
+ * Creates a partial Hapi server with vitest spies in place of lifecycle methods.
+ * @param {Record<string, unknown>} [customProps] Properties to merge over the defaults.
+ */
 export const mockHapiServer = (customProps = {}) => ({
   logger: {
     info: vi.fn(),
@@ -86,6 +103,10 @@ export const mockHapiServer = (customProps = {}) => ({
   ...customProps
 })
 
+/**
+ * Creates a minimal request shape used by the SSO callback tests.
+ * @param {Record<string, unknown>} [customProps] Properties to merge over the defaults.
+ */
 export const mockSsoRequest = (customProps = {}) => ({
   query: {},
   url: {
@@ -95,6 +116,10 @@ export const mockSsoRequest = (customProps = {}) => ({
   ...customProps
 })
 
+/**
+ * Creates a request shape pre-populated with authenticated credentials.
+ * @param {Record<string, unknown>} [customProps] Properties to merge over the defaults.
+ */
 export const mockAuthRequest = (customProps = {}) => ({
   auth: {
     isAuthenticated: true,
@@ -111,6 +136,10 @@ export const mockAuthRequest = (customProps = {}) => ({
   ...customProps
 })
 
+/**
+ * Creates a bare-bones request shape with just method, path and app.
+ * @param {Record<string, unknown>} [customProps] Properties to merge over the defaults.
+ */
 export const mockSimpleRequest = (customProps = {}) => ({
   method: 'GET',
   path: '/test',
@@ -118,6 +147,10 @@ export const mockSimpleRequest = (customProps = {}) => ({
   ...customProps
 })
 
+/**
+ * Creates a minimal form-context-style object with a payload bag.
+ * @param {Record<string, unknown>} [customProps] Properties to merge over the defaults.
+ */
 export const mockContext = (customProps = {}) => ({
   payload: {},
   ...customProps
@@ -125,13 +158,8 @@ export const mockContext = (customProps = {}) => ({
 
 /**
  * Creates a mock fetch response object for testing.
- * @param {object} options - Response options
- * @param {boolean} [options.ok=true] - Whether the response is successful
- * @param {number} [options.status=200] - HTTP status code
- * @param {string} [options.statusText='OK'] - HTTP status text
- * @param {*} [options.data=null] - Data to return from json()
- * @param {string} [options.text=''] - Text to return from text()
- * @returns {object} Mock response object
+ * @param {MockFetchResponseOptions} [options]
+ * @returns {MockFetchResponse}
  */
 export const createMockFetchResponse = ({
   ok = true,
@@ -158,8 +186,8 @@ export const mockFetch = () => {
 }
 
 /**
- *
- * @param response
+ * Replaces `global.fetch` with a spy that resolves to a response wrapping `response`.
+ * @param {Record<string, unknown>} [response] Body merged into the resolved response and returned by json/text.
  * @returns {import('vitest').Mock}
  */
 export const mockFetchWithResponse = (response = {}) => {
@@ -173,3 +201,21 @@ export const mockFetchWithResponse = (response = {}) => {
   global.fetch = mockFetch
   return mockFetch
 }
+
+/**
+ * @typedef {object} MockFetchResponseOptions
+ * @property {boolean} [ok] Whether the response is successful (default `true`).
+ * @property {number} [status] HTTP status code (default `200`).
+ * @property {string} [statusText] HTTP status text (default `'OK'`).
+ * @property {unknown} [data] Value resolved by `json()` (default `null`).
+ * @property {string} [text] Value resolved by `text()` (default `''`).
+ */
+
+/**
+ * @typedef {object} MockFetchResponse
+ * @property {boolean} ok
+ * @property {number} status
+ * @property {string} statusText
+ * @property {() => Promise<unknown>} json
+ * @property {() => Promise<string>} text
+ */

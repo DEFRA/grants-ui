@@ -113,7 +113,7 @@ export default class CheckResponsesPageController extends SummaryPageController 
      * Handle POST requests to the confirm farm details page.
      * @param {AnyFormRequest} request
      * @param {FormContext} context
-     * @param {Pick<ResponseToolkit, 'redirect' | 'view'>} h
+     * @param {FormResponseToolkit} h
      * @returns {Promise<ResponseObject>}
      */
     const fn = async (request, context, h) => {
@@ -124,8 +124,8 @@ export default class CheckResponsesPageController extends SummaryPageController 
 }
 
 /**
- * @import { FormContext, AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
- * @import { ResponseObject, ResponseToolkit } from '@hapi/hapi'
+ * @import { FormContext, AnyFormRequest, FormResponseToolkit } from '@defra/forms-engine-plugin/types'
+ * @import { ResponseObject } from '@hapi/hapi'
  * @import { FormModel } from '@defra/forms-engine-plugin/engine/models/index.js'
  * @import { PageSummary } from '@defra/forms-model'
  * @import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'

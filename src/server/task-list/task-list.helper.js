@@ -1,4 +1,8 @@
 /**
+ * @import { FormModel } from '@defra/forms-engine-plugin/engine/models/index.js'
+ */
+
+/**
  * @typedef {object} TaskItem
  * @property {string} title - The task or task page title
  * @property {string} href - The path to the task page
@@ -443,12 +447,13 @@ function buildTaskListDataHideQuestions(model, formModel, state) {
 /**
  * Builds the task list data structure for the GOV.UK Task List component
  * @param {object} model - The form model
- * @param {object} formModel - The form model from the session store, used to build task links
+ * @param {FormModel} formModel - The form model from the session store, used to build task links
  * @param {object} state - The current form state
  * @returns {Task[]} Array of tasks with their task pages
  */
 export function buildTaskListData(model, formModel, state) {
-  const { showQuestions = true } = formModel.def.metadata.tasklist ?? {}
+  const { showQuestions = true } =
+    /** @type {{ tasklist?: { showQuestions?: boolean } }} */ (formModel.def.metadata).tasklist ?? {}
 
   if (!showQuestions) {
     return buildTaskListDataHideQuestions(model, formModel, state)
@@ -494,8 +499,8 @@ export function buildTaskListData(model, formModel, state) {
 /**
  * Calculates completion statistics for the task list
  * @param {object} model - The form model
+ * @param {FormModel} formModel - The form model from the session store
  * @param {object} state - The current form state
- * @param formModel
  * @returns {{ completed: number, total: number, isComplete: boolean }} Completion stats
  */
 export function getCompletionStats(model, formModel, state) {

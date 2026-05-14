@@ -8,7 +8,8 @@ import { logUpstreamError } from '~/src/server/common/helpers/logging/upstream-e
 
 /**
  * Validates required configuration values
- * @param {object} request - The request object
+ * @param {AnyRequest} request - The request object
+ * @returns {{ baseUrl: string, token: string }} The validated config values
  * @throws {Error} If required config is missing
  */
 function validateConfig(request) {
@@ -49,31 +50,36 @@ function buildTargetUri(baseUrl, path) {
  *  - 'sbi' should be provided by the defra-id service
  *  - 'source' from grants-ui service will always be 'defra'
  * @param {string} token - The API token
- * @param {object} request - The incoming request object
- * @returns {object} The proxy headers object
+ * @param {AnyRequest} request - The incoming request object
+ * @returns {Record<string, string>} The proxy headers object
  */
 function buildProxyHeaders(token, request) {
   const sbi = request?.auth?.credentials?.sbi
   const source = 'defra'
   const jwtSecret = config.get('agreements.jwtSecret')
   try {
-    const encryptedAuth = Jwt.token.generate({ sbi: sbi.toString(), source }, jwtSecret)
+    const encryptedAuth = Jwt.token.generate(
+      { sbi: /** @type {string | number} */ (sbi).toString(), source },
+      jwtSecret
+    )
+    const contentTypeHeader = request.headers['content-type']
+    const contentType = Array.isArray(contentTypeHeader) ? contentTypeHeader[0] : contentTypeHeader
     return {
       Authorization: `Bearer ${token}`,
-      'x-base-url': config.get('agreements.baseUrl'),
-      'content-type': request.headers['content-type'] || 'application/x-www-form-urlencoded',
+      'x-base-url': /** @type {string} */ (config.get('agreements.baseUrl')),
+      'content-type': contentType || 'application/x-www-form-urlencoded',
       'x-encrypted-auth': encryptedAuth,
-      'x-csp-nonce': request.app.cspNonce
+      'x-csp-nonce': /** @type {string} */ (request.app.cspNonce)
     }
   } catch (jwtError) {
     const systemError = new SystemError({
       message: 'JWT generate failed',
       source: 'buildProxyHeaders',
       reason: 'jwt_generation_failure',
-      userId: request.userId
+      userId: /** @type {{ userId?: string }} */ (request).userId
     })
     systemError.logCode = LogCodes.AGREEMENTS.AGREEMENT_ERROR
-    throw systemError.from(jwtError)
+    throw systemError.from(/** @type {Error} */ (jwtError))
   }
 }
 
@@ -94,6 +100,10 @@ function logAgreementsUpstreamError(request, error) {
  * @satisfies {Partial<ServerRoute>}
  */
 export const getAgreementController = {
+  /**
+   * @param {AnyRequest} request
+   * @param {ResponseToolkit} h
+   */
   async handler(request, h) {
     try {
       const { baseUrl, token } = validateConfig(request)
@@ -123,7 +133,7 @@ export const getAgreementController = {
     } catch (error) {
       logAgreementsUpstreamError(request, error)
 
-      if (error.message.includes('Missing required configuration')) {
+      if (/** @type {Error} */ (error).message.includes('Missing required configuration')) {
         return h
           .response({
             error: 'Service Configuration Error',
@@ -132,14 +142,15 @@ export const getAgreementController = {
           .code(statusCodes.serviceUnavailable)
       }
 
-      const statusCode = error.statusCode || error.output?.statusCode || statusCodes.serviceUnavailable
+      const errResponse = /** @type {ErrorResponse} */ (error)
+      const statusCode = errResponse.statusCode || errResponse.output?.statusCode || statusCodes.serviceUnavailable
 
       return h
         .response({
           error: 'External Service Unavailable',
           message: 'Unable to process request',
           ...(process.env.NODE_ENV !== 'production' && {
-            details: error.message
+            details: /** @type {Error} */ (error).message
           })
         })
         .code(statusCode)
@@ -148,5 +159,10 @@ export const getAgreementController = {
 }
 
 /**
- * @import { ServerRoute } from '@hapi/hapi'
+ * @import { ServerRoute, ResponseToolkit } from '@hapi/hapi'
+ * @import { AnyRequest } from '@defra/forms-engine-plugin/engine/types.js'
+ */
+
+/**
+ * @typedef {Error & { statusCode?: number, output?: { statusCode?: number } }} ErrorResponse
  */

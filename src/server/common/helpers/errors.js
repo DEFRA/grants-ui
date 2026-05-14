@@ -99,9 +99,11 @@ function getUpstreamStatus(response) {
  */
 export function catchAll(request, h) {
   const { response } = request
+  const boomResponse = /** @type {import('@hapi/boom').Boom} */ (response)
 
-  if (!response?.isBoom && !(response instanceof BaseError)) {
-    return h.response(response).code(response?.statusCode ?? statusCodes.ok)
+  if (!isBoom(response) && !(response instanceof BaseError)) {
+    const respObj = /** @type {import('@hapi/hapi').ResponseObject} */ (response)
+    return h.response(respObj).code(respObj?.statusCode ?? statusCodes.ok)
   }
 
   let statusCode
@@ -114,17 +116,25 @@ export function catchAll(request, h) {
     }
     statusCode = response.details.status || statusCodes.internalServerError
   } else {
-    statusCode = response.output.statusCode || statusCodes.internalServerError
+    statusCode = boomResponse.output.statusCode || statusCodes.internalServerError
     upstreamStatus = getUpstreamStatus(response)
     handleErrorLogging(request, response, statusCode, upstreamStatus)
   }
 
   // Handle redirects properly
-  if (statusCode === statusCodes.redirect && response.output.headers.location) {
-    return h.redirect(response.output.headers.location)
+  if (statusCode === statusCodes.redirect && boomResponse.output.headers.location) {
+    return h.redirect(/** @type {string} */ (boomResponse.output.headers.location))
   }
 
   return renderErrorView(h, statusCode)
+}
+
+/**
+ * @param {unknown} response
+ * @returns {response is import('@hapi/boom').Boom}
+ */
+function isBoom(response) {
+  return Boolean(response && typeof response === 'object' && 'isBoom' in response && response.isBoom)
 }
 
 /**

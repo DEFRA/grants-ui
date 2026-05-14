@@ -3,8 +3,9 @@ import { LogCodes } from '~/src/server/common/helpers/logging/log-codes.js'
 
 /**
  * Validates backend authentication configuration
- * @param {object} config - The convict config object
+ * @param {Record<string, any>} config - The convict config object (callers in this repo annotate it as `SchemaObj<any>`, which is structurally a string-keyed bag — typing it tighter cascades into widespread breakage)
  * @throws {Error} When backend URL is set but auth credentials are incomplete
+ * @returns {void}
  */
 export function validateBackendAuthConfig(config) {
   const backendUrl = config.get('session.cache.apiEndpoint')

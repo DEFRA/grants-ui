@@ -47,13 +47,13 @@ export default class ConfirmMethaneDetailsController extends QuestionPageControl
    * @returns {Promise<object>} Farm details object with rows array
    */
   async buildFarmDetails(request) {
-    const toleratedPaths = this.model?.def?.metadata?.toleratedFailurePaths
+    const toleratedPaths = /** @type {string[] | undefined} */ (this.model?.def?.metadata?.toleratedFailurePaths)
     const data = await fetchBusinessAndCPH(request, { toleratedPaths })
 
     const rows = [
       createCustomerNameRow(data.customer?.name),
       createBusinessNameRow(data.business?.name),
-      createSbiRow(request.auth?.credentials?.sbi),
+      createSbiRow(/** @type {string} */ (request.auth?.credentials?.sbi)),
       createContactDetailsRow(null, data.business?.phone?.mobile, data.business?.email?.address),
       createAddressRow(data.business?.address),
       this.createTypeRow(data.business?.type),
@@ -113,7 +113,7 @@ export default class ConfirmMethaneDetailsController extends QuestionPageControl
      * Handle POST requests to the confirm farm details page.
      * @param {AnyFormRequest} request
      * @param {FormContext} context
-     * @param {Pick<ResponseToolkit, 'redirect' | 'view'>} h
+     * @param {FormResponseToolkit} h
      * @returns {Promise<ResponseObject>}
      */
     const fn = async (request, context, h) => {
@@ -121,7 +121,7 @@ export default class ConfirmMethaneDetailsController extends QuestionPageControl
       const { sbi } = request.auth.credentials
 
       if (sbi) {
-        const toleratedPaths = this.model?.def?.metadata?.toleratedFailurePaths
+        const toleratedPaths = /** @type {string[] | undefined} */ (this.model?.def?.metadata?.toleratedFailurePaths)
         const applicant = await fetchBusinessAndCPH(request, { toleratedPaths })
         await this.setState(request, mergeAdditionalAnswers(state, { applicant }))
       }
@@ -149,6 +149,6 @@ export default class ConfirmMethaneDetailsController extends QuestionPageControl
 /**
  * @import { FormModel } from '@defra/forms-engine-plugin/engine/models/index.js'
  * @import { PageQuestion } from '@defra/forms-model'
- * @import { FormContext, AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
- * @import { ResponseObject, ResponseToolkit } from '@hapi/hapi'
+ * @import { FormContext, AnyFormRequest, FormResponseToolkit } from '@defra/forms-engine-plugin/types'
+ * @import { ResponseObject } from '@hapi/hapi'
  */

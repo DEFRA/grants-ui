@@ -4,6 +4,12 @@ import { getOidcConfig } from '~/src/server/auth/get-oidc-config.js'
 import { AuthError } from '~/src/server/common/utils/errors/AuthError.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
+/**
+ * Exchange a refresh token at the Defra Identity token endpoint.
+ * @param {string} refreshToken
+ * @param {AnyRequest} request
+ * @returns {Promise<RefreshTokenPayload>}
+ */
 async function refreshTokens(refreshToken, request) {
   try {
     const { token_endpoint: url } = await getOidcConfig()
@@ -54,15 +60,21 @@ async function refreshTokens(refreshToken, request) {
     return payload
   } catch (error) {
     let step
-    if (error.message.includes('OIDC')) {
+    if (/** @type {ErrorResponse} */ (error).message.includes('OIDC')) {
       step = 'oidc_config_fetch'
-    } else if (error.message.includes('ENOTFOUND') || error.message.includes('ECONNREFUSED')) {
+    } else if (
+      /** @type {ErrorResponse} */ (error).message.includes('ENOTFOUND') ||
+      /** @type {ErrorResponse} */ (error).message.includes('ECONNREFUSED')
+    ) {
       step = 'token_endpoint_connection'
-    } else if (error.message.includes('400') || error.message.includes('401')) {
+    } else if (
+      /** @type {ErrorResponse} */ (error).message.includes('400') ||
+      /** @type {ErrorResponse} */ (error).message.includes('401')
+    ) {
       step = 'token_endpoint_auth'
-    } else if (error.message.includes('access_token')) {
+    } else if (/** @type {ErrorResponse} */ (error).message.includes('access_token')) {
       step = 'token_refresh_response_validation'
-    } else if (error.statusCode) {
+    } else if (/** @type {ErrorResponse} */ (error).statusCode) {
       step = 'token_endpoint_response'
     } else {
       step = 'unknown'
@@ -72,12 +84,26 @@ async function refreshTokens(refreshToken, request) {
       message: 'Token refresh failed',
       source: 'refreshTokens',
       reason: step,
-      statusCode: error.statusCode,
+      statusCode: /** @type {ErrorResponse} */ (error).statusCode,
       hasRefreshToken: !!refreshToken
     })
     authError.logCode = LogCodes.AUTH.TOKEN_VERIFICATION_FAILURE
-    throw authError.from(error)
+    throw authError.from(/** @type {Error} */ (error))
   }
 }
 
 export { refreshTokens }
+
+/**
+ * @import { AnyRequest } from '@defra/forms-engine-plugin/engine/types.js'
+ */
+
+/**
+ * @typedef {Error & { statusCode?: number }} ErrorResponse
+ *
+ * @typedef {{
+ *   access_token: string,
+ *   refresh_token: string,
+ *   [key: string]: unknown
+ * }} RefreshTokenPayload
+ */

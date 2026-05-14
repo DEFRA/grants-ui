@@ -56,7 +56,10 @@ export default class CheckDetailsController extends QuestionPageController {
    * @param {PageQuestion} pageDef
    */
   constructor(model, pageDef) {
-    const confirmationFieldName = model.def.metadata?.detailsPage?.confirmationFieldName ?? 'detailsConfirmed'
+    const detailsPageMeta = /** @type {{ confirmationFieldName?: string } | undefined} */ (
+      model.def.metadata?.detailsPage
+    )
+    const confirmationFieldName = detailsPageMeta?.confirmationFieldName ?? 'detailsConfirmed'
     const isSfdEnabled = config.get('externalLinks.sfd.enabled')
     const noButtonLabel = isSfdEnabled ? 'No, update my details on the Farm and Land Service' : 'No'
 
@@ -73,7 +76,7 @@ export default class CheckDetailsController extends QuestionPageController {
     }
 
     if (!model.lists.some((l) => l.name === 'yesNo')) {
-      model.lists.push(yesNoList)
+      model.lists.push(/** @type {import('@defra/forms-model').List} */ (/** @type {unknown} */ (yesNoList)))
     }
     // Inject Html (placeholder) and RadiosField components into the page def BEFORE super() so they are
     // included in the collection's formSchema/stateSchema from the start.
@@ -132,10 +135,14 @@ export default class CheckDetailsController extends QuestionPageController {
       // Register the condition in the model so the engine can evaluate it
       // when determining the next page path (V2 engine checks page.condition.fn)
       if (!model.conditions[conditionName]) {
-        model.conditions[conditionName] = {
-          name: conditionName,
-          fn: (evaluationState) => evaluationState[confirmationFieldName] === false
-        }
+        model.conditions[conditionName] =
+          /** @type {import('@defra/forms-engine-plugin/types').ExecutableCondition} */ (
+            /** @type {unknown} */ ({
+              name: conditionName,
+              fn: (/** @type {Partial<Record<string, unknown>>} */ evaluationState) =>
+                evaluationState[confirmationFieldName] === false
+            })
+          )
       }
 
       const updateDetailsPageDef = {
@@ -160,7 +167,9 @@ export default class CheckDetailsController extends QuestionPageController {
       // getNextPath finds it before any unconditional pages (e.g. status page).
       const checkDetailsIndex = model.pages.indexOf(this)
       const insertAt = checkDetailsIndex >= 0 ? checkDetailsIndex + 1 : model.pages.length
-      model.def.pages.push(updateDetailsPageDef)
+      model.def.pages.push(
+        /** @type {import('@defra/forms-model').Page} */ (/** @type {unknown} */ (updateDetailsPageDef))
+      )
       model.pages.splice(insertAt, 0, updateDetailsController)
       model.pageMap?.set(UPDATE_DETAILS_PATH, updateDetailsController)
     }
@@ -202,7 +211,10 @@ export default class CheckDetailsController extends QuestionPageController {
       }
 
       if (context.errors) {
-        const viewModel = this.getViewModel(request, context)
+        const viewModel =
+          /** @type {import('@defra/forms-engine-plugin/types').FormPageViewModel & { sections?: unknown }} */ (
+            this.getViewModel(request, context)
+          )
         viewModel.errors = collection.getViewErrors(viewModel.errors)
         const { sections } = await this.fetchAndProcessData(request, detailsPageConfig)
         viewModel.sections = sections

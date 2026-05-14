@@ -104,7 +104,7 @@ const createHapiServer = () => {
 const registerFormsPlugin = async (server, prefix = '') => {
   const formService = await formsService()
   await server.register({
-    plugin,
+    plugin: /** @type {import('@hapi/hapi').Plugin<any>} */ (/** @type {unknown} */ (plugin)),
     options: {
       ...(prefix && { routes: { prefix } }),
       cache: new StatePersistenceService({ server }),

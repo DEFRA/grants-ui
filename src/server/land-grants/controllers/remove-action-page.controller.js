@@ -164,8 +164,8 @@ export default class RemoveActionPageController extends QuestionPageWithParcelCh
    */
   async handlePost(request, context, h) {
     const { state } = context
-    const payload = request.payload ?? {}
-    const { action, parcelId } = request.query
+    const payload = /** @type {{ remove?: string }} */ (request.payload ?? {})
+    const { action, parcelId } = /** @type {{ action: string, parcelId: string }} */ (request.query)
 
     // Get pageheading and hint from state for error messages
     const actionInfo = findActionInfoFromState(state.landParcels, parcelId, action)

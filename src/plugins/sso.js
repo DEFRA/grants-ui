@@ -1,8 +1,8 @@
 export default {
   plugin: {
     name: 'sso',
-    register: (server) => {
-      server.ext('onRequest', (request, h) => {
+    register: (/** @type {Server} */ server) => {
+      server.ext('onRequest', (/** @type {Request} */ request, /** @type {ResponseToolkit} */ h) => {
         // If the user has already selected an organisation in another service, pass the organisation Id to force Defra Id to skip the organisation selection screen
         if (request.query.ssoOrgId) {
           const searchParams = new URLSearchParams(request.url.search)
@@ -19,3 +19,7 @@ export default {
     }
   }
 }
+
+/**
+ * @import { Server, Request, ResponseToolkit } from '@hapi/hapi'
+ */

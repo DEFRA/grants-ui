@@ -29,9 +29,7 @@ function logLockReleaseError(err, urlHref, ownerId, timeoutMs) {
  * It handles cases where the endpoint is not configured, network errors, non-OK HTTP responses,
  * and invalid JSON returned by the backend.
  *
- * @param {Object} params - Parameters object.
- * @param {string} params.ownerId - DEFRA user ID of the owner whose locks should be released.
- *
+ * @param {{ ownerId: string }} params - Parameters object.
  * @returns {Promise<{ok: boolean, releasedCount: number, skipped?: boolean}>}
  *   Result object indicating whether locks were released, how many, and if the call was skipped
  * @example
