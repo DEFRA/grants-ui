@@ -4,7 +4,7 @@ import { BaseError } from '../utils/errors/BaseError.js'
  * Returns the grantCode for the current request.
  * Throws an error if not found.
  *
- * @param {import('@hapi/hapi').Request} request - Hapi request object
+ * @param {import('@defra/forms-engine-plugin/engine/types.js').AnyRequest} request - Hapi request object
  * @returns {string} - The grantCode
  */
 export function getGrantCode(request) {

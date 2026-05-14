@@ -92,7 +92,7 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
    * @returns {object}
    */
   buildDetailedFarmDetails(request, data) {
-    const sbi = request.auth?.credentials?.sbi
+    const sbi = /** @type {string} */ (request.auth?.credentials?.sbi)
     const person = createPersonRows(data.customer?.name)
     const business = createBusinessRows(sbi, data.business)
     const contact = createContactRows(data.business)
@@ -136,7 +136,7 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
      * Handle POST requests to the confirm farm details page.
      * @param {AnyFormRequest} request
      * @param {FormContext} context
-     * @param {Pick<ResponseToolkit, 'redirect' | 'view'>} h
+     * @param {FormResponseToolkit} h
      * @returns {Promise<ResponseObject>}
      */
     const fn = async (request, context, h) => {
@@ -156,6 +156,6 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
 }
 
 /**
- * @import { FormContext, AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
- * @import { ResponseObject, ResponseToolkit } from '@hapi/hapi'
+ * @import { FormContext, AnyFormRequest, FormResponseToolkit } from '@defra/forms-engine-plugin/types'
+ * @import { ResponseObject } from '@hapi/hapi'
  */

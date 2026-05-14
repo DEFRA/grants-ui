@@ -107,12 +107,13 @@ The file is an array of step objects, executed in order:
 
 Each step requires:
 
-| Field     | Required | Description                                               |
-| --------- | -------- | --------------------------------------------------------- |
-| `slug`    | Yes      | The page URL slug to match against                        |
-| `name`    | Yes      | Human-readable label (for console logs)                   |
-| `type`    | Yes      | The handler to use (see below)                            |
-| `section` | No       | Section name, used for section-based `runJourney()` calls |
+| Field       | Required | Description                                                                                                                                                                                                                                                                                                                                    |
+| ----------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `slug`      | Yes      | The page URL slug to match against                                                                                                                                                                                                                                                                                                             |
+| `name`      | Yes      | Human-readable label (for console logs)                                                                                                                                                                                                                                                                                                        |
+| `type`      | Yes      | The handler to use (see below)                                                                                                                                                                                                                                                                                                                 |
+| `section`   | No       | Section name, used for section-based `runJourney()` calls                                                                                                                                                                                                                                                                                      |
+| `matchMode` | No       | Set to `"prefix"` to match `/{slug}/{itemId}` URLs where `itemId` is a UUID (used for `RepeatPageController` item-entry pages). Default match compares the page path (URL with the form slug stripped) for exact equality with `"/" + slug`, so multi-segment slugs like `"repeat-page/summary"` match the literal `/repeat-page/summary` URL. |
 
 ### Step types
 
@@ -140,6 +141,71 @@ Each step requires:
 | `pigs-might-fly.json`               | Flying pigs               |
 | `methane.json`                      | Methane                   |
 | `woodland.json`                     | Woodland Management Plan  |
+
+### Example grant with auth
+
+The `example-grant-with-auth` journey is the canonical demo of every form component. Use the step numbers below with `runJourney(N)` to stop on a specific page. For example, `runJourney(8)` fills in and submits steps 1–7, then lands on the `number-field-validation` page without filling it in. Handy when iterating on a single component.
+
+There are two `NumberField` demos because the engine treats validation and conditional routing as separate concerns: step 8 (`/number-field-validation`) demonstrates schema-level `min`/`max` rejection (you cannot leave the page until the value is in range), while step 9 (`/number-field-routing`) demonstrates an `is more than` condition that diverts the journey when the value exceeds £100,000 (the value is accepted; only the next page changes).
+
+Steps 20 and 21 traverse a `RepeatPageController`: the engine renders one URL per item (`/repeat-page/{itemId}`, where `{itemId}` is a UUID) plus a list-summary URL (`/repeat-page/summary`), so the runner needs two steps — the first uses `matchMode: "prefix"` to match the per-item URL by UUID, the second uses the literal slug `"repeat-page/summary"` to match the summary URL exactly. See the `matchMode` row above.
+
+Step 17 (`/location-components`) groups five location field types on a single page (`EastingNorthingField`, `OsGridRefField`, `NationalGridFieldNumberField`, `LatLongField`, `GeospatialField`); the runner submits valid values for all five (the `GeospatialField` textarea is filled with a single-feature GeoJSON example). Step 18 (`/hidden-field`) demonstrates a `HiddenField` rendered with no visible input — the runner just submits the page.
+
+| Step | Page slug                 | Component / purpose                                                                                                           |
+| ---- | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| 1    | `start`                   | Start page (guidance components)                                                                                              |
+| 2    | `check-details`           | Authenticated details check (DefraID)                                                                                         |
+| 3    | `yes-no-field`            | `YesNoField`                                                                                                                  |
+| 4    | `autocomplete-field`      | `AutocompleteField`                                                                                                           |
+| 5    | `radios-field`            | `RadiosField`                                                                                                                 |
+| 6    | `conditional-page`        | Conditional page (reached when radios option one is chosen)                                                                   |
+| 7    | `checkboxes-field`        | `CheckboxesField`                                                                                                             |
+| 8    | `number-field-validation` | `NumberField` with schema `min`/`max` validation                                                                              |
+| 9    | `number-field-routing`    | `NumberField` driving an `is more than` condition (routing demo)                                                              |
+| 10   | `date-parts-field`        | `DatePartsField`                                                                                                              |
+| 11   | `month-year-field`        | `MonthYearField`                                                                                                              |
+| 12   | `select-field`            | `SelectField`                                                                                                                 |
+| 13   | `multiline-text-field`    | `MultilineTextField`                                                                                                          |
+| 14   | `email-address-field`     | `EmailAddressField`                                                                                                           |
+| 15   | `telephone-number-field`  | `TelephoneNumberField`                                                                                                        |
+| 16   | `uk-address-field`        | `UkAddressField` (compound)                                                                                                   |
+| 17   | `location-components`     | `EastingNorthingField`, `OsGridRefField`, `NationalGridFieldNumberField`, `LatLongField`, `GeospatialField` (all on one page) |
+| 18   | `hidden-field`            | `HiddenField` (rendered as `<input type="hidden">`; no visible control)                                                       |
+| 19   | `multi-field-form`        | Multiple components on one page (`TextField` + others)                                                                        |
+| 20   | `repeat-page/{itemId}`    | `RepeatPageController` item entry (one item filled in)                                                                        |
+| 21   | `repeat-page/summary`     | `RepeatPageController` list summary — submit to continue                                                                      |
+| 22   | `select-land-parcel`      | `CommonSelectLandParcelPageController` + `CheckboxesField`                                                                    |
+| 23   | `summary`                 | Check answers (`CheckResponsesPageController`)                                                                                |
+| 24   | `declaration`             | Declaration / submit (`DeclarationPageController`)                                                                            |
+
+A few pages are reached only when their conditions match and are skipped by `runJourney()` during a normal traversal. Each one demonstrates a different condition operator:
+
+| Page                    | Operator       | Value type     | Trigger                                                                | Runner default    |
+| ----------------------- | -------------- | -------------- | ---------------------------------------------------------------------- | ----------------- |
+| `/terminal-page`        | `is`           | `BooleanValue` | Answer "No" on `/yes-no-field`                                         | "Yes"             |
+| `/number-too-high`      | `is more than` | `NumberValue`  | Enter any value over £100,000 on `/number-field-routing` (e.g. 200000) | £50,000           |
+| `/checkboxes-follow-up` | `contains`     | `ListItemRef`  | Tick "Option three" on `/checkboxes-field`                             | First option only |
+
+To exercise these pages, run `runJourney(N)` to land on the trigger page (`runJourney(3)` for terminal, `runJourney(9)` for number routing, `runJourney(7)` for checkboxes), then enter a triggering value manually and submit.
+
+#### Environment setup for `runJourney()` to reach `/declaration`
+
+Step 22 (`/select-land-parcel`) renders parcels fetched from the DAL stub for the signed-in SBI and runs `performAuthCheck` against the same source on submit. For the journey runner to clear the page, three things have to line up — the same conditions that the woodland journey relies on:
+
+1. **Sign in with CRN `1102838829`.** The DAL stub (`grants-ui-dal-stub`) returns parcels for this CRN; signing in with another CRN renders no checkboxes (or ones that fail the auth check).
+2. **Run with mockserver in front of the land-grants API.** The default `compose.yml` already points `LAND_GRANTS_API_URL` at mockserver. If you're running `compose.land-grants.yml` (real backend), layer in `compose.journey-runner.yml`:
+
+   ```sh
+   npm run docker:landgrants:journey-runner:up
+   # tear down with: npm run docker:landgrants:journey-runner:down
+   ```
+
+3. **Clear stale state between runs.** Visit `http://localhost:3000/example-grant-with-auth/clear-application-state` to flush both the Redis-backed form state and the in-memory parcel cache.
+
+The `select-land-parcel` step in `example-grant-with-auth.json` uses `"selectAll": true`, so the runner ticks every rendered parcel checkbox before submitting (mirroring the `land-parcels` step in `woodland.json`).
+
+If `runJourney()` reports `Stuck on "SelectLandParcel"`, the most likely cause is the signed-in CRN. Re-check step 1, hit the clear-state route in step 3, and re-run.
 
 ### Woodland Management Plan
 

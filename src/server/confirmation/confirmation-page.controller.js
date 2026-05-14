@@ -33,7 +33,7 @@ export default class ConfirmationPageController extends StatusPageController {
       const state = await cacheService.getState(request)
       const referenceNumber = state.$$__referenceNumber
 
-      return this.renderConfirmationPage(request, context, h, referenceNumber)
+      return this.renderConfirmationPage(request, context, h, /** @type {string} */ (referenceNumber))
     }
   }
 
@@ -64,7 +64,7 @@ export default class ConfirmationPageController extends StatusPageController {
 
   /**
    * Gets the path to the status page (in this case /confirmation page) for the GET handler.
-   * @param {object} request - The request object containing the URL info
+   * @param {object} [request] - The request object containing the URL info
    * @param {object} [context] - The context object which may contain form state
    * @returns {string} path to the status page
    */

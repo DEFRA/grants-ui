@@ -6,11 +6,11 @@ const logger = pino(loggerOptions)
 /**
  * Logs an event with the specified level and context.
  * @param {object} logCode - Logging options.
- * @param {import('./log-codes-definition.js').LogTypes.LogLevel} logCode.level - The log level.
+ * @param {import('./log-codes/definition.js').LogTypes.LogLevel} logCode.level - The log level.
  * @param {Function} logCode.messageFunc - A function that creates an interpolated message string
  * @param {object} [logCode.error] - An error object (optional)
  * @param {object} messageOptions - Values for message interpolation
- * @param {import('@hapi/hapi').Request} [request] - Hapi request object (optional)
+ * @param {import('@defra/forms-engine-plugin/engine/types.js').AnyRequest} [request] - Hapi request object (optional)
  */
 const log = (logCode, messageOptions, request) => {
   const message = logCode.messageFunc(messageOptions)
@@ -21,11 +21,11 @@ const log = (logCode, messageOptions, request) => {
 /**
  * Logs an event with the specified level and context.
  * @param {object} logCode - Logging options.
- * @param {import('./log-codes-definition.js').LogTypes.LogLevel} logCode.level - The log level.
+ * @param {import('./log-codes/definition.js').LogTypes.LogLevel} logCode.level - The log level.
  * @param {Function} logCode.messageFunc - A function that creates an interpolated message string
  * @param {object} [logCode.error] - An error object (optional)
  * @param {object} messageOptions - Values for message interpolation
- * @param {import('@hapi/hapi').Request} [request] - Hapi request object (optional)
+ * @param {import('@defra/forms-engine-plugin/engine/types.js').AnyRequest} [request] - Hapi request object (optional)
  */
 const debug = (logCode, messageOptions, request) => {
   const message = logCode.messageFunc(messageOptions)
@@ -40,7 +40,7 @@ const debug = (logCode, messageOptions, request) => {
  * @param {Function} logCode.messageFunc - A function that creates an interpolated message string
  * @param {object} [logCode.error] - An error object (optional)
  * @param {object} messageOptions - Values for message interpolation
- * @param {import('@hapi/hapi').Request} [request] - Hapi request object (optional)
+ * @param {import('@defra/forms-engine-plugin/engine/types.js').AnyRequest} [request] - Hapi request object (optional)
  */
 const error = (logCode, messageOptions, request) => {
   const message = logCode.messageFunc(messageOptions)
@@ -51,7 +51,7 @@ const error = (logCode, messageOptions, request) => {
 
 /**
  * Returns the logger function corresponding to the given log level.
- * @param {import('./log-codes-definition.js').LogTypes.LogLevel} level - The log level.
+ * @param {import('./log-codes/definition.js').LogTypes.LogLevel} level - The log level.
  * @param {object} [request] - Hapi request object (optional)
  * @returns {(errorContext: object | undefined, message: string) => void} Logger function.
  */

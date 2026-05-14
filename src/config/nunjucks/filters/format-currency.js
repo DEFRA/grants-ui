@@ -4,7 +4,7 @@
  * @param {string} currency
  * @param {number} maximumFractionDigits
  * @param {keyof Intl.NumberFormatOptionsStyleRegistry} style
- * @return {string}
+ * @returns {string}
  */
 export function formatCurrency(
   value,
@@ -13,6 +13,7 @@ export function formatCurrency(
   maximumFractionDigits = 2,
   style = 'currency'
 ) {
+  /** @type {Intl.NumberFormatOptions} */
   const options = {
     style,
     maximumFractionDigits

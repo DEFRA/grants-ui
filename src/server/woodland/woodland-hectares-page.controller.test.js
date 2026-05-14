@@ -66,8 +66,16 @@ vi.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js', () =
 
 vi.mock('~/src/server/task-list/task-list.helper.js', () => ({
   getTaskListPath: vi.fn().mockReturnValue('/task-list'),
-  getTaskPageBackLink: vi.fn()
+  getTaskPageBackLink: vi.fn(),
+  withTaskContext: (Base) => Base
 }))
+
+vi.mock('~/src/server/task-list/task-page.controller.js', async () => {
+  const { QuestionPageController } = await import('@defra/forms-engine-plugin/controllers/QuestionPageController.js')
+  return {
+    default: class TaskPageController extends QuestionPageController {}
+  }
+})
 
 const mockH = { view: vi.fn().mockReturnValue('error view') }
 

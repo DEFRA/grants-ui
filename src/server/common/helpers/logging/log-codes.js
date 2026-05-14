@@ -1,5 +1,5 @@
 import { validateLogCode } from './log-code-validator.js'
-import { LogCodes } from './log-codes-definition.js'
+import { LogCodes } from './log-codes/definition.js'
 
 // Re-export LogCodes from the definition file
 export { LogCodes }

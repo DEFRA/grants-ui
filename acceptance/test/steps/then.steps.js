@@ -58,7 +58,7 @@ Then('(the user )should see banner {string}', async (text) => {
   await expect($(`//span[@class='govuk-service-navigation__service-name']/a`)).toHaveText(text)
 })
 
-Then('(the user )should see section title {string}', async (text) => {
+Then('(the user )should see task title {string}', async (text) => {
   if (text.indexOf("'") > -1) {
     text = text.substring(0, text.indexOf("'"))
   }

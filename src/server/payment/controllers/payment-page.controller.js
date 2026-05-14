@@ -175,7 +175,7 @@ export default class PaymentPageController extends QuestionPageController {
   }
 
   /**
-   * @param {ResponseToolkit} h
+   * @param {FormResponseToolkit} h
    * @param {AnyFormRequest} request
    * @param {FormContext} context
    * @param {{ text: string }[]} errorMessages
@@ -201,9 +201,9 @@ export default class PaymentPageController extends QuestionPageController {
   makeGetRouteHandler() {
     /**
      * Handle GET requests to the payment page.
-     * @param {AnyFormRequest} request
+     * @param {FormRequest} request
      * @param {FormContext} context
-     * @param {ResponseToolkit} h
+     * @param {FormResponseToolkit} h
      */
     return async (request, context, h) => {
       const { viewName } = this
@@ -218,7 +218,12 @@ export default class PaymentPageController extends QuestionPageController {
         parcelItems = result.parcelItems ?? []
         additionalYearlyPayments = result.additionalYearlyPayments ?? []
 
-        await this.setState(request, { ...state, totalPence, totalPayment, payment })
+        await this.setState(
+          request,
+          /** @type {import('@defra/forms-engine-plugin/types').FormSubmissionState} */ (
+            /** @type {unknown} */ ({ ...state, totalPence, totalPayment, payment })
+          )
+        )
       } catch (error) {
         const sbi = request.auth?.credentials?.sbi
         debug(
@@ -244,12 +249,12 @@ export default class PaymentPageController extends QuestionPageController {
   makePostRouteHandler() {
     /**
      * Handle POST requests to the payment page.
-     * @param {AnyFormRequest} request
+     * @param {FormRequestPayload} request
      * @param {FormContext} context
-     * @param {ResponseToolkit} h
+     * @param {FormResponseToolkit} h
      */
     return async (request, context, h) => {
-      const payload = request.payload ?? {}
+      const payload = /** @type {Record<string, string>} */ (request.payload ?? {})
       const { state } = context
 
       const validationError = this.validatePostPayload(payload)
@@ -284,7 +289,7 @@ export default class PaymentPageController extends QuestionPageController {
 
 /**
  * @import { FormModel } from '@defra/forms-engine-plugin/engine/models/index.js'
- * @import { FormContext, AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
+ * @import { FormContext, AnyFormRequest, FormRequest, FormRequestPayload, FormResponseToolkit } from '@defra/forms-engine-plugin/types'
  * @import { ResponseObject, ResponseToolkit } from '@hapi/hapi'
  * @import { PaymentStrategyResult } from '../payment-strategies.d.js'
  * @import { ParcelCardViewModel, AdditionalPaymentViewModel } from '~/src/server/land-grants/view-models/payment.view-model.js'

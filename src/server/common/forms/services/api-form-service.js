@@ -18,7 +18,9 @@ export class ApiFormService {
   }
 
   generateJwt() {
-    return jwt.sign({ sub: 'grants-ui' }, this.jwtSecret, { expiresIn: this.jwtExpiry })
+    return jwt.sign({ sub: 'grants-ui' }, this.jwtSecret, {
+      expiresIn: /** @type {import('jsonwebtoken').SignOptions['expiresIn']} */ (this.jwtExpiry)
+    })
   }
 
   /**
@@ -145,7 +147,7 @@ export class ApiFormService {
 
         logger.info(`Loaded API form into Redis: ${slug}`)
       } catch (error) {
-        logger.error(`Failed to load API form "${slug}" during startup: ${error.message}`)
+        logger.error(`Failed to load API form "${slug}" during startup: ${/** @type {Error} */ (error).message}`)
         throw error
       }
     }

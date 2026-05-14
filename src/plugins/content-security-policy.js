@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto'
 import { config } from '~/src/config/config.js'
 
-const defaultContentPolicy = (nonce) => {
+const defaultContentPolicy = (/** @type {string} */ nonce) => {
   const gtm = 'https://www.googletagmanager.com'
   const ga4 = 'https://www.google-analytics.com'
   const ga4WildCard = 'https://*.google-analytics.com'
@@ -38,20 +38,23 @@ const defaultContentPolicy = (nonce) => {
   ].join('; ')
 }
 
+/**
+ * @returns {string}
+ */
 function generateNewNonce() {
   return randomBytes(16).toString('base64')
 }
 
 export const contentSecurityPolicy = {
   name: 'content-security-policy',
-  register: (server) => {
-    server.ext('onRequest', (request, h) => {
+  register: (/** @type {Server} */ server) => {
+    server.ext('onRequest', (/** @type {Request} */ request, /** @type {ResponseToolkit} */ h) => {
       request.app.cspNonce = generateNewNonce()
       return h.continue
     })
 
-    server.ext('onPreResponse', (request, h) => {
-      const response = request.response
+    server.ext('onPreResponse', (/** @type {Request} */ request, /** @type {ResponseToolkit} */ h) => {
+      const response = /** @type {PossibleResponse} */ (/** @type {unknown} */ (request.response))
       const nonce = request.app.cspNonce
       if (response?.isBoom) {
         if (typeof response.header === 'function') {
@@ -62,12 +65,12 @@ export const contentSecurityPolicy = {
       }
 
       if (typeof response.header === 'function') {
-        response.header('Content-Security-Policy', defaultContentPolicy(nonce))
+        response.header('Content-Security-Policy', defaultContentPolicy(/** @type {string} */ (nonce)))
         response.header('Referrer-Policy', 'no-referrer')
 
         // Only set this header in non-production environments for debugging
         if (!config.get('isProduction')) {
-          response.header('X-CSP-Nonce', nonce)
+          response.header('X-CSP-Nonce', /** @type {string} */ (nonce))
         }
       }
 
@@ -79,3 +82,19 @@ export const contentSecurityPolicy = {
     })
   }
 }
+
+/**
+ * @import { Server, Request, ResponseToolkit } from '@hapi/hapi'
+ */
+
+/**
+ * Hapi exposes `request.response` as `ResponseObject | Boom`, but downstream
+ * code here duck-types the union. This captures just the properties this
+ * plugin touches; the const is assigned via a double-cast through `unknown`
+ * because no Hapi-supplied union member is structurally narrower than this.
+ * @typedef {object} PossibleResponse
+ * @property {boolean} [isBoom]
+ * @property {(name: string, value: string) => unknown} [header]
+ * @property {string} [variety]
+ * @property {{ context?: Record<string, unknown> }} source
+ */

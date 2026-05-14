@@ -31,9 +31,9 @@ export async function clearApplicationStateHandler(request, h) {
     const cacheService = getFormsCacheService(request.server)
     let sessionKey = 'unknown'
     try {
-      await cacheService.clearState(request, true)
+      await cacheService.clearState(request)
     } catch (error) {
-      sessionKey = cacheService._Key(request)
+      sessionKey = cacheService.Key(request).id
       const sessionError = new SessionError({
         message: 'Session state clear failed',
         source: 'clearApplicationStateHandler',

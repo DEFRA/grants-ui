@@ -27,6 +27,10 @@ function getPermissions(crn, organisationId, token) {
   return { role, scope }
 }
 
+/**
+ * @param {{ crn: string, token: string }} _headers
+ * @returns {string}
+ */
 function getPersonId(_headers) {
   // simulate call to RPS API
   // Only id is needed for mapping roles, but other fields shown for context for what else is available
@@ -66,9 +70,16 @@ function getPersonId(_headers) {
 }
 
 /**
+ * Mock retrieval of roles and privileges from Siti Agri API.
+ *
+ * `role` is intentionally typed as `any`: the live API may return a string or
+ * an array, and downstream code reassigns it to a `string[]` fallback when
+ * the response is empty. Narrowing it here would either lie or cascade type
+ * errors into callers that already treat the result as `string`.
+ *
  * @param {string} _personId
  * @param {string} _organisationId
- * @returns {{role: *, privileges: *[]}}
+ * @returns {{role: any, privileges: string[]}}
  */
 function getRolesAndPrivileges(_personId, _organisationId) {
   // simulate call to Siti Agri API

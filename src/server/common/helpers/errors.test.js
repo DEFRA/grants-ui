@@ -30,6 +30,25 @@ vi.mock('@defra/forms-engine-plugin', () => ({
   }
 }))
 
+vi.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js', () => ({
+  QuestionPageController: class {
+    constructor(model, pageDef) {
+      this.model = model
+      this.pageDef = pageDef
+    }
+  }
+}))
+
+vi.mock('@defra/forms-engine-plugin/controllers/TerminalPageController.js', () => ({
+  TerminalPageController: class {
+    constructor(model, pageDef) {
+      this.model = model
+      this.pageDef = pageDef
+      this.path = pageDef?.path
+    }
+  }
+}))
+
 vi.mock('~/src/server/common/forms/services/api-form-service.js', () => ({
   ApiFormService: vi.fn().mockImplementation(function () {
     return {
@@ -189,6 +208,26 @@ describe('#catchAll', () => {
     expect(mockErrorLogger).not.toHaveBeenCalledWith(mockStack)
     expect(mockToolkitView).toHaveBeenCalledWith('errors/500', { supportEmail: null })
     expect(mockToolkitCode).toHaveBeenCalledWith(statusCodes.imATeapot)
+  })
+
+  test('Should include upstreamStatus in the SERVER_ERROR log payload when the response carries an upstream 5xx', () => {
+    const request = mockRequest(statusCodes.internalServerError)
+    request.response.code = statusCodes.badGateway
+    request.response.status = statusCodes.badGateway
+
+    catchAll(request, mockToolkit)
+
+    expect(log).toHaveBeenCalledWith(
+      expect.objectContaining({ level: 'error' }),
+      expect.objectContaining({
+        upstreamStatus: statusCodes.badGateway,
+        statusCode: statusCodes.internalServerError
+      }),
+      request
+    )
+    // Response status is unchanged — 500 stays 500 user-facing.
+    expect(mockToolkitView).toHaveBeenCalledWith('errors/500', { supportEmail: null })
+    expect(mockToolkitCode).toHaveBeenCalledWith(statusCodes.internalServerError)
   })
 
   test('Should provide expected "Something went wrong" page and log error for internalServerError', () => {

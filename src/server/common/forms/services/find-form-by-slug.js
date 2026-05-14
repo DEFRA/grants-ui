@@ -26,7 +26,7 @@ export async function findFormBySlug(slug) {
  * Loads a form's full definition — from the YAML file for file-sourced forms, or from Redis
  * for API-sourced forms (lazy re-fetch is handled by the formsService layer).
  * @param {import('./forms-redis.js').FormCacheEntry} form
- * @param formsService
+ * @param {FormsServiceWithSlugLookup} formsService
  * @returns {Promise<import('@defra/forms-model').FormDefinition>}
  */
 export async function loadFormDefinition(form, formsService) {
@@ -38,10 +38,15 @@ export async function loadFormDefinition(form, formsService) {
     }
 
     const raw = await readFile(filePath, 'utf8')
-    const parsed = parseYaml(raw)
+    const parsed = /** @type {import('@defra/forms-model').FormDefinition} */ (parseYaml(raw))
     yamlCache.set(filePath, parsed)
     return structuredClone(parsed)
   }
 
   return formsService.getFormDefinitionBySlug(form.slug)
 }
+
+/**
+ * @typedef {import('@defra/forms-model').FormDefinition} FormDefinition
+ * @typedef {{ getFormDefinitionBySlug: (slug: string) => Promise<FormDefinition> }} FormsServiceWithSlugLookup
+ */
