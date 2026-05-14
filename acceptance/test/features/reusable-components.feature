@@ -193,7 +193,7 @@ Feature: Reusable Components
 
         # repeat-page (list summary)
         Then the user should be at URL "repeat-page"
-        And should see heading "You have added 1 Item"
+        And should see heading "You have added 1 answer"
         And the page is analyzed for accessibility
         When the user continues
 
