@@ -180,9 +180,9 @@ Then('(the user )should see warning {string}', async (text) => {
 })
 
 Then(
-  '(the user )should see the following task list with {int} of {int} tasks completed',
+  '(the user )should see the following task list with questions with {int} of {int} task pages completed',
   async (completedTasks, totalTasks, dataTable) => {
-    const expectedGroups = []
+    const expectedGroupOfQuestions = []
     let group = null
 
     for (const row of dataTable.raw()) {
@@ -192,7 +192,7 @@ Then(
 
       if (!row[1]) {
         group = new TaskListGroup(row[0], [])
-        expectedGroups.push(group)
+        expectedGroupOfQuestions.push(group)
       } else {
         group.tasks.push(new Task(row[0], row[1]))
       }
@@ -202,8 +202,26 @@ Then(
     await expect((await applicationStatus).completedTasks).toEqual(completedTasks)
     await expect((await applicationStatus).totalTasks).toEqual(totalTasks)
 
-    const actualGroups = await TaskListPage.groups()
-    await expect(actualGroups).toEqual(expectedGroups)
+    const actualGroupsOfQuestions = await TaskListPage.groupsOfQuestions()
+    await expect(actualGroupsOfQuestions).toEqual(expectedGroupOfQuestions)
+  }
+)
+
+Then(
+  '(the user )should see the following task list without questions with {int} of {int} task pages completed',
+  async (completedTasks, totalTasks, dataTable) => {
+    const expectedTasks = []
+
+    for (const row of dataTable.raw()) {
+      expectedTasks.push(new Task(row[0], row[1]))
+    }
+
+    const applicationStatus = TaskListPage.applicationStatus()
+    await expect((await applicationStatus).completedTasks).toEqual(completedTasks)
+    await expect((await applicationStatus).totalTasks).toEqual(totalTasks)
+
+    const actualTasks = await TaskListPage.tasksWithoutQuestions()
+    await expect(actualTasks).toEqual(expectedTasks)
   }
 )
 
