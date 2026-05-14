@@ -1,4 +1,5 @@
 import '@hapi/hapi'
+import type { CacheService } from '@defra/forms-engine-plugin/cache-service.js'
 
 declare module '@hapi/hapi' {
   interface ServerMethods {
@@ -21,6 +22,14 @@ declare module '@hapi/hapi' {
       def?: {
         metadata?: Record<string, unknown>
       }
+    }
+  }
+
+  // Mirrors @defra/forms-engine-plugin's hapi augmentation; the plugin's own
+  // declaration uses unresolvable ~/src/... path aliases so tsc can't see it.
+  interface PluginProperties {
+    'forms-engine-plugin': {
+      cacheService: CacheService
     }
   }
 }

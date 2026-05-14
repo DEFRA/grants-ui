@@ -126,6 +126,7 @@
     "@stryker-mutator/core": "9.6.1",
     "@stryker-mutator/vitest-runner": "9.6.1",
     "@types/convict": "6.1.6",
+    "@types/jsonwebtoken": "9.0.10",
     "@types/lodash": "4.17.24",
     "@types/node": "25.6.0",
     "@types/nunjucks": "3.2.6",

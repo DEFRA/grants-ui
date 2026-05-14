@@ -2,12 +2,16 @@ import { config } from '~/src/config/config.js'
 import { getOidcConfig } from '~/src/server/auth/get-oidc-config.js'
 import { createState } from '~/src/server/auth/state.js'
 
+/**
+ * Build the Defra Identity end-session URL for the current user.
+ * @param {AnyRequest} request
+ * @param {string} token
+ * @returns {Promise<string>}
+ */
 async function getSignOutUrl(request, token) {
   const { end_session_endpoint: url } = await getOidcConfig()
 
-  /**
-   * @type {object}
-   */
+  /** @type {string} */
   const signOutRedirectUrl = config.get('defraId.signOutRedirectUrl')
 
   // To prevent CSRF attacks, the state parameter should be passed during redirection
@@ -20,3 +24,7 @@ async function getSignOutUrl(request, token) {
 }
 
 export { getSignOutUrl }
+
+/**
+ * @import { AnyRequest } from '@defra/forms-engine-plugin/engine/types.js'
+ */

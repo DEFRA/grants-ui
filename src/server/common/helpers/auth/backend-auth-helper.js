@@ -40,8 +40,8 @@ export function encryptToken(token, encryptionKey) {
  * Creates headers for authenticating with the grants-ui-backend API
  * @param {string} token - Auth token
  * @param {string} encryptionKey - Encryption key
- * @param {object} baseHeaders - Base headers to extend
- * @returns {object} Headers with authentication if token is available
+ * @param {Record<string, string>} [baseHeaders] - Base headers to extend
+ * @returns {Record<string, string>} Headers with authentication if token is available
  */
 export function createAuthenticatedHeaders(token, encryptionKey, baseHeaders = {}) {
   const headers = { ...baseHeaders }
@@ -57,9 +57,8 @@ export function createAuthenticatedHeaders(token, encryptionKey, baseHeaders = {
 
 /**
  * Creates standard headers for API requests to grants-ui-backend
- * @param {Object} [options]
- * @param {string} [options.lockToken] - Signed application lock token
- * @returns {object} Headers with Content-Type and authentication
+ * @param {{ lockToken?: string }} [options]
+ * @returns {Record<string, string>} Headers with Content-Type and authentication
  */
 export function createApiHeadersForGrantsUiBackend({ lockToken } = {}) {
   const headers = createAuthenticatedHeaders(GRANTS_UI_BACKEND_AUTH_TOKEN, ENCRYPTION_KEY, {
@@ -74,7 +73,7 @@ export function createApiHeadersForGrantsUiBackend({ lockToken } = {}) {
 
 /**
  * Creates standard headers for API requests to land-grants-api
- * @returns {object} Headers with Content-Type and authentication
+ * @returns {Record<string, string>} Headers with Content-Type and authentication
  */
 export function createApiHeadersForLandGrantsBackend() {
   return createAuthenticatedHeaders(LAND_GRANTS_AUTH_TOKEN, LAND_GRANTS_ENCRYPTION_KEY, {
