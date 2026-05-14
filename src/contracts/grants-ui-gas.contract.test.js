@@ -8,11 +8,10 @@ vi.mock('../server/common/helpers/retry.js', () => ({
   retry: (operation) => operation()
 }))
 
-vi.mock('../server/common/helpers/logging/log.js', () => ({
-  debug: vi.fn(),
-  log: vi.fn(),
-  logger: { debug: vi.fn(), info: vi.fn(), error: vi.fn(), warn: vi.fn() }
-}))
+vi.mock('../server/common/helpers/logging/log.js', async () => {
+  const { mockLogHelper } = await import('../__mocks__/logger-mocks.js')
+  return mockLogHelper()
+})
 
 function createProvider() {
   return new PactV4({

@@ -2,7 +2,7 @@ import { config } from '~/src/config/config.js'
 import { getValidToken } from '~/src/server/common/helpers/entra/token-manager.js'
 import { escapeGraphQLString } from '~/src/server/common/helpers/graphql-utils.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
-import { log, debug, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { ConsolidatedViewError } from '~/src/server/common/utils/errors/ConsolidatedViewError.js'
 import { statusCodes } from '../../constants/status-codes.js'
 
@@ -149,14 +149,7 @@ async function fetchFromConsolidatedView(request, { query, formatResponse, toler
 
     return formatResponse(responseJson)
   } catch (error) {
-    debug(
-      LogCodes.SYSTEM.CONSOLIDATED_VIEW_API_ERROR,
-      {
-        sbi,
-        errorMessage: error.message
-      },
-      request
-    )
+    logConsolidatedViewUpstreamError(request, sbi, error)
 
     if (error instanceof ConsolidatedViewError) {
       throw error
@@ -171,6 +164,18 @@ async function fetchFromConsolidatedView(request, { query, formatResponse, toler
       }).from(error)
     }
   }
+}
+
+function logConsolidatedViewUpstreamError(request, sbi, error) {
+  log(
+    LogCodes.SYSTEM.CONSOLIDATED_VIEW_API_ERROR,
+    {
+      sbi,
+      statusCode: error.status ?? error.statusCode ?? null,
+      errorMessage: error.message
+    },
+    request
+  )
 }
 
 async function makeStubRequest({ query, sbi, crn }) {

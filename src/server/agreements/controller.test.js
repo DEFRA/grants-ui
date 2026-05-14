@@ -3,6 +3,7 @@ import { getAgreementController } from './controller.js'
 import { config } from '~/src/config/config.js'
 import Jwt from '@hapi/jwt'
 import { mockHapiRequest, mockHapiResponseToolkit } from '~/src/__mocks__/hapi-mocks.js'
+import { log } from '~/src/server/common/helpers/logging/log.js'
 
 vi.mock('~/src/config/config.js', async () => {
   const { mockConfigSimple } = await import('~/src/__mocks__')
@@ -447,6 +448,25 @@ describe('Agreements Controller', () => {
         message: 'Unable to process request',
         details: 'Bad Gateway'
       })
+    })
+
+    test('should log EXTERNAL_API_ERROR with service and upstreamStatus on proxy 5xx', async () => {
+      const proxyError = new Error('Bad Gateway')
+      proxyError.output = { statusCode: 502 }
+      mockH.proxy.mockRejectedValue(proxyError)
+
+      await getAgreementController.handler(mockRequest, mockH)
+
+      expect(log).toHaveBeenCalledWith(
+        expect.objectContaining({ level: 'error' }),
+        expect.objectContaining({
+          endpoint: 'agreements',
+          service: 'farming-grants-agreements-ui',
+          upstreamStatus: 502,
+          errorMessage: 'Bad Gateway'
+        }),
+        mockRequest
+      )
     })
 
     test('should not include error details in production', async () => {
