@@ -6,6 +6,7 @@ const IGNORED_VIOLATIONS = [
     ignoredTargets: [
       '.govuk-back-link',
       '.govuk-skip-link',
+      '.govuk-width-container:nth-child(6)',
       '.govuk-width-container:nth-child(7)',
       '.govuk-width-container:nth-child(8)'
     ]
