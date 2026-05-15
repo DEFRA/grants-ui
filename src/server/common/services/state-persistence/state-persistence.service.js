@@ -107,7 +107,7 @@ export class StatePersistenceService extends CacheService {
 
   /**
    * Clear state in backend (no-op if you don’t want to clear on submission).
-   * @param {AnyFormRequest} request
+   * @param {AnyRequest} request
    * @param force
    */
   async clearState(request, force = false) {

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { clearApplicationStateHandler } from './clear-application-state.handler.js'
 import { getFormsCacheService } from '../../common/helpers/forms-cache/forms-cache.js'
 import { SessionError } from '~/src/server/common/utils/errors/SessionError.js'
@@ -24,7 +24,7 @@ describe('clearApplicationStateHandler', () => {
     vi.clearAllMocks()
 
     mockCacheService = {
-      Key: vi.fn().mockReturnValue({ id: 'test-session-key', segment: 'forms' }),
+      _Key: vi.fn().mockReturnValue('test-session-key'),
       clearState: vi.fn().mockResolvedValue(undefined)
     }
 
@@ -50,7 +50,7 @@ describe('clearApplicationStateHandler', () => {
       const result = await clearApplicationStateHandler(mockRequest, mockH)
 
       expect(getFormsCacheService).toHaveBeenCalledWith(mockRequest.server)
-      expect(mockCacheService.clearState).toHaveBeenCalledWith(mockRequest)
+      expect(mockCacheService.clearState).toHaveBeenCalledWith(mockRequest, true)
       expect(mockH.redirect).toHaveBeenCalledWith('/my-application')
       expect(result).toEqual({ redirect: '/my-application' })
     })
@@ -64,7 +64,7 @@ describe('clearApplicationStateHandler', () => {
 
         await clearApplicationStateHandler(mockRequest, mockH)
 
-        expect(mockCacheService.clearState).toHaveBeenCalledWith(mockRequest)
+        expect(mockCacheService.clearState).toHaveBeenCalledWith(mockRequest, true)
         expect(mockH.redirect).toHaveBeenCalledWith(`/${slug}`)
       }
     })
@@ -75,7 +75,7 @@ describe('clearApplicationStateHandler', () => {
       await clearApplicationStateHandler(mockRequest, mockH)
 
       expect(mockCacheService.clearState).toHaveBeenCalledTimes(1)
-      expect(mockCacheService.clearState).toHaveBeenCalledWith(mockRequest)
+      expect(mockCacheService.clearState).toHaveBeenCalledWith(mockRequest, true)
     })
 
     it('should handle clearState errors', async () => {
@@ -152,7 +152,7 @@ describe('clearApplicationStateHandler', () => {
 
       await clearApplicationStateHandler(mockRequest, mockH)
 
-      expect(mockCacheService.clearState).toHaveBeenCalledWith(mockRequest)
+      expect(mockCacheService.clearState).toHaveBeenCalledWith(mockRequest, true)
       expect(mockH.redirect).toHaveBeenCalledWith('/my-app-123')
     })
 
@@ -161,7 +161,7 @@ describe('clearApplicationStateHandler', () => {
 
       await clearApplicationStateHandler(mockRequest, mockH)
 
-      expect(mockCacheService.clearState).toHaveBeenCalledWith(mockRequest)
+      expect(mockCacheService.clearState).toHaveBeenCalledWith(mockRequest, true)
       expect(mockH.redirect).toHaveBeenCalledWith('/my%20app')
     })
 
@@ -218,7 +218,7 @@ describe('clearApplicationStateHandler', () => {
 
       const result = await clearApplicationStateHandler(mockRequest, mockH)
 
-      expect(mockCacheService.clearState).toHaveBeenCalledWith(mockRequest)
+      expect(mockCacheService.clearState).toHaveBeenCalledWith(mockRequest, true)
       expect(mockH.redirect).toHaveBeenCalledWith('/test-slug')
       expect(result).toEqual({ redirect: '/test-slug' })
     })

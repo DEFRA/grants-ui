@@ -1,12 +1,12 @@
 /**
  * @param {Server} server
- * @returns {CacheService}
+ * @returns {StatePersistenceService}
  */
 export function getFormsCacheService(server) {
-  return server.plugins['forms-engine-plugin'].cacheService
+  return /** @type {StatePersistenceService} */ (server.plugins['forms-engine-plugin'].cacheService)
 }
 
 /**
  * @import { Server } from '@hapi/hapi'
- * @import { CacheService } from '@defra/forms-engine-plugin/cache-service.js'
+ * @import { StatePersistenceService } from '~/src/server/common/services/state-persistence/state-persistence.service.js'
  */
