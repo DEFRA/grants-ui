@@ -5,6 +5,21 @@ import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 const GA_COOKIE_REGEX = /^_ga$|^_ga_.*$|^_gid$|^_gat_.*$|^_dc_gtm_.*$/
 
 /**
+ * Maps a consent cookie value to a boolean or undefined.
+ * @param {unknown} value
+ * @returns {boolean | undefined}
+ */
+const parseConsent = (value) => {
+  if (value === 'true' || value === true) {
+    return true
+  }
+  if (value === 'false' || value === false) {
+    return false
+  }
+  return undefined
+}
+
+/**
  * Removes Google Analytics cookies server-side using h.unstate().
  * This is essential for users with JavaScript disabled, where client-side
  * deletion never runs. Sends Set-Cookie headers with a past expiry date.
@@ -45,12 +60,7 @@ export const cookiesController = {
     const ctx = await context(request)
     const cookieName = config.get('cookieConsent.cookieName')
     const consentCookie = request.state[cookieName]
-    let analyticsConsent
-    if (consentCookie === 'true' || consentCookie === true) {
-      analyticsConsent = true
-    } else if (consentCookie === 'false' || consentCookie === false) {
-      analyticsConsent = false
-    }
+    const analyticsConsent = parseConsent(consentCookie)
 
     return h.view('cookies', {
       ...ctx,
@@ -110,12 +120,7 @@ export const cookiesPostController = {
 
     // Synchronous mode from preferences page — re-render with success banner
     const ctx = await context(request)
-    let analyticsConsent
-    if (consentValue === 'true') {
-      analyticsConsent = true
-    } else if (consentValue === 'false') {
-      analyticsConsent = false
-    }
+    const analyticsConsent = parseConsent(consentValue)
 
     const response = h.view('cookies', {
       ...ctx,
