@@ -36,6 +36,9 @@
 
 import { deleteGoogleAnalyticsCookies, loadGoogleAnalytics } from '../../shared/cookie-utils.js'
 
+const HTTP_2XX_RANGE_START = 200
+const HTTP_2XX_RANGE_END = 299
+
 export { loadGoogleAnalytics } from '../../shared/cookie-utils.js'
 
 /**
@@ -104,7 +107,7 @@ const setupCookieComponentListeners = () => {
     xhr.setRequestHeader('Content-Type', 'application/json')
 
     xhr.onload = () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
+      if (xhr.status >= HTTP_2XX_RANGE_START && xhr.status <= HTTP_2XX_RANGE_END) {
         onSuccess()
       } else {
         // Server rejected the request (e.g. stale CSRF token) — fall back

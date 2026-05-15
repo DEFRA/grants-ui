@@ -45,12 +45,12 @@ export const cookiesController = {
     const ctx = await context(request)
     const cookieName = config.get('cookieConsent.cookieName')
     const consentCookie = request.state[cookieName]
-    const analyticsConsent =
-      consentCookie === 'true' || consentCookie === true
-        ? true
-        : consentCookie === 'false' || consentCookie === false
-          ? false
-          : undefined
+    let analyticsConsent
+    if (consentCookie === 'true' || consentCookie === true) {
+      analyticsConsent = true
+    } else if (consentCookie === 'false' || consentCookie === false) {
+      analyticsConsent = false
+    }
 
     return h.view('cookies', {
       ...ctx,
@@ -85,37 +85,37 @@ export const cookiesPostController = {
       removeAnalytics(request, h)
     }
 
+    const cookieOptions = {
+      ttl: expiryMs,
+      isSecure,
+      isHttpOnly: false,
+      isSameSite: /** @type {'Lax'} */ ('Lax'),
+      path: '/',
+      encoding: /** @type {'none'} */ ('none')
+    }
+
     // Async mode — return JSON for the XHR request from client-side JS
     if (isAsync) {
-      const response = h.response({ message: 'success' })
-      response.state(cookieName, consentValue, {
-        ttl: expiryMs,
-        isSecure,
-        isHttpOnly: false,
-        isSameSite: 'Lax',
-        path: '/',
-        encoding: 'none'
-      })
-      return response
+      const asyncResponse = h.response({ message: 'success' })
+      asyncResponse.state(cookieName, consentValue, cookieOptions)
+      return asyncResponse
     }
 
     // Synchronous mode from banner — redirect back to the original page
     if (isValidReturnUrl(returnUrl)) {
-      const response = h.redirect(returnUrl)
-      response.state(cookieName, consentValue, {
-        ttl: expiryMs,
-        isSecure,
-        isHttpOnly: false,
-        isSameSite: 'Lax',
-        path: '/',
-        encoding: 'none'
-      })
-      return response
+      const redirectResponse = h.redirect(returnUrl)
+      redirectResponse.state(cookieName, consentValue, cookieOptions)
+      return redirectResponse
     }
 
     // Synchronous mode from preferences page — re-render with success banner
     const ctx = await context(request)
-    const analyticsConsent = consentValue === 'true' ? true : consentValue === 'false' ? false : undefined
+    let analyticsConsent
+    if (consentValue === 'true') {
+      analyticsConsent = true
+    } else if (consentValue === 'false') {
+      analyticsConsent = false
+    }
 
     const response = h.view('cookies', {
       ...ctx,
@@ -125,14 +125,7 @@ export const cookiesPostController = {
       success: true,
       analyticsConsent
     })
-    response.state(cookieName, consentValue, {
-      ttl: expiryMs,
-      isSecure,
-      isHttpOnly: false,
-      isSameSite: 'Lax',
-      path: '/',
-      encoding: 'none'
-    })
+    response.state(cookieName, consentValue, cookieOptions)
     return response
   }
 }
