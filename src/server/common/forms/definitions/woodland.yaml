@@ -26,9 +26,9 @@ metadata:
 
       # Offer sent, withdrawn, accepted -> agreements service
       - fromGrantsStatus: 'SUBMITTED'
-        gasStatus: 'OFFER_SENT,OFFER_WITHDRAWN,OFFER_ACCEPTED'
+        gasStatus: 'STATUS_AGREEMENT_READY_FOR_APPLICANT,STATUS_READY_TO_FORWARD,STATUS_AWAITING_FC,STATUS_COMPLETED'
         toGrantsStatus: 'SUBMITTED'
-        toPath: /agreements
+        toPath: /agreement
 
       # Reopened
       - fromGrantsStatus: REOPENED
