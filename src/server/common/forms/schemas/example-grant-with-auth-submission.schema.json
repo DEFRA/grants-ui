@@ -34,7 +34,7 @@
       "minItems": 1,
       "description": "GeoJSON-style feature objects captured by the GeospatialField component"
     },
-    "hiddenField": { "type": "string" },
+    "hiddenField": { "type": ["string", "null"] },
     "projectName": { "type": "string" },
     "projectDescription": { "type": "string" },
     "projectBudget": { "type": "number" },
