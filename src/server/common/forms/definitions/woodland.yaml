@@ -24,7 +24,7 @@ metadata:
         toGrantsStatus: REOPENED
         toPath: /tasks
 
-      # Offer sent, withdrawn, accepted -> agreements service
+      # Agreement in progress/completed GAS statuses -> agreements service
       - fromGrantsStatus: 'SUBMITTED'
         gasStatus: 'STATUS_AGREEMENT_READY_FOR_APPLICANT,STATUS_READY_TO_FORWARD,STATUS_AWAITING_FC,STATUS_COMPLETED'
         toGrantsStatus: 'SUBMITTED'
