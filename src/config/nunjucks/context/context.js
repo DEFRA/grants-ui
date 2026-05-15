@@ -3,10 +3,7 @@ import path from 'node:path'
 
 import { config } from '~/src/config/config.js'
 import { buildNavigation } from '~/src/config/nunjucks/context/build-navigation.js'
-import {
-  buildCookieBannerConfig,
-  buildCookieBannerNoscriptConfig
-} from '~/src/config/nunjucks/context/build-cookie-banner-config.js'
+import { buildCookieBannerConfig } from '~/src/config/nunjucks/context/build-cookie-banner-config.js'
 import { debug, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
 const assetPath = config.get('assetPath')
@@ -111,19 +108,21 @@ const createAssetPathGetter = (asset) => {
  * @param {string} serviceName
  * @param {string} cookiePolicyUrl
  * @param {number} cookieConsentExpiryDays
+ * @param {ExtendedRequest | undefined} request
  * @returns {Record<string, unknown>} Common configuration object
  */
-const buildCommonConfig = (serviceName, cookiePolicyUrl, cookieConsentExpiryDays) => {
+const buildCommonConfig = (serviceName, cookiePolicyUrl, cookieConsentExpiryDays, request) => {
   const cookieConsentName = config.get('cookieConsent.cookieName')
-  const gaTrackingId = config.get('googleAnalytics.trackingId')
+  const googleTagManagerKey = config.get('googleAnalytics.trackingId')
   const sessionCookieTtl = config.get('session.cookie.ttl')
+  const consentCookieValue = /** @type {any} */ (request)?.state?.[cookieConsentName]
 
   return {
     assetPath: `${assetPath}/assets/rebrand`,
     serviceName,
     serviceUrl: '/',
     cdpEnvironment: config.get('cdpEnvironment'),
-    gaTrackingId,
+    googleTagManagerKey,
     cookiePolicyUrl,
     cookieConsentName,
     cookieConsentExpiryDays,
@@ -132,10 +131,17 @@ const buildCommonConfig = (serviceName, cookiePolicyUrl, cookieConsentExpiryDays
       serviceName,
       cookieConsentName,
       cookieConsentExpiryDays,
-      gaTrackingId,
-      cookiePolicyUrl
+      googleTagManagerKey,
+      cookiePolicyUrl,
+      /** @type {any} */ (request)?.plugins?.crumb
     ),
-    cookieBannerNoscriptConfig: buildCookieBannerNoscriptConfig(serviceName),
+    crumb: /** @type {any} */ (request)?.plugins?.crumb,
+    currentPath: request?.path ?? '/',
+    cookiesPolicy: {
+      confirmed: Boolean(consentCookieValue),
+      analytics: consentCookieValue === 'true'
+    },
+    consentConfirmed: Boolean(consentCookieValue),
     breadcrumbs: []
   }
 }
@@ -152,7 +158,7 @@ const buildSuccessContext = (auth, request, serviceName, cookiePolicyUrl, cookie
   const submitButtonText = request?.app?.model?.def?.metadata?.options?.submitButtonText
 
   return {
-    ...buildCommonConfig(serviceName, cookiePolicyUrl, cookieConsentExpiryDays),
+    ...buildCommonConfig(serviceName, cookiePolicyUrl, cookieConsentExpiryDays, request),
     auth,
     navigation: buildNavigation(request),
     getAssetPath: createAssetPathGetter,
@@ -168,7 +174,7 @@ const buildSuccessContext = (auth, request, serviceName, cookiePolicyUrl, cookie
  */
 const buildFallbackContext = (serviceName, cookiePolicyUrl, cookieConsentExpiryDays) => {
   return {
-    ...buildCommonConfig(serviceName, cookiePolicyUrl, cookieConsentExpiryDays),
+    ...buildCommonConfig(serviceName, cookiePolicyUrl, cookieConsentExpiryDays, undefined),
     auth: {
       isAuthenticated: false,
       sbi: null,

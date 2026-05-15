@@ -61,13 +61,16 @@ const getExpectedContext = () => ({
   serviceName: 'Farm and land service',
   serviceUrl: '/',
   cdpEnvironment: undefined,
-  gaTrackingId: undefined,
+  googleTagManagerKey: undefined,
   cookiePolicyUrl: expect.any(String),
   cookieConsentName: expect.any(String),
   cookieConsentExpiryDays: expect.any(Number),
   sessionCookieTtl: expect.any(Number),
   cookieBannerConfig: expect.any(Object),
-  cookieBannerNoscriptConfig: expect.any(Object),
+  crumb: undefined,
+  currentPath: '/',
+  cookiesPolicy: { confirmed: false, analytics: false },
+  consentConfirmed: false,
   auth: {
     isAuthenticated: false,
     name: undefined,
@@ -444,7 +447,7 @@ describe('context', () => {
         cookiePolicyUrl: '/cookies',
         cookieConsentName: 'cookie_consent',
         cookieConsentExpiryDays: 365,
-        gaTrackingId: undefined
+        googleTagManagerKey: undefined
       })
     })
 
@@ -467,23 +470,20 @@ describe('context', () => {
 
       expect(contextResult.cookieBannerConfig).toBeDefined()
       expect(contextResult.cookieBannerConfig.ariaLabel).toBe('Cookies on Farm and land service')
-      expect(contextResult.cookieBannerConfig.hidden).toBe(true)
+      expect(contextResult.cookieBannerConfig.classes).toBe('js-cookies-container js-cookies-banner')
       expect(contextResult.cookieBannerConfig.attributes['data-cookie-name']).toBe('cookie_consent')
       expect(contextResult.cookieBannerConfig.attributes['data-cookie-policy-url']).toBe('/cookies')
-      expect(contextResult.cookieBannerConfig.messages).toHaveLength(1)
+      expect(contextResult.cookieBannerConfig.messages).toHaveLength(3)
       expect(contextResult.cookieBannerConfig.messages[0].actions).toHaveLength(3)
     })
 
-    test('includes cookieBannerNoscriptConfig with correct structure', async () => {
+    test('cookieBannerNoscriptConfig is no longer in context (unified banner)', async () => {
       setupManifestSuccess()
 
       const contextImport = await import('~/src/config/nunjucks/context/context.js')
       const contextResult = await contextImport.context(mockRequest)
 
-      expect(contextResult.cookieBannerNoscriptConfig).toBeDefined()
-      expect(contextResult.cookieBannerNoscriptConfig.ariaLabel).toBe('Cookies on Farm and land service')
-      expect(contextResult.cookieBannerNoscriptConfig.attributes['data-nosnippet']).toBe('')
-      expect(contextResult.cookieBannerNoscriptConfig.messages).toHaveLength(1)
+      expect(contextResult.cookieBannerNoscriptConfig).toBeUndefined()
     })
 
     test('includes cookie banner configs in fallback context', async () => {
@@ -496,8 +496,7 @@ describe('context', () => {
       expect(contextResult.cookieBannerConfig.ariaLabel).toBe('Cookies on Farm and land service')
       expect(contextResult.cookieBannerConfig.attributes['data-cookie-name']).toBe('cookie_consent')
 
-      expect(contextResult.cookieBannerNoscriptConfig).toBeDefined()
-      expect(contextResult.cookieBannerNoscriptConfig.ariaLabel).toBe('Cookies on Farm and land service')
+      expect(contextResult.cookieBannerNoscriptConfig).toBeUndefined()
     })
   })
 
@@ -659,7 +658,7 @@ describe('context', () => {
         }
       })
       expect(contextResult.cookieBannerConfig).toBeDefined()
-      expect(contextResult.cookieBannerNoscriptConfig).toBeDefined()
+      expect(contextResult.cookieBannerNoscriptConfig).toBeUndefined()
       expect(typeof contextResult.getAssetPath).toBe('function')
     })
   })
