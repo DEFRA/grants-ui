@@ -81,6 +81,8 @@ services:
       FORMS_API_CACHE_TTL_SECONDS: ${FORMS_API_CACHE_TTL_SECONDS:-300}
       SFD_UPDATE_URL: '${SFD_UPDATE_URL:-http://localhost:3000/sfd/mock}'
       SFD_UPDATE_ENABLED: ${SFD_UPDATE_ENABLED:-false}
+      ENTRA_ID_CONFIG_URL: ${ENTRA_ID_URL:-http://host.docker.internal:8000}
+      NODE_TLS_REJECT_UNAUTHORIZED: 0
       AWS_ENDPOINT_URL: ${AWS_ENDPOINT_URL:-http://localstack:4566}
       AWS_REGION: ${AWS_REGION:-eu-west-2}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-test}
@@ -88,6 +90,8 @@ services:
       AUDIT_ENABLED: ${AUDIT_ENABLED:-false}
       AUDIT_SNS_TOPIC_ARN: ${AUDIT_SNS_TOPIC_ARN:-arn:aws:sns:eu-west-2:000000000000:fcp_audit_events}
       AUDIT_APPLICATION: ${AUDIT_APPLICATION:-Grants}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./src:/home/node/src
       - /home/node/node_modules
