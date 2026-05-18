@@ -8,6 +8,7 @@ import defraId from './defra-id.js'
 import landGrants from './land-grants.js'
 import agreements from './agreements.js'
 import externalLinks from './external-links.js'
+import entraId from './entra-id.js'
 import { sessionSchema } from './session.js'
 import { redisSchema } from './redis.js'
 import { rateLimitSchema } from './rate-limit.js'
@@ -210,6 +211,13 @@ const convictConfig = {
     default: null,
     env: 'HTTP_PROXY'
   }),
+  entraIdProxy: /** @type {SchemaObj<string | null>} */ ({
+    doc: 'Proxy URL specifically for Entra ID traffic',
+    format: String,
+    nullable: true,
+    default: null,
+    env: 'ENTRA_ID_PROXY_URL'
+  }),
   isSecureContextEnabled: {
     doc: 'Enable Secure Context',
     format: Boolean,
@@ -366,7 +374,8 @@ export const config = convict({
     defraId: defraId.getProperties(),
     landGrants: landGrants.getProperties(),
     agreements: agreements.getProperties(),
-    externalLinks: externalLinks.getProperties()
+    externalLinks: externalLinks.getProperties(),
+    entraId: entraId.getProperties()
   }
 })
 
