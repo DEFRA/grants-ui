@@ -48,7 +48,6 @@ export const config = {
     snippets: true,
     source: true,
     strict: false,
-    tags: '@ci',
     timeout: 180000,
     ignoreUndefinedDefinitions: false
   },

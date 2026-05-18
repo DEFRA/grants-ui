@@ -1,13 +1,12 @@
 Feature: SBI-Driven Applications
 
-    @ci
     Scenario: Begin a journey as an applicant, continue as an agent and complete the application as the applicant, checking application locking is enforced along the way
         Given there is no application lock for CRN "1109990002" and SBI "119000002" and grant "example-grant-with-auth"
         And there is no application lock for CRN "1109990001" and SBI "119000002" and grant "example-grant-with-auth"
         And there is no application state stored for CRN "1109990002" and SBI "119000002" and grant "example-grant-with-auth"
 
         # login as applicant farmer
-        Given the user navigates to "/example-grant-with-auth/start"
+        Given the user navigates to "/example-grant-with-auth"
         And completes any login process as CRN "1109990002"
 
         # start
@@ -36,7 +35,7 @@ Feature: SBI-Driven Applications
 
         # reload the browser session and login again as the agent, selecting the same SBI
         Given the user starts a new browser session
-        And navigates to "/example-grant-with-auth/start"
+        And navigates to "/example-grant-with-auth"
         And completes any login process as CRN "1109990001"
         And selects SBI "119000002"
         And continues
@@ -46,7 +45,7 @@ Feature: SBI-Driven Applications
 
         # unlock the application using the admin endpoint
         Given there is no application lock for CRN "1109990002" and SBI "119000002" and grant "example-grant-with-auth"
-        And the user navigates to "/example-grant-with-auth/start"
+        And the user navigates to "/example-grant-with-auth"
 
         # radios-field, now the second user has access to the first unanswered question
         Then the user should be at URL "radios-field"
@@ -74,7 +73,7 @@ Feature: SBI-Driven Applications
 
         # first user logs back in
         Given the user starts a new browser session
-        And navigates to "/example-grant-with-auth/start"
+        And navigates to "/example-grant-with-auth"
         And completes any login process as CRN "1109990002"
 
         # checkboxes-field, first user is at the first unanswered question
@@ -157,10 +156,10 @@ Feature: SBI-Driven Applications
         # multi-field-form
         Then the user should be at URL "multi-field-form"
         When the user enters the following
-            | FIELD               | VALUE                                       |
-            | Project name        | Test project                                |
-            | Project description | Project description for the journey runner. |
-            | Project budget      | 50000                                       |
+            | FIELD               | VALUE               |
+            | Project name        | Test project        |
+            | Project description | Project description |
+            | Project budget      | 50000               |
         And continues
 
         # repeat-page (item entry)
@@ -183,36 +182,36 @@ Feature: SBI-Driven Applications
         # summary
         Then the user should be at URL "summary"
         And should see the following answers
-            | QUESTION                   | ANSWER                                      |
-            | Yes or No                  | Yes                                         |
-            | Country                    | England                                     |
-            | Radio option               | Option two                                  |
-            | Checkbox options           | Option two                                  |
-            |                            | Option three                                |
-            | Enter amount               | 150000                                      |
-            | Routing amount             | 50000                                       |
-            | Date                       | {DATE IN A WEEK}                            |
-            | Month and year             | August 2025                                 |
-            | Select option              | Option three                                |
-            | Description                | Lorem ipsum                                 |
-            | Email address              | test@example.com                            |
-            | Telephone number           | 01234 567890                                |
-            | Address                    | 1 Example Street                            |
-            |                            | Exampleton                                  |
-            |                            | EX1 1EX                                     |
-            | Easting and northing           | Easting: 530000                             |
-            |                                | Northing: 180000                            |
-            | OS grid reference              | ST 678 678                                  |
-            | National Grid field number     | NG 1234 5678                                |
-            | Latitude and longitude         | Latitude: 51.51945                          |
-            |                                | Longitude: -0.127758                        |
-            | GeospatialField                | Added 1 location                            |
-            | Hidden field                   | Not provided                                |
-            | Project name                   | Test project                                |
-            | Project description (optional) | Project description for the journey runner. |
-            | Project budget                 | 50000                                       |
-            | Item                           | You have added 1 answer                     |
-            | Select land parcels            | SD6351-8781                                 |
+            | QUESTION                       | ANSWER                  |
+            | Yes or No                      | Yes                     |
+            | Country                        | England                 |
+            | Radio option                   | Option two              |
+            | Checkbox options               | Option two              |
+            |                                | Option three            |
+            | Enter amount                   | 150000                  |
+            | Routing amount                 | 50000                   |
+            | Date                           | {DATE IN A WEEK}        |
+            | Month and year                 | August 2025             |
+            | Select option                  | Option three            |
+            | Description                    | Lorem ipsum             |
+            | Email address                  | test@example.com        |
+            | Telephone number               | 01234 567890            |
+            | Address                        | 1 Example Street        |
+            |                                | Exampleton              |
+            |                                | EX1 1EX                 |
+            | Easting and northing           | Easting: 530000         |
+            |                                | Northing: 180000        |
+            | OS grid reference              | ST 678 678              |
+            | National Grid field number     | NG 1234 5678            |
+            | Latitude and longitude         | Latitude: 51.51945      |
+            |                                | Longitude: -0.127758    |
+            | GeospatialField                | Added 1 location        |
+            | Hidden field                   | Not provided            |
+            | Project name                   | Test project            |
+            | Project description (optional) | Project description     |
+            | Project budget                 | 50000                   |
+            | Item                           | You have added 1 answer |
+            | Select land parcels            | SD6351-8781             |
         And continues
 
         # declaration

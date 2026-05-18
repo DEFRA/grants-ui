@@ -1,12 +1,11 @@
 Feature: Defra ID Signout
 
-    @ci
     Scenario: Sign out of Defra ID and sign in as another user
         Given there is no application state stored for CRN "1101003693" and SBI "115722586" and grant "example-grant-with-auth"
         And there is no application state stored for CRN "1100995056" and SBI "115680267" and grant "example-grant-with-auth"
 
         # login as user 1
-        Given the user navigates to "/example-grant-with-auth/start"
+        Given the user navigates to "/example-grant-with-auth"
         And completes any login process as CRN "1101003693"
         Then the user should see SBI "115722586" as the logged in organisation
 
@@ -35,7 +34,7 @@ Feature: Defra ID Signout
 
         # sign-out and sign in as user 2
         Given the user signs out of Defra ID
-        And navigates to "/example-grant-with-auth/start"
+        And navigates to "/example-grant-with-auth"
         And completes any login process as CRN "1100995056"
         Then the user should see SBI "115680267" as the logged in organisation
 
@@ -64,7 +63,7 @@ Feature: Defra ID Signout
 
         # sign-out and sign in again as user 1
         Given the user signs out of Defra ID
-        And navigates to "/example-grant-with-auth/start"
+        And navigates to "/example-grant-with-auth"
         And completes any login process as CRN "1101003693"
         Then the user should see SBI "115722586" as the logged in organisation
 

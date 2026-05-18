@@ -1,11 +1,10 @@
 Feature: Reusable Components
 
-    @ci
     Scenario: Use all available components in example journey and analyze accessibility
         Given there is no application state stored for CRN "1100957269" and SBI "107593059" and grant "example-grant-with-auth"
 
         # start
-        Given the user navigates to "/example-grant-with-auth/start"
+        Given the user navigates to "/example-grant-with-auth"
         And completes any login process as CRN "1100957269"
         Then the user should see heading "Example Grant"
         And the page is analyzed for accessibility
@@ -175,10 +174,10 @@ Feature: Reusable Components
         And should see heading "Multi Field Form Example"
         And the page is analyzed for accessibility
         When the user enters the following
-            | FIELD               | VALUE                                       |
-            | Project name        | Test project                                |
-            | Project description | Project description for the journey runner. |
-            | Project budget      | 50000                                       |
+            | FIELD               | VALUE               |
+            | Project name        | Test project        |
+            | Project description | Project description |
+            | Project budget      | 50000               |
         And continues
 
         # repeat-page (item entry)
@@ -210,36 +209,36 @@ Feature: Reusable Components
         And should see heading "Check your answers"
         And the page is analyzed for accessibility
         Then the user should see the following answers
-            | QUESTION                       | ANSWER                                      |
-            | Yes or No                      | Yes                                         |
-            | Country                        | England                                     |
-            | Radio option                   | Option one                                  |
-            | Checkbox options               | Option two                                  |
-            |                                | Option three                                |
-            | Enter amount                   | 100000                                      |
-            | Routing amount                 | 50000                                       |
-            | Date                           | {DATE IN A WEEK}                            |
-            | Month and year                 | August 2025                                 |
-            | Select option                  | Option three                                |
-            | Description                    | Lorem ipsum                                 |
-            | Email address                  | test@example.com                            |
-            | Telephone number               | 01234 567890                                |
-            | Address                        | 1 Example Street                            |
-            |                                | Exampleton                                  |
-            |                                | EX1 1EX                                     |
-            | Easting and northing           | Easting: 530000                             |
-            |                                | Northing: 180000                            |
-            | OS grid reference              | ST 678 678                                  |
-            | National Grid field number     | NG 1234 5678                                |
-            | Latitude and longitude         | Latitude: 51.51945                          |
-            |                                | Longitude: -0.127758                        |
-            | GeospatialField                | Added 1 location                            |
-            | Hidden field                   | Not provided                                |
-            | Project name                   | Test project                                |
-            | Project description (optional) | Project description for the journey runner. |
-            | Project budget                 | 50000                                       |
-            | Item                           | You have added 1 answer                     |
-            | Select land parcels            | SD6351-8781                                 |
+            | QUESTION                       | ANSWER                  |
+            | Yes or No                      | Yes                     |
+            | Country                        | England                 |
+            | Radio option                   | Option one              |
+            | Checkbox options               | Option two              |
+            |                                | Option three            |
+            | Enter amount                   | 100000                  |
+            | Routing amount                 | 50000                   |
+            | Date                           | {DATE IN A WEEK}        |
+            | Month and year                 | August 2025             |
+            | Select option                  | Option three            |
+            | Description                    | Lorem ipsum             |
+            | Email address                  | test@example.com        |
+            | Telephone number               | 01234 567890            |
+            | Address                        | 1 Example Street        |
+            |                                | Exampleton              |
+            |                                | EX1 1EX                 |
+            | Easting and northing           | Easting: 530000         |
+            |                                | Northing: 180000        |
+            | OS grid reference              | ST 678 678              |
+            | National Grid field number     | NG 1234 5678            |
+            | Latitude and longitude         | Latitude: 51.51945      |
+            |                                | Longitude: -0.127758    |
+            | GeospatialField                | Added 1 location        |
+            | Hidden field                   | Not provided            |
+            | Project name                   | Test project            |
+            | Project description (optional) | Project description     |
+            | Project budget                 | 50000                   |
+            | Item                           | You have added 1 answer |
+            | Select land parcels            | SD6351-8781             |
         When the user chooses to change their summary answer to question "Country"
 
         # autocomplete-field
@@ -252,36 +251,36 @@ Feature: Reusable Components
         Then the user should be at URL "summary"
         And the page is analyzed for accessibility
         Then the user should see the following answers
-            | QUESTION                       | ANSWER                                      |
-            | Yes or No                      | Yes                                         |
-            | Country                        | Wales                                       |
-            | Radio option                   | Option one                                  |
-            | Checkbox options               | Option two                                  |
-            |                                | Option three                                |
-            | Enter amount                   | 100000                                      |
-            | Routing amount                 | 50000                                       |
-            | Date                           | {DATE IN A WEEK}                            |
-            | Month and year                 | August 2025                                 |
-            | Select option                  | Option three                                |
-            | Description                    | Lorem ipsum                                 |
-            | Email address                  | test@example.com                            |
-            | Telephone number               | 01234 567890                                |
-            | Address                        | 1 Example Street                            |
-            |                                | Exampleton                                  |
-            |                                | EX1 1EX                                     |
-            | Easting and northing           | Easting: 530000                             |
-            |                                | Northing: 180000                            |
-            | OS grid reference              | ST 678 678                                  |
-            | National Grid field number     | NG 1234 5678                                |
-            | Latitude and longitude         | Latitude: 51.51945                          |
-            |                                | Longitude: -0.127758                        |
-            | GeospatialField                | Added 1 location                            |
-            | Hidden field                   | Not provided                                |
-            | Project name                   | Test project                                |
-            | Project description (optional) | Project description for the journey runner. |
-            | Project budget                 | 50000                                       |
-            | Item                           | You have added 1 answer                     |
-            | Select land parcels            | SD6351-8781                                 |
+            | QUESTION                       | ANSWER                  |
+            | Yes or No                      | Yes                     |
+            | Country                        | Wales                   |
+            | Radio option                   | Option one              |
+            | Checkbox options               | Option two              |
+            |                                | Option three            |
+            | Enter amount                   | 100000                  |
+            | Routing amount                 | 50000                   |
+            | Date                           | {DATE IN A WEEK}        |
+            | Month and year                 | August 2025             |
+            | Select option                  | Option three            |
+            | Description                    | Lorem ipsum             |
+            | Email address                  | test@example.com        |
+            | Telephone number               | 01234 567890            |
+            | Address                        | 1 Example Street        |
+            |                                | Exampleton              |
+            |                                | EX1 1EX                 |
+            | Easting and northing           | Easting: 530000         |
+            |                                | Northing: 180000        |
+            | OS grid reference              | ST 678 678              |
+            | National Grid field number     | NG 1234 5678            |
+            | Latitude and longitude         | Latitude: 51.51945      |
+            |                                | Longitude: -0.127758    |
+            | GeospatialField                | Added 1 location        |
+            | Hidden field                   | Not provided            |
+            | Project name                   | Test project            |
+            | Project description (optional) | Project description     |
+            | Project budget                 | 50000                   |
+            | Item                           | You have added 1 answer |
+            | Select land parcels            | SD6351-8781             |
         When the user continues
 
         # declaration
@@ -335,7 +334,7 @@ Feature: Reusable Components
             | National Grid field number | NG 1234 5678                                    |
             | Latitude and longitude     | 51.51945, -0.127758                             |
             | Project name               | Test project                                    |
-            | Project description        | Project description for the journey runner.     |
+            | Project description        | Project description                             |
             | Project budget             | 50000                                           |
             | Select land parcels        | SD6351-8781                                     |
         And should see the following configurable content
@@ -343,3 +342,6 @@ Feature: Reusable Components
             | This is an example of configurable content on the print page, defined via the configurablePrintContent property in the form YAML metadata. |
             | It supports HTML markup and the example-grant-with-auth placeholder.                                                                       |
         And should see button "Print this page"
+
+        # validate GAS submission
+        And the GAS submission should be valid against the "example-grant-with-auth" schema
