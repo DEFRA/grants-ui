@@ -104,6 +104,12 @@ describe('Validate submission answers', () => {
     expect(result.errors).toBeUndefined()
   })
 
+  it('should accept null for optional hiddenField (form declares required: false with no default)', () => {
+    const result = validateSubmissionAnswers({ ...validPayload, hiddenField: null }, GRANT_CODE)
+    expect(result.errors).toBeUndefined()
+    expect(result.valid).toBe(true)
+  })
+
   it('should return an error if missing required field', () => {
     const payloadWithoutRequiredField = { ...validPayload }
     delete payloadWithoutRequiredField.projectName
