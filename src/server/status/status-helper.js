@@ -335,6 +335,7 @@ export const formsStatusCallback = async (request, h, context) => {
 
   const checkDetailsChangesPending = context.state.checkDetailsChangesPending
   const isCheckDetailsStartPage = request.app.model?.def?.startPage === '/check-details'
+  const isPostSubmission = previousStatus === ApplicationStatus.SUBMITTED
 
   /** Don't redirect if page is listed in the grant config excludedPaths
    * or if the request is from within the grant pages (e.g. user refreshing the page or navigating using the back button)
@@ -342,11 +343,9 @@ export const formsStatusCallback = async (request, h, context) => {
    * NOTE: Some older OS versions and browsers don't support sec-fetch-site header, so the isWithinGrantPages check is
    * not 100% reliable, but it provides an additional layer of protection against redirect loops while still allowing
    * the excludedPaths configuration to work as intended for most users.
-   * isWithinGrantPages is intentionally NOT applied when previousStatus is SUBMITTED: a submitted application has no
+   * isWithinGrantPages is intentionally NOT applied when the application is already submitted: there is no
    * in-progress journey to protect from redirect loops, so the post-submission redirect must always run.
    */
-
-  const isPostSubmission = previousStatus === ApplicationStatus.SUBMITTED
 
   if (
     grantRedirectRules?.excludedPaths?.includes(request.params?.path) ||
@@ -360,7 +359,7 @@ export const formsStatusCallback = async (request, h, context) => {
     return preSubmissionRedirect(request, h, context)
   }
 
-  if (previousStatus !== ApplicationStatus.SUBMITTED && previousStatus !== ApplicationStatus.REOPENED) {
+  if (!isPostSubmission && previousStatus !== ApplicationStatus.REOPENED) {
     return h.continue
   }
 
