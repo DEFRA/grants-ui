@@ -1,22 +1,26 @@
 import { vi } from 'vitest'
 import Wreck from '@hapi/wreck'
+import { config } from '~/src/config/config.js'
 import { getOidcConfig, resetOidcConfigCache } from './get-oidc-config.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
 vi.mock('@hapi/wreck')
-vi.mock('~/src/config/config.js', () => ({
-  config: {
-    get: vi.fn()
-  }
-}))
+vi.mock('~/src/config/config.js')
+vi.mock('~/src/server/common/helpers/logging/log.js')
 
 const WELL_KNOWN_URL = 'https://example.com/.well-known/openid_configuration'
 
 describe('getOidcConfig', () => {
-  beforeEach(async () => {
+  const mockPayload = {
+    authorization_endpoint: 'https://example.com/auth',
+    token_endpoint: 'https://example.com/token',
+    jwks_uri: 'https://example.com/keys',
+    end_session_endpoint: 'https://example.com/logout'
+  }
+
+  beforeEach(() => {
     vi.clearAllMocks()
     resetOidcConfigCache()
-    const { config } = await import('~/src/config/config.js')
     config.get.mockReturnValue(WELL_KNOWN_URL)
   })
 
@@ -25,14 +29,6 @@ describe('getOidcConfig', () => {
   })
 
   test('fetches OIDC configuration from well-known URL', async () => {
-    const mockPayload = {
-      authorization_endpoint: 'https://example.com/auth',
-      token_endpoint: 'https://example.com/token',
-      jwks_uri: 'https://example.com/keys',
-      end_session_endpoint: 'https://example.com/logout'
-    }
-
-    const { config } = await import('~/src/config/config.js')
     Wreck.get.mockResolvedValue({
       payload: mockPayload
     })
@@ -47,8 +43,24 @@ describe('getOidcConfig', () => {
     expect(result).toEqual(mockPayload)
   })
 
+  test('fetches OIDC configuration from custom URL', async () => {
+    Wreck.get.mockResolvedValue({
+      payload: mockPayload
+    })
+
+    const customOIDCConfigUrl = 'https://custom-url.com/.well-known/openid-configuration'
+
+    const result = await getOidcConfig(customOIDCConfigUrl)
+
+    expect(Wreck.get).not.toHaveBeenCalledWith(WELL_KNOWN_URL, expect.anything())
+    expect(Wreck.get).toHaveBeenCalledWith(customOIDCConfigUrl, {
+      json: true,
+      timeout: 10000
+    })
+    expect(result).toEqual(mockPayload)
+  })
+
   test('retries then succeeds when an early attempt fails', async () => {
-    const mockPayload = { authorization_endpoint: 'https://example.com/auth' }
     const blip = /** @type {Error & { code?: string }} */ (new Error('Transient blip'))
     blip.code = 'ECONNRESET'
     Wreck.get.mockRejectedValueOnce(blip).mockResolvedValueOnce({ payload: mockPayload })
@@ -86,7 +98,6 @@ describe('getOidcConfig', () => {
   })
 
   test('caches the discovery document and does not re-fetch on subsequent calls', async () => {
-    const mockPayload = { end_session_endpoint: 'https://example.com/logout' }
     Wreck.get.mockResolvedValue({ payload: mockPayload })
 
     const first = await getOidcConfig()
@@ -99,7 +110,6 @@ describe('getOidcConfig', () => {
   })
 
   test('clears the cache after a failed fetch so a later call re-fetches', async () => {
-    const mockPayload = { end_session_endpoint: 'https://example.com/logout' }
     Wreck.get.mockRejectedValue(new Error('Network request failed'))
 
     vi.useFakeTimers()
