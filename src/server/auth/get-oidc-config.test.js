@@ -1,19 +1,15 @@
 import { vi } from 'vitest'
 import Wreck from '@hapi/wreck'
-import { getOidcConfig } from './get-oidc-config.js'
+import { config } from '~/src/config/config.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
 vi.mock('@hapi/wreck')
-vi.mock('~/src/config/config.js', () => ({
-  config: {
-    get: vi.fn()
-  }
-}))
+vi.mock('~/src/config/config.js')
+
+import { getOidcConfig } from './get-oidc-config.js'
 
 describe('getOidcConfig', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
+  const mockOpenIdConfigUrl = 'https://example.com/.well-known/openid-configuration'
 
   afterEach(() => {
     vi.useRealTimers()
@@ -27,20 +23,42 @@ describe('getOidcConfig', () => {
       end_session_endpoint: 'https://example.com/logout'
     }
 
-    const mockConfig = await import('~/src/config/config.js')
-    mockConfig.config.get.mockReturnValue('https://example.com/.well-known/openid_configuration')
+  beforeEach(() => {
+    vi.clearAllMocks()
+    config.get.mockReturnValue(mockOpenIdConfigUrl)
+  })
 
+  test('fetches OIDC configuration from well-known URL', async () => {
     Wreck.get.mockResolvedValue({
       payload: mockPayload
     })
 
     const result = await getOidcConfig()
 
-    expect(mockConfig.config.get).toHaveBeenCalledWith('defraId.wellKnownUrl')
-    expect(Wreck.get).toHaveBeenCalledWith('https://example.com/.well-known/openid_configuration', {
+    expect(Wreck.get).toHaveBeenCalledWith(mockOpenIdConfigUrl, {
+      json: true
+    })
+    expect(result).toEqual(mockPayload)
+  })
+
+  test('fetches OIDC configuration from custom URL', async () => {
+    Wreck.get.mockResolvedValue({
+      payload: mockPayload
+    })
+
+    const customOIDCConfigUrl = 'https://custom-url.com/.well-known/openid-configuration'
+
+    const result = await getOidcConfig(customOIDCConfigUrl)
+
+    expect(Wreck.get).not.toHaveBeenCalledWith(mockOpenIdConfigUrl, {
       json: true,
       timeout: 10000
     })
+
+    expect(Wreck.get).toHaveBeenCalledWith(customOIDCConfigUrl, {
+      json: true
+    })
+
     expect(result).toEqual(mockPayload)
   })
 
@@ -69,9 +87,6 @@ describe('getOidcConfig', () => {
   })
 
   test('retries the configured number of times then throws the last error', async () => {
-    const mockConfig = await import('~/src/config/config.js')
-    mockConfig.config.get.mockReturnValue('https://example.com/.well-known/openid_configuration')
-
     const networkError = new Error('Network request failed')
     Wreck.get.mockRejectedValue(networkError)
 
@@ -82,16 +97,13 @@ describe('getOidcConfig', () => {
 
     await expect(promise).rejects.toThrow('Network request failed')
     expect(Wreck.get).toHaveBeenCalledTimes(3)
-    expect(Wreck.get).toHaveBeenCalledWith('https://example.com/.well-known/openid_configuration', {
+    expect(Wreck.get).toHaveBeenCalledWith(mockOpenIdConfigUrl, {
       json: true,
       timeout: 10000
     })
   })
 
   test('handles invalid JSON responses', async () => {
-    const mockConfig = await import('~/src/config/config.js')
-    mockConfig.config.get.mockReturnValue('https://example.com/.well-known/openid_configuration')
-
     const jsonError = new Error('Invalid JSON')
     Wreck.get.mockRejectedValue(jsonError)
 
