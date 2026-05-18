@@ -20,7 +20,7 @@ function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-// The endpoint URLs never change, so fetch once and reuse.
+// The default (Defra ID) endpoint URL never changes, so fetch once and reuse.
 /** @type {Promise<any> | null} */
 let oidcConfigPromise = null
 
@@ -32,12 +32,20 @@ function resetOidcConfigCache() {
   oidcConfigPromise = null
 }
 
-async function getOidcConfig() {
+/**
+ * @param {string} [url] - well-known config URL. Defaults to the Defra ID
+ *   endpoint and is cached; any other URL (e.g. Entra ID) bypasses the cache.
+ */
+async function getOidcConfig(url) {
+  if (url) {
+    return fetchOidcConfig(url)
+  }
+
   if (oidcConfigPromise) {
     return oidcConfigPromise
   }
 
-  oidcConfigPromise = fetchOidcConfig()
+  oidcConfigPromise = fetchOidcConfig(config.get('defraId.wellKnownUrl'))
 
   try {
     return await oidcConfigPromise
@@ -48,15 +56,13 @@ async function getOidcConfig() {
   }
 }
 
-async function fetchOidcConfig() {
+async function fetchOidcConfig(url) {
   // Fetch the OpenID Connect configuration from the well-known endpoint
   // Contains the URLs for authorisation, sign out, token and public keys in JSON format
-  const wellKnownUrl = config.get('defraId.wellKnownUrl')
-
   let lastError
   for (let attempt = 1; attempt <= OIDC_FETCH_MAX_ATTEMPTS; attempt++) {
     try {
-      const { payload } = await Wreck.get(wellKnownUrl, {
+      const { payload } = await Wreck.get(url, {
         json: true,
         timeout: OIDC_FETCH_TIMEOUT_MS
       })
@@ -72,7 +78,7 @@ async function fetchOidcConfig() {
     log(LogCodes.AUTH.OIDC_CONFIG_FETCH_RETRY, {
       attempt,
       maxAttempts: OIDC_FETCH_MAX_ATTEMPTS,
-      wellKnownUrl,
+      wellKnownUrl: url,
       code: err.code ?? 'n/a',
       errorMessage: err.message
     })
