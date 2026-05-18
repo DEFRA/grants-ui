@@ -249,3 +249,23 @@ Available sections:
 | `start`          | Start and check details pages (reaches task list) |
 | `eligibility`    | Eligibility questions (land, tenancy, WMP, etc.)  |
 | `about-woodland` | Woodland details (area, grid ref, FC team)        |
+
+Steps (use with `runJourney(N)` to stop before step `N`):
+
+| Step | Page slug                        | Section          | Purpose                                                      |
+| ---- | -------------------------------- | ---------------- | ------------------------------------------------------------ |
+| 1    | `start`                          | `start`          | Start page (submit only)                                     |
+| 2    | `check-details`                  | `start`          | Confirm business details (DefraID) — answers "Yes"           |
+| 3    | `tasks`                          | `eligibility`    | Task list — clicks the "eligibility-land-registered" link    |
+| 4    | `eligibility-land-registered`    | `eligibility`    | Land registered with RPA — "Yes"                             |
+| 5    | `eligibility-management-control` | `eligibility`    | Management control of the land — "Yes"                       |
+| 6    | `eligibility-tenant`             | `eligibility`    | Public body tenant — "No"                                    |
+| 7    | `eligibility-grazing-rights`     | `eligibility`    | Land has grazing rights — "No"                               |
+| 8    | `eligibility-valid-wmp`          | `eligibility`    | Existing valid WMP — "No"                                    |
+| 9    | `eligibility-higher-tier`        | `eligibility`    | Intent to apply for Higher Tier — "No"                       |
+| 10   | `tasks`                          | `about-woodland` | Task list — clicks the "land-parcels" link                   |
+| 11   | `land-parcels`                   | `about-woodland` | Select land parcels (`selectAll: true` ticks every checkbox) |
+| 12   | `total-area-of-woodland`         | `about-woodland` | Hectares ≥10 years old (30) and <10 years old (20)           |
+| 13   | `centre-of-woodland`             | `about-woodland` | Centre-of-woodland OS grid reference (`SP 4178 2432`)        |
+| 14   | `woodland-name`                  | `about-woodland` | Woodland name (`Test Woodland`)                              |
+| 15   | `which-forestry-commission-team` | `about-woodland` | Forestry Commission team — selects the first radio option    |
