@@ -21,6 +21,11 @@ Then('a new tab should be opened at URL {string} and closed by the user', async 
   await browser.switchToWindow(handles[0])
 })
 
+Then('no option should be selected', async () => {
+  const inputs = await $$(`//input[@checked]`)
+  await expect(inputs).toHaveLength(0)
+})
+
 Then('the footer should contain the following links', async (dataTable) => {
   for (const row of dataTable.hashes()) {
     const linkText = row.TEXT
