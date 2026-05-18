@@ -342,14 +342,15 @@ export const formsStatusCallback = async (request, h, context) => {
    * NOTE: Some older OS versions and browsers don't support sec-fetch-site header, so the isWithinGrantPages check is
    * not 100% reliable, but it provides an additional layer of protection against redirect loops while still allowing
    * the excludedPaths configuration to work as intended for most users.
-   * isWithinGrantPages is intentionally NOT applied when previousStatus is SUBMITTED, because the dispatch redirect
-   * from /{slug} always arrives same-origin, which would otherwise bypass the redirect to /agreement on first load
-   * after clearing cookies.
+   * isWithinGrantPages is intentionally NOT applied when previousStatus is SUBMITTED: a submitted application has no
+   * in-progress journey to protect from redirect loops, so the post-submission redirect must always run.
    */
+
+  const isPostSubmission = previousStatus === ApplicationStatus.SUBMITTED
 
   if (
     grantRedirectRules?.excludedPaths?.includes(request.params?.path) ||
-    (isWithinGrantPages && previousStatus !== ApplicationStatus.SUBMITTED) ||
+    (isWithinGrantPages && !isPostSubmission) ||
     (checkDetailsChangesPending && isCheckDetailsStartPage)
   ) {
     return h.continue
