@@ -22,6 +22,6 @@
     "ajv": "^8.18.0",
     "jsonwebtoken": "9.0.3",
     "mockserver-client": "5.15.0",
-    "tsx": "4.19.0"
+    "tsx": "4.21.0"
   }
 }
