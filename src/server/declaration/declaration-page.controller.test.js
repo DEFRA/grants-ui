@@ -9,6 +9,7 @@ import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { handleGasApiError } from '~/src/server/common/helpers/gas-error-messages.js'
 import { log, LogCodes } from '../common/helpers/logging/log.js'
 import { getTaskPageBackLink } from '~/src/server/task-list/task-list.helper.js'
+import { requireCsSubmitPermission } from '~/src/server/common/helpers/permissions/guards/require-cs-submit-permission.js'
 
 vi.mock('~/src/server/common/helpers/gas-error-messages.js')
 vi.mock('../common/helpers/logging/log.js', async () => {
@@ -47,8 +48,17 @@ vi.mock('@defra/forms-engine-plugin/controllers/SummaryPageController.js', () =>
 })
 vi.mock('~/src/server/common/services/grant-application/grant-application.service.js')
 vi.mock('~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js')
-vi.mock('~/src/server/task-list/task-list.helper.js', () => ({
-  getTaskPageBackLink: vi.fn()
+vi.mock('~/src/server/task-list/task-list.helper.js', async (importOriginal) => {
+  const actual = await importOriginal()
+
+  return {
+    ...actual,
+    getTaskPageBackLink: vi.fn(),
+    getTaskListPath: vi.fn().mockReturnValue('/task-list')
+  }
+})
+vi.mock('~/src/server/common/helpers/permissions/guards/require-cs-submit-permission.js', () => ({
+  requireCsSubmitPermission: vi.fn((request, h) => h.continue)
 }))
 
 describe('DeclarationPageController', () => {
@@ -468,6 +478,24 @@ describe('DeclarationPageController', () => {
         mockRequest
       )
       expect(handleGasApiError).not.toHaveBeenCalled()
+    })
+
+    test('should redirect when user does not have submit permission', async () => {
+      const redirectResponse = { redirected: true }
+
+      requireCsSubmitPermission.mockReturnValue(redirectResponse)
+
+      const handler = controller.makePostRouteHandler()
+
+      const result = await handler(mockRequest, mockContext, mockH)
+
+      expect(result).toBe(redirectResponse)
+
+      expect(submitGrantApplication).not.toHaveBeenCalled()
+
+      expect(requireCsSubmitPermission).toHaveBeenCalledWith(mockRequest, mockH, {
+        returnUrl: '/example-grant-with-auth/task-list'
+      })
     })
   })
 

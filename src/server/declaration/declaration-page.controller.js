@@ -11,6 +11,8 @@ import { log, LogCodes } from '../common/helpers/logging/log.js'
 import { getTaskPageBackLink } from '~/src/server/task-list/task-list.helper.js'
 import { getGrantCode } from '../common/helpers/grant-code.js'
 import { transformWoodlandAnswers } from '~/src/server/woodland/mappers/state-to-gas-answers-mapper.js'
+import { requireCsSubmitPermission } from '~/src/server/common/helpers/permissions/guards/require-cs-submit-permission.js'
+import { getReturnToApplicationPath } from '../common/helpers/permissions/guards/require-permission.js'
 
 /** @type {Record<string, (submissionState: Record<string, unknown>, rawState: Record<string, unknown>) => object>} */
 const answerTransformers = {
@@ -190,6 +192,11 @@ export default class DeclarationPageController extends SummaryPageController {
 
   makePostRouteHandler() {
     return async (request, context, h) => {
+      const returnUrl = getReturnToApplicationPath(this.model, request.params.slug ? `/${request.params.slug}` : '')
+      const permissionResult = requireCsSubmitPermission(request, h, { returnUrl })
+      if (permissionResult !== h.continue) {
+        return permissionResult
+      }
       const { sbi, crn } = request.auth.credentials
       storeSlugInContext(request, context, 'DeclarationController')
 

@@ -2,7 +2,7 @@ export const permissionRules = {
   csApplications: {
     permissionGroup: 'COUNTRYSIDE_STEWARDSHIP_APPLICATIONS',
 
-    actions: {
+    permissions: {
       view: 'VIEW',
       amend: 'AMEND',
       submit: 'SUBMIT'
@@ -12,7 +12,7 @@ export const permissionRules = {
   csAgreements: {
     permissionGroup: 'COUNTRYSIDE_STEWARDSHIP_AGREEMENTS',
 
-    actions: {
+    permissions: {
       view: 'VIEW',
       amend: 'AMEND',
       submit: 'SUBMIT'
@@ -22,7 +22,7 @@ export const permissionRules = {
   landDetails: {
     permissionGroup: 'LAND_DETAILS',
 
-    actions: {
+    permissions: {
       view: 'VIEW',
       amend: 'AMEND'
     }
@@ -31,7 +31,7 @@ export const permissionRules = {
   businessDetails: {
     permissionGroup: 'BUSINESS_DETAILS',
 
-    actions: {
+    permissions: {
       view: 'VIEW',
       amend: 'AMEND',
       submit: 'FULL_PERMISSION'
