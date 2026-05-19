@@ -15,6 +15,8 @@ const HECTARES_UNDER_TEN_FIELD_NAME = 'hectaresUnderTenYearsOld'
 
 const ERROR_BELOW_MINIMUM = `The total area of woodland must be at least ${MIN_WOODLAND_TOTAL_AREA_HA}ha`
 
+const truncTo4dp = (/** @type {number} */ value) => Math.trunc(value * 10000) / 10000
+
 const errorExceedsMax = (/** @type {number} */ max) =>
   `Total area of woodland cannot be more than total area of selected land parcels (${max}ha)`
 
@@ -59,7 +61,7 @@ export default class WoodlandHectaresPageController extends withTaskContext(Ques
    */
   getViewModel(request, context) {
     const { state } = context
-    const totalHectaresForSelectedParcels = Number(state['totalHectaresForSelectedParcels'] ?? 0)
+    const totalHectaresForSelectedParcels = truncTo4dp(Number(state['totalHectaresForSelectedParcels'] ?? 0))
     const viewModel = /** @type {Record<string, any>} */ (super.getViewModel(request, context))
 
     const guidanceIndex = viewModel.components?.findIndex(
@@ -182,7 +184,7 @@ export default class WoodlandHectaresPageController extends withTaskContext(Ques
       const { state } = context
       const payload = /** @type {Record<string, string>} */ (request.payload ?? {})
 
-      const totalHectaresForSelectedParcels = Number(state['totalHectaresForSelectedParcels']) || 0
+      const totalHectaresForSelectedParcels = truncTo4dp(Number(state['totalHectaresForSelectedParcels']) || 0)
       const overTen = Number.parseFloat(payload[HECTARES_OVER_TEN_FIELD_NAME])
       const underTen = Number.parseFloat(payload[HECTARES_UNDER_TEN_FIELD_NAME]) || 0
 
