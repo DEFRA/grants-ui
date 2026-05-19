@@ -60,6 +60,7 @@ services:
       MOCKSERVER_PORT: 1080
     volumes:
       - ./nginx/certs:/etc/ssl/certs:ro
+      - ./woodland-grant-journey-tests-schemas:/app/test/schemas:ro
     command: ["npm", "run", "test:ci"]
     networks:
       - grants-ui-net
