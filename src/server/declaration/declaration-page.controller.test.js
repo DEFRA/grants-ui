@@ -497,6 +497,50 @@ describe('DeclarationPageController', () => {
         returnUrl: '/example-grant-with-auth/task-list'
       })
     })
+
+    test('should use empty base path when request.params.slug is missing', async () => {
+      const redirectResponse = { redirected: true }
+
+      requireCsSubmitPermission.mockReturnValue(redirectResponse)
+
+      const requestWithoutSlug = {
+        ...mockRequest,
+        params: {}
+      }
+
+      const handler = controller.makePostRouteHandler()
+
+      const result = await handler(requestWithoutSlug, mockContext, mockH)
+
+      expect(result).toBe(redirectResponse)
+
+      expect(requireCsSubmitPermission).toHaveBeenCalledWith(requestWithoutSlug, mockH, {
+        returnUrl: '/task-list'
+      })
+
+      expect(submitGrantApplication).not.toHaveBeenCalled()
+    })
+
+    test('should redirect when permission denied and slug missing', async () => {
+      const redirectResponse = { redirected: true }
+
+      requireCsSubmitPermission.mockReturnValue(redirectResponse)
+
+      const requestWithoutSlug = {
+        ...mockRequest,
+        params: {}
+      }
+
+      const handler = controller.makePostRouteHandler()
+
+      const result = await handler(requestWithoutSlug, mockContext, mockH)
+
+      expect(result).toBe(redirectResponse)
+
+      expect(requireCsSubmitPermission).toHaveBeenCalledWith(requestWithoutSlug, mockH, {
+        returnUrl: '/task-list'
+      })
+    })
   })
 
   describe('buildApplicationData', () => {

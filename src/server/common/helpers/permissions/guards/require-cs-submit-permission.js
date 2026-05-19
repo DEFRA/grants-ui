@@ -5,7 +5,7 @@ import { canSubmitCsApplication } from '../countryside-stewardship.permissions.j
 export const requireCsSubmitPermission = requirePermission({
   hasPermission: canSubmitCsApplication,
 
-  onFail: (request, h, { returnUrl }) => {
+  onFail: (_request, h, { returnUrl }) => {
     const redirectUrl = returnUrl
       ? `${permissionPaths.cannotSubmit}?returnUrl=${encodeURIComponent(returnUrl)}`
       : permissionPaths.cannotSubmit
