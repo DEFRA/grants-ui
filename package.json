@@ -131,6 +131,7 @@
     "@types/jsonwebtoken": "9.0.10",
     "@types/lodash": "4.17.24",
     "@types/node": "25.6.0",
+    "@types/node-jose": "1.1.13",
     "@types/nunjucks": "3.2.6",
     "@types/webpack-assets-manifest": "5.1.4",
     "@typescript-eslint/eslint-plugin": "8.59.2",

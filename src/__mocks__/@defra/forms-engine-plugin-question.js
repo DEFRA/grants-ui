@@ -14,10 +14,18 @@ export class QuestionPageController {
     }
   }
 
+  /**
+   * @param {unknown} options
+   */
   constructor(options) {
     this.options = options
   }
 
+  /**
+   * @param {FormContextRequest} request
+   * @param {FormContext} context
+   * @returns {{ pageTitle: string }}
+   */
   getViewModel(request, context) {
     return {
       pageTitle: 'Default Title'
@@ -78,3 +86,7 @@ export class QuestionPageController {
 }
 
 export default QuestionPageController
+
+/**
+ * @import { FormContext, FormContextRequest } from '@defra/forms-engine-plugin/engine/types.js'
+ */

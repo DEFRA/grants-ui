@@ -34,6 +34,8 @@ export const loggerOptions = {
     remove: true
   },
   level: logConfig.level,
+  // @ts-ignore - TS7053 (strict/IDE only): logConfig is `any` (config.get is @ts-ignored
+  // above for convict's TS2589 depth limit), so this index key is `any`.
   ...formatters[logConfig.format],
   nesting: true,
   ...(!isDebugMode && {
@@ -46,7 +48,11 @@ export const loggerOptions = {
         statusCode: res.statusCode
       })
     },
-    customRequestCompleted: (req, res, responseTime) => {
+    customRequestCompleted: (
+      /** @type {import('@hapi/hapi').Request} */ req,
+      /** @type {import('node:http').ServerResponse} */ res,
+      /** @type {number} */ responseTime
+    ) => {
       return `[response] ${req.method} ${req.url} ${res.statusCode} (${responseTime}ms)`
     }
   }),

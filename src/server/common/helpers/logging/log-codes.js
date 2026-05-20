@@ -4,7 +4,11 @@ import { LogCodes } from './log-codes/definition.js'
 // Re-export LogCodes from the definition file
 export { LogCodes }
 
-// Validate all log codes once at startup
+/**
+ * Validates all log codes once at startup, recursing into nested groups.
+ * @param {Record<string, object>} logCodes - Map of log code groups or leaf definitions to validate.
+ * @returns {void}
+ */
 export const validateLogCodes = (logCodes) => {
   Object.values(logCodes).forEach((entry) => {
     Object.entries(entry).forEach(([key, value]) => {
@@ -23,7 +27,9 @@ export const validateLogCodes = (logCodes) => {
           try {
             validateLogCode(value)
           } catch (e) {
-            throw new Error(`Invalid log code definition for "${key}": ${e.message}`, { cause: e })
+            throw new Error(`Invalid log code definition for "${key}": ${/** @type {Error} */ (e).message}`, {
+              cause: e
+            })
           }
         } else {
           // This is a nested node, recursively validate it
@@ -40,5 +46,5 @@ export const validateLogCodes = (logCodes) => {
 try {
   validateLogCodes(LogCodes)
 } catch (error) {
-  throw new Error(`Log code validation failed: ${error.message}`, { cause: error })
+  throw new Error(`Log code validation failed: ${/** @type {Error} */ (error).message}`, { cause: error })
 }
