@@ -14,7 +14,7 @@ import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
  * @param {number | string | null | undefined} details.upstreamStatus - HTTP status returned by the upstream service, if any.
  * @param {string} details.errorMessage - The error message.
  * @param {number} [details.attempts] - Number of attempts made before giving up (optional).
- * @param {import('@hapi/hapi').Request} [request] - Hapi request object (optional).
+ * @param {AnyRequest} [request] - Hapi request object (optional).
  */
 export function logUpstreamError({ endpoint, service, upstreamStatus, errorMessage, attempts }, request) {
   log(
@@ -29,3 +29,7 @@ export function logUpstreamError({ endpoint, service, upstreamStatus, errorMessa
     request
   )
 }
+
+/**
+ * @import { AnyRequest } from '@defra/forms-engine-plugin/engine/types.js'
+ */

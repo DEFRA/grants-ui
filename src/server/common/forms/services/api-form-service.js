@@ -17,6 +17,9 @@ export class ApiFormService {
     this.cacheTtlSeconds = cacheTtlSeconds
   }
 
+  /**
+   * @returns {string} A signed JWT for authenticating against the Config API
+   */
   generateJwt() {
     return jwt.sign({ sub: 'grants-ui' }, this.jwtSecret, {
       expiresIn: /** @type {import('jsonwebtoken').SignOptions['expiresIn']} */ (this.jwtExpiry)

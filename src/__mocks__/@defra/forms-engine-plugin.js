@@ -28,6 +28,10 @@ export const QuestionPageController = class {
 }
 
 export const SummaryPageController = class {
+  /**
+   * @param {FormModel} model
+   * @param {Page} pageDef
+   */
   constructor(model, pageDef) {
     this.model = model
     this.pageDef = pageDef
@@ -60,6 +64,7 @@ export const SummaryPageController = class {
   }
 }
 
+/** @type {MockPlugin} */
 const plugin = {
   name: 'forms-engine-plugin',
   register: vi.fn(),
@@ -77,3 +82,15 @@ plugin.createServer = vi.fn().mockImplementation(() => {
 })
 
 export default plugin
+
+/**
+ * @import { Mock } from 'vitest'
+ * @import { FormModel } from '@defra/forms-engine-plugin/engine/models/index.js'
+ * @import { Page } from '@defra/forms-model'
+ * @typedef {{
+ *   name: string,
+ *   register: Mock,
+ *   controllers: { QuestionPageController: typeof QuestionPageController },
+ *   createServer?: Mock
+ * }} MockPlugin
+ */

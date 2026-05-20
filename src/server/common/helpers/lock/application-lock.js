@@ -5,6 +5,14 @@ import { config } from '~/src/config/config.js'
 
 const GRANTS_UI_BACKEND_ENDPOINT = config.get('session.cache.apiEndpoint')
 
+/**
+ * Logs a lock-release failure, distinguishing timeouts from upstream API errors.
+ * @param {Error} err - The error thrown by the fetch call
+ * @param {string} urlHref - The backend endpoint URL that was called
+ * @param {string} ownerId - The lock owner's user identifier
+ * @param {number} timeoutMs - The configured release timeout in milliseconds
+ * @returns {void}
+ */
 function logLockReleaseError(err, urlHref, ownerId, timeoutMs) {
   if (err.name === 'AbortError') {
     log(LogCodes.APPLICATION_LOCKS.RELEASE_TIMEOUT, {
@@ -91,7 +99,7 @@ export async function releaseAllApplicationLocksForOwnerFromApi({ ownerId }) {
     })
     return { ok: true, releasedCount: body.releasedCount ?? 0 }
   } catch (err) {
-    logLockReleaseError(err, url.href, ownerId, timeoutMs)
+    logLockReleaseError(/** @type {Error} */ (err), url.href, ownerId, timeoutMs)
     return { ok: false, releasedCount: 0 }
   } finally {
     clearTimeout(timeoutId)

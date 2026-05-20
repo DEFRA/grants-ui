@@ -83,6 +83,12 @@ function buildProxyHeaders(token, request) {
   }
 }
 
+/**
+ * Logs an upstream error encountered while proxying to the agreements API.
+ * @param {AnyRequest} request - The incoming request object
+ * @param {ErrorResponse} error - The upstream error
+ * @returns {void}
+ */
 function logAgreementsUpstreamError(request, error) {
   logUpstreamError(
     {
@@ -103,6 +109,7 @@ export const getAgreementController = {
   /**
    * @param {AnyRequest} request
    * @param {ResponseToolkit} h
+   * @returns {Promise<unknown>}
    */
   async handler(request, h) {
     try {
@@ -131,7 +138,7 @@ export const getAgreementController = {
 
       return apiResponse
     } catch (error) {
-      logAgreementsUpstreamError(request, error)
+      logAgreementsUpstreamError(request, /** @type {ErrorResponse} */ (error))
 
       if (/** @type {Error} */ (error).message.includes('Missing required configuration')) {
         return h
@@ -164,5 +171,5 @@ export const getAgreementController = {
  */
 
 /**
- * @typedef {Error & { statusCode?: number, output?: { statusCode?: number } }} ErrorResponse
+ * @typedef {Error & { statusCode?: number, status?: number, output?: { statusCode?: number } }} ErrorResponse
  */
