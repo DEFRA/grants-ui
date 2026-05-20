@@ -1,4 +1,4 @@
-import { describe, test, beforeEach, afterEach, expect, vi, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, test, vi } from 'vitest'
 import { contentSecurityPolicy as plugin } from '~/src/plugins/content-security-policy.js'
 
 vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
@@ -128,6 +128,33 @@ describe('contentSecurityPolicy plugin', () => {
       if (initialContext?.existingProp) {
         expect(request.response.source.context).toHaveProperty('existingProp', 'value')
       }
+    })
+
+    it('should include GOV.UK Frontend SHA-256 hash in script-src', async () => {
+      const request = { response: { isBoom: false, header: mockHeader, variety: '' }, app: {} }
+      await onRequest(request, h)
+      await onPreResponse(request, h)
+
+      const cspHeader = mockHeader.mock.calls.find(([name]) => name === 'Content-Security-Policy')?.[1]
+      expect(cspHeader).toContain("'sha256-GUQ5ad8JK5KmEWmROf3LZd9ge94daqNvd8xy9YS1iDw='")
+    })
+
+    it('should include form-action self directive', async () => {
+      const request = { response: { isBoom: false, header: mockHeader, variety: '' }, app: {} }
+      await onRequest(request, h)
+      await onPreResponse(request, h)
+
+      const cspHeader = mockHeader.mock.calls.find(([name]) => name === 'Content-Security-Policy')?.[1]
+      expect(cspHeader).toContain("form-action 'self'")
+    })
+
+    it('should include GTM wildcard in script-src', async () => {
+      const request = { response: { isBoom: false, header: mockHeader, variety: '' }, app: {} }
+      await onRequest(request, h)
+      await onPreResponse(request, h)
+
+      const cspHeader = mockHeader.mock.calls.find(([name]) => name === 'Content-Security-Policy')?.[1]
+      expect(cspHeader).toContain('https://*.googletagmanager.com')
     })
   })
 

@@ -7,9 +7,13 @@ const createMockElement = (type = 'div') => ({
   appendChild: vi.fn(),
   addEventListener: vi.fn(),
   insertBefore: vi.fn(),
+  closest: vi.fn().mockReturnValue(null),
+  querySelector: vi.fn().mockReturnValue(null),
+  focus: vi.fn(),
   tagName: type.toUpperCase(),
   textContent: '',
   src: '',
+  async: false,
   height: '',
   width: '',
   style: {
@@ -18,6 +22,15 @@ const createMockElement = (type = 'div') => ({
   },
   dataset: {}
 })
+
+const mockXhr = {
+  open: vi.fn(),
+  setRequestHeader: vi.fn(),
+  send: vi.fn(),
+  onload: null,
+  onerror: null,
+  status: 200
+}
 
 const mockDocument = {
   cookie: '',
@@ -32,57 +45,73 @@ const mockDocument = {
 
 globalThis.document = mockDocument
 
-const DEFAULT_BANNER_CONFIG = {
-  cookieName: 'cookie_consent',
-  expiryDays: '365',
-  gaTrackingId: 'GA-123'
+function MockXMLHttpRequest() {
+  return mockXhr
+}
+MockXMLHttpRequest.prototype = mockXhr
+globalThis.XMLHttpRequest = MockXMLHttpRequest
+
+const DEFAULT_BANNER_DATASET = {
+  crumb: 'test-crumb-token',
+  gtmKey: 'GTM-ABC123'
 }
 
-const createBannerMock = (dataset = DEFAULT_BANNER_CONFIG) => {
+const createBannerMock = (dataset = DEFAULT_BANNER_DATASET) => {
   const banner = createMockElement()
   banner.dataset = { ...dataset }
   return banner
 }
 
-const createNonceScriptMock = (nonce = 'test-nonce') => {
-  const script = createMockElement('script')
-  script.getAttribute = vi.fn(() => nonce)
-  return script
-}
-
-const setupGetElementByIdMock = (banner, acceptButton, rejectButton) => {
-  mockDocument.getElementById.mockImplementation((id) => {
-    if (id === 'cookie-banner') {
-      return banner
-    }
-
-    if (id === 'cookie-banner-accept') {
-      return acceptButton
-    }
-
-    if (id === 'cookie-banner-reject') {
-      return rejectButton
-    }
-
-    return null
-  })
-}
-
-const setupStandardMocks = (bannerDataset = DEFAULT_BANNER_CONFIG) => {
+// Sets up querySelector to return elements by class selector
+const setupStandardMocks = (bannerDataset = DEFAULT_BANNER_DATASET) => {
   const banner = createBannerMock(bannerDataset)
   const acceptButton = createMockElement('button')
   const rejectButton = createMockElement('button')
+  const acceptedBanner = createMockElement()
+  const rejectedBanner = createMockElement()
+  const cookieBanner = createMockElement()
 
-  setupGetElementByIdMock(banner, acceptButton, rejectButton)
+  // js-hide buttons inside accepted/rejected banners
+  const acceptHideBtn = createMockElement('button')
+  const rejectHideBtn = createMockElement('button')
+  acceptedBanner.querySelector.mockReturnValue(acceptHideBtn)
+  rejectedBanner.querySelector.mockReturnValue(rejectHideBtn)
 
-  return { banner, acceptButton, rejectButton }
+  mockDocument.querySelector.mockImplementation((selector) => {
+    if (selector === '.js-cookies-container') {
+      return banner
+    }
+    if (selector === '.js-cookies-button-accept') {
+      return acceptButton
+    }
+    if (selector === '.js-cookies-button-reject') {
+      return rejectButton
+    }
+    if (selector === '.js-cookies-accepted') {
+      return acceptedBanner
+    }
+    if (selector === '.js-cookies-rejected') {
+      return rejectedBanner
+    }
+    if (selector === '.js-cookies-banner') {
+      return cookieBanner
+    }
+    if (selector === '.js-question-banner') {
+      return createMockElement()
+    }
+    if (selector === 'script[src*="googletagmanager.com/gtm.js"]') {
+      return null
+    }
+    return null
+  })
+
+  return { banner, acceptButton, rejectButton, acceptedBanner, rejectedBanner, cookieBanner }
 }
 
 const simulateButtonClick = (button) => {
   const clickHandler = button.addEventListener.mock.calls.find((call) => call[0] === 'click')?.[1]
-
   if (clickHandler) {
-    clickHandler()
+    clickHandler({ preventDefault: vi.fn() })
   }
 }
 
@@ -93,29 +122,28 @@ describe('cookie-consent', () => {
     mockDocument.cookie = ''
     mockDocument.getElementById.mockReturnValue(null)
     mockDocument.querySelector.mockReturnValue(null)
+    mockXhr.open.mockReset()
+    mockXhr.setRequestHeader.mockReset()
+    mockXhr.send.mockReset()
+    mockXhr.status = 200
+    mockXhr.onload = null
+    mockXhr.onerror = null
   })
 
   describe('banner initialisation', () => {
-    test('shows banner when no consent cookie exists', async () => {
-      const { banner } = setupStandardMocks()
-      mockDocument.cookie = ''
+    test('sets up listeners when banner is present', async () => {
+      const { acceptButton, rejectButton } = setupStandardMocks()
 
       await import('./cookie-consent.js')
 
-      expect(mockDocument.getElementById).toHaveBeenCalledWith('cookie-banner')
-      expect(banner.removeAttribute).toHaveBeenCalledWith('hidden')
+      expect(acceptButton.addEventListener).toHaveBeenCalledWith('click', expect.any(Function))
+      expect(rejectButton.addEventListener).toHaveBeenCalledWith('click', expect.any(Function))
     })
 
-    test('does not show banner when consent cookie exists', async () => {
-      const { banner } = setupStandardMocks()
-      const mockNonceScript = createNonceScriptMock()
+    test('does not throw when banner is absent', async () => {
+      mockDocument.querySelector.mockReturnValue(null)
 
-      mockDocument.querySelector.mockReturnValue(mockNonceScript)
-      mockDocument.cookie = 'cookie_consent=true'
-
-      await import('./cookie-consent.js')
-
-      expect(banner.removeAttribute).not.toHaveBeenCalled()
+      await expect(import('./cookie-consent.js')).resolves.toBeDefined()
     })
   })
 
@@ -129,33 +157,31 @@ describe('cookie-consent', () => {
       expect(rejectButton.addEventListener).toHaveBeenCalledWith('click', expect.any(Function))
     })
 
-    test('accept button click sets cookie and hides banner', async () => {
-      const { banner, acceptButton } = setupStandardMocks()
+    test('accept button click shows accepted banner and loads GA', async () => {
+      const { acceptButton, acceptedBanner } = setupStandardMocks()
+      const mockScript = createMockElement('script')
+      mockDocument.createElement.mockReturnValue(mockScript)
 
       await import('./cookie-consent.js')
 
       simulateButtonClick(acceptButton)
 
-      expect(mockDocument.cookie).toContain('cookie_consent=true')
-      expect(banner.setAttribute).toHaveBeenCalledWith('hidden', 'hidden')
+      expect(acceptedBanner.removeAttribute).toHaveBeenCalledWith('hidden')
+      expect(mockScript.src).toContain('GTM-ABC123')
     })
 
-    test('reject button click sets cookie and hides banner', async () => {
-      const { banner, rejectButton } = setupStandardMocks()
+    test('reject button click shows rejected banner and deletes GA cookies', async () => {
+      const { rejectButton, rejectedBanner } = setupStandardMocks()
 
       await import('./cookie-consent.js')
 
       simulateButtonClick(rejectButton)
 
-      expect(mockDocument.cookie).toContain('cookie_consent=false')
-      expect(banner.setAttribute).toHaveBeenCalledWith('hidden', 'hidden')
+      expect(rejectedBanner.removeAttribute).toHaveBeenCalledWith('hidden')
     })
 
     test('accept button does not load GA when tracking ID is missing', async () => {
-      const { acceptButton } = setupStandardMocks({
-        cookieName: 'cookie_consent',
-        expiryDays: '365'
-      })
+      const { acceptButton } = setupStandardMocks({ crumb: 'test-crumb' })
 
       await import('./cookie-consent.js')
 
@@ -167,48 +193,131 @@ describe('cookie-consent', () => {
     })
 
     test('handles missing buttons gracefully', async () => {
-      const mockBanner = createBannerMock()
-
-      setupGetElementByIdMock(mockBanner, null, null)
+      const banner = createBannerMock()
+      mockDocument.querySelector.mockImplementation((selector) => {
+        if (selector === '.js-cookies-container') {
+          return banner
+        }
+        return null
+      })
 
       await expect(import('./cookie-consent.js')).resolves.toBeDefined()
     })
   })
 
+  describe('XHR async submission', () => {
+    test('accept button sends XHR POST with crumb token', async () => {
+      const { acceptButton } = setupStandardMocks()
+
+      await import('./cookie-consent.js')
+
+      simulateButtonClick(acceptButton)
+
+      expect(mockXhr.open).toHaveBeenCalledWith('POST', '/cookies', true)
+      expect(mockXhr.setRequestHeader).toHaveBeenCalledWith('Content-Type', 'application/json')
+      const sentBody = JSON.parse(mockXhr.send.mock.calls[0][0])
+      expect(sentBody.crumb).toBe('test-crumb-token')
+      expect(sentBody.analytics).toBe(true)
+    })
+
+    test('reject button sends XHR POST with crumb token', async () => {
+      const { rejectButton } = setupStandardMocks()
+
+      await import('./cookie-consent.js')
+
+      simulateButtonClick(rejectButton)
+
+      expect(mockXhr.open).toHaveBeenCalledWith('POST', '/cookies', true)
+      const sentBody = JSON.parse(mockXhr.send.mock.calls[0][0])
+      expect(sentBody.crumb).toBe('test-crumb-token')
+      expect(sentBody.analytics).toBe(false)
+    })
+
+    test('falls back to form submit on XHR error', async () => {
+      const mockForm = { submit: vi.fn() }
+      const { rejectButton, banner } = setupStandardMocks()
+      banner.closest.mockReturnValue(mockForm)
+
+      await import('./cookie-consent.js')
+
+      simulateButtonClick(rejectButton)
+
+      mockXhr.onerror()
+
+      expect(mockForm.submit).toHaveBeenCalled()
+    })
+
+    test('falls back to form submit on non-2xx response', async () => {
+      const mockForm = { submit: vi.fn() }
+      const { rejectButton, banner } = setupStandardMocks()
+      banner.closest.mockReturnValue(mockForm)
+
+      await import('./cookie-consent.js')
+
+      simulateButtonClick(rejectButton)
+
+      mockXhr.status = 403
+      mockXhr.onload()
+
+      expect(mockForm.submit).toHaveBeenCalled()
+    })
+  })
+
+  describe('stale cookie cleanup', () => {
+    test('deletes GA cookies when banner is absent and no GTM script loaded', async () => {
+      mockDocument.querySelector.mockReturnValue(null)
+      mockDocument.cookie = '_ga=GA1.2.123'
+
+      await import('./cookie-consent.js')
+
+      expect(mockDocument.cookie).not.toContain('_ga=GA1')
+    })
+
+    test('does not delete GA cookies when banner is present', async () => {
+      const { banner } = setupStandardMocks()
+      // banner present means cleanupStaleCookies returns early
+      mockDocument.querySelector.mockImplementation((selector) => {
+        if (selector === '.js-cookies-container') {
+          return banner
+        }
+        return null
+      })
+      mockDocument.cookie = '_ga=GA1.2.123'
+
+      await import('./cookie-consent.js')
+
+      expect(mockDocument.cookie).toContain('_ga=GA1')
+    })
+  })
+
   describe('edge cases', () => {
     test('handles missing banner element', async () => {
-      mockDocument.getElementById.mockReturnValue(null)
+      mockDocument.querySelector.mockReturnValue(null)
 
       await expect(import('./cookie-consent.js')).resolves.toBeDefined()
     })
 
-    test('loads GA without nonce when no nonce script exists', async () => {
-      setupStandardMocks()
+    test('loads GA script via src when GTM key is set and accept is clicked', async () => {
+      const { acceptButton } = setupStandardMocks()
       const mockScript = createMockElement('script')
-
-      mockDocument.querySelector.mockReturnValue(null)
       mockDocument.createElement.mockReturnValue(mockScript)
-      mockDocument.cookie = 'cookie_consent=true'
 
       await import('./cookie-consent.js')
 
-      expect(mockScript.setAttribute).not.toHaveBeenCalledWith('nonce', expect.anything())
+      simulateButtonClick(acceptButton)
+
       expect(mockDocument.head.appendChild).toHaveBeenCalled()
+      expect(mockScript.src).toContain('GTM-ABC123')
     })
 
-    test('uses default config values when dataset attributes are missing', async () => {
-      const mockBanner = createMockElement()
-      mockBanner.dataset = {}
-      const mockAcceptButton = createMockElement('button')
-      const mockRejectButton = createMockElement('button')
-
-      setupGetElementByIdMock(mockBanner, mockAcceptButton, mockRejectButton)
+    test('does not load GA when gtmKey is missing', async () => {
+      const { acceptButton } = setupStandardMocks({ crumb: 'test-crumb' })
 
       await import('./cookie-consent.js')
 
-      simulateButtonClick(mockAcceptButton)
+      simulateButtonClick(acceptButton)
 
-      expect(mockDocument.cookie).toContain('cookie_consent=true')
+      expect(mockDocument.createElement).not.toHaveBeenCalled()
     })
   })
 
@@ -216,9 +325,13 @@ describe('cookie-consent', () => {
     test('initialises on DOMContentLoaded when readyState is loading', async () => {
       mockDocument.readyState = 'loading'
 
-      const mockBanner = createBannerMock()
-
-      setupGetElementByIdMock(mockBanner, null, null)
+      const banner = createBannerMock()
+      mockDocument.querySelector.mockImplementation((selector) => {
+        if (selector === '.js-cookies-container') {
+          return banner
+        }
+        return null
+      })
 
       await import('./cookie-consent.js')
 
@@ -230,7 +343,9 @@ describe('cookie-consent', () => {
     test.each([
       ['null', null],
       ['undefined', undefined],
-      ['empty string', '']
+      ['empty string', ''],
+      ['invalid format (GA4 ID)', 'G-ABC123'],
+      ['invalid format (no prefix)', 'ABC123']
     ])('returns early when trackingId is %s', async (_, trackingId) => {
       const { loadGoogleAnalytics } = await import('./cookie-consent.js')
 

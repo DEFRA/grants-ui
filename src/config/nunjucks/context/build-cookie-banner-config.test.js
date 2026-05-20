@@ -1,59 +1,76 @@
 import { describe, expect, test } from 'vitest'
-import {
-  buildCookieBannerConfig,
-  buildCookieBannerNoscriptConfig
-} from '~/src/config/nunjucks/context/build-cookie-banner-config.js'
+import { buildCookieBannerConfig } from '~/src/config/nunjucks/context/build-cookie-banner-config.js'
 
 const mockCookieConfig = {
   serviceName: 'Test Service',
   cookieConsentName: 'test_cookie_consent',
   cookieConsentExpiryDays: 365,
-  gaTrackingId: 'GA-12345',
+  gaTrackingId: 'GTM-12345',
   cookiePolicyUrl: '/cookies'
 }
 
 const expectedBannerConfig = {
   ariaLabel: 'Cookies on Test Service',
-  hidden: true,
+  classes: 'js-cookies-container js-cookies-banner',
   attributes: {
     'data-nosnippet': '',
-    id: 'cookie-banner',
     'data-cookie-name': 'test_cookie_consent',
     'data-expiry-days': 365,
-    'data-ga-tracking-id': 'GA-12345',
-    'data-cookie-policy-url': '/cookies'
+    'data-gtm-key': 'GTM-12345',
+    'data-cookie-policy-url': '/cookies',
+    'data-crumb': 'test-crumb-token'
   },
   messages: [
     {
       headingText: 'Cookies on Test Service',
-      html: '<p class="govuk-body">We use some essential cookies to make this service work.</p><p class="govuk-body">We\'d like to set additional cookies to understand how you use the service, remember your settings and improve the service.</p>',
+      html: '<p class="govuk-body">We use some essential cookies to make this service work.</p><p class="govuk-body">We\'d also like to use analytics cookies so we can understand how you use the service and make improvements.</p>',
+      classes: 'js-question-banner',
       actions: [
         {
           text: 'Accept analytics cookies',
-          type: 'button',
-          attributes: { id: 'cookie-banner-accept', 'data-module': 'govuk-button' }
+          type: 'submit',
+          name: 'analytics',
+          value: 'true',
+          classes: 'js-cookies-button-accept'
         },
         {
           text: 'Reject analytics cookies',
-          type: 'button',
-          attributes: { id: 'cookie-banner-reject', 'data-module': 'govuk-button' }
+          type: 'submit',
+          name: 'analytics',
+          value: 'false',
+          classes: 'js-cookies-button-reject'
         },
         {
           text: 'View cookies',
           href: '/cookies'
         }
       ]
-    }
-  ]
-}
-
-const expectedNoscriptConfig = {
-  ariaLabel: 'Cookies on Test Service',
-  attributes: { 'data-nosnippet': '' },
-  messages: [
+    },
     {
-      headingText: 'Cookies on Test Service',
-      html: '<p class="govuk-body">We use some essential cookies to make this service work.</p><p class="govuk-body">JavaScript is disabled, so you cannot set cookie preferences. Analytics cookies will not run.</p>'
+      html: '<p class="govuk-body">You\'ve accepted analytics cookies. You can <a class="govuk-link" href="/cookies">change your cookie settings</a> at any time.</p>',
+      role: 'alert',
+      hidden: true,
+      classes: 'js-cookies-accepted',
+      actions: [
+        {
+          text: 'Hide this message',
+          type: 'button',
+          classes: 'js-hide'
+        }
+      ]
+    },
+    {
+      html: '<p class="govuk-body">You\'ve rejected analytics cookies. You can <a class="govuk-link" href="/cookies">change your cookie settings</a> at any time.</p>',
+      role: 'alert',
+      hidden: true,
+      classes: 'js-cookies-rejected',
+      actions: [
+        {
+          text: 'Hide this message',
+          type: 'button',
+          classes: 'js-hide'
+        }
+      ]
     }
   ]
 }
@@ -67,27 +84,31 @@ describe('buildCookieBannerConfig', () => {
       cookieConsentName,
       cookieConsentExpiryDays,
       gaTrackingId,
-      cookiePolicyUrl
+      cookiePolicyUrl,
+      'test-crumb-token'
     )
 
     expect(result).toEqual(expectedBannerConfig)
   })
 
-  test('should handle undefined GA tracking ID', () => {
-    const result = buildCookieBannerConfig('My Service', 'cookie_consent', 90, undefined, '/cookies')
-
-    expect(result.attributes['data-ga-tracking-id']).toBeUndefined()
+  test('should include crumb token in data-crumb attribute', () => {
+    const result = buildCookieBannerConfig('My Service', 'cookie_consent', 365, undefined, '/cookies', 'my-crumb')
+    expect(result.attributes['data-crumb']).toBe('my-crumb')
   })
 
-  test.each([
-    { func: buildCookieBannerConfig, name: 'buildCookieBannerConfig' },
-    { func: buildCookieBannerNoscriptConfig, name: 'buildCookieBannerNoscriptConfig' }
-  ])('$name should use service name in ariaLabel and heading', ({ func }) => {
+  test('should have undefined data-crumb when crumb is not provided', () => {
+    const result = buildCookieBannerConfig('My Service', 'cookie_consent', 365, undefined, '/cookies')
+    expect(result.attributes['data-crumb']).toBeUndefined()
+  })
+
+  test('should handle undefined GA tracking ID', () => {
+    const result = buildCookieBannerConfig('My Service', 'cookie_consent', 90, undefined, '/cookies', undefined)
+    expect(result.attributes['data-gtm-key']).toBeUndefined()
+  })
+
+  test('should use service name in ariaLabel and heading', () => {
     const serviceName = 'Farm and land service'
-    const result =
-      func === buildCookieBannerConfig
-        ? func(serviceName, 'cookie_consent', 365, undefined, '/cookies')
-        : func(serviceName)
+    const result = buildCookieBannerConfig(serviceName, 'cookie_consent', 365, undefined, '/cookies')
 
     expect(result.ariaLabel).toBe('Cookies on Farm and land service')
     expect(result.messages[0].headingText).toBe('Cookies on Farm and land service')
@@ -95,18 +116,48 @@ describe('buildCookieBannerConfig', () => {
 
   test('should use custom cookie policy URL when provided', () => {
     const customUrl = '/custom/cookie-policy'
-    const result = buildCookieBannerConfig('My Service', 'cookie_consent', 90, 'GA-123', customUrl)
+    const result = buildCookieBannerConfig('My Service', 'cookie_consent', 90, 'GTM-123', customUrl)
 
     expect(result.attributes['data-cookie-policy-url']).toBe(customUrl)
     expect(result.messages[0].actions[2].href).toBe(customUrl)
   })
-})
 
-describe('buildCookieBannerNoscriptConfig', () => {
-  test('should build noscript configuration with correct structure', () => {
-    const { serviceName } = mockCookieConfig
-    const result = buildCookieBannerNoscriptConfig(serviceName)
+  test('should include js-cookies-container and js-cookies-banner classes', () => {
+    const result = buildCookieBannerConfig('My Service', 'cookie_consent', 365, undefined, '/cookies')
+    expect(result.classes).toBe('js-cookies-container js-cookies-banner')
+  })
 
-    expect(result).toEqual(expectedNoscriptConfig)
+  test('should include question banner with submit buttons', () => {
+    const result = buildCookieBannerConfig('My Service', 'cookie_consent', 365, undefined, '/cookies')
+    const questionMessage = result.messages[0]
+    expect(questionMessage.classes).toBe('js-question-banner')
+    expect(questionMessage.actions[0]).toMatchObject({
+      type: 'submit',
+      name: 'analytics',
+      value: 'true',
+      classes: 'js-cookies-button-accept'
+    })
+    expect(questionMessage.actions[1]).toMatchObject({
+      type: 'submit',
+      name: 'analytics',
+      value: 'false',
+      classes: 'js-cookies-button-reject'
+    })
+  })
+
+  test('should include accepted and rejected confirmation messages', () => {
+    const result = buildCookieBannerConfig('My Service', 'cookie_consent', 365, undefined, '/cookies')
+    const acceptedMessage = result.messages[1]
+    const rejectedMessage = result.messages[2]
+
+    expect(acceptedMessage.classes).toBe('js-cookies-accepted')
+    expect(acceptedMessage.hidden).toBe(true)
+    expect(acceptedMessage.role).toBe('alert')
+    expect(acceptedMessage.actions[0]).toMatchObject({ text: 'Hide this message', type: 'button', classes: 'js-hide' })
+
+    expect(rejectedMessage.classes).toBe('js-cookies-rejected')
+    expect(rejectedMessage.hidden).toBe(true)
+    expect(rejectedMessage.role).toBe('alert')
+    expect(rejectedMessage.actions[0]).toMatchObject({ text: 'Hide this message', type: 'button', classes: 'js-hide' })
   })
 })
