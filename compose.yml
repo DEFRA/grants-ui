@@ -104,6 +104,7 @@ services:
       HOST: 0.0.0.0
       NODE_ENV: ${NODE_ENV:-development}
       MONGO_URI: mongodb://mongodb:27017/
+      MONGO_CONFIG_URI: mongodb://mongodb:27017/
       GRANTS_UI_BACKEND_AUTH_TOKEN: ${GRANTS_UI_BACKEND_AUTH_TOKEN:-auth_token}
       GRANTS_UI_BACKEND_ENCRYPTION_KEY: ${GRANTS_UI_BACKEND_ENCRYPTION_KEY:-encryption_key}
       APPLICATION_LOCK_TOKEN_SECRET: ${APPLICATION_LOCK_TOKEN_SECRET:-dev-lock-secret}
