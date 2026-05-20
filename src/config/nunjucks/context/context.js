@@ -113,7 +113,7 @@ const createAssetPathGetter = (asset) => {
  */
 const buildCommonConfig = (serviceName, cookiePolicyUrl, cookieConsentExpiryDays, request) => {
   const cookieConsentName = config.get('cookieConsent.cookieName')
-  const googleTagManagerKey = config.get('googleAnalytics.trackingId')
+  const gaTrackingId = config.get('googleAnalytics.trackingId')
   const sessionCookieTtl = config.get('session.cookie.ttl')
   const consentCookieValue = /** @type {any} */ (request)?.state?.[cookieConsentName]
 
@@ -122,7 +122,7 @@ const buildCommonConfig = (serviceName, cookiePolicyUrl, cookieConsentExpiryDays
     serviceName,
     serviceUrl: '/',
     cdpEnvironment: config.get('cdpEnvironment'),
-    googleTagManagerKey,
+    gaTrackingId,
     cookiePolicyUrl,
     cookieConsentName,
     cookieConsentExpiryDays,
@@ -131,7 +131,7 @@ const buildCommonConfig = (serviceName, cookiePolicyUrl, cookieConsentExpiryDays
       serviceName,
       cookieConsentName,
       cookieConsentExpiryDays,
-      googleTagManagerKey,
+      gaTrackingId,
       cookiePolicyUrl,
       /** @type {any} */ (request)?.plugins?.crumb
     ),
@@ -141,7 +141,6 @@ const buildCommonConfig = (serviceName, cookiePolicyUrl, cookieConsentExpiryDays
       confirmed: Boolean(consentCookieValue),
       analytics: consentCookieValue === 'true'
     },
-    consentConfirmed: Boolean(consentCookieValue),
     breadcrumbs: []
   }
 }

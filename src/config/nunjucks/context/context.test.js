@@ -61,7 +61,7 @@ const getExpectedContext = () => ({
   serviceName: 'Farm and land service',
   serviceUrl: '/',
   cdpEnvironment: undefined,
-  googleTagManagerKey: undefined,
+  gaTrackingId: undefined,
   cookiePolicyUrl: expect.any(String),
   cookieConsentName: expect.any(String),
   cookieConsentExpiryDays: expect.any(Number),
@@ -70,7 +70,6 @@ const getExpectedContext = () => ({
   crumb: undefined,
   currentPath: '/',
   cookiesPolicy: { confirmed: false, analytics: false },
-  consentConfirmed: false,
   auth: {
     isAuthenticated: false,
     name: undefined,
@@ -447,7 +446,7 @@ describe('context', () => {
         cookiePolicyUrl: '/cookies',
         cookieConsentName: 'cookie_consent',
         cookieConsentExpiryDays: 365,
-        googleTagManagerKey: undefined
+        gaTrackingId: undefined
       })
     })
 
