@@ -1,4 +1,9 @@
 class QuestionPageController {
+  /**
+   * @param {MockPage} page
+   * @param {FormModel} model
+   * @param {Record<string, unknown>} [options]
+   */
   constructor(page, model, options = {}) {
     this.page = page
     this.model = model
@@ -16,6 +21,11 @@ class QuestionPageController {
 }
 
 class StatusPageController {
+  /**
+   * @param {MockPage} page
+   * @param {FormModel} model
+   * @param {Record<string, unknown>} [options]
+   */
   constructor(page, model, options = {}) {
     this.page = page
     this.model = model
@@ -29,6 +39,11 @@ class StatusPageController {
 }
 
 class SummaryPageController {
+  /**
+   * @param {MockPage} page
+   * @param {FormModel} model
+   * @param {Record<string, unknown>} [options]
+   */
   constructor(page, model, options = {}) {
     this.page = page
     this.model = model
@@ -51,3 +66,8 @@ module.exports = {
     controllers: {}
   }
 }
+
+/**
+ * @import { FormModel } from '@defra/forms-engine-plugin/engine/models/index.js'
+ * @typedef {{ name?: string }} MockPage
+ */

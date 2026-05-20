@@ -8,7 +8,7 @@ import jwt from 'jsonwebtoken'
  * - Identify the user/session attempting to own a lock
  * - Prove the token was minted by grants-ui
  *
- * @param {Object} params
+ * @param {object} params
  * @param {string} params.userId - DEFRA ID of the authenticated user
  * @param {string} params.sbi - Single Business Identifier defining the lock scope
  * @param {string} params.grantCode - Identifier of the grant code being locked
@@ -35,7 +35,7 @@ export function mintLockToken({ userId, sbi, grantCode, grantVersion }) {
 /**
  * Mint a lock-release JWT for a given user
  *
- * @param {Object} opts
+ * @param {object} opts
  * @param {string} opts.ownerId - The user identifier
  * @param {number} [opts.ttlMs] - Optional token TTL in milliseconds (default: 1 min)
  * @returns {string} JWT

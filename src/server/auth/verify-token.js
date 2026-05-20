@@ -22,7 +22,7 @@ async function verifyToken(token) {
 }
 
 /**
- * @returns {Promise<unknown[]>} the `keys` array from the JWKS document
+ * @returns {Promise<Record<string, unknown>[]>} the `keys` array from the JWKS document
  */
 async function fetchJwksKeys() {
   const { jwks_uri: uri } = await getOidcConfig()
@@ -42,7 +42,7 @@ async function fetchJwksKeys() {
 }
 
 /**
- * @param {unknown[]} keys - raw JWKS `keys` array
+ * @param {Record<string, unknown>[]} keys - raw JWKS `keys` array
  * @returns {Promise<JoseKey>}
  */
 function convertJwkToPem(keys) {
@@ -61,7 +61,8 @@ function verifyTokenSignature(token, key) {
 }
 
 /**
- * @param {any} decoded - JWT artifacts (defensively read in two shapes)
+ * @param {DecodedToken} decoded - JWT artifacts (defensively read in two shapes)
+ * @returns {void}
  */
 function logSuccessfulVerification(decoded) {
   const tokenPayload = decoded.decoded?.payload || decoded['payload'] || {}
@@ -83,7 +84,7 @@ function handleVerificationError(error, token) {
   let step = 'unknown'
 
   try {
-    /** @type {any} */
+    /** @type {DecodedToken} */
     const decoded = Jwt.token.decode(token)
     const tokenPayload = decoded.decoded?.payload || decoded['payload'] || {}
     userId = tokenPayload.contactId || 'unknown'
@@ -128,4 +129,6 @@ export { verifyToken }
  * @typedef {{ toPEM: () => string }} JoseKey
  *
  * @typedef {Error & { alreadyLogged?: boolean }} ErrorResponse
+ *
+ * @typedef {{ decoded?: { payload?: any }, payload?: any }} DecodedToken
  */

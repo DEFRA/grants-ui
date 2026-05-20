@@ -25,7 +25,7 @@ Object.freeze(LogLevel)
  *   - `error`
  * - The `logCode` object must contain a `messageFunc` property, which must be a function.
  *
- * @param {Object} logCode - The log code object to validate.
+ * @param {LogCodesDefinition} logCode - The log code object to validate.
  * @throws {Error} Throws an error if `logCode` is not a non-empty object.
  * @throws {Error} Throws an error if `logCode.level` is not one of the specified valid levels.
  * @throws {Error} Throws an error if `logCode.messageFunc` is not a function.
@@ -43,3 +43,7 @@ export const validateLogCode = (logCode) => {
     throw new Error('logCode.messageFunc must be a function')
   }
 }
+
+/**
+ * @import { LogCodesDefinition } from './log-codes/definition.js'
+ */
