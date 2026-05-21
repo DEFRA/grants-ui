@@ -4,19 +4,26 @@ import { getAllForms } from '~/src/server/dev-tools/utils/index.js'
 export default {
   plugin: {
     name: 'whitelist',
-    register: (server) => {
+    register: (/** @type {Server} */ server) => {
       server.ext('onPostAuth', (request, h) => whitelistHandler(request, h))
     }
   }
 }
 
+/**
+ * Hapi `onPostAuth` extension that enforces grant whitelist access.
+ *
+ * @param {Request} request - The incoming request.
+ * @param {ResponseToolkit} h - The Hapi response toolkit.
+ * @returns {Promise<symbol | ResponseObject>} The continue signal or a redirect response.
+ */
 const whitelistHandler = async (request, h) => {
   if (!request.auth.isAuthenticated) {
     return h.continue
   }
 
-  const crn = request.auth.credentials.crn
-  const sbi = request.auth.credentials.sbi
+  const crn = /** @type {string} */ (request.auth.credentials.crn)
+  const sbi = /** @type {string} */ (request.auth.credentials.sbi)
 
   const allForms = await getAllForms()
   const grantMetadata = allForms.find((form) => form.slug === request.params.slug)?.metadata
@@ -39,3 +46,7 @@ const whitelistHandler = async (request, h) => {
   }
   return h.continue
 }
+
+/**
+ * @import { Request, ResponseObject, ResponseToolkit, Server } from '@hapi/hapi'
+ */

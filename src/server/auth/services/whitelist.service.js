@@ -120,7 +120,7 @@ class WhitelistService {
    * Validate grant access for CRN and SBI based on injected whitelists
    * @param {string} crn - The user's CRN from DefraID
    * @param {string} sbi - The SBI number
-   * @returns {object} Validation result object
+   * @returns {ValidationResult} Validation result object
    */
   validateGrantAccess(crn, sbi) {
     const crnPassesValidation = this.isCrnWhitelisted(crn)
@@ -276,4 +276,12 @@ export { WhitelistService, WhitelistServiceFactory, whitelistService }
  *   sbi: string,
  *   validationType?: string
  * }} ScenarioConfig
+ *
+ * @typedef {{
+ *   crnPassesValidation: boolean,
+ *   sbiPassesValidation: boolean,
+ *   hasCrnValidation: boolean,
+ *   hasSbiValidation: boolean,
+ *   overallAccess: boolean
+ * }} ValidationResult
  */

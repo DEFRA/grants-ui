@@ -4,8 +4,8 @@ import { landActionWithCode } from '~/src/server/land-grants/utils/land-action-w
 /**
  * Builds a print-friendly view model from payment data.
  * Returns null when there is no payment data or parcelItems is empty.
- * @param {object | undefined} payment
- * @returns {{ totalAnnualPayment: string, parcelItems: object[], additionalPayments: object[] } | null}
+ * @param {PrintPayment | undefined} payment
+ * @returns {{ totalAnnualPayment: string, parcelItems: PrintParcelCard[], additionalPayments: PrintTableCell[][] } | null}
  */
 export function buildPrintPaymentViewModel(payment) {
   if (!payment?.parcelItems || !Object.keys(payment.parcelItems).length) {
@@ -21,8 +21,8 @@ export function buildPrintPaymentViewModel(payment) {
 
 /**
  * Groups parcel items by sheetId + parcelId into summary cards with table rows.
- * @param {object} payment
- * @returns {Array<{ cardTitle: string, items: Array<Array<object>> }>}
+ * @param {PrintPayment} payment
+ * @returns {PrintParcelCard[]}
  */
 export function buildPrintParcelItems(payment) {
   const grouped = Object.values(payment.parcelItems || {}).reduce((acc, data) => {
@@ -42,15 +42,15 @@ export function buildPrintParcelItems(payment) {
     ])
 
     return acc
-  }, {})
+  }, /** @type {Record<string, PrintParcelCard>} */ ({}))
 
   return Object.values(grouped)
 }
 
 /**
  * Maps agreement-level items into table rows for additional annual payments.
- * @param {object} payment
- * @returns {Array<Array<object>>}
+ * @param {PrintPayment} payment
+ * @returns {PrintTableCell[][]}
  */
 export function buildPrintAdditionalPayments(payment) {
   return Object.values(payment.agreementLevelItems || {}).map((data) => [
@@ -63,3 +63,32 @@ export function buildPrintAdditionalPayments(payment) {
     }
   ])
 }
+
+/**
+ * @typedef {object} PrintParcelItem
+ * @property {string} sheetId
+ * @property {string} parcelId
+ * @property {string} description
+ * @property {string} code
+ * @property {number} quantity
+ * @property {number} annualPaymentPence
+ */
+
+/**
+ * @typedef {object} PrintAgreementItem
+ * @property {string} description
+ * @property {string} code
+ * @property {number} annualPaymentPence
+ */
+
+/**
+ * @typedef {object} PrintPayment
+ * @property {Record<string, PrintParcelItem>} [parcelItems]
+ * @property {Record<string, PrintAgreementItem>} [agreementLevelItems]
+ * @property {number} annualTotalPence
+ */
+
+/**
+ * @typedef {{ text: string | number, format?: string }} PrintTableCell
+ * @typedef {{ cardTitle: string, items: PrintTableCell[][] }} PrintParcelCard
+ */
