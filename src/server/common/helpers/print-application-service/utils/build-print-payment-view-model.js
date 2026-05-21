@@ -2,6 +2,10 @@ import { formatPrice } from '~/src/server/common/utils/payment.js'
 import { landActionWithCode } from '~/src/server/land-grants/utils/land-action-with-code.js'
 
 /**
+ * @import { PrintPayment, PrintParcelCard, PrintTableCell } from '~/src/server/common/helpers/print-application-service/types/print-payment.d.js'
+ */
+
+/**
  * Builds a print-friendly view model from payment data.
  * Returns null when there is no payment data or parcelItems is empty.
  * @param {PrintPayment | undefined} payment
@@ -63,32 +67,3 @@ export function buildPrintAdditionalPayments(payment) {
     }
   ])
 }
-
-/**
- * @typedef {object} PrintParcelItem
- * @property {string} sheetId
- * @property {string} parcelId
- * @property {string} description
- * @property {string} code
- * @property {number} quantity
- * @property {number} annualPaymentPence
- */
-
-/**
- * @typedef {object} PrintAgreementItem
- * @property {string} description
- * @property {string} code
- * @property {number} annualPaymentPence
- */
-
-/**
- * @typedef {object} PrintPayment
- * @property {Record<string, PrintParcelItem>} [parcelItems]
- * @property {Record<string, PrintAgreementItem>} [agreementLevelItems]
- * @property {number} annualTotalPence
- */
-
-/**
- * @typedef {{ text: string | number, format?: string }} PrintTableCell
- * @typedef {{ cardTitle: string, items: PrintTableCell[][] }} PrintParcelCard
- */

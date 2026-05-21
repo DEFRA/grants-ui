@@ -1,6 +1,18 @@
 import { COMPONENT_TYPES, MONTH_NAMES } from '~/src/server/common/helpers/print-application-service/constants.js'
 
 /**
+ * Converts an unexpected value to a string without producing '[object Object]'.
+ * @param {unknown} value
+ * @returns {string}
+ */
+function stringifyValue(value) {
+  if (value !== null && typeof value === 'object') {
+    return JSON.stringify(value)
+  }
+  return String(value)
+}
+
+/**
  * Looks up the display text for a value from a component's items list
  * @param {Component} component
  * @param {unknown} value
@@ -9,7 +21,7 @@ import { COMPONENT_TYPES, MONTH_NAMES } from '~/src/server/common/helpers/print-
 function lookupItemLabel(component, value) {
   const items = component.items || /** @type {{ items?: ListItem[] }} */ (component.list)?.items || []
   const match = items.find((item) => item.value === value)
-  return match?.text ?? String(value)
+  return match?.text ?? stringifyValue(value)
 }
 
 /**
@@ -28,7 +40,7 @@ function formatYesNo(_component, value) {
  */
 function formatCheckboxes(component, value) {
   if (!Array.isArray(value)) {
-    return String(value)
+    return stringifyValue(value)
   }
   return value.map((v) => lookupItemLabel(component, v)).join(', ')
 }
@@ -43,7 +55,7 @@ function formatDateParts(_component, value) {
     const monthName = MONTH_NAMES[Number(value.month) - 1] || value.month
     return `${Number(value.day)} ${monthName} ${value.year}`
   }
-  return String(value)
+  return stringifyValue(value)
 }
 
 /**
@@ -56,7 +68,7 @@ function formatMonthYear(_component, value) {
     const monthName = MONTH_NAMES[Number(value.month) - 1] || value.month
     return `${monthName} ${value.year}`
   }
-  return String(value)
+  return stringifyValue(value)
 }
 
 /**
@@ -77,7 +89,7 @@ function formatUkAddress(_component, value) {
   if (typeof value === 'object') {
     return [value.addressLine1, value.addressLine2, value.town, value.county, value.postcode].filter(Boolean).join(', ')
   }
-  return String(value)
+  return stringifyValue(value)
 }
 
 /**
@@ -89,7 +101,7 @@ function formatEastingNorthing(_component, value) {
   if (typeof value === 'object' && value.easting !== undefined && value.northing !== undefined) {
     return `${value.easting}, ${value.northing}`
   }
-  return String(value)
+  return stringifyValue(value)
 }
 
 /**
@@ -101,7 +113,7 @@ function formatLatLong(_component, value) {
   if (typeof value === 'object' && value.latitude !== undefined && value.longitude !== undefined) {
     return `${value.latitude}, ${value.longitude}`
   }
-  return String(value)
+  return stringifyValue(value)
 }
 
 /**
@@ -114,7 +126,7 @@ function formatGeospatial(_component, value) {
     const unit = value.length === 1 ? 'feature' : 'features'
     return `${value.length} ${unit}`
   }
-  return String(value)
+  return stringifyValue(value)
 }
 
 /**
@@ -123,7 +135,7 @@ function formatGeospatial(_component, value) {
  * @returns {string}
  */
 function formatStringValue(_component, value) {
-  return String(value)
+  return stringifyValue(value)
 }
 
 /** @type {Record<string, (component: Component, value: any) => string>} */
@@ -161,7 +173,7 @@ export function formatAnswer(component, value) {
   }
 
   const formatter = FORMATTERS[component.type]
-  return formatter ? formatter(component, value) : String(value)
+  return formatter ? formatter(component, value) : stringifyValue(value)
 }
 
 /**

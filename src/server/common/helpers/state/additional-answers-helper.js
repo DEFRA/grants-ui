@@ -12,7 +12,7 @@ export function mergeAdditionalAnswers(state, newAnswers) {
     /** @type {unknown} */ ({
       ...state,
       additionalAnswers: {
-        .../** @type {Record<string, unknown>} */ (/** @type {unknown} */ (state?.additionalAnswers) ?? {}),
+        .../** @type {Record<string, unknown>} */ (/** @type {unknown} */ (state?.additionalAnswers)),
         ...newAnswers
       }
     })

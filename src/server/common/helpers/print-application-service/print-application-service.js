@@ -12,6 +12,10 @@ export const COMPOSITE_FIELD_PARTS = {
 }
 
 /**
+ * @import { PrintPayment } from './types/print-payment.d.js'
+ */
+
+/**
  * @typedef {{ text: string, value: string | number | boolean }} ListItem
  * @typedef {{ type: string, name: string, title: string, shortDescription?: string, list?: string, items?: ListItem[] }} FormComponent
  * @typedef {{ title: string, components?: FormComponent[] }} FormPage
@@ -181,9 +185,7 @@ export function buildPrintViewModel({
     },
     applicantDetailsSections,
     sections: buildSections(definition.pages, answers),
-    paymentInfo: buildPrintPaymentViewModel(
-      /** @type {import('./utils/build-print-payment-view-model.js').PrintPayment | undefined} */ (answers.payment)
-    ),
+    paymentInfo: buildPrintPaymentViewModel(/** @type {PrintPayment | undefined} */ (answers.payment)),
     configurablePrintContent,
     breadcrumbs: []
   }
