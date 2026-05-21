@@ -6,18 +6,6 @@ describe('can', () => {
     {
       id: 'COUNTRYSIDE_STEWARDSHIP_APPLICATIONS',
       level: 'SUBMIT'
-    },
-    {
-      id: 'LAND_DETAILS',
-      level: 'AMEND'
-    },
-    {
-      id: 'BUSINESS_DETAILS',
-      level: 'FULL_PERMISSION'
-    },
-    {
-      id: 'ENVIRONMENTAL_LAND_MANAGEMENT_APPLICATIONS',
-      level: 'NO_ACCESS'
     }
   ]
 
@@ -35,49 +23,63 @@ describe('can', () => {
     })
   })
 
-  describe('LAND_DETAILS', () => {
-    it('should allow amend when level is AMEND', () => {
-      expect(can(permissionGroups, 'amend', 'landDetails')).toBe(true)
+  describe('permission hierarchy', () => {
+    it('should allow VIEW when user has VIEW', () => {
+      const permissionGroups = [
+        {
+          id: 'COUNTRYSIDE_STEWARDSHIP_APPLICATIONS',
+          level: 'VIEW'
+        }
+      ]
+
+      expect(can(permissionGroups, 'view', 'csApplications')).toBe(true)
     })
 
-    it('should allow view when level is AMEND', () => {
-      expect(can(permissionGroups, 'view', 'landDetails')).toBe(true)
+    it('should not allow AMEND when user only has VIEW', () => {
+      const permissionGroups = [
+        {
+          id: 'COUNTRYSIDE_STEWARDSHIP_APPLICATIONS',
+          level: 'VIEW'
+        }
+      ]
+
+      expect(can(permissionGroups, 'amend', 'csApplications')).toBe(false)
     })
 
-    it('should deny submit when level is AMEND', () => {
-      expect(can(permissionGroups, 'submit', 'landDetails')).toBe(false)
+    it('should not allow SUBMIT when user only has AMEND', () => {
+      const permissionGroups = [
+        {
+          id: 'COUNTRYSIDE_STEWARDSHIP_APPLICATIONS',
+          level: 'AMEND'
+        }
+      ]
+
+      expect(can(permissionGroups, 'submit', 'csApplications')).toBe(false)
+    })
+
+    it('should allow VIEW when user has AMEND', () => {
+      const permissionGroups = [
+        {
+          id: 'COUNTRYSIDE_STEWARDSHIP_APPLICATIONS',
+          level: 'AMEND'
+        }
+      ]
+
+      expect(can(permissionGroups, 'view', 'csApplications')).toBe(true)
     })
   })
 
-  describe('BUSINESS_DETAILS', () => {
-    it('should allow submit when level is FULL_PERMISSION', () => {
-      expect(can(permissionGroups, 'submit', 'businessDetails')).toBe(true)
-    })
+  describe('missing or uknown permissions', () => {
+    it('should return false for unknown permission level', () => {
+      const permissionGroups = [
+        {
+          id: 'COUNTRYSIDE_STEWARDSHIP_APPLICATIONS',
+          level: 'INVALID'
+        }
+      ]
 
-    it('should allow amend when level is FULL_PERMISSION', () => {
-      expect(can(permissionGroups, 'amend', 'businessDetails')).toBe(true)
+      expect(can(permissionGroups, 'view', 'csApplications')).toBe(false)
     })
-
-    it('should allow view when level is FULL_PERMISSION', () => {
-      expect(can(permissionGroups, 'view', 'businessDetails')).toBe(true)
-    })
-  })
-
-  describe('NO_ACCESS permissions', () => {
-    it('should deny view when level is NO_ACCESS', () => {
-      expect(can(permissionGroups, 'view', 'elmApplications')).toBe(false)
-    })
-
-    it('should deny amend when level is NO_ACCESS', () => {
-      expect(can(permissionGroups, 'amend', 'elmApplications')).toBe(false)
-    })
-
-    it('should deny submit when level is NO_ACCESS', () => {
-      expect(can(permissionGroups, 'submit', 'elmApplications')).toBe(false)
-    })
-  })
-
-  describe('missing permissions', () => {
     it('should return false when permission group is missing', () => {
       expect(can(permissionGroups, 'view', 'csAgreements')).toBe(false)
     })
