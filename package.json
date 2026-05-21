@@ -145,7 +145,7 @@
     "copy-webpack-plugin": "14.0.0",
     "cssnano": "7.1.9",
     "cssnano-preset-default": "7.0.17",
-    "eslint": "9.39.4",
+    "eslint": "10.4.0",
     "eslint-config-prettier": "10.1.8",
     "eslint-import-resolver-typescript": "3.10.1",
     "eslint-plugin-import": "2.32.0",
