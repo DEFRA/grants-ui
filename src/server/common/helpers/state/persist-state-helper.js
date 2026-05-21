@@ -12,7 +12,7 @@ const MAX_DB_STATE_SIZE_BYTES = config.get('session.cache.maxDbStateSizeBytes')
 /**
  * Persists a given state object to the Grants UI backend API.
  *
- * @param {object} state - The state object to persist. Can include form/session data.
+ * @param {Record<string, unknown>} state - The state object to persist. Can include form/session data.
  * @param {string} key - The cache/session key to identify this state.
  * @param {{grantVersion?: unknown, lockToken?: string}} [options] - Optional grant version, lock token to identify who is locking the state.
  * @returns {Promise<void>} Resolves once the state is sent to the backend.
@@ -73,7 +73,7 @@ export async function persistStateToApi(state, key, { lockToken, grantVersion } 
       method: 'POST',
       endpoint: url.href,
       identity: key,
-      errorMessage: err.message
+      errorMessage: /** @type {Error} */ (err).message
     })
     // NOSONAR TODO: See TGC-873
     // throw err

@@ -14,8 +14,7 @@ export const getCacheKey = (request) => {
   if (!credentials) {
     throw BaseError.wrap(new Error('Missing auth credentials'))
   }
-  /** @type {object} */
-  const { crn, organisationId: sbi } = credentials
+  const { crn, organisationId: sbi } = /** @type {{ crn?: string, organisationId?: string }} */ (credentials)
 
   if (!crn) {
     throw BaseError.wrap(new Error('Missing CRN in credentials'))

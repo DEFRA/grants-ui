@@ -10,22 +10,22 @@ const GRANTS_UI_BACKEND_ENDPOINT = config.get('session.cache.apiEndpoint')
 
 /**
  * Logging function for API errors
- * @param logCode
- * @returns {(function(*, {}=): void)|*}
+ * @param {LogCodeEntry} [logCode] - The log code entry to bind the returned logger to
+ * @returns {(request: AnyRequest, messageOptions?: Record<string, unknown>) => void} A logger bound to the given log code
  */
 function logApiError(logCode = LogCodes.SYSTEM.EXTERNAL_API_ERROR) {
   /**
    * Logs API errors with the specified log code
-   * @param {Object} request - The request object
-   * @param {Object} messageOptions - Additional message options
+   * @param {AnyRequest} request - The request object
+   * @param {Record<string, unknown>} messageOptions - Additional message options
    */
   return (request, messageOptions = {}) => log(logCode, messageOptions, request)
 }
 
 /**
  * Constructs the endpoint URL for the state API based on the session key
- * @param key
- * @param grantVersion
+ * @param {string} key - The session key
+ * @param {string | number} grantVersion - The grant definition version
  * @returns {string}
  */
 function getEndpoint(key, grantVersion) {
@@ -33,7 +33,7 @@ function getEndpoint(key, grantVersion) {
   const url = new URL('/state/', GRANTS_UI_BACKEND_ENDPOINT)
   url.searchParams.set('sbi', sbi)
   url.searchParams.set('grantCode', grantCode)
-  url.searchParams.set('grantVersion', grantVersion)
+  url.searchParams.set('grantVersion', /** @type {string} */ (grantVersion))
   return url.href
 }
 
@@ -41,14 +41,14 @@ function getEndpoint(key, grantVersion) {
  * Makes an API call to the state endpoint with the specified HTTP method
  * @param {string} key - The session key
  * @param {string} method - HTTP method (GET or DELETE)
- * @param request - The request object
+ * @param {AnyRequest} request - The request object
  * @param {{lockToken?: string}} [options]
- * @returns {Promise<Object|null>} The response JSON or null
+ * @returns {Promise<Record<string, unknown>|null>} The response JSON or null
  */
 async function callStateApi(key, method, request, { lockToken } = {}) {
   const logDebug = logApiError(LogCodes.SYSTEM.EXTERNAL_API_CALL_DEBUG)
   const logError = logApiError()
-  const grantVersion = request.app.model?.def?.metadata?.version ?? 1 // Default to 1 to support non-config broker grants
+  const grantVersion = /** @type {string | number} */ (request.app.model?.def?.metadata?.version ?? 1) // Default to 1 to support non-config broker grants
   if (!GRANTS_UI_BACKEND_ENDPOINT?.length) {
     return null
   }
@@ -68,7 +68,7 @@ async function callStateApi(key, method, request, { lockToken } = {}) {
       headers: createApiHeadersForGrantsUiBackend({ lockToken })
     })
   } catch (err) {
-    logError(request, { method, endpoint, identity: key, errorMessage: err.message })
+    logError(request, { method, endpoint, identity: key, errorMessage: /** @type {Error} */ (err).message })
     throw err
   }
 
@@ -96,7 +96,7 @@ async function callStateApi(key, method, request, { lockToken } = {}) {
 
 /**
  * @param {string} key
- * @param {object} request
+ * @param {AnyRequest} request
  * @param {{lockToken?: string}} [options]
  */
 export async function fetchSavedStateFromApi(key, request, { lockToken } = {}) {
@@ -105,9 +105,14 @@ export async function fetchSavedStateFromApi(key, request, { lockToken } = {}) {
 
 /**
  * @param {string} key
- * @param {object} request
+ * @param {AnyRequest} request
  * @param {{lockToken?: string}} [options]
  */
 export async function clearSavedStateFromApi(key, request, { lockToken } = {}) {
   return callStateApi(key, 'DELETE', request, { lockToken })
 }
+
+/**
+ * @import { AnyRequest } from '@defra/forms-engine-plugin/engine/types.js'
+ * @import { LogCodeEntry } from '../logging/log.js'
+ */

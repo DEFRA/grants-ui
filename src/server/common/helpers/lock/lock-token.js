@@ -12,7 +12,7 @@ import jwt from 'jsonwebtoken'
  * @param {string} params.userId - DEFRA ID of the authenticated user
  * @param {string} params.sbi - Single Business Identifier defining the lock scope
  * @param {string} params.grantCode - Identifier of the grant code being locked
- * @param {string} params.grantVersion - Version of the grant being locked
+ * @param {string | number} params.grantVersion - Version of the grant being locked
  * @returns {string} Signed JWT lock token
  */
 export function mintLockToken({ userId, sbi, grantCode, grantVersion }) {
