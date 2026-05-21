@@ -2,9 +2,24 @@ import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { permissionPaths, getReturnToApplicationPath, requirePermission } from './require-permission.js'
 
 import { getTaskListPath } from '~/src/server/task-list/task-list.helper.js'
+import { isPermissionEnforced } from '../permission-config.js'
+import { logPermissionEvent } from '../permission-logger.js'
+import { getGrantCode } from '../../grant-code.js'
 
 vi.mock('~/src/server/task-list/task-list.helper.js', () => ({
   getTaskListPath: vi.fn()
+}))
+
+vi.mock('../permission-config.js', () => ({
+  isPermissionEnforced: vi.fn()
+}))
+
+vi.mock('../permission-logger.js', () => ({
+  logPermissionEvent: vi.fn()
+}))
+
+vi.mock('../../grant-code.js', () => ({
+  getGrantCode: vi.fn()
 }))
 
 describe('permissionPaths', () => {
@@ -54,13 +69,15 @@ describe('getReturnToApplicationPath', () => {
 })
 
 describe('requirePermission', () => {
-  let hasPermission
+  let isAuthorised
   let onFail
   let request
   let h
 
   beforeEach(() => {
-    hasPermission = vi.fn()
+    vi.clearAllMocks()
+
+    isAuthorised = vi.fn()
     onFail = vi.fn()
 
     request = {
@@ -74,11 +91,15 @@ describe('requirePermission', () => {
     h = {
       continue: Symbol('continue')
     }
+
+    isPermissionEnforced.mockReturnValue(true)
+    getGrantCode.mockReturnValue('cs')
   })
 
   test('returns middleware function', () => {
     const middleware = requirePermission({
-      hasPermission,
+      permission: 'submit',
+      isAuthorised,
       onFail
     })
 
@@ -86,16 +107,25 @@ describe('requirePermission', () => {
   })
 
   test('returns h.continue when permission check passes', () => {
-    hasPermission.mockReturnValue(true)
+    isAuthorised.mockReturnValue(true)
 
     const middleware = requirePermission({
-      hasPermission,
+      permission: 'submit',
+      isAuthorised,
       onFail
     })
 
     const result = middleware(request, h)
 
-    expect(hasPermission).toHaveBeenCalledWith(['permission-1'])
+    expect(isAuthorised).toHaveBeenCalledWith(['permission-1'])
+
+    expect(logPermissionEvent).toHaveBeenCalledWith({
+      request,
+      grantCode: 'cs',
+      permission: 'submit',
+      enforcementEnabled: true,
+      authorised: true
+    })
 
     expect(onFail).not.toHaveBeenCalled()
 
@@ -103,12 +133,13 @@ describe('requirePermission', () => {
   })
 
   test('calls onFail when permission check fails', () => {
-    hasPermission.mockReturnValue(false)
+    isAuthorised.mockReturnValue(false)
 
     onFail.mockReturnValue('redirected')
 
     const middleware = requirePermission({
-      hasPermission,
+      permission: 'submit',
+      isAuthorised,
       onFail
     })
 
@@ -118,33 +149,69 @@ describe('requirePermission', () => {
 
     const result = middleware(request, h, context)
 
-    expect(hasPermission).toHaveBeenCalledWith(['permission-1'])
+    expect(isAuthorised).toHaveBeenCalledWith(['permission-1'])
+
+    expect(logPermissionEvent).toHaveBeenCalledWith({
+      request,
+      grantCode: 'cs',
+      permission: 'submit',
+      enforcementEnabled: true,
+      authorised: false
+    })
 
     expect(onFail).toHaveBeenCalledWith(request, h, context)
 
     expect(result).toBe('redirected')
   })
 
+  test('returns h.continue when permission enforcement is disabled', () => {
+    isPermissionEnforced.mockReturnValue(false)
+
+    const middleware = requirePermission({
+      permission: 'submit',
+      isAuthorised,
+      onFail
+    })
+
+    const result = middleware(request, h)
+
+    expect(isAuthorised).not.toHaveBeenCalled()
+
+    expect(logPermissionEvent).toHaveBeenCalledWith({
+      request,
+      grantCode: 'cs',
+      permission: 'submit',
+      enforcementEnabled: false,
+      authorised: true
+    })
+
+    expect(onFail).not.toHaveBeenCalled()
+
+    expect(result).toBe(h.continue)
+  })
+
   test('uses empty permissions array when permissions are undefined', () => {
     request.auth.credentials.permissions = undefined
 
-    hasPermission.mockReturnValue(true)
+    isAuthorised.mockReturnValue(true)
 
     const middleware = requirePermission({
-      hasPermission,
+      permission: 'submit',
+      isAuthorised,
       onFail
     })
 
     middleware(request, h)
 
-    expect(hasPermission).toHaveBeenCalledWith([])
+    expect(isAuthorised).toHaveBeenCalledWith([])
   })
 
   test('uses default empty context object', () => {
-    hasPermission.mockReturnValue(false)
+    isAuthorised.mockReturnValue(false)
 
     const middleware = requirePermission({
-      hasPermission,
+      permission: 'submit',
+      isAuthorised,
       onFail
     })
 

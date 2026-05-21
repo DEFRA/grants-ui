@@ -3,6 +3,7 @@ import { describe, test, expect, vi, beforeEach } from 'vitest'
 const mockRequirePermission = vi.fn((config) => config)
 
 vi.mock('./require-permission.js', () => ({
+  permission: 'submit',
   permissionPaths: {
     cannotSubmit: '/cannot-submit'
   },
@@ -23,7 +24,8 @@ describe('requireSubmitCsApplication', () => {
     await import('./require-cs-submit-permission.js')
 
     expect(mockRequirePermission).toHaveBeenCalledWith({
-      hasPermission: expect.any(Function),
+      permission: 'submit',
+      isAuthorised: expect.any(Function),
       onFail: expect.any(Function)
     })
   })

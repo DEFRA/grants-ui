@@ -1,4 +1,7 @@
 import { getTaskListPath } from '~/src/server/task-list/task-list.helper.js'
+import { isPermissionEnforced } from '../permission-config.js'
+import { getGrantCode } from '../../grant-code.js'
+import { logPermissionEvent } from '../permission-logger.js'
 
 export const permissionPaths = {
   cannotSubmit: '/cannot-submit'
@@ -21,11 +24,28 @@ export function getReturnToApplicationPath(model, basePath) {
   return `${basePath}/summary`
 }
 
-export const requirePermission = ({ hasPermission, onFail }) => {
+export const requirePermission = ({ permission, isAuthorised, onFail }) => {
   return (request, h, context = {}) => {
+    if (!isPermissionEnforced(request)) {
+      logPermissionEvent({
+        request,
+        grantCode: getGrantCode(request),
+        permission,
+        enforcementEnabled: false,
+        authorised: true
+      })
+      return h.continue
+    }
     const permissions = request.auth.credentials.permissions || []
-
-    if (hasPermission(permissions)) {
+    const authorised = isAuthorised(permissions)
+    logPermissionEvent({
+      request,
+      grantCode: getGrantCode(request),
+      permission,
+      enforcementEnabled: true,
+      authorised
+    })
+    if (authorised) {
       return h.continue
     }
 
