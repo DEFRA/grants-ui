@@ -12,7 +12,12 @@ export const COMPOSITE_FIELD_PARTS = {
 }
 
 /**
- * @typedef {{ type: string, name: string, title: string, shortDescription?: string, list?: string, items?: Array<{text: string, value: string | number | boolean}> }} FormComponent
+ * @import { PrintPayment } from './types/print-payment.d.js'
+ */
+
+/**
+ * @typedef {{ text: string, value: string | number | boolean }} ListItem
+ * @typedef {{ type: string, name: string, title: string, shortDescription?: string, list?: string, items?: ListItem[] }} FormComponent
  * @typedef {{ title: string, components?: FormComponent[] }} FormPage
  * @typedef {{ pages?: FormPage[] }} FormDefinition
  * @typedef {{ title: string, path?: string, slug: string, id: string }} FormMeta
@@ -47,6 +52,7 @@ function resolveAnswer(component, answers) {
     return undefined
   }
 
+  /** @type {Record<string, unknown>} */
   const assembled = {}
   let hasValue = false
 
@@ -99,7 +105,7 @@ function buildSections(pages, answers) {
 
 /**
  * Resolves list UUID references on components to actual items arrays.
- * @param {FormDefinition & { lists?: { id?: string, items?: object[] }[] }} definition - Parsed YAML form definition
+ * @param {FormDefinition & { lists?: { id?: string, items?: ListItem[] }[] }} definition - Parsed YAML form definition
  * @returns {FormDefinition} The same definition, with list items resolved on components
  */
 export function enrichDefinitionWithListItems(definition) {
@@ -114,8 +120,8 @@ export function enrichDefinitionWithListItems(definition) {
 
 /**
  * Builds a Map of list ID → items from the definition's lists array.
- * @param {{ id?: string, items?: object[] }[]} lists
- * @returns {Map<string, object[]>}
+ * @param {{ id?: string, items?: ListItem[] }[]} lists
+ * @returns {Map<string, ListItem[]>}
  */
 function buildListsMap(lists) {
   const listsById = new Map()
@@ -132,7 +138,7 @@ function buildListsMap(lists) {
 /**
  * Resolves list UUID references on components to actual items arrays.
  * @param {FormComponent[]} components
- * @param {Map<string, object[]>} listsById
+ * @param {Map<string, ListItem[]>} listsById
  */
 function resolveComponentLists(components, listsById) {
   for (const component of components) {
@@ -179,7 +185,7 @@ export function buildPrintViewModel({
     },
     applicantDetailsSections,
     sections: buildSections(definition.pages, answers),
-    paymentInfo: buildPrintPaymentViewModel(answers.payment),
+    paymentInfo: buildPrintPaymentViewModel(/** @type {PrintPayment | undefined} */ (answers.payment)),
     configurablePrintContent,
     breadcrumbs: []
   }
@@ -188,9 +194,9 @@ export function buildPrintViewModel({
 /**
  * Processes configurablePrintContent from YAML metadata — replaces component placeholders
  * and {{SLUG}} tokens.
- * @param {object | undefined} configurablePrintContent
+ * @param {{ html?: string } | undefined} configurablePrintContent
  * @param {string} slug
- * @returns {object | undefined}
+ * @returns {{ html: string } | undefined}
  */
 export function processConfigurablePrintContent(configurablePrintContent, slug) {
   if (!configurablePrintContent?.html) {

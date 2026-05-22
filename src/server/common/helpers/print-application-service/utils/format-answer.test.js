@@ -89,7 +89,7 @@ describe('formatAnswer', () => {
     })
 
     test('should stringify when day is missing', () => {
-      expect(formatAnswer(component, { month: '1', year: '2025' })).toBe('[object Object]')
+      expect(formatAnswer(component, { month: '1', year: '2025' })).toBe('{"month":"1","year":"2025"}')
     })
   })
 
@@ -109,7 +109,7 @@ describe('formatAnswer', () => {
     })
 
     test('should stringify when month is missing', () => {
-      expect(formatAnswer(component, { year: '2025' })).toBe('[object Object]')
+      expect(formatAnswer(component, { year: '2025' })).toBe('{"year":"2025"}')
     })
   })
 

@@ -19,7 +19,7 @@ export const can = (permissionGroups, action, resource) => {
     return false
   }
 
-  const requiredLevel = rule.actions[action]
+  const requiredLevel = rule.permissions[action]
 
   if (!requiredLevel) {
     return false
